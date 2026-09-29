@@ -1,0 +1,27 @@
+---
+key: Side
+scope: themes
+label: Track side restriction
+see_also: [Normal, Scenario, RequiredAddon]
+when_omitted:
+  kind: value
+  value: <none>
+  note: No restriction, which offers the track to every side.
+---
+
+`Side=` restricts the music track to players of the sides it lists, separated by commas. The track is allowed only while the local player's country belongs to one of those sides, so every country on them gets it. A country's side comes from `[Sides]` or its own [`Side=`](/keys/side/#scope-housetype).
+
+```ini title="theme.ini"
+[DUSKHOUR]
+Name=Dusk Hour
+Length=4.11
+Side=GDI
+```
+
+`Side=GDI,Nod` allows the track for both sides and keeps it from a third side a mod declares.
+
+For a player of any other side, the track is missing from the automatic playlist and from the sound options track list, and the [next track](/commands/nexttheme/) and [previous track](/commands/prevtheme/) commands skip it. Other ways of starting the track, listed under [`Normal`](/keys/normal/), still play it.
+
+While no game is loaded there is no player's country to compare, so the restriction is not applied.
+
+A name that no `[Sides]` entry declares is skipped. When the list names no declared side at all, the key is ignored and the track stays unrestricted. `Side=<none>` also leaves the track unrestricted.

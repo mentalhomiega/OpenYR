@@ -1,0 +1,381 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#include "always.h"
+
+#include "progress.h"
+
+#include "_convert.h"
+#include "_mixfile.h"
+#include "_surface.h"
+#include "convert.h"
+#include "data.h"
+#include "dialog.h"
+#include "draw.h"
+#include "gscreen.h"
+#include "init.h"
+#include "language/language.h"
+#include "lightcon.h"
+#include "mixfile.h"
+#include "scheme.h"
+#include "session.h"
+#include "shapeset.h"
+#include "surface.h"
+#include "voc.h"
+
+#include <algorithm>
+
+
+ProgressScreenClass Progress;
+
+static struct {
+	int Progress;
+	int Text;
+} _progress_messages[] = {
+	{ 0,	TXT_LOADING_GAME1A },
+	{ 12,	TXT_LOADING_GAME1B },
+	{ 20,	TXT_LOADING_GAME1C },
+	{ 30,	TXT_LOADING_GAME1D },
+	{ 50,	TXT_LOADING_GAME1E },
+	{ 70,	TXT_LOADING_GAME1F },
+	{ 80,	TXT_LOADING_GAME1G },
+	{ 100,	TXT_LOADING_GAME1H }
+};
+
+
+/// <summary>
+/// Constructs the progress screen object.
+/// The screen starts out idle and with no artwork attached. Initialize and
+/// Set_Graphic_Data supply both before anything can be displayed.
+/// </summary>
+ProgressScreenClass::ProgressScreenClass(void)
+{
+	MainProgress = 0;
+	String = NULL;
+	Shape = NULL;
+	Background = NULL;
+	IsActive = false;
+	Percentage = -1;
+	Reached = -1;
+	Printed = -1;
+	for (int i = 0; i < MAX_PLAYERS; i++) {
+		PlayerProgress[i] = 0;
+	}
+}
+
+
+/// <summary>
+/// Destroys the progress screen object.
+/// </summary>
+ProgressScreenClass::~ProgressScreenClass(void)
+{
+}
+
+
+/// <summary>
+/// Prepares the progress screen for a new job.
+/// This routine records how much work the job amounts to, clears the progress of every
+/// player being tracked, and then either brings up the progress dialog or clears the
+/// hidden surface for the full screen presentation.
+/// </summary>
+/// <param name="progress">The total amount of work this job represents.</param>
+/// <param name="count">The number of players whose progress must be tracked.</param>
+/// <param name="usedialog">Should the dialog be used instead of the full screen?</param>
+void ProgressScreenClass::Initialize(double progress, int count, bool usedialog)
+{
+	MainProgress = progress;
+	PlayerCount = std::max(count, 1);
+
+	for (int i = 0; i < PlayerCount; i++) {
+		PlayerProgress[i] = 0;
+	}
+	IsActive = true;
+
+	if (usedialog) {
+		if (!Box.Is_Shown()) {
+			Begin_Dialog();
+		}
+	} else {
+		HiddenSurface->Fill(0);
+	}
+	Percentage = -1;
+	Reached = -1;
+	Printed = -1;
+}
+
+
+/// <summary>
+/// Marks the progress screen as finished.
+/// This routine is used when the job is over. Further progress requests are ignored
+/// until Initialize starts another one.
+/// </summary>
+void ProgressScreenClass::End(void)
+{
+	IsActive = false;
+	MainProgress = 0.0;
+}
+
+
+/// <summary>
+/// Sets up the artwork for the progress screen.
+/// This routine loads the title page to sit behind the bars, fetches the progress bar
+/// shape from the mix files, and prints the caption and the player names onto the hidden
+/// surface so that the screen is ready before the first progress update arrives.
+/// </summary>
+/// <param name="progbar">Name of the progress bar shape, or NULL to keep the current one.</param>
+/// <param name="background">Name of the title page to load, or NULL to keep the current
+/// one.</param>
+/// <param name="string">The caption to print above the bars, or NULL for none.</param>
+/// <param name="pt">The center of the bars, or Point2D(-1,-1) to center them on the screen.</param>
+void ProgressScreenClass::Set_Graphic_Data(const char * progbar, const char * background, const char * string, Point2D pt)
+{
+	Rect rect;
+
+	String = string;
+	if (background != NULL) {
+		Background = background;
+		Load_Title_Page(Background, false);
+	}
+
+	ColorScheme * scheme = Fetch_Scheme_By_Name("Yellow");
+
+	if (pt.X == -1 && pt.Y == -1) {
+		Pos = Point2D(HiddenSurface->Get_Width() / 2, HiddenSurface->Get_Height() / 2);
+	} else {
+		Pos.X = pt.X;
+		Pos.Y = pt.Y;
+	}
+
+	if (progbar != NULL) {
+		Shape = (ShapeSet *)MFCD::Retrieve(progbar);
+		if (Shape != NULL) {
+			for (int i = 0; i < PlayerCount; i++) {
+				rect = Shape->Get_Rect(0);
+
+				rect.X = (Pos.X - rect.Width / 2) - 1;
+				if (PlayerCount == 1) {
+					rect.Y = (Pos.Y - rect.Height / 2) - 1;
+				} else {
+					rect.Y = (Pos.Y - rect.Height / 2) + (i * 10) - 1;
+				}
+				rect.Width = rect.Width + 2;
+				rect.Height = rect.Height + 2;
+				if (PlayerCount != 1) {
+					pt.X = rect.X - 80;
+					pt.Y = rect.Y;
+					Fancy_Text_Print(Session.Shown_Seat_Name(Session.Players[i]).c_str(), *HiddenSurface, HiddenSurface->Get_Rect(), pt, Fetch_Scheme_By_Name("Green"), 0, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+				}
+			}
+		}
+	}
+
+	if (String != NULL) {
+		int ycenter = 0;
+		if (Shape != NULL) {
+			ycenter = Shape->Get_Height() / 2;
+		}
+		if (PlayerCount == 1) {
+			pt = Point2D(HiddenSurface->Get_Width() / 2, (HiddenSurface->Get_Height() / 2) - ycenter - 20);
+		} else {
+			rect = Shape->Get_Rect(0);
+			pt = Point2D((Pos.X - rect.Width / 2) - 1, Pos.Y - (rect.Height / 2)) + Point2D(-80, 89);
+		}
+		Fancy_Text_Print(String, *HiddenSurface, HiddenSurface->Get_Rect(), pt, scheme, TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_6PT_GRAD));
+	}
+	Update_Visible_Surface();
+}
+
+
+/// <summary>
+/// Fetches the overall progress of the job.
+/// This routine averages the progress of every player being tracked, which is what the
+/// network loading code watches to decide when everyone is ready.
+/// </summary>
+/// <returns>Returns with the progress as a fraction, where 1.0 means the job is done.</returns>
+double ProgressScreenClass::Get_Current_Progress(void) const
+{
+	double total = 0;
+
+	for (int i = 0; i < PlayerCount; i++) {
+		total += PlayerProgress[i];
+	}
+
+	return(total / PlayerCount / MainProgress);
+}
+
+
+void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
+{
+	if (Box.Is_Shown() || PlayerCount != 1 || Shape == NULL || pt != Point2D(-1,-1)) {
+		return;
+	}
+
+	if (PlayerProgress[index] > MainProgress) {
+		PlayerProgress[index] = MainProgress;
+	}
+
+	int progress = (int)PlayerProgress[index];
+	if (progress <= Percentage) {
+		return;
+	}
+
+	for (int j = 0; j < ARRAY_SIZE(_progress_messages); j++) {
+		if (_progress_messages[j].Progress <= progress && _progress_messages[j].Progress > Percentage) {
+			Sound_Effect(VocClass::From_Name("Notify"), 0.4f);
+			Percentage = _progress_messages[j].Progress;
+			Reached = j;
+			break;
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws a progress bar for every player being tracked, and in a single-player game shows
+/// the next loading message as the work passes each milestone.
+/// </summary>
+/// <param name="xpt">The screen position to draw at, or Point2D(-1,-1) to use the
+/// position established by Set_Graphic_Data.</param>
+/// <remarks>Nothing is drawn before Initialize, or while the progress notice is
+/// shown.</remarks>
+void ProgressScreenClass::Display_Progress(Point2D xpt)
+{
+	if (Box.Is_Shown()) {
+		return;
+	}
+
+	if (IsActive) {
+		Point2D pt = xpt;
+
+		Surface * surface = HiddenSurface;
+
+		ConvertClass * drawer = NormalDrawer;
+		for (int i = 0; i < PlayerCount; i++) {
+			if (PlayerProgress[i] > MainProgress) {
+				PlayerProgress[i] = MainProgress;
+			}
+			if (Shape != NULL) {
+				if (pt == Point2D(-1,-1)) {
+					if (PlayerCount == 1) {
+						while (Printed < Reached) {
+							Printed++;
+							Fancy_Text_Print(Fetch_String(_progress_messages[Printed].Text), *HiddenSurface, HiddenSurface->Get_Rect(), Pos + Point2D(0, 10 * Printed), Fetch_Scheme_By_Name("Green"), 0, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
+							Update_Visible_Surface();
+						}
+						return;
+					} else {
+						pt = Point2D(Pos.X, Pos.Y + (10 * i));
+						drawer = ColorSchemes[Session.Color_Index_To_Scheme(Session.Players[i]->Player.Color)]->Converter;
+					}
+				}
+
+				Rect rect = Shape->Get_Rect(0);
+				pt.X += rect.Width / -2;
+				pt.Y += rect.Height / -2;
+				rect.Width = rect.Width * Get_Current_Progress(i);
+				rect.X = pt.X;
+				rect.Y = pt.Y;
+				Draw_Shape(
+					*surface,
+					*drawer,
+					Shape,
+					0,
+					Point2D(0,0),
+					rect,
+					SHAPE_WIN_REL
+				);
+			}
+			pt = Point2D(-1,-1);
+		}
+
+		if (surface == HiddenSurface) {
+			Update_Visible_Surface();
+		}
+	}
+}
+
+
+/// <summary>
+/// Fetches the width of the progress bar artwork.
+/// </summary>
+/// <returns>Returns with the width of the progress bar shape, in pixels.</returns>
+/// <remarks>The progress bar shape must have been attached by Set_Graphic_Data first.</remarks>
+int ProgressScreenClass::Get_Bar_Width(void) const
+{
+	return(Shape->Get_Rect(0).Width);
+}
+
+
+/// <summary>
+/// Sets a player's progress to a percentage of the job.
+/// This routine is used when the loader knows how far along it is rather than how much
+/// it has just accomplished. The display is only refreshed when the progress changed.
+/// </summary>
+/// <param name="index">The player slot whose progress should be set.</param>
+/// <param name="value">The percentage of the whole job that has been completed.</param>
+/// <param name="pt">The screen position to draw at, or Point2D(-1,-1) for the default.</param>
+void ProgressScreenClass::Set_Progress_Percent(int index, double value, Point2D pt)
+{
+	double prog1 = PlayerProgress[index];
+	PlayerProgress[index] = (MainProgress / 100.0) * value;
+
+	if (PlayerProgress[index] != prog1) {
+		Advance_Milestone(index, pt);
+		if (Box.Is_Shown()) {
+			Box.Set_Fraction(Get_Current_Progress(index));
+		} else {
+			Display_Progress(pt);
+		}
+	}
+}
+
+
+/// <summary>
+/// Advances a player's progress by a percentage of the job.
+/// This routine is used by the loading code as each stage of its work completes. The
+/// display is only refreshed when the progress actually moved.
+/// </summary>
+/// <param name="index">The player slot whose progress should be advanced.</param>
+/// <param name="value">The percentage of the whole job that has just been completed.</param>
+/// <param name="pt">The screen position to draw at, or Point2D(-1,-1) for the default.</param>
+void ProgressScreenClass::Add_Progress_Percent(int index, double value, Point2D pt)
+{
+	double prog1 = PlayerProgress[index];
+	PlayerProgress[index] += (MainProgress / 100.0) * value;
+
+	if (PlayerProgress[index] != prog1) {
+		Advance_Milestone(index, pt);
+		if (Box.Is_Shown()) {
+			Box.Set_Fraction(Get_Current_Progress(index));
+		} else {
+			Display_Progress(pt);
+		}
+	}
+}
+
+
+/// <summary>
+/// Shows the progress notice in place of the full-screen progress display. Initialize()
+/// calls it when the caller asks for the notice.
+/// </summary>
+void ProgressScreenClass::Begin_Dialog(void)
+{
+	if (Box.Show("Working - Please Wait", true)) {
+		Box.Set_Fraction(0.0);
+	}
+}
+
+
+/// <summary>
+/// Takes the progress notice down. It is harmless to call when none was shown.
+/// </summary>
+void ProgressScreenClass::End_Dialog(void)
+{
+	Box.Hide();
+}
