@@ -19,6 +19,4 @@ The game creates this flame in the cases below, and no object type can choose a 
 - A destroyed structure gives each cell of its footprint an even chance of one, half a cell from the cell's center in a random direction. Half of those cells also get a `LargeFire`.
 - A structure knocked down a damage level can get one on each footprint cell. [`Sparky`](/keys/sparky/) covers that case, including the engineer damage that prevents the flame and the [`OnFire`](/keys/onfire/) set that replaces it.
 
-:::danger[Set SmallFire to a real animation]
-None of these cases checks that an animation was named. If the key is unset, the first flame crashes the game, and ordinary structure damage reaches that point within the first few exchanges of fire. `SmallFire=none` is no safer: it leaves the same empty value as an omitted key and crashes the same way.
-:::
+With the key unset or `SmallFire=none`, no flame appears in any of these cases. Yuri's Revenge's stock rules do not set it.

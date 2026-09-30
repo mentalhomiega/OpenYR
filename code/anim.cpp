@@ -1208,18 +1208,24 @@ void AnimClass::Middle(void)
 	**	animations.
 	*/
 	if (Class->IsFlameThrower) {
-		new AnimClass(Rule->SmallFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), CELL_LEPTON / 4), true), 0, Random_Pick(1, 2));
-		if (Percent_Chance(50)) {
-			new AnimClass(Rule->SmallFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 5 * CELL_LEPTON / 8), true), 0, Random_Pick(1, 2));
+		if (Rule->SmallFire != NULL) {
+			new AnimClass(Rule->SmallFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), CELL_LEPTON / 4), true), 0, Random_Pick(1, 2));
 		}
 		if (Percent_Chance(50)) {
-			new AnimClass(Rule->LargeFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 7 * CELL_LEPTON / 16), true), 0, Random_Pick(1, 2));
+			if (Rule->SmallFire != NULL) {
+				new AnimClass(Rule->SmallFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 5 * CELL_LEPTON / 8), true), 0, Random_Pick(1, 2));
+			}
+		}
+		if (Percent_Chance(50)) {
+			if (Rule->LargeFire != NULL) {
+				new AnimClass(Rule->LargeFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 7 * CELL_LEPTON / 16), true), 0, Random_Pick(1, 2));
+			}
 		}
 	} else if (Class->IsScorcher) {
 		if (HeightAGL < 10) {
 			LandType land = Map[(Coord const &)PositionCoord].Land_Type();
 			if (land != LAND_WATER && land != LAND_BEACH && land != LAND_ICE && land != LAND_ROCK) {
-				newanim = new AnimClass(Rule->SmallFire, Center_Coord(), 0, Random_Pick(1, 2));
+				newanim = Rule->SmallFire != NULL ? new AnimClass(Rule->SmallFire, Center_Coord(), 0, Random_Pick(1, 2)) : NULL;
 				if (newanim != NULL && xObject != NULL) {
 					newanim->Attach_To(xObject);
 				}

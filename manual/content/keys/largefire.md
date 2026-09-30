@@ -19,6 +19,4 @@ The engine lights this flame in two situations, each time alongside [`SmallFire`
 
 No object type can name a different animation for either situation, so this key is the only way to change it. A structure that only drops a damage level does not use this flame. [`Sparky`](/keys/sparky/) covers that case, where the choice is between the small flame and the [`OnFire`](/keys/onfire/) set.
 
-:::danger[Name an animation before a structure can be destroyed]
-With the key unset, the game crashes the first time either situation lays this flame.
-:::
+With the key unset, no flame appears in either situation.

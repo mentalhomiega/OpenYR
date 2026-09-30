@@ -2147,12 +2147,16 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
 			coord.Z = PositionCoord.Z;
 			Coord ccoord = cell;
 			pos = coord + Coord_Scatter(ccoord, CELL_LEPTON / 2);
-			new AnimClass(Rule->SmallFire, pos, Random_Pick(0, 7), Random_Pick(1, 3));
+			if (Rule->SmallFire != NULL) {
+				new AnimClass(Rule->SmallFire, pos, Random_Pick(0, 7), Random_Pick(1, 3));
+			}
 			if (Percent_Chance(50)) {
 				coord.Z = PositionCoord.Z;
 				Coord ccoord = cell;
 				pos = coord + Coord_Scatter(ccoord, CELL_LEPTON / 4);
-				new AnimClass(Rule->LargeFire, pos, Random_Pick(0, 7), Random_Pick(1, 3));
+				if (Rule->LargeFire != NULL) {
+					new AnimClass(Rule->LargeFire, pos, Random_Pick(0, 7), Random_Pick(1, 3));
+				}
 			}
 		}
 		if (Class->Explosion_Set().Count() > 0) {
@@ -2373,7 +2377,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 								**	renovator that caused the damage.
 								*/
 								if (source == NULL || source->RTTI != RTTI_INFANTRY || !((InfantryClass *)source)->Class->IsEngineer) {
-									anim = new AnimClass(Rule->SmallFire, Coord_Scatter(coord, 3 * CELL_LEPTON / 8), Random_Pick(0, 7), Random_Pick(1, 3));
+									anim = Rule->SmallFire != NULL ? new AnimClass(Rule->SmallFire, Coord_Scatter(coord, 3 * CELL_LEPTON / 8), Random_Pick(0, 7), Random_Pick(1, 3)) : NULL;
 								}
 							}
 						}
