@@ -5,7 +5,7 @@ release: 0.2.0
 targets:
 - type: system
   id: sidebar
-  effect: fixed
+  effect: changed
 credit: [Lucas]
 ---
 
