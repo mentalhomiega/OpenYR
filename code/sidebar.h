@@ -59,6 +59,8 @@ class SidebarClass : public PowerClass
 		*/
 		enum SideBarClassEnums {
 			SIDE_Y=158,						// The Y position of sidebar upper left corner, below the radar.
+			VIEW_TOP=0,						// The tactical view starts at the top of the screen.
+			COMMAND_BAR_HEIGHT=32,			// The strip below the tactical view kept for the command bar.
 			SIDE_WIDTH=168,					// Width of the entire sidebar (in pixels).
 			SIDE_BODY_Y=138,				/// Y position where the sidebar body (below the radar) begins.
 			CREDITS_HEIGHT=16,				/// Height of the credits readout area at the top of the sidebar.

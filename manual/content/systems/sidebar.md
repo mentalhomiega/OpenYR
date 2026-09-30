@@ -236,7 +236,7 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `POWERP.SHP` | The power bar's pips |
 | `TOP.SHP` | The piece between the credit readout and the radar |
 | `RADAR.SHP` | The radar frame and its open and close animation |
-| `TABS.SHP` | The tab bar |
+| `TABS.SHP` | The mission timer's backdrop, and the credit readout's when `CREDITS.SHP` is missing |
 | `CREDITS.SHP` | The credit readout's backdrop, redrawn under each new figure |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 

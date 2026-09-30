@@ -419,7 +419,7 @@ void SidebarClass::Init_IO(void)
 	SidebarRect.X = TacticalRect.X + TacticalRect.Width;
 	SidebarRect.Y = SIDE_Y;
 	SidebarRect.Width = 641 - SidebarRect.X;
-	SidebarRect.Height = (TacticalRect.Y - SidebarRect.Y) + TacticalRect.Height;
+	SidebarRect.Height = (TacticalRect.Y - SidebarRect.Y) + TacticalRect.Height + COMMAND_BAR_HEIGHT;
 
 	/*
 	**	Add the sidebar's buttons only if we're not in editor mode.
@@ -2793,7 +2793,7 @@ void SidebarClass::Reposition_Sidebar(void)
 	SidebarRect.X = Options.IsSidebarOnRight ? TacticalRect.X + TacticalRect.Width : 0;
 	SidebarRect.Y = SIDE_Y;
 	SidebarRect.Width = SIDE_WIDTH;
-	SidebarRect.Height = TacticalRect.Height + TacticalRect.Y - SIDE_Y;
+	SidebarRect.Height = TacticalRect.Height + TacticalRect.Y + COMMAND_BAR_HEIGHT - SIDE_Y;
 
 	BASECLASS::Reposition_Sidebar();
 

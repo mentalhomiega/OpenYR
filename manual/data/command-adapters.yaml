@@ -445,8 +445,6 @@ fixed_exclusions:
       - { file: code/sidebar.cpp, function: SidebarClass::StripClass::AI, expression: KN_BUTTON }
       - { file: code/sidebar.cpp, function: SidebarClass::StripClass::AI, expression: KN_UNK }
     reason: Encoded sidebar gadget IDs and input flags, not physical bindings.
-  - site: { file: code/tab.cpp, function: TabClass::AI, expression: KN_LMOUSE }
-    reason: Tactical-tab hit-testing handled as pointer input.
   - sites:
       - { file: code/wdtsel.cpp, function: Selection::Pick_Territory, expression: KN_NONE }
       - { file: code/wdtsel.cpp, function: Selection::Pick_Territory, expression: KN_LMOUSE }

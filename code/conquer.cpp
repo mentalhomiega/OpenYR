@@ -967,7 +967,6 @@ bool Map_Edit_Loop(void)
 /// <param name="flag">Should the tactical view expand to fill the entire screen?</param>
 static void Resize_Tactical_View(bool flag)
 {
-	static int _tab_height = 16;
 	static int _sidebar_width = SidebarClass::SIDE_WIDTH;
 
 	if (flag) {
@@ -991,7 +990,7 @@ static void Resize_Tactical_View(bool flag)
 		Rect sidebar(0, 0, _sidebar_width, Options.ScreenHeight);
 		Allocate_Surfaces(hidden, comp, tile, sidebar);
 
-		Rect view(0, _tab_height, Options.ScreenWidth-_sidebar_width, Options.ScreenHeight-_tab_height);
+		Rect view(0, SidebarClass::VIEW_TOP, Options.ScreenWidth-_sidebar_width, Options.ScreenHeight-SidebarClass::VIEW_TOP-SidebarClass::COMMAND_BAR_HEIGHT);
 		Map.Set_View_Dimensions(view);
 
 		Sleep(2);

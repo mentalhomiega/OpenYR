@@ -128,26 +128,9 @@ void TabClass::Draw_It(bool complete)
 		**	Redraw the top bar imagery if flagged to do so or if the entire display needs
 		**	to be redrawn.
 		*/
+		// Yuri's Revenge has no tab bar above the tactical view; only the credit readout remains.
 		if (complete || IsToRedraw) {
-
-			int width  = CompositeSurface->Get_Width() + SidebarSurface->Get_Width();
-			int rightx = width - 1;
-			int tab_height = TAB_HEIGHT * 2/*RESFACTOR*/;
-
-			for (int x = TabShape->Get_Width(); x < CompositeSurface->Get_Width(); x += TabShape->Get_Width()) {
-				Draw_Shape(*CompositeSurface, *SidebarDrawer, TabShape, 1, Point2D(x, 0), CompositeSurface->Get_Rect());
-			}
-
-			int sidex = Options.IsSidebarOnRight ? 0 : LogicalSurface->Get_Width() - EVA_WIDTH * 2/*RESFACTOR*/;
-
-			Draw_Shape(*LogicalSurface, *SidebarDrawer, TabShape, 0, Point2D(sidex, 0), VisibleRect);
 			Draw_Credits_Tab();
-			LogicalSurface->Draw_Line(Point2D(0, tab_height-(1* 2)), Point2D(rightx, tab_height-(1 * 2/*RESFACTOR*/)), TBLACK);
-			Fancy_Text_Print(TXT_TAB_BUTTON_CONTROLS, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(sidex + (EVA_WIDTH/2) * 2/*RESFACTOR*/, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL | TPF_CENTER | TPF_METAL12));
-
-			if (LogicalSurface != TileSurface) {
-				TileSurface->Blit_From(Rect(0, 0, TileSurface->Get_Width(), tab_height), *LogicalSurface, Rect(0, 0, TileSurface->Get_Width(), tab_height));
-			}
 		}
 	}
 
@@ -250,40 +233,6 @@ void TabClass::Hilite_Tab(int tab)
  *=============================================================================================*/
 void TabClass::AI(KeyNumType &input, Point2D const & xy)
 {
-	if (!Map.IsRubberBand) {
-
-		if (xy.Y >= 0 && xy.Y < (TAB_HEIGHT * 2/*RESFACTOR*/) && xy.X < (VisibleSurface->Get_Width() - 1) && xy.X > 0) {
-
-			bool 	ok = false;
-
-			/*
-			**	If the mouse is at the top of the screen, then the tab bars only work
-			**	in certain areas. If the special scroll modification is not active, then
-			**	the tabs never work when the mouse is at the top of the screen.
-			*/
-			if (xy.Y > 0) {
-				ok = true;
-			}
-
-			if (ok) {
-				if (input == KN_LMOUSE) {
-					int sel = 0;
-					if (Options.IsSidebarOnRight) {
-						if (xy.X >= (EVA_WIDTH * 2/*RESFACTOR*/)) sel = -1;
-					} else {
-						if (xy.X <= VisibleRect.Width - (EVA_WIDTH * 2/*RESFACTOR*/) || xy.X >= VisibleRect.Width) sel = -1;
-					}
-					if (sel >= 0) {
-						Set_Active(sel);
-						input = KN_NONE;
-					}
-				}
-
-				Override_Mouse_Shape(MOUSE_NORMAL, false);
-			}
-		}
-	}
-
 	if (MoneyFlashTimer == 1) {
 		IsToRedraw = true;
 		Flag_To_Redraw();

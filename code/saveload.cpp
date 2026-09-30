@@ -758,9 +758,9 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 
 	Rect temp = VisibleRect;
 	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = 16;
+	temp.Y = SidebarClass::VIEW_TOP;
 	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= 16;
+	temp.Height -= SidebarClass::VIEW_TOP + SidebarClass::COMMAND_BAR_HEIGHT;
 
 	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
 

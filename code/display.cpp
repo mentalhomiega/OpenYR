@@ -256,9 +256,9 @@ void DisplayClass::One_Time(void)
 	} else {
 		rect.X = SidebarClass::SIDE_WIDTH;
 	}
-	rect.Y = 16;
+	rect.Y = SidebarClass::VIEW_TOP;
 	rect.Width = rect.Width - SidebarClass::SIDE_WIDTH;
-	rect.Height = rect.Height - 16;
+	rect.Height = rect.Height - SidebarClass::VIEW_TOP - SidebarClass::COMMAND_BAR_HEIGHT;
 	Set_View_Dimensions(rect);
 }
 
