@@ -222,7 +222,7 @@ void Test_File_Names(void)
 
 	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=Data\n");
 	config.Read_File("");
-	Check(config.ArtFile == "ART.INI", "a file that names none of them leaves the defaults");
+	Check(config.ArtFile == "ARTMD.INI", "a file that names none of them leaves the defaults");
 
 	Write_File(Root + "\\OPENTS.INI",
 			"[Files]\nRules=dtarules.ini\nArt=dtaart.ini\nAI=dtaai.ini\nSound=dtasound.ini\n"
