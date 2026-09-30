@@ -73,4 +73,5 @@ class TabClass: public SidebarClass
 		CDTimerClass<FrameTimerClass> MoneyFlashTimer;
 
 		static ShapeSet const * TabShape;
+		static ShapeSet const * CreditsShape;
 };

@@ -58,6 +58,7 @@
 #include "surface.h"
 
 ShapeSet const * TabClass::TabShape = NULL;
+ShapeSet const * TabClass::CreditsShape = NULL;
 
 
 /***********************************************************************************************
@@ -167,7 +168,12 @@ void TabClass::Draw_It(bool complete)
 /// </summary>
 void TabClass::Draw_Credits_Tab(void)
 {
-	Draw_Shape(*SidebarSurface, *SidebarDrawer, TabShape, 2, Point2D(0, 0), SidebarSurface->Get_Rect());
+	// Yuri's Revenge clears the readout with its own backdrop; TS used a frame of the tab art.
+	if (CreditsShape != NULL) {
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, CreditsShape, 0, Point2D(0, 0), SidebarSurface->Get_Rect());
+	} else {
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, TabShape, 2, Point2D(0, 0), SidebarSurface->Get_Rect());
+	}
 
 	if (Scen->MissionTimer.Is_Active()) {
 		bool light = ((int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning) || Map.FlasherTimer > 0;
@@ -350,6 +356,7 @@ void TabClass::Init_For_House(void)
 {
 	BASECLASS::Init_For_House();
 	TabShape = (ShapeSet const *)MixFileClass::Retrieve("TABS.SHP");
+	CreditsShape = (ShapeSet const *)MixFileClass::Retrieve("CREDITS.SHP");
 	Credits.Current = 0;
 }
 
@@ -357,6 +364,7 @@ void TabClass::Init_For_House(void)
 void TabClass::Clear_For_House(void)
 {
 	TabShape = NULL;
+	CreditsShape = NULL;
 	BASECLASS::Clear_For_House();
 }
 
