@@ -15219,6 +15219,23 @@ NavComQueueLineThick:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+Naval:
+  key: Naval
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsNaval
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 NewINIFormat:
   key: NewINIFormat
   scopes:

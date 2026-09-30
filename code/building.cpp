@@ -7322,6 +7322,9 @@ void BuildingClass::Factory_AI(void)
 			**	abort the production and refund money.
 			*/
 			case 0:
+				if (product->What_Am_I() == RTTI_BUILDING && product->Techno_Type_Class()->IsNaval) {
+					House->IsNavalPlaceable = false;
+				}
 				Factory->Abandon();
 				delete (FactoryClass *)Factory;
 				Factory = 0;

@@ -240,6 +240,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsHuman(false),
 	IsPlayerControl(false),
 	IsStarted(false),
+	IsNavalPlaceable(true),
 	IsAlerted(false),
 	IsAITriggersOn(false),
 	IsBaseBuilding(false),
@@ -4498,6 +4499,12 @@ int HouseClass::AI_Building(void)
 
 	if (node == NULL) return(TICKS_PER_SECOND);
 
+	if (!IsNavalPlaceable && node->Type >= STRUCT_FIRST && BuildingTypes[node->Type]->IsNaval) {
+		Base.Nodes.Delete_Index(Base.Nodes.ID(node));
+		node = Base.Next_Buildable();
+		if (node == NULL) return(TICKS_PER_SECOND);
+	}
+
 	/*
 	 * Build some walls.
 	 */
@@ -6580,6 +6587,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHuman);
 	stream.Serialize(IsPlayerControl);
 	stream.Serialize(IsStarted);
+	stream.Serialize(IsNavalPlaceable);
 	stream.Serialize(IsAlerted);
 	stream.Serialize(IsAITriggersOn);
 	stream.Serialize(IsBaseBuilding);

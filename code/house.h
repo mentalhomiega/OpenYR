@@ -235,6 +235,12 @@ class HouseClass : public AbstractClass
 		bool IsStarted;
 
 		/*
+		**	Cleared when one of the computer's naval structures could not be placed; the computer
+		**	then drops naval structures from its base plan.
+		*/
+		bool IsNavalPlaceable;
+
+		/*
 		**	When alerted, the house will create teams of the special "auto" type and
 		**	will generate appropriate units to fill those team types.
 		*/

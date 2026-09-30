@@ -174,6 +174,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDetectDisguise(false),
 	IsMoveToShroud(true),
 	IsTrainable(true),
+	IsNaval(false),
 	IsDamageSparks(true),
 	IsTargetLaser(false),
 	IsImmuneToVeins(false),
@@ -630,6 +631,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Risk = ini.Get_Int(Name(), "ThreatPosed", Risk);
 		Ownable = ini.Get_Owners(Name(), "Owner", Ownable);
 		IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
+		IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
 		IsCrew = ini.Get_Bool(Name(), "Crewed", IsCrew);
 		IsRepairable = ini.Get_Bool(Name(), "Repairable", IsRepairable);
 		IsInvisible = ini.Get_Bool(Name(), "Invisible", IsInvisible);
@@ -1036,6 +1038,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDetectDisguise);
 	stream.Serialize(IsMoveToShroud);
 	stream.Serialize(IsTrainable);
+	stream.Serialize(IsNaval);
 	stream.Serialize(IsDamageSparks);
 	stream.Serialize(IsTargetLaser);
 	stream.Serialize(IsImmuneToVeins);

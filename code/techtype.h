@@ -482,6 +482,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsTrainable;
 
 		/*
+		 * Marks a naval type. A computer house drops naval structures from its base plan once one
+		 * of them fails to place.
+		 */
+		bool IsNaval;
+
+		/*
 		 * If this object throws sparks once it has been hurt, then this flag will be true. The
 		 * spark system is picked from the DamageParticleSystems list and appears once the
 		 * object drops below the condition yellow health level.
