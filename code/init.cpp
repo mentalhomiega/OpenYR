@@ -2196,6 +2196,11 @@ static bool Init_Bootstrap_Mixfiles(void)
 	//char name[64];
 	//MFCD * expand;
 
+	// The language archives hold localised content such as CAMEOMD.MIX, which the secondary
+	// archives need, and are searched ahead of every other startup archive.
+	LanguageMix = new MFCD("LANGMD.MIX", &FastKey);
+	BaseLanguageMix = new MFCD("LANGUAGE.MIX", &FastKey);
+
 	Init_Patch_Mixfiles();
 	Init_Expand_Mixfiles();
 
@@ -2254,16 +2259,52 @@ static bool Init_Bootstrap_Mixfiles(void)
  *=============================================================================================*/
 static bool Init_Secondary_Mixfiles(void)
 {
-	/*
-	**	Inform the file system of the various MIX files.
-	*/
+	// Each pair mounts Yuri's Revenge's archive before Red Alert 2's, so YR's copy of a
+	// file is found first.
+	if (CCFileClass("CONQMD.MIX").Is_Available()) {
+		ConquerMix = new MFCD("CONQMD.MIX", &FastKey);
+	}
+
+	DebugStringNoPrefix(" CONQMD.MIX");
+
+	if (ConquerMix == NULL) {
+		return(false);
+	}
+
+	GenericMix = new MFCD("GENERMD.MIX", &FastKey);
+	GenericMix->Cache();
+	BaseGenericMix = new MFCD("GENERIC.MIX", &FastKey);
+	BaseGenericMix->Cache();
+	IsoGenericMix = new MFCD("ISOGENMD.MIX", &FastKey);
+	BaseIsoGenericMix = new MFCD("ISOGEN.MIX", &FastKey);
+
 	if (CCFileClass("CONQUER.MIX").Is_Available()) {
-		ConquerMix = new MFCD("CONQUER.MIX", &FastKey);
+		BaseConquerMix = new MFCD("CONQUER.MIX", &FastKey);
 	}
 
 	DebugStringNoPrefix(" CONQUER.MIX");
 
-	if (ConquerMix == NULL) {
+	if (BaseConquerMix == NULL) {
+		return(false);
+	}
+
+	if (CCFileClass("CAMEOMD.MIX").Is_Available()) {
+		CameoMix = new MFCD("CAMEOMD.MIX", &FastKey);
+	}
+
+	DebugStringNoPrefix(" CAMEOMD.MIX");
+
+	if (CameoMix == NULL) {
+		return(false);
+	}
+
+	if (CCFileClass("CAMEO.MIX").Is_Available()) {
+		BaseCameoMix = new MFCD("CAMEO.MIX", &FastKey);
+	}
+
+	DebugStringNoPrefix(" CAMEO.MIX");
+
+	if (BaseCameoMix == NULL) {
 		return(false);
 	}
 
@@ -2272,7 +2313,13 @@ static bool Init_Secondary_Mixfiles(void)
 	{
 		// The map and multiplayer archives are not required. A deployment may keep the maps
 		// and the multiplayer content loose or in archives of its own.
-		std::vector<std::string> const maps = Search_Files("MAPS*.MIX");
+		std::vector<std::string> maps = Search_Files("MAPSMD*.MIX");
+
+		for (std::string const & found : Search_Files("MAPS*.MIX")) {
+			if (_strnicmp(found.c_str(), "MAPSMD", 6) != 0) {
+				maps.push_back(found);
+			}
+		}
 
 		for (unsigned int index = 0; index < maps.size(); index++) {
 			char const * found = maps[index].c_str();
@@ -2293,56 +2340,33 @@ static bool Init_Secondary_Mixfiles(void)
 
 #ifndef _DEMO
 
-	if (CCFileClass("MULTI.MIX").Is_Available()) {
-		MultiMix = new MFCD("MULTI.MIX", &FastKey);
+	if (CCFileClass("MULTIMD.MIX").Is_Available()) {
+		MultiMix = new MFCD("MULTIMD.MIX", &FastKey);
 
-		DebugStringNoPrefix(" MULTI.MIX");
+		DebugStringNoPrefix(" MULTIMD.MIX");
 	}
 
 #endif
 
-	if (Addon_Installed(ADDON_FIRESTORM) == true) {
-		if (CCFileClass("SOUNDS01.MIX").Is_Available()) {
-			Sounds01Mix = new MFCD("SOUNDS01.MIX", &FastKey);
-		}
-
-		DebugStringNoPrefix(" SOUNDS01.MIX");
-
-		if (Sounds01Mix == NULL) {
-			return(false);
-		}
+	if (CCFileClass("THEMEMD.MIX").Is_Available()) {
+		ThemeMix = new MFCD("THEMEMD.MIX", &FastKey);
 	}
 
-	if (CCFileClass("SOUNDS.MIX").Is_Available()) {
-		SoundsMix = new MFCD("SOUNDS.MIX", &FastKey);
+	if (CCFileClass("THEME.MIX").Is_Available()) {
+		BaseThemeMix = new MFCD("THEME.MIX", &FastKey);
 	}
 
-	DebugStringNoPrefix(" SOUNDS.MIX");
-
-	if (SoundsMix == NULL) {
-		return(false);
-	}
-
-	/*
-	**	Register the score mixfile.
-	*/
-	if (CCFileClass("SCORES.MIX").Is_Available()) {
-		ScoresMix = new MFCD("SCORES.MIX", &FastKey);
-	}
-
-	DebugStringNoPrefix(" SCORES.MIX");
-
-	if (CCFileClass("SCORES01.MIX").Is_Available()) {
-		Scores01Mix = new MFCD("SCORES01.MIX", &FastKey);
-	}
-
-	DebugStringNoPrefix(" SCORES01.MIX");
+	DebugStringNoPrefix(" THEME.MIX");
 
 	ScoresPresent = true;
 	Theme.Scan();
 
 	{
-		std::vector<std::string> const movies = Search_Files("MOVIES*.MIX");
+		std::vector<std::string> movies = Search_Files("MOVMD*.MIX");
+
+		for (std::string const & found : Search_Files("MOVIES*.MIX")) {
+			movies.push_back(found);
+		}
 
 		for (unsigned int index = 0; index < movies.size(); index++) {
 			char const * found = movies[index].c_str();
@@ -2561,15 +2585,8 @@ static bool Init_Bulk_Data(void)
 	/*
 	**	Cache the main game data. This operation can take a very long time.
 	*/
-	if (ConquerMix == NULL || !ConquerMix->Cache()) {
-		return(false);
-	}
-
-	if (AudioEngine.Is_Available() && !Debug_Quiet) {
-		if (SoundsMix != NULL && !SoundsMix->Cache()) {
-			return(false);
-		}
-		if (Sounds01Mix != NULL && !Sounds01Mix->Cache()) {
+	for (MFCD * mix : {ConquerMix, BaseConquerMix, CameoMix, BaseCameoMix}) {
+		if (mix == NULL || !mix->Cache()) {
 			return(false);
 		}
 	}

@@ -904,6 +904,11 @@ void __cdecl Prog_End(void)
 		delete ConquerMix;
 		ConquerMix = NULL;
 	}
+	for (MFCD ** mix : {&BaseConquerMix, &GenericMix, &BaseGenericMix, &IsoGenericMix, &BaseIsoGenericMix,
+			&CameoMix, &BaseCameoMix, &ThemeMix, &BaseThemeMix, &LanguageMix, &BaseLanguageMix}) {
+		delete *mix;
+		*mix = NULL;
+	}
 
 	while (ExpandSideMix.Count() > 0) {
 		delete ExpandSideMix[0];

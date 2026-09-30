@@ -23,20 +23,25 @@ Startup mounts these archives in this order:
 
 | Order | Archive | Required | Cached |
 | --- | --- | --- | --- |
-| 1 | `PATCH.MIX` | No | No |
-| 2 | `PCACHE.MIX` | No | Yes |
-| 3 | `EXPANDMD99.MIX` down to `EXPANDMD00.MIX` | No | No |
-| 4 | `ECACHE99.MIX` down to `ECACHE00.MIX` | No | Yes |
-| 5 | `RA2MD.MIX`, then `RA2.MIX` | No | No |
-| 6 | `CACHEMD.MIX`, then `CACHE.MIX` | Yes | Yes |
-| 7 | `LOCALMD.MIX`, then `LOCAL.MIX` | No | No |
-| 8 | `CONQUER.MIX` | Yes | Yes |
-| 9 | Every `MAPS*.MIX`, in alphabetical order | No | No |
-| 10 | `MULTI.MIX` | No | No |
-| 11 | `SOUNDS01.MIX` | Where the Firestorm expansion is installed | Yes, when audio is available |
-| 12 | `SOUNDS.MIX` | Yes | Yes, when audio is available |
-| 13 | `SCORES.MIX`, then `SCORES01.MIX` | No | No |
-| 14 | Every `MOVIES*.MIX`, in alphabetical order | No | No |
+| 1 | `LANGMD.MIX`, then `LANGUAGE.MIX` | No | No |
+| 2 | `PATCH.MIX` | No | No |
+| 3 | `PCACHE.MIX` | No | Yes |
+| 4 | `EXPANDMD99.MIX` down to `EXPANDMD00.MIX` | No | No |
+| 5 | `ECACHE99.MIX` down to `ECACHE00.MIX` | No | Yes |
+| 6 | `RA2MD.MIX`, then `RA2.MIX` | No | No |
+| 7 | `CACHEMD.MIX`, then `CACHE.MIX` | Yes | Yes |
+| 8 | `LOCALMD.MIX`, then `LOCAL.MIX` | No | No |
+| 9 | `CONQMD.MIX` | Yes | Yes |
+| 10 | `GENERMD.MIX`, then `GENERIC.MIX` | No | Yes |
+| 11 | `ISOGENMD.MIX`, then `ISOGEN.MIX` | No | No |
+| 12 | `CONQUER.MIX` | Yes | Yes |
+| 13 | `CAMEOMD.MIX`, then `CAMEO.MIX` | Yes | Yes |
+| 14 | Every `MAPSMD*.MIX`, then every other `MAPS*.MIX`, each group in alphabetical order | No | No |
+| 15 | `MULTIMD.MIX` | No | No |
+| 16 | `THEMEMD.MIX`, then `THEME.MIX` | No | No |
+| 17 | Every `MOVMD*.MIX`, then every `MOVIES*.MIX`, each group in alphabetical order | No | No |
+
+Several of these are normally members of an earlier archive rather than loose files: `CONQMD.MIX`, `GENERMD.MIX` and `ISOGENMD.MIX` are in `RA2MD.MIX`, `CONQUER.MIX` is in `RA2.MIX`, and the cameo archives are in the language archives.
 
 `PATCH.MIX` and the `EXPANDMD` archives are mounted only as loose files, never as members of another archive.
 
