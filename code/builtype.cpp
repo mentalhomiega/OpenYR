@@ -1710,7 +1710,7 @@ bool BuildingTypeClass::Legal_Placement(Cell const & pos, HouseClass * house) co
 /// <returns>Returns with the width, height and vertical extent of the building.</returns>
 Point3D BuildingTypeClass::Lepton_Dimensions(void) const
 {
-	return(Point3D(Width() * CELL_LEPTON_W, Height() * CELL_LEPTON_H, 40 * (ZHeight * 5)));
+	return(Point3D(Width() * CELL_LEPTON_W, Height() * CELL_LEPTON_H, ZHeight * LEVEL_LEPTON_H));
 }
 
 
