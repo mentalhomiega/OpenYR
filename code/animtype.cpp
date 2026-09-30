@@ -274,7 +274,19 @@ void AnimTypeClass::Init_Theater(TheaterType theater)
 /// <param name="theater">The theater to align the animation artwork with.</param>
 void AnimTypeClass::Load_Image(TheaterType theater)
 {
-	if (!IsDemandLoad && ImageData == NULL) {
+	if (!IsDemandLoad && !IsTheater && IsNewTheater) {
+
+		// As in Yuri's Revenge, the theater's art or the generic 'G' art replaces the unrenamed
+		// file read with the type; that file stays only when neither exists.
+		char fullname[_MAX_FNAME+_MAX_EXT];
+		_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
+		Theater_Naming_Convention(fullname, theater);
+		void const * themed = Retrieve_Theater_Art(fullname);
+		if (themed != NULL) {
+			ImageData = themed;
+		}
+
+	} else if (!IsDemandLoad && ImageData == NULL) {
 		if (IsTheater) {
 			Fetch_Normal_Image();
 		} else {

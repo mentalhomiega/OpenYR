@@ -12,17 +12,17 @@ when_omitted:
 
 The name rewritten is the one [`Image=`](/keys/image/#scope-animtype) gives, or the AnimType ID when no Image ID is set. [`Theater=yes`](/keys/theater/#scope-animtype) uses the AnimType ID instead, except in a scenario whose theater repeats the previous scenario's.
 
-The renamed file is used when it exists. Otherwise the animation draws an unrenamed file: `<AnimType ID>.SHP` when that exists, and `<Image ID>.SHP` after that.
+The renamed file is used when it exists. Otherwise the file with `G` as its second letter is used, such as `GGCNST_A.SHP` for `GACNST_A`. When neither exists, the animation draws an unrenamed file: `<AnimType ID>.SHP` when that exists, and `<Image ID>.SHP` after that.
 
 ```ini title="art.ini"
 [GAFLAG] ; example AnimType ID, with no Image= set
-NewTheater=yes ; draws GTFLAG.SHP in temperate, or GAFLAG.SHP when that file is missing
+NewTheater=yes ; draws GTFLAG.SHP in temperate, then GGFLAG.SHP, then GAFLAG.SHP
 ```
 
 Put `NewTheater=yes` in the art section of the Image ID, which is the AnimType's own section when `Image=` is not set. When the Image ID names another section, the AnimType's own section is read for this key only if neither `<AnimType ID>.SHP` nor `<Image ID>.SHP` exists.
 
 :::caution[Some animations get no fallback]
-Two kinds of animation draw nothing when the renamed file is missing, because the unrenamed file is never tried:
+Two kinds of animation never fall back to the unrenamed file, so they draw nothing when the theater file is missing:
 
 - a [`DemandLoad=yes`](/keys/demandload/#scope-animtype) animation;
 - any animation after a saved game is loaded, even one that drew its unrenamed file before the save.
