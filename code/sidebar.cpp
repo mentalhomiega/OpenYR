@@ -102,6 +102,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
+#include "init.h"
 #include "language/language.h"
 #include "map.h"
 #include "mixfile.h"
@@ -147,7 +148,9 @@ enum ButtonNumberType {
 	BUTTON_UPGRADE,
 	BUTTON_WAYPOINT,
 
-	BUTTON_TAB = 230		// One per tab, after the strips' scroll and select buttons.
+	BUTTON_TAB = 230,		// One per tab, after the strips' scroll and select buttons.
+	BUTTON_OPTIONS = BUTTON_TAB + 4,
+	BUTTON_DIPLOMACY
 };
 
 /*
@@ -159,6 +162,8 @@ ShapeButtonClass SidebarClass::Power;
 ShapeButtonClass SidebarClass::Upgrade;
 ShapeButtonClass SidebarClass::Waypoint;
 ShapeButtonClass SidebarClass::TabButton[COLUMNS];
+ShapeButtonClass SidebarClass::OptionsButton;
+ShapeButtonClass SidebarClass::DiplomacyButton;
 ShapeButtonClass SidebarClass::StripClass::UpButton[COLUMNS];
 ShapeButtonClass SidebarClass::StripClass::DownButton[COLUMNS];
 SidebarClass::StripClass::SelectClass
@@ -490,6 +495,17 @@ void SidebarClass::Init_IO(void)
 			TabButton[index].IsPressed = false;
 		}
 
+		OptionsButton.ID = BUTTON_OPTIONS;
+		DiplomacyButton.ID = BUTTON_DIPLOMACY;
+		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
+			button->IsSticky = true;
+			button->DrawOffsetX = xoff;
+			button->DrawOffsetY = yoff;
+			button->DrawOnSidebar = true;
+			button->ShapeDrawer = SidebarDrawer;
+			button->IsPressed = false;
+		}
+
 		Reposition_Sidebar();
 
 		/*
@@ -544,6 +560,10 @@ void SidebarClass::Init_For_House(void)
 	Waypoint.ShapeDrawer = SidebarDrawer;
 	Repair.Set_Shape((ShapeSet *)MFCD::Retrieve("REPAIR.SHP"));
 	Repair.ShapeDrawer = SidebarDrawer;
+	OptionsButton.Set_Shape((ShapeSet *)MFCD::Retrieve("OPTBTN.SHP"));
+	OptionsButton.ShapeDrawer = SidebarDrawer;
+	DiplomacyButton.Set_Shape((ShapeSet *)MFCD::Retrieve("DIPLOBTN.SHP"));
+	DiplomacyButton.ShapeDrawer = SidebarDrawer;
 
 	SidebarShape = (ShapeSet *)MFCD::Retrieve("SIDE1.SHP");
 	SidebarMiddleShape = (ShapeSet *)MFCD::Retrieve("SIDE2.SHP");
@@ -573,6 +593,8 @@ void SidebarClass::Clear_For_House(void)
 	Power.Set_Shape(NULL);
 	Waypoint.Set_Shape(NULL);
 	Repair.Set_Shape(NULL);
+	OptionsButton.Set_Shape(NULL);
+	DiplomacyButton.Set_Shape(NULL);
 	for (int i = 0; i < COLUMNS; i++) {
 		StripClass::UpButton[i].Set_Shape(NULL);
 		StripClass::DownButton[i].Set_Shape(NULL);
@@ -1171,6 +1193,18 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 				Set_Tab(index);
 			}
 		}
+
+		if (input == (BUTTON_OPTIONS|KN_BUTTON)) {
+			OptionsButton.IsPressed = false;
+			input = KN_NONE;
+			Execute_Command("Options");
+		}
+
+		// There is no diplomacy screen yet, so the button does nothing.
+		if (input == (BUTTON_DIPLOMACY|KN_BUTTON)) {
+			DiplomacyButton.IsPressed = false;
+			input = KN_NONE;
+		}
 	}
 
 	if ((!IsRepairMode) && Repair.IsOn) {
@@ -1292,6 +1326,10 @@ bool SidebarClass::Activate(int control)
 				TabButton[index].Zap();
 				Add_A_Button(TabButton[index]);
 			}
+			OptionsButton.Zap();
+			Add_A_Button(OptionsButton);
+			DiplomacyButton.Zap();
+			Add_A_Button(DiplomacyButton);
 			Column[ActiveTab].Activate();
 			Background.Zap();
 			Add_A_Button(Background);
@@ -1304,6 +1342,8 @@ bool SidebarClass::Activate(int control)
 			for (int index = 0; index < COLUMNS; index++) {
 				Remove_A_Button(TabButton[index]);
 			}
+			Remove_A_Button(OptionsButton);
+			Remove_A_Button(DiplomacyButton);
 			Remove_A_Button(Background);
 			Column[ActiveTab].Deactivate();
 			Remove_A_Button(RadarButton);
@@ -2828,6 +2868,17 @@ void SidebarClass::Reposition_Sidebar(void)
 	Upgrade.Set_Position(Repair.X + sell_step, Repair.Y);
 	Upgrade.Flag_To_Redraw();
 	Upgrade.DrawOffsetX = -SidebarRect.X;
+
+	/*
+	 * The buttons on the piece above the radar sit at fixed screen rows (RadarClass::Init_For_House,
+	 * 0x652E90 in gamemd).
+	 */
+	DiplomacyButton.Set_Position(SidebarRect.X + (first ? 11 : 14), first ? 20 : 21);
+	DiplomacyButton.Flag_To_Redraw();
+	DiplomacyButton.DrawOffsetX = -SidebarRect.X;
+	OptionsButton.Set_Position(SidebarRect.X + (first ? 83 : 86), first ? 20 : 21);
+	OptionsButton.Flag_To_Redraw();
+	OptionsButton.DrawOffsetX = -SidebarRect.X;
 
 	for (index = 0; index < COLUMNS; index++) {
 		TabButton[index].Set_Position(SidebarRect.X + tab_x + index * tab_step, SidebarRect.Y + tab_y);

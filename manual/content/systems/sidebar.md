@@ -26,7 +26,7 @@ related:
     id: ToggleRadar
 ---
 
-The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the radar pane, the repair and sell buttons, four tabs, and the cameos of the tab that is shown, two to a row. Each tab has its own strip of cameos, and clicking a tab shows its strip in place of the one shown before. Production on the other tabs goes on while they are hidden. The panel stays up for the whole match. An observer gets the panel with every strip empty.
+The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the diplomacy and options buttons, the radar pane, the repair and sell buttons, four tabs, and the cameos of the tab that is shown, two to a row. Each tab has its own strip of cameos, and clicking a tab shows its strip in place of the one shown before. Production on the other tabs goes on while they are hidden. The panel stays up for the whole match. An observer gets the panel with every strip empty.
 
 ## What the strips list
 
@@ -209,6 +209,10 @@ With something selected, a left click in the radar picture can act as a click on
 [Radar Toggle](/commands/toggleradar/) switches the pane between the multiplayer name and kill list and the radar map, or the blank frame when the player has no radar. In a campaign game the command does nothing. Nothing else shows the name and kill list, so a campaign never shows it.
 :::
 
+### The diplomacy and options buttons
+
+The two buttons above the radar pane are diplomacy on the left and options on the right. Options opens the same menu as [Options](/commands/options/). Diplomacy does nothing yet.
+
 ### The mode buttons
 
 The two buttons above the tabs toggle the same modes as [Repair Mode](/commands/togglerepair/) and [Sell Mode](/commands/togglesell/), in that order from the left. [Power Mode](/commands/togglepower/) and [Waypoint Mode](/commands/waypointmode/) have no button and are reached only through their commands.
@@ -230,6 +234,7 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `R-UP.SHP`, `R-DN.SHP` | The scroll arrows, shared by every tab |
 | `TAB00.SHP` to `TAB03.SHP` | The four tab buttons |
 | `REPAIR.SHP`, `SELL.SHP` | The two mode buttons |
+| `DIPLOBTN.SHP`, `OPTBTN.SHP` | The diplomacy and options buttons |
 | `GCLOCK2.SHP` | The build clock, also drawn over a recharging superweapon |
 | `DARKEN.SHP` | The overlay drawn over a darkened cameo |
 | `XXICON.SHP` | The cameo used when `Cameo=` is absent or names a file that cannot be found |
@@ -240,7 +245,7 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `CREDITS.SHP` | The credit readout's backdrop, redrawn under each new figure |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 
-Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it, build clock, credit backdrop and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
+Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it, build clock, credit backdrop, diplomacy and options buttons and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
 
 The darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
 

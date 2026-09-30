@@ -138,6 +138,10 @@ class SidebarClass : public PowerClass
 		int ActiveTab;
 
 		static ShapeButtonClass TabButton[COLUMNS];
+
+		// The two buttons on the piece above the radar.
+		static ShapeButtonClass OptionsButton;
+		static ShapeButtonClass DiplomacyButton;
 		void Recalc(void);
 		bool Factory_Link(FactoryClass * factory, RTTIType type, int id);
 		bool Is_On_Sidebar(RTTIType type, int id) const;

@@ -382,6 +382,8 @@ void RadarClass::Draw_It(bool forced)
 
 	if (FullRedraw == true) {
 		FullRedraw = false;
+		Map.OptionsButton.Draw_Me(true);
+		Map.DiplomacyButton.Draw_Me(true);
 		Map.Repair.Draw_Me(true);
 		Map.Upgrade.Draw_Me(true);
 	}
