@@ -73,7 +73,7 @@ Each strip holds up to 225 cameos and shows at most 60 at a time. The arrows bel
 
 ### What removes a cameo
 
-The strips are checked again after events that can change what the player may build, and a cameo is removed if its type fails the check. This check is looser than the one that added the cameo. Of the four gates in [what a house may build](/systems/production/#what-a-house-may-build), it applies only the build limit, unless [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) makes it apply all four.
+The strips are checked again after events that can change what the player may build, and a cameo is removed if its type fails the check. This check is looser than the one that added the cameo. Of the five gates in [what a house may build](/systems/production/#what-a-house-may-build), it applies only the build limit, unless [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) makes it apply all five.
 
 A cameo is removed when **Any of** these is true:
 

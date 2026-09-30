@@ -115,13 +115,19 @@ A newly placed factory is flagged primary when its house owns more than one stru
 
 ## What a house may build
 
-Four gates decide whether a house may build an object type. They are checked in this order, and a type must pass all four.
+Five gates decide whether a house may build an object type, and a type must pass all five.
 
-With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all four gates again and cancels production of any type that fails.
+With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all five gates again and cancels production of any type that fails.
 
 ### Tech level
 
 [`TechLevel=-1`](/keys/techlevel/#scope-aircrafttype) makes a type unbuildable. Otherwise the type's level must not exceed the house's tech level. A house's level comes from [its section in the map](/keys/techlevel/#scope-house-per-scenario) and defaults to the scenario number. Outside campaigns, every house the session sets up gets the session's chosen level instead, which starts from [`[MultiplayerDefaults] TechLevel`](/keys/techlevel/#scope-global-rules).
+
+### Country and stolen technology
+
+[`RequiredHouses=`](/keys/requiredhouses/) limits a type to the countries it lists, and [`ForbiddenHouses=`](/keys/forbiddenhouses/) excludes the countries it lists. The test uses the country the house acts as.
+
+A type with [`RequiresStolenAlliedTech=yes`](/keys/requiresstolenalliedtech/), [`RequiresStolenSovietTech=yes`](/keys/requiresstolensoviettech/) or [`RequiresStolenThirdTech=yes`](/keys/requiresstolenthirdtech/) needs the house to have stolen the first, second or third side's technology. Nothing steals technology yet, so such a type is never buildable.
 
 ### Prerequisites
 
@@ -160,7 +166,7 @@ The last gate is the [build limit](#build-limits). It is the only gate the facto
 
 ### Computer houses
 
-A computer house faces only the tech-level gate. Every type that passes it counts as buildable, and [base planning](/systems/ai-base-building/) decides what the house actually produces.
+A computer house faces only the tech-level gate and the country and stolen-technology gate. Every type that passes them counts as buildable, and [base planning](/systems/ai-base-building/) decides what the house actually produces.
 
 ## Build limits
 

@@ -175,6 +175,11 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsMoveToShroud(true),
 	IsTrainable(true),
 	IsNaval(false),
+	RequiredHouses(-1),
+	ForbiddenHouses(-1),
+	IsRequiresStolenAlliedTech(false),
+	IsRequiresStolenSovietTech(false),
+	IsRequiresStolenThirdTech(false),
 	IsDamageSparks(true),
 	IsTargetLaser(false),
 	IsImmuneToVeins(false),
@@ -632,6 +637,11 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Ownable = ini.Get_Owners(Name(), "Owner", Ownable);
 		IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
 		IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
+		RequiredHouses = ini.Get_Owners(Name(), "RequiredHouses", RequiredHouses);
+		ForbiddenHouses = ini.Get_Owners(Name(), "ForbiddenHouses", ForbiddenHouses);
+		IsRequiresStolenAlliedTech = ini.Get_Bool(Name(), "RequiresStolenAlliedTech", IsRequiresStolenAlliedTech);
+		IsRequiresStolenSovietTech = ini.Get_Bool(Name(), "RequiresStolenSovietTech", IsRequiresStolenSovietTech);
+		IsRequiresStolenThirdTech = ini.Get_Bool(Name(), "RequiresStolenThirdTech", IsRequiresStolenThirdTech);
 		IsCrew = ini.Get_Bool(Name(), "Crewed", IsCrew);
 		IsRepairable = ini.Get_Bool(Name(), "Repairable", IsRepairable);
 		IsInvisible = ini.Get_Bool(Name(), "Invisible", IsInvisible);
@@ -1039,6 +1049,11 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMoveToShroud);
 	stream.Serialize(IsTrainable);
 	stream.Serialize(IsNaval);
+	stream.Serialize(RequiredHouses);
+	stream.Serialize(ForbiddenHouses);
+	stream.Serialize(IsRequiresStolenAlliedTech);
+	stream.Serialize(IsRequiresStolenSovietTech);
+	stream.Serialize(IsRequiresStolenThirdTech);
 	stream.Serialize(IsDamageSparks);
 	stream.Serialize(IsTargetLaser);
 	stream.Serialize(IsImmuneToVeins);

@@ -241,6 +241,13 @@ class HouseClass : public AbstractClass
 		bool IsNavalPlaceable;
 
 		/*
+		**	Set once this house has stolen the technology of the first, second or third side.
+		*/
+		bool IsSide0TechStolen;
+		bool IsSide1TechStolen;
+		bool IsSide2TechStolen;
+
+		/*
 		**	When alerted, the house will create teams of the special "auto" type and
 		**	will generate appropriate units to fill those team types.
 		*/

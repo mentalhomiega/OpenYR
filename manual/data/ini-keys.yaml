@@ -9283,6 +9283,23 @@ FogRate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ForbiddenHouses:
+  key: ForbiddenHouses
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of HouseTypes
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: ForbiddenHouses
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Foundation:
   key: Foundation
   scopes:
@@ -18840,6 +18857,74 @@ RequiredForRMG:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+RequiredHouses:
+  key: RequiredHouses
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of HouseTypes
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: RequiredHouses
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RequiresStolenAlliedTech:
+  key: RequiresStolenAlliedTech
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsRequiresStolenAlliedTech
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RequiresStolenSovietTech:
+  key: RequiresStolenSovietTech
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsRequiresStolenSovietTech
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RequiresStolenThirdTech:
+  key: RequiresStolenThirdTech
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsRequiresStolenThirdTech
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Retaliate:
   key: Retaliate
   scopes:

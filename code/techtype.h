@@ -488,6 +488,21 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsNaval;
 
 		/*
+		 * The countries that may build this type, and those that may not, as Ownable bits. -1
+		 * places no limit.
+		 */
+		int RequiredHouses;
+		int ForbiddenHouses;
+
+		/*
+		 * A type that needs stolen technology can be built only once its house has stolen that
+		 * side's technology.
+		 */
+		bool IsRequiresStolenAlliedTech;
+		bool IsRequiresStolenSovietTech;
+		bool IsRequiresStolenThirdTech;
+
+		/*
 		 * If this object throws sparks once it has been hurt, then this flag will be true. The
 		 * spark system is picked from the DamageParticleSystems list and appears once the
 		 * object drops below the condition yellow health level.

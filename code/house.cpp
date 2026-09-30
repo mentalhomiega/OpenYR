@@ -241,6 +241,9 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsPlayerControl(false),
 	IsStarted(false),
 	IsNavalPlaceable(true),
+	IsSide0TechStolen(false),
+	IsSide1TechStolen(false),
+	IsSide2TechStolen(false),
 	IsAlerted(false),
 	IsAITriggersOn(false),
 	IsBaseBuilding(false),
@@ -905,6 +908,16 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		**	of who requests it.
 		*/
 		if (((TechnoTypeClass const *)type)->Level == -1) return(0);
+
+		int const required = ((TechnoTypeClass const *)type)->RequiredHouses;
+		int const forbidden = ((TechnoTypeClass const *)type)->ForbiddenHouses;
+		if (required != -1 && (required & Acted_Mask()) == 0) return(0);
+		if (forbidden != -1 && (forbidden & Acted_Mask()) != 0) return(0);
+
+		TechnoTypeClass const * techno = (TechnoTypeClass const *)type;
+		if (techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
+		if (techno->IsRequiresStolenSovietTech && !IsSide1TechStolen) return(0);
+		if (techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
 
 		TypeList<int> pre = ((TechnoTypeClass const *)type)->Prerequisite;
 
@@ -6588,6 +6601,9 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPlayerControl);
 	stream.Serialize(IsStarted);
 	stream.Serialize(IsNavalPlaceable);
+	stream.Serialize(IsSide0TechStolen);
+	stream.Serialize(IsSide1TechStolen);
+	stream.Serialize(IsSide2TechStolen);
 	stream.Serialize(IsAlerted);
 	stream.Serialize(IsAITriggersOn);
 	stream.Serialize(IsBaseBuilding);
