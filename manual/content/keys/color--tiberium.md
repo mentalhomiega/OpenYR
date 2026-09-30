@@ -11,8 +11,9 @@ when_omitted:
 
 The value names a color scheme declared in the rules' `[Colors]` section, in any letter case. A name that `[Colors]` does not declare leaves the type on the scheme it already had.
 
-The scheme recolors three things:
+The scheme recolors two things:
 
-- the type's overlays on the battlefield, though not on the radar minimap;
 - the [`CellAnim`](/keys/cellanim/) animation a Tiberium overlay of this type starts when it is placed;
 - the [`Debris`](/keys/debris/) animation left when a [`TiberiumChainReaction=yes`](/keys/tiberiumchainreaction/) animation clears a cell of this type.
+
+The overlays themselves are drawn in the theater's palette, as Yuri's Revenge draws ore and gems, so the scheme does not change them.

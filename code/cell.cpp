@@ -2319,17 +2319,17 @@ void CellClass::Draw_Overlay(Point2D const & xpoint, Rect const & cliprect)
 		}
 
 		TiberiumClass * tiberium = Tiberiums[tibtype];
-		ColorScheme * scheme = ColorSchemes[tiberium->Color];
 
 		ShapeSet const * tibshape = Tiberium_Overlay_Image(*this, *tiberium);
 		if (tibshape == NULL || OverlayData >= tibshape->Get_Count() / 2) {
 			return;
 		}
 
+		// Yuri's Revenge draws ore in the theater palette, lit per cell; this draws it unlit.
 		if (Ramp != RAMP_NONE) {
-			Draw_Shape(*LogicalSurface, *scheme->Converter, tibshape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_GROUND, NORMAL_LIGHT, SlopeZShapes[Ramp - 1]);
+			Draw_Shape(*LogicalSurface, *TerrainDrawer, tibshape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_GROUND, NORMAL_LIGHT, SlopeZShapes[Ramp - 1]);
 		} else {
-			Draw_Shape(*LogicalSurface, *scheme->Converter, tibshape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_GROUND, NORMAL_LIGHT);
+			Draw_Shape(*LogicalSurface, *TerrainDrawer, tibshape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_GROUND, NORMAL_LIGHT);
 		}
 	} else if (otype->IsWall) {
 		Draw_Shape(*LogicalSurface, *ColorSchemes[PlayerPtr->Scheme]->Converter, shape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_90DEG, Brightness);

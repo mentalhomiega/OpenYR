@@ -97,7 +97,7 @@ When a scenario loads, the engine replaces the stage of every Tiberium cell. The
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Stage | 0 | 1 | 3 | 4 | 6 | 7 | 8 | 10 | 11 |
 
-A cell shows the frame for its stage from one of its type's overlays. The cell's map position picks that overlay, not the overlay the cell actually holds. Flat cells use the set's flat overlays and sloped cells use its slope overlays. The type's [`Color`](/keys/color/#scope-tiberium) recolors the result.
+A cell shows the frame for its stage from one of its type's overlays. The cell's map position picks that overlay, not the overlay the cell actually holds. Flat cells use the set's flat overlays and sloped cells use its slope overlays. The frame is drawn in the theater's palette, without the lighting of its cell.
 
 Slope overlays exist only for the four simple slopes, and the large-Tiberium set has none. A type on that set never spreads onto a slope, and shows nothing on one where a map or an animation's [`TiberiumSpawnType`](/keys/tiberiumspawntype/) places it. A cell is also not drawn when the chosen overlay has no frame for its stage.
 
