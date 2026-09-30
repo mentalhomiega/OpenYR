@@ -1415,11 +1415,11 @@ bool RulesClass::Do_InfantryTypes(CCINIClass const & ini)
 /// <returns>bool; Were any houses declared?</returns>
 bool RulesClass::Do_HouseTypes(CCINIClass const & ini)
 {
-	static char const * const HOUSES = "Houses";
+	static char const * const COUNTRIES = "Countries";
 	char buffer[32];
-	int count = ini.Entry_Count(HOUSES);
+	int count = ini.Entry_Count(COUNTRIES);
 	for (int i = 0; i < count; i++) {
-		if (ini.Get_String(HOUSES, ini.Get_Entry(HOUSES, i), "", buffer, sizeof(buffer))) {
+		if (ini.Get_String(COUNTRIES, ini.Get_Entry(COUNTRIES, i), "", buffer, sizeof(buffer))) {
 			HouseTypeClass::Find_Or_Make(buffer);
 		}
 	}

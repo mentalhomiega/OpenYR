@@ -4,15 +4,12 @@ title: Rules registration lists
 summary: Lists in the rules files that register each kind of rules type and assign countries to sides.
 kind: registry
 files:
-  - RULES.INI
+  - RULESMD.INI
   - LANGRULE.INI
-  - FIRESTRM.INI
-  - LANGFS.INI
   - MPLAYER.INI
-  - MPLAYERFS.INI
 registrations:
   - { section: InfantryTypes, id_from: value, entry_section: "<InfantryType ID>" }
-  - { section: Houses, id_from: value, entry_section: "<HouseType ID>" }
+  - { section: Countries, id_from: value, entry_section: "<HouseType ID>" }
   - { section: VehicleTypes, id_from: value, entry_section: "<UnitType ID>" }
   - { section: AircraftTypes, id_from: value, entry_section: "<AircraftType ID>" }
   - { section: Sides, id_from: key, value: "Comma-separated HouseType IDs" }

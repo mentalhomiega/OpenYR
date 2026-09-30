@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-The value is a comma-separated list of country IDs from `[Houses]`, matched without regard to case. Do not put spaces after the commas: a name with a leading space matches no country. A name that matches no country is skipped.
+The value is a comma-separated list of country IDs from `[Countries]`, matched without regard to case. Do not put spaces after the commas: a name with a leading space matches no country. A name that matches no country is skipped.
 
 ```ini title="rules.ini"
 [MYWEAP] ; example war factory BuildingType
@@ -22,6 +22,6 @@ The list decides these things:
 - **Dropship loadout.** The [loadout screen](/keys/allowableunits/) offers only types that list the player's country.
 - **Crate vehicles.** A crate's random vehicle reward picks only [`CrateGoodie=yes`](/keys/crategoodie/) types that list the country the collector's house acts as.
 
-Outside campaign games, [`DoubleOwned=yes`](/keys/doubleowned/) replaces the list for production only, with a mask of the first 31 countries in `[Houses]`. The other uses read the list as written.
+Outside campaign games, [`DoubleOwned=yes`](/keys/doubleowned/) replaces the list for production only, with a mask of the first 31 countries in `[Countries]`. The other uses read the list as written.
 
-The list can name only the first 32 countries in `[Houses]`. Do not rely on a later country owning any type.
+The list can name only the first 32 countries in `[Countries]`. Do not rely on a later country owning any type.

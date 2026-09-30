@@ -149,7 +149,7 @@ A nonzero `Seed` makes a launch repeatable: launching the same file again places
 Each person has a section: `[Settings]` for the player at this machine, and `[Other1]` to `[Other7]` for the other people. Each section gives the person's `Name`, `Side` and `Color`:
 
 - `Name` is UTF-8 text. A name longer than 63 bytes is shortened.
-- `Side` is the person's country, numbered from `0` in the order of the rules' `[Houses]` list.
+- `Side` is the person's country, numbered from `0` in the order of the rules' `[Countries]` list.
 - `Color` is one of the eight player colors, `0` to `7`. In a game against other machines, no two people may share a color.
 
 A person's section must give a valid `Side` and `Color`; it cannot leave them to the game.
