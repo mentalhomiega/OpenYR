@@ -20409,7 +20409,7 @@ SidebarCameoText:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: 'no'
       declared_in: OptionsClass
       member: SidebarCameoText
       source: code/options.cpp
