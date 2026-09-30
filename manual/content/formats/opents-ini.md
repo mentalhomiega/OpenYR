@@ -35,24 +35,16 @@ Without the file, or without the key, the game searches `INI`, `MIX` and `Maps`,
 
 ```ini title="OPENTS.INI"
 [Files]
-Rules=RULES.INI
-RulesExpansion=FIRESTRM.INI
-Art=ART.INI
-ArtExpansion=ARTFS.INI
-AI=AI.INI
-AIExpansion=AIFS.INI
-Sound=SOUND.INI
-SoundExpansion=SOUND01.INI
-Theme=THEME.INI
-ThemeExpansion=THEME01.INI
-Battle=BATTLE.INI
-BattleExpansion=BATTLEFS.INI
+Rules=RULESMD.INI
+Art=ARTMD.INI
+AI=AIMD.INI
+Sound=SOUNDMD.INI
+Theme=THEMEMD.INI
+Battle=BATTLEMD.INI
 LanguageRules=LANGRULE.INI
-LanguageRulesExpansion=LANGFS.INI
 MultiplayerRules=MPLAYER.INI
-MultiplayerRulesExpansion=MPLAYERFS.INI
 Tutorial=TUTORIAL.INI
-UI=UI.INI
+UI=UIMD.INI
 Settings=RA2MD.INI
 ```
 
@@ -72,7 +64,7 @@ Each key names one file, and a key left out keeps the name shown above.
 | `UI` | The [interface settings](/formats/ui-ini/) |
 | `Settings` | The file a player's options are read from and saved to |
 
-Each of the eight `Expansion` keys names the expansion's copy of the matching base file, which is read after the base file. The expansion's rules, AI and multiplayer rules files are used only while Firestorm is enabled, and so is its art file, except for that file's `[Movies]` list. Its sound, music, campaign and translated rules files are read whether or not Firestorm is enabled.
+The eight `Expansion` keys, such as `RulesExpansion` and `ArtExpansion`, name no file unless written. Each names an expansion's copy of the matching base file, which is read after the base file. The expansion's rules, AI and multiplayer rules files are used only while Firestorm is enabled, and so is its art file, except for that file's `[Movies]` list. Its sound, music, campaign and translated rules files are read whether or not Firestorm is enabled.
 
 `RulesExpansion` also decides whether the expansion is installed: the game counts Firestorm as installed only when it finds the file this key names.
 

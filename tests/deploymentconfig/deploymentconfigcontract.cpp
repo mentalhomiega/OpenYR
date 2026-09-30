@@ -216,7 +216,7 @@ void Test_File_Names(void)
 {
 	DeploymentConfigClass config;
 
-	Check(config.RulesFile == "RULES.INI", "with no file the rules come from RULES.INI");
+	Check(config.RulesFile == "RULESMD.INI", "with no file the rules come from RULESMD.INI");
 	Check(config.MultiplayerRulesFile == "MPLAYER.INI", "and the multiplayer rules from MPLAYER.INI");
 	Check(config.SettingsFile == "RA2MD.INI", "and a player's settings from RA2MD.INI");
 
@@ -241,11 +241,11 @@ void Test_File_Names(void)
 	Check(config.TutorialFile == "dtatutorial.ini", "and for the tutorial text");
 	Check(config.UIFile == "dtaui.ini", "and for the interface");
 	Check(config.SettingsFile == "Settings.ini", "and for a player's settings");
-	Check(config.ArtExpansionFile == "ARTFS.INI", "an expansion file it leaves alone keeps its name");
+	Check(config.ArtExpansionFile.empty(), "an expansion file it leaves alone keeps its name");
 
 	Remove_File(Root + "\\OPENTS.INI");
 	config.Read_File("");
-	Check(config.RulesFile == "RULES.INI", "with the file gone the names return to the defaults");
+	Check(config.RulesFile == "RULESMD.INI", "with the file gone the names return to the defaults");
 	Check(config.SettingsFile == "RA2MD.INI", "every one of them");
 }
 
@@ -254,8 +254,8 @@ void Test_Expansion_File_Names(void)
 {
 	DeploymentConfigClass config;
 
-	Check(config.RulesExpansionFile == "FIRESTRM.INI", "with no file the expansion rules are FIRESTRM.INI");
-	Check(config.MultiplayerRulesExpansionFile == "MPLAYERFS.INI", "and the expansion multiplayer rules are MPLAYERFS.INI");
+	Check(config.RulesExpansionFile.empty(), "with no file there are no expansion rules");
+	Check(config.MultiplayerRulesExpansionFile.empty(), "and no expansion multiplayer rules");
 
 	Write_File(Root + "\\OPENTS.INI",
 			"[Files]\nRulesExpansion=fsrules.ini\nArtExpansion=fsart.ini\nAIExpansion=fsai.ini\n"
@@ -270,11 +270,11 @@ void Test_Expansion_File_Names(void)
 	Check(config.BattleExpansionFile == "fsbattle.ini", "and for the expansion campaigns");
 	Check(config.LanguageRulesExpansionFile == "fslang.ini", "and for the translated expansion rules");
 	Check(config.MultiplayerRulesExpansionFile == "fsmplayer.ini", "and for the expansion multiplayer rules");
-	Check(config.RulesFile == "RULES.INI", "while the base files stand where it names none of them");
+	Check(config.RulesFile == "RULESMD.INI", "while the base files stand where it names none of them");
 
 	Remove_File(Root + "\\OPENTS.INI");
 	config.Read_File("");
-	Check(config.RulesExpansionFile == "FIRESTRM.INI", "with the file gone they return to the defaults");
+	Check(config.RulesExpansionFile.empty(), "with the file gone they return to the defaults");
 }
 
 
@@ -297,7 +297,7 @@ void Test_Palette_Names(void)
 	Remove_File(Root + "\\OPENTS.INI");
 	config.Read_File("");
 	Check(config.SchemePaletteFile == "UNITSNO.PAL", "with the file gone both return to the defaults");
-	Check(config.GamePaletteFile == "TEMPERAT.PAL", "as they stand in Tiberian Sun");
+	Check(config.GamePaletteFile == "TEMPERAT.PAL", "as they stand in Red Alert 2");
 }
 
 }

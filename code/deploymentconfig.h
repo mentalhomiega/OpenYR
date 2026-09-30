@@ -28,24 +28,24 @@ class DeploymentConfigClass
 
 		// The files the game reads its rules, artwork and text from. Whether the expansion is
 		// installed at all is decided by looking for the rules expansion.
-		std::string RulesFile = "RULES.INI";
-		std::string RulesExpansionFile = "FIRESTRM.INI";
-		std::string ArtFile = "ART.INI";
-		std::string ArtExpansionFile = "ARTFS.INI";
-		std::string AIFile = "AI.INI";
-		std::string AIExpansionFile = "AIFS.INI";
-		std::string SoundFile = "SOUND.INI";
-		std::string SoundExpansionFile = "SOUND01.INI";
-		std::string ThemeFile = "THEME.INI";
-		std::string ThemeExpansionFile = "THEME01.INI";
-		std::string BattleFile = "BATTLE.INI";
-		std::string BattleExpansionFile = "BATTLEFS.INI";
+		std::string RulesFile = "RULESMD.INI";
+		std::string RulesExpansionFile = "";
+		std::string ArtFile = "ARTMD.INI";
+		std::string ArtExpansionFile = "";
+		std::string AIFile = "AIMD.INI";
+		std::string AIExpansionFile = "";
+		std::string SoundFile = "SOUNDMD.INI";
+		std::string SoundExpansionFile = "";
+		std::string ThemeFile = "THEMEMD.INI";
+		std::string ThemeExpansionFile = "";
+		std::string BattleFile = "BATTLEMD.INI";
+		std::string BattleExpansionFile = "";
 		std::string LanguageRulesFile = "LANGRULE.INI";
-		std::string LanguageRulesExpansionFile = "LANGFS.INI";
+		std::string LanguageRulesExpansionFile = "";
 		std::string MultiplayerRulesFile = "MPLAYER.INI";
-		std::string MultiplayerRulesExpansionFile = "MPLAYERFS.INI";
+		std::string MultiplayerRulesExpansionFile = "";
 		std::string TutorialFile = "TUTORIAL.INI";
-		std::string UIFile = "UI.INI";
+		std::string UIFile = "UIMD.INI";
 
 		// The file a player's own settings are read from and written back to.
 		std::string SettingsFile = "RA2MD.INI";
