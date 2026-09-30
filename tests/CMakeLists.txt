@@ -69,6 +69,7 @@ endfunction()
 
 add_subdirectory(actionids)
 add_subdirectory(cpudetect)
+add_subdirectory(csf)
 add_subdirectory(gamedirs)
 add_subdirectory(ini)
 add_subdirectory(logstress)

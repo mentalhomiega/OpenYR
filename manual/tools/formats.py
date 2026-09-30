@@ -16,7 +16,7 @@ LEGACY_FORMAT_ROUTES = {
     "ai_triggers": "/mapping/ai-triggers/",
 }
 FORMAT_KINDS = {"syntax", "file", "registry", "record", "binary"}
-BINARY_ROLES = {"archive", "image", "model", "audio", "video", "persistence"}
+BINARY_ROLES = {"archive", "image", "model", "audio", "video", "persistence", "text"}
 _FRONTMATTER = re.compile(r"^---\r?\n([\s\S]*?)\r?\n---")
 
 
@@ -247,5 +247,5 @@ def scaffold_frontmatter(format_id, kind):
         }]
     else:
         result["extensions"] = [".TODO"]
-        result["role"] = "TODO: choose archive, image, model, audio, video, or persistence"
+        result["role"] = "TODO: choose archive, image, model, audio, video, persistence, or text"
     return result

@@ -102,6 +102,7 @@
 #include "chat.h"
 #include "command.h"
 #include "conquer.h"
+#include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -198,6 +199,7 @@
 #include "wsproto.h"
 #include "wspudp.h"
 #include "wwfont.h"
+#include "xstraw.h"
 
 #include "bench.hh"
 #include "scrnsel.hh"
@@ -2174,6 +2176,32 @@ static void Read_Palette(PaletteClass & palette, char const * name)
 }
 
 
+/// <summary>
+/// Reads the string table named, with its extension replaced by .CSF as Yuri's Revenge does,
+/// into StringTable. Returns false when the file is missing or is not a string table.
+/// </summary>
+static bool Load_String_Table(char const * filename)
+{
+	std::string name = filename;
+	std::size_t const dot = name.find('.');
+	if (dot != std::string::npos) {
+		name.resize(dot);
+	}
+	name += ".CSF";
+
+	CCFileClass file(name.c_str());
+	if (!file.Is_Available()) {
+		return(false);
+	}
+	FileStraw straw(file);
+	if (!StringTable.Load(straw)) {
+		return(false);
+	}
+	DebugString("String table %s: %d labels\n", name.c_str(), StringTable.Count());
+	return(true);
+}
+
+
 /***********************************************************************************************
  * Init_Bootstrap_Mixfiles -- Registers and caches any mixfiles needed for bootstrapping.      *
  *                                                                                             *
@@ -2200,6 +2228,11 @@ static bool Init_Bootstrap_Mixfiles(void)
 	// archives need, and are searched ahead of every other startup archive.
 	LanguageMix = new MFCD("LANGMD.MIX", &FastKey);
 	BaseLanguageMix = new MFCD("LANGUAGE.MIX", &FastKey);
+
+	if (!Load_String_Table("RA2MD.STR")) {
+		DebugString("Unable to read the string table RA2MD.CSF\n");
+		return(false);
+	}
 
 	Init_Patch_Mixfiles();
 	Init_Expand_Mixfiles();

@@ -80,7 +80,7 @@ export interface RecordFormat extends FormatCommon {
 export interface BinaryFormat extends FormatCommon {
 	kind: 'binary';
 	extensions: string[];
-	role: 'archive' | 'image' | 'model' | 'audio' | 'video' | 'persistence';
+	role: 'archive' | 'image' | 'model' | 'audio' | 'video' | 'persistence' | 'text';
 	companion_formats: string[];
 }
 

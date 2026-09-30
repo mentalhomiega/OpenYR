@@ -130,7 +130,8 @@
             "model",
             "audio",
             "video",
-            "persistence"
+            "persistence",
+            "text"
           ]
         },
         "companion_formats": {
