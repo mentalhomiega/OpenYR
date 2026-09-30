@@ -90,6 +90,7 @@
 #include "audio/audioengine.h"
 #include "autosave.h"
 #include "bench.h"
+#include "bitfont.h"
 #include "blight.h"
 #include "building.h"
 #include "builtype.h"
@@ -1997,6 +1998,27 @@ static bool Init_One_Time_Systems(void)
 static bool Init_Fonts(void)
 {
 	const void * ptr;
+
+	/*
+	**	Yuri's Revenge draws all of its text with the one Unicode font.
+	*/
+	CCFileClass unicode("GAME.FNT");
+	if (unicode.Is_Available()) {
+		std::vector<unsigned char> image(unicode.Size());
+		if (!image.empty() && unicode.Read(image.data(), (int)image.size()) == (int)image.size()) {
+			std::shared_ptr<BitFontData const> data = BitFontData::Parse(image.data(), image.size());
+			if (data != NULL) {
+				Metal12FontPtr = new BitFontClass(data);
+				MapFontPtr = new BitFontClass(data);
+				Font6Ptr = new BitFontClass(data);
+				EditorFont = new BitFontClass(data);
+				Font8Ptr = new BitFontClass(data);
+				GradFont6Ptr = new BitFontClass(data);
+				return(true);
+			}
+		}
+		DebugString("GAME.FNT is not a usable font; using the older fonts.\n");
+	}
 
 	ptr = MFCD::Retrieve("12METFNT.FNT");
 	if (ptr == NULL) {

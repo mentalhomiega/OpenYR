@@ -68,6 +68,7 @@ function(opents_add_test target)
 endfunction()
 
 add_subdirectory(actionids)
+add_subdirectory(bitfont)
 add_subdirectory(cpudetect)
 add_subdirectory(csf)
 add_subdirectory(gamedirs)
