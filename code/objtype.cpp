@@ -677,24 +677,43 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 
 /// <summary>
 /// Converts an artwork name to the current theater's spelling.
-/// Only a name whose second letter is already some theater's image letter follows this
-/// convention, so the civilian artwork that carries NewTheater= in error is left alone.
+/// As in Yuri's Revenge, only a name starting G, N, C or Y whose second letter is A or T
+/// follows this convention; its second letter becomes the theater's image letter.
 /// </summary>
 /// <param name="name">The artwork name to adjust in place.</param>
 void ObjectTypeClass::Theater_Naming_Convention(char * name, TheaterType theater) const
 {
-	char letter = TheaterClass::As_Reference(theater).ImageLetter;
-
-	if (letter == '\0' || name[0] == '\0' || name[1] == '\0') {
+	if (theater == THEATER_NONE || name[0] == '\0' || name[1] == '\0') {
 		return;
 	}
 
-	for (int index = 0; index < Theaters.Count(); index++) {
-		if (toupper((unsigned char)name[1]) == toupper((unsigned char)Theaters[index]->ImageLetter)) {
-			name[1] = letter;
-			return;
-		}
+	char letter = TheaterClass::As_Reference(theater).ImageLetter;
+	if (letter == '\0') {
+		return;
 	}
+
+	char const first = (char)tolower((unsigned char)name[0]);
+	char const second = (char)tolower((unsigned char)name[1]);
+	if ((first == 'g' || first == 'n' || first == 'c' || first == 'y') && (second == 'a' || second == 't')) {
+		name[1] = letter;
+	}
+}
+
+
+/// <summary>
+/// Retrieves art named by Theater_Naming_Convention. When that file is missing, the generic
+/// art is tried instead, with 'G' as the second letter, as Yuri's Revenge does.
+/// </summary>
+/// <param name="name">The file name; its second letter becomes 'G' when the fallback is tried.</param>
+/// <returns>The art, or NULL if neither file exists.</returns>
+void const * ObjectTypeClass::Retrieve_Theater_Art(char * name)
+{
+	void const * data = MFCD::Retrieve(name);
+	if (data == NULL && name[0] != '\0' && name[1] != '\0') {
+		name[1] = 'G';
+		data = MFCD::Retrieve(name);
+	}
+	return(data);
 }
 
 

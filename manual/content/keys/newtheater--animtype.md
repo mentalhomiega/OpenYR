@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-`NewTheater=yes` makes the animation draw a theater-specific shape when one exists. The file keeps its `.SHP` extension, and the second letter of its name is replaced by the scenario theater's [`ImageLetter`](/keys/imageletter/): `T` in temperate and `A` in snow. A name is rewritten only when its second letter is already the image letter of some declared theater, ignoring case. `GACNST` and `XTCNST` follow this convention. With the stock theaters `CITY01` does not, so it loads the same file in every theater.
+`NewTheater=yes` makes the animation draw a theater-specific shape when one exists. The file keeps its `.SHP` extension, and the second letter of its name is replaced by the scenario theater's [`ImageLetter`](/keys/imageletter/): `T` in temperate and `A` in snow. A name is rewritten only when it starts with `G`, `N`, `C` or `Y` and its second letter is `A` or `T`, ignoring case. `GACNST` follows this convention. `XTCNST` and `CITY01` do not, so each loads the same file in every theater.
 
 The name rewritten is the one [`Image=`](/keys/image/#scope-animtype) gives, or the AnimType ID when no Image ID is set. [`Theater=yes`](/keys/theater/#scope-animtype) uses the AnimType ID instead, except in a scenario whose theater repeats the previous scenario's.
 

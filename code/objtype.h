@@ -220,6 +220,7 @@ class ObjectTypeClass : public AbstractTypeClass
 		void Fetch_Normal_Image(void);
 
 		void Theater_Naming_Convention(char * name, TheaterType theater) const;
+		static void const * Retrieve_Theater_Art(char * name);
 
 		static void Clear_Voxel_Indexes(void);
 

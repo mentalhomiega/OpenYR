@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-`NewTheater=yes` looks for the type's shape under a theater-specific name. The name is `<Image ID>.SHP` with its second letter replaced by the scenario theater's [`ImageLetter`](/keys/imageletter/): `T` in temperate and `A` in snow. A name is rewritten only when its second letter is already the image letter of some declared theater, ignoring case. Any other name, such as `CITY01` with the stock theaters, is looked up as written in every theater.
+`NewTheater=yes` looks for the type's shape under a theater-specific name. The name is `<Image ID>.SHP` with its second letter replaced by the scenario theater's [`ImageLetter`](/keys/imageletter/): `T` in temperate and `A` in snow. A name is rewritten only when it starts with `G`, `N`, `C` or `Y` and its second letter is `A` or `T`, ignoring case. Any other name, such as `CITY01`, is looked up as written in every theater.
 
 ```ini title="art.ini"
 [GAFENC] ; example Image ID of an OverlayType
@@ -21,7 +21,7 @@ Whether the renamed shape is drawn depends on the kind of type:
 - Structures are renamed whether or not the flag is set. The rename covers the structure's shape and the art named by [`Buildup`](/keys/buildup/), [`DeployingAnim`](/keys/deployinganim/), [`DoorAnim`](/keys/dooranim/), [`UnderDoorAnim`](/keys/underdooranim/), [`SpecialZOverlay`](/keys/specialzoverlay/) and [`BibShape`](/keys/bibshape/).
 - Aircraft, infantry, vehicles, smudges and terrain objects ignore the flag in a new game. They draw `<Image ID>.SHP`, and have no shape if only the renamed file exists.
 
-Where the renamed shape is drawn, it is the only name tried. A type whose file for the current theater is missing has no shape, so provide one file for each theater.
+A structure whose renamed file is missing draws the file with `G` as its second letter instead, such as `GGCNST.SHP` for `GACNST`. For every other type the renamed shape is the only name tried, and a type whose file for the current theater is missing has no shape, so provide one file for each theater.
 
 :::caution[A loaded game can draw different art]
 Loading a saved game fetches shapes again. These types can then draw a different file from the one the saved game drew:

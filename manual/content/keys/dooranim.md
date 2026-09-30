@@ -17,6 +17,6 @@ DoorStages=9
 UnderDoorAnim=GAWEAP_1
 ```
 
-Write the filename without its extension; the engine loads `<value>.SHP`. Before loading, the second letter of the name is rewritten for the scenario's theater, as it is for [`NewTheater=yes`](/keys/newtheater/) artwork, whether or not the structure sets `NewTheater`. The letter changes only when it already matches the [`ImageLetter`](/keys/imageletter/) of some theater, so `GAWEAP_D` loads as `GTWEAP_D.SHP` in temperate and as `GAWEAP_D.SHP` in snow.
+Write the filename without its extension; the engine loads `<value>.SHP`. Before loading, the second letter of the name is rewritten for the scenario's theater, as it is for [`NewTheater=yes`](/keys/newtheater/) artwork, whether or not the structure sets `NewTheater`. The letter changes only when the name starts with `G`, `N`, `C` or `Y` and its second letter is `A` or `T`, so `GAWEAP_D` loads as `GTWEAP_D.SHP` in temperate and as `GAWEAP_D.SHP` in snow. When the renamed file is missing, the name with `G` as its second letter is loaded instead, such as `GGWEAP_D.SHP`.
 
 The door frames are drawn at the lighting level of the structure's cell, so [`ExtraLight`](/keys/extralight/) does not change them.

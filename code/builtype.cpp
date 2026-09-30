@@ -973,6 +973,13 @@ void const * BuildingTypeClass::Get_Image_Data(void) const
 		if (TheaterImageFile[0] != '\0') {
 			CCFileClass file(TheaterImageFile);
 			(void *&)ImageData = Load_Alloc_Data(file);
+			if (ImageData == NULL) {
+				char generic[sizeof(TheaterImageFile)];
+				strcpy(generic, TheaterImageFile);
+				generic[1] = 'G';
+				CCFileClass fallback(generic);
+				(void *&)ImageData = Load_Alloc_Data(fallback);
+			}
 		}
 		return(ImageData);
 	}
@@ -1000,7 +1007,7 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 			*/
 			_makepath(fullname, NULL, NULL, BuildupFilename, ".SHP");
 			Theater_Naming_Convention(fullname, theater);
-			BuildupData = MFCD::Retrieve(fullname);
+			BuildupData = ObjectTypeClass::Retrieve_Theater_Art(fullname);
 			if (BuildupData != NULL) {
 				int timedelay = 1;
 				int count = ((ShapeSet const *)BuildupData)->Get_Count()/2;
@@ -1019,35 +1026,35 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 	if (strlen(buffer) != 0) {
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		DeployingAnim = (ShapeSet const *)MFCD::Retrieve(fullname);
+		DeployingAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "DoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		DoorAnim = (ShapeSet const *)MFCD::Retrieve(fullname);
+		DoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "UnderDoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		UnderDoorAnim = (ShapeSet const *)MFCD::Retrieve(fullname);
+		UnderDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "SpecialZOverlay", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		SpecialZOverlay = (ShapeSet const *)MFCD::Retrieve(fullname);
+		SpecialZOverlay = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "BibShape", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		BibShape = (ShapeSet const *)MFCD::Retrieve(fullname);
+		BibShape = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	char ext[16];
@@ -1071,7 +1078,10 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 	**	Fetch the normal game shape for this building.
 	*/
 	if (!IsDemandLoad) {
-		ImageData = MFCD::Retrieve(fullname);
+		ImageData = ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		if (ImageData != NULL) {
+			strncpy(TheaterImageFile, fullname, sizeof(TheaterImageFile) - 1);
+		}
 	}
 
 	Fetch_Building_Voxel_Image();
