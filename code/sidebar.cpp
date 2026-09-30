@@ -366,9 +366,6 @@ void SidebarClass::One_Time(void)
 	for (int index = 0; index < COLUMNS; index++) {
 		Column[index].One_Time(index);
 	}
-
-	StripClass::RechargeClockShapes = (ShapeSet const *)MFCD::Retrieve("RCLOCK2.SHP");
-	StripClass::ClockShapes = (ShapeSet const *)MFCD::Retrieve("GCLOCK2.SHP");
 }
 
 
@@ -520,6 +517,10 @@ void SidebarClass::Init_For_House(void)
 
 	BASECLASS::Init_For_House();
 
+	// Yuri's Revenge keeps the build clock in each side's archives and has no separate recharge clock.
+	StripClass::ClockShapes = (ShapeSet const *)MFCD::Retrieve("GCLOCK2.SHP");
+	StripClass::RechargeClockShapes = StripClass::ClockShapes;
+
 	PaletteClass pal;
 
 	memmove(&pal, MFCD::Retrieve("SIDEBAR.PAL"), sizeof(pal));
@@ -582,6 +583,8 @@ void SidebarClass::Clear_For_House(void)
 	SidebarMiddleShape = NULL;
 	SidebarBottomShape = NULL;
 	SidebarAddonShape = NULL;
+	StripClass::ClockShapes = NULL;
+	StripClass::RechargeClockShapes = NULL;
 
 	BASECLASS::Clear_For_House();
 }

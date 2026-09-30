@@ -230,7 +230,7 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `R-UP.SHP`, `R-DN.SHP` | The scroll arrows, shared by every tab |
 | `TAB00.SHP` to `TAB03.SHP` | The four tab buttons |
 | `REPAIR.SHP`, `SELL.SHP` | The two mode buttons |
-| `GCLOCK2.SHP`, `RCLOCK2.SHP` | The build clock and the recharge clock |
+| `GCLOCK2.SHP` | The build clock, also drawn over a recharging superweapon |
 | `DARKEN.SHP` | The overlay drawn over a darkened cameo |
 | `XXICON.SHP` | The cameo used when `Cameo=` is absent or names a file that cannot be found |
 | `POWERP.SHP` | The power bar's pips |
@@ -239,9 +239,9 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `TABS.SHP` | The tab bar and the credit readout's backdrop |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 
-Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
+Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it, build clock and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
 
-The clock, darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
+The darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
 
 ## Parsed settings without effect
 
