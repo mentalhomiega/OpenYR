@@ -7387,6 +7387,11 @@ void BuildingClass::Factory_AI(void)
 				if (House->IsStarted && House->Available_Money() > 10) {
 					TechnoTypeClass const * techno = House->Suggest_New_Object(Class->ToBuild, false);
 
+					// A naval factory builds only naval units, and any other factory only other units.
+					if (techno != NULL && techno->What_Am_I() == RTTI_UNITTYPE && techno->IsNaval != Class->IsNaval) {
+						return;
+					}
+
 					/*
 					**	If a suitable object type was selected for production, then start
 					**	producing it now.

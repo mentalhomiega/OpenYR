@@ -7,7 +7,7 @@ when_omitted:
   note: The teleport locomotor. No stock type names this identifier, and the only stock type that leaves the key out is the crate-goodie `BASEUNIT` shell.
 ---
 
-The value is a class identifier in the usual braced form. Each aircraft, infantryman and vehicle gets a locomotor of the named class when it is created, and that class decides how it travels: whether it drives, walks, hovers, flies, burrows or strides. [Locomotion and piggybacking](/internals/locomotion/) explains how an object can for a time be moved by a different locomotor than its type names. The engine registers ten classes:
+The value is a class identifier in the usual braced form. Each aircraft, infantryman and vehicle gets a locomotor of the named class when it is created, and that class decides how it travels: whether it drives, walks, hovers, flies, burrows or strides. [Locomotion and piggybacking](/internals/locomotion/) explains how an object can for a time be moved by a different locomotor than its type names. The engine registers eleven classes:
 
 | Identifier | Movement |
 | --- | --- |
@@ -21,6 +21,7 @@ The value is a class identifier in the usual braced form. Each aircraft, infantr
 | `{55D141B8-DB94-11D1-AC98-006008055BB5}` | Mech: the striding walk of stock walkers such as the Titan and Juggernaut |
 | `{92612C46-F71F-11D1-AC9F-006008055BB5}` | Jumpjet: powered hover flight, tuned by `[JumpjetControls]` |
 | `{3DC0B295-6546-11D3-80B0-00902792494C}` | Levitate: the stock jellyfish |
+| `{2BEA74E1-7CCA-11D3-BE14-00104B62A16C}` | Ship: naval units; it moves exactly as Drive does |
 
 A structure never gets a locomotor, so the key does nothing in a BuildingType's section.
 
@@ -35,5 +36,5 @@ A vehicle leaving a war factory drives out according to the locomotor it is usin
 Text that is not a well-formed class identifier is ignored, and the type keeps the value it had before this assignment.
 
 :::danger[An identifier that names no locomotor crashes the game]
-A well-formed identifier that matches none of the ten classes above leaves the object without a locomotor. The game crashes as the first aircraft, infantryman or vehicle of that type is created. For a type the map places, that happens while the scenario is loading.
+A well-formed identifier that matches none of the eleven classes above leaves the object without a locomotor. The game crashes as the first aircraft, infantryman or vehicle of that type is created. For a type the map places, that happens while the scenario is loading.
 :::

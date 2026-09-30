@@ -360,6 +360,11 @@ BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopow
 			**	fixed wing craft only.
 			*/
 			if (intheory || !building->In_Radio_Contact() || RTTI != RTTI_AIRCRAFTTYPE) {
+
+				// Naval units come only from naval factories, and everything else only from other factories.
+				bool const naval = RTTI == RTTI_UNITTYPE && ((TechnoTypeClass const *)this)->IsNaval;
+				if (naval != building->Class->IsNaval) continue;
+
 				if (building->IsLeader) return(building);
 				freebuilding = building;
 			} else {

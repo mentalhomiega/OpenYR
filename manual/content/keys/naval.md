@@ -1,6 +1,6 @@
 ---
 key: Naval
-summary: Marks the type as naval.
+summary: Marks the type as naval, which decides the factories that build it.
 see_also: ["system:production"]
 when_omitted:
   kind: value
@@ -14,4 +14,6 @@ A computer house that cannot place a finished `Naval=yes` structure abandons it 
 Naval=yes
 ```
 
-The key is read for every type. It has no other effect yet: naval units still move and place like other units.
+A `Naval=yes` VehicleType is built only at a `Naval=yes` structure, and every other type only at a structure without the flag. A factory structure therefore never offers or builds the other kind, for a human player or the computer.
+
+The key is read for every type. It has no other effect: a naval unit moves as its [`Locomotor`](/keys/locomotor/) and [`SpeedType`](/keys/speedtype/) decide.

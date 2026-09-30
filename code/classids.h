@@ -83,3 +83,4 @@ extern ClassID const ClassID_TeleportLocomotion;
 extern ClassID const ClassID_MechLocomotion;
 extern ClassID const ClassID_JumpjetLocomotion;
 extern ClassID const ClassID_LevitateLocomotion;
+extern ClassID const ClassID_ShipLocomotion;
