@@ -188,7 +188,8 @@ class RadarClass: public DisplayClass
 		*/
 		enum RadarClassEnums {
 			RADAR_ACTIVATED_FRAME = 25,
-			MAX_RADAR_FRAMES = 40
+			MAX_RADAR_FRAMES = 32,
+			TOP_Y = 16				// The top of the panel piece above the radar; the radar sits below it.
 		};
 
 		/*
@@ -382,4 +383,5 @@ class RadarClass: public DisplayClass
 		CDTimerClass<SystemTimerClass> RadarAnimTimer;
 
 		static void const * RadarAnim;
+		static void const * TopShape;
 };

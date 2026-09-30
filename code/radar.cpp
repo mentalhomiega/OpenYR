@@ -112,6 +112,7 @@
 RadarClass::RTacticalClass RadarClass::RadarButton;
 
 void const * RadarClass::RadarAnim  = NULL;
+void const * RadarClass::TopShape  = NULL;
 
 
 /***********************************************************************************************
@@ -198,11 +199,11 @@ void RadarClass::One_Time(void)
 {
 	DebugString("RadarClass::One_Time()\n");
 	RadX				 = 0;
-	RadY				 = 8 * 2/*RESFACTOR*/;
+	RadY				 = TOP_Y + 32;
 	RadWidth			 = SidebarSurface->Get_Width();
-	RadHeight			 = 70 * 2/*RESFACTOR*/;
-	RadOffX				 = 15;
-	RadOffY				 = 12;
+	RadHeight			 = 110;
+	RadOffX				 = 16;
+	RadOffY				 = 1;
 	RadPWidth			 = 70 * 2/*RESFACTOR*/;
 	RadPHeight			 = 54 * 2/*RESFACTOR*/;
 	RadIWidth			 = 70 * 2/*RESFACTOR*/;
@@ -265,6 +266,7 @@ void RadarClass::Init_For_House(void)
 {
 	DebugString("RadarClass::Init_For_House()\n");
 	RadarAnim = MFCD::Retrieve("RADAR.SHP");
+	TopShape = MFCD::Retrieve("TOP.SHP");
 }
 
 
@@ -275,6 +277,7 @@ void RadarClass::Init_For_House(void)
 void RadarClass::Clear_For_House(void)
 {
 	RadarAnim = NULL;
+	TopShape = NULL;
 }
 
 
@@ -307,6 +310,10 @@ void RadarClass::Draw_It(bool forced)
 
 	FullRedraw = FullRedraw == true || forced == true;
 	IsToRedraw = IsToRedraw == true || FullRedraw == true;
+
+	if (FullRedraw && TopShape != NULL) {
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)TopShape, 0, Point2D(RadX, TOP_Y), SidebarSurface->Get_Rect());
+	}
 
 	if (RadarState != RSTATE_ACTIVE) {
 
@@ -376,9 +383,7 @@ void RadarClass::Draw_It(bool forced)
 	if (FullRedraw == true) {
 		FullRedraw = false;
 		Map.Repair.Draw_Me(true);
-		Map.Power.Draw_Me(true);
 		Map.Upgrade.Draw_Me(true);
-		Map.Waypoint.Draw_Me(true);
 	}
 }
 
@@ -768,7 +773,7 @@ void RadarClass::Draw_Names(void)
 		return;
 	}
 
-	Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, 40, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+	Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 
 	y = RadY + RadOffY+(2);
 

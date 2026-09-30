@@ -286,7 +286,7 @@ The background picture ignores the shroud, the fog and ownership. It holds the t
 
 Fog does not hide terrain on the radar. Fogged ground keeps its true color there, even while the tactical view hides it. Only objects drop off the radar under fog.
 
-While the pane is opening or closing, only the frame animation is drawn: 40 frames, four system ticks each. [`RadarOn`](/keys/radaron/) plays as the pane starts to open, and [`RadarOff`](/keys/radaroff/) as it starts to close. Clicks on the pane do nothing unless it is fully open and showing the map.
+While the pane is opening or closing, only the frame animation is drawn: 32 frames, four system ticks each. [`RadarOn`](/keys/radaron/) plays as the pane starts to open, and [`RadarOff`](/keys/radaroff/) as it starts to close. Clicks on the pane do nothing unless it is fully open and showing the map.
 
 Whether the pane is raised at all is decided elsewhere. [Power output and drain](/systems/power/#radar) covers the availability test, and [ion storms](/systems/ion-storms/#radar) the suppression that overrides it.
 

@@ -234,11 +234,12 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `DARKEN.SHP` | The overlay drawn over a darkened cameo |
 | `XXICON.SHP` | The cameo used when `Cameo=` is absent or names a file that cannot be found |
 | `POWERP.SHP` | The power bar's pips |
+| `TOP.SHP` | The piece between the credit readout and the radar |
 | `RADAR.SHP` | The radar frame and its open and close animation |
 | `TABS.SHP` | The tab bar and the credit readout's backdrop |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 
-Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
+Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
 
 The clock, darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
 
