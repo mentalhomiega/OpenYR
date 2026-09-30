@@ -25,11 +25,11 @@ Startup mounts these archives in this order:
 | --- | --- | --- | --- |
 | 1 | `PATCH.MIX` | No | No |
 | 2 | `PCACHE.MIX` | No | Yes |
-| 3 | `EXPAND99.MIX` down to `EXPAND00.MIX` | No | No |
+| 3 | `EXPANDMD99.MIX` down to `EXPANDMD00.MIX` | No | No |
 | 4 | `ECACHE99.MIX` down to `ECACHE00.MIX` | No | Yes |
-| 5 | `TIBSUN.MIX` | No | No |
-| 6 | `CACHE.MIX` | Yes | Yes |
-| 7 | `LOCAL.MIX` | No | No |
+| 5 | `RA2MD.MIX`, then `RA2.MIX` | No | No |
+| 6 | `CACHEMD.MIX`, then `CACHE.MIX` | Yes | Yes |
+| 7 | `LOCALMD.MIX`, then `LOCAL.MIX` | No | No |
 | 8 | `CONQUER.MIX` | Yes | Yes |
 | 9 | Every `MAPS*.MIX`, in alphabetical order | No | No |
 | 10 | `MULTI.MIX` | No | No |
@@ -38,7 +38,7 @@ Startup mounts these archives in this order:
 | 13 | `SCORES.MIX`, then `SCORES01.MIX` | No | No |
 | 14 | Every `MOVIES*.MIX`, in alphabetical order | No | No |
 
-`PATCH.MIX` and the `EXPAND` archives are mounted only as loose files, never as members of another archive.
+`PATCH.MIX` and the `EXPANDMD` archives are mounted only as loose files, never as members of another archive.
 
 If a required archive is missing or cannot be cached, the game stops during startup. An optional archive that is missing is skipped, and later lookups do not search it. A deployment can therefore keep the maps and the multiplayer content loose or in other archives.
 
@@ -80,7 +80,7 @@ Whether an archive is cached decides how its members can be read:
 - Many files are read only from cached archives. They include the shapes of object and animation types that are not [demand-loaded](/keys/demandload/), the game fonts, the theater palettes and the mouse cursor. A loose copy of such a file, or a copy in an archive mounted without caching, is not found.
 - Any file the game opens by name can come from either kind of archive.
 
-To replace a file of the first kind, put the replacement in `PCACHE.MIX` or an `ECACHE` archive. Do not also put a copy in an uncached archive that the game searches earlier: `PATCH.MIX` for a file in `PCACHE.MIX`, or `PATCH.MIX` or any `EXPAND` archive for a file in an `ECACHE` archive. The game finds that uncached copy first and treats the file as missing.
+To replace a file of the first kind, put the replacement in `PCACHE.MIX` or an `ECACHE` archive. Do not also put a copy in an uncached archive that the game searches earlier: `PATCH.MIX` for a file in `PCACHE.MIX`, or `PATCH.MIX` or any `EXPANDMD` archive for a file in an `ECACHE` archive. The game finds that uncached copy first and treats the file as missing.
 
 An archive may carry a digest of its member data. The game checks it when caching the archive and leaves the archive uncached if the digest does not match.
 

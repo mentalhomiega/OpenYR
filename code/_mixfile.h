@@ -43,6 +43,12 @@ extern MFCD * MainMix;
 extern MFCD * ConquerMix;
 extern MFCD * CacheMix;
 extern MFCD * LocalMix;
+
+// Red Alert 2's own archives (RA2.MIX, CACHE.MIX, LOCAL.MIX). GameMix, CacheMix and LocalMix
+// hold Yuri's Revenge's (RA2MD.MIX, CACHEMD.MIX, LOCALMD.MIX), which are searched first.
+extern MFCD * BaseGameMix;
+extern MFCD * BaseCacheMix;
+extern MFCD * BaseLocalMix;
 extern MFCD * MapsMix;
 
 extern MFCD * SpeechMix;

@@ -2095,7 +2095,7 @@ static void Init_Expand_Mixfiles(void)
 	MFCD * expand;
 
 	for (index = 99; index >= 0; index--) {
-		sprintf(name, "EXPAND%02d.MIX", index);
+		sprintf(name, "EXPANDMD%02d.MIX", index);
 		// Searched for as a loose file wherever the game's files are kept, but never
 		// inside another archive.
 		if (CDFileClass(name).Is_Available()) {
@@ -2203,16 +2203,24 @@ static bool Init_Bootstrap_Mixfiles(void)
 #ifndef _DEMO
 	Detect_Addons();
 
-	GameMix = new MFCD("TIBSUN.MIX", &FastKey);
+	// Registration order is search order, so Yuri's Revenge's archive of each pair comes first.
+	GameMix = new MFCD("RA2MD.MIX", &FastKey);
+	BaseGameMix = new MFCD("RA2.MIX", &FastKey);
 #endif
 
 	/*
 	**	Bootstrap enough of the system so that the error dialog box can successfully
 	**	be displayed.
 	*/
-	DebugStringNoPrefix(" CACHE.MIX");
+	CacheMix = new MFCD("CACHEMD.MIX", &FastKey);
 
-	CacheMix = new MFCD("CACHE.MIX", &FastKey);
+	if (MFCD::Cache("CACHEMD.MIX") == false) {
+		return(false);
+	}
+
+	DebugStringNoPrefix(" CACHEMD.MIX");
+
+	BaseCacheMix = new MFCD("CACHE.MIX", &FastKey);
 
 	if (MFCD::Cache("CACHE.MIX") == false) {
 		return(false);
@@ -2220,7 +2228,8 @@ static bool Init_Bootstrap_Mixfiles(void)
 
 	DebugStringNoPrefix(" CACHE.MIX");
 
-	LocalMix = new MFCD("LOCAL.MIX", &FastKey);
+	LocalMix = new MFCD("LOCALMD.MIX", &FastKey);
+	BaseLocalMix = new MFCD("LOCAL.MIX", &FastKey);
 
 	DebugStringNoPrefix(" LOCAL.MIX");
 

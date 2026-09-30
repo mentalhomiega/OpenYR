@@ -925,6 +925,14 @@ void __cdecl Prog_End(void)
 		delete LocalMix;
 		LocalMix = NULL;
 	}
+	if (BaseCacheMix != NULL) {
+		delete BaseCacheMix;
+		BaseCacheMix = NULL;
+	}
+	if (BaseLocalMix != NULL) {
+		delete BaseLocalMix;
+		BaseLocalMix = NULL;
+	}
 	if (SpeechMix != NULL) {
 		delete SpeechMix;
 		SpeechMix = NULL;
@@ -964,6 +972,10 @@ void __cdecl Prog_End(void)
 	if (GameMix != NULL) {
 		delete GameMix;
 		GameMix = NULL;
+	}
+	if (BaseGameMix != NULL) {
+		delete BaseGameMix;
+		BaseGameMix = NULL;
 	}
 
 	if (TacticalMap != NULL) {
