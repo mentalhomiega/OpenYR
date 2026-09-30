@@ -58,7 +58,7 @@ class SidebarClass : public PowerClass
 		**	as enumerations since C++ cannot use "const" in this context.
 		*/
 		enum SideBarClassEnums {
-			SIDE_Y=148,						// The Y position of sidebar upper left corner.
+			SIDE_Y=158,						// The Y position of sidebar upper left corner, below the radar.
 			SIDE_WIDTH=168,					// Width of the entire sidebar (in pixels).
 			SIDE_BODY_Y=138,				/// Y position where the sidebar body (below the radar) begins.
 			CREDITS_HEIGHT=16,				/// Height of the credits readout area at the top of the sidebar.
@@ -74,7 +74,11 @@ class SidebarClass : public PowerClass
 
 			GADGET_CAMEO=1000,				/// Tooltip ID of the first cameo slot.
 
-			COLUMNS=2						// Number of side strips on sidebar.
+			GRID_X=22,						// Upper left of the cameo grid, relative to the sidebar.
+			GRID_Y=69,
+
+			// One strip per sidebar tab: buildings, defenses, infantry, and vehicles with aircraft.
+			COLUMNS=4
 		};
 
 		static ShapeSet const * SidebarShape;
@@ -121,6 +125,17 @@ class SidebarClass : public PowerClass
 		bool Activate(int control);
 		bool Add(RTTIType type, int ID);
 		bool Sidebar_Click(KeyNumType & input, int x, int y);
+
+		// Shows the strip of the tab given; the other strips keep running out of sight.
+		void Set_Tab(int tab);
+
+		// Flags every strip to redraw, for changes that can show on any tab.
+		void Flag_Strips_To_Redraw(void);
+
+		// The tab currently shown.
+		int ActiveTab;
+
+		static ShapeButtonClass TabButton[COLUMNS];
 		void Recalc(void);
 		bool Factory_Link(FactoryClass * factory, RTTIType type, int id);
 		bool Is_On_Sidebar(RTTIType type, int id) const;
@@ -175,6 +190,7 @@ class SidebarClass : public PowerClass
 				void Flag_To_Redraw(void);
 				bool Factory_Link(FactoryClass * factory, RTTIType type, int id);
 				ShapeSet const * Get_Special_Cameo(SuperWeaponType type);
+				static int Column_Step(void);
 
 				/*
 				**	Working numbers used when rendering and processing the side strip.
@@ -184,7 +200,8 @@ class SidebarClass : public PowerClass
 					BUTTON_DOWN=210,
 					BUTTON_SELECT=220,
 					MAX_BUILDABLES=225,				// Maximum number of object types in sidebar.
-					OBJECT_HEIGHT=51,				// Pixel height of each buildable object.
+					OBJECT_HEIGHT=50,				// Pixel height of each row of cameos.
+					SLOT_COLUMNS=2,					// Cameos side by side in each row.
 					OBJECT_WIDTH=64,				// Pixel width of each buildable object.
 					MAX_VISIBLE=4,					// Number of object slots visible at any one time.
 					MAX_SLOTS=60,					// Maximum number of object slots at any resolution.
@@ -421,7 +438,7 @@ class SidebarClass : public PowerClass
 		bool Activate_Repair(int control);
 		bool Activate_Upgrade(int control);
 		bool Activate_Demolish(int control);
-		int Which_Column(RTTIType type);
+		int Which_Column(RTTIType type, int id);
 
 		bool IsRepairActive;
 		bool IsUpgradeActive;

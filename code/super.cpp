@@ -665,7 +665,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 			House->Activate_Firestorm();
 			if (player) {
 				House->IsRecalcNeeded = true;
-				Map.Column[1].IsToRedraw = true;
+				Map.Flag_Strips_To_Redraw();
 			}
 			break;
 
@@ -778,7 +778,7 @@ void SuperClass::Deactivate_Firestorm(int, bool player) const
 		House->Deactivate_Firestorm();
 		if (player) {
 			House->IsRecalcNeeded = true;
-			Map.Column[1].IsToRedraw = true;
+			Map.Flag_Strips_To_Redraw();
 		}
 	}
 }

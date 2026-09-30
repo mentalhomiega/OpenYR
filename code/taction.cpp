@@ -1536,7 +1536,7 @@ bool TActionClass::TAction_1_SPECIAL(HouseClass * house, ObjectClass * , Trigger
 
 	if (PlayerPtr == house) {
 		Map.Add(RTTI_SPECIAL, Data.Special);
-		Map.Column[1].Flag_To_Redraw();
+		Map.Flag_Strips_To_Redraw();
 	}
 	return(true);
 }
@@ -1555,7 +1555,7 @@ bool TActionClass::TAction_FULL_SPECIAL(HouseClass * house, ObjectClass * , Trig
 
 	if (PlayerPtr == house) {
 		Map.Add(RTTI_SPECIAL, Data.Special);
-		Map.Column[1].Flag_To_Redraw();
+		Map.Flag_Strips_To_Redraw();
 	}
 	return(true);
 }

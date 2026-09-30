@@ -100,6 +100,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
+#include "houstype.h"
 #include "incdec.h"
 #include "language/language.h"
 #include "map.h"
@@ -144,7 +145,9 @@ enum ButtonNumberType {
 	BUTTON_POWER,
 	BUTTON_SELL,
 	BUTTON_UPGRADE,
-	BUTTON_WAYPOINT
+	BUTTON_WAYPOINT,
+
+	BUTTON_TAB = 230		// One per tab, after the strips' scroll and select buttons.
 };
 
 /*
@@ -155,6 +158,7 @@ ShapeButtonClass SidebarClass::Repair;
 ShapeButtonClass SidebarClass::Power;
 ShapeButtonClass SidebarClass::Upgrade;
 ShapeButtonClass SidebarClass::Waypoint;
+ShapeButtonClass SidebarClass::TabButton[COLUMNS];
 ShapeButtonClass SidebarClass::StripClass::UpButton[COLUMNS];
 ShapeButtonClass SidebarClass::StripClass::DownButton[COLUMNS];
 SidebarClass::StripClass::SelectClass
@@ -311,21 +315,16 @@ SidebarClass::SidebarClass(void) :
 	IsToRedraw(true),
 	IsRepairActive(false),
 	IsUpgradeActive(false),
-	IsDemolishActive(false)
+	IsDemolishActive(false),
+	ActiveTab(0)
 {
-	/*
-	**	Set up the coordinates for the sidebar strips. These coordinates are for
-	**	the upper left corner.
-	*/
-	new (&Column[0]) StripClass(InitClass());
-	new (&Column[1]) StripClass(InitClass());
-
-	Column[0].X = COLUMN_ONE_X;
-	Column[0].Y = COLUMN_ONE_Y;
-	Column[0].ObjectRect = Rect(Column[0].X, Column[0].Y, StripClass::OBJECT_WIDTH, StripClass::OBJECT_HEIGHT * Max_Visible());
-	Column[1].X = COLUMN_TWO_X;
-	Column[1].Y = COLUMN_TWO_Y;
-	Column[1].ObjectRect = Rect(Column[1].X, Column[1].Y, StripClass::OBJECT_WIDTH, StripClass::OBJECT_HEIGHT * Max_Visible());
+	// Every strip covers the same grid; only the active tab's strip is shown.
+	for (int index = 0; index < COLUMNS; index++) {
+		new (&Column[index]) StripClass(InitClass());
+		Column[index].X = GRID_X;
+		Column[index].Y = GRID_Y;
+		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::SLOT_COLUMNS, StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::SLOT_COLUMNS);
+	}
 }
 
 
@@ -364,8 +363,9 @@ void SidebarClass::One_Time(void)
 {
 	BASECLASS::One_Time();
 
-	Column[0].One_Time(0);
-	Column[1].One_Time(1);
+	for (int index = 0; index < COLUMNS; index++) {
+		Column[index].One_Time(index);
+	}
 
 	StripClass::RechargeClockShapes = (ShapeSet const *)MFCD::Retrieve("RCLOCK2.SHP");
 	StripClass::ClockShapes = (ShapeSet const *)MFCD::Retrieve("GCLOCK2.SHP");
@@ -394,8 +394,10 @@ void SidebarClass::Init_Clear(void)
 	IsUpgradeActive = false;
 	IsDemolishActive = false;
 
-	Column[0].Init_Clear();
-	Column[1].Init_Clear();
+	for (int index = 0; index < COLUMNS; index++) {
+		Column[index].Init_Clear();
+	}
+	ActiveTab = 0;
 
 	Activate(false);
 }
@@ -479,8 +481,17 @@ void SidebarClass::Init_IO(void)
 
 		Waypoint.Enable();
 
-		Column[0].Init_IO(0);
-		Column[1].Init_IO(1);
+		for (int index = 0; index < COLUMNS; index++) {
+			Column[index].Init_IO(index);
+
+			TabButton[index].ID = BUTTON_TAB + index;
+			TabButton[index].IsSticky = true;
+			TabButton[index].DrawOffsetX = xoff;
+			TabButton[index].DrawOffsetY = yoff;
+			TabButton[index].DrawOnSidebar = true;
+			TabButton[index].ShapeDrawer = SidebarDrawer;
+			TabButton[index].IsPressed = false;
+		}
 
 		Reposition_Sidebar();
 
@@ -543,6 +554,11 @@ void SidebarClass::Init_For_House(void)
 		StripClass::UpButton[i].ShapeDrawer = SidebarDrawer;
 		StripClass::DownButton[i].Set_Shape((ShapeSet *)MFCD::Retrieve("R-DN.SHP"));
 		StripClass::DownButton[i].ShapeDrawer = SidebarDrawer;
+
+		char name[16];
+		sprintf(name, "TAB%02d.SHP", i);
+		TabButton[i].Set_Shape((ShapeSet *)MFCD::Retrieve(name));
+		TabButton[i].ShapeDrawer = SidebarDrawer;
 	}
 }
 
@@ -559,6 +575,7 @@ void SidebarClass::Clear_For_House(void)
 	for (int i = 0; i < COLUMNS; i++) {
 		StripClass::UpButton[i].Set_Shape(NULL);
 		StripClass::DownButton[i].Set_Shape(NULL);
+		TabButton[i].Set_Shape(NULL);
 	}
 
 	SidebarShape = NULL;
@@ -584,13 +601,11 @@ void SidebarClass::Clear_For_House(void)
  *=============================================================================================*/
 void SidebarClass::Reload_Sidebar(void)
 {
-	Column[0].X = COLUMN_ONE_X;
-	Column[0].Y = COLUMN_ONE_Y;
-	Column[0].ObjectRect = Rect(Column[0].X, Column[0].Y, StripClass::OBJECT_WIDTH, (StripClass::OBJECT_HEIGHT) * Max_Visible());
-
-	Column[1].X = COLUMN_TWO_X;
-	Column[1].Y = COLUMN_ONE_Y;
-	Column[1].ObjectRect = Rect(Column[1].X, Column[1].Y, StripClass::OBJECT_WIDTH, (StripClass::OBJECT_HEIGHT) * Max_Visible());
+	for (int index = 0; index < COLUMNS; index++) {
+		Column[index].X = GRID_X;
+		Column[index].Y = GRID_Y;
+		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::SLOT_COLUMNS, StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::SLOT_COLUMNS);
+	}
 }
 
 
@@ -609,12 +624,25 @@ void SidebarClass::Reload_Sidebar(void)
  * HISTORY:                                                                                    *
  *   01/01/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-int SidebarClass::Which_Column(RTTIType type)
+int SidebarClass::Which_Column(RTTIType type, int id)
 {
-	if (type == RTTI_BUILDINGTYPE || type == RTTI_BUILDING) {
-		return(0);
+	// Yuri's Revenge's tabs (SidebarClass::GetObjectTabIdx): combat structures and superweapons
+	// on the defenses tab, other structures on the buildings tab.
+	switch (type) {
+		case RTTI_BUILDING:
+		case RTTI_BUILDINGTYPE:
+			return(BuildingTypes[id]->BuildCat == BUILDCAT_COMBAT ? 1 : 0);
+
+		case RTTI_SPECIAL:
+			return(1);
+
+		case RTTI_INFANTRY:
+		case RTTI_INFANTRYTYPE:
+			return(2);
+
+		default:
+			return(3);
 	}
-	return(1);
 }
 
 
@@ -643,7 +671,7 @@ bool SidebarClass::Factory_Link(FactoryClass * factory, RTTIType type, int id)
 	assert((unsigned)type < RTTI_COUNT);
 	assert(id >= 0);
 
-	return(Column[Which_Column(type)].Factory_Link(factory, type, id));
+	return(Column[Which_Column(type, id)].Factory_Link(factory, type, id));
 }
 
 
@@ -827,7 +855,7 @@ bool SidebarClass::Add(RTTIType type, int id)
 	**	Add the sidebar only if we're not in editor mode.
 	*/
 	if (!Debug_Map) {
-		int column = Which_Column(type);
+		int column = Which_Column(type, id);
 
 		if (Column[column].Add(type, id)) {
 			Activate(1);
@@ -868,10 +896,7 @@ bool SidebarClass::Scroll(bool up, int column)
 
 	if (column == -1) {
 		bool scr = false;
-		if (Column[0].Scroll(up)) {
-			scr = true;
-		}
-		if (Column[1].Scroll(up)) {
+		if (Column[ActiveTab].Scroll(up)) {
 			scr = true;
 		}
 		if (scr) {
@@ -885,7 +910,8 @@ bool SidebarClass::Scroll(bool up, int column)
 		return(false);
 	}
 
-	if (Column[column].Scroll(up)) {
+	// With one strip shown at a time, a command naming a strip moves the shown tab's.
+	if (Column[ActiveTab].Scroll(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
 		//IsToRedraw = true;
 		Flag_To_Redraw();
@@ -903,16 +929,13 @@ bool SidebarClass::Scroll(bool up, int column)
 /// in that direction to page to.
 /// </summary>
 /// <param name="up">Should the paging be upwards?</param>
-/// <param name="column">The strip to page, or -1 to page both of them together.</param>
+/// <param name="column">Ignored unless -1, which also scolds when the shown strip cannot page.</param>
 /// <returns>bool; Did any paging occur?</returns>
 bool SidebarClass::Page(bool up, int column)
 {
 	if (column == -1) {
 		bool scr = false;
-		if (Column[0].Page(up)) {
-			scr = true;
-		}
-		if (Column[1].Page(up)) {
+		if (Column[ActiveTab].Page(up)) {
 			scr = true;
 		}
 		if (scr) {
@@ -926,7 +949,7 @@ bool SidebarClass::Page(bool up, int column)
 		return(false);
 	}
 
-	if (Column[column].Page(up)) {
+	if (Column[ActiveTab].Page(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
 		//IsToRedraw = true;
 		Flag_To_Redraw();
@@ -966,7 +989,7 @@ void SidebarClass::Draw_It(bool complete)
 	Rect window(0, 0, SidebarSurface->Get_Width(), SidebarSurface->Get_Height());
 
 	if (IsSidebarActive && (IsToRedraw || complete) && !Debug_Map) {
-		if (complete || Column[0].IsToRedraw || Column[1].IsToRedraw) {
+		if (complete || Column[ActiveTab].IsToRedraw) {
 
 			int y = SidebarRect.Y;
 
@@ -974,9 +997,9 @@ void SidebarClass::Draw_It(bool complete)
 			**	The sidebar shape is too big in 640x400 so it needs to be drawn in three chunks.
 			*/
 			Draw_Shape(*SidebarSurface, *SidebarDrawer, SidebarShape, 0, Point2D(0, y), window, SHAPE_WIN_REL);
-			y += SidebarClass::SidebarShape->Get_Height();
+			y = SidebarRect.Y + GRID_Y;
 
-			for (int i = 0; i < Max_Visible(); i++) {
+			for (int i = 0; i < Max_Visible() / StripClass::SLOT_COLUMNS; i++) {
 				Draw_Shape(*SidebarSurface, *SidebarDrawer, SidebarMiddleShape, 0, Point2D(0, y), window, SHAPE_WIN_REL);
 				y += SidebarMiddleShape->Get_Height();
 			}
@@ -984,14 +1007,14 @@ void SidebarClass::Draw_It(bool complete)
 			Draw_Shape(*SidebarSurface, *SidebarDrawer, SidebarBottomShape, 0, Point2D(0, y), window, SHAPE_WIN_REL);
 			Draw_Shape(*SidebarSurface, *SidebarDrawer, SidebarAddonShape, 0, Point2D(0, y + SidebarBottomShape->Get_Height()), window, SHAPE_WIN_REL);
 
-			Column[0].IsToRedraw = true;
-			Column[1].IsToRedraw = true;
+			Column[ActiveTab].IsToRedraw = true;
 		}
 
 		Repair.Draw_Me(true);
 		Upgrade.Draw_Me(true);
-		Power.Draw_Me(true);
-		Waypoint.Draw_Me(true);
+		for (int index = 0; index < COLUMNS; index++) {
+			TabButton[index].Draw_Me(true);
+		}
 		IsToBlitSidebar = true;
 	}
 
@@ -999,8 +1022,7 @@ void SidebarClass::Draw_It(bool complete)
 	**	Draw the side strip elements by calling their respective draw functions.
 	*/
 	if (IsSidebarActive) {
-		Column[0].Draw_It(complete);
-		Column[1].Draw_It(complete);
+		Column[ActiveTab].Draw_It(complete);
 	}
 	if (Repair.IsDrawn) {
 		IsToBlitSidebar = true;
@@ -1107,8 +1129,9 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 	}
 
 	if (!Debug_Map) {
-		Column[0].AI(input, xy_rel);
-		Column[1].AI(input, xy_rel);
+		for (int index = 0; index < COLUMNS; index++) {
+			Column[index].AI(input, xy_rel);
+		}
 	}
 
 	if (IsSidebarActive) {
@@ -1137,6 +1160,13 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 		if (input == (BUTTON_UPGRADE|KN_BUTTON)) {
 			Sell_Mode_Control(-1);
+		}
+
+		for (int index = 0; index < COLUMNS; index++) {
+			if (input == KeyNumType((BUTTON_TAB + index)|KN_BUTTON)) {
+				TabButton[index].IsPressed = false;
+				Set_Tab(index);
+			}
 		}
 	}
 
@@ -1183,11 +1213,10 @@ void SidebarClass::Recalc(void)
 {
 	bool redraw = false;
 
-	if (Column[0].Recalc()) {
-		redraw = true;
-	}
-	if (Column[1].Recalc()) {
-		redraw = true;
+	for (int index = 0; index < COLUMNS; index++) {
+		if (Column[index].Recalc()) {
+			redraw = true;
+		}
 	}
 	if (redraw) {
 		IsToRedraw = true;
@@ -1256,12 +1285,11 @@ bool SidebarClass::Activate(int control)
 			Add_A_Button(Repair);
 			Upgrade.Zap();
 			Add_A_Button(Upgrade);
-			Power.Zap();
-			Add_A_Button(Power);
-			Waypoint.Zap();
-			Add_A_Button(Waypoint);
-			Column[0].Activate();
-			Column[1].Activate();
+			for (int index = 0; index < COLUMNS; index++) {
+				TabButton[index].Zap();
+				Add_A_Button(TabButton[index]);
+			}
+			Column[ActiveTab].Activate();
 			Background.Zap();
 			Add_A_Button(Background);
 			RadarButton.Zap();
@@ -1270,11 +1298,11 @@ bool SidebarClass::Activate(int control)
 			Stop_Ingame_Movie();
 			Remove_A_Button(Repair);
 			Remove_A_Button(Upgrade);
-			Remove_A_Button(Power);
-			Remove_A_Button(Waypoint);
+			for (int index = 0; index < COLUMNS; index++) {
+				Remove_A_Button(TabButton[index]);
+			}
 			Remove_A_Button(Background);
-			Column[0].Deactivate();
-			Column[1].Deactivate();
+			Column[ActiveTab].Deactivate();
 			Remove_A_Button(RadarButton);
 		}
 
@@ -1440,8 +1468,8 @@ void SidebarClass::StripClass::Init_IO(int id)
 	for (int index = 0; index < Map.Max_Visible(); index++) {
 		SelectClass & g = SelectButton[ID][index];
 		g.ID = BUTTON_SELECT;
-		g.X = SidebarRect.X + Map.Column[ID].X;
-		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT*index);
+		g.X = SidebarRect.X + Map.Column[ID].X + (index % SLOT_COLUMNS) * Column_Step();
+		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT * (index / SLOT_COLUMNS));
 		g.Width = OBJECT_WIDTH;
 		g.Height = OBJECT_HEIGHT;
 		g.Set_Owner(*this, index);
@@ -1576,6 +1604,16 @@ bool SidebarClass::StripClass::Scroll(bool up)
 
 
 /// <summary>
+/// The distance between the two cameos of a row: 63 pixels on the first side's sidebar and 64
+/// on the others', as in Yuri's Revenge.
+/// </summary>
+int SidebarClass::StripClass::Column_Step(void)
+{
+	return(PlayerPtr != NULL && PlayerPtr->Class->Side == SIDE_FIRST ? 63 : 64);
+}
+
+
+/// <summary>
 /// Causes the side strip to scroll by a whole page.
 /// Use this routine to flag the side strip to move a full screenful of cameos rather than
 /// the single one that Scroll would move. As with scrolling, this routine only starts the
@@ -1587,10 +1625,10 @@ bool SidebarClass::StripClass::Page(bool up)
 {
 	if (up) {
 		if (!TopIndex) return(false);
-		Scroller-=Map.Max_Visible();
+		Scroller-=Map.Max_Visible() / SLOT_COLUMNS;
 	} else {
 		if (TopIndex+Map.Max_Visible() >= BuildableCount) return(false);
-		Scroller+=Map.Max_Visible();
+		Scroller+=Map.Max_Visible() / SLOT_COLUMNS;
 	}
 	return(true);
 }
@@ -1704,7 +1742,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 					Scroller++;
 					IsScrollingDown = false;
 					IsScrolling = true;
-					TopIndex--;
+					TopIndex = std::max(0, TopIndex - SLOT_COLUMNS);
 					Slid = 0;
 				}
 
@@ -1730,7 +1768,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 			if (Slid <= 0) {
 				IsScrolling = false;
 				Slid = 0;
-				TopIndex++;
+				TopIndex += SLOT_COLUMNS;
 			}
 		} else {
 			Slid += SCROLL_RATE;
@@ -1886,12 +1924,12 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 		**	Loop through all the buildable objects that are visible in the strip and render
 		**	them. Their Y offset may be adjusted if the strip is in the process of scrolling.
 		*/
-		for (int i = 0; i < Map.Max_Visible() + (IsScrolling ? 1 : 0); i++) {
+		for (int i = 0; i < Map.Max_Visible() + (IsScrolling ? SLOT_COLUMNS : 0); i++) {
 			ShapeSet const * shapefile = NULL;
 
 			int index = i+TopIndex;
-			int x = X;
-			int y = COLUMN_ONE_Y + i * OBJECT_HEIGHT;
+			int x = X + (i % SLOT_COLUMNS) * Column_Step();
+			int y = Y + (i / SLOT_COLUMNS) * OBJECT_HEIGHT;
 
 			bool production = false;
 			bool completed = false;
@@ -2438,8 +2476,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					} else {
 						Speak(VOX_SUSPENDED);
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SUSPEND, otype, oid));
-						Map.Column[0].IsToRedraw = true;
-						Map.Column[1].IsToRedraw = true;
+						Map.Flag_Strips_To_Redraw();
 					}
 				} else {
 
@@ -2637,7 +2674,13 @@ bool SidebarClass::StripClass::Factory_Link(FactoryClass * factory, RTTIType typ
  *=============================================================================================*/
 bool SidebarClass::Abandon_Production(RTTIType type, FactoryClass * factory)
 {
-	return(Column[Which_Column(type)].Abandon_Production(factory));
+	// Only the strip holding the factory's cameo acts on it.
+	for (int index = 0; index < COLUMNS; index++) {
+		if (Column[index].Abandon_Production(factory)) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -2758,26 +2801,57 @@ void SidebarClass::Reposition_Sidebar(void)
 	}
 
 	/*
-	 * Position the sidebar's buttons.
+	 * Yuri's Revenge lays the first side's sidebar out a little differently from the others'
+	 * (FUN_006a5090 and FUN_006a5130 in gamemd).
 	 */
+	bool const first = PlayerPtr == NULL || PlayerPtr->Class->Side == SIDE_FIRST;
+	int const repair_x = first ? 20 : 33;
+	int const repair_y = first ? 8 : 7;
+	int const sell_step = first ? 64 : 52;
+	int const tab_x = first ? 26 : 20;
+	int const tab_step = first ? 29 : 32;
+	int const tab_y = 39;
+	int const rows = Max_Visible() / StripClass::SLOT_COLUMNS;
+	int const arrow_y = SidebarRect.Y + GRID_Y + rows * StripClass::OBJECT_HEIGHT + 7;
+	int const down_step = first ? 46 : 45;
+
 	Background.Set_Position(SidebarRect.X + 16, TacticalRect.Y);
 	Background.Flag_To_Redraw();
 
-	Repair.Set_Position(SidebarRect.X + BUTTON_ONE_X, SidebarRect.Y + BUTTON_ONE_Y);
+	Repair.Set_Position(SidebarRect.X + repair_x, SidebarRect.Y + repair_y);
 	Repair.Flag_To_Redraw();
 	Repair.DrawOffsetX = -SidebarRect.X;
 
-	Upgrade.Set_Position(Repair.X + BUTTON_SPACING, Power.Y);
+	Upgrade.Set_Position(Repair.X + sell_step, Repair.Y);
 	Upgrade.Flag_To_Redraw();
 	Upgrade.DrawOffsetX = -SidebarRect.X;
 
-	Power.Set_Position(Upgrade.X + BUTTON_SPACING, Repair.Y);
-	Power.Flag_To_Redraw();
-	Power.DrawOffsetX = -SidebarRect.X;
+	for (index = 0; index < COLUMNS; index++) {
+		TabButton[index].Set_Position(SidebarRect.X + tab_x + index * tab_step, SidebarRect.Y + tab_y);
+		TabButton[index].Flag_To_Redraw();
+		TabButton[index].DrawOffsetX = -SidebarRect.X;
+	}
 
-	Waypoint.Set_Position(Power.X + BUTTON_SPACING, Upgrade.Y);
-	Waypoint.Flag_To_Redraw();
-	Waypoint.DrawOffsetX = -SidebarRect.X;
+	/*
+	 * Every strip's scroll arrows and cameo slots sit in the same place; only the shown strip's
+	 * are in the button list.
+	 */
+	for (int col = 0; col < COLUMNS; col++) {
+		StripClass::UpButton[col].Set_Position(SidebarRect.X + 39, arrow_y);
+		StripClass::UpButton[col].Flag_To_Redraw();
+		StripClass::UpButton[col].DrawOffsetX = -SidebarRect.X;
+
+		StripClass::DownButton[col].Set_Position(SidebarRect.X + 39 + down_step, arrow_y);
+		StripClass::DownButton[col].Flag_To_Redraw();
+		StripClass::DownButton[col].DrawOffsetX = -SidebarRect.X;
+
+		for (int i = 0; i < Max_Visible(); i++) {
+			StripClass::SelectButton[col][i].Set_Position(
+				SidebarRect.X + Column[col].X + (i % StripClass::SLOT_COLUMNS) * StripClass::Column_Step(),
+				SidebarRect.Y + Column[col].Y + StripClass::OBJECT_HEIGHT * (i / StripClass::SLOT_COLUMNS));
+			StripClass::SelectButton[col][i].Flag_To_Redraw();
+		}
+	}
 
 	/*
 	 * Create the tooltips for the sidebar.
@@ -2790,29 +2864,14 @@ void SidebarClass::Reposition_Sidebar(void)
 				ToolTips->Remove((j | (index << 8)) + GADGET_CAMEO);
 			}
 		}
-		int arrowy = SidebarRect.Y + Map.Max_Visible() * StripClass::OBJECT_HEIGHT + StripClass::UP_Y_OFFSET;
 
-		for (int col = 0; col < COLUMNS; col++) {
-
-			StripClass::UpButton[col].Set_Position(SidebarRect.X + Column[col].X + StripClass::UP_X_OFFSET, arrowy);
-			StripClass::UpButton[col].Flag_To_Redraw();
-			StripClass::UpButton[col].DrawOffsetX = -SidebarRect.X;
-
-			StripClass::DownButton[col].Set_Position(SidebarRect.X + Column[col].X + StripClass::DOWN_X_OFFSET, arrowy);
-			StripClass::DownButton[col].Flag_To_Redraw();
-			StripClass::DownButton[col].DrawOffsetX = -SidebarRect.X;
-
-			for (int i = 0; i < Map.Max_Visible(); i++) {
-				StripClass::SelectButton[col][i].Set_Position(SidebarRect.X + Column[col].X, SidebarRect.Y + Column[col].Y + (StripClass::OBJECT_HEIGHT * i));
-				StripClass::SelectButton[col][i].Flag_To_Redraw();
-				ToolTip tmp;
-				tmp.Text = TXT_NONE;
-				tmp.ID = (i | (col << 8)) + GADGET_CAMEO;
-				tmp.Region.Set(StripClass::SelectButton[col][i].X,	  StripClass::SelectButton[col][i].Y,
-								   StripClass::SelectButton[col][i].Width, StripClass::SelectButton[col][i].Height);
-				ToolTips->Add(&tmp);
-			}
-
+		for (int i = 0; i < Max_Visible(); i++) {
+			ToolTip tmp;
+			tmp.Text = TXT_NONE;
+			tmp.ID = (i | (ActiveTab << 8)) + GADGET_CAMEO;
+			tmp.Region.Set(StripClass::SelectButton[ActiveTab][i].X, StripClass::SelectButton[ActiveTab][i].Y,
+							   StripClass::SelectButton[ActiveTab][i].Width, StripClass::SelectButton[ActiveTab][i].Height);
+			ToolTips->Add(&tmp);
 		}
 
 		tooltip.ID = BUTTON_REPAIR;
@@ -2821,21 +2880,9 @@ void SidebarClass::Reposition_Sidebar(void)
 		ToolTips->Remove(tooltip.ID);
 		ToolTips->Add(&tooltip);
 
-		tooltip.ID = BUTTON_POWER;
-		tooltip.Text = TXT_POWER_MODE;
-		tooltip.Region.Set(Power.X, Power.Y, Power.Width, Power.Height);
-		ToolTips->Remove(tooltip.ID);
-		ToolTips->Add(&tooltip);
-
 		tooltip.ID = BUTTON_SELL;
 		tooltip.Text = TXT_SELL_MODE;
 		tooltip.Region.Set(Upgrade.X, Upgrade.Y, Upgrade.Width, Upgrade.Height);
-		ToolTips->Remove(tooltip.ID);
-		ToolTips->Add(&tooltip);
-
-		tooltip.ID = BUTTON_WAYPOINT;
-		tooltip.Text = TXT_WAYPOINTMODE;
-		tooltip.Region.Set(Waypoint.X, Waypoint.Y, Waypoint.Width, Waypoint.Height);
 		ToolTips->Remove(tooltip.ID);
 		ToolTips->Add(&tooltip);
 	}
@@ -2848,6 +2895,39 @@ void SidebarClass::Reposition_Sidebar(void)
 		Background.Set_Position(x, y);
 	}
 	Background.Set_Size(SidebarSurface->Get_Width(), SidebarSurface->Get_Height() - y);
+}
+
+
+/// <summary>
+/// Shows the strip of the tab given in place of the one shown before. The other strips keep
+/// building and counting down out of sight.
+/// </summary>
+void SidebarClass::Set_Tab(int tab)
+{
+	if (tab < 0 || tab >= COLUMNS || tab == ActiveTab) {
+		return;
+	}
+
+	if (IsSidebarActive) {
+		Column[ActiveTab].Deactivate();
+	}
+	ActiveTab = tab;
+	if (IsSidebarActive) {
+		Column[ActiveTab].Activate();
+	}
+
+	Reposition_Sidebar();
+	IsToRedraw = true;
+	Column[ActiveTab].Flag_To_Redraw();
+	Flag_To_Redraw();
+}
+
+
+void SidebarClass::Flag_Strips_To_Redraw(void)
+{
+	for (int index = 0; index < COLUMNS; index++) {
+		Column[index].Flag_To_Redraw();
+	}
 }
 
 
@@ -2882,10 +2962,10 @@ const char * SidebarClass::Help_Text(int id)
 /// shows the slots it has rather than the slots that would fit.</remarks>
 int SidebarClass::Max_Visible(void)
 {
-	if (SidebarSurface != NULL && SidebarShape != NULL) {
-		Rect r = SidebarRect;
-		int fits = (r.Height - SidebarBottomShape->Get_Height() - SidebarShape->Get_Height()) / SidebarMiddleShape->Get_Height();
-		return(std::min(fits, int(StripClass::MAX_SLOTS)));
+	if (SidebarSurface != NULL) {
+		bool const first = PlayerPtr == NULL || PlayerPtr->Class->Side == SIDE_FIRST;
+		int const rows = (SidebarRect.Height - GRID_Y - (first ? 26 : 18) - 7) / StripClass::OBJECT_HEIGHT;
+		return(std::clamp(rows * int(StripClass::SLOT_COLUMNS), int(StripClass::SLOT_COLUMNS), int(StripClass::MAX_SLOTS)));
 	}
 	return(StripClass::MAX_VISIBLE);
 }

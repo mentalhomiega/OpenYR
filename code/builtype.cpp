@@ -265,6 +265,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	AntiAirValue(0),
 	AntiArmorValue(0),
 	AntiInfantryValue(0),
+	BuildCat(BUILDCAT_DONTCARE),
 	ZShapePointMove(Point2D(0, 0)),
 	DrawRect(RECT_NONE),
 	ExtraLight(0),
@@ -1186,6 +1187,17 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		AntiInfantryValue = ini.Get_Int(Name(), "AntiInfantryValue", AntiInfantryValue);
 		AntiArmorValue = ini.Get_Int(Name(), "AntiArmorValue", AntiArmorValue);
 		AntiAirValue = ini.Get_Int(Name(), "AntiAirValue", AntiAirValue);
+		// A name that is not a category reads as DontCare, whatever the value was before.
+		static char const * const _buildcat_names[BUILDCAT_COUNT] = {"DontCare", "Tech", "Resource", "Power", "Infrastructure", "Combat"};
+		char buildcat[32];
+		ini.Get_String(Name(), "BuildCat", _buildcat_names[BuildCat], buildcat, sizeof(buildcat));
+		BuildCat = BUILDCAT_DONTCARE;
+		for (int index = 0; index < BUILDCAT_COUNT; index++) {
+			if (stricmp(buildcat, _buildcat_names[index]) == 0) {
+				BuildCat = BuildCatType(index);
+				break;
+			}
+		}
 		HasSpotlight = ini.Get_Bool(Name(), "HasSpotlight", HasSpotlight);
 		HalfDamageSmokeLocation1 = ini.Get_Point(Name(), "HalfDamageSmokeLocation1", HalfDamageSmokeLocation1);
 		HalfDamageSmokeLocation2 = ini.Get_Point(Name(), "HalfDamageSmokeLocation2", HalfDamageSmokeLocation2);
@@ -1859,6 +1871,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AntiAirValue);
 	stream.Serialize(AntiArmorValue);
 	stream.Serialize(AntiInfantryValue);
+	stream.Serialize(BuildCat);
 	stream.Serialize(ZShapePointMove);
 	stream.Serialize(DrawRect);
 	stream.Serialize(ExtraLight);

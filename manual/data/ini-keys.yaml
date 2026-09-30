@@ -3729,6 +3729,23 @@ BuildBarracks:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BuildCat:
+  key: BuildCat
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buildcat
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 BuildConst:
   key: BuildConst
   scopes:

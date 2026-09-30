@@ -168,7 +168,7 @@ void Debug_Key(unsigned input)
 //						PlayerPtr->SuperWeapon[spc]->Enable(true, true);
 //						PlayerPtr->SuperWeapon[spc]->Forced_Charge(true);
 //						Map.Add(RTTI_SPECIAL, spc);
-//						Map.Column[1].Flag_To_Redraw();
+//						Map.Flag_Strips_To_Redraw();
 //					}
 //				}
 //				break;

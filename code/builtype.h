@@ -31,6 +31,18 @@ class ShapeSet;
 **	Building types need some special information custom to buildings. This
 **	is a derived class that elaborates these additional data elements.
 */
+// A structure's BuildCat=, in Yuri's Revenge's order; the values are stored in saves.
+enum BuildCatType {
+	BUILDCAT_DONTCARE,
+	BUILDCAT_TECH,
+	BUILDCAT_RESOURCE,
+	BUILDCAT_POWER,
+	BUILDCAT_INFRASTRUCTURE,
+	BUILDCAT_COMBAT,
+
+	BUILDCAT_COUNT
+};
+
 class BuildingTypeClass : public TechnoTypeClass
 {
 		typedef TechnoTypeClass BASECLASS;
@@ -323,11 +335,17 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		/*
 		 * These are this building's ratings as a defense against aircraft, armor and infantry,
-		 * derived from its weapons. The computer plans and weighs its base defenses by them.
+		 * as its rules set them. The computer plans and weighs its base defenses by them.
 		 */
 		int AntiAirValue;
 		int AntiArmorValue;
 		int AntiInfantryValue;
+
+		/*
+		 * What kind of structure this is. A combat structure is listed on the sidebar's
+		 * defenses tab, every other structure on its buildings tab.
+		 */
+		BuildCatType BuildCat;
 
 		/*
 		 * This is the pixel offset applied to the Z shape as the building is drawn, for the

@@ -1652,8 +1652,7 @@ void HouseClass::AI(void)
 			Map.Recalc();
 			Map.SidebarClass::IsToRedraw = true;
 			Map.IsToBlitSidebar = true;
-			Map.Column[0].Flag_To_Redraw();
-			Map.Column[1].Flag_To_Redraw();
+			Map.Flag_Strips_To_Redraw();
 
 			/*
 			**	This placement might affect any prerequisite requirements for construction
@@ -1728,7 +1727,7 @@ void HouseClass::Super_Weapon_Handler(void)
 			**	flag the sidebar to be redrawn so the player will see the change.
 			*/
 			if (super->AI(this == PlayerPtr)) {
-				if (this == PlayerPtr) Map.Column[1].Flag_To_Redraw();
+				if (this == PlayerPtr) Map.Flag_Strips_To_Redraw();
 			}
 
 			if (super->Class->Type == SUPER_CHEM_MISSILE) {
@@ -2476,7 +2475,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 
 	if (result) {
 		if (fptr->QueuedObjects.Count() && !resume && !has_suspended) {
-			Map.Column[1].Flag_To_Redraw();
+			Map.Flag_Strips_To_Redraw();
 		} else {
 			fptr->Start(onhold);
 
@@ -2548,8 +2547,7 @@ ProdFailType HouseClass::Suspend_Production(RTTIType type)
 		Map.SidebarClass::IsToRedraw = true;
 		Map.IsToBlitSidebar = true;
 		Map.Flag_To_Redraw();
-		Map.Column[0].Flag_To_Redraw();
-		Map.Column[1].Flag_To_Redraw();
+		Map.Flag_Strips_To_Redraw();
 	}
 
 	return(PROD_OK);
@@ -2586,7 +2584,7 @@ ProdFailType HouseClass::Abandon_Production(RTTIType type, int id)
 	if (fptr->QueuedObjects.Count() > 0 && id >= 0) {
 		TechnoTypeClass const * tech = Fetch_Techno_Type(type, id);
 		if (fptr->Remove_From_Queue(tech)) {
-			Map.Column[1].Flag_To_Redraw();
+			Map.Flag_Strips_To_Redraw();
 			return(PROD_OK);
 		}
 	}
@@ -8312,8 +8310,7 @@ void HouseClass::Update_Factories(RTTIType rtti)
 						Map.SidebarClass::IsToRedraw = true;
 						Map.IsToBlitSidebar = true;
 						Map.Flag_To_Redraw();
-						Map.Column[0].Flag_To_Redraw();
-						Map.Column[1].Flag_To_Redraw();
+						Map.Flag_Strips_To_Redraw();
 					}
 				} else {
 					if (factory->IsSuspended && !factory->IsOnHold) {
@@ -9050,7 +9047,7 @@ void HouseClass::Update_Present_Super_Weapons(void)
 							if (Map.IsTargettingMode == s) {
 								Map.IsTargettingMode = SUPER_NONE;
 							}
-							Map.Column[1].Flag_To_Redraw();
+							Map.Flag_Strips_To_Redraw();
 						}
 						IsRecalcNeeded = true;
 					}
@@ -9060,7 +9057,7 @@ void HouseClass::Update_Present_Super_Weapons(void)
 							if (s == Map.IsTargettingMode) {
 								Map.IsTargettingMode = SUPER_NONE;
 							}
-							Map.Column[1].Flag_To_Redraw();
+							Map.Flag_Strips_To_Redraw();
 						}
 						IsRecalcNeeded = true;
 					}
@@ -9070,7 +9067,7 @@ void HouseClass::Update_Present_Super_Weapons(void)
 							if (Map.IsTargettingMode == s) {
 								Map.IsTargettingMode = SUPER_NONE;
 							}
-							Map.Column[1].Flag_To_Redraw();
+							Map.Flag_Strips_To_Redraw();
 						}
 						IsRecalcNeeded = true;
 					}
@@ -9109,7 +9106,7 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 								SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
 								if (this == PlayerPtr) {
 									Map.Add(RTTI_SPECIAL, s);
-									Map.Column[1].Flag_To_Redraw();
+									Map.Flag_Strips_To_Redraw();
 								}
 								break;
 							}

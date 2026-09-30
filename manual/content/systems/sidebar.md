@@ -1,8 +1,9 @@
 ---
 title: Sidebar and build queue
-summary: "Lists what the player can build as two strips of cameos, shows each order's progress on its cameo, and turns clicks into production orders."
+summary: "Lists what the player can build on four tabs of cameos, shows each order's progress on its cameo, and turns clicks into production orders."
 category: interface-controls
 keys:
+  - BuildCat
   - Cameo
   - CameoSortOrder
   - CreditTicks
@@ -25,7 +26,7 @@ related:
     id: ToggleRadar
 ---
 
-The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the radar pane, four mode buttons, and two strips of cameos with the power bar running down their left side. The panel stays up for the whole match. An observer gets the panel with both strips empty.
+The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the radar pane, the repair and sell buttons, four tabs, and the cameos of the tab that is shown, two to a row. Each tab has its own strip of cameos, and clicking a tab shows its strip in place of the one shown before. Production on the other tabs goes on while they are hidden. The panel stays up for the whole match. An observer gets the panel with every strip empty.
 
 ## What the strips list
 
@@ -33,13 +34,20 @@ A cameo appears on a strip when one of the player's structures offers its type. 
 
 Each such structure offers a whole category at once: every type in the list its [`Factory=`](/keys/factory/) names (`[BuildingTypes]`, `[VehicleTypes]`, `[InfantryTypes]` or `[AircraftTypes]`). A type reaches the strip only if [the house may build it](/systems/production/#what-a-house-may-build) and some structure the house owns could produce it. The build limit is the one exception: a type the house already owns as many of as a positive [`BuildLimit=`](/keys/buildlimit/) allows still reaches the strip, darkened. A type already on the strip is not added again.
 
-The left strip holds structures. The right strip holds everything else: vehicles, infantry, aircraft and [superweapon cameos](/systems/superweapons/#the-sidebar-cameo).
+Each type goes to one tab:
+
+| Tab | What it lists |
+| --- | --- |
+| First | Structures, except those with [`BuildCat=Combat`](/keys/buildcat/) |
+| Second | Structures with `BuildCat=Combat`, and [superweapon cameos](/systems/superweapons/#the-sidebar-cameo) |
+| Third | Infantry |
+| Fourth | Vehicles and aircraft |
 
 ### The order of the strips
 
 By default each strip is kept in a fixed order that depends only on the rules, so the same rules give the same strip whatever order the cameos were added in. Entries are compared on each of the following in turn, and the first difference decides. No two entries can tie on all four.
 
-1. **Kind.** Superweapons, then infantry, then aircraft, then vehicles, then structures. Only the right strip holds more than one kind.
+1. **Kind.** Superweapons, then infantry, then aircraft, then vehicles, then structures. Only the second and fourth strips hold more than one kind.
 2. **[`CameoSortOrder=`](/keys/cameosortorder/)**, lowest first.
 3. **Group**, for structures only: ordinary buildings, then walls, then gates, then base defenses. A type that fits more than one group takes the first of them in this order.
    - A wall is a type with [`Wall=`](/keys/wall/#scope-buildingtype), [`FirestormWall=`](/keys/firestormwall/), [`LaserFence=`](/keys/laserfence/) or [`LaserFencePost=`](/keys/laserfencepost/).
@@ -61,7 +69,7 @@ A strip is sorted again whenever a cameo is added to it, and after a saved game 
 
 Adding a cameo plays the new-construction-options announcement. Superweapon cameos are added without it, and so is every cameo added while a scenario is still being set up.
 
-Each strip holds up to 225 cameos and shows at most 60 at a time. The arrows below the strip scroll through the rest. A type offered to a full strip is left off it, whatever its place in the order. The right strip is the one likely to fill, because vehicles, infantry, aircraft and superweapons all share it.
+Each strip holds up to 225 cameos and shows at most 60 at a time. The arrows below the cameos scroll through the rest. A type offered to a full strip is left off it, whatever its place in the order.
 
 ### What removes a cameo
 
@@ -150,21 +158,21 @@ The cameo of the outstanding structure order still answers: a left click resumes
 
 ## Scrolling the strips
 
-The two arrows below each strip scroll that strip alone. A left click moves it one row and a right click moves it a screenful. Clicking an arrow that has nowhere left to go plays [`ScoldSound`](/keys/scoldsound/).
+The two arrows below the cameos scroll the shown tab's strip. A left click moves it one row of two cameos and a right click moves it a screenful. Clicking an arrow that has nowhere left to go plays [`ScoldSound`](/keys/scoldsound/). The other tabs' strips keep their own positions.
 
-Twelve commands do the same from the keyboard. Each motion has three commands: one moves both strips, and the other two move one strip each.
+Twelve commands do the same from the keyboard, and every one of them moves only the shown tab's strip. The Structure List and Unit List commands move the shown strip just as the Sidebar commands do.
 
-| Motion | Both strips | Structures only | Everything else only |
-| --- | --- | --- | --- |
-| One row up | [Sidebar Up](/commands/sidebarup/) | [Structure List up](/commands/leftsidebarup/) | [Unit List Up](/commands/rightsidebarup/) |
-| One row down | [Sidebar Down](/commands/sidebardown/) | [Structure List Down](/commands/leftsidebardown/) | [Unit List Down](/commands/rightsidebardown/) |
-| A screenful up | [Sidebar PageUp](/commands/sidebarpageup/) | [Structure List PageUp](/commands/leftsidebarpageup/) | [Unit List PageUp](/commands/rightsidebarpageup/) |
-| A screenful down | [Sidebar PageDown](/commands/sidebarpagedown/) | [Structure List PageDown](/commands/leftsidebarpagedown/) | [Unit List PageDown](/commands/rightsidebarpagedown/) |
+| Motion | Commands |
+| --- | --- |
+| One row up | [Sidebar Up](/commands/sidebarup/), [Structure List up](/commands/leftsidebarup/), [Unit List Up](/commands/rightsidebarup/) |
+| One row down | [Sidebar Down](/commands/sidebardown/), [Structure List Down](/commands/leftsidebardown/), [Unit List Down](/commands/rightsidebardown/) |
+| A screenful up | [Sidebar PageUp](/commands/sidebarpageup/), [Structure List PageUp](/commands/leftsidebarpageup/), [Unit List PageUp](/commands/rightsidebarpageup/) |
+| A screenful down | [Sidebar PageDown](/commands/sidebarpagedown/), [Structure List PageDown](/commands/leftsidebarpagedown/), [Unit List PageDown](/commands/rightsidebarpagedown/) |
 
 Turning the mouse wheel forward runs Sidebar Up, and turning it back runs Sidebar Down, wherever the pointer is.
 
 :::caution[When the scroll commands play ScoldSound]
-The four both-strips commands, including the mouse wheel, play `ScoldSound` only when neither strip can move. A strip already at its end stays silent as long as the other one still moves. The eight one-strip commands never play it, although the arrow buttons for the same motion do.
+The four Sidebar commands, including the mouse wheel, play `ScoldSound` when the shown strip cannot move. The eight Structure List and Unit List commands never play it, although the arrow buttons for the same motion do.
 :::
 
 A strip moves one whole row per update, so a screenful takes one update per row. A partly scrolled row is never drawn.
@@ -203,24 +211,25 @@ With something selected, a left click in the radar picture can act as a click on
 
 ### The mode buttons
 
-The four buttons above the strips toggle the same modes as [Repair Mode](/commands/togglerepair/), [Sell Mode](/commands/togglesell/), [Power Mode](/commands/togglepower/) and [Waypoint Mode](/commands/waypointmode/), in that order from the left.
+The two buttons above the tabs toggle the same modes as [Repair Mode](/commands/togglerepair/) and [Sell Mode](/commands/togglesell/), in that order from the left. [Power Mode](/commands/togglepower/) and [Waypoint Mode](/commands/waypointmode/) have no button and are reached only through their commands.
 
 ## What is fixed in the engine
 
-No setting changes the panel's layout. Its width, the number of strips, their positions, the size of a cameo slot and the 225-entry capacity are fixed in the engine. So are the one-row scroll step, the timing of the power bar's blink, and the timing of the radar animation.
+No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos, the size of a cameo slot and the 225-entry capacity are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row scroll step, the timing of the power bar's blink, and the timing of the radar animation.
 
 The panel always sits on the right edge of the screen. Neither `sun.ini` nor the rules can move it.
 
-The number of cameo slots a strip shows depends on the screen height. It is the panel height left after the backdrop's top piece and bottom cap, divided by the height of the repeating middle piece, up to a maximum of 60. A taller screen therefore shows more cameos and a shorter one fewer. On a screen with room for more than 60 rows, the backdrop ends below the sixtieth slot and does not reach the bottom of the screen.
+The number of cameos a strip shows depends on the screen height. The panel shows as many rows of two 50-pixel cameos as fit between the top of the cameo area and the scroll arrows, at least one row and at most 30. A taller screen therefore shows more cameos and a shorter one fewer. The backdrop repeats its middle piece once per row.
 
-The art filenames are fixed as well. The table lists each file the panel loads and what it draws.
+The art filenames are fixed as well. The table lists each file the panel draws.
 
 | File | What it draws |
 | --- | --- |
 | `SIDE1.SHP`, `SIDE2.SHP`, `SIDE3.SHP` | The backdrop's top piece, its repeating middle piece and its bottom cap |
 | `ADDON.SHP` | The trim panel below the bottom cap |
-| `R-UP.SHP`, `R-DN.SHP` | The scroll arrows, shared by both strips |
-| `REPAIR.SHP`, `SELL.SHP`, `POWER.SHP`, `WAYP.SHP` | The four mode buttons |
+| `R-UP.SHP`, `R-DN.SHP` | The scroll arrows, shared by every tab |
+| `TAB00.SHP` to `TAB03.SHP` | The four tab buttons |
+| `REPAIR.SHP`, `SELL.SHP` | The two mode buttons |
 | `GCLOCK2.SHP`, `RCLOCK2.SHP` | The build clock and the recharge clock |
 | `DARKEN.SHP` | The overlay drawn over a darkened cameo |
 | `XXICON.SHP` | The cameo used when `Cameo=` is absent or names a file that cannot be found |
@@ -229,7 +238,7 @@ The art filenames are fixed as well. The table lists each file the panel loads a
 | `TABS.SHP` | The tab bar and the credit readout's backdrop |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 
-Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
+Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
 
 The clock, darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
 
