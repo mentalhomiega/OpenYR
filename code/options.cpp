@@ -122,7 +122,7 @@ OptionsClass::OptionsClass(void) :
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
 	IsSidebarOnRight(true),
-	SidebarCameoText(true),
+	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
 	ToolTips(true),
