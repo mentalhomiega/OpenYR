@@ -189,16 +189,18 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
 
 		char buffer[128];
-		if (ini.Get_String(Name(), "Verses", "100%%,100%%,100%%,100%%,100%%", buffer, sizeof(buffer))) {
+		if (ini.Get_String(Name(), "Verses", "100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%", buffer, sizeof(buffer))) {
 			char * aval = strtok(buffer, ",");
-			for (int armor = ARMOR_FIRST; armor < ARMOR_COUNT; armor++) {
+			// A list shorter than the armor types leaves the rest unchanged; Yuri's Revenge
+			// crashes on one.
+			for (int armor = ARMOR_FIRST; armor < ARMOR_COUNT && aval != NULL; armor++) {
 				double percent = _Parse_Percentage(aval);
 				Modifier[armor] = percent;
 				aval = strtok(NULL, ",");
 			}
 		}
 
-		IsOrganic = (Modifier[ARMOR_STEEL] == 0);
+		IsOrganic = (Modifier[ARMOR_MEDIUM] == 0 && Modifier[ARMOR_WOOD] == 0);
 
 		return(true);
 	}

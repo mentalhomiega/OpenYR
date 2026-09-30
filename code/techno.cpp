@@ -7907,116 +7907,41 @@ int TechnoClass::Refund_Amount(void) const
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Anti_Air -- Determines the anti-aircraft strength of the object.               *
- *                                                                                             *
- *    This routine will calculate and return the anti-aircraft strength of this object.        *
- *    Typical users of this strength value is the base defense expert system AI.               *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  Returns with the anti-aircraft defense value of this object. The value returned    *
- *          is an abstract number to be used for relative comparisons only.                    *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   10/02/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// The strength against aircraft that the computer player's base planning weighs. A
+/// building takes the AntiAirValue its type sets; anything else is worth nothing, as in
+/// Yuri's Revenge.
+/// </summary>
 int TechnoClass::Anti_Air(void) const
 {
-	if (Is_Weapon_Equipped()) {
-
-		WeaponTypeClass const * weapon = PrimaryWeapon;
-		BulletTypeClass const * bullet = weapon->Bullet;
-		WarheadTypeClass const * warhead = weapon->WarheadPtr;
-
-		if (bullet->IsAntiAircraft) {
-			int value = ((weapon->Attack * warhead->Modifier[ARMOR_ALUMINUM]) * weapon->Range) / weapon->ROF;
-
-			if (TClass->Is_Two_Shooter()) {
-				value *= 2;
-			}
-			return(value/50);
-		}
+	if (RTTI == RTTI_BUILDING) {
+		return(((BuildingClass const *)this)->Class->AntiAirValue);
 	}
 	return(0);
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Anti_Armor -- Determines the anti-armor strength of the object.                *
- *                                                                                             *
- *    This routine is used to examine and calculate the anti-armor strength of this object.    *
- *    Typical user user of this would be the expert system base defense AI.                    *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  Returns with the relative anti-armor combat value for this object. The value       *
- *          is abstract and is only to be used in relative comparisons.                        *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   10/02/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// The strength against vehicles that the computer player's base planning weighs, taken
+/// from a building type's AntiArmorValue; anything that is not a building is worth nothing.
+/// </summary>
 int TechnoClass::Anti_Armor(void) const
 {
-	if (Is_Weapon_Equipped()) {
-		if (!PrimaryWeapon->Bullet->IsAntiGround) return(0);
-
-		WeaponTypeClass const * weapon = PrimaryWeapon;
-		BulletTypeClass const * bullet = weapon->Bullet;
-		WarheadTypeClass const * warhead = weapon->WarheadPtr;
-		int mrange = std::min(weapon->Range, 4 * CELL_LEPTON);
-
-		int value = ((weapon->Attack * warhead->Modifier[ARMOR_STEEL]) * mrange * warhead->SpreadFactor) / weapon->ROF;
-		if (TClass->Is_Two_Shooter()) {
-			value *= 2;
-		}
-		if (bullet->IsInaccurate) {
-			value /= 2;
-		}
-		return(value/50);
+	if (RTTI == RTTI_BUILDING) {
+		return(((BuildingClass const *)this)->Class->AntiArmorValue);
 	}
 	return(0);
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Anti_Infantry -- Calculates the anti-infantry strength of this object.         *
- *                                                                                             *
- *    This routine is used to determine the anti-infantry strength of this object. The         *
- *    typical user of this routine is the expert system base defense AI.                       *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  Returns with the anti-infantry strength of this object. The value returned is      *
- *          abstract and should only be used for relative comparisons.                         *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   10/02/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// The strength against infantry that the computer player's base planning weighs, taken
+/// from a building type's AntiInfantryValue; anything that is not a building is worth nothing.
+/// </summary>
 int TechnoClass::Anti_Infantry(void) const
 {
-	if (Is_Weapon_Equipped()) {
-		if (!PrimaryWeapon->Bullet->IsAntiGround) return(0);
-
-		WeaponTypeClass const * weapon = PrimaryWeapon;
-		BulletTypeClass const * bullet = weapon->Bullet;
-		WarheadTypeClass const * warhead = weapon->WarheadPtr;
-		int mrange = std::min(weapon->Range, 4 * CELL_LEPTON);
-
-		int value = ((weapon->Attack * warhead->Modifier[ARMOR_NONE]) * mrange * warhead->SpreadFactor) / weapon->ROF;
-		if (TClass->Is_Two_Shooter()) {
-			value *= 2;
-		}
-		if (bullet->IsInaccurate) {
-			value /= 2;
-		}
-		return(value/50);
+	if (RTTI == RTTI_BUILDING) {
+		return(((BuildingClass const *)this)->Class->AntiInfantryValue);
 	}
 	return(0);
 }

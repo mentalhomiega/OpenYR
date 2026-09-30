@@ -71,10 +71,16 @@ char const * SpeedName[SPEED_COUNT] = {
 */
 char const * const ArmorName[ARMOR_COUNT] = {
 	"none",
-	"wood",
+	"flak",
+	"plate",
 	"light",
+	"medium",
 	"heavy",
-	"concrete"
+	"wood",
+	"steel",
+	"concrete",
+	"special_1",
+	"special_2"
 };
 
 

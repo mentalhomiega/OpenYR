@@ -19,12 +19,20 @@
 **	combination of armor and weaponry. Each vehicle or building has armor
 **	rated according to one of the following types.
 */
+// Yuri's Revenge's armor types, in the order of a warhead's Verses= list. The values are
+// stored in saves.
 enum ArmorType {
-	ARMOR_NONE,     // Vulnerable to SA and HE.
-	ARMOR_WOOD,     // Vulnerable to HE and Fire.
-	ARMOR_ALUMINUM, // Vulnerable to AP and SA.
-	ARMOR_STEEL,    // Vulnerable to AP.
-	ARMOR_CONCRETE, // Vulnerable to HE and AP.
+	ARMOR_NONE,
+	ARMOR_FLAK,
+	ARMOR_PLATE,
+	ARMOR_LIGHT,
+	ARMOR_MEDIUM,
+	ARMOR_HEAVY,
+	ARMOR_WOOD,
+	ARMOR_STEEL,
+	ARMOR_CONCRETE,
+	ARMOR_SPECIAL_1,
+	ARMOR_SPECIAL_2,
 
 	ARMOR_COUNT,
 	ARMOR_FIRST=0

@@ -904,7 +904,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool Is_Mobile_Deployer(void) const;
 		virtual bool Is_Immune_To_EMP(void) const override;
 		Dir256 Deploy_Facing(void) const;
-		void Calculate_Base_Defense_Values(void);
 
 	public:
 

@@ -1183,6 +1183,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 
 	if (BASECLASS::Read_INI(ini)) {
 
+		AntiInfantryValue = ini.Get_Int(Name(), "AntiInfantryValue", AntiInfantryValue);
+		AntiArmorValue = ini.Get_Int(Name(), "AntiArmorValue", AntiArmorValue);
+		AntiAirValue = ini.Get_Int(Name(), "AntiAirValue", AntiAirValue);
 		HasSpotlight = ini.Get_Bool(Name(), "HasSpotlight", HasSpotlight);
 		HalfDamageSmokeLocation1 = ini.Get_Point(Name(), "HalfDamageSmokeLocation1", HalfDamageSmokeLocation1);
 		HalfDamageSmokeLocation2 = ini.Get_Point(Name(), "HalfDamageSmokeLocation2", HalfDamageSmokeLocation2);
@@ -2120,32 +2123,6 @@ void BuildingTypeClass::Free_Buildup_Data(void)
 	if (IsFreeBuildup && IsDemandLoadBuildup) {
 		if (BuildupData != NULL) {
 			Free_Demand_Loaded_Shape(BuildupData);
-		}
-	}
-}
-
-
-/// <summary>
-/// Calculates the threat values for this base defense.
-/// This routine rates how dangerous the structure is to aircraft, armor and infantry so
-/// that the computer can weigh its base defenses against the enemy it expects to face.
-/// </summary>
-void BuildingTypeClass::Calculate_Base_Defense_Values(void)
-{
-	if (IsBaseDefense) {
-		WeaponTypeClass * weapon = Get_Weapon(0)->Weapon;
-
-		if (weapon != NULL) {
-			int damage = weapon->Attack / (weapon->ROF * 0.025);
-
-			if (weapon->Bullet->IsAntiAircraft) {
-				AntiAirValue = std::min((double)Rule->MaximumBaseDefenseValue, damage * weapon->WarheadPtr->Modifier[ARMOR_STEEL]);
-			}
-
-			if (weapon->Bullet->IsAntiGround) {
-				AntiArmorValue = std::min((double)Rule->MaximumBaseDefenseValue, damage * weapon->WarheadPtr->Modifier[ARMOR_STEEL]);
-				AntiInfantryValue = std::min((double)Rule->MaximumBaseDefenseValue, damage * weapon->WarheadPtr->Modifier[ARMOR_NONE]);
-			}
 		}
 	}
 }

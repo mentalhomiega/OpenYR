@@ -2235,6 +2235,57 @@ Annoyance:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+AntiAirValue:
+  key: AntiAirValue
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: AntiAirValue
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+AntiArmorValue:
+  key: AntiArmorValue
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: AntiArmorValue
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+AntiInfantryValue:
+  key: AntiInfantryValue
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: AntiInfantryValue
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Arcing:
   key: Arcing
   scopes:

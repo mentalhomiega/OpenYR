@@ -292,12 +292,7 @@ When no candidate plugs into the tower, the tower node becomes a standalone defe
 
 ### Defense values
 
-A BuildingType's anti-air, anti-armor and anti-infantry values are computed when the rules are loaded. Only a type with [`IsBaseDefense=yes`](/keys/isbasedefense/) and a primary weapon gets them. From that weapon, `damage` is `Damage / (ROF * 0.025)`, truncated to a whole number:
-
-- A projectile with [`AA=yes`](/keys/aa/) sets the anti-air value to `damage` times the warhead's [`Verses`](/keys/verses/) percentage against `heavy` armor.
-- A projectile with [`AG=yes`](/keys/ag/), the default, sets the anti-armor value the same way, and the anti-infantry value from the `Verses` percentage against `none`.
-
-Each value is capped at [`MaximumBaseDefenseValue`](/keys/maximumbasedefensevalue/). Every other type keeps all three values at zero, so it is never a defense candidate.
+A BuildingType's anti-air, anti-armor and anti-infantry values are set by [`AntiAirValue`](/keys/antiairvalue/), [`AntiArmorValue`](/keys/antiarmorvalue/) and [`AntiInfantryValue`](/keys/antiinfantryvalue/). A type that sets none of them keeps all three at zero, so it is never a defense candidate.
 
 An owned structure whose type has a zero value in a category counts the first non-zero value among the upgrades plugged into it.
 

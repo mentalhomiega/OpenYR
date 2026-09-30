@@ -2986,10 +2986,6 @@ bool RulesClass::Objects(CCINIClass const & ini)
 		Weapons[windex]->Init_Max_Speed();
 	}
 
-	for (bindex = 0; bindex < BuildingTypes.Count(); bindex++) {
-		BuildingTypes[bindex]->Calculate_Base_Defense_Values();
-	}
-
 	for (int tindex = 0; tindex < TerrainTypes.Count(); tindex++) {
 		TerrainTypes[tindex]->Read_INI(ini);
 	}
