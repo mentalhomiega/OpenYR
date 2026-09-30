@@ -5,7 +5,7 @@ label: Theater archive root
 see_also: [IsoRoot, Suffix]
 when_omitted:
   kind: context-dependent
-  note: "`TEMPERAT` for TEMPERATE and `SNOW` for SNOW, which keep their original settings; for any other theater, the theater's own name."
+  note: "`TEMPERAT` for TEMPERATE, `SNOW` for SNOW, `URBAN` for URBAN, `DESERT` for DESERT, `URBANN` for NEWURBAN and `LUNAR` for LUNAR, the six built-in theaters, which keep their original settings; for any other theater, the theater's own name."
 ---
 
 `Root` names three theater files:

@@ -5,7 +5,7 @@ label: Theater artwork extension
 see_also: [MMSuffix, Root, IsoRoot]
 when_omitted:
   kind: context-dependent
-  note: "`TEM` for TEMPERATE and `SNO` for SNOW, which keep their original settings; empty for any other theater, which then looks for artwork under no extension at all and has no unit remap palette."
+  note: "`TEM` for TEMPERATE, `SNO` for SNOW, `URB` for URBAN, `DES` for DESERT, `UBN` for NEWURBAN and `LUN` for LUNAR, the six built-in theaters, which keep their original settings; empty for any other theater, which then looks for artwork under no extension at all and has no unit remap palette."
 ---
 
 `Suffix` is the file extension of the theater's own artwork. A type marked [`Theater=yes`](/keys/theater/#scope-aircrafttype) loads `<name>.<Suffix>`, and so does each tile of a [tile set](/formats/theater-control/).

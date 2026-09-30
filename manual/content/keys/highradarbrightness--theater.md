@@ -5,7 +5,7 @@ label: Theater radar ceiling
 see_also: [LowRadarBrightness]
 when_omitted:
   kind: context-dependent
-  note: "`1.1` for SNOW, which keeps its original settings; `1.6` for TEMPERATE and for every other theater."
+  note: "`1.1` for SNOW, which keeps its original settings; `1.6` for every other theater."
 ---
 
 `HighRadarBrightness` sets how much brighter raised ground shows on the radar. It multiplies the tile colors that [`LowRadarBrightness`](/keys/lowradarbrightness/) has already scaled, in proportion to the cell's height. A cell at height level 0 gets none of it, and a cell at height level 12 gets all of it.

@@ -5909,6 +5909,16 @@ void Init_Theater(TheaterType theater)
 	Session.Update_Progress(8);
 
 	if (Scen->Theater != LastTheater) {
+		// Yuri's Revenge's copy of each theater archive is mounted first, so it is searched first.
+		delete TheaterExpansionData;
+		TheaterExpansionData = NULL;
+		char expansion[_MAX_PATH];
+		snprintf(expansion, sizeof(expansion), "%sMD.MIX", data.Root.c_str());
+		if (CCFileClass(expansion).Is_Available()) {
+			TheaterExpansionData = new MFCD(expansion, &FastKey);
+			TheaterExpansionData->Cache();
+		}
+
 		if (TheaterData != NULL) {
 			delete TheaterData;
 		}
@@ -5922,6 +5932,10 @@ void Init_Theater(TheaterType theater)
 
 		TheaterData->Cache();
 		Session.Update_Progress(6);
+
+		delete IsometricExpansionData;
+		snprintf(expansion, sizeof(expansion), "ISO%sMD.MIX", data.Suffix.c_str());
+		IsometricExpansionData = new MFCD(expansion, &FastKey);
 
 		if (IsometricTheaterData != NULL) {
 			delete IsometricTheaterData;

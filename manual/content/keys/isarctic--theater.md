@@ -5,7 +5,7 @@ label: Arctic theater
 see_also: [IsIceGrowthEnabled, TemperateOccupationBits, SnowOccupationBits]
 when_omitted:
   kind: context-dependent
-  note: "`yes` for SNOW, which keeps its original settings; `no` for TEMPERATE and for every other theater."
+  note: "`yes` for SNOW, which keeps its original settings; `no` for every other theater."
 ---
 
 `IsArctic` picks which occupation bits terrain objects use in this theater. With `yes` they use [`SnowOccupationBits`](/keys/snowoccupationbits/), and with `no` they use [`TemperateOccupationBits`](/keys/temperateoccupationbits/). The bits decide which sub-positions of a cell a tree or rock blocks. A terrain type has only these two sets, so a new theater uses one of them.

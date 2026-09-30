@@ -19,8 +19,8 @@
 
 
 /*
- * Tiberian Sun hard-coded these two theaters, so they are what a rules file declaring no
- * theater list gets, and what a list naming either of them starts from.
+ * Yuri's Revenge hard-codes these six theaters (gamemd's table at 0x7E1B78), so they are what
+ * a rules file declaring no theater list gets, and what a list naming one of them starts from.
  */
 struct TheaterSeedType
 {
@@ -39,12 +39,16 @@ struct TheaterSeedType
 static TheaterSeedType const _Seeds[] = {
 	{"TEMPERATE", "TEMPERAT", "ISOTEMP", "TEM", "MMT", 'T', false, false, 1.0f, 1.6f},
 	{"SNOW",      "SNOW",     "ISOSNOW", "SNO", "MMS", 'A', true,  true,  0.8f, 1.1f},
+	{"URBAN",     "URBAN",    "ISOURB",  "URB", "MMU", 'U', false, false, 1.0f, 1.6f},
+	{"DESERT",    "DESERT",   "ISODES",  "DES", "MMD", 'D', false, false, 1.0f, 1.6f},
+	{"NEWURBAN",  "URBANN",   "ISOUBN",  "UBN", "MMT", 'N', false, false, 1.0f, 1.6f},
+	{"LUNAR",     "LUNAR",    "ISOLUN",  "LUN", "MML", 'L', false, false, 1.0f, 1.6f},
 };
 
 
 /// <summary>
 /// Creates a theater and adds it to the global theater list.
-/// One carrying a name Tiberian Sun hard-coded starts from that theater's settings, so a
+/// One carrying a name Yuri's Revenge hard-codes starts from that theater's settings, so a
 /// rules file may name it without restating them.
 /// </summary>
 /// <param name="listed">Only the placeholder As_Reference hands back for an unusable index
@@ -136,7 +140,7 @@ TheaterClass const & TheaterClass::As_Reference(TheaterType theater)
 
 
 /// <summary>
-/// Declares the two theaters Tiberian Sun hard-coded, in their original order.
+/// Declares the six theaters Yuri's Revenge hard-codes, in their original order.
 /// This is what a game whose rules declare no theater list plays with.
 /// </summary>
 void TheaterClass::One_Time(void)

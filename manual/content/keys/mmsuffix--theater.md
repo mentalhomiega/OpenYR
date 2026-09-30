@@ -5,7 +5,7 @@ label: Theater marble madness extension
 see_also: [Suffix, NonMarbleMadness]
 when_omitted:
   kind: context-dependent
-  note: "`MMT` for TEMPERATE and `MMS` for SNOW, which keep their original settings; empty for any other theater, which then makes no second attempt."
+  note: "`MMT` for TEMPERATE and NEWURBAN, `MMS` for SNOW, `MMU` for URBAN, `MMD` for DESERT and `MML` for LUNAR, the six built-in theaters, which keep their original settings; empty for any other theater, which then makes no second attempt."
 ---
 
 `MMSuffix` is the extension tried when a tile's own artwork is missing. The game first looks for the tile under the theater's [`Suffix`](/keys/suffix/#scope-theater). If that file does not exist, it tries the same name with this extension. This lets marble madness tile artwork stand in for tiles the theater does not draw itself.

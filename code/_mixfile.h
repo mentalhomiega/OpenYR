@@ -36,6 +36,12 @@ extern MFCD * GameMix;
 extern MFCD * TheaterData;
 extern MFCD * TheaterDat;
 extern MFCD * IsometricTheaterData;
+
+// <Root>MD.MIX and ISO<Suffix>MD.MIX, Yuri's Revenge's theater archives, searched ahead of
+// TheaterData and IsometricTheaterData. The first is mounted only where the file exists.
+extern MFCD * TheaterExpansionData;
+extern MFCD * IsometricExpansionData;
+
 extern MFCD * MoviesMix;
 
 extern MFCD * ScoresMix;

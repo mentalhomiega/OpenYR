@@ -852,6 +852,10 @@ void __cdecl Prog_End(void)
 		delete IsometricTheaterData;
 		IsometricTheaterData = NULL;
 	}
+	delete TheaterExpansionData;
+	TheaterExpansionData = NULL;
+	delete IsometricExpansionData;
+	IsometricExpansionData = NULL;
 
 	if (IsometricTileTypeClass::CellShadowShapes != NULL) {
 		delete IsometricTileTypeClass::CellShadowShapes;

@@ -15,6 +15,6 @@ Theater=SNOW
 
 The theater decides which tile, art and palette archives are mounted for the whole map load, so it is settled before the map's houses, objects, terrain and rules overrides are read. Unlike most scenario-wide settings, it goes under `[Map]`, not `[Basic]`.
 
-The value names one of the theaters the rules file lists in [`[Theaters]`](/formats/rules-registries/), ignoring case. Rules that declare no such section still have `TEMPERATE` and `SNOW`, in that order. A name that matches no theater is ignored, and the map is played in the first declared theater.
+The value names one of the theaters the rules file lists in [`[Theaters]`](/formats/rules-registries/), ignoring case. Rules that declare no such section still have `TEMPERATE`, `SNOW`, `URBAN`, `DESERT`, `NEWURBAN` and `LUNAR`, in that order. A name that matches no theater is ignored, and the map is played in the first declared theater.
 
 The theater also decides whether ice grows. [`IceGrowthEnabled`](/keys/icegrowthenabled/) does nothing in a theater whose [`IsIceGrowthEnabled`](/keys/isicegrowthenabled/) is off.

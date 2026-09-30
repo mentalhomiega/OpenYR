@@ -5,7 +5,7 @@ label: Theater radar floor
 see_also: [HighRadarBrightness]
 when_omitted:
   kind: context-dependent
-  note: "`0.8` for SNOW, which keeps its original settings; `1.0` for TEMPERATE and for every other theater."
+  note: "`0.8` for SNOW, which keeps its original settings; `1.0` for every other theater."
 ---
 
 `LowRadarBrightness` scales a cell's radar colors at every height. A cell shows two colors on the radar, both taken from its tile artwork, and this value multiplies both of them. Below `1.0` the theater's ground shows darker on the radar than in its artwork, and above `1.0` it shows lighter.

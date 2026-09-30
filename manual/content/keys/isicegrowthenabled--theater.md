@@ -5,7 +5,7 @@ label: Theater ice
 see_also: [IsArctic, IceGrowthEnabled, IceGrowthRate]
 when_omitted:
   kind: context-dependent
-  note: "`yes` for SNOW, which keeps its original settings; `no` for TEMPERATE and for every other theater."
+  note: "`yes` for SNOW, which keeps its original settings; `no` for every other theater."
 ---
 
 `IsIceGrowthEnabled` turns ice behavior on for a theater. With it off:

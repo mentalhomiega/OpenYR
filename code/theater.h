@@ -41,10 +41,12 @@ class TheaterClass
 
 		/*
 		 * These name the files a theater loads. Root gives <Root>.MIX, <Root>.PAL and the
-		 * <Root>.INI tile set control file; IsoRoot gives the <IsoRoot>.MIX the tile artwork
-		 * is read from. Suffix is the extension theater artwork carries, and also names
-		 * <Suffix>.MIX, ISO<Suffix>.PAL and UNIT<Suffix>.PAL. MMSuffix is the extension tried
-		 * where a tile set allows marble madness artwork and the theater's own file is missing.
+		 * <Root>.INI tile set control file, with <Root>MD.MIX searched ahead of <Root>.MIX
+		 * where it exists; IsoRoot gives the <IsoRoot>.MIX the tile artwork is read from, with
+		 * ISO<Suffix>MD.MIX searched ahead of it. Suffix is the extension theater artwork
+		 * carries, and also names <Suffix>.MIX, ISO<Suffix>.PAL and UNIT<Suffix>.PAL. MMSuffix
+		 * is the extension tried where a tile set allows marble madness artwork and the
+		 * theater's own file is missing.
 		 */
 		TStringID<16> Root;
 		TStringID<16> IsoRoot;

@@ -54,7 +54,7 @@ A music track or movie whose file is not found in any archive or folder is skipp
 
 Archives mounted after startup are searched after every startup archive.
 
-When a scenario or saved game uses a different theater from the one last loaded, the game drops the previous theater's archives and mounts the new theater's. These are `<Root>.MIX` and `<Suffix>.MIX`, both cached, then `<IsoRoot>.MIX`, not cached. [`Root`](/keys/root/), [`Suffix`](/keys/suffix/#scope-theater) and [`IsoRoot`](/keys/isoroot/) are set per theater.
+When a scenario or saved game uses a different theater from the one last loaded, the game drops the previous theater's archives and mounts the new theater's. These are `<Root>MD.MIX` where that file exists, `<Root>.MIX` and `<Suffix>.MIX`, all cached, then `ISO<Suffix>MD.MIX` and `<IsoRoot>.MIX`, not cached. Of the stock theaters only SNOW has a `<Root>MD.MIX`, `SNOWMD.MIX`. [`Root`](/keys/root/), [`Suffix`](/keys/suffix/#scope-theater) and [`IsoRoot`](/keys/isoroot/) are set per theater.
 
 Each time a scenario or saved game loads, the game drops the previous side's archives and mounts those of the player's side. The two-digit side number `<nn>` is the side's position in the side list: `01` for the first side, `02` for the second. The archives are mounted in this order:
 
