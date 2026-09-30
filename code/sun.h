@@ -84,8 +84,10 @@
 #define CELL_LEPTON_H			256
 #define CELL_LEPTON				256
 
-#define LEPTON_TO_PIXEL(lepton) ((lepton) / 7)
-#define PIXEL_TO_LEPTON(pixel)  ((pixel) * 7)
+// A cell's leptons per pixel along its mean screen side: 7 for Tiberian Sun's cells, about 5.7 for
+// Yuri's Revenge's.
+#define LEPTON_TO_PIXEL(lepton) ((lepton) * ((CELL_PIXEL_W + CELL_PIXEL_H) / 2) / CELL_LEPTON)
+#define PIXEL_TO_LEPTON(pixel)  ((pixel) * CELL_LEPTON / ((CELL_PIXEL_W + CELL_PIXEL_H) / 2))
 
 #define	PIXEL_LEPTON_W			(CELL_LEPTON_W/CELL_PIXEL_W)
 #define	PIXEL_LEPTON_H			(CELL_LEPTON_H/CELL_PIXEL_H)

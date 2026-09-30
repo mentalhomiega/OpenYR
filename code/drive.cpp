@@ -1248,7 +1248,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			CellClass * stepcellptr = &Map[stepcoord];
 
 			Coord partial(0, 0, 0);
-			partial = Lerp(partial, movement, SpeedAccum / 7.0); /// 7 == (CELL_LEPTON / ((CELL_PIXEL_W + CELL_PIXEL_H) / 2))
+			partial = Lerp(partial, movement, SpeedAccum / (CELL_LEPTON / ((CELL_PIXEL_W + CELL_PIXEL_H) / 2.0)));
 			Coord partialcoord = oldcoord + partial;
 
 			CellClass * oldcellptr = &Map[oldcoord];
