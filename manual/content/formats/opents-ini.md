@@ -18,7 +18,7 @@ related:
     id: game-data
 ---
 
-`OPENTS.INI` belongs to the deployment and describes how it lays out the game's files. A player's options are kept in a separate settings file, `SUN.INI` unless `Settings` below names another. The game reads `OPENTS.INI` once at startup.
+`OPENTS.INI` belongs to the deployment and describes how it lays out the game's files. A player's options are kept in a separate settings file, `RA2MD.INI` unless `Settings` below names another. The game reads `OPENTS.INI` once at startup.
 
 ```ini title="OPENTS.INI"
 [Paths]
@@ -53,7 +53,7 @@ MultiplayerRules=MPLAYER.INI
 MultiplayerRulesExpansion=MPLAYERFS.INI
 Tutorial=TUTORIAL.INI
 UI=UI.INI
-Settings=SUN.INI
+Settings=RA2MD.INI
 ```
 
 Each key names one file, and a key left out keeps the name shown above.
@@ -136,5 +136,5 @@ A search by pattern covers every directory in the list, and does not stop at the
 :::caution[Do not ship a file the game writes in the game's own directory]
 Settings, saved games, recordings, screen captures and the other files the game writes go to the user data directory, or to the game's own directory when there is none. The debug log, out-of-sync reports and crash reports always go into folders beside the executable, as [Game data](/using/game-data/#keeping-the-data-somewhere-else) describes. `mpstats.txt` always goes to the game's own directory.
 
-A file the game writes is found ahead of a shipped copy in a later directory, so a player's saved `SUN.INI` is read instead of one shipped in the `INI` folder. When the player's copy of a file such as `KEYBOARD.INI` is removed, the game reads the shipped copy again. Without a user data directory, the game writes and deletes in its own directory, so a copy shipped there is overwritten or removed and cannot be read again.
+A file the game writes is found ahead of a shipped copy in a later directory, so a player's saved `RA2MD.INI` is read instead of one shipped in the `INI` folder. When the player's copy of a file such as `KEYBOARD.INI` is removed, the game reads the shipped copy again. Without a user data directory, the game writes and deletes in its own directory, so a copy shipped there is overwritten or removed and cannot be read again.
 :::

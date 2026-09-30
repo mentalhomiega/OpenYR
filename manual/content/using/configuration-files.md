@@ -23,7 +23,7 @@ Look up a configuration fact in the area that covers it:
 
 The game reads its configuration from these files:
 
-- `SUN.INI` stores the player's options.
+- `RA2MD.INI` stores the player's options.
 - [`KEYBOARD.INI`](/formats/keyboard-ini/) assigns keys to command names.
 - [`UI.INI`](/formats/ui-ini/), which a mod or deployment may ship, sets how order lines and the sighting laser are drawn.
 - Rules, art, sound, theme, and scenario files supply game and mod data.

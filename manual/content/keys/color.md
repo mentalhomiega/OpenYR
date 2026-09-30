@@ -14,6 +14,6 @@ The four scheme names, each written in the section of the type or house it color
 
 Each name is looked up, in any letter case, among the schemes the rules declare in `[Colors]`. Each entry there names a color scheme and gives the hue, saturation and value its colors are built from.
 
-The number is the [preferred multiplayer color](/keys/color/#scope-multiplayer-settings). It lives in `[MultiPlayer]` of the player's settings file, `SUN.INI`, and is a position in the lobby's eight-color list, not a name the rules know.
+The number is the [preferred multiplayer color](/keys/color/#scope-multiplayer-settings). It lives in `[MultiPlayer]` of the player's settings file, `RA2MD.INI`, and is a position in the lobby's eight-color list, not a name the rules know.
 
 A spawned game reads one more `Color=`, in each person's section of the [spawn file](/formats/spawn-ini/#who-is-playing). It gives the lobby color that person plays.

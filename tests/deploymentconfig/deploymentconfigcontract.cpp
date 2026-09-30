@@ -218,7 +218,7 @@ void Test_File_Names(void)
 
 	Check(config.RulesFile == "RULES.INI", "with no file the rules come from RULES.INI");
 	Check(config.MultiplayerRulesFile == "MPLAYER.INI", "and the multiplayer rules from MPLAYER.INI");
-	Check(config.SettingsFile == "SUN.INI", "and a player's settings from SUN.INI");
+	Check(config.SettingsFile == "RA2MD.INI", "and a player's settings from RA2MD.INI");
 
 	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=Data\n");
 	config.Read_File("");
@@ -246,7 +246,7 @@ void Test_File_Names(void)
 	Remove_File(Root + "\\OPENTS.INI");
 	config.Read_File("");
 	Check(config.RulesFile == "RULES.INI", "with the file gone the names return to the defaults");
-	Check(config.SettingsFile == "SUN.INI", "every one of them");
+	Check(config.SettingsFile == "RA2MD.INI", "every one of them");
 }
 
 

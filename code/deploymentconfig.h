@@ -14,7 +14,7 @@
 class INIClass;
 
 /*
- * What a deployment asks of the game in its own OPENTS.INI, as against SUN.INI, which holds
+ * What a deployment asks of the game in its own OPENTS.INI, as against RA2MD.INI, which holds
  * a player's settings. Reading cannot fail: an unwritten key keeps its default.
  */
 class DeploymentConfigClass
@@ -48,7 +48,7 @@ class DeploymentConfigClass
 		std::string UIFile = "UI.INI";
 
 		// The file a player's own settings are read from and written back to.
-		std::string SettingsFile = "SUN.INI";
+		std::string SettingsFile = "RA2MD.INI";
 
 		// The palettes in force until a theater is loaded, which the theater roster cannot name
 		// because they are read before the rules that declare it.
