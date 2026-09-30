@@ -133,8 +133,8 @@ Tactical::Tactical(void) :
 	 * cell-height ratio and pixel Y by the cell-width ratio; the first row sums the two terms
 	 * (world X) and the second row takes their difference (world Y).
 	 */
-	float x_scale = (float)(CELL_LEPTON_W / CELL_PIXEL_W) + 0.6667f;
-	float y_scale = (float)(CELL_LEPTON_H / CELL_PIXEL_H) + 0.3333302f;
+	float x_scale = (float)CELL_LEPTON_W / CELL_PIXEL_W;
+	float y_scale = (float)CELL_LEPTON_H / CELL_PIXEL_H;
 	PixelToCoordMatrix.Set(
 		 y_scale, x_scale, 0.0f, 0.0f,
 		-y_scale, x_scale, 0.0f, 0.0f,
@@ -1786,8 +1786,8 @@ void Tactical::Rectangular_To_Isometric(int xin, int yin, int & xout, int & yout
 /// </summary>
 void Tactical::Isometric_To_Rectangular(int xin, int yin, int & xout, int & yout)
 {
-	xout = ((ISO_TILE_PIXEL_W / 2) * yin + (ISO_TILE_PIXEL_H / 2) * xin) / 576 - 65536;
-	yout = ((ISO_TILE_PIXEL_W / 2) * yin - (ISO_TILE_PIXEL_H / 2) * xin) / 576 + 65536;
+	xout = ((ISO_TILE_PIXEL_W / 2) * yin + (ISO_TILE_PIXEL_H / 2) * xin) / (ISO_TILE_PIXEL_W * ISO_TILE_PIXEL_H / 2) - 65536;
+	yout = ((ISO_TILE_PIXEL_W / 2) * yin - (ISO_TILE_PIXEL_H / 2) * xin) / (ISO_TILE_PIXEL_W * ISO_TILE_PIXEL_H / 2) + 65536;
 }
 
 

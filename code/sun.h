@@ -78,8 +78,8 @@
 
 #define	REFRESH_EOL				Cell(32767, 32767)	// This number ends a refresh/occupy offset list.
 
-#define CELL_PIXEL_W			24
-#define CELL_PIXEL_H			48
+#define CELL_PIXEL_W			30
+#define CELL_PIXEL_H			60
 #define CELL_LEPTON_W			256
 #define CELL_LEPTON_H			256
 #define CELL_LEPTON				256
