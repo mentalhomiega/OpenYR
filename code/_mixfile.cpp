@@ -58,6 +58,7 @@ MFCD * SoundsMix = NULL;
 MFCD * Sounds01Mix = NULL;
 MFCD * Scores01Mix = NULL;
 MFCD * SideCMix = NULL;
+MFCD * SideCMDMix = NULL;
 MFCD * SideNCMix = NULL;
 MFCD * SideCDMix = NULL;
 

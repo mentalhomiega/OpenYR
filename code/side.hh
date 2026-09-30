@@ -13,8 +13,11 @@
 enum SideType {
 	SIDE_NONE=-1,
 
-	SIDE_GDI,					/// Global Defense Initiative
-	SIDE_NOD,					/// Brotherhood of Nod
+	// Yuri's Revenge's rules keep Tiberian Sun's side names: GDI plays the Allies, Nod the
+	// Soviets, and ThirdSide Yuri.
+	SIDE_GDI,
+	SIDE_NOD,
+	SIDE_THIRD,
 	SIDE_CIVILIAN,				/// Civilians
 	SIDE_MUTANT,				/// The Forgotten
 

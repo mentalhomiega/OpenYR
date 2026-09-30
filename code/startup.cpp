@@ -970,6 +970,8 @@ void __cdecl Prog_End(void)
 		delete SideCMix;
 		SideCMix = NULL;
 	}
+	delete SideCMDMix;
+	SideCMDMix = NULL;
 	if (SideNCMix != NULL) {
 		delete SideNCMix;
 		SideNCMix = NULL;

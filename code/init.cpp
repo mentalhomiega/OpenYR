@@ -6012,6 +6012,12 @@ void Init_Theater(TheaterType theater)
 
 static void Release_Side_Mixfiles(void)
 {
+	if (SideCMDMix != NULL) {
+		DebugString("     Releasing %s\n", SideCMDMix->Filename);
+		delete SideCMDMix;
+		SideCMDMix = NULL;
+	}
+
 	if (SideCMix != NULL) {
 		DebugString("     Releasing %s\n", SideCMix->Filename);
 		delete SideCMix;
@@ -6059,6 +6065,14 @@ static bool Mount_Side_Mixfiles(int id, bool required)
 				mix->Cache();
 			}
 		}
+	}
+
+	// Yuri's Revenge's copy of the side's cached archive, searched first where it exists.
+	sprintf(name, "SIDEC%02dMD.MIX", id);
+	if (CCFileClass(name).Is_Available()) {
+		DebugString("     Initializing %s\n", name);
+		SideCMDMix = new MFCD(name, &FastKey);
+		SideCMDMix->Cache();
 	}
 
 	sprintf(name, "SIDEC%02d.MIX", id);
@@ -6144,7 +6158,8 @@ bool Prep_For_Side(SideType side)
 
 	Release_Side_Mixfiles();
 
-	id = (int)side + 1;
+	// The third side, Yuri, uses the second side's archives, as in Yuri's Revenge.
+	id = (side == SIDE_THIRD ? (int)SIDE_NOD : (int)side) + 1;
 
 	if (!Mount_Side_Mixfiles(id, true)) {
 		return(false);
@@ -6235,9 +6250,10 @@ bool Prep_Speech_For_Side(SideType side)
 		SpeechMix = new MFCD(name, &FastKey);
 	}
 
+	// Yuri's Revenge keeps its announcer's lines in the sample bag and has no speech archive,
+	// so a missing one is not an error.
 	if (SpeechMix == NULL) {
-		DebugString("     FAILED!\n");
-		return(false);
+		DebugString("     Not found\n");
 	}
 
 	return(true);

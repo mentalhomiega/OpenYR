@@ -78,6 +78,7 @@ extern MFCD * SoundsMix;
 extern MFCD * Sounds01Mix;
 extern MFCD * Scores01Mix;
 extern MFCD * SideCMix;
+extern MFCD * SideCMDMix;		// SIDEC<nn>MD.MIX, searched ahead of SideCMix
 extern MFCD * SideNCMix;
 extern MFCD * SideCDMix;
 
