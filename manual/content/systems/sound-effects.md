@@ -84,6 +84,8 @@ The mixer compresses peaks above nine tenths of full scale, so a loud mix does n
 
 A sound's samples are loaded when the sound first plays. Each name in `Sounds=` is looked up through the normal file search, which covers loose files and every mounted archive. The extensions are tried in order: `.WAV`, `.OGG`, `.FLAC`, `.MP3`, then `.AUD`, and the first file that decodes is used.
 
+The stock samples are not separate files: they sit in `AUDIO.BAG`, and `AUDIO.IDX` lists each one's name, format and position. Both are members of `AUDIOMD.MIX`, or of `AUDIO.MIX` where `AUDIOMD.MIX` is missing. A sample name with no `.WAV` file of its own is read from the bag when `AUDIO.IDX` lists it, so a loose or archived `.WAV` replaces the bag's sample of the same name. The index is matched without regard to case, and of a name it lists twice the first is used.
+
 A sample must be mono or stereo, and no larger than eight megabytes once decoded to 16-bit audio. That is about 47 seconds of 44.1 kHz stereo. A larger sample does not load.
 
 A sample that cannot be loaded is left out of the play. When the body is one chosen sample, the next body sample in the list plays in its place.

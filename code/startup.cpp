@@ -905,7 +905,7 @@ void __cdecl Prog_End(void)
 		ConquerMix = NULL;
 	}
 	for (MFCD ** mix : {&BaseConquerMix, &GenericMix, &BaseGenericMix, &IsoGenericMix, &BaseIsoGenericMix,
-			&CameoMix, &BaseCameoMix, &ThemeMix, &BaseThemeMix, &LanguageMix, &BaseLanguageMix}) {
+			&CameoMix, &BaseCameoMix, &ThemeMix, &BaseThemeMix, &LanguageMix, &BaseLanguageMix, &AudioMix}) {
 		delete *mix;
 		*mix = NULL;
 	}

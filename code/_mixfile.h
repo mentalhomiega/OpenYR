@@ -61,6 +61,10 @@ extern MFCD * ThemeMix;
 extern MFCD * BaseThemeMix;
 extern MFCD * LanguageMix;
 extern MFCD * BaseLanguageMix;
+
+// AUDIOMD.MIX, or AUDIO.MIX where it is missing.
+extern MFCD * AudioMix;
+
 extern MFCD * MapsMix;
 
 extern MFCD * SpeechMix;

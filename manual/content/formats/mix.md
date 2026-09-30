@@ -40,6 +40,7 @@ Startup mounts these archives in this order:
 | 15 | `MULTIMD.MIX` | No | No |
 | 16 | `THEMEMD.MIX`, then `THEME.MIX` | No | No |
 | 17 | Every `MOVMD*.MIX`, then every `MOVIES*.MIX`, each group in alphabetical order | No | No |
+| 18 | `AUDIOMD.MIX`, or `AUDIO.MIX` where it is missing | No | No |
 
 Several of these are normally members of an earlier archive rather than loose files: `CONQMD.MIX`, `GENERMD.MIX` and `ISOGENMD.MIX` are in `RA2MD.MIX`, `CONQUER.MIX` is in `RA2.MIX`, and the cameo archives are in the language archives.
 

@@ -2416,6 +2416,11 @@ static bool Init_Secondary_Mixfiles(void)
 		}
 	}
 
+	// The sample archive holds AUDIO.IDX and AUDIO.BAG. Only one of the two is mounted.
+	char const * const audio = CCFileClass("AUDIOMD.MIX").Is_Available() ? "AUDIOMD.MIX" : "AUDIO.MIX";
+	AudioMix = new MFCD(audio, &FastKey);
+	DebugStringNoPrefix(" %s", audio);
+
 	return(true);
 }
 

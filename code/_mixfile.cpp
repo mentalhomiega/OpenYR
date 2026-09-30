@@ -49,6 +49,7 @@ MFCD * ThemeMix = NULL;
 MFCD * BaseThemeMix = NULL;
 MFCD * LanguageMix = NULL;
 MFCD * BaseLanguageMix = NULL;
+MFCD * AudioMix = NULL;
 MFCD * MapsMix = NULL;
 MFCD * SpeechMix = NULL;
 MFCD * SoundsMix = NULL;

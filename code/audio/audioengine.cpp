@@ -9,6 +9,7 @@
 
 #include "audio/audioengine.h"
 
+#include "audio/audiobag.h"
 #include "audio/audiodecode.h"
 #include "audio/audiodevice.h"
 #include "_rand.h"
@@ -102,7 +103,10 @@ class CCFileReaderClass : public AudioAssetReaderClass
 		bool Read(char const * filename, std::vector<uint8_t> & bytes) override
 		{
 			CCFileClass file(filename);
-			if (!file.Is_Available() || !file.Open(FileClass::READ)) {
+			if (!file.Is_Available()) {
+				return(Read_From_Bag(filename, bytes));
+			}
+			if (!file.Open(FileClass::READ)) {
 				return(false);
 			}
 			int size = file.Size();
@@ -114,6 +118,51 @@ class CCFileReaderClass : public AudioAssetReaderClass
 			file.Close();
 			return(ok);
 		}
+
+	private:
+		// A WAV that is not a file of its own is looked up in AUDIO.IDX and read from AUDIO.BAG,
+		// so a loose or archived WAV replaces the bag's sample of the same name.
+		bool Read_From_Bag(char const * filename, std::vector<uint8_t> & bytes)
+		{
+			std::string name(filename);
+			if (name.size() < 4 || _stricmp(name.c_str() + name.size() - 4, ".WAV") != 0) {
+				return(false);
+			}
+			name.resize(name.size() - 4);
+
+			if (!BagTried) {
+				BagTried = true;
+				CCFileClass index("AUDIO.IDX");
+				if (index.Is_Available() && index.Open(FileClass::READ)) {
+					std::vector<uint8_t> data((size_t)std::max(index.Size(), 0));
+					if (!data.empty() && index.Read(data.data(), (int)data.size()) == (int)data.size()) {
+						Bag.Load_Index(data.data(), data.size());
+					}
+					index.Close();
+				}
+				DebugString("Audio: AUDIO.IDX lists %d samples\n", Bag.Count());
+			}
+
+			AudioBagClass::EntryType const * entry = Bag.Find(name.c_str());
+			if (entry == nullptr || entry->Size == 0) {
+				return(false);
+			}
+			CCFileClass bag("AUDIO.BAG");
+			if (!bag.Is_Available() || !bag.Open(FileClass::READ)) {
+				return(false);
+			}
+			std::vector<uint8_t> data(entry->Size);
+			bag.Seek((int)entry->Offset, SEEK_SET);
+			bool const ok = bag.Read(data.data(), (int)entry->Size) == (int)entry->Size;
+			bag.Close();
+			if (ok) {
+				bytes = AudioBagClass::Make_Wav(*entry, data.data(), data.size());
+			}
+			return(ok);
+		}
+
+		AudioBagClass Bag;
+		bool BagTried = false;
 };
 
 
