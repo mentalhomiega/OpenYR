@@ -10,12 +10,14 @@
 #include "always.h"
 
 #include "_command.h"
+#include "_deploymentconfig.h"
 #include "_ui.h"
 #include "ccfile.h"
 #include "ccini.h"
 #include "cdfile.h"
 #include "command.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "index.h"
 #include "init.h"
 #include "keyboard.h"
@@ -63,8 +65,8 @@ class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 
 		virtual void Reset(std::vector<UIHotkeyBinding> & bindings) override
 		{
-			DebugString("Deleting users KEYBOARD.INI\n");
-			CCFileClass file("KEYBOARD.INI");
+			DebugString("Deleting users %s\n", DeploymentConfig.KeyboardFile.c_str());
+			CCFileClass file(DeploymentConfig.KeyboardFile.c_str());
 			file.Delete();
 			Init_Hotkeys();
 			Fetch_Bindings(bindings);
@@ -86,7 +88,7 @@ class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 				ini.Put_Int("Hotkey", command->Get_Unique_Name(), HotkeyCommands.Fetch_ID_By_Position(position));
 			}
 
-			CDFileClass file("Keyboard.ini");
+			CDFileClass file(DeploymentConfig.KeyboardFile.c_str());
 			ini.Save(file, false);
 		}
 };

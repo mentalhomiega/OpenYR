@@ -5554,7 +5554,7 @@ static void Init_Commands(void)
 
 
 /// <summary>
-/// Binds the game commands to the keys named in KEYBOARD.INI.
+/// Binds the game commands to the keys named in the keyboard file, KEYBOARDMD.INI by default.
 /// This routine throws the current key assignments away and rebuilds them from the
 /// player's keyboard file, matching each entry against a command's unique name.
 /// </summary>
@@ -5563,7 +5563,7 @@ static void Init_Commands(void)
 bool Init_Hotkeys(void)
 {
 	CCINIClass ini;
-	CCFileClass file("KEYBOARD.INI");
+	CCFileClass file(DeploymentConfig.KeyboardFile.c_str());
 
 	if (ini.Load(file, false)) {
 
@@ -5589,7 +5589,7 @@ bool Init_Hotkeys(void)
 		return(true);
 	}
 
-	DebugString("Unable to load KEYBOARD.INI\n");
+	DebugString("Unable to load %s\n", DeploymentConfig.KeyboardFile.c_str());
 	return(false);
 }
 

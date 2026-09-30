@@ -46,6 +46,7 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 	TutorialFile = ini.Get_String("Files", "Tutorial", TutorialFile.c_str());
 	UIFile = ini.Get_String("Files", "UI", UIFile.c_str());
 	SettingsFile = ini.Get_String("Files", "Settings", SettingsFile.c_str());
+	KeyboardFile = ini.Get_String("Files", "Keyboard", KeyboardFile.c_str());
 	SchemePaletteFile = ini.Get_String("Palettes", "Scheme", SchemePaletteFile.c_str());
 	GamePaletteFile = ini.Get_String("Palettes", "Game", GamePaletteFile.c_str());
 }

@@ -46,6 +46,7 @@ MultiplayerRules=MPLAYER.INI
 Tutorial=TUTORIAL.INI
 UI=UIMD.INI
 Settings=RA2MD.INI
+Keyboard=KEYBOARDMD.INI
 ```
 
 Each key names one file, and a key left out keeps the name shown above.
@@ -63,6 +64,7 @@ Each key names one file, and a key left out keeps the name shown above.
 | `Tutorial` | The [numbered text lines](/formats/tutorial-ini/) |
 | `UI` | The [interface settings](/formats/ui-ini/) |
 | `Settings` | The file a player's options are read from and saved to |
+| `Keyboard` | The [hotkey file](/formats/keyboard-ini/), read at startup and saved by the keyboard dialog |
 
 The eight `Expansion` keys, such as `RulesExpansion` and `ArtExpansion`, name no file unless written. Each names an expansion's copy of the matching base file, which is read after the base file. The expansion's rules, AI and multiplayer rules files are used only while Firestorm is enabled, and so is its art file, except for that file's `[Movies]` list. Its sound, music, campaign and translated rules files are read whether or not Firestorm is enabled.
 
@@ -128,5 +130,5 @@ A search by pattern covers every directory in the list, and does not stop at the
 :::caution[Do not ship a file the game writes in the game's own directory]
 Settings, saved games, recordings, screen captures and the other files the game writes go to the user data directory, or to the game's own directory when there is none. The debug log, out-of-sync reports and crash reports always go into folders beside the executable, as [Game data](/using/game-data/#keeping-the-data-somewhere-else) describes. `mpstats.txt` always goes to the game's own directory.
 
-A file the game writes is found ahead of a shipped copy in a later directory, so a player's saved `RA2MD.INI` is read instead of one shipped in the `INI` folder. When the player's copy of a file such as `KEYBOARD.INI` is removed, the game reads the shipped copy again. Without a user data directory, the game writes and deletes in its own directory, so a copy shipped there is overwritten or removed and cannot be read again.
+A file the game writes is found ahead of a shipped copy in a later directory, so a player's saved `RA2MD.INI` is read instead of one shipped in the `INI` folder. When the player's copy of a file such as `KEYBOARDMD.INI` is removed, the game reads the shipped copy again. Without a user data directory, the game writes and deletes in its own directory, so a copy shipped there is overwritten or removed and cannot be read again.
 :::

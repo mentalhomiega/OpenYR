@@ -50,6 +50,9 @@ class DeploymentConfigClass
 		// The file a player's own settings are read from and written back to.
 		std::string SettingsFile = "RA2MD.INI";
 
+		// The file the hotkeys are read from and the keyboard dialog saves them to.
+		std::string KeyboardFile = "KEYBOARDMD.INI";
+
 		// The palettes in force until a theater is loaded, which the theater roster cannot name
 		// because they are read before the rules that declare it.
 		std::string SchemePaletteFile = "UNITSNO.PAL";

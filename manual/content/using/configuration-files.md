@@ -24,10 +24,10 @@ Look up a configuration fact in the area that covers it:
 The game reads its configuration from these files:
 
 - `RA2MD.INI` stores the player's options.
-- [`KEYBOARD.INI`](/formats/keyboard-ini/) assigns keys to command names.
+- [`KEYBOARDMD.INI`](/formats/keyboard-ini/) assigns keys to command names.
 - [`UI.INI`](/formats/ui-ini/), which a mod or deployment may ship, sets how order lines and the sighting laser are drawn.
 - Rules, art, sound, theme, and scenario files supply game and mod data.
 
-A deployment can rename these files in [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads): the settings file, `UI.INI`, the tutorial file, and the rules, language rules, multiplayer rules, art, AI, sound, theme, and campaign list files together with their expansion copies. `KEYBOARD.INI` and scenario files cannot be renamed.
+A deployment can rename these files in [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads): the settings file, the keyboard file, `UI.INI`, the tutorial file, and the rules, language rules, multiplayer rules, art, AI, sound, theme, and campaign list files together with their expansion copies. Scenario files cannot be renamed.
 
 The game looks for each file in the [search order](/formats/opents-ini/#the-order-files-are-searched-for-in) and uses the first copy it finds. Settings and hotkeys the player saves are written to the first directory in that order, so the saved copy is read ahead of a shipped one.
