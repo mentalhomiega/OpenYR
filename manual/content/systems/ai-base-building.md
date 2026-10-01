@@ -270,6 +270,7 @@ The planner then picks the defense category with the smallest share of that quad
 
 A BuildingType is a candidate for that category when all of these hold:
 
+- the `[AI]` base defense list for the side of the house's own country names it: [`AlliedBaseDefenses`](/keys/alliedbasedefenses--global-rules/) for the first side in `[Sides]`, [`SovietBaseDefenses`](/keys/sovietbasedefenses--global-rules/) for the second, and [`ThirdBaseDefenses`](/keys/thirdbasedefenses--global-rules/) for any other;
 - the country the house acts as may own it;
 - its value in that category is above zero;
 - its `TechLevel` is within the house's tech level;

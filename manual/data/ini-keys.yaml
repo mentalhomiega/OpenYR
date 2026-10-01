@@ -1613,6 +1613,24 @@ AirstripRatio:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AlliedBaseDefenses:
+  key: AlliedBaseDefenses
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AI
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AlliedBaseDefenses
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Allies:
   key: Allies
   scopes:
@@ -21043,6 +21061,24 @@ Sounds:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+SovietBaseDefenses:
+  key: SovietBaseDefenses
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AI
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: SovietBaseDefenses
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Soylent:
   key: Soylent
   scopes:
@@ -23557,6 +23593,24 @@ Thief:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+ThirdBaseDefenses:
+  key: ThirdBaseDefenses
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AI
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: ThirdBaseDefenses
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ThreatAvoidanceCoefficient:
   key: ThreatAvoidanceCoefficient
   scopes:

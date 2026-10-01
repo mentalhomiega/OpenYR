@@ -1058,6 +1058,11 @@ class RulesClass
 		TypeList<BuildingTypeClass const *> BuildDefense;
 		TypeList<BuildingTypeClass const *> BuildPDefense;
 		TypeList<BuildingTypeClass const *> BuildAA;
+
+		// The defenses a computer house of each side chooses from when it plans its base.
+		TypeList<BuildingTypeClass const *> AlliedBaseDefenses;
+		TypeList<BuildingTypeClass const *> SovietBaseDefenses;
+		TypeList<BuildingTypeClass const *> ThirdBaseDefenses;
 		TypeList<BuildingTypeClass const *> BuildHelipad;
 
 		/*

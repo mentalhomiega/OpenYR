@@ -533,6 +533,9 @@ RulesClass::RulesClass(void) :
 	BuildDefense(),
 	BuildPDefense(),
 	BuildAA(),
+	AlliedBaseDefenses(),
+	SovietBaseDefenses(),
+	ThirdBaseDefenses(),
 	BuildHelipad(),
 	BuildRadar(),
 	ConcreteWalls(),
@@ -1819,6 +1822,9 @@ bool RulesClass::AI(CCINIClass const & ini)
 		BuildDefense = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildDefense", BuildDefense);
 		BuildPDefense = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildPDefense", BuildPDefense);
 		BuildAA = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildAA", BuildAA);
+		AlliedBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "AlliedBaseDefenses", AlliedBaseDefenses);
+		SovietBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "SovietBaseDefenses", SovietBaseDefenses);
+		ThirdBaseDefenses = TGet_TypeList<BuildingTypeClass>(ini, AI, "ThirdBaseDefenses", ThirdBaseDefenses);
 		BuildHelipad = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildHelipad", BuildHelipad);
 		BuildRadar = TGet_TypeList<BuildingTypeClass>(ini, AI, "BuildRadar", BuildRadar);
 		ConcreteWalls = TGet_TypeList<BuildingTypeClass>(ini, AI, "ConcreteWalls", ConcreteWalls);
@@ -2367,6 +2373,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildDefense);
 	stream.Serialize(BuildPDefense);
 	stream.Serialize(BuildAA);
+	stream.Serialize(AlliedBaseDefenses);
+	stream.Serialize(SovietBaseDefenses);
+	stream.Serialize(ThirdBaseDefenses);
 	stream.Serialize(BuildHelipad);
 	stream.Serialize(BuildRadar);
 	stream.Serialize(ConcreteWalls);
@@ -2919,6 +2928,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	BuildDefense.Delete((BuildingTypeClass const *)target);
 	BuildPDefense.Delete((BuildingTypeClass const *)target);
 	BuildAA.Delete((BuildingTypeClass const *)target);
+	AlliedBaseDefenses.Delete((BuildingTypeClass const *)target);
+	SovietBaseDefenses.Delete((BuildingTypeClass const *)target);
+	ThirdBaseDefenses.Delete((BuildingTypeClass const *)target);
 	BuildHelipad.Delete((BuildingTypeClass const *)target);
 	BuildRadar.Delete((BuildingTypeClass const *)target);
 

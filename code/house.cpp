@@ -7936,11 +7936,23 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 }
 
 
+static TypeList<BuildingTypeClass const *> const & Side_Base_Defenses(int side)
+{
+	if (side == 0) {
+		return(Rule->AlliedBaseDefenses);
+	}
+	if (side == 1) {
+		return(Rule->SovietBaseDefenses);
+	}
+	return(Rule->ThirdBaseDefenses);
+}
+
+
 /// <summary>
 /// Fetches the anti-aircraft defenses this house could build.
-/// This routine gathers the candidates that the base defense planner will choose between.
-/// Only structures this house may own, that are within its tech level, and whose
-/// prerequisites are already accounted for, are listed.
+/// The candidates come from the AlliedBaseDefenses, SovietBaseDefenses or ThirdBaseDefenses
+/// list for this house's side. Only structures this house may own, that are within its tech
+/// level, and whose prerequisites are already accounted for, are listed.
 /// </summary>
 /// <param name="owned">The structures to count as owned when testing prerequisites.</param>
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
@@ -7949,8 +7961,9 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Air_Defense_Buildin
 	unsigned ownable = Acted_Mask();
 	DynamicVectorClass<BuildingTypeClass *> defenses;
 
-	for (int i = 0; i < BuildingTypes.Count(); i++) {
-		BuildingTypeClass * b = BuildingTypes[i];
+	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(Planning_Side());
+	for (int i = list.Count() - 1; i >= 0; i--) {
+		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
 		if (ownable & b->Ownable && b->AntiAirValue > 0 && b->Level <= Control.TechLevel && AI_Has_Prerequisites(b, owned, owned.Count())) {
 			defenses.Add(b);
 		}
@@ -7962,9 +7975,9 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Air_Defense_Buildin
 
 /// <summary>
 /// Fetches the anti-armor defenses this house could build.
-/// This routine gathers the candidates that the base defense planner will choose between.
-/// Only structures this house may own, that are within its tech level, and whose
-/// prerequisites are already accounted for, are listed.
+/// The candidates come from the AlliedBaseDefenses, SovietBaseDefenses or ThirdBaseDefenses
+/// list for this house's side. Only structures this house may own, that are within its tech
+/// level, and whose prerequisites are already accounted for, are listed.
 /// </summary>
 /// <param name="owned">The structures to count as owned when testing prerequisites.</param>
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
@@ -7973,8 +7986,9 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Armor_Defense_Build
 	unsigned ownable = Acted_Mask();
 	DynamicVectorClass<BuildingTypeClass *> defenses;
 
-	for (int i = 0; i < BuildingTypes.Count(); i++) {
-		BuildingTypeClass * b = BuildingTypes[i];
+	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(Planning_Side());
+	for (int i = list.Count() - 1; i >= 0; i--) {
+		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
 		if (ownable & b->Ownable && b->AntiArmorValue > 0 && b->Level <= Control.TechLevel && AI_Has_Prerequisites(b, owned, owned.Count())) {
 			defenses.Add(b);
 		}
@@ -7986,9 +8000,9 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Armor_Defense_Build
 
 /// <summary>
 /// Fetches the anti-infantry defenses this house could build.
-/// This routine gathers the candidates that the base defense planner will choose between.
-/// Only structures this house may own, that are within its tech level, and whose
-/// prerequisites are already accounted for, are listed.
+/// The candidates come from the AlliedBaseDefenses, SovietBaseDefenses or ThirdBaseDefenses
+/// list for this house's side. Only structures this house may own, that are within its tech
+/// level, and whose prerequisites are already accounted for, are listed.
 /// </summary>
 /// <param name="owned">The structures to count as owned when testing prerequisites.</param>
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
@@ -7997,8 +8011,9 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Ground_Defense_Buil
 	unsigned ownable = Acted_Mask();
 	DynamicVectorClass<BuildingTypeClass *> defenses;
 
-	for (int i = 0; i < BuildingTypes.Count(); i++) {
-		BuildingTypeClass * b = BuildingTypes[i];
+	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(Planning_Side());
+	for (int i = list.Count() - 1; i >= 0; i--) {
+		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
 		if (ownable & b->Ownable && b->AntiInfantryValue > 0 && b->Level <= Control.TechLevel && AI_Has_Prerequisites(b, owned, owned.Count())) {
 			defenses.Add(b);
 		}
