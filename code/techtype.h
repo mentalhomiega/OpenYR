@@ -128,6 +128,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		TypeList<AnimTypeClass const *> DebrisAnims;
 
+		// One of these animations, picked at random, plays where a structure or vehicle of this type is destroyed.
+		TypeList<AnimTypeClass const *> DestroyAnim;
+
 		/*
 		 * This is the class ID of the locomotion object that moves an object of this type
 		 * about. It is what decides whether the object drives, walks, hovers, flies or

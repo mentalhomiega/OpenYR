@@ -6852,6 +6852,11 @@ void UnitClass::Explode(void)
 
 		new AnimClass(anim, PositionCoord);
 
+		// A random DestroyAnim also plays where the vehicle was destroyed (UnitClass::Explode, 0x738680).
+		if (Class->DestroyAnim.Count() > 0) {
+			new AnimClass(Class->DestroyAnim[Scen->RandomNumber(0, Class->DestroyAnim.Count() - 1)], PositionCoord);
+		}
+
 		/*
 		**	Harvesters explode with a force equal to the amount of
 		**	Tiberium they are carrying.

@@ -131,6 +131,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	DebrisTypes(),
 	DebrisMaximums(),
 	DebrisAnims(),
+	DestroyAnim(),
 	Locomotor(ClassID_TeleportLocomotion),
 	VoxelCenterY(0),
 	VoxelCenterX(0),
@@ -690,6 +691,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
+		DestroyAnim = TGet_TypeList<AnimTypeClass>(ini, IniName, "DestroyAnim", DestroyAnim);
 		TurretCount = ini.Get_Int(Name(), "TurretCount", TurretCount);
 		WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
 		if (!Has_Multiple_Turrets()) {
@@ -1129,6 +1131,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DebrisTypes);
 	stream.Serialize(DebrisMaximums);
 	stream.Serialize(DebrisAnims);
+	stream.Serialize(DestroyAnim);
 
 	/*
 	 * A class identifier is a plain sixteen byte value from the Windows SDK with no member

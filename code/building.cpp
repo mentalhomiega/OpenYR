@@ -2426,6 +2426,18 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 					Do_Destruction(tech, source, forced, offset);
 
+					// A random DestroyAnim plays where the structure stood, in its house's colors (BuildingClass::Destroy, 0x4415F0).
+					if (Class->DestroyAnim.Count() > 0) {
+						AnimTypeClass const * type = Class->DestroyAnim[Scen->RandomNumber(0, Class->DestroyAnim.Count() - 1)];
+						if (type != NULL) {
+							AnimClass * anim = new AnimClass(type, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+							if (anim != NULL) {
+								anim->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+								anim->AlternativeBrightness = Apparent_Brightness();
+							}
+						}
+					}
+
 					if (CountDown > 0) {
 						Delete_Me();
 					}

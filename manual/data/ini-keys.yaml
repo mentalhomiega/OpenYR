@@ -8865,6 +8865,23 @@ Description:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
+DestroyAnim:
+  key: DestroyAnim
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of AnimTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: DestroyAnim
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DestroyWalls:
   key: DestroyWalls
   scopes:
