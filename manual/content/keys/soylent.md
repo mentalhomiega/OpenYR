@@ -17,4 +17,4 @@ Soylent=200   ; selling it at a service depot returns 200 credits
 
 A negative value, including the default `-1`, keeps the usual refund: the object's price with its owner's multipliers, times `RefundPercent` for a human player's house.
 
-The value replaces the refund in every payment `RefundPercent` lists, which covers selling a structure, a vehicle or aircraft at a service depot, or an upgrade, and the compensation for a structure that cannot undeploy. An upgrade's sale uses the upgrade type's `Soylent=`, and undeploy compensation uses the structure's.
+The value replaces the refund in every payment `RefundPercent` lists, which covers selling a structure, a vehicle or aircraft at a service depot, or an upgrade, and the compensation for a structure that cannot undeploy. It also replaces the payment for an object fed into a [`Grinding=yes`](/keys/grinding/) structure. An upgrade's sale uses the upgrade type's `Soylent=`, and undeploy compensation uses the structure's.

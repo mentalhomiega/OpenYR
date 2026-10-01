@@ -2307,6 +2307,23 @@ RadioMessageType FootClass::Receive_Message(RadioClass * from, RadioMessageType 
  *=============================================================================================*/
 int FootClass::Do_MISSION_ENTER(void)
 {
+	// An object sent into its owner's grinder keeps heading there and is ground up on arrival.
+	if (RTTI == RTTI_INFANTRY || RTTI == RTTI_UNIT) {
+		BuildingClass * grinder = NULL;
+		if (NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
+			grinder = (BuildingClass *)NavCom;
+		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
+			grinder = (BuildingClass *)ArchiveTarget;
+		}
+		if (grinder != NULL && grinder->Class->IsGrinding && grinder->House == House) {
+			ArchiveTarget = grinder;
+			if (NavCom == NULL) {
+				Assign_Destination(grinder);
+			}
+			return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+		}
+	}
+
 	/*
 	 * A soldier sent to garrison a structure remembers it and keeps walking there, trying again
 	 * if its path gives out; it goes inside on arrival. It gives up once the structure cannot

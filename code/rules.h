@@ -427,6 +427,9 @@ class RulesClass
 		// Played for the player when a spy satellite starts showing the map, and when it stops.
 		VocType SpySatActivationSound;
 		VocType SpySatDeactivationSound;
+
+		// Played where an object is ground up in a grinder.
+		VocType EnterGrinderSound;
 		VocType GateDownSound;
 
 		/*

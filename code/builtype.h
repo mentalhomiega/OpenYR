@@ -505,6 +505,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Cloning=yes structure releases a copy of every soldier its owner's barracks release.
 		bool IsCloning;
 
+		// A Grinding=yes structure takes in its owner's infantry and vehicles and pays their refund.
+		bool IsGrinding;
+
 		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
 		bool IsFactoryPlant;
 		double InfantryCostBonus;

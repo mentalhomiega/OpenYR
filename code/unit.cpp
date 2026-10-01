@@ -2104,6 +2104,15 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			}
 		}
 
+		if (Mission == MISSION_ENTER && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
+			BuildingClass * grinder = (BuildingClass *)NavCom;
+			if (grinder->Class->IsGrinding && grinder->House == House && Get_Cell_Ptr()->Cell_Building() == grinder) {
+				grinder->Grind(this);
+				BEnd(BENCH_PCP);
+				return;
+			}
+		}
+
 		TechnoClass	* whom = Contact_With_Whom();
 		if ((Mission == MISSION_ENTER || Mission == MISSION_PATROL) && whom != NULL) {
 			Cell center = Center_Coord();
@@ -3901,6 +3910,9 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	authorization from the occupier.
 			*/
 			if (obj == Contact_With_Whom() && (IsTethered || (obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Class->IsCanUnitRepair))) {
+				return(MOVE_OK);
+			}
+			if (obj == NavCom && Mission == MISSION_ENTER && obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Class->IsGrinding && ((BuildingClass *)obj)->House == House) {
 				return(MOVE_OK);
 			}
 

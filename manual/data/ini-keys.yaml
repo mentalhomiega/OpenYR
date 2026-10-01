@@ -9027,6 +9027,24 @@ EngineerDamage:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EnterGrinderSound:
+  key: EnterGrinderSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: EnterGrinderSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ExitCoord:
   key: ExitCoord
   scopes:
@@ -10714,6 +10732,23 @@ GreenTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+Grinding:
+  key: Grinding
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsGrinding
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Ground:
   key: Ground
   scopes:

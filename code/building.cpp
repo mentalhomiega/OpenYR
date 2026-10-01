@@ -397,6 +397,13 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 {
 	switch (message) {
 
+		// A grinder takes in its owner's objects without holding contact with any one of them.
+		case RADIO_HELLO:
+			if (Class->IsGrinding) {
+				return(RADIO_NEGATIVE);
+			}
+			break;
+
 		/*
 		**	This message is received as a request to attach/load/dock with this building.
 		**	Verify that this is allowed and return the appropriate response.
@@ -406,6 +413,12 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			if (!House->Is_Ally(from)) return(RADIO_STATIC);
 			if (Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION || BState == BSTATE_CONSTRUCTION || (!ScenarioInit && In_Radio_Contact() && Contact_With_Whom() != from)) return(RADIO_NEGATIVE);
 			if (!IsOn) return(RADIO_NEGATIVE);
+			if (Class->IsGrinding) {
+				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && ((TechnoClass *)from)->House == House) {
+					return(RADIO_ROGER);
+				}
+				return(RADIO_NEGATIVE);
+			}
 			if (Class->IsCanUnitRepair) {
 				if (from->RTTI == RTTI_UNIT || (from->RTTI == RTTI_AIRCRAFT)) {
 					if (Transmit_Message(RADIO_ON_DEPOT, from) != RADIO_ROGER) {
@@ -443,6 +456,10 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 		case RADIO_IM_IN:
 			if (Mission == MISSION_DECONSTRUCTION) {
 				return(RADIO_NEGATIVE);
+			}
+			if (Class->IsGrinding && (from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT)) {
+				Grind((FootClass *)from);
+				return(RADIO_ROGER);
 			}
 			if (Class->IsCanUnitRepair || Class->IsCanUnitReload || Class->IsHospital || Class->IsArmory) {
 				IsReadyToCommence = true;
@@ -493,6 +510,10 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 					}
 					return(RADIO_NEGATIVE);
 				}
+			}
+
+			if (Class->IsGrinding) {
+				return(RADIO_ROGER);
 			}
 
 			if (Class->IsHospital || Class->IsArmory) {
@@ -8326,6 +8347,29 @@ void BuildingClass::Occupy(InfantryClass * infantry)
 	infantry->Limbo();
 	Occupants.Add(infantry);
 	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Grinds up an infantryman or vehicle that has come in, as the arrival code of
+/// InfantryClass (0x519630) and UnitClass (0x739EC0) does: the owner is paid the refund of the
+/// object and of every passenger it carries, and the object is removed.
+/// </summary>
+void BuildingClass::Grind(FootClass * object)
+{
+	int refund = object->Refund_Amount();
+	for (FootClass * passenger = (FootClass *)object->Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
+		refund += passenger->Refund_Amount();
+	}
+	House->Refund_Money(refund);
+
+	Sound_Effect(Rule->EnterGrinderSound, object->Center_Coord());
+	if (Anims[BANIM_ACTIVE_ONE] != NULL) {
+		End_Anim(BANIM_ACTIVE_ONE);
+		Begin_Anim(BANIM_SPECIAL_ONE, HealthRatio <= Rule->ConditionYellow);
+	}
+
+	object->Delete_Me();
 }
 
 

@@ -776,7 +776,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 
 		// A soldier that reaches the structure it was sent to garrison goes inside, as gamemd's
 		// InfantryClass cell arrival (0x519630) does; one that may no longer enter is turned away.
-		if (Mission == MISSION_ENTER && Class->IsOccupier && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
+		if (Mission == MISSION_ENTER && Class->IsOccupier && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING && ((BuildingClass *)NavCom)->Class->IsCanBeOccupied) {
 			BuildingClass * building = (BuildingClass *)NavCom;
 			if (building == cellptr->Cell_Building()) {
 				if (building->Can_Be_Occupied_By(this)) {
@@ -955,6 +955,12 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				techno->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 			}
 			if (techno->RTTI == RTTI_BUILDING) {
+				// A grinder takes the soldier in for good.
+				if (((BuildingClass *)techno)->Class->IsGrinding && techno == Get_Cell_Ptr()->Cell_Building() && techno->House == House) {
+					((BuildingClass *)techno)->Grind(this);
+					BEnd(BENCH_PCP);
+					return;
+				}
 				if (techno == Get_Cell_Ptr()->Cell_Building() && Transmit_Message(RADIO_IM_IN) == RADIO_ROGER) {
 					Limbo();
 					Transmit_Message(RADIO_HELLO, techno);
@@ -2811,6 +2817,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
 
 	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Can_Be_Occupied_By(this)) {
+		return(ACTION_ENTER);
+	}
+
+	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Class->IsGrinding && ((BuildingClass const *)object)->House == House) {
 		return(ACTION_ENTER);
 	}
 

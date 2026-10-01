@@ -545,6 +545,7 @@ class BuildingClass : public TechnoClass
 		bool Can_Occupy_Fire(void) const;
 		void Occupy(InfantryClass * infantry);
 		void Eject_Occupants(void);
+		void Grind(FootClass * object);
 		void Garrison_AI(void);
 		void Set_Garrison_House(HouseClass * newowner);
 		void Power_Anims_Off(void);
