@@ -8389,6 +8389,23 @@ DetectDisguise:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DetectDisguiseRange:
+  key: DetectDisguiseRange
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: DetectDisguiseRange
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DetonationAltitude:
   key: DetonationAltitude
   scopes:
@@ -12190,6 +12207,40 @@ GameSpeedBias:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GapGenerator:
+  key: GapGenerator
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsGapGenerator
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+GapRadiusInCells:
+  key: GapRadiusInCells
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: GapRadiusInCells
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Gate:
   key: Gate
   scopes:

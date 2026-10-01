@@ -9888,3 +9888,17 @@ void TechnoClass::Set_Talker(TechnoClass * techno, TalkType bubble)
 		TalkBubbleTimer = 0;
 	}
 }
+
+
+/// <summary>
+/// Is this object shown to the local player with its disguise (InfantryClass::IsDisguisedAs,
+/// 0x5227F0)? It is not when the player's house is an ally of its owner, or when a
+/// disguise detector of the player's house covers its cell.
+/// </summary>
+bool TechnoClass::Is_Disguised_To_Player(void) const
+{
+	if (DisguiseType == NULL || DisguiseHouse == NULL || PlayerPtr == NULL || House->Is_Ally(PlayerPtr)) {
+		return(false);
+	}
+	return(Map[Get_Cell()].DisguiseSensorCount[PlayerPtr] == 0);
+}

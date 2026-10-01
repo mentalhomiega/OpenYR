@@ -30,6 +30,7 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	kill <TypeID>			destroys the objects of that type other houses own
 **	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
 **							that cell
 **	unload x y				orders the structure on that cell to unload
@@ -374,9 +375,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "cell") {
 		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
 		ObjectClass const * occupier = cell.Cell_Occupier();
-		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d\n",
+		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d gap %d\n",
 			std::atoi(step.Argument.c_str()), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
-			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count());
+			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), cell.GapCount);
 	} else if (step.Command == "water") {
 		// water x y: logs the open water cell nearest to that cell.
 		Cell const from(std::atoi(step.Argument.c_str()), step.X);
@@ -544,6 +545,15 @@ void Run(StepType const & step)
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
 				DebugString("AUTOTEST   damage %s at %d,%d took %d strength %d curtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, damage, (int)techno->Strength, (int)techno->IronCurtainTimer);
+			}
+		}
+	} else if (step.Command == "kill") {
+		for (int index = Technos.Count() - 1; index >= 0; index--) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House != PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				int damage = techno->Strength;
+				DebugString("AUTOTEST   kill %s at %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y);
+				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 			}
 		}
 	} else if (step.Command == "price") {

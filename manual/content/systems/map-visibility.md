@@ -9,6 +9,8 @@ keys:
   - SpySat
   - SpySatActivationSound
   - SpySatDeactivationSound
+  - GapGenerator
+  - GapRadiusInCells
   - AttackingAircraftSightRange
   - FlashFrameTime
   - FogRate
@@ -218,6 +220,23 @@ When the first such structure starts counting, the shroud lifts from every cell 
 
 When the last one stops counting, every cell goes back under the shroud and the fog for that house, and its objects look again, so only ground they see stays uncovered. The local player hears [`SpySatDeactivationSound`](/keys/spysatdeactivationsound/). Ground uncovered by earlier reveals is lost too, and the house is no longer marked as fully revealed.
 
+### Gap generators
+
+A [`GapGenerator=yes`](/keys/gapgenerator/) structure shrouds the ground around it for the local player while it works, if that player is still in the game and is neither its owner nor an ally of its owner. Other players, and computer houses, are not affected.
+
+```ini title="rulesmd.ini"
+[MYGAP] ; example BuildingType
+GapGenerator=yes
+GapRadiusInCells=10
+Powered=yes
+```
+
+The structure works while it stands on the map, is [operational](/systems/power/#defenses), and has finished its buildup. Its gap covers every cell within [`GapRadiusInCells`](/keys/gapradiusincells/) cells of the cell it is drawn over. When it starts working, those cells go under the shroud and the fog. While any gap covers a cell, nothing uncovers it for the local player, not even the player's own objects standing there, unless the player has a working [spy satellite](#the-spy-satellite). The local player also loses the fully-revealed mark, so a later reveal works again.
+
+When the structure stops working because it is sold, destroyed, captured or loses power, the cells stay covered. The local player's objects look again at once, so the ground they see is uncovered, and a working spy satellite reveals the whole map again. A captured gap generator starts working for its new owner on its next update.
+
+Yuri's Revenge also lets a gap generator widen its gap to `SuperGapRadiusInCells` when deployed. That is not done yet.
+
 ## The fog of war
 
 Whether fog is on depends on the game type:
@@ -327,8 +346,8 @@ The shroud also limits orders. An order onto a shrouded cell is refused unless t
 
 A subterranean unit ordered to move onto a shrouded object does nothing unless [`AllowShroudedSubteranneanMoves=yes`](/keys/allowshroudedsubteranneanmoves/). An aircraft ignores that order regardless.
 
-:::note[Nothing hides ground from an opponent]
-There is no gap generator, GPS reveal or radar jamming. No structure, weapon or setting lets one house hide uncovered ground from another. A [`Camera=yes`](/keys/camera/) weapon does not reveal ground either.
+:::note[Gap generators are the only way to hide ground from an opponent]
+There is no GPS reveal or radar jamming. Apart from [gap generators](#gap-generators), no structure, weapon or setting lets one house hide uncovered ground from another. A [`Camera=yes`](/keys/camera/) weapon does not reveal ground either.
 
 A stun can still take a player's radar away. An [EM pulse](/systems/emp-pulse/) stuns every building inside its radius, whoever owns it, and a stunned [`Radar=yes`](/keys/radar/) structure stops supplying the radar map for as long as the stun lasts. [Power output and drain](/systems/power/#radar) owns that test.
 :::

@@ -166,6 +166,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsImmuneToPsionics(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
+	GapRadiusInCells(0),
 	IsParasiteable(true),
 	SuppressionThreshold(0),
 	IsReselectIfLimboed(false),
@@ -204,6 +205,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	TurretNotExportedOnGround(false),
 	IsTypeImmune(false),
 	IsDetectDisguise(false),
+	DetectDisguiseRange(0),
 	IsMoveToShroud(true),
 	IsTrainable(true),
 	IsNaval(false),
@@ -577,6 +579,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsTypeImmune = ini.Get_Bool(Name(), "TypeImmune", IsTypeImmune);
 		IsDetectDisguise = ini.Get_Bool(Name(), "DetectDisguise", IsDetectDisguise);
+		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
 		WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
 		IsMoveToShroud = ini.Get_Bool(Name(), "MoveToShroud", IsMoveToShroud);
 		IsTrain = ini.Get_Bool(Name(), "IsTrain", IsTrain);
@@ -628,6 +631,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
 		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
@@ -1125,6 +1129,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsImmuneToPsionics);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
+	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
 	stream.Serialize(IsReselectIfLimboed);
@@ -1186,6 +1191,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EliteWeapons);
 	stream.Serialize(IsTypeImmune);
 	stream.Serialize(IsDetectDisguise);
+	stream.Serialize(DetectDisguiseRange);
 	stream.Serialize(IsMoveToShroud);
 	stream.Serialize(IsTrainable);
 	stream.Serialize(IsNaval);

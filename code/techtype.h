@@ -297,6 +297,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
 
+		// How far a gap generator of this type shrouds the map, in cells.
+		int GapRadiusInCells;
+
 		/*
 		 * Parasites: can one get into this object, how much damage to its victim from others it
 		 * shrugs off, and is it selected again after a weapon with LimboLaunch takes it off the map?
@@ -567,6 +570,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * target, then this flag will be true.
 		 */
 		bool IsDetectDisguise;
+
+		// How far a DetectDisguise=yes structure shows disguised objects to its owner, in cells.
+		int DetectDisguiseRange;
 
 		/*
 		 * If this object may be ordered into shrouded territory, then this flag will be true.

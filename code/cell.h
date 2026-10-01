@@ -77,6 +77,9 @@ class CellClass : public AbstractClass
 		// The radiation the sites around this cell give it.
 		double RadLevel;
 
+		// The number of gap generators shrouding this cell for the local player.
+		int GapCount;
+
 		/*
 		 * When the cell falls under fog, the objects standing in it are replaced by
 		 * snapshots so the player keeps seeing what was there when he last looked. This
@@ -178,6 +181,9 @@ class CellClass : public AbstractClass
 		 */
 		HouseArray<std::uint16_t> CloakCount;
 		HouseArray<std::uint16_t> SensorCount;
+
+		// The number of disguise detectors of each house covering this cell.
+		HouseArray<std::uint16_t> DisguiseSensorCount;
 		HouseSet OccupiedBy;
 
 	private:

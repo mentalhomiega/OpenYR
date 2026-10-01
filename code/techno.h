@@ -589,7 +589,7 @@ class TechnoClass :	public RadioClass,
 		void Set_Turret_Weapon(int position);
 		bool Temporal_AI(void);
 		void Plant_Bomb(TechnoClass * planter);
-		bool Is_Disguised_To_Player(void) const { return(DisguiseType != NULL && DisguiseHouse != NULL && PlayerPtr != NULL && !House->Is_Ally(PlayerPtr)); }
+		bool Is_Disguised_To_Player(void) const;
 		void Detonate_Bomb(void);
 		void Disarm_Bomb(void);
 		void Gattling_Rate_Up(int frames);

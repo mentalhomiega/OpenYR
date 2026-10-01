@@ -1066,6 +1066,11 @@ bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shro
 	CellClass * cellptr = &(*this)[cell];
 	bool const view = (house == PlayerPtr);
 
+	// A gap generator keeps its cells shrouded for the local player unless a spy satellite works.
+	if (view && cellptr->GapCount > 0 && !house->IsSpySatActive) {
+		return(false);
+	}
+
 	bool wasfogged = !cellptr->IsFogMapped[house];
 	bool changed = (shroud && !cellptr->IsMapped[house]) || (fog && !cellptr->IsFogMapped[house]);
 	bool newlymapped = changed;

@@ -333,6 +333,13 @@ class BuildingClass : public TechnoClass
 		 */
 		char CurrentCloakRadius;
 
+		// Is this gap generator's shroud in place, and did it count against the local player's view?
+		bool IsGeneratingGap;
+		bool IsGapCounted;
+
+		void Create_Gap(void);
+		void Destroy_Gap(void);
+
 		/*
 		 * These mark the cells of the cloaking grid around a cloak generator that its own field
 		 * covers, so its cover is counted on and off without disturbing another generator's.
@@ -344,6 +351,11 @@ class BuildingClass : public TechnoClass
 		 * however often the array is switched on.
 		 */
 		bool IsSensing;
+
+		// Does this disguise detector currently count over its cells?
+		bool IsDetectingDisguise;
+
+		void Disguise_Detector(bool on);
 
 		/*
 		 * This is how far this building has faded from sight, from 0 (solid) to 15 (invisible).

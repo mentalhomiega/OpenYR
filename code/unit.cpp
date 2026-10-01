@@ -3042,7 +3042,7 @@ void UnitClass::Mirage_AI(void)
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	// A disguised Mirage looks like its terrain to houses that are not its owner's allies.
-	if (MirageType != NULL && PlayerPtr != NULL && !House->Is_Ally(PlayerPtr)) {
+	if (MirageType != NULL && PlayerPtr != NULL && !House->Is_Ally(PlayerPtr) && Map[Get_Cell()].DisguiseSensorCount[PlayerPtr] == 0) {
 		ShapeSet const * shape = (ShapeSet const *)MirageType->Get_Image_Data();
 		CellClass & cellptr = Map[Get_Cell()];
 		if (cellptr.Drawer == NULL) {

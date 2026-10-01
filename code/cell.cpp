@@ -248,6 +248,7 @@ CellClass::CellClass(void) :
 	BASECLASS(),
 	CellID(CELL_NONE),
 	RadLevel(0.0),
+	GapCount(0),
 	IsPlot(false),
 	IsCursorHere(false),
 	IsMapped(),
@@ -301,6 +302,7 @@ CellClass::CellClass(void) :
 	FogFrame(-2),
 	CloakCount(),
 	SensorCount(),
+	DisguiseSensorCount(),
 	OccupiedBy(),
 	Intensity(0x10000),
 	Ambient(0),
@@ -4405,6 +4407,7 @@ void CellClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(CellID);
 	stream.Serialize(RadLevel);
+	stream.Serialize(GapCount);
 
 	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate
 	// that names none is refused here, while the record can still be thrown away whole.
@@ -4444,6 +4447,7 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LastBridgeDrawRect);
 	stream.Serialize(CloakCount);
 	stream.Serialize(SensorCount);
+	stream.Serialize(DisguiseSensorCount);
 	stream.Serialize(OccupiedBy);
 	stream.Serialize(OccupierPtr);
 	stream.Serialize(BridgeOccupierPtr);

@@ -1,7 +1,7 @@
 ---
 key: DetectDisguise
 summary: Lets an object see a disguised soldier for what it is when it scans for a target.
-see_also: [Disguised, Disguise, AIDetectDisguise, "system:target-selection"]
+see_also: [Disguised, Disguise, AIDetectDisguise, DetectDisguiseRange, "system:target-selection", "system:disguises"]
 when_omitted:
   kind: value
   value: "no"
@@ -20,4 +20,4 @@ The flag belongs to the scanning object's type, so it works the same for a playe
 
 Every other rule about a candidate still applies. In particular, an ally is rejected before the disguise is considered, so the flag cannot turn an object on a friendly spy unless the scanning object is an infantryman that has gone berserk.
 
-The flag changes nothing else about the disguise. To other players the soldier still shows the disguise's name and artwork, drawn in the viewing player's colors, and appears on radar in that player's color. A vehicle still refuses to run it over on its own initiative.
+On a structure with a [`DetectDisguiseRange`](/keys/detectdisguiserange/), the flag also [shows its owner disguised objects nearby as they are](/systems/disguises/#structures-that-see-through-disguises). Otherwise the flag changes nothing else about the disguise. To other players the soldier still shows the disguise's name and artwork, drawn in the viewing player's colors, and appears on radar in that player's color. A vehicle still refuses to run it over on its own initiative.

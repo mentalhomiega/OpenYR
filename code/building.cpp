@@ -264,7 +264,10 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsPoweredOn(true),
 	CloakGeneratorState(CLOAK_SETTLED),
 	CurrentCloakRadius(0),
+	IsGeneratingGap(false),
+	IsGapCounted(false),
 	IsSensing(false),
+	IsDetectingDisguise(false),
 	TranslucencyLevel(0),
 	Brightness(NORMAL_LIGHT),
 	UpgradeLevel(0),
@@ -1647,6 +1650,15 @@ void BuildingClass::AI(void)
 	**	the bstate change to occur immediately before the MissionClass::AI.
 	*/
 	Animation_AI();
+
+	if (Class->IsGapGenerator) {
+		bool const gap = !IsInLimbo && Is_Powered_On() && BState != BSTATE_CONSTRUCTION;
+		if (gap && !IsGeneratingGap) {
+			Create_Gap();
+		} else if (!gap && IsGeneratingGap) {
+			Destroy_Gap();
+		}
+	}
 
 	/*
 	**	If now is a good time to act on a new mission, then do so. This process occurs
@@ -3472,9 +3484,16 @@ bool BuildingClass::Limbo(void)
 			Update_Laser_Fence_Connections(false);
 		}
 
+		if (IsGeneratingGap) {
+			Destroy_Gap();
+		}
+
 		if (!ScenarioInit) {
 			if (Class->IsSensorArray) {
 				Disable_Sensor_Array();
+			}
+			if (Class->IsDetectDisguise) {
+				Disguise_Detector(false);
 			}
 			if (!Considered_Vehicle()) {
 				Release_Base_Area();
@@ -3832,6 +3851,9 @@ void BuildingClass::Grand_Opening(bool captured)
 			}
 			if (Class->IsSensorArray) {
 				Enable_Sensor_Array();
+			}
+			if (Class->IsDetectDisguise && Is_Powered_On()) {
+				Disguise_Detector(true);
 			}
 			if (Class->IsMobileWar) {
 				Toggle_Primary();
@@ -4538,8 +4560,17 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		if (Class->IsSensorArray) {
 			Disable_Sensor_Array();
 		}
+		if (IsGeneratingGap) {
+			Destroy_Gap();
+		}
+		bool const detecting = IsDetectingDisguise;
+		Disguise_Detector(false);
 
 		BASECLASS::Captured(newowner);
+
+		if (detecting) {
+			Disguise_Detector(true);
+		}
 
 		if (Class->IsCloakGenerator && Is_Powered_On()) {
 			Enable_Cloak_Generator();
@@ -9519,8 +9550,11 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPoweredOn);
 	stream.Serialize(CloakGeneratorState);
 	stream.Serialize(CurrentCloakRadius);
+	stream.Serialize(IsGeneratingGap);
+	stream.Serialize(IsGapCounted);
 	stream.Serialize(CloakFieldCells);
 	stream.Serialize(IsSensing);
+	stream.Serialize(IsDetectingDisguise);
 	stream.Serialize(TranslucencyLevel);
 	stream.Serialize(Brightness);
 	stream.Serialize(UpgradeLevel);
@@ -9763,6 +9797,92 @@ bool BuildingClass::Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover)
 
 
 /// <summary>
+/// Calls the function with every cell within GapRadiusInCells cells of the cell the building
+/// is drawn over.
+/// </summary>
+template<typename Fn>
+static void For_Each_Gap_Cell(BuildingClass const * building, Fn && fn)
+{
+	int const radius = building->Techno_Type_Class()->GapRadiusInCells;
+	Coord coord = building->Center_Coord();
+	coord.X = coord.X + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
+	coord.Y = coord.Y + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
+	Cell const center = coord.As_Cell();
+
+	for (int dx = -radius - 2; dx < radius + 2; dx++) {
+		for (int dy = -radius - 2; dy < radius + 2; dy++) {
+			if (dx * dx + dy * dy < (radius + 1) * (radius + 1)) {
+				Cell const cell(center.X + dx, center.Y + dy);
+				if (Map.In_Radar(cell)) {
+					fn(Map[cell]);
+				}
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Puts this gap generator's shroud in place (TechnoClass::CreateGap, 0x6FB170). Its cells are
+/// shrouded and kept from being revealed for the local player when that player is still in the
+/// game and is neither its owner nor an ally of its owner; other players are not affected.
+/// </summary>
+void BuildingClass::Create_Gap(void)
+{
+	if (PlayerPtr == NULL || IsGeneratingGap) {
+		return;
+	}
+	IsGeneratingGap = true;
+	IsGapCounted = (House != PlayerPtr && !House->Is_Ally(PlayerPtr) && !PlayerPtr->IsDefeated);
+	if (!IsGapCounted) {
+		return;
+	}
+
+	For_Each_Gap_Cell(this, [](CellClass & cell) {
+		cell.GapCount++;
+		cell.IsMapped.Clear(PlayerPtr);
+		cell.IsVisible.Clear(PlayerPtr);
+		cell.IsFogMapped.Clear(PlayerPtr);
+		cell.IsFogVisible.Clear(PlayerPtr);
+	});
+	PlayerPtr->IsVisionary = false;
+	Map.Complete_Radar_Refresh();
+	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+}
+
+
+/// <summary>
+/// Lifts this gap generator's shroud (TechnoClass::DestroyGap, 0x6FB470). Its cells stay
+/// shrouded until the local player's objects or a working spy satellite reveal them again.
+/// </summary>
+void BuildingClass::Destroy_Gap(void)
+{
+	if (!IsGeneratingGap) {
+		return;
+	}
+	IsGeneratingGap = false;
+	if (!IsGapCounted) {
+		return;
+	}
+	IsGapCounted = false;
+
+	For_Each_Gap_Cell(this, [](CellClass & cell) {
+		if (cell.GapCount > 0) {
+			cell.GapCount--;
+		}
+	});
+	if (PlayerPtr != NULL) {
+		PlayerPtr->IsVisionary = false;
+		if (PlayerPtr->IsSpySatActive) {
+			Map.Reveal_The_Map(PlayerPtr);
+		}
+	}
+	Map.All_To_Look();
+	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+}
+
+
+/// <summary>
 /// Handles the cloaking logic for this building.
 /// This routine fades the building in and out of view as it cloaks and uncloaks, and it
 /// grows or collapses the field of a cloak generator one ring of cells at a time. Any unit
@@ -9938,6 +10058,38 @@ bool BuildingClass::Is_Powered_On(void) const
 /// The array's coverage is lifted from every cell within its radius, so that cloaked objects
 /// standing there are hidden again unless another array of the house still covers them.
 /// </summary>
+/// <summary>
+/// Starts or stops this structure showing its owner the disguised objects within
+/// DetectDisguiseRange cells (BuildingClass::DisguiseDetectorActivate, 0x455A80, and
+/// DisguiseDetectorDeactivate, 0x455980). Turning it on or off twice in a row does nothing more.
+/// </summary>
+void BuildingClass::Disguise_Detector(bool on)
+{
+	if (on == IsDetectingDisguise) {
+		return;
+	}
+	IsDetectingDisguise = on;
+
+	int const radius = Techno_Type_Class()->DetectDisguiseRange;
+	Cell const origin = Center_Coord().As_Cell();
+	for (int y = -radius; y < radius; y++) {
+		for (int x = -radius; x < radius; x++) {
+			if (x * x + y * y < radius * radius) {
+				Cell const cell(origin.X + x, origin.Y + y);
+				if (Map.In_Radar(cell)) {
+					std::uint16_t & count = Map[cell].DisguiseSensorCount[House];
+					if (on) {
+						count++;
+					} else if (count > 0) {
+						count--;
+					}
+				}
+			}
+		}
+	}
+}
+
+
 void BuildingClass::Disable_Sensor_Array(void)
 {
 	if (!IsSensing) {
