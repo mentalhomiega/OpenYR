@@ -414,6 +414,9 @@ void Run(StepType const & step)
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
 			}
 		}
+	} else if (step.Command == "reveal") {
+		// reveal: uncovers the whole map, shroud and fog, for the player.
+		Map.Reveal_The_Map(PlayerPtr, true);
 	} else if (step.Command == "ini") {
 		// ini <section>: every entry of that section of the rules file, as the game read it.
 		CCINIClass const & ini = *RuleINI;
