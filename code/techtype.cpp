@@ -169,6 +169,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsParasiteable(true),
 	SuppressionThreshold(0),
 	IsReselectIfLimboed(false),
+	IsCanDisguise(false),
 	IsBalloonHover(false),
 	MindControlRingOffset(140),
 	MindClearedSound(VOC_NONE),
@@ -630,6 +631,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
+		IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
 		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
 		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
 		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
@@ -950,6 +952,11 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 
 	bool is_within_ground_firing_angle;
 
+	// A weapon with Range=-2 reaches anything (TechnoClass::InRange, 0x6F7220).
+	if (target != NULL && weapon != NULL && weapon->Range == -2 * CELL_LEPTON_W) {
+		return(true);
+	}
+
 	if (target != NULL && weapon != NULL) {
 		int range = weapon->Range - CELL_LEPTON / 3;
 		Coord tcoord = target->Center_Coord();
@@ -1121,6 +1128,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
 	stream.Serialize(IsReselectIfLimboed);
+	stream.Serialize(IsCanDisguise);
 	stream.Serialize(IsBalloonHover);
 	stream.Serialize(MindControlRingOffset);
 	stream.Serialize(MindClearedSound);

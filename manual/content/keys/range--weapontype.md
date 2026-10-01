@@ -45,3 +45,5 @@ When the weapon's [`Projectile=`](/keys/projectile/) has [`Arcing=yes`](/keys/ar
 `Range=0` leaves the reach below zero. A weapon without an arcing projectile can then fire only at structures, and only within the structure allowance above.
 
 A structure whose first-slot weapon has `Range=0` counts as unable to shoot back. A human player's objects outside a team, other than engineers, therefore do not pick it as a target on their own; [target selection](/systems/target-selection/#why-a-candidate-is-rejected) lists the rule and its exceptions.
+
+The value `-2` reaches any target, however far away.

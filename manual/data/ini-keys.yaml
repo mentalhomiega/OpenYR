@@ -5100,6 +5100,23 @@ CanBeOccupied:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CanDisguise:
+  key: CanDisguise
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsCanDisguise
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CanOccupyFire:
   key: CanOccupyFire
   scopes:
@@ -11009,6 +11026,23 @@ FireInTransport:
       default_candidate: 'yes'
       declared_in: WeaponTypeClass
       member: IsFireInTransport
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+FireOnce:
+  key: FireOnce
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsFireOnce
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
@@ -17347,6 +17381,23 @@ MakeInfantry:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+MakesDisguise:
+  key: MakesDisguise
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsMakesDisguise
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 ManualControl:
   key: ManualControl
   scopes:

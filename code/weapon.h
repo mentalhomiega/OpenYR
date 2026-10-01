@@ -273,6 +273,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Does firing take the firer off the map, to ride its projectile?
 		bool IsLimboLaunch;
+
+		// Does the firer drop its target after one shot?
+		bool IsFireOnce;
 		AnimTypeClass const * OpenToppedAnim;
 
 		/*

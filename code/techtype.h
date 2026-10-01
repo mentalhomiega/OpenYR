@@ -304,6 +304,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsParasiteable;
 		int SuppressionThreshold;
 		bool IsReselectIfLimboed;
+
+		// Can a disguise warhead fired by this object disguise it?
+		bool IsCanDisguise;
 		bool IsBalloonHover;
 
 		// How far above the object's center a mind control ring is drawn, in leptons.

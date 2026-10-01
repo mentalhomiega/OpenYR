@@ -306,6 +306,9 @@ void Dump(void)
 		if (object->House != PlayerPtr) continue;
 		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d rank %d tar %d,%d opentopped %d lastfire %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength, object->Veterancy.Is_Elite() ? 2 : (object->Veterancy.Is_Veteran() ? 1 : 0), tar.X, tar.Y, (int)object->IsInOpenToppedTransport, object->LastFireFrame);
+		if (object->DisguiseType != NULL) {
+			DebugString("AUTOTEST     disguised as %s of %s\n", object->DisguiseType->Name(), object->DisguiseHouse != NULL ? object->DisguiseHouse->Class->Name() : "-");
+		}
 	}
 }
 

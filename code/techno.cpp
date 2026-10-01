@@ -291,6 +291,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsBeingWarpedOut(false),
 	ParasiteImUsing(),
 	ParasiteEatingMe(NULL),
+	DisguiseType(NULL),
+	DisguiseHouse(NULL),
 	BombOwner(NULL),
 	BombHouse(NULL),
 	BombPlantFrame(0),
@@ -4528,6 +4530,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		bullet->Set_Payback(this);
 	}
 
+	// A FireOnce weapon's firer drops its target after the shot (TechnoClass::Fire, 0x6FDD50).
+	if (bullet != NULL && weapon->IsFireOnce) {
+		Assign_Target(NULL);
+	}
+
 	return(bullet);
 }
 
@@ -6400,6 +6407,8 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 		} else {
 			if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 				converter = EightBitDrawer;
+			} else if (Is_Disguised_To_Player()) {
+				converter = ColorSchemes[DisguiseHouse->Scheme]->Converter;
 			} else {
 				converter = ColorSchemes[House->Scheme]->Converter;
 			}
@@ -7041,6 +7050,10 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		if (BombHouse == target) {
 			BombHouse = NULL;
+		}
+		if (DisguiseHouse == target) {
+			DisguiseType = NULL;
+			DisguiseHouse = NULL;
 		}
 	}
 
@@ -8869,6 +8882,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBeingWarpedOut);
 	stream.Serialize(ParasiteImUsing);
 	stream.Serialize(ParasiteEatingMe);
+	stream.Serialize(DisguiseType);
+	stream.Serialize(DisguiseHouse);
 	stream.Serialize(BombOwner);
 	stream.Serialize(BombHouse);
 	stream.Serialize(BombPlantFrame);

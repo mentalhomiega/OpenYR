@@ -3148,6 +3148,10 @@ const char * InfantryClass::Full_Name(void) const
 		return(Fetch_String(TXT_TECHNICIAN));
 	}
 
+	if (Is_Disguised_To_Player()) {
+		return(DisguiseType->GivenName);
+	}
+
 	if (Class->IsDisguised && !House->Is_Player_Control() && Rule->Disguise != NULL) {
 		return(Rule->Disguise->GivenName);
 	}
@@ -3796,7 +3800,7 @@ void InfantryClass::Firing_AI(void)
 			}
 
 			const WeaponDataStruct * wdata = Get_Class_Weapon_Data(0);
-			if (wdata->Weapon->MaxSpeed < Rule->Incoming) {
+			if (TarCom != NULL && wdata->Weapon->MaxSpeed < Rule->Incoming) {
 				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
 			}
 		}
@@ -3968,6 +3972,9 @@ void const * InfantryClass::Get_Image_Data(void) const
 {
 	if (Doing == DO_STRUGGLE && Rule->WebbedInfantry != NULL) {
 		return(Rule->WebbedInfantry->Get_Image_Data());
+	}
+	if (Is_Disguised_To_Player()) {
+		return(DisguiseType->ImageData);
 	}
 	if (!IsOwnedByPlayer && Class->IsDisguised && Rule->Disguise != NULL) {
 		return(Rule->Disguise->ImageData);

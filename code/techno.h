@@ -171,6 +171,10 @@ class TechnoClass :	public RadioClass,
 		std::optional<ParasiteClass> ParasiteImUsing;
 		TechnoClass * ParasiteEatingMe;
 
+		// The soldier and house this object looks like to houses that are not its owner's allies.
+		InfantryTypeClass const * DisguiseType;
+		HouseClass * DisguiseHouse;
+
 		// The Ivan bomb on this object: who planted it, for which house, and when it goes off (BombDetonateFrame is -1 with no bomb).
 		TechnoClass * BombOwner;
 		HouseClass * BombHouse;
@@ -585,6 +589,7 @@ class TechnoClass :	public RadioClass,
 		void Set_Turret_Weapon(int position);
 		bool Temporal_AI(void);
 		void Plant_Bomb(TechnoClass * planter);
+		bool Is_Disguised_To_Player(void) const { return(DisguiseType != NULL && DisguiseHouse != NULL && PlayerPtr != NULL && !House->Is_Ally(PlayerPtr)); }
 		void Detonate_Bomb(void);
 		void Disarm_Bomb(void);
 		void Gattling_Rate_Up(int frames);

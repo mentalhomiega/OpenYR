@@ -2247,7 +2247,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					if (TarCom != NULL) {
+						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					}
 					if (Is_Strafe()) {
 						Status = STRAFE_SHOT2;
 						IsLockedStraight = true;
@@ -2307,7 +2309,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					if (TarCom != NULL) {
+						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					}
 
 					if (Ammo) {
 						Status = Rule->IsCurleyShuffle ? PICK_ATTACK_LOCATION : FIRE_AT_TARGET;
@@ -2355,7 +2359,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			if (TarCom != NULL) {
+				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			}
 			Assign_Destination(TarCom);
 			Status = STRAFE_SHOT3;
 			return(PrimaryWeapon->ROF);
@@ -2385,7 +2391,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			if (TarCom != NULL) {
+				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			}
 			Assign_Destination(TarCom);
 			Status = STRAFE_SHOT4;
 			return(PrimaryWeapon->ROF);
@@ -2415,7 +2423,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			if (TarCom != NULL) {
+				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			}
 			Assign_Destination(TarCom);
 			Status = STRAFE_LAST_SHOT;
 			return(PrimaryWeapon->ROF);
@@ -2433,7 +2443,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					if (TarCom != NULL) {
+						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					}
 					Status = FLY_TO_POSITION;
 					return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
 

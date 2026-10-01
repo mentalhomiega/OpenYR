@@ -1346,6 +1346,19 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	/*
+	 * A disguise warhead makes a CanDisguise firer look like the soldier it hit, in that
+	 * soldier's house colors (TechnoClass::DisguiseAs, 0x70E280).
+	 */
+	else if (warhead->IsMakesDisguise) {
+		InfantryClass const * target = dynamic_cast<InfantryClass const *>(TarCom);
+		if (Payback != NULL && Payback->TClass->IsCanDisguise && target != NULL && target != Payback) {
+			Payback->DisguiseType = target->Class;
+			Payback->DisguiseHouse = target->House;
+			Payback->Mark(MARK_CHANGE);
+		}
+	}
+
+	/*
 	 * An Ivan bomb warhead fixes a time bomb to the target (BulletClass::Detonate, 0x469210).
 	 */
 	else if (warhead->IsIvanBomb) {
