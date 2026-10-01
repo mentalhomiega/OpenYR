@@ -261,14 +261,14 @@ The second test also stops a [`Charges=yes`](/keys/charges/) defense from starti
 - A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure that stops being operational shrinks its field ring by ring. It regrows the field the same way, out to [`CloakRadiusInCells`](/keys/cloakradiusincells/), once it is operational again and, for a `Powered=yes` type, once its house is no longer short of power. A generator that stays operational, such as one left at `Powered=no`, keeps its field through any shortfall.
 - [Laser fences](/systems/laser-fences/) are rechecked at every change to the balance. A fence run is up only while the posts at both ends are operational, so low power at either end drops the whole run.
 - A spotlight is neither drawn nor able to notice an intruder unless its structure is operational.
-- When a house is not short of power, every structure it owns runs its powered animations and powered lights, including a structure that is switched off. When the house is short, only a type that is `Powered=yes`, has drain, and is `TogglePower=yes` stops them.
+- Only a `Powered=yes` type that drains power reacts to the house's power with its attached animations. While the house is short, such a structure freezes or removes them as their [power flags](/systems/building-animations/#power) say. Each time the house rechecks its power at full power, it starts them again, including on a structure that is switched off. Other structures keep their animations running through a shortfall.
 
 :::caution[A sensor array does not go dark with the rest of the base]
 A power change does not remove sensor coverage. A [`SensorArray=yes`](/keys/sensorarray/) structure keeps its cells until it is taken off the map or captured. Low power matters only to an array that has not marked its cells yet: an array that finishes building while it is not operational marks nothing until any house's cloak field finishes growing while it is operational.
 :::
 
-:::caution[A TogglePower=no defense is silenced but stays lit]
-The animation shutdown and the out-of-service test both spare a `TogglePower=no` structure, but the weapon test does not. Such a defense holds fire through a shortfall while its animations and lights keep running, so it looks like a working turret.
+:::caution[A TogglePower=no defense is silenced by a shortfall]
+The out-of-service test spares a `TogglePower=no` structure, but the weapon test does not. Such a defense holds fire through a shortfall even though it still counts as in service.
 :::
 
 ### Player feedback

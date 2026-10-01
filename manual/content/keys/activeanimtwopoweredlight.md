@@ -11,7 +11,7 @@ when_omitted:
 
 The flag takes effect only beside [`ActiveAnimTwoPowered=no`](/keys/activeanimtwopowered/). While `ActiveAnimTwoPowered` is `yes`, its default, the animation freezes during a shortage and this flag is ignored.
 
-Each time the house rechecks its power at full power, it creates the animation in the slot if the slot is empty. That includes an animation that played to its end.
+Each time the house rechecks its power at full power, it creates the animation in the slot if the slot is empty, on a [`Powered=yes`](/keys/powered/) structure that drains power. That includes an animation that played to its end.
 
 Three events can start the animation again during a shortage, and it then runs until the next recheck removes it:
 

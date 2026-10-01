@@ -129,6 +129,9 @@ class BuildingClass : public TechnoClass
 		 */
 		AnimClass * Anims[BANIM_COUNT];
 
+		// A PoweredEffect animation that losing power stopped, to be restarted when power returns.
+		bool AnimStates[BANIM_COUNT];
+
 		/*
 		 * These are the building types installed in this building as upgrades, in the order
 		 * they were added. Each carries the extra weapon, power, and super weapon it grants.
@@ -531,6 +534,8 @@ class BuildingClass : public TechnoClass
 		void Turn_Off(void);
 		void Power_On(void);
 		void Power_Off(void);
+		void Power_Anims_On(void);
+		void Power_Anims_Off(void);
 		bool Open_Gate(void);
 		bool Is_Gate_Open(void) const;
 		bool Is_Blocked_By_Occupier(void);

@@ -11,4 +11,4 @@ Adds this many leptons to the [`ActiveAnimFour`](/keys/activeanimfour/) animatio
 
 The slot's value replaces the AnimType's own [`YSortAdjust=`](/keys/ysortadjust/), so repeat that value here to keep it.
 
-Keep the value between -128 and 127; a value outside that range wraps around, so `200` acts as `-56`. [Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers both rules and how this bias differs from the depth bias.
+[Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers how this sorting bias differs from the depth bias.

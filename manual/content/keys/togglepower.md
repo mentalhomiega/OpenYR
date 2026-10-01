@@ -13,7 +13,7 @@ It does not keep the structure switched on. The [Turn off building](/mapping/act
 
 `TogglePower=no` also changes what a power shortfall does to a [`Powered=yes`](/keys/powered/) structure with drain:
 
-- The structure stays operational, so its powered animations and lights keep running.
+- The structure stays operational, so its spotlight, laser fence and cloak field keep working. Its attached animations still freeze or disappear as their [power flags](/systems/building-animations/#power) say.
 - Its weapons still cannot fire, and a [`SAM=yes`](/keys/sam/) launcher still stops tracking.
 
 [Defenses](/systems/power/#defenses) defines operational and sets these tests side by side.

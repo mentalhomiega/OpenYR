@@ -242,6 +242,12 @@ class BuildingTypeClass : public TechnoTypeClass
 			char AnimDamaged[16];
 
 			/*
+			 * This is the name of the animation type to run in this slot while infantry occupy
+			 * the building. If the artwork provides none, then the healthy animation is used.
+			 */
+			char AnimGarrisoned[16];
+
+			/*
 			 * This is the pixel offset from the building's center at which this animation is
 			 * placed, so that a plume of smoke sits on the right chimney.
 			 */
@@ -251,13 +257,13 @@ class BuildingTypeClass : public TechnoTypeClass
 			 * This is the depth bias given to this animation, which decides whether it draws
 			 * in front of or behind the building it belongs to.
 			 */
-			char ZAdjust;
+			int ZAdjust;
 
 			/*
 			 * This is the bias added to this animation's sorting position, which moves it
 			 * earlier or later among the objects it shares its layer with.
 			 */
-			char YSort;
+			int YSort;
 
 			/*
 			 * If this animation only runs while the building has power, then this flag will be
@@ -271,17 +277,24 @@ class BuildingTypeClass : public TechnoTypeClass
 			 */
 			bool PoweredLight;
 
+			// Yuri's Revenge's PoweredEffect= and PoweredSpecial= flags for this slot.
+			bool PoweredEffect;
+			bool PoweredSpecial;
+
 			// Carries the animation entry to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{
 				stream.Serialize(Anim);
 				stream.Serialize(AnimDamaged);
+				stream.Serialize(AnimGarrisoned);
 				stream.Serialize(Location);
 				stream.Serialize(ZAdjust);
 				stream.Serialize(YSort);
 				stream.Serialize(Powered);
 				stream.Serialize(PoweredLight);
+				stream.Serialize(PoweredEffect);
+				stream.Serialize(PoweredSpecial);
 			}
 		};
 

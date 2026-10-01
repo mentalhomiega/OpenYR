@@ -29,7 +29,7 @@ These events start the slot again if it is empty:
 
 - A repair step that the house can pay for.
 - An upgrade plug installed on a structure below maximum strength. Installing the plug also restores the structure to maximum strength.
-- The house rechecking its power at full power, when the slot sets [`ActiveAnimPowered=no`](/keys/activeanimpowered/) and [`ActiveAnimPoweredLight=yes`](/keys/activeanimpoweredlight/).
+- The house rechecking its power at full power, when the slot sets [`ActiveAnimPowered=no`](/keys/activeanimpowered/) and [`ActiveAnimPoweredLight=yes`](/keys/activeanimpoweredlight/) and the structure is [`Powered=yes`](/keys/powered/) and drains power.
 - A [`UnitRepair=yes`](/keys/unitrepair/) service depot ending a repair. This event starts slot one only.
 
 ## What belongs to this slot alone

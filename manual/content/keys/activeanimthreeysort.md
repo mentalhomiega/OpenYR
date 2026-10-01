@@ -13,4 +13,4 @@ The value has no effect on an AnimType left at [`Surface=no`](/keys/surface/), b
 
 The slot's value replaces the AnimType's [`YSortAdjust`](/keys/ysortadjust/). To keep that bias, repeat it in `ActiveAnimThreeYSort`.
 
-Keep the value between -128 and 127, about half a cell either way. [Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers what happens outside that range.
+[Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers how this sorting bias differs from the depth bias.

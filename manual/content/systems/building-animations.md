@@ -1,6 +1,6 @@
 ---
 title: Building animations
-summary: "Steps a structure's artwork through five frame sequences and runs up to thirteen attached animations pinned to it, one per slot."
+summary: "Steps a structure's artwork through five frame sequences and runs up to twenty-one attached animations pinned to it, one per slot."
 category: buildings-economy
 keys:
   - ActiveAnim
@@ -119,11 +119,11 @@ related:
     id: shp
 ---
 
-A structure animates in two independent ways. Its artwork steps through a few frame sequences, covered in [the last section](#the-structures-own-frames). It can also run up to thirteen attached animations. Each is a separate animation from the [`[Animations]` list](/formats/rules-registries/), pinned to a point on the structure's artwork and playing at its own rate. The structure creates and removes these animations as its state changes. Most of this page covers attached animations.
+A structure animates in two independent ways. Its artwork steps through a few frame sequences, covered in [the last section](#the-structures-own-frames). It can also run up to twenty-one attached animations. Each is a separate animation from the [`[Animations]` list](/formats/rules-registries/), pinned to a point on the structure's artwork and playing at its own rate. The structure creates and removes these animations as its state changes. Most of this page covers attached animations.
 
 Each attached animation occupies an animation slot. A BuildingType has one set of settings per slot, and a structure runs at most one animation in each slot at a time. Events on the structure fill and empty the slots. A slot that no event fills never runs anything, whatever settings are written for it.
 
-## The thirteen slots
+## The twenty-one slots
 
 The table lists each slot, the key that names its animation, and when the slot is filled. The key pages give the full timing for each kind of structure.
 
@@ -134,7 +134,11 @@ The table lists each slot, the key that names its animation, and when the slot i
 | Pre-production | [`PreProductionAnim=`](/keys/preproductionanim/) | A construction yard begins a structure, or a harvester begins unloading into the structure |
 | Production | [`ProductionAnim=`](/keys/productionanim/) | A construction yard finishes a structure, a factory releases what it built, a refinery finishes unloading a harvester, or a service depot begins a repair |
 | Turret | [`TurretAnim=`](/keys/turretanim/) | A turret-equipped or [`ChargeAnim=yes`](/keys/chargeanim/) structure comes online, or the structure begins charging its weapon. With [`TurretAnimIsExclusive=yes`](/keys/turretanimisexclusive/), only charging fills it. A [`TurretAnimIsVoxel=yes`](/keys/turretanimisvoxel/) structure skips the fill when it comes online |
-| Special one to three | [`SpecialAnim=`](/keys/specialanim/), [`SpecialAnimTwo=`](/keys/specialanimtwo/), [`SpecialAnimThree=`](/keys/specialanimthree/) | An event on a [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) or [`FirestormWall=yes`](/keys/firestormwall/) structure |
+| Special one to four | [`SpecialAnim=`](/keys/specialanim/), [`SpecialAnimTwo=`](/keys/specialanimtwo/), [`SpecialAnimThree=`](/keys/specialanimthree/), [`SpecialAnimFour=`](/keys/specialanimfour/) | An event on a [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) or [`FirestormWall=yes`](/keys/firestormwall/) structure. No event fills special slot four |
+| Super one to four | [`SuperAnim=`](/keys/superanim/), [`SuperAnimTwo=`](/keys/superanimtwo/), [`SuperAnimThree=`](/keys/superanimthree/), [`SuperAnimFour=`](/keys/superanimfour/) | No event fills them yet. Yuri's Revenge fills them as a superweapon structure charges |
+| Idle | [`IdleAnim=`](/keys/idleanim/) | The structure comes online, unless it is a refinery, or the scenario places it |
+| Low power | [`LowPower=`](/keys/lowpower/) | No event fills it yet |
+| Super low power | [`SuperLowPower=`](/keys/superlowpower/) | A power shortfall removes a [`SuperAnimThreePoweredEffect=yes`](/keys/superanimthreepoweredeffect/) animation. Full power empties it again |
 
 Three active-slot rules apply only to particular structures:
 
@@ -171,7 +175,7 @@ Two cases do not use the slot's names:
 - The structure that [`WallTower`](/keys/walltower/) names cycles through lettered turret variants, named after its Image ID with `_B`, `_C` or `_D` appended. They use the turret slot's offset and biases.
 - A [`FirestormWall=yes`](/keys/firestormwall/) section fills its first two special slots with fixed animations. [A firestorm wall section](/keys/specialanim/#a-firestorm-wall-section) covers them.
 
-A slot empties when its animation plays to its end or when an event stops it. A looping animation therefore holds its slot until something stops it, while a finite one frees the slot when it ends. All thirteen slots empty when the structure begins to be sold or undeployed, and when it is removed from the game.
+A slot empties when its animation plays to its end or when an event stops it. A looping animation therefore holds its slot until something stops it, while a finite one frees the slot when it ends. All twenty-one slots empty when the structure begins to be sold or undeployed, and when it is removed from the game.
 
 Attached animations follow the structure. When the structure is placed on a new cell, each animation moves to its slot's offset from the new position.
 
@@ -183,7 +187,9 @@ Under fog of war, the player sees the structure's remembered image, with each at
 
 Each slot has a healthy name and a damaged name. Most fills use the damaged name when the structure's health is at or below [`ConditionYellow`](/keys/conditionyellow/) at that moment. Some fills always use the healthy name; they are listed at the end of this section.
 
-A slot that names only a healthy form uses that name in both states. The upgrade slots are the exception: an upgrade slot without `PowerUp<n>DamagedAnim=` keeps running its healthy animation while the structure is damaged.
+A slot that names only a healthy form uses that name in both states.
+
+Each slot also has a garrisoned name, written with the `…Garrisoned` suffix, for a structure that infantry occupy. When it is omitted, the slot uses its healthy name. No structure can be occupied yet, so the garrisoned name is read but never used. The upgrade slots are the exception: an upgrade slot without `PowerUp<n>DamagedAnim=` keeps running its healthy animation while the structure is damaged.
 
 A slot that names only a damaged form starts only when it is filled in the damaged form. It does not start while the structure is healthy, and it never starts from the fills listed below that always use the healthy name. If it starts while the structure is damaged, repairing the structure leaves that animation running.
 
@@ -209,24 +215,22 @@ Some fills always use the healthy form, whatever the structure's health. On a da
 An AnimType can set a sort bias with [`YSortAdjust=`](/keys/ysortadjust/). A building slot replaces that bias with the slot's `…YSort`, which is 0 when omitted. To keep the AnimType's bias in a building slot, repeat the value in the slot's `…YSort`.
 :::
 
-:::caution[Keep both biases between -128 and 127]
-`…ZAdjust` and `…YSort` are each stored in one signed byte. A value outside -128 to 127 wraps around: `…ZAdjust=200` is stored as -56, which draws the animation in front of the structure it was meant to hide behind. The same limit keeps `…YSort` within about half a cell in either direction.
-:::
-
 ## Power
 
-Two flags decide what a slot's animation does when its house is short of power. Only the active and special slots have them; on active slot one they are `ActiveAnimPowered=` and `ActiveAnimPoweredLight=`.
+Four flags decide what a slot's animation does when its house is short of power. Every slot except the upgrade and turret slots has them; on active slot one they are `ActiveAnimPowered=`, `ActiveAnimPoweredLight=`, `ActiveAnimPoweredEffect=` and `ActiveAnimPoweredSpecial=`.
 
 - `…Powered=yes` freezes the animation on its current frame. It stays on screen and resumes at full power.
-- `…PoweredLight=yes` removes the animation, and creates it again at full power.
+- `…PoweredLight=yes` removes the animation, and creates it again at full power whether or not the shortfall removed it.
+- `…PoweredEffect=yes` removes the animation, and creates it again at full power only if the shortfall removed it. When the slot is super slot three, the shortfall also starts the super low power slot.
+- `…PoweredSpecial=` is read but has no effect yet.
 
-Only one of the two flags is used. The structure tests `…Powered` first and reads `…PoweredLight` only when `…Powered` is `no`. Because `…Powered` defaults to `yes`, a slot that should use `…PoweredLight=yes` must also set `…Powered=no`.
+Only one of the first three flags is used. The structure tests `…Powered` first, then `…PoweredLight`, then `…PoweredEffect`. Because `…Powered` defaults to `yes`, a slot that should use either of the other two must also set `…Powered=no`.
 
-The upgrade, pre-production, production and turret slots have no power flags and always behave as `…Powered=yes`. A frozen turret animation still follows the turret's facing, because the structure sets its frame directly.
+The upgrade and turret slots have no power flags and always behave as `…Powered=yes`. A frozen turret animation still follows the turret's facing, because the structure sets its frame directly.
 
-The house applies these flags to every structure it owns each time it rechecks its power. At full power it resumes frozen animations and creates any missing `…PoweredLight=yes` animation on every structure. Below full power, only some structures freeze or remove their animations; [Fields, fences and lights](/systems/power/#fields-fences-and-lights) says which.
+The house applies these flags each time it rechecks its power, but only to its structures whose type is [`Powered=yes`](/keys/powered/) and drains power. Other structures keep their animations running through a shortfall. At full power the house resumes frozen animations, creates any missing `…PoweredLight=yes` animation, recreates each `…PoweredEffect=yes` animation the shortfall removed, and empties the super low power slot.
 
-The full-power pass is the only way a structure that is not `UnitRepair=yes`, `SiloDamage=yes` or `FirestormWall=yes` runs a special animation.
+The full-power pass is the only way a structure that is not `UnitRepair=yes`, `SiloDamage=yes` or `FirestormWall=yes` runs a special animation, and the only way any structure runs a super animation.
 
 Switching one structure off with the power cursor or the [Turn off building](/mapping/actions/taction-turn-off-attached/) trigger action freezes its `…Powered=yes` animations. Switching off also makes the house recheck its power. If the house has full power after the switch, that recheck resumes the animations at once. If the house is short of power, they stay frozen until the house next rechecks its power at full power.
 
@@ -236,16 +240,15 @@ Neither switching off nor an EMP pulse removes a `…PoweredLight=yes` animation
 
 ## Where each setting is read from
 
-A slot's settings do not all come from the same section. The difference matters only for a structure that borrows another structure's artwork with [`Image=`](/keys/image/), so that its Image ID and ObjectType ID name different sections. The table gives the section each half of a slot is read from.
+Most slots read every setting from the structure's art entry, but the turret slot reads its settings from the rules. The difference matters only for a structure that borrows another structure's artwork with [`Image=`](/keys/image/), so that its Image ID and ObjectType ID name different sections. The table gives the section each half of a slot is read from.
 
 | Slot | Names | The remaining settings |
 | --- | --- | --- |
 | Upgrade one to three | The Image ID art entry | The Image ID art entry |
-| Active one to four | The Image ID art entry | The Image ID art entry |
-| Special, production and pre-production | The Image ID art entry | The art entry named after the ObjectType ID |
+| Active, super, special, idle, low power, super low power, production and pre-production | The Image ID art entry | The Image ID art entry |
 | Turret | The rules entry named after the ObjectType ID | The rules entry named after the ObjectType ID |
 
-The active, special, production and pre-production slots read their remaining settings only when the slot has a name, healthy or damaged. A slot with neither name ignores them. The upgrade slots read theirs for each declared upgrade. The turret slot reads its four offset and bias settings in every case, from the same rules entry as its names:
+Every slot except the upgrade and turret slots reads its remaining settings only when the slot has a name: healthy, damaged or garrisoned. A slot with no name ignores them. The upgrade slots read theirs for each declared upgrade. The turret slot reads its four offset and bias settings in every case, from the same rules entry as its names:
 
 ```ini title="rules.ini"
 [MYTURRET]                ; the structure's BuildingType entry
@@ -259,7 +262,7 @@ TurretAnimYSort=0
 
 ## The upgrade slots and the active slots share one array
 
-The three upgrade slots come first among the thirteen, directly before the four active slots. Two operations find an upgrade slot by its number, and both run past upgrade slot three into the active slots.
+The three upgrade slots come first among the twenty-one, directly before the four active slots. Two operations find an upgrade slot by its number, and both run past upgrade slot three into the active slots.
 
 The first is reading the art file. It reads one set of `PowerUp<n>` settings per declared upgrade, up to the [`Upgrades=`](/keys/upgrades/) count: `PowerUp1Anim=` and its companions into upgrade slot one, `PowerUp2Anim=` into slot two, and so on. A type that declares four upgrades therefore reads `PowerUp4Anim=` and its five companions into active slot one. Each `PowerUp4` assignment that is present replaces the matching active-slot setting: its two names, its offset or one of its biases. A fifth, sixth and seventh upgrade reach active slots two, three and four in turn.
 

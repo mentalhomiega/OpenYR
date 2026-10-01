@@ -359,11 +359,14 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	for (int i = 0; i < BANIM_COUNT; i++) {
 		memset(AnimData[i].Anim, 0, sizeof(AnimData[i].Anim));
 		memset(AnimData[i].AnimDamaged, 0, sizeof(AnimData[i].AnimDamaged));
+		memset(AnimData[i].AnimGarrisoned, 0, sizeof(AnimData[i].AnimGarrisoned));
 		AnimData[i].Location = Point2D(0, 0);
 		AnimData[i].ZAdjust = 0;
 		AnimData[i].YSort = 0;
 		AnimData[i].Powered = true;
 		AnimData[i].PoweredLight = false;
+		AnimData[i].PoweredEffect = false;
+		AnimData[i].PoweredSpecial = false;
 	}
 
 	BuildupFilename.clear();
@@ -1391,216 +1394,519 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			sscanf(animcontrol, "%d,%d,%d", &Anims[BSTATE_AUX2].Start, &Anims[BSTATE_AUX2].Count, &Anims[BSTATE_AUX2].Rate);
 		}
 
+		/*
+		 * The animation slots, in the order BuildingTypeClass::Read_INI (0x45FE50 in gamemd) reads
+		 * them. A slot's damaged and garrisoned forms fall back to its normal animation, and the
+		 * placement and power settings are read only for a slot that names some animation.
+		 */
 		/// ActiveAnim
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnim", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnim", "", buffer, sizeof(AnimData[BANIM_ACTIVE_ONE].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_ONE].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimDamaged", "", buffer, sizeof(AnimData[BANIM_ACTIVE_ONE].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_ONE].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_ACTIVE_ONE].AnimDamaged)) {
 			strcpy(AnimData[BANIM_ACTIVE_ONE].AnimDamaged, AnimData[BANIM_ACTIVE_ONE].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_ACTIVE_ONE].Anim) || strlen(AnimData[BANIM_ACTIVE_ONE].AnimDamaged)) {
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimGarrisoned", "", buffer, sizeof(AnimData[BANIM_ACTIVE_ONE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_ACTIVE_ONE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_ACTIVE_ONE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_ACTIVE_ONE].AnimGarrisoned, AnimData[BANIM_ACTIVE_ONE].Anim);
+		}
+		if (strlen(AnimData[BANIM_ACTIVE_ONE].Anim) || strlen(AnimData[BANIM_ACTIVE_ONE].AnimDamaged) || strlen(AnimData[BANIM_ACTIVE_ONE].AnimGarrisoned)) {
 			AnimData[BANIM_ACTIVE_ONE].Location.X = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimX", AnimData[BANIM_ACTIVE_ONE].Location.X);
 			AnimData[BANIM_ACTIVE_ONE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimY", AnimData[BANIM_ACTIVE_ONE].Location.Y);
 			AnimData[BANIM_ACTIVE_ONE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimZAdjust", AnimData[BANIM_ACTIVE_ONE].ZAdjust);
 			AnimData[BANIM_ACTIVE_ONE].YSort = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimYSort", AnimData[BANIM_ACTIVE_ONE].YSort);
 			AnimData[BANIM_ACTIVE_ONE].Powered = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimPowered", AnimData[BANIM_ACTIVE_ONE].Powered);
 			AnimData[BANIM_ACTIVE_ONE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimPoweredLight", AnimData[BANIM_ACTIVE_ONE].PoweredLight);
+			AnimData[BANIM_ACTIVE_ONE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimPoweredEffect", AnimData[BANIM_ACTIVE_ONE].PoweredEffect);
+			AnimData[BANIM_ACTIVE_ONE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimPoweredSpecial", AnimData[BANIM_ACTIVE_ONE].PoweredSpecial);
 		}
 
 		/// ActiveAnimTwo
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimTwo", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimTwo", "", buffer, sizeof(AnimData[BANIM_ACTIVE_TWO].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_TWO].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimTwoDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimTwoDamaged", "", buffer, sizeof(AnimData[BANIM_ACTIVE_TWO].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_TWO].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_ACTIVE_TWO].AnimDamaged)) {
 			strcpy(AnimData[BANIM_ACTIVE_TWO].AnimDamaged, AnimData[BANIM_ACTIVE_TWO].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_ACTIVE_TWO].Anim) || strlen(AnimData[BANIM_ACTIVE_TWO].AnimDamaged)) {
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimTwoGarrisoned", "", buffer, sizeof(AnimData[BANIM_ACTIVE_TWO].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_ACTIVE_TWO].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_ACTIVE_TWO].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_ACTIVE_TWO].AnimGarrisoned, AnimData[BANIM_ACTIVE_TWO].Anim);
+		}
+		if (strlen(AnimData[BANIM_ACTIVE_TWO].Anim) || strlen(AnimData[BANIM_ACTIVE_TWO].AnimDamaged) || strlen(AnimData[BANIM_ACTIVE_TWO].AnimGarrisoned)) {
 			AnimData[BANIM_ACTIVE_TWO].Location.X = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimTwoX", AnimData[BANIM_ACTIVE_TWO].Location.X);
 			AnimData[BANIM_ACTIVE_TWO].Location.Y = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimTwoY", AnimData[BANIM_ACTIVE_TWO].Location.Y);
 			AnimData[BANIM_ACTIVE_TWO].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimTwoZAdjust", AnimData[BANIM_ACTIVE_TWO].ZAdjust);
 			AnimData[BANIM_ACTIVE_TWO].YSort = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimTwoYSort", AnimData[BANIM_ACTIVE_TWO].YSort);
 			AnimData[BANIM_ACTIVE_TWO].Powered = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimTwoPowered", AnimData[BANIM_ACTIVE_TWO].Powered);
 			AnimData[BANIM_ACTIVE_TWO].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimTwoPoweredLight", AnimData[BANIM_ACTIVE_TWO].PoweredLight);
+			AnimData[BANIM_ACTIVE_TWO].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimTwoPoweredEffect", AnimData[BANIM_ACTIVE_TWO].PoweredEffect);
+			AnimData[BANIM_ACTIVE_TWO].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimTwoPoweredSpecial", AnimData[BANIM_ACTIVE_TWO].PoweredSpecial);
 		}
 
 		/// ActiveAnimThree
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimThree", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimThree", "", buffer, sizeof(AnimData[BANIM_ACTIVE_THREE].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_THREE].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimThreeDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimThreeDamaged", "", buffer, sizeof(AnimData[BANIM_ACTIVE_THREE].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_THREE].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_ACTIVE_THREE].AnimDamaged)) {
 			strcpy(AnimData[BANIM_ACTIVE_THREE].AnimDamaged, AnimData[BANIM_ACTIVE_THREE].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_ACTIVE_THREE].Anim) || strlen(AnimData[BANIM_ACTIVE_THREE].AnimDamaged)) {
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimThreeGarrisoned", "", buffer, sizeof(AnimData[BANIM_ACTIVE_THREE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_ACTIVE_THREE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_ACTIVE_THREE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_ACTIVE_THREE].AnimGarrisoned, AnimData[BANIM_ACTIVE_THREE].Anim);
+		}
+		if (strlen(AnimData[BANIM_ACTIVE_THREE].Anim) || strlen(AnimData[BANIM_ACTIVE_THREE].AnimDamaged) || strlen(AnimData[BANIM_ACTIVE_THREE].AnimGarrisoned)) {
 			AnimData[BANIM_ACTIVE_THREE].Location.X = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimThreeX", AnimData[BANIM_ACTIVE_THREE].Location.X);
 			AnimData[BANIM_ACTIVE_THREE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimThreeY", AnimData[BANIM_ACTIVE_THREE].Location.Y);
 			AnimData[BANIM_ACTIVE_THREE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimThreeZAdjust", AnimData[BANIM_ACTIVE_THREE].ZAdjust);
 			AnimData[BANIM_ACTIVE_THREE].YSort = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimThreeYSort", AnimData[BANIM_ACTIVE_THREE].YSort);
 			AnimData[BANIM_ACTIVE_THREE].Powered = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimThreePowered", AnimData[BANIM_ACTIVE_THREE].Powered);
 			AnimData[BANIM_ACTIVE_THREE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimThreePoweredLight", AnimData[BANIM_ACTIVE_THREE].PoweredLight);
+			AnimData[BANIM_ACTIVE_THREE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimThreePoweredEffect", AnimData[BANIM_ACTIVE_THREE].PoweredEffect);
+			AnimData[BANIM_ACTIVE_THREE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimThreePoweredSpecial", AnimData[BANIM_ACTIVE_THREE].PoweredSpecial);
 		}
 
 		/// ActiveAnimFour
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimFour", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimFour", "", buffer, sizeof(AnimData[BANIM_ACTIVE_FOUR].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_FOUR].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "ActiveAnimFourDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimFourDamaged", "", buffer, sizeof(AnimData[BANIM_ACTIVE_FOUR].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_ACTIVE_FOUR].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_ACTIVE_FOUR].AnimDamaged)) {
 			strcpy(AnimData[BANIM_ACTIVE_FOUR].AnimDamaged, AnimData[BANIM_ACTIVE_FOUR].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_ACTIVE_FOUR].Anim) || strlen(AnimData[BANIM_ACTIVE_FOUR].AnimDamaged)) {
+		ArtINI.Get_String(Graphic_Name(), "ActiveAnimFourGarrisoned", "", buffer, sizeof(AnimData[BANIM_ACTIVE_FOUR].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_ACTIVE_FOUR].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_ACTIVE_FOUR].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_ACTIVE_FOUR].AnimGarrisoned, AnimData[BANIM_ACTIVE_FOUR].Anim);
+		}
+		if (strlen(AnimData[BANIM_ACTIVE_FOUR].Anim) || strlen(AnimData[BANIM_ACTIVE_FOUR].AnimDamaged) || strlen(AnimData[BANIM_ACTIVE_FOUR].AnimGarrisoned)) {
 			AnimData[BANIM_ACTIVE_FOUR].Location.X = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimFourX", AnimData[BANIM_ACTIVE_FOUR].Location.X);
 			AnimData[BANIM_ACTIVE_FOUR].Location.Y = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimFourY", AnimData[BANIM_ACTIVE_FOUR].Location.Y);
 			AnimData[BANIM_ACTIVE_FOUR].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimFourZAdjust", AnimData[BANIM_ACTIVE_FOUR].ZAdjust);
 			AnimData[BANIM_ACTIVE_FOUR].YSort = ArtINI.Get_Int(Graphic_Name(), "ActiveAnimFourYSort", AnimData[BANIM_ACTIVE_FOUR].YSort);
 			AnimData[BANIM_ACTIVE_FOUR].Powered = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimFourPowered", AnimData[BANIM_ACTIVE_FOUR].Powered);
 			AnimData[BANIM_ACTIVE_FOUR].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimFourPoweredLight", AnimData[BANIM_ACTIVE_FOUR].PoweredLight);
+			AnimData[BANIM_ACTIVE_FOUR].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimFourPoweredEffect", AnimData[BANIM_ACTIVE_FOUR].PoweredEffect);
+			AnimData[BANIM_ACTIVE_FOUR].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "ActiveAnimFourPoweredSpecial", AnimData[BANIM_ACTIVE_FOUR].PoweredSpecial);
+		}
+
+		/// SuperAnim
+		ArtINI.Get_String(Graphic_Name(), "SuperAnim", "", buffer, sizeof(AnimData[BANIM_SUPER_ONE].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_ONE].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimDamaged", "", buffer, sizeof(AnimData[BANIM_SUPER_ONE].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_ONE].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_ONE].AnimDamaged)) {
+			strcpy(AnimData[BANIM_SUPER_ONE].AnimDamaged, AnimData[BANIM_SUPER_ONE].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimGarrisoned", "", buffer, sizeof(AnimData[BANIM_SUPER_ONE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_ONE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_ONE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SUPER_ONE].AnimGarrisoned, AnimData[BANIM_SUPER_ONE].Anim);
+		}
+		if (strlen(AnimData[BANIM_SUPER_ONE].Anim) || strlen(AnimData[BANIM_SUPER_ONE].AnimDamaged) || strlen(AnimData[BANIM_SUPER_ONE].AnimGarrisoned)) {
+			AnimData[BANIM_SUPER_ONE].Location.X = ArtINI.Get_Int(Graphic_Name(), "SuperAnimX", AnimData[BANIM_SUPER_ONE].Location.X);
+			AnimData[BANIM_SUPER_ONE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SuperAnimY", AnimData[BANIM_SUPER_ONE].Location.Y);
+			AnimData[BANIM_SUPER_ONE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SuperAnimZAdjust", AnimData[BANIM_SUPER_ONE].ZAdjust);
+			AnimData[BANIM_SUPER_ONE].YSort = ArtINI.Get_Int(Graphic_Name(), "SuperAnimYSort", AnimData[BANIM_SUPER_ONE].YSort);
+			AnimData[BANIM_SUPER_ONE].Powered = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimPowered", AnimData[BANIM_SUPER_ONE].Powered);
+			AnimData[BANIM_SUPER_ONE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimPoweredLight", AnimData[BANIM_SUPER_ONE].PoweredLight);
+			AnimData[BANIM_SUPER_ONE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimPoweredEffect", AnimData[BANIM_SUPER_ONE].PoweredEffect);
+			AnimData[BANIM_SUPER_ONE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimPoweredSpecial", AnimData[BANIM_SUPER_ONE].PoweredSpecial);
+		}
+
+		/// SuperAnimTwo
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimTwo", "", buffer, sizeof(AnimData[BANIM_SUPER_TWO].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_TWO].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimTwoDamaged", "", buffer, sizeof(AnimData[BANIM_SUPER_TWO].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_TWO].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_TWO].AnimDamaged)) {
+			strcpy(AnimData[BANIM_SUPER_TWO].AnimDamaged, AnimData[BANIM_SUPER_TWO].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimTwoGarrisoned", "", buffer, sizeof(AnimData[BANIM_SUPER_TWO].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_TWO].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_TWO].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SUPER_TWO].AnimGarrisoned, AnimData[BANIM_SUPER_TWO].Anim);
+		}
+		if (strlen(AnimData[BANIM_SUPER_TWO].Anim) || strlen(AnimData[BANIM_SUPER_TWO].AnimDamaged) || strlen(AnimData[BANIM_SUPER_TWO].AnimGarrisoned)) {
+			AnimData[BANIM_SUPER_TWO].Location.X = ArtINI.Get_Int(Graphic_Name(), "SuperAnimTwoX", AnimData[BANIM_SUPER_TWO].Location.X);
+			AnimData[BANIM_SUPER_TWO].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SuperAnimTwoY", AnimData[BANIM_SUPER_TWO].Location.Y);
+			AnimData[BANIM_SUPER_TWO].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SuperAnimTwoZAdjust", AnimData[BANIM_SUPER_TWO].ZAdjust);
+			AnimData[BANIM_SUPER_TWO].YSort = ArtINI.Get_Int(Graphic_Name(), "SuperAnimTwoYSort", AnimData[BANIM_SUPER_TWO].YSort);
+			AnimData[BANIM_SUPER_TWO].Powered = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimTwoPowered", AnimData[BANIM_SUPER_TWO].Powered);
+			AnimData[BANIM_SUPER_TWO].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimTwoPoweredLight", AnimData[BANIM_SUPER_TWO].PoweredLight);
+			AnimData[BANIM_SUPER_TWO].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimTwoPoweredEffect", AnimData[BANIM_SUPER_TWO].PoweredEffect);
+			AnimData[BANIM_SUPER_TWO].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimTwoPoweredSpecial", AnimData[BANIM_SUPER_TWO].PoweredSpecial);
+		}
+
+		/// SuperAnimThree
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimThree", "", buffer, sizeof(AnimData[BANIM_SUPER_THREE].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_THREE].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimThreeDamaged", "", buffer, sizeof(AnimData[BANIM_SUPER_THREE].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_THREE].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_THREE].AnimDamaged)) {
+			strcpy(AnimData[BANIM_SUPER_THREE].AnimDamaged, AnimData[BANIM_SUPER_THREE].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimThreeGarrisoned", "", buffer, sizeof(AnimData[BANIM_SUPER_THREE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_THREE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_THREE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SUPER_THREE].AnimGarrisoned, AnimData[BANIM_SUPER_THREE].Anim);
+		}
+		if (strlen(AnimData[BANIM_SUPER_THREE].Anim) || strlen(AnimData[BANIM_SUPER_THREE].AnimDamaged) || strlen(AnimData[BANIM_SUPER_THREE].AnimGarrisoned)) {
+			AnimData[BANIM_SUPER_THREE].Location.X = ArtINI.Get_Int(Graphic_Name(), "SuperAnimThreeX", AnimData[BANIM_SUPER_THREE].Location.X);
+			AnimData[BANIM_SUPER_THREE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SuperAnimThreeY", AnimData[BANIM_SUPER_THREE].Location.Y);
+			AnimData[BANIM_SUPER_THREE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SuperAnimThreeZAdjust", AnimData[BANIM_SUPER_THREE].ZAdjust);
+			AnimData[BANIM_SUPER_THREE].YSort = ArtINI.Get_Int(Graphic_Name(), "SuperAnimThreeYSort", AnimData[BANIM_SUPER_THREE].YSort);
+			AnimData[BANIM_SUPER_THREE].Powered = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimThreePowered", AnimData[BANIM_SUPER_THREE].Powered);
+			AnimData[BANIM_SUPER_THREE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimThreePoweredLight", AnimData[BANIM_SUPER_THREE].PoweredLight);
+			AnimData[BANIM_SUPER_THREE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimThreePoweredEffect", AnimData[BANIM_SUPER_THREE].PoweredEffect);
+			AnimData[BANIM_SUPER_THREE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimThreePoweredSpecial", AnimData[BANIM_SUPER_THREE].PoweredSpecial);
+		}
+
+		/// SuperAnimFour
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimFour", "", buffer, sizeof(AnimData[BANIM_SUPER_FOUR].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_FOUR].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimFourDamaged", "", buffer, sizeof(AnimData[BANIM_SUPER_FOUR].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_FOUR].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_FOUR].AnimDamaged)) {
+			strcpy(AnimData[BANIM_SUPER_FOUR].AnimDamaged, AnimData[BANIM_SUPER_FOUR].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperAnimFourGarrisoned", "", buffer, sizeof(AnimData[BANIM_SUPER_FOUR].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_FOUR].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_FOUR].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SUPER_FOUR].AnimGarrisoned, AnimData[BANIM_SUPER_FOUR].Anim);
+		}
+		if (strlen(AnimData[BANIM_SUPER_FOUR].Anim) || strlen(AnimData[BANIM_SUPER_FOUR].AnimDamaged) || strlen(AnimData[BANIM_SUPER_FOUR].AnimGarrisoned)) {
+			AnimData[BANIM_SUPER_FOUR].Location.X = ArtINI.Get_Int(Graphic_Name(), "SuperAnimFourX", AnimData[BANIM_SUPER_FOUR].Location.X);
+			AnimData[BANIM_SUPER_FOUR].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SuperAnimFourY", AnimData[BANIM_SUPER_FOUR].Location.Y);
+			AnimData[BANIM_SUPER_FOUR].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SuperAnimFourZAdjust", AnimData[BANIM_SUPER_FOUR].ZAdjust);
+			AnimData[BANIM_SUPER_FOUR].YSort = ArtINI.Get_Int(Graphic_Name(), "SuperAnimFourYSort", AnimData[BANIM_SUPER_FOUR].YSort);
+			AnimData[BANIM_SUPER_FOUR].Powered = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimFourPowered", AnimData[BANIM_SUPER_FOUR].Powered);
+			AnimData[BANIM_SUPER_FOUR].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimFourPoweredLight", AnimData[BANIM_SUPER_FOUR].PoweredLight);
+			AnimData[BANIM_SUPER_FOUR].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimFourPoweredEffect", AnimData[BANIM_SUPER_FOUR].PoweredEffect);
+			AnimData[BANIM_SUPER_FOUR].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SuperAnimFourPoweredSpecial", AnimData[BANIM_SUPER_FOUR].PoweredSpecial);
 		}
 
 		/// SpecialAnim
-		ArtINI.Get_String(Graphic_Name(), "SpecialAnim", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnim", "", buffer, sizeof(AnimData[BANIM_SPECIAL_ONE].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_SPECIAL_ONE].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "SpecialAnimDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimDamaged", "", buffer, sizeof(AnimData[BANIM_SPECIAL_ONE].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_SPECIAL_ONE].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_SPECIAL_ONE].AnimDamaged)) {
 			strcpy(AnimData[BANIM_SPECIAL_ONE].AnimDamaged, AnimData[BANIM_SPECIAL_ONE].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_SPECIAL_ONE].Anim) || strlen(AnimData[BANIM_SPECIAL_ONE].AnimDamaged)) {
-			AnimData[BANIM_SPECIAL_ONE].Location.X = ArtINI.Get_Int(Name(), "SpecialAnimX", AnimData[BANIM_SPECIAL_ONE].Location.X);
-			AnimData[BANIM_SPECIAL_ONE].Location.Y = ArtINI.Get_Int(Name(), "SpecialAnimY", AnimData[BANIM_SPECIAL_ONE].Location.Y);
-			AnimData[BANIM_SPECIAL_ONE].ZAdjust = ArtINI.Get_Int(Name(), "SpecialAnimZAdjust", AnimData[BANIM_SPECIAL_ONE].ZAdjust);
-			AnimData[BANIM_SPECIAL_ONE].YSort = ArtINI.Get_Int(Name(), "SpecialAnimYSort", AnimData[BANIM_SPECIAL_ONE].YSort);
-			AnimData[BANIM_SPECIAL_ONE].Powered = ArtINI.Get_Bool(Name(), "SpecialAnimPowered", AnimData[BANIM_SPECIAL_ONE].Powered);
-			AnimData[BANIM_SPECIAL_ONE].PoweredLight = ArtINI.Get_Bool(Name(), "SpecialAnimPoweredLight", AnimData[BANIM_SPECIAL_ONE].PoweredLight);
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimGarrisoned", "", buffer, sizeof(AnimData[BANIM_SPECIAL_ONE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SPECIAL_ONE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SPECIAL_ONE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SPECIAL_ONE].AnimGarrisoned, AnimData[BANIM_SPECIAL_ONE].Anim);
+		}
+		if (strlen(AnimData[BANIM_SPECIAL_ONE].Anim) || strlen(AnimData[BANIM_SPECIAL_ONE].AnimDamaged) || strlen(AnimData[BANIM_SPECIAL_ONE].AnimGarrisoned)) {
+			AnimData[BANIM_SPECIAL_ONE].Location.X = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimX", AnimData[BANIM_SPECIAL_ONE].Location.X);
+			AnimData[BANIM_SPECIAL_ONE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimY", AnimData[BANIM_SPECIAL_ONE].Location.Y);
+			AnimData[BANIM_SPECIAL_ONE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimZAdjust", AnimData[BANIM_SPECIAL_ONE].ZAdjust);
+			AnimData[BANIM_SPECIAL_ONE].YSort = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimYSort", AnimData[BANIM_SPECIAL_ONE].YSort);
+			AnimData[BANIM_SPECIAL_ONE].Powered = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimPowered", AnimData[BANIM_SPECIAL_ONE].Powered);
+			AnimData[BANIM_SPECIAL_ONE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimPoweredLight", AnimData[BANIM_SPECIAL_ONE].PoweredLight);
+			AnimData[BANIM_SPECIAL_ONE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimPoweredEffect", AnimData[BANIM_SPECIAL_ONE].PoweredEffect);
+			AnimData[BANIM_SPECIAL_ONE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimPoweredSpecial", AnimData[BANIM_SPECIAL_ONE].PoweredSpecial);
 		}
 
 		/// SpecialAnimTwo
-		ArtINI.Get_String(Graphic_Name(), "SpecialAnimTwo", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimTwo", "", buffer, sizeof(AnimData[BANIM_SPECIAL_TWO].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_SPECIAL_TWO].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "SpecialAnimTwoDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimTwoDamaged", "", buffer, sizeof(AnimData[BANIM_SPECIAL_TWO].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_SPECIAL_TWO].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_SPECIAL_TWO].AnimDamaged)) {
 			strcpy(AnimData[BANIM_SPECIAL_TWO].AnimDamaged, AnimData[BANIM_SPECIAL_TWO].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_SPECIAL_TWO].Anim) || strlen(AnimData[BANIM_SPECIAL_TWO].AnimDamaged)) {
-			AnimData[BANIM_SPECIAL_TWO].Location.X = ArtINI.Get_Int(Name(), "SpecialAnimTwoX", AnimData[BANIM_SPECIAL_TWO].Location.X);
-			AnimData[BANIM_SPECIAL_TWO].Location.Y = ArtINI.Get_Int(Name(), "SpecialAnimTwoY", AnimData[BANIM_SPECIAL_TWO].Location.Y);
-			AnimData[BANIM_SPECIAL_TWO].ZAdjust = ArtINI.Get_Int(Name(), "SpecialAnimTwoZAdjust", AnimData[BANIM_SPECIAL_TWO].ZAdjust);
-			AnimData[BANIM_SPECIAL_TWO].YSort = ArtINI.Get_Int(Name(), "SpecialAnimTwoYSort", AnimData[BANIM_SPECIAL_TWO].YSort);
-			AnimData[BANIM_SPECIAL_TWO].Powered = ArtINI.Get_Bool(Name(), "SpecialAnimTwoPowered", AnimData[BANIM_SPECIAL_TWO].Powered);
-			AnimData[BANIM_SPECIAL_TWO].PoweredLight = ArtINI.Get_Bool(Name(), "SpecialAnimTwoPoweredLight", AnimData[BANIM_SPECIAL_TWO].PoweredLight);
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimTwoGarrisoned", "", buffer, sizeof(AnimData[BANIM_SPECIAL_TWO].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SPECIAL_TWO].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SPECIAL_TWO].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SPECIAL_TWO].AnimGarrisoned, AnimData[BANIM_SPECIAL_TWO].Anim);
+		}
+		if (strlen(AnimData[BANIM_SPECIAL_TWO].Anim) || strlen(AnimData[BANIM_SPECIAL_TWO].AnimDamaged) || strlen(AnimData[BANIM_SPECIAL_TWO].AnimGarrisoned)) {
+			AnimData[BANIM_SPECIAL_TWO].Location.X = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimTwoX", AnimData[BANIM_SPECIAL_TWO].Location.X);
+			AnimData[BANIM_SPECIAL_TWO].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimTwoY", AnimData[BANIM_SPECIAL_TWO].Location.Y);
+			AnimData[BANIM_SPECIAL_TWO].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimTwoZAdjust", AnimData[BANIM_SPECIAL_TWO].ZAdjust);
+			AnimData[BANIM_SPECIAL_TWO].YSort = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimTwoYSort", AnimData[BANIM_SPECIAL_TWO].YSort);
+			AnimData[BANIM_SPECIAL_TWO].Powered = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimTwoPowered", AnimData[BANIM_SPECIAL_TWO].Powered);
+			AnimData[BANIM_SPECIAL_TWO].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimTwoPoweredLight", AnimData[BANIM_SPECIAL_TWO].PoweredLight);
+			AnimData[BANIM_SPECIAL_TWO].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimTwoPoweredEffect", AnimData[BANIM_SPECIAL_TWO].PoweredEffect);
+			AnimData[BANIM_SPECIAL_TWO].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimTwoPoweredSpecial", AnimData[BANIM_SPECIAL_TWO].PoweredSpecial);
 		}
 
 		/// SpecialAnimThree
-		ArtINI.Get_String(Graphic_Name(), "SpecialAnimThree", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimThree", "", buffer, sizeof(AnimData[BANIM_SPECIAL_THREE].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_SPECIAL_THREE].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "SpecialAnimThreeDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimThreeDamaged", "", buffer, sizeof(AnimData[BANIM_SPECIAL_THREE].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_SPECIAL_THREE].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_SPECIAL_THREE].AnimDamaged)) {
 			strcpy(AnimData[BANIM_SPECIAL_THREE].AnimDamaged, AnimData[BANIM_SPECIAL_THREE].Anim);
 		}
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimThreeGarrisoned", "", buffer, sizeof(AnimData[BANIM_SPECIAL_THREE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SPECIAL_THREE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SPECIAL_THREE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SPECIAL_THREE].AnimGarrisoned, AnimData[BANIM_SPECIAL_THREE].Anim);
+		}
+		if (strlen(AnimData[BANIM_SPECIAL_THREE].Anim) || strlen(AnimData[BANIM_SPECIAL_THREE].AnimDamaged) || strlen(AnimData[BANIM_SPECIAL_THREE].AnimGarrisoned)) {
+			AnimData[BANIM_SPECIAL_THREE].Location.X = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimThreeX", AnimData[BANIM_SPECIAL_THREE].Location.X);
+			AnimData[BANIM_SPECIAL_THREE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimThreeY", AnimData[BANIM_SPECIAL_THREE].Location.Y);
+			AnimData[BANIM_SPECIAL_THREE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimThreeZAdjust", AnimData[BANIM_SPECIAL_THREE].ZAdjust);
+			AnimData[BANIM_SPECIAL_THREE].YSort = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimThreeYSort", AnimData[BANIM_SPECIAL_THREE].YSort);
+			AnimData[BANIM_SPECIAL_THREE].Powered = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimThreePowered", AnimData[BANIM_SPECIAL_THREE].Powered);
+			AnimData[BANIM_SPECIAL_THREE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimThreePoweredLight", AnimData[BANIM_SPECIAL_THREE].PoweredLight);
+			AnimData[BANIM_SPECIAL_THREE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimThreePoweredEffect", AnimData[BANIM_SPECIAL_THREE].PoweredEffect);
+			AnimData[BANIM_SPECIAL_THREE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimThreePoweredSpecial", AnimData[BANIM_SPECIAL_THREE].PoweredSpecial);
+		}
 
-		if (strlen(AnimData[BANIM_SPECIAL_THREE].Anim) || strlen(AnimData[BANIM_SPECIAL_THREE].AnimDamaged)) {
-			AnimData[BANIM_SPECIAL_THREE].Location.X = ArtINI.Get_Int(Name(), "SpecialAnimThreeX", AnimData[BANIM_SPECIAL_THREE].Location.X);
-			AnimData[BANIM_SPECIAL_THREE].Location.Y = ArtINI.Get_Int(Name(), "SpecialAnimThreeY", AnimData[BANIM_SPECIAL_THREE].Location.Y);
-			AnimData[BANIM_SPECIAL_THREE].ZAdjust = ArtINI.Get_Int(Name(), "SpecialAnimThreeZAdjust", AnimData[BANIM_SPECIAL_THREE].ZAdjust);
-			AnimData[BANIM_SPECIAL_THREE].YSort = ArtINI.Get_Int(Name(), "SpecialAnimThreeYSort", AnimData[BANIM_SPECIAL_THREE].YSort);
-			AnimData[BANIM_SPECIAL_THREE].Powered = ArtINI.Get_Bool(Name(), "SpecialAnimThreePowered", AnimData[BANIM_SPECIAL_THREE].Powered);
-			AnimData[BANIM_SPECIAL_THREE].PoweredLight = ArtINI.Get_Bool(Name(), "SpecialAnimThreePoweredLight", AnimData[BANIM_SPECIAL_THREE].PoweredLight);
+		/// SpecialAnimFour
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimFour", "", buffer, sizeof(AnimData[BANIM_SPECIAL_FOUR].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SPECIAL_FOUR].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimFourDamaged", "", buffer, sizeof(AnimData[BANIM_SPECIAL_FOUR].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SPECIAL_FOUR].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SPECIAL_FOUR].AnimDamaged)) {
+			strcpy(AnimData[BANIM_SPECIAL_FOUR].AnimDamaged, AnimData[BANIM_SPECIAL_FOUR].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SpecialAnimFourGarrisoned", "", buffer, sizeof(AnimData[BANIM_SPECIAL_FOUR].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SPECIAL_FOUR].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SPECIAL_FOUR].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SPECIAL_FOUR].AnimGarrisoned, AnimData[BANIM_SPECIAL_FOUR].Anim);
+		}
+		if (strlen(AnimData[BANIM_SPECIAL_FOUR].Anim) || strlen(AnimData[BANIM_SPECIAL_FOUR].AnimDamaged) || strlen(AnimData[BANIM_SPECIAL_FOUR].AnimGarrisoned)) {
+			AnimData[BANIM_SPECIAL_FOUR].Location.X = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimFourX", AnimData[BANIM_SPECIAL_FOUR].Location.X);
+			AnimData[BANIM_SPECIAL_FOUR].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimFourY", AnimData[BANIM_SPECIAL_FOUR].Location.Y);
+			AnimData[BANIM_SPECIAL_FOUR].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimFourZAdjust", AnimData[BANIM_SPECIAL_FOUR].ZAdjust);
+			AnimData[BANIM_SPECIAL_FOUR].YSort = ArtINI.Get_Int(Graphic_Name(), "SpecialAnimFourYSort", AnimData[BANIM_SPECIAL_FOUR].YSort);
+			AnimData[BANIM_SPECIAL_FOUR].Powered = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimFourPowered", AnimData[BANIM_SPECIAL_FOUR].Powered);
+			AnimData[BANIM_SPECIAL_FOUR].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimFourPoweredLight", AnimData[BANIM_SPECIAL_FOUR].PoweredLight);
+			AnimData[BANIM_SPECIAL_FOUR].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimFourPoweredEffect", AnimData[BANIM_SPECIAL_FOUR].PoweredEffect);
+			AnimData[BANIM_SPECIAL_FOUR].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SpecialAnimFourPoweredSpecial", AnimData[BANIM_SPECIAL_FOUR].PoweredSpecial);
+		}
+
+		/// LowPower
+		ArtINI.Get_String(Graphic_Name(), "LowPower", "", buffer, sizeof(AnimData[BANIM_LOW_POWER].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_LOW_POWER].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "LowPowerDamaged", "", buffer, sizeof(AnimData[BANIM_LOW_POWER].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_LOW_POWER].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_LOW_POWER].AnimDamaged)) {
+			strcpy(AnimData[BANIM_LOW_POWER].AnimDamaged, AnimData[BANIM_LOW_POWER].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "LowPowerGarrisoned", "", buffer, sizeof(AnimData[BANIM_LOW_POWER].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_LOW_POWER].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_LOW_POWER].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_LOW_POWER].AnimGarrisoned, AnimData[BANIM_LOW_POWER].Anim);
+		}
+		if (strlen(AnimData[BANIM_LOW_POWER].Anim) || strlen(AnimData[BANIM_LOW_POWER].AnimDamaged) || strlen(AnimData[BANIM_LOW_POWER].AnimGarrisoned)) {
+			AnimData[BANIM_LOW_POWER].Location.X = ArtINI.Get_Int(Graphic_Name(), "LowPowerX", AnimData[BANIM_LOW_POWER].Location.X);
+			AnimData[BANIM_LOW_POWER].Location.Y = ArtINI.Get_Int(Graphic_Name(), "LowPowerY", AnimData[BANIM_LOW_POWER].Location.Y);
+			AnimData[BANIM_LOW_POWER].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "LowPowerZAdjust", AnimData[BANIM_LOW_POWER].ZAdjust);
+			AnimData[BANIM_LOW_POWER].YSort = ArtINI.Get_Int(Graphic_Name(), "LowPowerYSort", AnimData[BANIM_LOW_POWER].YSort);
+			AnimData[BANIM_LOW_POWER].Powered = ArtINI.Get_Bool(Graphic_Name(), "LowPowerPowered", AnimData[BANIM_LOW_POWER].Powered);
+			AnimData[BANIM_LOW_POWER].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "LowPowerPoweredLight", AnimData[BANIM_LOW_POWER].PoweredLight);
+			AnimData[BANIM_LOW_POWER].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "LowPowerPoweredEffect", AnimData[BANIM_LOW_POWER].PoweredEffect);
+			AnimData[BANIM_LOW_POWER].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "LowPowerPoweredSpecial", AnimData[BANIM_LOW_POWER].PoweredSpecial);
+		}
+
+		/// SuperLowPower
+		ArtINI.Get_String(Graphic_Name(), "SuperLowPower", "", buffer, sizeof(AnimData[BANIM_SUPER_LOW_POWER].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_LOW_POWER].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperLowPowerDamaged", "", buffer, sizeof(AnimData[BANIM_SUPER_LOW_POWER].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_LOW_POWER].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_LOW_POWER].AnimDamaged)) {
+			strcpy(AnimData[BANIM_SUPER_LOW_POWER].AnimDamaged, AnimData[BANIM_SUPER_LOW_POWER].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "SuperLowPowerGarrisoned", "", buffer, sizeof(AnimData[BANIM_SUPER_LOW_POWER].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_SUPER_LOW_POWER].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_SUPER_LOW_POWER].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_SUPER_LOW_POWER].AnimGarrisoned, AnimData[BANIM_SUPER_LOW_POWER].Anim);
+		}
+		if (strlen(AnimData[BANIM_SUPER_LOW_POWER].Anim) || strlen(AnimData[BANIM_SUPER_LOW_POWER].AnimDamaged) || strlen(AnimData[BANIM_SUPER_LOW_POWER].AnimGarrisoned)) {
+			AnimData[BANIM_SUPER_LOW_POWER].Location.X = ArtINI.Get_Int(Graphic_Name(), "SuperLowPowerX", AnimData[BANIM_SUPER_LOW_POWER].Location.X);
+			AnimData[BANIM_SUPER_LOW_POWER].Location.Y = ArtINI.Get_Int(Graphic_Name(), "SuperLowPowerY", AnimData[BANIM_SUPER_LOW_POWER].Location.Y);
+			AnimData[BANIM_SUPER_LOW_POWER].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "SuperLowPowerZAdjust", AnimData[BANIM_SUPER_LOW_POWER].ZAdjust);
+			AnimData[BANIM_SUPER_LOW_POWER].YSort = ArtINI.Get_Int(Graphic_Name(), "SuperLowPowerYSort", AnimData[BANIM_SUPER_LOW_POWER].YSort);
+			AnimData[BANIM_SUPER_LOW_POWER].Powered = ArtINI.Get_Bool(Graphic_Name(), "SuperLowPowerPowered", AnimData[BANIM_SUPER_LOW_POWER].Powered);
+			AnimData[BANIM_SUPER_LOW_POWER].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "SuperLowPowerPoweredLight", AnimData[BANIM_SUPER_LOW_POWER].PoweredLight);
+			AnimData[BANIM_SUPER_LOW_POWER].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "SuperLowPowerPoweredEffect", AnimData[BANIM_SUPER_LOW_POWER].PoweredEffect);
+			AnimData[BANIM_SUPER_LOW_POWER].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "SuperLowPowerPoweredSpecial", AnimData[BANIM_SUPER_LOW_POWER].PoweredSpecial);
 		}
 
 		/// ProductionAnim
-		ArtINI.Get_String(Graphic_Name(), "ProductionAnim", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "ProductionAnim", "", buffer, sizeof(AnimData[BANIM_PRODUCTION].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_PRODUCTION].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "ProductionAnimDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "ProductionAnimDamaged", "", buffer, sizeof(AnimData[BANIM_PRODUCTION].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_PRODUCTION].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_PRODUCTION].AnimDamaged)) {
 			strcpy(AnimData[BANIM_PRODUCTION].AnimDamaged, AnimData[BANIM_PRODUCTION].Anim);
 		}
+		ArtINI.Get_String(Graphic_Name(), "ProductionAnimGarrisoned", "", buffer, sizeof(AnimData[BANIM_PRODUCTION].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_PRODUCTION].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_PRODUCTION].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_PRODUCTION].AnimGarrisoned, AnimData[BANIM_PRODUCTION].Anim);
+		}
+		if (strlen(AnimData[BANIM_PRODUCTION].Anim) || strlen(AnimData[BANIM_PRODUCTION].AnimDamaged) || strlen(AnimData[BANIM_PRODUCTION].AnimGarrisoned)) {
+			AnimData[BANIM_PRODUCTION].Location.X = ArtINI.Get_Int(Graphic_Name(), "ProductionAnimX", AnimData[BANIM_PRODUCTION].Location.X);
+			AnimData[BANIM_PRODUCTION].Location.Y = ArtINI.Get_Int(Graphic_Name(), "ProductionAnimY", AnimData[BANIM_PRODUCTION].Location.Y);
+			AnimData[BANIM_PRODUCTION].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "ProductionAnimZAdjust", AnimData[BANIM_PRODUCTION].ZAdjust);
+			AnimData[BANIM_PRODUCTION].YSort = ArtINI.Get_Int(Graphic_Name(), "ProductionAnimYSort", AnimData[BANIM_PRODUCTION].YSort);
+			AnimData[BANIM_PRODUCTION].Powered = ArtINI.Get_Bool(Graphic_Name(), "ProductionAnimPowered", AnimData[BANIM_PRODUCTION].Powered);
+			AnimData[BANIM_PRODUCTION].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "ProductionAnimPoweredLight", AnimData[BANIM_PRODUCTION].PoweredLight);
+			AnimData[BANIM_PRODUCTION].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "ProductionAnimPoweredEffect", AnimData[BANIM_PRODUCTION].PoweredEffect);
+			AnimData[BANIM_PRODUCTION].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "ProductionAnimPoweredSpecial", AnimData[BANIM_PRODUCTION].PoweredSpecial);
+		}
 
-		if (strlen(AnimData[BANIM_PRODUCTION].Anim) || strlen(AnimData[BANIM_PRODUCTION].AnimDamaged)) {
-			AnimData[BANIM_PRODUCTION].Location.X = ArtINI.Get_Int(Name(), "ProductionAnimX", AnimData[BANIM_PRODUCTION].Location.X);
-			AnimData[BANIM_PRODUCTION].Location.Y = ArtINI.Get_Int(Name(), "ProductionAnimY", AnimData[BANIM_PRODUCTION].Location.Y);
-			AnimData[BANIM_PRODUCTION].ZAdjust = ArtINI.Get_Int(Name(), "ProductionAnimZAdjust", AnimData[BANIM_PRODUCTION].ZAdjust);
-			AnimData[BANIM_PRODUCTION].YSort = ArtINI.Get_Int(Name(), "ProductionAnimYSort", AnimData[BANIM_PRODUCTION].YSort);
+		/// IdleAnim
+		ArtINI.Get_String(Graphic_Name(), "IdleAnim", "", buffer, sizeof(AnimData[BANIM_IDLE].Anim));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_IDLE].Anim, buffer);
+		}
+		ArtINI.Get_String(Graphic_Name(), "IdleAnimDamaged", "", buffer, sizeof(AnimData[BANIM_IDLE].AnimDamaged));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_IDLE].AnimDamaged, buffer);
+		}
+		if (!strlen(AnimData[BANIM_IDLE].AnimDamaged)) {
+			strcpy(AnimData[BANIM_IDLE].AnimDamaged, AnimData[BANIM_IDLE].Anim);
+		}
+		ArtINI.Get_String(Graphic_Name(), "IdleAnimGarrisoned", "", buffer, sizeof(AnimData[BANIM_IDLE].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_IDLE].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_IDLE].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_IDLE].AnimGarrisoned, AnimData[BANIM_IDLE].Anim);
+		}
+		if (strlen(AnimData[BANIM_IDLE].Anim) || strlen(AnimData[BANIM_IDLE].AnimDamaged) || strlen(AnimData[BANIM_IDLE].AnimGarrisoned)) {
+			AnimData[BANIM_IDLE].Location.X = ArtINI.Get_Int(Graphic_Name(), "IdleAnimX", AnimData[BANIM_IDLE].Location.X);
+			AnimData[BANIM_IDLE].Location.Y = ArtINI.Get_Int(Graphic_Name(), "IdleAnimY", AnimData[BANIM_IDLE].Location.Y);
+			AnimData[BANIM_IDLE].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "IdleAnimZAdjust", AnimData[BANIM_IDLE].ZAdjust);
+			AnimData[BANIM_IDLE].YSort = ArtINI.Get_Int(Graphic_Name(), "IdleAnimYSort", AnimData[BANIM_IDLE].YSort);
+			AnimData[BANIM_IDLE].Powered = ArtINI.Get_Bool(Graphic_Name(), "IdleAnimPowered", AnimData[BANIM_IDLE].Powered);
+			AnimData[BANIM_IDLE].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "IdleAnimPoweredLight", AnimData[BANIM_IDLE].PoweredLight);
+			AnimData[BANIM_IDLE].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "IdleAnimPoweredEffect", AnimData[BANIM_IDLE].PoweredEffect);
+			AnimData[BANIM_IDLE].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "IdleAnimPoweredSpecial", AnimData[BANIM_IDLE].PoweredSpecial);
 		}
 
 		/// PreProductionAnim
-		ArtINI.Get_String(Graphic_Name(), "PreProductionAnim", "", buffer, sizeof(((AnimDataType *)0)->Anim));
+		ArtINI.Get_String(Graphic_Name(), "PreProductionAnim", "", buffer, sizeof(AnimData[BANIM_PRE_PRODUCTION].Anim));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_PRE_PRODUCTION].Anim, buffer);
 		}
-
-		ArtINI.Get_String(Graphic_Name(), "PreProductionAnimDamaged", "", buffer, sizeof(((AnimDataType *)0)->AnimDamaged));
+		ArtINI.Get_String(Graphic_Name(), "PreProductionAnimDamaged", "", buffer, sizeof(AnimData[BANIM_PRE_PRODUCTION].AnimDamaged));
 		if (strlen(buffer)) {
 			strcpy(AnimData[BANIM_PRE_PRODUCTION].AnimDamaged, buffer);
 		}
-
 		if (!strlen(AnimData[BANIM_PRE_PRODUCTION].AnimDamaged)) {
 			strcpy(AnimData[BANIM_PRE_PRODUCTION].AnimDamaged, AnimData[BANIM_PRE_PRODUCTION].Anim);
 		}
-
-		if (strlen(AnimData[BANIM_PRE_PRODUCTION].Anim) || strlen(AnimData[BANIM_PRE_PRODUCTION].AnimDamaged)) {
-			AnimData[BANIM_PRE_PRODUCTION].Location.X = ArtINI.Get_Int(Name(), "PreProductionAnimX", AnimData[BANIM_PRE_PRODUCTION].Location.X);
-			AnimData[BANIM_PRE_PRODUCTION].Location.Y = ArtINI.Get_Int(Name(), "PreProductionAnimY", AnimData[BANIM_PRE_PRODUCTION].Location.Y);
-			AnimData[BANIM_PRE_PRODUCTION].ZAdjust = ArtINI.Get_Int(Name(), "PreProductionAnimZAdjust", AnimData[BANIM_PRE_PRODUCTION].ZAdjust);
-			AnimData[BANIM_PRE_PRODUCTION].YSort = ArtINI.Get_Int(Name(), "PreProductionAnimYSort", AnimData[BANIM_PRE_PRODUCTION].YSort);
+		ArtINI.Get_String(Graphic_Name(), "PreProductionAnimGarrisoned", "", buffer, sizeof(AnimData[BANIM_PRE_PRODUCTION].AnimGarrisoned));
+		if (strlen(buffer)) {
+			strcpy(AnimData[BANIM_PRE_PRODUCTION].AnimGarrisoned, buffer);
+		}
+		if (!strlen(AnimData[BANIM_PRE_PRODUCTION].AnimGarrisoned)) {
+			strcpy(AnimData[BANIM_PRE_PRODUCTION].AnimGarrisoned, AnimData[BANIM_PRE_PRODUCTION].Anim);
+		}
+		if (strlen(AnimData[BANIM_PRE_PRODUCTION].Anim) || strlen(AnimData[BANIM_PRE_PRODUCTION].AnimDamaged) || strlen(AnimData[BANIM_PRE_PRODUCTION].AnimGarrisoned)) {
+			AnimData[BANIM_PRE_PRODUCTION].Location.X = ArtINI.Get_Int(Graphic_Name(), "PreProductionAnimX", AnimData[BANIM_PRE_PRODUCTION].Location.X);
+			AnimData[BANIM_PRE_PRODUCTION].Location.Y = ArtINI.Get_Int(Graphic_Name(), "PreProductionAnimY", AnimData[BANIM_PRE_PRODUCTION].Location.Y);
+			AnimData[BANIM_PRE_PRODUCTION].ZAdjust = ArtINI.Get_Int(Graphic_Name(), "PreProductionAnimZAdjust", AnimData[BANIM_PRE_PRODUCTION].ZAdjust);
+			AnimData[BANIM_PRE_PRODUCTION].YSort = ArtINI.Get_Int(Graphic_Name(), "PreProductionAnimYSort", AnimData[BANIM_PRE_PRODUCTION].YSort);
+			AnimData[BANIM_PRE_PRODUCTION].Powered = ArtINI.Get_Bool(Graphic_Name(), "PreProductionAnimPowered", AnimData[BANIM_PRE_PRODUCTION].Powered);
+			AnimData[BANIM_PRE_PRODUCTION].PoweredLight = ArtINI.Get_Bool(Graphic_Name(), "PreProductionAnimPoweredLight", AnimData[BANIM_PRE_PRODUCTION].PoweredLight);
+			AnimData[BANIM_PRE_PRODUCTION].PoweredEffect = ArtINI.Get_Bool(Graphic_Name(), "PreProductionAnimPoweredEffect", AnimData[BANIM_PRE_PRODUCTION].PoweredEffect);
+			AnimData[BANIM_PRE_PRODUCTION].PoweredSpecial = ArtINI.Get_Bool(Graphic_Name(), "PreProductionAnimPoweredSpecial", AnimData[BANIM_PRE_PRODUCTION].PoweredSpecial);
 		}
 
 		/// TurretAnim

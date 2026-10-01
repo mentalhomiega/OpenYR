@@ -51,6 +51,6 @@ The indicator always starts from `SpecialAnim=`, never from [`SpecialAnimDamaged
 
 A `FirestormWall=yes` section fills the first two slots with animations named in `[AudioVisual]`, at fixed offsets and a fixed depth bias of -10. [The firestorm wall](/systems/laser-fences/#raising-and-lowering-the-wall) covers when each of the two appears. The section's `SpecialAnim=` and [`SpecialAnimTwo=`](/keys/specialanimtwo/), with their offsets and biases, are not used for them. Raising or lowering the wall never starts the third slot.
 
-### A powered light on any structure
+### A powered light on a powered structure
 
-Each time a house rechecks its power at full power, it creates every missing `…PoweredLight=yes` animation on its structures, special slots included. A special slot with [`SpecialAnimPowered=no`](/keys/specialanimpowered/) and [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/) therefore runs on any structure, whatever its flags. This is the only way a structure with none of the three flags runs a special animation. [Power](/systems/building-animations/#power) covers what the two flags do and which of them is used.
+Each time a house rechecks its power at full power, it creates every missing `…PoweredLight=yes` animation on its [`Powered=yes`](/keys/powered/) structures that drain power, special slots included. A special slot with [`SpecialAnimPowered=no`](/keys/specialanimpowered/) and [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/) therefore runs on such a structure, whatever its other flags. This is the only way a structure with none of the three flags runs a special animation. [Power](/systems/building-animations/#power) covers what the power flags do and which of them is used.

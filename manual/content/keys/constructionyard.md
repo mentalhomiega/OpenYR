@@ -13,7 +13,7 @@ The flag does not make a type count toward its house's construction yards. Only 
 
 ## Production animations
 
-A construction yard plays its [`PreProductionAnim`](/keys/preproductionanim/) while a structure it built runs its construction animation, and switches to its [`ProductionAnim`](/keys/productionanim/) when that animation ends. [The thirteen slots](/systems/building-animations/#the-thirteen-slots) lists what starts each animation on other structures.
+A construction yard plays its [`PreProductionAnim`](/keys/preproductionanim/) while a structure it built runs its construction animation, and switches to its [`ProductionAnim`](/keys/productionanim/) when that animation ends. [The twenty-one slots](/systems/building-animations/#the-twenty-one-slots) lists what starts each animation on other structures.
 
 ## Undeploying
 

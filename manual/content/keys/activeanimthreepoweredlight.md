@@ -11,6 +11,6 @@ when_omitted:
 
 The flag takes effect only beside [`ActiveAnimThreePowered=no`](/keys/activeanimthreepowered/). While `ActiveAnimThreePowered` is `yes`, its default, the animation freezes during a shortage and this flag is ignored.
 
-Each time the house rechecks its power at full power, it creates the animation in the slot if the slot is empty. That includes an animation that played to its end.
+Each time the house rechecks its power at full power, it creates the animation in the slot if the slot is empty, on a [`Powered=yes`](/keys/powered/) structure that drains power. That includes an animation that played to its end.
 
 A repair step, or an [upgrade](/keys/upgrades/) installed on a structure below maximum strength, starts the animation if the slot is empty. Either can start it during a shortage, and it then runs until the next recheck removes it.

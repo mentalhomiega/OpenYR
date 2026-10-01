@@ -13,6 +13,6 @@ A slot's animation is drawn in the ground layer only if its AnimType sets [`Surf
 
 The value replaces the AnimType's own [`YSortAdjust=`](/keys/ysortadjust/). To keep that bias, repeat it here.
 
-Keep the value between -128 and 127. It is stored in one signed byte, so a value outside that range wraps around; [Placement and draw order](/systems/building-animations/#placement-and-draw-order) gives an example.
+[Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers how this sorting bias differs from the depth bias.
 
 The slot's animation names come from a different art entry when the structure sets [`Image=`](/keys/image/); [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) covers the split.

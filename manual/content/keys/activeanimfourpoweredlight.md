@@ -11,6 +11,6 @@ With `yes`, the [`ActiveAnimFour`](/keys/activeanimfour/) animation is removed w
 
 A shortfall removes the animation only on some structures; [Fields, fences and lights](/systems/power/#fields-fences-and-lights) says which.
 
-Each time the house [rechecks its power](/systems/power/#when-the-tally-is-rebuilt) at full power, it creates the animation if the slot is empty. A non-looping animation therefore plays again at each recheck, even if no shortfall removed it.
+Each time the house [rechecks its power](/systems/power/#when-the-tally-is-rebuilt) at full power, it creates the animation if the slot is empty, on a [`Powered=yes`](/keys/powered/) structure that drains power. A non-looping animation therefore plays again at each recheck, even if no shortfall removed it.
 
 Despite its name, the flag does not tint or light anything.

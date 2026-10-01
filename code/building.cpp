@@ -287,6 +287,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	Init();
 
 	memset(Anims, 0, sizeof(Anims));
+	memset(AnimStates, 0, sizeof(AnimStates));
 
 	FactoryPtrTracker.Add(this);
 	AnimPtrTracker.Add(this);
@@ -3711,6 +3712,9 @@ void BuildingClass::Grand_Opening(bool captured)
 {
 	if (!HasOpened || captured) {
 		if (!HasOpened) {
+			if (!Class->IsRefinery) {
+				Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
+			}
 			Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow, Class->IsSensorArray ? 30 : 0);
 			Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
 			Begin_Anim(BANIM_ACTIVE_THREE, HealthRatio <= Rule->ConditionYellow);
@@ -4106,13 +4110,9 @@ void BuildingClass::Begin_Mode(BStateType bstate)
 		BuildingTypeClass::AnimControlType const * ctrl = Fetch_Anim_Control();
 
 		if (ScenarioInit) {
+			Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
 			Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
-		}
-
-		if (!IsCharging && !IsCharged || !Class->IsTurretAnimExclusive) {
-			if (ScenarioInit) {
-				Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
-			}
+			Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
 		}
 
 		if (ScenarioInit) {
@@ -8246,6 +8246,64 @@ void BuildingClass::Power_Off(void)
 
 
 /// <summary>
+/// Brings this building's animations back when its house's power recovers. A Powered
+/// animation resumes, a PoweredLight one that is missing starts again, and a PoweredEffect
+/// one that losing power stopped starts again. The SuperLowPower animation ends.
+/// </summary>
+void BuildingClass::Power_Anims_On(void)
+{
+	bool damaged = HealthRatio <= Rule->ConditionYellow;
+
+	End_Anim(BANIM_SUPER_LOW_POWER);
+	for (int index = 0; index < BANIM_COUNT; index++) {
+		BuildingTypeClass::AnimDataType const & data = Class->AnimData[index];
+		if (data.Powered) {
+			if (Anims[index] != NULL) {
+				Anims[index]->Enable();
+			}
+		} else if (data.PoweredLight) {
+			if (Anims[index] == NULL) {
+				Begin_Anim(BAnimType(index), damaged);
+			}
+		} else if (data.PoweredEffect && AnimStates[index]) {
+			AnimStates[index] = false;
+			Begin_Anim(BAnimType(index), damaged);
+		}
+	}
+}
+
+
+/// <summary>
+/// Changes this building's animations for a house short of power. A Powered animation
+/// pauses and a PoweredLight one ends. A PoweredEffect one ends and is marked to start again
+/// with power; when that slot is SuperAnimThree, the SuperLowPower animation starts instead.
+/// </summary>
+void BuildingClass::Power_Anims_Off(void)
+{
+	bool damaged = HealthRatio <= Rule->ConditionYellow;
+
+	for (int index = 0; index < BANIM_COUNT; index++) {
+		BuildingTypeClass::AnimDataType const & data = Class->AnimData[index];
+		if (data.Powered) {
+			if (Anims[index] != NULL) {
+				Anims[index]->Disable();
+			}
+		} else if (data.PoweredLight) {
+			if (Anims[index] != NULL) {
+				End_Anim(BAnimType(index));
+			}
+		} else if (data.PoweredEffect && Anims[index] != NULL) {
+			AnimStates[index] = true;
+			End_Anim(BAnimType(index));
+			if (index == BANIM_SUPER_THREE) {
+				Begin_Anim(BANIM_SUPER_LOW_POWER, damaged);
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Requests that this gate be opened.
 /// This routine is called by a unit that wishes to pass through. A building that is
 /// not a gate agrees at once, but a real gate is put onto its opening mission and the
@@ -8989,6 +9047,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AnimToTrack);
 	stream.Serialize(PlacementDelay);
 	stream.Serialize(Anims);
+	stream.Serialize(AnimStates);
 	stream.Serialize(Upgrades);
 	stream.Serialize(LastSuperWeaponIndex);
 	stream.Serialize(TurretIndex);
@@ -9179,14 +9238,8 @@ void Adjust_House_Power(HouseClass * house)
 			}
 
 			if (fraction >= 1.0) {
-				for (int banim = 0; banim < BANIM_COUNT; banim++) {
-					if (bptr->Class->AnimData[banim].Powered) {
-						if (bptr->Anims[banim] != NULL) {
-							bptr->Anims[banim]->Enable();
-						}
-					} else if (bptr->Class->AnimData[banim].PoweredLight && bptr->Anims[banim] == NULL) {
-						bptr->Begin_Anim((BAnimType)banim, bptr->HealthRatio <= Rule->ConditionYellow);
-					}
+				if (bptr->Class->IsPowered && bptr->Class->Drain > 0) {
+					bptr->Power_Anims_On();
 				}
 			} else {
 				if (bptr->Class->IsCloakGenerator && bptr->CloakGeneratorState >= 0 && !bptr->Is_Powered_On()) {
@@ -9194,16 +9247,8 @@ void Adjust_House_Power(HouseClass * house)
 						bptr->Disable_Cloak_Generator();
 					}
 				}
-				if (bptr->Class->IsPowered && bptr->Class->Drain > 0 && bptr->Class->IsCanTogglePower) {
-					for (int banim = 0; banim < BANIM_COUNT; banim++) {
-						if (bptr->Class->AnimData[banim].Powered) {
-							if (bptr->Anims[banim] != NULL) {
-								bptr->Anims[banim]->Disable();
-							}
-						} else if (bptr->Class->AnimData[banim].PoweredLight && bptr->Anims[banim] != NULL) {
-							bptr->End_Anim((BAnimType)banim);
-						}
-					}
+				if (bptr->Class->IsPowered && bptr->Class->Drain > 0) {
+					bptr->Power_Anims_Off();
 				}
 			}
 		}

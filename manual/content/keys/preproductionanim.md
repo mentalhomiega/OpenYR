@@ -16,4 +16,4 @@ The slot runs an animation registered in `[Animations]`, on the terms [Building 
 The harvester starts the pre-production slot of the structure one cell west of its own cell, whatever kind of structure that is. Only the later start of the production slot checks for [`Refinery=yes`](/keys/refinery/).
 :::
 
-The two names come from the structure's `[<Image ID>]` art entry. The offset and the two draw-order biases come from the entry named after the BuildingType itself, and are read only when the slot has a name. [Where the settings are read](/keys/productionanim/#where-the-settings-are-read) covers that split. The slot has no power flags.
+Every setting of the slot comes from the structure's `[<Image ID>]` art entry. The offset, the two draw-order biases and the power flags are read only when the slot has a name. [Where the settings are read](/keys/productionanim/#where-the-settings-are-read) covers the same rule for the production slot.

@@ -15,6 +15,6 @@ Other structures use the slot differently:
 
 - A [`FirestormWall=yes`](/keys/firestormwall/) section runs the [`FirestormIdleAnim`](/keys/firestormidleanim/) animation in this slot at random moments while its house's firestorm is up. That animation does not use this name. If this name is set, damage or repair that moves the section across [`ConditionYellow`](/keys/conditionyellow/) while the idle animation runs replaces it with this slot's healthy or damaged animation.
 - A [`SiloDamage=yes`](/keys/silodamage/) structure's fill indicator uses only the first special slot.
-- Any structure can run this animation through [a powered light](/keys/specialanim/#a-powered-light-on-any-structure).
+- Any structure can run this animation through [a powered light](/keys/specialanim/#a-powered-light-on-a-powered-structure).
 
 [Building animations](/systems/building-animations/) covers the offset, draw-order and power settings the slot shares with the other slots.

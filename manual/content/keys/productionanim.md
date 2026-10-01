@@ -33,11 +33,11 @@ A docked harvester that has finished unloading waits at the refinery until the r
 Only the construction yard chooses between `ProductionAnim` and [`ProductionAnimDamaged=`](/keys/productionanimdamaged/) by its health. Every other structure starts the healthy `ProductionAnim` even when damaged, and that start switches every animation the damaged structure is running to its healthy form. The damaged forms return at the next hit or repair step that finds the structure at [`ConditionYellow`](/keys/conditionyellow/) or below.
 :::
 
-The production animation has no power settings and always behaves as `…Powered=yes`, so a power shortfall or an EMP pulse can freeze it on its current frame. [Power](/systems/building-animations/#power) covers when it freezes and when it resumes.
+The production animation freezes on its current frame during a power shortfall or an EMP pulse unless [`ProductionAnimPowered=no`](/keys/productionanimpowered/) is set. [Power](/systems/building-animations/#power) covers when it freezes and when it resumes.
 
 ## Where the settings are read
 
-The two animation names, `ProductionAnim` and `ProductionAnimDamaged`, are read from the structure's `[<Image ID>]` art entry. The X and Y offsets and the two draw-order biases are read from the art entry named after the BuildingType itself, and only when the Image ID entry names at least one of the two animations. For an ordinary structure, which sets no [`Image=`](/keys/image/), both are the same entry. A type that borrows another structure's artwork must write the names and the offsets in two different entries. [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) gives the same split for every slot.
+Every production setting is read from the structure's `[<Image ID>]` art entry. The X and Y offsets, the two draw-order biases and the power flags are read only when that entry names a production animation in at least one form. A type that borrows another structure's artwork with [`Image=`](/keys/image/) therefore takes the offsets with the names. [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) covers every slot.
 
 ```ini title="rules.ini"
 [MYPROC] ; example refinery BuildingType
@@ -45,11 +45,9 @@ Image=NAREFN ; its art entries are read from [NAREFN]
 ```
 
 ```ini title="art.ini"
-[NAREFN] ; the Image ID entry supplies the two names
+[NAREFN] ; the Image ID entry supplies every setting
 ProductionAnim=NAREFN_AR
 PreProductionAnim=NAREFN_A
-
-[MYPROC] ; the type's own entry supplies the offsets and biases
 ProductionAnimX=-2
 ProductionAnimY=2
 ProductionAnimZAdjust=-100

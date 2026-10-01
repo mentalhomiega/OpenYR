@@ -874,6 +874,23 @@ ActiveAnimFourDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimFourGarrisoned:
+  key: ActiveAnimFourGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimFourPowered:
   key: ActiveAnimFourPowered
   scopes:
@@ -891,6 +908,23 @@ ActiveAnimFourPowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimFourPoweredEffect:
+  key: ActiveAnimFourPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_FOUR].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimFourPoweredLight:
   key: ActiveAnimFourPoweredLight
   scopes:
@@ -905,6 +939,23 @@ ActiveAnimFourPoweredLight:
       default_candidate: null
       declared_in: BuildingTypeClass
       member: AnimData[BANIM_ACTIVE_FOUR].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ActiveAnimFourPoweredSpecial:
+  key: ActiveAnimFourPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_FOUR].PoweredSpecial
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
@@ -976,6 +1027,23 @@ ActiveAnimFourZAdjust:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimGarrisoned:
+  key: ActiveAnimGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimPowered:
   key: ActiveAnimPowered
   scopes:
@@ -993,6 +1061,23 @@ ActiveAnimPowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimPoweredEffect:
+  key: ActiveAnimPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_ONE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimPoweredLight:
   key: ActiveAnimPoweredLight
   scopes:
@@ -1007,6 +1092,23 @@ ActiveAnimPoweredLight:
       default_candidate: null
       declared_in: BuildingTypeClass
       member: AnimData[BANIM_ACTIVE_ONE].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ActiveAnimPoweredSpecial:
+  key: ActiveAnimPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_ONE].PoweredSpecial
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
@@ -1044,6 +1146,23 @@ ActiveAnimThreeDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimThreeGarrisoned:
+  key: ActiveAnimThreeGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimThreePowered:
   key: ActiveAnimThreePowered
   scopes:
@@ -1061,6 +1180,23 @@ ActiveAnimThreePowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimThreePoweredEffect:
+  key: ActiveAnimThreePoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_THREE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimThreePoweredLight:
   key: ActiveAnimThreePoweredLight
   scopes:
@@ -1075,6 +1211,23 @@ ActiveAnimThreePoweredLight:
       default_candidate: null
       declared_in: BuildingTypeClass
       member: AnimData[BANIM_ACTIVE_THREE].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ActiveAnimThreePoweredSpecial:
+  key: ActiveAnimThreePoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_THREE].PoweredSpecial
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
@@ -1180,6 +1333,23 @@ ActiveAnimTwoDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimTwoGarrisoned:
+  key: ActiveAnimTwoGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimTwoPowered:
   key: ActiveAnimTwoPowered
   scopes:
@@ -1197,6 +1367,23 @@ ActiveAnimTwoPowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ActiveAnimTwoPoweredEffect:
+  key: ActiveAnimTwoPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_TWO].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ActiveAnimTwoPoweredLight:
   key: ActiveAnimTwoPoweredLight
   scopes:
@@ -1211,6 +1398,23 @@ ActiveAnimTwoPoweredLight:
       default_candidate: null
       declared_in: BuildingTypeClass
       member: AnimData[BANIM_ACTIVE_TWO].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ActiveAnimTwoPoweredSpecial:
+  key: ActiveAnimTwoPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_ACTIVE_TWO].PoweredSpecial
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
@@ -11366,6 +11570,193 @@ IdleActionFrequency:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+IdleAnim:
+  key: IdleAnim
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimDamaged:
+  key: IdleAnimDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimGarrisoned:
+  key: IdleAnimGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimPowered:
+  key: IdleAnimPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimPoweredEffect:
+  key: IdleAnimPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimPoweredLight:
+  key: IdleAnimPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimPoweredSpecial:
+  key: IdleAnimPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimX:
+  key: IdleAnimX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimY:
+  key: IdleAnimY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimYSort:
+  key: IdleAnimYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+IdleAnimZAdjust:
+  key: IdleAnimZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_IDLE].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 IgnoreGlobalAITriggers:
   key: IgnoreGlobalAITriggers
   scopes:
@@ -13952,6 +14343,193 @@ Lose:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+LowPower:
+  key: LowPower
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerDamaged:
+  key: LowPowerDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerGarrisoned:
+  key: LowPowerGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerPowered:
+  key: LowPowerPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerPoweredEffect:
+  key: LowPowerPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerPoweredLight:
+  key: LowPowerPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerPoweredSpecial:
+  key: LowPowerPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerX:
+  key: LowPowerX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerY:
+  key: LowPowerY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerYSort:
+  key: LowPowerYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LowPowerZAdjust:
+  key: LowPowerZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_LOW_POWER].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 LowRadarBrightness:
   key: LowRadarBrightness
   scopes:
@@ -17334,14 +17912,99 @@ PreProductionAnimDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+PreProductionAnimGarrisoned:
+  key: PreProductionAnimGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+PreProductionAnimPowered:
+  key: PreProductionAnimPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRE_PRODUCTION].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+PreProductionAnimPoweredEffect:
+  key: PreProductionAnimPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRE_PRODUCTION].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+PreProductionAnimPoweredLight:
+  key: PreProductionAnimPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRE_PRODUCTION].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+PreProductionAnimPoweredSpecial:
+  key: PreProductionAnimPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRE_PRODUCTION].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 PreProductionAnimX:
   key: PreProductionAnimX
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17357,8 +18020,8 @@ PreProductionAnimY:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17374,8 +18037,8 @@ PreProductionAnimYSort:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17391,8 +18054,8 @@ PreProductionAnimZAdjust:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17834,14 +18497,99 @@ ProductionAnimDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ProductionAnimGarrisoned:
+  key: ProductionAnimGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProductionAnimPowered:
+  key: ProductionAnimPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRODUCTION].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProductionAnimPoweredEffect:
+  key: ProductionAnimPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRODUCTION].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProductionAnimPoweredLight:
+  key: ProductionAnimPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRODUCTION].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProductionAnimPoweredSpecial:
+  key: ProductionAnimPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_PRODUCTION].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ProductionAnimX:
   key: ProductionAnimX
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17857,8 +18605,8 @@ ProductionAnimY:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17874,8 +18622,8 @@ ProductionAnimYSort:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -17891,8 +18639,8 @@ ProductionAnimZAdjust:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21526,14 +22274,218 @@ SpecialAnimDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimFour:
+  key: SpecialAnimFour
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourDamaged:
+  key: SpecialAnimFourDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourGarrisoned:
+  key: SpecialAnimFourGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourPowered:
+  key: SpecialAnimFourPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourPoweredEffect:
+  key: SpecialAnimFourPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourPoweredLight:
+  key: SpecialAnimFourPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourPoweredSpecial:
+  key: SpecialAnimFourPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourX:
+  key: SpecialAnimFourX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourY:
+  key: SpecialAnimFourY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourYSort:
+  key: SpecialAnimFourYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimFourZAdjust:
+  key: SpecialAnimFourZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_FOUR].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimGarrisoned:
+  key: SpecialAnimGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimPowered:
   key: SpecialAnimPowered
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: boolean
     status: generated
     _provenance:
@@ -21543,20 +22495,54 @@ SpecialAnimPowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimPoweredEffect:
+  key: SpecialAnimPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_ONE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimPoweredLight:
   key: SpecialAnimPoweredLight
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: boolean
     status: generated
     _provenance:
       default_candidate: null
       declared_in: BuildingTypeClass
       member: AnimData[BANIM_SPECIAL_ONE].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpecialAnimPoweredSpecial:
+  key: SpecialAnimPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_ONE].PoweredSpecial
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
@@ -21594,14 +22580,31 @@ SpecialAnimThreeDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimThreeGarrisoned:
+  key: SpecialAnimThreeGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimThreePowered:
   key: SpecialAnimThreePowered
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: boolean
     status: generated
     _provenance:
@@ -21611,14 +22614,31 @@ SpecialAnimThreePowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimThreePoweredEffect:
+  key: SpecialAnimThreePoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_THREE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimThreePoweredLight:
   key: SpecialAnimThreePoweredLight
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: boolean
     status: generated
     _provenance:
@@ -21628,14 +22648,31 @@ SpecialAnimThreePoweredLight:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimThreePoweredSpecial:
+  key: SpecialAnimThreePoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_THREE].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimThreeX:
   key: SpecialAnimThreeX
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21651,8 +22688,8 @@ SpecialAnimThreeY:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21668,8 +22705,8 @@ SpecialAnimThreeYSort:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21685,8 +22722,8 @@ SpecialAnimThreeZAdjust:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21730,14 +22767,31 @@ SpecialAnimTwoDamaged:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimTwoGarrisoned:
+  key: SpecialAnimTwoGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimTwoPowered:
   key: SpecialAnimTwoPowered
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: boolean
     status: generated
     _provenance:
@@ -21747,14 +22801,31 @@ SpecialAnimTwoPowered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimTwoPoweredEffect:
+  key: SpecialAnimTwoPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_TWO].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimTwoPoweredLight:
   key: SpecialAnimTwoPoweredLight
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: boolean
     status: generated
     _provenance:
@@ -21764,14 +22835,31 @@ SpecialAnimTwoPoweredLight:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialAnimTwoPoweredSpecial:
+  key: SpecialAnimTwoPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SPECIAL_TWO].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpecialAnimTwoX:
   key: SpecialAnimTwoX
   scopes:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21787,8 +22875,8 @@ SpecialAnimTwoY:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21804,8 +22892,8 @@ SpecialAnimTwoYSort:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21821,8 +22909,8 @@ SpecialAnimTwoZAdjust:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21838,8 +22926,8 @@ SpecialAnimX:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21855,8 +22943,8 @@ SpecialAnimY:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21872,8 +22960,8 @@ SpecialAnimYSort:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -21889,8 +22977,8 @@ SpecialAnimZAdjust:
   - applies_to: *id004
     file: art.ini
     section:
-      kind: identifier
-      source: object-type
+      kind: image
+      fallback: object-type
     value_type: integer
     status: generated
     _provenance:
@@ -22754,6 +23842,941 @@ Suicide:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+SuperAnim:
+  key: SuperAnim
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimDamaged:
+  key: SuperAnimDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFour:
+  key: SuperAnimFour
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourDamaged:
+  key: SuperAnimFourDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourGarrisoned:
+  key: SuperAnimFourGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourPowered:
+  key: SuperAnimFourPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourPoweredEffect:
+  key: SuperAnimFourPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourPoweredLight:
+  key: SuperAnimFourPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourPoweredSpecial:
+  key: SuperAnimFourPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourX:
+  key: SuperAnimFourX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourY:
+  key: SuperAnimFourY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourYSort:
+  key: SuperAnimFourYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimFourZAdjust:
+  key: SuperAnimFourZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_FOUR].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimGarrisoned:
+  key: SuperAnimGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimPowered:
+  key: SuperAnimPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimPoweredEffect:
+  key: SuperAnimPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimPoweredLight:
+  key: SuperAnimPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimPoweredSpecial:
+  key: SuperAnimPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThree:
+  key: SuperAnimThree
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreeDamaged:
+  key: SuperAnimThreeDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreeGarrisoned:
+  key: SuperAnimThreeGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreePowered:
+  key: SuperAnimThreePowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreePoweredEffect:
+  key: SuperAnimThreePoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreePoweredLight:
+  key: SuperAnimThreePoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreePoweredSpecial:
+  key: SuperAnimThreePoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreeX:
+  key: SuperAnimThreeX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreeY:
+  key: SuperAnimThreeY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreeYSort:
+  key: SuperAnimThreeYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimThreeZAdjust:
+  key: SuperAnimThreeZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_THREE].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwo:
+  key: SuperAnimTwo
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoDamaged:
+  key: SuperAnimTwoDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoGarrisoned:
+  key: SuperAnimTwoGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoPowered:
+  key: SuperAnimTwoPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoPoweredEffect:
+  key: SuperAnimTwoPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoPoweredLight:
+  key: SuperAnimTwoPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoPoweredSpecial:
+  key: SuperAnimTwoPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoX:
+  key: SuperAnimTwoX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoY:
+  key: SuperAnimTwoY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoYSort:
+  key: SuperAnimTwoYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimTwoZAdjust:
+  key: SuperAnimTwoZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_TWO].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimX:
+  key: SuperAnimX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimY:
+  key: SuperAnimY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimYSort:
+  key: SuperAnimYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperAnimZAdjust:
+  key: SuperAnimZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_ONE].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPower:
+  key: SuperLowPower
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerDamaged:
+  key: SuperLowPowerDamaged
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerGarrisoned:
+  key: SuperLowPowerGarrisoned
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: buffer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerPowered:
+  key: SuperLowPowerPowered
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].Powered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerPoweredEffect:
+  key: SuperLowPowerPoweredEffect
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].PoweredEffect
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerPoweredLight:
+  key: SuperLowPowerPoweredLight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].PoweredLight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerPoweredSpecial:
+  key: SuperLowPowerPoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].PoweredSpecial
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerX:
+  key: SuperLowPowerX
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].Location.X
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerY:
+  key: SuperLowPowerY
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].Location.Y
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerYSort:
+  key: SuperLowPowerYSort
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].YSort
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SuperLowPowerZAdjust:
+  key: SuperLowPowerZAdjust
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AnimData[BANIM_SUPER_LOW_POWER].ZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SuperWeapon:
   key: SuperWeapon
   scopes:
@@ -23926,24 +25949,6 @@ TiberiumExplosive:
       source: code/special.cpp
       guard: null
     level: SpecialClass
-TiberiumFarScan:
-  key: TiberiumFarScan
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: AI
-    value_type: distance (cells)
-    status: generated
-    _provenance:
-      default_candidate: '8192'
-      declared_in: RulesClass
-      member: TiberiumLongScan
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 TiberiumGrows:
   key: TiberiumGrows
   scopes:
@@ -24045,21 +26050,21 @@ TiberiumLayout:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
-TiberiumNearScan:
-  key: TiberiumNearScan
+TiberiumLongScan:
+  key: TiberiumLongScan
   scopes:
   - applies_to:
     - global rules
     file: rules.ini
     section:
       kind: literal
-      name: AI
+      name: General
     value_type: distance (cells)
     status: generated
     _provenance:
-      default_candidate: '1536'
+      default_candidate: '8192'
       declared_in: RulesClass
-      member: TiberiumShortScan
+      member: TiberiumLongScan
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -24080,6 +26085,24 @@ TiberiumProof:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+TiberiumShortScan:
+  key: TiberiumShortScan
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: '1536'
+      declared_in: RulesClass
+      member: TiberiumShortScan
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 TiberiumSpawnType:
   key: TiberiumSpawnType
   scopes:

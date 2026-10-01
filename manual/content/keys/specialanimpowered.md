@@ -13,4 +13,4 @@ A shortfall freezes the animation only on some structures; [Fields, fences and l
 
 To remove the animation during a shortfall instead of freezing it, set `SpecialAnimPowered=no` and [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/).
 
-The value is read only when the slot has an animation name from `SpecialAnim` or [`SpecialAnimDamaged`](/keys/specialanimdamaged/). Write it in the art entry named after the structure's ObjectType ID, even when [`Image=`](/keys/image/) puts the animation names in another entry. [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) has the full table.
+The value is read only when the slot has an animation name from `SpecialAnim`, [`SpecialAnimDamaged`](/keys/specialanimdamaged/) or [`SpecialAnimGarrisoned`](/keys/specialanimgarrisoned/). Write it in the same art entry as the animation names. [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) has the full table.
