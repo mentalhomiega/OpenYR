@@ -5088,18 +5088,20 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 
 			/*
-			 * Spawn destruction debris -- either the explicit voxel debris list (with
-			 * per-type maximums) or generic metallic debris animations.
+			 * Spawn destruction debris as Yuri's Revenge does (TechnoClass::ReceiveDamage). Voxel
+			 * debris is dealt out round the DebrisTypes list until the count is used up; flat
+			 * animations come from DebrisAnims, or from MetallicDebris when the type has neither.
 			 */
 			if (TClass->MaxDebris > 0) {
-				if (TClass->DebrisTypes.Count() > 0) {
-					int remaining = TClass->MaxDebris;
-					for (int index = 0; remaining > 0; index++) {
-						if (index >= TClass->DebrisTypes.Count()) {
-							break;
-						}
+				int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
 
-						int count = abs(Scen->RandomNumber) % (TClass->DebrisMaximums[index] + 1);
+				if (TClass->DebrisTypes.Count() > 0) {
+					int index = 0;
+					int idlepasses = 0;
+					bool placed = false;
+					while (remaining > 0 && idlepasses < 2) {
+						int const maximum = index < TClass->DebrisMaximums.Count() ? TClass->DebrisMaximums[index] : 0;
+						int count = abs(Scen->RandomNumber) % (maximum + 1);
 						if (count >= remaining) {
 							count = remaining;
 						}
@@ -5107,11 +5109,21 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 							new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
 						}
 						remaining -= count;
+						placed = placed || count > 0;
+
+						// The original game loops forever when no entry can place any; this stops after two empty passes.
+						if (++index >= TClass->DebrisTypes.Count()) {
+							index = 0;
+							idlepasses = placed ? 0 : idlepasses + 1;
+							placed = false;
+						}
 					}
-				} else {
-					int count = Scen->RandomNumber(0, TClass->MaxDebris);
-					for (int index = 0; index < count; index++) {
-						new AnimClass(Rule->MetallicDebris[Scen->RandomNumber(0, Rule->MetallicDebris.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+				}
+
+				TypeList<AnimTypeClass const *> const & anims = TClass->DebrisAnims.Count() > 0 ? TClass->DebrisAnims : Rule->MetallicDebris;
+				if ((TClass->DebrisAnims.Count() > 0 || TClass->DebrisTypes.Count() == 0) && anims.Count() > 0) {
+					for (; remaining > 0; remaining--) {
+						new AnimClass(anims[Scen->RandomNumber(0, anims.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
 					}
 				}
 			}

@@ -6530,6 +6530,23 @@ Debris:
       source: code/tiberium.cpp
       guard: null
     level: TiberiumClass
+DebrisAnims:
+  key: DebrisAnims
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of AnimTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: DebrisAnims
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DebrisMaximums:
   key: DebrisMaximums
   scopes:
@@ -14464,6 +14481,23 @@ MinDamage:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MinDebris:
+  key: MinDebris
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: MinDebris
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 MinPlayers:
   key: MinPlayers
   scopes:

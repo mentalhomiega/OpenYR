@@ -130,6 +130,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CloakingSpeed(7),
 	DebrisTypes(),
 	DebrisMaximums(),
+	DebrisAnims(),
 	Locomotor(ClassID_TeleportLocomotion),
 	VoxelCenterY(0),
 	VoxelCenterX(0),
@@ -157,6 +158,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	AuxSound1(VOC_NONE),
 	AuxSound2(VOC_NONE),
 	MaxDebris(0),
+	MinDebris(0),
 	FlightLevel(-1),
 	IsAllowedToStartInMultiplayer(true),
 	CameoFilename(""),
@@ -213,6 +215,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 
 	DebrisTypes.Clear();
 	DebrisMaximums.Clear();
+	DebrisAnims.Clear();
 	Dock.Clear();
 
 	for (int i = 0; i < WEAPON_SLOT_COUNT; i++) {
@@ -585,8 +588,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Weight = ini.Get_Float(Name(), "Weight", Weight);
 		PhysicalSize = ini.Get_Float(Name(), "PhysicalSize", PhysicalSize);
 		MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
+		MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
+		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
 		Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
 		Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
 		Weapons[2].Weapon = TGet_Class(ini, Name(), "Elite", Weapons[2].Weapon);
@@ -976,6 +981,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CloakingSpeed);
 	stream.Serialize(DebrisTypes);
 	stream.Serialize(DebrisMaximums);
+	stream.Serialize(DebrisAnims);
 
 	/*
 	 * A class identifier is a plain sixteen byte value from the Windows SDK with no member
@@ -1012,6 +1018,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MZone);
 	stream.Serialize(ThreatRange);
 	stream.Serialize(MaxDebris);
+	stream.Serialize(MinDebris);
 	stream.Serialize(MaxPassengers);
 	stream.Serialize(Size);
 	stream.Serialize(SizeLimit);

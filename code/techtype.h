@@ -121,6 +121,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		TypeList<int> DebrisMaximums;
 
 		/*
+		 * Flat debris animations this object throws off as it dies, picked at random.
+		 */
+		TypeList<AnimTypeClass const *> DebrisAnims;
+
+		/*
 		 * This is the class ID of the locomotion object that moves an object of this type
 		 * about. It is what decides whether the object drives, walks, hovers, flies or
 		 * tunnels, and an instance of it is created for every object as it is unlimboed.
@@ -259,6 +264,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * destroyed. If zero, then it leaves no debris behind at all.
 		 */
 		int MaxDebris;
+
+		/*
+		 * The least debris this object throws off as it is destroyed, when MaxDebris allows any.
+		 */
+		int MinDebris;
 
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this

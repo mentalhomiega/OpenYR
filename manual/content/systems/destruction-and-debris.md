@@ -61,7 +61,7 @@ Write the per-type settings in the object type's rules section. The wreck animat
 [MYTANK] ; a UnitType registered in [VehicleTypes]
 Explodes=yes           ; sets off the collateral blast
 Crewed=yes             ; lets one crew member escape
-MaxDebris=5            ; at most five pieces of wreckage
+MaxDebris=5            ; at most four pieces of wreckage
 DebrisTypes=TIRE,WTRAK ; VoxelAnimTypes registered in [VoxelAnims], thrown in order
 DebrisMaximums=4,2     ; at most four TIRE, then at most two WTRAK
 ```
@@ -86,7 +86,7 @@ The shared step runs first, in this order, for a vehicle, a structure, an infant
    - the ground beneath it is water.
 
    The infantry step, and the step for a vehicle without [`DeathFrames`](/keys/deathframes/), then leave a wake and a splash in place of the usual death animation.
-6. **The wreckage.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero throws wreckage. A type with a [`DebrisTypes`](/keys/debristypes/) list throws those animations from its center. A type without one throws [`MetallicDebris`](/keys/metallicdebris/) animations from twenty leptons above its center. `MaxDebris` caps the number of pieces either way.
+6. **The wreckage.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero throws wreckage. A type with a [`DebrisTypes`](/keys/debristypes/) list throws those voxel pieces from its center, and a type with [`DebrisAnims`](/keys/debrisanims/) throws those animations from twenty leptons above it. A type with neither throws [`MetallicDebris`](/keys/metallicdebris/) animations instead. [`MaxDebris`](/keys/maxdebris/) describes how many pieces are thrown.
 7. **The collateral blast.** An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type, or an object whose rank grants [the explodes ability](/systems/veterancy/#abilities), deals area damage sized by [`CollateralDamageCoefficient`](/keys/collateraldamagecoefficient/). The blast plays a combat explosion animation and uses the warhead of the object's current primary weapon: its elite weapon at elite rank, or an upgrade's weapon on a structure. A [`Bright=yes`](/keys/bright/#scope-warheadtype) warhead adds a lighting flash. An object with no weapon in that slot gets no animation, flash or damage from this step. `Explodes` owns the radius and damage figures.
 
 Because the water exit comes before the wreckage and the blast, a vehicle without `DeathFrames` that falls off a bridge into a river leaves only the splash, whatever its wreckage and explosion settings. A vehicle with `DeathFrames` also skips the wreckage and the blast, but it still becomes [a wreck](#a-vehicle). The wreck gets no splash, and it plays its death explosion when its counter runs out.
