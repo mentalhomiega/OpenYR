@@ -3732,6 +3732,24 @@ BlueMoldTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+BombAttachSound:
+  key: BombAttachSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BombAttachSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BombParachute:
   key: BombParachute
   scopes:
@@ -3761,6 +3779,24 @@ BombParachute:
       value_type: class
       applies_to: *id012
     precedence: accepted under more than one entry heading; the last one the engine reads wins
+    level: RulesClass
+BombTickingSound:
+  key: BombTickingSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BombTickingSound
+      source: code/rules.cpp
+      guard: null
     level: RulesClass
 BounceAnim:
   key: BounceAnim
@@ -15931,6 +15967,95 @@ IsoRoot:
       source: code/theater.cpp
       guard: null
     level: TheaterClass
+IvanBomb:
+  key: IvanBomb
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsIvanBomb
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+IvanDamage:
+  key: IvanDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: IvanDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+IvanIconFlickerRate:
+  key: IvanIconFlickerRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: IvanIconFlickerRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+IvanTimedDelay:
+  key: IvanTimedDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: IvanTimedDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+IvanWarhead:
+  key: IvanWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: IvanWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Jellyfish:
   key: Jellyfish
   scopes:

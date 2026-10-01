@@ -155,6 +155,8 @@
 #include "bullettype.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "_mixfile.h"
+#include "mixfile.h"
 #include "combat.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -289,6 +291,11 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsBeingWarpedOut(false),
 	ParasiteImUsing(),
 	ParasiteEatingMe(NULL),
+	BombOwner(NULL),
+	BombHouse(NULL),
+	BombPlantFrame(0),
+	BombDetonateFrame(-1),
+	BombSound(),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
 	IsGattlingSoundPlaying(false),
@@ -1402,6 +1409,21 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
 			}
+		}
+	}
+
+	// The bomb icon counts down over an object carrying the player's bomb (TechnoClass::DrawExtras, 0x6F5190).
+	if (BombDetonateFrame != -1 && BombHouse == PlayerPtr) {
+		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
+		if (_bombcurs != NULL) {
+			int frame = 0;
+			if (Rule->IvanTimedDelay >= 6) {
+				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
+			}
+			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
+				frame++;
+			}
+			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 		}
 	}
 
@@ -3112,6 +3134,19 @@ void TechnoClass::AI(void)
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound);
 	}
 
+	// As TechnoClass::Update (0x6F9E50) and BombListClass::Update (0x438BF0): the bomb ticks where the planter's player can hear it, and goes off on time.
+	if (BombDetonateFrame != -1) {
+		if (BombHouse != NULL && BombHouse->Is_Player_Control()) {
+			Play_If_In_Range(Rule->BombTickingSound, Center_Coord(), &BombSound, true);
+		}
+		if (Frame > BombDetonateFrame) {
+			Detonate_Bomb();
+			if (!IsActive) {
+				return;
+			}
+		}
+	}
+
 	/*
 	 * As TechnoClass::EnteredOpenTopped (0x710470) and FootClass::UpdatePassengerCoords: each
 	 * passenger of an open-topped transport guards, keeps thinking and stays at its position.
@@ -3722,6 +3757,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 
 	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried.
 	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && Transporter->IsInLimbo))) {
+		return(FIRE_ILLEGAL);
+	}
+
+	// An Ivan bomb weapon does not fire at an object that already carries a bomb (TechnoClass::GetFireError, 0x6FC0B0).
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsIvanBomb && techno->BombDetonateFrame != -1) {
 		return(FIRE_ILLEGAL);
 	}
 
@@ -6802,9 +6842,67 @@ void TechnoClass::Delete_Me(void)
 		ParasiteImUsing->Victim->ParasiteEatingMe = NULL;
 		ParasiteImUsing->Victim = NULL;
 	}
+	Disarm_Bomb();
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
 	BASECLASS::Delete_Me();
+}
+
+
+/// <summary>
+/// Fixes an Ivan bomb to this object (BombListClass::Plant, 0x438E70). Only a soldier plants
+/// one, and an object holds one bomb at a time. BombAttachSound plays when the planter is the
+/// player's.
+/// </summary>
+void TechnoClass::Plant_Bomb(TechnoClass * planter)
+{
+	if (planter == NULL || planter->RTTI != RTTI_INFANTRY || BombDetonateFrame != -1) {
+		return;
+	}
+	BombOwner = planter;
+	BombHouse = planter->House;
+	BombPlantFrame = Frame;
+	BombDetonateFrame = Frame + Rule->IvanTimedDelay;
+	if (BombHouse->Is_Player_Control()) {
+		Sound_Effect(Rule->BombAttachSound, Center_Coord());
+	}
+}
+
+
+/// <summary>
+/// Sets the bomb off (BombClass::Detonate, 0x438720): IvanDamage through IvanWarhead where this
+/// object stands, credited to the planter, with the warhead's explosion. A bomb on an object
+/// off the map goes off harmlessly.
+/// </summary>
+void TechnoClass::Detonate_Bomb(void)
+{
+	if (BombDetonateFrame == -1) {
+		return;
+	}
+	TechnoClass * planter = BombOwner;
+	HouseClass * house = BombHouse;
+	bool const harmless = IsInLimbo;
+	Disarm_Bomb();
+	if (harmless || Rule->IvanWarhead == NULL) {
+		return;
+	}
+
+	Coord const coord = PositionCoord;
+	AnimTypeClass const * anim = Combat_Anim(Rule->IvanDamage, Rule->IvanWarhead, Map[coord].Land_Type(), coord);
+	if (anim != NULL) {
+		new AnimClass(anim, coord);
+	}
+	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true, house);
+}
+
+
+void TechnoClass::Disarm_Bomb(void)
+{
+	BombOwner = NULL;
+	BombHouse = NULL;
+	BombDetonateFrame = -1;
+	BombSound.Stop();
+	BombSound.Clear();
 }
 
 
@@ -6937,6 +7035,12 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		if (ParasiteEatingMe == target) {
 			ParasiteEatingMe = NULL;
+		}
+		if (BombOwner == target) {
+			BombOwner = NULL;
+		}
+		if (BombHouse == target) {
+			BombHouse = NULL;
 		}
 	}
 
@@ -8765,6 +8869,10 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBeingWarpedOut);
 	stream.Serialize(ParasiteImUsing);
 	stream.Serialize(ParasiteEatingMe);
+	stream.Serialize(BombOwner);
+	stream.Serialize(BombHouse);
+	stream.Serialize(BombPlantFrame);
+	stream.Serialize(BombDetonateFrame);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

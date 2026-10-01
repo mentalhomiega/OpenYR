@@ -1346,6 +1346,16 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	/*
+	 * An Ivan bomb warhead fixes a time bomb to the target (BulletClass::Detonate, 0x469210).
+	 */
+	else if (warhead->IsIvanBomb) {
+		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+		if (target != NULL) {
+			target->Plant_Bomb(Payback);
+		}
+	}
+
+	/*
 	 * A parasite warhead puts its firer inside the target (BulletClass::Detonate, 0x469210).
 	 */
 	else if (warhead->IsParasite) {

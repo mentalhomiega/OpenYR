@@ -183,6 +183,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A parasite warhead puts its firer inside the target instead of hurting it.
 		bool IsParasite;
 
+		// An Ivan bomb warhead fixes a time bomb to its target instead of hurting it.
+		bool IsIvanBomb;
+
 		/*
 		**	If this warhead can destroy wooden walls, then this flag will be true.
 		*/

@@ -171,6 +171,17 @@ class RulesClass
 		// A temporal weapon fired from an open-topped transport lets go beyond this many cells.
 		int OpenToppedWarpDistance;
 
+		/*
+		 * Ivan bombs go off IvanTimedDelay frames after they are planted, doing IvanDamage through
+		 * IvanWarhead; their icon flickers every IvanIconFlickerRate frames.
+		 */
+		WarheadTypeClass const * IvanWarhead;
+		int IvanDamage;
+		int IvanTimedDelay;
+		int IvanIconFlickerRate;
+		VocType BombTickingSound;
+		VocType BombAttachSound;
+
 		// How many frames the Iron Curtain protects what it covers, and the animation played where it lands.
 		int IronCurtainDuration;
 		AnimTypeClass const * IronCurtainInvokeAnim;

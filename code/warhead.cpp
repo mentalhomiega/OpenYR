@@ -110,6 +110,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsTemporal(false),
 	IsRadiation(false),
 	IsParasite(false),
+	IsIvanBomb(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
 	IsOrganic(false),
@@ -194,6 +195,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
 		IsParasite = ini.Get_Bool(Name(), "Parasite", IsParasite);
+		IsIvanBomb = ini.Get_Bool(Name(), "IvanBomb", IsIvanBomb);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
 			WebDurationVariation = ini.Get_Int(Name(), "WebDurationVariation", WebDurationVariation);
@@ -291,6 +293,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTemporal);
 	stream.Serialize(IsRadiation);
 	stream.Serialize(IsParasite);
+	stream.Serialize(IsIvanBomb);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);
 	stream.Serialize(IsOrganic);

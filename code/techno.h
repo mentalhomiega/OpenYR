@@ -171,6 +171,13 @@ class TechnoClass :	public RadioClass,
 		std::optional<ParasiteClass> ParasiteImUsing;
 		TechnoClass * ParasiteEatingMe;
 
+		// The Ivan bomb on this object: who planted it, for which house, and when it goes off (BombDetonateFrame is -1 with no bomb).
+		TechnoClass * BombOwner;
+		HouseClass * BombHouse;
+		int BombPlantFrame;
+		int BombDetonateFrame;
+		AudioHandle BombSound;
+
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
 		VocType GattlingVoc;
@@ -577,6 +584,9 @@ class TechnoClass :	public RadioClass,
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
 		void Set_Turret_Weapon(int position);
 		bool Temporal_AI(void);
+		void Plant_Bomb(TechnoClass * planter);
+		void Detonate_Bomb(void);
+		void Disarm_Bomb(void);
 		void Gattling_Rate_Up(int frames);
 		void Gattling_Rate_Down(int frames);
 		virtual int Get_Collateral_Damage(void) const;

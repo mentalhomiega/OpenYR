@@ -347,6 +347,12 @@ RulesClass::RulesClass(void) :
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
 	OpenToppedWarpDistance(5),
+	IvanWarhead(NULL),
+	IvanDamage(0),
+	IvanTimedDelay(0),
+	IvanIconFlickerRate(0),
+	BombTickingSound(VOC_NONE),
+	BombAttachSound(VOC_NONE),
 	OccupyROFMultiplier(1.0),
 	OccupyWeaponRange(5),
 	IronCurtainDuration(0),
@@ -1032,6 +1038,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ChronoInSound = ini.Get_VocType(AUDIOVISUAL, "ChronoInSound", ChronoInSound);
 		YuriMindControlSound = ini.Get_VocType(AUDIOVISUAL, "YuriMindControlSound", YuriMindControlSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
+		BombTickingSound = ini.Get_VocType(AUDIOVISUAL, "BombTickingSound", BombTickingSound);
+		BombAttachSound = ini.Get_VocType(AUDIOVISUAL, "BombAttachSound", BombAttachSound);
 		MindClearedSound = ini.Get_VocType(AUDIOVISUAL, "MindClearedSound", MindClearedSound);
 		MasterMindOverloadDeathSound = ini.Get_VocType(AUDIOVISUAL, "MasterMindOverloadDeathSound", MasterMindOverloadDeathSound);
 		ChronoOutSound = ini.Get_VocType(AUDIOVISUAL, "ChronoOutSound", ChronoOutSound);
@@ -1164,6 +1172,10 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
 		OpenToppedWarpDistance = ini.Get_Int(COMBATDAMAGE, "OpenToppedWarpDistance", OpenToppedWarpDistance);
+		IvanWarhead = TGet_Class(ini, COMBATDAMAGE, "IvanWarhead", IvanWarhead);
+		IvanDamage = ini.Get_Int(COMBATDAMAGE, "IvanDamage", IvanDamage);
+		IvanTimedDelay = ini.Get_Int(COMBATDAMAGE, "IvanTimedDelay", IvanTimedDelay);
+		IvanIconFlickerRate = ini.Get_Int(COMBATDAMAGE, "IvanIconFlickerRate", IvanIconFlickerRate);
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
 		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
@@ -2419,6 +2431,12 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
 	stream.Serialize(OpenToppedWarpDistance);
+	stream.Serialize(IvanWarhead);
+	stream.Serialize(IvanDamage);
+	stream.Serialize(IvanTimedDelay);
+	stream.Serialize(IvanIconFlickerRate);
+	stream.Serialize(BombTickingSound);
+	stream.Serialize(BombAttachSound);
 	stream.Serialize(OccupyROFMultiplier);
 	stream.Serialize(OccupyWeaponRange);
 	stream.Serialize(IronCurtainDuration);
