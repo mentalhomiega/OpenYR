@@ -22,6 +22,8 @@
 **	enemies					writes the structures of other houses and the count of their units
 **	owners <TypeID>			writes the type's owner bits and each house's country bit
 **	view x y				centres the view on a cell
+**	cell x y				writes a cell's shroud state, tile, height and occupier
+**	click x y				queues a left click at that screen position
 **	follow <TypeID>			keeps the view centred on one of the player's objects of that type
 **	record <frames>			saves a screenshot every that many frames; 0 stops
 **	dump					writes the player's credits, objects and missions to the log
@@ -33,6 +35,7 @@
 
 #include "autotest.h"
 
+#include "_keyboar.h"
 #include "_map.h"
 #include "_tactica.h"
 #include "aircraft.h"
@@ -50,10 +53,12 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
+#include "keyboard.h"
 #include "loco.h"
 #include "tactical.h"
 #include "unit.h"
 #include "unittype.h"
+#include "windowevent.hh"
 
 #include <algorithm>
 #include <cstdio>
@@ -296,6 +301,15 @@ void Run(StepType const & step)
 		Point2D actual = TacticalMap->Get_Tactical_Position();
 		DebugString("AUTOTEST   view wanted %d,%d actual %d,%d local %d,%d %dx%d play %dx%d\n", wanted.X, wanted.Y, actual.X, actual.Y,
 			Map.LocalRect.X, Map.LocalRect.Y, Map.LocalRect.Width, Map.LocalRect.Height, Map.PlayRect.Width, Map.PlayRect.Height);
+	} else if (step.Command == "click") {
+		int x = std::atoi(step.Argument.c_str());
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_DOWN;
+		event.X = x;
+		event.Y = step.X;
+		Keyboard->Handle_Window_Event(event);
+		event.Type = WINDOW_EVENT_MOUSE_UP;
+		Keyboard->Handle_Window_Event(event);
 	} else if (step.Command == "cell") {
 		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
 		ObjectClass const * occupier = cell.Cell_Occupier();
