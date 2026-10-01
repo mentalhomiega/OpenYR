@@ -562,6 +562,10 @@ int AircraftClass::Do_MISSION_HUNT(void)
  *=============================================================================================*/
 void AircraftClass::AI(void)
 {
+	if (Temporal_AI()) {
+		return;
+	}
+
 	if (Mission == MISSION_SLEEP && HeightAGL > 0) {
 		Assign_Mission(MISSION_GUARD);
 	}

@@ -103,6 +103,7 @@ class RulesClass
 		bool Audio_Visual_Rules(CCINIClass const & ini);
 		bool Crate_Rules(CCINIClass const & ini);
 		bool Combat_Damage(CCINIClass const & ini);
+		bool Radiation(CCINIClass const & ini);
 		bool Color_Schemes(CCINIClass const & ini);
 
 		bool General(CCINIClass const & ini);
@@ -167,6 +168,9 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport multiplies its damage by this.
 		double OpenToppedDamageMultiplier;
 
+		// A temporal weapon fired from an open-topped transport lets go beyond this many cells.
+		int OpenToppedWarpDistance;
+
 		// How many frames the Iron Curtain protects what it covers, and the animation played where it lands.
 		int IronCurtainDuration;
 		AnimTypeClass const * IronCurtainInvokeAnim;
@@ -183,6 +187,11 @@ class RulesClass
 		AnimTypeClass const * ChronoBlast;
 		AnimTypeClass const * ChronoBlastDest;
 		AnimTypeClass const * WarpOut;
+
+		// Played where a temporal weapon erases its target, and every 24 frames over an object being warped.
+		AnimTypeClass const * WarpAway;
+		AnimTypeClass const * ChronoSparkle1;
+
 		VocType ChronoInSound;
 		VocType ChronoOutSound;
 
@@ -266,6 +275,10 @@ class RulesClass
 		 */
 		AnimTypeClass const * ControlledAnimationType;
 		VocType YuriMindControlSound;
+
+		// The colors of the beam an IsRadBeam weapon draws: RadColor normally, ChronoBeamColor for a temporal warhead.
+		RGBClass RadColor;
+		RGBClass ChronoBeamColor;
 		VocType MindClearedSound;
 		VocType MasterMindOverloadDeathSound;
 		int MindControlAttackLineFrames;

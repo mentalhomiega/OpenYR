@@ -1338,6 +1338,17 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
+	/*
+	 * A temporal warhead starts its firer's warp on the target instead of hurting it
+	 * (BulletClass::Detonate, 0x469210).
+	 */
+	else if (warhead->IsTemporal) {
+		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+		if (Payback != NULL && Payback->TemporalImUsing && target != NULL) {
+			Payback->TemporalImUsing->Fire(target);
+		}
+	}
+
 	else if (warhead->IsWebby) {
 		int radius = warhead->WebRadius;
 		int radius_squared = radius * radius;

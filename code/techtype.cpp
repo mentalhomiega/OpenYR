@@ -164,6 +164,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsOrganic(false),
 	IsDamageSelf(false),
 	IsImmuneToPsionics(false),
+	IsWarpable(true),
 	IsBalloonHover(false),
 	MindControlRingOffset(140),
 	MindClearedSound(VOC_NONE),
@@ -620,6 +621,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);
 		IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
+		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
 		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
 		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
@@ -1106,6 +1108,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOrganic);
 	stream.Serialize(IsDamageSelf);
 	stream.Serialize(IsImmuneToPsionics);
+	stream.Serialize(IsWarpable);
 	stream.Serialize(IsBalloonHover);
 	stream.Serialize(MindControlRingOffset);
 	stream.Serialize(MindClearedSound);

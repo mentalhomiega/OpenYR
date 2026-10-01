@@ -290,6 +290,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// The psychic dominator cannot take over an ImmuneToPsionics or BalloonHover object.
 		bool IsImmuneToPsionics;
+
+		// Can a temporal weapon warp an object of this type?
+		bool IsWarpable;
 		bool IsBalloonHover;
 
 		// How far above the object's center a mind control ring is drawn, in leptons.

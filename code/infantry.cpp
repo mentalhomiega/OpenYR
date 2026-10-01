@@ -1487,6 +1487,10 @@ void InfantryClass::Tunnel_AI(void)
  *=============================================================================================*/
 void InfantryClass::AI(void)
 {
+	if (Temporal_AI()) {
+		return;
+	}
+
 	if (CurrentTube >= 0) {
 		Tunnel_AI();
 		Update_Radar_Position();

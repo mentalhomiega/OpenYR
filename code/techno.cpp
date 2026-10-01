@@ -162,6 +162,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "radbeam.h"
 #include "fog.h"
 #include "globals.h"
 #include "goptions.h"
@@ -283,6 +284,9 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	LastFireFrame(-100),
 	Transporter(NULL),
 	IsInOpenToppedTransport(false),
+	TemporalImUsing(),
+	WarpedBy(NULL),
+	IsBeingWarpedOut(false),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
 	IsGattlingSoundPlaying(false),
@@ -1277,6 +1281,11 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 	if (why == PCP_END) {
 		Cell cell = Center_Coord().As_Cell();
 
+		// A firer that moves on to another cell lets its warp go (TechnoClass::Per_Cell_Process, 0x6F5090).
+		if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+			TemporalImUsing->Let_Go();
+		}
+
 		Try_To_Cloak();
 
 		if (Tag != NULL) {
@@ -1816,6 +1825,10 @@ bool TechnoClass::Limbo(void)
 		}
 	}
 
+	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+		TemporalImUsing->Let_Go();
+	}
+
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
 
@@ -1870,6 +1883,9 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		WeaponTypeClass const * primary = Get_Class_Weapon_Data(0)->Weapon;
 		if (!CaptureManager && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsMindControl) {
 			CaptureManager.emplace(this, primary->Attack, primary->IsInfiniteMindControl);
+		}
+		if (!TemporalImUsing && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsTemporal) {
+			TemporalImUsing.emplace(this);
 		}
 
 		House->Tracking_Active_Add(this, false);
@@ -3704,6 +3720,14 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A warp in progress keeps its hold without another shot, and only a temporal weapon fires at a warped object.
+	if (TemporalImUsing && TemporalImUsing->Target != NULL && TemporalImUsing->Target == target) {
+		return(FIRE_REARM);
+	}
+	if (techno != NULL && techno->IsBeingWarpedOut && (weapon->WarheadPtr == NULL || !weapon->WarheadPtr->IsTemporal)) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
 		return(FIRE_ILLEGAL);
@@ -4386,6 +4410,12 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 				if (weapon->IsElectricBolt && !weapon->IsLaser) {
 					Electric_Zap(target, which, weapon);
+				}
+
+				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
+				if (weapon->IsRadBeam) {
+					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
+					RadBeamClass::Fire(Fire_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
 				}
 
 				/*
@@ -5290,6 +5320,9 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
 			if (CaptureManager) {
 				CaptureManager->Free_All();
+			}
+			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+				TemporalImUsing->Let_Go();
 			}
 
 			/*
@@ -6278,6 +6311,11 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 					flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 				}
 			}
+
+			// An object being warped out is drawn half see-through, as TechnoClass::Draw_Voxel (0x706640) draws it.
+			if (IsBeingWarpedOut) {
+				flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
+			}
 		}
 
 		ConvertClass * converter;
@@ -6460,6 +6498,9 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 		}
 	}
 
+	if (IsBeingWarpedOut) {
+		flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
+	}
 	flags = ShapeFlags_Type(~negflags & (flags|SHAPE_ALPHA));
 
 	Rect cliprect = xcliprect;
@@ -6720,9 +6761,41 @@ void TechnoClass::Delete_Me(void)
 	if (CaptureManager) {
 		CaptureManager->Free_All();
 	}
+	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+		TemporalImUsing->Let_Go();
+	}
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
 	BASECLASS::Delete_Me();
+}
+
+
+/// <summary>
+/// Steps the warp holding this object and keeps a warped object frozen (UnitClass::Update,
+/// 0x7360C0, and the other kinds' updates): ChronoSparkle1 plays over it every 24 frames, and
+/// it drops its target and destination.
+/// </summary>
+/// <returns>bool; Should the rest of this object's AI be skipped this frame?</returns>
+bool TechnoClass::Temporal_AI(void)
+{
+	TechnoClass * warper = WarpedBy;
+	if (warper != NULL && warper->TemporalImUsing) {
+		warper->TemporalImUsing->Update();
+		if (!IsActive) {
+			return(true);
+		}
+	}
+	if (!IsBeingWarpedOut) {
+		return(false);
+	}
+	if (Frame % 24 == 0 && Rule->ChronoSparkle1 != NULL) {
+		new AnimClass(Rule->ChronoSparkle1, PositionCoord + Coord(120, 120, 0));
+	}
+	if (TarCom != NULL) {
+		Assign_Target(NULL);
+	}
+	Assign_Destination(NULL);
+	return(true);
 }
 
 
@@ -6812,6 +6885,13 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		if (Transporter == target) {
 			Transporter = NULL;
+		}
+		if (TemporalImUsing) {
+			TemporalImUsing->Detach(target);
+		}
+		if (WarpedBy == target) {
+			WarpedBy = NULL;
+			IsBeingWarpedOut = false;
 		}
 	}
 
@@ -8635,6 +8715,9 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LastFireFrame);
 	stream.Serialize(Transporter);
 	stream.Serialize(IsInOpenToppedTransport);
+	stream.Serialize(TemporalImUsing);
+	stream.Serialize(WarpedBy);
+	stream.Serialize(IsBeingWarpedOut);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

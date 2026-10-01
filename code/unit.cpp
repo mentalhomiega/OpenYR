@@ -474,6 +474,10 @@ void UnitClass::Tunnel_AI(void)
  *=============================================================================================*/
 void UnitClass::AI(void)
 {
+	if (Temporal_AI()) {
+		return;
+	}
+
 	if (DeathCounter != -1) {
 		if (DeathCounter++ >= Class->MaxDeathCounter) {
 			Explode();

@@ -932,7 +932,7 @@ def extract_globals(path, cls, methods, opts=None):
 
 GLOBAL_UNITS = [
     ("rules.cpp", "RulesClass", [
-        "General", "Audio_Visual_Rules", "AI", "Combat_Damage", "IQ",
+        "General", "Audio_Visual_Rules", "AI", "Combat_Damage", "Radiation", "IQ",
         "MPlayer", "Crate_Rules", "Jumpjet_Controls", "Heap_Maximums",
         "Difficulty_Rules", "Land_Characteristics",
     ], None),

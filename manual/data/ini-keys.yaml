@@ -5378,6 +5378,24 @@ CheckHeap:
       source: code/session.cpp
       guard: null
     level: SessionClass
+ChronoBeamColor:
+  key: ChronoBeamColor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: RulesClass
+      member: ChronoBeamColor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoBlast:
   key: ChronoBlast
   scopes:
@@ -5493,6 +5511,24 @@ ChronoPlacement:
       default_candidate: none
       declared_in: RulesClass
       member: ChronoPlacement
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoSparkle1:
+  key: ChronoSparkle1
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ChronoSparkle1
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -15576,6 +15612,23 @@ IsPowered:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+IsRadBeam:
+  key: IsRadBeam
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsRadBeam
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IsRailgun:
   key: IsRailgun
   scopes:
@@ -20034,6 +20087,24 @@ OpenToppedDamageMultiplier:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+OpenToppedWarpDistance:
+  key: OpenToppedWarpDistance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: RulesClass
+      member: OpenToppedWarpDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 OpenTransportWeapon:
   key: OpenTransportWeapon
   scopes:
@@ -22325,6 +22396,24 @@ RadCannonTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+RadColor:
+  key: RadColor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: RulesClass
+      member: RadColor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Radar:
   key: Radar
   scopes:
@@ -29647,6 +29736,23 @@ TemperateOccupationBits:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
+Temporal:
+  key: Temporal
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsTemporal
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 TerrainPalette:
   key: TerrainPalette
   scopes:
@@ -33193,6 +33299,24 @@ Warhead:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+WarpAway:
+  key: WarpAway
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: WarpAway
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 WarpOut:
   key: WarpOut
   scopes:
@@ -33211,6 +33335,23 @@ WarpOut:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Warpable:
+  key: Warpable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsWarpable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 WaterAmount:
   key: WaterAmount
   scopes:

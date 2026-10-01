@@ -1632,6 +1632,10 @@ bool BuildingClass::Mark(MarkType mark)
  *=============================================================================================*/
 void BuildingClass::AI(void)
 {
+	if (Temporal_AI()) {
+		return;
+	}
+
 	if (Class->IsSAM && TarCom != NULL && !TarCom->In_Air()) {
 		Assign_Target(NULL);
 	}

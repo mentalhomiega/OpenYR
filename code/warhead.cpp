@@ -107,6 +107,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsWallAbsoluteDestroyer(false),
 	IsNukeMaker(false),
 	IsMindControl(false),
+	IsTemporal(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
 	IsOrganic(false),
@@ -188,6 +189,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsWallAbsoluteDestroyer = ini.Get_Bool(Name(), "WallAbsoluteDestroyer", IsWallAbsoluteDestroyer);
 		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		IsMindControl = ini.Get_Bool(Name(), "MindControl", IsMindControl);
+		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
 			WebDurationVariation = ini.Get_Int(Name(), "WebDurationVariation", WebDurationVariation);
@@ -282,6 +284,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsWallAbsoluteDestroyer);
 	stream.Serialize(IsNukeMaker);
 	stream.Serialize(IsMindControl);
+	stream.Serialize(IsTemporal);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);
 	stream.Serialize(IsOrganic);

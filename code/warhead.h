@@ -174,6 +174,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A MindControl warhead takes its target over for the firer instead of damaging it.
 		bool IsMindControl;
 
+		// A temporal warhead erases its target over time instead of damaging it.
+		bool IsTemporal;
+
 		/*
 		**	If this warhead can destroy wooden walls, then this flag will be true.
 		*/

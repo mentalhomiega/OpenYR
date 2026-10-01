@@ -35,6 +35,7 @@
 #include "_voxel.h"
 #include "audio/audiohandle.h"
 #include "capture.h"
+#include "temporal.h"
 #include "cargo.h"
 #include "door.h"
 #include "facing.h"
@@ -156,6 +157,14 @@ class TechnoClass :	public RadioClass,
 		// The open-topped transport this object rides and fires from, if any.
 		TechnoClass * Transporter;
 		bool IsInOpenToppedTransport;
+
+		/*
+		 * Temporal weapons: the warp this object holds when its primary warhead is Temporal, the
+		 * owner of the warp counting this object down, and whether a warp holds this object.
+		 */
+		std::optional<TemporalClass> TemporalImUsing;
+		TechnoClass * WarpedBy;
+		bool IsBeingWarpedOut;
 
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
@@ -562,6 +571,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Scatter_Incoming_Infantry(void) const;
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
 		void Set_Turret_Weapon(int position);
+		bool Temporal_AI(void);
 		void Gattling_Rate_Up(int frames);
 		void Gattling_Rate_Down(int frames);
 		virtual int Get_Collateral_Damage(void) const;

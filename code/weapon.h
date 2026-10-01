@@ -264,6 +264,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Can a passenger fire this weapon from inside an open-topped transport, and with which firing animation?
 		bool IsFireInTransport;
+
+		// Does this weapon draw a wavy beam from its muzzle to its target as it fires?
+		bool IsRadBeam;
 		AnimTypeClass const * OpenToppedAnim;
 
 		/*

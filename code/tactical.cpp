@@ -39,6 +39,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "radbeam.h"
 #include "fog.h"
 #include "font.h"
 #include "globals.h"
@@ -1298,6 +1299,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		SpotLightClass::Draw_All();
 		LaserDrawClass::Draw_All();
 		EBoltClass::Draw_All();
+		RadBeamClass::Draw_All();
 		Draw_Mind_Control_Links();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {

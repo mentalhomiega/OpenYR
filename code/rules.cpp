@@ -346,6 +346,7 @@ RulesClass::RulesClass(void) :
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
+	OpenToppedWarpDistance(5),
 	OccupyROFMultiplier(1.0),
 	OccupyWeaponRange(5),
 	IronCurtainDuration(0),
@@ -355,6 +356,8 @@ RulesClass::RulesClass(void) :
 	ChronoBlast(NULL),
 	ChronoBlastDest(NULL),
 	WarpOut(NULL),
+	WarpAway(NULL),
+	ChronoSparkle1(NULL),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	AllyParaDropInf(),
@@ -404,6 +407,8 @@ RulesClass::RulesClass(void) :
 	PermaControlledAnimationType(NULL),
 	ControlledAnimationType(NULL),
 	YuriMindControlSound(VOC_NONE),
+	RadColor(0, 0, 0),
+	ChronoBeamColor(0, 0, 0),
 	MindClearedSound(VOC_NONE),
 	MasterMindOverloadDeathSound(VOC_NONE),
 	MindControlAttackLineFrames(0),
@@ -900,6 +905,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Combat_Damage(ini);
 	Audio_Visual_Rules(ini);
 	Special_Weapons(ini);
+	Radiation(ini);
 
 	BEnd(BENCH_RULES);
 
@@ -1016,6 +1022,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		PsychicDominatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicDominatorActivateSound", PsychicDominatorActivateSound);
 		ChronoInSound = ini.Get_VocType(AUDIOVISUAL, "ChronoInSound", ChronoInSound);
 		YuriMindControlSound = ini.Get_VocType(AUDIOVISUAL, "YuriMindControlSound", YuriMindControlSound);
+		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
 		MindClearedSound = ini.Get_VocType(AUDIOVISUAL, "MindClearedSound", MindClearedSound);
 		MasterMindOverloadDeathSound = ini.Get_VocType(AUDIOVISUAL, "MasterMindOverloadDeathSound", MasterMindOverloadDeathSound);
 		ChronoOutSound = ini.Get_VocType(AUDIOVISUAL, "ChronoOutSound", ChronoOutSound);
@@ -1116,6 +1123,21 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 /// suppression distances, and the scorches, craters and smoke systems left behind.
 /// </summary>
 /// <returns>bool; Was a combat damage section found in the control file?</returns>
+/// <summary>
+/// Fetches the radiation values.
+/// </summary>
+/// <returns>bool; Was the [Radiation] section found and processed?</returns>
+bool RulesClass::Radiation(CCINIClass const & ini)
+{
+	static char const * const RADIATION = "Radiation";
+	if (ini.Is_Present(RADIATION)) {
+		RadColor = ini.Get_RGBClass(RADIATION, "RadColor", RadColor);
+		return(true);
+	}
+	return(false);
+}
+
+
 bool RulesClass::Combat_Damage(CCINIClass const & ini)
 {
 	static char const * const COMBATDAMAGE = "CombatDamage";
@@ -1123,6 +1145,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		AmmoCrateDamage = ini.Get_Int(COMBATDAMAGE, "AmmoCrateDamage", AmmoCrateDamage);
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
+		OpenToppedWarpDistance = ini.Get_Int(COMBATDAMAGE, "OpenToppedWarpDistance", OpenToppedWarpDistance);
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
 		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
@@ -1236,6 +1259,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		ChronoBlast = TGet_Class(ini, GENERAL, "ChronoBlast", ChronoBlast);
 		ChronoBlastDest = TGet_Class(ini, GENERAL, "ChronoBlastDest", ChronoBlastDest);
 		WarpOut = TGet_Class(ini, GENERAL, "WarpOut", WarpOut);
+		WarpAway = TGet_Class(ini, GENERAL, "WarpAway", WarpAway);
+		ChronoSparkle1 = TGet_Class(ini, GENERAL, "ChronoSparkle1", ChronoSparkle1);
 		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
@@ -2375,6 +2400,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(OpenToppedWarpDistance);
 	stream.Serialize(OccupyROFMultiplier);
 	stream.Serialize(OccupyWeaponRange);
 	stream.Serialize(IronCurtainDuration);
@@ -2384,6 +2410,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoBlast);
 	stream.Serialize(ChronoBlastDest);
 	stream.Serialize(WarpOut);
+	stream.Serialize(WarpAway);
+	stream.Serialize(ChronoSparkle1);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(AllyParaDropInf);
@@ -2433,6 +2461,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PermaControlledAnimationType);
 	stream.Serialize(ControlledAnimationType);
 	stream.Serialize(YuriMindControlSound);
+	stream.Serialize(RadColor);
+	stream.Serialize(ChronoBeamColor);
 	stream.Serialize(MindClearedSound);
 	stream.Serialize(MasterMindOverloadDeathSound);
 	stream.Serialize(MindControlAttackLineFrames);
@@ -3170,6 +3200,12 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == WarpOut) {
 		WarpOut = NULL;
+	}
+	if (target == WarpAway) {
+		WarpAway = NULL;
+	}
+	if (target == ChronoSparkle1) {
+		ChronoSparkle1 = NULL;
 	}
 	if (target == LightningWarhead) {
 		LightningWarhead = NULL;

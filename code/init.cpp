@@ -111,6 +111,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "radbeam.h"
 #include "egos.h"
 #include "empulse.h"
 #include "enviro.h"
@@ -5864,6 +5865,7 @@ void Delete_All_Objects(void)
 
 	LaserDrawClass::All_Clear();
 	EBoltClass::All_Clear();
+	RadBeamClass::All_Clear();
 
 	while (AbstractTypes.Count()) {
 		delete AbstractTypes[0];
