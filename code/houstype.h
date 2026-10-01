@@ -64,6 +64,14 @@ class HouseTypeClass : public AbstractTypeClass
 		// Scales the credits this country earns from delivered ore.
 		double IncomeMult;
 
+		// Scale the prices this country pays for infantry, vehicles, aircraft, structures and
+		// BuildCat=Combat structures.
+		double CostInfantryMult;
+		double CostUnitsMult;
+		double CostAircraftMult;
+		double CostBuildingsMult;
+		double CostDefensesMult;
+
 		/*
 		**	This is the filename suffix to use when creating a house specific
 		**	file name. It is three characters long.

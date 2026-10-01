@@ -294,6 +294,12 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	InfantryGainSelfHeal(0),
 	UnitsGainSelfHeal(0),
 	IsSpySat(false),
+	IsFactoryPlant(false),
+	InfantryCostBonus(1.0),
+	UnitsCostBonus(1.0),
+	AircraftCostBonus(1.0),
+	BuildingsCostBonus(1.0),
+	DefensesCostBonus(1.0),
 	IsFlat(false),
 	IsDockUnload(false),
 	IsRecoilless(false),
@@ -1272,6 +1278,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		InfantryGainSelfHeal = ini.Get_Int(Name(), "InfantryGainSelfHeal", InfantryGainSelfHeal);
 		UnitsGainSelfHeal = ini.Get_Int(Name(), "UnitsGainSelfHeal", UnitsGainSelfHeal);
 		IsSpySat = ini.Get_Bool(Name(), "SpySat", IsSpySat);
+		IsFactoryPlant = ini.Get_Bool(Name(), "FactoryPlant", IsFactoryPlant);
+		InfantryCostBonus = ini.Get_Float(Name(), "InfantryCostBonus", InfantryCostBonus);
+		UnitsCostBonus = ini.Get_Float(Name(), "UnitsCostBonus", UnitsCostBonus);
+		AircraftCostBonus = ini.Get_Float(Name(), "AircraftCostBonus", AircraftCostBonus);
+		BuildingsCostBonus = ini.Get_Float(Name(), "BuildingsCostBonus", BuildingsCostBonus);
+		DefensesCostBonus = ini.Get_Float(Name(), "DefensesCostBonus", DefensesCostBonus);
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
 		IsSAM = ini.Get_Bool(Name(), "SAM", IsSAM);
@@ -2243,6 +2255,12 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InfantryGainSelfHeal);
 	stream.Serialize(UnitsGainSelfHeal);
 	stream.Serialize(IsSpySat);
+	stream.Serialize(IsFactoryPlant);
+	stream.Serialize(InfantryCostBonus);
+	stream.Serialize(UnitsCostBonus);
+	stream.Serialize(AircraftCostBonus);
+	stream.Serialize(BuildingsCostBonus);
+	stream.Serialize(DefensesCostBonus);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsDockUnload);
 	stream.Serialize(IsRecoilless);

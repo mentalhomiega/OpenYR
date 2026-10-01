@@ -502,6 +502,14 @@ class BuildingTypeClass : public TechnoTypeClass
 		// While a SpySat=yes structure works, its owner sees the whole map.
 		bool IsSpySat;
 
+		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
+		bool IsFactoryPlant;
+		double InfantryCostBonus;
+		double UnitsCostBonus;
+		double AircraftCostBonus;
+		double BuildingsCostBonus;
+		double DefensesCostBonus;
+
 		/// Unused
 		bool IsFlat;
 

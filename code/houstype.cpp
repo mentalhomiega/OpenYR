@@ -83,6 +83,11 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	CostBias(1.0),
 	BuildSpeedBias(1.0),
 	IncomeMult(1.0),
+	CostInfantryMult(1.0),
+	CostUnitsMult(1.0),
+	CostAircraftMult(1.0),
+	CostBuildingsMult(1.0),
+	CostDefensesMult(1.0),
 	Scheme(0),
 	Prefix('A'),
 	IsMultiplay(false),
@@ -182,6 +187,11 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		CostBias = ini.Get_Float(Name(), "Cost", CostBias);
 		BuildSpeedBias = ini.Get_Float(Name(), "BuildTime", BuildSpeedBias);
 		IncomeMult = ini.Get_Float(Name(), "IncomeMult", IncomeMult);
+		CostInfantryMult = ini.Get_Float(Name(), "CostInfantryMult", CostInfantryMult);
+		CostUnitsMult = ini.Get_Float(Name(), "CostUnitsMult", CostUnitsMult);
+		CostAircraftMult = ini.Get_Float(Name(), "CostAircraftMult", CostAircraftMult);
+		CostBuildingsMult = ini.Get_Float(Name(), "CostBuildingsMult", CostBuildingsMult);
+		CostDefensesMult = ini.Get_Float(Name(), "CostDefensesMult", CostDefensesMult);
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
@@ -227,6 +237,11 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(CostBias);
 	crc(BuildSpeedBias);
 	crc(IncomeMult);
+	crc(CostInfantryMult);
+	crc(CostUnitsMult);
+	crc(CostAircraftMult);
+	crc(CostBuildingsMult);
+	crc(CostDefensesMult);
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
@@ -253,6 +268,11 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CostBias);
 	stream.Serialize(BuildSpeedBias);
 	stream.Serialize(IncomeMult);
+	stream.Serialize(CostInfantryMult);
+	stream.Serialize(CostUnitsMult);
+	stream.Serialize(CostAircraftMult);
+	stream.Serialize(CostBuildingsMult);
+	stream.Serialize(CostDefensesMult);
 	stream.Serialize(Suffix);
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);

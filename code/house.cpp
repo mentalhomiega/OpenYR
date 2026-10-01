@@ -1843,6 +1843,41 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 
 
 /// <summary>
+/// Fetches the factor this house's prices for the type are scaled by: its country's multiplier
+/// for the type's category times the bonus of every factory plant it has on the map, as
+/// TechnoTypeClass::GetActualCost (0x711F00) and HouseClass::CalculateCostMultipliers (0x50BF60)
+/// work them out.
+/// </summary>
+double HouseClass::Cost_Multiplier(TechnoTypeClass const * type) const
+{
+	int category;
+	switch (type->Fetch_RTTI()) {
+		case RTTI_INFANTRYTYPE: category = 0; break;
+		case RTTI_UNITTYPE: category = 1; break;
+		case RTTI_AIRCRAFTTYPE: category = 2; break;
+		case RTTI_BUILDINGTYPE:
+			category = static_cast<BuildingTypeClass const *>(type)->BuildCat == BUILDCAT_COMBAT ? 4 : 3;
+			break;
+		default:
+			return(1.0);
+	}
+
+	double const country[5] = {Class->CostInfantryMult, Class->CostUnitsMult, Class->CostAircraftMult, Class->CostBuildingsMult, Class->CostDefensesMult};
+	double multiplier = country[category];
+
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this && building->Class->IsFactoryPlant && !building->IsInLimbo && building->Strength > 0) {
+			BuildingTypeClass const * plant = building->Class;
+			double const bonus[5] = {plant->InfantryCostBonus, plant->UnitsCostBonus, plant->AircraftCostBonus, plant->BuildingsCostBonus, plant->DefensesCostBonus};
+			multiplier *= bonus[category];
+		}
+	}
+	return(multiplier);
+}
+
+
+/// <summary>
 /// Totals the InfantryGainSelfHeal, or the UnitsGainSelfHeal, of every structure this house has
 /// on the map, as the counters HouseClass keeps for HouseClass::GetInfSelfHealStep (0x50D9E0) do.
 /// </summary>

@@ -1766,6 +1766,23 @@ Aircraft:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AircraftCostBonus:
+  key: AircraftCostBonus
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: BuildingTypeClass
+      member: AircraftCostBonus
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 AircraftFogReveal:
   key: AircraftFogReveal
   scopes:
@@ -4484,6 +4501,23 @@ BuildingWithPipGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+BuildingsCostBonus:
+  key: BuildingsCostBonus
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: BuildingTypeClass
+      member: BuildingsCostBonus
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Buildup:
   key: Buildup
   scopes:
@@ -6002,6 +6036,91 @@ Cost:
       source: code/rules.cpp
       guard: null
     level: DifficultyClass
+CostAircraftMult:
+  key: CostAircraftMult
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: CostAircraftMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+CostBuildingsMult:
+  key: CostBuildingsMult
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: CostBuildingsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+CostDefensesMult:
+  key: CostDefensesMult
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: CostDefensesMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+CostInfantryMult:
+  key: CostInfantryMult
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: CostInfantryMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+CostUnitsMult:
+  key: CostUnitsMult
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: CostUnitsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 Crate:
   key: Crate
   scopes:
@@ -7205,6 +7324,23 @@ DefenseRatio:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DefensesCostBonus:
+  key: DefensesCostBonus
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: BuildingTypeClass
+      member: DefensesCostBonus
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Deform:
   key: Deform
   scopes:
@@ -9174,6 +9310,23 @@ Factory:
       default_candidate: none
       declared_in: BuildingTypeClass
       member: ToBuild
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+FactoryPlant:
+  key: FactoryPlant
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsFactoryPlant
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
@@ -12327,6 +12480,23 @@ InfantryBrute:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+InfantryCostBonus:
+  key: InfantryCostBonus
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: BuildingTypeClass
+      member: InfantryCostBonus
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 InfantryExplode:
   key: InfantryExplode
   scopes:
@@ -28374,6 +28544,23 @@ UnitWithPipGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+UnitsCostBonus:
+  key: UnitsCostBonus
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: BuildingTypeClass
+      member: UnitsCostBonus
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 UnitsGainSelfHeal:
   key: UnitsGainSelfHeal
   scopes:
