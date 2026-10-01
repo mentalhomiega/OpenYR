@@ -296,6 +296,12 @@ void Run(StepType const & step)
 		Point2D actual = TacticalMap->Get_Tactical_Position();
 		DebugString("AUTOTEST   view wanted %d,%d actual %d,%d local %d,%d %dx%d play %dx%d\n", wanted.X, wanted.Y, actual.X, actual.Y,
 			Map.LocalRect.X, Map.LocalRect.Y, Map.LocalRect.Width, Map.LocalRect.Height, Map.PlayRect.Width, Map.PlayRect.Height);
+	} else if (step.Command == "cell") {
+		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
+		ObjectClass const * occupier = cell.Cell_Occupier();
+		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s\n",
+			std::atoi(step.Argument.c_str()), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
+			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-");
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
 	} else if (step.Command == "anims") {
