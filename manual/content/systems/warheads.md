@@ -3,6 +3,11 @@ title: Warheads and damage
 summary: "How a blast chooses the objects it damages, how much strength each one loses, and what else the blast does to the ground."
 category: weapons-projectiles
 keys:
+  - AffectsAllies
+  - ShakeXlo
+  - ShakeXhi
+  - ShakeYlo
+  - ShakeYhi
   - AmmoCrateDamage
   - AnimList
   - Armor
@@ -161,17 +166,18 @@ Every candidate receives the same raw figure and then reduces it separately, so 
 5. **Minimum of one.** If steps 3 and 4 left less than one point, the figure becomes one point.
 6. **Type immunity.** An object whose type is [`TypeImmune=yes`](/keys/typeimmune/) takes no damage from a credited attacker of the same type owned by the same house.
 7. **Iron Curtain.** An object under the [Iron Curtain](/systems/superweapons/#iron-curtain) takes no damage.
-8. **Object immunity.** An object whose type is [`Immune=yes`](/keys/immune/#scope-aircrafttype) takes no damage. Neither does an object already at zero strength.
-9. **Distance.** The figure thins with the target's distance from the blast, as [the next section](#how-distance-thins-the-damage) explains.
-10. **Armor table.** The result is multiplied by the warhead's [`Verses`](/keys/verses/) entry for the target's [`Armor=`](/keys/armor/#scope-aircrafttype) class and rounded down. It can reach zero.
-11. **`MaxDamage` ceiling.** The result is capped at [`MaxDamage`](/keys/maxdamage/). The cap applies to each hit separately, not to the blast as a whole.
-12. **Strength lost.** The result is taken off the target's strength, but never more than the strength it had. A killing blow therefore counts only the strength the target had left.
+8. **Allies.** An [`AffectsAllies=no`](/keys/affectsallies/) warhead does nothing to an object whose owner is an ally of the credited attacker's house, the attacker's own house included.
+9. **Object immunity.** An object whose type is [`Immune=yes`](/keys/immune/#scope-aircrafttype) takes no damage. Neither does an object already at zero strength.
+10. **Distance.** The figure thins with the target's distance from the blast, as [the next section](#how-distance-thins-the-damage) explains.
+11. **Armor table.** The result is multiplied by the warhead's [`Verses`](/keys/verses/) entry for the target's [`Armor=`](/keys/armor/#scope-aircrafttype) class and rounded down. It can reach zero.
+12. **`MaxDamage` ceiling.** The result is capped at [`MaxDamage`](/keys/maxdamage/). The cap applies to each hit separately, not to the blast as a whole.
+13. **Strength lost.** The result is taken off the target's strength, but never more than the strength it had. A killing blow therefore counts only the strength the target had left.
 
-Steps 3 to 7 apply only to vehicles, infantry, aircraft and structures, so a tree or a veinhole monster skips them.
+Steps 3 to 8 apply only to vehicles, infantry, aircraft and structures, so a tree or a veinhole monster skips them.
 
 A tree takes no damage at all unless the warhead is [`Wood=yes`](/keys/wood/).
 
-A blast never deals forced damage. The engine deals forced damage directly, for example when a C4 charge destroys a structure. Forced damage skips step 1 and steps 3 to 11, so of the numbered steps only the web of step 2 and step 12 apply. It still does nothing to an object already at zero strength. Refusals that belong to a particular kind of object also still apply, such as a tree's need for a `Wood=yes` warhead and a harvester's protection under the harvester truce.
+A blast never deals forced damage. The engine deals forced damage directly, for example when a C4 charge destroys a structure. Forced damage skips step 1 and steps 3 to 12, so of the numbered steps only the web of step 2 and step 13 apply. It still does nothing to an object already at zero strength. Refusals that belong to a particular kind of object also still apply, such as a tree's need for a `Wood=yes` warhead and a harvester's protection under the harvester truce.
 
 Unforced damage with no warhead, or any unforced damage in a scenario with [`Inert=yes`](/keys/inert/), does nothing. An ordinary blast in either case damages nothing and has none of the ground effects below. A [wide-area blast](#the-wide-area-blast) in an `Inert=yes` scenario can still crater the ground at its center.
 
@@ -219,6 +225,8 @@ After it damages objects, the blast acts on the ground in the order below.
 7. A `Wall=yes` or [`Fire=yes`](/keys/fire/) warhead cracks the ice beneath the blast, unless the blast is up on a bridge.
 
 The explosion animation and the lighting flash are not blast effects. [`AnimList`](/keys/animlist/), the [`SplashList`](/keys/splashlist/) animation that [`Conventional=yes`](/keys/conventional/) uses over water, and the [`Bright=yes`](/keys/bright/#scope-warheadtype) flash are chosen by whatever raised the blast. Whether they appear therefore depends on what caused the explosion as well as on the warhead.
+
+A projectile that detonates shakes the screen when its warhead sets a shake range. The view moves sideways by a random number of pixels from [`ShakeXlo`](/keys/shakexlo/) to [`ShakeXhi`](/keys/shakexhi/), and vertically by one from [`ShakeYlo`](/keys/shakeylo/) to [`ShakeYhi`](/keys/shakeyhi/); a range of `0` to `0` leaves that direction alone. Every second frame the view swings to the other side and the shake shrinks by one pixel, so a 5-pixel shake settles after about ten frames. The shake happens wherever the projectile lands, even out of view, and only blasts raised by projectiles shake the screen.
 
 Three more warhead settings act on the damaged object. Each is described on the page that covers its effect:
 

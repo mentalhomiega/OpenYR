@@ -57,6 +57,7 @@
 #include "bench.h"
 #include "cctooltip.h"
 #include "gadget.h"
+#include "globals.h"
 #include "goptions.h"
 #include "keyboard.h"
 #include "savestream.h"
@@ -575,6 +576,17 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 /// <param name="xy">The current mouse position.</param>
 void GScreenClass::AI(KeyNumType &, Point2D const & xy)
 {
-	ScreenX < 0 ? ScreenX += 1 : ScreenX > 0 ? ScreenX -= 1 : 0;
-	ScreenY < 0 ? ScreenY += 1 : ScreenY > 0 ? ScreenY -= 1 : 0;
+	// On every other game frame the shake swings to the other side, one pixel smaller (GScreenClass::Update, 0x4F4BB0).
+	// This runs several times per game frame, so it remembers the last frame it acted on.
+	static int _lastframe = -1;
+	if (Frame % 2 != 0 || Frame == _lastframe) {
+		return;
+	}
+	_lastframe = Frame;
+	if (ScreenX != 0) {
+		ScreenX = (ScreenX < 0 ? -1 : 1) - ScreenX;
+	}
+	if (ScreenY != 0) {
+		ScreenY = (ScreenY < 0 ? -1 : 1) - ScreenY;
+	}
 }

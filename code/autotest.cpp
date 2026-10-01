@@ -30,7 +30,11 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	shake <Warhead>			starts the screen shake that warhead's detonation would
+**	screen					writes the current screen shake offset
 **	kill <TypeID>			destroys the objects of that type other houses own
+**	hit <TypeID>:<Warhead> <amount>	hits every object of that type, whoever owns it, with that
+**							warhead, fired by one of the player's objects of another type
 **	action <TypeID> x y		writes what the player's object of that type would do when clicked
 **							on the object standing on that cell
 **	rule <Key> <0|1>		overrides a rules setting the tests need; only CanDetonateTimeBomb so far
@@ -93,6 +97,7 @@
 #include "vox.h"
 #include "unittype.h"
 #include "light.h"
+#include "warhead.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -572,6 +577,33 @@ void Run(StepType const & step)
 				break;
 			}
 		}
+	} else if (step.Command == "hit") {
+		std::string const argument = step.Argument;
+		std::size_t const colon = argument.find(':');
+		std::string const typename_ = argument.substr(0, colon);
+		WarheadTypeClass const * warhead = colon != std::string::npos ? WarheadTypeClass::From_Name(argument.substr(colon + 1).c_str()) : NULL;
+		TechnoClass * firer = NULL;
+		for (int index = 0; index < Technos.Count() && firer == NULL; index++) {
+			if (Technos[index]->House == PlayerPtr && !Technos[index]->IsInLimbo && stricmp(Technos[index]->TClass->Name(), typename_.c_str()) != 0) {
+				firer = Technos[index];
+			}
+		}
+		for (int index = Technos.Count() - 1; warhead != NULL && index >= 0; index--) {
+			TechnoClass * techno = Technos[index];
+			if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
+				int damage = step.X;
+				techno->Take_Damage(damage, 0, warhead, firer, false);
+				DebugString("AUTOTEST   hit %s of %s took %d strength %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength);
+			}
+		}
+	} else if (step.Command == "shake") {
+		WarheadTypeClass const * warhead = WarheadTypeClass::From_Name(step.Argument.c_str());
+		if (warhead != NULL) {
+			Map.ScreenX = warhead->ShakeXhi;
+			Map.ScreenY = warhead->ShakeYhi;
+		}
+	} else if (step.Command == "screen") {
+		DebugString("AUTOTEST   screen shake %d,%d frame %d\n", Map.ScreenX, Map.ScreenY, Frame);
 	} else if (step.Command == "kill") {
 		for (int index = Technos.Count() - 1; index >= 0; index--) {
 			TechnoClass * techno = Technos[index];

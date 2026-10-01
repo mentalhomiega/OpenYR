@@ -186,6 +186,15 @@ class WarheadTypeClass : public AbstractTypeClass
 		// An Ivan bomb warhead fixes a time bomb to its target instead of hurting it.
 		bool IsIvanBomb;
 
+		// With AffectsAllies=no, the warhead does nothing to objects of its firer's allies.
+		bool IsAffectsAllies;
+
+		// The range, in pixels, of the sideways and vertical screen shake the warhead's detonation starts.
+		int ShakeXlo;
+		int ShakeXhi;
+		int ShakeYlo;
+		int ShakeYhi;
+
 		// A BombDisarm warhead removes the Ivan bomb from its target instead of hurting it.
 		bool IsBombDisarm;
 

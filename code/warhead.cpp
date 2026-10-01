@@ -111,6 +111,11 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsRadiation(false),
 	IsParasite(false),
 	IsIvanBomb(false),
+	IsAffectsAllies(true),
+	ShakeXlo(0),
+	ShakeXhi(0),
+	ShakeYlo(0),
+	ShakeYhi(0),
 	IsBombDisarm(false),
 	IsMakesDisguise(false),
 	IsWoodDestroyer(false),
@@ -198,6 +203,11 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
 		IsParasite = ini.Get_Bool(Name(), "Parasite", IsParasite);
 		IsIvanBomb = ini.Get_Bool(Name(), "IvanBomb", IsIvanBomb);
+		IsAffectsAllies = ini.Get_Bool(Name(), "AffectsAllies", IsAffectsAllies);
+		ShakeXlo = ini.Get_Int(Name(), "ShakeXlo", ShakeXlo);
+		ShakeXhi = ini.Get_Int(Name(), "ShakeXhi", ShakeXhi);
+		ShakeYlo = ini.Get_Int(Name(), "ShakeYlo", ShakeYlo);
+		ShakeYhi = ini.Get_Int(Name(), "ShakeYhi", ShakeYhi);
 		IsBombDisarm = ini.Get_Bool(Name(), "BombDisarm", IsBombDisarm);
 		IsMakesDisguise = ini.Get_Bool(Name(), "MakesDisguise", IsMakesDisguise);
 		if (IsWebby) {
@@ -298,6 +308,11 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRadiation);
 	stream.Serialize(IsParasite);
 	stream.Serialize(IsIvanBomb);
+	stream.Serialize(IsAffectsAllies);
+	stream.Serialize(ShakeXlo);
+	stream.Serialize(ShakeXhi);
+	stream.Serialize(ShakeYlo);
+	stream.Serialize(ShakeYhi);
 	stream.Serialize(IsBombDisarm);
 	stream.Serialize(IsMakesDisguise);
 	stream.Serialize(IsWoodDestroyer);

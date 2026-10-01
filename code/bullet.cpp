@@ -61,6 +61,7 @@
 #include "building.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "_rand.h"
 #include "cell.h"
 #include "combat.h"
 #include "convert.h"
@@ -1317,6 +1318,14 @@ void BulletClass::Bullet_Explodes(bool forced)
 void BulletClass::Detonate(Coord const & coord)
 {
 	WarheadTypeClass * warhead = Warhead;
+
+	// The detonation starts a screen shake drawn from the warhead's Shake ranges (BulletClass::Detonate, 0x469210).
+	if (warhead->ShakeXlo != 0 || warhead->ShakeXhi != 0) {
+		Map.ScreenX = NonCriticalRandomNumber(warhead->ShakeXlo, warhead->ShakeXhi);
+	}
+	if (warhead->ShakeYlo != 0 || warhead->ShakeYhi != 0) {
+		Map.ScreenY = NonCriticalRandomNumber(warhead->ShakeYlo, warhead->ShakeYhi);
+	}
 
 	// A weapon with RadLevel leaves radiation reaching its warhead's CellSpread (BulletClass::Detonate, 0x469210).
 	if (Weapon != NULL && Weapon->RadLevel > 0) {
