@@ -881,6 +881,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		**	Check to see what zone this object should recognize.
 		*/
 		MZone = ini.Get_MZoneType(Name(), "MovementZone", MZone);
+		Speed = ini.Get_SpeedType(Name(), "SpeedType", Speed);
 		IsSubterranean = MZone == MZONE_SUBTERANNEAN;
 
 		if (IsVoxel) {

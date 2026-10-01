@@ -376,8 +376,6 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 			Speed = IsCrusher ? SPEED_TRACK : SPEED_WHEEL;
 		}
 
-		Speed = ini.Get_SpeedType(Name(), "SpeedType", Speed);
-
 		IsTilter = ini.Get_Bool(Name(), "IsTilter", IsTilter);
 		IsCarriesCrate = ini.Get_Bool(Name(), "CarriesCrate", IsCarriesCrate);
 		IsLockTurret = !IsTurretEquipped;
