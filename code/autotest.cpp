@@ -318,6 +318,23 @@ void Run(StepType const & step)
 			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-");
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
+	} else if (step.Command == "banims") {
+		for (int slot = 0; slot < BANIM_COUNT; slot++) {
+			int count = 0;
+			int garrisoned = 0;
+			int effect = 0;
+			char const * example = "";
+			for (int index = 0; index < BuildingTypes.Count(); index++) {
+				BuildingTypeClass::AnimDataType const & data = BuildingTypes[index]->AnimData[slot];
+				if (data.Anim[0] != '\0') {
+					count++;
+					example = BuildingTypes[index]->Name();
+				}
+				if (std::strcmp(data.AnimGarrisoned, data.Anim) != 0) garrisoned++;
+				if (data.PoweredEffect || data.PoweredSpecial) effect++;
+			}
+			DebugString("AUTOTEST   banim slot %d used %d garrisoned %d effect %d e.g. %s\n", slot, count, garrisoned, effect, example);
+		}
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
