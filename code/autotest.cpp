@@ -56,6 +56,9 @@
 #include "keyboard.h"
 #include "loco.h"
 #include "tactical.h"
+#include "script.h"
+#include "teamtype.h"
+#include "team.h"
 #include "unit.h"
 #include "unittype.h"
 #include "windowevent.hh"
@@ -318,6 +321,18 @@ void Run(StepType const & step)
 			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-");
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
+	} else if (step.Command == "teams") {
+		for (int index = 0; index < Teams.Count(); index++) {
+			TeamClass * team = Teams[index];
+			int members = 0;
+			for (FootClass * member = team->Get_Member(); member != NULL; member = member->Member) {
+				members++;
+			}
+			TeamMissionClass mission = team->Script != NULL ? team->Script->Get_Current_Mission() : TeamMissionClass(TMISSION_NONE, 0);
+			DebugString("AUTOTEST   team %s house %s members %d mission %d data %d moving %d hasbeen %d full %d under %d\n",
+				team->Class->Name(), team->House->Class->Name(), members, (int)mission.Mission, mission.Data.Value,
+				(int)team->IsMoving, (int)team->IsHasBeen, (int)team->IsFullStrength, (int)team->IsUnderStrength);
+		}
 	} else if (step.Command == "banims") {
 		for (int slot = 0; slot < BANIM_COUNT; slot++) {
 			int count = 0;
