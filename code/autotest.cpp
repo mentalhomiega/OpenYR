@@ -262,7 +262,7 @@ void Dump(void)
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];
 		if (object->House != PlayerPtr) continue;
-		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()));
+		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed());
 	}
 }
 
@@ -389,6 +389,17 @@ void Run(StepType const & step)
 		}
 		for (int index = 0; index < Houses.Count(); index++) {
 			DebugString("AUTOTEST   house %s scheme %d\n", Houses[index]->Class->Name(), Houses[index]->Scheme);
+		}
+	} else if (step.Command == "seq") {
+		// seq <InfantryTypeID>: the art sequences the type has, by DoType number.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL && type->Fetch_RTTI() == RTTI_INFANTRYTYPE && ((InfantryTypeClass const *)type)->DoControls != NULL) {
+			DoInfoStruct const * controls = ((InfantryTypeClass const *)type)->DoControls;
+			for (int index = 0; index < DO_COUNT; index++) {
+				if (controls[index].Count > 0) {
+					DebugString("AUTOTEST   seq %s %d frame %d count %d jump %d\n", type->Name(), index, controls[index].Frame, controls[index].Count, controls[index].Jump);
+				}
+			}
 		}
 	} else if (step.Command == "teams") {
 		for (int index = 0; index < Teams.Count(); index++) {
