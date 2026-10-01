@@ -371,6 +371,9 @@ class TeamClass : public AbstractClass
 		void TMission_FLASH(TeamMissionClass * mission, bool);
 		void TMission_PLAY_ANIM(TeamMissionClass * mission, bool);
 		void TMission_TALK_BUBBLE(TeamMissionClass * mission, bool);
+		void TMission_GATHER_AT_ENEMY(TeamMissionClass * mission, bool);
+		void TMission_GATHER_AT_BASE(TeamMissionClass * mission, bool);
+		void Gather_Near(FootClass * leader, Coord const & base, Coord const & toward);
 
 		/*
 		 * Keeping the members moving and fighting together.

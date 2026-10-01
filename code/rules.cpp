@@ -536,6 +536,7 @@ RulesClass::RulesClass(void) :
 	AlliedBaseDefenses(),
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
+	AISafeDistance(8),
 	BuildHelipad(),
 	BuildRadar(),
 	ConcreteWalls(),
@@ -1331,6 +1332,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
+		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
 		return(true);
 	}
 	return(false);
@@ -2376,6 +2378,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AlliedBaseDefenses);
 	stream.Serialize(SovietBaseDefenses);
 	stream.Serialize(ThirdBaseDefenses);
+	stream.Serialize(AISafeDistance);
 	stream.Serialize(BuildHelipad);
 	stream.Serialize(BuildRadar);
 	stream.Serialize(ConcreteWalls);

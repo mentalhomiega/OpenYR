@@ -2911,3 +2911,100 @@ team_missions:
   - name: Talk bubble
     type: talk-bubble
   status: generated
+- id: TMISSION_GATHER_AT_ENEMY
+  kind: team-mission
+  index: 53
+  editor_name: Gather at enemy base
+  editor_description: Gather near the enemy base, short of its defenses.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_GATHER_AT_BASE
+  kind: team-mission
+  index: 54
+  editor_name: Regroup at friendly base
+  editor_description: Gather near the team's own base, on the side facing the enemy.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_IRON_CURTAIN_ME
+  kind: team-mission
+  index: 55
+  editor_name: Iron Curtain me
+  editor_description: Ask for the house's Iron Curtain on the team. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_CHRONO_PREP_ABWP
+  kind: team-mission
+  index: 56
+  editor_name: Chrono prep for ABwP
+  editor_description: Chronoshift the team toward a building with a property. Not ported yet; the step
+    is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_CHRONO_PREP_AQ
+  kind: team-mission
+  index: 57
+  editor_name: Chrono prep for AQ
+  editor_description: Chronoshift the team toward its quarry. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_MOVE_TO_OWN_BUILDING
+  kind: team-mission
+  index: 58
+  editor_name: Move to own building
+  editor_description: Move to one of the house's own buildings. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_ATTACK_WAYPOINT_OBJECT
+  kind: team-mission
+  index: 59
+  editor_name: Attack object at waypoint
+  editor_description: Attack the object at the specified waypoint. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_ENTER_GRINDER
+  kind: team-mission
+  index: 60
+  editor_name: Enter grinder
+  editor_description: Members enter a grinder. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_ENTER_TANK_BUNKER
+  kind: team-mission
+  index: 61
+  editor_name: Enter tank bunker
+  editor_description: Members enter a tank bunker. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_ENTER_BIO_REACTOR
+  kind: team-mission
+  index: 62
+  editor_name: Enter bio reactor
+  editor_description: Members enter a bio reactor. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_ENTER_BATTLE_BUNKER
+  kind: team-mission
+  index: 63
+  editor_name: Enter battle bunker
+  editor_description: Members enter a battle bunker. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated
+- id: TMISSION_GARRISON_STRUCTURE
+  kind: team-mission
+  index: 64
+  editor_name: Garrison structure
+  editor_description: Members garrison a structure. Not ported yet; the step is skipped.
+  need: NEED_NONE
+  parameters: []
+  status: generated

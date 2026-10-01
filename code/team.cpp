@@ -686,6 +686,13 @@ void TeamClass::AI(void)
 			INVOKE(FLASH);
 			INVOKE(PLAY_ANIM);
 			INVOKE(TALK_BUBBLE);
+			INVOKE(GATHER_AT_ENEMY);
+			INVOKE(GATHER_AT_BASE);
+
+			// A step this engine cannot carry out yet is passed over, as gamemd does for any unknown step.
+			default:
+				IsNextMission = true;
+				break;
 		}
 
 	} else {
@@ -2227,15 +2234,15 @@ void TeamClass::Scan_Limit(void)
  *=============================================================================================*/
 FootClass * TeamClass::Fetch_A_Leader(void) const
 {
-	FootClass * leader = Member;
+	FootClass * leader = NULL;
 
-	/*
-	**	Scan through the team members trying to find one that is an active member and
-	**	is equipped with a weapon.
-	*/
-	while (leader != NULL) {
-		if (_Is_It_Playing(leader) /*&& leader->Is_Weapon_Equipped()*/) break;
-		leader = leader->Member;
+	// The playing member with the highest LeadershipRating leads; the first one wins a tie.
+	int rating = -1;
+	for (FootClass * member = Member; member != NULL; member = member->Member) {
+		if (_Is_It_Playing(member) && member->TClass->LeadershipRating > rating) {
+			rating = member->TClass->LeadershipRating;
+			leader = member;
+		}
 	}
 
 	/*
@@ -2382,6 +2389,78 @@ void TeamClass::TMission_MOVECELL(TeamMissionClass * mission, bool first_time)
 		if (Map.In_Radar(cell)) {
 		Assign_Mission_Target(&Map[cell]);
 	}
+	}
+	Coordinate_Move();
+}
+
+
+/// <summary>
+/// Sends the team to a spot AISafeDistance cells from a base center, in the direction of a
+/// second point, as gamemd's gather missions (FUN_006EF700 and FUN_006EFA10) do. The spot is
+/// moved to the nearest clear 3x3 area the leader can stand in.
+/// </summary>
+void TeamClass::Gather_Near(FootClass * leader, Coord const & base, Coord const & toward)
+{
+	double dx = toward.X - base.X;
+	double dy = toward.Y - base.Y;
+	double length = sqrt(dx * dx + dy * dy);
+	if (length < 1.0) {
+		double angle = Random_Pick(0, 255) * (2.0 * 3.14159265358979 / 256.0);
+		dx = cos(angle);
+		dy = sin(angle);
+		length = 1.0;
+	}
+
+	double distance = Rule->AISafeDistance * CELL_LEPTON_W;
+	Coord spot(base.X + (int)(dx / length * distance), base.Y + (int)(dy / length * distance), 0);
+	Cell cell = Map.Nearby_Location(spot.As_Cell(), leader->TClass->Speed, -1, MZONE_NORMAL, false, Point2D(3, 3));
+	if (cell != CELL_NONE) {
+		Assign_Mission_Target(&Map[cell]);
+	} else {
+		IsNextMission = true;
+	}
+}
+
+
+/// <summary>
+/// Gathers the team short of its house's enemy's base, on the side facing its own base.
+/// A house with no enemy, or an enemy with no base, ends the step at once.
+/// </summary>
+void TeamClass::TMission_GATHER_AT_ENEMY(TeamMissionClass *, bool first_time)
+{
+	if (first_time) {
+		FootClass * leader = Fetch_A_Leader();
+		HouseClass * enemy = leader != NULL ? House_From_HousesType(leader->House->Enemy) : NULL;
+		if (enemy == NULL || enemy->Center == Coord(0, 0, 0)) {
+			IsNextMission = true;
+			return;
+		}
+		Coord home = leader->House->Center;
+		if (home == Coord(0, 0, 0)) {
+			home = leader->Center_Coord();
+		}
+		Gather_Near(leader, enemy->Center, home);
+	}
+	Coordinate_Move();
+}
+
+
+/// <summary>
+/// Gathers the team just outside its own base, on the side facing its house's enemy, or in a
+/// random direction when the house has no enemy.
+/// </summary>
+void TeamClass::TMission_GATHER_AT_BASE(TeamMissionClass *, bool first_time)
+{
+	if (first_time) {
+		FootClass * leader = Fetch_A_Leader();
+		if (leader == NULL) {
+			IsNextMission = true;
+			return;
+		}
+		Coord home = leader->House->Center;
+		HouseClass * enemy = House_From_HousesType(leader->House->Enemy);
+		Coord toward = enemy != NULL ? enemy->Center : home;
+		Gather_Near(leader, home, toward);
 	}
 	Coordinate_Move();
 }

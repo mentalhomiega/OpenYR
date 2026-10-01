@@ -14,7 +14,7 @@ With this set, three script missions pick a target only from [the house's declar
 
 A mission that finds no target ends, and the team moves on to the next line of its script.
 
-The filter has one gap on the Attack mission, and it depends on the team's leader. The leader is the most recently joined member that is [in formation](/systems/ai-team-execution/#bringing-a-member-into-formation), armed or not.
+The filter has one gap on the Attack mission, and it depends on the team's leader. The leader is the member with the highest [`LeadershipRating`](/keys/leadershiprating/) among those that are alive, out of [limbo](/glossary/#limbo), and [in formation](/systems/ai-team-execution/#bringing-a-member-into-formation) or an aircraft. A tie goes to the most recently joined of them, and when no member qualifies the most recently joined member leads. It need not be armed.
 
 - If a computer house's unarmed engineer leads, it picks the building its house wants recaptured when that building is within 15 cells.
 - If a vehicle thief leads, it picks the vehicle it is already heading for when that vehicle is within 15 cells and is not a train.

@@ -498,6 +498,24 @@ AIIonCannonWarFactoryValue:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AISafeDistance:
+  key: AISafeDistance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '8'
+      declared_in: RulesClass
+      member: AISafeDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AITriggerFailureWeightDelta:
   key: AITriggerFailureWeightDelta
   scopes:
@@ -13863,6 +13881,23 @@ LastTilesInSet:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+LeadershipRating:
+  key: LeadershipRating
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: TechnoTypeClass
+      member: LeadershipRating
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 LegalTarget:
   key: LegalTarget
   scopes:

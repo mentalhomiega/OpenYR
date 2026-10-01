@@ -85,6 +85,18 @@ char const * const TMissions[TMISSION_COUNT] = {
 	"Flash",
 	"Play Anim",
 	"Talk Bubble",
+	"Gather at enemy base",
+	"Regroup at friendly base",
+	"Iron Curtain me",
+	"Chrono prep for ABwP",
+	"Chrono prep for AQ",
+	"Move to own building",
+	"Attack object at waypoint",
+	"Enter grinder",
+	"Enter tank bunker",
+	"Enter bio reactor",
+	"Enter battle bunker",
+	"Garrison structure",
 };
 
 char const * const TMissionsHelp[TMISSION_COUNT] = {
@@ -141,6 +153,18 @@ char const * const TMissionsHelp[TMISSION_COUNT] = {
 	"Flashes a team for a period of team.",
 	"Plays an anim over every unit in the team.",
 	"Displays talk bubble over first unit in the team.",
+	"Gather near the enemy base, short of its defenses.",
+	"Gather near the team's own base, on the side facing the enemy.",
+	"Ask for the house's Iron Curtain on the team. Not ported yet; the step is skipped.",
+	"Chronoshift the team toward a building with a property. Not ported yet; the step is skipped.",
+	"Chronoshift the team toward its quarry. Not ported yet; the step is skipped.",
+	"Move to one of the house's own buildings. Not ported yet; the step is skipped.",
+	"Attack the object at the specified waypoint. Not ported yet; the step is skipped.",
+	"Members enter a grinder. Not ported yet; the step is skipped.",
+	"Members enter a tank bunker. Not ported yet; the step is skipped.",
+	"Members enter a bio reactor. Not ported yet; the step is skipped.",
+	"Members enter a battle bunker. Not ported yet; the step is skipped.",
+	"Members garrison a structure. Not ported yet; the step is skipped.",
 };
 
 char const * const TargetProperties[TPROPERTY_COUNT] = {

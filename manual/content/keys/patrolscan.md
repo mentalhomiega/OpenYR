@@ -11,7 +11,7 @@ The value is in minutes and becomes a whole number of frames, so the default is 
 
 At each interval, a patrolling team looks for the greatest threat within its leader's [`GuardRange`](/keys/guardrange/), or within the leader's weapon range when `GuardRange` is zero. If it finds one, the team attacks it. If it finds none, the team drops any target it was attacking and continues toward its waypoint.
 
-The leader is the first member that has joined up with the team; an aircraft counts as joined at once. If no member has joined yet, the first member leads.
+The leader is the member with the highest [`LeadershipRating`](/keys/leadershiprating/) among those that are alive, out of [limbo](/glossary/#limbo), and [in formation](/systems/ai-team-execution/#bringing-a-member-into-formation) or an aircraft. A tie goes to the most recently joined of them, and when no member qualifies the most recently joined member leads.
 
 The interval counts game frames, not the time since each team started patrolling, so every patrolling team in the scenario scans on the same frames.
 

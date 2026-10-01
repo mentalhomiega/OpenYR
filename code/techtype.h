@@ -277,6 +277,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		int PixelSelectionBracketDelta;
 
+		// Which member leads a team: the highest rating among those ready to act.
+		int LeadershipRating;
+
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.

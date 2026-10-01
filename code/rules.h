@@ -1063,6 +1063,9 @@ class RulesClass
 		TypeList<BuildingTypeClass const *> AlliedBaseDefenses;
 		TypeList<BuildingTypeClass const *> SovietBaseDefenses;
 		TypeList<BuildingTypeClass const *> ThirdBaseDefenses;
+
+		// How many cells from a base center a team gathers before an attack or after one.
+		int AISafeDistance;
 		TypeList<BuildingTypeClass const *> BuildHelipad;
 
 		/*
