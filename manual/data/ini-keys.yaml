@@ -13024,6 +13024,23 @@ IsARock:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+IsAlternateColor:
+  key: IsAlternateColor
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsAlternateColor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IsAnimated:
   key: IsAnimated
   scopes:
@@ -13171,6 +13188,23 @@ IsDropship:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+IsElectricBolt:
+  key: IsElectricBolt
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsElectricBolt
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IsFlamingGuy:
   key: IsFlamingGuy
   scopes:

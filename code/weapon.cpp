@@ -84,6 +84,8 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsCamera(false),
 	IsElectric(false),
 	IsLaser(false),
+	IsElectricBolt(false),
+	IsAlternateColor(false),
 	IsIonSensitive(false),
 	Burst(1),
 	Bullet(NULL),
@@ -190,6 +192,8 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsCamera = ini.Get_Bool(IniName, "Camera", IsCamera);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
+		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
+		IsAlternateColor = ini.Get_Bool(IniName, "IsAlternateColor", IsAlternateColor);
 		IsElectric = ini.Get_Bool(IniName, "Charges", IsElectric);
 		IsTurboBoosted = ini.Get_Bool(IniName, "TurboBoost", IsTurboBoosted);
 
@@ -335,6 +339,8 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsSupressed);
 	crc(IsCamera);
 	crc(IsLaser);
+	crc(IsElectricBolt);
+	crc(IsAlternateColor);
 	crc(Burst);
 	if (Bullet != NULL) crc(Bullet->Fetch_ID());
 	crc(Attack);
@@ -399,6 +405,8 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCamera);
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);
+	stream.Serialize(IsElectricBolt);
+	stream.Serialize(IsAlternateColor);
 	stream.Serialize(IsIonSensitive);
 }
 

@@ -49,6 +49,7 @@
 #include "blight.h"
 #include "building.h"
 #include "bullet.h"
+#include "ebolt.h"
 #include "empulse.h"
 #include "factory.h"
 #include "globals.h"
@@ -348,6 +349,7 @@ void LogicClass::AI(void)
 
 	SpotLightClass::Update_All();
 	LaserDrawClass::Update_All();
+	EBoltClass::Update_All();
 	IonStormClass::AI();
 	LightSourceClass::Process_Lighting(6);
 	EMPulseClass::Update_All();

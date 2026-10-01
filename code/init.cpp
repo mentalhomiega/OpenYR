@@ -110,6 +110,7 @@
 #include "deploymentconfig.h"
 #include "dialog.h"
 #include "dsurface.h"
+#include "ebolt.h"
 #include "egos.h"
 #include "empulse.h"
 #include "enviro.h"
@@ -5860,6 +5861,7 @@ void Delete_All_Objects(void)
 	Process_Deferred_Deletion();
 
 	LaserDrawClass::All_Clear();
+	EBoltClass::All_Clear();
 
 	while (AbstractTypes.Count()) {
 		delete AbstractTypes[0];

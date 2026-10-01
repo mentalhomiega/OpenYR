@@ -273,6 +273,10 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsLaser;
 
+		// An electric bolt is drawn from the muzzle to the target, in the alternate color when set.
+		bool IsElectricBolt;
+		bool IsAlternateColor;
+
 		/*
 		 * If this weapon cannot be fired during an ion storm, then this flag will be true.
 		 */

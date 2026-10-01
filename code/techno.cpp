@@ -160,6 +160,7 @@
 #include "dialog.h"
 #include "draw.h"
 #include "dsurface.h"
+#include "ebolt.h"
 #include "fog.h"
 #include "globals.h"
 #include "goptions.h"
@@ -797,6 +798,7 @@ void TechnoClass::Init(void)
 /// </summary>
 TechnoClass::~TechnoClass(void)
 {
+	EBoltClass::Detach(this);
 	House=0;
 	Technos.Delete(this);
 	HousePtrTracker.Delete(this);
@@ -3827,6 +3829,35 @@ int TechnoClass::Rearm_Delay(int which) const
 }
 
 
+/// <summary>
+/// Draws an electric bolt from the weapon's muzzle to the target, as gamemd's FUN_006FD460 and
+/// FUN_006FD570 do. A vehicle's first bolt follows its muzzle while the bolt lasts.
+/// </summary>
+void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClass const * weapon)
+{
+	if (target == NULL) {
+		return;
+	}
+
+	Coord source = Fire_Coord(which);
+
+	// A structure's bolt sorts with the height its muzzle is drawn above the structure.
+	int zadjust = 0;
+	if (RTTI == RTTI_BUILDING) {
+		Point2D muzzle;
+		Point2D base;
+		TacticalMap->Coord_To_Pixel(source, muzzle);
+		TacticalMap->Coord_To_Pixel(Render_Coord(), base);
+		zadjust = std::min(muzzle.Y - base.Y, 0);
+	}
+
+	EBoltClass * bolt = new EBoltClass;
+	bolt->IsAlternateColor = weapon->IsAlternateColor;
+	bolt->Fire(source, target->Center_Coord(), zadjust);
+	bolt->Set_Owner(this, which);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Laser_Zap -- Fires laser zap at the target specified.                          *
  *                                                                                             *
@@ -4192,6 +4223,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
 					TargetingLaserTimer = UIControls.TargetLaserTime;
+				}
+
+				if (weapon->IsElectricBolt && !weapon->IsLaser) {
+					Electric_Zap(target, which, weapon);
 				}
 
 				/*
