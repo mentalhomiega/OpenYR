@@ -386,6 +386,16 @@ class RulesClass
 		AnimTypeClass const * InfantryExplode;
 
 		/*
+		 * The animations Yuri's Revenge plays for infantry killed by the warheads whose
+		 * InfDeath is 6 (head pop), 7 (nuked), 8 (virus), 9 (mutate) and 10 (brute).
+		 */
+		AnimTypeClass const * InfantryHeadPop;
+		AnimTypeClass const * InfantryNuked;
+		AnimTypeClass const * InfantryVirus;
+		AnimTypeClass const * InfantryMutate;
+		AnimTypeClass const * InfantryBrute;
+
+		/*
 		 * This is the animation of a drop pod burning its way down through the atmosphere,
 		 * played on the pod as it appears above the map.
 		 */

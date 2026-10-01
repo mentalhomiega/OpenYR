@@ -441,10 +441,15 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				infdeath = 5;
 			}
 
+			/*
+			**	Yuri's Revenge's death types (InfantryClass::Destroy, 0x517FA0 in gamemd). The
+			**	animation types come from the rules, and a death whose animation is not set
+			**	removes the infantryman without one.
+			*/
+			AnimTypeClass const * deathanim = NULL;
 			switch (infdeath) {
 				default:
 				case 0:
-					delthis = true;
 					break;
 
 				case 1:
@@ -452,32 +457,45 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					break;
 
 				case 2:
+				case 9:		// Mutation into a brute is not ported; the infantryman dies as from an explosion.
 					Do_Action(DO_EXPLOSION_DEATH, true);
 					break;
 
 				case 3:
-					new AnimClass(Rule->InfantryExplode, PositionCoord);
-					delthis = true;
+					deathanim = Rule->InfantryExplode;
 					break;
 
 				case 4:
-					if (Class->IsDoggie) {
-						Do_Action(DO_FIRE_DEATH, true);
-					} else {
-						AnimClass * anim = new AnimClass(Rule->FlamingInfantry, PositionCoord);
-						anim->AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
-						delthis = true;
-					}
+					deathanim = Rule->FlamingInfantry;
 					break;
 
 				case 5:
-					if (Class->IsDoggie) {
-						Do_Action(DO_FIRE_DEATH, true);
-					} else {
-						AnimClass * anim = new AnimClass(AnimTypes[ANIM_ELECT_DIE], PositionCoord);
-						delthis = true;
-					}
+					// Yuri's Revenge takes the second entry of [Animations] for electrocution.
+					deathanim = AnimTypes.Count() > ANIM_ELECT_DIE ? AnimTypes[ANIM_ELECT_DIE] : NULL;
 					break;
+
+				case 6:
+					deathanim = Rule->InfantryHeadPop;
+					break;
+
+				case 7:
+					deathanim = Rule->InfantryNuked;
+					break;
+
+				case 8:
+					deathanim = Rule->InfantryVirus;
+					break;
+
+				case 10:
+					deathanim = Rule->InfantryBrute;
+					break;
+			}
+
+			if (infdeath != 1 && infdeath != 2 && infdeath != 9) {
+				if (deathanim != NULL) {
+					new AnimClass(deathanim, PositionCoord);
+				}
+				delthis = true;
 			}
 		}
 

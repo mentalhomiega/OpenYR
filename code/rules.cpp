@@ -390,6 +390,11 @@ RulesClass::RulesClass(void) :
 	IonBlast(NULL),
 	IonBeam(NULL),
 	InfantryExplode(NULL),
+	InfantryHeadPop(NULL),
+	InfantryNuked(NULL),
+	InfantryVirus(NULL),
+	InfantryMutate(NULL),
+	InfantryBrute(NULL),
 	AtmosphereEntry(NULL),
 	PrerequisitePower(),
 	PrerequisiteFactory(),
@@ -860,6 +865,11 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		IonBlast = TGet_Class(ini, AUDIOVISUAL, "IonBlast", IonBlast);
 		IonBeam = TGet_Class(ini, AUDIOVISUAL, "IonBeam", IonBeam);
 		InfantryExplode = TGet_Class(ini, AUDIOVISUAL, "InfantryExplode", InfantryExplode);
+		InfantryHeadPop = TGet_Class(ini, AUDIOVISUAL, "InfantryHeadPop", InfantryHeadPop);
+		InfantryNuked = TGet_Class(ini, AUDIOVISUAL, "InfantryNuked", InfantryNuked);
+		InfantryVirus = TGet_Class(ini, AUDIOVISUAL, "InfantryVirus", InfantryVirus);
+		InfantryMutate = TGet_Class(ini, AUDIOVISUAL, "InfantryMutate", InfantryMutate);
+		InfantryBrute = TGet_Class(ini, AUDIOVISUAL, "InfantryBrute", InfantryBrute);
 		AtmosphereEntry = TGet_Class(ini, AUDIOVISUAL, "AtmosphereEntry", AtmosphereEntry);
 		GateUpSound = ini.Get_VocType(AUDIOVISUAL, "GateUp", GateUpSound);
 		GateDownSound = ini.Get_VocType(AUDIOVISUAL, "GateDown", GateDownSound);
@@ -2214,6 +2224,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IonBlast);
 	stream.Serialize(IonBeam);
 	stream.Serialize(InfantryExplode);
+	stream.Serialize(InfantryHeadPop);
+	stream.Serialize(InfantryNuked);
+	stream.Serialize(InfantryVirus);
+	stream.Serialize(InfantryMutate);
+	stream.Serialize(InfantryBrute);
 	stream.Serialize(AtmosphereEntry);
 	stream.Serialize(PrerequisitePower);
 	stream.Serialize(PrerequisiteFactory);
@@ -2823,6 +2838,21 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == InfantryExplode) {
 		InfantryExplode = NULL;
+	}
+	if (target == InfantryHeadPop) {
+		InfantryHeadPop = NULL;
+	}
+	if (target == InfantryNuked) {
+		InfantryNuked = NULL;
+	}
+	if (target == InfantryVirus) {
+		InfantryVirus = NULL;
+	}
+	if (target == InfantryMutate) {
+		InfantryMutate = NULL;
+	}
+	if (target == InfantryBrute) {
+		InfantryBrute = NULL;
 	}
 	if (target == IonBlast) {
 		IonBlast = NULL;

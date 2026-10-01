@@ -26,4 +26,4 @@ A prone dog stands up again when it is given a destination.
 
 ## Death
 
-Where a warhead's [`InfDeath`](/keys/infdeath/) would set an ordinary soldier alight or electrocute it, a dog plays the `Die5` run of its [`Sequence`](/keys/sequence/) section instead. When a dog's death sequence finishes, the dog is removed without leaving one of the [`DeadBodies`](/keys/deadbodies/) corpses.
+A dog dies as any soldier does for its warhead's [`InfDeath`](/keys/infdeath/), including the burning and electrocution deaths. When a dog's death sequence finishes, the dog is removed without leaving one of the [`DeadBodies`](/keys/deadbodies/) corpses.

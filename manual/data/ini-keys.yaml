@@ -641,11 +641,7 @@ AV:
 Accelerates:
   key: Accelerates
   scopes:
-  - applies_to: &id003
-    - AircraftType
-    - BuildingType
-    - InfantryType
-    - UnitType
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -11501,6 +11497,24 @@ InfantryBaseMult:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+InfantryBrute:
+  key: InfantryBrute
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: InfantryBrute
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 InfantryExplode:
   key: InfantryExplode
   scopes:
@@ -11537,6 +11551,60 @@ InfantryGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+InfantryHeadPop:
+  key: InfantryHeadPop
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: InfantryHeadPop
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+InfantryMutate:
+  key: InfantryMutate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: InfantryMutate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+InfantryNuked:
+  key: InfantryNuked
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: InfantryNuked
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 InfantryReserve:
   key: InfantryReserve
   scopes:
@@ -11552,6 +11620,24 @@ InfantryReserve:
       default_candidate: '2000'
       declared_in: RulesClass
       member: InfantryReserve
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+InfantryVirus:
+  key: InfantryVirus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: InfantryVirus
       source: code/rules.cpp
       guard: null
     level: RulesClass

@@ -1,13 +1,13 @@
 ---
 key: InfDeath
 summary: The death sequence an infantryman killed by the warhead performs.
-see_also: [Doggie, DeadBodies, InfantryExplode, FlamingInfantry, "system:laser-fences"]
+see_also: [DeadBodies, InfantryExplode, FlamingInfantry, InfantryHeadPop, InfantryNuked, InfantryVirus, InfantryBrute, "system:laser-fences"]
 when_omitted:
   kind: value
   value: "0"
 ---
 
-The value selects one of six deaths:
+The value selects one of eleven deaths:
 
 | Value | Result |
 | --- | --- |
@@ -15,8 +15,15 @@ The value selects one of six deaths:
 | `1` | The soldier plays its gun death sequence |
 | `2` | The soldier plays its explosion death sequence |
 | `3` | The soldier is removed and leaves the [`InfantryExplode`](/keys/infantryexplode/) animation |
-| `4` | A [`Doggie=yes`](/keys/doggie/) type plays its burning death. Any other type is removed and leaves the [`FlamingInfantry`](/keys/flaminginfantry/) animation |
-| `5` | A `Doggie=yes` type plays its burning death. Any other type is removed and leaves the electrocution animation |
+| `4` | The soldier is removed and leaves the [`FlamingInfantry`](/keys/flaminginfantry/) animation |
+| `5` | The soldier is removed and leaves the electrocution animation |
+| `6` | The soldier is removed and leaves the [`InfantryHeadPop`](/keys/infantryheadpop/) animation |
+| `7` | The soldier is removed and leaves the [`InfantryNuked`](/keys/infantrynuked/) animation |
+| `8` | The soldier is removed and leaves the [`InfantryVirus`](/keys/infantryvirus/) animation |
+| `9` | The soldier plays its explosion death sequence; mutation into a brute is not supported yet |
+| `10` | The soldier is removed and leaves the [`InfantryBrute`](/keys/infantrybrute/) animation |
+
+A death that names an animation the rules leave unset removes the soldier without one.
 
 Any other value behaves as `0`.
 
