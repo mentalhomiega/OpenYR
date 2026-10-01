@@ -7749,6 +7749,24 @@ DefaultLargeRedSmokeSystem:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DefaultMirageDisguises:
+  key: DefaultMirageDisguises
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: DefaultMirageDisguises
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DefaultRepairParticleSystem:
   key: DefaultRepairParticleSystem
   scopes:
@@ -8585,6 +8603,23 @@ Disguise:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DisguiseWhenStill:
+  key: DisguiseWhenStill
+  scopes:
+  - applies_to: *id015
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsDisguiseWhenStill
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 Disguised:
   key: Disguised
   scopes:
@@ -14266,6 +14301,24 @@ InfantryBaseMult:
       default_candidate: '2'
       declared_in: RulesClass
       member: InfantryBaseMult
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+InfantryBlinkDisguiseTime:
+  key: InfantryBlinkDisguiseTime
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: InfantryBlinkDisguiseTime
       source: code/rules.cpp
       guard: null
     level: RulesClass

@@ -153,6 +153,7 @@
 #include "tag.h"
 #include "tagtype.h"
 #include "team.h"
+#include "terrtype.h"
 #include "tiberium.h"
 #include "tracker.h"
 #include "tube.h"
@@ -210,6 +211,8 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	IsDumping(false),
 	IsHarvesting(false),
 	GunnerPassengers(0),
+	MirageType(NULL),
+	MirageBlockedUntil(0),
 	Reload(0),
 	FiringSyncDelay(-1),
 	VisceroidFacing(FACING_NONE),
@@ -550,6 +553,10 @@ void UnitClass::AI(void)
 	*/
 	if (Mission != MISSION_HARVEST) {
 		IsHarvesting = false;
+	}
+
+	if (Class->IsDisguiseWhenStill) {
+		Mirage_AI();
 	}
 
 	/*
@@ -3002,8 +3009,53 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
  *   01/07/1995 JLB : Harvester animation support.                                             *
  *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
  *=============================================================================================*/
+/// <summary>
+/// Updates a DisguiseWhenStill vehicle's look (UnitClass::UpdateDisguise, 0x7468C0). Moving
+/// drops the disguise. On seven frames in eight, a soldier of a house that is not an ally
+/// standing next to it also drops it and blocks a new one for InfantryBlinkDisguiseTime frames.
+/// A still vehicle without a disguise takes a random DefaultMirageDisguises terrain type.
+/// </summary>
+void UnitClass::Mirage_AI(void)
+{
+	if (Locomotion->Is_Moving()) {
+		MirageType = NULL;
+		return;
+	}
+	if (Frame % 8 != 0) {
+		Cell const cell = Get_Cell();
+		for (FacingType facing = FACING_FIRST; facing < FACING_COUNT; facing++) {
+			InfantryClass const * infantry = Map[Adjacent_Cell(cell, facing)].Cell_Infantry();
+			if (infantry != NULL && !House->Is_Ally(infantry)) {
+				MirageBlockedUntil = Frame + Rule->InfantryBlinkDisguiseTime;
+				MirageType = NULL;
+				return;
+			}
+		}
+	}
+	if (MirageType == NULL && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
+		MirageType = Rule->DefaultMirageDisguises[Sim_Random_Pick(0, Rule->DefaultMirageDisguises.Count() - 1)];
+		Mark(MARK_CHANGE);
+	}
+}
+
+
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
+	// A disguised Mirage looks like its terrain to houses that are not its owner's allies.
+	if (MirageType != NULL && PlayerPtr != NULL && !House->Is_Ally(PlayerPtr)) {
+		ShapeSet const * shape = (ShapeSet const *)MirageType->Get_Image_Data();
+		CellClass & cellptr = Map[Get_Cell()];
+		if (cellptr.Drawer == NULL) {
+			cellptr.Init_Drawer();
+		}
+		if (shape != NULL && cellptr.Drawer != NULL) {
+			Point2D drawpoint = point;
+			drawpoint.Y += MirageType->YDrawFudge;
+			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, 0, drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -12, ZGRAD_90DEG, cellptr.TileBrightness);
+		}
+		return;
+	}
+
 	static ShapeSet const * harvesting_shape = (ShapeSet const *)MFCD::Retrieve("HARVESTR.SHP");
 
 	Point2D adjusted_point = point;
@@ -6236,6 +6288,8 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDumping);
 	stream.Serialize(IsHarvesting);
 	stream.Serialize(GunnerPassengers);
+	stream.Serialize(MirageType);
+	stream.Serialize(MirageBlockedUntil);
 	stream.Serialize(IsCompositingToEightBitSurface);
 	stream.Serialize(VisceroidFacing);
 	stream.Serialize(Charge);

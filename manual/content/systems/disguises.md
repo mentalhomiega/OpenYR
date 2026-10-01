@@ -7,6 +7,9 @@ keys:
   - CanDisguise
   - Disguised
   - FireOnce
+  - DisguiseWhenStill
+  - DefaultMirageDisguises
+  - InfantryBlinkDisguiseTime
 related:
   - type: system
     id: capture
@@ -32,4 +35,8 @@ The disguise shows only to players whose house is not an ally of the disguised o
 
 An infantry type with [`Disguised=yes`](/keys/disguised/) is a separate, older disguise: it always looks like the rules' `Disguise` type to other houses.
 
-Yuri's Revenge also makes the Mirage tank look like a tree while it stands still, and lets dogs and other detectors see through disguises. Neither is done yet.
+## Vehicles that hide as terrain
+
+A [`DisguiseWhenStill=yes`](/keys/disguisewhenstill/) vehicle looks like a tree while it stands still: it picks one of the [`DefaultMirageDisguises`](/keys/defaultmiragedisguises/) terrain types at random and is drawn as that terrain to players whose house is not an ally of its owner. It drops the disguise as soon as it moves. On seven frames in eight, a soldier of a house that is not an ally standing in a neighboring cell also drops the disguise, and the vehicle cannot take a new one for [`InfantryBlinkDisguiseTime`](/keys/infantryblinkdisguisetime/) frames. The vehicle's shadow is still drawn while it is disguised.
+
+Yuri's Revenge also lets dogs and other detectors see through disguises. That is not done yet.

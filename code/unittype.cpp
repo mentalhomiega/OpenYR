@@ -120,6 +120,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsCarriesCrate(false),
 	AltImageData(NULL),
 	IsNonVehicle(false),
+	IsDisguiseWhenStill(false),
 	IsJellyfish(false),
 	IsLimpetDrone(false),
 	IsMobileEMP(false),
@@ -399,6 +400,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsLargeVisceroid = ini.Get_Bool(Name(), "LargeVisceroid", IsLargeVisceroid);
 		IsJellyfish = ini.Get_Bool(Name(), "Jellyfish", IsJellyfish);
 		IsNonVehicle = ini.Get_Bool(Name(), "NonVehicle", IsNonVehicle);
+		IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
 
 		/*
 		 * As UnitTypeClass::LoadFromINI (0x747620): only the type named FV reads which turret each
@@ -603,6 +605,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCarriesCrate);
 	// AltImageData -- artwork, fetched from the mix files again as this loads.
 	stream.Serialize(IsNonVehicle);
+	stream.Serialize(IsDisguiseWhenStill);
 	stream.Serialize(IsJellyfish);
 	stream.Serialize(IsLimpetDrone);
 	stream.Serialize(IsMobileEMP);

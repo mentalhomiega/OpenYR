@@ -164,6 +164,9 @@ class UnitTypeClass : public TechnoTypeClass
 		 */
 		bool IsNonVehicle;
 
+		// Does this vehicle look like a tree to other houses while it stands still?
+		bool IsDisguiseWhenStill;
+
 		// The numbered turrets and barrels a multi-turret vehicle that is not a gattling type swaps between.
 		VoxelDataStruct ChargerTurrets[WEAPON_SLOT_COUNT];
 		VoxelDataStruct ChargerBarrels[WEAPON_SLOT_COUNT];

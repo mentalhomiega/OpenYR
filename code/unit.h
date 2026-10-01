@@ -108,6 +108,12 @@ class UnitClass : public FootClass
 		// The passenger count a gunner vehicle last acted on.
 		int GunnerPassengers;
 
+		// The terrain a DisguiseWhenStill vehicle looks like, and the frame before which it may not take a new look.
+		TerrainTypeClass const * MirageType;
+		int MirageBlockedUntil;
+
+		void Mirage_AI(void);
+
 		/*
 		 * If this unit's artwork is being layered onto the shared eight bit scratch surface
 		 * rather than drawn straight to the screen, then this flag will be true. It tells

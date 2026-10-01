@@ -1401,6 +1401,10 @@ class RulesClass
 		 */
 		TypeList<AnimTypeClass const *> SplashList;
 
+		// The terrain a DisguiseWhenStill vehicle picks its look from, and how long an enemy soldier beside it spoils the disguise.
+		TypeList<TerrainTypeClass const *> DefaultMirageDisguises;
+		int InfantryBlinkDisguiseTime;
+
 		/*
 		 * These are the fires left burning where something has been destroyed. The
 		 * larger one is used for the fiercer blazes.
