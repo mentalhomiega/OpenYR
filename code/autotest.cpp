@@ -289,7 +289,12 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "view") {
 		FollowType.clear();
-		TacticalMap->Set_Tactical_Position(Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord());
+		Coord coord = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();
+		TacticalMap->Set_Tactical_Position(coord);
+		Point2D wanted = TacticalMap->Coord_To_Pixel_Absolute(coord);
+		Point2D actual = TacticalMap->Get_Tactical_Position();
+		DebugString("AUTOTEST   view wanted %d,%d actual %d,%d local %d,%d %dx%d play %dx%d\n", wanted.X, wanted.Y, actual.X, actual.Y,
+			Map.LocalRect.X, Map.LocalRect.Y, Map.LocalRect.Width, Map.LocalRect.Height, Map.PlayRect.Width, Map.PlayRect.Height);
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
 	} else if (step.Command == "anims") {
@@ -374,6 +379,10 @@ void AutoTest_Frame(void)
 			UnitClass * object = Units[index];
 			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
 				TacticalMap->Set_Tactical_Position(object->Center_Coord());
+				if ((Frame % 300) == 0) {
+					Point2D actual = TacticalMap->Get_Tactical_Position();
+					DebugString("AUTOTEST   follow %s cell %d,%d view %d,%d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, actual.X, actual.Y);
+				}
 				break;
 			}
 		}
