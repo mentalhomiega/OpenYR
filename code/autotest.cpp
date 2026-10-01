@@ -32,6 +32,7 @@
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
+**	ruleanims				writes the animations some rules settings resolved to
 **	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
 **							weapon at the object on that cell now, and why not
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
@@ -611,6 +612,10 @@ void Run(StepType const & step)
 				break;
 			}
 		}
+	} else if (step.Command == "ruleanims") {
+		auto name = [](AnimTypeClass const * type) { return type != NULL ? type->Name() : "-"; };
+		DebugString("AUTOTEST   ruleanims MoveFlash %s InfantryExplode %s InfantryNuked %s FlamingInfantry %s IonBlast %s DropZoneAnim %s BarrelExplode %s money %d\n",
+			name(Rule->MoveFlash), name(Rule->InfantryExplode), name(Rule->InfantryNuked), name(Rule->FlamingInfantry), name(Rule->IonBlast), name(Rule->FlareAnim), name(Rule->BarrelExplode), Rule->MPMoney);
 	} else if (step.Command == "canfire") {
 		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
 		for (int index = 0; target != NULL && index < Technos.Count(); index++) {

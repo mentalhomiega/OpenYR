@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 DropZoneAnim=MYBEACON ; an AnimType registered in [Animations]
 ```
 
@@ -26,3 +26,5 @@ If this key names an animation type that is also used elsewhere, every use of th
 :::danger[Set DropZoneAnim before a scenario uses the drop zone action]
 If `DropZoneAnim` names no animation type, the game crashes when a Drop Zone Flare action runs.
 :::
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

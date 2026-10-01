@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 FlamingInfantry=MYFLAMEGUY ; an AnimType registered in [Animations]
 ```
 
@@ -25,3 +25,5 @@ How the figure moves depends on the named type. With [`IsFlamingGuy=yes`](/keys/
 The figure is drawn without a house's colors. After a saved game is loaded, a figure whose type sets `IsFlamingGuy=yes` is repainted in the local player's colors.
 
 With the key unset, an `InfDeath=4` warhead removes the soldier without a figure.
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

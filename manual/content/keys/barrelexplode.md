@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 BarrelExplode=MYBARRELBOOM ; an AnimType registered in [Animations]
 ```
 
@@ -19,3 +19,5 @@ The fires that spread to neighboring explosive overlays use the `FIRE3` animatio
 :::danger[Set an animation before any overlay explodes]
 If `BarrelExplode` names no animation, the game crashes the first time an [`Explodes=yes`](/keys/explodes/#scope-overlaytype) overlay is set off.
 :::
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

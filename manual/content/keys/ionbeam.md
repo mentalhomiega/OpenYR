@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 IonBeam=MYIONBEAM ; an AnimType registered in [Animations]
 ```
 
@@ -19,3 +19,5 @@ A superweapon with [`Type=IonCannon`](/keys/type/#scope-superweapontype) and the
 :::danger[Name an animation before an ion cannon can fire]
 With the key unset, the game crashes as soon as an ion cannon blast lands, whether the superweapon or the trigger action set it off.
 :::
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

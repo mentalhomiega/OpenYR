@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 InfantryExplode=MYINFBANG ; an AnimType registered in [Animations]
 ```
 
@@ -28,3 +28,5 @@ The animation also marks a `Cyborg=yes` infantryman losing its legs without dyin
 :::danger[Name an animation before any cyborg or jumpjet takes fatal damage]
 With the key unset, the game crashes the first time the animation would play outside case 4, including the first time a cyborg loses its legs. Cyborgs and jumpjets reach it without any warhead setting `InfDeath=3`. Case 4 with the key unset removes the soldier without the animation.
 :::
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

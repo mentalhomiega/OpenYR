@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 BridgeExplosions=MYBLAST1,MYBLAST2 ; AnimTypes registered in [Animations]
 ```
 
@@ -19,3 +19,5 @@ Each cell that shows an explosion also has an even chance to throw wreckage from
 :::caution[An empty list also removes the wreckage]
 With no entries, a collapsing bridge shows no explosions and throws no `MetallicDebris` wreckage, because the wreckage is thrown only alongside an explosion.
 :::
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

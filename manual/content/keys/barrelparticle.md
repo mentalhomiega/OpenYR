@@ -8,7 +8,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[AudioVisual]
+[General]
 BarrelParticle=MyGraySmokeSys ; a ParticleSystemType registered in [ParticleSystems]
 ```
 
@@ -17,3 +17,5 @@ An exploding overlay starts a particle system of this type on a 25% chance. The 
 :::danger[Set a particle system before any overlay explodes]
 If `BarrelParticle` names no particle system, the game crashes on the first explosion that wins the 25% chance. Earlier explosions that lose the chance do not crash, so the fault can appear only after several.
 :::
+
+Yuri's Revenge keeps this key in `[General]`. A `[General]` entry overrides one in `[AudioVisual]`, where Tiberian Sun kept it.

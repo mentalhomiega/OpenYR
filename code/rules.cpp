@@ -976,26 +976,39 @@ bool RulesClass::Special_Weapons(CCINIClass const & ini)
 bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 {
 	static char const * const AUDIOVISUAL = "AudioVisual";
+	// Yuri's Revenge moved these animations to [General]; a [General] entry overrides the [AudioVisual] one.
+	static char const * const YR_GENERAL = "General";
 	if (ini.Is_Present(AUDIOVISUAL)) {
 		UnloadingHarvester = TGet_Class(ini, AUDIOVISUAL, "UnloadingHarvester", UnloadingHarvester);
 		PoseDir = (Dir256)ini.Get_Int(AUDIOVISUAL, "PoseDir", PoseDir);
 		DropPodPuff = TGet_Class(ini, AUDIOVISUAL, "DropPodPuff", DropPodPuff);
 		WaypointAnimationSpeed = ini.Get_Int(AUDIOVISUAL, "WaypointAnimationSpeed", WaypointAnimationSpeed);
 		BarrelExplode = TGet_Class(ini, AUDIOVISUAL, "BarrelExplode", BarrelExplode);
+		BarrelExplode = TGet_Class(ini, YR_GENERAL, "BarrelExplode", BarrelExplode);
 		BarrelDebris = TGet_TypeList<VoxelAnimTypeClass>(ini, AUDIOVISUAL, "BarrelDebris", BarrelDebris);
+		BarrelDebris = TGet_TypeList<VoxelAnimTypeClass>(ini, YR_GENERAL, "BarrelDebris", BarrelDebris);
 		BarrelParticle = TGet_Class(ini, AUDIOVISUAL, "BarrelParticle", BarrelParticle);
+		BarrelParticle = TGet_Class(ini, YR_GENERAL, "BarrelParticle", BarrelParticle);
 		Wake = TGet_Class(ini, AUDIOVISUAL, "Wake", Wake);
 		FlamingInfantry = TGet_Class(ini, AUDIOVISUAL, "FlamingInfantry", FlamingInfantry);
+		FlamingInfantry = TGet_Class(ini, YR_GENERAL, "FlamingInfantry", FlamingInfantry);
 		VeinAttack = TGet_Class(ini, AUDIOVISUAL, "VeinAttack", VeinAttack);
 		DropPod = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "DropPod", DropPod);
+		DropPod = TGet_TypeList<AnimTypeClass>(ini, YR_GENERAL, "DropPod", DropPod);
 		DigSound = ini.Get_VocType(AUDIOVISUAL, "DigSound", DigSound);
 		Dig = TGet_Class(ini, AUDIOVISUAL, "Dig", Dig);
 		IonBlast = TGet_Class(ini, AUDIOVISUAL, "IonBlast", IonBlast);
+		IonBlast = TGet_Class(ini, YR_GENERAL, "IonBlast", IonBlast);
 		IonBeam = TGet_Class(ini, AUDIOVISUAL, "IonBeam", IonBeam);
+		IonBeam = TGet_Class(ini, YR_GENERAL, "IonBeam", IonBeam);
 		InfantryExplode = TGet_Class(ini, AUDIOVISUAL, "InfantryExplode", InfantryExplode);
+		InfantryExplode = TGet_Class(ini, YR_GENERAL, "InfantryExplode", InfantryExplode);
 		InfantryHeadPop = TGet_Class(ini, AUDIOVISUAL, "InfantryHeadPop", InfantryHeadPop);
+		InfantryHeadPop = TGet_Class(ini, YR_GENERAL, "InfantryHeadPop", InfantryHeadPop);
 		InfantryNuked = TGet_Class(ini, AUDIOVISUAL, "InfantryNuked", InfantryNuked);
+		InfantryNuked = TGet_Class(ini, YR_GENERAL, "InfantryNuked", InfantryNuked);
 		InfantryVirus = TGet_Class(ini, AUDIOVISUAL, "InfantryVirus", InfantryVirus);
+		InfantryVirus = TGet_Class(ini, YR_GENERAL, "InfantryVirus", InfantryVirus);
 		InfantryMutate = TGet_Class(ini, AUDIOVISUAL, "InfantryMutate", InfantryMutate);
 		InfantryBrute = TGet_Class(ini, AUDIOVISUAL, "InfantryBrute", InfantryBrute);
 		AtmosphereEntry = TGet_Class(ini, AUDIOVISUAL, "AtmosphereEntry", AtmosphereEntry);
@@ -1058,6 +1071,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "MetallicDebris", MetallicDebris);
 		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "BridgeExplosions", BridgeExplosions);
+		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, YR_GENERAL, "BridgeExplosions", BridgeExplosions);
 		OnFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "OnFire", OnFire);
 		Smoke1 = TGet_Class(ini, AUDIOVISUAL, "Smoke", Smoke1);
 		Smoke2 = TGet_Class(ini, AUDIOVISUAL, "Smoke", Smoke2);
@@ -1075,6 +1089,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ConditionYellow = ini.Get_Float(AUDIOVISUAL, "ConditionYellow", ConditionYellow);
 		DropZoneRadius = ini.Get_Lepton(AUDIOVISUAL, "DropZoneRadius", DropZoneRadius);
 		FlareAnim = TGet_Class(ini, AUDIOVISUAL, "DropZoneAnim", FlareAnim);
+		FlareAnim = TGet_Class(ini, YR_GENERAL, "DropZoneAnim", FlareAnim);
 		IsHealthBar = ini.Get_Bool(AUDIOVISUAL, "EnemyHealth", IsHealthBar);
 		Gravity = ini.Get_Int(AUDIOVISUAL, "Gravity", Gravity);
 		RandomAnimateTime = ini.Get_Float(AUDIOVISUAL, "IdleActionFrequency", RandomAnimateTime);
@@ -1102,6 +1117,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ExtraAircraftLight = (int)(NORMAL_LIGHT * ini.Get_Float(AUDIOVISUAL, "ExtraAircraftLight", ExtraAircraftLight / NORMAL_LIGHT) );
 
 		EMPulseSparkles = TGet_Class(ini, AUDIOVISUAL, "EMPulseSparkles", EMPulseSparkles);
+		EMPulseSparkles = TGet_Class(ini, YR_GENERAL, "EMPulseSparkles", EMPulseSparkles);
 		WebbedInfantry = TGet_Class(ini, AUDIOVISUAL, "WebbedInfantry", WebbedInfantry);
 		return(true);
 	}
@@ -1618,17 +1634,29 @@ bool RulesClass::General(CCINIClass const & ini)
 bool RulesClass::MPlayer(CCINIClass const & ini)
 {
 	static char const * const MPLAYER = "MultiplayerDefaults";
-	if (ini.Is_Present(MPLAYER)) {
+	// Yuri's Revenge keeps these defaults in [MultiplayerDialogSettings]; an entry there overrides [MultiplayerDefaults].
+	static char const * const MPDIALOG = "MultiplayerDialogSettings";
+	if (ini.Is_Present(MPLAYER) || ini.Is_Present(MPDIALOG)) {
 		MPMoney = ini.Get_Int(MPLAYER, "Money", MPMoney);
+		MPMoney = ini.Get_Int(MPDIALOG, "Money", MPMoney);
 		MPMaxMoney = ini.Get_Int(MPLAYER, "MaxMoney", MPMaxMoney);
+		MPMaxMoney = ini.Get_Int(MPDIALOG, "MaxMoney", MPMaxMoney);
 		MPUnitCount = ini.Get_Int(MPLAYER, "UnitCount", MPUnitCount);
+		MPUnitCount = ini.Get_Int(MPDIALOG, "UnitCount", MPUnitCount);
 		MPBuildLevel = ini.Get_Int(MPLAYER, "TechLevel", MPBuildLevel);
+		MPBuildLevel = ini.Get_Int(MPDIALOG, "TechLevel", MPBuildLevel);
 		IsMPBridgeDestruction = ini.Get_Bool(MPLAYER, "BridgeDestruction", IsMPBridgeDestruction);
+		IsMPBridgeDestruction = ini.Get_Bool(MPDIALOG, "BridgeDestruction", IsMPBridgeDestruction);
 		IsMPShadowGrow = ini.Get_Bool(MPLAYER, "ShadowGrow", IsMPShadowGrow);
+		IsMPShadowGrow = ini.Get_Bool(MPDIALOG, "ShadowGrow", IsMPShadowGrow);
 		IsMPBasesOn = ini.Get_Bool(MPLAYER, "Bases", IsMPBasesOn);
+		IsMPBasesOn = ini.Get_Bool(MPDIALOG, "Bases", IsMPBasesOn);
 		IsMPTiberiumGrow = ini.Get_Bool(MPLAYER, "TiberiumGrows", IsMPTiberiumGrow);
+		IsMPTiberiumGrow = ini.Get_Bool(MPDIALOG, "TiberiumGrows", IsMPTiberiumGrow);
 		IsMPCrates = ini.Get_Bool(MPLAYER, "Crates", IsMPCrates);
+		IsMPCrates = ini.Get_Bool(MPDIALOG, "Crates", IsMPCrates);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPLAYER, "CaptureTheFlag", IsMPCaptureTheFlag);
+		IsMPCaptureTheFlag = ini.Get_Bool(MPDIALOG, "CaptureTheFlag", IsMPCaptureTheFlag);
 		IsMPBuildOffAllyAnyStructure = ini.Get_Bool(MPLAYER, "BuildOffAllyAnyStructure", IsMPBuildOffAllyAnyStructure);
 		return(true);
 	}
