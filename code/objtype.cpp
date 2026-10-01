@@ -76,6 +76,7 @@ ObjectTypeClass::ObjectTypeClass(char const * ininame) :
 	AlphaGraphicName(),
 	IsTheater(false),
 	IsCrushable(false),
+	IsBombable(true),
 	IsStealthy(false),
 	IsSelectable(true),
 	IsLegalTarget(true),
@@ -696,6 +697,7 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 		CrushSound = ini.Get_VocType(IniName, "CrushSound", CrushSound);
 
 		IsCrushable = ini.Get_Bool(IniName, "Crushable", IsCrushable);
+		IsBombable = ini.Get_Bool(IniName, "Bombable", IsBombable);
 		IsStealthy = ini.Get_Bool(IniName, "RadarInvisible", IsStealthy);
 		IsSelectable = ini.Get_Bool(IniName, "Selectable", IsSelectable);
 		IsLegalTarget = ini.Get_Bool(IniName, "LegalTarget", IsLegalTarget);
@@ -791,6 +793,7 @@ void ObjectTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AlphaGraphicName);
 	stream.Serialize(IsTheater);
 	stream.Serialize(IsCrushable);
+	stream.Serialize(IsBombable);
 	stream.Serialize(IsStealthy);
 	stream.Serialize(IsSelectable);
 	stream.Serialize(IsLegalTarget);

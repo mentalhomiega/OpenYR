@@ -112,6 +112,9 @@ class InfantryTypeClass : public TechnoTypeClass
 		*/
 		bool IsBomber;
 
+		// Does the player's attack order with this soldier show the Ivan bomb cursor?
+		bool IsIvan;
+
 		/*
 		 * If this infantry type is an engineer, then this flag will be true. An engineer
 		 * captures or repairs a building by walking into it, and is consumed in the process.

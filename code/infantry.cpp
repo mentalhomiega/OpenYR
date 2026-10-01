@@ -3063,6 +3063,13 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 			action = ACTION_ATTACK_SUPPORT;
 		}
 	}
+
+	// An Ivan's attack order bombs only a Bombable object that carries no bomb yet (InfantryClass::What_Action, 0x51E3B0).
+	if (House->Is_Player_Control() && action == ACTION_ATTACK && Class->IsIvan) {
+		bool const bombed = object->Is_Techno() && ((TechnoClass const *)object)->BombDetonateFrame != -1;
+		action = (object->Class_Of() != NULL && object->Class_Of()->IsBombable && !bombed) ? ACTION_IVAN_BOMB : ACTION_NO_IVAN_BOMB;
+	}
+
 	/*
 	**	If it doesn't know what to do with the object, then just
 	**	say it can't move there.
@@ -3106,8 +3113,12 @@ bool InfantryClass::Active_Click_With(ActionType action, ObjectClass * object, b
 			break;
 
 		case ACTION_HEAL:
+		case ACTION_IVAN_BOMB:
 			action = ACTION_ATTACK;
 			break;
+
+		case ACTION_NO_IVAN_BOMB:
+			return(false);
 
 		case ACTION_SABOTAGE:
 		case ACTION_ATTACK:

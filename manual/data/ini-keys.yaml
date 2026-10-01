@@ -3906,6 +3906,37 @@ BombTickingSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Bombable:
+  key: Bombable
+  scopes:
+  - applies_to: *id009
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: ObjectTypeClass
+      member: IsBombable
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
+  - applies_to: *id005
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: ObjectTypeClass
+      member: IsBombable
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
 BounceAnim:
   key: BounceAnim
   scopes:
@@ -16213,6 +16244,23 @@ IsoRoot:
       source: code/theater.cpp
       guard: null
     level: TheaterClass
+Ivan:
+  key: Ivan
+  scopes:
+  - applies_to: *id019
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsIvan
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 IvanBomb:
   key: IvanBomb
   scopes:

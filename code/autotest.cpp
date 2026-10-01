@@ -31,6 +31,8 @@
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	kill <TypeID>			destroys the objects of that type other houses own
+**	action <TypeID> x y		writes what the player's object of that type would do when clicked
+**							on the object standing on that cell
 **	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
 **							that cell
 **	unload x y				orders the structure on that cell to unload
@@ -545,6 +547,16 @@ void Run(StepType const & step)
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
 				DebugString("AUTOTEST   damage %s at %d,%d took %d strength %d curtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, damage, (int)techno->Strength, (int)techno->IronCurtainTimer);
+			}
+		}
+	} else if (step.Command == "action") {
+		ObjectClass * target = Map[Cell(step.X, step.Y)].Cell_Occupier();
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				ActionType const action = target != NULL ? techno->What_Action(target, false) : ACTION_NONE;
+				DebugString("AUTOTEST   action %s on %s: %s\n", techno->TClass->Name(), target != NULL ? target->Class_Of()->Name() : "-", ActionName[action]);
+				break;
 			}
 		}
 	} else if (step.Command == "kill") {

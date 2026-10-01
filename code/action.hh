@@ -94,5 +94,8 @@ enum ActionType {
 	ACTION_NO_FORCE_SHIELD,
 	ACTION_PSYCHIC_REVEAL,
 
+	ACTION_IVAN_BOMB,		// Plant an Ivan bomb on the object.
+	ACTION_NO_IVAN_BOMB,	// The object cannot take an Ivan bomb.
+
 	ACTION_COUNT
 };

@@ -100,6 +100,9 @@ class ObjectTypeClass : public AbstractTypeClass
 		*/
 		bool IsCrushable;
 
+		// Can the player order an Ivan to bomb this object?
+		bool IsBombable;
+
 		/*
 		**	Does this object type NOT show up on radar scans?  If true, then in any
 		**	radar display, only the underlying ground will be show, not this object.

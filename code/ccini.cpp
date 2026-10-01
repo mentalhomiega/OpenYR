@@ -177,7 +177,9 @@ char const * const ActionName[ACTION_COUNT] = {
 	"GeneticConverter",
 	"ForceShield",
 	"NoForceShield",
-	"PsychicReveal"
+	"PsychicReveal",
+	"IvanBomb",
+	"NoIvanBomb"
 };
 
 

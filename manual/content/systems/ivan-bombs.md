@@ -10,6 +10,8 @@ keys:
   - IvanIconFlickerRate
   - BombTickingSound
   - BombAttachSound
+  - Ivan
+  - Bombable
 related:
   - type: system
     id: capture
@@ -37,5 +39,9 @@ The bomb goes off [`IvanTimedDelay`](/keys/ivantimeddelay/) frames after it is p
 ## Going off
 
 The bomb does [`IvanDamage`](/keys/ivandamage/) through [`IvanWarhead`](/keys/ivanwarhead/) where the object stands, with the warhead's explosion, credited to the soldier that planted it. A bomb whose object is off the map when the time comes, such as inside a transport, waits and goes off as soon as the object is back on the map. A bomb whose object is destroyed or removed first goes with it.
+
+## Ordering a bomb
+
+When the player points an [`Ivan=yes`](/keys/ivan/) soldier at something it would attack, the cursor shows the bomb if the target's type is [`Bombable=yes`](/keys/bombable/) and the target carries no bomb yet. Otherwise it shows the no-move cursor, and clicking gives no order. The key only limits the player's orders: a soldier that picks a target on its own still plants a bomb on an object whose type sets `Bombable=no`.
 
 Yuri's Revenge also lets the player set a bomb off early, plants death bombs, lets other houses' bomb detectors see bombs, and blows up a bridge a bomb is fixed to. None of these is done yet.
