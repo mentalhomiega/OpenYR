@@ -241,8 +241,9 @@ void Dump(void)
 		UnitClass * object = Units[index];
 		if (object->House != PlayerPtr) continue;
 		Cell const nav = object->NavCom != NULL ? object->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		ClassID const loco = Locomotion_Class_ID(object->Locomotion.get());
-		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d moving %d limbo %d loco %08X typeloco %08X speed %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed);
+		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed);
 	}
 	for (int index = 0; index < Aircraft.Count(); index++) {
 		AircraftClass * object = Aircraft[index];
@@ -281,7 +282,7 @@ void Run(StepType const & step)
 	} else if (step.Command == "owners") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
-			DebugString("AUTOTEST   %s Ownable %08X RequiredHouses %08X\n", type->Name(), type->Ownable, type->RequiredHouses);
+			DebugString("AUTOTEST   %s Ownable %08X RequiredHouses %08X ForbiddenHouses %08X AIBasePlanningSide %d\n", type->Name(), type->Ownable, type->RequiredHouses, type->ForbiddenHouses, type->AIBasePlanningSide);
 		}
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
