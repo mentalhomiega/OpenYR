@@ -1103,6 +1103,13 @@ void EventClass::Execute(void)
 					}
 				}
 
+				// As EventClass::Execute (0x4C6CB0): an open-topped transport's passengers take the target it was given.
+				if (techno->TClass->IsOpenTopped && techno->TarCom != NULL) {
+					for (FootClass * passenger = techno->Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+						passenger->Assign_Target(techno->TarCom);
+					}
+				}
+
 #ifdef NEVER
 				if ((techno->What_Am_I() == RTTI_UNIT || techno->What_Am_I() == RTTI_INFANTRY) &&
 						Data.MegaMission.Mission == MISSION_GUARD_AREA) {
@@ -1142,6 +1149,11 @@ void EventClass::Execute(void)
 				if (techno->RTTI != RTTI_AIRCRAFT) {
 					techno->Assign_Mission(MISSION_GUARD);
 					techno->Commence();
+				}
+				if (techno->TClass->IsOpenTopped) {
+					for (FootClass * passenger = techno->Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+						passenger->Assign_Target(NULL);
+					}
 				}
 			}
 			break;

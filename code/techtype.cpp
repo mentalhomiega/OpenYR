@@ -181,6 +181,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	RateDown(0),
 	IsGunner(false),
 	IFVMode(0),
+	IsOpenTopped(false),
+	OpenTransportWeapon(-1),
 	FlightLevel(-1),
 	IsAllowedToStartInMultiplayer(true),
 	CameoFilename(""),
@@ -646,6 +648,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
 		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
+		IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
+		OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
 		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
 		WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
 		RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
@@ -1120,6 +1124,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGunner);
 	stream.Serialize(IFVMode);
 	stream.Serialize(TurretWeapon);
+	stream.Serialize(IsOpenTopped);
+	stream.Serialize(OpenTransportWeapon);
 	stream.Serialize(MaxPassengers);
 	stream.Serialize(Size);
 	stream.Serialize(SizeLimit);

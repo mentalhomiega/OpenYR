@@ -339,6 +339,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		int IFVMode;
 		int TurretWeapon[WEAPON_SLOT_COUNT];
 
+		// The passengers of an open-topped transport fire from inside it; OpenTransportWeapon picks their weapon there.
+		bool IsOpenTopped;
+		int OpenTransportWeapon;
+
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.

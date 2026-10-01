@@ -164,6 +164,9 @@ class RulesClass
 		double OccupyROFMultiplier;
 		int OccupyWeaponRange;
 
+		// A passenger firing from inside an open-topped transport multiplies its damage by this.
+		double OpenToppedDamageMultiplier;
+
 		// How many frames the Iron Curtain protects what it covers, and the animation played where it lands.
 		int IronCurtainDuration;
 		AnimTypeClass const * IronCurtainInvokeAnim;

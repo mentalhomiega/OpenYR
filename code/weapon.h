@@ -262,6 +262,10 @@ class WeaponTypeClass : public AbstractTypeClass
 		// A mind control weapon with InfiniteMindControl keeps taking units over past its Damage, at a cost to its firer.
 		bool IsInfiniteMindControl;
 
+		// Can a passenger fire this weapon from inside an open-topped transport, and with which firing animation?
+		bool IsFireInTransport;
+		AnimTypeClass const * OpenToppedAnim;
+
 		/*
 		**	If this weapon requires charging before it can fire, then this
 		**	flag is true. In actuality, this only applies to the Tesla coil

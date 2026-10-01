@@ -345,6 +345,7 @@ RulesClass::RulesClass(void) :
 	EngineerDamage(0),
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
+	OpenToppedDamageMultiplier(1.0),
 	OccupyROFMultiplier(1.0),
 	OccupyWeaponRange(5),
 	IronCurtainDuration(0),
@@ -1121,6 +1122,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 	if (ini.Is_Present(COMBATDAMAGE)) {
 		AmmoCrateDamage = ini.Get_Int(COMBATDAMAGE, "AmmoCrateDamage", AmmoCrateDamage);
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
+		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
 		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
@@ -2372,6 +2374,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
+	stream.Serialize(OpenToppedDamageMultiplier);
 	stream.Serialize(OccupyROFMultiplier);
 	stream.Serialize(OccupyWeaponRange);
 	stream.Serialize(IronCurtainDuration);

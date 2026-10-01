@@ -135,6 +135,7 @@
 #include "_bench.h"
 #include "_convert.h"
 #include "_keyboar.h"
+#include "_logic.h"
 #include "_map.h"
 #include "_rtti.h"
 #include "_rules.h"
@@ -175,6 +176,7 @@
 #include "language/language.h"
 #include "laser.h"
 #include "lightcon.h"
+#include "logic.h"
 #include "mono.h"
 #include "overtype.h"
 #include "partsys.h"
@@ -279,6 +281,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	GattlingValue(0),
 	TurretAnimFrame(0),
 	LastFireFrame(-100),
+	Transporter(NULL),
+	IsInOpenToppedTransport(false),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
 	IsGattlingSoundPlaying(false),
@@ -458,7 +462,10 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	if (RTTI == RTTI_INFANTRY) {
 		InfantryClass const * infantry = static_cast<InfantryClass const *>(this);
 		if (infantry->Class->IsDeployFire) {
-			return(infantry->Is_Deployed() ? infantry->Class->DeployFireWeapon : 0);
+			if (infantry->Is_Deployed()) {
+				return(infantry->Class->DeployFireWeapon);
+			}
+			return(IsInOpenToppedTransport && TClass->OpenTransportWeapon != -1 ? TClass->OpenTransportWeapon : 0);
 		}
 	}
 
@@ -470,6 +477,10 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	}
 
 	if (target == NULL) return(0);
+
+	if (IsInOpenToppedTransport && TClass->OpenTransportWeapon != -1 && PrimaryWeapon != NULL && SecondaryWeapon != NULL) {
+		return(TClass->OpenTransportWeapon);
+	}
 
 	if (TClass->IsGattling) {
 		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
@@ -1799,6 +1810,12 @@ bool TechnoClass::Limbo(void)
 		Radar_Untrack();
 	}
 
+	if (TClass->IsOpenTopped) {
+		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+			passenger->Assign_Target(NULL);
+		}
+	}
+
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
 
@@ -1838,6 +1855,9 @@ bool TechnoClass::Limbo(void)
  *=============================================================================================*/
 bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 {
+	IsInOpenToppedTransport = false;
+	Transporter = NULL;
+
 	IsLocked = Map.In_Local_Radar(coord.As_Cell());
 
 	if (BASECLASS::Unlimbo(coord, dir)) {
@@ -3072,6 +3092,25 @@ void TechnoClass::AI(void)
 	}
 
 	/*
+	 * As TechnoClass::EnteredOpenTopped (0x710470) and FootClass::UpdatePassengerCoords: each
+	 * passenger of an open-topped transport guards, keeps thinking and stays at its position.
+	 */
+	if (TClass->IsOpenTopped) {
+		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+			if (!passenger->IsInOpenToppedTransport) {
+				passenger->IsInOpenToppedTransport = true;
+				passenger->Transporter = this;
+				passenger->Assign_Target(NULL);
+				passenger->Assign_Destination(NULL);
+				passenger->Assign_Mission(MISSION_GUARD);
+				passenger->Commence();
+				Logic.Submit(passenger);
+			}
+			passenger->Set_Coord(PositionCoord);
+		}
+	}
+
+	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
 	 * (TechnoClass::Update, 0x6F9E50).
 	 */
@@ -3660,6 +3699,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		goto CANT_FIRE;
 	}
 
+	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried.
+	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && Transporter->IsInLimbo))) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
 		return(FIRE_ILLEGAL);
@@ -4160,6 +4204,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
 		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
 	}
+	if (IsInOpenToppedTransport) {
+		firepower = (int)(firepower * Rule->OpenToppedDamageMultiplier);
+	}
 
 	int max_speed = weapon->MaxSpeed;
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->ProjectileRange, weapon->IsBright);
@@ -4301,6 +4348,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				AnimTypeClass const * a = NULL;
 				if (weapon->Anim.Count() > 0) {
 					a = weapon->Anim[Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count())];
+				}
+				if (a == NULL && IsInOpenToppedTransport) {
+					a = weapon->OpenToppedAnim;
 				}
 
 				/*
@@ -4921,14 +4971,26 @@ bool TechnoClass::Can_Repair(void) const
  *=============================================================================================*/
 int TechnoClass::Weapon_Range(int which) const
 {
-	assert((unsigned)which < 2);
+	assert((unsigned)which < TechnoTypeClass::WEAPON_SLOT_COUNT);
 
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
 
-	if (weapon != NULL) {
-		return(weapon->Range);
+	if (weapon == NULL) {
+		return(0);
 	}
-	return(0);
+
+	// As TechnoClass::GetWeaponRange (0x7012C0): an open-topped transport reaches no farther than its passengers' primary weapons.
+	if (TClass->IsOpenTopped) {
+		int range = weapon->Range;
+		for (FootClass const * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass const *)(ObjectClass const *)passenger->Next) {
+			WeaponTypeClass const * primary = passenger->Get_Class_Weapon_Data(0)->Weapon;
+			if (primary != NULL) {
+				range = std::min(range, primary->Range);
+			}
+		}
+		return(range);
+	}
+	return(weapon->Range);
 }
 
 /***************************************************************************
@@ -6747,6 +6809,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		if (MindControlledBy == target) {
 			MindControlledBy = NULL;
+		}
+		if (Transporter == target) {
+			Transporter = NULL;
 		}
 	}
 
@@ -8568,6 +8633,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GattlingValue);
 	stream.Serialize(TurretAnimFrame);
 	stream.Serialize(LastFireFrame);
+	stream.Serialize(Transporter);
+	stream.Serialize(IsInOpenToppedTransport);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

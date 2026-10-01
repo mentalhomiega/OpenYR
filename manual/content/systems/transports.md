@@ -12,6 +12,11 @@ keys:
   - Loadable
   - DeployTime
   - CrewEscape
+  - OpenTopped
+  - OpenTransportWeapon
+  - FireInTransport
+  - OpenToppedAnim
+  - OpenToppedDamageMultiplier
 ---
 
 A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero is a transport. A structure or infantry type that sets `Passengers` admits nobody, except a structure with [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/), which its owner's infantry or vehicles can enter. A player can order infantry and vehicles aboard a transport, but not aircraft.
@@ -66,6 +71,30 @@ Passengers then leave one at a time. Each passenger tries the eight neighboring 
 Each passenger that gets out moves into its cell. If the transport is on a team, the passenger joins that team.
 
 If a passenger finds no cell, it goes back aboard and the transport stops unloading. Everyone still aboard stays there.
+
+## Firing from an open-topped transport
+
+The passengers of an [`OpenTopped=yes`](/keys/opentopped/) vehicle fight from inside it. Each passenger stays at the transport's position, picks its own targets within reach of it, and fires its own weapons. A passenger aboard never moves off to chase a target and takes no movement orders.
+
+- A passenger fires only a weapon with [`FireInTransport=yes`](/keys/fireintransport/), and none while the transport is itself off the map, such as inside another transport.
+- A passenger with both a primary and a secondary weapon fires the weapon its type's [`OpenTransportWeapon`](/keys/opentransportweapon/) names, if any, instead of choosing between them. So does a [`DeployFire=yes`](/keys/deployfire/) soldier that has not deployed.
+- Each shot's damage is multiplied by [`OpenToppedDamageMultiplier`](/keys/opentoppeddamagemultiplier/), after the passenger's own firepower bonuses, and rounded down.
+- A weapon with no [`Anim`](/keys/anim/) plays its [`OpenToppedAnim`](/keys/opentoppedanim/) when fired from the transport.
+
+```ini title="rulesmd.ini"
+[MYFORTRESS] ; example VehicleType
+Passengers=5
+OpenTopped=yes
+
+[CombatDamage]
+OpenToppedDamageMultiplier=1.3 ; passengers deal 30% more damage from inside
+```
+
+Ordering the transport to attack gives every passenger aboard the same target, and ordering it to stop clears their targets. When the transport leaves the map, its passengers lose their targets. The transport's own weapons reach no farther than the shortest primary weapon among its passengers, so an attacking transport closes in until its passengers can fire.
+
+A passenger that gets out behaves as any other object again. A [gunner vehicle](/systems/gunner-vehicles/) works differently: it fires a weapon its first passenger chooses, and the passenger does not fire.
+
+Yuri's Revenge also gives each passenger after the first its own firing position on the transport from the art's `AlternateFLH` keys. Every passenger here fires from the transport's position, offset by its own firing offset.
 
 ## Losing the transport
 

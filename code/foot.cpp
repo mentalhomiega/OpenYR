@@ -1087,6 +1087,11 @@ void FootClass::Approach_Target(void)
 		return;
 	}
 
+	// As FootClass::ApproachTarget (0x4D5690): a passenger of an open-topped transport waits for targets to come in range.
+	if (IsInOpenToppedTransport) {
+		return;
+	}
+
 	/*
 	**	Determine that if there is an existing target it is still legal
 	**	and within range.
@@ -2435,6 +2440,11 @@ int FootClass::Do_MISSION_ENTER(void)
  *=============================================================================================*/
 void FootClass::Assign_Destination(AbstractClass * target, bool)
 {
+	// As FootClass::SetDestination (0x4D94B0): a passenger of an open-topped transport takes no destination.
+	if (IsInOpenToppedTransport && target != NULL) {
+		return;
+	}
+
 	NavCom = target;
 
 	if (NavCom != NULL) {

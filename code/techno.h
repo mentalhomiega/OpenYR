@@ -153,6 +153,10 @@ class TechnoClass :	public RadioClass,
 		// The frame this object last fired a shot on.
 		int LastFireFrame;
 
+		// The open-topped transport this object rides and fires from, if any.
+		TechnoClass * Transporter;
+		bool IsInOpenToppedTransport;
+
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
 		VocType GattlingVoc;

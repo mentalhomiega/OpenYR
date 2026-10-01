@@ -83,6 +83,8 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsSupressed(false),
 	IsCamera(false),
 	IsInfiniteMindControl(false),
+	IsFireInTransport(true),
+	OpenToppedAnim(NULL),
 	IsElectric(false),
 	IsLaser(false),
 	IsElectricBolt(false),
@@ -193,6 +195,8 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsCamera = ini.Get_Bool(IniName, "Camera", IsCamera);
 		IsInfiniteMindControl = ini.Get_Bool(IniName, "InfiniteMindControl", IsInfiniteMindControl);
+		IsFireInTransport = ini.Get_Bool(IniName, "FireInTransport", IsFireInTransport);
+		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
 		IsAlternateColor = ini.Get_Bool(IniName, "IsAlternateColor", IsAlternateColor);
@@ -341,6 +345,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsSupressed);
 	crc(IsCamera);
 	crc(IsInfiniteMindControl);
+	crc(IsFireInTransport);
 	crc(IsLaser);
 	crc(IsElectricBolt);
 	crc(IsAlternateColor);
@@ -407,6 +412,8 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSupressed);
 	stream.Serialize(IsCamera);
 	stream.Serialize(IsInfiniteMindControl);
+	stream.Serialize(IsFireInTransport);
+	stream.Serialize(OpenToppedAnim);
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);
 	stream.Serialize(IsElectricBolt);

@@ -10923,6 +10923,23 @@ FireAngle:
       applies_to: *id003
     precedence: read more than once -- the art.ini value is applied last and overrides the others
     level: TechnoTypeClass
+FireInTransport:
+  key: FireInTransport
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WeaponTypeClass
+      member: IsFireInTransport
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 FirePower:
   key: FirePower
   scopes:
@@ -19965,6 +19982,75 @@ OnlyTargetHouseEnemy:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+OpenTopped:
+  key: OpenTopped
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsOpenTopped
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OpenToppedAnim:
+  key: OpenToppedAnim
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WeaponTypeClass
+      member: OpenToppedAnim
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+OpenToppedDamageMultiplier:
+  key: OpenToppedDamageMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: OpenToppedDamageMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OpenTransportWeapon:
+  key: OpenTransportWeapon
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: OpenTransportWeapon
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 OptionsChanged:
   key: OptionsChanged
   scopes:
