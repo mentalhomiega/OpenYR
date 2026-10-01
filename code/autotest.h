@@ -19,3 +19,6 @@
 bool AutoTest_Active(void);
 bool AutoTest_Load(char const * filename);
 void AutoTest_Frame(void);
+
+// Ends an unattended run when the game is won or lost, instead of waiting at the score screen.
+void AutoTest_Game_Over(bool won);

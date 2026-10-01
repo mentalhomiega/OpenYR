@@ -251,7 +251,7 @@ void Dump(void)
 		Cell const nav = object->NavCom != NULL ? object->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		ClassID const loco = Locomotion_Class_ID(object->Locomotion.get());
-		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed);
+		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d load %d%% ore %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed, (int)(object->Tiberium_Load() * 100), (int)object->Get_Cell_Ptr()->Tiberium_Value());
 	}
 	for (int index = 0; index < Aircraft.Count(); index++) {
 		AircraftClass * object = Aircraft[index];
@@ -451,4 +451,14 @@ void AutoTest_Frame(void)
 	if (RecordInterval > 0 && (Frame % RecordInterval) == 0) {
 		Execute_Command("ScreenCapture");
 	}
+}
+
+
+void AutoTest_Game_Over(bool won)
+{
+	if (!Active) {
+		return;
+	}
+	DebugString("AUTOTEST game over frame %d: %s\n", Frame, won ? "won" : "lost");
+	std::exit(0);
 }

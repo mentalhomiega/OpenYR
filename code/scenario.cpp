@@ -61,6 +61,7 @@
 
 #include "scenario.h"
 
+#include "autotest.h"
 #include "_bench.h"
 #include "_deploymentconfig.h"
 #include "_keyboar.h"
@@ -1173,6 +1174,8 @@ void Clear_Scenario(void)
  *=============================================================================================*/
 void Do_Win(void)
 {
+	AutoTest_Game_Over(true);
+
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		if (!Session.Play) {
 			Wait_For_End_Of_Queue();
@@ -1335,6 +1338,8 @@ void Do_Win(void)
  *=============================================================================================*/
 void Do_Lose(void)
 {
+	AutoTest_Game_Over(false);
+
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		if (!Session.Play) {
 			Wait_For_End_Of_Queue();
