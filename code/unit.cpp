@@ -5050,7 +5050,8 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 			return(FIRE_ROTATING);
 		}
 
-		if (!Class->IsLargeVisceroid && !Class->IsSmallVisceroid && !Class->IsJellyfish) {
+		// An OmniFire weapon fires in any direction (UnitClass::GetFireError, 0x740FD0).
+		if (!weapon->IsOmniFire && !Class->IsLargeVisceroid && !Class->IsSmallVisceroid && !Class->IsJellyfish) {
 			DirType turret;
 			/*
 			**	Determine if the turret facing isn't too far off of facing the target.

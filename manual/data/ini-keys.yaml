@@ -5517,6 +5517,23 @@ CellAnim:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+CellRangefinding:
+  key: CellRangefinding
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsCellRangefinding
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 CellSpread:
   key: CellSpread
   scopes:
@@ -20504,6 +20521,23 @@ Official:
       source: code/session.cpp
       guard: null
     level: SessionClass
+OmniFire:
+  key: OmniFire
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsOmniFire
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 OmniHealer:
   key: OmniHealer
   scopes:
@@ -24539,6 +24573,23 @@ RevealByHeight:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+RevealOnFire:
+  key: RevealOnFire
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WeaponTypeClass
+      member: IsRevealOnFire
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 RevealTriggerRadius:
   key: RevealTriggerRadius
   scopes:

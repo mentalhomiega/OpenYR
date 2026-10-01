@@ -116,6 +116,9 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	LaserDuration(10),
 	IsBigLaser(false),
 	IsSonic(false),
+	IsCellRangefinding(false),
+	IsOmniFire(false),
+	IsRevealOnFire(true),
 	IsTurboBoosted(false),
 	Sound(),
 	Anim()
@@ -175,6 +178,9 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 	if (ini.Is_Present(IniName)) {
 		AmbientDamage = ini.Get_Int(IniName, "AmbientDamage", AmbientDamage);
 		IsSonic = ini.Get_Bool(IniName, "IsSonic", IsSonic);
+		IsCellRangefinding = ini.Get_Bool(IniName, "CellRangefinding", IsCellRangefinding);
+		IsOmniFire = ini.Get_Bool(IniName, "OmniFire", IsOmniFire);
+		IsRevealOnFire = ini.Get_Bool(IniName, "RevealOnFire", IsRevealOnFire);
 		IsSupressed = ini.Get_Bool(IniName, "Supress", IsSupressed);
 		Burst = ini.Get_Int(IniName, "Burst", Burst);
 		if (Burst < 1) {
@@ -349,6 +355,9 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(AmbientDamage);
 	crc(IsSonic);
+	crc(IsCellRangefinding);
+	crc(IsOmniFire);
+	crc(IsRevealOnFire);
 	crc(IsTurboBoosted);
 	crc(IsSupressed);
 	crc(IsCamera);
@@ -420,6 +429,9 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LaserDuration);
 	stream.Serialize(IsBigLaser);
 	stream.Serialize(IsSonic);
+	stream.Serialize(IsCellRangefinding);
+	stream.Serialize(IsOmniFire);
+	stream.Serialize(IsRevealOnFire);
 	stream.Serialize(IsTurboBoosted);
 	stream.Serialize(IsSupressed);
 	stream.Serialize(IsCamera);

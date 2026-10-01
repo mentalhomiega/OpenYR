@@ -30,6 +30,8 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
+**							weapon at the object on that cell now, and why not
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	kill <TypeID>			destroys the objects of that type other houses own
@@ -594,6 +596,15 @@ void Run(StepType const & step)
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
 				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration);
+			}
+		}
+	} else if (step.Command == "canfire") {
+		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   canfire %s at %s: %d facing %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing());
+				break;
 			}
 		}
 	} else if (step.Command == "shake") {

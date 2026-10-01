@@ -203,6 +203,8 @@ Each check asks only whether the hold is occupied, not what occupies it. This ma
 
 Vehicles have one more gate, unrelated to effects. [`FiringSyncFrame1`](/keys/firingsyncframe1/) times the first round of each burst to the firing animation, and [`FiringSyncFrame2`](/keys/firingsyncframe2/) times the second round. A weapon without a burst uses `FiringSyncFrame1` for every round. While the firing animation is playing, the round is treated as still reloading until the animation reaches the named frame. It then fires even if the reload delay has not run out. Only first-slot shots are timed this way.
 
+A vehicle also has to point at its target before it fires: its turret, or its body if it has no turret, must face nearly toward the target, and a homing projectile allows a wider angle. A vehicle that is off turns toward the target first. An [`OmniFire=yes`](/keys/omnifire/) weapon skips this test, so the vehicle fires in any direction without turning. Visceroids and jellyfish never need to turn.
+
 ## The reload delay
 
 The delay before the next shot comes from the first row that applies:

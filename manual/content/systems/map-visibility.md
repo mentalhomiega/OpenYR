@@ -182,7 +182,7 @@ Terrain objects and animations never look. Only vehicles, infantry, aircraft and
 
 Several other events reveal ground.
 
-When an object fires at an object that a human player owns, it reveals the ground within two cells of itself to that player if either of these holds:
+When an object fires at an object that a human player owns, it reveals the ground within two cells of itself to that player if either of these holds, unless the weapon is [`RevealOnFire=no`](/keys/revealonfire/):
 
 - the firer belongs to another house, and that player has not discovered it;
 - the firer stands on ground that is shrouded or fogged for that player, and it is not one of that player's aircraft.

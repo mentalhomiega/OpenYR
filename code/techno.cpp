@@ -1985,12 +1985,21 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		return(true);
 	}
 
+	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
+
+	// A CellRangefinding weapon measures from the center of the firer's cell (TechnoClass::IsCloseEnough, 0x6F77B0).
 	Coord coord = Center_Coord();
+	if (weapon != NULL && weapon->IsCellRangefinding) {
+		coord = Map[Get_Cell()].Center_Coord();
+		if (IsOnBridge) {
+			coord.Z += BRIDGE_LEPTON_HEIGHT;
+		}
+	}
 	if (In_Air()) {
 		coord.Z = target->Center_Coord().Z;
 	}
 
-	return(TClass->In_Range(coord, target, Get_Class_Weapon_Data(which)->Weapon));
+	return(TClass->In_Range(coord, target, weapon));
 }
 
 
@@ -4024,7 +4033,7 @@ int TechnoClass::Rearm_Delay(int which) const
 		return(1);
 	}
 
-	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
 	if (weapon == NULL) {
 		return(1);
 	}
@@ -4210,7 +4219,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	Coord target_coord;              // Coordinate of the target.
 	Coord fire_coord;                // Coordinate of firing position.
 	ObjectClass * object;
-	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
 
 	/*
 	**	If this object doesn't have a weapon, then it is obvious that firing
@@ -4520,7 +4529,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				ObjectClass * obj = target->As_ObjectClass();
 				HouseClass * tgt_owner = (obj != NULL) ? obj->Owner_HouseClass() : NULL;
 				HouseClass * viewer = (tgt_owner != NULL) ? tgt_owner->Player_View() : NULL;
-				if (viewer != NULL) {
+				if (viewer != NULL && weapon->IsRevealOnFire) {
 					bool owned = (House == viewer);
 					bool hidden = Map.Is_Shrouded(Center_Coord(), viewer) || Map.Is_Fogged(Center_Coord(), viewer);
 					if ((!owned && !DiscoveredBy[viewer]) || (hidden && (RTTI != RTTI_AIRCRAFT || !owned))) {
@@ -5097,7 +5106,7 @@ int TechnoClass::Weapon_Range(int which) const
 {
 	assert((unsigned)which < TechnoTypeClass::WEAPON_SLOT_COUNT);
 
-	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
 
 	if (weapon == NULL) {
 		return(0);
@@ -9706,7 +9715,7 @@ void TechnoClass::Remove_Target(AbstractClass * target)
 /// yes.</returns>
 bool TechnoClass::Should_Use_High_Arc(int which) const
 {
-	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
 	if (weapon == NULL) {
 		return(true);
 	}

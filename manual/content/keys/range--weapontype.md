@@ -2,7 +2,7 @@
 key: Range
 scope: weapontype
 label: Firing distance
-see_also: ["MinimumRange", "ProjectileRange", "Speed", "GuardRange", "system:target-selection"]
+see_also: ["CellRangefinding", "MinimumRange", "ProjectileRange", "Speed", "GuardRange", "system:target-selection"]
 when_omitted:
   kind: value
   value: "0"
@@ -16,7 +16,7 @@ Range=10.5
 MinimumRange=2
 ```
 
-The distance runs from the firer's center to the target's center and includes the height difference, with two exceptions:
+The distance runs from the firer's center to the target's center and includes the height difference. A [`CellRangefinding=yes`](/keys/cellrangefinding/) weapon measures from the center of the cell the firer stands in instead, at ground level or on the bridge deck. Two exceptions apply to either starting point:
 
 - An aircraft measures the horizontal distance only, however far below it the target lies.
 - Any other object in the air is measured as though it were at the target's height, so for it too only the horizontal distance counts.

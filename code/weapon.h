@@ -241,6 +241,15 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsSonic;
 
+		// Is this weapon's range measured from the center of the firer's cell rather than from the firer itself?
+		bool IsCellRangefinding;
+
+		// Can a vehicle fire this weapon without first turning its body or turret to the target?
+		bool IsOmniFire;
+
+		// With RevealOnFire=no, firing this weapon does not reveal the firer to the target's owner.
+		bool IsRevealOnFire;
+
 		/*
 		**	Increase the weapon speed if the target is flying.
 		*/
