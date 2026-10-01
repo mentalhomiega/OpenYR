@@ -171,6 +171,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		 */
 		bool IsNukeMaker;
 
+		// A MindControl warhead takes its target over for the firer instead of damaging it.
+		bool IsMindControl;
+
 		/*
 		**	If this warhead can destroy wooden walls, then this flag will be true.
 		*/

@@ -33,6 +33,7 @@
 #pragma once
 
 #include "_voxel.h"
+#include "capture.h"
 #include "cargo.h"
 #include "door.h"
 #include "facing.h"
@@ -61,6 +62,7 @@
 #include "zgrad.hh"
 
 #include <cstdint>
+#include <optional>
 
 
 class ParticleSystemClass;
@@ -126,6 +128,15 @@ class TechnoClass :	public RadioClass,
 
 		// The rank last seen: 0 rookie, 1 veteran, 2 elite, or -1 before the first look.
 		int CurrentRank;
+
+		/*
+		 * Mind control: the units this object holds when its primary weapon's warhead is
+		 * MindControl, the object holding this one, and whether the psychic dominator took
+		 * this one for good, which mind control cannot undo.
+		 */
+		std::optional<CaptureManagerClass> CaptureManager;
+		TechnoClass * MindControlledBy;
+		bool IsPermaControlled;
 
 		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
@@ -729,6 +740,7 @@ class TechnoClass :	public RadioClass,
 		virtual bool Unlimbo(Coord const & , Dir256 facing=DIR_N) override;
 		virtual void Init(void) override;
 		virtual void Detach(AbstractClass const * target, bool all) override;
+		virtual void Delete_Me(void) override;
 
 		/*
 		 * This is the countdown that keeps the action line of a selected object on screen. It

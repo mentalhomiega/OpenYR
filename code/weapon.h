@@ -259,6 +259,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		*/
 		bool IsCamera;
 
+		// A mind control weapon with InfiniteMindControl keeps taking units over past its Damage, at a cost to its firer.
+		bool IsInfiniteMindControl;
+
 		/*
 		**	If this weapon requires charging before it can fire, then this
 		**	flag is true. In actuality, this only applies to the Tesla coil

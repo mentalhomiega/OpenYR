@@ -255,6 +255,21 @@ class RulesClass
 		int DominatorCaptureRange;
 		AnimTypeClass const * PermaControlledAnimationType;
 
+		/*
+		 * Mind control: the ring over a controlled unit, the sounds of a capture, a release
+		 * and an overloaded controller's death, how long the link line shows after a capture,
+		 * and the overload table: past each OverloadCount, an InfiniteMindControl firer takes
+		 * OverloadDamage every OverloadFrames frames.
+		 */
+		AnimTypeClass const * ControlledAnimationType;
+		VocType YuriMindControlSound;
+		VocType MindClearedSound;
+		VocType MasterMindOverloadDeathSound;
+		int MindControlAttackLineFrames;
+		TypeList<int> OverloadCount;
+		TypeList<int> OverloadDamage;
+		TypeList<int> OverloadFrames;
+
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 

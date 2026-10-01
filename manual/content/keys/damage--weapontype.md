@@ -2,7 +2,7 @@
 key: Damage
 scope: weapontype
 label: Weapon damage
-see_also: ["system:emp-pulse"]
+see_also: ["system:emp-pulse", "system:mind-control"]
 when_omitted:
   kind: value
   value: "0"
@@ -15,3 +15,5 @@ When an object fires the weapon, a positive value is scaled by the firer's firep
 An [`IsSonic=yes`](/keys/issonic/) or [`UseFireParticles=yes`](/keys/usefireparticles/) weapon fires its projectile with no damage, whatever this value is.
 
 An [`EMEffect=yes`](/keys/emeffect/) warhead deals no damage. It uses this value as [the pulse duration in frames](/systems/emp-pulse/#firing-a-pulse) instead.
+
+A [`MindControl=yes`](/keys/mindcontrol/) warhead deals no damage. This value is then how many objects the firer can hold under [mind control](/systems/mind-control/).

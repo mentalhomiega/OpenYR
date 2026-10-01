@@ -158,7 +158,11 @@ void PsychicDominatorClass::Fire(void)
 
 	for (int index = 0; index < captured.Count(); index++) {
 		TechnoClass * techno = captured[index];
+		if (techno->MindControlledBy != NULL && techno->MindControlledBy->CaptureManager) {
+			techno->MindControlledBy->CaptureManager->Free_Unit(techno);
+		}
 		techno->Captured(Owner);
+		techno->IsPermaControlled = true;
 		if (Rule->PermaControlledAnimationType != NULL) {
 			Coord ring = techno->Center_Coord();
 			ring.Z += techno->TClass->MindControlRingOffset;

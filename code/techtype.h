@@ -293,6 +293,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		// How far above the object's center a mind control ring is drawn, in leptons.
 		int MindControlRingOffset;
 
+		// Played where this object is freed from mind control; VOC_NONE uses the rules' sound.
+		VocType MindClearedSound;
+
+		// How far above the object a mind control link line ends, in leptons.
+		int LeptonMindControlOffset;
+
 		/*
 		 * A teleporter survives the chronosphere even when organic. A teleporting vehicle
 		 * also drives wherever it is sent, carrying its own locomotor, except onto the dock

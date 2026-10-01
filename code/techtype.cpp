@@ -166,6 +166,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsImmuneToPsionics(false),
 	IsBalloonHover(false),
 	MindControlRingOffset(140),
+	MindClearedSound(VOC_NONE),
+	LeptonMindControlOffset(70),
 	IsTeleporter(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
@@ -606,6 +608,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
 		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
 		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
+		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
+		LeptonMindControlOffset = ini.Get_Int(Name(), "LeptonMindControlOffset", LeptonMindControlOffset);
 		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
@@ -1051,6 +1055,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsImmuneToPsionics);
 	stream.Serialize(IsBalloonHover);
 	stream.Serialize(MindControlRingOffset);
+	stream.Serialize(MindClearedSound);
+	stream.Serialize(LeptonMindControlOffset);
 	stream.Serialize(IsTeleporter);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);

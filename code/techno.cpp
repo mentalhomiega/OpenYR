@@ -271,6 +271,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IronTintTimer(),
 	IronTintStage(10),
 	CurrentRank(-1),
+	MindControlledBy(NULL),
+	IsPermaControlled(false),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -1814,6 +1816,12 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 			return(true);
 		}
 
+		// A mind control primary weapon holds up to its Damage in units (TechnoClass::Init, 0x6F3F40).
+		WeaponTypeClass const * primary = Get_Class_Weapon_Data(0)->Weapon;
+		if (!CaptureManager && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsMindControl) {
+			CaptureManager.emplace(this, primary->Attack, primary->IsInfiniteMindControl);
+		}
+
 		House->Tracking_Active_Add(this, false);
 		PrimaryFacing.Set(dir);
 		BarrelPitch.Set(DIR_E << 8);
@@ -3022,6 +3030,13 @@ void TechnoClass::AI(void)
 
 	Iron_Tint_AI();
 
+	if (CaptureManager) {
+		CaptureManager->Handle_Overload();
+		if (!IsActive) {
+			return;
+		}
+	}
+
 	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
 	 * (TechnoClass::Update, 0x6F9E50).
@@ -3608,6 +3623,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	weapon = Get_Class_Weapon_Data(which)->Weapon;
 	if (weapon == NULL) {
 		goto CANT_FIRE;
+	}
+
+	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
+		return(FIRE_ILLEGAL);
 	}
 
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
@@ -5169,6 +5189,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	switch (result) {
 		case RESULT_DESTROYED:
 
+			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
+			if (CaptureManager) {
+				CaptureManager->Free_All();
+			}
+
 			/*
 			 * Play the death voice response.
 			 */
@@ -6589,12 +6614,30 @@ void TechnoClass::Calculate_Sinking_Offset(short height, int y)
  * HISTORY:                                                                                    *
  *   07/29/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
+/// <summary>
+/// Removes this object from the game; a mind controller lets its units go first.
+/// </summary>
+void TechnoClass::Delete_Me(void)
+{
+	if (CaptureManager) {
+		CaptureManager->Free_All();
+	}
+	BASECLASS::Delete_Me();
+}
+
+
 void TechnoClass::Detach(AbstractClass const * target, bool all)
 {
 	BASECLASS::Detach(target, all);
 
 	if (all) {
 		Cargo.Detach((FootClass *)target);
+		if (CaptureManager) {
+			CaptureManager->Detach(target);
+		}
+		if (MindControlledBy == target) {
+			MindControlledBy = NULL;
+		}
 	}
 
 	bool clear_target = true;
@@ -8406,6 +8449,9 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IronTintTimer);
 	stream.Serialize(IronTintStage);
 	stream.Serialize(CurrentRank);
+	stream.Serialize(CaptureManager);
+	stream.Serialize(MindControlledBy);
+	stream.Serialize(IsPermaControlled);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

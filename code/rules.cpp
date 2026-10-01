@@ -401,6 +401,14 @@ RulesClass::RulesClass(void) :
 	DominatorWarhead(NULL),
 	DominatorCaptureRange(2),
 	PermaControlledAnimationType(NULL),
+	ControlledAnimationType(NULL),
+	YuriMindControlSound(VOC_NONE),
+	MindClearedSound(VOC_NONE),
+	MasterMindOverloadDeathSound(VOC_NONE),
+	MindControlAttackLineFrames(0),
+	OverloadCount(),
+	OverloadDamage(),
+	OverloadFrames(),
 	AIMinorSuperReadyPercent(0.8),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
@@ -1005,6 +1013,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		GeneticMutatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "GeneticMutatorActivateSound", GeneticMutatorActivateSound);
 		PsychicDominatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicDominatorActivateSound", PsychicDominatorActivateSound);
 		ChronoInSound = ini.Get_VocType(AUDIOVISUAL, "ChronoInSound", ChronoInSound);
+		YuriMindControlSound = ini.Get_VocType(AUDIOVISUAL, "YuriMindControlSound", YuriMindControlSound);
+		MindClearedSound = ini.Get_VocType(AUDIOVISUAL, "MindClearedSound", MindClearedSound);
+		MasterMindOverloadDeathSound = ini.Get_VocType(AUDIOVISUAL, "MasterMindOverloadDeathSound", MasterMindOverloadDeathSound);
 		ChronoOutSound = ini.Get_VocType(AUDIOVISUAL, "ChronoOutSound", ChronoOutSound);
 		SpyPlaneCamera = ini.Get_VocType(AUDIOVISUAL, "SpyPlaneCamera", SpyPlaneCamera);
 		SpyPlaneCameraFrames = ini.Get_Int(AUDIOVISUAL, "SpyPlaneCameraFrames", SpyPlaneCameraFrames);
@@ -1114,6 +1125,11 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
 		PsychicRevealRadius = ini.Get_Int(COMBATDAMAGE, "PsychicRevealRadius", PsychicRevealRadius);
 		PermaControlledAnimationType = TGet_Class(ini, COMBATDAMAGE, "PermaControlledAnimationType", PermaControlledAnimationType);
+		ControlledAnimationType = TGet_Class(ini, COMBATDAMAGE, "ControlledAnimationType", ControlledAnimationType);
+		MindControlAttackLineFrames = ini.Get_Int(COMBATDAMAGE, "MindControlAttackLineFrames", MindControlAttackLineFrames);
+		OverloadCount = ini.Get_IntList(COMBATDAMAGE, "OverloadCount", OverloadCount);
+		OverloadDamage = ini.Get_IntList(COMBATDAMAGE, "OverloadDamage", OverloadDamage);
+		OverloadFrames = ini.Get_IntList(COMBATDAMAGE, "OverloadFrames", OverloadFrames);
 		IonCannonDamage = ini.Get_Int(COMBATDAMAGE, "IonCannonDamage", IonCannonDamage);
 		RailgunDamageRadius = ini.Get_Int(COMBATDAMAGE, "RailgunDamageRadius", RailgunDamageRadius);
 		TiberiumExplosionDamage = ini.Get_Int(COMBATDAMAGE, "TiberiumExplosionDamage", TiberiumExplosionDamage);
@@ -2410,6 +2426,14 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DominatorWarhead);
 	stream.Serialize(DominatorCaptureRange);
 	stream.Serialize(PermaControlledAnimationType);
+	stream.Serialize(ControlledAnimationType);
+	stream.Serialize(YuriMindControlSound);
+	stream.Serialize(MindClearedSound);
+	stream.Serialize(MasterMindOverloadDeathSound);
+	stream.Serialize(MindControlAttackLineFrames);
+	stream.Serialize(OverloadCount);
+	stream.Serialize(OverloadDamage);
+	stream.Serialize(OverloadFrames);
 	stream.Serialize(AIMinorSuperReadyPercent);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
@@ -3167,6 +3191,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == PermaControlledAnimationType) {
 		PermaControlledAnimationType = NULL;
+	}
+	if (target == ControlledAnimationType) {
+		ControlledAnimationType = NULL;
 	}
 	if (target == IonBeam) {
 		IonBeam = NULL;

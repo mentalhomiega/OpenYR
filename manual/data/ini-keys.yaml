@@ -6280,6 +6280,24 @@ Control:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+ControlledAnimationType:
+  key: ControlledAnimationType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ControlledAnimationType
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Conventional:
   key: Conventional
   scopes:
@@ -13378,6 +13396,23 @@ Infiltrate:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+InfiniteMindControl:
+  key: InfiniteMindControl
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsInfiniteMindControl
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 InitTime:
   key: InitTime
   scopes:
@@ -15126,6 +15161,23 @@ Length:
       source: code/themeini.cpp
       guard: null
     level: ThemeControl
+LeptonMindControlOffset:
+  key: LeptonMindControlOffset
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '70'
+      declared_in: TechnoTypeClass
+      member: LeptonMindControlOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 LeptonsPerSightIncrease:
   key: LeptonsPerSightIncrease
   scopes:
@@ -16063,6 +16115,24 @@ MarbleMadness:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+MasterMindOverloadDeathSound:
+  key: MasterMindOverloadDeathSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: MasterMindOverloadDeathSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Max:
   key: Max
   scopes:
@@ -16800,6 +16870,73 @@ MinZVelocity:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+MindClearedSound:
+  key: MindClearedSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: MindClearedSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: MindClearedSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+MindControl:
+  key: MindControl
+  scopes:
+  - applies_to: *id015
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsMindControl
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+MindControlAttackLineFrames:
+  key: MindControlAttackLineFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: MindControlAttackLineFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MindControlRingOffset:
   key: MindControlRingOffset
   scopes:
@@ -18791,6 +18928,60 @@ Organic:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+OverloadCount:
+  key: OverloadCount
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: OverloadCount
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OverloadDamage:
+  key: OverloadDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: OverloadDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OverloadFrames:
+  key: OverloadFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: OverloadFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Overrides:
   key: Overrides
   scopes:
@@ -32289,6 +32480,24 @@ YVelocity:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+YuriMindControlSound:
+  key: YuriMindControlSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: YuriMindControlSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 YuriParaDropInf:
   key: YuriParaDropInf
   scopes:

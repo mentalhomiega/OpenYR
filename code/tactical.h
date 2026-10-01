@@ -182,6 +182,7 @@ class Tactical : public AbstractClass
 		void Select_Rubber_Band(void (*select_callback)(ObjectClass * object));
 		void End_Rubber_Band(void);
 		void Draw_Rubber_Band(void);
+		void Draw_Mind_Control_Links(void);
 
 		/*
 		 * Terrain rendering passes.

@@ -1298,6 +1298,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		SpotLightClass::Draw_All();
 		LaserDrawClass::Draw_All();
 		EBoltClass::Draw_All();
+		Draw_Mind_Control_Links();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
@@ -3587,6 +3588,39 @@ void Tactical::Draw_Waypoints(bool inshroud)
 /// This routine is a debugging aid that joins each cell to the object occupying it, on the
 /// ground and on any bridge above it, and chains together the objects that share a cell.
 /// </summary>
+/// <summary>
+/// Draws a line in its house's color from each mind controller to every unit it holds, while
+/// either one is selected and for MindControlAttackLineFrames after the capture
+/// (CaptureManagerClass::DrawLinks, 0x472160). The line ends LeptonMindControlOffset above the
+/// unit.
+/// </summary>
+void Tactical::Draw_Mind_Control_Links(void)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (!techno->CaptureManager || techno->CaptureManager->Controlled_Count() == 0 || techno->IsInLimbo) {
+			continue;
+		}
+		CaptureManagerClass const & manager = *techno->CaptureManager;
+		RGBClass const & rgb = techno->House->RemapColorRGB;
+		int const color = DSurface::Build_Hicolor_Pixel(rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue());
+		Point2D start;
+		Coord_To_Pixel(techno->Center_Coord(), start);
+		for (int node = 0; node < manager.Controlled_Count(); node++) {
+			TechnoClass const * unit = manager.Controlled(node);
+			if (unit == NULL || unit->IsInLimbo || (!techno->IsSelected && !unit->IsSelected && !manager.Is_Link_Shown(node))) {
+				continue;
+			}
+			Coord to = unit->PositionCoord;
+			to.Z += unit->TClass->LeptonMindControlOffset;
+			Point2D end;
+			Coord_To_Pixel(to, end);
+			LogicalSurface->Draw_Line(TacticalRect, start, end, color);
+		}
+	}
+}
+
+
 void Tactical::Debug_Draw_Occupier_Links(void)
 {
 	Map.Reset_Iterator();

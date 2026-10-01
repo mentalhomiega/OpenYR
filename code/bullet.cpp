@@ -1324,6 +1324,20 @@ void BulletClass::Detonate(Coord const & coord)
 		new EMPulseClass(coord.As_Cell(), Warhead->SpreadFactor, Strength, Payback);
 	}
 
+	/*
+	 * A mind control warhead takes its target over for the firer instead of hurting it, with
+	 * YuriMindControlSound when either side is the player's (BulletClass::Detonate, 0x469210).
+	 */
+	else if (warhead->IsMindControl) {
+		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+		if (Payback != NULL && Payback->CaptureManager && target != NULL) {
+			bool const players = Payback->House->Is_Player_Control() || target->House->Is_Player_Control();
+			if (Payback->CaptureManager->Capture_Unit(target) && players) {
+				Sound_Effect(Rule->YuriMindControlSound, target->PositionCoord);
+			}
+		}
+	}
+
 	else if (warhead->IsWebby) {
 		int radius = warhead->WebRadius;
 		int radius_squared = radius * radius;
