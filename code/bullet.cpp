@@ -90,6 +90,9 @@
 #include "unit.h"
 #include "voxdrsys.h"
 #include "warhead.h"
+#include "dbgprint.h"
+#include "ebolt.h"
+#include "laser.h"
 #include "weapon.h"
 
 #include <algorithm>
@@ -1319,6 +1322,10 @@ void BulletClass::Detonate(Coord const & coord)
 {
 	WarheadTypeClass * warhead = Warhead;
 
+	if (Class->ShrapnelWeapon != NULL) {
+		Shrapnel();
+	}
+
 	// The detonation starts a screen shake drawn from the warhead's Shake ranges (BulletClass::Detonate, 0x469210).
 	if (warhead->ShakeXlo != 0 || warhead->ShakeXhi != 0) {
 		Map.ScreenX = NonCriticalRandomNumber(warhead->ShakeXlo, warhead->ShakeXhi);
@@ -1706,6 +1713,66 @@ void BulletClass::Nuke_Maker(void)
 	if (bullet != NULL) {
 		if (!bullet->Unlimbo(coord, TVelocity3D<double>(0.0, 0.0, -1.0))) {
 			delete bullet;
+		}
+	}
+}
+
+
+/// <summary>
+/// Throws this projectile's ShrapnelWeapon from where it hits (BulletClass::Shrapnel, 0x46A310).
+/// Nothing is thrown unless something other than a structure stands in the cell it hits. Rings
+/// of cells are searched outward to the shrapnel weapon's range, and the weapon fires at the
+/// first object in each cell that is neither the firer nor an ally of the firer's house, up to
+/// ShrapnelCount objects. A laser or electric bolt shrapnel weapon also draws its beam.
+/// </summary>
+void BulletClass::Shrapnel(void)
+{
+	WeaponTypeClass * weapon = Class->ShrapnelWeapon;
+	if (weapon == NULL || weapon->Bullet == NULL || Payback == NULL || Class->ShrapnelCount <= 0) {
+		return;
+	}
+	Cell const center = Get_Cell();
+	ObjectClass const * occupier = Map[center].Cell_Occupier();
+	if (occupier == NULL || occupier->RTTI == RTTI_BUILDING) {
+		return;
+	}
+
+	Coord const from = Center_Coord();
+	int const range = weapon->Range / CELL_LEPTON;
+	int fired = 0;
+	for (int ring = 0; ring <= range && fired < Class->ShrapnelCount; ring++) {
+		for (int dy = -ring; dy <= ring && fired < Class->ShrapnelCount; dy++) {
+			for (int dx = -ring; dx <= ring && fired < Class->ShrapnelCount; dx++) {
+				if (std::max(std::abs(dx), std::abs(dy)) != ring) continue;
+				Cell const cell(center.X + dx, center.Y + dy);
+				if (!Map.In_Radar(cell)) continue;
+				TechnoClass * target = Map[cell].Cell_Techno();
+				if (target == NULL || target == Payback || Payback->House->Is_Ally(target->House)) continue;
+
+				BulletClass * piece = Create_Bullet(weapon->Bullet, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->ProjectileRange, weapon->IsBright);
+				if (piece == NULL) continue;
+				piece->Weapon = weapon;
+				Coord const to = target->Center_Coord();
+				TVelocity3D<double> velocity;
+				velocity.Set(0.0, 0.0, 0.0);
+				velocity.Set_Yaw(DirType(std::atan2((double)-(to.Y - from.Y), (double)(to.X - from.X))));
+				velocity.Set_Speed((double)std::max<int>(weapon->MaxSpeed, 1));
+				velocity.Set_Pitch(DirType(0.785398));
+				if (!piece->Unlimbo(from, velocity)) {
+					delete piece;
+					continue;
+				}
+				if (weapon->IsElectricBolt) {
+					EBoltClass * bolt = new EBoltClass;
+					bolt->IsAlternateColor = weapon->IsAlternateColor;
+					bolt->Fire(from, to, 0);
+				}
+				if (weapon->IsLaser) {
+					new LaserDrawClass(from, to, 0, true, weapon->LaserInnerColor, weapon->LaserOuterColor, weapon->LaserOuterSpread, weapon->LaserDuration, false, false, 1.0, 0.0);
+				}
+				DebugString("Shrapnel: %s throws %s at %s on %d,%d\n", Class->Name(), weapon->Name(), target->TClass->Name(), cell.X, cell.Y);
+				fired++;
+			}
 		}
 	}
 }

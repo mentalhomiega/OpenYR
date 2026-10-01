@@ -27054,6 +27054,40 @@ ShowTimer:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+ShrapnelCount:
+  key: ShrapnelCount
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BulletTypeClass
+      member: ShrapnelCount
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
+ShrapnelWeapon:
+  key: ShrapnelWeapon
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: BulletTypeClass
+      member: ShrapnelWeapon
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 ShroudGrow:
   key: ShroudGrow
   scopes:

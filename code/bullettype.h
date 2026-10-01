@@ -169,6 +169,10 @@ class BulletTypeClass : public ObjectTypeClass
 		 */
 		WeaponTypeClass *AirburstWeapon;
 
+		// The weapon a projectile of this type fires from where it hits at up to ShrapnelCount nearby enemies.
+		WeaponTypeClass *ShrapnelWeapon;
+		int ShrapnelCount;
+
 		/*
 		 * This is the fraction of its speed that a bouncy projectile keeps when it rebounds
 		 * off the slope it landed on. The rebound is figured in the slope's own frame of

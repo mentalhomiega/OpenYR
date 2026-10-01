@@ -57,4 +57,5 @@ class EBoltClass
 		static DynamicVectorClass<EBoltClass *> Bolts;
 
 		friend class TechnoClass;
+		friend class BulletClass;
 };

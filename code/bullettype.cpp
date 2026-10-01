@@ -97,6 +97,8 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsAntiVehicle(false),
 	Cluster(1),
 	AirburstWeapon(NULL),
+	ShrapnelWeapon(NULL),
+	ShrapnelCount(0),
 	Elasticity(.75),
 	Acceleration(3),
 	IsVertical(false),
@@ -191,6 +193,8 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		AirburstWeapon = TGet_Class(ini, Name(), "AirburstWeapon", AirburstWeapon);
+		ShrapnelWeapon = TGet_Class(ini, Name(), "ShrapnelWeapon", ShrapnelWeapon);
+		ShrapnelCount = ini.Get_Int(Name(), "ShrapnelCount", ShrapnelCount);
 
 		AnimLow = ArtINI.Get_Int(Graphic_Name(), "AnimLow", AnimLow);
 		AnimHigh = ArtINI.Get_Int(Graphic_Name(), "AnimHigh", AnimHigh);
@@ -345,6 +349,8 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAntiVehicle);
 	stream.Serialize(Cluster);
 	stream.Serialize(AirburstWeapon);
+	stream.Serialize(ShrapnelWeapon);
+	stream.Serialize(ShrapnelCount);
 	stream.Serialize(Elasticity);
 	stream.Serialize(Acceleration);
 	stream.Serialize(IsVertical);
