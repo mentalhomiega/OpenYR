@@ -44,9 +44,13 @@
 #include "_mixfile.h"
 #include "_rules.h"
 #include "_surface.h"
+#include "_uicontrol.h"
 #include "dialog.h"
 #include "draw.h"
 #include "goptions.h"
+#include "globals.h"
+#include "house.h"
+#include "init.h"
 #include "language/language.h"
 #include "mixfile.h"
 #include "queue.h"
@@ -54,11 +58,43 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
+#include "session.h"
 #include "shapeset.h"
 #include "surface.h"
+#include "techno.h"
+#include "uicontrol.h"
+
+#include <cstdio>
+#include <cstring>
 
 ShapeSet const * TabClass::TabShape = NULL;
 ShapeSet const * TabClass::CreditsShape = NULL;
+ShapeSet const * TabClass::SpacerShape = NULL;
+ShapeSet const * TabClass::LeftCapShape = NULL;
+ShapeSet const * TabClass::ButtonBackShape = NULL;
+ShapeSet const * TabClass::RightCapShape = NULL;
+ShapeSet const * TabClass::CommandShapes[COMMAND_COUNT];
+ShapeButtonClass TabClass::CommandButtons[COMMAND_COUNT];
+ShapeButtonClass TabClass::ToggleButton;
+int TabClass::CommandSlot[COMMAND_COUNT];
+bool TabClass::IsCommandButtonListed[COMMAND_COUNT];
+bool TabClass::IsToggleListed = false;
+bool TabClass::IsCommandBarOpen = true;
+
+namespace {
+
+// The ButtonList names, in CommandButtonType order (gamemd's table at 0x8427D0).
+char const * const CommandNames[] = {
+	"Team01", "Team02", "Team03", "TypeSelect", "Deploy", "AttackMove",
+	"Guard", "Beacon", "Stop", "PlanningMode", "Cheer"
+};
+
+enum {
+	BUTTON_COMMAND = 300,
+	BUTTON_COMMAND_TOGGLE = BUTTON_COMMAND + 20
+};
+
+}
 
 
 /***********************************************************************************************
@@ -137,6 +173,7 @@ void TabClass::Draw_It(bool complete)
 	if (!Debug_Map) {
 		Credits.Graphic_Logic(complete || IsToRedraw);
 		IsToRedraw = false;
+		Draw_Command_Bar();
 	}
 
 	BASECLASS::Draw_It(complete);
@@ -239,6 +276,7 @@ void TabClass::AI(KeyNumType &input, Point2D const & xy)
 	}
 
 	Credits.AI();
+	Command_Bar_AI(input);
 	BASECLASS::AI(input, xy);
 }
 
@@ -307,6 +345,34 @@ void TabClass::Init_For_House(void)
 	TabShape = (ShapeSet const *)MixFileClass::Retrieve("TABS.SHP");
 	CreditsShape = (ShapeSet const *)MixFileClass::Retrieve("CREDITS.SHP");
 	Credits.Current = 0;
+
+	SpacerShape = (ShapeSet const *)MixFileClass::Retrieve("LSPACER.SHP");
+	LeftCapShape = (ShapeSet const *)MixFileClass::Retrieve("LENDCAP.SHP");
+	ButtonBackShape = (ShapeSet const *)MixFileClass::Retrieve("BTTNBKGD.SHP");
+	RightCapShape = (ShapeSet const *)MixFileClass::Retrieve("RENDCAP.SHP");
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		char name[16];
+		std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
+		CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
+	}
+
+	bool multiplayer = Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH;
+	std::vector<std::string> const & names = multiplayer ? UIControls.MultiplayerCommandBarButtons : UIControls.CommandBarButtons;
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		CommandSlot[index] = -1;
+	}
+
+	// An unknown name still takes up its place in the row.
+	for (int position = 0; position < (int)names.size(); position++) {
+		for (int index = 0; index < COMMAND_COUNT; index++) {
+			if (std::strcmp(names[position].c_str(), CommandNames[index]) == 0) {
+				CommandSlot[index] = position;
+				break;
+			}
+		}
+	}
+
+	Place_Command_Buttons();
 }
 
 
@@ -314,6 +380,15 @@ void TabClass::Clear_For_House(void)
 {
 	TabShape = NULL;
 	CreditsShape = NULL;
+	SpacerShape = NULL;
+	LeftCapShape = NULL;
+	ButtonBackShape = NULL;
+	RightCapShape = NULL;
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		CommandShapes[index] = NULL;
+		CommandButtons[index].Set_Shape(NULL);
+	}
+	ToggleButton.Set_Shape(NULL);
 	BASECLASS::Clear_For_House();
 }
 
@@ -329,4 +404,208 @@ void TabClass::Flash_Money(void)
 	IsToRedraw = true;
 	Flag_To_Redraw();
 	MoneyFlashTimer = 7;
+}
+
+
+/// <summary>
+/// Rebuilds the button list and adds the command bar's buttons to it.
+/// </summary>
+void TabClass::Init_IO(void)
+{
+	BASECLASS::Init_IO();
+
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		IsCommandButtonListed[index] = false;
+	}
+	IsToggleListed = false;
+	Place_Command_Buttons();
+}
+
+
+/// <summary>
+/// Measures the command bar from its artwork and the screen size, as gamemd's FUN_0072fc60 does.
+/// The bar fills the bottom 32 rows left of the sidebar: the spacer from the left edge, then
+/// the left end cap, as many button backgrounds as fit, and the right end cap against the
+/// sidebar. A closed bar has its left end cap next to the right one and no buttons.
+/// </summary>
+TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
+{
+	CommandBarLayout layout {};
+	layout.Y = VisibleRect.Height - SidebarClass::COMMAND_BAR_HEIGHT;
+	if (LeftCapShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL) {
+		return(layout);
+	}
+
+	int capwidth = LeftCapShape->Get_Width();
+	int backwidth = std::max(1, ButtonBackShape->Get_Width());
+	int rightwidth = RightCapShape->Get_Width();
+
+	layout.RightCapX = VisibleRect.Width - SidebarClass::SIDE_WIDTH - rightwidth;
+	layout.Slots = std::max(0, (VisibleRect.Width - capwidth - SidebarClass::SIDE_WIDTH - rightwidth) / backwidth);
+	layout.ButtonX = layout.RightCapX - layout.Slots * backwidth;
+	layout.OpenCapX = layout.ButtonX - capwidth;
+	layout.ClosedCapX = layout.RightCapX - capwidth;
+	return(layout);
+}
+
+
+/// <summary>
+/// Positions the command bar's buttons and keeps the input list holding exactly the ones the
+/// bar shows: the end cap that opens or closes the bar, and while it is open, each listed
+/// command whose place in the row fits on the screen.
+/// </summary>
+void TabClass::Place_Command_Buttons(void)
+{
+	CommandBarLayout layout = Command_Bar_Layout();
+	bool ready = LeftCapShape != NULL && ButtonBackShape != NULL && RightCapShape != NULL;
+
+	ToggleButton.ID = BUTTON_COMMAND_TOGGLE;
+	ToggleButton.IsSticky = true;
+	ToggleButton.ShapeDrawer = SidebarDrawer;
+	ToggleButton.Set_Shape(LeftCapShape);
+	ToggleButton.Set_Position(IsCommandBarOpen ? layout.OpenCapX : layout.ClosedCapX, layout.Y);
+	ToggleButton.Flag_To_Redraw();
+	if (ready != IsToggleListed) {
+		if (ready) {
+			ToggleButton.Zap();
+			Add_A_Button(ToggleButton);
+		} else {
+			Remove_A_Button(ToggleButton);
+		}
+		IsToggleListed = ready;
+	}
+
+	int backwidth = ready ? ButtonBackShape->Get_Width() : 0;
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		ShapeButtonClass & button = CommandButtons[index];
+		int x = layout.ButtonX + CommandSlot[index] * backwidth;
+		bool shown = ready && IsCommandBarOpen && CommandSlot[index] >= 0 && CommandShapes[index] != NULL
+			&& x + backwidth <= layout.RightCapX;
+
+		button.ID = BUTTON_COMMAND + index;
+		button.IsSticky = true;
+		button.ShapeDrawer = SidebarDrawer;
+		button.IsPressed = false;
+		button.Set_Shape(CommandShapes[index]);
+		button.Set_Position(x, layout.Y);
+		button.Flag_To_Redraw();
+
+		if (shown != IsCommandButtonListed[index]) {
+			if (shown) {
+				button.Zap();
+				Add_A_Button(button);
+			} else {
+				Remove_A_Button(button);
+			}
+			IsCommandButtonListed[index] = shown;
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws the command bar's background under its buttons, as TabClass::Draw (0x6D0A20) does.
+/// The bar is redrawn every frame because the tactical view's background pass can cover it.
+/// </summary>
+void TabClass::Draw_Command_Bar(void)
+{
+	if (SpacerShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL || CompositeSurface == NULL) {
+		return;
+	}
+
+	CommandBarLayout layout = Command_Bar_Layout();
+	Rect clip = CompositeSurface->Get_Rect();
+
+	Draw_Shape(*CompositeSurface, *SidebarDrawer, SpacerShape, 0, Point2D(0, layout.Y), clip);
+	if (IsCommandBarOpen) {
+		for (int slot = 0; slot < layout.Slots; slot++) {
+			Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
+		}
+	}
+	Draw_Shape(*CompositeSurface, *SidebarDrawer, RightCapShape, 0, Point2D(layout.RightCapX, layout.Y), clip);
+
+	ToggleButton.Flag_To_Redraw();
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		if (IsCommandButtonListed[index]) {
+			CommandButtons[index].Flag_To_Redraw();
+		}
+	}
+}
+
+
+/// <summary>
+/// Acts on a click on the command bar: the end cap opens or closes the bar, and a command
+/// button runs its command. The click is consumed either way.
+/// </summary>
+void TabClass::Command_Bar_AI(KeyNumType & input)
+{
+	if (input == (BUTTON_COMMAND_TOGGLE | KN_BUTTON)) {
+		ToggleButton.IsPressed = false;
+		input = KN_NONE;
+		IsCommandBarOpen = !IsCommandBarOpen;
+		Place_Command_Buttons();
+		return;
+	}
+
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		if (input == ((BUTTON_COMMAND + index) | KN_BUTTON)) {
+			CommandButtons[index].IsPressed = false;
+			input = KN_NONE;
+			Do_Command(CommandButtonType(index));
+			return;
+		}
+	}
+}
+
+
+/// <summary>
+/// Runs a command bar button's command through the matching keyboard command. A team button
+/// makes the selection into its team while the team is empty and selects the team otherwise.
+/// Attack move, beacon and cheer have no command in this engine yet and do nothing.
+/// </summary>
+void TabClass::Do_Command(CommandButtonType command)
+{
+	switch (command) {
+		case COMMAND_TEAM01:
+		case COMMAND_TEAM02:
+		case COMMAND_TEAM03:
+		{
+			int team = command - COMMAND_TEAM01 + 1;
+			bool empty = true;
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass const * object = Technos[index];
+				if (object != NULL && !object->IsInLimbo && object->Group == team - 1 && object->House->Is_Player_Control()) {
+					empty = false;
+					break;
+				}
+			}
+			char name[32];
+			std::snprintf(name, sizeof(name), empty ? "TeamCreate_%d" : "TeamSelect_%d", team);
+			Execute_Command(name);
+			break;
+		}
+
+		case COMMAND_TYPE_SELECT:
+			Execute_Command("SelectType");
+			break;
+
+		case COMMAND_DEPLOY:
+			Execute_Command("DeployObject");
+			break;
+
+		case COMMAND_GUARD:
+			Execute_Command("GuardObject");
+			break;
+
+		case COMMAND_STOP:
+			Execute_Command("StopObject");
+			break;
+
+		case COMMAND_PLANNING_MODE:
+			Execute_Command("WaypointMode");
+			break;
+
+		default:
+			break;
+	}
 }

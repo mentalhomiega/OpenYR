@@ -15,6 +15,9 @@
 #include "rtti.hh"
 #include "stimer.h"
 
+#include <string>
+#include <vector>
+
 class CCINIClass;
 
 
@@ -84,4 +87,8 @@ class UIControlsClass
 		Point2D InfantryWithPipGroupNumberOffset = Point2D(-4, -8);
 		Point2D BuildingWithPipGroupNumberOffset = Point2D(-4, -8);
 		Point2D AircraftWithPipGroupNumberOffset = Point2D(-4, -8);
+
+		// The ButtonList names of [AdvancedCommandBar] and [MultiplayerAdvancedCommandBar], in order.
+		std::vector<std::string> CommandBarButtons;
+		std::vector<std::string> MultiplayerCommandBarButtons;
 };

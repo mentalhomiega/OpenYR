@@ -217,6 +217,22 @@ The two buttons above the radar pane are diplomacy on the left and options on th
 
 The two buttons above the tabs toggle the same modes as [Repair Mode](/commands/togglerepair/) and [Sell Mode](/commands/togglesell/), in that order from the left. [Power Mode](/commands/togglepower/) and [Waypoint Mode](/commands/waypointmode/) have no button and are reached only through their commands.
 
+## The command bar
+
+The command bar fills the bottom 32 rows of the screen to the left of the panel. It holds a row of command buttons, and the round cap at its left end closes it into a plain strip or opens it again. The bar starts open in every game.
+
+UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist--ui-controls/): the `[AdvancedCommandBar]` list in a campaign or skirmish, and the `[MultiplayerAdvancedCommandBar]` list in any other game. The buttons sit left to right in list order, one per button slot. Each name takes up a slot even when the engine does not know it, so an unknown name leaves a gap. A button whose slot falls past the right end of the bar is not shown, so a narrow screen shows fewer buttons.
+
+| Name | What a click does |
+| --- | --- |
+| `Team01`, `Team02`, `Team03` | Makes the selection into that team while the team is empty, as [Create Team 1](/commands/teamcreate-1/) does for team 1; otherwise selects the team, as [Select Team 1](/commands/teamselect-1/) does |
+| `TypeSelect` | Selects every on-screen unit of the selected types, as [Select Type](/commands/selecttype/) |
+| `Deploy` | Deploys the selection, as [Deploy](/commands/deployobject/) |
+| `Guard` | Puts the selection on guard, as [Guard](/commands/guardobject/) |
+| `Stop` | Stops the selection, as [Stop](/commands/stopobject/) |
+| `PlanningMode` | Toggles [Waypoint Mode](/commands/waypointmode/) |
+| `AttackMove`, `Beacon`, `Cheer` | Nothing yet |
+
 ## What is fixed in the engine
 
 No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos, the size of a cameo slot and the 225-entry capacity are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row scroll step, the timing of the power bar's blink, and the timing of the radar animation.
@@ -243,6 +259,9 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `RADAR.SHP` | The radar frame and its open and close animation |
 | `TABS.SHP` | The mission timer's backdrop, and the credit readout's when `CREDITS.SHP` is missing |
 | `CREDITS.SHP` | The credit readout's backdrop, redrawn under each new figure |
+| `LSPACER.SHP`, `LENDCAP.SHP`, `RENDCAP.SHP` | The command bar's strip and its left and right end caps |
+| `BTTNBKGD.SHP` | The backdrop of each command bar button slot |
+| `BUTTON00.SHP` to `BUTTON10.SHP` | The command bar's buttons, in the order of the table above |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 
 Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it, build clock, credit backdrop, diplomacy and options buttons and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.

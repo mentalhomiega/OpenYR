@@ -55,6 +55,7 @@ class TabClass: public SidebarClass
 
 		virtual void Init_For_House(void) override;
 		virtual void Clear_For_House(void) override;
+		virtual void Init_IO(void) override;
 
 		CreditClass Credits;
 
@@ -74,4 +75,51 @@ class TabClass: public SidebarClass
 
 		static ShapeSet const * TabShape;
 		static ShapeSet const * CreditsShape;
+
+		/*
+		 * The command bar along the bottom of the tactical view. Its buttons are the commands
+		 * UIMD.INI lists in [AdvancedCommandBar] ButtonList, or [MultiplayerAdvancedCommandBar]
+		 * in a multiplayer game, placed left to right in list order.
+		 */
+		enum CommandButtonType {
+			COMMAND_TEAM01,
+			COMMAND_TEAM02,
+			COMMAND_TEAM03,
+			COMMAND_TYPE_SELECT,
+			COMMAND_DEPLOY,
+			COMMAND_ATTACK_MOVE,
+			COMMAND_GUARD,
+			COMMAND_BEACON,
+			COMMAND_STOP,
+			COMMAND_PLANNING_MODE,
+			COMMAND_CHEER,
+			COMMAND_COUNT
+		};
+
+		struct CommandBarLayout {
+			int Y;
+			int ButtonX;
+			int Slots;
+			int OpenCapX;
+			int ClosedCapX;
+			int RightCapX;
+		};
+
+		static CommandBarLayout Command_Bar_Layout(void);
+		void Place_Command_Buttons(void);
+		static void Draw_Command_Bar(void);
+		void Command_Bar_AI(KeyNumType & input);
+		static void Do_Command(CommandButtonType command);
+
+		static ShapeSet const * SpacerShape;
+		static ShapeSet const * LeftCapShape;
+		static ShapeSet const * ButtonBackShape;
+		static ShapeSet const * RightCapShape;
+		static ShapeSet const * CommandShapes[COMMAND_COUNT];
+		static ShapeButtonClass CommandButtons[COMMAND_COUNT];
+		static ShapeButtonClass ToggleButton;
+		static int CommandSlot[COMMAND_COUNT];
+		static bool IsCommandButtonListed[COMMAND_COUNT];
+		static bool IsToggleListed;
+		static bool IsCommandBarOpen;
 };

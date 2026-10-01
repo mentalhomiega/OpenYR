@@ -20,6 +20,24 @@ namespace {
 char const * const INGAME = "Ingame";
 char const * const PIPS = "Pips";
 
+// Empty names between commas are skipped.
+std::vector<std::string> Split_Button_List(std::string const & value)
+{
+	std::vector<std::string> list;
+	std::size_t start = 0;
+	while (start <= value.size()) {
+		std::size_t end = value.find(',', start);
+		if (end == std::string::npos) {
+			end = value.size();
+		}
+		if (end > start) {
+			list.push_back(value.substr(start, end - start));
+		}
+		start = end + 1;
+	}
+	return(list);
+}
+
 }
 
 
@@ -64,6 +82,14 @@ bool UIControlsClass::Read_INI(CCINIClass const & ini)
 	InfantryWithPipGroupNumberOffset = ini.Get_Point(PIPS, "InfantryWithPipGroupNumberOffset", InfantryWithPipGroupNumberOffset);
 	BuildingWithPipGroupNumberOffset = ini.Get_Point(PIPS, "BuildingWithPipGroupNumberOffset", BuildingWithPipGroupNumberOffset);
 	AircraftWithPipGroupNumberOffset = ini.Get_Point(PIPS, "AircraftWithPipGroupNumberOffset", AircraftWithPipGroupNumberOffset);
+
+	// A missing section keeps its list; an empty one clears it.
+	if (ini.Is_Present("AdvancedCommandBar")) {
+		CommandBarButtons = Split_Button_List(ini.Get_String("AdvancedCommandBar", "ButtonList"));
+	}
+	if (ini.Is_Present("MultiplayerAdvancedCommandBar")) {
+		MultiplayerCommandBarButtons = Split_Button_List(ini.Get_String("MultiplayerAdvancedCommandBar", "ButtonList"));
+	}
 
 	return(true);
 }
