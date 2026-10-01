@@ -48,7 +48,9 @@ An occupant is off the map while it is inside. It cannot be selected, attacked o
 
 ## Owner
 
-An empty garrisonable structure belongs to the first house whose country is on the `Civilian` side. When the first soldier moves in, the structure passes to that soldier's house; when the last one leaves, it passes back. The change of owner scores nothing, plays no speech and springs no triggers. Units already heading for the structure keep it as their goal.
+An empty garrisonable structure belongs to the first house whose country is on the `Civilian` side. When the first soldier moves in, the structure passes to that soldier's house; when the last one leaves, it passes back. The change of owner scores nothing and springs no triggers.
+
+The player hears [`BuildingGarrisonedSound`](/keys/buildinggarrisonedsound/) at the first soldier of theirs to move in, and [`BuildingAbandonedSound`](/keys/buildingabandonedsound/) when their garrison empties. With [EVAMD.INI](/formats/eva-ini/), the announcer adds `EVA_StructureGarrisoned` and `EVA_StructureAbandoned`. Units already heading for the structure keep it as their goal.
 
 If no house is on the `Civilian` side, the structure keeps its owner.
 

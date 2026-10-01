@@ -914,7 +914,8 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					}
 				} else {
 					if (Class->IsAgent) {
-						if (House->Is_Player_Control()) Speak(VOX_BUILDING_INFILTRATED);
+						// The announcer file names the infiltration lines as the building gives up its secrets instead.
+						if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
 						((BuildingClass *)tech)->Spied_By(House);
 					}
 				}

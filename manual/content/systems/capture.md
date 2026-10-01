@@ -206,7 +206,7 @@ When a structure drops below half strength or below `ConditionRed`, the game rea
 
 ### Infiltrating it
 
-A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. EVA announces the infiltration when the spy belongs to a player-controlled house. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's house is recorded as spying on that structure; there is no alliance test. Capturing a structure clears the capturing house's spy record on it.
+A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. Without [EVAMD.INI](/formats/eva-ini/), EVA announces the infiltration when the spy belongs to a player-controlled house; with it, the announcement depends on the effect, as listed below. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's house is recorded as spying on that structure; there is no alliance test. Capturing a structure clears the capturing house's spy record on it.
 
 When the spying player selects a spied structure, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
 
@@ -223,6 +223,16 @@ One effect then follows, decided by the first row that fits the structure's type
 | [`Factory=InfantryType`](/keys/factory/) | From then on, every `Trainable=yes` infantryman the spy's house gets starts as a veteran. |
 
 A structure that fits no row gives up nothing beyond the spy record.
+
+With EVAMD.INI, the announcer names the effect to the player whose house owns the structure or sent the spy:
+
+| Effect | The structure's owner hears | The spy's house hears |
+| --- | --- | --- |
+| Radar, unless the owner has a working spy satellite | `EVA_RadarSabotaged` | `EVA_BuildingInfRadarSabotaged` |
+| Power | `EVA_PowerSabotaged` | `EVA_BuildingInfiltrated`, then `EVA_EnemyBasePoweredDown` |
+| Technology, war factory or barracks | `EVA_TechnologyStolen` | `EVA_BuildingInfiltrated`, then `EVA_NewTechnologyAcquired` |
+| Superweapon | `EVA_BuildingInfiltrated` | `EVA_BuildingInfiltrated` |
+| Money | `EVA_CashStolen` | `EVA_BuildingInfCashStolen` |
 
 ### The soldier is consumed
 

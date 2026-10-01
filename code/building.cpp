@@ -8385,6 +8385,12 @@ void BuildingClass::Occupy(InfantryClass * infantry)
 	infantry->Limbo();
 	Occupants.Add(infantry);
 	Mark(MARK_CHANGE);
+
+	// The player's first soldier inside is announced (0x5229C1).
+	if (Occupants.Count() == 1 && infantry->House->Is_Player_Control()) {
+		Speak_Eva("EVA_StructureGarrisoned");
+		Sound_Effect(Rule->BuildingGarrisonedSound, infantry->Center_Coord());
+	}
 }
 
 
@@ -8547,6 +8553,10 @@ void BuildingClass::Garrison_AI(void)
 	}
 
 	if (Occupants.Count() == 0 && House != civilians) {
+		if (House->Is_Player_Control()) {
+			Sound_Effect(Rule->BuildingAbandonedSound);
+			Speak_Eva("EVA_StructureAbandoned");
+		}
 		Set_Garrison_House(civilians);
 	} else if (Occupants.Count() > 0 && House == civilians) {
 		Set_Garrison_House(Occupants[0]->House);
@@ -10530,6 +10540,18 @@ bool BuildingClass::Is_Radar_Visible(DetectedType & detected) const
 }
 
 
+static void Speak_Stolen_Tech(bool victim, bool spy)
+{
+	if (victim) {
+		Speak_Eva("EVA_TechnologyStolen");
+	}
+	if (spy) {
+		Speak_Eva("EVA_BuildingInfiltrated");
+		Speak_Eva("EVA_NewTechnologyAcquired");
+	}
+}
+
+
 /// <summary>
 /// Records that a spy has infiltrated this building.
 /// This routine is called when a spy makes it inside. The spying house is handed whatever
@@ -10543,6 +10565,10 @@ void BuildingClass::Spied_By(HouseClass * house)
 	}
 	SpiedBy.Set(house);
 
+	// The owner hears what was lost and the spy's house what was gained.
+	bool const victim = House->Is_Player_Control();
+	bool const spy = house->Is_Player_Control();
+
 	/*
 	 * Each kind of structure gives up one thing, tested in this order, as gamemd's FUN_004571E0
 	 * does.
@@ -10550,12 +10576,20 @@ void BuildingClass::Spied_By(HouseClass * house)
 	if (Class->IsRadar) {
 		if (!House->IsSpySatActive) {
 			Map.Shroud_The_Map(House);
+			if (victim) Speak_Eva("EVA_RadarSabotaged");
+			if (spy) Speak_Eva("EVA_BuildingInfRadarSabotaged");
 		}
 	} else if (Class->Power > 0) {
 		if (Rule->SpyPowerBlackout > 0) {
 			House->PowerBlackout = Rule->SpyPowerBlackout;
 			House->IsPowerBlackout = true;
 			House->RecalcPower = true;
+		}
+		if (victim) {
+			Speak_Eva("EVA_PowerSabotaged");
+		} else if (spy) {
+			Speak_Eva("EVA_BuildingInfiltrated");
+			Speak_Eva("EVA_EnemyBasePoweredDown");
 		}
 	} else if (Rule->BuildTech.Is_In_List(Class)) {
 		if (Class->AIBasePlanningSide == 0) {
@@ -10566,6 +10600,7 @@ void BuildingClass::Spied_By(HouseClass * house)
 			house->IsSide2TechStolen = true;
 		}
 		house->IsRecalcNeeded = true;
+		Speak_Stolen_Tech(victim, spy);
 	} else if (Class->SuperWeapon != SUPER_NONE) {
 		if (Class->SuperWeapon < House->SuperWeapon.Count()) {
 			SuperClass * super = House->SuperWeapon[Class->SuperWeapon];
@@ -10573,18 +10608,25 @@ void BuildingClass::Spied_By(HouseClass * house)
 				super->Reset();
 			}
 		}
+		if (victim || spy) {
+			Speak_Eva("EVA_BuildingInfiltrated");
+		}
 	} else if (Class->Capacity > 0) {
 		int amount = (int)(House->Available_Money() * Rule->SpyMoneyStealPercent);
 		if (amount > 0) {
 			House->Spend_Money(amount);
 			house->Refund_Money(amount);
 		}
+		if (victim) Speak_Eva("EVA_CashStolen");
+		if (spy) Speak_Eva("EVA_BuildingInfCashStolen");
 	} else if (Class->ToBuild == RTTI_UNITTYPE) {
 		house->IsWarFactoryInfiltrated = true;
 		house->IsRecalcNeeded = true;
+		Speak_Stolen_Tech(victim, spy);
 	} else if (Class->ToBuild == RTTI_INFANTRYTYPE) {
 		house->IsBarracksInfiltrated = true;
 		house->IsRecalcNeeded = true;
+		Speak_Stolen_Tech(victim, spy);
 	}
 	Mark(MARK_CHANGE);
 }

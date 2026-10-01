@@ -69,6 +69,7 @@
 #include "surface.h"
 #include "techno.h"
 #include "unit.h"
+#include "vox.h"
 #include "unittype.h"
 
 #include "color.hh"
@@ -770,6 +771,11 @@ void EventClass::Execute(void)
 			techno = Data.NavCom.Whom.As_Techno();
 			if (techno && techno->IsActive) {
 				techno->ArchiveTarget = Data.NavCom.Where.As_Abstract();
+
+				// A structure's new rally point is announced to its owner (BuildingClass::SetRallypoint, 0x443860).
+				if (techno->RTTI == RTTI_BUILDING && techno->House->Is_Player_Control()) {
+					Speak_Eva("EVA_NewRallyPointEstablished");
+				}
 			}
 			break;
 

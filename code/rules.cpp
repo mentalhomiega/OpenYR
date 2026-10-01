@@ -544,6 +544,11 @@ RulesClass::RulesClass(void) :
 	ChuteSound(VOC_NONE),
 	StopSound(VOC_NONE),
 	GuardSound(VOC_NONE),
+	UpgradeVeteranSound(VOC_NONE),
+	UpgradeEliteSound(VOC_NONE),
+	EliteFlashTimer(100),
+	BuildingGarrisonedSound(VOC_NONE),
+	BuildingAbandonedSound(VOC_NONE),
 	ScatterSound(VOC_NONE),
 	DeploySound(VOC_NONE),
 	LightningSound(VOC_NONE),
@@ -986,6 +991,11 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BuildingDrop = ini.Get_VocType(AUDIOVISUAL, "BuildingDrop", BuildingDrop);
 		StopSound = ini.Get_VocType(AUDIOVISUAL, "StopSound", StopSound);
 		GuardSound = ini.Get_VocType(AUDIOVISUAL, "GuardSound", GuardSound);
+		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
+		UpgradeEliteSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeEliteSound", UpgradeEliteSound);
+		EliteFlashTimer = ini.Get_Int(AUDIOVISUAL, "EliteFlashTimer", EliteFlashTimer);
+		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
+		BuildingAbandonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingAbandonedSound", BuildingAbandonedSound);
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
@@ -2543,6 +2553,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChuteSound);
 	stream.Serialize(StopSound);
 	stream.Serialize(GuardSound);
+	stream.Serialize(UpgradeVeteranSound);
+	stream.Serialize(UpgradeEliteSound);
+	stream.Serialize(EliteFlashTimer);
+	stream.Serialize(BuildingGarrisonedSound);
+	stream.Serialize(BuildingAbandonedSound);
 	stream.Serialize(ScatterSound);
 	stream.Serialize(DeploySound);
 	stream.Serialize(LightningSound);

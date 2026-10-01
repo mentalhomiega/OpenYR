@@ -200,6 +200,8 @@ Promotion bonuses apply the next time the object fires, takes damage, or moves. 
 
 Extra sight reveals more terrain the next time the object reveals its surroundings. Promotion itself does not reveal the larger area.
 
+When one of the player's objects becomes a veteran or elite, the player hears [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) at the object, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
+
 ## Carrying rank between objects
 
 A vehicle keeps its experience when it deploys into a building, and the building passes that experience back when it undeploys. Capturing an object also preserves its rank and any abilities or elite weapon that rank grants.

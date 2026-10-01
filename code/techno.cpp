@@ -270,6 +270,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IronCurtainTimer(),
 	IronTintTimer(),
 	IronTintStage(10),
+	CurrentRank(-1),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -3020,6 +3021,24 @@ void TechnoClass::AI(void)
 	}
 
 	Iron_Tint_AI();
+
+	/*
+	 * A rank gained is announced to the player, and an object that has become elite flashes
+	 * (TechnoClass::Update, 0x6F9E50).
+	 */
+	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	if (rank != CurrentRank) {
+		if (CurrentRank != -1 && rank > 0) {
+			if (House->Is_Player_Control()) {
+				Sound_Effect(rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound, PositionCoord);
+				Speak_Eva("EVA_UnitPromoted");
+			}
+			if (rank == 2) {
+				FlashCount = Rule->EliteFlashTimer;
+			}
+		}
+		CurrentRank = rank;
+	}
 
 	if (!House->Is_Human_Player() && TarCom != NULL && House->Is_Ally(TarCom)) {
 		if (RTTI != RTTI_AIRCRAFT && (RTTI != RTTI_INFANTRY || !((InfantryClass *)this)->Class->IsEngineer)) {
@@ -8386,6 +8405,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IronCurtainTimer);
 	stream.Serialize(IronTintTimer);
 	stream.Serialize(IronTintStage);
+	stream.Serialize(CurrentRank);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

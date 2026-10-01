@@ -124,6 +124,9 @@ class TechnoClass :	public RadioClass,
 		int IronTintStage;
 		bool IsForceShielded;
 
+		// The rank last seen: 0 rookie, 1 veteran, 2 elite, or -1 before the first look.
+		int CurrentRank;
+
 		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
 		 * tracking table is keyed by it, so a moved object untracks here before plotting anew.

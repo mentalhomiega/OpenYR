@@ -976,6 +976,17 @@ class RulesClass
 		 */
 		VocType GuardSound;
 
+		// Played when one of the player's objects becomes a veteran or elite.
+		VocType UpgradeVeteranSound;
+		VocType UpgradeEliteSound;
+
+		// How many frames an object that has just become elite flashes.
+		int EliteFlashTimer;
+
+		// Played when the player garrisons a structure, and when the player's garrison empties.
+		VocType BuildingGarrisonedSound;
+		VocType BuildingAbandonedSound;
+
 		/*
 		 * This is the sound effect played when the player orders the current selection to
 		 * scatter.
