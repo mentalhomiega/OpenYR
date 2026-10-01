@@ -882,7 +882,9 @@ void EventClass::Execute(void)
 				coord.Z += BRIDGE_LEPTON_HEIGHT;
 			}
 			if (Data.Anim.What == ANIM_NONE) {
-				anim = new AnimClass(Rule->MoveFlash, coord);
+				if (Rule->MoveFlash != NULL) {
+					anim = new AnimClass(Rule->MoveFlash, coord);
+				}
 			} else {
 				anim = new AnimClass(AnimTypes[Data.Anim.What], coord);
 			}

@@ -1791,7 +1791,7 @@ bool FootClass::Active_Click_With(ActionType action, Cell const & cell, bool is_
 			break;
 
 		case ACTION_MOVE:
-			if (AllowVoice) {
+			if (AllowVoice && Rule->MoveFlash != NULL) {
 				Coord coord = cell;
 				coord.Z = Map.Get_Height_GL(coord);
 				if (Map[coord].IsUnderBridge) {

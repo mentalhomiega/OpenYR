@@ -351,6 +351,7 @@ RulesClass::RulesClass(void) :
 	IvanDamage(0),
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
+	DeathWeapon(NULL),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
 	BombAttachSound(VOC_NONE),
@@ -1064,7 +1065,6 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		FirestormIdleAnim = TGet_Class(ini, AUDIOVISUAL, "FirestormIdleAnim", FirestormIdleAnim);
 		FirestormAirAnim = TGet_Class(ini, AUDIOVISUAL, "FirestormAirAnim", FirestormAirAnim);
 		FirestormGroundAnim = TGet_Class(ini, AUDIOVISUAL, "FirestormGroundAnim", FirestormGroundAnim);
-		MoveFlash = TGet_Class(ini, AUDIOVISUAL, "MoveFlash", MoveFlash);
 		Parachute = TGet_Class(ini, AUDIOVISUAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, AUDIOVISUAL, "BombParachute", BombParachute);
 		SmallFire = TGet_Class(ini, AUDIOVISUAL, "SmallFire", SmallFire);
@@ -1185,6 +1185,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		IvanDamage = ini.Get_Int(COMBATDAMAGE, "IvanDamage", IvanDamage);
 		IvanTimedDelay = ini.Get_Int(COMBATDAMAGE, "IvanTimedDelay", IvanTimedDelay);
 		IsCanDetonateTimeBomb = ini.Get_Bool(COMBATDAMAGE, "CanDetonateTimeBomb", IsCanDetonateTimeBomb);
+		DeathWeapon = TGet_Class(ini, COMBATDAMAGE, "DeathWeapon", DeathWeapon);
 		IvanIconFlickerRate = ini.Get_Int(COMBATDAMAGE, "IvanIconFlickerRate", IvanIconFlickerRate);
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
@@ -1303,6 +1304,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		ChronoSparkle1 = TGet_Class(ini, GENERAL, "ChronoSparkle1", ChronoSparkle1);
 		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
+		MoveFlash = TGet_Class(ini, GENERAL, "MoveFlash", MoveFlash);
 		DefaultMirageDisguises = TGet_TypeList<TerrainTypeClass>(ini, GENERAL, "DefaultMirageDisguises", DefaultMirageDisguises);
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
@@ -2453,6 +2455,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
 	stream.Serialize(IsCanDetonateTimeBomb);
+	stream.Serialize(DeathWeapon);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);
 	stream.Serialize(BombAttachSound);
