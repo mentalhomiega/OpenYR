@@ -17,14 +17,14 @@ Each position picks an entry of the rules' [`[Colors]`](/keys/color/) section by
 | Position | Lobby color | `[Colors]` entry | Stock name |
 | --- | --- | --- | --- |
 | `0` | gold | 2nd | `Gold` |
-| `1` | red | 11th | `DarkRed` |
-| `2` | blue | 24th | `DarkBlue` |
-| `3` | green | 37th | `DarkGreen` |
-| `4` | orange | 14th | `Orange` |
-| `5` | sky blue | 28th | `DarkSky` |
-| `6` | purple | 20th | `Purple` |
-| `7` | pink | 17th | `Magenta` |
+| `1` | red | 6th | `DarkRed` |
+| `2` | blue | 11th | `DarkBlue` |
+| `3` | green | 15th | `DarkGreen` |
+| `4` | orange | 7th | `Orange` |
+| `5` | sky blue | 13th | `DarkSky` |
+| `6` | purple | 9th | `Purple` |
+| `7` | pink | 8th | `Magenta` |
 
-Reordering `[Colors]` therefore changes the color each lobby position gives. Keep at least 37 entries in `[Colors]`, or the green position names an entry that does not exist.
+Reordering `[Colors]` therefore changes the color each lobby position gives. Keep at least 15 entries in `[Colors]`, or the green position names an entry that does not exist.
 
 A value outside `0` to `7` shows gold in the color box. In skirmish, gold is used and saved. In a network game, pick a color in the lobby; otherwise the out-of-range value is kept, and the house does not get one of the eight lobby colors.

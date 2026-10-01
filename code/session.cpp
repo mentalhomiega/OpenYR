@@ -1167,21 +1167,15 @@ void SessionClass::Trap_Object(void)
 int SessionClass::Color_Index_To_Scheme(int id)
 {
 	/*
-	 * The list holds each scheme twice, and the odd entry of each pair is the lighting-aware
-	 * one, so the index is doubled and stepped one past the plain copy.
+	 * Yuri's Revenge's table. The list holds each scheme twice and the odd entry of each pair
+	 * is the lighting-aware one. Color -2 takes the ninth entry.
 	 */
-	static char _table[] = {
-		(2 *  1) + 1,
-		(2 * 10) + 1,
-		(2 * 23) + 1,
-		(2 * 36) + 1,
-		(2 * 13) + 1,
-		(2 * 27) + 1,
-		(2 * 19) + 1,
-		(2 * 16) + 1,
-	};
+	static char const _table[] = { 3, 11, 21, 29, 13, 25, 17, 15, 5 };
 
-	if (id < sizeof(_table)) {
+	if (id == -2) {
+		return(_table[8]);
+	}
+	if (id >= 0 && id < (int)sizeof(_table)) {
 		return(_table[id]);
 	}
 	return(id);
