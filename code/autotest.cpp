@@ -36,6 +36,7 @@
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
 **	price <TypeID>			writes what the player pays for the type
+**	types <prefix>			writes every structure type whose ID starts with the prefix
 **	schemes					writes the color schemes and the scheme each house draws with
 **	seq <TypeID>			writes an infantry type's art sequences
 **	plan					writes each computer house's base plan
@@ -408,6 +409,13 @@ void Run(StepType const & step)
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
 			DebugString("AUTOTEST   price %s %d (listed %d)\n", type->Name(), type->Cost_Of(PlayerPtr), type->Raw_Cost());
+		}
+	} else if (step.Command == "types") {
+		// types <prefix>: every structure type whose ID starts with the prefix.
+		for (int index = 0; index < BuildingTypes.Count(); index++) {
+			if (strnicmp(BuildingTypes[index]->Name(), step.Argument.c_str(), step.Argument.size()) == 0) {
+				DebugString("AUTOTEST   type %s\n", BuildingTypes[index]->Name());
+			}
 		}
 	} else if (step.Command == "count") {
 		// count <TypeID>: the number of live objects of the type on the map, per owner.
