@@ -105,6 +105,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsPassive(false),
 	IsCrateGoodie(false),
 	IsToHarvest(false),
+	IsTeleporter(false),
 	IsToVeinHarvest(false),
 	IsFireAnim(false),
 	IsTilter(true),
@@ -366,6 +367,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsNoFireWhileMoving = ini.Get_Bool(Name(), "NoMovingFire", IsNoFireWhileMoving);
 		IsDeployToFire = ini.Get_Bool(Name(), "DeployToFire", IsDeployToFire);
 		IsToHarvest = ini.Get_Bool(Name(), "Harvester", IsToHarvest);
+		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
 		IsToVeinHarvest = ini.Get_Bool(Name(), "Weeder", IsToVeinHarvest);
 
 		/*
@@ -565,6 +567,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPassive);
 	stream.Serialize(IsCrateGoodie);
 	stream.Serialize(IsToHarvest);
+	stream.Serialize(IsTeleporter);
 	stream.Serialize(IsToVeinHarvest);
 	stream.Serialize(IsFireAnim);
 	stream.Serialize(IsLockTurret);

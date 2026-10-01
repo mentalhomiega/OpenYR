@@ -5229,6 +5229,35 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	BuildingClass * b = dynamic_cast<BuildingClass *>(target);
 
 	/*
+	**	A teleporter drives, carrying its own locomotor, unless it is being sent onto a free dock
+	**	cell of the refinery it is talking to; then it goes back to its own locomotor and enters
+	**	(UnitClass::SetDestination, 0x741970 in gamemd).
+	*/
+	if (Class->IsTeleporter && target != NULL) {
+		ClassID const current = Locomotion_Class_ID(Locomotion.get());
+		BuildingClass const * refinery = In_Radio_Contact() ? dynamic_cast<BuildingClass const *>(Contact_With_Whom()) : NULL;
+		CellClass const * dock = dynamic_cast<CellClass const *>(target);
+		bool const to_refinery = refinery != NULL && refinery->Class->IsRefinery && dock != NULL && dock->Cell_Unit() == NULL;
+
+		if (!to_refinery) {
+			if (current != ClassID_DriveLocomotion) {
+				std::unique_ptr<ILocomotion> drive = Create_Locomotor(ClassID_DriveLocomotion);
+				drive->Link_To_Object(this);
+				IPiggyback * piggy = Piggyback_Of(drive.get());
+				if (piggy != NULL && piggy->Begin_Piggyback(Locomotion)) {
+					Locomotion = std::move(drive);
+				}
+			}
+		} else if (current != ClassID_TeleportLocomotion) {
+			IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+			if (piggy != NULL && piggy->Is_Piggybacking()) {
+				Locomotion = piggy->End_Piggyback();
+				Assign_Mission(MISSION_ENTER);
+			}
+		}
+	}
+
+	/*
 	**	Handle entry logic here.
 	*/
 	if (Mission == MISSION_ENTER || MissionQueue == MISSION_ENTER) {

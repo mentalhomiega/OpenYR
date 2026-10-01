@@ -27,6 +27,7 @@ class TeleportLocomotionClass : public LocomotionClass
 		virtual Coord Destination(void) override;
 		virtual void Move_To(Coord to) override;
 		virtual void Stop_Moving(void) override;
+		virtual void Do_Turn(DirType dir) override;
 		virtual bool Process(void) override;
 		virtual LayerType In_Which_Layer(void) override;
 

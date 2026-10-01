@@ -23163,6 +23163,23 @@ Technician:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Teleporter:
+  key: Teleporter
+  scopes:
+  - applies_to: *id015
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsTeleporter
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 TemperateOccupationBits:
   key: TemperateOccupationBits
   scopes:

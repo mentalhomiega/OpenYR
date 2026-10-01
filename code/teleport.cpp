@@ -85,6 +85,16 @@ void TeleportLocomotionClass::Move_To(Coord to)
 
 
 /// <summary>
+/// Turns the object toward the direction given at its normal rate, as Yuri's Revenge's teleport
+/// locomotor does; a docking harvester waits for this turn before it backs in.
+/// </summary>
+void TeleportLocomotionClass::Do_Turn(DirType dir)
+{
+	LinkedTo->PrimaryFacing.Set_Desired(dir);
+}
+
+
+/// <summary>
 /// Cancels any teleport that has been ordered.
 /// The pending destination is forgotten, so the object stays where it is rather than
 /// making the jump.
