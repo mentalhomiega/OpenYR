@@ -820,7 +820,8 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 
 	if (Class->IsInvisibleInGame) return;
 
-	Point2D zdrawpoint(144, 172);
+	// The depth shape's reference point and the widest foundation that uses it are Yuri's Revenge's (BuildingClass::DrawIt, 0x43D290).
+	Point2D zdrawpoint(198, 446);
 	int zadjust = Class->NormalZAdjust;
 
 	if (Mission == MISSION_OPEN && !Door.Is_Ready_To_Open()) {
@@ -880,7 +881,7 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 	zdrawpoint -= TacticalMap->Coord_To_Pixel_Absolute(zsizeoffset);
 
 	ShapeSet const * zshapefile = (ShapeSet const *)BuildingTypeClass::BuildingZShape;
-	if (Class->Width() >= 6) {
+	if (Class->Width() > 7) {
 		zshapefile = NULL;
 	}
 
