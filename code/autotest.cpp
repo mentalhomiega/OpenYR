@@ -86,6 +86,7 @@
 #include "unit.h"
 #include "vox.h"
 #include "unittype.h"
+#include "light.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -356,9 +357,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "cell") {
 		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
 		ObjectClass const * occupier = cell.Cell_Occupier();
-		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s\n",
+		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d\n",
 			std::atoi(step.Argument.c_str()), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
-			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-");
+			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count());
 	} else if (step.Command == "water") {
 		// water x y: logs the open water cell nearest to that cell.
 		Cell const from(std::atoi(step.Argument.c_str()), step.X);

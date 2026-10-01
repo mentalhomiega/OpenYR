@@ -177,6 +177,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A temporal warhead erases its target over time instead of damaging it.
 		bool IsTemporal;
 
+		// A radiation warhead does no damage to an ImmuneToRadiation type.
+		bool IsRadiation;
+
 		/*
 		**	If this warhead can destroy wooden walls, then this flag will be true.
 		*/

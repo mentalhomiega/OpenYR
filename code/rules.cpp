@@ -408,6 +408,15 @@ RulesClass::RulesClass(void) :
 	ControlledAnimationType(NULL),
 	YuriMindControlSound(VOC_NONE),
 	RadColor(0, 0, 0),
+	RadDurationMultiple(0),
+	RadApplicationDelay(0),
+	RadLevelMax(0),
+	RadLevelDelay(0),
+	RadLightDelay(0),
+	RadLevelFactor(0.0),
+	RadLightFactor(0.0),
+	RadTintFactor(0.0),
+	RadSiteWarhead(NULL),
 	ChronoBeamColor(0, 0, 0),
 	MindClearedSound(VOC_NONE),
 	MasterMindOverloadDeathSound(VOC_NONE),
@@ -1132,6 +1141,15 @@ bool RulesClass::Radiation(CCINIClass const & ini)
 	static char const * const RADIATION = "Radiation";
 	if (ini.Is_Present(RADIATION)) {
 		RadColor = ini.Get_RGBClass(RADIATION, "RadColor", RadColor);
+		RadDurationMultiple = ini.Get_Int(RADIATION, "RadDurationMultiple", RadDurationMultiple);
+		RadApplicationDelay = ini.Get_Int(RADIATION, "RadApplicationDelay", RadApplicationDelay);
+		RadLevelMax = ini.Get_Int(RADIATION, "RadLevelMax", RadLevelMax);
+		RadLevelDelay = ini.Get_Int(RADIATION, "RadLevelDelay", RadLevelDelay);
+		RadLightDelay = ini.Get_Int(RADIATION, "RadLightDelay", RadLightDelay);
+		RadLevelFactor = ini.Get_Float(RADIATION, "RadLevelFactor", RadLevelFactor);
+		RadLightFactor = ini.Get_Float(RADIATION, "RadLightFactor", RadLightFactor);
+		RadTintFactor = ini.Get_Float(RADIATION, "RadTintFactor", RadTintFactor);
+		RadSiteWarhead = TGet_Class(ini, RADIATION, "RadSiteWarhead", RadSiteWarhead);
 		return(true);
 	}
 	return(false);
@@ -2462,6 +2480,15 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ControlledAnimationType);
 	stream.Serialize(YuriMindControlSound);
 	stream.Serialize(RadColor);
+	stream.Serialize(RadDurationMultiple);
+	stream.Serialize(RadApplicationDelay);
+	stream.Serialize(RadLevelMax);
+	stream.Serialize(RadLevelDelay);
+	stream.Serialize(RadLightDelay);
+	stream.Serialize(RadLevelFactor);
+	stream.Serialize(RadLightFactor);
+	stream.Serialize(RadTintFactor);
+	stream.Serialize(RadSiteWarhead);
 	stream.Serialize(ChronoBeamColor);
 	stream.Serialize(MindClearedSound);
 	stream.Serialize(MasterMindOverloadDeathSound);

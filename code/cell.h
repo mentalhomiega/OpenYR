@@ -74,6 +74,9 @@ class CellClass : public AbstractClass
 		*/
 		Cell CellID;
 
+		// The radiation the sites around this cell give it.
+		double RadLevel;
+
 		/*
 		 * When the cell falls under fog, the objects standing in it are replaced by
 		 * snapshots so the player keeps seeing what was there when he last looked. This
@@ -577,6 +580,9 @@ class CellClass : public AbstractClass
 		FacingType Bounce_Direction(Coord const & target_coord) const;
 
 		virtual Coord Center_Coord(void) const override;
+
+		// The radiation an object here takes damage from, capped at RadLevelMax (CellClass::GetRadLevel, 0x487CB0).
+		int Rad_Level(void) const;
 		virtual Coord As_Coord(void) const override;
 
 		bool Is_Cloaked(HouseClass const * house) const;

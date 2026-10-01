@@ -247,6 +247,7 @@ CellClass::~CellClass(void)
 CellClass::CellClass(void) :
 	BASECLASS(),
 	CellID(CELL_NONE),
+	RadLevel(0.0),
 	IsPlot(false),
 	IsCursorHere(false),
 	IsMapped(),
@@ -4403,6 +4404,7 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(CellID);
+	stream.Serialize(RadLevel);
 
 	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate
 	// that names none is refused here, while the record can still be thrown away whole.
@@ -5810,6 +5812,12 @@ bool CellClass::Should_Draw_As_Cloaked(HouseClass const * house) const
 /// surface rather than at sea level.
 /// </summary>
 /// <returns>Returns with the coordinate of the cell's center point.</returns>
+int CellClass::Rad_Level(void) const
+{
+	return((int)std::min(RadLevel, (double)Rule->RadLevelMax));
+}
+
+
 Coord CellClass::Center_Coord(void) const
 {
 	Point2D pt = Point2D((CellID.X * CELL_LEPTON_W) + CELL_LEPTON_W / 2, (CellID.Y * CELL_LEPTON_H) + CELL_LEPTON_H / 2);

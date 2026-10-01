@@ -293,6 +293,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Can a temporal weapon warp an object of this type?
 		bool IsWarpable;
+
+		// Is this object spared radiation damage?
+		bool IsImmuneToRadiation;
 		bool IsBalloonHover;
 
 		// How far above the object's center a mind control ring is drawn, in leptons.

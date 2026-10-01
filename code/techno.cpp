@@ -4234,6 +4234,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 	int max_speed = weapon->MaxSpeed;
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->ProjectileRange, weapon->IsBright);
+	if (bullet != NULL) {
+		bullet->Weapon = weapon;
+	}
 
 	if (bullet != NULL) {
 		bullet->Limbo();
@@ -5271,6 +5274,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
+	// A radiation warhead does nothing to a type immune to radiation (TechnoClass::ReceiveDamage, 0x701900).
+	if (warhead != NULL && warhead->IsRadiation && TClass->IsImmuneToRadiation) {
 		damage = 0;
 		return(RESULT_NONE);
 	}

@@ -76,6 +76,7 @@
 #include "missile.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "radsite.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -121,6 +122,7 @@ BulletClass::BulletClass(void) :
 	BASECLASS(),
 	Class(NULL),
 	Payback(NULL),
+	Weapon(NULL),
 	IsInaccurate(false),
 	Fuse(),
 	IsBright(false),
@@ -1316,6 +1318,11 @@ void BulletClass::Detonate(Coord const & coord)
 {
 	WarheadTypeClass * warhead = Warhead;
 
+	// A weapon with RadLevel leaves radiation reaching its warhead's CellSpread (BulletClass::Detonate, 0x469210).
+	if (Weapon != NULL && Weapon->RadLevel > 0) {
+		RadSiteClass::Irradiate(coord, (int)warhead->CellSpread, Weapon->RadLevel);
+	}
+
 	if (warhead->IsNukeMaker) {
 		Nuke_Maker();
 	}
@@ -1505,6 +1512,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(Class);
 	stream.Serialize(Payback);
+	stream.Serialize(Weapon);
 	stream.Serialize(IsInaccurate);
 	stream.Serialize(Fuse);
 	stream.Serialize(IsBright);

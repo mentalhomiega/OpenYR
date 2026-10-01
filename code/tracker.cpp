@@ -47,6 +47,7 @@
 #include "object.h"
 #include "partsys.h"
 #include "psydom.h"
+#include "radsite.h"
 #include "rules.h"
 #include "tactical.h"
 #include "unit.h"
@@ -111,6 +112,8 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	if (target->RTTI == RTTI_PARTICLESYSTEM && target == GasSystem) {
 		GasSystem = NULL;
 	}
+
+	RadSiteClass::Detach_All(target);
 
 	if (target->RTTI == RTTI_HOUSE) {
 		LightningStormClass::Detach(target);

@@ -180,6 +180,7 @@
 
 #include "bench.hh"
 #include "psydom.h"
+#include "radsite.h"
 
 #include <algorithm>
 #include <utility>
@@ -1121,6 +1122,7 @@ void Clear_Scenario(void)
 	IonStormClass::Init();
 	LightningStormClass::Clear();
 	PsychicDominatorClass::Clear();
+	RadSiteClass::Clear_All();
 	EMPulseClass::Reset();
 	VeinholeMonsterClass::Reset();
 

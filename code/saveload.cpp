@@ -145,6 +145,7 @@
 
 #include "objheaps.hh"
 #include "psydom.h"
+#include "radsite.h"
 
 #include <memory>
 #include <new>
@@ -1223,6 +1224,7 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	IonStormClass::Serialize(stream);
 	LightningStormClass::Serialize(stream);
 	PsychicDominatorClass::Serialize(stream);
+	RadSiteClass::Serialize_All(stream);
 
 	stream.Serialize(LogicTags);
 	stream.Serialize(MapTags);

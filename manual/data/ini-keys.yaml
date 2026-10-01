@@ -14008,6 +14008,23 @@ ImmuneToPsionics:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ImmuneToRadiation:
+  key: ImmuneToRadiation
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToRadiation
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ImmuneToVeins:
   key: ImmuneToVeins
   scopes:
@@ -22362,6 +22379,24 @@ ROT:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+RadApplicationDelay:
+  key: RadApplicationDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: RadApplicationDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 RadCannonTurretIndex:
   key: RadCannonTurretIndex
   scopes:
@@ -22411,6 +22446,167 @@ RadColor:
       default_candidate: 0,0,0
       declared_in: RulesClass
       member: RadColor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadDurationMultiple:
+  key: RadDurationMultiple
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: RadDurationMultiple
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadLevel:
+  key: RadLevel
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WeaponTypeClass
+      member: RadLevel
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+RadLevelDelay:
+  key: RadLevelDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: RadLevelDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadLevelFactor:
+  key: RadLevelFactor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: RulesClass
+      member: RadLevelFactor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadLevelMax:
+  key: RadLevelMax
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: RadLevelMax
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadLightDelay:
+  key: RadLightDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: RadLightDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadLightFactor:
+  key: RadLightFactor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: RulesClass
+      member: RadLightFactor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadSiteWarhead:
+  key: RadSiteWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: RadSiteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+RadTintFactor:
+  key: RadTintFactor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: Radiation
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: RulesClass
+      member: RadTintFactor
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -22690,6 +22886,23 @@ RadialColor:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+Radiation:
+  key: Radiation
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsRadiation
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Radius:
   key: Radius
   scopes:

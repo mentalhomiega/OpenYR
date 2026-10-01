@@ -109,6 +109,9 @@ class BulletClass : public ObjectClass
 		*/
 		bool IsInaccurate;
 
+		// The weapon that fired this projectile, if a weapon did.
+		WeaponTypeClass const * Weapon;
+
 	private:
 		/*
 		 * This is the fuse that decides when a homing projectile has arrived. It is armed

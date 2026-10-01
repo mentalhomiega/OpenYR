@@ -279,6 +279,22 @@ class RulesClass
 		// The colors of the beam an IsRadBeam weapon draws: RadColor normally, ChronoBeamColor for a temporal warhead.
 		RGBClass RadColor;
 		RGBClass ChronoBeamColor;
+
+		/*
+		 * Radiation: a site lasts RadDurationMultiple frames per point of level, loses a step every
+		 * RadLevelDelay frames and dims its light every RadLightDelay frames. Every
+		 * RadApplicationDelay frames an object on a radiated cell takes the cell's level, capped at
+		 * RadLevelMax, times RadLevelFactor as damage through RadSiteWarhead.
+		 */
+		int RadDurationMultiple;
+		int RadApplicationDelay;
+		int RadLevelMax;
+		int RadLevelDelay;
+		int RadLightDelay;
+		double RadLevelFactor;
+		double RadLightFactor;
+		double RadTintFactor;
+		WarheadTypeClass const * RadSiteWarhead;
 		VocType MindClearedSound;
 		VocType MasterMindOverloadDeathSound;
 		int MindControlAttackLineFrames;

@@ -51,6 +51,7 @@
 #include "bullet.h"
 #include "ebolt.h"
 #include "radbeam.h"
+#include "radsite.h"
 #include "empulse.h"
 #include "factory.h"
 #include "globals.h"
@@ -354,6 +355,7 @@ void LogicClass::AI(void)
 	LaserDrawClass::Update_All();
 	EBoltClass::Update_All();
 	RadBeamClass::Update_All();
+	RadSiteClass::Update_All();
 	IonStormClass::AI();
 	LightningStormClass::AI();
 	PsychicDominatorClass::AI();

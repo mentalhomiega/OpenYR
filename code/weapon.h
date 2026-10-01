@@ -267,6 +267,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Does this weapon draw a wavy beam from its muzzle to its target as it fires?
 		bool IsRadBeam;
+
+		// The radiation this weapon leaves where it goes off, reaching its warhead's CellSpread.
+		int RadLevel;
 		AnimTypeClass const * OpenToppedAnim;
 
 		/*
