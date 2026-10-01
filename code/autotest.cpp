@@ -56,6 +56,7 @@
 #include "keyboard.h"
 #include "loco.h"
 #include "tactical.h"
+#include "scheme.h"
 #include "script.h"
 #include "teamtype.h"
 #include "team.h"
@@ -321,6 +322,72 @@ void Run(StepType const & step)
 			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-");
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
+	} else if (step.Command == "enter") {
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		DebugString("AUTOTEST enter %s -> %s\n", step.Argument.c_str(), building != NULL ? building->Class->Name() : "(none)");
+		for (int index = 0; building != NULL && index < Infantry.Count(); index++) {
+			InfantryClass * infantry = Infantry[index];
+			if (infantry->House == PlayerPtr && !infantry->IsInLimbo && stricmp(infantry->Class->Name(), step.Argument.c_str()) == 0) {
+				infantry->Assign_Mission(MISSION_ENTER);
+				infantry->Assign_Destination(building);
+			}
+		}
+	} else if (step.Command == "unload") {
+		BuildingClass * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
+		if (building != NULL) {
+			building->Assign_Mission(MISSION_UNLOAD);
+		}
+	} else if (step.Command == "garrisons") {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->Class->IsCanBeOccupied && (building->Occupants.Count() > 0 || building->Class->MaxNumberOccupants > 0)) {
+				DebugString("AUTOTEST   garrison %s cell %d,%d house %s occupants %d/%d strength %d fire %d tar %d arm %d mission %d queue %d ready %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+					building->House->Class->Name(), building->Occupants.Count(), building->Class->MaxNumberOccupants, building->Strength, (int)building->Can_Occupy_Fire(), (int)(building->TarCom != NULL), (int)building->Arm, (int)building->Mission, (int)building->MissionQueue, (int)building->IsReadyToCommence);
+			}
+		}
+	} else if (step.Command == "spawn") {
+		// spawn <TypeID> x y: puts an object of the type, owned by the first computer house, on that cell.
+		HouseClass * enemy = NULL;
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
+				enemy = Houses[index];
+				break;
+			}
+		}
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (enemy != NULL && type != NULL) {
+			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(enemy));
+			Cell cell(step.X, step.Y);
+			ScenarioInit++;
+			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+			ScenarioInit--;
+			if (placed) {
+				object->Assign_Mission(MISSION_GUARD);
+			}
+			DebugString("AUTOTEST spawn %s at %d,%d: %s\n", type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+		}
+	} else if (step.Command == "count") {
+		// count <TypeID>: the number of live objects of the type on the map, per owner.
+		for (int house = 0; house < Houses.Count(); house++) {
+			int count = 0;
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass const * techno = Technos[index];
+				if (techno->House == Houses[house] && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+					count++;
+				}
+			}
+			if (count > 0) {
+				DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
+			}
+		}
+	} else if (step.Command == "schemes") {
+		// schemes: every color scheme by list position, then the scheme each house draws with.
+		for (int index = 0; index < ColorSchemes.Count(); index++) {
+			DebugString("AUTOTEST   scheme %d %s\n", index, ColorSchemes[index]->Name != NULL ? ColorSchemes[index]->Name : "-");
+		}
+		for (int index = 0; index < Houses.Count(); index++) {
+			DebugString("AUTOTEST   house %s scheme %d\n", Houses[index]->Class->Name(), Houses[index]->Scheme);
+		}
 	} else if (step.Command == "teams") {
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
