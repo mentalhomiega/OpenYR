@@ -73,7 +73,7 @@ MinProductionSpeed=0.75  ; lowest production multiplier a shortfall can impose
 
 ### What each structure contributes
 
-A structure's output is its type's positive [`Power=`](/keys/power/#scope-buildingtype) plus the positive `Power=` of every plug installed in it. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). The sum is multiplied by the structure's current strength as a fraction of its maximum and rounded down.
+A structure's output is its type's positive [`Power=`](/keys/power/#scope-buildingtype) plus the positive `Power=` of every plug installed in it, plus [`ExtraPower`](/keys/extrapower/) for each object inside an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). The sum is multiplied by the structure's current strength as a fraction of its maximum and rounded down.
 
 A structure's drain is the size of its type's negative `Power=`, plus the drain of its plugs. Damage does not change it.
 

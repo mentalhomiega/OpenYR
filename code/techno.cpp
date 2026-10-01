@@ -4720,7 +4720,8 @@ bool TechnoClass::Can_Deploy_Now(void) const
 	}
 
 	BuildingClass const * building = dynamic_cast<BuildingClass const *>(this);
-	if (building != NULL && building->Occupants.Count() > 0 && !Is_Immobilized()) {
+	if (building != NULL && !Is_Immobilized() && (building->Occupants.Count() > 0
+		|| ((building->Class->IsInfantryAbsorb || building->Class->IsUnitAbsorb) && building->Cargo.How_Many() > 0))) {
 		blocked = false;
 	}
 	if (building != NULL && building->Class->Can_Always_Undeploy()) {

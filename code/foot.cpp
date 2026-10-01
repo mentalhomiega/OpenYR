@@ -2315,12 +2315,18 @@ int FootClass::Do_MISSION_ENTER(void)
 		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
 			grinder = (BuildingClass *)ArchiveTarget;
 		}
-		if (grinder != NULL && grinder->Class->IsGrinding && grinder->House == House) {
-			ArchiveTarget = grinder;
-			if (NavCom == NULL) {
-				Assign_Destination(grinder);
+		if (grinder != NULL && (grinder->Class->IsGrinding || grinder->Class->IsInfantryAbsorb || grinder->Class->IsUnitAbsorb)) {
+			if (grinder->Takes_Walk_Ins(this)) {
+				ArchiveTarget = grinder;
+				if (NavCom == NULL) {
+					Assign_Destination(grinder);
+				}
+				return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 			}
-			return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+			ArchiveTarget = NULL;
+			Assign_Destination(NULL);
+			Enter_Idle_Mode();
+			return(Current_Mission_Control().Normal_Delay());
 		}
 	}
 

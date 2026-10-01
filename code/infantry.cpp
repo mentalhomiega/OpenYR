@@ -961,6 +961,18 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					BEnd(BENCH_PCP);
 					return;
 				}
+				if (((BuildingClass *)techno)->Class->IsInfantryAbsorb && techno == Get_Cell_Ptr()->Cell_Building()) {
+					if (((BuildingClass *)techno)->Can_Absorb(this)) {
+						NavCom = NULL;
+						ArchiveTarget = NULL;
+						((BuildingClass *)techno)->Absorb(this);
+					} else {
+						Assign_Destination(NULL);
+						Scatter(COORD_NONE, true);
+					}
+					BEnd(BENCH_PCP);
+					return;
+				}
 				if (techno == Get_Cell_Ptr()->Cell_Building() && Transmit_Message(RADIO_IM_IN) == RADIO_ROGER) {
 					Limbo();
 					Transmit_Message(RADIO_HELLO, techno);
@@ -2822,6 +2834,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Class->IsGrinding && ((BuildingClass const *)object)->House == House) {
 		return(ACTION_ENTER);
+	}
+
+	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Class->IsInfantryAbsorb && ((BuildingClass const *)object)->House == House) {
+		return(((BuildingClass const *)object)->Can_Absorb(this) ? ACTION_ENTER : ACTION_NO_ENTER);
 	}
 
 	/*

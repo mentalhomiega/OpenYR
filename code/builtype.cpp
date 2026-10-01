@@ -296,6 +296,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSpySat(false),
 	IsCloning(false),
 	IsGrinding(false),
+	IsInfantryAbsorb(false),
+	IsUnitAbsorb(false),
+	ExtraPowerBonus(0),
 	IsFactoryPlant(false),
 	InfantryCostBonus(1.0),
 	UnitsCostBonus(1.0),
@@ -1282,6 +1285,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsSpySat = ini.Get_Bool(Name(), "SpySat", IsSpySat);
 		IsCloning = ini.Get_Bool(Name(), "Cloning", IsCloning);
 		IsGrinding = ini.Get_Bool(Name(), "Grinding", IsGrinding);
+		IsInfantryAbsorb = ini.Get_Bool(Name(), "InfantryAbsorb", IsInfantryAbsorb);
+		IsUnitAbsorb = ini.Get_Bool(Name(), "UnitAbsorb", IsUnitAbsorb);
+		ExtraPowerBonus = ini.Get_Int(Name(), "ExtraPower", ExtraPowerBonus);
 		IsFactoryPlant = ini.Get_Bool(Name(), "FactoryPlant", IsFactoryPlant);
 		InfantryCostBonus = ini.Get_Float(Name(), "InfantryCostBonus", InfantryCostBonus);
 		UnitsCostBonus = ini.Get_Float(Name(), "UnitsCostBonus", UnitsCostBonus);
@@ -2261,6 +2267,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpySat);
 	stream.Serialize(IsCloning);
 	stream.Serialize(IsGrinding);
+	stream.Serialize(IsInfantryAbsorb);
+	stream.Serialize(IsUnitAbsorb);
+	stream.Serialize(ExtraPowerBonus);
 	stream.Serialize(IsFactoryPlant);
 	stream.Serialize(InfantryCostBonus);
 	stream.Serialize(UnitsCostBonus);

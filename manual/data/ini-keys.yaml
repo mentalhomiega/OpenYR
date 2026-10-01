@@ -9278,6 +9278,23 @@ ExtraLight:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ExtraPower:
+  key: ExtraPower
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: ExtraPowerBonus
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ExtraUnitLight:
   key: ExtraUnitLight
   scopes:
@@ -12496,6 +12513,23 @@ InfDeath:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+InfantryAbsorb:
+  key: InfantryAbsorb
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsInfantryAbsorb
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 InfantryBaseMult:
   key: InfantryBaseMult
   scopes:
@@ -28469,6 +28503,23 @@ UnderDoorAnim:
       default_candidate: ''
       declared_in: BuildingTypeClass
       member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+UnitAbsorb:
+  key: UnitAbsorb
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsUnitAbsorb
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass

@@ -3353,7 +3353,8 @@ class DeployCommandClass : public CommandClass
 				for (int index = 0; index < CurrentObject.Count(); index++) {
 					ObjectClass * obj = CurrentObject[index];
 					BuildingClass const * garrison = (obj != NULL && obj->RTTI == RTTI_BUILDING) ? (BuildingClass const *)obj : NULL;
-					bool evacuate = garrison != NULL && garrison->Occupants.Count() > 0 && garrison->House->Is_Player_Control();
+					bool evacuate = garrison != NULL && garrison->House->Is_Player_Control() && (garrison->Occupants.Count() > 0
+						|| ((garrison->Class->IsInfantryAbsorb || garrison->Class->IsUnitAbsorb) && garrison->Cargo.How_Many() > 0));
 					if (obj != NULL && (obj->Can_Player_Move() || obj->Can_Player_Fire() || evacuate)) {
 						TechnoClass * tech = dynamic_cast<TechnoClass *>(obj);
 						if (tech == NULL || (tech->Can_Attack_Now() && tech->Can_Deploy_Now())) {

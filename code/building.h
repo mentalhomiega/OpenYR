@@ -546,6 +546,10 @@ class BuildingClass : public TechnoClass
 		void Occupy(InfantryClass * infantry);
 		void Eject_Occupants(void);
 		void Grind(FootClass * object);
+		bool Can_Absorb(FootClass const * object) const;
+		void Absorb(FootClass * object);
+		bool Release_Passenger(void);
+		bool Takes_Walk_Ins(FootClass const * object) const;
 		void Garrison_AI(void);
 		void Set_Garrison_House(HouseClass * newowner);
 		void Power_Anims_Off(void);

@@ -2111,6 +2111,13 @@ void UnitClass::Per_Cell_Process(PCPType why)
 				BEnd(BENCH_PCP);
 				return;
 			}
+			if (grinder->Class->IsUnitAbsorb && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Absorb(this)) {
+				NavCom = NULL;
+				ArchiveTarget = NULL;
+				grinder->Absorb(this);
+				BEnd(BENCH_PCP);
+				return;
+			}
 		}
 
 		TechnoClass	* whom = Contact_With_Whom();
@@ -3912,7 +3919,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			if (obj == Contact_With_Whom() && (IsTethered || (obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Class->IsCanUnitRepair))) {
 				return(MOVE_OK);
 			}
-			if (obj == NavCom && Mission == MISSION_ENTER && obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Class->IsGrinding && ((BuildingClass *)obj)->House == House) {
+			if (obj == NavCom && Mission == MISSION_ENTER && obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Takes_Walk_Ins(this)) {
 				return(MOVE_OK);
 			}
 

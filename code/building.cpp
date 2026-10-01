@@ -399,7 +399,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 
 		// A grinder takes in its owner's objects without holding contact with any one of them.
 		case RADIO_HELLO:
-			if (Class->IsGrinding) {
+			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
 				return(RADIO_NEGATIVE);
 			}
 			break;
@@ -413,8 +413,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			if (!House->Is_Ally(from)) return(RADIO_STATIC);
 			if (Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION || BState == BSTATE_CONSTRUCTION || (!ScenarioInit && In_Radio_Contact() && Contact_With_Whom() != from)) return(RADIO_NEGATIVE);
 			if (!IsOn) return(RADIO_NEGATIVE);
-			if (Class->IsGrinding) {
-				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && ((TechnoClass *)from)->House == House) {
+			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && Takes_Walk_Ins((FootClass const *)from)) {
 					return(RADIO_ROGER);
 				}
 				return(RADIO_NEGATIVE);
@@ -512,7 +512,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				}
 			}
 
-			if (Class->IsGrinding) {
+			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
 				return(RADIO_ROGER);
 			}
 
@@ -2656,7 +2656,7 @@ bool BuildingClass::Active_Click_With(ActionType action, ObjectClass * object, b
 	}
 
 	if (action == ACTION_SELF) {
-		if (Occupants.Count() > 0) {
+		if (Occupants.Count() > 0 || ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0)) {
 			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
 			return(true);
 		}
@@ -4004,7 +4004,8 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
 
-	if (action == ACTION_SELF && Occupants.Count() > 0) {
+	bool absorbed = (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0;
+	if (action == ACTION_SELF && (Occupants.Count() > 0 || absorbed)) {
 		if (StunDuration > 0 || House != PlayerPtr) {
 			action = ACTION_NONE;
 		}
@@ -4989,6 +4990,12 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 
 			if (Can_Be_Undeployed() && Class->Is_Mobile_Deployer()) {
 				Assign_Target(NULL);
+			}
+
+			// Selling an absorber lets everyone inside out first.
+			if (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+				while (Release_Passenger()) {
+				}
 			}
 
 			/*
@@ -6372,6 +6379,14 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 		return(1);
 	}
 
+	if ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0) {
+		if (Release_Passenger()) {
+			return(Current_Mission_Control().Normal_Delay());
+		}
+		Enter_Idle_Mode();
+		return(1);
+	}
+
 	if (Class->IsWeaponsFactory) {
 		// The door cell, as in Yuri's Revenge (BuildingClass::Mission_Unload, 0x44D880): the
 		// eleventh outside cell, moved one cell west.
@@ -6624,6 +6639,11 @@ int BuildingClass::Do_MISSION_OPEN(void)
 int BuildingClass::Power_Output(void) const
 {
 	int power = Class->Power;
+
+	// An absorber makes ExtraPower more for each object inside, as BuildingClass::GetPowerOutput (0x44E7B0) does.
+	if ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Class->ExtraPowerBonus > 0) {
+		power += Class->ExtraPowerBonus * Cargo.How_Many();
+	}
 	if (UpgradeLevel != 0) {
 		for (int i = 0; i < BUILDING_UPGRADE_MAX; i++) {
 			if (Upgrades[i] != NULL) {
@@ -8347,6 +8367,78 @@ void BuildingClass::Occupy(InfantryClass * infantry)
 	infantry->Limbo();
 	Occupants.Add(infantry);
 	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Tells whether this structure lets the object walk or drive in now: a grinder takes any of
+/// its owner's infantry and vehicles, and an absorber the kind it absorbs while it has room.
+/// </summary>
+bool BuildingClass::Takes_Walk_Ins(FootClass const * object) const
+{
+	if (object == NULL || object->House != House) {
+		return(false);
+	}
+	if (Class->IsGrinding) {
+		return(object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT);
+	}
+	return(Can_Absorb(object));
+}
+
+
+/// <summary>
+/// Tells whether this InfantryAbsorb=yes or UnitAbsorb=yes structure can take the object in now,
+/// as BuildingClass::DiscoveredBy (0x43C2D0) checks: the object must be its owner's, of the kind
+/// it absorbs, and there must be room under its Passengers.
+/// </summary>
+bool BuildingClass::Can_Absorb(FootClass const * object) const
+{
+	if (object == NULL || object->House != House) {
+		return(false);
+	}
+	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
+		return(false);
+	}
+	bool kind = (object->RTTI == RTTI_INFANTRY && Class->IsInfantryAbsorb) || (object->RTTI == RTTI_UNIT && Class->IsUnitAbsorb);
+	return(kind && Cargo.How_Many() < Class->Max_Passengers());
+}
+
+
+/// <summary>
+/// Takes the object inside. It stays off the map until the structure releases it.
+/// </summary>
+void BuildingClass::Absorb(FootClass * object)
+{
+	object->Limbo();
+	Cargo.Attach(object);
+	House->RecalcPower = true;
+	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Puts the first passenger back on the map next to the structure, as BuildingClass::Mission_Unload
+/// (0x44D880) does. A passenger with no room to stand is removed from the game.
+/// </summary>
+/// <returns>bool; Is anyone still inside?</returns>
+bool BuildingClass::Release_Passenger(void)
+{
+	FootClass * passenger = Cargo.Detach_Object();
+	if (passenger != NULL) {
+		Cell cell = Map.Nearby_Location(Get_Cell() + Cell(0, Class->Height()), passenger->TClass->Speed);
+		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
+		ScenarioInit++;
+		bool placed = coord != COORD_NONE && passenger->Unlimbo(coord, DIR_S);
+		ScenarioInit--;
+		if (placed) {
+			passenger->Enter_Idle_Mode();
+		} else {
+			delete passenger;
+		}
+		House->RecalcPower = true;
+		Mark(MARK_CHANGE);
+	}
+	return(Cargo.How_Many() > 0);
 }
 
 

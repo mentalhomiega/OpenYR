@@ -14,7 +14,7 @@ keys:
   - CrewEscape
 ---
 
-A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero is a transport. A structure or infantry type that sets `Passengers` admits nobody. A player can order infantry and vehicles aboard a transport, but not aircraft.
+A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero is a transport. A structure or infantry type that sets `Passengers` admits nobody, except a structure with [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/), which its owner's infantry or vehicles can enter. A player can order infantry and vehicles aboard a transport, but not aircraft.
 
 ```ini title="rules.ini"
 [MYAPC]                  ; a UnitType registered in [VehicleTypes]

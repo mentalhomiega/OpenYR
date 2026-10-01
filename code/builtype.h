@@ -508,6 +508,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Grinding=yes structure takes in its owner's infantry and vehicles and pays their refund.
 		bool IsGrinding;
 
+		// An InfantryAbsorb=yes or UnitAbsorb=yes structure takes in its owner's infantry or
+		// vehicles, up to Passengers, and makes ExtraPower more power for each one inside.
+		bool IsInfantryAbsorb;
+		bool IsUnitAbsorb;
+		int ExtraPowerBonus;
+
 		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
 		bool IsFactoryPlant;
 		double InfantryCostBonus;
