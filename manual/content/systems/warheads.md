@@ -4,6 +4,10 @@ summary: "How a blast chooses the objects it damages, how much strength each one
 category: weapons-projectiles
 keys:
   - AffectsAllies
+  - PsychicDamage
+  - Poison
+  - ImmuneToPsionicWeapons
+  - ImmuneToPoison
   - Psychedelic
   - BerserkFriendly
   - ShakeXlo
@@ -169,7 +173,7 @@ Every candidate receives the same raw figure and then reduces it separately, so 
 7. **Iron Curtain.** An object under the [Iron Curtain](/systems/superweapons/#iron-curtain) takes no damage.
 8. **Allies.** An [`AffectsAllies=no`](/keys/affectsallies/) warhead does nothing to an object whose owner is an ally of the credited attacker's house, the attacker's own house included.
 9. **Madness.** A [`Psychedelic=yes`](/keys/psychedelic/) warhead does no damage. Instead it drives a vehicle, infantryman or aircraft berzerk, unless the object's owner is an ally of the credited attacker's house or its type is [`ImmuneToPsionics=yes`](/keys/immunetopsionics/). The madness lasts as many frames as the hit's damage after the warhead's `Verses` entry for the object's armor and the thinning with distance from the blast, and a new hit restarts the count. An object that was not yet berzerk leaves its team, drops its target and starts hunting. [Berzerk objects](/systems/target-selection/#berzerk-objects) describes what it does then.
-10. **Object immunity.** An object whose type is [`Immune=yes`](/keys/immune/#scope-aircrafttype) takes no damage. Neither does an object already at zero strength.
+10. **Object immunity.** An object whose type is [`Immune=yes`](/keys/immune/#scope-aircrafttype) takes no damage. Neither does an object already at zero strength. A [`PsychicDamage=yes`](/keys/psychicdamage/) warhead does nothing to an [`ImmuneToPsionicWeapons=yes`](/keys/immunetopsionicweapons/) type, and a [`Poison=yes`](/keys/poison/) warhead nothing to an [`ImmuneToPoison=yes`](/keys/immunetopoison/) type.
 11. **Distance.** The figure thins with the target's distance from the blast, as [the next section](#how-distance-thins-the-damage) explains.
 12. **Armor table.** The result is multiplied by the warhead's [`Verses`](/keys/verses/) entry for the target's [`Armor=`](/keys/armor/#scope-aircrafttype) class and rounded down. It can reach zero.
 13. **`MaxDamage` ceiling.** The result is capped at [`MaxDamage`](/keys/maxdamage/). The cap applies to each hit separately, not to the blast as a whole.

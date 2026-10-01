@@ -192,6 +192,10 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A Psychedelic warhead drives what it hits berzerk for as many frames as the damage it would have done.
 		bool IsPsychedelic;
 
+		// A PsychicDamage warhead spares ImmuneToPsionicWeapons types; a Poison warhead spares ImmuneToPoison types.
+		bool IsPsychicDamage;
+		bool IsPoison;
+
 		// The range, in pixels, of the sideways and vertical screen shake the warhead's detonation starts.
 		int ShakeXlo;
 		int ShakeXhi;

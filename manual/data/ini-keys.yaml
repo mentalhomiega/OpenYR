@@ -14721,6 +14721,40 @@ ImmuneToEMP:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ImmuneToPoison:
+  key: ImmuneToPoison
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToPoison
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ImmuneToPsionicWeapons:
+  key: ImmuneToPsionicWeapons
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToPsionicWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ImmuneToPsionics:
   key: ImmuneToPsionics
   scopes:
@@ -22299,6 +22333,23 @@ Points:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Poison:
+  key: Poison
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsPoison
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 PoseDir:
   key: PoseDir
   scopes:
@@ -23536,6 +23587,23 @@ Psychedelic:
       default_candidate: 'no'
       declared_in: WarheadTypeClass
       member: IsPsychedelic
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+PsychicDamage:
+  key: PsychicDamage
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsPsychicDamage
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass

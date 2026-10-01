@@ -5420,6 +5420,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// Nor does a PsychicDamage warhead to an ImmuneToPsionicWeapons type, or a Poison warhead to an ImmuneToPoison one.
+	if (warhead != NULL && ((warhead->IsPsychicDamage && TClass->IsImmuneToPsionicWeapons) || (warhead->IsPoison && TClass->IsImmuneToPoison))) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, unless the damage is forced.
 	if (warhead != NULL && !warhead->IsAffectsAllies && !forced && source != NULL && House->Is_Ally(source->House)) {
 		damage = 0;

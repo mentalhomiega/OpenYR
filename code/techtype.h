@@ -294,6 +294,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Does a berzerk object refuse to fire at objects of this type?
 		bool IsBerserkFriendly;
 
+		// Is this type spared PsychicDamage warheads, or Poison warheads?
+		bool IsImmuneToPsionicWeapons;
+		bool IsImmuneToPoison;
+
 		// Does an idle object of this type pick targets on its own, and does it fire back when hit?
 		bool IsCanPassiveAquire;
 		bool IsCanRetaliate;
