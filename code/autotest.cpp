@@ -33,6 +33,7 @@
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
+**	maps					writes every XMP multiplayer map the file system finds
 **	cratesounds				writes the sound numbers the crate pickup sounds resolved to
 **	elite <TypeID>			makes the player's objects of that type elite
 **	canrepair x y			writes whether the structure on that cell can be repaired with the repair cursor
@@ -396,9 +397,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "cell") {
 		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
 		ObjectClass const * occupier = cell.Cell_Occupier();
-		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d gap %d\n",
+		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d gap %d land %d\n",
 			std::atoi(step.Argument.c_str()), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
-			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), cell.GapCount);
+			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-", (int)cell.RadLevel, (int)cell.Ambient, (int)cell.Brightness, LightSources.Count(), cell.GapCount, (int)cell.Land_Type());
 	} else if (step.Command == "water") {
 		// water x y: logs the open water cell nearest to that cell.
 		Cell const from(std::atoi(step.Argument.c_str()), step.X);
@@ -523,6 +524,19 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   evafile %s: %s %s\n", step.Argument.c_str(), file.empty() ? "-" : file.c_str(), handle.Is_Valid() ? "opened" : "failed");
 		if (handle.Is_Valid()) {
 			AudioEngine.Stop_Stream(handle);
+		}
+	} else if (step.Command == "maps") {
+		// maps: every XMP<nn><letter><digit>.MAP multiplayer map the file system finds.
+		for (int number = 0; number < 100; number++) {
+			for (char letter = 'A'; letter <= 'Z'; letter++) {
+				for (char digit = '0'; digit <= '9'; digit++) {
+					char name[32];
+					std::snprintf(name, sizeof(name), "XMP%02d%c%c.MAP", number, letter, digit);
+					if (CCFileClass(name).Is_Available()) {
+						DebugString("AUTOTEST   map %s\n", name);
+					}
+				}
+			}
 		}
 	} else if (step.Command == "inifile") {
 		// inifile <FILE.INI>: every section and entry of that file, as the game's file system finds it.
