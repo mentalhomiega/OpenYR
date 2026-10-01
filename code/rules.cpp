@@ -356,6 +356,17 @@ RulesClass::RulesClass(void) :
 	WarpOut(NULL),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
+	AllyParaDropInf(),
+	AllyParaDropNum(),
+	SovParaDropInf(),
+	SovParaDropNum(),
+	YuriParaDropInf(),
+	YuriParaDropNum(),
+	AmerParaDropInf(),
+	AmerParaDropNum(),
+	ParadropRadius(1024),
+	SpyPlaneCamera(VOC_NONE),
+	SpyPlaneCameraFrames(16),
 	LightningStormDuration(900),
 	LightningStormDeferment(250),
 	LightningStormDamage(200),
@@ -985,6 +996,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		PsychicDominatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicDominatorActivateSound", PsychicDominatorActivateSound);
 		ChronoInSound = ini.Get_VocType(AUDIOVISUAL, "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(AUDIOVISUAL, "ChronoOutSound", ChronoOutSound);
+		SpyPlaneCamera = ini.Get_VocType(AUDIOVISUAL, "SpyPlaneCamera", SpyPlaneCamera);
+		SpyPlaneCameraFrames = ini.Get_Int(AUDIOVISUAL, "SpyPlaneCameraFrames", SpyPlaneCameraFrames);
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "MetallicDebris", MetallicDebris);
 		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "BridgeExplosions", BridgeExplosions);
@@ -1194,6 +1207,17 @@ bool RulesClass::General(CCINIClass const & ini)
 		ChronoBlast = TGet_Class(ini, GENERAL, "ChronoBlast", ChronoBlast);
 		ChronoBlastDest = TGet_Class(ini, GENERAL, "ChronoBlastDest", ChronoBlastDest);
 		WarpOut = TGet_Class(ini, GENERAL, "WarpOut", WarpOut);
+		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
+		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
+		AllyParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AllyParaDropInf", AllyParaDropInf);
+		AllyParaDropNum = ini.Get_IntList(GENERAL, "AllyParaDropNum", AllyParaDropNum);
+		SovParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "SovParaDropInf", SovParaDropInf);
+		SovParaDropNum = ini.Get_IntList(GENERAL, "SovParaDropNum", SovParaDropNum);
+		YuriParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "YuriParaDropInf", YuriParaDropInf);
+		YuriParaDropNum = ini.Get_IntList(GENERAL, "YuriParaDropNum", YuriParaDropNum);
+		AmerParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AmerParaDropInf", AmerParaDropInf);
+		AmerParaDropNum = ini.Get_IntList(GENERAL, "AmerParaDropNum", AmerParaDropNum);
+		ParadropRadius = ini.Get_Int(GENERAL, "ParadropRadius", ParadropRadius);
 		LightningStormDuration = ini.Get_Int(GENERAL, "LightningStormDuration", LightningStormDuration);
 		LightningStormDeferment = ini.Get_Int(GENERAL, "LightningDeferment", LightningStormDeferment);
 		LightningStormDamage = ini.Get_Int(GENERAL, "LightningDamage", LightningStormDamage);
@@ -2331,6 +2355,17 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(WarpOut);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
+	stream.Serialize(AllyParaDropInf);
+	stream.Serialize(AllyParaDropNum);
+	stream.Serialize(SovParaDropInf);
+	stream.Serialize(SovParaDropNum);
+	stream.Serialize(YuriParaDropInf);
+	stream.Serialize(YuriParaDropNum);
+	stream.Serialize(AmerParaDropInf);
+	stream.Serialize(AmerParaDropNum);
+	stream.Serialize(ParadropRadius);
+	stream.Serialize(SpyPlaneCamera);
+	stream.Serialize(SpyPlaneCameraFrames);
 	stream.Serialize(LightningStormDuration);
 	stream.Serialize(LightningStormDeferment);
 	stream.Serialize(LightningStormDamage);

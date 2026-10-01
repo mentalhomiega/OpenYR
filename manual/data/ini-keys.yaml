@@ -1699,7 +1699,7 @@ AdvancedPowerPlant:
 Agent:
   key: Agent
   scopes:
-  - applies_to: &id016
+  - applies_to: &id018
     - InfantryType
     file: rules.ini
     section:
@@ -2123,6 +2123,42 @@ AllowedToStartInMultiplayer:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+AllyParaDropInf:
+  key: AllyParaDropInf
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AllyParaDropInf
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AllyParaDropNum:
+  key: AllyParaDropNum
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AllyParaDropNum
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AllyReveal:
   key: AllyReveal
   scopes:
@@ -2205,7 +2241,7 @@ AltHomeCell:
 AltImage:
   key: AltImage
   scopes:
-  - applies_to: &id017
+  - applies_to: &id019
     - UnitType
     file: rules.ini
     section:
@@ -2363,6 +2399,42 @@ AmbientDamage:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+AmerParaDropInf:
+  key: AmerParaDropInf
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AmerParaDropInf
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AmerParaDropNum:
+  key: AmerParaDropNum
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AmerParaDropNum
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Ammo:
   key: Ammo
   scopes:
@@ -2502,7 +2574,7 @@ AnimIdle:
 AnimList:
   key: AnimList
   scopes:
-  - applies_to: &id013
+  - applies_to: &id015
     - WarheadType
     file: rules.ini
     section:
@@ -2905,7 +2977,7 @@ AttachedParticleSystem:
 AttachedSystem:
   key: AttachedSystem
   scopes:
-  - applies_to: &id012
+  - applies_to: &id014
     - VoxelAnimType
     file: rules.ini
     section:
@@ -3415,7 +3487,7 @@ Bases:
 BehavesLike:
   key: BehavesLike
   scopes:
-  - applies_to: &id019
+  - applies_to: &id021
     - ParticleType
     file: rules.ini
     section:
@@ -3430,7 +3502,7 @@ BehavesLike:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
-  - applies_to: &id025
+  - applies_to: &id027
     - ParticleSystemType
     file: rules.ini
     section:
@@ -3663,12 +3735,12 @@ BlueMoldTile:
 BombParachute:
   key: BombParachute
   scopes:
-  - applies_to:
+  - applies_to: &id012
     - global rules
     file: rules.ini
-    section:
+    section: &id013
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: class
     status: generated
     _provenance:
@@ -3677,6 +3749,18 @@ BombParachute:
       member: BombParachute
       source: code/rules.cpp
       guard: null
+    read_from:
+    - file: rules.ini
+      section:
+        kind: literal
+        name: AudioVisual
+      value_type: class
+      applies_to: *id012
+    - file: rules.ini
+      section: *id013
+      value_type: class
+      applies_to: *id012
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 BounceAnim:
   key: BounceAnim
@@ -3695,7 +3779,7 @@ BounceAnim:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -3726,7 +3810,7 @@ BounceSound:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -4096,7 +4180,7 @@ Bright:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -4467,7 +4551,7 @@ Buildable:
 BuildableOver:
   key: BuildableOver
   scopes:
-  - applies_to: &id018
+  - applies_to: &id020
     - OverlayType
     file: rules.ini
     section:
@@ -4609,7 +4693,7 @@ BuildupTime:
 Burn:
   key: Burn
   scopes:
-  - applies_to: &id020
+  - applies_to: &id022
     - SmudgeType
     file: rules.ini
     section:
@@ -4712,10 +4796,10 @@ BurstDelay3:
 ButtonList:
   key: ButtonList
   scopes:
-  - applies_to: &id014
+  - applies_to: &id016
     - UI controls
     file: ui.ini
-    section: &id015
+    section: &id017
       kind: literal
       name: MultiplayerAdvancedCommandBar
     value_type: string
@@ -4732,17 +4816,17 @@ ButtonList:
         kind: literal
         name: AdvancedCommandBar
       value_type: string
-      applies_to: *id014
+      applies_to: *id016
     - file: ui.ini
-      section: *id015
+      section: *id017
       value_type: string
-      applies_to: *id014
+      applies_to: *id016
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: UIControlsClass
 C4:
   key: C4
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -4795,7 +4879,7 @@ C4Warhead:
 CD:
   key: CD
   scopes:
-  - applies_to: &id023
+  - applies_to: &id025
     - Campaign
     file: battle.ini
     section:
@@ -4965,7 +5049,7 @@ CaptureTheFlag:
 CarriesCrate:
   key: CarriesCrate
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -5018,7 +5102,7 @@ CarryOverMoney:
 Carryall:
   key: Carryall
   scopes:
-  - applies_to: &id021
+  - applies_to: &id023
     - AircraftType
     file: rules.ini
     section:
@@ -5071,7 +5155,7 @@ Cell:
 CellAnim:
   key: CellAnim
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -5088,7 +5172,7 @@ CellAnim:
 CellSpread:
   key: CellSpread
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -5105,7 +5189,7 @@ CellSpread:
 ChainReaction:
   key: ChainReaction
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -5381,7 +5465,7 @@ CivEvac:
 Civilian:
   key: Civilian
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -5868,7 +5952,7 @@ Color:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
-  - applies_to: &id022
+  - applies_to: &id024
     - Tiberium
     file: rules.ini
     section:
@@ -5917,7 +6001,7 @@ Color:
 ColorList:
   key: ColorList
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -5934,7 +6018,7 @@ ColorList:
 ColorSpeed:
   key: ColorSpeed
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -6163,7 +6247,7 @@ Control:
 Conventional:
   key: Conventional
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -6329,7 +6413,7 @@ CostUnitsMult:
 Crate:
   key: Crate
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -6346,7 +6430,7 @@ Crate:
 CrateGoodie:
   key: CrateGoodie
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -6471,7 +6555,7 @@ CrateRegen:
 CrateTrigger:
   key: CrateTrigger
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -6502,7 +6586,7 @@ Crater:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id020
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -6573,7 +6657,7 @@ Crates:
 Crawls:
   key: Crawls
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: art.ini
     section:
       kind: image
@@ -6902,7 +6986,7 @@ CursorScale:
 CustomRotor:
   key: CustomRotor
   scopes:
-  - applies_to: *id021
+  - applies_to: *id023
     file: art.ini
     section:
       kind: image
@@ -6919,7 +7003,7 @@ CustomRotor:
 Cyborg:
   key: Cyborg
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -6950,7 +7034,7 @@ Damage:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -6964,7 +7048,7 @@ Damage:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -7013,7 +7097,7 @@ DamageDelay:
 DamageLevels:
   key: DamageLevels
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: art.ini
     section:
       kind: image
@@ -7061,7 +7145,7 @@ DamageRadius:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -7147,7 +7231,7 @@ DamagedDoor:
 Deacc:
   key: Deacc
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -7181,7 +7265,7 @@ DeaccelerationFactor:
 DeadBodies:
   key: DeadBodies
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -7213,7 +7297,7 @@ DeadBodies:
 DeathFrameRate:
   key: DeathFrameRate
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -7230,7 +7314,7 @@ DeathFrameRate:
 DeathFrames:
   key: DeathFrames
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -7247,7 +7331,7 @@ DeathFrames:
 Debris:
   key: Debris
   scopes:
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -7566,7 +7650,7 @@ DefensesCostBonus:
 Deform:
   key: Deform
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -7583,7 +7667,7 @@ Deform:
 DeformThreshhold:
   key: DeformThreshhold
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -7635,7 +7719,7 @@ Delay:
 DeleteOnStateLimit:
   key: DeleteOnStateLimit
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -7680,7 +7764,7 @@ DemandLoad:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id018
+  - applies_to: *id020
     file: art.ini
     section:
       kind: image
@@ -7714,7 +7798,7 @@ DemandLoadBuildup:
 DeployFire:
   key: DeployFire
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -7731,7 +7815,7 @@ DeployFire:
 DeployFireWeapon:
   key: DeployFireWeapon
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -7762,7 +7846,7 @@ DeploySound:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -7811,7 +7895,7 @@ DeployTime:
 DeployToFire:
   key: DeployToFire
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -7828,7 +7912,7 @@ DeployToFire:
 Deployer:
   key: Deployer
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -7880,7 +7964,7 @@ DeploysInto:
 Description:
   key: Description
   scopes:
-  - applies_to: *id023
+  - applies_to: *id025
     file: battle.ini
     section:
       kind: identifier
@@ -8259,7 +8343,7 @@ Disguise:
 Disguised:
   key: Disguised
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -8328,7 +8412,7 @@ DockUnload:
 Doggie:
   key: Doggie
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -8523,7 +8607,7 @@ Drag:
 DrawFlat:
   key: DrawFlat
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -8848,7 +8932,7 @@ DumbTargetStrengthCoefficient:
 Duration:
   key: Duration
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -8865,7 +8949,7 @@ Duration:
 EMEffect:
   key: EMEffect
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -9017,7 +9101,7 @@ Elasticity:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -9051,7 +9135,7 @@ EliteAbilities:
 EliteOccupyWeapon:
   key: EliteOccupyWeapon
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -9239,7 +9323,7 @@ EndOfGame:
 EndStateAI:
   key: EndStateAI
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -9292,7 +9376,7 @@ EnemyHouseThreatBonus:
 Engineer:
   key: Engineer
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -9427,7 +9511,7 @@ ExpireAnim:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -9458,7 +9542,7 @@ ExpireSound:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -9489,7 +9573,7 @@ Explodes:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -9664,7 +9748,7 @@ FShift:
 Facings:
   key: Facings
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -9733,7 +9817,7 @@ FadeOut:
 Fearless:
   key: Fearless
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -9822,7 +9906,7 @@ FillSilos:
 FinalDamageState:
   key: FinalDamageState
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -9839,7 +9923,7 @@ FinalDamageState:
 FinalMovie:
   key: FinalMovie
   scopes:
-  - applies_to: *id023
+  - applies_to: *id025
     file: battle.ini
     section:
       kind: identifier
@@ -9874,7 +9958,7 @@ FineDiffControl:
 Fire:
   key: Fire
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -9893,7 +9977,7 @@ FireAngle:
   scopes:
   - applies_to: *id003
     file: art.ini
-    section: &id024
+    section: &id026
       kind: image
       fallback: object-type
     value_type: angle
@@ -9912,7 +9996,7 @@ FireAngle:
       value_type: integer
       applies_to: *id003
     - file: art.ini
-      section: *id024
+      section: *id026
       value_type: angle
       applies_to: *id003
     precedence: read more than once -- the art.ini value is applied last and overrides the others
@@ -9940,7 +10024,7 @@ FirePower:
 FireProne:
   key: FireProne
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: art.ini
     section:
       kind: image
@@ -10011,7 +10095,7 @@ FireSupress:
 FireUp:
   key: FireUp
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: art.ini
     section:
       kind: image
@@ -10172,7 +10256,7 @@ FirestormWarhead:
 FiringFrames:
   key: FiringFrames
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -10189,7 +10273,7 @@ FiringFrames:
 FiringSyncFrame1:
   key: FiringSyncFrame1
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -10206,7 +10290,7 @@ FiringSyncFrame1:
 FiringSyncFrame2:
   key: FiringSyncFrame2
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -10587,7 +10671,7 @@ Foundation:
 Fraidycat:
   key: Fraidycat
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -11289,7 +11373,7 @@ Group:
 Growth:
   key: Growth
   scopes:
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -11306,7 +11390,7 @@ Growth:
 GrowthPercentage:
   key: GrowthPercentage
   scopes:
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -11429,7 +11513,7 @@ HSBuilding:
 HalfDamageSmokeLocation:
   key: HalfDamageSmokeLocation
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -11498,7 +11582,7 @@ Handle:
 Harvester:
   key: Harvester
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -11699,7 +11783,7 @@ Height:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id020
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -11816,7 +11900,7 @@ High:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -11833,7 +11917,7 @@ High:
 HighRadarBrightness:
   key: HighRadarBrightness
   scopes:
-  - applies_to: &id026
+  - applies_to: &id028
     - Theater
     file: rules.ini
     section:
@@ -11851,7 +11935,7 @@ HighRadarBrightness:
 HoldsWhat:
   key: HoldsWhat
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -12717,7 +12801,7 @@ Image:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -12750,7 +12834,7 @@ Image:
 ImageLetter:
   key: ImageLetter
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -12954,7 +13038,7 @@ Inert:
 InfDeath:
   key: InfDeath
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -13006,10 +13090,10 @@ InfantryBaseMult:
 InfantryBrute:
   key: InfantryBrute
   scopes:
-  - applies_to: &id027
+  - applies_to: &id029
     - global rules
     file: rules.ini
-    section: &id028
+    section: &id030
       kind: literal
       name: General
     value_type: class
@@ -13026,11 +13110,11 @@ InfantryBrute:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id027
+      applies_to: *id029
     - file: rules.ini
-      section: *id028
+      section: *id030
       value_type: class
-      applies_to: *id027
+      applies_to: *id029
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryCostBonus:
@@ -13124,10 +13208,10 @@ InfantryHeadPop:
 InfantryMutate:
   key: InfantryMutate
   scopes:
-  - applies_to: &id029
+  - applies_to: &id031
     - global rules
     file: rules.ini
-    section: &id030
+    section: &id032
       kind: literal
       name: General
     value_type: class
@@ -13144,11 +13228,11 @@ InfantryMutate:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id029
+      applies_to: *id031
     - file: rules.ini
-      section: *id030
+      section: *id032
       value_type: class
-      applies_to: *id029
+      applies_to: *id031
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryNuked:
@@ -13226,7 +13310,7 @@ InfantryWithPipGroupNumberOffset:
 Infiltrate:
   key: Infiltrate
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -13935,7 +14019,7 @@ IronCurtainInvokeAnim:
 IsARock:
   key: IsARock
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -14003,7 +14087,7 @@ IsAnimatedTiberium:
 IsArctic:
   key: IsArctic
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -14082,7 +14166,7 @@ IsCoreDefender:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -14167,7 +14251,7 @@ IsFlammable:
 IsIceGrowthEnabled:
   key: IsIceGrowthEnabled
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -14218,7 +14302,7 @@ IsLaser:
 IsLimpetDrone:
   key: IsLimpetDrone
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -14266,7 +14350,7 @@ IsMeteor:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -14283,7 +14367,7 @@ IsMeteor:
 IsMobileEMP:
   key: IsMobileEMP
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -14486,7 +14570,7 @@ IsTiberium:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -14503,7 +14587,7 @@ IsTiberium:
 IsTilter:
   key: IsTilter
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -14571,7 +14655,7 @@ IsVeinhole:
 IsVeinholeMonster:
   key: IsVeinholeMonster
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -14602,7 +14686,7 @@ IsVeins:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -14619,7 +14703,7 @@ IsVeins:
 IsWebImmune:
   key: IsWebImmune
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -14636,7 +14720,7 @@ IsWebImmune:
 IsoRoot:
   key: IsoRoot
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -14653,7 +14737,7 @@ IsoRoot:
 Jellyfish:
   key: Jellyfish
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -14670,7 +14754,7 @@ Jellyfish:
 JumpJet:
   key: JumpJet
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -14687,7 +14771,7 @@ JumpJet:
 Land:
   key: Land
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -14704,7 +14788,7 @@ Land:
 Landable:
   key: Landable
   scopes:
-  - applies_to: *id021
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -14739,7 +14823,7 @@ LargeFire:
 LargeVisceroid:
   key: LargeVisceroid
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -14771,7 +14855,7 @@ LargeVisceroid:
 Laser:
   key: Laser
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -14788,7 +14872,7 @@ Laser:
 LaserColor:
   key: LaserColor
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -15042,7 +15126,7 @@ Level:
 Lifetime:
   key: Lifetime
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -15127,7 +15211,7 @@ LightRedTint:
 LightSize:
   key: LightSize
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -15394,7 +15478,7 @@ Limit:
 LimpetFactor:
   key: LimpetFactor
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -15789,7 +15873,7 @@ LowPowerZAdjust:
 LowRadarBrightness:
   key: LowRadarBrightness
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -15842,7 +15926,7 @@ MMRampBase:
 MMSuffix:
   key: MMSuffix
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -15945,7 +16029,7 @@ Max:
 MaxAngularVelocity:
   key: MaxAngularVelocity
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -15980,7 +16064,7 @@ MaxBlockCount:
 MaxCharge:
   key: MaxCharge
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -15997,7 +16081,7 @@ MaxCharge:
 MaxDC:
   key: MaxDC
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -16032,7 +16116,7 @@ MaxDamage:
 MaxDeathCounter:
   key: MaxDeathCounter
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -16066,7 +16150,7 @@ MaxDebris:
 MaxEC:
   key: MaxEC
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -16290,7 +16374,7 @@ MaxXYVel:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -16307,7 +16391,7 @@ MaxXYVel:
 MaxZVel:
   key: MaxZVel
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -16431,10 +16515,10 @@ MessageDelay:
 MetallicDebris:
   key: MetallicDebris
   scopes:
-  - applies_to: &id031
+  - applies_to: &id033
     - global rules
     file: rules.ini
-    section: &id032
+    section: &id034
       kind: literal
       name: General
     value_type: typelist
@@ -16451,11 +16535,11 @@ MetallicDebris:
         kind: literal
         name: AudioVisual
       value_type: typelist
-      applies_to: *id031
+      applies_to: *id033
     - file: rules.ini
-      section: *id032
+      section: *id034
       value_type: typelist
-      applies_to: *id031
+      applies_to: *id033
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Meteorites:
@@ -16496,7 +16580,7 @@ MidPoint:
 MinAngularVelocity:
   key: MinAngularVelocity
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -16631,7 +16715,7 @@ MinZVel:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -16648,7 +16732,7 @@ MinZVel:
 MinZVelocity:
   key: MinZVelocity
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -16950,7 +17034,7 @@ MovementLineThick:
 MovementPerturbationCoefficient:
   key: MovementPerturbationCoefficient
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -16967,7 +17051,7 @@ MovementPerturbationCoefficient:
 MovementRestrictedTo:
   key: MovementRestrictedTo
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -17719,7 +17803,7 @@ NewTheater:
     level: ObjectTypeClass
   - applies_to: *id005
     file: art.ini
-    section: &id033
+    section: &id035
       kind: identifier
       source: object-type
     value_type: boolean
@@ -17738,7 +17822,7 @@ NewTheater:
       value_type: boolean
       applies_to: *id005
     - file: art.ini
-      section: *id033
+      section: *id035
       value_type: boolean
       applies_to: *id005
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -17763,7 +17847,7 @@ Next:
 NextParticle:
   key: NextParticle
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -17780,7 +17864,7 @@ NextParticle:
 NextParticleOffset:
   key: NextParticleOffset
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -17832,7 +17916,7 @@ NoAutoFire:
 NoMovingFire:
   key: NoMovingFire
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -17867,7 +17951,7 @@ NoThreat:
 NoUseTileLandType:
   key: NoUseTileLandType
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -18063,7 +18147,7 @@ NonMarbleMadness:
 NonVehicle:
   key: NonVehicle
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -18143,7 +18227,7 @@ Normalized:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -18157,7 +18241,7 @@ Normalized:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -18174,7 +18258,7 @@ Normalized:
 NotHuman:
   key: NotHuman
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -18209,7 +18293,7 @@ NukeDown:
 NukeMaker:
   key: NukeMaker
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -18297,7 +18381,7 @@ NukeWarhead:
 NumLoopFrames:
   key: NumLoopFrames
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -18347,7 +18431,7 @@ NumPlayers:
 Occupier:
   key: Occupier
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -18382,7 +18466,7 @@ OccupyDamageMultiplier:
 OccupyPip:
   key: OccupyPip
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -18417,7 +18501,7 @@ OccupyROFMultiplier:
 OccupyWeapon:
   key: OccupyWeapon
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -18552,7 +18636,7 @@ OnTransOnly:
 OneFrameLight:
   key: OneFrameLight
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -18656,7 +18740,7 @@ Organic:
 Overrides:
   key: Overrides
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -18742,18 +18826,48 @@ PadAircraft:
 Parachute:
   key: Parachute
   scopes:
-  - applies_to:
+  - applies_to: &id036
     - global rules
     file: rules.ini
-    section:
+    section: &id037
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: class
     status: generated
     _provenance:
       default_candidate: none
       declared_in: RulesClass
       member: Parachute
+      source: code/rules.cpp
+      guard: null
+    read_from:
+    - file: rules.ini
+      section:
+        kind: literal
+        name: AudioVisual
+      value_type: class
+      applies_to: *id036
+    - file: rules.ini
+      section: *id037
+      value_type: class
+      applies_to: *id036
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
+    level: RulesClass
+ParadropRadius:
+  key: ParadropRadius
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1024'
+      declared_in: RulesClass
+      member: ParadropRadius
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -18814,7 +18928,7 @@ Paratrooper:
 Particle:
   key: Particle
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -18831,7 +18945,7 @@ Particle:
 ParticleCap:
   key: ParticleCap
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -18848,7 +18962,7 @@ ParticleCap:
 ParticlesPerCoord:
   key: ParticlesPerCoord
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -18882,7 +18996,7 @@ Passengers:
 Passive:
   key: Passive
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -19025,7 +19139,7 @@ Percent:
 PercentAtMax:
   key: PercentAtMax
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -19130,7 +19244,7 @@ PingPong:
 Pip:
   key: Pip
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -19462,7 +19576,7 @@ PoseDir:
 PositionPerturbationCoefficient:
   key: PositionPerturbationCoefficient
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -19528,7 +19642,7 @@ Power:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -20507,7 +20621,7 @@ ProjectileRange:
 ProneDamage:
   key: ProneDamage
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -21002,7 +21116,7 @@ RadialColor:
 Radius:
   key: Radius
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -21773,7 +21887,7 @@ RequiredAddOn:
 RequiredAddon:
   key: RequiredAddon
   scopes:
-  - applies_to: *id023
+  - applies_to: *id025
     file: battle.ini
     section:
       kind: identifier
@@ -21981,7 +22095,7 @@ Reverse:
 Rocker:
   key: Rocker
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -22033,7 +22147,7 @@ RollAngle:
 Root:
   key: Root
   scopes:
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -22083,7 +22197,7 @@ Rotates:
 Rotors:
   key: Rotors
   scopes:
-  - applies_to: *id021
+  - applies_to: *id023
     file: art.ini
     section:
       kind: image
@@ -22327,7 +22441,7 @@ ScatterSound:
 Scenario:
   key: Scenario
   scopes:
-  - applies_to: *id023
+  - applies_to: *id025
     file: battle.ini
     section:
       kind: identifier
@@ -23216,7 +23330,7 @@ ShakeScreen:
 ShareBarrelData:
   key: ShareBarrelData
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -23233,7 +23347,7 @@ ShareBarrelData:
 ShareBodyData:
   key: ShareBodyData
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -23250,7 +23364,7 @@ ShareBodyData:
 ShareSource:
   key: ShareSource
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -23267,7 +23381,7 @@ ShareSource:
 ShareTurretData:
   key: ShareTurretData
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -23698,7 +23812,7 @@ SlopeSetPieces2:
 Slowdown:
   key: Slowdown
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -23750,7 +23864,7 @@ SmallFire:
 SmallVisceroid:
   key: SmallVisceroid
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -23939,6 +24053,42 @@ Sounds:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+SovParaDropInf:
+  key: SovParaDropInf
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: SovParaDropInf
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SovParaDropNum:
+  key: SovParaDropNum
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: SovParaDropNum
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 SovietBaseDefenseCounts:
   key: SovietBaseDefenseCounts
   scopes:
@@ -24013,7 +24163,7 @@ Soylent:
 SparkSpawnFrames:
   key: SparkSpawnFrames
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24030,7 +24180,7 @@ SparkSpawnFrames:
 Sparky:
   key: Sparky
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -24061,7 +24211,7 @@ SpawnCount:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -24078,7 +24228,7 @@ SpawnCount:
 SpawnCutoff:
   key: SpawnCutoff
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24095,7 +24245,7 @@ SpawnCutoff:
 SpawnDirection:
   key: SpawnDirection
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24112,7 +24262,7 @@ SpawnDirection:
 SpawnFrames:
   key: SpawnFrames
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24129,7 +24279,7 @@ SpawnFrames:
 SpawnRadius:
   key: SpawnRadius
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24146,7 +24296,7 @@ SpawnRadius:
 SpawnSparkPercentage:
   key: SpawnSparkPercentage
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24163,7 +24313,7 @@ SpawnSparkPercentage:
 SpawnTranslucencyCutoff:
   key: SpawnTranslucencyCutoff
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24194,7 +24344,7 @@ Spawns:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -24208,7 +24358,7 @@ Spawns:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -25141,7 +25291,7 @@ Speed:
 SpeedType:
   key: SpeedType
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -25158,7 +25308,7 @@ SpeedType:
 SpiralDeltaPerCoord:
   key: SpiralDeltaPerCoord
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -25175,7 +25325,7 @@ SpiralDeltaPerCoord:
 SpiralRadius:
   key: SpiralRadius
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -25335,7 +25485,7 @@ SpotlightSpeed:
 Spread:
   key: Spread
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -25349,7 +25499,7 @@ Spread:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -25366,7 +25516,7 @@ Spread:
 SpreadPercentage:
   key: SpreadPercentage
   scopes:
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -25395,6 +25545,42 @@ SpyMoneyStealPercent:
       default_candidate: '0.5'
       declared_in: RulesClass
       member: SpyMoneyStealPercent
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SpyPlaneCamera:
+  key: SpyPlaneCamera
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SpyPlaneCamera
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SpyPlaneCameraFrames:
+  key: SpyPlaneCameraFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '16'
+      declared_in: RulesClass
+      member: SpyPlaneCameraFrames
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -25489,7 +25675,7 @@ Spyable:
 StandingFrames:
   key: StandingFrames
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -25523,7 +25709,7 @@ Start:
 StartCharge:
   key: StartCharge
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -25540,7 +25726,7 @@ StartCharge:
 StartColor1:
   key: StartColor1
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -25557,7 +25743,7 @@ StartColor1:
 StartColor2:
   key: StartColor2
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -25574,7 +25760,7 @@ StartColor2:
 StartDeathFrame:
   key: StartDeathFrame
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -25608,7 +25794,7 @@ StartFacing:
 StartFiringFrame:
   key: StartFiringFrame
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -25625,7 +25811,7 @@ StartFiringFrame:
 StartFrame:
   key: StartFrame
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -25687,7 +25873,7 @@ StartSound:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -25704,7 +25890,7 @@ StartSound:
 StartStandFrame:
   key: StartStandFrame
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -25721,7 +25907,7 @@ StartStandFrame:
 StartStateAI:
   key: StartStateAI
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -25738,7 +25924,7 @@ StartStateAI:
 StartTurretFrame:
   key: StartTurretFrame
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -25755,7 +25941,7 @@ StartTurretFrame:
 StartWalkFrame:
   key: StartWalkFrame
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -25790,7 +25976,7 @@ StartingDropships:
 StateAIAdvance:
   key: StateAIAdvance
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -25934,7 +26120,7 @@ Strength:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -25983,7 +26169,7 @@ Suffix:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
-  - applies_to: *id026
+  - applies_to: *id028
     file: rules.ini
     section:
       kind: identifier
@@ -27861,7 +28047,7 @@ Theater:
     level: ObjectTypeClass
   - applies_to: *id005
     file: art.ini
-    section: &id034
+    section: &id038
       kind: identifier
       source: object-type
     value_type: boolean
@@ -27880,7 +28066,7 @@ Theater:
       value_type: boolean
       applies_to: *id005
     - file: art.ini
-      section: *id034
+      section: *id038
       value_type: boolean
       applies_to: *id005
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -27923,7 +28109,7 @@ Theme:
 Thief:
   key: Thief
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -28028,7 +28214,7 @@ ThreatPosed:
 Tiberium:
   key: Tiberium
   scopes:
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -28042,7 +28228,7 @@ Tiberium:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -28279,7 +28465,7 @@ TiberiumLongScan:
 TiberiumProof:
   key: TiberiumProof
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -28665,7 +28851,7 @@ TogglePower:
 TooBigToFitUnderBridge:
   key: TooBigToFitUnderBridge
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -28700,7 +28886,7 @@ ToolTips:
 Totable:
   key: Totable
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -28819,7 +29005,7 @@ TrailerAnim:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -28920,7 +29106,7 @@ Translucency:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -28968,7 +29154,7 @@ Translucent:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -28985,7 +29171,7 @@ Translucent:
 Translucent25State:
   key: Translucent25State
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -29002,7 +29188,7 @@ Translucent25State:
 Translucent50State:
   key: Translucent50State
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -29382,7 +29568,7 @@ TurretChargeAnimRate:
 TurretFacings:
   key: TurretFacings
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -29546,7 +29732,7 @@ UndeploySound:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -30018,7 +30204,7 @@ UseTransitions:
 UseTurretShadow:
   key: UseTurretShadow
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -30071,7 +30257,7 @@ VSync:
 Value:
   key: Value
   scopes:
-  - applies_to: *id022
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -30106,7 +30292,7 @@ Vegetation:
 VehicleThief:
   key: VehicleThief
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -30195,7 +30381,7 @@ VeinGrowthRate:
 Veinhole:
   key: Veinhole
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -30320,7 +30506,7 @@ VeinholeWarhead:
 Velocity:
   key: Velocity
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -30337,7 +30523,7 @@ Velocity:
 VelocityPerturbationCoefficient:
   key: VelocityPerturbationCoefficient
   scopes:
-  - applies_to: *id025
+  - applies_to: *id027
     file: rules.ini
     section:
       kind: identifier
@@ -30354,7 +30540,7 @@ VelocityPerturbationCoefficient:
 Verses:
   key: Verses
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -30617,7 +30803,7 @@ VoiceAttack:
 VoiceComment:
   key: VoiceComment
   scopes:
-  - applies_to: *id016
+  - applies_to: *id018
     file: rules.ini
     section:
       kind: identifier
@@ -30884,7 +31070,7 @@ VoxelBarrelScale:
 VoxelIndex:
   key: VoxelIndex
   scopes:
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -30919,7 +31105,7 @@ Wake:
 WalkFrames:
   key: WalkFrames
   scopes:
-  - applies_to: *id017
+  - applies_to: *id019
     file: art.ini
     section:
       kind: image
@@ -30967,7 +31153,7 @@ Wall:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id018
+  - applies_to: *id020
     file: rules.ini
     section:
       kind: identifier
@@ -30981,7 +31167,7 @@ Wall:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -30998,7 +31184,7 @@ Wall:
 WallAbsoluteDestroyer:
   key: WallAbsoluteDestroyer
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -31118,7 +31304,7 @@ Warhead:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -31132,7 +31318,7 @@ Warhead:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
-  - applies_to: *id012
+  - applies_to: *id014
     file: rules.ini
     section:
       kind: identifier
@@ -31498,7 +31684,7 @@ WeatherConClouds:
 WebDuration:
   key: WebDuration
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -31515,7 +31701,7 @@ WebDuration:
 WebDurationVariation:
   key: WebDurationVariation
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -31532,7 +31718,7 @@ WebDurationVariation:
 WebRadius:
   key: WebRadius
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -31567,7 +31753,7 @@ WebbedInfantry:
 Webby:
   key: Webby
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -31616,7 +31802,7 @@ Weeder:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id017
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -31703,7 +31889,7 @@ Whiner:
 Width:
   key: Width
   scopes:
-  - applies_to: *id020
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -31771,7 +31957,7 @@ WindDirection:
 WindEffect:
   key: WindEffect
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -31860,7 +32046,7 @@ WobblesPerSecond:
 Wood:
   key: Wood
   scopes:
-  - applies_to: *id013
+  - applies_to: *id015
     file: rules.ini
     section:
       kind: identifier
@@ -31931,7 +32117,7 @@ WorstLowPowerBuildRateCoefficient:
 XVelocity:
   key: XVelocity
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -31999,7 +32185,7 @@ YSortAdjust:
 YVelocity:
   key: YVelocity
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier
@@ -32013,6 +32199,42 @@ YVelocity:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+YuriParaDropInf:
+  key: YuriParaDropInf
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: YuriParaDropInf
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+YuriParaDropNum:
+  key: YuriParaDropNum
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: YuriParaDropNum
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ZFudgeBridge:
   key: ZFudgeBridge
   scopes:
@@ -32101,7 +32323,7 @@ ZShapePointMove:
 ZVelocityRange:
   key: ZVelocityRange
   scopes:
-  - applies_to: *id019
+  - applies_to: *id021
     file: rules.ini
     section:
       kind: identifier

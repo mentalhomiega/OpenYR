@@ -48,6 +48,10 @@ enum MissionType {
 	MISSION_HARMLESS,       // Sit around and don't appear like a threat.
 	MISSION_OPEN,
 	MISSION_PATROL,
+	MISSION_PARADROP_APPROACH,  // Fly to the target with paratroopers aboard.
+	MISSION_PARADROP_OVERFLY,   // Drop the paratroopers over the target.
+	MISSION_SPYPLANE_APPROACH,  // Fly to the target and photograph it.
+	MISSION_SPYPLANE_OVERFLY,   // Fly on past the target and off the map.
 
 	MISSION_COUNT,
 	MISSION_FIRST=0

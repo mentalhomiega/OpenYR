@@ -128,6 +128,10 @@ int MissionClass::Do_MISSION_MISSILE(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_OPEN(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_RESCUE(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_PATROL(void) {return(TICKS_PER_SECOND*30);};
+int MissionClass::Do_MISSION_PARADROP_APPROACH(void) {return(TICKS_PER_SECOND*30);};
+int MissionClass::Do_MISSION_PARADROP_OVERFLY(void) {return(TICKS_PER_SECOND*30);};
+int MissionClass::Do_MISSION_SPYPLANE_APPROACH(void) {return(TICKS_PER_SECOND*30);};
+int MissionClass::Do_MISSION_SPYPLANE_OVERFLY(void) {return(TICKS_PER_SECOND*30);};
 
 
 /***********************************************************************************************
@@ -269,6 +273,10 @@ void MissionClass::AI(void)
 			INVOKE(HUNT);
 			INVOKE(RESCUE);
 			INVOKE(PATROL);
+			INVOKE(PARADROP_APPROACH);
+			INVOKE(PARADROP_OVERFLY);
+			INVOKE(SPYPLANE_APPROACH);
+			INVOKE(SPYPLANE_OVERFLY);
 
 			case MISSION_STICKY:
 				Timer = Do_MISSION_GUARD();

@@ -39,7 +39,7 @@ A loaner in a team leaves the team in three cases, and then behaves as the table
 - it belongs to a human player, is empty and in the air, and its team has entered the map;
 - it belongs to a computer player, its type sets [`Ammo=0`](/keys/ammo/), it is empty and in the air, and its team has entered the map. A computer player's aircraft that is not a loaner leaves its team in this case too.
 
-The Retreat mission does nothing for an aircraft. A loaner on it picks no map edge and flies nowhere. Leaving the map, and the deletion outside the playable area, happen only when some other order takes it there.
+An aircraft on the Retreat mission finishes any movement already under way, then flies for a cell on its owner's [`Edge`](/keys/edge/), and is deleted once it is outside the playable area.
 
 ## Aircraft the player keeps
 

@@ -71,6 +71,7 @@ class SuperClass : public AbstractClass
 		void Genetic_Mutator(Cell const & cell) const;
 		void Force_Shield(Cell const & cell);
 		void Chrono_Warp(Cell const & cell) const;
+		void Paradrop(Cell const & cell) const;
 		SuperClass * Pre_Dependent(void) const;
 		SuperWeaponType Follow_Up(void) const;
 		void Stop_Pre_Click_Anim(void);

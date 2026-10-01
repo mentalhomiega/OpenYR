@@ -1924,10 +1924,9 @@ bool ObjectClass::Paradrop(Coord const & coord)
 
 		PositionCoord = coord;
 
-		if (RTTI == RTTI_BULLET) {
-			anim = new AnimClass(Rule->BombParachute, coord);
-		} else {
-			anim = new AnimClass(Rule->Parachute, coord);
+		AnimTypeClass const * chute = RTTI == RTTI_BULLET ? Rule->BombParachute : Rule->Parachute;
+		if (chute != NULL) {
+			anim = new AnimClass(chute, coord);
 		}
 
 		/*

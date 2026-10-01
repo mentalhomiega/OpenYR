@@ -184,6 +184,23 @@ class RulesClass
 		VocType ChronoOutSound;
 
 		/*
+		 * The paradrop superweapons: the infantry types each side's planes carry and how many
+		 * of each, how close to the target a plane starts dropping, and the spy plane's camera
+		 * sound and how many frames apart it photographs.
+		 */
+		TypeList<InfantryTypeClass const *> AllyParaDropInf;
+		TypeList<int> AllyParaDropNum;
+		TypeList<InfantryTypeClass const *> SovParaDropInf;
+		TypeList<int> SovParaDropNum;
+		TypeList<InfantryTypeClass const *> YuriParaDropInf;
+		TypeList<int> YuriParaDropNum;
+		TypeList<InfantryTypeClass const *> AmerParaDropInf;
+		TypeList<int> AmerParaDropNum;
+		int ParadropRadius;
+		VocType SpyPlaneCamera;
+		int SpyPlaneCameraFrames;
+
+		/*
 		 * The lightning storm: how long it rages after a warning delay, how often a cloud
 		 * gathers over its center and around it, how far around and how far apart, and
 		 * what each bolt does.

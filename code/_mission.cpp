@@ -46,4 +46,8 @@ char const * Missions[MISSION_COUNT] = {
 	"Harmless",
 	"Open",
 	"Patrol",
+	"Paradrop Approach",
+	"Paradrop Overfly",
+	"Spyplane Approach",
+	"Spyplane Overfly",
 };

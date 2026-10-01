@@ -809,6 +809,8 @@ class HouseClass : public AbstractClass
 		bool Place_Special_Blast(SuperWeaponType id, Cell const & cell);
 		Cell Pick_Ion_Cannon_Target(void);
 		Cell Pick_Drop_Target(void);
+		SourceType Entry_Edge(void) const;
+		void Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry = NULL, int count = 0);
 		Cell Pick_Mutator_Target(void);
 		Cell Pick_Dominator_Target(void);
 		bool Flag_Attach(Cell const & cell, bool set_home = false);

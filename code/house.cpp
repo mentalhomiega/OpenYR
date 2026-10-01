@@ -8771,6 +8771,9 @@ void HouseClass::AI_Super_Weapons(void)
 						AI_Drop_Pods(super);
 						break;
 
+					case SUPER_PARA_DROP:
+					case SUPER_AMER_PARA_DROP:
+					case SUPER_SPY_PLANE:
 					case SUPER_PSYCHIC_REVEAL: {
 						Cell const cell = Pick_Drop_Target();
 						if (cell != CELL_NONE) {
@@ -8831,6 +8834,65 @@ void HouseClass::AI_Ion_Cannon(SuperClass * super)
 	if (cell != CELL_NONE) {
 		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 	}
+}
+
+
+/// <summary>
+/// Fetches the map edge this house's support planes fly in from: the house's Edge, or north when
+/// it names none.
+/// </summary>
+SourceType HouseClass::Entry_Edge(void) const
+{
+	if (Control.Edge >= SOURCE_NORTH && Control.Edge <= SOURCE_WEST) {
+		return(Control.Edge);
+	}
+	return(SOURCE_NORTH);
+}
+
+
+/// <summary>
+/// Brings one plane of the type in from this house's map edge to carry out the mission against
+/// the target cell, carrying count infantry of the type given (HouseClass::SendParadropPlanes,
+/// 0x65E660). Nothing comes when the plane cannot be placed.
+/// </summary>
+void HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry, int count)
+{
+	Cell const cell = Map.Calculated_Cell(Entry_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
+	if (type == NULL || cell == CELL_NONE) {
+		return;
+	}
+
+	ScenarioInit++;
+	AircraftClass * plane = static_cast<AircraftClass *>(type->Create_One_Of(this));
+	ScenarioInit--;
+	if (plane == NULL) {
+		return;
+	}
+	plane->IsALoaner = true;
+
+	DirType facing;
+	facing.Direction(Coord(cell, 0), Coord(target, 0));
+	ScenarioInit++;
+	bool const placed = plane->Unlimbo(Coord(cell, 0), facing.As_Dir256());
+	ScenarioInit--;
+	if (!placed) {
+		delete plane;
+		return;
+	}
+	plane->Assign_Target(&Map[target]);
+	plane->Assign_Mission(mission);
+
+	if (infantry != NULL) {
+		plane->Passenger = true;
+		for (int index = 0; index < count; index++) {
+			FootClass * trooper = static_cast<FootClass *>(infantry->Create_One_Of(this));
+			if (trooper == NULL) {
+				break;
+			}
+			plane->Cargo.Attach(trooper);
+		}
+	}
+	plane->Commence();
 }
 
 

@@ -114,6 +114,10 @@ class MissionClass : public ObjectClass
 		virtual int Do_MISSION_OPEN(void);
 		virtual int Do_MISSION_RESCUE(void);
 		virtual int Do_MISSION_PATROL(void);
+		virtual int Do_MISSION_PARADROP_APPROACH(void);
+		virtual int Do_MISSION_PARADROP_OVERFLY(void);
+		virtual int Do_MISSION_SPYPLANE_APPROACH(void);
+		virtual int Do_MISSION_SPYPLANE_OVERFLY(void);
 
 		virtual void Set_Mission(MissionType mission);
 		static bool Is_Recruitable_Mission(MissionType mission);

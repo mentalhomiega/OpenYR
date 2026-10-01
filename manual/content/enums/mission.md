@@ -13,7 +13,7 @@ values:
   - { constant: MISSION_ATTACK, value: 1, input: "1", meaning: "Attack the object's current target. An object with no target switches to its idle mission." }
   - { constant: MISSION_MOVE, value: 2, input: "2", meaning: "Move toward the assigned destination." }
   - { constant: MISSION_QMOVE, value: 3, input: "3", meaning: "Rewritten to Move before the mission is queued." }
-  - { constant: MISSION_RETREAT, value: 4, input: "4", meaning: "Head for a map edge, preferring the edge the object's team came from." }
+  - { constant: MISSION_RETREAT, value: 4, input: "4", meaning: "Head for a map edge. Infantry and vehicles prefer the edge their team came from; an aircraft flies to its owner's edge and is removed once off the map." }
   - { constant: MISSION_GUARD, value: 5, input: "5", meaning: "Hold position and guard." }
   - { constant: MISSION_STICKY, value: 6, input: "6", meaning: "Guard in place, dropping a target that moves out of range instead of chasing it. A vehicle on this mission never scatters. An infantryman, vehicle or aircraft standing still on this mission ignores a mission that a script or trigger gives it later." }
   - { constant: MISSION_ENTER, value: 7, input: "7", meaning: "Enter another object cooperatively." }
@@ -34,11 +34,15 @@ values:
   - { constant: MISSION_HARMLESS, value: 22, input: "22", meaning: "Do nothing, as with Sleep." }
   - { constant: MISSION_OPEN, value: 23, input: "23", meaning: "Open a gate and close it again once the way is clear." }
   - { constant: MISSION_PATROL, value: 24, input: "24", meaning: "Move toward the destination, fighting threats met along the way, then carry on." }
+  - { constant: MISSION_PARADROP_APPROACH, value: 25, input: "25", meaning: "Fly an aircraft to its target, then switch to Paradrop Overfly within ParadropRadius of it. An aircraft with no target retreats." }
+  - { constant: MISSION_PARADROP_OVERFLY, value: 26, input: "26", meaning: "Drop the aircraft's passengers by parachute while within ParadropRadius of its target, then retreat." }
+  - { constant: MISSION_SPYPLANE_APPROACH, value: 27, input: "27", meaning: "Fly an aircraft to its target, mapping the ground below while within its weapon's range, then switch to Spyplane Overfly within three cells of it." }
+  - { constant: MISSION_SPYPLANE_OVERFLY, value: 28, input: "28", meaning: "Fly an aircraft off the map at the edge opposite its owner's, mapping the ground below while within its weapon's range of its target." }
 ---
 
 These are the missions an object on the map can be in. Team scripts use a separate list of team missions, described under Mapping.
 
-Each mission has a name. A placed object's row in a [scenario file](/formats/scenario-objects/) names the mission it starts in, and each mission's settings sit in a `rules.ini` section of the same name, as [Missions in brief](/systems/target-selection/#missions-in-brief) describes. The name is the constant without its `MISSION_` prefix, capitalized as in `Guard` or `QMove`. Two constants have other names: `MISSION_GUARD_AREA` is `Area Guard` and `MISSION_DECONSTRUCTION` is `Selling`.
+Each mission has a name. A placed object's row in a [scenario file](/formats/scenario-objects/) names the mission it starts in, and each mission's settings sit in a `rules.ini` section of the same name, as [Missions in brief](/systems/target-selection/#missions-in-brief) describes. The name is the constant without its `MISSION_` prefix, capitalized as in `Guard` or `QMove`. Six constants have other names: `MISSION_GUARD_AREA` is `Area Guard`, `MISSION_DECONSTRUCTION` is `Selling`, and the paradrop and spy plane missions are `Paradrop Approach`, `Paradrop Overfly`, `Spyplane Approach` and `Spyplane Overfly`.
 
 Two script entries give objects a mission by its number: the [Do this...](/mapping/missions/tmission-do/) team mission and the [All Assign Mission...](/mapping/actions/taction-all-assign-mission/) trigger action. Their pages say which objects take the mission. Both assign `QMove` as `Move`.
 
@@ -46,14 +50,15 @@ Each kind of object acts only on some missions:
 
 - Every kind, structures included: `Attack`, `Guard`, `Sticky` and `Area Guard`.
 - Infantry, vehicles and aircraft: `Move`, `QMove`, `Enter`, `Capture`, `Sabotage`, `Hunt`, `Rescue` and `Patrol`.
-- Infantry and vehicles: `Retreat`.
+- Infantry, vehicles and aircraft: `Retreat`.
+- Aircraft only: `Paradrop Approach`, `Paradrop Overfly`, `Spyplane Approach` and `Spyplane Overfly`.
 - Vehicles, aircraft and structures: `Unload`.
 - Vehicles and structures: `Repair`.
 - Vehicles only: `Harvest`.
 - Structures only: `Construction`, `Selling`, `Missile` and `Open`.
 - No kind: `Sleep`, `Return`, `Stop`, `Ambush` and `Harmless`.
 
-A mission that an object does not act on still becomes its mission. The object then does nothing until another mission replaces it. A script that gives a team `Missile` or `Open` therefore leaves its members standing where they are, and an aircraft given `Retreat` stays where it is.
+A mission that an object does not act on still becomes its mission. The object then does nothing until another mission replaces it. A script that gives a team `Missile` or `Open` therefore leaves its members standing where they are.
 
 An infantryman, vehicle or aircraft put on `Selling` keeps it for the rest of the game. It ignores every later mission and does nothing.
 

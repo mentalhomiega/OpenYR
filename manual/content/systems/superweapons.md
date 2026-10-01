@@ -17,6 +17,10 @@ keys:
   - AIIonCannonWarFactoryValue
   - AIMinorSuperReadyPercent
   - Action
+  - AllyParaDropInf
+  - AllyParaDropNum
+  - AmerParaDropInf
+  - AmerParaDropNum
   - AnimToInfantry
   - BalloonHover
   - AuxBuilding
@@ -73,6 +77,7 @@ keys:
   - NukeSilo
   - NukeTakeOff
   - Organic
+  - ParadropRadius
   - PermaControlledAnimationType
   - PostClick
   - PreClick
@@ -83,7 +88,11 @@ keys:
   - RechargeTime
   - RechargeVoice
   - SidebarImage
+  - SovParaDropInf
+  - SovParaDropNum
   - SpecialSound
+  - SpyPlaneCamera
+  - SpyPlaneCameraFrames
   - StartSound
   - StormSound
   - SuperWeapon
@@ -99,6 +108,8 @@ keys:
   - WeatherConBolts
   - WeatherConClouds
   - WeedCapacity
+  - YuriParaDropInf
+  - YuriParaDropNum
 related:
   - type: system
     id: drop-pods
@@ -341,7 +352,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
 - **Lightning storm** aims as the ion cannon does, and only while no storm is raging or waiting to break.
-- **Psychic reveal** aims near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis.
+- **Paradrops, the spy plane and the psychic reveal** aim near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis.
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
 
@@ -507,6 +518,56 @@ Once the first animation has played [`DominatorFireAtPercentage`](/keys/dominato
 - every vehicle, infantryman and aircraft within [`DominatorCaptureRange`](/keys/dominatorcapturerange/) cells joins the firing house for good, with [`PermaControlledAnimationType`](/keys/permacontrolledanimationtype/) shown [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above it. A computer house sends its new units hunting.
 
 Structures, objects in the air or under the Iron Curtain, and types with [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) or [`BalloonHover=yes`](/keys/balloonhover/) are not taken over. Only one blast runs at a time: a shot while one runs does nothing, and the weapon stays charged. Yuri's Revenge also tells the player that the dominator is already active, which is not shown yet, and dims the map's lighting during the blast, which is not done yet.
+
+### Paradrops
+
+A `Type=ParaDrop` or `Type=AmerParaDrop` weapon calls in cargo planes that drop infantry by parachute around the target cell. A shot aimed at water lands at the nearest cell infantry can enter, if that cell is dry.
+
+The infantry come from a pair of `[General]` lists, one naming the types and one the number of each:
+
+| Weapon and firing house | Lists |
+| --- | --- |
+| `Type=AmerParaDrop`, any house | [`AmerParaDropInf`](/keys/amerparadropinf/) and [`AmerParaDropNum`](/keys/amerparadropnum/) |
+| `Type=ParaDrop`, a house of the first side in `[Sides]` | [`AllyParaDropInf`](/keys/allyparadropinf/) and [`AllyParaDropNum`](/keys/allyparadropnum/) |
+| `Type=ParaDrop`, a house of the third side | [`YuriParaDropInf`](/keys/yuriparadropinf/) and [`YuriParaDropNum`](/keys/yuriparadropnum/) |
+| `Type=ParaDrop`, a house of any other side | [`SovParaDropInf`](/keys/sovparadropinf/) and [`SovParaDropNum`](/keys/sovparadropnum/) |
+
+Each type in the list sends one plane of the `PDPLANE` aircraft type, carrying the number at the same position in the second list. When the two lists differ in length, or there is no `PDPLANE` type, the shot spends its charge and no plane comes.
+
+```ini title="rulesmd.ini"
+[ParaDropSpecial]
+Type=ParaDrop
+Action=ParaDrop
+RechargeTime=4
+
+[General]
+AllyParaDropInf=E1,GGI
+AllyParaDropNum=6,2   ; two planes: six GIs and two guardian GIs
+```
+
+The planes fly in from the firing house's [`Edge`](/keys/edge/), which is north outside a campaign. Within [`ParadropRadius`](/keys/paradropradius/) leptons of the target, measured along the ground, a plane drops a paratrooper every 5 frames while it is over the playable map. Each one lands half a cell to the left or right of the plane's path, alternating sides, and falls under the [`Parachute`](/keys/parachute/) canopy with [`ChuteSound`](/keys/chutesound/). A paratrooper that could not stand where it would land stays aboard.
+
+A plane that leaves the radius with paratroopers still aboard turns back for another pass. It gives up after five passes in a row in which nobody could jump. A plane that is empty or has given up flies back to its own edge and leaves the map.
+
+A paratrooper of a player's house guards where it lands; one of a computer house hunts.
+
+### Spy plane
+
+A `Type=SpyPlane` weapon sends planes of the `SPYP` aircraft type from the firing house's [`Edge`](/keys/edge/) over the target cell. It sends one plane for each entry of [`AllyParaDropInf`](/keys/allyparadropinf/), whatever the firing house's side. It sends none when `AllyParaDropInf` and [`AllyParaDropNum`](/keys/allyparadropnum/) differ in length or there is no `SPYP` type.
+
+While a plane is within its primary weapon's `Range` of the target, it photographs: it maps the ground for its house around the point below it, out to the weapon's `Damage` in cells, at most 10.
+
+- On the way to the target it photographs every [`SpyPlaneCameraFrames`](/keys/spyplanecameraframes/) frames and plays [`SpyPlaneCamera`](/keys/spyplanecamera/) each time.
+- Within three cells of the target it turns for the map edge opposite its house's edge, photographing every 3 frames without the sound, and is removed once it leaves the map.
+
+```ini title="rulesmd.ini"
+[SPYP]
+Primary=SpyCameraWeapon
+
+[SpyCameraWeapon]
+Range=20  ; photographs within 20 cells of the target
+Damage=6  ; maps 6 cells around the point below the plane
+```
 
 ### Chronosphere
 

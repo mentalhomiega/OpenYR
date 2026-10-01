@@ -47,6 +47,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "_weapon.h"
+#include "airctype.h"
 #include "anim.h"
 #include "building.h"
 #include "builtype.h"
@@ -792,6 +793,66 @@ void SuperClass::Force_Shield(Cell const & cell)
 
 
 /// <summary>
+/// Calls in the planes for a paradrop or spy plane shot, as the ParaDrop, AmerParaDrop and
+/// SpyPlane cases of SuperClass::Launch (0x6CC390) do. A paradrop aimed at water lands at the
+/// nearest dry ground. Each entry of the side's ParaDropInf list sends a PDPLANE carrying
+/// ParaDropNum infantry of that type, and nothing comes when the two lists differ in length. A
+/// spy plane shot sends one SPYP for each entry of AllyParaDropInf.
+/// </summary>
+void SuperClass::Paradrop(Cell const & cell) const
+{
+	if (Class->Type == SUPER_SPY_PLANE) {
+		AircraftType const plane = AircraftTypeClass::From_Name("SPYP");
+		if (plane != AIRCRAFT_NONE && Rule->AllyParaDropInf.Count() == Rule->AllyParaDropNum.Count()) {
+			for (int index = 0; index < Rule->AllyParaDropInf.Count(); index++) {
+				House->Send_Plane(AircraftTypes[plane], MISSION_SPYPLANE_APPROACH, cell);
+			}
+		}
+		return;
+	}
+
+	Cell target = cell;
+	if (Map[cell].Land_Type() == LAND_WATER) {
+		Cell const nearby = Map.Nearby_Location(cell, SPEED_FOOT);
+		if (nearby != CELL_NONE && Map[nearby].Land_Type() != LAND_WATER) {
+			target = nearby;
+		}
+	}
+
+	TypeList<InfantryTypeClass const *> const * infantry = &Rule->AmerParaDropInf;
+	TypeList<int> const * counts = &Rule->AmerParaDropNum;
+	if (Class->Type == SUPER_PARA_DROP) {
+		switch (House->Planning_Side()) {
+			case SIDE_GDI:
+				infantry = &Rule->AllyParaDropInf;
+				counts = &Rule->AllyParaDropNum;
+				break;
+
+			case SIDE_THIRD:
+				infantry = &Rule->YuriParaDropInf;
+				counts = &Rule->YuriParaDropNum;
+				break;
+
+			default:
+				infantry = &Rule->SovParaDropInf;
+				counts = &Rule->SovParaDropNum;
+				break;
+		}
+	}
+
+	AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
+	if (plane == AIRCRAFT_NONE || infantry->Count() != counts->Count()) {
+		return;
+	}
+	for (int index = 0; index < infantry->Count(); index++) {
+		if ((*infantry)[index] != NULL) {
+			House->Send_Plane(AircraftTypes[plane], MISSION_PARADROP_APPROACH, target, (*infantry)[index], (*counts)[index]);
+		}
+	}
+}
+
+
+/// <summary>
 /// Fetches the owner's super weapon whose Type is this weapon's PreDependent, or NULL.
 /// </summary>
 SuperClass * SuperClass::Pre_Dependent(void) const
@@ -1112,6 +1173,18 @@ void SuperClass::Place(Cell const & cell, bool player)
 				} else if (PreClickAnim != NULL) {
 					PreClickAnim->Make_Invisible();
 				}
+			}
+			break;
+
+		case SUPER_PARA_DROP:
+		case SUPER_AMER_PARA_DROP:
+		case SUPER_SPY_PLANE:
+			if (IsReady) {
+				Paradrop(cell);
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
 			}
 			break;
 

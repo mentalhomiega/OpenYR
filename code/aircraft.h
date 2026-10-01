@@ -89,6 +89,10 @@ class AircraftClass : public FootClass, public IFlyControl
 		virtual int Do_MISSION_GUARD(void) override;
 		virtual int Do_MISSION_GUARD_AREA(void) override;
 		virtual int Do_MISSION_PATROL(void) override;
+		virtual int Do_MISSION_PARADROP_APPROACH(void) override;
+		virtual int Do_MISSION_PARADROP_OVERFLY(void) override;
+		virtual int Do_MISSION_SPYPLANE_APPROACH(void) override;
+		virtual int Do_MISSION_SPYPLANE_OVERFLY(void) override;
 
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 
@@ -154,6 +158,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		*/
 		int Paradrop_Cargo(void);
 		void Drop_Off_Cargo(void);
+		void Drop_Paratrooper(void);
+		bool Spy_Plane_Photograph(void);
+		void Spy_Plane_Exit(void);
 		virtual void AI(void) override;
 		virtual bool Enter_Idle_Mode(bool initial = false, bool = true) override;
 		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
@@ -200,6 +207,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		 * heading, and it keeps the aircraft from commencing a new order until the run ends.
 		 */
 		bool IsLockedStraight;
+
+		// How many more times a paradrop plane may come back over its target without dropping anyone.
+		int ParadropPasses;
 
 	private:
 		/*

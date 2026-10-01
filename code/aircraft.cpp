@@ -213,6 +213,7 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	IsKamikaze(false),
 	field_35B(false),
 	IsLockedStraight(false),
+	ParadropPasses(5),
 	SightTimer(0),
 	AttacksRemaining(1),
 	IsReadyToCommence(true)
@@ -864,64 +865,16 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
  *=============================================================================================*/
 int AircraftClass::Do_MISSION_RETREAT(void)
 {
-	return(0);
-#if NEVER
-	//assert(IsActive);
-
-	if (Class->IsFixedWing) {
-		if (Class->IsFixedWing && Height < FLIGHT_LEVEL) {
-			Height += 1;
-			return(3);
+	// Heads for a cell on the owner's map edge (AircraftClass::Mission_Retreat, 0x415A50).
+	if (NavCom == NULL) {
+		Cell const exit = Map.Calculated_Cell(House->Entry_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
+		if (exit != CELL_NONE) {
+			Assign_Destination(&Map[exit]);
 		}
-		return(TICKS_PER_SECOND*10);
+	} else if (NavCom == Get_Cell_Ptr()) {
+		Assign_Destination(NULL);
 	}
-
-	enum {
-		TAKE_OFF,
-		FACE_MAP_EDGE,
-		KEEP_FLYING
-	};
-	switch (Status) {
-
-		/*
-		**	Take off if landed.
-		*/
-		case TAKE_OFF:
-			if (Process_Take_Off()) {
-				Status = FACE_MAP_EDGE;
-			}
-			return(1);
-
-		/*
-		**	Set facing and speed toward the friendly map edge.
-		*/
-		case FACE_MAP_EDGE:
-			Set_Speed(MPH_LIGHT_SPEED);
-
-			/*
-			**	Take advantage of the fact that the source map edge enumerations happen to
-			**	occur in a clockwise order and are the first four enumerations of the map
-			**	edge default for the house. If this value is masked and then shifted, a
-			**	normalized direction value results. Use this value to head the aircraft
-			**	toward the "friendly" map edge.
-			*/
-			PrimaryFacing.Set_Desired((Dir256)((House->Control.Edge & 0x03) << 6));
-			SecondaryFacing.Set_Desired(PrimaryFacing.Desired());
-			Status = KEEP_FLYING;
-			break;
-
-		/*
-		**	Just do nothing since we are headed toward the map edge. When the edge is
-		**	reached, the aircraft should be automatically eliminated.
-		*/
-		case KEEP_FLYING:
-			break;
-
-		default:
-			break;
-	}
-	return(MissionControl[Mission].Normal_Delay() + Random_Pick(0, 2));
-#endif
+	return(3);
 }
 
 
@@ -3911,6 +3864,7 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsKamikaze);
 	stream.Serialize(field_35B);
 	stream.Serialize(IsLockedStraight);
+	stream.Serialize(ParadropPasses);
 	stream.Serialize(SightTimer);
 	stream.Serialize(AttacksRemaining);
 	stream.Serialize(IsReadyToCommence);
@@ -4091,6 +4045,165 @@ bool AircraftClass::Commence(void)
 
 
 /// <summary>
+/// Flies a paradrop plane to its target (AircraftClass::Mission_ParaDropApproach, 0x4158E0).
+/// Within ParadropRadius of the target it starts dropping, which uses up one of its passes;
+/// a plane with no target leaves the map.
+/// </summary>
+int AircraftClass::Do_MISSION_PARADROP_APPROACH(void)
+{
+	if (TarCom == NULL) {
+		Assign_Destination(NULL);
+		Assign_Mission(MISSION_RETREAT);
+		return(3);
+	}
+	if (NavCom == NULL) {
+		Assign_Destination(TarCom);
+		return(3);
+	}
+	if (Planar_Distance(TarCom) <= Rule->ParadropRadius) {
+		Assign_Mission(MISSION_PARADROP_OVERFLY);
+		ParadropPasses--;
+	}
+	return(3);
+}
+
+
+/// <summary>
+/// Drops the paratroopers one at a time while the plane is within ParadropRadius of its target
+/// (AircraftClass::Mission_ParaDropOverfly, 0x415960). A plane that passes the target with
+/// paratroopers still aboard turns back while it has passes left; otherwise it leaves the map.
+/// </summary>
+int AircraftClass::Do_MISSION_PARADROP_OVERFLY(void)
+{
+	IsLocked = true;
+	if (TarCom != NULL && Cargo.Is_Something_Attached()) {
+		if (Planar_Distance(TarCom) <= Rule->ParadropRadius) {
+			if (Map.In_Local_Radar(PositionCell)) {
+				Drop_Paratrooper();
+			}
+			return(5);
+		}
+		IsLocked = false;
+		if (ParadropPasses > 0) {
+			Assign_Mission(MISSION_PARADROP_APPROACH);
+			return(5);
+		}
+	} else {
+		IsLocked = false;
+	}
+	Assign_Target(NULL);
+	Assign_Destination(NULL);
+	Assign_Mission(MISSION_RETREAT);
+	return(5);
+}
+
+
+/// <summary>
+/// Drops the first paratrooper aboard half a cell to one side of the plane's path, alternating
+/// sides (0x415C60). A paratrooper that cannot land on the cell below stays aboard. Each drop
+/// gives the plane five more passes.
+/// </summary>
+void AircraftClass::Drop_Paratrooper(void)
+{
+	FootClass * passenger = Cargo.Detach_Object();
+	if (passenger == NULL) {
+		return;
+	}
+	Ammo--;
+	int const turn = (Ammo & 1) ? -0x3FFF : 0x3FFF;
+	Coord const drop = Move_Coord(PositionCoord, DirType(PrimaryFacing.Current().As_Int() + turn), CELL_LEPTON_W / 2);
+	CellClass * cellptr = &Map[drop];
+	if (passenger->Can_Enter_Cell(cellptr) == MOVE_OK) {
+		Coord spot = cellptr->Closest_Free_Spot(drop);
+		if (spot != COORD_NONE) {
+			spot.Z = PositionCoord.Z;
+			if (passenger->Paradrop(spot)) {
+				Sound_Effect(Rule->ChuteSound, PositionCoord);
+				if (Team != NULL) {
+					Team->Remove(passenger);
+				}
+				ParadropPasses = 5;
+				return;
+			}
+		}
+	}
+	Cargo.Attach(passenger);
+	passenger->Hidden();
+	Ammo++;
+}
+
+
+/// <summary>
+/// Maps the ground around the point below a spy plane for its owner, out to its weapon's Damage
+/// in cells, when the plane is within the weapon's range of its target.
+/// </summary>
+/// <returns>bool; Did the plane photograph the ground?</returns>
+bool AircraftClass::Spy_Plane_Photograph(void)
+{
+	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(0)->Weapon;
+	if (weapon == NULL || TarCom == NULL || Planar_Distance(TarCom) > weapon->Range) {
+		return(false);
+	}
+	Coord ground = Center_Coord();
+	ground.Z = Map.Get_Height_GL(ground);
+	Map.Sight_From(ground, weapon->Attack, House, false);
+	return(true);
+}
+
+
+/// <summary>
+/// Sends a spy plane off the map on the edge opposite its owner's edge.
+/// </summary>
+void AircraftClass::Spy_Plane_Exit(void)
+{
+	static SourceType const _opposite[4] = {SOURCE_SOUTH, SOURCE_WEST, SOURCE_NORTH, SOURCE_EAST};
+	Cell const exit = Map.Calculated_Cell(_opposite[House->Entry_Edge()], CELL_NONE, CELL_NONE, SPEED_WINGED);
+	if (exit != CELL_NONE) {
+		Assign_Destination(&Map[exit]);
+	}
+}
+
+
+/// <summary>
+/// Flies a spy plane over its target, photographing the ground with SpyPlaneCamera whenever it
+/// is within its weapon's range (AircraftClass::Mission_SpyPlaneApproach, 0x4155F0). Within
+/// three cells of the target it turns for the far map edge.
+/// </summary>
+int AircraftClass::Do_MISSION_SPYPLANE_APPROACH(void)
+{
+	int const distance = Planar_Distance(TarCom);
+	if (TarCom == NULL) {
+		Assign_Destination(NULL);
+		Assign_Mission(MISSION_RETREAT);
+	} else if (NavCom == NULL) {
+		Assign_Destination(TarCom);
+	} else if (Spy_Plane_Photograph()) {
+		Sound_Effect(Rule->SpyPlaneCamera, PositionCoord);
+	}
+	if (distance <= 3 * CELL_LEPTON_W) {
+		Assign_Mission(MISSION_SPYPLANE_OVERFLY);
+		IsLocked = true;
+		Spy_Plane_Exit();
+	}
+	return(Rule->SpyPlaneCameraFrames);
+}
+
+
+/// <summary>
+/// Keeps a spy plane photographing its target while in range on its way off the map
+/// (AircraftClass::Mission_SpyPlaneOverfly, 0x4157C0).
+/// </summary>
+int AircraftClass::Do_MISSION_SPYPLANE_OVERFLY(void)
+{
+	Spy_Plane_Photograph();
+	if (NavCom == NULL) {
+		Spy_Plane_Exit();
+	}
+	return(3);
+}
+
+
+/// <summary>
 /// Should this aircraft be quietly removed once it leaves the map?
 /// A loaner, or an aircraft belonging to a team that is on its way off the map, has no
 /// further business in the scenario and is deleted rather than left to fly forever.
@@ -4102,6 +4215,9 @@ bool AircraftClass::Should_Delete_Off_Map(void)
 		if ((Team == NULL && IsALoaner) || (Team != NULL && Team->Is_Leaving_Map())) {
 			return(true);
 		}
+	}
+	if (IsALoaner && IsLocked && Mission == MISSION_SPYPLANE_OVERFLY) {
+		return(true);
 	}
 	return(false);
 }
