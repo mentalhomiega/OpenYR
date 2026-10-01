@@ -7166,6 +7166,9 @@ void HouseClass::Make_Base_Nodes(void)
 	for (index = 0; index < BuildingTypes.Count(); index++) {
 		BuildingTypeClass const * builtype = BuildingTypes[index];
 		if (ownable & builtype->Ownable &&
+			(builtype->AIBasePlanningSide == -1 || builtype->AIBasePlanningSide == Planning_Side()) &&
+			(builtype->RequiredHouses == -1 || (builtype->RequiredHouses & ownable) != 0) &&
+			(builtype->ForbiddenHouses == -1 || (builtype->ForbiddenHouses & ownable) == 0) &&
 			builtype->CanAIBuildThis &&
 			builtype->Level <= Control.TechLevel &&
 			(!builtype->IsWeeder || VeinholeMonsterClass::VeinholeMonsters.Count() > 0) &&
