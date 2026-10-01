@@ -177,6 +177,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsNaval(false),
 	RequiredHouses(-1),
 	ForbiddenHouses(-1),
+	AIBasePlanningSide(-1),
 	IsRequiresStolenAlliedTech(false),
 	IsRequiresStolenSovietTech(false),
 	IsRequiresStolenThirdTech(false),
@@ -639,6 +640,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
 		RequiredHouses = ini.Get_Owners(Name(), "RequiredHouses", RequiredHouses);
 		ForbiddenHouses = ini.Get_Owners(Name(), "ForbiddenHouses", ForbiddenHouses);
+		AIBasePlanningSide = ini.Get_Int(Name(), "AIBasePlanningSide", AIBasePlanningSide);
 		IsRequiresStolenAlliedTech = ini.Get_Bool(Name(), "RequiresStolenAlliedTech", IsRequiresStolenAlliedTech);
 		IsRequiresStolenSovietTech = ini.Get_Bool(Name(), "RequiresStolenSovietTech", IsRequiresStolenSovietTech);
 		IsRequiresStolenThirdTech = ini.Get_Bool(Name(), "RequiresStolenThirdTech", IsRequiresStolenThirdTech);
@@ -1051,6 +1053,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNaval);
 	stream.Serialize(RequiredHouses);
 	stream.Serialize(ForbiddenHouses);
+	stream.Serialize(AIBasePlanningSide);
 	stream.Serialize(IsRequiresStolenAlliedTech);
 	stream.Serialize(IsRequiresStolenSovietTech);
 	stream.Serialize(IsRequiresStolenThirdTech);

@@ -157,6 +157,27 @@ AIBaseDefensesWithWalls:
       source: code/side.cpp
       guard: null
     level: SideClass
+AIBasePlanningSide:
+  key: AIBasePlanningSide
+  scopes:
+  - applies_to: &id003
+    - AircraftType
+    - BuildingType
+    - InfantryType
+    - UnitType
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: AIBasePlanningSide
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AIBaseSpacing:
   key: AIBaseSpacing
   scopes:

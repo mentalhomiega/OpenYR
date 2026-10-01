@@ -834,6 +834,7 @@ class HouseClass : public AbstractClass
 		SideClass const * Acted_Side(void) const;
 		bool Is_Acted_Tower(BuildingTypeClass const * type) const;
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
+		int Planning_Side(void) const;
 		template<typename T> T const * Get_Preferred(DynamicVectorClass<T const *> const & list) const;
 		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const;
 		template<typename T> int Count_Owned(CounterClass const & tally, TypeList<T const *> const & list) const;
@@ -1168,15 +1169,19 @@ inline int HouseClass::Count_Owned(CounterClass const & tally, TypeList<T const 
 }
 
 
-// The first entry the country this house builds for may own, or NULL when it may own none.
+// The first entry the country this house builds for may own and plan for, or NULL when there is
+// none (HouseClass::FirstBuildableFromArray, 0x5051E0 in gamemd).
 template<typename T>
 inline T const * HouseClass::Get_First_Acted(DynamicVectorClass<T const *> const & list) const
 {
 	int mask = Acted_Mask();
 	for (int index = 0; index < list.Count(); index++) {
-		if (mask & list[index]->Ownable) {
-			return(list[index]);
-		}
+		T const * type = list[index];
+		if ((mask & type->Ownable) == 0) continue;
+		if (type->RequiredHouses != -1 && (type->RequiredHouses & mask) == 0) continue;
+		if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & mask) != 0) continue;
+		if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) continue;
+		return(type);
 	}
 	return(NULL);
 }

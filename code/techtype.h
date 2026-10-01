@@ -495,6 +495,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		int ForbiddenHouses;
 
 		/*
+		 * The side whose computer houses put this type in their base plans, or -1 for any side.
+		 */
+		int AIBasePlanningSide;
+
+		/*
 		 * A type that needs stolen technology can be built only once its house has stolen that
 		 * side's technology.
 		 */

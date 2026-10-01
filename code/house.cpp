@@ -6955,6 +6955,16 @@ void HouseClass::Begin_Construction(Cell const & center)
 
 
 /// <summary>
+/// Fetches the side this house's own country belongs to, which AIBasePlanningSide is matched
+/// against.
+/// </summary>
+int HouseClass::Planning_Side(void) const
+{
+	return((int)Class->Side);
+}
+
+
+/// <summary>
 /// Fetches the Ownable bit of the country this house acts as, which every role list in the
 /// rules is resolved through.
 /// </summary>
