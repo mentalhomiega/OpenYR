@@ -1,6 +1,6 @@
 ---
 title: Superweapons
-summary: "How a house gains, charges and fires each declared superweapon, and what each of the seven hard-coded behaviors delivers."
+summary: "How a house gains, charges and fires each declared superweapon, and what each of the hard-coded behaviors delivers."
 category: superweapons-special
 keys:
   - AIIonCannonAPCValue
@@ -15,6 +15,7 @@ keys:
   - AIIonCannonTempleValue
   - AIIonCannonThiefValue
   - AIIonCannonWarFactoryValue
+  - AIMinorSuperReadyPercent
   - Action
   - AuxBuilding
   - ChargeToDrainRatio
@@ -28,10 +29,13 @@ keys:
   - ImpatientVoice
   - IonCannonDamage
   - IonCannonWarhead
+  - IronCurtainDuration
+  - IronCurtainInvokeAnim
   - IsPowered
   - ManualControl
   - NodHunterSeeker
   - NukeSilo
+  - Organic
   - RechargeTime
   - RechargeVoice
   - SidebarImage
@@ -62,7 +66,7 @@ related:
 
 Every superweapon has one rules section and one copy in each house. The section sets what all copies share: the recharge delay, the cameo, the mouse action and the behavior. Each house's copy keeps its own state: whether the house holds the weapon, whether it is suspended, and how far its countdown has run.
 
-A weapon's **behavior** is the effect it delivers when fired. `Type=` selects one of seven behaviors built into the engine, and rules cannot add more. The **declared list** is `[SuperWeaponTypes]`, and a weapon's **position** in that list is the number trigger actions use to name it.
+A weapon's **behavior** is the effect it delivers when fired. `Type=` selects one of the behaviors built into the engine, and rules cannot add more. The **declared list** is `[SuperWeaponTypes]`, and a weapon's **position** in that list is the number trigger actions use to name it.
 
 ## Declaring a superweapon
 
@@ -320,6 +324,30 @@ The drone comes out of the house's structure whose type is listed in [`HSBuildin
 The drone appears at the nearest cell to that structure that infantry could enter, even though the drone is a vehicle. If that cell lies outside the playable area, the region a scenario declares with `[Map] LocalSize=`, or the drone cannot be placed there, nothing launches and the charge is spent. A placed drone chooses a target and attacks it.
 
 The drone type is the [`HunterSeeker`](/keys/hunterseeker/#scope-side) of the side the firing house [acts as](/keys/actslike/). In each rules file, [`GDIHunterSeeker`](/keys/gdihunterseeker/) and [`NodHunterSeeker`](/keys/nodhunterseeker/) in `[General]` set it for the first two sides in `[Sides]`, and a side's section in the same file overrides them. A house with no side, or whose side names no drone, spends the charge and launches nothing.
+
+### Iron curtain
+
+A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininvokeanim/) over the target cell, then covers every object on that cell and the eight cells around it. On a cell with a bridge, only the objects on the bridge are covered. What happens to each covered object depends on its kind:
+
+- Infantry die.
+- A vehicle or aircraft with [`Organic=yes`](/keys/organic/) takes damage equal to its full strength, which its armor can reduce.
+- Anything else is protected for [`IronCurtainDuration`](/keys/ironcurtainduration/) frames. A structure's demolition charge is also defused.
+
+A protected object takes no damage, except from damage that ignores armor, such as a demolition charge going off. Healing still reaches it. Infantry cannot plant a demolition charge on a protected structure or walk into one, so an engineer cannot capture it.
+
+A protected object pulses dark while the protection lasts: it flashes bright as the protection starts, throbs dark, and flashes bright again in its last second. Yuri's Revenge also tints it with `IronCurtainColor`, which is not drawn yet.
+
+```ini title="rulesmd.ini"
+[MyCurtainSpecial]
+Type=IronCurtain
+Action=IronCurtain
+RechargeTime=5
+
+[CombatDamage]
+IronCurtainDuration=750 ; 50 seconds at normal game speed
+```
+
+Computer houses do not fire the Iron Curtain on their own. A computer team asks for it with the [Iron Curtain me](/scripting/missions/55/) script line.
 
 ### EM pulse
 

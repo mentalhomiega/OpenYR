@@ -1726,6 +1726,35 @@ void DisplayClass::Mouse_Right_Release(Point2D const & point)
 }
 
 
+/// <summary>
+/// The cursor for a super weapon targeting action; any other action gets the plain cursor.
+/// The Tiberian Sun weapons borrow the Yuri's Revenge cursor that uses the same frames.
+/// </summary>
+static MouseType Super_Weapon_Mouse(ActionType action)
+{
+	switch (action) {
+		case ACTION_IRON_CURTAIN:		return(MOUSE_IRON_CURTAIN);
+		case ACTION_LIGHTNING_STORM:	return(MOUSE_LIGHTNING_STORM);
+		case ACTION_CHRONOSPHERE:
+		case ACTION_CHRONO_WARP:		return(MOUSE_CHRONOSPHERE);
+		case ACTION_PARA_DROP:
+		case ACTION_AMER_PARA_DROP:		return(MOUSE_PARA_DROP);
+		case ACTION_PSYCHIC_DOMINATOR:	return(MOUSE_PSYCHIC_DOMINATOR);
+		case ACTION_SPY_PLANE:			return(MOUSE_SPY_PLANE);
+		case ACTION_GENETIC_CONVERTER:	return(MOUSE_GENETIC_MUTATOR);
+		case ACTION_FORCE_SHIELD:		return(MOUSE_FORCE_SHIELD);
+		case ACTION_NO_FORCE_SHIELD:	return(MOUSE_NO_FORCE_SHIELD);
+		case ACTION_PSYCHIC_REVEAL:		return(MOUSE_PSYCHIC_REVEAL);
+		case ACTION_ION_CANNON:
+		case ACTION_DROP_POD:			return(MOUSE_LIGHTNING_STORM);
+		case ACTION_CHEM_BOMB:			return(MOUSE_DETONATE);
+		case ACTION_EMPULSE:			return(MOUSE_CHRONOSPHERE);
+		case ACTION_EMPULSE_RANGE:		return(MOUSE_DISALLOWED);
+		default:						return(MOUSE_NORMAL);
+	}
+}
+
+
 /***********************************************************************************************
  * DisplayClass::Mouse_Left_Up -- Handles the left mouse "cruising" over the map.              *
  *                                                                                             *
@@ -1818,39 +1847,24 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 	**	In fact, just show the normal move cursor in order to keep the shadowed
 	**	terrain a mystery.
 	*/
+	/*
+	**	Pick the cursor for the action, as Yuri's Revenge does (DisplayClass::ConvertAction,
+	**	0x4AAE90). Under the shroud, most actions show the plain cursor and an attack shows
+	**	the move cursor, to keep the shrouded ground a mystery.
+	*/
 	if (shadow) {
 		switch (waypoint_action) {
-			case ACTION_TOTE:
-				Set_Default_Mouse(MOUSE_NO_TOTE, wsmall);
+			case ACTION_MOVE:
+			case ACTION_ATTACK:
+				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
 				break;
 
-			case ACTION_NO_ENTER:
-			case ACTION_NO_ENTER_TUNNEL:
-				Set_Default_Mouse(MOUSE_NO_ENTER, wsmall);
-				break;
-
-			case ACTION_DAMAGE:
-				Set_Default_Mouse(MOUSE_NORMAL, wsmall);
-				break;
-
-			case ACTION_GREPAIR:
-				Set_Default_Mouse(MOUSE_NORMAL, wsmall);
-				break;
-
-			case ACTION_NO_DEPLOY:
-				Set_Default_Mouse(MOUSE_NO_DEPLOY, wsmall);
-				break;
-
-			case ACTION_GUARD_AREA:
-				Set_Default_Mouse(MOUSE_AREA_GUARD, wsmall);
-				break;
-
-			case ACTION_CHEM_BOMB:
-				Set_Default_Mouse(MOUSE_CHEMBOMB, wsmall);
-				break;
-
-			case ACTION_NONE:
-				Set_Default_Mouse(MOUSE_NORMAL, wsmall);
+			case ACTION_NOMOVE:
+				if (CurrentObject.Count() && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->TClass->IsMoveToShroud) {
+					Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
+					break;
+				}
+				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
 				break;
 
 			case ACTION_NO_SELL:
@@ -1869,80 +1883,37 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				Set_Default_Mouse(MOUSE_NUCLEAR_BOMB, wsmall);
 				break;
 
+			case ACTION_GUARD_AREA:
+				Set_Default_Mouse(MOUSE_AREA_GUARD, wsmall);
+				break;
+
+			case ACTION_NO_DEPLOY:
+				Set_Default_Mouse(MOUSE_NO_DEPLOY, wsmall);
+				break;
+
+			case ACTION_NO_ENTER:
+			case ACTION_NO_ENTER_TUNNEL:
+				Set_Default_Mouse(MOUSE_NO_ENTER, wsmall);
+				break;
+
+			case ACTION_TOTE:
+			case ACTION_HEAL:
 			case ACTION_TOGGLE_POWER:
 			case ACTION_NO_TOGGLE_POWER:
-				Set_Default_Mouse(MOUSE_NO_TOGGLE_POWER, wsmall);
-				break;
-
-			case ACTION_EMPULSE:
-				Set_Default_Mouse(MOUSE_EM_PULSE, wsmall);
-				break;
-
-			case ACTION_ION_CANNON:
-			case ACTION_DROP_POD:
-				Set_Default_Mouse(MOUSE_AIR_STRIKE, wsmall);
-				break;
-
-			case ACTION_EMPULSE_RANGE:
-				Set_Default_Mouse(MOUSE_EM_PULSE_RANGE, wsmall);
-				break;
-
-			case ACTION_HEAL:
-				Set_Default_Mouse(MOUSE_HEAL, wsmall);
-				break;
-
-			case ACTION_NOMOVE:
-				if (CurrentObject.Count() && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->TClass->IsMoveToShroud) {
-					Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
-					break;
-				}
-				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
-				break;
-				// Fall into next case for non aircraft object types.
-
-			case ACTION_MOVE:
-			case ACTION_ATTACK:
-				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
-				break;
-
 			case ACTION_PLACE_WAYPOINT:
-				Set_Default_Mouse(MOUSE_PLACE_WAYPOINT, wsmall);
-				break;
-
 			case ACTION_NO_PLACE_WAYPOINT:
-				Set_Default_Mouse(MOUSE_NO_PLACE_WAYPOINT, wsmall);
-				break;
-
 			case ACTION_ENTER_WAYPOINT_MODE:
-				Set_Default_Mouse(MOUSE_ENTER_WAYPOINT_MODE, wsmall);
-				break;
-
-			case ACTION_SELECT_WAYPOINT:
-				Set_Default_Mouse(MOUSE_SELECT_WAYPOINT, wsmall);
-				break;
-
-			case ACTION_LOOP_WAYPOINT_PATH:
-				Set_Default_Mouse(MOUSE_LOOP_WAYPOINT_PATH, wsmall);
-				break;
-
-			case ACTION_ATTACK_WAYPOINT:
-				Set_Default_Mouse(MOUSE_ATTACK_WAYPOINT, wsmall);
-				break;
-
-			case ACTION_PATROL_WAYPOINT:
-				Set_Default_Mouse(MOUSE_PATROL_WAYPOINT, wsmall);
-				break;
-
 			case ACTION_FOLLOW_WAYPOINT:
-				Set_Default_Mouse(MOUSE_FOLLOW_WAYPOINT, wsmall);
-				break;
-
+			case ACTION_SELECT_WAYPOINT:
+			case ACTION_LOOP_WAYPOINT_PATH:
+			case ACTION_ATTACK_WAYPOINT:
 			case ACTION_ENTER_WAYPOINT:
-				Set_Default_Mouse(MOUSE_ENTER_WAYPOINT, wsmall);
+			case ACTION_PATROL_WAYPOINT:
+				Set_Default_Mouse(MOUSE_DISALLOWED, wsmall);
 				break;
 
 			default:
-				Set_Default_Mouse(MOUSE_NORMAL, wsmall);
+				Set_Default_Mouse(Super_Weapon_Mouse(waypoint_action), wsmall);
 				break;
 		}
 	} else {
@@ -1952,38 +1923,23 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 		**	if the mouse button were clicked at this location.
 		*/
 		switch (waypoint_action) {
-			case ACTION_TOTE:
-				Set_Default_Mouse(MOUSE_TOTE, wsmall);
-				break;
-
-			case ACTION_NO_ENTER:
-				Set_Default_Mouse(MOUSE_NO_ENTER, wsmall);
-				break;
-
-			case ACTION_GREPAIR:
-				Set_Default_Mouse(MOUSE_GREPAIR, wsmall);
-				break;
-
-			case ACTION_TOGGLE_SELECT:
-			case ACTION_SELECT:
-				Set_Default_Mouse(MOUSE_CAN_SELECT, wsmall);
-				break;
-
-			case ACTION_NO_DEPLOY:
-				Set_Default_Mouse(MOUSE_NO_DEPLOY, wsmall);
-				break;
-
-			case ACTION_GUARD_AREA:
-				Set_Default_Mouse(MOUSE_AREA_GUARD, wsmall);
-				break;
-
-			case ACTION_CHEM_BOMB:
-				Set_Default_Mouse(MOUSE_CHEMBOMB, wsmall);
-				break;
-
 			case ACTION_MOVE:
 			case ACTION_RALLY_TO_POINT:
 				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
+				break;
+
+			case ACTION_NOMOVE:
+				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
+				break;
+
+			case ACTION_ENTER:
+			case ACTION_CAPTURE:
+			case ACTION_ENTER_TUNNEL:
+				Set_Default_Mouse(MOUSE_ENTER, wsmall);
+				break;
+
+			case ACTION_SELF:
+				Set_Default_Mouse(MOUSE_DEPLOY, wsmall);
 				break;
 
 			case ACTION_ATTACK:
@@ -1997,18 +1953,21 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
 				break;
 
-			case ACTION_SABOTAGE:
-				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
+			case ACTION_TOGGLE_SELECT:
+			case ACTION_SELECT:
+				Set_Default_Mouse(MOUSE_CAN_SELECT, wsmall);
 				break;
 
-			case ACTION_ENTER:
-			case ACTION_CAPTURE:
-			case ACTION_ENTER_TUNNEL:
-				Set_Default_Mouse(MOUSE_ENTER, wsmall);
+			case ACTION_REPAIR:
+				Set_Default_Mouse(MOUSE_REPAIR, wsmall);
 				break;
 
-			case ACTION_NOMOVE:
-				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
+			case ACTION_SELL:
+				Set_Default_Mouse(MOUSE_SELL_BACK, wsmall);
+				break;
+
+			case ACTION_SELL_UNIT:
+				Set_Default_Mouse(MOUSE_SELL_UNIT, wsmall);
 				break;
 
 			case ACTION_NO_SELL:
@@ -2020,89 +1979,52 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				Set_Default_Mouse(MOUSE_NO_REPAIR, wsmall);
 				break;
 
-			case ACTION_SELF:
-				Set_Default_Mouse(MOUSE_DEPLOY, wsmall);
-				break;
-
-			case ACTION_REPAIR:
-				Set_Default_Mouse(MOUSE_REPAIR, wsmall);
-				break;
-
-			case ACTION_SELL_UNIT:
-				Set_Default_Mouse(MOUSE_SELL_UNIT, wsmall);
-				break;
-
-			case ACTION_NO_TOGGLE_POWER:
-				Set_Default_Mouse(MOUSE_NO_TOGGLE_POWER, wsmall);
-				break;
-
-			case ACTION_TOGGLE_POWER:
-				Set_Default_Mouse(MOUSE_TOGGLE_POWER, wsmall);
-				break;
-
-			case ACTION_SELL:
-				Set_Default_Mouse(MOUSE_SELL_BACK, wsmall);
+			case ACTION_SABOTAGE:
+				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
 				break;
 
 			case ACTION_NUKE_BOMB:
 				Set_Default_Mouse(MOUSE_NUCLEAR_BOMB, wsmall);
 				break;
 
-			case ACTION_EMPULSE:
-				Set_Default_Mouse(MOUSE_EM_PULSE, wsmall);
+			case ACTION_GUARD_AREA:
+				Set_Default_Mouse(MOUSE_AREA_GUARD, wsmall);
 				break;
 
-			case ACTION_EMPULSE_RANGE:
-				Set_Default_Mouse(MOUSE_EM_PULSE_RANGE, wsmall);
+			case ACTION_DAMAGE:
+				// Yuri's Revenge leaves the cursor as it was.
 				break;
 
-			case ACTION_ION_CANNON:
-			case ACTION_DROP_POD:
-				Set_Default_Mouse(MOUSE_AIR_STRIKE, wsmall);
+			case ACTION_GREPAIR:
+				Set_Default_Mouse(MOUSE_GREPAIR, wsmall);
 				break;
 
+			case ACTION_NO_DEPLOY:
+				Set_Default_Mouse(MOUSE_NO_DEPLOY, wsmall);
+				break;
+
+			case ACTION_NO_ENTER:
+				Set_Default_Mouse(MOUSE_NO_ENTER, wsmall);
+				break;
+
+			case ACTION_TOTE:
 			case ACTION_HEAL:
-				Set_Default_Mouse(MOUSE_HEAL, wsmall);
-				break;
-
+			case ACTION_TOGGLE_POWER:
+			case ACTION_NO_TOGGLE_POWER:
 			case ACTION_PLACE_WAYPOINT:
-				Set_Default_Mouse(MOUSE_PLACE_WAYPOINT, wsmall);
-				break;
-
 			case ACTION_NO_PLACE_WAYPOINT:
-				Set_Default_Mouse(MOUSE_NO_PLACE_WAYPOINT, wsmall);
-				break;
-
 			case ACTION_ENTER_WAYPOINT_MODE:
-				Set_Default_Mouse(MOUSE_ENTER_WAYPOINT_MODE, wsmall);
-				break;
-
-			case ACTION_SELECT_WAYPOINT:
-				Set_Default_Mouse(MOUSE_SELECT_WAYPOINT, wsmall);
-				break;
-
-			case ACTION_LOOP_WAYPOINT_PATH:
-				Set_Default_Mouse(MOUSE_LOOP_WAYPOINT_PATH, wsmall);
-				break;
-
-			case ACTION_ATTACK_WAYPOINT:
-				Set_Default_Mouse(MOUSE_ATTACK_WAYPOINT, wsmall);
-				break;
-
-			case ACTION_PATROL_WAYPOINT:
-				Set_Default_Mouse(MOUSE_PATROL_WAYPOINT, wsmall);
-				break;
-
 			case ACTION_FOLLOW_WAYPOINT:
-				Set_Default_Mouse(MOUSE_FOLLOW_WAYPOINT, wsmall);
-				break;
-
+			case ACTION_SELECT_WAYPOINT:
+			case ACTION_LOOP_WAYPOINT_PATH:
+			case ACTION_ATTACK_WAYPOINT:
 			case ACTION_ENTER_WAYPOINT:
-				Set_Default_Mouse(MOUSE_ENTER_WAYPOINT, wsmall);
+			case ACTION_PATROL_WAYPOINT:
+				Set_Default_Mouse(MOUSE_DISALLOWED, wsmall);
 				break;
 
 			default:
-				Set_Default_Mouse(MOUSE_NORMAL, wsmall);
+				Set_Default_Mouse(Super_Weapon_Mouse(waypoint_action), wsmall);
 				break;
 		}
 	}

@@ -504,6 +504,7 @@ class BuildingClass : public TechnoClass
 		virtual FireErrorType Can_Fire(AbstractClass *, int which) const override;
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const override;
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false) override;
+		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield) override;
 		virtual bool Captured(HouseClass * newowner) override;
 		virtual WeaponDataStruct const * Get_Class_Weapon_Data(int which=0) const override;
 		virtual bool Is_Turret_Equipped() const override;

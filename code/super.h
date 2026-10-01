@@ -65,6 +65,7 @@ class SuperClass : public AbstractClass
 		void Forced_Charge(bool player=false);
 		void Place(Cell const & cell, bool player);
 		void Drop_Pods(Cell const & cell) const;
+		void Iron_Curtain(Cell const & cell) const;
 		void Deactivate_Firestorm(int, bool player) const;
 		bool AI(bool player=false);
 		bool Remove(void);

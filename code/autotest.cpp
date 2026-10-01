@@ -54,6 +54,7 @@
 
 #include "_keyboar.h"
 #include "_map.h"
+#include "_rules.h"
 #include "_tactica.h"
 #include "aircraft.h"
 #include "airctype.h"
@@ -74,7 +75,10 @@
 #include "loco.h"
 #include "tactical.h"
 #include "scheme.h"
+#include "rules.h"
 #include "script.h"
+#include "super.h"
+#include "suprtype.h"
 #include "teamtype.h"
 #include "team.h"
 #include "unit.h"
@@ -261,7 +265,7 @@ void Dump(void)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * object = Buildings[index];
 		if (object->House != PlayerPtr) continue;
-		DebugString("AUTOTEST   building %s cell %d,%d strength %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->Strength);
+		DebugString("AUTOTEST   building %s cell %d,%d strength %d curtain %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->Strength, (int)object->IronCurtainTimer);
 	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * object = Units[index];
@@ -269,7 +273,10 @@ void Dump(void)
 		Cell const nav = object->NavCom != NULL ? object->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		ClassID const loco = Locomotion_Class_ID(object->Locomotion.get());
-		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d load %d%% ore %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed, (int)(object->Tiberium_Load() * 100), (int)object->Get_Cell_Ptr()->Tiberium_Value());
+		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d load %d%% ore %d curtain %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed, (int)(object->Tiberium_Load() * 100), (int)object->Get_Cell_Ptr()->Tiberium_Value(), (int)object->IronCurtainTimer);
+		if (object->Is_Iron_Curtained()) {
+			DebugString("AUTOTEST     tint stage %d light %d\n", object->IronTintStage, object->Apparent_Brightness(1000));
+		}
 	}
 	for (int index = 0; index < Aircraft.Count(); index++) {
 		AircraftClass * object = Aircraft[index];
@@ -405,6 +412,33 @@ void Run(StepType const & step)
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
+			}
+		}
+	} else if (step.Command == "grant") {
+		// grant <SuperWeaponTypeID>: gives the player that super weapon, fully charged.
+		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
+		if (id != SUPER_NONE && id < PlayerPtr->SuperWeapon.Count()) {
+			SuperClass * super = PlayerPtr->SuperWeapon[id];
+			super->Enable(false, true, true);
+			super->Forced_Charge(true);
+			DebugString("AUTOTEST   grant %s type %d ready %d\n", step.Argument.c_str(), (int)super->Class->Type, (int)super->Is_Ready());
+		} else {
+			DebugString("AUTOTEST   grant %s: no such super weapon\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "fire") {
+		// fire <SuperWeaponTypeID> x y: the player fires that super weapon at the cell.
+		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
+		if (id != SUPER_NONE) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, id, Cell(step.X, step.Y)));
+		}
+	} else if (step.Command == "damage") {
+		// damage <TypeID> <amount>: hits every player object of the type for that much unforced damage.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				int damage = step.X;
+				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
+				DebugString("AUTOTEST   damage %s at %d,%d took %d strength %d curtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, damage, (int)techno->Strength, (int)techno->IronCurtainTimer);
 			}
 		}
 	} else if (step.Command == "price") {

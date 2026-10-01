@@ -164,6 +164,13 @@ class RulesClass
 		double OccupyROFMultiplier;
 		int OccupyWeaponRange;
 
+		// How many frames the Iron Curtain protects what it covers, and the animation played where it lands.
+		int IronCurtainDuration;
+		AnimTypeClass const * IronCurtainInvokeAnim;
+
+		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
+		double AIMinorSuperReadyPercent;
+
 		/*
 		 * These are the two visceroid types. A small visceroid is spawned where infantry
 		 * dies in tiberium, and when two of them meet one is promoted to the large type

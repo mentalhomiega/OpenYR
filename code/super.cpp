@@ -47,6 +47,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "_weapon.h"
+#include "anim.h"
 #include "building.h"
 #include "builtype.h"
 #include "bullet.h"
@@ -605,6 +606,50 @@ bool SuperClass::Can_Place(void) const
 
 
 /// <summary>
+/// Puts the objects on the cell and the eight around it under the Iron Curtain, after the
+/// invoke animation starts over the cell, as the IronCurtain case of SuperClass::Launch
+/// (0x6CC390) does. On a bridge cell, only the objects on the bridge are covered.
+/// </summary>
+void SuperClass::Iron_Curtain(Cell const & cell) const
+{
+	Coord coord = Map[cell].Center_Coord();
+	if (Map[cell].IsUnderBridge) {
+		coord.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+	coord.Z += 5;
+	if (Rule->IronCurtainInvokeAnim != NULL) {
+		new AnimClass(Rule->IronCurtainInvokeAnim, coord);
+	}
+
+	/*
+	 * Gather everything first: the curtain kills infantry, which must not upset the walk
+	 * through the cell's object list.
+	 */
+	DynamicVectorClass<TechnoClass *> covered;
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			Cell const where = cell + Cell(dx, dy);
+			if (!Map.In_Radar(where)) {
+				continue;
+			}
+			CellClass & cellptr = Map[where];
+			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
+				if (object->Is_Techno()) {
+					covered.Add((TechnoClass *)object);
+				}
+			}
+		}
+	}
+	for (int index = 0; index < covered.Count(); index++) {
+		TechnoClass * techno = covered[index];
+		if (techno->IsActive && !techno->IsInLimbo) {
+			techno->Iron_Curtain(Rule->IronCurtainDuration, House, false);
+		}
+	}
+}
+
+
+/// <summary>
 /// Unleashes the super weapon upon the cell specified.
 /// This routine is called once the target has been chosen, either by the player
 /// clicking on the map or by the computer deciding where to strike. Each kind of super
@@ -624,6 +669,16 @@ void SuperClass::Place(Cell const & cell, bool player)
 				Map.IsTargettingMode = SUPER_NONE;
 			}
 			House->IsRecalcNeeded = true;
+			break;
+
+		case SUPER_IRON_CURTAIN:
+			if (IsReady) {
+				Iron_Curtain(cell);
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
+			}
 			break;
 
 		case SUPER_ION_CANNON:

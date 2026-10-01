@@ -116,6 +116,15 @@ class TechnoClass :	public RadioClass,
 		CDTimerClass<FrameTimerClass> RadarFlashTimer;
 
 		/*
+		 * While the Iron Curtain timer runs, this object takes no damage. The tint stage and
+		 * its timer step the object's brightness through the curtain's pulse.
+		 */
+		CDTimerClass<FrameTimerClass> IronCurtainTimer;
+		CDTimerClass<FrameTimerClass> IronTintTimer;
+		int IronTintStage;
+		bool IsForceShielded;
+
+		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
 		 * tracking table is keyed by it, so a moved object untracks here before plotting anew.
 		 */
@@ -690,6 +699,10 @@ class TechnoClass :	public RadioClass,
 		**	Movement and animation.
 		*/
 		virtual int Apparent_Brightness(int brightness = 1000) const;
+		int Iron_Curtain_Brightness(int brightness) const;
+		void Iron_Tint_AI(void);
+		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
+		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
 		virtual bool Is_Ready_To_Random_Animate(void) const;
 		virtual bool Random_Animate(void) {return(false);}
 		virtual void Assign_Destination(AbstractClass * target, bool = true);

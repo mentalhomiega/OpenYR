@@ -30,9 +30,9 @@ values:
   - { constant: ACTION_PARA_SABOTEUR, value: 18, input: "DontUse3", meaning: "Legacy parachute-saboteur action.", note: "No ordinary order produces this action; only a superweapon can use it." }
   - { constant: ACTION_NUKE_BOMB, value: 19, input: "Nuke", meaning: "Target a nuclear or multi-missile strike." }
   - { constant: ACTION_AIR_STRIKE, value: 20, input: "DontUse4", meaning: "Legacy air-strike action.", note: "No ordinary order produces this action; only a superweapon can use it." }
-  - { constant: ACTION_CHRONOSPHERE, value: 21, input: "DontUse5", meaning: "Legacy chronosphere source action.", note: "No ordinary order produces this action; only a superweapon can use it." }
+  - { constant: ACTION_DONT_USE5, value: 21, input: "DontUse5", meaning: "Unused action.", note: "No ordinary order produces this action; only a superweapon can use it." }
   - { constant: ACTION_CHRONO2, value: 22, input: "DontUse6", meaning: "Legacy chronosphere destination action.", note: "No ordinary order produces this action; only a superweapon can use it." }
-  - { constant: ACTION_IRON_CURTAIN, value: 23, input: "DontUse7", meaning: "Legacy invulnerability action.", note: "No ordinary order produces this action; only a superweapon can use it." }
+  - { constant: ACTION_DONT_USE7, value: 23, input: "DontUse7", meaning: "Unused action.", note: "No ordinary order produces this action; only a superweapon can use it." }
   - { constant: ACTION_SPY_MISSION, value: 24, input: "DontUse8", meaning: "Legacy reconnaissance action.", note: "No ordinary order produces this action; only a superweapon can use it." }
   - { constant: ACTION_GUARD_AREA, value: 25, input: "GuardArea", meaning: "Guard the location or object under the cursor." }
   - { constant: ACTION_HEAL, value: 26, input: "Heal", meaning: "Heal the damaged allied infantry under the cursor." }
@@ -62,6 +62,18 @@ values:
   - { constant: ACTION_DROP_POD, value: 50, input: "DropPod", meaning: "Target a drop-pod delivery." }
   - { constant: ACTION_RALLY_TO_POINT, value: 51, input: "Rally To Point", meaning: "Set a rally point." }
   - { constant: ACTION_ATTACK_SUPPORT, value: 52, input: "Attack Support", meaning: "Put an object whose first weapon slot has negative damage on Guard Area, and any other object on Guard." }
+  - { constant: ACTION_IRON_CURTAIN, value: 53, input: "IronCurtain", meaning: "Target an Iron Curtain.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_LIGHTNING_STORM, value: 54, input: "LightningStorm", meaning: "Target a lightning storm.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_CHRONOSPHERE, value: 55, input: "ChronoSphere", meaning: "Pick what a chronosphere sends.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_CHRONO_WARP, value: 56, input: "ChronoWarp", meaning: "Pick where a chronosphere sends it.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_PARA_DROP, value: 57, input: "ParaDrop", meaning: "Target a paradrop.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_AMER_PARA_DROP, value: 58, input: "AmerParaDrop", meaning: "Target the American paradrop.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_PSYCHIC_DOMINATOR, value: 59, input: "PsychicDominator", meaning: "Target a psychic dominator.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_SPY_PLANE, value: 60, input: "SpyPlane", meaning: "Target a spy plane.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_GENETIC_CONVERTER, value: 61, input: "GeneticConverter", meaning: "Target a genetic mutator.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_FORCE_SHIELD, value: 62, input: "ForceShield", meaning: "Target a force shield.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_NO_FORCE_SHIELD, value: 63, input: "NoForceShield", meaning: "Indicate that a force shield cannot go there.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_PSYCHIC_REVEAL, value: 64, input: "PsychicReveal", meaning: "Target a psychic reveal.", note: "Only a superweapon uses this action." }
 ---
 
 These are the actions a left click on the map can carry. The action under the cursor picks the mouse shape and decides what a click does. The trigger actions that a map's triggers run are a separate list.

@@ -461,6 +461,7 @@ class FootClass : public TechnoClass
 		*/
 		virtual void Stun(void) override;
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false) override;
+		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield) override;
 		virtual void Death_Announcement(TechnoClass const * source=0) const override;
 		virtual bool Captured(HouseClass * newowner) override;
 		virtual void Berzerk(void) {};

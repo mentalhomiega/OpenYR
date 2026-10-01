@@ -516,6 +516,24 @@ AIIonCannonWarFactoryValue:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIMinorSuperReadyPercent:
+  key: AIMinorSuperReadyPercent
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.8'
+      declared_in: RulesClass
+      member: AIMinorSuperReadyPercent
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AISafeDistance:
   key: AISafeDistance
   scopes:
@@ -13417,6 +13435,42 @@ IonStorms:
       source: code/special.cpp
       guard: null
     level: SpecialClass
+IronCurtainDuration:
+  key: IronCurtainDuration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: IronCurtainDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+IronCurtainInvokeAnim:
+  key: IronCurtainInvokeAnim
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: IronCurtainInvokeAnim
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 IsARock:
   key: IsARock
   scopes:
@@ -17806,6 +17860,23 @@ OrePurifier:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+Organic:
+  key: Organic
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsOrganic
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Overrides:
   key: Overrides
   scopes:

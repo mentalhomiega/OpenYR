@@ -1021,7 +1021,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				if (building->Tag) {
 					building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 				}
-				if (building->Mission != MISSION_DECONSTRUCTION) {
+				if (building->Mission != MISSION_DECONSTRUCTION && !building->Is_Iron_Curtained()) {
 					building->IsGoingToBlow = true;
 					building->Clicked_As_Target((Rule->C4Delay * TICKS_PER_MINUTE) / 2);
 					building->CountDown = Rule->C4Delay * TICKS_PER_MINUTE;
@@ -1740,6 +1740,9 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			if (Mission == MISSION_ENTER || Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE ||
 				((Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL || Mission == MISSION_GUARD) && Class->IsEngineer)) {
 				if (obj == NavCom || (&Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom)) {
+					if (obj->RTTI == RTTI_BUILDING && obj == NavCom && ((BuildingClass *)obj)->Is_Iron_Curtained()) {
+						return(MOVE_NO);
+					}
 					if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 						return(MOVE_NO);
 					}
@@ -4537,4 +4540,14 @@ RTTIType InfantryClass::Fetch_RTTI(void) const
 bool InfantryClass::Active_Click_With(ActionType action, Cell const & cell, bool is_waypoint)
 {
 	return(BASECLASS::Active_Click_With(action, cell, is_waypoint));
+}
+
+
+/// <summary>
+/// The Iron Curtain kills infantry outright (InfantryClass::IronCurtain, 0x522600).
+/// </summary>
+void InfantryClass::Iron_Curtain(int, HouseClass *, bool)
+{
+	int damage = Class->MaxStrength;
+	Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 }

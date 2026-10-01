@@ -267,6 +267,10 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	Cargo(),
 	Veterancy(),
 	RadarFlashTimer(),
+	IronCurtainTimer(),
+	IronTintTimer(),
+	IronTintStage(10),
+	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
 	CloakingDevice(),
@@ -3015,6 +3019,8 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	Iron_Tint_AI();
+
 	if (!House->Is_Human_Player() && TarCom != NULL && House->Is_Ally(TarCom)) {
 		if (RTTI != RTTI_AIRCRAFT && (RTTI != RTTI_INFANTRY || !((InfantryClass *)this)->Class->IsEngineer)) {
 			Assign_Target(NULL);
@@ -5092,6 +5098,14 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 			}
 		}
+	}
+
+	/*
+	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
+	 */
+	if (Is_Iron_Curtained() && !forced && !negative) {
+		damage = 0;
+		return(RESULT_NONE);
 	}
 
 	/*
@@ -8369,6 +8383,10 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirepowerBias);
 	stream.Serialize(IdleTimer);
 	stream.Serialize(RadarFlashTimer);
+	stream.Serialize(IronCurtainTimer);
+	stream.Serialize(IronTintTimer);
+	stream.Serialize(IronTintStage);
+	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);
 	stream.Serialize(Group);
@@ -8832,10 +8850,171 @@ void TechnoClass::Set_Action_Lines(bool on)
 int TechnoClass::Apparent_Brightness(int brightness) const
 {
 	if (((FlashCount / 2) % 2) == 1) {
-		return(brightness > 1500 ? 500 : 2000);
-	} else {
+		brightness = (brightness > 1500 ? 500 : 2000);
+	}
+	return(Iron_Curtain_Brightness(brightness));
+}
+
+
+/// <summary>
+/// Scales the brightness of an object under the Iron Curtain by the stage of its pulse, as
+/// TechnoClass::GetInvulnerabilityTintIntensity (0x70E380) does. Yuri's Revenge also adds
+/// the IronCurtainColor tint, which is not drawn here.
+/// </summary>
+/// <param name="brightness">The brightness the object would otherwise be drawn with.</param>
+/// <returns>Returns with the brightness to draw the object with, no more than 2000.</returns>
+int TechnoClass::Iron_Curtain_Brightness(int brightness) const
+{
+	if (!Is_Iron_Curtained()) {
 		return(brightness);
 	}
+
+	int left = IronTintTimer;
+	int scale = 256;
+	switch (IronTintStage) {
+		case 1:
+			scale = (12 - left) * 256 / 6;
+			break;
+
+		case 2:
+		case 8:
+			scale = 512;
+			break;
+
+		case 3:
+			scale = (left * 461 + 1020) / 20;
+			break;
+
+		case 4:
+			scale = (1024 - left * 77) / 8;
+			break;
+
+		case 5:
+			scale = (left * 77 + 816) / 16;
+			break;
+
+		case 6:
+			scale = 51;
+			break;
+
+		case 7:
+			scale = (3072 - left * 461) / 6;
+			break;
+
+		case 9:
+			scale = (left + 20) * 256 / 20;
+			break;
+
+		default:
+			return(brightness);
+	}
+	return(std::min((scale * brightness) >> 8, 2000));
+}
+
+
+/// <summary>
+/// Steps the pulse of an object under the Iron Curtain: a flash as it comes on, a dark throb
+/// while it lasts, and a flash as it wears off (FUN_0070E5A0).
+/// </summary>
+void TechnoClass::Iron_Tint_AI(void)
+{
+	if (!Is_Iron_Curtained()) {
+		IronTintStage = 0;
+		return;
+	}
+
+	switch (IronTintStage) {
+		case 0:
+			IronTintStage = 1;
+			IronTintTimer = 6;
+			break;
+
+		case 1:
+			if (IronTintTimer == 0) {
+				IronTintStage = 2;
+				IronTintTimer = 4;
+			}
+			break;
+
+		case 2:
+			if (IronTintTimer == 0) {
+				IronTintStage = 3;
+				IronTintTimer = Random_Pick(-5, 5) + 20;
+			}
+			break;
+
+		case 3:
+			if (IronTintTimer == 0) {
+				IronTintStage = 4;
+				IronTintTimer = 8;
+			}
+			break;
+
+		case 4:
+			if (IronTintTimer == 0) {
+				IronTintStage = 5;
+				IronTintTimer = 16;
+			}
+			break;
+
+		case 5:
+			if (IronTintTimer == 0) {
+				if (IronCurtainTimer < 54) {
+					IronTintStage = 6;
+				} else {
+					IronTintStage = 4;
+					IronTintTimer = 8;
+				}
+			}
+			break;
+
+		case 6:
+			if (IronCurtainTimer < 31) {
+				IronTintStage = 7;
+				IronTintTimer = 6;
+			}
+			break;
+
+		case 7:
+			if (IronTintTimer == 0) {
+				IronTintStage = 8;
+				IronTintTimer = 4;
+			}
+			break;
+
+		case 8:
+			if (IronTintTimer == 0) {
+				IronTintStage = 9;
+				IronTintTimer = 20;
+			}
+			break;
+
+		case 9:
+			if (IronTintTimer == 0) {
+				IronTintStage = 10;
+			}
+			break;
+
+		default:
+			IronTintStage = 10;
+			break;
+	}
+}
+
+
+/// <summary>
+/// Puts this object under the Iron Curtain (or the Force Shield) for the number of frames
+/// given, as TechnoClass::IronCurtain (0x70E2B0) does. Kinds of object that cannot be
+/// protected override this.
+/// </summary>
+/// <param name="duration">How many frames the protection lasts.</param>
+/// <param name="source">The house whose super weapon this is.</param>
+/// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
+void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
+{
+	IronCurtainTimer = duration;
+	IronTintStage = 0;
+	IsForceShielded = force_shield;
 }
 
 

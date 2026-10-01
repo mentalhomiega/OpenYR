@@ -347,6 +347,9 @@ RulesClass::RulesClass(void) :
 	OccupyDamageMultiplier(1.0),
 	OccupyROFMultiplier(1.0),
 	OccupyWeaponRange(5),
+	IronCurtainDuration(0),
+	IronCurtainInvokeAnim(NULL),
+	AIMinorSuperReadyPercent(0.8),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
 	UnloadingHarvester(NULL),
@@ -1035,6 +1038,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
+		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
 		IonCannonDamage = ini.Get_Int(COMBATDAMAGE, "IonCannonDamage", IonCannonDamage);
 		RailgunDamageRadius = ini.Get_Int(COMBATDAMAGE, "RailgunDamageRadius", RailgunDamageRadius);
 		TiberiumExplosionDamage = ini.Get_Int(COMBATDAMAGE, "TiberiumExplosionDamage", TiberiumExplosionDamage);
@@ -1132,6 +1136,8 @@ bool RulesClass::General(CCINIClass const & ini)
 
 	if (ini.Is_Present(GENERAL)) {
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
+		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
+		AIMinorSuperReadyPercent = ini.Get_Float(GENERAL, "AIMinorSuperReadyPercent", AIMinorSuperReadyPercent);
 		SmallVisceroid = TGet_Class(ini, GENERAL, "SmallVisceroid", SmallVisceroid);
 		TiberiumHeal = ini.Get_Float(GENERAL, "TiberiumHeal", TiberiumHeal);
 		PrerequisitePower = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisitePower", PrerequisitePower);
@@ -2231,6 +2237,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OccupyROFMultiplier);
 	stream.Serialize(OccupyWeaponRange);
+	stream.Serialize(IronCurtainDuration);
+	stream.Serialize(IronCurtainInvokeAnim);
+	stream.Serialize(AIMinorSuperReadyPercent);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
 	stream.Serialize(UnloadingHarvester);
@@ -2937,6 +2946,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == IonBlast) {
 		IonBlast = NULL;
+	}
+	if (target == IronCurtainInvokeAnim) {
+		IronCurtainInvokeAnim = NULL;
 	}
 	if (target == IonBeam) {
 		IonBeam = NULL;

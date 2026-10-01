@@ -4839,3 +4839,18 @@ bool FootClass::On_Ground(void) const
 
 	return(IsDown && clsid == ClassID_HoverLocomotion);
 }
+
+
+/// <summary>
+/// An organic vehicle dies under the Iron Curtain; anything else is protected, as
+/// FootClass::IronCurtain (0x4DEAE0) does.
+/// </summary>
+void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shield)
+{
+	if (TClass->IsOrganic) {
+		int damage = TClass->MaxStrength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
+		return;
+	}
+	TechnoClass::Iron_Curtain(duration, source, force_shield);
+}

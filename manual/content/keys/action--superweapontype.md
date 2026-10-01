@@ -15,7 +15,9 @@ when_omitted:
 
 [Aiming and the click](/systems/superweapons/#aiming-and-the-click) covers targeting mode in full.
 
-`Nuke`, `IonCannon`, `DropPod`, `ChemBomb`, `EMPulse` and `EMPulseRange` are the actions with superweapon cursors. `EMPulse` and `EMPulseRange` are the EM pulse's in-range and out-of-range cursors.
+`Nuke`, `IronCurtain`, `LightningStorm`, `ChronoSphere`, `ChronoWarp`, `ParaDrop`, `AmerParaDrop`, `PsychicDominator`, `SpyPlane`, `GeneticConverter`, `ForceShield`, `NoForceShield` and `PsychicReveal` are the Yuri's Revenge actions with superweapon cursors. `ChronoSphere` and `ChronoWarp` share a cursor, as do `ParaDrop` and `AmerParaDrop`.
+
+`IonCannon`, `DropPod`, `ChemBomb`, `EMPulse` and `EMPulseRange` are kept from Tiberian Sun. Each shows the Yuri's Revenge cursor drawn from the same frames: the lightning storm cursor for `IonCannon` and `DropPod`, the detonate cursor for `ChemBomb`, the chronosphere cursor for `EMPulse`, and a single still frame for `EMPulseRange`.
 
 [`Type=`](/keys/type/#scope-superweapontype) alone decides what the weapon does when it fires; `Action=` changes only the cursor and the click. A `Type=EMPulse` weapon is the exception. Once its targeting mode is armed, its cursor is always one of the [EM pulse](/systems/emp-pulse/#em-pulse-cannon-superweapon) cursors, and an in-range click fires the first section with `Action=EMPulse`. Give a `Type=EMPulse` section `Action=EMPulse`.
 

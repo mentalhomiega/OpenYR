@@ -45,9 +45,9 @@ enum ActionType {
 	ACTION_PARA_SABOTEUR,	// Parachute saboteur strike.
 	ACTION_NUKE_BOMB,		// That target object should be blasted.
 	ACTION_AIR_STRIKE,		// That target object should be blasted.
-	ACTION_CHRONOSPHERE,	// That target object should be teleported.
+	ACTION_DONT_USE5,
 	ACTION_CHRONO2,			// Teleport it to the given coordinates now.
-	ACTION_IRON_CURTAIN,	// That target object should be invulnerable.
+	ACTION_DONT_USE7,
 	ACTION_SPY_MISSION,		// Photo recon mission.
 	ACTION_GUARD_AREA,		// Guard the area/object clicked on.
 	ACTION_HEAL,			// Heal the infantryman clicked on.
@@ -77,6 +77,22 @@ enum ActionType {
 	ACTION_DROP_POD,
 	ACTION_RALLY_TO_POINT,
 	ACTION_ATTACK_SUPPORT,
+
+	/*
+	**	Super weapon targeting actions from Yuri's Revenge.
+	*/
+	ACTION_IRON_CURTAIN,	// Make the objects there invulnerable for a while.
+	ACTION_LIGHTNING_STORM,
+	ACTION_CHRONOSPHERE,
+	ACTION_CHRONO_WARP,
+	ACTION_PARA_DROP,
+	ACTION_AMER_PARA_DROP,
+	ACTION_PSYCHIC_DOMINATOR,
+	ACTION_SPY_PLANE,
+	ACTION_GENETIC_CONVERTER,
+	ACTION_FORCE_SHIELD,
+	ACTION_NO_FORCE_SHIELD,
+	ACTION_PSYCHIC_REVEAL,
 
 	ACTION_COUNT
 };

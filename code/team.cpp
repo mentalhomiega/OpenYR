@@ -101,6 +101,8 @@
 #include "script.h"
 #include "session.h"
 #include "sun.h"
+#include "super.h"
+#include "suprtype.h"
 #include "swizzle.h"
 #include "tactical.h"
 #include "tag.h"
@@ -688,6 +690,7 @@ void TeamClass::AI(void)
 			INVOKE(TALK_BUBBLE);
 			INVOKE(GATHER_AT_ENEMY);
 			INVOKE(GATHER_AT_BASE);
+			INVOKE(IRON_CURTAIN_ME);
 
 			// A step this engine cannot carry out yet is passed over, as gamemd does for any unknown step.
 			default:
@@ -2463,6 +2466,55 @@ void TeamClass::TMission_GATHER_AT_BASE(TeamMissionClass *, bool first_time)
 		Gather_Near(leader, home, toward);
 	}
 	Coordinate_Move();
+}
+
+
+/// <summary>
+/// Fires the house's Iron Curtain at the team, as FUN_006EFC70 does. The house is taken from
+/// the member with the highest LeadershipRating. The step ends once the curtain is fired,
+/// when the house has none, or when it is not yet AIMinorSuperReadyPercent charged;
+/// otherwise the team waits for it.
+/// </summary>
+void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
+{
+	FootClass * chosen = Member;
+	int best = -1;
+	for (FootClass * member = Member; member != NULL; member = member->Member) {
+		if (member->IsActive && member->Strength > 0 && (ScenarioInit || !member->IsInLimbo)
+			&& (member->IsInitiated || member->RTTI == RTTI_AIRCRAFT) && member->TClass->LeadershipRating > best) {
+			chosen = member;
+			best = member->TClass->LeadershipRating;
+		}
+	}
+	if (chosen == NULL) {
+		IsNextMission = true;
+		return;
+	}
+
+	HouseClass * house = chosen->House;
+	SuperClass * super = NULL;
+	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
+		if (house->SuperWeapon[index]->Class->Type == SUPER_IRON_CURTAIN) {
+			super = house->SuperWeapon[index];
+			break;
+		}
+	}
+	if (super == NULL) {
+		IsNextMission = true;
+		return;
+	}
+
+	if (super->Is_Ready() && house->Power_Fraction() >= 1.0) {
+		Cell cell = Zone != NULL ? Zone->Center_Coord().As_Cell() : chosen->Get_Cell();
+		house->Place_Special_Blast(super->Class->HeapID, cell);
+		IsNextMission = true;
+		return;
+	}
+
+	int recharge = std::max(1, super->Class->RechargeTime);
+	if (!super->Is_Present() || 1.0 - Rule->AIMinorSuperReadyPercent < (double)super->Control.Value() / (double)recharge) {
+		IsNextMission = true;
+	}
 }
 
 

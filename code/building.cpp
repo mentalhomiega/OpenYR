@@ -10469,9 +10469,9 @@ void BuildingClass::Clicked_As_Target(int count)
 int BuildingClass::Apparent_Brightness(int brightness) const
 {
 	if ((FlashCount & 2) == 2) {
-		return(brightness > 1500 ? brightness - 500 : brightness + 500);
+		brightness = (brightness > 1500 ? brightness - 500 : brightness + 500);
 	}
-	return(brightness);
+	return(Iron_Curtain_Brightness(brightness));
 }
 
 
@@ -10931,4 +10931,19 @@ ObjectTypeClass const * BuildingClass::Class_Of(void) const
 Coord BuildingClass::Render_Coord(void) const
 {
 	return(PositionCoord - Coord(CELL_LEPTON/2,CELL_LEPTON/2,0));
+}
+
+
+/// <summary>
+/// The Iron Curtain also defuses any demolition charge set on the structure, as
+/// BuildingClass::IronCurtain (0x457C90) does.
+/// </summary>
+void BuildingClass::Iron_Curtain(int duration, HouseClass * source, bool force_shield)
+{
+	if (IsGoingToBlow) {
+		IsGoingToBlow = false;
+		WhomToRepay = NULL;
+		CountDown = 0;
+	}
+	TechnoClass::Iron_Curtain(duration, source, force_shield);
 }

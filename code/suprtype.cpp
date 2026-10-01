@@ -42,7 +42,18 @@ SuperWeaponType Special_From_Name(char const * name)
 		"IonCannon",
 		"HunterSeeker",
 		"ChemMissile",
-		"DropPod"
+		"DropPod",
+		"IronCurtain",
+		"LightningStorm",
+		"ChronoSphere",
+		"ChronoWarp",
+		"ParaDrop",
+		"AmerParaDrop",
+		"PsychicDominator",
+		"SpyPlane",
+		"GeneticConverter",
+		"ForceShield",
+		"PsychicReveal"
 	};
 
 	for (int i = SUPER_FIRST; i < SUPER_COUNT; i++) {

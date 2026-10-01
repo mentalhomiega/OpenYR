@@ -280,6 +280,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Which member leads a team: the highest rating among those ready to act.
 		int LeadershipRating;
 
+		// An organic vehicle is killed by the Iron Curtain instead of being protected.
+		bool IsOrganic;
+
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.

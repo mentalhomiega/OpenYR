@@ -93,6 +93,7 @@ class MouseClass: public ScrollClass
 			int FrameCount; // Number of animation frames.
 			int FrameRate;  // Frame delay between changing frames.
 			int SmallFrame; // Start frame number for small version (if any).
+			int SmallCount; // Number of animation frames of the small version.
 			int X,Y;        // Hotspot X and Y offset.
 		};
 

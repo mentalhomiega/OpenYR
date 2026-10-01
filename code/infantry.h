@@ -177,6 +177,7 @@ class InfantryClass : public FootClass
 		virtual ActionType What_Action(Cell const &, bool check_fog = false, bool disallow_force = false) const override;
 		virtual BulletClass * Fire_At(AbstractClass * target, int which) override;
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false) override;
+		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield) override;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which) const override;
 		virtual void Assign_Target(AbstractClass *) override;
 		virtual void Set_Occupy_Bit(Coord const & coord) override;

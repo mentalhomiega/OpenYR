@@ -2697,7 +2697,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		if (SinkingYOffset > 0) {
 			rect = Intersect(rect, Rect(0, 0, TacticalRect.Width, SinkingYOffset - TacticalMap->TacPixelY));
 		}
-		Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, brightness);
+		Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
 		LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
 		LogicalSurface = old_surface;
 		IsCompositingToEightBitSurface = false;

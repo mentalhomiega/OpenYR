@@ -165,7 +165,19 @@ char const * const ActionName[ACTION_COUNT] = {
 	"PatrolWaypoint",
 	"DropPod",
 	"Rally To Point",
-	"Attack Support"
+	"Attack Support",
+	"IronCurtain",
+	"LightningStorm",
+	"ChronoSphere",
+	"ChronoWarp",
+	"ParaDrop",
+	"AmerParaDrop",
+	"PsychicDominator",
+	"SpyPlane",
+	"GeneticConverter",
+	"ForceShield",
+	"NoForceShield",
+	"PsychicReveal"
 };
 
 

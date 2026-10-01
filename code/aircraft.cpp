@@ -426,7 +426,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		}
 
 		brightness *= (HeightAGL / (2 * LEVEL_LEPTON_H));
-		int newbrightness = brightness + Map[coord].Brightness + Rule->ExtraAircraftLight;
+		int newbrightness = Iron_Curtain_Brightness(brightness + Map[coord].Brightness + Rule->ExtraAircraftLight);
 
 		/*
 		**	Actually draw the root body of the unit.
