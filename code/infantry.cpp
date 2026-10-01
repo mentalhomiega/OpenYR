@@ -260,7 +260,6 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	IsTechnician(false),
 	IsStoked(false),
 	IsProne(false),
-	IsBerzerk(false),
 	IsZoneCheat(false),
 	WasSelected(false),
 	Fear(FEAR_NONE)
@@ -4217,7 +4216,6 @@ void InfantryClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Doing);
 	stream.Serialize(Comment);
 	stream.Serialize(Fear);
-	stream.Serialize(IsBerzerk);
 	stream.Serialize(IsTechnician);
 	stream.Serialize(IsStoked);
 	stream.Serialize(IsProne);

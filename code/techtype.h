@@ -291,6 +291,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The psychic dominator cannot take over an ImmuneToPsionics or BalloonHover object.
 		bool IsImmuneToPsionics;
 
+		// Does a berzerk object refuse to fire at objects of this type?
+		bool IsBerserkFriendly;
+
 		// Can a temporal weapon warp an object of this type?
 		bool IsWarpable;
 

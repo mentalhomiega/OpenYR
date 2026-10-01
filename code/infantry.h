@@ -68,12 +68,6 @@ class InfantryClass : public FootClass
 		FearType Fear;
 
 		/*
-		 * If this infantry has gone berzerk, then this flag will be true. A berzerk soldier
-		 * no longer spares its allies when picking targets, so it attacks whatever is nearby.
-		 */
-		bool IsBerzerk;
-
-		/*
 		**	If this civilian is actually a technician, then this flag will be true.
 		**	It should only be set for the civilian type infantry. Typically, the
 		**	technician appears after a building is destroyed.

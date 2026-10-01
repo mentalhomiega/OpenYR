@@ -4,6 +4,8 @@ summary: "How a blast chooses the objects it damages, how much strength each one
 category: weapons-projectiles
 keys:
   - AffectsAllies
+  - Psychedelic
+  - BerserkFriendly
   - ShakeXlo
   - ShakeXhi
   - ShakeYlo
@@ -167,17 +169,18 @@ Every candidate receives the same raw figure and then reduces it separately, so 
 6. **Type immunity.** An object whose type is [`TypeImmune=yes`](/keys/typeimmune/) takes no damage from a credited attacker of the same type owned by the same house.
 7. **Iron Curtain.** An object under the [Iron Curtain](/systems/superweapons/#iron-curtain) takes no damage.
 8. **Allies.** An [`AffectsAllies=no`](/keys/affectsallies/) warhead does nothing to an object whose owner is an ally of the credited attacker's house, the attacker's own house included.
-9. **Object immunity.** An object whose type is [`Immune=yes`](/keys/immune/#scope-aircrafttype) takes no damage. Neither does an object already at zero strength.
-10. **Distance.** The figure thins with the target's distance from the blast, as [the next section](#how-distance-thins-the-damage) explains.
-11. **Armor table.** The result is multiplied by the warhead's [`Verses`](/keys/verses/) entry for the target's [`Armor=`](/keys/armor/#scope-aircrafttype) class and rounded down. It can reach zero.
-12. **`MaxDamage` ceiling.** The result is capped at [`MaxDamage`](/keys/maxdamage/). The cap applies to each hit separately, not to the blast as a whole.
-13. **Strength lost.** The result is taken off the target's strength, but never more than the strength it had. A killing blow therefore counts only the strength the target had left.
+9. **Madness.** A [`Psychedelic=yes`](/keys/psychedelic/) warhead does no damage. Instead it drives a vehicle, infantryman or aircraft berzerk, unless the object's owner is an ally of the credited attacker's house or its type is [`ImmuneToPsionics=yes`](/keys/immunetopsionics/). The madness lasts as many frames as the hit's damage after the warhead's `Verses` entry for the object's armor and the thinning with distance from the blast, and a new hit restarts the count. An object that was not yet berzerk leaves its team, drops its target and starts hunting. [Berzerk objects](/systems/target-selection/#berzerk-objects) describes what it does then.
+10. **Object immunity.** An object whose type is [`Immune=yes`](/keys/immune/#scope-aircrafttype) takes no damage. Neither does an object already at zero strength.
+11. **Distance.** The figure thins with the target's distance from the blast, as [the next section](#how-distance-thins-the-damage) explains.
+12. **Armor table.** The result is multiplied by the warhead's [`Verses`](/keys/verses/) entry for the target's [`Armor=`](/keys/armor/#scope-aircrafttype) class and rounded down. It can reach zero.
+13. **`MaxDamage` ceiling.** The result is capped at [`MaxDamage`](/keys/maxdamage/). The cap applies to each hit separately, not to the blast as a whole.
+14. **Strength lost.** The result is taken off the target's strength, but never more than the strength it had. A killing blow therefore counts only the strength the target had left.
 
-Steps 3 to 8 apply only to vehicles, infantry, aircraft and structures, so a tree or a veinhole monster skips them.
+Steps 3 to 9 apply only to vehicles, infantry, aircraft and structures, so a tree or a veinhole monster skips them.
 
 A tree takes no damage at all unless the warhead is [`Wood=yes`](/keys/wood/).
 
-A blast never deals forced damage. The engine deals forced damage directly, for example when a C4 charge destroys a structure. Forced damage skips step 1 and steps 3 to 12, so of the numbered steps only the web of step 2 and step 13 apply. It still does nothing to an object already at zero strength. Refusals that belong to a particular kind of object also still apply, such as a tree's need for a `Wood=yes` warhead and a harvester's protection under the harvester truce.
+A blast never deals forced damage. The engine deals forced damage directly, for example when a C4 charge destroys a structure. Forced damage skips step 1 and steps 3 to 13, so of the numbered steps only the web of step 2 and step 14 apply. It still does nothing to an object already at zero strength. Refusals that belong to a particular kind of object also still apply, such as a tree's need for a `Wood=yes` warhead and a harvester's protection under the harvester truce.
 
 Unforced damage with no warhead, or any unforced damage in a scenario with [`Inert=yes`](/keys/inert/), does nothing. An ordinary blast in either case damages nothing and has none of the ground effects below. A [wide-area blast](#the-wide-area-blast) in an `Inert=yes` scenario can still crater the ground at its center.
 

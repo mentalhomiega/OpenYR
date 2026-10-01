@@ -182,6 +182,14 @@ class TechnoClass :	public RadioClass,
 		int BombDetonateFrame;
 		AudioHandle BombSound;
 
+		/*
+		 * A berzerk object no longer spares its allies when picking targets, fires twice as
+		 * fast and ignores its owner's orders. BerzerkDuration counts the frames left, or is
+		 * zero when the madness lasts for good.
+		 */
+		bool IsBerzerk;
+		int BerzerkDuration;
+
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
 		VocType GattlingVoc;

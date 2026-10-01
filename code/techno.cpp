@@ -297,6 +297,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BombHouse(NULL),
 	BombPlantFrame(0),
 	BombDetonateFrame(-1),
+	IsBerzerk(false),
+	BerzerkDuration(0),
 	BombSound(),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
@@ -2153,7 +2155,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	/*
 	**	An object in limbo can never be a valid target.
 	*/
-	if (object == NULL || object->IsInLimbo || object->Strength == 0) {
+	if (object == NULL || object == this || object->IsInLimbo || object->Strength == 0) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
@@ -2202,7 +2204,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	object is a friend.  Unless we're a medic, of course.  But then,
 	**	only consider it a target if it's injured.
 	*/
-	if ((RTTI != RTTI_INFANTRY || !((InfantryClass *)this)->IsBerzerk) && House->Is_Ally(object)) {
+	if (!IsBerzerk && House->Is_Ally(object)) {
 		if (Combat_Damage() < 0 || engineer) {
 			if (object->HealthRatio == Rule->ConditionGreen) {
 				BEnd(BENCH_EVAL_OBJECT);
@@ -2550,9 +2552,9 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 					if (tech->HealthRatio < Rule->ConditionGreen && House->Is_Ally(tech) && Can_Heal(tech)) break;
 				} else {
 					if (!House->Is_Ally(tech)
+						|| IsBerzerk
 						|| (RTTI == RTTI_INFANTRY
-							&& (((InfantryClass*)this)->IsBerzerk
-							|| (((InfantryClass*)this)->Class->IsEngineer
+							&& ((((InfantryClass*)this)->Class->IsEngineer
 								&& CurrentMission == MISSION_GUARD_AREA
 								&& tech->HealthRatio <= Rule->ConditionRed
 								&& tech->RTTI == RTTI_BUILDING
@@ -3116,6 +3118,10 @@ bool TechnoClass::Is_Voxel_Loaded(void) const
  *=============================================================================================*/
 void TechnoClass::AI(void)
 {
+	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
+		IsBerzerk = false;
+	}
+
 	if (Is_Voxel_Loaded()) {
 		Rocking_AI();
 		if (!IsActive) {
@@ -3767,6 +3773,10 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	if (IsBerzerk && techno != NULL && techno->TClass->IsBerserkFriendly) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A bomb disarming weapon fires only at an object that carries a bomb.
 	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsBombDisarm && (techno == NULL || techno->BombDetonateFrame == -1)) {
 		return(FIRE_ILLEGAL);
@@ -4413,7 +4423,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 				LastFireFrame = Frame;
 				BurstIndex++;
-				Arm = Rearm_Delay(which);
+				Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
 				BurstIndex %= weapon->Burst;
 
 				// The occupants of a garrison take turns to fire.
@@ -4620,6 +4630,10 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
  *=============================================================================================*/
 ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_force) const
 {
+	if (IsBerzerk) {
+		return(ACTION_NONE);
+	}
+
 	if (object != NULL) {
 
 		/*
@@ -4740,6 +4754,10 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
  *=============================================================================================*/
 ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disallow_force) const
 {
+	if (IsBerzerk) {
+		return(ACTION_NONE);
+	}
+
 	CellClass const * cellptr = &Map[cell];
 	OverlayTypeClass const * optr = NULL;
 
@@ -5359,6 +5377,29 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, unless the damage is forced.
 	if (warhead != NULL && !warhead->IsAffectsAllies && !forced && source != NULL && House->Is_Ally(source->House)) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
+	/*
+	 * A Psychedelic warhead does no damage. It drives a vehicle, soldier or aircraft that is not
+	 * an ally of the attacker, nor ImmuneToPsionics, berzerk for as many frames as the damage
+	 * would have been after armor; a fresh madness also drops the object's team, target and
+	 * orders and sets it hunting (TechnoClass::ReceiveDamage, 0x701900).
+	 */
+	if (warhead != NULL && warhead->IsPsychedelic && !forced && !negative) {
+		bool const ally = source != NULL && House->Is_Ally(source->House);
+		if (!ally && !TClass->IsImmuneToPsionics && RTTI != RTTI_BUILDING) {
+			BerzerkDuration = Modify_Damage(damage, warhead, TClass->Armor, distance);
+			if (!IsBerzerk) {
+				IsBerzerk = true;
+				if (Is_Foot() && ((FootClass *)this)->Team != NULL) {
+					((FootClass *)this)->Team->Remove((FootClass *)this);
+				}
+				Assign_Target(NULL);
+				Assign_Mission(MISSION_HUNT);
+			}
+		}
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -8904,6 +8945,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombHouse);
 	stream.Serialize(BombPlantFrame);
 	stream.Serialize(BombDetonateFrame);
+	stream.Serialize(IsBerzerk);
+	stream.Serialize(BerzerkDuration);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

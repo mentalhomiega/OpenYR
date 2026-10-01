@@ -164,6 +164,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsOrganic(false),
 	IsDamageSelf(false),
 	IsImmuneToPsionics(false),
+	IsBerserkFriendly(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
 	GapRadiusInCells(0),
@@ -630,6 +631,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);
 		IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
+		IsBerserkFriendly = ini.Get_Bool(Name(), "BerserkFriendly", IsBerserkFriendly);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
@@ -1129,6 +1131,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOrganic);
 	stream.Serialize(IsDamageSelf);
 	stream.Serialize(IsImmuneToPsionics);
+	stream.Serialize(IsBerserkFriendly);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
 	stream.Serialize(GapRadiusInCells);

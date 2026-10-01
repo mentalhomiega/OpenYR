@@ -593,7 +593,7 @@ void Run(StepType const & step)
 			if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
-				DebugString("AUTOTEST   hit %s of %s took %d strength %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength);
+				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration);
 			}
 		}
 	} else if (step.Command == "shake") {

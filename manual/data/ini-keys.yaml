@@ -3642,6 +3642,23 @@ BehavesLike:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+BerserkFriendly:
+  key: BerserkFriendly
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsBerserkFriendly
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 BerzerkAllowed:
   key: BerzerkAllowed
   scopes:
@@ -22803,6 +22820,23 @@ ProximityDistance:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+Psychedelic:
+  key: Psychedelic
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsPsychedelic
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 PsychicDominatorActivateSound:
   key: PsychicDominatorActivateSound
   scopes:
