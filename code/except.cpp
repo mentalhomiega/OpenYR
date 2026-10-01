@@ -49,6 +49,7 @@
 // The subsystem is Windows only; other platforms get the inert stubs at the end of the file.
 #if defined(_WIN32)
 
+#include "autotest.h"
 #include "misc.h"
 #include "resource.h"
 #include "version.h"
@@ -1578,7 +1579,9 @@ static void Show_Recursion_Notice(void)
 					"The game crashed again while reporting a crash, before anything could be saved.");
 	}
 
-	MessageBoxA(NULL, message, "OpenTS", MB_OK | MB_ICONSTOP | MB_SYSTEMMODAL | MB_SETFOREGROUND);
+	if (!AutoTest_Active()) {
+		MessageBoxA(NULL, message, "OpenTS", MB_OK | MB_ICONSTOP | MB_SYSTEMMODAL | MB_SETFOREGROUND);
+	}
 }
 
 
@@ -1588,6 +1591,11 @@ static void Show_Recursion_Notice(void)
 [[noreturn]] static void Show_Exception_Dialog(void)
 {
 	Release_Display();
+
+	// An unattended test run ends without a dialog that would take the foreground; the report is saved.
+	if (AutoTest_Active()) {
+		Terminate_Now();
+	}
 
 	INT_PTR const result = DialogBoxParam(ProgramInstance, MAKEINTRESOURCE(IDD_EXCEPTION), NULL,
 				Exception_Dialog_Proc, 0);

@@ -83,6 +83,7 @@
 #include "_voxel.h"
 #include "abstract.h"
 #include "addon.h"
+#include "autotest.h"
 #include "aircraft.h"
 #include "airctype.h"
 #include "alphashp.h"
@@ -1519,6 +1520,16 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 		if (strnicmp(string, "-USERDIR=", strlen("-USERDIR=")) == 0) {
 			Set_User_Directory(&original[strlen("-USERDIR=")]);
+			continue;
+		}
+
+		if (strnicmp(string, "-AUTOTEST=", strlen("-AUTOTEST=")) == 0) {
+			char const * script = &original[strlen("-AUTOTEST=")];
+			if (AutoTest_Load(script)) {
+				GameInFocus = true;
+			} else {
+				DebugString("AUTOTEST: cannot read %s\n", script);
+			}
 			continue;
 		}
 

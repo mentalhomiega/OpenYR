@@ -27,6 +27,7 @@
 #include "_ui.h"
 #include "_xmouse.h"
 #include "audio/audioengine.h"
+#include "autotest.h"
 #include "bench.h"
 #include "chat.h"
 #include "command.h"
@@ -337,6 +338,7 @@ bool Main_Loop(void)
 	**	AI logic operations are performed here.
 	*/
 	Logic.AI();
+	AutoTest_Frame();
 
 	/*
 	**	Manage the inter-player message list.  If Manage() returns true, it means

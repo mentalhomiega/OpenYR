@@ -523,6 +523,14 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-USERDIR=' }
+  - id: launch:autotest
+    title: Unattended test run
+    syntax: -AUTOTEST=<script>
+    description: Plays the steps of a test script inside the engine with the window hidden and the real mouse and keyboard ignored, so a test can run while another program has the focus. docs/AUTOTEST.md describes the script.
+    audience: developer
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-AUTOTEST=' }
   - id: launch:spawn
     title: Client launch
     syntax: -SPAWN

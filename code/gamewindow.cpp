@@ -17,6 +17,7 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "_xmouse.h"
+#include "autotest.h"
 #include "cctooltip.h"
 #include "dbgprint.h"
 #include "globals.h"
@@ -59,6 +60,11 @@ static bool Is_Mouse_Event(WindowEventType type)
 
 static void Set_Game_Focus(bool focused)
 {
+	// An unattended test run keeps playing while another program has the focus.
+	if (AutoTest_Active()) {
+		focused = true;
+	}
+
 	if (GameInFocus == focused) {
 		return;
 	}

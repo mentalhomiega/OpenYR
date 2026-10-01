@@ -9,6 +9,7 @@
 
 #include "sdl/sdlwindow.h"
 
+#include "autotest.h"
 #include "dbgprint.h"
 #include "gamewindow.h"
 #include "resource.h"
@@ -381,8 +382,11 @@ bool Main_Window_Create(bool windowed, int width, int height)
 	SetWindowSubclass(Window_Handle(), Watch_Messages, WindowSubclass, 0);
 	_Input.Reset();
 
-	SDL_ShowWindow(_Window);
-	SDL_RaiseWindow(_Window);
+	// An unattended test run stays hidden, so it never takes the foreground from another program.
+	if (!AutoTest_Active()) {
+		SDL_ShowWindow(_Window);
+		SDL_RaiseWindow(_Window);
+	}
 
 	// Typed text is always on, as characters from Windows were.
 	SDL_StartTextInput(_Window);
@@ -542,7 +546,7 @@ void Main_Window_Take_Focus(void)
 
 void Main_Window_Capture_Mouse(bool capture)
 {
-	if (_Window == nullptr) {
+	if (_Window == nullptr || AutoTest_Active()) {
 		return;
 	}
 	SDL_CaptureMouse(capture);
@@ -564,7 +568,7 @@ bool Main_Window_Mouse_Captured(void)
 
 void Main_Window_Confine_Cursor(bool confine)
 {
-	if (_Window != nullptr) {
+	if (_Window != nullptr && !AutoTest_Active()) {
 		SDL_SetWindowMouseGrab(_Window, confine);
 	}
 }
@@ -576,6 +580,13 @@ bool Main_Window_Cursor_Position(int & x, int & y)
 {
 	if (_Window == nullptr) {
 		return(false);
+	}
+
+	// An unattended test run ignores the real mouse; its cursor rests away from the screen edges.
+	if (AutoTest_Active()) {
+		x = 200;
+		y = 200;
+		return(true);
 	}
 
 	float globalx = 0.0f;
@@ -595,7 +606,7 @@ bool Main_Window_Cursor_Position(int & x, int & y)
 
 void Main_Window_Warp_Cursor(int x, int y)
 {
-	if (_Window != nullptr) {
+	if (_Window != nullptr && !AutoTest_Active()) {
 		float const density = Pixel_Density();
 		SDL_WarpMouseInWindow(_Window, (float)x / density, (float)y / density);
 	}
@@ -605,6 +616,10 @@ void Main_Window_Warp_Cursor(int x, int y)
 // Mouse buttons follow the player's left-handed button setting.
 bool Main_Window_Key_Down(int virtualkey)
 {
+	if (AutoTest_Active()) {
+		return(false);
+	}
+
 	switch (virtualkey) {
 		case VK_LBUTTON:	return((SDL_GetGlobalMouseState(nullptr, nullptr) & SDL_BUTTON_LMASK) != 0);
 		case VK_RBUTTON:	return((SDL_GetGlobalMouseState(nullptr, nullptr) & SDL_BUTTON_RMASK) != 0);

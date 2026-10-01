@@ -2269,6 +2269,19 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:autotest
+  route_id: autotest
+  kind: launch
+  title: Unattended test run
+  description: Plays the steps of a test script inside the engine with the window hidden and the real
+    mouse and keyboard ignored, so a test can run while another program has the focus. docs/AUTOTEST.md
+    describes the script.
+  audience: developer
+  availability: *id001
+  syntax: -AUTOTEST=<script>
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:spawn
   route_id: spawn
   kind: launch
