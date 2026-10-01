@@ -44,8 +44,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 	public:
 
+		// The weapon slots are primary, secondary, elite primary and elite secondary, in that order.
 		enum {
-			WEAPON_SLOT_COUNT = 3
+			WEAPON_SLOT_COUNT = 4
 		};
 
 		/*

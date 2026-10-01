@@ -26,6 +26,15 @@
     type: key
     id: Brief
 - type: key
+  id: Elite
+  route: /keys/elite/
+  search_aliases:
+    - Elite
+  summary: Named the weapon an elite object fired in place of its primary. Yuri's Revenge reads ElitePrimary and EliteSecondary instead.
+  replacement:
+    type: key
+    id: ElitePrimary
+- type: key
   id: ModemName
   route: /keys/modemname/
   search_aliases:

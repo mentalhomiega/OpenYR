@@ -761,8 +761,8 @@ inline DirType TechnoClass::Turret_Facing(void) const
 
 inline WeaponDataStruct const * TechnoClass::Get_Class_Weapon_Data(int which) const
 {
-	if (Veterancy.Is_Elite() && which == 0) {
-		return(TClass->Get_Weapon(2));
+	if (Veterancy.Is_Elite() && (which == 0 || which == 1)) {
+		return(TClass->Get_Weapon(which + 2));
 	}
 
 	return(TClass->Get_Weapon(which));

@@ -1,7 +1,7 @@
 ---
 key: PBarrelLength
 summary: How far out along the first weapon's barrel its muzzle sits.
-see_also: ["PrimaryFireFLH", "PBarrelThickness", "Elite", "SBarrelLength"]
+see_also: ["PrimaryFireFLH", "PBarrelThickness", "ElitePBarrelLength", "SBarrelLength"]
 when_omitted:
   kind: value
   value: "0"
@@ -19,4 +19,4 @@ The weapon's fire animation, laser beam, sonic wave and attached particle system
 
 A value above `0` also advances the weapon's projectile up to two steps along its flight as soon as it is fired. The second step is skipped if the first ends the projectile. Laser weapons and [`Inviso=yes`](/keys/inviso/) projectiles are not advanced.
 
-The [`Elite`](/keys/elite/) weapon slot uses this same setting, so an elite weapon fires from the end of the same barrel as the weapon it replaces.
+The elite primary slot uses [`ElitePBarrelLength`](/keys/elitepbarrellength/), which defaults to this value.

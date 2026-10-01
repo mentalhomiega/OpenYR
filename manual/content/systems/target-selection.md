@@ -7,7 +7,7 @@ keys:
   - AG
   - AV
   - ComputerBaseDefenseResponse
-  - Elite
+  - ElitePrimary
   - EnemyHouseThreatBonus
   - FireSupress
   - GuardArea
@@ -308,7 +308,7 @@ A web weapon replaces those scores. When either slot has a [`Webby=yes`](/keys/w
 
 A target that is not an object, such as a cell, counts as armor class `none`.
 
-The primary slot does not always hold [`Primary`](/keys/primary/). An elite object uses its [`Elite`](/keys/elite/) weapon in that slot, and a building's plugged-in upgrades can replace the weapon in either case; [the elite weapon](/systems/veterancy/#the-elite-weapon) covers both. On this page, "primary weapon" means whatever weapon that slot holds.
+The primary slot does not always hold [`Primary`](/keys/primary/). An elite object uses its [`ElitePrimary`](/keys/eliteprimary/) weapon in that slot when it has one, and a building's plugged-in upgrades can replace the weapon in either case; [the elite weapons](/systems/veterancy/#the-elite-weapons) covers both. On this page, "primary weapon" means whatever weapon that slot holds.
 
 :::danger[A web primary with no secondary reads an empty weapon slot]
 When the primary's warhead is `Webby=yes` and the secondary slot is empty, the web rule above picks the empty secondary slot for any target the web weapon can fire at but cannot web. That covers every vehicle and building, a landed aircraft, and every `IsWebImmune=yes` or immobilized infantry. Scoring copes with the empty slot and uses `GuardRange` as the range. The retaliation check does not: when such an object is damaged by something its web weapon can fire at but cannot web, the check reads the warhead of the empty slot, which is an invalid memory access. Give any object with a web primary a secondary weapon.

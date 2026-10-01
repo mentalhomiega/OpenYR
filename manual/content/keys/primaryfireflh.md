@@ -1,7 +1,7 @@
 ---
 key: PrimaryFireFLH
 summary: The offset from an object's center that its first weapon fires from.
-see_also: ["Primary", "Elite", "PBarrelLength", "PBarrelThickness", "TurretOffset", "SecondaryFireFLH"]
+see_also: ["Primary", "ElitePrimaryFireFLH", "PBarrelLength", "PBarrelThickness", "TurretOffset", "SecondaryFireFLH"]
 when_omitted:
   kind: value
   value: 0,0,0
@@ -37,7 +37,7 @@ An infantry type has no separate mounting: its projectile starts at the muzzle, 
 
 ## Other slots and overrides
 
-The elite weapon slot has no offset keys of its own. It uses `PrimaryFireFLH`, `PBarrelLength` and `PBarrelThickness`, so an [`Elite`](/keys/elite/) weapon fires from the same point as the weapon it replaces.
+The elite primary slot reads its own offset from [`ElitePrimaryFireFLH`](/keys/eliteprimaryfireflh/), which defaults to this value.
 
 Two structure settings replace this offset for every weapon slot. If both are set, the first one listed applies:
 

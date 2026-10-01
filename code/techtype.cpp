@@ -596,7 +596,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
 		Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
 		Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
-		Weapons[2].Weapon = TGet_Class(ini, Name(), "Elite", Weapons[2].Weapon);
+		Weapons[2].Weapon = TGet_Class(ini, Name(), "ElitePrimary", Weapons[2].Weapon);
+		Weapons[3].Weapon = TGet_Class(ini, Name(), "EliteSecondary", Weapons[3].Weapon);
 		VoiceMove = ini.Get_VocType_List(ini, IniName, "VoiceMove", VoiceMove);
 		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
@@ -729,9 +730,13 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Weapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "SecondaryFireFLH", Weapons[1].FireFLH);
 		Weapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "SBarrelLength", Weapons[1].BarrelLength);
 		Weapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "SBarrelThickness", Weapons[1].BarrelThickness);
-		Weapons[2].FireFLH = ArtINI.Get_Point(Graphic_Name(), "PrimaryFireFLH", Weapons[2].FireFLH);
-		Weapons[2].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "PBarrelLength", Weapons[2].BarrelLength);
-		Weapons[2].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "PBarrelThickness", Weapons[2].BarrelThickness);
+		// An elite weapon fires from where its normal counterpart does unless the art says otherwise.
+		Weapons[2].FireFLH = ArtINI.Get_Point(Graphic_Name(), "ElitePrimaryFireFLH", Weapons[0].FireFLH);
+		Weapons[2].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelLength", Weapons[0].BarrelLength);
+		Weapons[2].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelThickness", Weapons[0].BarrelThickness);
+		Weapons[3].FireFLH = ArtINI.Get_Point(Graphic_Name(), "EliteSecondaryFireFLH", Weapons[1].FireFLH);
+		Weapons[3].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelLength", Weapons[1].BarrelLength);
+		Weapons[3].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelThickness", Weapons[1].BarrelThickness);
 
 		TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
 
@@ -1218,15 +1223,15 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 
 /// <summary>
 /// Fetches the weapon data for one of this object type's weapon slots.
-/// An object type that was never given an elite weapon quietly serves up its primary
-/// instead, so a veteran object may ask for its elite armament without checking first.
+/// An empty elite slot serves up the matching normal weapon instead, so an elite object may
+/// ask for its elite armament without checking first.
 /// </summary>
 /// <param name="which">The weapon slot desired.</param>
 /// <returns>Returns with a pointer to the weapon data for that slot.</returns>
 WeaponDataStruct const * TechnoTypeClass::Get_Weapon(int which) const
 {
-	if (which == 2 && Weapons[which].Weapon == NULL) {
-		which = 0;
+	if (which >= 2 && Weapons[which].Weapon == NULL) {
+		which -= 2;
 	}
 	return(&Weapons[which]);
 }

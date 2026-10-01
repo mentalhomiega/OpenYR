@@ -5,8 +5,9 @@ category: combat-targeting
 keys:
   - Armory
   - CrateRadius
-  - Elite
   - EliteAbilities
+  - ElitePrimary
+  - EliteSecondary
   - IRepairRate
   - InitialVeteran
   - Trainable
@@ -118,7 +119,7 @@ The training time is set by [`IRepairRate`](/keys/irepairrate/), which also cont
 
 ## What a rank changes
 
-Promotion bonuses depend on the type's ability lists. A veteran with no abilities gains only a rank insignia. Elite objects can also use an elite weapon and cause other objects in their cell to scatter, as described below.
+Promotion bonuses depend on the type's ability lists. A veteran with no abilities gains only a rank insignia. Elite objects can also use elite weapons and cause other objects in their cell to scatter, as described below.
 
 ### Abilities
 
@@ -183,11 +184,11 @@ Set the five bonuses below in `rules.ini` under `[General]`. Each applies only w
 
 Sonic weapons and weapons using fire particles receive no firepower bonus. Sonic weapons also receive no reload bonus, as do weapons with an attached spark, fire, or railgun particle system. The reload bonus shortens the delay after a burst, not the gaps between its shots.
 
-### The elite weapon
+### The elite weapons
 
-At elite rank, the weapon named by [`Elite`](/keys/elite/) replaces the primary weapon. Target selection, range, reload delay, and firing all use this weapon. The secondary weapon stays unchanged. If `Elite` is unset, the object keeps its primary weapon.
+At elite rank, the weapon named by [`ElitePrimary`](/keys/eliteprimary/) replaces the primary weapon, and the weapon named by [`EliteSecondary`](/keys/elitesecondary/) replaces the secondary. Target selection, range, reload delay, and firing all use the replacement. A slot whose elite key is unset keeps its normal weapon.
 
-The elite weapon uses the primary weapon's art settings: [`PrimaryFireFLH`](/keys/primaryfireflh/), [`PBarrelLength`](/keys/pbarrellength/), and [`PBarrelThickness`](/keys/pbarrelthickness/). It fires from the same muzzle offset.
+Each elite weapon has its own art settings, which default to the normal slot's: [`ElitePrimaryFireFLH`](/keys/eliteprimaryfireflh/), [`ElitePBarrelLength`](/keys/elitepbarrellength/) and [`ElitePBarrelThickness`](/keys/elitepbarrelthickness/) for the primary, and [`EliteSecondaryFireFLH`](/keys/elitesecondaryfireflh/), [`EliteSBarrelLength`](/keys/elitesbarrellength/) and [`EliteSBarrelThickness`](/keys/elitesbarrelthickness/) for the secondary.
 
 :::caution[Building upgrades take priority]
 A building upgrade that supplies a weapon takes priority over the building's own weapon in that slot, including its elite weapon. Upgrades are structure types with [`PowersUpBuilding=`](/keys/powersupbuilding/) installed in the host's [upgrade slots](/keys/upgrades/).

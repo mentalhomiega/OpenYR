@@ -8141,8 +8141,59 @@ Elasticity:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
-Elite:
-  key: Elite
+EliteAbilities:
+  key: EliteAbilities
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: abilities
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteAbilities
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ElitePBarrelLength:
+  key: ElitePBarrelLength
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ElitePBarrelThickness:
+  key: ElitePBarrelThickness
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ElitePrimary:
+  key: ElitePrimary
   scopes:
   - applies_to: *id003
     file: rules.ini
@@ -8158,20 +8209,88 @@ Elite:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-EliteAbilities:
-  key: EliteAbilities
+ElitePrimaryFireFLH:
+  key: ElitePrimaryFireFLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteSBarrelLength:
+  key: EliteSBarrelLength
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteSBarrelThickness:
+  key: EliteSBarrelThickness
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteSecondary:
+  key: EliteSecondary
   scopes:
   - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
       source: object-type
-    value_type: abilities
+    value_type: class
     status: generated
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: EliteAbilities
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteSecondaryFireFLH:
+  key: EliteSecondaryFireFLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

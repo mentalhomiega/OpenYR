@@ -13,7 +13,8 @@ keys:
   - BurstDelay2
   - BurstDelay3
   - Charges
-  - Elite
+  - ElitePrimary
+  - EliteSecondary
   - FiringSyncFrame1
   - IsBigLaser
   - IsLaser
@@ -58,16 +59,16 @@ One shot can produce a projectile, a laser beam or sonic wave, weapon particle e
 
 ## Weapon slots in brief
 
-An object type has three weapon slots. [`Primary=`](/keys/primary/) fills the first, [`Secondary=`](/keys/secondary/) the second, and [`Elite=`](/keys/elite/) the third. The third slot is never fired directly; it only replaces the first slot on an elite object.
+An object type has four weapon slots. [`Primary=`](/keys/primary/) fills the first, [`Secondary=`](/keys/secondary/) the second, [`ElitePrimary=`](/keys/eliteprimary/) the third and [`EliteSecondary=`](/keys/elitesecondary/) the fourth. The last two are never fired directly; on an elite object they replace the first and second slots.
 
-Each slot also holds a firing offset, a barrel length and a barrel thickness. These come from the type's image section in art.ini, not from rules.ini. The first slot uses [`PrimaryFireFLH`](/keys/primaryfireflh/), [`PBarrelLength`](/keys/pbarrellength/) and [`PBarrelThickness`](/keys/pbarrelthickness/). The second slot uses [`SecondaryFireFLH`](/keys/secondaryfireflh/), [`SBarrelLength`](/keys/sbarrellength/) and [`SBarrelThickness`](/keys/sbarrelthickness/). The third slot uses the first slot's three values.
+Each slot also holds a firing offset, a barrel length and a barrel thickness. These come from the type's image section in art.ini, not from rules.ini. The first slot uses [`PrimaryFireFLH`](/keys/primaryfireflh/), [`PBarrelLength`](/keys/pbarrellength/) and [`PBarrelThickness`](/keys/pbarrelthickness/). The second slot uses [`SecondaryFireFLH`](/keys/secondaryfireflh/), [`SBarrelLength`](/keys/sbarrellength/) and [`SBarrelThickness`](/keys/sbarrelthickness/). The elite slots use their own `Elite` variants of these keys, which default to the matching normal slot's values.
 
 Two substitutions can replace a whole slot, including its offsets. Both are checked each time the slot is used, so a promotion or a new upgrade applies from the next shot.
 
-- An object at elite [rank](/systems/veterancy/#the-elite-weapon) uses the third slot in place of the first. Because the third slot takes the first slot's offsets, the elite weapon fires from the same point on the artwork. If the type sets no `Elite=` weapon, the first slot's weapon stays in use.
+- An object at elite [rank](/systems/veterancy/#the-elite-weapons) uses the third slot in place of the first and the fourth in place of the second. An elite slot with no weapon leaves its normal slot in use.
 - A structure with upgrades plugged in takes each slot from the first upgrade type that has a weapon in that slot. It also takes that upgrade type's offsets for the slot. This replacement is checked before rank, so an upgrade's first-slot weapon also replaces the elite weapon.
 
-On this page, **the firing slot** means the slot the shot was ordered from, after these substitutions. **The first slot** means slot one after these substitutions, so on an elite object it holds the elite weapon.
+On this page, **the firing slot** means the slot the shot was ordered from, after these substitutions. **The first slot** means slot one after these substitutions, so on an elite object it holds the elite primary weapon when the type has one.
 
 This abridged example shows where the settings go. The weapons are named in rules.ini, and their offsets are set in art.ini under the type's image, which is the type's ID unless `Image=` names another:
 
