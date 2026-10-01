@@ -105,6 +105,9 @@ class UnitClass : public FootClass
 		 */
 		bool IsHarvesting;
 
+		// The passenger count a gunner vehicle last acted on.
+		int GunnerPassengers;
+
 		/*
 		 * If this unit's artwork is being layered onto the shared eight bit scratch surface
 		 * rather than drawn straight to the screen, then this flag will be true. It tells

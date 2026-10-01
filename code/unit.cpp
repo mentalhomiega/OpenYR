@@ -209,6 +209,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	Flagged(HOUSE_NONE),
 	IsDumping(false),
 	IsHarvesting(false),
+	GunnerPassengers(0),
 	Reload(0),
 	FiringSyncDelay(-1),
 	VisceroidFacing(FACING_NONE),
@@ -253,6 +254,10 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	// A house that has spied on a war factory gets its trainable land vehicles as veterans.
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval) {
 		Veterancy.Set_Veteran(true);
+	}
+
+	if (Class != NULL && Class->IsGunner) {
+		Set_Turret_Weapon(0);
 	}
 }
 
@@ -541,6 +546,20 @@ void UnitClass::AI(void)
 	*/
 	if (Mission != MISSION_HARVEST) {
 		IsHarvesting = false;
+	}
+
+	/*
+	 * As FootClass::EnterAsPassenger and RemovePassenger (0x4DE630, 0x4DE670): a gunner
+	 * vehicle takes the weapon its first passenger's IFVMode names, and returns to
+	 * position 0 once it is empty.
+	 */
+	if (Class->IsGunner && Cargo.How_Many() != GunnerPassengers) {
+		if (Cargo.How_Many() == 0) {
+			Set_Turret_Weapon(0);
+		} else if (GunnerPassengers == 0 && Cargo.Attached_Object() != NULL) {
+			Set_Turret_Weapon(Cargo.Attached_Object()->TClass->IFVMode);
+		}
+		GunnerPassengers = Cargo.How_Many();
 	}
 
 	/*
@@ -2666,11 +2685,25 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 	**	If there is a turret, then it must be rendered as well. This may include
 	**	firing animation if required.
 	*/
-	if (Class->IsTurretEquipped && Class->AuxVoxel.VoxLib != NULL) {
+	/*
+	 * As UnitClass::DrawAsVXL (0x73B470): a multi-turret vehicle that is not a gattling type shows
+	 * the numbered turret and barrel its current weapon maps to.
+	 */
+	VoxelDataStruct const * turret = &Class->AuxVoxel;
+	VoxelDataStruct const * barrel = &Class->AuxVoxel2;
+	if (Class->Has_Multiple_Turrets() && !Class->IsGattling) {
+		int const index = CurrentTurretNumber >= 0 && CurrentTurretNumber < TechnoTypeClass::WEAPON_SLOT_COUNT ? CurrentTurretNumber : 0;
+		if (Class->ChargerTurrets[index].VoxLib != NULL && Class->ChargerTurrets[index].MotLib != NULL) {
+			turret = &Class->ChargerTurrets[index];
+			barrel = &Class->ChargerBarrels[index];
+		}
+	}
+
+	if (Class->IsTurretEquipped && turret->VoxLib != NULL) {
 		// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
 		int turret_frame = frame;
-		if (frame == 0 && Class->AuxVoxel.MotLib != NULL && Class->AuxVoxel.MotLib->Get_Frame_Count() > 0) {
-			turret_frame = TurretAnimFrame % Class->AuxVoxel.MotLib->Get_Frame_Count();
+		if (frame == 0 && turret->MotLib != NULL && turret->MotLib->Get_Frame_Count() > 0) {
+			turret_frame = TurretAnimFrame % turret->MotLib->Get_Frame_Count();
 		}
 
 		main_matrix.Translate_X(Class->TurretOffset / 8);
@@ -2696,20 +2729,18 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		bool draw_barrel;
 		if (SecondaryFacing.Current().As_Dir4() <= 0 || SecondaryFacing.Current().As_Dir4() >= 3) {
 			draw_barrel = false;
-			voxl = &Class->AuxVoxel2;
-			if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-				Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
+			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
+				Draw_Voxel(*barrel, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
 			}
 		} else {
 			draw_barrel = true;
 		}
 
-		Draw_Voxel(Class->AuxVoxel, turret_frame, -1, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		Draw_Voxel(*turret, turret_frame, -1, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
 
 		if (draw_barrel) {
-			voxl = &Class->AuxVoxel2;
-			if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-				Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
+			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
+				Draw_Voxel(*barrel, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
 			}
 		}
 	} else {
@@ -6200,6 +6231,7 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFollowing);
 	stream.Serialize(IsDumping);
 	stream.Serialize(IsHarvesting);
+	stream.Serialize(GunnerPassengers);
 	stream.Serialize(IsCompositingToEightBitSurface);
 	stream.Serialize(VisceroidFacing);
 	stream.Serialize(Charge);

@@ -145,6 +145,7 @@ class TechnoClass :	public RadioClass,
 		 * object fires or rearms.
 		 */
 		int CurrentWeaponNumber;
+		int CurrentTurretNumber;
 		int CurrentGattlingStage;
 		int GattlingValue;
 		int TurretAnimFrame;
@@ -556,6 +557,7 @@ class TechnoClass :	public RadioClass,
 		virtual int How_Many_Survivors(void) const;
 		virtual void Scatter_Incoming_Infantry(void) const;
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
+		void Set_Turret_Weapon(int position);
 		void Gattling_Rate_Up(int frames);
 		void Gattling_Rate_Down(int frames);
 		virtual int Get_Collateral_Damage(void) const;

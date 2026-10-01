@@ -274,6 +274,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	MindControlledBy(NULL),
 	IsPermaControlled(false),
 	CurrentWeaponNumber(0),
+	CurrentTurretNumber(-1),
 	CurrentGattlingStage(0),
 	GattlingValue(0),
 	TurretAnimFrame(0),
@@ -6664,6 +6665,21 @@ void TechnoClass::Delete_Me(void)
 
 
 /// <summary>
+/// Makes a multi-turret object fire the weapon position given and show the turret that
+/// position maps to (TechnoClass::SetTurretWeapon, 0x70DC70). A position outside the list
+/// selects position 0.
+/// </summary>
+void TechnoClass::Set_Turret_Weapon(int position)
+{
+	if (position < 0 || position >= TechnoTypeClass::WEAPON_SLOT_COUNT) {
+		position = 0;
+	}
+	CurrentWeaponNumber = position;
+	CurrentTurretNumber = TClass->TurretWeapon[position];
+}
+
+
+/// <summary>
 /// Spins a gattling weapon up for the frames given (TechnoClass::GattlingRateUp, 0x70DE70).
 /// The spin grows by RateUp a frame until it reaches the last stage's threshold, and the
 /// weapon moves up a stage when the spin it had before the call reaches the current stage's
@@ -8547,6 +8563,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MindControlledBy);
 	stream.Serialize(IsPermaControlled);
 	stream.Serialize(CurrentWeaponNumber);
+	stream.Serialize(CurrentTurretNumber);
 	stream.Serialize(CurrentGattlingStage);
 	stream.Serialize(GattlingValue);
 	stream.Serialize(TurretAnimFrame);

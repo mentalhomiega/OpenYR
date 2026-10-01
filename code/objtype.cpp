@@ -385,6 +385,35 @@ BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopow
 
 
 /// <summary>
+/// Loads the voxel model and motion data named by root into data, replacing what it held.
+/// </summary>
+/// <returns>False when the model exists but either file fails to load; a missing model leaves data empty.</returns>
+static bool Fetch_Voxel_Pair(char const * root, VoxelDataStruct & data)
+{
+	char name[260];
+	delete data.VoxLib;
+	delete data.MotLib;
+	data.VoxLib = NULL;
+	data.MotLib = NULL;
+
+	_makepath(name, 0, 0, root, ".VXL");
+	CCFileClass vxl(name);
+	if (!vxl.Is_Available()) {
+		return(true);
+	}
+	data.VoxLib = new VoxelLibrary(vxl);
+	_makepath(name, 0, 0, root, ".HVA");
+	CCFileClass hva(name);
+	data.MotLib = new MotionLibrary(hva);
+	if (data.VoxLib->Load_Failed() || data.MotLib->Load_Failed()) {
+		return(false);
+	}
+	data.MotLib->Scale(data.VoxLib->Get_Layer_Info(0, 0).Scale);
+	return(true);
+}
+
+
+/// <summary>
 /// Fetches the voxel artwork for this object type.
 /// This routine will load the voxel model and the motion data that animates it, along
 /// with the turret, barrel, or weapon models that belong with it. If any piece of the set
@@ -507,6 +536,29 @@ void ObjectTypeClass::Fetch_Voxel_Image(void)
 			//}
 		}
 	}
+	/*
+	 * As ObjectTypeClass::LoadVoxel (0x5F8110): a multi-turret vehicle that is not a gattling
+	 * type loads its numbered turrets, TUR then TUR1 onward, and barrels, BARL then BARL1.
+	 */
+	if (utype->RTTI == RTTI_UNITTYPE && utype->Has_Multiple_Turrets() && !utype->IsGattling) {
+		for (int i = 0; i < std::min<int>(utype->TurretCount, TechnoTypeClass::WEAPON_SLOT_COUNT); i++) {
+			if (i == 0) {
+				sprintf(buffer, "%sTUR", (const char *)utype->GraphicName);
+			} else {
+				sprintf(buffer, "%sTUR%d", (const char *)utype->GraphicName, i);
+			}
+			if (!Fetch_Voxel_Pair(buffer, utype->ChargerTurrets[i])) {
+				failed = true;
+			}
+			if (i == 0) {
+				sprintf(buffer, "%sBARL", (const char *)utype->GraphicName);
+			} else {
+				sprintf(buffer, "%sBARL%d", (const char *)utype->GraphicName, i);
+			}
+			Fetch_Voxel_Pair(buffer, utype->ChargerBarrels[i]);
+		}
+	}
+
 	if (!failed) {
 		int largest = Voxel.VoxLib->Get_Layer_Info(0, 0).XSize;
 		for (int i = 0; i < (int)Voxel.VoxLib->Get_Layer_Count(); i++) {

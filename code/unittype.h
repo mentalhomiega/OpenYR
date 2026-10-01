@@ -164,6 +164,10 @@ class UnitTypeClass : public TechnoTypeClass
 		 */
 		bool IsNonVehicle;
 
+		// The numbered turrets and barrels a multi-turret vehicle that is not a gattling type swaps between.
+		VoxelDataStruct ChargerTurrets[WEAPON_SLOT_COUNT];
+		VoxelDataStruct ChargerBarrels[WEAPON_SLOT_COUNT];
+
 		/*
 		 * If this type is the jellyfish, then this flag will be true. It swims on logic of
 		 * its own instead of the usual combat and approach missions, is drawn lifted by

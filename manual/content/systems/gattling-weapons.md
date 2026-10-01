@@ -38,7 +38,7 @@ A type with `TurretCount` above `0` ignores `Primary`, `Secondary`, `ElitePrimar
 
 An elite object fires the normal weapon in any position with no elite weapon. An elite firing offset defaults to the normal offset of the same position. The list's weapons fire with no barrel length or thickness.
 
-Positions 1 and 2 stand in for the primary and secondary weapon wherever the game looks those up, such as in range and threat checks. A type that is not a gattling type always fires position 1.
+Positions 1 and 2 stand in for the primary and secondary weapon wherever the game looks those up, such as in range and threat checks. A type that is not a gattling type fires position 1, unless a passenger of a [gunner vehicle](/systems/gunner-vehicles/) chooses another.
 
 ```ini title="rulesmd.ini"
 [MYTANK] ; example VehicleType
@@ -49,7 +49,7 @@ Weapon2=MyFlakGun
 EliteWeapon1=MyEliteGun
 ```
 
-Yuri's Revenge also lets an IFV's passenger choose the position, and reads a barrel length, barrel thickness and turret lock for each position. None of these is read yet.
+Yuri's Revenge also reads a barrel length, barrel thickness and turret lock for each position. None of these is read yet.
 
 ## Stages
 

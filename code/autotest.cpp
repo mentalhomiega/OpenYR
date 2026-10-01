@@ -86,6 +86,7 @@
 #include "unit.h"
 #include "vox.h"
 #include "unittype.h"
+#include "weapon.h"
 #include "windowevent.hh"
 
 #include <algorithm>
@@ -286,6 +287,10 @@ void Dump(void)
 		if (object->Class->IsGattling) {
 			DebugString("AUTOTEST     gattling stage %d value %d turret frame %d tar %s\n", object->CurrentGattlingStage, object->GattlingValue, object->TurretAnimFrame, object->TarCom != NULL ? "yes" : "no");
 		}
+		if (object->Class->IsGunner) {
+			WeaponTypeClass const * weapon = object->Get_Class_Weapon_Data(object->CurrentWeaponNumber)->Weapon;
+			DebugString("AUTOTEST     gunner weapon %d (%s) turret %d passengers %d\n", object->CurrentWeaponNumber, weapon != NULL ? weapon->Name() : "none", object->CurrentTurretNumber, object->Cargo.How_Many());
+		}
 	}
 	for (int index = 0; index < Aircraft.Count(); index++) {
 		AircraftClass * object = Aircraft[index];
@@ -383,8 +388,12 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "enter") {
-		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
-		DebugString("AUTOTEST enter %s -> %s\n", step.Argument.c_str(), building != NULL ? building->Class->Name() : "(none)");
+		// enter <TypeID> x y: the player's objects of that type enter the structure, or else the vehicle, on that cell.
+		TechnoClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		if (building == NULL) {
+			building = Map[Cell(step.X, step.Y)].Cell_Unit();
+		}
+		DebugString("AUTOTEST enter %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {

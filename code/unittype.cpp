@@ -400,6 +400,30 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsJellyfish = ini.Get_Bool(Name(), "Jellyfish", IsJellyfish);
 		IsNonVehicle = ini.Get_Bool(Name(), "NonVehicle", IsNonVehicle);
 
+		/*
+		 * As UnitTypeClass::LoadFromINI (0x747620): only the type named FV reads which turret each
+		 * weapon position shows. Each pair maps the weapon position it names to a turret.
+		 */
+		if (stricmp(IniName, "FV") == 0) {
+			Map_Turret_Weapon(ini.Get_Int(Name(), "NormalTurretIndex", 0), ini.Get_Int(Name(), "NormalTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "RepairTurretIndex", 1), ini.Get_Int(Name(), "RepairTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "MachineGunTurretIndex", 2), ini.Get_Int(Name(), "MachineGunTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "FlakTurretIndex", 3), ini.Get_Int(Name(), "FlakTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "PistolTurretIndex", 0), ini.Get_Int(Name(), "PistolTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "SniperTurretIndex", 0), ini.Get_Int(Name(), "SniperTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "ShockTurretIndex", 0), ini.Get_Int(Name(), "ShockTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "ExplodeTurretIndex", 0), ini.Get_Int(Name(), "ExplodeTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "BrainBlastTurretIndex", 0), ini.Get_Int(Name(), "BrainBlastTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "RadCannonTurretIndex", 0), ini.Get_Int(Name(), "RadCannonTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "ChronoTurretIndex", 0), ini.Get_Int(Name(), "ChronoTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "TerroristExplodeTurretIndex", 0), ini.Get_Int(Name(), "TerroristExplodeTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "CowTurretIndex", 0), ini.Get_Int(Name(), "CowTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "InitiateTurretIndex", 0), ini.Get_Int(Name(), "InitiateTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "VirusTurretIndex", 0), ini.Get_Int(Name(), "VirusTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "YuriPrimeTurretIndex", 0), ini.Get_Int(Name(), "YuriPrimeTurretWeapon", -1));
+			Map_Turret_Weapon(ini.Get_Int(Name(), "GuardianTurretIndex", 0), ini.Get_Int(Name(), "GuardianTurretWeapon", -1));
+		}
+
 		if (IsSmallVisceroid || IsLargeVisceroid) {
 			IsNonVehicle = true;
 		}

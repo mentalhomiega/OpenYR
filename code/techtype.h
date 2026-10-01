@@ -332,6 +332,14 @@ class TechnoTypeClass : public ObjectTypeClass
 		int RateDown;
 
 		/*
+		 * A gunner vehicle fires the weapon position its first passenger's IFVMode names, and
+		 * shows the turret TurretWeapon maps that position to.
+		 */
+		bool IsGunner;
+		int IFVMode;
+		int TurretWeapon[WEAPON_SLOT_COUNT];
+
+		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.
 		*/
@@ -874,6 +882,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		WeaponDataStruct const * Get_Weapon(int which) const;
 		WeaponDataStruct const * Get_Elite_Weapon(int which) const;
 		bool Has_Multiple_Turrets(void) const { return(TurretCount > 0); }
+
+		// A weapon position outside the list is ignored.
+		void Map_Turret_Weapon(int turret, int weapon) { if (weapon >= 0 && weapon < WEAPON_SLOT_COUNT) TurretWeapon[weapon] = turret; }
 
 		/*
 		**	This is a pointer to the wake shape (as needed by the gunboat).
