@@ -344,8 +344,35 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s\n",
 			std::atoi(step.Argument.c_str()), step.X, (int)cell.IsMapped[PlayerPtr], (int)cell.IsVisible[PlayerPtr], (int)cell.IsFogMapped[PlayerPtr],
 			(int)cell.ITType, (int)cell.Height, (int)cell.Elevation, (int)cell.Overlay, occupier != NULL ? occupier->Class_Of()->Name() : "-");
+	} else if (step.Command == "water") {
+		// water x y: logs the open water cell nearest to that cell.
+		Cell const from(std::atoi(step.Argument.c_str()), step.X);
+		Cell best = CELL_NONE;
+		int bestdist = INT_MAX;
+		for (int y = 0; y < MAP_CELL_H; y++) {
+			for (int x = 0; x < MAP_CELL_W; x++) {
+				Cell const where(x, y);
+				if (Map.In_Radar(where) && Map[where].Land_Type() == LAND_WATER && !Map[where].IsUnderBridge) {
+					int const dist = (x - from.X) * (x - from.X) + (y - from.Y) * (y - from.Y);
+					if (dist < bestdist) {
+						bestdist = dist;
+						best = where;
+					}
+				}
+			}
+		}
+		DebugString("AUTOTEST   water nearest %d,%d: %d,%d\n", from.X, from.Y, best.X, best.Y);
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
+	} else if (step.Command == "move") {
+		// move <TypeID> x y: orders every player object of the type to that cell.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Mission(MISSION_MOVE);
+				techno->Assign_Destination(&Map[Cell(step.X, step.Y)]);
+			}
+		}
 	} else if (step.Command == "enter") {
 		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 		DebugString("AUTOTEST enter %s -> %s\n", step.Argument.c_str(), building != NULL ? building->Class->Name() : "(none)");

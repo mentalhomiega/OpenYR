@@ -172,6 +172,18 @@ class RulesClass
 		AnimTypeClass const * NukeTakeOff;
 
 		/*
+		 * The chronosphere: the marker over the chosen units, the blasts at both ends of the
+		 * warp, the animation at each warped unit's old and new position, and the default
+		 * sounds played there.
+		 */
+		AnimTypeClass const * ChronoPlacement;
+		AnimTypeClass const * ChronoBlast;
+		AnimTypeClass const * ChronoBlastDest;
+		AnimTypeClass const * WarpOut;
+		VocType ChronoInSound;
+		VocType ChronoOutSound;
+
+		/*
 		 * The lightning storm: how long it rages after a warning delay, how often a cloud
 		 * gathers over its center and around it, how far around and how far apart, and
 		 * what each bolt does.

@@ -130,6 +130,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsScanner = true;
 	IsRepairable = false;
 	IsCrew = false;
+	IsOrganic = true;
 }
 
 

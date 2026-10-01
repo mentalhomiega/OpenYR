@@ -34,8 +34,10 @@
 
 #include "abstract.h"
 #include "ftimer.h"
+#include "super.hh"
 #include "timer.h"
 
+class AnimClass;
 class SuperWeaponTypeClass;
 class HouseClass;
 
@@ -68,6 +70,10 @@ class SuperClass : public AbstractClass
 		void Iron_Curtain(Cell const & cell) const;
 		void Genetic_Mutator(Cell const & cell) const;
 		void Force_Shield(Cell const & cell);
+		void Chrono_Warp(Cell const & cell) const;
+		SuperClass * Pre_Dependent(void) const;
+		SuperWeaponType Follow_Up(void) const;
+		void Stop_Pre_Click_Anim(void);
 		void Deactivate_Firestorm(int, bool player) const;
 		bool AI(bool player=false);
 		bool Remove(void);
@@ -120,6 +126,10 @@ class SuperClass : public AbstractClass
 		CDTimerClass<FrameTimerClass> SpecialSoundTimer;
 		bool IsSpecialSoundPending = false;
 		Coord SpecialSoundCoord;
+
+		// The center of the units a chronosphere shot picked, and the marker shown over them.
+		Cell ChronoSource = Cell(0, 0);
+		AnimClass * PreClickAnim = NULL;
 
 		/*
 		 * This is where a charge drain weapon (such as the firestorm defense) sits in its

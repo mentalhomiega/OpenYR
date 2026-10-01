@@ -350,6 +350,12 @@ RulesClass::RulesClass(void) :
 	IronCurtainDuration(0),
 	IronCurtainInvokeAnim(NULL),
 	NukeTakeOff(NULL),
+	ChronoPlacement(NULL),
+	ChronoBlast(NULL),
+	ChronoBlastDest(NULL),
+	WarpOut(NULL),
+	ChronoInSound(VOC_NONE),
+	ChronoOutSound(VOC_NONE),
 	LightningStormDuration(900),
 	LightningStormDeferment(250),
 	LightningStormDamage(200),
@@ -977,6 +983,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		PsychicRevealActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicRevealActivateSound", PsychicRevealActivateSound);
 		GeneticMutatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "GeneticMutatorActivateSound", GeneticMutatorActivateSound);
 		PsychicDominatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicDominatorActivateSound", PsychicDominatorActivateSound);
+		ChronoInSound = ini.Get_VocType(AUDIOVISUAL, "ChronoInSound", ChronoInSound);
+		ChronoOutSound = ini.Get_VocType(AUDIOVISUAL, "ChronoOutSound", ChronoOutSound);
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "MetallicDebris", MetallicDebris);
 		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "BridgeExplosions", BridgeExplosions);
@@ -1182,6 +1190,10 @@ bool RulesClass::General(CCINIClass const & ini)
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
+		ChronoPlacement = TGet_Class(ini, GENERAL, "ChronoPlacement", ChronoPlacement);
+		ChronoBlast = TGet_Class(ini, GENERAL, "ChronoBlast", ChronoBlast);
+		ChronoBlastDest = TGet_Class(ini, GENERAL, "ChronoBlastDest", ChronoBlastDest);
+		WarpOut = TGet_Class(ini, GENERAL, "WarpOut", WarpOut);
 		LightningStormDuration = ini.Get_Int(GENERAL, "LightningStormDuration", LightningStormDuration);
 		LightningStormDeferment = ini.Get_Int(GENERAL, "LightningDeferment", LightningStormDeferment);
 		LightningStormDamage = ini.Get_Int(GENERAL, "LightningDamage", LightningStormDamage);
@@ -2313,6 +2325,12 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IronCurtainDuration);
 	stream.Serialize(IronCurtainInvokeAnim);
 	stream.Serialize(NukeTakeOff);
+	stream.Serialize(ChronoPlacement);
+	stream.Serialize(ChronoBlast);
+	stream.Serialize(ChronoBlastDest);
+	stream.Serialize(WarpOut);
+	stream.Serialize(ChronoInSound);
+	stream.Serialize(ChronoOutSound);
 	stream.Serialize(LightningStormDuration);
 	stream.Serialize(LightningStormDeferment);
 	stream.Serialize(LightningStormDamage);
@@ -3060,6 +3078,18 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == NukeTakeOff) {
 		NukeTakeOff = NULL;
+	}
+	if (target == ChronoPlacement) {
+		ChronoPlacement = NULL;
+	}
+	if (target == ChronoBlast) {
+		ChronoBlast = NULL;
+	}
+	if (target == ChronoBlastDest) {
+		ChronoBlastDest = NULL;
+	}
+	if (target == WarpOut) {
+		WarpOut = NULL;
 	}
 	if (target == LightningWarhead) {
 		LightningWarhead = NULL;

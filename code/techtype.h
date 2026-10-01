@@ -294,6 +294,17 @@ class TechnoTypeClass : public ObjectTypeClass
 		int MindControlRingOffset;
 
 		/*
+		 * A teleporter survives the chronosphere even when organic. A teleporting vehicle
+		 * also drives wherever it is sent, carrying its own locomotor, except onto the dock
+		 * of the refinery it is talking to, which it reaches with that locomotor.
+		 */
+		bool IsTeleporter;
+
+		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.
+		VocType ChronoInSound;
+		VocType ChronoOutSound;
+
+		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.
 		*/

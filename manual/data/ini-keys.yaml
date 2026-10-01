@@ -5224,6 +5224,124 @@ CheckHeap:
       source: code/session.cpp
       guard: null
     level: SessionClass
+ChronoBlast:
+  key: ChronoBlast
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ChronoBlast
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoBlastDest:
+  key: ChronoBlastDest
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ChronoBlastDest
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoInSound:
+  key: ChronoInSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: ChronoInSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ChronoInSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoOutSound:
+  key: ChronoOutSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: ChronoOutSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ChronoOutSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoPlacement:
+  key: ChronoPlacement
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ChronoPlacement
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChuteSound:
   key: ChuteSound
   scopes:
@@ -19358,6 +19476,23 @@ PositionPerturbationCoefficient:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+PostClick:
+  key: PostClick
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: SuperWeaponTypeClass
+      member: IsPostClick
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 PostScore:
   key: PostScore
   scopes:
@@ -19511,6 +19646,40 @@ PowersUpToLevel:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+PreClick:
+  key: PreClick
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: SuperWeaponTypeClass
+      member: IsPreClick
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+PreDependent:
+  key: PreDependent
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: buffer
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 PreMapSelect:
   key: PreMapSelect
   scopes:
@@ -27535,7 +27704,7 @@ Technician:
 Teleporter:
   key: Teleporter
   scopes:
-  - applies_to: *id017
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -27544,11 +27713,11 @@ Teleporter:
     status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: UnitTypeClass
+      declared_in: TechnoTypeClass
       member: IsTeleporter
-      source: code/unittype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 TemperateOccupationBits:
   key: TemperateOccupationBits
   scopes:
@@ -30991,6 +31160,24 @@ Warhead:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+WarpOut:
+  key: WarpOut
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: WarpOut
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 WaterAmount:
   key: WaterAmount
   scopes:

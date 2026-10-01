@@ -166,6 +166,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsImmuneToPsionics(false),
 	IsBalloonHover(false),
 	MindControlRingOffset(140),
+	IsTeleporter(false),
+	ChronoInSound(VOC_NONE),
+	ChronoOutSound(VOC_NONE),
 	FlightLevel(-1),
 	IsAllowedToStartInMultiplayer(true),
 	CameoFilename(""),
@@ -603,6 +606,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
 		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
 		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
+		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
+		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
+		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1045,6 +1051,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsImmuneToPsionics);
 	stream.Serialize(IsBalloonHover);
 	stream.Serialize(MindControlRingOffset);
+	stream.Serialize(IsTeleporter);
+	stream.Serialize(ChronoInSound);
+	stream.Serialize(ChronoOutSound);
 	stream.Serialize(MaxPassengers);
 	stream.Serialize(Size);
 	stream.Serialize(SizeLimit);

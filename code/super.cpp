@@ -62,6 +62,7 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
+#include "ion.h"
 #include "ionblast.h"
 #include "language/language.h"
 #include "lstorm.h"
@@ -138,6 +139,7 @@ SuperClass::SuperClass(SuperWeaponTypeClass * type, HouseClass * owner) :
 	SuperWeapons.Add(this);
 	AbstractTypePtrTracker.Add(this);
 	HousePtrTracker.Add(this);
+	AnimPtrTracker.Add(this);
 }
 
 
@@ -151,6 +153,7 @@ SuperClass::~SuperClass(void)
 	SuperWeapons.Delete(this);
 	AbstractTypePtrTracker.Delete(this);
 	HousePtrTracker.Delete(this);
+	AnimPtrTracker.Delete(this);
 }
 
 
@@ -254,6 +257,12 @@ bool SuperClass::Enable(bool onetime, bool player, bool quiet)
 bool SuperClass::Remove(void)
 {
 	if (IsPresent) {
+		if (PreClickAnim != NULL) {
+			Stop_Pre_Click_Anim();
+			if (House == PlayerPtr && Map.IsTargettingMode != SUPER_NONE && Map.IsTargettingMode == Follow_Up()) {
+				Map.IsTargettingMode = SUPER_NONE;
+			}
+		}
 		IsReady = false;
 		IsPresent = false;
 		if (Class->UseChargeDrain) {
@@ -363,8 +372,45 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 		return(false);
 	}
 
-	if (Control.Is_Active() && IsPresent && IsReady) {
+	/*
+	 * A PostClick weapon fires charged or not, once the PreClick weapon it completes has
+	 * picked its cells; that weapon is the one used up (HouseClass::Fire_SW, 0x4FAE50).
+	 */
+	if (Class->IsPostClick) {
+		SuperClass * first = Pre_Dependent();
+		if (first == NULL || !first->IsPresent || !first->IsReady) {
+			return(false);
+		}
+		ChronoSource = first->ChronoSource;
 		Place(cell, player);
+		first->Stop_Pre_Click_Anim();
+		first->IsReady = false;
+		if (first->IsOneTime) {
+			first->IsOneTime = false;
+			return(first->Remove());
+		}
+		first->OldStage = -1;
+		first->Control = first->Class->RechargeTime;
+		if (first->IsSuspended || first->Class->IsManualControl) {
+			first->Control.Stop();
+		}
+		return(false);
+	}
+
+	if (Control.Is_Active() && IsPresent && IsReady) {
+
+		// One storm and one dominator blast at a time; a refused shot keeps its charge (SuperClass::ClickFire).
+		if (Class->Type == SUPER_LIGHTNING_STORM && LightningStormClass::Is_Active_Or_Pending()) {
+			return(false);
+		}
+		if (Class->Type == SUPER_PSYCHIC_DOMINATOR && PsychicDominatorClass::Is_Active()) {
+			return(false);
+		}
+
+		Place(cell, player);
+		if (Class->IsPreClick) {
+			return(false);
+		}
 		IsReady = false;
 		if (IsOneTime) {
 			IsOneTime = false;
@@ -406,6 +452,11 @@ bool SuperClass::AI(bool player)
 	if (IsSpecialSoundPending && SpecialSoundTimer == 0) {
 		IsSpecialSoundPending = false;
 		Sound_Effect(Class->SpecialSound, SpecialSoundCoord);
+	}
+
+	// The chronosphere's marker shows only while its owner, the player, aims the warp.
+	if (PreClickAnim != NULL && (!player || Map.IsTargettingMode == SUPER_NONE || Map.IsTargettingMode != Follow_Up())) {
+		PreClickAnim->Make_Invisible();
 	}
 
 	if (IsPresent && (!IsReady || Class->UseChargeDrain) && !IsSuspended) {
@@ -741,6 +792,230 @@ void SuperClass::Force_Shield(Cell const & cell)
 
 
 /// <summary>
+/// Fetches the owner's super weapon whose Type is this weapon's PreDependent, or NULL.
+/// </summary>
+SuperClass * SuperClass::Pre_Dependent(void) const
+{
+	if (Class->PreDependent == SUPER_NONE || House == NULL) {
+		return(NULL);
+	}
+	for (int index = 0; index < House->SuperWeapon.Count(); index++) {
+		SuperClass * super = House->SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == Class->PreDependent) {
+			return(super);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
+/// Fetches the owner's index of the PostClick weapon that completes this weapon's shot, or
+/// SUPER_NONE when the owner has none.
+/// </summary>
+SuperWeaponType SuperClass::Follow_Up(void) const
+{
+	if (House == NULL) {
+		return(SUPER_NONE);
+	}
+	for (int index = 0; index < House->SuperWeapon.Count(); index++) {
+		SuperClass const * super = House->SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->IsPostClick && super->Class->PreDependent == Class->Type) {
+			return(SuperWeaponType(index));
+		}
+	}
+	return(SUPER_NONE);
+}
+
+
+/// <summary>
+/// Lets the chronosphere's marker finish its current loop and forgets it.
+/// </summary>
+void SuperClass::Stop_Pre_Click_Anim(void)
+{
+	if (PreClickAnim != NULL) {
+		PreClickAnim->Loops = 0;
+		PreClickAnim = NULL;
+	}
+}
+
+
+static void Chrono_Kill(TechnoClass * techno)
+{
+	if (techno->IsActive && !techno->IsInLimbo) {
+		int damage = techno->TClass->MaxStrength;
+		techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+	}
+}
+
+
+/// <summary>
+/// Sets a unit the chronosphere picked up down at the coordinate, as the Yuri's Revenge
+/// teleport locomotor does with the chronosphere's destination (0x718260, 0x7187A0).
+/// Whatever stands on the landing spot is destroyed, except the other units in moving; an
+/// infantryman crushes only infantry on its own spot. The unit dies instead if something
+/// there is under the Iron Curtain or the spot is off the map, and moves to the nearest free
+/// cell if a structure or tree stands there. A vehicle set down on water it cannot cross
+/// sinks; anything else set down where it cannot move is destroyed.
+/// </summary>
+static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootClass *> const & moving)
+{
+	Cell cell = dest.As_Cell();
+	if (!Map.In_Radar(cell)) {
+		Chrono_Kill(foot);
+		return;
+	}
+
+	DynamicVectorClass<TechnoClass *> crushed;
+	bool blocked = false;
+	CellClass * cellptr = &Map[cell];
+	for (ObjectClass * object = cellptr->Cell_Occupier(cellptr->IsUnderBridge); object != NULL; object = object->Next) {
+		if (object == foot || (object->Is_Foot() && moving.ID((FootClass *)object) != -1)) {
+			continue;
+		}
+		if (object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained()) {
+			Chrono_Kill(foot);
+			return;
+		}
+		if (object->RTTI == RTTI_BUILDING || object->RTTI == RTTI_TERRAIN) {
+			blocked = true;
+		} else if (!object->Is_Foot()) {
+			continue;
+		} else if (foot->RTTI != RTTI_INFANTRY || object->RTTI != RTTI_INFANTRY || (object->PositionCoord.X == dest.X && object->PositionCoord.Y == dest.Y)) {
+			crushed.Add((TechnoClass *)object);
+		}
+	}
+
+	if (blocked) {
+		Cell const nearby = Map.Nearby_Location(cell, foot->TClass->Speed, -1, foot->TClass->MZone);
+		if (nearby == CELL_NONE) {
+			Chrono_Kill(foot);
+			return;
+		}
+		dest.X += (nearby.X - cell.X) * CELL_LEPTON_W;
+		dest.Y += (nearby.Y - cell.Y) * CELL_LEPTON_H;
+		cell = nearby;
+		cellptr = &Map[cell];
+	} else {
+		for (int index = 0; index < crushed.Count(); index++) {
+			Chrono_Kill(crushed[index]);
+		}
+	}
+
+	TechnoTypeClass const * type = foot->TClass;
+	VocType const out_sound = type->ChronoOutSound != VOC_NONE ? type->ChronoOutSound : Rule->ChronoOutSound;
+	VocType const in_sound = type->ChronoInSound != VOC_NONE ? type->ChronoInSound : Rule->ChronoInSound;
+	if (Rule->WarpOut != NULL) {
+		new AnimClass(Rule->WarpOut, foot->Center_Coord());
+	}
+	Sound_Effect(out_sound, foot->Center_Coord());
+
+	/*
+	 * The unit moves the way a teleport locomotor moves it, without leaving the map, so it
+	 * keeps its team and its selection. A fresh locomotor drops any move it was part way
+	 * through.
+	 */
+	dest.Z = Map.Get_Height_GL(dest) + (cellptr->IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
+	foot->Stop_Driver();
+	foot->Locomotion->Mark_All_Occupation_Bits(0);
+	foot->Locomotion->Stop_Movement_Animation();
+	foot->Mark(MARK_UP);
+	foot->PositionCoord = dest;
+	foot->IsOnBridge = cellptr->IsUnderBridge;
+	foot->Mark(MARK_DOWN);
+	foot->Locomotion = Create_Locomotor(type->Locomotor);
+	foot->Locomotion->Link_To_Object(foot);
+	foot->Locomotion->Unlimbo();
+	if (IonStormClass::Is_Ion_Storm_Active() && foot->Locomotion->Is_Ion_Sensitive()) {
+		foot->Locomotion->Power_Off();
+	} else {
+		foot->Locomotion->Power_On();
+	}
+	foot->Assign_Destination(NULL);
+
+	if (Rule->WarpOut != NULL) {
+		new AnimClass(Rule->WarpOut, foot->Center_Coord());
+	}
+	Sound_Effect(in_sound, foot->Center_Coord());
+
+	if (!cellptr->Is_Clear_To_Move(type->Speed, true, true)) {
+		if (foot->RTTI == RTTI_UNIT && cellptr->Land_Type() == LAND_WATER) {
+			foot->IsSinking = true;
+			foot->Stun();
+			if (Rule->Wake != NULL) {
+				new AnimClass(Rule->Wake, foot->PositionCoord);
+			}
+		} else {
+			Chrono_Kill(foot);
+			return;
+		}
+	}
+	foot->Per_Cell_Process(PCP_END);
+}
+
+
+/// <summary>
+/// Warps the units the chronosphere picked to the cell, as the ChronoWarp case of
+/// SuperClass::Launch (0x6CC390) does. ChronoBlast plays over the picked cell and
+/// ChronoBlastDest over the target. Every unit on the ground on the picked cell and the eight
+/// around it moves to the same place relative to the target; on a bridge cell only the units
+/// on the bridge go. Organic units that are not Teleporters are killed instead. Units under
+/// the Iron Curtain and vehicles standing in a war factory stay behind.
+/// </summary>
+void SuperClass::Chrono_Warp(Cell const & cell) const
+{
+	Coord const from = Map[ChronoSource].As_Coord();
+	Coord const to = Map[cell].As_Coord();
+	if (Rule->ChronoBlastDest != NULL) {
+		new AnimClass(Rule->ChronoBlastDest, Coord(to.X, to.Y, to.Z + 5));
+	}
+	if (Rule->ChronoBlast != NULL) {
+		new AnimClass(Rule->ChronoBlast, Coord(from.X, from.Y, from.Z + 5));
+	}
+
+	DynamicVectorClass<FootClass *> killed;
+	DynamicVectorClass<FootClass *> moving;
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			Cell const where = ChronoSource + Cell(dx, dy);
+			if (!Map.In_Radar(where)) {
+				continue;
+			}
+			CellClass & cellptr = Map[where];
+			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
+				if (!object->Is_Foot() || object->In_Air()) {
+					continue;
+				}
+				FootClass * foot = (FootClass *)object;
+				BuildingClass const * building = cellptr.Cell_Building();
+				if (foot->RTTI == RTTI_UNIT && building != NULL && building->Class->IsWeaponsFactory) {
+					continue;
+				}
+				if (foot->TClass->IsOrganic && !foot->TClass->IsTeleporter) {
+					killed.Add(foot);
+				} else if (!foot->Is_Iron_Curtained()) {
+					moving.Add(foot);
+				}
+			}
+		}
+	}
+
+	for (int index = 0; index < killed.Count(); index++) {
+		Chrono_Kill(killed[index]);
+	}
+	for (int index = 0; index < moving.Count(); index++) {
+		FootClass * foot = moving[index];
+		if (foot->IsActive && !foot->IsInLimbo) {
+			Coord dest = foot->PositionCoord;
+			dest.X += to.X - from.X;
+			dest.Y += to.Y - from.Y;
+			Chrono_Shift(foot, dest, moving);
+		}
+	}
+}
+
+
+/// <summary>
 /// Unleashes the super weapon upon the cell specified.
 /// This routine is called once the target has been chosen, either by the player
 /// clicking on the map or by the computer deciding where to strike. Each kind of super
@@ -822,6 +1097,30 @@ void SuperClass::Place(Cell const & cell, bool player)
 				}
 				House->IsRecalcNeeded = true;
 			}
+			break;
+
+		case SUPER_CHRONOSPHERE:
+			if (IsReady) {
+				ChronoSource = cell;
+				Stop_Pre_Click_Anim();
+				if (Rule->ChronoPlacement != NULL) {
+					Coord const coord = Map[cell].As_Coord();
+					PreClickAnim = new AnimClass(Rule->ChronoPlacement, Coord(coord.X, coord.Y, coord.Z + 5));
+				}
+				if (player) {
+					Map.IsTargettingMode = Follow_Up();
+				} else if (PreClickAnim != NULL) {
+					PreClickAnim->Make_Invisible();
+				}
+			}
+			break;
+
+		case SUPER_CHRONO_WARP:
+			Chrono_Warp(cell);
+			if (player) {
+				Map.IsTargettingMode = SUPER_NONE;
+			}
+			House->IsRecalcNeeded = true;
 			break;
 
 		case SUPER_IRON_CURTAIN:
@@ -1047,6 +1346,8 @@ void SuperClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpecialSoundTimer);
 	stream.Serialize(IsSpecialSoundPending);
 	stream.Serialize(SpecialSoundCoord);
+	stream.Serialize(ChronoSource);
+	stream.Serialize(PreClickAnim);
 	stream.Serialize(ChargeDrainState);
 }
 
@@ -1064,6 +1365,9 @@ void SuperClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == Class) {
 		Class = NULL;
+	}
+	if (target == PreClickAnim) {
+		PreClickAnim = NULL;
 	}
 }
 

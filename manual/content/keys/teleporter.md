@@ -1,13 +1,15 @@
 ---
 key: Teleporter
-summary: Makes a vehicle drive wherever it is sent and use its own locomotor only to reach the refinery it docks at.
-see_also: ["Locomotor", "system:tiberium"]
+summary: Lets an organic unit survive the chronosphere, and makes a vehicle drive wherever it is sent but use its own locomotor to reach the refinery it docks at.
+see_also: ["Locomotor", Organic, "system:tiberium", "system:superweapons"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-A `Teleporter=yes` VehicleType keeps the [`Locomotor`](/keys/locomotor/) its type names, but drives every ordinary move: when it is sent somewhere, it switches to driving and carries its own locomotor along. It switches back only when it is sent onto a free docking cell of the refinery it is in radio contact with, and then it moves there with its own locomotor and enters the refinery.
+A `Teleporter=yes` type is moved by the [chronosphere](/systems/superweapons/#chronosphere) even when it is [`Organic=yes`](/keys/organic/), as infantry are by default. Any other organic unit the chronosphere picks up is destroyed instead.
+
+A `Teleporter=yes` VehicleType also keeps the [`Locomotor`](/keys/locomotor/) its type names, but drives every ordinary move: when it is sent somewhere, it switches to driving and carries its own locomotor along. It switches back only when it is sent onto a free docking cell of the refinery it is in radio contact with, and then it moves there with its own locomotor and enters the refinery.
 
 ```ini title="rulesmd.ini"
 [MyMiner] ; example VehicleType

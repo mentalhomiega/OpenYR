@@ -22,6 +22,11 @@ keys:
   - AuxBuilding
   - ChargeToDrainRatio
   - ChargingVoice
+  - ChronoBlast
+  - ChronoBlastDest
+  - ChronoInSound
+  - ChronoOutSound
+  - ChronoPlacement
   - DominatorCaptureRange
   - DominatorDamage
   - DominatorFireAtPercentage
@@ -69,6 +74,9 @@ keys:
   - NukeTakeOff
   - Organic
   - PermaControlledAnimationType
+  - PostClick
+  - PreClick
+  - PreDependent
   - PsychicDominatorActivateSound
   - PsychicRevealActivateSound
   - PsychicRevealRadius
@@ -82,8 +90,10 @@ keys:
   - SuperWeapon2
   - SuperWeapons
   - SuspendVoice
+  - Teleporter
   - Type
   - UseChargeDrain
+  - WarpOut
   - WeaponType
   - WeatherConBoltExplosion
   - WeatherConBolts
@@ -211,6 +221,8 @@ The table lists the events that change an ordinary weapon's countdown. The weed 
 | Fired, repeating weapon | restarted at the full delay |
 | Fired, `ManualControl=yes` | set to the full delay and stopped |
 | Fired, one-time weapon | the weapon is removed from the house |
+| Fired, `PreClick=yes` weapon | unchanged; the weapon stays ready |
+| Its `PostClick=yes` weapon fired | restarted at the full delay, or stopped there while suspended or with `ManualControl=yes`; a one-time weapon is removed |
 
 Voices play only for the local player's weapons. [`ChargingVoice=`](/keys/chargingvoice/) plays when a countdown starts: when a structure grants the weapon, after each shot, and when the weed pool restarts a chemical missile. [`RechargeVoice=`](/keys/rechargevoice/) plays when the countdown reaches zero. No voice plays when a trigger action or a crate grants the weapon, or when a suspended weapon resumes. A charge-draining weapon plays `ChargingVoice=` only when a structure grants it; its later charge and drain cycles are silent.
 
@@ -292,6 +304,30 @@ If a section's `Action=` is one that ordinary orders also use, the player's next
 An `Action=` value the engine does not recognize reads as `None`. Clicking the charged cameo then fires the weapon at once at cell 0,0, with no way to choose where the effect lands.
 :::
 
+### Two-click weapons
+
+The chronosphere takes two clicks: the first picks the units, and the second picks where they go. Each click fires a separate section, paired by three keys:
+
+- The first section is [`PreClick=yes`](/keys/preclick/) with `Type=ChronoSphere`.
+- The second section is [`PostClick=yes`](/keys/postclick/) with [`PreDependent=ChronoSphere`](/keys/predependent/) and `Type=ChronoWarp`.
+
+```ini title="rulesmd.ini"
+[ChronoSphereSpecial]
+Type=ChronoSphere
+Action=ChronoSphere
+PreClick=yes
+
+[ChronoWarpSpecial]
+Type=ChronoWarp
+Action=ChronoWarp
+PostClick=yes
+PreDependent=ChronoSphere
+```
+
+For the player, the first click arms targeting mode again, now for the first `PostClick=yes` section whose `PreDependent=` names `ChronoSphere`. The first section stays charged. A right click cancels the second click and leaves it ready for a new first click.
+
+The second section needs no structure, charge or cameo of its own. It fires only while its house holds a weapon of the `PreDependent=` behavior, fully charged, and it acts on the cells that weapon last picked. That weapon's charge is then spent, as the [charging table](#charging) shows. When a house holds several weapons of that behavior, the first in `[SuperWeaponTypes]` is used.
+
 ### The computer's use
 
 A computer house fires its ready superweapons during its periodic AI pass, which runs every 7 to 7.5 seconds. Outside a campaign, the pass always fires them. In a campaign, it fires them only when the house's [`IQ=`](/keys/iq/) is at least [`SuperWeapons`](/keys/superweapons/) in `[IQ]`. A campaign house takes its `IQ=` from its section in the scenario, and has 0 when the section sets none.
@@ -309,7 +345,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
 
-The computer never fires the force shield on its own.
+The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/scripting/missions/56/) and [Chrono prep for AQ](/scripting/missions/57/) script lines, which are not done yet.
 
 The ion cannon's rating is the only one of the four with settings.
 
@@ -416,7 +452,7 @@ Computer houses do not fire the Iron Curtain on their own. A computer team asks 
 
 ### Lightning storm
 
-A `Type=LightningStorm` weapon calls a storm over the target cell. Only one storm exists at a time: a shot while a storm rages moves its center, and a shot while one is waiting to break sets the center and keeps the shorter wait.
+A `Type=LightningStorm` weapon calls a storm over the target cell. Only one storm exists at a time: a shot while a storm rages or waits to break does nothing, and the weapon stays charged. Yuri's Revenge also tells the player that a storm is already active, which is not shown yet.
 
 The storm breaks [`LightningDeferment`](/keys/lightningdeferment/) frames after the shot. It then rages for [`LightningStormDuration`](/keys/lightningstormduration/) frames:
 
@@ -470,7 +506,27 @@ Once the first animation has played [`DominatorFireAtPercentage`](/keys/dominato
 - [`DominatorDamage`](/keys/dominatordamage/) goes off through [`DominatorWarhead`](/keys/dominatorwarhead/), credited to the firing house;
 - every vehicle, infantryman and aircraft within [`DominatorCaptureRange`](/keys/dominatorcapturerange/) cells joins the firing house for good, with [`PermaControlledAnimationType`](/keys/permacontrolledanimationtype/) shown [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above it. A computer house sends its new units hunting.
 
-Structures, objects in the air or under the Iron Curtain, and types with [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) or [`BalloonHover=yes`](/keys/balloonhover/) are not taken over. A computer house waits for a blast to finish before it fires again; a player's shot while one runs replaces it. Yuri's Revenge also dims the map's lighting during the blast, which is not done yet.
+Structures, objects in the air or under the Iron Curtain, and types with [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) or [`BalloonHover=yes`](/keys/balloonhover/) are not taken over. Only one blast runs at a time: a shot while one runs does nothing, and the weapon stays charged. Yuri's Revenge also tells the player that the dominator is already active, which is not shown yet, and dims the map's lighting during the blast, which is not done yet.
+
+### Chronosphere
+
+A `Type=ChronoSphere` weapon picks the units to move, and a `Type=ChronoWarp` weapon moves them. [Two-click weapons](#two-click-weapons) covers how the two shots pair up. The first shot plays [`ChronoPlacement`](/keys/chronoplacement/) over the picked cell, which only the player sees, and only while aiming the second shot.
+
+When the warp fires, [`ChronoBlast`](/keys/chronoblast/) plays over the picked cell and [`ChronoBlastDest`](/keys/chronoblastdest/) over the target. Then each vehicle, infantryman and landed aircraft on the picked cell and the eight cells around it is handled in turn. On a cell with a bridge, only those on the bridge count.
+
+- An [`Organic=yes`](/keys/organic/) unit, which every infantryman is by default, is destroyed unless its type is [`Teleporter=yes`](/keys/teleporter/).
+- A unit under the Iron Curtain, and a vehicle standing on a war factory, stays where it is.
+- Every other unit moves to the cell in the same position relative to the target, keeping its place within the cell. [`WarpOut`](/keys/warpout/) plays where it leaves and where it lands, with [`ChronoOutSound`](/keys/chronooutsound/) and [`ChronoInSound`](/keys/chronoinsound/).
+
+What stands where a unit lands decides what happens to it:
+
+- Another vehicle, infantryman or aircraft is destroyed, unless the warp is moving it too. An arriving infantryman destroys only infantry on its own spot in the cell.
+- Anything under the Iron Curtain or the force shield destroys the arriving unit instead.
+- A structure or a terrain object, such as a tree, sends the arriving unit to the nearest cell it could stand on. With no such cell, the unit is destroyed.
+
+A unit landing on a cell with a bridge lands on the bridge. A unit whose landing spot is off the map is destroyed. A vehicle set down on water it cannot cross sinks, and any other unit set down where it cannot move, such as on a cliff, is destroyed.
+
+A moved unit stays in its team and stays selected, but it stops where it lands and forgets its move order.
 
 ### EM pulse
 

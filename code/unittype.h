@@ -70,12 +70,6 @@ class UnitTypeClass : public TechnoTypeClass
 		bool IsToHarvest;
 
 		/*
-		**	A teleporter drives wherever it is sent, carrying its own locomotor, except onto the
-		**	dock of the refinery it is talking to, which it reaches with that locomotor.
-		*/
-		bool IsTeleporter;
-
-		/*
 		 * Does this unit harvest veins when it stops on a weed field? Only the weed eater
 		 * does this, and it unloads at a weeder building rather than a tiberium refinery.
 		 */
