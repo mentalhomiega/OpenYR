@@ -7099,9 +7099,45 @@ bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVecto
 /// refineries and placeholders for base defenses are woven in along the way, according to
 /// the difficulty level and the side's appetite for fortification.
 /// </summary>
+/// <summary>
+/// Fetches the per-difficulty base defense counts for a side, as HouseClass::Make_Base_Nodes
+/// (0x5054B0) picks them: Allied for side 0, Soviet for side 1 and Third for side 2.
+/// </summary>
+static TypeList<int> const * Side_Base_Defense_Counts(int side)
+{
+	if (side == 0) {
+		return(&Rule->AlliedBaseDefenseCounts);
+	}
+	if (side == 1) {
+		return(&Rule->SovietBaseDefenseCounts);
+	}
+	if (side == 2) {
+		return(&Rule->ThirdBaseDefenseCounts);
+	}
+	return(NULL);
+}
+
+
+static int Difficulty_Entry(TypeList<int> const & list, int difficulty)
+{
+	if (difficulty >= 0 && difficulty < list.Count()) {
+		return(list[difficulty]);
+	}
+	return(0);
+}
+
+
 void HouseClass::Make_Base_Nodes(void)
 {
 	int index;
+
+	/*
+	 * A side with a Yuri's Revenge defense count list gets that game's plan: no extra helipads,
+	 * refineries from AIExtraRefineries, a fixed number of defenses at random places, and no
+	 * wall. Without the list, the Tiberian Sun plan applies.
+	 */
+	TypeList<int> const * defense_counts = Side_Base_Defense_Counts(Planning_Side());
+	bool counted_plan = defense_counts != NULL && defense_counts->Count() > 0;
 
 	SideClass const * side = Acted_Side();
 	double defense_coefficient = side != NULL ? side->AIBaseDefenseCoefficient : 1.0;
@@ -7204,7 +7240,7 @@ void HouseClass::Make_Base_Nodes(void)
 			if (AI_Has_Prerequisites(b, startingqueue, queued)) {
 				isadded[index] = true;
 				startingqueue.Add(b);
-				if (b->IsHelipad) {
+				if (b->IsHelipad && !counted_plan) {
 					int num = Random_Pick(1, 3);
 					for (int i = 0; i < num; i++) {
 						startingqueue.Add(b);
@@ -7227,6 +7263,23 @@ void HouseClass::Make_Base_Nodes(void)
 	}
 
 	int refcount = 2 - Difficulty;
+	if (counted_plan) {
+		// A house that can build no harvester mines with slaves, and its rules count the refinery it already plans.
+		bool harvests = false;
+		unsigned ownable_mask = Acted_Mask();
+		for (index = 0; index < Rule->HarvesterUnit.Count(); index++) {
+			UnitTypeClass const * harvester = Rule->HarvesterUnit[index];
+			if (harvester != NULL && (harvester->Ownable & ownable_mask) != 0) {
+				harvests = true;
+				break;
+			}
+		}
+		if (harvests) {
+			refcount = Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
+		} else {
+			refcount = Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty) - 1;
+		}
+	}
 
 	BuildingTypeClass const * ref = Get_First_Acted(Rule->BuildRefinery);
 	int refpos = 0;
@@ -7246,6 +7299,27 @@ void HouseClass::Make_Base_Nodes(void)
 	if (startingqueue.Count() < 3) {
 		for (index = 0; index < startingqueue.Count(); index++) {
 			Base.Nodes.Add(BaseNodeClass(startingqueue[index]->HeapID, Cell(0, 0)));
+		}
+		return;
+	}
+
+	if (counted_plan) {
+		DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
+		for (int count = Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
+			int after = Random_Pick(3, std::max(3, plan.Count() - 1));
+			if (after >= plan.Count()) {
+				plan.Add((BuildingTypeClass const *)-1);
+			} else {
+				plan.Insert_After(after, (BuildingTypeClass const *)-1);
+			}
+		}
+		for (index = 0; index < plan.Count(); index++) {
+			BuildingTypeClass const * b = plan[index];
+			if ((intptr_t)b < 0) {
+				Base.Nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
+			} else {
+				Base.Nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
+			}
 		}
 		return;
 	}

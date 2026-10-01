@@ -537,6 +537,11 @@ RulesClass::RulesClass(void) :
 	BuildPDefense(),
 	BuildAA(),
 	AlliedBaseDefenses(),
+	AlliedBaseDefenseCounts(),
+	SovietBaseDefenseCounts(),
+	ThirdBaseDefenseCounts(),
+	AIExtraRefineries(),
+	AISlaveMinerNumber(),
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
 	AISafeDistance(8),
@@ -1199,6 +1204,11 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsRecheckPrerequisites = ini.Get_Bool(GENERAL, "RecheckPrerequisites", IsRecheckPrerequisites);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
+		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
+		SovietBaseDefenseCounts = ini.Get_IntList(GENERAL, "SovietBaseDefenseCounts", SovietBaseDefenseCounts);
+		ThirdBaseDefenseCounts = ini.Get_IntList(GENERAL, "ThirdBaseDefenseCounts", ThirdBaseDefenseCounts);
+		AIExtraRefineries = ini.Get_IntList(GENERAL, "AIExtraRefineries", AIExtraRefineries);
+		AISlaveMinerNumber = ini.Get_IntList(GENERAL, "AISlaveMinerNumber", AISlaveMinerNumber);
 		AIHateDelays = ini.Get_IntList(GENERAL, "AIHateDelays", AIHateDelays);
 		AIAlternateProductionCreditCutoff = ini.Get_Int(GENERAL, "AIAlternateProductionCreditCutoff", AIAlternateProductionCreditCutoff);
 		AIUseTurbineUpgradeChance = ini.Get_Float(GENERAL, "AIUseTurbineUpgradeProbability", AIUseTurbineUpgradeChance);
@@ -2502,6 +2512,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnitCrateType);
 	stream.Serialize(PatrolTime);
 	stream.Serialize(TeamDelays);
+	stream.Serialize(AlliedBaseDefenseCounts);
+	stream.Serialize(SovietBaseDefenseCounts);
+	stream.Serialize(ThirdBaseDefenseCounts);
+	stream.Serialize(AIExtraRefineries);
+	stream.Serialize(AISlaveMinerNumber);
 	stream.Serialize(AIHateDelays);
 	stream.Serialize(DissolveUnfilledTeamDelay);
 	stream.Serialize(AIIonCannonConYardValue);

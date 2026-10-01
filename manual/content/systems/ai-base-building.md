@@ -9,6 +9,11 @@ keys:
   - Adjacent
   - AdvancedPowerPlant
   - AG
+  - AlliedBaseDefenseCounts
+  - SovietBaseDefenseCounts
+  - ThirdBaseDefenseCounts
+  - AIExtraRefineries
+  - AISlaveMinerNumber
   - AIBaseDefenseCoefficient
   - AIBaseDefensePlaceholders
   - AIBaseDefensesWithWalls
@@ -173,6 +178,17 @@ Several steps take "the first entry the country may own" from a rules list. That
 | Hard | 0, the `[Easy]` section | 2 | 3 |
 
 The same `3 - Difficulty` term caps the [wall defenses](#walls-and-gates) a house appends after its perimeter wall, when its side lists a wall tower its country may own.
+
+### The counted plan
+
+A house whose own country is on the first, second or third side in `[Sides]` uses the Yuri's Revenge plan when that side's count list is set: [`AlliedBaseDefenseCounts`](/keys/alliedbasedefensecounts/), [`SovietBaseDefenseCounts`](/keys/sovietbasedefensecounts/) or [`ThirdBaseDefenseCounts`](/keys/thirdbasedefensecounts/). Steps 1 and 2 are unchanged, and the rest differ:
+
+- Step 3 queues no extra copies of a `Helipad=yes` type.
+- Step 4 inserts the [`AIExtraRefineries`](/keys/aiextrarefineries/) entry for the house's slot as the number of extra refineries, when the acted country may own any [`HarvesterUnit`](/keys/harvesterunit/) entry. Otherwise it inserts one fewer than the [`AISlaveMinerNumber`](/keys/aislaveminernumber/) entry.
+- Step 5 takes the count list's entry for the slot as the number of `-1` placeholders. Each is inserted after a random entry from the fourth on, so placeholders spread through the plan. Cost, `AIBaseDefenseCoefficient`, `AIWallTowers` and `AIBaseDefensePlaceholders` play no part.
+- Step 6 adds no wall node, so the house plans no perimeter wall and has no threat ring.
+
+A queue of fewer than three entries still becomes the plan unchanged. A slot past the end of a list counts as `0`.
 
 ## Choosing what to build next
 

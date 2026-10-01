@@ -13,6 +13,6 @@ when_omitted:
 AIBaseDefensesWithWalls=yes
 ```
 
-Whether a computer house playing for this side adds its [`AIBaseDefensePlaceholders`](/keys/aibasedefenseplaceholders/) block of extra base defenses even when it also plans a perimeter wall. With `no`, the house adds that block only when it plans no wall.
+Whether a computer house playing for this side adds its [`AIBaseDefensePlaceholders`](/keys/aibasedefenseplaceholders/) block of extra base defenses even when it also plans a perimeter wall. With `no`, the house adds that block only when it plans no wall. A side with a [base defense count list](/systems/ai-base-building/#the-counted-plan) ignores this key.
 
 This key does not control the tower and defense pairs placed along a wall. [`AIWallTowers`](/keys/aiwalltowers/), [`AIWallDefense`](/keys/aiwalldefense/) and [`AIWallDefenseCoefficient`](/keys/aiwalldefensecoefficient/) set those.

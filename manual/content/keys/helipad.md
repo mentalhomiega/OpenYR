@@ -15,4 +15,4 @@ A player's aircraft ordered onto a pad docks there only while the pad is free, m
 
 A [`FreeUnit=`](/keys/freeunit/) aircraft handed out by a pad stays docked on it.
 
-While [the base plan is assembled](/systems/ai-base-building/#building-the-plan), a computer house adds a type with this flag one to three extra times, so its plan holds two to four of that pad.
+While [the base plan is assembled](/systems/ai-base-building/#building-the-plan), a computer house adds a type with this flag one to three extra times, so its plan holds two to four of that pad. A house whose side has a [base defense count list](/systems/ai-base-building/#the-counted-plan) adds no extra copies.

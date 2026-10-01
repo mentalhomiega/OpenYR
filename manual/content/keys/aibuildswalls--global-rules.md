@@ -13,6 +13,6 @@ when_omitted:
 AIBuildsWalls=yes
 ```
 
-Whether computer houses may plan a [perimeter wall](/systems/ai-base-building/#walls-and-gates) around their bases. With `yes`, each side decides with its [`AIBuildsWalls`](/keys/aibuildswalls/#scope-side). With `no`, no computer house plans a wall, whatever its side sets.
+Whether computer houses may plan a [perimeter wall](/systems/ai-base-building/#walls-and-gates) around their bases. With `yes`, each side decides with its [`AIBuildsWalls`](/keys/aibuildswalls/#scope-side). With `no`, no computer house plans a wall, whatever its side sets. A side with a [base defense count list](/systems/ai-base-building/#the-counted-plan) plans no wall either way.
 
 A house that plans no wall adds its side's [`AIBaseDefensePlaceholders`](/keys/aibasedefenseplaceholders/) block of extra base defenses to its plan instead, when its plan holds at least three structures.

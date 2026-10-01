@@ -15,7 +15,7 @@ AIWallTowers=GACTWR
 
 The wall towers a computer house playing for this side builds, each meant to carry a base defense that plugs into it. The house uses the first entry its country may own:
 
-- In its [generated base plan](/systems/ai-base-building/#building-the-plan), a tower goes ahead of every `-1` base-defense placeholder.
+- In its [generated base plan](/systems/ai-base-building/#building-the-plan), a tower goes ahead of every `-1` base-defense placeholder, unless the side has a [base defense count list](/systems/ai-base-building/#the-counted-plan).
 - After planning a [perimeter wall](/systems/ai-base-building/#walls-and-gates), it adds tower and placeholder pairs along the wall, up to the limit that [`AIWallDefense`](/keys/aiwalldefense/) and [`AIWallDefenseCoefficient`](/keys/aiwalldefensecoefficient/) set. The wall cells also become the [threat ring](/systems/ai-base-building/#base-defenses), the cells where the house places its later defenses.
 
 When the list names nothing the country may own, the house plans its placeholders without towers, adds no pairs along its wall, and has no threat ring.

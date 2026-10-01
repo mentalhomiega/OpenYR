@@ -13,6 +13,6 @@ when_omitted:
 AIBuildsWalls=no
 ```
 
-Whether a computer house playing for this side ends its generated base plan with a [perimeter wall](/systems/ai-base-building/#walls-and-gates). The house plans a wall only when both this key and the global [`AIBuildsWalls`](/keys/aibuildswalls/#scope-global-rules) are `yes`.
+Whether a computer house playing for this side ends its generated base plan with a [perimeter wall](/systems/ai-base-building/#walls-and-gates). The house plans a wall only when both this key and the global [`AIBuildsWalls`](/keys/aibuildswalls/#scope-global-rules) are `yes`, and never when the side has a [base defense count list](/systems/ai-base-building/#the-counted-plan).
 
 A house that plans no wall adds the side's [`AIBaseDefensePlaceholders`](/keys/aibasedefenseplaceholders/) block of extra base defenses instead, when its plan holds at least three structures. A side that sets [`AIBaseDefensesWithWalls=yes`](/keys/aibasedefenseswithwalls/) gets that block together with the wall.

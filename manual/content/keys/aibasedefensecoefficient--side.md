@@ -13,7 +13,7 @@ when_omitted:
 AIBaseDefenseCoefficient=1.5
 ```
 
-Scales how many base defenses a computer house playing for this side mixes into its base plan as the plan grows more expensive. A higher value gives more defenses, earlier in the plan. The house applies it when it [generates its plan](/systems/ai-base-building/#building-the-plan).
+Scales how many base defenses a computer house playing for this side mixes into its base plan as the plan grows more expensive. A higher value gives more defenses, earlier in the plan. The house applies it when it [generates its plan](/systems/ai-base-building/#building-the-plan). A side with a [base defense count list](/systems/ai-base-building/#the-counted-plan) ignores this key.
 
 Before each plan entry from the fourth on, the house works out how many defenses it wants so far:
 

@@ -1070,6 +1070,17 @@ class RulesClass
 		TypeList<BuildingTypeClass const *> SovietBaseDefenses;
 		TypeList<BuildingTypeClass const *> ThirdBaseDefenses;
 
+		// Base defenses a computer house of each side plans, per difficulty slot. A side with no
+		// list plans its defenses by cost instead.
+		TypeList<int> AlliedBaseDefenseCounts;
+		TypeList<int> SovietBaseDefenseCounts;
+		TypeList<int> ThirdBaseDefenseCounts;
+
+		// Extra refineries a planned base gets, per difficulty slot, when the house can build a
+		// harvester; one fewer than AISlaveMinerNumber when it cannot.
+		TypeList<int> AIExtraRefineries;
+		TypeList<int> AISlaveMinerNumber;
+
 		// How many cells from a base center a team gathers before an attack or after one.
 		int AISafeDistance;
 		TypeList<BuildingTypeClass const *> BuildHelipad;

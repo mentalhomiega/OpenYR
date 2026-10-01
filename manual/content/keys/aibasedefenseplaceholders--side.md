@@ -13,7 +13,7 @@ when_omitted:
 AIBaseDefensePlaceholders=3
 ```
 
-Sets how many extra base defenses a computer house playing for this side adds at the end of its [generated base plan](/systems/ai-base-building/#building-the-plan). The house adds `(3 - Difficulty)` times this value as `-1` placeholders, where `Difficulty` is its [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot). On a Hard game the computer normally holds slot 0, so it adds three times this value; on Easy it adds the value once.
+Sets how many extra base defenses a computer house playing for this side adds at the end of its [generated base plan](/systems/ai-base-building/#building-the-plan). The house adds `(3 - Difficulty)` times this value as `-1` placeholders, where `Difficulty` is its [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot). On a Hard game the computer normally holds slot 0, so it adds three times this value; on Easy it adds the value once. A side with a [base defense count list](/systems/ai-base-building/#the-counted-plan) ignores this key.
 
 When its plan holds at least three structures, the house adds this block in either of these cases:
 
