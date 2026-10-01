@@ -33,6 +33,9 @@
 **	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
 **							that cell
 **	unload x y				orders the structure on that cell to unload
+**	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
+**							the structure on that cell
+**	houses					writes each house's money, power and spy effects
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
 **	price <TypeID>			writes what the player pays for the type
@@ -276,7 +279,7 @@ void Dump(void)
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];
 		if (object->House != PlayerPtr) continue;
-		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength);
+		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d rank %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength, object->Veterancy.Is_Elite() ? 2 : (object->Veterancy.Is_Veteran() ? 1 : 0));
 	}
 }
 
@@ -416,6 +419,24 @@ void Run(StepType const & step)
 			if (strnicmp(BuildingTypes[index]->Name(), step.Argument.c_str(), step.Argument.size()) == 0) {
 				DebugString("AUTOTEST   type %s\n", BuildingTypes[index]->Name());
 			}
+		}
+	} else if (step.Command == "capture") {
+		// capture <TypeID> x y: sends the player's objects of that type that are not already capturing into the structure on that cell.
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		DebugString("AUTOTEST capture %s -> %s\n", step.Argument.c_str(), building != NULL ? building->Class->Name() : "(none)");
+		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Mission() != MISSION_CAPTURE && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Mission(MISSION_CAPTURE);
+				techno->Assign_Destination(building);
+			}
+		}
+	} else if (step.Command == "houses") {
+		// houses: each house's money, power and spy effects.
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * house = Houses[index];
+			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
+				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
 		}
 	} else if (step.Command == "count") {
 		// count <TypeID>: the number of live objects of the type on the map, per owner.
