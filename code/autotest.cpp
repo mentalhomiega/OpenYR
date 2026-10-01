@@ -30,7 +30,7 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
-**	enter <TypeID> x y		sends the player's soldiers of that type into the structure on
+**	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
 **							that cell
 **	unload x y				orders the structure on that cell to unload
 **	garrisons				writes every structure that can be garrisoned
@@ -339,11 +339,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "enter") {
 		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 		DebugString("AUTOTEST enter %s -> %s\n", step.Argument.c_str(), building != NULL ? building->Class->Name() : "(none)");
-		for (int index = 0; building != NULL && index < Infantry.Count(); index++) {
-			InfantryClass * infantry = Infantry[index];
-			if (infantry->House == PlayerPtr && !infantry->IsInLimbo && stricmp(infantry->Class->Name(), step.Argument.c_str()) == 0) {
-				infantry->Assign_Mission(MISSION_ENTER);
-				infantry->Assign_Destination(building);
+		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Mission(MISSION_ENTER);
+				techno->Assign_Destination(building);
 			}
 		}
 	} else if (step.Command == "unload") {
