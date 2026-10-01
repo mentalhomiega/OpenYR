@@ -495,6 +495,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Each OrePurifier=yes structure its owner has adds PurifierBonus to the ore it is paid for.
 		bool IsOrePurifier;
 
+		// How much this structure adds to its owner's infantry and vehicle self-healing.
+		int InfantryGainSelfHeal;
+		int UnitsGainSelfHeal;
+
 		/// Unused
 		bool IsFlat;
 

@@ -1088,6 +1088,13 @@ class RulesClass
 		// computer house counts as having, per difficulty slot.
 		double PurifierBonus;
 		TypeList<int> AIVirtualPurifiers;
+
+		// How often, and by how much per InfantryGainSelfHeal or UnitsGainSelfHeal point, a
+		// house's hospitals and machine shops mend its infantry and vehicles.
+		int SelfHealInfantryFrames;
+		int SelfHealInfantryAmount;
+		int SelfHealUnitFrames;
+		int SelfHealUnitAmount;
 		TypeList<BuildingTypeClass const *> BuildHelipad;
 
 		/*

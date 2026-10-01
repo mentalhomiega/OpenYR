@@ -12345,6 +12345,23 @@ InfantryExplode:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+InfantryGainSelfHeal:
+  key: InfantryGainSelfHeal
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: InfantryGainSelfHeal
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 InfantryGroupNumberOffset:
   key: InfantryGroupNumberOffset
   scopes:
@@ -21547,6 +21564,42 @@ SelfHealCap:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SelfHealInfantryAmount:
+  key: SelfHealInfantryAmount
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: SelfHealInfantryAmount
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SelfHealInfantryFrames:
+  key: SelfHealInfantryFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1000'
+      declared_in: RulesClass
+      member: SelfHealInfantryFrames
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 SelfHealRate:
   key: SelfHealRate
   scopes:
@@ -21580,6 +21633,42 @@ SelfHealStep:
       default_candidate: '1'
       declared_in: RulesClass
       member: SelfHealStep
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SelfHealUnitAmount:
+  key: SelfHealUnitAmount
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: SelfHealUnitAmount
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SelfHealUnitFrames:
+  key: SelfHealUnitFrames
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1000'
+      declared_in: RulesClass
+      member: SelfHealUnitFrames
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -28232,6 +28321,23 @@ UnitWithPipGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+UnitsGainSelfHeal:
+  key: UnitsGainSelfHeal
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: UnitsGainSelfHeal
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 UnloadingClass:
   key: UnloadingClass
   scopes:

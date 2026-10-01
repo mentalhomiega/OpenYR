@@ -890,6 +890,7 @@ class HouseClass : public AbstractClass
 		bool Does_Enemy_Building_Exist(StructType) const;
 		void Harvested(int tiberium, TiberiumType slot);
 		void Purified(int tiberium, TiberiumType slot);
+		int Self_Heal_Points(bool infantry) const;
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
 		void Refund_Money(int money);

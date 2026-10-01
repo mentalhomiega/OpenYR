@@ -1842,6 +1842,23 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 
 
 /// <summary>
+/// Totals the InfantryGainSelfHeal, or the UnitsGainSelfHeal, of every structure this house has
+/// on the map, as the counters HouseClass keeps for HouseClass::GetInfSelfHealStep (0x50D9E0) do.
+/// </summary>
+int HouseClass::Self_Heal_Points(bool infantry) const
+{
+	int points = 0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this && !building->IsInLimbo && building->Strength > 0) {
+			points += std::max(infantry ? building->Class->InfantryGainSelfHeal : building->Class->UnitsGainSelfHeal, 0);
+		}
+	}
+	return(points);
+}
+
+
+/// <summary>
 /// Adds harvested weed to this house's storage.
 /// This routine is called when a weed eater unloads. Anything that will not fit within the
 /// house's weed capacity is simply thrown away.

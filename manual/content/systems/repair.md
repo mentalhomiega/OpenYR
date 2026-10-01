@@ -29,6 +29,12 @@ keys:
   - SelfHealRate
   - SelfHealStep
   - SelfHealing
+  - InfantryGainSelfHeal
+  - UnitsGainSelfHeal
+  - SelfHealInfantryFrames
+  - SelfHealInfantryAmount
+  - SelfHealUnitFrames
+  - SelfHealUnitAmount
   - SelfHealingCap
   - SelfHealingRate
   - SelfHealingStep
@@ -303,6 +309,17 @@ The rules key of the same name, [`TiberiumHeal`](/keys/tiberiumheal/#scope-globa
 A weapon that deals negative damage, such as a medic's or a mechanic's, heals through ordinary damage and uses none of the settings on this page. Each heal also clears the target's limpet mine and resets its turn rates to the type's `ROT`.
 
 A healer's kind decides what it can heal: infantry heal infantry, and every other healer heals vehicles, including landed aircraft. [`Mechanic=yes`](/keys/mechanic/) makes infantry heal vehicles instead of infantry, and [`OmniHealer=yes`](/keys/omnihealer/) makes a healer heal both.
+
+## Healing from support structures
+
+Structures with [`InfantryGainSelfHeal`](/keys/infantrygainselfheal/), such as a hospital, mend every infantryman their owner has, and structures with [`UnitsGainSelfHeal`](/keys/unitsgainselfheal/), such as a machine shop, mend every vehicle, wherever it is. No order or credits are needed.
+
+Every [`SelfHealInfantryFrames`](/keys/selfhealinfantryframes/) frames, each damaged infantryman gains [`SelfHealInfantryAmount`](/keys/selfhealinfantryamount/) strength for every point of `InfantryGainSelfHeal` its house's structures add up to. Vehicles use [`SelfHealUnitFrames`](/keys/selfhealunitframes/) and [`SelfHealUnitAmount`](/keys/selfhealunitamount/) with `UnitsGainSelfHeal` the same way. Aircraft and structures gain nothing.
+
+- Healing stops at maximum strength and has no ceiling.
+- A structure counts from the moment it is placed until it is sold or destroyed, whether or not its owner has power. A captured structure counts for its new owner.
+- Healing falls on frames that are multiples of the interval, so every object heals on the same frames.
+- A vehicle this healing lifts above [`ConditionYellow`](/keys/conditionyellow/) stops giving off damage smoke.
 
 ## When the computer repairs
 

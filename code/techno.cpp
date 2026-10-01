@@ -3084,6 +3084,24 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	// A house's hospitals mend its infantry and its machine shops its vehicles, as
+	// TechnoClass::Update (0x6F9E50) does.
+	if ((RTTI == RTTI_INFANTRY || RTTI == RTTI_UNIT) && Strength > 0 && Strength < TClass->MaxStrength) {
+		bool infantry = RTTI == RTTI_INFANTRY;
+		int frames = infantry ? Rule->SelfHealInfantryFrames : Rule->SelfHealUnitFrames;
+		if (frames > 0 && (Frame % frames) == 0) {
+			int step = (infantry ? Rule->SelfHealInfantryAmount : Rule->SelfHealUnitAmount) * House->Self_Heal_Points(infantry);
+			if (step > 0) {
+				Strength = std::min(Strength + step, TClass->MaxStrength);
+				if (!infantry && (HealthRatio > Rule->ConditionYellow || HeightAGL < -10)) {
+					if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
+						ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
+					}
+				}
+			}
+		}
+	}
+
 	/*
 	**	Cloaking device processing.
 	*/

@@ -547,6 +547,10 @@ RulesClass::RulesClass(void) :
 	AISafeDistance(8),
 	PurifierBonus(0.25),
 	AIVirtualPurifiers(),
+	SelfHealInfantryFrames(1000),
+	SelfHealInfantryAmount(1),
+	SelfHealUnitFrames(1000),
+	SelfHealUnitAmount(1),
 	BuildHelipad(),
 	BuildRadar(),
 	ConcreteWalls(),
@@ -1356,6 +1360,10 @@ bool RulesClass::General(CCINIClass const & ini)
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
+		SelfHealInfantryFrames = ini.Get_Int(GENERAL, "SelfHealInfantryFrames", SelfHealInfantryFrames);
+		SelfHealInfantryAmount = ini.Get_Int(GENERAL, "SelfHealInfantryAmount", SelfHealInfantryAmount);
+		SelfHealUnitFrames = ini.Get_Int(GENERAL, "SelfHealUnitFrames", SelfHealUnitFrames);
+		SelfHealUnitAmount = ini.Get_Int(GENERAL, "SelfHealUnitAmount", SelfHealUnitAmount);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "DeadBodies", DeadBodies);
 		return(true);
 	}
@@ -2408,6 +2416,10 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AISafeDistance);
 	stream.Serialize(PurifierBonus);
 	stream.Serialize(AIVirtualPurifiers);
+	stream.Serialize(SelfHealInfantryFrames);
+	stream.Serialize(SelfHealInfantryAmount);
+	stream.Serialize(SelfHealUnitFrames);
+	stream.Serialize(SelfHealUnitAmount);
 	stream.Serialize(BuildHelipad);
 	stream.Serialize(BuildRadar);
 	stream.Serialize(ConcreteWalls);
