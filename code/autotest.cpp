@@ -33,6 +33,8 @@
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
+**	overpower x y			writes how many objects charge the structure on that cell and whether it is
+**							overpowered
 **	ruleanims				writes the animations some rules settings resolved to
 **	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
 **							weapon at the object on that cell now, and why not
@@ -617,6 +619,11 @@ void Run(StepType const & step)
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
 			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound);
+		}
+	} else if (step.Command == "overpower") {
+		BuildingClass const * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
+		if (building != NULL) {
+			DebugString("AUTOTEST   overpower %s chargers %d overpowered %d powered %d\n", building->Class->Name(), building->Overpowerer_Count(), (int)building->IsOverpowered, (int)building->Is_Powered_On());
 		}
 	} else if (step.Command == "ruleanims") {
 		auto name = [](AnimTypeClass const * type) { return type != NULL ? type->Name() : "-"; };

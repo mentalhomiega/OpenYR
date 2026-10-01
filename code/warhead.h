@@ -194,6 +194,9 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// A PsychicDamage warhead spares ImmuneToPsionicWeapons types; a Poison warhead spares ImmuneToPoison types.
 		bool IsPsychicDamage;
+
+		// An ElectricAssault warhead charges an allied Overpowerable structure instead of hurting it.
+		bool IsElectricAssault;
 		bool IsPoison;
 
 		// The range, in pixels, of the sideways and vertical screen shake the warhead's detonation starts.

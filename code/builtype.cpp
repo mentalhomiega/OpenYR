@@ -330,6 +330,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSensorArray(false),
 	IsGapGenerator(false),
 	DelayedFireDelay(0),
+	IsOverpowerable(false),
 	IsICBMLauncher(false),
 	IsArtillary(false),
 	IsHelipad(false),
@@ -1319,6 +1320,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCloakGenerator = ini.Get_Bool(Name(), "CloakGenerator", IsCloakGenerator);
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
 		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
+		IsOverpowerable = ini.Get_Bool(Name(), "Overpowerable", IsOverpowerable);
 		CloakRadiusInCells = ini.Get_Int(Name(), "CloakRadiusInCells", CloakRadiusInCells);
 
 		LightVisibility = ini.Get_Int(Name(), "LightVisibility", LightVisibility);
@@ -2307,6 +2309,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSensorArray);
 	stream.Serialize(IsGapGenerator);
 	stream.Serialize(DelayedFireDelay);
+	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsICBMLauncher);
 	stream.Serialize(IsArtillary);
 	stream.Serialize(IsHelipad);

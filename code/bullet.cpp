@@ -1370,6 +1370,9 @@ void BulletClass::Detonate(Coord const & coord)
 	/*
 	 * An Ivan bomb warhead fixes a time bomb to the target (BulletClass::Detonate, 0x469210).
 	 */
+	else if (warhead->IsElectricAssault && dynamic_cast<BuildingClass *>(TarCom) != NULL && static_cast<BuildingClass *>(TarCom)->Class->IsOverpowerable) {
+	}
+
 	else if (warhead->IsIvanBomb) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		if (target != NULL) {

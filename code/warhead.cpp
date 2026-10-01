@@ -114,6 +114,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsAffectsAllies(true),
 	IsPsychedelic(false),
 	IsPsychicDamage(false),
+	IsElectricAssault(false),
 	IsPoison(false),
 	ShakeXlo(0),
 	ShakeXhi(0),
@@ -209,6 +210,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsAffectsAllies = ini.Get_Bool(Name(), "AffectsAllies", IsAffectsAllies);
 		IsPsychedelic = ini.Get_Bool(Name(), "Psychedelic", IsPsychedelic);
 		IsPsychicDamage = ini.Get_Bool(Name(), "PsychicDamage", IsPsychicDamage);
+		IsElectricAssault = ini.Get_Bool(Name(), "ElectricAssault", IsElectricAssault);
 		IsPoison = ini.Get_Bool(Name(), "Poison", IsPoison);
 		ShakeXlo = ini.Get_Int(Name(), "ShakeXlo", ShakeXlo);
 		ShakeXhi = ini.Get_Int(Name(), "ShakeXhi", ShakeXhi);
@@ -317,6 +319,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAffectsAllies);
 	stream.Serialize(IsPsychedelic);
 	stream.Serialize(IsPsychicDamage);
+	stream.Serialize(IsElectricAssault);
 	stream.Serialize(IsPoison);
 	stream.Serialize(ShakeXlo);
 	stream.Serialize(ShakeXhi);

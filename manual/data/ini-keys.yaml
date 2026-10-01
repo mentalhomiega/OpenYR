@@ -9957,6 +9957,23 @@ Elasticity:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+ElectricAssault:
+  key: ElectricAssault
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsElectricAssault
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 EliteAbilities:
   key: EliteAbilities
   scopes:
@@ -21447,6 +21464,23 @@ OverloadFrames:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Overpowerable:
+  key: Overpowerable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsOverpowerable
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Overrides:
   key: Overrides
   scopes:

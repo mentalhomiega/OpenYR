@@ -277,6 +277,11 @@ class BuildingClass : public TechnoClass
 		Coord PrismTargetCoord;
 		int SupportingPrisms;
 
+		// Is this Overpowerable structure charged by enough soldiers to work on its own and fire its second weapon?
+		bool IsOverpowered;
+
+		int Overpowerer_Count(void) const;
+
 		bool Prism_Charge(void);
 		void Prism_AI(void);
 		bool IsCharged;

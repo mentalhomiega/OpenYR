@@ -239,6 +239,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	PrismDelay(0),
 	PrismTargetCoord(),
 	SupportingPrisms(0),
+	IsOverpowered(false),
 	IsCharged(false),
 	IsCaptured(false),
 	HasOpened(false),
@@ -1646,6 +1647,12 @@ void BuildingClass::AI(void)
 
 	if (PrismStage != PRISM_IDLE) {
 		Prism_AI();
+	}
+
+	// Three charging soldiers overpower the structure; one is enough while its house has full power (BuildingClass::Update, 0x43FB20).
+	if (Class->IsOverpowerable) {
+		int const count = Overpowerer_Count();
+		IsOverpowered = count >= 3 || (count >= 1 && House->Power_Fraction() >= 1.0 && IsPoweredOn);
 	}
 
 	if (Class->IsSAM && TarCom != NULL && !TarCom->In_Air()) {
@@ -4395,7 +4402,7 @@ FireErrorType BuildingClass::Can_Fire(AbstractClass * target, int which) const
 		/*
 		**	Certain buildings cannot fire if there is insufficient power.
 		*/
-		if (Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1) {
+		if (Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1 && !IsOverpowered) {
 			return(FIRE_BUSY);
 		}
 
@@ -9556,6 +9563,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrismDelay);
 	stream.Serialize(PrismTargetCoord);
 	stream.Serialize(SupportingPrisms);
+	stream.Serialize(IsOverpowered);
 	stream.Serialize(IsCharged);
 	stream.Serialize(IsCaptured);
 	stream.Serialize(HasOpened);
@@ -10060,7 +10068,7 @@ bool BuildingClass::Is_Powered_On(void) const
 		return(false);
 	}
 	if (Class->IsPowered && Class->Drain > 0) {
-		if (Class->IsCanTogglePower) {
+		if (Class->IsCanTogglePower && !IsOverpowered) {
 			if (House->Power_Fraction() < 1.0) {
 				return(false);
 			}
@@ -11324,4 +11332,23 @@ void BuildingClass::Prism_AI(void)
 		Arm = Rule->PrismSupportDelay;
 		SupportingPrisms = 0;
 	}
+}
+
+
+/// <summary>
+/// Counts the objects charging this structure: those targeting it with an ElectricAssault
+/// second weapon whose house is this structure's or an ally of it.
+/// </summary>
+int BuildingClass::Overpowerer_Count(void) const
+{
+	int count = 0;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno->TarCom != this || techno->IsInLimbo || techno->Strength <= 0) continue;
+		WeaponTypeClass const * weapon = techno->Get_Class_Weapon_Data(1)->Weapon;
+		if (weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsElectricAssault && (techno->House == House || techno->House->Is_Ally(House))) {
+			count++;
+		}
+	}
+	return(count);
 }

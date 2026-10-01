@@ -496,6 +496,18 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 
 	if (target == NULL) return(0);
 
+	// An overpowered structure fires its second weapon, and a soldier charges an allied Overpowerable structure with its ElectricAssault one (TechnoClass::SelectWeapon, 0x6F3330).
+	if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->IsOverpowered && SecondaryWeapon != NULL) {
+		return(1);
+	}
+	BuildingClass const * targetbuilding = dynamic_cast<BuildingClass const *>(target);
+	if (targetbuilding != NULL && targetbuilding->Class->IsOverpowerable && (targetbuilding->House == House || House->Is_Ally(targetbuilding->House))) {
+		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
+		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsElectricAssault) {
+			return(1);
+		}
+	}
+
 	if (IsInOpenToppedTransport && TClass->OpenTransportWeapon != -1 && PrimaryWeapon != NULL && SecondaryWeapon != NULL) {
 		return(TClass->OpenTransportWeapon);
 	}

@@ -3,6 +3,8 @@ title: Power output and drain
 summary: "How a house's power output and drain are totaled, and what a house short of power loses."
 category: buildings-economy
 keys:
+  - Overpowerable
+  - ElectricAssault
   - BuildSpeed
   - BuildTime
   - C4Warhead
@@ -252,6 +254,12 @@ Three separate tests decide whether low power stops a defense, and they treat `T
 3. **SAM tracking.** A [`SAM=yes`](/keys/sam/) launcher that is `Powered=yes` with drain stays in its ready state while its house is short of power, so it never turns toward its target.
 
 The second test also stops a [`Charges=yes`](/keys/charges/) defense from starting a charge.
+
+#### Overpowered defenses
+
+Soldiers whose second weapon has an [`ElectricAssault=yes`](/keys/electricassault/) warhead can charge an [`Overpowerable=yes`](/keys/overpowerable/) structure of their own house or an allied one. Their shots at it do it no damage. An idle soldier of this kind standing next to such a structure of its own house starts charging it by itself; a player can also order a soldier to attack the structure.
+
+The structure is **overpowered** while three or more soldiers charge it, or while at least one does, it is switched on and its house has full power. An overpowered structure counts as operational and passes the weapons test even while its house is short of power, so three chargers keep it working through a blackout. It also fires its `Secondary` weapon instead of its `Primary`.
 
 ### Fields, fences and lights
 

@@ -131,6 +131,7 @@
 #include "voc.h"
 #include "vox.h"
 #include "waypoint.h"
+#include "warhead.h"
 #include "weapon.h"
 #include "xsurface.h"
 
@@ -911,6 +912,22 @@ int FootClass::Do_MISSION_ATTACK(void)
 int FootClass::Do_MISSION_GUARD(void)
 {
 	bool renovator = Is_Renovator();
+
+	// A soldier with an ElectricAssault second weapon starts charging its own Overpowerable structure next to it (FootClass::Mission_Guard, 0x4D5070).
+	if (TarCom == NULL && RTTI == RTTI_INFANTRY) {
+		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
+		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsElectricAssault) {
+			for (FacingType facing = FACING_FIRST; facing < FACING_COUNT; facing++) {
+				BuildingClass * building = Map[Adjacent_Cell(Get_Cell(), facing)].Cell_Building();
+				if (building != NULL && building->Class->IsOverpowerable && building->House == House) {
+					Assign_Target(building);
+					Assign_Mission(MISSION_ATTACK);
+					return(1);
+				}
+			}
+		}
+	}
+
 	// A CanPassiveAquire=no type never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
 	if (!renovator && TClass->IsCanPassiveAquire && (TarCom == NULL || RTTI != RTTI_AIRCRAFT || House->Is_Human_Player())) {
 		if (!Target_Something_Nearby(PositionCoord, THREAT_RANGE)) {
