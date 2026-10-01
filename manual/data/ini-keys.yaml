@@ -624,6 +624,24 @@ AIUseTurbineUpgradeProbability:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIVirtualPurifiers:
+  key: AIVirtualPurifiers
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AIVirtualPurifiers
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIWallDefense:
   key: AIWallDefense
   scopes:
@@ -17498,6 +17516,23 @@ OptionsChanged:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+OrePurifier:
+  key: OrePurifier
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsOrePurifier
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Overrides:
   key: Overrides
   scopes:
@@ -19333,6 +19368,24 @@ ProximityDistance:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+PurifierBonus:
+  key: PurifierBonus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.25'
+      declared_in: RulesClass
+      member: PurifierBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ROF:
   key: ROF
   scopes:

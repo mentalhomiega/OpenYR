@@ -290,6 +290,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSiloDamage(false),
 	IsCanUnitRepair(false),
 	IsCanUnitReload(false),
+	IsOrePurifier(false),
 	IsFlat(false),
 	IsDockUnload(false),
 	IsRecoilless(false),
@@ -1264,6 +1265,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanTogglePower = ini.Get_Bool(Name(), "TogglePower", IsCanTogglePower);
 		IsCanUnitRepair = ini.Get_Bool(Name(), "UnitRepair", IsCanUnitRepair);
 		IsCanUnitReload = ini.Get_Bool(Name(), "UnitReload", IsCanUnitReload);
+		IsOrePurifier = ini.Get_Bool(Name(), "OrePurifier", IsOrePurifier);
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
 		IsSAM = ini.Get_Bool(Name(), "SAM", IsSAM);
@@ -2231,6 +2233,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSiloDamage);
 	stream.Serialize(IsCanUnitRepair);
 	stream.Serialize(IsCanUnitReload);
+	stream.Serialize(IsOrePurifier);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsDockUnload);
 	stream.Serialize(IsRecoilless);

@@ -889,6 +889,7 @@ class HouseClass : public AbstractClass
 		void Recalc_Center(void);
 		bool Does_Enemy_Building_Exist(StructType) const;
 		void Harvested(int tiberium, TiberiumType slot);
+		void Purified(int tiberium, TiberiumType slot);
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
 		void Refund_Money(int money);

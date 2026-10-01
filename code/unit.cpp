@@ -3298,6 +3298,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 									House->Harvested_Weed(amount, slot);
 								} else {
 									House->Harvested(amount, (TiberiumType)slot);
+									House->Purified(amount, (TiberiumType)slot);
 								}
 								Set_Stage(0);
 							}

@@ -545,6 +545,8 @@ RulesClass::RulesClass(void) :
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
 	AISafeDistance(8),
+	PurifierBonus(0.25),
+	AIVirtualPurifiers(),
 	BuildHelipad(),
 	BuildRadar(),
 	ConcreteWalls(),
@@ -1352,6 +1354,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
+		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
+		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "DeadBodies", DeadBodies);
 		return(true);
 	}
@@ -2402,6 +2406,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SovietBaseDefenses);
 	stream.Serialize(ThirdBaseDefenses);
 	stream.Serialize(AISafeDistance);
+	stream.Serialize(PurifierBonus);
+	stream.Serialize(AIVirtualPurifiers);
 	stream.Serialize(BuildHelipad);
 	stream.Serialize(BuildRadar);
 	stream.Serialize(ConcreteWalls);

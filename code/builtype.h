@@ -492,6 +492,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsCanUnitReload;
 
+		// Each OrePurifier=yes structure its owner has adds PurifierBonus to the ore it is paid for.
+		bool IsOrePurifier;
+
 		/// Unused
 		bool IsFlat;
 

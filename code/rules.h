@@ -1083,6 +1083,11 @@ class RulesClass
 
 		// How many cells from a base center a team gathers before an attack or after one.
 		int AISafeDistance;
+
+		// The share of delivered ore each ore purifier adds, and the purifiers each skirmish
+		// computer house counts as having, per difficulty slot.
+		double PurifierBonus;
+		TypeList<int> AIVirtualPurifiers;
 		TypeList<BuildingTypeClass const *> BuildHelipad;
 
 		/*

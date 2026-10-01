@@ -1814,6 +1814,34 @@ void HouseClass::Harvested(int tiberium, TiberiumType slot)
 
 
 /// <summary>
+/// Pays the ore purifier bonus on ore a harvester has just delivered, as UnitClass::Mission_Unload
+/// (0x73D630) does: PurifierBonus of the ore for every purifier the house has on the map, plus
+/// the AIVirtualPurifiers entry for a computer house outside a campaign.
+/// </summary>
+/// <param name="tiberium">The amount of ore delivered.</param>
+/// <param name="slot">The kind of ore delivered.</param>
+void HouseClass::Purified(int tiberium, TiberiumType slot)
+{
+	int purifiers = 0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == this && building->Class->IsOrePurifier && !building->IsInLimbo && building->Strength > 0) {
+			purifiers++;
+		}
+	}
+	if (!Is_Human_Player() && Session.Type != GAME_NORMAL && Difficulty >= 0 && Difficulty < Rule->AIVirtualPurifiers.Count()) {
+		purifiers += Rule->AIVirtualPurifiers[Difficulty];
+	}
+
+	double bonus = purifiers * Rule->PurifierBonus * tiberium;
+	if (bonus > 0) {
+		PointTotal += (int)(bonus * 5);
+		Credits += (int)(Tiberiums[slot]->CreditValue * Class->IncomeMult * bonus);
+	}
+}
+
+
+/// <summary>
 /// Adds harvested weed to this house's storage.
 /// This routine is called when a weed eater unloads. Anything that will not fit within the
 /// house's weed capacity is simply thrown away.
