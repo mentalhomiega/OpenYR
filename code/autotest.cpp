@@ -29,6 +29,7 @@
 **	spawn <TypeID> x y		puts an object owned by the first computer house with a
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
+**	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	enter <TypeID> x y		sends the player's soldiers of that type into the structure on
 **							that cell
 **	unload x y				orders the structure on that cell to unload
@@ -273,7 +274,7 @@ void Dump(void)
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];
 		if (object->House != PlayerPtr) continue;
-		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed());
+		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength);
 	}
 }
 
@@ -391,6 +392,15 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST own %s at %d,%d: %s\n", type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
 			DebugString("AUTOTEST own %s: no such type\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "hurt") {
+		// hurt <TypeID> <percent>: sets the strength of the player's objects of that type to that share.
+		int percent = step.X;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
+			}
 		}
 	} else if (step.Command == "count") {
 		// count <TypeID>: the number of live objects of the type on the map, per owner.
