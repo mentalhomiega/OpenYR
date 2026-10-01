@@ -250,6 +250,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// With RevealOnFire=no, firing this weapon does not reveal the firer to the target's owner.
 		bool IsRevealOnFire;
 
+		// Is this weapon's laser drawn in its firer's house color rather than its own laser colors?
+		bool IsHouseColor;
+
 		/*
 		**	Increase the weapon speed if the target is flying.
 		*/

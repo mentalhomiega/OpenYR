@@ -16329,6 +16329,23 @@ IsGattling:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+IsHouseColor:
+  key: IsHouseColor
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsHouseColor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IsIceGrowthEnabled:
   key: IsIceGrowthEnabled
   scopes:
