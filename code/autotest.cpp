@@ -26,6 +26,17 @@
 **	click x y				queues a left click at that screen position
 **	follow <TypeID>			keeps the view centred on one of the player's objects of that type
 **	record <frames>			saves a screenshot every that many frames; 0 stops
+**	spawn <TypeID> x y		puts an object owned by the first computer house with a
+**							construction yard on that cell
+**	own <TypeID> x y		puts an object owned by the player on that cell
+**	enter <TypeID> x y		sends the player's soldiers of that type into the structure on
+**							that cell
+**	unload x y				orders the structure on that cell to unload
+**	garrisons				writes every structure that can be garrisoned
+**	count <TypeID>			writes how many live objects of that type each house has
+**	schemes					writes the color schemes and the scheme each house draws with
+**	seq <TypeID>			writes an infantry type's art sequences
+**	plan					writes each computer house's base plan
 **	dump					writes the player's credits, objects and missions to the log
 **	log <text>				writes the text to the log
 **	quit					ends the process
@@ -367,6 +378,19 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST spawn %s at %d,%d: %s\n", type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
 			DebugString("AUTOTEST spawn %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
+		}
+	} else if (step.Command == "own") {
+		// own <TypeID> x y: puts an object of the type, owned by the player, on that cell.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(PlayerPtr));
+			Cell cell(step.X, step.Y);
+			ScenarioInit++;
+			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+			ScenarioInit--;
+			DebugString("AUTOTEST own %s at %d,%d: %s\n", type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+		} else {
+			DebugString("AUTOTEST own %s: no such type\n", step.Argument.c_str());
 		}
 	} else if (step.Command == "count") {
 		// count <TypeID>: the number of live objects of the type on the map, per owner.
