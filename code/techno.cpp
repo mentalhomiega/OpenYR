@@ -1567,25 +1567,21 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 
 	} else {
 
-		bool powerup = false;
-		if (ArmorBias > 1.0 || FirepowerBias > 1.0 || (Is_Foot() && ((FootClass *)this)->SpeedBias > 1.0)) {
-			powerup = true;
-		}
-
+		int delta = TClass->PixelSelectionBracketDelta;
 		Point2D offset;
 		int health_bar_count;
 
 		if (RTTI == RTTI_INFANTRY) {
 			if (IsSelected) {
-				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)ObjectTypeClass::SelectShapes, powerup ? 6 : 2, xpoint, cliprect, ShapeFlags_Type(SHAPE_ALPHA|SHAPE_WIN_REL|SHAPE_CENTER));
+				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)ObjectTypeClass::PipBorderShapes, 1, xpoint + Point2D(11, delta - 25), cliprect, ShapeFlags_Type(SHAPE_ALPHA|SHAPE_WIN_REL|SHAPE_CENTER));
 			}
-			offset = Point2D(-5, -24);
+			offset = Point2D(-5, delta - 24);
 			health_bar_count = 8;
 		} else {
 			if (IsSelected) {
-				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)ObjectTypeClass::SelectShapes, (LimpetType.Any() ? 8 : 0) + (powerup ? 4 : 0) + 3, xpoint, cliprect, ShapeFlags_Type(SHAPE_ALPHA|SHAPE_WIN_REL|SHAPE_CENTER));
+				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)ObjectTypeClass::PipBorderShapes, 0, xpoint + Point2D(1, delta - 26), cliprect, ShapeFlags_Type(SHAPE_ALPHA|SHAPE_WIN_REL|SHAPE_CENTER));
 			}
-			offset = Point2D(-15, -25);
+			offset = Point2D(-15, delta - 25);
 			health_bar_count = 17;
 		}
 
@@ -1597,12 +1593,12 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 			n = health_bar_count;
 		}
 
-		int shapenum = 9;
+		int shapenum = 16;
 		if (HealthRatio <= Rule->ConditionYellow) {
-			shapenum = 10;
+			shapenum = 17;
 		}
 		if (HealthRatio <= Rule->ConditionRed) {
-			shapenum = 11;
+			shapenum = 18;
 		}
 
 		Point2D point;

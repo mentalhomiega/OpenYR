@@ -42,7 +42,7 @@
 **	Selected objects have a special marking box around them. This is the shapes that are
 **	used for this purpose.
 */
-void const * ObjectTypeClass::SelectShapes = 0;
+void const * ObjectTypeClass::PipBorderShapes = 0;
 
 void const * ObjectTypeClass::PipShapes = 0;
 void const * ObjectTypeClass::Pip2Shapes = 0;
@@ -287,7 +287,7 @@ Cell const * ObjectTypeClass::Occupy_List(bool) const
  *=============================================================================================*/
 void ObjectTypeClass::One_Time(void)
 {
-	SelectShapes = MFCD::Retrieve("SELECT.SHP");
+	PipBorderShapes = MFCD::Retrieve("PIPBRD.SHP");
 	PipShapes = MFCD::Retrieve("PIPS.SHP");
 	Pip2Shapes = MFCD::Retrieve("PIPS2.SHP");
 	TalkBubbleShapes = MFCD::Retrieve("TALKBUBL.SHP");

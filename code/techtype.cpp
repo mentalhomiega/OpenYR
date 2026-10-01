@@ -159,6 +159,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	AuxSound2(VOC_NONE),
 	MaxDebris(0),
 	MinDebris(0),
+	PixelSelectionBracketDelta(0),
 	FlightLevel(-1),
 	IsAllowedToStartInMultiplayer(true),
 	CameoFilename(""),
@@ -589,6 +590,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		PhysicalSize = ini.Get_Float(Name(), "PhysicalSize", PhysicalSize);
 		MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
 		MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
+		PixelSelectionBracketDelta = ini.Get_Int(Name(), "PixelSelectionBracketDelta", PixelSelectionBracketDelta);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1019,6 +1021,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ThreatRange);
 	stream.Serialize(MaxDebris);
 	stream.Serialize(MinDebris);
+	stream.Serialize(PixelSelectionBracketDelta);
 	stream.Serialize(MaxPassengers);
 	stream.Serialize(Size);
 	stream.Serialize(SizeLimit);

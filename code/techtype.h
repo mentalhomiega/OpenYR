@@ -271,6 +271,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		int MinDebris;
 
 		/*
+		 * Moves the selection border and health bar of a unit or infantry up or down, in pixels;
+		 * positive values move them down.
+		 */
+		int PixelSelectionBracketDelta;
+
+		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.
 		*/

@@ -232,7 +232,7 @@ class ObjectTypeClass : public AbstractTypeClass
 			AuxVoxel2Index.Clear();
 		}
 
-		static void const * SelectShapes;
+		static void const * PipBorderShapes;
 		static void const * PipShapes;
 
 		/*

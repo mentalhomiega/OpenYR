@@ -16681,6 +16681,23 @@ PitchSpeed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+PixelSelectionBracketDelta:
+  key: PixelSelectionBracketDelta
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: PixelSelectionBracketDelta
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PlaceAnywhere:
   key: PlaceAnywhere
   scopes:
