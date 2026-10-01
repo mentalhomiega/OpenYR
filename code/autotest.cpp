@@ -401,6 +401,21 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "plan") {
+		// plan: each computer house's base plan, node by node; a negative type is a placeholder.
+		for (int house = 0; house < Houses.Count(); house++) {
+			HouseClass * owner = Houses[house];
+			if (owner == PlayerPtr || owner->Base.Nodes.Count() == 0) {
+				continue;
+			}
+			std::string line;
+			for (int index = 0; index < owner->Base.Nodes.Count(); index++) {
+				int type = owner->Base.Nodes[index].Type;
+				line += (type >= 0 && type < BuildingTypes.Count()) ? BuildingTypes[type]->Name() : std::to_string(type);
+				line += " ";
+			}
+			DebugString("AUTOTEST   plan %s difficulty %d: %s\n", owner->Class->Name(), (int)owner->Difficulty, line.c_str());
+		}
 	} else if (step.Command == "teams") {
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
