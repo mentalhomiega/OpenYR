@@ -17,6 +17,13 @@
 **	place <TypeID>			places a finished structure at the first legal cell near the
 **							player's construction yard
 **	move <TypeID> <x> <y>	orders the player's objects of that type to a cell
+**	attack <TypeID>			orders the player's objects of that type to attack the nearest
+**							structure of an enemy that has a base
+**	enemies					writes the structures of other houses and the count of their units
+**	owners <TypeID>			writes the type's owner bits and each house's country bit
+**	view x y				centres the view on a cell
+**	follow <TypeID>			keeps the view centred on one of the player's objects of that type
+**	record <frames>			saves a screenshot every that many frames; 0 stops
 **	dump					writes the player's credits, objects and missions to the log
 **	log <text>				writes the text to the log
 **	quit					ends the process
@@ -27,6 +34,8 @@
 #include "autotest.h"
 
 #include "_map.h"
+#include "_tactica.h"
+#include "animtype.h"
 #include "building.h"
 #include "builtype.h"
 #include "cell.h"
@@ -40,9 +49,11 @@
 #include "infatype.h"
 #include "init.h"
 #include "loco.h"
+#include "tactical.h"
 #include "unit.h"
 #include "unittype.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -64,6 +75,12 @@ struct StepType
 bool Active = false;
 std::vector<StepType> Steps;
 std::size_t Next = 0;
+
+// Frames between the screenshots of a recording, or 0 when not recording.
+int RecordInterval = 0;
+
+// The type the view keeps centred on, or empty when it stays put.
+std::string FollowType;
 
 
 TechnoTypeClass const * Find_Type(std::string const & name)
@@ -145,6 +162,63 @@ void Move(std::string const & name, int x, int y)
 }
 
 
+BuildingClass * Nearest_Enemy_Building(void)
+{
+	if (PlayerPtr->ConYards.Count() == 0) return(NULL);
+	Coord const home = PlayerPtr->ConYards[0]->Center_Coord();
+
+	BuildingClass * best = NULL;
+	int bestdistance = 0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		// Only a house that has a base counts; this leaves out the map's civilian and neutral structures.
+		if (building->IsInLimbo || building->House == NULL || building->House->Is_Ally(PlayerPtr) || building->House->ConYards.Count() == 0) continue;
+		int const distance = ::Distance(home, building->Center_Coord());
+		if (best == NULL || distance < bestdistance) {
+			best = building;
+			bestdistance = distance;
+		}
+	}
+	return(best);
+}
+
+
+void Attack(std::string const & name)
+{
+	BuildingClass * target = Nearest_Enemy_Building();
+	if (target == NULL) {
+		DebugString("AUTOTEST attack: no enemy structure\n");
+		return;
+	}
+	DebugString("AUTOTEST attack %s -> %s at %d,%d\n", name.c_str(), target->Class->Name(), target->Get_Cell().X, target->Get_Cell().Y);
+
+	Select_Type(name);
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass * unit = Units[index];
+		if (unit->IsSelected) unit->Assign_Target(target), unit->Assign_Mission(MISSION_ATTACK);
+	}
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass * infantry = Infantry[index];
+		if (infantry->IsSelected) infantry->Assign_Target(target), infantry->Assign_Mission(MISSION_ATTACK);
+	}
+}
+
+
+void Enemies(void)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * object = Buildings[index];
+		if (object->House == PlayerPtr || object->IsInLimbo) continue;
+		DebugString("AUTOTEST   enemy building %s house %s cell %d,%d strength %d\n", object->Class->Name(), object->House->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->Strength);
+	}
+	int units = 0;
+	int infantry = 0;
+	for (int index = 0; index < Units.Count(); index++) if (Units[index]->House != PlayerPtr) units++;
+	for (int index = 0; index < Infantry.Count(); index++) if (Infantry[index]->House != PlayerPtr) infantry++;
+	DebugString("AUTOTEST   enemy units %d infantry %d\n", units, infantry);
+}
+
+
 void Dump(void)
 {
 	DebugString("AUTOTEST dump frame %d credits %d\n", Frame, PlayerPtr->Available_Money());
@@ -185,6 +259,31 @@ void Run(StepType const & step)
 		Place(step.Argument);
 	} else if (step.Command == "move") {
 		Move(step.Argument, step.X, step.Y);
+	} else if (step.Command == "attack") {
+		Attack(step.Argument);
+	} else if (step.Command == "enemies") {
+		Enemies();
+	} else if (step.Command == "owners") {
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   %s Ownable %08X RequiredHouses %08X\n", type->Name(), type->Ownable, type->RequiredHouses);
+		}
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * house = Houses[index];
+			DebugString("AUTOTEST   house %s ActLike %d mask %08X conyards %d\n", house->Class->Name(), (int)house->ActLike, house->Acted_Mask(), house->ConYards.Count());
+		}
+	} else if (step.Command == "view") {
+		FollowType.clear();
+		TacticalMap->Set_Tactical_Position(Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord());
+	} else if (step.Command == "follow") {
+		FollowType = step.Argument;
+	} else if (step.Command == "anims") {
+		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
+			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
+		}
+		DebugString("AUTOTEST   anim count %d\n", AnimTypes.Count());
+	} else if (step.Command == "record") {
+		RecordInterval = std::max(0, std::atoi(step.Argument.c_str()));
 	} else if (step.Command == "dump") {
 		Dump();
 	} else if (step.Command == "log") {
@@ -246,5 +345,26 @@ void AutoTest_Frame(void)
 	}
 	while (Next < Steps.size() && Steps[Next].Frame <= Frame) {
 		Run(Steps[Next++]);
+	}
+
+	if (!FollowType.empty() && (Frame % 15) == 0) {
+		for (int index = 0; index < Infantry.Count(); index++) {
+			InfantryClass * object = Infantry[index];
+			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
+				TacticalMap->Set_Tactical_Position(object->Center_Coord());
+				break;
+			}
+		}
+		for (int index = 0; index < Units.Count(); index++) {
+			UnitClass * object = Units[index];
+			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
+				TacticalMap->Set_Tactical_Position(object->Center_Coord());
+				break;
+			}
+		}
+	}
+
+	if (RecordInterval > 0 && (Frame % RecordInterval) == 0) {
+		Execute_Command("ScreenCapture");
 	}
 }
