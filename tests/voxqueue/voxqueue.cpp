@@ -31,9 +31,9 @@ void Check(bool condition, char const * what)
 }
 
 
-VoxType Pop(VoxQueueClass & queue)
+int Pop(VoxQueueClass & queue)
 {
-	VoxType voice = VOX_NONE;
+	int voice = VOX_NONE;
 	queue.Next(voice);
 	return(voice);
 }

@@ -1520,7 +1520,12 @@ bool TActionClass::TAction_PLAY_MUSIC(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_PLAY_SPEECH(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Speak(Data.Speech);
+	// With an announcer file the number is a position in its list, as in Yuri's Revenge.
+	if (Is_Eva_Loaded()) {
+		Speak_Eva_Index((int)Data.Speech);
+	} else {
+		Speak(Data.Speech);
+	}
 	return(true);
 }
 

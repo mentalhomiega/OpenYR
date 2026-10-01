@@ -16,6 +16,11 @@
 #include "vox.h"
 
 #include "audio/audioengine.h"
+#include "ccfile.h"
+#include "ccini.h"
+#include "dbgprint.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 #include "globals.h"
 #include "stimer.h"
 #include "timer.h"
@@ -23,6 +28,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
+#include <vector>
 
 CDTimerClass<SystemTimerClass> SpeakTimer;
 
@@ -609,16 +616,118 @@ char const * Speech[VOX_COUNT] =  {
 
 namespace {
 
+int const PRIORITY_LOW = 25;
 int const PRIORITY_NORMAL = 50;
+int const PRIORITY_IMPORTANT = 100;
 int const PRIORITY_CRITICAL = 255;
 int const SETTLE_TICKS = TIMER_SECOND;
 int const GAP_TICKS = TIMER_SECOND / 2;
 
+// A queued line at or above this number is a Tiberian Sun speech file, numbered by its VoxType.
+int const LEGACY_LINE = 0x10000;
+
+// One line of the announcer file: its sample for each side's voice, and how it waits its turn.
+struct EvaLineType {
+	std::string Name;
+	std::string Sample[3];
+	int Priority;
+	VoxControlType Control;
+	float Volume;
+};
+
+// The announcer's lines in the order the file lists them, which is the number a trigger names.
+std::vector<EvaLineType> EvaLines;
+int VoiceLines[VOX_COUNT];
+int EvaSide = 0;
+
 // The lines waiting to be spoken, the one speaking, and the silence between.
 VoxQueueClass Queue;
 AudioHandle Current;
-VoxType CurrentVoice = VOX_NONE;
+int CurrentLine = -1;
 CDTimerClass<SystemTimerClass> SpeakGapTimer;
+
+// The announcer lines that stand for Tiberian Sun's voices with Yuri's Revenge data.
+struct VoiceEvaType {
+	VoxType Voice;
+	char const * Name;
+};
+
+VoiceEvaType const VoiceEva[] = {
+	{VOX_ACCOMPLISHED, "EVA_MissionAccomplished"},
+	{VOX_FAIL, "EVA_MissionFailed"},
+	{VOX_NO_FACTORY, "EVA_UnableToComply"},
+	{VOX_CONSTRUCTION, "EVA_ConstructionComplete"},
+	{VOX_UNIT_READY, "EVA_UnitReady"},
+	{VOX_NEW_CONSTRUCT, "EVA_NewConstructionOptions"},
+	{VOX_DEPLOY, "EVA_CannotDeployHere"},
+	{VOX_NO_CASH, "EVA_InsufficientFunds"},
+	{VOX_CONTROL_EXIT, "EVA_BattleControlTerminated"},
+	{VOX_REINFORCEMENTS, "EVA_ReinforcementsHaveArrived"},
+	{VOX_CANCELED, "EVA_Canceled"},
+	{VOX_BUILDING, "EVA_Building"},
+	{VOX_LOW_POWER, "EVA_LowPower"},
+	{VOX_BASE_UNDER_ATTACK, "EVA_OurBaseIsUnderAttack"},
+	{VOX_PRIMARY_SELECTED, "EVA_PrimaryBuildingSelected"},
+	{VOX_UNIT_LOST, "EVA_UnitLost"},
+	{VOX_SELECT_TARGET, "EVA_SelectTarget"},
+	{VOX_SUSPENDED, "EVA_OnHold"},
+	{VOX_REPAIRING, "EVA_Repairing"},
+	{VOX_TRAINING, "EVA_Training"},
+	{VOX_UPGRADE_ARMOR, "EVA_UnitArmorUpgraded"},
+	{VOX_UPGRADE_FIREPOWER, "EVA_UnitFirePowerUpgraded"},
+	{VOX_UPGRADE_SPEED, "EVA_UnitSpeedUpgraded"},
+	{VOX_UNIT_REPAIRED, "EVA_UnitRepaired"},
+	{VOX_STRUCTURE_SOLD, "EVA_StructureSold"},
+	{VOX_HARVESTER_UNDER_ATTACK, "EVA_OreMinerUnderAttack"},
+	{VOX_TIME_20, "EVA_20MinutesRemaining"},
+	{VOX_TIME_10, "EVA_10MinutesRemaining"},
+	{VOX_TIME_5, "EVA_5MinutesRemaining"},
+	{VOX_TIME_4, "EVA_4MinutesRemaining"},
+	{VOX_TIME_3, "EVA_3MinutesRemaining"},
+	{VOX_TIME_2, "EVA_2MinutesRemaining"},
+	{VOX_TIME_1, "EVA_1MinuteRemaining"},
+	{VOX_UNIT_SOLD, "EVA_UnitSold"},
+	{VOX_BUILDING_CAPTURED, "EVA_BuildingCaptured"},
+	{VOX_CONTROL_ESTABLISHED, "EVA_EstablishBattlefieldControl"},
+	{VOX_NEW_TERRAIN, "EVA_NewTerrainDiscovered"},
+	{VOX_MISSILE_LAUNCH_DETECTED, "EVA_NuclearMissileLaunched"},
+	{VOX_PRIMARY_OBJECTIVE_ACHIEVED, "EVA_PrimaryObjectiveAchieved"},
+	{VOX_SECONDARY_OBJECTIVE_ACHIEVED, "EVA_SecondaryObjectiveAchieved"},
+	{VOX_TERTIARY_OBJECTIVE_ACHIEVED, "EVA_TertiaryObjectiveAchieved"},
+	{VOX_CRITICAL_UNIT_LOST, "EVA_CriticalUnitLost"},
+	{VOX_CRITICAL_STRUCTURE_LOST, "EVA_CriticalStrucureLost"},
+	{VOX_BUILDING_INFILTRATED, "EVA_BuildingInfiltrated"},
+	{VOX_TIMER_STARTED, "EVA_TimerStarted"},
+	{VOX_TIMER_STOPPED, "EVA_TimerStopped"},
+	{VOX_BRIDGE_REPAIRED, "EVA_BridgeRepaired"},
+	{VOX_BASE_DEFENSES_OFFLINE, "EVA_BaseDefensesOffLine"},
+	{VOX_BUILDING_OFFLINE, "EVA_BuildingOffLine"},
+	{VOX_BUILDING_ONLINE, "EVA_BuildingOnLine"},
+	{VOX_PLAYER_HAS_RESIGNED, "EVA_PlayerResigned"},
+	{VOX_PLAYER_WAS_DEFEATED, "EVA_PlayerDefeated"},
+	{VOX_YOU_ARE_VICTORIOUS, "EVA_YouAreVictorious"},
+	{VOX_YOU_HAVE_LOST, "EVA_YouHaveLost"},
+	{VOX_YOU_HAVE_RESIGNED, "EVA_YouHaveResigned"},
+	{VOX_ALLIANCE_FORMED, "EVA_AllianceFormed"},
+	{VOX_ALLIANCE_BROKEN, "EVA_AllianceBroken"},
+	{VOX_ALLY_ATTACK, "EVA_OurAllyIsUnderAttack"},
+	{VOX_INCOMING_TRANSMISSION, "EVA_IncomingTransmission"},
+	{VOX_OBJECTIVE_COMPLETE, "EVA_ObjectiveComplete"},
+};
+
+
+int Eva_Line(char const * name)
+{
+	if (name == NULL) {
+		return(-1);
+	}
+	for (int index = 0; index < (int)EvaLines.size(); index++) {
+		if (_stricmp(EvaLines[index].Name.c_str(), name) == 0) {
+			return(index);
+		}
+	}
+	return(-1);
+}
 
 
 bool Is_Critical_Line(VoxType voice)
@@ -678,20 +787,70 @@ char const * Speech_Name(VoxType speech)
  *=============================================================================================*/
 void Speak(VoxType voice, bool now)
 {
-	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || voice == VOX_NONE || voice >= VOX_COUNT) {
+	if (voice == VOX_NONE || voice >= VOX_COUNT) {
 		return;
 	}
-	if (!SpeechEnabled && Is_Eva_Line(voice)) {
+	if (EvaLines.empty()) {
+		Speak_Eva_Index(LEGACY_LINE + voice, now);
+	} else {
+		Speak_Eva_Index(VoiceLines[voice], now);
+	}
+}
+
+
+/// <summary>
+/// Queues the announcer line of the name given, as Yuri's Revenge's VoxClass::Play (0x752700)
+/// does. A name the announcer file does not list says nothing.
+/// </summary>
+void Speak_Eva(char const * name, bool now)
+{
+	Speak_Eva_Index(Eva_Line(name), now);
+}
+
+
+/// <summary>
+/// Queues the announcer line at that position of the announcer file's list, as Yuri's Revenge's
+/// VoxClass::PlayIndex (0x752480) does. A line asked for now goes ahead of the waiting lines;
+/// otherwise its Type and Priority in the file decide where it waits.
+/// </summary>
+void Speak_Eva_Index(int line, bool now)
+{
+	if (line >= 0 && line < (int)EvaLines.size()) {
+		DebugString("Speech: request %s\n", EvaLines[line].Name.c_str());
+	}
+	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || line < 0) {
 		return;
 	}
 
+	VoxControlType control;
+	int priority;
+	if (line >= LEGACY_LINE) {
+		VoxType const voice = VoxType(line - LEGACY_LINE);
+		if (voice >= VOX_COUNT || (!SpeechEnabled && Is_Eva_Line(voice))) {
+			return;
+		}
+		control = Is_Critical_Line(voice) ? VOXC_CRITICAL : VOXC_QUEUE;
+		priority = Is_Critical_Line(voice) ? PRIORITY_CRITICAL : PRIORITY_NORMAL;
+	} else {
+		if (line >= (int)EvaLines.size()) {
+			return;
+		}
+		EvaLineType const & entry = EvaLines[line];
+		if (!SpeechEnabled && _strnicmp(entry.Name.c_str(), "EVA_", 4) == 0) {
+			return;
+		}
+		control = entry.Priority == PRIORITY_CRITICAL ? VOXC_CRITICAL : entry.Control;
+		priority = entry.Priority;
+	}
+	if (now) {
+		control = VOXC_QUEUED_INTERRUPT;
+	}
+
 	bool idle = !Current.Is_Valid() && Queue.Count() == 0;
-	VoxControlType control = now ? VOXC_QUEUED_INTERRUPT : (Is_Critical_Line(voice) ? VOXC_CRITICAL : VOXC_QUEUE);
-	int priority = Is_Critical_Line(voice) ? PRIORITY_CRITICAL : PRIORITY_NORMAL;
-	if (Queue.Submit(voice, priority, control, Current.Is_Valid() ? CurrentVoice : VOX_NONE)) {
+	if (Queue.Submit(line, priority, control, Current.Is_Valid() ? CurrentLine : -1)) {
 		AudioEngine.Stop_Stream(Current);
 		Current.Clear();
-		CurrentVoice = VOX_NONE;
+		CurrentLine = -1;
 	}
 
 	// A burst settles for a second before its first line, unless one is wanted at once.
@@ -730,9 +889,9 @@ void Speak_AI(void)
 	if (Current.Is_Valid()) {
 		return;
 	}
-	if (CurrentVoice != VOX_NONE) {
+	if (CurrentLine >= 0) {
 		// The line has ended; the next one waits its half second.
-		CurrentVoice = VOX_NONE;
+		CurrentLine = -1;
 		SpeakGapTimer = GAP_TICKS;
 	}
 	if (Queue.Count() == 0 || SpeakTimer > 0 || SpeakGapTimer > 0) {
@@ -740,13 +899,24 @@ void Speak_AI(void)
 	}
 
 	// A line whose file is missing is passed over for the next.
-	VoxType next;
+	int next;
 	while (Queue.Next(next)) {
 		char name[_MAX_FNAME + _MAX_EXT];
-		_makepath(name, NULL, NULL, Speech[next], ".AUD");
-		Current = AudioEngine.Open_Stream(name, AUDIO_GROUP_SPEECH, 1.0f, false);
+		float volume = 1.0f;
+		if (next >= LEGACY_LINE) {
+			_makepath(name, NULL, NULL, Speech[next - LEGACY_LINE], ".AUD");
+		} else {
+			EvaLineType const & entry = EvaLines[next];
+			if (entry.Sample[EvaSide].empty()) {
+				continue;
+			}
+			_makepath(name, NULL, NULL, entry.Sample[EvaSide].c_str(), ".WAV");
+			volume = entry.Volume;
+		}
+		Current = AudioEngine.Open_Stream(name, AUDIO_GROUP_SPEECH, volume, false);
 		if (Current.Is_Valid()) {
-			CurrentVoice = next;
+			CurrentLine = next;
+			DebugString("Speech: %s\n", name);
 			return;
 		}
 	}
@@ -775,7 +945,7 @@ void Stop_Speaking(void)
 		AudioEngine.Stop_Stream(Current);
 	}
 	Current.Clear();
-	CurrentVoice = VOX_NONE;
+	CurrentLine = -1;
 	SpeakGapTimer = 0;
 }
 
@@ -825,6 +995,85 @@ void Set_Speech_Volume(int volume)
 void Set_Speech_State(bool state)
 {
 	SpeechEnabled = state;
+}
+
+
+/// <summary>
+/// Reads the announcer's lines from the file the deployment names, EVAMD.INI by default, as
+/// Yuri's Revenge does at startup. Each name in [DialogList] is a section that names the
+/// line's sample for the Allied, Russian and Yuri voices and may set its Type, Priority and
+/// Volume. Without the file the Tiberian Sun speech files are spoken instead.
+/// </summary>
+void Load_Eva(void)
+{
+	EvaLines.clear();
+	std::fill(VoiceLines, VoiceLines + VOX_COUNT, -1);
+
+	CCINIClass ini;
+	CCFileClass file(DeploymentConfig.EvaFile.c_str());
+	if (!file.Is_Available() || !ini.Load(file, false)) {
+		return;
+	}
+
+	static char const * const LIST = "DialogList";
+	static char const * const _sides[3] = {"Allied", "Russian", "Yuri"};
+	int const count = ini.Entry_Count(LIST);
+	for (int index = 0; index < count; index++) {
+		EvaLineType line;
+		line.Name = ini.Get_String(LIST, ini.Get_Entry(LIST, index));
+		char const * section = line.Name.c_str();
+		for (int side = 0; side < 3; side++) {
+			// The game keeps eight characters of a sample's name.
+			line.Sample[side] = ini.Get_String(section, _sides[side]).substr(0, 8);
+		}
+
+		std::string const type = ini.Get_String(section, "Type");
+		line.Control = VOXC_STANDARD;
+		if (_stricmp(type.c_str(), "QUEUE") == 0) line.Control = VOXC_QUEUE;
+		if (_stricmp(type.c_str(), "INTERRUPT") == 0) line.Control = VOXC_INTERRUPT;
+		if (_stricmp(type.c_str(), "QUEUED_INTERRUPT") == 0) line.Control = VOXC_QUEUED_INTERRUPT;
+
+		std::string const priority = ini.Get_String(section, "Priority");
+		line.Priority = PRIORITY_NORMAL;
+		if (_stricmp(priority.c_str(), "LOW") == 0) line.Priority = PRIORITY_LOW;
+		if (_stricmp(priority.c_str(), "IMPORTANT") == 0) line.Priority = PRIORITY_IMPORTANT;
+		if (_stricmp(priority.c_str(), "CRITICAL") == 0) line.Priority = PRIORITY_CRITICAL;
+
+		line.Volume = (float)ini.Get_Float(section, "Volume", 1.0);
+		EvaLines.push_back(line);
+	}
+
+	for (VoiceEvaType const & entry : VoiceEva) {
+		VoiceLines[entry.Voice] = Eva_Line(entry.Name);
+	}
+	DebugString("Read %d announcer lines from %s\n", (int)EvaLines.size(), DeploymentConfig.EvaFile.c_str());
+}
+
+
+/// <summary>
+/// Picks the voice the announcer speaks in: the Allied voice for the first side, the Russian
+/// voice for the second, and the Yuri voice for any other (VoxClass::EVAIndex).
+/// </summary>
+void Set_Eva_Side(int side)
+{
+	EvaSide = side == 0 || side < 0 ? 0 : (side == 1 ? 1 : 2);
+}
+
+
+bool Is_Eva_Loaded(void)
+{
+	return(!EvaLines.empty());
+}
+
+
+// The file the named announcer line plays in the current voice, or an empty string.
+std::string Eva_Sample_File(char const * name)
+{
+	int const line = Eva_Line(name);
+	if (line < 0 || EvaLines[line].Sample[EvaSide].empty()) {
+		return(std::string());
+	}
+	return(EvaLines[line].Sample[EvaSide] + ".WAV");
 }
 
 

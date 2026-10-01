@@ -120,9 +120,15 @@ site_exclusions:
     classification: excluded
     reason: These fields configure the legacy campaign-selection UI territory map, not game or mod data.
 
+  - path: code/vox.cpp
+    function: Load_Eva
+    keys: [Type, Priority, Volume]
+    classification: excluded
+    reason: Each is a setting of an announcer line in the EVA file, documented as that format rather than as game data.
+
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
-    keys: [SearchPaths, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
+    keys: [SearchPaths, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
     classification: excluded
     reason: Each is a setting of the deployment's own file, documented as that format rather than as game data.
 

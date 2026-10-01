@@ -15,7 +15,15 @@
 
 #include "vox.hh"
 
+#include <string>
+
 void Speak(VoxType voice, bool now=false);
+void Speak_Eva(char const * name, bool now=false);
+void Speak_Eva_Index(int index, bool now=false);
+void Load_Eva(void);
+void Set_Eva_Side(int side);
+bool Is_Eva_Loaded(void);
+std::string Eva_Sample_File(char const * name);
 void Speak_AI(void);
 void Stop_Speaking(void);
 bool Is_Speaking(void);

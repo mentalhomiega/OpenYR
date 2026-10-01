@@ -7,6 +7,6 @@ when_omitted:
   value: none
 ---
 
-The line plays for the local player's weapon on the frame its countdown reaches zero and the weapon becomes ready.
+The line plays for the local player's weapon on the frame its countdown reaches zero and the weapon becomes ready. With [EVAMD.INI](/formats/eva-ini/), the weapon's behavior picks the line instead and this key is not used; [Announcements](/systems/superweapons/#announcements) lists the lines.
 
 Two kinds of weapon become ready without it. A [`UseChargeDrain=yes`](/keys/usechargedrain/) weapon never plays it. A one-time weapon from a trigger action or a crate arrives fully charged, and its grant is silent. An unrecognized speech name gives the weapon no line.

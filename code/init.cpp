@@ -506,6 +506,7 @@ int Init_Game(int , char * [])
 
 	Free_Vocs();
 	Init_Vocs(voc_ini);
+	Load_Eva();
 
 	/*
 	**	Find and process any rules for this game.
@@ -6256,6 +6257,7 @@ bool Prep_Speech_For_Side(SideType side)
 
 	// A line still streaming from the old archive must be closed before it goes.
 	Stop_Speaking();
+	Set_Eva_Side(side);
 
 	if (SpeechMix != NULL) {
 		DebugString("     Releasing %s\n", SpeechMix->Filename);

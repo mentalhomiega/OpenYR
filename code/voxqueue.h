@@ -9,8 +9,9 @@
 
 // The order EVA lines wait in. Each request carries a class that says where it
 // goes: critical lines first, then lines asked for right away, then the queue
-// by priority and age, then the one standard slot. The queue holds nothing
-// about playback, so it is tested on its own.
+// by priority and age, then the one standard slot. A line is a number from
+// zero, and a negative number names none. The queue holds nothing about
+// playback, so it is tested on its own.
 
 #pragma once
 
@@ -36,18 +37,18 @@ class VoxQueueClass
 		// Returns true when the playing line must be cut for this one. A line
 		// already playing or waiting is not added again. When the queue is full
 		// the oldest of the lowest-priority lines is dropped.
-		bool Submit(VoxType voice, int priority, VoxControlType control, VoxType playing);
+		bool Submit(int voice, int priority, VoxControlType control, int playing);
 
 		// Takes the next line to play. False when nothing waits.
-		bool Next(VoxType & voice);
+		bool Next(int & voice);
 
-		bool Contains(VoxType voice) const;
+		bool Contains(int voice) const;
 		int Count(void) const { return(Pending); }
 		void Clear(void);
 
 	private:
 		struct EntryClass {
-			VoxType Voice;
+			int Voice;
 			int Priority;
 			VoxControlType Control;
 			unsigned Order;

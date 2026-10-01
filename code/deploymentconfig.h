@@ -38,6 +38,7 @@ class DeploymentConfigClass
 		std::string SoundExpansionFile = "";
 		std::string ThemeFile = "THEMEMD.INI";
 		std::string ThemeExpansionFile = "";
+		std::string EvaFile = "EVAMD.INI";
 		std::string BattleFile = "BATTLEMD.INI";
 		std::string BattleExpansionFile = "";
 		std::string LanguageRulesFile = "LANGRULE.INI";

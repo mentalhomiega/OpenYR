@@ -3840,6 +3840,20 @@ void BuildingClass::Grand_Opening(bool captured)
 				Transmit_Message(RADIO_TETHER);
 			}
 		}
+
+		// Outside a campaign, an enemy superweapon structure is announced (BuildingClass::Place, 0x445F80).
+		SuperWeaponType const super = Fetch_Super_Weapon();
+		if (Session.Type != GAME_NORMAL && super != SUPER_NONE && PlayerPtr != NULL && !House->Is_Player_Control() && !House->Is_Ally(PlayerPtr)) {
+			switch (SuperWeaponTypes[super]->Type) {
+				case SUPER_MULTI_MISSILE: Speak_Eva("EVA_NuclearSiloDetected"); break;
+				case SUPER_IRON_CURTAIN: Speak_Eva("EVA_IronCurtainDetected"); break;
+				case SUPER_LIGHTNING_STORM: Speak_Eva("EVA_WeatherDeviceReady"); break;
+				case SUPER_CHRONOSPHERE: Speak_Eva("EVA_ChronosphereDetected"); break;
+				case SUPER_PSYCHIC_DOMINATOR: Speak_Eva("EVA_PsychicDominatorDetected"); break;
+				case SUPER_GENETIC_CONVERTER: Speak_Eva("EVA_GeneticMutatorDetected"); break;
+				default: break;
+			}
+		}
 	}
 }
 
@@ -6049,7 +6063,8 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 							if (Rule->NukeTakeOff != NULL) {
 								new AnimClass(Rule->NukeTakeOff, launch);
 							}
-							if (!House->Is_Player_Control()) {
+							// The announcer file announces every launch when it is fired instead.
+							if (!House->Is_Player_Control() && !Is_Eva_Loaded()) {
 								Speak(VOX_MISSILE_LAUNCH_DETECTED);
 							}
 							Status = LAUNCH_DOWN;

@@ -40,6 +40,7 @@ Art=ARTMD.INI
 AI=AIMD.INI
 Sound=SOUNDMD.INI
 Theme=THEMEMD.INI
+Eva=EVAMD.INI
 Battle=BATTLEMD.INI
 LanguageRules=LANGRULE.INI
 MultiplayerRules=MPLAYER.INI
@@ -58,6 +59,7 @@ Each key names one file, and a key left out keeps the name shown above.
 | `AI` | The computer player's data |
 | `Sound` | The [sound registry](/formats/sound-ini/) |
 | `Theme` | The [music registry](/formats/theme-ini/) |
+| `Eva` | The [announcer's lines](/formats/eva-ini/) |
 | `Battle` | The campaign list |
 | `LanguageRules` | The translated rules, read over the other rules |
 | `MultiplayerRules` | The [rules read only outside a campaign](/formats/multiplayer-rules/) |

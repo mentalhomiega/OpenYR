@@ -97,6 +97,40 @@ class CCFileByteSourceClass : public AudioByteSourceClass
 };
 
 
+// A byte source over a file read whole into memory.
+class MemoryByteSourceClass : public AudioByteSourceClass
+{
+	public:
+		explicit MemoryByteSourceClass(std::vector<uint8_t> && bytes) : Bytes(std::move(bytes)), Cursor(0) {}
+
+		size_t Read(void * buffer, size_t bytes) override
+		{
+			size_t const count = std::min(bytes, Bytes.size() - Cursor);
+			if (count > 0) {
+				std::memcpy(buffer, Bytes.data() + Cursor, count);
+				Cursor += count;
+			}
+			return(count);
+		}
+
+		bool Seek(size_t position) override
+		{
+			if (position > Bytes.size()) {
+				return(false);
+			}
+			Cursor = position;
+			return(true);
+		}
+
+		size_t Position(void) const override { return(Cursor); }
+		size_t Size(void) const override { return(Bytes.size()); }
+
+	private:
+		std::vector<uint8_t> Bytes;
+		size_t Cursor;
+};
+
+
 class CCFileReaderClass : public AudioAssetReaderClass
 {
 	public:
@@ -349,9 +383,18 @@ AudioHandle AudioEngineClass::Open_Stream(char const * filename, AudioGroupType 
 		return(AudioHandle());
 	}
 
-	std::unique_ptr<CCFileByteSourceClass> source(new CCFileByteSourceClass(filename));
-	if (!source->Is_Open()) {
-		return(AudioHandle());
+	std::unique_ptr<AudioByteSourceClass> source;
+	std::unique_ptr<CCFileByteSourceClass> file(new CCFileByteSourceClass(filename));
+	if (file->Is_Open()) {
+		source = std::move(file);
+	} else {
+		// A WAV with no file of its own is read whole from the sample bag, where Yuri's Revenge
+		// keeps the announcer's lines.
+		std::vector<uint8_t> bytes;
+		if (Reader == nullptr || !Reader->Read(filename, bytes)) {
+			return(AudioHandle());
+		}
+		source.reset(new MemoryByteSourceClass(std::move(bytes)));
 	}
 	std::unique_ptr<AudioFileStreamProducerClass> producer(new AudioFileStreamProducerClass());
 	if (!producer->Open(std::move(source), loop)) {

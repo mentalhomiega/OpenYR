@@ -3291,7 +3291,11 @@ void TeamClass::TMission_LOSE(TeamMissionClass * mission, bool)
 /// </summary>
 void TeamClass::TMission_PLAY_SPEECH(TeamMissionClass * mission, bool)
 {
-	Speak(mission->Data.Speech);
+	if (Is_Eva_Loaded()) {
+		Speak_Eva_Index((int)mission->Data.Speech);
+	} else {
+		Speak(mission->Data.Speech);
+	}
 	IsNextMission = true;
 }
 

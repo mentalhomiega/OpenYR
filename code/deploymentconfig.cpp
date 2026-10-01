@@ -37,6 +37,7 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 	SoundExpansionFile = ini.Get_String("Files", "SoundExpansion", SoundExpansionFile.c_str());
 	ThemeFile = ini.Get_String("Files", "Theme", ThemeFile.c_str());
 	ThemeExpansionFile = ini.Get_String("Files", "ThemeExpansion", ThemeExpansionFile.c_str());
+	EvaFile = ini.Get_String("Files", "Eva", EvaFile.c_str());
 	BattleFile = ini.Get_String("Files", "Battle", BattleFile.c_str());
 	BattleExpansionFile = ini.Get_String("Files", "BattleExpansion", BattleExpansionFile.c_str());
 	LanguageRulesFile = ini.Get_String("Files", "LanguageRules", LanguageRulesFile.c_str());

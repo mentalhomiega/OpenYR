@@ -390,6 +390,25 @@ No row covers aircraft, so an aircraft on the ground is a candidate rated 1 howe
 
 A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the missile handlers use.
 
+## Announcements
+
+With [EVAMD.INI](/formats/eva-ini/), the announcer speaks the Yuri's Revenge line for each weapon's behavior, and [`RechargeVoice=`](/keys/rechargevoice/) is not used. The ready line plays to the weapon's owner. The fired line plays to every player.
+
+| Behavior | Ready | Fired |
+| --- | --- | --- |
+| `MultiMissile` | `EVA_NuclearMissileReady` | `EVA_NuclearMissileLaunched`, unless no silo takes a repeating weapon's order |
+| `IronCurtain` | `EVA_IronCurtainReady` | `EVA_IronCurtainActivated` |
+| `LightningStorm` | `EVA_LightningStormReady` | `EVA_LightningStormCreated` |
+| `ChronoSphere` | `EVA_ChronosphereReady` | `EVA_ChronosphereActivated`, when the warp fires |
+| `ParaDrop`, `AmerParaDrop` | `EVA_ReinforcementsReady` | none |
+| `SpyPlane` | `EVA_SpyPlaneReady` | none |
+| `PsychicDominator` | `EVA_PsychicDominatorReady` | `EVA_PsychicDominatorActivated` |
+| `GeneticConverter` | `EVA_GeneticMutatorReady` | `EVA_GeneticMutatorActivated` |
+| `ForceShield` | `EVA_ForceShieldReady` | none |
+| `PsychicReveal` | `EVA_PsychicRevealReady` | none |
+
+Outside a campaign, the player also hears when a house that is not an ally places or captures a structure whose [`SuperWeapon=`](/keys/superweapon/) it could fire: `EVA_NuclearSiloDetected`, `EVA_IronCurtainDetected`, `EVA_WeatherDeviceReady` for a lightning storm, `EVA_ChronosphereDetected`, `EVA_PsychicDominatorDetected` or `EVA_GeneticMutatorDetected`. Other behaviors, `SuperWeapon2=`, and a weapon whose `AuxBuilding=` the house lacks are not announced.
+
 ## What each behavior delivers
 
 `Type=DropPod` calls the [drop-pod delivery](/systems/drop-pods/#drop-pods-superweapon) on the chosen cell, and `Type=Firestorm` toggles [the firestorm defense](#the-firestorm-defense). This section covers the other behaviors.

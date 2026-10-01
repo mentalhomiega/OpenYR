@@ -288,6 +288,34 @@ void SuperClass::Reset(void)
 }
 
 
+/// <summary>
+/// Announces that a super weapon is ready. With an announcer file this is the Yuri's Revenge
+/// line for its behavior (SuperClass::AI, 0x6CBCA0), and paradrops share the reinforcements
+/// line; without one it is the weapon's RechargeVoice.
+/// </summary>
+static void Speak_Ready(SuperWeaponTypeClass const * type)
+{
+	if (!Is_Eva_Loaded()) {
+		Speak(type->VoxRecharge);
+		return;
+	}
+	switch (type->Type) {
+		case SUPER_MULTI_MISSILE: Speak_Eva("EVA_NuclearMissileReady"); break;
+		case SUPER_IRON_CURTAIN: Speak_Eva("EVA_IronCurtainReady"); break;
+		case SUPER_FORCE_SHIELD: Speak_Eva("EVA_ForceShieldReady"); break;
+		case SUPER_LIGHTNING_STORM: Speak_Eva("EVA_LightningStormReady"); break;
+		case SUPER_PSYCHIC_DOMINATOR: Speak_Eva("EVA_PsychicDominatorReady"); break;
+		case SUPER_CHRONOSPHERE: Speak_Eva("EVA_ChronosphereReady"); break;
+		case SUPER_PARA_DROP:
+		case SUPER_AMER_PARA_DROP: Speak_Eva("EVA_ReinforcementsReady"); break;
+		case SUPER_SPY_PLANE: Speak_Eva("EVA_SpyPlaneReady"); break;
+		case SUPER_GENETIC_CONVERTER: Speak_Eva("EVA_GeneticMutatorReady"); break;
+		case SUPER_PSYCHIC_REVEAL: Speak_Eva("EVA_PsychicRevealReady"); break;
+		default: break;
+	}
+}
+
+
 /***********************************************************************************************
  * SuperClass::Recharge -- Starts the special super weapon recharging.                         *
  *                                                                                             *
@@ -481,7 +509,7 @@ bool SuperClass::AI(bool player)
 				} else {
 					IsReady = true;
 					if (player) {
-						Speak(Class->VoxRecharge);
+						Speak_Ready(Class);
 					}
 					return(true);
 				}
@@ -588,7 +616,7 @@ void SuperClass::Forced_Charge(bool player)
 		Control = 0;
 //		IsSuspended = false;
 		if (player) {
-			Speak(Class->VoxRecharge);
+			Speak_Ready(Class);
 		}
 		if (Class->UseChargeDrain) {
 			ChargeDrainState = READY;
@@ -1123,6 +1151,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 			if (IsReady) {
 				PsychicDominatorClass::Start(cell, House);
 				Sound_Effect(Rule->PsychicDominatorActivateSound, Map[cell].Center_Coord());
+				Speak_Eva("EVA_PsychicDominatorActivated");
 				if (player) {
 					Map.IsTargettingMode = SUPER_NONE;
 				}
@@ -1133,6 +1162,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_GENETIC_CONVERTER:
 			if (IsReady) {
 				Genetic_Mutator(cell);
+				Speak_Eva("EVA_GeneticMutatorActivated");
 				if (player) {
 					Map.IsTargettingMode = SUPER_NONE;
 				}
@@ -1153,6 +1183,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_LIGHTNING_STORM:
 			if (IsReady) {
 				LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, cell, House);
+				Speak_Eva("EVA_LightningStormCreated");
 				if (player) {
 					Map.IsTargettingMode = SUPER_NONE;
 				}
@@ -1190,6 +1221,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 		case SUPER_CHRONO_WARP:
 			Chrono_Warp(cell);
+			Speak_Eva("EVA_ChronosphereActivated");
 			if (player) {
 				Map.IsTargettingMode = SUPER_NONE;
 			}
@@ -1199,6 +1231,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_IRON_CURTAIN:
 			if (IsReady) {
 				Iron_Curtain(cell);
+				Speak_Eva("EVA_IronCurtainActivated");
 				if (player) {
 					Map.IsTargettingMode = SUPER_NONE;
 				}
@@ -1289,6 +1322,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 						TVelocity3D<double> velocity = TVelocity3D<double>(DIR_E, DIR_N, 100);
 						bullet->Unlimbo(closest, velocity);
 					}
+					if (Class->Type == SUPER_MULTI_MISSILE) {
+						Speak_Eva("EVA_NuclearMissileLaunched");
+					}
 					if (player) {
 						Map.IsTargettingMode = SUPER_NONE;
 					}
@@ -1312,6 +1348,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 								launchsite->Commence();
 								House->NukeDest = cell;
 								launchsite->LastSuperWeaponIndex = Class->Type;
+								if (Class->Type == SUPER_MULTI_MISSILE) {
+									Speak_Eva("EVA_NuclearMissileLaunched");
+								}
 							}
 
 							break;

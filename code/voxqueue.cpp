@@ -51,7 +51,7 @@ void VoxQueueClass::Remove(int index)
 }
 
 
-bool VoxQueueClass::Contains(VoxType voice) const
+bool VoxQueueClass::Contains(int voice) const
 {
 	return(std::any_of(Entries, Entries + Pending, [voice](EntryClass const & entry) { return(entry.Voice == voice); }));
 }
@@ -63,9 +63,9 @@ void VoxQueueClass::Clear(void)
 }
 
 
-bool VoxQueueClass::Submit(VoxType voice, int priority, VoxControlType control, VoxType playing)
+bool VoxQueueClass::Submit(int voice, int priority, VoxControlType control, int playing)
 {
-	if (voice == VOX_NONE) {
+	if (voice < 0) {
 		return(false);
 	}
 	if (voice == playing || Contains(voice)) {
@@ -75,7 +75,7 @@ bool VoxQueueClass::Submit(VoxType voice, int priority, VoxControlType control, 
 	bool cut = false;
 	if (control == VOXC_INTERRUPT) {
 		Clear();
-		cut = playing != VOX_NONE;
+		cut = playing >= 0;
 	}
 
 	if (control == VOXC_STANDARD) {
@@ -105,7 +105,7 @@ bool VoxQueueClass::Submit(VoxType voice, int priority, VoxControlType control, 
 }
 
 
-bool VoxQueueClass::Next(VoxType & voice)
+bool VoxQueueClass::Next(int & voice)
 {
 	if (Pending == 0) {
 		return(false);
