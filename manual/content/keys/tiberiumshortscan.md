@@ -1,7 +1,7 @@
 ---
-key: TiberiumNearScan
+key: TiberiumShortScan
 summary: Distance a harvester searches for the next Tiberium cell once the cell it is working runs out.
-see_also: ["system:tiberium", "TiberiumFarScan"]
+see_also: ["system:tiberium", "TiberiumLongScan"]
 when_omitted:
   kind: value
   value: "6"

@@ -1329,6 +1329,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		EngineerCaptureLevel = (float)ini.Get_Float(GENERAL, "EngineerCaptureLevel", EngineerCaptureLevel);
 		EngineerDamage = (float)ini.Get_Float(GENERAL, "EngineerDamage", EngineerDamage);
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
+		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
+		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
 		return(true);
 	}
 	return(false);
@@ -1836,8 +1838,6 @@ bool RulesClass::AI(CCINIClass const & ini)
 		RepairThreshhold = ini.Get_Int(AI, "CreditReserve", RepairThreshhold);
 		PathDelay = ini.Get_Float(AI, "PathDelay", PathDelay);
 		BlockagePathDelay = ini.Get_Int(AI, "BlockagePathDelay", BlockagePathDelay);
-		TiberiumShortScan = ini.Get_Lepton(AI, "TiberiumNearScan", TiberiumShortScan);
-		TiberiumLongScan = ini.Get_Lepton(AI, "TiberiumFarScan", TiberiumLongScan);
 		AutocreateTime = ini.Get_Float(AI, "AutocreateTime", AutocreateTime);
 		InfantryReserve = ini.Get_Int(AI, "InfantryReserve", InfantryReserve);
 		InfantryBaseMult = ini.Get_Int(AI, "InfantryBaseMult", InfantryBaseMult);

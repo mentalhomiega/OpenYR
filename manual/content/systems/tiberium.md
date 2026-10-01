@@ -27,11 +27,11 @@ keys:
   - Tiberium
   - TiberiumExplosionDamage
   - TiberiumExplosive
-  - TiberiumFarScan
   - TiberiumGrows
   - TiberiumGrowthEnabled
-  - TiberiumNearScan
+  - TiberiumLongScan
   - TiberiumProof
+  - TiberiumShortScan
   - TiberiumSpreads
   - TiberiumToSpawn
   - Value
@@ -178,7 +178,7 @@ A vehicle with both `Weeder=yes` and `Harvester=yes` looks for veins when it set
 
 ### Finding a patch
 
-A harvester that is not full first drives back to the patch it recorded on its previous trip, if it has one. Otherwise it searches for Tiberium out to one cell less than [`TiberiumFarScan`](/keys/tiberiumfarscan/).
+A harvester that is not full first drives back to the patch it recorded on its previous trip, if it has one. Otherwise it searches for Tiberium out to one cell less than [`TiberiumLongScan`](/keys/tiberiumlongscan/).
 
 The search takes the cell the harvester stands in if it is Tiberium ground. Otherwise it checks rings of cells at increasing distance and takes the most valuable cell in the nearest ring that has any. A cell's value is its type's [`Value`](/keys/value/) multiplied by its stage plus one.
 
@@ -203,9 +203,9 @@ A harvester standing on Tiberium ground lifts one growth stage every 9 times [`H
 
 Each lift lowers the cell by one stage. A cell at stage 0 is cleared to bare ground by the next lift, which gives nothing, so a cell at stage 11 yields 11 units, not 12.
 
-When the cell runs out before the harvester is full, the harvester searches out to one cell less than [`TiberiumNearScan`](/keys/tiberiumnearscan/) for the next one. If it finds none, it heads home with a partial load.
+When the cell runs out before the harvester is full, the harvester searches out to one cell less than [`TiberiumShortScan`](/keys/tiberiumshortscan/) for the next one. If it finds none, it heads home with a partial load.
 
-A harvester that fills its [`Storage`](/keys/storage/) runs the same search out to one cell less than `TiberiumNearScan`, records the cell it finds as the patch to return to, and heads home.
+A harvester that fills its [`Storage`](/keys/storage/) runs the same search out to one cell less than `TiberiumShortScan`, records the cell it finds as the patch to return to, and heads home.
 
 ### Unloading
 

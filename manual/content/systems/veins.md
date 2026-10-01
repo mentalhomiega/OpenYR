@@ -13,8 +13,8 @@ keys:
   - IsVeins
   - MaxVeinholeGrowth
   - Storage
-  - TiberiumFarScan
-  - TiberiumNearScan
+  - TiberiumLongScan
+  - TiberiumShortScan
   - VeinAttack
   - VeinDamage
   - VeinGrowthEnabled
@@ -185,7 +185,7 @@ If the vein warhead sets [`Veinhole=yes`](/keys/veinhole/), a damaged object fig
 
 A UnitType with [`Weeder=yes`](/keys/weeder/#scope-unittype) harvests veins through the same harvest mission as a [Tiberium harvester](/systems/tiberium/#harvesting). It starts harvesting when it is placed on the map, including when it leaves a factory or a repair bay. When it later goes idle, it resumes harvesting if its house is computer-controlled or it is standing on veins. A player-owned weeder that goes idle anywhere else takes a guard mission instead, so a player can park it. A weeder whose house owns none of the buildings in its [`Dock`](/keys/dock/) list switches to guard. Do not also set [`Harvester=yes`](/keys/harvester/#scope-unittype): such a vehicle waits for Tiberium ground instead, as [Tiberium harvesting](/systems/tiberium/#harvesting) explains.
 
-A weeder first checks its own cell, then searches outward one ring at a time and takes a qualifying cell from the nearest ring that has one. The search covers every ring closer than [`TiberiumFarScan`](/keys/tiberiumfarscan/) cells when the weeder sets out, and closer than [`TiberiumNearScan`](/keys/tiberiumnearscan/) cells while it works a field. A cell qualifies when all of the following hold, tested in this order:
+A weeder first checks its own cell, then searches outward one ring at a time and takes a qualifying cell from the nearest ring that has one. The search covers every ring closer than [`TiberiumLongScan`](/keys/tiberiumlongscan/) cells when the weeder sets out, and closer than [`TiberiumShortScan`](/keys/tiberiumshortscan/) cells while it works a field. A cell qualifies when all of the following hold, tested in this order:
 
 1. it lies inside the playable area;
 2. in a campaign, if the local player owns the weeder, the cell is not shrouded;

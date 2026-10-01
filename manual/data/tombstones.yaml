@@ -35,6 +35,24 @@
     type: key
     id: ElitePrimary
 - type: key
+  id: TiberiumNearScan
+  route: /keys/tiberiumnearscan/
+  search_aliases:
+    - TiberiumNearScan
+  summary: Set a harvester's ore search distance in [AI]. Yuri's Revenge reads TiberiumShortScan in [General] instead.
+  replacement:
+    type: key
+    id: TiberiumShortScan
+- type: key
+  id: TiberiumFarScan
+  route: /keys/tiberiumfarscan/
+  search_aliases:
+    - TiberiumFarScan
+  summary: Set a harvester's ore search distance in [AI]. Yuri's Revenge reads TiberiumLongScan in [General] instead.
+  replacement:
+    type: key
+    id: TiberiumLongScan
+- type: key
   id: ModemName
   route: /keys/modemname/
   search_aliases:

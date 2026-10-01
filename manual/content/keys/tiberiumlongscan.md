@@ -1,7 +1,7 @@
 ---
-key: TiberiumFarScan
+key: TiberiumLongScan
 summary: Distance a harvester searches for Tiberium when it sets out with no recorded patch to return to.
-see_also: ["system:tiberium", "TiberiumNearScan"]
+see_also: ["system:tiberium", "TiberiumShortScan"]
 when_omitted:
   kind: value
   value: "32"
