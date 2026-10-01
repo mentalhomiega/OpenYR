@@ -1255,11 +1255,11 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 
 /// <summary>
 /// Draws the decorations that appear after the object's body.
-/// A selected object, or a submerged one the player's sensors have picked up, gets its
-/// selection box and its condition indicator drawn over it, plus its pips when the player
-/// is allied to its owner or spying on that house. Without a selection, the object under
-/// the mouse still shows its condition and those pips, and an allied or spied-on object
-/// still wears its insignia. A structure that can be garrisoned shows its pips to every
+/// Every object the player can see wears its rank insignia. A selected object, or a
+/// submerged one the player's sensors have picked up, gets its selection box and its
+/// condition indicator drawn over it, plus its pips when the player is allied to its owner
+/// or spying on that house. Without a selection, the object under the mouse still shows its
+/// condition and those pips. A structure that can be garrisoned shows its pips to every
 /// player. The talk bubble, when the object has something to say, is drawn whether the
 /// object is selected or not.
 /// </summary>
@@ -1275,6 +1275,11 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 
 	bool allied = House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr];
 	bool pips_shown = allied || (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Class->IsCanBeOccupied);
+
+	// Rank insignia show whoever owns the object, as TechnoClass::DrawExtras (0x6F5190) draws them.
+	if (Is_Decoration_Visible()) {
+		Draw_Insignia(Pip_Origin(point), point, cliprect);
+	}
 
 	if (IsSelected || sensed_underground) {
 
@@ -1327,14 +1332,10 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 
 		bool hovered = Map.HoverObject == this && Class_Of()->IsSelectable && !IsALoaner;
 
-		if ((hovered || allied) && Is_Decoration_Visible()) {
-			if (hovered) {
-				Draw_Health_Bar(point, cliprect);
-			}
-			if (hovered && pips_shown) {
+		if (hovered && Is_Decoration_Visible()) {
+			Draw_Health_Bar(point, cliprect);
+			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
-			} else if (allied) {
-				Draw_Insignia(Pip_Origin(point), point, cliprect);
 			}
 		}
 	}
@@ -7612,10 +7613,9 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
-/// Draws the marks that stand for what the object is rather than what state it is in: the
-/// cross worn by a healer and the insignia of a veteran or an elite. These are drawn whether
-/// or not the object is selected, so the caller is responsible for testing that the player is
-/// allied to its owner and may see it.
+/// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
+/// whether or not the object is selected, so the caller is responsible for testing that the
+/// player may see the object.
 /// </summary>
 /// <param name="bottomleft">The point the cargo pips would run from.</param>
 /// <param name="center">The point the insignia is placed beside.</param>
@@ -7787,8 +7787,6 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 			}
 		}
 	}
-
-	Draw_Insignia(bottomleft, center, rect);
 
 	/*
 	**	Display whether this unit is a leader unit or not.

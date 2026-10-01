@@ -210,6 +210,6 @@ Passengers who survive a destroyed transport keep their ranks. Crew created when
 
 Veteran and elite objects display different rank insignia beside them, even when unselected. Buildings display them too. The insignia sits farther from vehicles, aircraft, and buildings than from infantry.
 
-Ranks are visible to allies, players spying on the owner, and [observers with full map visibility](/systems/observers/). Shroud, fog, or an undetected cloak hides the insignia along with the object.
+Every player sees an object's rank insignia, whoever owns it. Shroud, fog, or an undetected cloak hides the insignia along with the object.
 
 The insignia comes from `PIPS.SHP`: frame 14 for a veteran, frame 15 for an elite object and frame 19 for a below-rookie object.
