@@ -96,6 +96,8 @@ enum ActionType {
 
 	ACTION_IVAN_BOMB,		// Plant an Ivan bomb on the object.
 	ACTION_NO_IVAN_BOMB,	// The object cannot take an Ivan bomb.
+	ACTION_DISARM_BOMB,		// Disarm the Ivan bomb on the object.
+	ACTION_DETONATE,		// Set off the Ivan bomb this object carries.
 
 	ACTION_COUNT
 };

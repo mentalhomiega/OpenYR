@@ -111,6 +111,7 @@ class EventClass
 			LATENCYFUDGE,
 			NETWORK_REPORT,
 			ABANDON_COUNT,
+			DETONATE,       // Set off the Ivan bomb on the specified object.
 
 			LAST_EVENT,			// one past the last event
 		};

@@ -2852,6 +2852,11 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
 
+	// A player's engineer offers to disarm a bomb the player sees (InfantryClass::MouseOverObject, 0x51E3B0).
+	if (action != ACTION_TOGGLE_SELECT && Class->IsEngineer && House->Is_Player_Control() && object->Is_Techno() && ((TechnoClass const *)object)->Is_Bomb_Visible()) {
+		return(ACTION_DISARM_BOMB);
+	}
+
 	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Can_Be_Occupied_By(this)) {
 		return(ACTION_ENTER);
 	}
@@ -3114,6 +3119,7 @@ bool InfantryClass::Active_Click_With(ActionType action, ObjectClass * object, b
 
 		case ACTION_HEAL:
 		case ACTION_IVAN_BOMB:
+		case ACTION_DISARM_BOMB:
 			action = ACTION_ATTACK;
 			break;
 

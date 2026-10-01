@@ -350,6 +350,7 @@ RulesClass::RulesClass(void) :
 	IvanWarhead(NULL),
 	IvanDamage(0),
 	IvanTimedDelay(0),
+	IsCanDetonateTimeBomb(false),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
 	BombAttachSound(VOC_NONE),
@@ -1183,6 +1184,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		IvanWarhead = TGet_Class(ini, COMBATDAMAGE, "IvanWarhead", IvanWarhead);
 		IvanDamage = ini.Get_Int(COMBATDAMAGE, "IvanDamage", IvanDamage);
 		IvanTimedDelay = ini.Get_Int(COMBATDAMAGE, "IvanTimedDelay", IvanTimedDelay);
+		IsCanDetonateTimeBomb = ini.Get_Bool(COMBATDAMAGE, "CanDetonateTimeBomb", IsCanDetonateTimeBomb);
 		IvanIconFlickerRate = ini.Get_Int(COMBATDAMAGE, "IvanIconFlickerRate", IvanIconFlickerRate);
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
@@ -2450,6 +2452,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IvanWarhead);
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
+	stream.Serialize(IsCanDetonateTimeBomb);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);
 	stream.Serialize(BombAttachSound);

@@ -76,6 +76,8 @@ values:
   - { constant: ACTION_PSYCHIC_REVEAL, value: 64, input: "PsychicReveal", meaning: "Target a psychic reveal.", note: "Only a superweapon uses this action." }
   - { constant: ACTION_IVAN_BOMB, value: 65, input: "IvanBomb", meaning: "Plant an Ivan bomb on the object." }
   - { constant: ACTION_NO_IVAN_BOMB, value: 66, input: "NoIvanBomb", meaning: "Indicate that the object cannot take an Ivan bomb; the click gives no order." }
+  - { constant: ACTION_DISARM_BOMB, value: 67, input: "DisarmBomb", meaning: "Send an engineer to disarm the bomb on the object." }
+  - { constant: ACTION_DETONATE, value: 68, input: "Detonate", meaning: "Set off the Ivan bomb the selected unit carries." }
 ---
 
 These are the actions a left click on the map can carry. The action under the cursor picks the mouse shape and decides what a click does. The trigger actions that a map's triggers run are a separate list.

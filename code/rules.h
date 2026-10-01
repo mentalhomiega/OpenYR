@@ -178,6 +178,9 @@ class RulesClass
 		WarheadTypeClass const * IvanWarhead;
 		int IvanDamage;
 		int IvanTimedDelay;
+
+		// Can the player set off an Ivan bomb early by clicking the object carrying it?
+		bool IsCanDetonateTimeBomb;
 		int IvanIconFlickerRate;
 		VocType BombTickingSound;
 		VocType BombAttachSound;

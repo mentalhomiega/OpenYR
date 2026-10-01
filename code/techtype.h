@@ -300,6 +300,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 
+		// How near an Ivan bomb must be for this object to show it to its owner, in cells.
+		int BombSight;
+
 		/*
 		 * Parasites: can one get into this object, how much damage to its victim from others it
 		 * shrugs off, and is it selected again after a weapon with LimboLaunch takes it off the map?

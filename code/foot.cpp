@@ -1617,6 +1617,12 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
 	assert(object != NULL);
 
 	switch (action) {
+		case ACTION_DETONATE:
+			if (BombHouse != NULL) {
+				OutList.push_back(EventClass(BombHouse->HeapID, EventClass::DETONATE, TargetClass(this)));
+			}
+			return(true);
+
 		case ACTION_GUARD_AREA:
 			if (Can_Player_Fire() && Can_Player_Move()) {
 				if (((RTTI == RTTI_INFANTRY &&

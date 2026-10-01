@@ -1158,6 +1158,14 @@ void EventClass::Execute(void)
 			}
 			break;
 
+		// Only the house whose bomb it is can set it off (EventClass::Execute, 0x4C6CB0).
+		case DETONATE:
+			techno = Data.Target.Whom.As_Techno();
+			if (techno != NULL && techno->IsActive && techno->BombDetonateFrame != -1 && techno->BombHouse == Houses[ID]) {
+				techno->Detonate_Bomb();
+			}
+			break;
+
 		case DEPLOY:
 			techno = Data.Target.Whom.As_Techno();
 			if (techno != NULL && techno->IsActive && !techno->IsInLimbo && !techno->IsTethered && techno->StunDuration == 0) {

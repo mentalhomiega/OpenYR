@@ -33,6 +33,9 @@
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	action <TypeID> x y		writes what the player's object of that type would do when clicked
 **							on the object standing on that cell
+**	rule <Key> <0|1>		overrides a rules setting the tests need; only CanDetonateTimeBomb so far
+**	clickon <TypeID> x y	clicks the player's object of that type on the object standing on that
+**							cell, as the player would with it selected
 **	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
 **							that cell
 **	unload x y				orders the structure on that cell to unload
@@ -549,13 +552,23 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   damage %s at %d,%d took %d strength %d curtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, damage, (int)techno->Strength, (int)techno->IronCurtainTimer);
 			}
 		}
-	} else if (step.Command == "action") {
+	} else if (step.Command == "rule") {
+		if (stricmp(step.Argument.c_str(), "CanDetonateTimeBomb") == 0) {
+			Rule->IsCanDetonateTimeBomb = step.X != 0;
+		}
+		DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
+	} else if (step.Command == "action" || step.Command == "clickon") {
 		ObjectClass * target = Map[Cell(step.X, step.Y)].Cell_Occupier();
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				ActionType const action = target != NULL ? techno->What_Action(target, false) : ACTION_NONE;
-				DebugString("AUTOTEST   action %s on %s: %s\n", techno->TClass->Name(), target != NULL ? target->Class_Of()->Name() : "-", ActionName[action]);
+				TechnoClass const * victim = dynamic_cast<TechnoClass const *>(target);
+				DebugString("AUTOTEST   action %s on %s: %s (bomb planted at %d)\n", techno->TClass->Name(), target != NULL ? target->Class_Of()->Name() : "-", ActionName[action],
+					victim != NULL && victim->BombDetonateFrame != -1 ? victim->BombPlantFrame : -1);
+				if (step.Command == "clickon" && target != NULL) {
+					techno->Active_Click_With(action, target, false);
+				}
 				break;
 			}
 		}

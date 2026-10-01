@@ -1414,8 +1414,8 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		}
 	}
 
-	// The bomb icon counts down over an object carrying the player's bomb (TechnoClass::DrawExtras, 0x6F5190).
-	if (BombDetonateFrame != -1 && BombHouse == PlayerPtr) {
+	// The bomb icon counts down over an object carrying a bomb the player sees (TechnoClass::DrawExtras, 0x6F5190).
+	if (Is_Bomb_Visible()) {
 		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
 		if (_bombcurs != NULL) {
 			int frame = 0;
@@ -3767,6 +3767,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A bomb disarming weapon fires only at an object that carries a bomb.
+	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsBombDisarm && (techno == NULL || techno->BombDetonateFrame == -1)) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A warp in progress keeps its hold without another shot, and only a temporal weapon fires at a warped object.
 	if (TemporalImUsing && TemporalImUsing->Target != NULL && TemporalImUsing->Target == target) {
 		return(FIRE_REARM);
@@ -4622,6 +4627,11 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	object cannot do anything special with itself, then just return with
 		**	the no action flag.
 		*/
+		// The player sets off their own bomb by clicking the vehicle or soldier carrying it (TechnoClass::MouseOverObject, 0x6FFEC0).
+		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Rule->IsCanDetonateTimeBomb) {
+			return(ACTION_DETONATE);
+		}
+
 		if (object == this && CurrentObject.Count() == 1 && House->Is_Player_Control()) {
 			return(ACTION_SELF);
 		}
@@ -9901,4 +9911,28 @@ bool TechnoClass::Is_Disguised_To_Player(void) const
 		return(false);
 	}
 	return(Map[Get_Cell()].DisguiseSensorCount[PlayerPtr] == 0);
+}
+
+
+/// <summary>
+/// Does the local player see the Ivan bomb on this object (BombListClass::Update, 0x438BF0)? A
+/// bomb shows when the player's house planted it, or when one of the player's objects with a
+/// BombSight is within that many cells of it.
+/// </summary>
+bool TechnoClass::Is_Bomb_Visible(void) const
+{
+	if (BombDetonateFrame == -1 || BombHouse == NULL) {
+		return(false);
+	}
+	if (BombHouse->Is_Player_Control()) {
+		return(true);
+	}
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * detector = Technos[index];
+		int const sight = detector->TClass->BombSight;
+		if (sight > 0 && !detector->IsInLimbo && detector->House->Is_Player_Control() && Distance(detector) < sight * CELL_LEPTON) {
+			return(true);
+		}
+	}
+	return(false);
 }

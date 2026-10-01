@@ -1996,6 +1996,14 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
 				break;
 
+			case ACTION_DISARM_BOMB:
+				Set_Default_Mouse(MOUSE_DISARM, wsmall);
+				break;
+
+			case ACTION_DETONATE:
+				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
+				break;
+
 			case ACTION_NUKE_BOMB:
 				Set_Default_Mouse(MOUSE_NUCLEAR_BOMB, wsmall);
 				break;

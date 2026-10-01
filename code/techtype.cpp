@@ -167,6 +167,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
 	GapRadiusInCells(0),
+	BombSight(0),
 	IsParasiteable(true),
 	SuppressionThreshold(0),
 	IsReselectIfLimboed(false),
@@ -632,6 +633,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
+		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
 		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
@@ -1130,6 +1132,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
 	stream.Serialize(GapRadiusInCells);
+	stream.Serialize(BombSight);
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
 	stream.Serialize(IsReselectIfLimboed);

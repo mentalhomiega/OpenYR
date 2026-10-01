@@ -186,6 +186,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// An Ivan bomb warhead fixes a time bomb to its target instead of hurting it.
 		bool IsIvanBomb;
 
+		// A BombDisarm warhead removes the Ivan bomb from its target instead of hurting it.
+		bool IsBombDisarm;
+
 		// A disguise warhead makes its firer look like the soldier it hits.
 		bool IsMakesDisguise;
 

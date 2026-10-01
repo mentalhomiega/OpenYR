@@ -1368,6 +1368,14 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
+	// A bomb disarming warhead removes the target's bomb (BombClass::Disarm, 0x4389B0).
+	else if (warhead->IsBombDisarm) {
+		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+		if (target != NULL) {
+			target->Disarm_Bomb();
+		}
+	}
+
 	/*
 	 * A parasite warhead puts its firer inside the target (BulletClass::Detonate, 0x469210).
 	 */

@@ -590,6 +590,7 @@ class TechnoClass :	public RadioClass,
 		bool Temporal_AI(void);
 		void Plant_Bomb(TechnoClass * planter);
 		bool Is_Disguised_To_Player(void) const;
+		bool Is_Bomb_Visible(void) const;
 		void Detonate_Bomb(void);
 		void Disarm_Bomb(void);
 		void Gattling_Rate_Up(int frames);
