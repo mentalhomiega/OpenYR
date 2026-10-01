@@ -2439,7 +2439,10 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					// Fall into next case.
 
 				case RESULT_MAJOR:
-					Sound_Effect(Rule->BlowupSound, PositionCoord);
+					// A structure without its own DamageSound plays BuildingDamageSound (BuildingClass::ReceiveDamage, 0x442230).
+					if (Class->DamageSound == VOC_NONE) {
+						Sound_Effect(Rule->BuildingDamageSound, PositionCoord);
+					}
 					while (*offset != REFRESH_EOL) {
 						Cell cell = Cell(*offset++) + PositionCell;
 						AnimClass * anim = NULL;

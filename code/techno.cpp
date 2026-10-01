@@ -3817,6 +3817,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).
+	if (techno != NULL && TClass->IsNatural && techno->TClass->IsUnnatural) {
+		return(FIRE_ILLEGAL);
+	}
+
 	// A bomb disarming weapon fires only at an object that carries a bomb.
 	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsBombDisarm && (techno == NULL || techno->BombDetonateFrame == -1)) {
 		return(FIRE_ILLEGAL);
@@ -5507,6 +5512,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 */
 	if (result != RESULT_NONE) {
 		RadarFlashTimer = Rule->RadarCombatFlashTime;
+	}
+
+	// A hit that does not change the object's condition plays its DamageSound (TechnoClass::ReceiveDamage, 0x701900).
+	if (result == RESULT_LIGHT && TClass->DamageSound != VOC_NONE) {
+		Sound_Effect(TClass->DamageSound, PositionCoord);
 	}
 
 	// A hit that hurts a disguised object strips its disguise, unless the disguise is permanent (TechnoClass::ReceiveDamage, 0x701900).

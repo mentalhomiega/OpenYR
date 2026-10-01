@@ -302,6 +302,9 @@ class RulesClass
 		VocType ImpactLandSound;
 		VocType ImpactWaterSound;
 
+		// Played at a structure that a hit takes below half strength or into the red, unless its type sets a DamageSound.
+		VocType BuildingDamageSound;
+
 		// The colors of the beam an IsRadBeam weapon draws: RadColor normally, ChronoBeamColor for a temporal warhead.
 		RGBClass RadColor;
 		RGBClass ChronoBeamColor;

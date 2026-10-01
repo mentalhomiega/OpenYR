@@ -4951,6 +4951,24 @@ BuildingAbandonedSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BuildingDamageSound:
+  key: BuildingDamageSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BuildingDamageSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BuildingDrop:
   key: BuildingDrop
   scopes:
@@ -7913,6 +7931,23 @@ DamageSmokeOffset:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: DamageSmokeOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+DamageSound:
+  key: DamageSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: DamageSound
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -20160,6 +20195,23 @@ NamedCivilians:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Natural:
+  key: Natural
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsNatural
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 NaturalParticleLocation:
   key: NaturalParticleLocation
   scopes:
@@ -33770,6 +33822,23 @@ UnloadingHarvester:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Unnatural:
+  key: Unnatural
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsUnnatural
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Unsellable:
   key: Unsellable
   scopes:

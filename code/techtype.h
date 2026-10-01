@@ -375,6 +375,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType ImpactLandSound;
 		VocType ImpactWaterSound;
 
+		// Played where an object of this type takes a hit that does not change its condition.
+		VocType DamageSound;
+
+		// A Natural object never fires at an Unnatural one.
+		bool IsNatural;
+		bool IsUnnatural;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.

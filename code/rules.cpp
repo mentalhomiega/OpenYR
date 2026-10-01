@@ -420,6 +420,7 @@ RulesClass::RulesClass(void) :
 	CreateAircraftSound(VOC_NONE),
 	ImpactLandSound(VOC_NONE),
 	ImpactWaterSound(VOC_NONE),
+	BuildingDamageSound(VOC_NONE),
 	RadColor(0, 0, 0),
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
@@ -1079,6 +1080,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		CreateAircraftSound = ini.Get_VocType(AUDIOVISUAL, "CreateAircraftSound", CreateAircraftSound);
 		ImpactLandSound = ini.Get_VocType(AUDIOVISUAL, "ImpactLandSound", ImpactLandSound);
 		ImpactWaterSound = ini.Get_VocType(AUDIOVISUAL, "ImpactWaterSound", ImpactWaterSound);
+		BuildingDamageSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDamageSound", BuildingDamageSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
 		BombTickingSound = ini.Get_VocType(AUDIOVISUAL, "BombTickingSound", BombTickingSound);
 		BombAttachSound = ini.Get_VocType(AUDIOVISUAL, "BombAttachSound", BombAttachSound);
@@ -2580,6 +2582,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CreateAircraftSound);
 	stream.Serialize(ImpactLandSound);
 	stream.Serialize(ImpactWaterSound);
+	stream.Serialize(BuildingDamageSound);
 	stream.Serialize(RadColor);
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);
