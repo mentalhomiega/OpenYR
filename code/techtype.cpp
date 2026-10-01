@@ -192,6 +192,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceEnter(VOC_NONE),
 	VoiceCapture(VOC_NONE),
 	VoiceHarvest(VOC_NONE),
+	ImpactLandSound(VOC_NONE),
+	ImpactWaterSound(VOC_NONE),
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
@@ -671,6 +673,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
 		VoiceCapture = ini.Get_VocType(Name(), "VoiceCapture", VoiceCapture);
 		VoiceHarvest = ini.Get_VocType(Name(), "VoiceHarvest", VoiceHarvest);
+		ImpactLandSound = ini.Get_VocType(Name(), "ImpactLandSound", ImpactLandSound);
+		ImpactWaterSound = ini.Get_VocType(Name(), "ImpactWaterSound", ImpactWaterSound);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1183,6 +1187,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoiceEnter);
 	stream.Serialize(VoiceCapture);
 	stream.Serialize(VoiceHarvest);
+	stream.Serialize(ImpactLandSound);
+	stream.Serialize(ImpactWaterSound);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);

@@ -521,10 +521,19 @@ void FlyLocomotionClass::Movement_AI(void)
 
 			int damage = LinkedTo->Strength;
 			if (damage == 0) {
-				Cell cell = newcoord.As_Cell();
-				new AnimClass(Combat_Anim(FORCED_DESTRUCTION_DAMAGE, Rule->C4Warhead, Map[cell].Land_Type(), newcoord), newcoord, 0, 1, ShapeFlags_Type(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ZGRAD), Get_Explosion_Z(newcoord));
-				Combat_Lighting(newcoord, FORCED_DESTRUCTION_DAMAGE, Rule->C4Warhead, false);
-				Explosion_Damage(newcoord, FORCED_DESTRUCTION_DAMAGE, NULL, Rule->C4Warhead, true);
+				/*
+				 * A destroyed aircraft that reaches the ground sets off its death weapon and plays
+				 * its impact sound, falling back on the rules' one (FlyLocomotionClass, 0x4CD600).
+				 */
+				LinkedTo->Fire_Death_Weapon();
+				bool const water = Map[newcoord.As_Cell()].Land_Type() == LAND_WATER;
+				VocType sound = water ? LinkedTo->TClass->ImpactWaterSound : LinkedTo->TClass->ImpactLandSound;
+				if (sound == VOC_NONE) {
+					sound = water ? Rule->ImpactWaterSound : Rule->ImpactLandSound;
+				}
+				if (sound != VOC_NONE) {
+					Sound_Effect(sound, newcoord);
+				}
 				LinkedTo->Delete_Me();
 			} else {
 				LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);

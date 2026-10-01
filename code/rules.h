@@ -298,6 +298,10 @@ class RulesClass
 		VocType CreateInfantrySound;
 		VocType CreateAircraftSound;
 
+		// Played where a destroyed aircraft hits the ground or the water, unless its type sets its own.
+		VocType ImpactLandSound;
+		VocType ImpactWaterSound;
+
 		// The colors of the beam an IsRadBeam weapon draws: RadColor normally, ChronoBeamColor for a temporal warhead.
 		RGBClass RadColor;
 		RGBClass ChronoBeamColor;
@@ -1416,6 +1420,17 @@ class RulesClass
 
 		// Frames between an OpportunityFire object's scans for targets while it moves.
 		int NormalTargetingDelay;
+
+		/*
+		 * The structure type whose towers charge each other before firing, the percent of extra
+		 * damage each supporting tower adds, how many may support one shot, the frames a
+		 * supporting tower then rests, and the frames its support beam shows.
+		 */
+		BuildingTypeClass const * PrismType;
+		int PrismSupportModifier;
+		int PrismSupportMax;
+		int PrismSupportDelay;
+		int PrismSupportDuration;
 
 		/*
 		 * These are the water splash animations, ordered from the smallest to the

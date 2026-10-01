@@ -22,4 +22,4 @@ The flag applies to these explosions, none of which comes from a projectile:
 - an animation or voxel animation that explodes when it expires
 - [`IonStormWarhead`](/keys/ionstormwarhead/) lightning and [`IonCannonWarhead`](/keys/ioncannonwarhead/)
 - the [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger action
-- the flashes that read [`C4Warhead`](/keys/c4warhead/): a laser fence segment blown up with its post, a stranded vehicle blowing itself up, a flying object that falls to the ground, an explosive crate, a hunter-seeker, and the three lighting trigger actions
+- the flashes that read [`C4Warhead`](/keys/c4warhead/): a laser fence segment blown up with its post, a stranded vehicle blowing itself up, a flying object that falls to the ground while it still has strength, an explosive crate, a hunter-seeker, and the three lighting trigger actions

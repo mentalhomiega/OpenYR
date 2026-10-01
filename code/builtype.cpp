@@ -329,6 +329,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCloakGenerator(false),
 	IsSensorArray(false),
 	IsGapGenerator(false),
+	DelayedFireDelay(0),
 	IsICBMLauncher(false),
 	IsArtillary(false),
 	IsHelipad(false),
@@ -1367,6 +1368,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		ZHeight = ArtINI.Get_Int(Graphic_Name(), "Height", ZHeight);
+		DelayedFireDelay = ArtINI.Get_Int(Graphic_Name(), "DelayedFireDelay", DelayedFireDelay);
 		IsRecoilless = ArtINI.Get_Bool(Graphic_Name(), "Recoilless", IsRecoilless);
 		IsFlat = ArtINI.Get_Bool(Graphic_Name(), "Flat", IsFlat);
 		IsSiloDamage = ArtINI.Get_Bool(Graphic_Name(), "SiloDamage", IsSiloDamage);
@@ -2304,6 +2306,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCloakGenerator);
 	stream.Serialize(IsSensorArray);
 	stream.Serialize(IsGapGenerator);
+	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsICBMLauncher);
 	stream.Serialize(IsArtillary);
 	stream.Serialize(IsHelipad);

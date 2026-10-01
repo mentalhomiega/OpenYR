@@ -265,6 +265,20 @@ class BuildingClass : public TechnoClass
 		**	animation.
 		*/
 		bool IsCharging;
+
+		/*
+		 * A prism tower's part in a charged shot: none, the tower that fires, or a tower that
+		 * beams support to it. The frames left before it acts, where a supporting tower aims its
+		 * beam, and how many towers support this one's shot.
+		 */
+		enum PrismStageType { PRISM_IDLE, PRISM_MASTER, PRISM_SLAVE };
+		PrismStageType PrismStage;
+		int PrismDelay;
+		Coord PrismTargetCoord;
+		int SupportingPrisms;
+
+		bool Prism_Charge(void);
+		void Prism_AI(void);
 		bool IsCharged;
 
 		/*

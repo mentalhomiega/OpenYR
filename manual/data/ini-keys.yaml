@@ -8471,6 +8471,23 @@ Delay:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+DelayedFireDelay:
+  key: DelayedFireDelay
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: DelayedFireDelay
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 DeleteOnStateLimit:
   key: DeleteOnStateLimit
   scopes:
@@ -14755,6 +14772,70 @@ ImmuneToVeins:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ImpactLandSound:
+  key: ImpactLandSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: ImpactLandSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ImpactLandSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ImpactWaterSound:
+  key: ImpactWaterSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: ImpactWaterSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ImpactWaterSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ImpatientVoice:
   key: ImpatientVoice
   scopes:
@@ -22923,6 +23004,96 @@ Priority:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+PrismSupportDelay:
+  key: PrismSupportDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '100'
+      declared_in: RulesClass
+      member: PrismSupportDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PrismSupportDuration:
+  key: PrismSupportDuration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '15'
+      declared_in: RulesClass
+      member: PrismSupportDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PrismSupportMax:
+  key: PrismSupportMax
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '8'
+      declared_in: RulesClass
+      member: PrismSupportMax
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PrismSupportModifier:
+  key: PrismSupportModifier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: null
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PrismType:
+  key: PrismType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: PrismType
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ProduceCashAmount:
   key: ProduceCashAmount
   scopes:

@@ -147,6 +147,7 @@
 #include "ipiggy.h"
 #include "isotile.h"
 #include "isotype.h"
+#include "laser.h"
 #include "light.h"
 #include "lightcon.h"
 #include "mono.h"
@@ -234,6 +235,10 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsGoingToBlow(false),
 	IsSurvivorless(false),
 	IsCharging(false),
+	PrismStage(PRISM_IDLE),
+	PrismDelay(0),
+	PrismTargetCoord(),
+	SupportingPrisms(0),
 	IsCharged(false),
 	IsCaptured(false),
 	HasOpened(false),
@@ -1637,6 +1642,10 @@ void BuildingClass::AI(void)
 {
 	if (Temporal_AI()) {
 		return;
+	}
+
+	if (PrismStage != PRISM_IDLE) {
+		Prism_AI();
 	}
 
 	if (Class->IsSAM && TarCom != NULL && !TarCom->In_Air()) {
@@ -5563,6 +5572,10 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case FIRE_OK:
+			if (Class == Rule->PrismType && Rule->PrismType != NULL) {
+				Prism_Charge();
+				return(1);
+			}
 			if (UpgradeLevel != 0 && Upgrades[0] != NULL) {
 				if (Upgrades[0]->Is_Two_Shooter()) {
 					Fire_At(TarCom, 0);
@@ -9539,6 +9552,10 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGoingToBlow);
 	stream.Serialize(IsSurvivorless);
 	stream.Serialize(IsCharging);
+	stream.Serialize(PrismStage);
+	stream.Serialize(PrismDelay);
+	stream.Serialize(PrismTargetCoord);
+	stream.Serialize(SupportingPrisms);
 	stream.Serialize(IsCharged);
 	stream.Serialize(IsCaptured);
 	stream.Serialize(HasOpened);
@@ -11231,4 +11248,80 @@ void BuildingClass::Iron_Curtain(int duration, HouseClass * source, bool force_s
 		CountDown = 0;
 	}
 	TechnoClass::Iron_Curtain(duration, source, force_shield);
+}
+
+
+/// <summary>
+/// Readies a prism tower's shot (BuildingClass::Mission_Attack, 0x44ACF0). While fewer than
+/// PrismSupportMax towers support it, the nearest of its owner's idle, rested prism towers
+/// within its secondary weapon's range is recruited to beam it after its DelayedFireDelay; one
+/// tower is recruited per call. Once none is left, this tower charges for its own
+/// DelayedFireDelay and then fires.
+/// </summary>
+/// <returns>bool; Was a supporting tower recruited?</returns>
+bool BuildingClass::Prism_Charge(void)
+{
+	if (PrismStage != PRISM_IDLE) {
+		return(false);
+	}
+
+	if (SupportingPrisms < Rule->PrismSupportMax) {
+		BuildingClass * best = NULL;
+		int bestdist = INT_MAX;
+		int const range = Weapon_Range(1);
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * other = Buildings[index];
+			if (other == this || other->House != House || other->Class != Rule->PrismType || !other->IsActive || other->IsInLimbo) continue;
+			if (other->Arm > 0 || other->PrismStage != PRISM_IDLE || other->StunDuration > 0 || other->Mission == MISSION_ATTACK || !other->Is_Powered_On()) continue;
+			int const dist = Distance(other);
+			if (dist <= range && dist < bestdist) {
+				bestdist = dist;
+				best = other;
+			}
+		}
+		if (best != NULL) {
+			SupportingPrisms++;
+			best->PrismStage = PRISM_SLAVE;
+			best->PrismDelay = best->Class->DelayedFireDelay;
+			best->PrismTargetCoord = Fire_Coord(0);
+			DebugString("Prism: tower at %d,%d supports the one at %d,%d (%d supporting)\n", best->Get_Cell().X, best->Get_Cell().Y, Get_Cell().X, Get_Cell().Y, SupportingPrisms);
+			return(true);
+		}
+	}
+
+	PrismStage = PRISM_MASTER;
+	PrismDelay = Class->DelayedFireDelay;
+	return(false);
+}
+
+
+/// <summary>
+/// Counts down a charging prism tower (0x4503F0). A firing tower then shoots its target, with
+/// PrismSupportModifier percent more damage for each supporting tower, provided it can still
+/// fire. A supporting tower draws its beam to the firing tower in its owner's color and rests
+/// for PrismSupportDelay frames.
+/// </summary>
+void BuildingClass::Prism_AI(void)
+{
+	if (--PrismDelay > 0) {
+		return;
+	}
+	PrismDelay = 0;
+	PrismStageType const stage = PrismStage;
+	PrismStage = PRISM_IDLE;
+
+	if (stage == PRISM_MASTER) {
+		if (TarCom != NULL && Can_Fire(TarCom, 0) == FIRE_OK) {
+			BulletClass * bullet = Fire_At(TarCom, 0);
+			DebugString("Prism: tower at %d,%d fires with %d supporting\n", Get_Cell().X, Get_Cell().Y, SupportingPrisms);
+			if (bullet != NULL && SupportingPrisms > 0) {
+				bullet->Strength = bullet->Strength * (100 + Rule->PrismSupportModifier * SupportingPrisms) / 100;
+			}
+		}
+		SupportingPrisms = 0;
+	} else if (stage == PRISM_SLAVE) {
+		new LaserDrawClass(Fire_Coord(0), PrismTargetCoord, 0, true, House->RemapColorRGB, RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, false, 1.0f, 0.0f);
+		Arm = Rule->PrismSupportDelay;
+		SupportingPrisms = 0;
+	}
 }

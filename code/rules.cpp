@@ -418,6 +418,8 @@ RulesClass::RulesClass(void) :
 	CreateUnitSound(VOC_NONE),
 	CreateInfantrySound(VOC_NONE),
 	CreateAircraftSound(VOC_NONE),
+	ImpactLandSound(VOC_NONE),
+	ImpactWaterSound(VOC_NONE),
 	RadColor(0, 0, 0),
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
@@ -686,6 +688,11 @@ RulesClass::RulesClass(void) :
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
 	NormalTargetingDelay(27),
+	PrismType(NULL),
+	PrismSupportModifier(100),
+	PrismSupportMax(8),
+	PrismSupportDelay(100),
+	PrismSupportDuration(15),
 	SplashList(),
 	DefaultMirageDisguises(),
 	InfantryBlinkDisguiseTime(0),
@@ -1067,6 +1074,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		CreateUnitSound = ini.Get_VocType(AUDIOVISUAL, "CreateUnitSound", CreateUnitSound);
 		CreateInfantrySound = ini.Get_VocType(AUDIOVISUAL, "CreateInfantrySound", CreateInfantrySound);
 		CreateAircraftSound = ini.Get_VocType(AUDIOVISUAL, "CreateAircraftSound", CreateAircraftSound);
+		ImpactLandSound = ini.Get_VocType(AUDIOVISUAL, "ImpactLandSound", ImpactLandSound);
+		ImpactWaterSound = ini.Get_VocType(AUDIOVISUAL, "ImpactWaterSound", ImpactWaterSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
 		BombTickingSound = ini.Get_VocType(AUDIOVISUAL, "BombTickingSound", BombTickingSound);
 		BombAttachSound = ini.Get_VocType(AUDIOVISUAL, "BombAttachSound", BombAttachSound);
@@ -1332,6 +1341,11 @@ bool RulesClass::General(CCINIClass const & ini)
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
 		NormalTargetingDelay = ini.Get_Int(GENERAL, "NormalTargetingDelay", NormalTargetingDelay);
+		PrismType = TGet_Class(ini, GENERAL, "PrismType", PrismType);
+		PrismSupportModifier = (int)(ini.Get_Float(GENERAL, "PrismSupportModifier", PrismSupportModifier / 100.0) * 100.0 + 0.5);
+		PrismSupportMax = ini.Get_Int(GENERAL, "PrismSupportMax", PrismSupportMax);
+		PrismSupportDelay = ini.Get_Int(GENERAL, "PrismSupportDelay", PrismSupportDelay);
+		PrismSupportDuration = ini.Get_Int(GENERAL, "PrismSupportDuration", PrismSupportDuration);
 		AllyParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AllyParaDropInf", AllyParaDropInf);
 		AllyParaDropNum = ini.Get_IntList(GENERAL, "AllyParaDropNum", AllyParaDropNum);
 		SovParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "SovParaDropInf", SovParaDropInf);
@@ -2558,6 +2572,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CreateUnitSound);
 	stream.Serialize(CreateInfantrySound);
 	stream.Serialize(CreateAircraftSound);
+	stream.Serialize(ImpactLandSound);
+	stream.Serialize(ImpactWaterSound);
 	stream.Serialize(RadColor);
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);
@@ -2821,6 +2837,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Parachute);
 	stream.Serialize(GuardAreaTargetingDelay);
 	stream.Serialize(NormalTargetingDelay);
+	stream.Serialize(PrismType);
+	stream.Serialize(PrismSupportModifier);
+	stream.Serialize(PrismSupportMax);
+	stream.Serialize(PrismSupportDelay);
+	stream.Serialize(PrismSupportDuration);
 	stream.Serialize(SplashList);
 	stream.Serialize(DefaultMirageDisguises);
 	stream.Serialize(InfantryBlinkDisguiseTime);

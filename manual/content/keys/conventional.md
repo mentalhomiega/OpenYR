@@ -20,5 +20,5 @@ The splash is chosen from [`SplashList`](/keys/splashlist/) by damage, in 35-poi
 A blast splashes only when the ground under the impact is water. It still plays the warhead's own animation when it is at or above the deck of a bridge, or when a projectile bursts two or more height levels above the ground.
 
 :::danger[An empty splash list gives no animation]
-A blast that splashes while `SplashList` is empty plays no animation. It does not fall back to `AnimList`. Four explosions that crash without an animation can land on water, so they crash here too when their warhead is `Conventional=yes`. Three use [`C4Warhead`](/keys/c4warhead/): a flying object that falls to the ground, a stranded vehicle, and a destroyed Tiberium-spawning terrain object. The fourth is lightning, which uses [`IonStormWarhead`](/keys/ionstormwarhead/).
+A blast that splashes while `SplashList` is empty plays no animation. It does not fall back to `AnimList`. Four explosions that crash without an animation can land on water, so they crash here too when their warhead is `Conventional=yes`. Three use [`C4Warhead`](/keys/c4warhead/): a flying object that falls to the ground while it still has strength, a stranded vehicle, and a destroyed Tiberium-spawning terrain object. The fourth is lightning, which uses [`IonStormWarhead`](/keys/ionstormwarhead/).
 :::

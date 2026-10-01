@@ -364,6 +364,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType VoiceCapture;
 		VocType VoiceHarvest;
 
+		// Played where a destroyed aircraft or jumpjet of this type hits the ground or the water.
+		VocType ImpactLandSound;
+		VocType ImpactWaterSound;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.

@@ -654,6 +654,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// While a GapGenerator=yes structure has power, it shrouds the map around it for players who are not its owner's allies.
 		bool IsGapGenerator;
 
+		// The frames a prism tower charges before it fires or sends its support beam.
+		int DelayedFireDelay;
+
 		/*
 		 * If this building is the deployed form of a mobile missile launcher, then this flag
 		 * will be true. It faces east when it deploys and may pack itself up again.

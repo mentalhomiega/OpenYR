@@ -40,12 +40,12 @@ The other events deal an explosion around a point. The warhead's `Verses` table,
 
 The [structure damage tick](/systems/power/#the-structure-damage-tick) a house takes while short of power also uses this warhead without forcing it, so `Verses` and `Immune=yes` apply to it.
 
-A falling aircraft, a stranded vehicle, a destroyed Tiberium-spawning terrain object, a failed drop pod, an explosive crate and a Tiberium chain reaction show explosions chosen from the warhead's [`AnimList`](/keys/animlist/). Over water, a falling aircraft and a stranded vehicle use [`SplashList`](/keys/splashlist/) instead when the warhead sets [`Conventional=yes`](/keys/conventional/).
+An aircraft that falls while it still has strength, a stranded vehicle, a destroyed Tiberium-spawning terrain object, a failed drop pod, an explosive crate and a Tiberium chain reaction show explosions chosen from the warhead's [`AnimList`](/keys/animlist/). Over water, a falling aircraft and a stranded vehicle use [`SplashList`](/keys/splashlist/) instead when the warhead sets [`Conventional=yes`](/keys/conventional/).
 
 :::danger[Set `C4Warhead` to a warhead with an `AnimList`]
 Without `C4Warhead`, the game crashes the first time any of these happens:
 
-- an aircraft falls to the ground;
+- an aircraft falls to the ground while it still has strength;
 - a vehicle is stopped on a cell it cannot enter where no structure stands;
 - a Tiberium-spawning terrain object is destroyed;
 - a drop pod cannot place its passenger;

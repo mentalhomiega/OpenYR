@@ -10024,6 +10024,7 @@ void TechnoClass::Fire_Death_Weapon(void)
 		return;
 	}
 
+	DebugString("Death weapon: %s sets off %s for %d at %d,%d\n", TClass->Name(), weapon->Name(), damage, Get_Cell().X, Get_Cell().Y);
 	BulletClass * bullet = Create_Bullet(weapon->Bullet, this, this, damage, weapon->WarheadPtr, 0, 0, weapon->IsBright);
 	if (bullet != NULL) {
 		bullet->Weapon = weapon;
