@@ -4624,7 +4624,8 @@ bool BuildingClass::Clear_Weapons_Factory_Bib(void)
 {
 	if (Class->IsWeaponsFactory) {
 
-		Cell exit = Class->ExitList[8];
+		// The door cell, as in Yuri's Revenge: the eleventh outside cell, moved one cell west.
+		Cell exit = Class->ExitList[10] + Cell(-1, 0);
 		Cell cell = exit + PositionCell;
 		Cell cell2 = cell;
 		Coord coord = cell.As_Coord();
@@ -6311,7 +6312,9 @@ DirType BuildingClass::Fire_Direction(void) const
 int BuildingClass::Do_MISSION_UNLOAD(void)
 {
 	if (Class->IsWeaponsFactory) {
-		Cell exitcell(Class->ExitList[8]);
+		// The door cell, as in Yuri's Revenge (BuildingClass::Mission_Unload, 0x44D880): the
+		// eleventh outside cell, moved one cell west.
+		Cell exitcell(Class->ExitList[10] + Cell(-1, 0));
 		Coord coord(exitcell + PositionCell);
 		enum {
 			INITIAL,
