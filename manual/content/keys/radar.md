@@ -17,4 +17,4 @@ A `Radar=yes` structure gives the local player the radar map. The map is up whil
 
 A stunned radar structure can keep the map dark even while another radar structure works, because the house checks only the first structure that passes the tests above. [Radar](/systems/power/#radar) gives the full test.
 
-`Radar=yes` also makes the structure a target for spies. When a spy enters an enemy's `Radar=yes` structure, everything that enemy's objects see is also uncovered for the spy's house. [Who looks, and when](/systems/map-visibility/#who-looks-and-when) covers how long that lasts.
+When a spy enters an enemy's `Radar=yes` structure, the whole map goes back under the shroud and the fog for that enemy, unless it has a working spy satellite. [Infiltrating it](/systems/capture/#infiltrating-it) lists what spies do to other structures.

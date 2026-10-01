@@ -249,6 +249,11 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	Init();
 
 	TargetTracker.Add_Index(Fetch_ID(), this);
+
+	// A house that has spied on a war factory gets its trainable land vehicles as veterans.
+	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval) {
+		Veterancy.Set_Veteran(true);
+	}
 }
 
 

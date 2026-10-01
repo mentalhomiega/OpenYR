@@ -89,10 +89,7 @@ FogRate=.1                      ; game minutes between fog regrowth passes
 
 A look is the scan an object makes of the cells around it. It uncovers each cell it reaches. The object making it is the looker.
 
-A look uncovers cells for the looker's house and for every house that shares its view:
-
-- every house that has spied on the radar of the looker's house;
-- while [`AllyReveal=yes`](/keys/allyreveal/), every house that the looker's house counts as an ally.
+A look uncovers cells for the looker's house and, while [`AllyReveal=yes`](/keys/allyreveal/), for every house that the looker's house counts as an ally. Those houses share its view.
 
 A house with a limpet drone attached to the looker also gets the look, as if one of its own objects had made it.
 
@@ -194,9 +191,7 @@ Both firing reveals uncover ground for the house they are made for and for the h
 
 When a house makes another its ally while `AllyReveal=yes`, every object of the house that made the alliance looks at once, so the new ally sees what those objects see. Outside a campaign, the objects of a [passive house](/keys/multiplaypassive/) never look, so its alliances reveal nothing.
 
-A spy that enters a [`Radar=yes`](/keys/radar/) structure marks the structure's owner as spied on by the spy's house. Every object of the spied house then looks at once. From then on, that house's looks also uncover ground for the spy's house until the mark is removed.
-
-The mark is recomputed from the spied house's remaining radar structures when a spied radar structure is destroyed, or when the house that spied on it captures it.
+A spy that enters a [`Radar=yes`](/keys/radar/) structure shrouds the map again for the structure's owner, as [Infiltrating it](/systems/capture/#infiltrating-it) describes.
 
 ### Reveals granted outright
 

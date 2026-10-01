@@ -10520,12 +10520,53 @@ bool BuildingClass::Is_Radar_Visible(DetectedType & detected) const
 /// <param name="house">The house that has gained the intelligence.</param>
 void BuildingClass::Spied_By(HouseClass * house)
 {
-	SpiedBy.Set(house);
-	if (Class->IsRadar) {
-		House->Update_Spied_Radar(house);
+	if (house == NULL || house == House) {
+		return;
 	}
-	if (Class->Power > 0) {
-		House->Update_Spied_Power_Plants();
+	SpiedBy.Set(house);
+
+	/*
+	 * Each kind of structure gives up one thing, tested in this order, as gamemd's FUN_004571E0
+	 * does.
+	 */
+	if (Class->IsRadar) {
+		if (!House->IsSpySatActive) {
+			Map.Shroud_The_Map(House);
+		}
+	} else if (Class->Power > 0) {
+		if (Rule->SpyPowerBlackout > 0) {
+			House->PowerBlackout = Rule->SpyPowerBlackout;
+			House->IsPowerBlackout = true;
+			House->RecalcPower = true;
+		}
+	} else if (Rule->BuildTech.Is_In_List(Class)) {
+		if (Class->AIBasePlanningSide == 0) {
+			house->IsSide0TechStolen = true;
+		} else if (Class->AIBasePlanningSide == 1) {
+			house->IsSide1TechStolen = true;
+		} else {
+			house->IsSide2TechStolen = true;
+		}
+		house->IsRecalcNeeded = true;
+	} else if (Class->SuperWeapon != SUPER_NONE) {
+		if (Class->SuperWeapon < House->SuperWeapon.Count()) {
+			SuperClass * super = House->SuperWeapon[Class->SuperWeapon];
+			if (super != NULL) {
+				super->Reset();
+			}
+		}
+	} else if (Class->Capacity > 0) {
+		int amount = (int)(House->Available_Money() * Rule->SpyMoneyStealPercent);
+		if (amount > 0) {
+			House->Spend_Money(amount);
+			house->Refund_Money(amount);
+		}
+	} else if (Class->ToBuild == RTTI_UNITTYPE) {
+		house->IsWarFactoryInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	} else if (Class->ToBuild == RTTI_INFANTRYTYPE) {
+		house->IsBarracksInfiltrated = true;
+		house->IsRecalcNeeded = true;
 	}
 	Mark(MARK_CHANGE);
 }

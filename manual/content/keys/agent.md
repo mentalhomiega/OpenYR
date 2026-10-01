@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-When a spy walks into a structure, its house is recorded as spying on that structure and the spy is consumed. [Infiltrating it](/systems/capture/#infiltrating-it) covers what the spying house then sees.
+A spy can be sent into another house's [`Spyable=yes`](/keys/spyable/) structure. When it walks in, the structure's owner loses something that depends on the structure, such as its power or its money, and the spy is consumed. [Infiltrating it](/systems/capture/#infiltrating-it) lists the effects.
 
 Write [`Infiltrate=yes`](/keys/infiltrate/) in the same section. `Agent=yes` does not turn `Infiltrate` on, and without it the soldier cannot be sent into a structure at all.
 

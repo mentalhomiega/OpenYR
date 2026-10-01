@@ -24376,6 +24376,42 @@ SpreadPercentage:
       source: code/tiberium.cpp
       guard: null
     level: TiberiumClass
+SpyMoneyStealPercent:
+  key: SpyMoneyStealPercent
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.5'
+      declared_in: RulesClass
+      member: SpyMoneyStealPercent
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SpyPowerBlackout:
+  key: SpyPowerBlackout
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: SpyPowerBlackout
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 SpySat:
   key: SpySat
   scopes:
@@ -24429,6 +24465,23 @@ SpySatDeactivationSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Spyable:
+  key: Spyable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsSpyable
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 StandingFrames:
   key: StandingFrames
   scopes:

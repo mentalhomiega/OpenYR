@@ -511,6 +511,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// An InfantryAbsorb=yes or UnitAbsorb=yes structure takes in its owner's infantry or
 		// vehicles, up to Passengers, and makes ExtraPower more power for each one inside.
 		bool IsInfantryAbsorb;
+
+		// A spy can be sent into a Spyable=yes structure of another house.
+		bool IsSpyable;
 		bool IsUnitAbsorb;
 		int ExtraPowerBonus;
 

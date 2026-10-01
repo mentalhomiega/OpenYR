@@ -88,6 +88,7 @@ class SuperClass : public AbstractClass
 		SuperWeaponTypeClass *Class;
 
 		bool Recharge(bool player=false);
+		void Reset(void);
 
 		/*
 		 * This is the house that owns this super weapon and that is credited as the

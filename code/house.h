@@ -247,6 +247,15 @@ class HouseClass : public AbstractClass
 		bool IsSide1TechStolen;
 		bool IsSide2TechStolen;
 
+		// Set once a spy of this house has entered another house's barracks or war factory: the
+		// trainable infantry or vehicles this house builds from then on start as veterans.
+		bool IsBarracksInfiltrated;
+		bool IsWarFactoryInfiltrated;
+
+		// While the blackout runs, this house's structures make no power.
+		CDTimerClass<FrameTimerClass> PowerBlackout;
+		bool IsPowerBlackout;
+
 		/*
 		**	When alerted, the house will create teams of the special "auto" type and
 		**	will generate appropriate units to fill those team types.

@@ -4455,7 +4455,8 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 
 				int primary = What_Weapon_Should_I_Use((ObjectClass *)object);
 				if (Can_Player_Move() || In_Range((ObjectClass *)object, primary)) {
-					if (In_Range((ObjectClass *)object, primary) || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsCaptureable)) {
+					if (In_Range((ObjectClass *)object, primary) || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING
+						&& (((InfantryClass *)this)->Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable))) {
 						return(ACTION_ATTACK);
 					} else {
 						if (!Can_Player_Move()) {

@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-At `yes`, each [look](/systems/map-visibility/#whose-looks-count) an object makes uncovers the map for every house its owner counts as an ally, as well as for the owner. An ally's sight therefore shows on screen. At `no`, an object's looks uncover the map only for its owner and for any house that has spied on the owner's radar.
+At `yes`, each [look](/systems/map-visibility/#whose-looks-count) an object makes uncovers the map for every house its owner counts as an ally, as well as for the owner. An ally's sight therefore shows on screen. At `no`, an object's looks uncover the map only for its owner.
 
 Outside a campaign, every human player discovers each structure as it is placed, and a discovered object [looks at once](/systems/map-visibility/#who-looks-and-when). At `yes`, a structure placed by an ally therefore uncovers the ground around it as soon as it is placed.
 

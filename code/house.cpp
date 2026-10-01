@@ -244,6 +244,10 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsSide0TechStolen(false),
 	IsSide1TechStolen(false),
 	IsSide2TechStolen(false),
+	IsBarracksInfiltrated(false),
+	IsWarFactoryInfiltrated(false),
+	PowerBlackout(0),
+	IsPowerBlackout(false),
 	IsAlerted(false),
 	IsAITriggersOn(false),
 	IsBaseBuilding(false),
@@ -1244,6 +1248,10 @@ void HouseClass::AI(void)
 {
 	//assert(Houses.ID(this) == ID);
 
+	if (IsPowerBlackout && PowerBlackout == 0) {
+		IsPowerBlackout = false;
+		RecalcPower = true;
+	}
 	if (RecalcPower) {
 		Recalc_Power_Drain();
 		RecalcRadar = true;
@@ -6651,6 +6659,10 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSide0TechStolen);
 	stream.Serialize(IsSide1TechStolen);
 	stream.Serialize(IsSide2TechStolen);
+	stream.Serialize(IsBarracksInfiltrated);
+	stream.Serialize(IsWarFactoryInfiltrated);
+	stream.Serialize(PowerBlackout);
+	stream.Serialize(IsPowerBlackout);
 	stream.Serialize(IsAlerted);
 	stream.Serialize(IsAITriggersOn);
 	stream.Serialize(IsBaseBuilding);
@@ -8338,6 +8350,11 @@ void HouseClass::Recalc_Power_Drain(void)
 			Power += Buildings[i]->Power_Output();
 			Drain += b->Power_Drain();
 		}
+	}
+
+	// A spy's blackout leaves the house's structures making nothing, as HouseClass::UpdatePower (0x508C30) does.
+	if (IsPowerBlackout) {
+		Power = 0;
 	}
 
 	Adjust_House_Power(this);

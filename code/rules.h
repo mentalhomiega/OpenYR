@@ -1096,6 +1096,10 @@ class RulesClass
 		double PurifierBonus;
 		TypeList<int> AIVirtualPurifiers;
 
+		// How many frames a spy cuts a house's power for, and the share of its money a spy steals.
+		int SpyPowerBlackout;
+		double SpyMoneyStealPercent;
+
 		// How often, and by how much per InfantryGainSelfHeal or UnitsGainSelfHeal point, a
 		// house's hospitals and machine shops mend its infantry and vehicles.
 		int SelfHealInfantryFrames;

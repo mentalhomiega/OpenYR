@@ -12,7 +12,7 @@ An engineer that walks into a non-allied `Capturable=yes` structure takes it for
 The flag also decides which cursors a player's soldiers get over a non-allied structure. [The cursor](/systems/capture/#the-cursor) gives the full rules.
 
 - Over a visible [`Repairable=yes`](/keys/repairable/) structure, an engineer gets the enter cursor only when this is set. While the structure is above [`EngineerCaptureLevel`](/keys/engineercapturelevel/), the engineer gets the damage action instead. Over a fogged record of a `Repairable=yes` structure, the enter cursor appears whatever `Capturable` says.
-- Every [`Infiltrate=yes`](/keys/infiltrate/) soldier, a spy included, gets the enter cursor over a `Capturable=yes`, [`LegalTarget=yes`](/keys/legaltarget/) structure.
+- Every [`Infiltrate=yes`](/keys/infiltrate/) soldier other than a spy gets the enter cursor over a `Capturable=yes`, [`LegalTarget=yes`](/keys/legaltarget/) structure. A spy looks at [`Spyable`](/keys/spyable/) instead.
 
 An unarmed `Infiltrate=yes` soldier that has no other destination walks to a `Capturable=yes` structure given to it as a target.
 

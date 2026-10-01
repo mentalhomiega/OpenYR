@@ -14,6 +14,9 @@ keys:
   - Engineer
   - EngineerCaptureLevel
   - Infiltrate
+  - Spyable
+  - SpyPowerBlackout
+  - SpyMoneyStealPercent
   - Insignificant
   - IsMobileWar
   - Repairable
@@ -75,7 +78,7 @@ An `IsMobileWar=yes` structure therefore always reaches these rules, and any oth
 
 Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point.
 
-Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`.
+Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. For an [`Agent=yes`](/keys/agent/) spy, the structure must be [`Spyable=yes`](/keys/spyable/) instead of `Capturable=yes`. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`.
 
 The shared rule shows the no-move cursor instead when the soldier cannot walk up to the structure. That happens when no cell next to the structure's footprint is in the soldier's [movement zone](/glossary/#movement-zone), as with a naval yard that no land route reaches.
 
@@ -203,13 +206,23 @@ When a structure drops below half strength or below `ConditionRed`, the game rea
 
 ### Infiltrating it
 
-A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. EVA announces the infiltration when the spy belongs to a player-controlled house, and the spy's house is recorded as spying on that structure. There is no alliance test. Capturing a structure clears the capturing house's spy record on it.
+A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. EVA announces the infiltration when the spy belongs to a player-controlled house. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's house is recorded as spying on that structure; there is no alliance test. Capturing a structure clears the capturing house's spy record on it.
 
 When the spying player selects a spied structure, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
 
-Spying on a [`Radar=yes`](/keys/radar/) structure also marks the whole owning house as radar-spied. While that mark stands, the spying player sees whatever the victim's objects see. The mark is recalculated only when a spied radar structure is destroyed, or captured by a house that had spied on it.
+One effect then follows, decided by the first row that fits the structure's type, as in Yuri's Revenge:
 
-Spying on a structure with positive [`Power`](/keys/power/#scope-buildingtype) has no further effect.
+| Structure | What the spy does |
+| --- | --- |
+| [`Radar=yes`](/keys/radar/) | The whole map goes back under the shroud and the fog for the owner, and the owner's objects look again. An owner with a working [spy satellite](/systems/map-visibility/#the-spy-satellite) keeps its map. |
+| Positive [`Power`](/keys/power/#scope-buildingtype) | For [`SpyPowerBlackout`](/keys/spypowerblackout/) frames, the owner's structures make no power. At `0` nothing happens. |
+| Listed in [`BuildTech`](/keys/buildtech/) | The spy's house steals a side's technology: the first side's when the structure's [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `0`, the second's when it is `1`, and the third's for any other value. Types that need that stolen technology become buildable for the spy's house. |
+| A [`SuperWeapon`](/keys/superweapon/) | The owner's superweapon of that type starts charging again from the beginning, unless it is suspended. |
+| Positive [`Storage`](/keys/storage/) | The spy's house takes [`SpyMoneyStealPercent`](/keys/spymoneystealpercent/) of the owner's money, rounded down. |
+| [`Factory=UnitType`](/keys/factory/) | From then on, every [`Trainable=yes`](/keys/trainable/) vehicle the spy's house gets, other than a naval one, starts as a veteran, whether it is built, cloned or delivered. |
+| [`Factory=InfantryType`](/keys/factory/) | From then on, every `Trainable=yes` infantryman the spy's house gets starts as a veteran. |
+
+A structure that fits no row gives up nothing beyond the spy record.
 
 ### The soldier is consumed
 

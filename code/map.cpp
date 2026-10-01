@@ -1093,7 +1093,7 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 	int viewer_count = 0;
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass * other = Houses[index];
-		if (other == house || house->RadarSpied[other] || (Rule->IsAllyReveal && house->Is_Ally(other))) {
+		if (other == house || (Rule->IsAllyReveal && house->Is_Ally(other))) {
 			viewers[viewer_count++] = other;
 		}
 	}

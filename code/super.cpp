@@ -261,6 +261,19 @@ bool SuperClass::Remove(void)
 }
 
 
+/// <summary>
+/// Starts a present weapon's charge over from the beginning, as SuperClass::Reset (0x6CE0B0)
+/// does. A suspended weapon only loses its charge.
+/// </summary>
+void SuperClass::Reset(void)
+{
+	if (IsPresent) {
+		IsReady = false;
+		Recharge(false);
+	}
+}
+
+
 /***********************************************************************************************
  * SuperClass::Recharge -- Starts the special super weapon recharging.                         *
  *                                                                                             *

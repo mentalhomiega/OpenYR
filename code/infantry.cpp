@@ -277,6 +277,11 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 
 	PrimaryFacing.Set_ROT(127);
 	TargetTracker.Add_Index(Fetch_ID(), this);
+
+	// A house that has spied on a barracks gets its trainable infantry as veterans.
+	if (House != NULL && House->IsBarracksInfiltrated && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
 }
 
 
@@ -2992,7 +2997,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	if (House->Is_Player_Control() && Class->IsCapture) {
 		if (action == ACTION_ATTACK) {
 			if (!House->Is_Ally(object) && (
-				(object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsCaptureable) )
+				(object->RTTI == RTTI_BUILDING && (Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable)) )
 				) {
 
 					if (Class->IsBomber && object->Considered_Vehicle() == true) {
