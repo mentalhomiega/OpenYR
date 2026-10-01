@@ -74,6 +74,8 @@ values:
   - { constant: ACTION_FORCE_SHIELD, value: 62, input: "ForceShield", meaning: "Target a force shield.", note: "Only a superweapon uses this action." }
   - { constant: ACTION_NO_FORCE_SHIELD, value: 63, input: "NoForceShield", meaning: "Indicate that a force shield cannot go there.", note: "Only a superweapon uses this action." }
   - { constant: ACTION_PSYCHIC_REVEAL, value: 64, input: "PsychicReveal", meaning: "Target a psychic reveal.", note: "Only a superweapon uses this action." }
+  - { constant: ACTION_IVAN_BOMB, value: 65, input: "IvanBomb", meaning: "Plant an Ivan bomb on the object." }
+  - { constant: ACTION_NO_IVAN_BOMB, value: 66, input: "NoIvanBomb", meaning: "Indicate that the object cannot take an Ivan bomb; the click gives no order." }
 ---
 
 These are the actions a left click on the map can carry. The action under the cursor picks the mouse shape and decides what a click does. The trigger actions that a map's triggers run are a separate list.
