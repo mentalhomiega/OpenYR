@@ -165,18 +165,40 @@ DoStruct const InfantryClass::MasterDoControls[DO_COUNT] = {
 	{true,	true,	true,	1},	// DO_CRAWL
 	{false,	false,	false,	1},	// DO_GET_UP
 	{true,	false,	false,	1},	// DO_FIRE_PRONE
-	{true,	false,	false,	1},	// DO_IDLE1
-	{true,	false,	false,	1},	// DO_IDLE2
+	{true,	false,	false,	3},	// DO_IDLE1
+	{true,	false,	false,	3},	// DO_IDLE2
 	{false,	false,	false,	1},	// DO_GUN_DEATH
 	{false,	false,	false,	1},	// DO_EXPLOSION_DEATH
 	{false,	false,	false,	1},	// DO_EXPLOSION2_DEATH
 	{false,	false,	false,	1},	// DO_GRENADE_DEATH
 	{false,	false,	false,	1},	// DO_FIRE_DEATH
-	{true,	true,	false,	1},	/// DO_HOVER
+	{true,	true,	false,	2},	/// DO_HOVER
 	{true,	true,	false,	1},	/// DO_FLY
 	{true,	true,	false,	1},	/// DO_TUMBLE
 	{true,	true,	false,	1},	/// DO_FIREFLY
 	{false,	false,	true,	3},	/// DO_STRUGGLE
+	{true,	false,	false,	3},	// DO_TREAD
+	{true,	true,	true,	1},	// DO_SWIM
+	{true,	false,	false,	3},	// DO_WET_IDLE1
+	{true,	false,	false,	3},	// DO_WET_IDLE2
+	{false,	false,	false,	1},	// DO_WET_DIE1
+	{false,	false,	false,	1},	// DO_WET_DIE2
+	{true,	false,	false,	1},	// DO_WET_ATTACK
+	{false,	false,	false,	1},	// DO_DEPLOY
+	{true,	false,	false,	1},	// DO_DEPLOYED
+	{true,	false,	false,	1},	// DO_DEPLOYED_FIRE
+	{true,	false,	false,	1},	// DO_DEPLOYED_IDLE
+	{false,	false,	false,	1},	// DO_UNDEPLOY
+	{false,	false,	false,	3},	// DO_CHEER
+	{true,	false,	false,	1},	// DO_PARADROP
+	{false,	false,	false,	3},	// DO_AIR_DEATH_START
+	{false,	false,	false,	1},	// DO_AIR_DEATH_FALLING
+	{false,	false,	false,	3},	// DO_AIR_DEATH_FINISH
+	{true,	true,	true,	4},	// DO_PANIC
+	{true,	false,	false,	6},	// DO_SHOVEL
+	{true,	true,	true,	3},	// DO_CARRY
+	{true,	false,	false,	1},	// DO_SECONDARY_FIRE
+	{true,	false,	false,	1},	// DO_SECONDARY_PRONE
 };
 
 
@@ -1146,6 +1168,11 @@ void InfantryClass::Detach(AbstractClass const * target, bool all)
  *=============================================================================================*/
 void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 {
+	// A human player's dug-in soldier stays put, as InfantryClass::SetDestination (0x51AA40) does.
+	if (House->Is_Human_Player() && Is_Deployed()) {
+		return;
+	}
+
 	/*
 	**	Special flag so that infantry will start heading in the right direction immediately.
 	*/
@@ -1275,6 +1302,11 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 void InfantryClass::Assign_Target(AbstractClass * target)
 {
 	Sync_Record_Target(*this, target, (unsigned)(uintptr_t)_ReturnAddress());
+
+	// A dug-in soldier that cannot fire while deployed takes no target.
+	if (target != NULL && Is_Deployed() && !Class->IsDeployFire) {
+		return;
+	}
 
 	if (target != TarCom && Strength > 0) {
 		IsFiring = false;
@@ -2317,8 +2349,90 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
  * HISTORY:                                                                                    *
  *   09/24/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+/// <summary>
+/// Tells whether this Deployer=yes soldier is digging in or dug in, as
+/// InfantryClass::IsDeployed (0x5228D0) does. A soldier packing up again counts as not deployed.
+/// </summary>
+bool InfantryClass::Is_Deployed(void) const
+{
+	if (!Class->IsDeployer) {
+		return(false);
+	}
+	return(Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE);
+}
+
+
+/// <summary>
+/// Digs in a Deployer=yes soldier, or packs up one that is dug in, as
+/// InfantryClass::Mission_Unload (0x51F6E0) does. The soldier then guards where it stands.
+/// </summary>
+int InfantryClass::Do_MISSION_UNLOAD(void)
+{
+	if (!Class->IsDeployer) {
+		return(BASECLASS::Do_MISSION_UNLOAD());
+	}
+
+	if (Is_Deployed()) {
+		Do_Action(DO_UNDEPLOY, true);
+	} else {
+		Do_Action(DO_DEPLOY, true);
+	}
+	Assign_Destination(NULL);
+
+	// The guard mission takes over at once, so the order is carried out only once.
+	Assign_Mission(MISSION_GUARD);
+	Commence();
+	return(1);
+}
+
+
+/// <summary>
+/// Keeps a human player's dug-in soldier in place, and has a computer player's soldier pack up
+/// before it sets off, as InfantryClass::Mission_Move (0x51F660) does.
+/// </summary>
+int InfantryClass::Do_MISSION_MOVE(void)
+{
+	if (Is_Deployed()) {
+		if (House->Is_Human_Player()) {
+			return(1);
+		}
+		if (Do_Action(DO_UNDEPLOY)) {
+			return(Class->DoControls[DO_UNDEPLOY].Count);
+		}
+	}
+	return(BASECLASS::Do_MISSION_MOVE());
+}
+
+
 bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 {
+	// A dug-in soldier stands, fires and idles with its deployed sequences, and never lies down.
+	// Walking ends the deployment without the Undeploy sequence.
+	if (Is_Deployed()) {
+		switch (todo) {
+			case DO_STAND_READY:
+			case DO_STAND_GUARD:
+			case DO_PRONE:
+			case DO_LIE_DOWN:
+			case DO_GET_UP:
+				todo = DO_DEPLOYED;
+				break;
+
+			case DO_FIRE_WEAPON:
+			case DO_FIRE_PRONE:
+				todo = DO_DEPLOYED_FIRE;
+				break;
+
+			case DO_IDLE1:
+			case DO_IDLE2:
+				todo = DO_DEPLOYED_IDLE;
+				break;
+
+			default:
+				break;
+		}
+	}
+
 	if (todo == DO_NOTHING || Class->DoControls[todo].Count == 0) {
 		return(false);
 	}
@@ -2356,6 +2470,15 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 
 			case DO_GET_UP:
 				IsProne = false;
+				break;
+
+			case DO_DEPLOY:
+				IsProne = false;
+				Sound_Effect(Class->DeploySound, PositionCoord);
+				break;
+
+			case DO_UNDEPLOY:
+				Sound_Effect(Class->UndeploySound, PositionCoord);
 				break;
 
 			default:
@@ -2818,10 +2941,19 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	}
 
 	/*
-	**	There is no self-select action available for infantry types.
+	**	Only a soldier that can deploy does anything when clicked on itself.
 	*/
-	if (action == ACTION_SELF) {
+	if (action == ACTION_SELF && !Class->IsDeployer) {
 		action = ACTION_NONE;
+	}
+
+	if (House->Is_Player_Control() && Is_Deployed()) {
+		if (action == ACTION_MOVE) {
+			return(ACTION_NOMOVE);
+		}
+		if (action == ACTION_ATTACK && (!Class->IsDeployFire || !In_Range((AbstractClass *)object, Class->DeployFireWeapon))) {
+			return(ACTION_NOMOVE);
+		}
 	}
 
 	/*
@@ -3046,6 +3178,10 @@ ActionType InfantryClass::What_Action(Cell const & cell, bool check_fog, bool di
 		if (action == ACTION_ATTACK) {
 			action = ACTION_GUARD_AREA;
 		}
+	}
+
+	if (Is_Deployed() && (action == ACTION_MOVE || (action == ACTION_ATTACK && !Class->IsDeployFire))) {
+		return(ACTION_NOMOVE);
 	}
 
 	if (Class->IsJumpJet && (action == ACTION_MOVE || action == ACTION_NOMOVE) && (Map[cell].Is_Near_Tunnel_NW() || Map[cell].Is_Near_Tunnel_ES())) {
@@ -3813,6 +3949,10 @@ bool InfantryClass::Is_Ready_To_Random_Animate(void) const
 	**	cannot occur. If they cannot, then return with the failure code.
 	*/
 	if (!BASECLASS::Is_Ready_To_Random_Animate()) {
+		return(false);
+	}
+
+	if (Is_Deployed()) {
 		return(false);
 	}
 

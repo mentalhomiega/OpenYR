@@ -144,6 +144,7 @@ class InfantryClass : public FootClass
 		virtual RTTIType Fetch_RTTI(void) const override;
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual bool Is_Ready_To_Random_Animate(void) const override;
+		bool Is_Deployed(void) const;
 		virtual void const * Get_Image_Data(void) const override;
 		int Shape_Number(void) const;
 		virtual ObjectTypeClass const * Class_Of(void) const override;
@@ -201,6 +202,8 @@ class InfantryClass : public FootClass
 		virtual bool Ready_To_Commence(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;
 		virtual int Do_MISSION_GUARD(void) override;
+		virtual int Do_MISSION_UNLOAD(void) override;
+		virtual int Do_MISSION_MOVE(void) override;
 		virtual void Berzerk(void) override;
 		virtual void Start_Fear(void) override;
 		virtual void Stop_Fear(void) override;

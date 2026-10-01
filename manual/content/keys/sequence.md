@@ -55,6 +55,13 @@ The table lists every entry a sequence section may have and the action each one 
 | `Tumble` | Tumbling on jump jets; never played |
 | `FireFly` | Firing while flying |
 | `Struggle` | Struggling inside a web |
+| `Tread`, `Swim`, `WetIdle1`, `WetIdle2`, `WetDie1`, `WetDie2`, `WetAttack` | Actions in water; never played |
+| `Deploy` | Deploying, for a [`Deployer=yes`](/keys/deployer/) type |
+| `Deployed` | Standing deployed |
+| `DeployedFire` | Firing while deployed |
+| `DeployedIdle` | Idling while deployed; never played |
+| `Undeploy` | Packing up from a deployment |
+| `Cheer`, `Paradrop`, `AirDeathStart`, `AirDeathFalling`, `AirDeathFinish`, `Panic`, `Shovel`, `Carry`, `SecondaryFire`, `SecondaryProne` | Never played |
 
 :::danger[An infantry type with no sequence crashes the game]
 A type with no `Sequence` has no animation table. The game crashes the first time an instance of the type animates, and whenever the game is saved, even if no instance exists. A type registered only by being named elsewhere, as [`AlliedCrew`](/keys/alliedcrew/) describes, has no section of its own and crashes the same way.

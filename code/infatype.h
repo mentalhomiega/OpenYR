@@ -155,6 +155,14 @@ class InfantryTypeClass : public TechnoTypeClass
 		// The figure a garrisoned structure draws for this soldier in its occupant pip row.
 		PipEnum OccupyPip;
 
+		// A Deployer=yes soldier digs in when told to deploy. With DeployFire=yes it fires the
+		// weapon in slot DeployFireWeapon while dug in and its first weapon otherwise.
+		bool IsDeployer;
+		bool IsDeployFire;
+		int DeployFireWeapon;
+		VocType DeploySound;
+		VocType UndeploySound;
+
 		/*
 		 * If this infantry type is an attack dog rather than a soldier, then this flag will
 		 * be true. A dog beds down in tiberium while guarding, panics outright once badly

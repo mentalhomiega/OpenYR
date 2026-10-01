@@ -100,6 +100,11 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	OccupyWeapon(),
 	EliteOccupyWeapon(),
 	OccupyPip(PIP_PERSON_GREEN),
+	IsDeployer(false),
+	IsDeployFire(false),
+	DeployFireWeapon(1),
+	DeploySound(VOC_NONE),
+	UndeploySound(VOC_NONE),
 	IsDoggie(false),
 	IsNotHuman(false),
 	DeadBodies(),
@@ -276,7 +281,29 @@ char const * SequenceName[DO_COUNT] = {
 	"Fly",
 	"Tumble",
 	"FireFly",
-	"Struggle"
+	"Struggle",
+	"Tread",
+	"Swim",
+	"WetIdle1",
+	"WetIdle2",
+	"WetDie1",
+	"WetDie2",
+	"WetAttack",
+	"Deploy",
+	"Deployed",
+	"DeployedFire",
+	"DeployedIdle",
+	"Undeploy",
+	"Cheer",
+	"Paradrop",
+	"AirDeathStart",
+	"AirDeathFalling",
+	"AirDeathFinish",
+	"Panic",
+	"Shovel",
+	"Carry",
+	"SecondaryFire",
+	"SecondaryProne"
 };
 
 
@@ -374,6 +401,11 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsThief = ini.Get_Bool(Name(), "Thief", IsThief);
 		IsVehicleThief = ini.Get_Bool(Name(), "VehicleThief", IsVehicleThief);
 		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
+		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
+		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
+		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
+		DeploySound = ini.Get_VocType(Name(), "DeploySound", DeploySound);
+		UndeploySound = ini.Get_VocType(Name(), "UndeploySound", UndeploySound);
 		OccupyWeapon.Weapon = TGet_Class(ini, Name(), "OccupyWeapon", OccupyWeapon.Weapon);
 		EliteOccupyWeapon.Weapon = TGet_Class(ini, Name(), "EliteOccupyWeapon", EliteOccupyWeapon.Weapon);
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
@@ -521,6 +553,11 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsThief);
 	stream.Serialize(IsVehicleThief);
 	stream.Serialize(IsOccupier);
+	stream.Serialize(IsDeployer);
+	stream.Serialize(IsDeployFire);
+	stream.Serialize(DeployFireWeapon);
+	stream.Serialize(DeploySound);
+	stream.Serialize(UndeploySound);
 	stream.Serialize(OccupyWeapon);
 	stream.Serialize(EliteOccupyWeapon);
 	stream.Serialize(OccupyPip);

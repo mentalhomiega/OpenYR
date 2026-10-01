@@ -437,6 +437,15 @@ bool TechnoClass::Is_Players_Army(void) const
  *=============================================================================================*/
 int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 {
+	// As InfantryClass::SelectWeapon (0x5218E0): a DeployFire=yes soldier fires DeployFireWeapon
+	// while dug in and its first weapon otherwise.
+	if (RTTI == RTTI_INFANTRY) {
+		InfantryClass const * infantry = static_cast<InfantryClass const *>(this);
+		if (infantry->Class->IsDeployFire) {
+			return(infantry->Is_Deployed() ? infantry->Class->DeployFireWeapon : 0);
+		}
+	}
+
 	if (target == NULL) return(0);
 
 	bool webby1 = false;
@@ -4686,7 +4695,8 @@ bool TechnoClass::Can_Deploy_Now(void) const
 		}
 	} else {
 		blocked = Is_Immobilized();
-		if (TClass->Max_Passengers() == 0) {
+		bool deployer = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Class->IsDeployer;
+		if (TClass->Max_Passengers() == 0 && !deployer) {
 			blocked = true;
 		}
 	}

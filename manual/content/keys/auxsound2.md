@@ -20,7 +20,7 @@ Two unrelated events play this sound:
 On any other vehicle or infantry type the key has no effect.
 
 :::caution[A structure's `UndeploySound` wins]
-[`UndeploySound`](/keys/undeploysound/) sets the same sound and is read after `AuxSound2`. A BuildingType section that sets both plays only the `UndeploySound`. A rules file read later that sets only `AuxSound2` replaces it.
+[`UndeploySound`](/keys/undeploysound/#scope-buildingtype) sets the same sound and is read after `AuxSound2`. A BuildingType section that sets both plays only the `UndeploySound`. A rules file read later that sets only `AuxSound2` replaces it.
 :::
 
 A name that matches no sound ID is ignored and the sound set earlier stays. Writing `none` therefore cannot clear a sound that an earlier rules file set.

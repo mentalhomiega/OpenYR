@@ -7281,6 +7281,40 @@ DemandLoadBuildup:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+DeployFire:
+  key: DeployFire
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsDeployFire
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+DeployFireWeapon:
+  key: DeployFireWeapon
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: InfantryTypeClass
+      member: DeployFireWeapon
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 DeploySound:
   key: DeploySound
   scopes:
@@ -7298,6 +7332,20 @@ DeploySound:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: DeploySound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -7347,6 +7395,23 @@ DeployToFire:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Deployer:
+  key: Deployer
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsDeployer
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 DeployingAnim:
   key: DeployingAnim
   scopes:
@@ -27843,7 +27908,7 @@ UndeploySound:
       kind: identifier
       source: object-type
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: BuildingTypeClass
@@ -27851,6 +27916,20 @@ UndeploySound:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: UndeploySound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 UndeploysInto:
   key: UndeploysInto
   scopes:
