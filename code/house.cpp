@@ -195,7 +195,9 @@
 #include "waypoint.h"
 
 #include "color.hh"
+#include "combat.h"
 #include "lstorm.h"
+#include "psydom.h"
 #include "strategy.hh"
 
 #include <algorithm>
@@ -8769,6 +8771,33 @@ void HouseClass::AI_Super_Weapons(void)
 						AI_Drop_Pods(super);
 						break;
 
+					case SUPER_PSYCHIC_REVEAL: {
+						Cell const cell = Pick_Drop_Target();
+						if (cell != CELL_NONE) {
+							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+						}
+						break;
+					}
+
+					case SUPER_PSYCHIC_DOMINATOR: {
+						// One blast at a time, and only against an enemy (HouseClass::Fire_PsyDom).
+						if (!PsychicDominatorClass::Is_Active() && Enemy != HOUSE_NONE) {
+							Cell const cell = Pick_Dominator_Target();
+							if (cell != CELL_NONE) {
+								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+							}
+						}
+						break;
+					}
+
+					case SUPER_GENETIC_CONVERTER: {
+						Cell const cell = Pick_Mutator_Target();
+						if (cell != CELL_NONE) {
+							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+						}
+						break;
+					}
+
 					case SUPER_LIGHTNING_STORM:
 						// One storm at a time (HouseClass::Fire_LightningStorm).
 						if (!LightningStormClass::Is_Active_Or_Pending()) {
@@ -8802,6 +8831,109 @@ void HouseClass::AI_Ion_Cannon(SuperClass * super)
 	if (cell != CELL_NONE) {
 		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 	}
+}
+
+
+/// <summary>
+/// Picks where a computer house drops paratroopers or reveals the map (HouseClass::Fire_ParaDrop):
+/// near the center of its enemy's base, or of its own base when it has no enemy, on clear ground
+/// for a five by five group, two cells further south-east.
+/// </summary>
+/// <returns>Returns with the cell to aim at, or CELL_NONE when that house has no base.</returns>
+Cell HouseClass::Pick_Drop_Target(void)
+{
+	HouseClass * target = Enemy != HOUSE_NONE ? Houses[Enemy] : this;
+	if (target->Center == Coord(0, 0, 0)) {
+		return(CELL_NONE);
+	}
+	Cell cell = Map.Nearby_Location(target->Center.As_Cell(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(5, 5));
+	if (cell == CELL_NONE) {
+		return(CELL_NONE);
+	}
+	return(cell + Cell(2, 2));
+}
+
+
+/// <summary>
+/// Picks where a computer house fires its genetic mutator (HouseClass::Fire_GenMutator): the
+/// cell of the infantryman with the most infantry of other, unallied houses on or around its
+/// cell, counting the nine cells around it and the first cell of the next ring.
+/// </summary>
+/// <returns>Returns with the cell to aim at, or CELL_NONE when no enemy infantry is near any
+/// infantryman.</returns>
+Cell HouseClass::Pick_Mutator_Target(void)
+{
+	static Cell const _offsets[10] = {
+		Cell(0, 0), Cell(0, -1), Cell(-1, 0), Cell(1, 0), Cell(0, 1),
+		Cell(-1, -1), Cell(1, -1), Cell(-1, 1), Cell(1, 1), Cell(0, -2)
+	};
+
+	Cell best_cell = CELL_NONE;
+	int best = 0;
+	for (int index = Infantry.Count() - 1; index >= 0; index--) {
+		InfantryClass * infantry = Infantry[index];
+		if (infantry->IsInLimbo) continue;
+
+		Cell const center = infantry->Get_Cell();
+		int count = 0;
+		for (Cell const & offset : _offsets) {
+			Cell const where = center + offset;
+			if (!Map.In_Radar(where)) continue;
+			for (ObjectClass * object = Map[where].Cell_Occupier(infantry->IsOnBridge); object != NULL; object = object->Next) {
+				if (object->RTTI != RTTI_INFANTRY) continue;
+				HouseClass const * owner = ((InfantryClass *)object)->House;
+				if ((owner == NULL || (owner != this && !Is_Ally(owner))) && !object->In_Air()) {
+					count++;
+				}
+			}
+		}
+		if (count > best) {
+			best = count;
+			best_cell = center;
+		}
+	}
+	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
+		return(CELL_NONE);
+	}
+	return(best_cell);
+}
+
+
+/// <summary>
+/// Picks where a computer house fires its psychic dominator (HouseClass::Fire_PsyDom): the cell
+/// of the object with the most units of other, unallied houses that the dominator could take
+/// over within the 38 nearest cells of it.
+/// </summary>
+/// <returns>Returns with the cell to aim at, or CELL_NONE when no such unit is near anything.</returns>
+Cell HouseClass::Pick_Dominator_Target(void)
+{
+	Cell best_cell = CELL_NONE;
+	int best = 0;
+	for (int index = Technos.Count() - 1; index >= 0; index--) {
+		TechnoClass * techno = Technos[index];
+		if (techno->IsInLimbo) continue;
+
+		Cell const center = techno->Get_Cell();
+		int count = 0;
+		for (int spread = 0; spread < 38; spread++) {
+			Cell const where = center + Cell_Spread_Offset(spread);
+			if (!Map.In_Radar(where)) continue;
+			for (ObjectClass * object = Map[where].Cell_Occupier(); object != NULL && object->Is_Foot(); object = object->Next) {
+				HouseClass const * owner = ((TechnoClass *)object)->House;
+				if ((owner == NULL || (owner != this && !Is_Ally(owner))) && PsychicDominatorClass::Can_Be_Dominated((TechnoClass *)object)) {
+					count++;
+				}
+			}
+		}
+		if (count > best) {
+			best = count;
+			best_cell = center;
+		}
+	}
+	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
+		return(CELL_NONE);
+	}
+	return(best_cell);
 }
 
 

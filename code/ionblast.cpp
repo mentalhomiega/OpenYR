@@ -71,10 +71,11 @@ Point2D Spiral_Index_To_Point(int index);
 /// there until its shockwave has expired. The ion cannon superweapon and the trigger
 /// action of the same name are the two things that set one off.
 /// </summary>
-IonBlastClass::IonBlastClass(Coord coord) :
+IonBlastClass::IonBlastClass(Coord coord, bool wave_only) :
 	Lifetime(0),
 	Position(coord)
 {
+	IsWaveOnly = wave_only;
 	IonBlasts.Add(this);
 }
 
@@ -99,6 +100,11 @@ void IonBlastClass::AI(void)
 {
 	if (Lifetime >= 79) {
 		delete this;
+		return;
+	}
+
+	if (IsWaveOnly) {
+		Lifetime++;
 		return;
 	}
 

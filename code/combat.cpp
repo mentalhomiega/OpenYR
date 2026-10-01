@@ -229,15 +229,13 @@ inline static int Explosion_Distance(Coord const & coord1, Coord const & coord2)
  * (0xABD490) lists them. A cell is within radius r when its longer offset plus half its
  * shorter one is no more than r.
  */
-static int const CELL_SPREAD_MAX = 11;
-
-static int Cell_Spread_Count(int radius)
+int Cell_Spread_Count(int radius)
 {
 	static int const _counts[CELL_SPREAD_MAX + 1] = {1, 9, 21, 37, 61, 89, 121, 161, 205, 253, 309, 369};
 	return(_counts[std::clamp(radius, 0, CELL_SPREAD_MAX)]);
 }
 
-static Cell Cell_Spread_Offset(int index)
+Cell Cell_Spread_Offset(int index)
 {
 	static std::vector<Cell> _table;
 	if (_table.empty()) {
@@ -288,7 +286,10 @@ static Cell Cell_Spread_Offset(int index)
  *   06/20/1994 JLB : Source is a pointer.                                                     *
  *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
  *=============================================================================================*/
-void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction)
+HouseClass * DamageSourceHouse = NULL;
+
+
+void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse)
 {
 	Cell								cell;		// Cell number under explosion.
 	ObjectClass *						object;		// Working object pointer.
@@ -418,6 +419,10 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	/*
 	 * Deal the damage. An aircraft in the air counts as half as far away.
 	 */
+	HouseClass * const previous_source = DamageSourceHouse;
+	if (sourcehouse != NULL) {
+		DamageSourceHouse = sourcehouse;
+	}
 	for (HitStruct const & hit : hits) {
 		object = hit.Object;
 		object->IsToDamage = false;
@@ -436,6 +441,7 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+	DamageSourceHouse = previous_source;
 
 	double rocking_force = std::min(strength * 0.01, 4.0);
 	if (warhead->IsRocker && rocking_force > 0.3) {

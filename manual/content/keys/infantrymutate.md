@@ -1,15 +1,17 @@
 ---
 key: InfantryMutate
-summary: The animation of an infantryman mutating into a brute; read but not used yet.
-see_also: [InfDeath]
+summary: The animation of an infantryman mutating, which becomes a new infantryman.
+see_also: [InfDeath, MakeInfantry, AnimToInfantry, "system:superweapons"]
 when_omitted:
   kind: value
   value: none
 ---
 
-The key is read from `[AudioVisual]`, but mutation is not supported yet: a warhead with [`InfDeath=9`](/keys/infdeath/) makes the soldier play its explosion death sequence, and this animation does not play.
+When a warhead with [`InfDeath=9`](/keys/infdeath/) kills an infantryman, he is removed and this animation plays where he stood. It belongs to the house of the object that dealt the damage, or of the superweapon that did. When it ends, its [`MakeInfantry`](/keys/makeinfantry/) entry turns it into a new infantryman of that house, such as a brute.
 
 ```ini title="rulesmd.ini"
-[AudioVisual]
+[General]
 InfantryMutate=MYMUTATE ; an AnimType registered in [Animations]
 ```
+
+The key is read from `[General]`, where Yuri's Revenge keeps it, and also from `[AudioVisual]`; an `[AudioVisual]` entry wins. With the key unset, the soldier is removed without an animation.

@@ -2565,6 +2565,24 @@ AnimRate:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+AnimToInfantry:
+  key: AnimToInfantry
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AnimToInfantry
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AnimationProbability:
   key: AnimationProbability
   scopes:
@@ -3163,6 +3181,23 @@ BallisticScatter:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BalloonHover:
+  key: BalloonHover
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsBalloonHover
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 BarracksLimit:
   key: BarracksLimit
   scopes:
@@ -8189,6 +8224,114 @@ Doggie:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+DominatorCaptureRange:
+  key: DominatorCaptureRange
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '2'
+      declared_in: RulesClass
+      member: DominatorCaptureRange
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DominatorDamage:
+  key: DominatorDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '50'
+      declared_in: RulesClass
+      member: DominatorDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DominatorFireAtPercentage:
+  key: DominatorFireAtPercentage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '50'
+      declared_in: RulesClass
+      member: DominatorFireAtPercentage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DominatorFirstAnim:
+  key: DominatorFirstAnim
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DominatorFirstAnim
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DominatorSecondAnim:
+  key: DominatorSecondAnim
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DominatorSecondAnim
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DominatorWarhead:
+  key: DominatorWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DominatorWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DoorAnim:
   key: DoorAnim
   scopes:
@@ -10199,6 +10342,96 @@ ForbiddenHouses:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ForceShieldBlackoutDuration:
+  key: ForceShieldBlackoutDuration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '800'
+      declared_in: RulesClass
+      member: ForceShieldBlackoutDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ForceShieldDuration:
+  key: ForceShieldDuration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '400'
+      declared_in: RulesClass
+      member: ForceShieldDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ForceShieldInvokeAnim:
+  key: ForceShieldInvokeAnim
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ForceShieldInvokeAnim
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ForceShieldPlayFadeSoundTime:
+  key: ForceShieldPlayFadeSoundTime
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '50'
+      declared_in: RulesClass
+      member: ForceShieldPlayFadeSoundTime
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ForceShieldRadius:
+  key: ForceShieldRadius
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '10'
+      declared_in: RulesClass
+      member: ForceShieldRadius
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Foundation:
   key: Foundation
   scopes:
@@ -10761,6 +10994,24 @@ GenericClick:
       default_candidate: none
       declared_in: RulesClass
       member: GenericClick
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+GeneticMutatorActivateSound:
+  key: GeneticMutatorActivateSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: GeneticMutatorActivateSound
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -12443,6 +12694,23 @@ ImmuneToEMP:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ImmuneToPsionics:
+  key: ImmuneToPsionics
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToPsionics
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ImmuneToVeins:
   key: ImmuneToVeins
   scopes:
@@ -12620,12 +12888,12 @@ InfantryBaseMult:
 InfantryBrute:
   key: InfantryBrute
   scopes:
-  - applies_to:
+  - applies_to: &id027
     - global rules
     file: rules.ini
-    section:
+    section: &id028
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: class
     status: generated
     _provenance:
@@ -12634,6 +12902,18 @@ InfantryBrute:
       member: InfantryBrute
       source: code/rules.cpp
       guard: null
+    read_from:
+    - file: rules.ini
+      section:
+        kind: literal
+        name: AudioVisual
+      value_type: class
+      applies_to: *id027
+    - file: rules.ini
+      section: *id028
+      value_type: class
+      applies_to: *id027
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryCostBonus:
   key: InfantryCostBonus
@@ -12726,12 +13006,12 @@ InfantryHeadPop:
 InfantryMutate:
   key: InfantryMutate
   scopes:
-  - applies_to:
+  - applies_to: &id029
     - global rules
     file: rules.ini
-    section:
+    section: &id030
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: class
     status: generated
     _provenance:
@@ -12740,6 +13020,18 @@ InfantryMutate:
       member: InfantryMutate
       source: code/rules.cpp
       guard: null
+    read_from:
+    - file: rules.ini
+      section:
+        kind: literal
+        name: AudioVisual
+      value_type: class
+      applies_to: *id029
+    - file: rules.ini
+      section: *id030
+      value_type: class
+      applies_to: *id029
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryNuked:
   key: InfantryNuked
@@ -15446,6 +15738,23 @@ MMSuffix:
       source: code/theater.cpp
       guard: null
     level: TheaterClass
+MakeInfantry:
+  key: MakeInfantry
+  scopes:
+  - applies_to: *id005
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: AnimTypeClass
+      member: MakeInfantry
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 ManualControl:
   key: ManualControl
   scopes:
@@ -16004,10 +16313,10 @@ MessageDelay:
 MetallicDebris:
   key: MetallicDebris
   scopes:
-  - applies_to: &id027
+  - applies_to: &id031
     - global rules
     file: rules.ini
-    section: &id028
+    section: &id032
       kind: literal
       name: General
     value_type: typelist
@@ -16024,11 +16333,11 @@ MetallicDebris:
         kind: literal
         name: AudioVisual
       value_type: typelist
-      applies_to: *id027
+      applies_to: *id031
     - file: rules.ini
-      section: *id028
+      section: *id032
       value_type: typelist
-      applies_to: *id027
+      applies_to: *id031
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Meteorites:
@@ -16235,6 +16544,23 @@ MinZVelocity:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+MindControlRingOffset:
+  key: MindControlRingOffset
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '140'
+      declared_in: TechnoTypeClass
+      member: MindControlRingOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 MinimumAIDefensiveTeams:
   key: MinimumAIDefensiveTeams
   scopes:
@@ -16693,6 +17019,60 @@ MultipleFactoryCap:
       default_candidate: '0'
       declared_in: RulesClass
       member: MultipleFactoryCap
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+MutateExplosion:
+  key: MutateExplosion
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: MutateExplosion
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+MutateExplosionWarhead:
+  key: MutateExplosionWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: SpecialWeapons
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: MutateExplosionWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+MutateWarhead:
+  key: MutateWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: SpecialWeapons
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: MutateWarhead
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -17221,7 +17601,7 @@ NewTheater:
     level: ObjectTypeClass
   - applies_to: *id005
     file: art.ini
-    section: &id029
+    section: &id033
       kind: identifier
       source: object-type
     value_type: boolean
@@ -17240,7 +17620,7 @@ NewTheater:
       value_type: boolean
       applies_to: *id005
     - file: art.ini
-      section: *id029
+      section: *id033
       value_type: boolean
       applies_to: *id005
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -18559,6 +18939,24 @@ PercentBuilt:
       source: code/base.cpp
       guard: null
     level: BaseClass
+PermaControlledAnimationType:
+  key: PermaControlledAnimationType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: PermaControlledAnimationType
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 PhysicalSize:
   key: PhysicalSize
   scopes:
@@ -20007,6 +20405,60 @@ ProximityDistance:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+PsychicDominatorActivateSound:
+  key: PsychicDominatorActivateSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: PsychicDominatorActivateSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PsychicRevealActivateSound:
+  key: PsychicRevealActivateSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: PsychicRevealActivateSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PsychicRevealRadius:
+  key: PsychicRevealRadius
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '3'
+      declared_in: RulesClass
+      member: PsychicRevealRadius
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 PurifierBonus:
   key: PurifierBonus
   scopes:
@@ -24384,6 +24836,23 @@ SpecialAnimZAdjust:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpecialSound:
+  key: SpecialSound
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: SuperWeaponTypeClass
+      member: SpecialSound
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SpecialThreatValue:
   key: SpecialThreatValue
   scopes:
@@ -25035,6 +25504,20 @@ StartSound:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: SuperWeaponTypeClass
+      member: StartSound
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
   - applies_to: *id012
     file: rules.ini
     section:
@@ -27209,7 +27692,7 @@ Theater:
     level: ObjectTypeClass
   - applies_to: *id005
     file: art.ini
-    section: &id030
+    section: &id034
       kind: identifier
       source: object-type
     value_type: boolean
@@ -27228,7 +27711,7 @@ Theater:
       value_type: boolean
       applies_to: *id005
     - file: art.ini
-      section: *id030
+      section: *id034
       value_type: boolean
       applies_to: *id005
     precedence: accepted under more than one entry heading; the last one the engine reads wins

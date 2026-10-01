@@ -53,6 +53,7 @@
 #include "bullet.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "combat.h"
 #include "crc.h"
 #include "data.h"
 #include "globals.h"
@@ -65,6 +66,7 @@
 #include "language/language.h"
 #include "lstorm.h"
 #include "mouse.h"
+#include "psydom.h"
 #include "rules.h"
 #include "savestream.h"
 #include "side.h"
@@ -401,6 +403,11 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
  *=============================================================================================*/
 bool SuperClass::AI(bool player)
 {
+	if (IsSpecialSoundPending && SpecialSoundTimer == 0) {
+		IsSpecialSoundPending = false;
+		Sound_Effect(Class->SpecialSound, SpecialSoundCoord);
+	}
+
 	if (IsPresent && (!IsReady || Class->UseChargeDrain) && !IsSuspended) {
 		if (!Control.Is_Active()) {
 			if (OldStage != -1) {
@@ -651,6 +658,89 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 
 
 /// <summary>
+/// Mutates the infantry at the cell, as the GeneticMutator case of SuperClass::Launch does.
+/// With MutateExplosion, a 10000-point blast through MutateExplosionWarhead decides who is
+/// caught; otherwise every infantryman on the cell and the eight around it is killed through
+/// MutateWarhead. Either way the infantry die as the warhead's InfDeath says, and a mutated
+/// infantryman becomes a brute of the firing house.
+/// </summary>
+void SuperClass::Genetic_Mutator(Cell const & cell) const
+{
+	Coord coord = Map[cell].Center_Coord();
+	if (Map[cell].IsUnderBridge) {
+		coord.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+	if (Rule->IonBlast != NULL) {
+		new AnimClass(Rule->IonBlast, Coord(coord.X, coord.Y, coord.Z + 5));
+	}
+	Sound_Effect(Rule->GeneticMutatorActivateSound, coord);
+
+	if (Rule->MutateExplosion) {
+		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House);
+		return;
+	}
+
+	DynamicVectorClass<InfantryClass *> victims;
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			Cell const where = cell + Cell(dx, dy);
+			if (!Map.In_Radar(where)) continue;
+			CellClass & cellptr = Map[where];
+			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
+				if (object->RTTI == RTTI_INFANTRY) {
+					victims.Add((InfantryClass *)object);
+				}
+			}
+		}
+	}
+	HouseClass * const previous = DamageSourceHouse;
+	DamageSourceHouse = House;
+	for (int index = 0; index < victims.Count(); index++) {
+		InfantryClass * infantry = victims[index];
+		if (infantry->IsActive && !infantry->IsInLimbo) {
+			int damage = infantry->Class->MaxStrength;
+			infantry->Take_Damage(damage, 0, Rule->MutateWarhead, NULL, true);
+		}
+	}
+	DamageSourceHouse = previous;
+}
+
+
+/// <summary>
+/// Raises the force shield around the cell, as the ForceShield case of SuperClass::Launch
+/// does: every structure of the firing house or its allies whose center is within
+/// ForceShieldRadius cells is protected for ForceShieldDuration frames, and the firing house
+/// loses its power for ForceShieldBlackoutDuration frames.
+/// </summary>
+void SuperClass::Force_Shield(Cell const & cell)
+{
+	Coord coord = Map[cell].Center_Coord();
+	if (Map[cell].IsUnderBridge) {
+		coord.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+	if (Rule->ForceShieldInvokeAnim != NULL) {
+		new AnimClass(Rule->ForceShieldInvokeAnim, Coord(coord.X, coord.Y, coord.Z + 5));
+	}
+
+	SpecialSoundTimer = Rule->ForceShieldDuration - Rule->ForceShieldPlayFadeSoundTime;
+	IsSpecialSoundPending = Class->SpecialSound != VOC_NONE;
+	SpecialSoundCoord = coord;
+	Sound_Effect(Class->StartSound, coord);
+
+	House->PowerBlackout = Rule->ForceShieldBlackoutDuration;
+	House->IsPowerBlackout = true;
+	House->RecalcPower = true;
+
+	for (int index = Buildings.Count() - 1; index >= 0; index--) {
+		BuildingClass * building = Buildings[index];
+		if (House->Is_Ally(building) && (building->Center_Coord() - coord).Length() < Rule->ForceShieldRadius * CELL_LEPTON_W) {
+			building->Iron_Curtain(Rule->ForceShieldDuration, House, true);
+		}
+	}
+}
+
+
+/// <summary>
 /// Unleashes the super weapon upon the cell specified.
 /// This routine is called once the target has been chosen, either by the player
 /// clicking on the map or by the computer deciding where to strike. Each kind of super
@@ -670,6 +760,58 @@ void SuperClass::Place(Cell const & cell, bool player)
 				Map.IsTargettingMode = SUPER_NONE;
 			}
 			House->IsRecalcNeeded = true;
+			break;
+
+		case SUPER_PSYCHIC_REVEAL:
+			if (IsReady) {
+				// Uncovers the area for the firing house, shroud and fog (the PsychicReveal case of SuperClass::Launch).
+				int const radius = Rule->PsychicRevealRadius;
+				for (int dy = -radius; dy <= radius; dy++) {
+					for (int dx = -radius; dx <= radius; dx++) {
+						Cell const where = cell + Cell(dx, dy);
+						if (Map.In_Radar(where) && Distance(where, cell) <= radius) {
+							Map.Map_Cell(where, House);
+							Map.Fog_Map_Cell(where, House);
+						}
+					}
+				}
+				Sound_Effect(Rule->PsychicRevealActivateSound, Map[cell].Center_Coord());
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
+			}
+			break;
+
+		case SUPER_PSYCHIC_DOMINATOR:
+			if (IsReady) {
+				PsychicDominatorClass::Start(cell, House);
+				Sound_Effect(Rule->PsychicDominatorActivateSound, Map[cell].Center_Coord());
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
+			}
+			break;
+
+		case SUPER_GENETIC_CONVERTER:
+			if (IsReady) {
+				Genetic_Mutator(cell);
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
+			}
+			break;
+
+		case SUPER_FORCE_SHIELD:
+			if (IsReady) {
+				Force_Shield(cell);
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
+			}
 			break;
 
 		case SUPER_LIGHTNING_STORM:
@@ -902,6 +1044,9 @@ void SuperClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsReady);
 	stream.Serialize(IsSuspended);
 	stream.Serialize(OldStage);
+	stream.Serialize(SpecialSoundTimer);
+	stream.Serialize(IsSpecialSoundPending);
+	stream.Serialize(SpecialSoundCoord);
 	stream.Serialize(ChargeDrainState);
 }
 

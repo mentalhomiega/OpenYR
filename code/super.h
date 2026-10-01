@@ -66,6 +66,8 @@ class SuperClass : public AbstractClass
 		void Place(Cell const & cell, bool player);
 		void Drop_Pods(Cell const & cell) const;
 		void Iron_Curtain(Cell const & cell) const;
+		void Genetic_Mutator(Cell const & cell) const;
+		void Force_Shield(Cell const & cell);
 		void Deactivate_Firestorm(int, bool player) const;
 		bool AI(bool player=false);
 		bool Remove(void);
@@ -113,6 +115,11 @@ class SuperClass : public AbstractClass
 		bool IsSuspended;
 
 		int OldStage;
+
+		// The force shield's SpecialSound plays here once the timer runs out.
+		CDTimerClass<FrameTimerClass> SpecialSoundTimer;
+		bool IsSpecialSoundPending = false;
+		Coord SpecialSoundCoord;
 
 		/*
 		 * This is where a charge drain weapon (such as the firestorm defense) sits in its

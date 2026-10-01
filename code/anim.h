@@ -63,6 +63,7 @@ class AnimClass : public ObjectClass, public StageClass
 		AnimClass(AnimTypeClass const * type, Coord const & coord, int timedelay=0, int loop=1, ShapeFlags_Type flags=ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), int zadjust = 0);
 		AnimClass(void);
 		virtual ~AnimClass(void) override;
+		bool Make_Infantry(void);
 
 		virtual ClassID Class_ID(void) const override;
 

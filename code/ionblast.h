@@ -16,7 +16,7 @@ template<class T> class DynamicVectorClass;
 class IonBlastClass
 {
 	public:
-		IonBlastClass(Coord coord);
+		IonBlastClass(Coord coord, bool wave_only = false);
 		~IonBlastClass(void);
 
 		void AI(void);
@@ -41,6 +41,9 @@ class IonBlastClass
 		 * of them the wave has run its course and the blast deletes itself.
 		 */
 		int Lifetime;
+
+		// A wave-only blast shows the shockwave and nothing else (DisableIonBeam).
+		bool IsWaveOnly;
 
 	public:
 		/*

@@ -77,6 +77,7 @@
 #include "wave.h"
 
 #include "bench.hh"
+#include "psydom.h"
 
 #include <algorithm>
 
@@ -353,6 +354,7 @@ void LogicClass::AI(void)
 	EBoltClass::Update_All();
 	IonStormClass::AI();
 	LightningStormClass::AI();
+	PsychicDominatorClass::AI();
 	LightSourceClass::Process_Lighting(6);
 	EMPulseClass::Update_All();
 	Map.Terrain_Deformation_AI();

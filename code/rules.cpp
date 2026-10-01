@@ -364,6 +364,26 @@ RulesClass::RulesClass(void) :
 	WeatherConBoltExplosion(NULL),
 	LightningSounds(),
 	StormSound(VOC_NONE),
+	PsychicRevealRadius(3),
+	PsychicRevealActivateSound(VOC_NONE),
+	GeneticMutatorActivateSound(VOC_NONE),
+	PsychicDominatorActivateSound(VOC_NONE),
+	MutateExplosion(false),
+	MutateWarhead(NULL),
+	MutateExplosionWarhead(NULL),
+	AnimToInfantry(),
+	ForceShieldRadius(10),
+	ForceShieldDuration(400),
+	ForceShieldBlackoutDuration(800),
+	ForceShieldPlayFadeSoundTime(50),
+	ForceShieldInvokeAnim(NULL),
+	DominatorFirstAnim(NULL),
+	DominatorSecondAnim(NULL),
+	DominatorFireAtPercentage(50),
+	DominatorDamage(50),
+	DominatorWarhead(NULL),
+	DominatorCaptureRange(2),
+	PermaControlledAnimationType(NULL),
 	AIMinorSuperReadyPercent(0.8),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
@@ -872,6 +892,8 @@ bool RulesClass::Special_Weapons(CCINIClass const & ini)
 		NukeDown = TGet_Class(ini, SPECIALWEAPONS, "NukeDown", NukeDown);
 		EMPulseWarhead = TGet_Class(ini, SPECIALWEAPONS, "EMPulseWarhead", EMPulseWarhead);
 		EMPulseProjectile = TGet_Class(ini, SPECIALWEAPONS, "EMPulseProjectile", EMPulseProjectile);
+		MutateWarhead = TGet_Class(ini, SPECIALWEAPONS, "MutateWarhead", MutateWarhead);
+		MutateExplosionWarhead = TGet_Class(ini, SPECIALWEAPONS, "MutateExplosionWarhead", MutateExplosionWarhead);
 		for (int i = 0; i < ::Warheads.Count(); i++) {
 			::Warheads[i]->Read_INI(ini);
 		}
@@ -952,6 +974,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
 		LightningSounds = ini.Get_VocType_List(ini, AUDIOVISUAL, "LightningSounds", LightningSounds);
 		StormSound = ini.Get_VocType(AUDIOVISUAL, "StormSound", StormSound);
+		PsychicRevealActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicRevealActivateSound", PsychicRevealActivateSound);
+		GeneticMutatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "GeneticMutatorActivateSound", GeneticMutatorActivateSound);
+		PsychicDominatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicDominatorActivateSound", PsychicDominatorActivateSound);
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "MetallicDebris", MetallicDebris);
 		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "BridgeExplosions", BridgeExplosions);
@@ -1056,6 +1081,8 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
 		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
+		PsychicRevealRadius = ini.Get_Int(COMBATDAMAGE, "PsychicRevealRadius", PsychicRevealRadius);
+		PermaControlledAnimationType = TGet_Class(ini, COMBATDAMAGE, "PermaControlledAnimationType", PermaControlledAnimationType);
 		IonCannonDamage = ini.Get_Int(COMBATDAMAGE, "IonCannonDamage", IonCannonDamage);
 		RailgunDamageRadius = ini.Get_Int(COMBATDAMAGE, "RailgunDamageRadius", RailgunDamageRadius);
 		TiberiumExplosionDamage = ini.Get_Int(COMBATDAMAGE, "TiberiumExplosionDamage", TiberiumExplosionDamage);
@@ -1168,6 +1195,21 @@ bool RulesClass::General(CCINIClass const & ini)
 		WeatherConBolts = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConBolts", WeatherConBolts);
 		WeatherConBoltExplosion = TGet_Class(ini, GENERAL, "WeatherConBoltExplosion", WeatherConBoltExplosion);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "MetallicDebris", MetallicDebris);
+		MutateExplosion = ini.Get_Bool(GENERAL, "MutateExplosion", MutateExplosion);
+		AnimToInfantry = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AnimToInfantry", AnimToInfantry);
+		InfantryMutate = TGet_Class(ini, GENERAL, "InfantryMutate", InfantryMutate);
+		InfantryBrute = TGet_Class(ini, GENERAL, "InfantryBrute", InfantryBrute);
+		ForceShieldRadius = ini.Get_Int(GENERAL, "ForceShieldRadius", ForceShieldRadius);
+		ForceShieldDuration = ini.Get_Int(GENERAL, "ForceShieldDuration", ForceShieldDuration);
+		ForceShieldBlackoutDuration = ini.Get_Int(GENERAL, "ForceShieldBlackoutDuration", ForceShieldBlackoutDuration);
+		ForceShieldPlayFadeSoundTime = ini.Get_Int(GENERAL, "ForceShieldPlayFadeSoundTime", ForceShieldPlayFadeSoundTime);
+		ForceShieldInvokeAnim = TGet_Class(ini, GENERAL, "ForceShieldInvokeAnim", ForceShieldInvokeAnim);
+		DominatorFirstAnim = TGet_Class(ini, GENERAL, "DominatorFirstAnim", DominatorFirstAnim);
+		DominatorSecondAnim = TGet_Class(ini, GENERAL, "DominatorSecondAnim", DominatorSecondAnim);
+		DominatorFireAtPercentage = ini.Get_Int(GENERAL, "DominatorFireAtPercentage", DominatorFireAtPercentage);
+		DominatorDamage = ini.Get_Int(GENERAL, "DominatorDamage", DominatorDamage);
+		DominatorWarhead = TGet_Class(ini, GENERAL, "DominatorWarhead", DominatorWarhead);
+		DominatorCaptureRange = ini.Get_Int(GENERAL, "DominatorCaptureRange", DominatorCaptureRange);
 		AIMinorSuperReadyPercent = ini.Get_Float(GENERAL, "AIMinorSuperReadyPercent", AIMinorSuperReadyPercent);
 		SmallVisceroid = TGet_Class(ini, GENERAL, "SmallVisceroid", SmallVisceroid);
 		TiberiumHeal = ini.Get_Float(GENERAL, "TiberiumHeal", TiberiumHeal);
@@ -2285,6 +2327,26 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(WeatherConBoltExplosion);
 	stream.Serialize(LightningSounds);
 	stream.Serialize(StormSound);
+	stream.Serialize(PsychicRevealRadius);
+	stream.Serialize(PsychicRevealActivateSound);
+	stream.Serialize(GeneticMutatorActivateSound);
+	stream.Serialize(PsychicDominatorActivateSound);
+	stream.Serialize(MutateExplosion);
+	stream.Serialize(MutateWarhead);
+	stream.Serialize(MutateExplosionWarhead);
+	stream.Serialize(AnimToInfantry);
+	stream.Serialize(ForceShieldRadius);
+	stream.Serialize(ForceShieldDuration);
+	stream.Serialize(ForceShieldBlackoutDuration);
+	stream.Serialize(ForceShieldPlayFadeSoundTime);
+	stream.Serialize(ForceShieldInvokeAnim);
+	stream.Serialize(DominatorFirstAnim);
+	stream.Serialize(DominatorSecondAnim);
+	stream.Serialize(DominatorFireAtPercentage);
+	stream.Serialize(DominatorDamage);
+	stream.Serialize(DominatorWarhead);
+	stream.Serialize(DominatorCaptureRange);
+	stream.Serialize(PermaControlledAnimationType);
 	stream.Serialize(AIMinorSuperReadyPercent);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
@@ -3004,6 +3066,27 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == WeatherConBoltExplosion) {
 		WeatherConBoltExplosion = NULL;
+	}
+	if (target == MutateWarhead) {
+		MutateWarhead = NULL;
+	}
+	if (target == MutateExplosionWarhead) {
+		MutateExplosionWarhead = NULL;
+	}
+	if (target == ForceShieldInvokeAnim) {
+		ForceShieldInvokeAnim = NULL;
+	}
+	if (target == DominatorFirstAnim) {
+		DominatorFirstAnim = NULL;
+	}
+	if (target == DominatorSecondAnim) {
+		DominatorSecondAnim = NULL;
+	}
+	if (target == DominatorWarhead) {
+		DominatorWarhead = NULL;
+	}
+	if (target == PermaControlledAnimationType) {
+		PermaControlledAnimationType = NULL;
 	}
 	if (target == IonBeam) {
 		IonBeam = NULL;

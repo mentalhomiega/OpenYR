@@ -93,6 +93,10 @@
 #include "tracker.h"
 
 #include "bench.hh"
+#include "houstype.h"
+#include "infantry.h"
+#include "infatype.h"
+#include "side.h"
 
 #include <algorithm>
 #include <intrin.h>
@@ -973,6 +977,10 @@ void AnimClass::AI(void)
 						Set_Stage(Class->Start);
 						Start();
 					} else {
+						if (Class->MakeInfantry != -1 && !Make_Infantry()) {
+							Set_Stage(Fetch_Stage() - 1);
+							return;
+						}
 						Delete_Me();
 					}
 				}
@@ -1752,4 +1760,48 @@ ClassID AnimClass::Class_ID(void) const
 RTTIType AnimClass::Fetch_RTTI(void) const
 {
 	return(RTTI_ANIM);
+}
+
+
+/// <summary>
+/// Turns a finished MakeInfantry animation into its AnimToInfantry infantryman, as the end of
+/// AnimClass::AI (0x423BC0) does. The infantryman belongs to the animation's house, or to the
+/// Civilian side's house when that house is gone or defeated. A computer house's new
+/// infantryman hunts.
+/// </summary>
+/// <returns>False when the infantryman cannot be placed yet, so the animation should hold
+/// its last frame and try again.</returns>
+bool AnimClass::Make_Infantry(void)
+{
+	if (Class->MakeInfantry < 0 || Class->MakeInfantry >= Rule->AnimToInfantry.Count()) {
+		return(true);
+	}
+
+	HouseClass * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+	if (owner == NULL || owner->IsDefeated) {
+		owner = NULL;
+		SideType civilian = SideClass::From_Name("Civilian");
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index]->Class->Side == civilian) {
+				owner = Houses[index];
+				break;
+			}
+		}
+	}
+	if (owner == NULL) {
+		return(true);
+	}
+
+	InfantryClass * infantry = (InfantryClass *)Rule->AnimToInfantry[Class->MakeInfantry]->Create_One_Of(owner);
+	if (infantry == NULL) {
+		return(true);
+	}
+	if (!infantry->Unlimbo(Center_Coord(), DIR_S)) {
+		delete infantry;
+		return(false);
+	}
+	if (!owner->Is_Human_Player()) {
+		infantry->Assign_Mission(MISSION_HUNT);
+	}
+	return(true);
 }

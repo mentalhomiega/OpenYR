@@ -179,6 +179,7 @@
 #include "xstraw.h"
 
 #include "bench.hh"
+#include "psydom.h"
 
 #include <algorithm>
 #include <utility>
@@ -1119,6 +1120,7 @@ void Clear_Scenario(void)
 	LightSourceClass::Reset();
 	IonStormClass::Init();
 	LightningStormClass::Clear();
+	PsychicDominatorClass::Clear();
 	EMPulseClass::Reset();
 	VeinholeMonsterClass::Reset();
 

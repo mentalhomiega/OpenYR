@@ -83,6 +83,8 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	CameoData(NULL),
 	CameoSortOrder(0),
 	Action(ACTION_NONE),
+	StartSound(VOC_NONE),
+	SpecialSound(VOC_NONE),
 	AuxBuilding(NULL),
 	SidebarImage(),
 	UseChargeDrain(false),
@@ -150,6 +152,8 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	// CameoData -- artwork, fetched from the mix files again as this loads.
 	stream.Serialize(CameoSortOrder);
 	stream.Serialize(Action);
+	stream.Serialize(StartSound);
+	stream.Serialize(SpecialSound);
 	stream.Serialize(AuxBuilding);
 	stream.Serialize(SidebarImage);
 	stream.Serialize(UseChargeDrain);
@@ -219,6 +223,8 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		VoxSuspend = ini.Get_VoxType(IniName, "SuspendVoice", VoxSuspend);
 
 		Action = ini.Get_ActionType(IniName, "Action", Action);
+		StartSound = ini.Get_VocType(IniName, "StartSound", StartSound);
+		SpecialSound = ini.Get_VocType(IniName, "SpecialSound", SpecialSound);
 		IsPowered = ini.Get_Bool(IniName, "IsPowered", IsPowered);
 
 		char buffer[40];

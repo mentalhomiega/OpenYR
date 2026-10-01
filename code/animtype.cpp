@@ -142,6 +142,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsAnimatedTiberium(false),
 	IsAltPalette(false),
 	IsNormalized(false),
+	MakeInfantry(-1),
 	IsGroundLayer(false),
 	IsFlat(false),
 	IsTranslucent(false),
@@ -399,6 +400,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsFlat = ini.Get_Bool(Name(), "Flat", IsFlat);
 		IsFlameThrower = ini.Get_Bool(Name(), "Flamer", IsFlameThrower);
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
+		MakeInfantry = ini.Get_Int(Name(), "MakeInfantry", MakeInfantry);
 		IsGroundLayer = ini.Get_Bool(Name(), "Surface", IsGroundLayer);
 		IsTranslucent = ini.Get_Bool(Name(), "Translucent", IsTranslucent);
 		IsScorcher = ini.Get_Bool(Name(), "Scorch", IsScorcher);
@@ -575,6 +577,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAnimatedTiberium);
 	stream.Serialize(IsAltPalette);
 	stream.Serialize(IsNormalized);
+	stream.Serialize(MakeInfantry);
 	stream.Serialize(IsGroundLayer);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsTranslucent);

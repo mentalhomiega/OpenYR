@@ -46,6 +46,7 @@
 #include "lstorm.h"
 #include "object.h"
 #include "partsys.h"
+#include "psydom.h"
 #include "rules.h"
 #include "tactical.h"
 #include "unit.h"
@@ -113,6 +114,7 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 
 	if (target->RTTI == RTTI_HOUSE) {
 		LightningStormClass::Detach(target);
+		PsychicDominatorClass::Detach(target);
 		for (index = 0; index < HousePtrTracker.Count(); index++) {
 			HousePtrTracker[index]->Detach(target, all);
 		}
@@ -125,6 +127,7 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 
 	if (target->RTTI == RTTI_ANIM) {
 		LightningStormClass::Detach(target);
+		PsychicDominatorClass::Detach(target);
 		for (index = 0; index < AnimPtrTracker.Count(); index++) {
 			AnimPtrTracker[index]->Detach(target, all);
 		}

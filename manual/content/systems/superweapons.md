@@ -17,15 +17,30 @@ keys:
   - AIIonCannonWarFactoryValue
   - AIMinorSuperReadyPercent
   - Action
+  - AnimToInfantry
+  - BalloonHover
   - AuxBuilding
   - ChargeToDrainRatio
   - ChargingVoice
+  - DominatorCaptureRange
+  - DominatorDamage
+  - DominatorFireAtPercentage
+  - DominatorFirstAnim
+  - DominatorSecondAnim
+  - DominatorWarhead
   - DamageToFirestormDamageCoefficient
   - FirestormWall
   - FirestormWarhead
+  - ForceShieldBlackoutDuration
+  - ForceShieldDuration
+  - ForceShieldInvokeAnim
+  - ForceShieldPlayFadeSoundTime
+  - ForceShieldRadius
+  - GeneticMutatorActivateSound
   - GDIFirestormGenerator
   - GDIHunterSeeker
   - HSBuilding
+  - ImmuneToPsionics
   - ImpatientVoice
   - IonCannonDamage
   - IonCannonWarhead
@@ -42,15 +57,26 @@ keys:
   - LightningStormDuration
   - LightningWarhead
   - IsPowered
+  - MakeInfantry
   - ManualControl
+  - MindControlRingOffset
+  - MutateExplosion
+  - MutateExplosionWarhead
+  - MutateWarhead
   - NodHunterSeeker
   - NukeMaker
   - NukeSilo
   - NukeTakeOff
   - Organic
+  - PermaControlledAnimationType
+  - PsychicDominatorActivateSound
+  - PsychicRevealActivateSound
+  - PsychicRevealRadius
   - RechargeTime
   - RechargeVoice
   - SidebarImage
+  - SpecialSound
+  - StartSound
   - StormSound
   - SuperWeapon
   - SuperWeapon2
@@ -279,6 +305,11 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
 - **Lightning storm** aims as the ion cannon does, and only while no storm is raging or waiting to break.
+- **Psychic reveal** aims near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis.
+- **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
+- **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
+
+The computer never fires the force shield on its own.
 
 The ion cannon's rating is the only one of the four with settings.
 
@@ -409,6 +440,37 @@ LightningSeparation=3
 LightningDamage=250
 LightningWarhead=IonWH
 ```
+
+### Psychic reveal
+
+A `Type=PsychicReveal` weapon uncovers the map for the firing house, shroud and fog, out to [`PsychicRevealRadius`](/keys/psychicrevealradius/) cells from the target, and plays [`PsychicRevealActivateSound`](/keys/psychicrevealactivatesound/) there.
+
+### Genetic mutator
+
+A `Type=GeneticConverter` weapon plays [`IonBlast`](/keys/ionblast/) over the target and [`GeneticMutatorActivateSound`](/keys/geneticmutatoractivatesound/). What it hits depends on [`MutateExplosion`](/keys/mutateexplosion/):
+
+- With `MutateExplosion=yes`, a blast of 10000 damage goes off through [`MutateExplosionWarhead`](/keys/mutateexplosionwarhead/), so that warhead's [`CellSpread`](/keys/cellspread/) and `Verses` decide who is caught.
+- Otherwise, every infantryman on the target cell and the eight cells around it takes its full strength as damage through [`MutateWarhead`](/keys/mutatewarhead/), ignoring armor.
+
+A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes.
+
+### Force shield
+
+A `Type=ForceShield` weapon plays [`ForceShieldInvokeAnim`](/keys/forceshieldinvokeanim/) over the target and the weapon's [`StartSound`](/keys/startsound/#scope-superweapontype). Every structure of the firing house or its allies whose center is less than [`ForceShieldRadius`](/keys/forceshieldradius/) cells from the target is protected for [`ForceShieldDuration`](/keys/forceshieldduration/) frames, exactly as the [Iron Curtain](#iron-curtain) protects it. The firing house then makes no power for [`ForceShieldBlackoutDuration`](/keys/forceshieldblackoutduration/) frames. The weapon's [`SpecialSound`](/keys/specialsound/) plays [`ForceShieldPlayFadeSoundTime`](/keys/forceshieldplayfadesoundtime/) frames before the protection ends.
+
+Yuri's Revenge tints shielded structures with `ForceShieldColor`, which is not drawn yet.
+
+### Psychic dominator
+
+A `Type=PsychicDominator` weapon plays [`DominatorFirstAnim`](/keys/dominatorfirstanim/) over the target and [`PsychicDominatorActivateSound`](/keys/psychicdominatoractivatesound/). Nothing happens unless both [`DominatorFirstAnim`](/keys/dominatorfirstanim/) and [`DominatorSecondAnim`](/keys/dominatorsecondanim/) are set.
+
+Once the first animation has played [`DominatorFireAtPercentage`](/keys/dominatorfireatpercentage/) percent of its frames, the blast fires:
+
+- a shockwave ripples out from the target, and `DominatorSecondAnim` plays there;
+- [`DominatorDamage`](/keys/dominatordamage/) goes off through [`DominatorWarhead`](/keys/dominatorwarhead/), credited to the firing house;
+- every vehicle, infantryman and aircraft within [`DominatorCaptureRange`](/keys/dominatorcapturerange/) cells joins the firing house for good, with [`PermaControlledAnimationType`](/keys/permacontrolledanimationtype/) shown [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above it. A computer house sends its new units hunting.
+
+Structures, objects in the air or under the Iron Curtain, and types with [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) or [`BalloonHover=yes`](/keys/balloonhover/) are not taken over. A computer house waits for a blast to finish before it fires again; a player's shot while one runs replaces it. Yuri's Revenge also dims the map's lighting during the blast, which is not done yet.
 
 ### EM pulse
 

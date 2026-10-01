@@ -484,8 +484,19 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					break;
 
 				case 2:
-				case 9:		// Mutation into a brute is not ported; the infantryman dies as from an explosion.
 					Do_Action(DO_EXPLOSION_DEATH, true);
+					break;
+
+				case 9:
+					// Mutation: InfantryMutate plays, owned by the attacker's house, and its
+					// MakeInfantry entry turns into a new infantryman for that house.
+					if (Rule->InfantryMutate != NULL) {
+						AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
+						HouseClass const * owner = source != NULL ? source->House : DamageSourceHouse;
+						if (mutate != NULL && owner != NULL) {
+							mutate->OwnerHouse = (HousesType)owner->HeapID;
+						}
+					}
 					break;
 
 				case 3:
@@ -518,7 +529,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					break;
 			}
 
-			if (infdeath != 1 && infdeath != 2 && infdeath != 9) {
+			if (infdeath != 1 && infdeath != 2) {
 				if (deathanim != NULL) {
 					new AnimClass(deathanim, PositionCoord);
 				}

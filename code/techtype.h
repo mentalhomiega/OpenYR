@@ -286,6 +286,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A DamageSelf object is caught in the blasts of its own weapons.
 		bool IsDamageSelf;
 
+		// The psychic dominator cannot take over an ImmuneToPsionics or BalloonHover object.
+		bool IsImmuneToPsionics;
+		bool IsBalloonHover;
+
+		// How far above the object's center a mind control ring is drawn, in leptons.
+		int MindControlRingOffset;
+
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.

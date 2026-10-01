@@ -8,9 +8,9 @@ when_omitted:
   value: none
 ---
 
-`Type=` selects which of the engine's built-in effects the weapon delivers when it fires: `MultiMissile`, `EMPulse`, `Firestorm`, `IonCannon`, `HunterSeeker`, `ChemMissile`, `DropPod`, `IronCurtain` or `LightningStorm`, in any letter case. [What each behavior delivers](/systems/superweapons/#what-each-behavior-delivers) describes them.
+`Type=` selects which of the engine's built-in effects the weapon delivers when it fires: `MultiMissile`, `EMPulse`, `Firestorm`, `IonCannon`, `HunterSeeker`, `ChemMissile`, `DropPod`, `IronCurtain`, `LightningStorm`, `PsychicReveal`, `GeneticConverter`, `ForceShield` or `PsychicDominator`, in any letter case. [What each behavior delivers](/systems/superweapons/#what-each-behavior-delivers) describes them.
 
-The other Yuri's Revenge names are also recognized: `ChronoSphere`, `ChronoWarp`, `ParaDrop`, `AmerParaDrop`, `PsychicDominator`, `SpyPlane`, `GeneticConverter`, `ForceShield` and `PsychicReveal`. Their effects are not built yet, so a weapon with one of them charges and can be fired, but firing it does nothing.
+The other Yuri's Revenge names are also recognized: `ChronoSphere`, `ChronoWarp`, `ParaDrop`, `AmerParaDrop` and `SpyPlane`. Their effects are not built yet, so a weapon with one of them charges and can be fired, but firing it does nothing.
 
 The section's other keys set the rest: its delay, cameo, cursor and required [`AuxBuilding=`](/keys/auxbuilding/) structure. Several sections can therefore share one behavior and remain independent weapons. Three things come from elsewhere:
 

@@ -808,6 +808,9 @@ class HouseClass : public AbstractClass
 		void Special_Weapon_AI(SuperWeaponType id);
 		bool Place_Special_Blast(SuperWeaponType id, Cell const & cell);
 		Cell Pick_Ion_Cannon_Target(void);
+		Cell Pick_Drop_Target(void);
+		Cell Pick_Mutator_Target(void);
+		Cell Pick_Dominator_Target(void);
 		bool Flag_Attach(Cell const & cell, bool set_home = false);
 		bool Flag_Attach(UnitClass * object, bool set_home = false);
 		bool Flag_Remove(AbstractClass * target, bool set_home = false);

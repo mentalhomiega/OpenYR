@@ -18,6 +18,7 @@
 #include "action.hh"
 #include "overlay.hh"
 #include "super.hh"
+#include "voc.hh"
 #include "vox.hh"
 
 class BuildingTypeClass;
@@ -104,6 +105,10 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		 * the cursor shown over the map and is how the click finds its way back here.
 		 */
 		ActionType Action;
+
+		// Played where the weapon is fired, and (for the force shield) as its effect starts to fade.
+		VocType StartSound;
+		VocType SpecialSound;
 
 		/*
 		 * Pointer to a building type that must also be standing before this super weapon is

@@ -144,6 +144,7 @@
 #include "weapon.h"
 
 #include "objheaps.hh"
+#include "psydom.h"
 
 #include <memory>
 #include <new>
@@ -1221,6 +1222,7 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 
 	IonStormClass::Serialize(stream);
 	LightningStormClass::Serialize(stream);
+	PsychicDominatorClass::Serialize(stream);
 
 	stream.Serialize(LogicTags);
 	stream.Serialize(MapTags);

@@ -191,6 +191,41 @@ class RulesClass
 		TypeList<int> LightningSounds;
 		VocType StormSound;
 
+		// The psychic reveal's radius in cells, and the sounds of the Yuri superweapons.
+		int PsychicRevealRadius;
+		VocType PsychicRevealActivateSound;
+		VocType GeneticMutatorActivateSound;
+		VocType PsychicDominatorActivateSound;
+
+		/*
+		 * The genetic mutator either explodes through MutateExplosionWarhead or turns the
+		 * infantry around its target into brutes through MutateWarhead. A mutated infantryman
+		 * leaves an animation whose MakeInfantry entry picks the AnimToInfantry type it becomes.
+		 */
+		bool MutateExplosion;
+		WarheadTypeClass const * MutateWarhead;
+		WarheadTypeClass const * MutateExplosionWarhead;
+		TypeList<InfantryTypeClass const *> AnimToInfantry;
+
+		// The force shield: its radius in cells, how long it lasts, and the power outage it costs.
+		int ForceShieldRadius;
+		int ForceShieldDuration;
+		int ForceShieldBlackoutDuration;
+		int ForceShieldPlayFadeSoundTime;
+		AnimTypeClass const * ForceShieldInvokeAnim;
+
+		/*
+		 * The psychic dominator: its two animations, how far through the first it fires, the
+		 * damage it deals, how many cells out it takes units over, and the animation over each.
+		 */
+		AnimTypeClass const * DominatorFirstAnim;
+		AnimTypeClass const * DominatorSecondAnim;
+		int DominatorFireAtPercentage;
+		int DominatorDamage;
+		WarheadTypeClass const * DominatorWarhead;
+		int DominatorCaptureRange;
+		AnimTypeClass const * PermaControlledAnimationType;
+
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 

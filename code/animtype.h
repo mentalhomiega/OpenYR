@@ -358,6 +358,9 @@ class AnimTypeClass : public ObjectTypeClass
 		*/
 		bool IsNormalized;
 
+		// When this animation ends, it becomes this entry of AnimToInfantry, owned by its house (-1 for none).
+		int MakeInfantry;
+
 		/*
 		**	If this animation should be rendered and sorted with the other ground
 		**	units, then this flag is true. Typical of this would be fire and other

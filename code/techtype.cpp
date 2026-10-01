@@ -163,6 +163,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	LeadershipRating(5),
 	IsOrganic(false),
 	IsDamageSelf(false),
+	IsImmuneToPsionics(false),
+	IsBalloonHover(false),
+	MindControlRingOffset(140),
 	FlightLevel(-1),
 	IsAllowedToStartInMultiplayer(true),
 	CameoFilename(""),
@@ -597,6 +600,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		LeadershipRating = ini.Get_Int(Name(), "LeadershipRating", LeadershipRating);
 		IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);
 		IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
+		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
+		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
+		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1036,6 +1042,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LeadershipRating);
 	stream.Serialize(IsOrganic);
 	stream.Serialize(IsDamageSelf);
+	stream.Serialize(IsImmuneToPsionics);
+	stream.Serialize(IsBalloonHover);
+	stream.Serialize(MindControlRingOffset);
 	stream.Serialize(MaxPassengers);
 	stream.Serialize(Size);
 	stream.Serialize(SizeLimit);
