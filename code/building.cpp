@@ -1023,6 +1023,10 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 			if (Class->AuxVoxel.VoxLib != NULL) {
 
+				// The turret and barrel step through their frames as the turret animates (BuildingClass::Draw, 0x43DA80).
+				int const turret_frame = Class->AuxVoxel.MotLib != NULL && Class->AuxVoxel.MotLib->Get_Frame_Count() > 0 ? TurretAnimFrame % Class->AuxVoxel.MotLib->Get_Frame_Count() : 0;
+				int const barrel_frame = Class->AuxVoxel2.MotLib != NULL && Class->AuxVoxel2.MotLib->Get_Frame_Count() > 0 ? TurretAnimFrame % Class->AuxVoxel2.MotLib->Get_Frame_Count() : 0;
+
 				matrix.Rotate_Z(PrimaryFacing.Current().As_Radian32());
 				matrix.Translate_X(Class->TurretOffset / 8);
 
@@ -1057,18 +1061,18 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 					draw_barrel = false;
 					voxl = &Class->AuxVoxel2;
 					if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-						Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
+						Draw_Voxel(Class->AuxVoxel2, barrel_frame, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
 					}
 				} else {
 					draw_barrel = true;
 				}
 
-				Draw_Voxel(Class->AuxVoxel, 0, -1, &Class->AuxVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
+				Draw_Voxel(Class->AuxVoxel, turret_frame, -1, &Class->AuxVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
 
 				if (draw_barrel) {
 					voxl = &Class->AuxVoxel2;
 					if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-						Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
+						Draw_Voxel(Class->AuxVoxel2, barrel_frame, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
 					}
 				}
 
@@ -1681,6 +1685,33 @@ void BuildingClass::AI(void)
 	*/
 	if (!Ammo && !Class->IsHospital && !Class->IsArmory) {
 		Ammo = Class->MaxAmmo;
+	}
+
+	/*
+	 * As BuildingClass::Update (0x43FB20): a gattling turret animates while it spins, twice as
+	 * fast out of the attack mission, where the spin also drops by RateDown each frame once
+	 * GuardAreaTargetingDelay plus five frames have passed since the last shot.
+	 */
+	if (Class->IsGattling) {
+		if (GattlingValue > 0) {
+			TurretAnimFrame++;
+		}
+		if (Mission != MISSION_ATTACK) {
+			if (Frame - LastFireFrame > Rule->GuardAreaTargetingDelay + 5) {
+				GattlingValue -= Class->RateDown;
+				if (GattlingValue < 0 || Class->RateDown == 0) {
+					GattlingValue = 0;
+				}
+				int const stage = CurrentGattlingStage;
+				int const * stages = Veterancy.Is_Elite() ? Class->EliteStage : Class->WeaponStage;
+				if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT && GattlingValue < stages[stage - 1]) {
+					CurrentGattlingStage = stage - 1;
+				}
+			}
+			if (GattlingValue > 0) {
+				TurretAnimFrame++;
+			}
+		}
 	}
 
 	/*
@@ -4748,6 +4779,11 @@ int BuildingClass::Do_MISSION_GUARD(void)
 	bool inrange;
 	bool tomove;
 
+	if (Class->IsGattling) {
+		Gattling_Rate_Down(MissionAccumulateTime);
+		MissionAccumulateTime = 0;
+	}
+
 	/*
 	**	If this building has a weapon, then search for a target to attack. When
 	**	a target is found, switch into attack mode to deal with the threat.
@@ -5436,12 +5472,21 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 		}
 	}
 
+	/*
+	 * As BuildingClass::Mission_Attack (0x44ACF0): a gattling weapon spins up for the frames
+	 * since the last call while it fires, faces or rearms, and spins down when it loses its
+	 * target, is busy or is cloaked. The turret of any other structure animates while it
+	 * fires or rearms.
+	 */
 	switch (fire) {
 		case FIRE_ILLEGAL:
 		case FIRE_CANT:
 		case FIRE_RANGE:
 		case FIRE_AMMO:
 			Assign_Target(NULL);
+			if (Class->IsGattling) {
+				Gattling_Rate_Down(MissionAccumulateTime);
+			}
 			Assign_Mission(MISSION_GUARD);
 			Commence();
 			break;
@@ -5450,19 +5495,36 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			if (TarCom != NULL) {
 				PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 			}
+			if (Class->IsGattling) {
+				Gattling_Rate_Up(MissionAccumulateTime);
+				MissionAccumulateTime = 0;
+			}
 			return(2);
 
 		case FIRE_REARM:
 			if (TarCom != NULL) {
 				PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 			}
+			if (Class->IsGattling) {
+				Gattling_Rate_Up(MissionAccumulateTime);
+				MissionAccumulateTime = 0;
+			} else {
+				TurretAnimFrame++;
+			}
 			return(2);
 
 		case FIRE_BUSY:
+			if (Class->IsGattling) {
+				Gattling_Rate_Down(MissionAccumulateTime);
+				MissionAccumulateTime = 0;
+			}
 			return(1);
 
 		case FIRE_CLOAKED:
 			Do_Uncloak();
+			if (Class->IsGattling) {
+				Gattling_Rate_Down(MissionAccumulateTime);
+			}
 			break;
 
 		case FIRE_OK:
@@ -5474,11 +5536,18 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			} else {
 				Fire_At(TarCom, primary);
 			}
+			if (Class->IsGattling) {
+				Gattling_Rate_Up(MissionAccumulateTime);
+				MissionAccumulateTime = 0;
+			} else {
+				TurretAnimFrame++;
+			}
 			return(1);
 
 		default:
 			break;
 	}
+	MissionAccumulateTime = 0;
 	if (TarCom != NULL) {
 		PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 		return(1);

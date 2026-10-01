@@ -28,3 +28,5 @@ Three other paths play the list, and each picks a new random entry every time it
 :::caution[Give weapons on those paths at least one sound]
 With an empty list, the ordinary firing path plays nothing. The EM pulse cannon, the jellyfish sting and the drop pod's covering fire instead play the first sound in the sound list, which in the retail sound list is `FIRSTRM1`, the Firestorm defense burning sound. A weapon used by one of those paths needs at least one entry that matches a registered sound.
 :::
+
+When a [gattling](/systems/gattling-weapons/#sound-and-animation) type fires the weapon, the sound loops while the weapon spins up instead of playing once a shot.

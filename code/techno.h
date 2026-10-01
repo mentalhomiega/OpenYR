@@ -33,6 +33,7 @@
 #pragma once
 
 #include "_voxel.h"
+#include "audio/audiohandle.h"
 #include "capture.h"
 #include "cargo.h"
 #include "door.h"
@@ -137,6 +138,24 @@ class TechnoClass :	public RadioClass,
 		std::optional<CaptureManagerClass> CaptureManager;
 		TechnoClass * MindControlledBy;
 		bool IsPermaControlled;
+
+		/*
+		 * The weapon a multi-turret object fires, and a gattling object's stage and spin. The
+		 * turret's animation frame advances while a gattling object spins, and while any other
+		 * object fires or rearms.
+		 */
+		int CurrentWeaponNumber;
+		int CurrentGattlingStage;
+		int GattlingValue;
+		int TurretAnimFrame;
+
+		// The frame this object last fired a shot on.
+		int LastFireFrame;
+
+		// The loop a spinning gattling weapon plays.
+		AudioHandle GattlingSound;
+		VocType GattlingVoc;
+		bool IsGattlingSoundPlaying;
 
 		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
@@ -537,6 +556,8 @@ class TechnoClass :	public RadioClass,
 		virtual int How_Many_Survivors(void) const;
 		virtual void Scatter_Incoming_Infantry(void) const;
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
+		void Gattling_Rate_Up(int frames);
+		void Gattling_Rate_Down(int frames);
 		virtual int Get_Collateral_Damage(void) const;
 		virtual int Get_Z_Adjust(void) const;
 		bool Is_Z_Fudge_Bridge(void) const;
@@ -790,8 +811,8 @@ inline DirType TechnoClass::Turret_Facing(void) const
 
 inline WeaponDataStruct const * TechnoClass::Get_Class_Weapon_Data(int which) const
 {
-	if (Veterancy.Is_Elite() && (which == 0 || which == 1)) {
-		return(TClass->Get_Weapon(which + 2));
+	if (Veterancy.Is_Elite()) {
+		return(TClass->Get_Elite_Weapon(which));
 	}
 
 	return(TClass->Get_Weapon(which));

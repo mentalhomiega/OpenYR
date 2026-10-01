@@ -909,6 +909,29 @@ void UnitClass::Firing_AI(void)
 				Approach_Target();
 				break;
 		}
+
+		/*
+		 * As UnitClass::UpdateFiring (0x736DF0): a gattling weapon spins up while it fires, faces,
+		 * turns or rearms and spins down otherwise. The turret animates while a gattling weapon
+		 * spins, and otherwise while the unit fires or rearms.
+		 */
+		if (Class->IsGattling) {
+			if (ok == FIRE_OK || ok == FIRE_FACING || ok == FIRE_REARM || ok == FIRE_ROTATING) {
+				Gattling_Rate_Up(1);
+			} else {
+				Gattling_Rate_Down(1);
+			}
+			if (GattlingValue > 0) {
+				TurretAnimFrame++;
+			}
+		} else if (ok == FIRE_OK || ok == FIRE_REARM) {
+			TurretAnimFrame++;
+		}
+	} else if (Class->IsGattling) {
+		Gattling_Rate_Down(1);
+		if (GattlingValue > 0) {
+			TurretAnimFrame++;
+		}
 	}
 }
 
@@ -2644,6 +2667,12 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 	**	firing animation if required.
 	*/
 	if (Class->IsTurretEquipped && Class->AuxVoxel.VoxLib != NULL) {
+		// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
+		int turret_frame = frame;
+		if (frame == 0 && Class->AuxVoxel.MotLib != NULL && Class->AuxVoxel.MotLib->Get_Frame_Count() > 0) {
+			turret_frame = TurretAnimFrame % Class->AuxVoxel.MotLib->Get_Frame_Count();
+		}
+
 		main_matrix.Translate_X(Class->TurretOffset / 8);
 		main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
 
@@ -2675,7 +2704,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			draw_barrel = true;
 		}
 
-		Draw_Voxel(Class->AuxVoxel, frame, -1, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		Draw_Voxel(Class->AuxVoxel, turret_frame, -1, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
 
 		if (draw_barrel) {
 			voxl = &Class->AuxVoxel2;

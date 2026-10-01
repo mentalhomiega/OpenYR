@@ -1349,6 +1349,9 @@ class RulesClass
 		AnimTypeClass const * BombParachute;
 		AnimTypeClass const * Parachute;
 
+		// A gattling structure out of its attack mission spins down once this many frames, plus five, pass without a shot.
+		int GuardAreaTargetingDelay;
+
 		/*
 		 * These are the water splash animations, ordered from the smallest to the
 		 * largest. Which one appears depends on how much damage struck the water.

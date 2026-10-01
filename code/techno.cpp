@@ -273,6 +273,14 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	CurrentRank(-1),
 	MindControlledBy(NULL),
 	IsPermaControlled(false),
+	CurrentWeaponNumber(0),
+	CurrentGattlingStage(0),
+	GattlingValue(0),
+	TurretAnimFrame(0),
+	LastFireFrame(-100),
+	GattlingSound(),
+	GattlingVoc(VOC_NONE),
+	IsGattlingSoundPlaying(false),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -453,7 +461,25 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		}
 	}
 
+	// As TechnoClass::SelectWeapon (0x6F3330): a multi-turret object fires its turret's weapon,
+	// and a gattling object its stage's pair, the second only at an aircraft in the air when
+	// the first stage's second weapon can hit aircraft.
+	if (TClass->Has_Multiple_Turrets() && !TClass->IsGattling) {
+		return(std::max(CurrentWeaponNumber, 0));
+	}
+
 	if (target == NULL) return(0);
+
+	if (TClass->IsGattling) {
+		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
+		if (second != NULL && PrimaryWeapon != NULL) {
+			TechnoClass const * techno = target->As_TechnoClass();
+			if (second->Bullet != NULL && second->Bullet->IsAntiAircraft && techno != NULL && techno->In_Air()) {
+				return(CurrentGattlingStage * 2 + 1);
+			}
+			return(CurrentGattlingStage * 2);
+		}
+	}
 
 	bool webby1 = false;
 	bool webby2 = false;
@@ -1772,6 +1798,9 @@ bool TechnoClass::Limbo(void)
 		Radar_Untrack();
 	}
 
+	GattlingSound.Stop();
+	IsGattlingSoundPlaying = false;
+
 	if (!IsInLimbo) {
 		House->Tracking_Active_Remove(this, false);
 		int risk = Risk();
@@ -3037,6 +3066,10 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	if (IsGattlingSoundPlaying) {
+		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound);
+	}
+
 	/*
 	 * A rank gained is announced to the player, and an object that has become elite flashes
 	 * (TechnoClass::Update, 0x6F9E50).
@@ -3107,6 +3140,7 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	MissionAccumulateTime++;
 	BASECLASS::AI();
 
 	if (!IsActive) return;
@@ -4250,6 +4284,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
 				}
 
+				LastFireFrame = Frame;
 				BurstIndex++;
 				Arm = Rearm_Delay(which);
 				BurstIndex %= weapon->Burst;
@@ -4270,7 +4305,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				/*
 				**	Play any sound effect tied to this weapon type.
 				*/
-				if (weapon->Sound.Count() > 0) {
+				if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
 					Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
 				}
 
@@ -6622,7 +6657,66 @@ void TechnoClass::Delete_Me(void)
 	if (CaptureManager) {
 		CaptureManager->Free_All();
 	}
+	GattlingSound.Stop();
+	IsGattlingSoundPlaying = false;
 	BASECLASS::Delete_Me();
+}
+
+
+/// <summary>
+/// Spins a gattling weapon up for the frames given (TechnoClass::GattlingRateUp, 0x70DE70).
+/// The spin grows by RateUp a frame until it reaches the last stage's threshold, and the
+/// weapon moves up a stage when the spin it had before the call reaches the current stage's
+/// threshold. The Report of the stage's first weapon loops while the weapon spins.
+/// </summary>
+void TechnoClass::Gattling_Rate_Up(int frames)
+{
+	int const * stages = Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage;
+	int const last = std::min<int>(TClass->WeaponStages, TechnoTypeClass::WEAPON_STAGE_COUNT) - 1;
+	int const value = GattlingValue;
+	if (last >= 0 && value < stages[last]) {
+		GattlingValue += TClass->RateUp * frames;
+	}
+	if (CurrentGattlingStage >= 0 && CurrentGattlingStage < last && stages[CurrentGattlingStage] <= value) {
+		CurrentGattlingStage++;
+		GattlingSound.Stop();
+		IsGattlingSoundPlaying = false;
+	}
+
+	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(CurrentGattlingStage * 2)->Weapon;
+	if (!IsGattlingSoundPlaying && weapon != NULL && weapon->Sound.Count() > 0) {
+		GattlingSound.Stop();
+		GattlingVoc = (VocType)weapon->Sound.Pick(SoundRandomSeed);
+		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound, true);
+		IsGattlingSoundPlaying = true;
+	}
+}
+
+
+/// <summary>
+/// Lets a gattling weapon spin down for the frames given (TechnoClass::GattlingRateDown,
+/// 0x70E000). The spin drops by RateDown a frame, and to zero at once when RateDown or the
+/// frames given are zero. The weapon moves down a stage when the spin falls below the
+/// previous stage's threshold, and its firing loop plays out its ending.
+/// </summary>
+void TechnoClass::Gattling_Rate_Down(int frames)
+{
+	GattlingSound.End_Looping();
+	IsGattlingSoundPlaying = false;
+
+	int const drop = TClass->RateDown * frames;
+	GattlingValue -= drop;
+	if (GattlingValue < 0 || drop == 0) {
+		GattlingValue = 0;
+	}
+
+	int const stage = CurrentGattlingStage;
+	if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT) {
+		int const * stages = Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage;
+		if (GattlingValue < stages[stage - 1]) {
+			CurrentGattlingStage = stage - 1;
+		}
+	}
 }
 
 
@@ -8452,6 +8546,11 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CaptureManager);
 	stream.Serialize(MindControlledBy);
 	stream.Serialize(IsPermaControlled);
+	stream.Serialize(CurrentWeaponNumber);
+	stream.Serialize(CurrentGattlingStage);
+	stream.Serialize(GattlingValue);
+	stream.Serialize(TurretAnimFrame);
+	stream.Serialize(LastFireFrame);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

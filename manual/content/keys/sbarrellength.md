@@ -23,3 +23,5 @@ The muzzle places the firing animation, a laser beam, and the start of a sonic w
 A value above `0` also advances the second weapon's projectile up to two steps along its flight as soon as it is fired. The second step is skipped if the first ends the projectile. Laser weapons and [`Inviso=yes`](/keys/inviso/) projectiles are not advanced.
 
 A structure that takes its firing points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/) or [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) ignores this key, as the [`SecondaryFireFLH`](/keys/secondaryfireflh/) page describes.
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.

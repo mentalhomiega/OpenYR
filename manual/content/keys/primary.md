@@ -34,3 +34,5 @@ An elite object fires its [`Elite`](/keys/elite/) weapon from this slot. A struc
 :::danger[This assignment can change weapon numbering]
 A weapon missing from the rules [`[Weapons]` list](/formats/rules-registries/) is numbered when a key such as this one first names it. Adding, removing or renaming an unlisted weapon here therefore shifts the weapon numbers stored in [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger actions. List the weapon in `[Weapons]` to fix its number.
 :::
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

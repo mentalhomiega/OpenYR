@@ -21,3 +21,5 @@ The elite primary fires from [`ElitePrimaryFireFLH`](/keys/eliteprimaryfireflh/)
 :::caution[An upgrade's weapon replaces this one]
 A structure with an upgrade installed uses the upgrade's primary weapon when the upgrade supplies one. The structure's `ElitePrimary` weapon then never applies, whatever the structure's rank.
 :::
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

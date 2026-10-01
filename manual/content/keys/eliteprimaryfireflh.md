@@ -13,3 +13,5 @@ when_omitted:
 [MYTANK] ; example image section
 ElitePrimaryFireFLH=150,0,100
 ```
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

@@ -45,3 +45,5 @@ Two structure settings replace this offset for every weapon slot. If both are se
 - A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure takes both points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/).
 
 Otherwise, a structure whose turret is a voxel adds the turret animation's screen offset to both points.
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

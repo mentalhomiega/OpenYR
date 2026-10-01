@@ -202,12 +202,16 @@ RULES_OBJECTS_READ_RE = re.compile(
 # a formatted name has no literal to find and the settings would be missing
 # from the catalog entirely rather than merely misclassified.
 #
-# A tree-wide sweep found exactly one such reader, so this is a declared
-# supplement rather than a general format-string parser: WeaponTypeClass
-# ::Read_INI formats "BurstDelay%d" once per element of BurstDelay[] and reads
-# each with Get_Int. Both the formatting call and the read are matched below,
-# so a change to either fails extraction instead of publishing four keys the
-# engine no longer looks up.
+# This is a declared supplement rather than a general format-string parser.
+# WeaponTypeClass::Read_INI formats "BurstDelay%d" once per element of
+# BurstDelay[], and TechnoTypeClass::Read_INI formats its numbered weapon list
+# and gattling stages, counting from 1. Both the formatting call and the read
+# are matched below, so a change to either fails extraction instead of
+# publishing keys the engine no longer looks up.
+def _numbered(names, count, start=1):
+    return [names % (start + i) for i in range(count)]
+
+
 COMPUTED_KEY_READS = {
     ("weapon.cpp", "WeaponTypeClass"): [
         {
@@ -221,6 +225,80 @@ COMPUTED_KEY_READS = {
             "member": "BurstDelay",
             "value_type": "integer",
             "default_expr": "BurstDelay[i]",
+        },
+    ],
+    ("techtype.cpp", "TechnoTypeClass"): [
+        {
+            "format": r'sprintf\s*\(\s*buf\s*,\s*"Weapon%d"\s*,\s*i\s*\+\s*1\s*\)',
+            "read": r'(?<!Elite)Weapons\[i\]\.Weapon\s*=\s*TGet_Class\s*\(\s*ini\s*,\s*Name\(\)\s*,'
+                    r'\s*buf\s*,\s*Weapons\[i\]\.Weapon\s*\)',
+            "keys": _numbered("Weapon%d", 18),
+            "receiver": "ini",
+            "suffix": "Class",
+            "section_expr": "Name()",
+            "member": "Weapons",
+            "value_type": "class",
+            "default_expr": "Weapons[i].Weapon",
+        },
+        {
+            "format": r'sprintf\s*\(\s*buf\s*,\s*"EliteWeapon%d"\s*,\s*i\s*\+\s*1\s*\)',
+            "read": r'EliteWeapons\[i\]\.Weapon\s*=\s*TGet_Class\s*\(\s*ini\s*,\s*Name\(\)\s*,'
+                    r'\s*buf\s*,\s*EliteWeapons\[i\]\.Weapon\s*\)',
+            "keys": _numbered("EliteWeapon%d", 18),
+            "receiver": "ini",
+            "suffix": "Class",
+            "section_expr": "Name()",
+            "member": "EliteWeapons",
+            "value_type": "class",
+            "default_expr": "EliteWeapons[i].Weapon",
+        },
+        {
+            "format": r'sprintf\s*\(\s*buf\s*,\s*"Stage%d"\s*,\s*i\s*\+\s*1\s*\)',
+            "read": r'WeaponStage\[i\]\s*=\s*ini\.Get_Int\s*\(\s*Name\(\)\s*,'
+                    r'\s*buf\s*,\s*WeaponStage\[i\]\s*\)',
+            "keys": _numbered("Stage%d", 6),
+            "receiver": "ini",
+            "suffix": "Int",
+            "section_expr": "Name()",
+            "member": "WeaponStage",
+            "value_type": "integer",
+            "default_expr": "WeaponStage[i]",
+        },
+        {
+            "format": r'sprintf\s*\(\s*buf\s*,\s*"EliteStage%d"\s*,\s*i\s*\+\s*1\s*\)',
+            "read": r'EliteStage\[i\]\s*=\s*ini\.Get_Int\s*\(\s*Name\(\)\s*,'
+                    r'\s*buf\s*,\s*EliteStage\[i\]\s*\)',
+            "keys": _numbered("EliteStage%d", 6),
+            "receiver": "ini",
+            "suffix": "Int",
+            "section_expr": "Name()",
+            "member": "EliteStage",
+            "value_type": "integer",
+            "default_expr": "EliteStage[i]",
+        },
+        {
+            "format": r'sprintf\s*\(\s*buf\s*,\s*"Weapon%dFLH"\s*,\s*i\s*\+\s*1\s*\)',
+            "read": r'(?<!Elite)Weapons\[i\]\.FireFLH\s*=\s*ArtINI\.Get_Point\s*\(\s*Graphic_Name\(\)\s*,'
+                    r'\s*buf\s*,\s*Weapons\[i\]\.FireFLH\s*\)',
+            "keys": _numbered("Weapon%dFLH", 18),
+            "receiver": "ArtINI",
+            "suffix": "Point",
+            "section_expr": "Graphic_Name()",
+            "member": "Weapons",
+            "value_type": "point (x,y,z)",
+            "default_expr": "Weapons[i].FireFLH",
+        },
+        {
+            "format": r'sprintf\s*\(\s*buf\s*,\s*"EliteWeapon%dFLH"\s*,\s*i\s*\+\s*1\s*\)',
+            "read": r'EliteWeapons\[i\]\.FireFLH\s*=\s*ArtINI\.Get_Point\s*\(\s*Graphic_Name\(\)\s*,'
+                    r'\s*buf\s*,\s*Weapons\[i\]\.FireFLH\s*\)',
+            "keys": _numbered("EliteWeapon%dFLH", 18),
+            "receiver": "ArtINI",
+            "suffix": "Point",
+            "section_expr": "Graphic_Name()",
+            "member": "EliteWeapons",
+            "value_type": "point (x,y,z)",
+            "default_expr": "Weapons[i].FireFLH",
         },
     ],
 }

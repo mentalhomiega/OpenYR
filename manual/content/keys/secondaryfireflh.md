@@ -24,3 +24,5 @@ A sonic wave from this slot starts at its muzzle but then follows the first weap
 :::caution[Two building settings replace this offset]
 A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) building takes its firing points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/) instead. A building with a [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` fires from that screen offset. Either setting makes this key have no effect on that building.
 :::
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

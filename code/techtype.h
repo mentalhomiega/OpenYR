@@ -44,9 +44,11 @@ class TechnoTypeClass : public ObjectTypeClass
 
 	public:
 
-		// The weapon slots are primary, secondary, elite primary and elite secondary, in that order.
+		// A type carries up to eighteen weapons, each with an elite counterpart, and a gattling
+		// type up to six stages.
 		enum {
-			WEAPON_SLOT_COUNT = 4
+			WEAPON_SLOT_COUNT = 18,
+			WEAPON_STAGE_COUNT = 6
 		};
 
 		/*
@@ -311,6 +313,25 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType ChronoOutSound;
 
 		/*
+		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
+		 * instead of Primary and Secondary.
+		 */
+		int TurretCount;
+		int WeaponCount;
+
+		/*
+		 * A gattling type fires the weapon pair for its current stage. Firing raises its spin by
+		 * RateUp a frame and idling lowers it by RateDown; the spin moves it up a stage on
+		 * reaching that stage's threshold and down a stage on falling below the one before.
+		 */
+		bool IsGattling;
+		int WeaponStages;
+		int WeaponStage[WEAPON_STAGE_COUNT];
+		int EliteStage[WEAPON_STAGE_COUNT];
+		int RateUp;
+		int RateDown;
+
+		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.
 		*/
@@ -503,6 +524,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	These are the weapons that this techno object is armed with.
 		*/
 		WeaponDataStruct Weapons[WEAPON_SLOT_COUNT];
+		WeaponDataStruct EliteWeapons[WEAPON_SLOT_COUNT];
 
 		/*
 		 * If this object cannot be harmed by another object of its own type and house, then
@@ -850,7 +872,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
 		WeaponDataStruct const * Get_Weapon(int which) const;
-		void Set_Weapon(WeaponDataStruct const & weapon, int which);
+		WeaponDataStruct const * Get_Elite_Weapon(int which) const;
+		bool Has_Multiple_Turrets(void) const { return(TurretCount > 0); }
 
 		/*
 		**	This is a pointer to the wake shape (as needed by the gunboat).

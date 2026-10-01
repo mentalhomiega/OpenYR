@@ -84,6 +84,7 @@ MissionClass::MissionClass(void) :
 	SuspendedMission(MISSION_NONE),
 	MissionQueue(MISSION_NONE),
 	Status(0),
+	MissionAccumulateTime(0),
 	IsMissionUnloadStandby(false),
 	Timer(0)
 {
@@ -154,6 +155,7 @@ void MissionClass::Set_Mission(MissionType mission)
 {
 	CurrentMission = mission;
 	MissionQueue = MISSION_NONE;
+	MissionAccumulateTime = 0;
 	IsMissionUnloadStandby = false;
 }
 
@@ -325,6 +327,7 @@ bool MissionClass::Commence(void)
 		*/
 		Timer = 0;
 		Status = 0;
+		MissionAccumulateTime = 0;
 		IsMissionUnloadStandby = false;
 		return(true);
 	}
@@ -572,6 +575,7 @@ void MissionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SuspendedMission);
 	stream.Serialize(MissionQueue);
 	stream.Serialize(Status);
+	stream.Serialize(MissionAccumulateTime);
 	stream.Serialize(IsMissionUnloadStandby);
 	stream.Serialize(Timer);
 }

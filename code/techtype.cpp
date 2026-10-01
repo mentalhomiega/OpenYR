@@ -171,6 +171,14 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTeleporter(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
+	TurretCount(0),
+	WeaponCount(0),
+	IsGattling(false),
+	WeaponStages(0),
+	WeaponStage{},
+	EliteStage{},
+	RateUp(0),
+	RateDown(0),
 	FlightLevel(-1),
 	IsAllowedToStartInMultiplayer(true),
 	CameoFilename(""),
@@ -235,6 +243,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 		Weapons[i].BarrelLength = 0;
 		Weapons[i].BarrelThickness = 0;
 		Weapons[i].FireFLH = Point3D(0,0,0);
+		EliteWeapons[i] = Weapons[i];
 	}
 
 	AbstractTypePtrTracker.Add(this);
@@ -616,10 +625,35 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
-		Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
-		Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
-		Weapons[2].Weapon = TGet_Class(ini, Name(), "ElitePrimary", Weapons[2].Weapon);
-		Weapons[3].Weapon = TGet_Class(ini, Name(), "EliteSecondary", Weapons[3].Weapon);
+		TurretCount = ini.Get_Int(Name(), "TurretCount", TurretCount);
+		WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
+		if (!Has_Multiple_Turrets()) {
+			Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
+			Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
+			EliteWeapons[0].Weapon = TGet_Class(ini, Name(), "ElitePrimary", EliteWeapons[0].Weapon);
+			EliteWeapons[1].Weapon = TGet_Class(ini, Name(), "EliteSecondary", EliteWeapons[1].Weapon);
+		} else {
+			char buf[32];
+			for (int i = 0; i < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); i++) {
+				sprintf(buf, "Weapon%d", i + 1);
+				Weapons[i].Weapon = TGet_Class(ini, Name(), buf, Weapons[i].Weapon);
+				sprintf(buf, "EliteWeapon%d", i + 1);
+				EliteWeapons[i].Weapon = TGet_Class(ini, Name(), buf, EliteWeapons[i].Weapon);
+			}
+		}
+		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
+		WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
+		RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
+		RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
+		if (IsGattling && WeaponStages > 1) {
+			char buf[32];
+			for (int i = 0; i < std::min<int>(WeaponStages, WEAPON_STAGE_COUNT); i++) {
+				sprintf(buf, "Stage%d", i + 1);
+				WeaponStage[i] = ini.Get_Int(Name(), buf, WeaponStage[i]);
+				sprintf(buf, "EliteStage%d", i + 1);
+				EliteStage[i] = ini.Get_Int(Name(), buf, EliteStage[i]);
+			}
+		}
 		VoiceMove = ini.Get_VocType_List(ini, IniName, "VoiceMove", VoiceMove);
 		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
@@ -746,19 +780,29 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			CameoData = (ShapeSet const *)MFCD::Retrieve("XXICON.SHP");
 		}
 
-		Weapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "PrimaryFireFLH", Weapons[0].FireFLH);
-		Weapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "PBarrelLength", Weapons[0].BarrelLength);
-		Weapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "PBarrelThickness", Weapons[0].BarrelThickness);
-		Weapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "SecondaryFireFLH", Weapons[1].FireFLH);
-		Weapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "SBarrelLength", Weapons[1].BarrelLength);
-		Weapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "SBarrelThickness", Weapons[1].BarrelThickness);
 		// An elite weapon fires from where its normal counterpart does unless the art says otherwise.
-		Weapons[2].FireFLH = ArtINI.Get_Point(Graphic_Name(), "ElitePrimaryFireFLH", Weapons[0].FireFLH);
-		Weapons[2].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelLength", Weapons[0].BarrelLength);
-		Weapons[2].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelThickness", Weapons[0].BarrelThickness);
-		Weapons[3].FireFLH = ArtINI.Get_Point(Graphic_Name(), "EliteSecondaryFireFLH", Weapons[1].FireFLH);
-		Weapons[3].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelLength", Weapons[1].BarrelLength);
-		Weapons[3].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelThickness", Weapons[1].BarrelThickness);
+		if (!Has_Multiple_Turrets()) {
+			Weapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "PrimaryFireFLH", Weapons[0].FireFLH);
+			Weapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "PBarrelLength", Weapons[0].BarrelLength);
+			Weapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "PBarrelThickness", Weapons[0].BarrelThickness);
+			Weapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "SecondaryFireFLH", Weapons[1].FireFLH);
+			Weapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "SBarrelLength", Weapons[1].BarrelLength);
+			Weapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "SBarrelThickness", Weapons[1].BarrelThickness);
+			EliteWeapons[0].FireFLH = ArtINI.Get_Point(Graphic_Name(), "ElitePrimaryFireFLH", Weapons[0].FireFLH);
+			EliteWeapons[0].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelLength", Weapons[0].BarrelLength);
+			EliteWeapons[0].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "ElitePBarrelThickness", Weapons[0].BarrelThickness);
+			EliteWeapons[1].FireFLH = ArtINI.Get_Point(Graphic_Name(), "EliteSecondaryFireFLH", Weapons[1].FireFLH);
+			EliteWeapons[1].BarrelLength = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelLength", Weapons[1].BarrelLength);
+			EliteWeapons[1].BarrelThickness = ArtINI.Get_Int(Graphic_Name(), "EliteSBarrelThickness", Weapons[1].BarrelThickness);
+		} else {
+			char buf[32];
+			for (int i = 0; i < std::min<int>(WeaponCount, WEAPON_SLOT_COUNT); i++) {
+				sprintf(buf, "Weapon%dFLH", i + 1);
+				Weapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
+				sprintf(buf, "EliteWeapon%dFLH", i + 1);
+				EliteWeapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
+			}
+		}
 
 		TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
 
@@ -1060,6 +1104,14 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTeleporter);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
+	stream.Serialize(TurretCount);
+	stream.Serialize(WeaponCount);
+	stream.Serialize(IsGattling);
+	stream.Serialize(WeaponStages);
+	stream.Serialize(WeaponStage);
+	stream.Serialize(EliteStage);
+	stream.Serialize(RateUp);
+	stream.Serialize(RateDown);
 	stream.Serialize(MaxPassengers);
 	stream.Serialize(Size);
 	stream.Serialize(SizeLimit);
@@ -1094,6 +1146,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Capacity);
 	stream.Serialize(TurretNotExportedOnGround);
 	stream.Serialize(Weapons);
+	stream.Serialize(EliteWeapons);
 	stream.Serialize(IsTypeImmune);
 	stream.Serialize(IsDetectDisguise);
 	stream.Serialize(IsMoveToShroud);
@@ -1256,27 +1309,28 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 
 /// <summary>
 /// Fetches the weapon data for one of this object type's weapon slots.
-/// An empty elite slot serves up the matching normal weapon instead, so an elite object may
-/// ask for its elite armament without checking first.
 /// </summary>
-/// <param name="which">The weapon slot desired.</param>
+/// <param name="which">The weapon slot desired, below WEAPON_SLOT_COUNT.</param>
 /// <returns>Returns with a pointer to the weapon data for that slot.</returns>
 WeaponDataStruct const * TechnoTypeClass::Get_Weapon(int which) const
 {
-	if (which >= 2 && Weapons[which].Weapon == NULL) {
-		which -= 2;
-	}
 	return(&Weapons[which]);
 }
 
 
 /// <summary>
-/// Sets one of this object type's weapon slots.
+/// Fetches the elite weapon data for one of this object type's weapon slots.
+/// An empty elite slot serves up the matching normal weapon instead, so an elite object may
+/// ask for its elite armament without checking first.
 /// </summary>
-/// <param name="which">The weapon slot to fill in.</param>
-void TechnoTypeClass::Set_Weapon(WeaponDataStruct const & weapon, int which)
+/// <param name="which">The weapon slot desired, below WEAPON_SLOT_COUNT.</param>
+/// <returns>Returns with a pointer to the weapon data for that slot.</returns>
+WeaponDataStruct const * TechnoTypeClass::Get_Elite_Weapon(int which) const
 {
-	Weapons[which] = weapon;
+	if (EliteWeapons[which].Weapon == NULL) {
+		return(&Weapons[which]);
+	}
+	return(&EliteWeapons[which]);
 }
 
 

@@ -22,3 +22,5 @@ The muzzle places the firing animation, a laser beam, and the start of a sonic w
 - An InfantryType creates it at the muzzle, so this key moves the projectile too.
 
 A structure that takes its firing points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/) or [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) ignores this key, as the [`SecondaryFireFLH`](/keys/secondaryfireflh/) page describes.
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.

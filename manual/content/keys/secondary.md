@@ -24,3 +24,5 @@ Writing `none` or `<none>` empties the slot. An ID with no section of its own re
 :::danger[Give an object with a web weapon a Secondary]
 If the first slot's warhead is [`Webby=yes`](/keys/webby/) and this slot is empty, the game can crash when the object is attacked by something the web weapon can fire at but cannot web. That covers every vehicle and structure, a landed aircraft, and any infantry that is immobilized or [`IsWebImmune=yes`](/keys/iswebimmune/). The crash comes when the object decides whether to fight back.
 :::
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

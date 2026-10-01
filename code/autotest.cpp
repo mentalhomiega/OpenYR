@@ -269,6 +269,9 @@ void Dump(void)
 		BuildingClass * object = Buildings[index];
 		if (object->House != PlayerPtr) continue;
 		DebugString("AUTOTEST   building %s cell %d,%d strength %d curtain %d mission %s silo %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->Strength, (int)object->IronCurtainTimer, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Class->IsNukeSilo);
+		if (object->Class->IsGattling) {
+			DebugString("AUTOTEST     gattling stage %d value %d turret frame %d\n", object->CurrentGattlingStage, object->GattlingValue, object->TurretAnimFrame);
+		}
 	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * object = Units[index];
@@ -279,6 +282,9 @@ void Dump(void)
 		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d load %d%% ore %d curtain %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed, (int)(object->Tiberium_Load() * 100), (int)object->Get_Cell_Ptr()->Tiberium_Value(), (int)object->IronCurtainTimer);
 		if (object->Is_Iron_Curtained()) {
 			DebugString("AUTOTEST     tint stage %d light %d\n", object->IronTintStage, object->Apparent_Brightness(1000));
+		}
+		if (object->Class->IsGattling) {
+			DebugString("AUTOTEST     gattling stage %d value %d turret frame %d tar %s\n", object->CurrentGattlingStage, object->GattlingValue, object->TurretAnimFrame, object->TarCom != NULL ? "yes" : "no");
 		}
 	}
 	for (int index = 0; index < Aircraft.Count(); index++) {

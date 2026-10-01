@@ -65,6 +65,9 @@ class MissionClass : public ObjectClass
 
 		int Status;
 
+		// Frames since the mission began or a mission handler last reset it.
+		int MissionAccumulateTime;
+
 		bool IsMissionUnloadStandby;
 
 		/*---------------------------------------------------------------------

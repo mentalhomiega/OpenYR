@@ -20,3 +20,5 @@ The weapon's fire animation, laser beam, sonic wave and attached particle system
 A value above `0` also advances the weapon's projectile up to two steps along its flight as soon as it is fired. The second step is skipped if the first ends the projectile. Laser weapons and [`Inviso=yes`](/keys/inviso/) projectiles are not advanced.
 
 The elite primary slot uses [`ElitePBarrelLength`](/keys/elitepbarrellength/), which defaults to this value.
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.

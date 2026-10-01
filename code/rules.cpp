@@ -652,6 +652,7 @@ RulesClass::RulesClass(void) :
 	MoveFlash(NULL),
 	BombParachute(NULL),
 	Parachute(NULL),
+	GuardAreaTargetingDelay(36),
 	SplashList(),
 	SmallFire(NULL),
 	LargeFire(NULL),
@@ -1235,6 +1236,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		WarpOut = TGet_Class(ini, GENERAL, "WarpOut", WarpOut);
 		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
+		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
 		AllyParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AllyParaDropInf", AllyParaDropInf);
 		AllyParaDropNum = ini.Get_IntList(GENERAL, "AllyParaDropNum", AllyParaDropNum);
 		SovParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "SovParaDropInf", SovParaDropInf);
@@ -2672,6 +2674,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MoveFlash);
 	stream.Serialize(BombParachute);
 	stream.Serialize(Parachute);
+	stream.Serialize(GuardAreaTargetingDelay);
 	stream.Serialize(SplashList);
 	stream.Serialize(SmallFire);
 	stream.Serialize(LargeFire);

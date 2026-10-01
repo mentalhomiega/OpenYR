@@ -13,3 +13,5 @@ when_omitted:
 [MYTANK] ; example image section
 EliteSBarrelLength=64
 ```
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.

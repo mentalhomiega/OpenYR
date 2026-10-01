@@ -172,7 +172,7 @@ AIBasePlanningSide:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: AIBasePlanningSide
       source: code/techtype.cpp
@@ -739,7 +739,7 @@ Accelerates:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsAccelerates
       source: code/techtype.cpp
@@ -2117,7 +2117,7 @@ AllowedToStartInMultiplayer:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsAllowedToStartInMultiplayer
       source: code/techtype.cpp
@@ -3075,7 +3075,7 @@ AutoCrush:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsAutoCrush
       source: code/techtype.cpp
@@ -5812,7 +5812,7 @@ CloakStop:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsCloakStop
       source: code/techtype.cpp
@@ -6959,7 +6959,7 @@ Crusher:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsCrusher
       source: code/techtype.cpp
@@ -7176,7 +7176,7 @@ DamageParticleSystems:
     value_type: list of ParticleSystemTypes
     status: generated
     _provenance:
-      default_candidate: ''
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: DamageParticleSystems
       source: code/techtype.cpp
@@ -7241,7 +7241,7 @@ DamageSmokeOffset:
     value_type: offset (x,y,z)
     status: generated
     _provenance:
-      default_candidate: 0,0,0
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: DamageSmokeOffset
       source: code/techtype.cpp
@@ -8174,7 +8174,7 @@ DetectDisguise:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsDetectDisguise
       source: code/techtype.cpp
@@ -8370,7 +8370,7 @@ Disableable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsDisableable
       source: code/techtype.cpp
@@ -9234,7 +9234,7 @@ ElitePBarrelLength:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9251,7 +9251,7 @@ ElitePBarrelThickness:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9268,7 +9268,7 @@ ElitePrimary:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9285,7 +9285,7 @@ ElitePrimaryFireFLH:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9302,7 +9302,7 @@ EliteSBarrelLength:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9319,7 +9319,7 @@ EliteSBarrelThickness:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9336,7 +9336,7 @@ EliteSecondary:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9353,7 +9353,721 @@ EliteSecondaryFireFLH:
     _provenance:
       default_candidate: null
       declared_in: TechnoTypeClass
-      member: Weapons
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteStage1:
+  key: EliteStage1
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteStage2:
+  key: EliteStage2
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteStage3:
+  key: EliteStage3
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteStage4:
+  key: EliteStage4
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteStage5:
+  key: EliteStage5
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteStage6:
+  key: EliteStage6
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon1:
+  key: EliteWeapon1
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon10:
+  key: EliteWeapon10
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon10FLH:
+  key: EliteWeapon10FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon11:
+  key: EliteWeapon11
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon11FLH:
+  key: EliteWeapon11FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon12:
+  key: EliteWeapon12
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon12FLH:
+  key: EliteWeapon12FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon13:
+  key: EliteWeapon13
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon13FLH:
+  key: EliteWeapon13FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon14:
+  key: EliteWeapon14
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon14FLH:
+  key: EliteWeapon14FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon15:
+  key: EliteWeapon15
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon15FLH:
+  key: EliteWeapon15FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon16:
+  key: EliteWeapon16
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon16FLH:
+  key: EliteWeapon16FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon17:
+  key: EliteWeapon17
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon17FLH:
+  key: EliteWeapon17FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon18:
+  key: EliteWeapon18
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon18FLH:
+  key: EliteWeapon18FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon1FLH:
+  key: EliteWeapon1FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon2:
+  key: EliteWeapon2
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon2FLH:
+  key: EliteWeapon2FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon3:
+  key: EliteWeapon3
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon3FLH:
+  key: EliteWeapon3FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon4:
+  key: EliteWeapon4
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon4FLH:
+  key: EliteWeapon4FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon5:
+  key: EliteWeapon5
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon5FLH:
+  key: EliteWeapon5FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon6:
+  key: EliteWeapon6
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon6FLH:
+  key: EliteWeapon6FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon7:
+  key: EliteWeapon7
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon7FLH:
+  key: EliteWeapon7FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon8:
+  key: EliteWeapon8
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon8FLH:
+  key: EliteWeapon8FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon9:
+  key: EliteWeapon9
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EliteWeapon9FLH:
+  key: EliteWeapon9FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EliteWeapons
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -9670,7 +10384,7 @@ Explosion:
     value_type: list of AnimTypes
     status: generated
     _provenance:
-      default_candidate: ''
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: Explosion
       source: code/techtype.cpp
@@ -10525,7 +11239,7 @@ FlightLevel:
     value_type: integer
     status: reviewed
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: FlightLevel
       source: code/techtype.cpp
@@ -10610,7 +11324,7 @@ ForbiddenHouses:
     value_type: list of HouseTypes
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ForbiddenHouses
       source: code/techtype.cpp
@@ -11512,6 +12226,24 @@ GuardArea:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GuardAreaTargetingDelay:
+  key: GuardAreaTargetingDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '36'
+      declared_in: RulesClass
+      member: GuardAreaTargetingDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 GuardRange:
   key: GuardRange
   scopes:
@@ -12227,7 +12959,7 @@ HunterSeeker:
     value_type: boolean
     status: needs_review
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsHunterSeeker
       source: code/techtype.cpp
@@ -12996,7 +13728,7 @@ ImmuneToVeins:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsImmuneToVeins
       source: code/techtype.cpp
@@ -14280,7 +15012,7 @@ IsDropship:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsDropship
       source: code/techtype.cpp
@@ -14337,6 +15069,23 @@ IsFlammable:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
+IsGattling:
+  key: IsGattling
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsGattling
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IsIceGrowthEnabled:
   key: IsIceGrowthEnabled
   scopes:
@@ -14701,7 +15450,7 @@ IsTrain:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTrain
       source: code/techtype.cpp
@@ -15449,7 +16198,7 @@ LightningRod:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsLightningRod
       source: code/techtype.cpp
@@ -16091,7 +16840,7 @@ ManualReload:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsManualReload
       source: code/techtype.cpp
@@ -17126,7 +17875,7 @@ MoveToShroud:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsMoveToShroud
       source: code/techtype.cpp
@@ -17827,7 +18576,7 @@ NaturalParticleLocation:
     value_type: offset (x,y,z)
     status: generated
     _provenance:
-      default_candidate: 0,0,0
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: NaturalParticleLocation
       source: code/techtype.cpp
@@ -17844,7 +18593,7 @@ NaturalParticleSystem:
     value_type: class
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: NaturalParticleSystem
       source: code/techtype.cpp
@@ -17951,7 +18700,7 @@ Naval:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsNaval
       source: code/techtype.cpp
@@ -18098,7 +18847,7 @@ NoAutoFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsNoAutoFire
       source: code/techtype.cpp
@@ -18398,7 +19147,7 @@ Normalized:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRegulated
       source: code/techtype.cpp
@@ -21321,7 +22070,7 @@ RadarVisible:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRadarVisible
       source: code/techtype.cpp
@@ -21565,6 +22314,40 @@ Rate:
       guard: null
     note: AARate in the same section falls back to this value when absent or zero.
     level: MissionControlClass
+RateDown:
+  key: RateDown
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RateDown
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RateUp:
+  key: RateUp
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RateUp
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RatioAITriggerTeam:
   key: RatioAITriggerTeam
   scopes:
@@ -22192,7 +22975,7 @@ RequiredHouses:
     value_type: list of HouseTypes
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: RequiredHouses
       source: code/techtype.cpp
@@ -22209,7 +22992,7 @@ RequiresStolenAlliedTech:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRequiresStolenAlliedTech
       source: code/techtype.cpp
@@ -22226,7 +23009,7 @@ RequiresStolenSovietTech:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRequiresStolenSovietTech
       source: code/techtype.cpp
@@ -22243,7 +23026,7 @@ RequiresStolenThirdTech:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRequiresStolenThirdTech
       source: code/techtype.cpp
@@ -22869,7 +23652,7 @@ ScrapExplosion:
     value_type: list of AnimTypes
     status: generated
     _provenance:
-      default_candidate: ''
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ScrapExplosion
       source: code/techtype.cpp
@@ -23530,7 +24313,7 @@ ShadowIndex:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ShadowIndex
       source: code/techtype.cpp
@@ -25917,6 +26700,108 @@ Spyable:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+Stage1:
+  key: Stage1
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WeaponStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Stage2:
+  key: Stage2
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WeaponStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Stage3:
+  key: Stage3
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WeaponStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Stage4:
+  key: Stage4
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WeaponStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Stage5:
+  key: Stage5
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WeaponStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Stage6:
+  key: Stage6
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WeaponStage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 StandingFrames:
   key: StandingFrames
   scopes:
@@ -26281,7 +27166,7 @@ Storage:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: Capacity
       source: code/techtype.cpp
@@ -27743,7 +28628,7 @@ TargetLaser:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTargetLaser
       source: code/techtype.cpp
@@ -28650,7 +29535,7 @@ TiberiumHeal:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTiberiumHeal
       source: code/techtype.cpp
@@ -28928,7 +29813,7 @@ TiltsWhenCrushes:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTiltsWhenCrushes
       source: code/techtype.cpp
@@ -29034,7 +29919,7 @@ ToProtect:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsToProtect
       source: code/techtype.cpp
@@ -29328,7 +30213,7 @@ Trainable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTrainable
       source: code/techtype.cpp
@@ -29810,6 +30695,23 @@ TurretChargeAnimRate:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+TurretCount:
+  key: TurretCount
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: TurretCount
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 TurretFacings:
   key: TurretFacings
   scopes:
@@ -29838,7 +30740,7 @@ TurretNotExportedOnGround:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: TurretNotExportedOnGround
       source: code/techtype.cpp
@@ -29855,7 +30757,7 @@ TurretOffset:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: TurretOffset
       source: code/techtype.cpp
@@ -29872,7 +30774,7 @@ TurretSpins:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRadarEquipped
       source: code/techtype.cpp
@@ -29936,7 +30838,7 @@ TypeImmune:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsTypeImmune
       source: code/techtype.cpp
@@ -31058,7 +31960,7 @@ VisibleLoad:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsVisibleLoad
       source: code/techtype.cpp
@@ -31874,6 +32776,652 @@ WaypointAnimationSpeed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Weapon1:
+  key: Weapon1
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon10:
+  key: Weapon10
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon10FLH:
+  key: Weapon10FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon11:
+  key: Weapon11
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon11FLH:
+  key: Weapon11FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon12:
+  key: Weapon12
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon12FLH:
+  key: Weapon12FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon13:
+  key: Weapon13
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon13FLH:
+  key: Weapon13FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon14:
+  key: Weapon14
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon14FLH:
+  key: Weapon14FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon15:
+  key: Weapon15
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon15FLH:
+  key: Weapon15FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon16:
+  key: Weapon16
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon16FLH:
+  key: Weapon16FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon17:
+  key: Weapon17
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon17FLH:
+  key: Weapon17FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon18:
+  key: Weapon18
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon18FLH:
+  key: Weapon18FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon1FLH:
+  key: Weapon1FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon2:
+  key: Weapon2
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon2FLH:
+  key: Weapon2FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon3:
+  key: Weapon3
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon3FLH:
+  key: Weapon3FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon4:
+  key: Weapon4
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon4FLH:
+  key: Weapon4FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon5:
+  key: Weapon5
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon5FLH:
+  key: Weapon5FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon6:
+  key: Weapon6
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon6FLH:
+  key: Weapon6FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon7:
+  key: Weapon7
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon7FLH:
+  key: Weapon7FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon8:
+  key: Weapon8
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon8FLH:
+  key: Weapon8FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon9:
+  key: Weapon9
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Weapon9FLH:
+  key: Weapon9FLH
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: Weapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+WeaponCount:
+  key: WeaponCount
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: WeaponCount
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+WeaponStages:
+  key: WeaponStages
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: WeaponStages
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 WeaponType:
   key: WeaponType
   scopes:
@@ -32545,7 +34093,7 @@ ZFudgeBridge:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ZFudgeBridge
       source: code/techtype.cpp
@@ -32562,7 +34110,7 @@ ZFudgeCliff:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '10'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ZFudgeCliff
       source: code/techtype.cpp
@@ -32579,7 +34127,7 @@ ZFudgeColumn:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '5'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ZFudgeColumn
       source: code/techtype.cpp
@@ -32596,7 +34144,7 @@ ZFudgeTunnel:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '10'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ZFudgeTunnel
       source: code/techtype.cpp

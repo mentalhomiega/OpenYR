@@ -17,3 +17,5 @@ EliteSecondary=MyEliteGrenade
 ```
 
 The elite secondary fires from [`EliteSecondaryFireFLH`](/keys/elitesecondaryfireflh/), which defaults to the secondary weapon's offset.
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

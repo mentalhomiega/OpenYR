@@ -19,3 +19,5 @@ PBarrelThickness=12 ; lifts the muzzle onto the barrel's centerline
 The weapon's fire animation, laser beam, sonic wave and attached particle systems start at the muzzle. A structure that sets [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) or [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) takes its firing point from that setting instead, and ignores this one. The projectile starts at the muzzle only for infantry. An aircraft, structure or vehicle creates it at the mounting point, which this setting does not raise.
 
 The elite primary slot uses [`ElitePBarrelThickness`](/keys/elitepbarrelthickness/), which defaults to this value.
+
+A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.
