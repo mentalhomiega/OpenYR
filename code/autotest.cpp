@@ -35,6 +35,8 @@
 
 #include "_map.h"
 #include "_tactica.h"
+#include "aircraft.h"
+#include "airctype.h"
 #include "animtype.h"
 #include "building.h"
 #include "builtype.h"
@@ -94,6 +96,9 @@ TechnoTypeClass const * Find_Type(std::string const & name)
 	for (int index = 0; index < InfantryTypes.Count(); index++) {
 		if (stricmp(InfantryTypes[index]->Name(), name.c_str()) == 0) return(InfantryTypes[index]);
 	}
+	for (int index = 0; index < AircraftTypes.Count(); index++) {
+		if (stricmp(AircraftTypes[index]->Name(), name.c_str()) == 0) return(AircraftTypes[index]);
+	}
 	return(NULL);
 }
 
@@ -116,6 +121,7 @@ void Select_Type(std::string const & name)
 	For_Player_Objects<UnitClass>(Units, name, [](UnitClass * object) {object->Select();});
 	For_Player_Objects<InfantryClass>(Infantry, name, [](InfantryClass * object) {object->Select();});
 	For_Player_Objects<BuildingClass>(Buildings, name, [](BuildingClass * object) {object->Select();});
+	For_Player_Objects<AircraftClass>(Aircraft, name, [](AircraftClass * object) {object->Select();});
 }
 
 
@@ -201,6 +207,10 @@ void Attack(std::string const & name)
 		InfantryClass * infantry = Infantry[index];
 		if (infantry->IsSelected) infantry->Assign_Target(target), infantry->Assign_Mission(MISSION_ATTACK);
 	}
+	for (int index = 0; index < Aircraft.Count(); index++) {
+		AircraftClass * aircraft = Aircraft[index];
+		if (aircraft->IsSelected) aircraft->Assign_Target(target), aircraft->Assign_Mission(MISSION_ATTACK);
+	}
 }
 
 
@@ -233,6 +243,11 @@ void Dump(void)
 		Cell const nav = object->NavCom != NULL ? object->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		ClassID const loco = Locomotion_Class_ID(object->Locomotion.get());
 		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d moving %d limbo %d loco %08X typeloco %08X speed %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed);
+	}
+	for (int index = 0; index < Aircraft.Count(); index++) {
+		AircraftClass * object = Aircraft[index];
+		if (object->House != PlayerPtr) continue;
+		DebugString("AUTOTEST   aircraft %s cell %d,%d height %d mission %s ammo %d limbo %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->HeightAGL, MissionClass::Mission_Name(object->Get_Mission()), object->Ammo, (int)object->IsInLimbo);
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];
@@ -357,6 +372,13 @@ void AutoTest_Frame(void)
 		}
 		for (int index = 0; index < Units.Count(); index++) {
 			UnitClass * object = Units[index];
+			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
+				TacticalMap->Set_Tactical_Position(object->Center_Coord());
+				break;
+			}
+		}
+		for (int index = 0; index < Aircraft.Count(); index++) {
+			AircraftClass * object = Aircraft[index];
 			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
 				TacticalMap->Set_Tactical_Position(object->Center_Coord());
 				break;
