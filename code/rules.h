@@ -168,6 +168,9 @@ class RulesClass
 		int IronCurtainDuration;
 		AnimTypeClass const * IronCurtainInvokeAnim;
 
+		// The animation a missile silo plays where its nuclear missile takes off.
+		AnimTypeClass const * NukeTakeOff;
+
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 

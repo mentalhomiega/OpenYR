@@ -8,9 +8,7 @@ when_omitted:
   value: "1"
 ---
 
-`Spread` sets how slowly a blast's damage thins with distance from the point of impact. A larger value carries more of the damage to targets further out; it does not add damage.
-
-`Spread` does not set how far a blast reaches. An ordinary blast damages objects within a cell and a half of the impact whatever this value is. [How distance thins the damage](/systems/warheads/#how-distance-thins-the-damage) gives the distances at which damage drops for a given `Spread`.
+`Spread` no longer affects blast damage. [`CellSpread`](/keys/cellspread/) sets how far a blast reaches and [`PercentAtMax`](/keys/percentatmax/) how its damage thins with distance, as [How distance thins the damage](/systems/warheads/#how-distance-thins-the-damage) describes.
 
 An [`EMEffect=yes`](/keys/emeffect/) warhead also uses this value as [the pulse radius in cells](/systems/emp-pulse/#firing-a-pulse), so a pulse's reach and its damage falloff cannot be set separately.
 

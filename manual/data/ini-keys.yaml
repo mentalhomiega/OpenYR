@@ -5050,6 +5050,23 @@ CellAnim:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+CellSpread:
+  key: CellSpread
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: WarheadTypeClass
+      member: CellSpread
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 ChainReaction:
   key: ChainReaction
   scopes:
@@ -6905,6 +6922,23 @@ DamageRadius:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+DamageSelf:
+  key: DamageSelf
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsDamageSelf
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DamageSmokeOffset:
   key: DamageSmokeOffset
   scopes:
@@ -7855,6 +7889,23 @@ DetectDisguise:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DetonationAltitude:
+  key: DetonationAltitude
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BulletTypeClass
+      member: DetonationAltitude
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 Difficulty:
   key: Difficulty
   scopes:
@@ -17465,6 +17516,23 @@ NukeDown:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+NukeMaker:
+  key: NukeMaker
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsNukeMaker
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 NukeProjectile:
   key: NukeProjectile
   scopes:
@@ -17500,6 +17568,24 @@ NukeSilo:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+NukeTakeOff:
+  key: NukeTakeOff
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: NukeTakeOff
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 NukeWarhead:
   key: NukeWarhead
   scopes:
@@ -18246,6 +18332,23 @@ Percent:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+PercentAtMax:
+  key: PercentAtMax
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: WarheadTypeClass
+      member: PercentAtMax
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 PercentBuilt:
   key: PercentBuilt
   scopes:
@@ -29403,6 +29506,23 @@ Verses:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+Vertical:
+  key: Vertical
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsVertical
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 VeryHigh:
   key: VeryHigh
   scopes:
@@ -30010,6 +30130,23 @@ Wall:
       default_candidate: 'no'
       declared_in: WarheadTypeClass
       member: IsWallDestroyer
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+WallAbsoluteDestroyer:
+  key: WallAbsoluteDestroyer
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsWallAbsoluteDestroyer
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass

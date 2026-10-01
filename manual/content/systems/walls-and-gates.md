@@ -167,11 +167,12 @@ The segment needs no hit of its own. A segment at one of these stages vanishes t
 
 [`Strength`](/keys/strength/#scope-overlaytype) on a wall overlay is a per-hit threshold, not a pool of hit points. A hit of at least that much damage always lands and advances the segment one stage. A smaller hit lands with a chance of its damage in `Strength` plus one: 50 damage against `Strength=150` lands 50 times in 151. Missed hits do not add up, so each hit is tested on its own.
 
-Five sources damage walls. The table gives the damage each one passes to this test. Only the first two can be changed in the rules.
+Six sources damage walls. The table gives the damage each one passes to this test. Only the first three can be changed in the rules.
 
 | Source | Damage applied |
 | --- | --- |
-| An explosion in the cell whose warhead is [`Wall=yes`](/keys/wall/#scope-warheadtype), or [`Wood=yes`](/keys/wood/) against an overlay with wood armor | The explosion's damage |
+| An explosion reaching the cell, as its warhead's [`CellSpread`](/keys/cellspread/) sets, whose warhead is [`WallAbsoluteDestroyer=yes`](/keys/wallabsolutedestroyer/) | `-1`, which removes the segment outright |
+| An explosion reaching the cell whose warhead is [`Wall=yes`](/keys/wall/#scope-warheadtype), or [`Wood=yes`](/keys/wood/) against an overlay with wood armor | The explosion's damage |
 | A sonic wave from an [`IsSonic=yes`](/keys/issonic/) weapon passing over the cell, whatever its warhead | The [`AmbientDamage`](/keys/ambientdamage/) of the firing object's primary weapon |
 | A crusher vehicle driving onto a [`Crushable=yes`](/keys/crushable/#scope-aircrafttype) wall | `-1`, which removes the segment outright |
 | The cascade described below, against each neighbor at stage zero | `200` |

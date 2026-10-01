@@ -101,6 +101,7 @@ class BulletClass : public ObjectClass
 		bool Is_Homing(void) const;
 		void Draw_Voxel(VoxelDataStruct const & voxeldata, Matrix3D const & transform, Point2D const & drawpoint, Rect const & cliprect, int frame, ShapeFlags_Type flags, int brightness) const;
 		void Detonate(Coord const & coord);
+		void Nuke_Maker(void);
 
 		/*
 		**	If this bullet is forced to be inaccurate because of some outside means. A tank

@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-An explosion from a `Wall=yes` warhead can damage the wall overlay in the cell it lands in. The chance of a hit landing depends on the explosion's raw damage, and [`Verses`](/keys/verses/) does not apply to walls; [Taking damage](/systems/walls-and-gates/#taking-damage) gives the rule. A warhead without the flag leaves walls undamaged, unless it is [`Wood=yes`](/keys/wood/) and the wall's armor is wood.
+An explosion from a `Wall=yes` warhead can damage the wall overlays in every cell it reaches, as its [`CellSpread`](/keys/cellspread/) sets. The chance of a hit landing depends on the explosion's raw damage, and [`Verses`](/keys/verses/) does not apply to walls; [Taking damage](/systems/walls-and-gates/#taking-damage) gives the rule. A warhead without the flag leaves walls undamaged, unless it is [`Wood=yes`](/keys/wood/) and the wall's armor is wood.
 
 In scenarios with [`DestroyableBridges=yes`](/keys/destroyablebridges/), the same explosions can damage bridges. Whatever that setting, they crack ice in the explosion's cell unless they go off up on a bridge.
 

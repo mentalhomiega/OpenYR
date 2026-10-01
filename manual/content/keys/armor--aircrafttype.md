@@ -10,7 +10,7 @@ when_omitted:
 
 A warhead's damage to an object of this type is multiplied by the warhead's [`Verses`](/keys/verses/) entry for the object's [armor class](/reference/enums/armor/). Forced damage, such as a C4 charge destroying a structure, skips this multiply. A vehicle, infantryman, aircraft or structure also weighs each of its weapons against the target's class when it picks which weapon to fire.
 
-Other reductions come before and after the `Verses` multiply. A prone infantryman's reduction, the house and crate armor divisors, and the veteran armor bonus apply before it. Distance falloff and the [`MinDamage`](/keys/mindamage/) and [`MaxDamage`](/keys/maxdamage/) limits apply after it. [What the target loses](/systems/warheads/#what-the-target-loses) lists every step in order.
+Other reductions come before and after the `Verses` multiply. A prone infantryman's reduction, the house and crate armor divisors, the veteran armor bonus and distance falloff apply before it. The [`MaxDamage`](/keys/maxdamage/) limit applies after it. [What the target loses](/systems/warheads/#what-the-target-loses) lists every step in order.
 
 An OverlayType's class matters only for a wall. Overlays never take damage through a `Verses` list. A wall overlay whose class is `wood` can also be reduced by a [`Wood=yes`](/keys/wood/) warhead, in addition to the wall-destroying warheads that reduce any wall.
 

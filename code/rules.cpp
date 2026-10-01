@@ -349,6 +349,7 @@ RulesClass::RulesClass(void) :
 	OccupyWeaponRange(5),
 	IronCurtainDuration(0),
 	IronCurtainInvokeAnim(NULL),
+	NukeTakeOff(NULL),
 	AIMinorSuperReadyPercent(0.8),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
@@ -1137,6 +1138,7 @@ bool RulesClass::General(CCINIClass const & ini)
 	if (ini.Is_Present(GENERAL)) {
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
+		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		AIMinorSuperReadyPercent = ini.Get_Float(GENERAL, "AIMinorSuperReadyPercent", AIMinorSuperReadyPercent);
 		SmallVisceroid = TGet_Class(ini, GENERAL, "SmallVisceroid", SmallVisceroid);
 		TiberiumHeal = ini.Get_Float(GENERAL, "TiberiumHeal", TiberiumHeal);
@@ -2239,6 +2241,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyWeaponRange);
 	stream.Serialize(IronCurtainDuration);
 	stream.Serialize(IronCurtainInvokeAnim);
+	stream.Serialize(NukeTakeOff);
 	stream.Serialize(AIMinorSuperReadyPercent);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
@@ -2950,6 +2953,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	if (target == IronCurtainInvokeAnim) {
 		IronCurtainInvokeAnim = NULL;
 	}
+	if (target == NukeTakeOff) {
+		NukeTakeOff = NULL;
+	}
 	if (target == IonBeam) {
 		IonBeam = NULL;
 	}
@@ -3054,6 +3060,11 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
  *=============================================================================================*/
 bool RulesClass::Objects(CCINIClass const & ini)
 {
+	/*
+	**	A NukeMaker warhead fetches its payload by name, so make sure that weapon is read.
+	*/
+	WeaponTypeClass::Find_Or_Make("NukePayload");
+
 	/*
 	**	Fetch the house attribute override values.
 	*/

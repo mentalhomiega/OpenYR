@@ -99,6 +99,8 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	AirburstWeapon(NULL),
 	Elasticity(.75),
 	Acceleration(3),
+	IsVertical(false),
+	DetonationAltitude(0),
 	Color(0),
 	Trailer(0),
 	ROT(0),
@@ -160,6 +162,8 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		ROT = ini.Get_Int(Name(), "ROT", ROT);
 		Elasticity = ini.Get_Float(Name(), "Elasticity", Elasticity);
 		Acceleration = ini.Get_Int(Name(), "Acceleration", Acceleration);
+		IsVertical = ini.Get_Bool(Name(), "Vertical", IsVertical);
+		DetonationAltitude = ini.Get_Int(Name(), "DetonationAltitude", DetonationAltitude);
 		Color = ini.Get_Scheme_Index(Name(), "Color", Color);
 		IsArcing = ini.Get_Bool(Name(), "Arcing", IsArcing);
 		IsFloater = ini.Get_Bool(Name(), "Floater", IsFloater);
@@ -343,6 +347,8 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AirburstWeapon);
 	stream.Serialize(Elasticity);
 	stream.Serialize(Acceleration);
+	stream.Serialize(IsVertical);
+	stream.Serialize(DetonationAltitude);
 	stream.Serialize(Color);
 	stream.Serialize(Trailer);
 	stream.Serialize(ROT);

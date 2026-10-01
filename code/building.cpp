@@ -6046,6 +6046,9 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 							delete bullet;
 							bullet = NULL;
 						} else {
+							if (Rule->NukeTakeOff != NULL) {
+								new AnimClass(Rule->NukeTakeOff, launch);
+							}
 							if (!House->Is_Player_Control()) {
 								Speak(VOX_MISSILE_LAUNCH_DETECTED);
 							}

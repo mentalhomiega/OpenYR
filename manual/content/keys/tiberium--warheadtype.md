@@ -8,8 +8,6 @@ when_omitted:
   value: "no"
 ---
 
-An explosion from a `Tiberium=yes` warhead can set off the Tiberium in its cell when the cell's overlay is a [`ChainReaction=yes`](/keys/chainreaction/) Tiberium overlay. The same explosion also thins that cell's Tiberium. Explosions from other warheads leave such a cell alone. [Tiberium damage](/systems/tiberium/#damage) gives the detonation chance and the thinning.
-
-A sonic wave passing over the cell can set the Tiberium off whatever its warhead.
+An explosion from a `Tiberium=yes` warhead thins the Tiberium in every cell it reaches whose overlay is a [`ChainReaction=yes`](/keys/chainreaction/) Tiberium overlay, by one growth stage for every ten points of damage. Explosions from other warheads leave such a cell alone. No explosion sets the Tiberium off; [Tiberium damage](/systems/tiberium/#damage) covers what does.
 
 The flag makes no difference to a `ChainReaction=yes` overlay that is not Tiberium; the [`ChainReaction`](/keys/chainreaction/) page covers that case.

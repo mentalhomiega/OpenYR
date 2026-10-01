@@ -15,7 +15,7 @@ when_omitted:
 Verses=100%,90%,80%,70%,60%,50%,40%,30%,20%,10%,100% ; none, flak, plate, light, medium, heavy, wood, steel, concrete, special_1, special_2
 ```
 
-A `0%` entry does not make a class immune. This table never reduces a hit below one point, and targets near a blast still take [`MinDamage`](/keys/mindamage/). [What the target loses](/systems/warheads/#what-the-target-loses) gives the full order.
+A `0%` entry stops the warhead harming that class. The multiplied damage is rounded down, so a small hit against a low percentage can come to nothing. [What the target loses](/systems/warheads/#what-the-target-loses) gives the full order.
 
 An empty `Verses=` counts as leaving the key out.
 

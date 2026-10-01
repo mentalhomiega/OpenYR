@@ -155,6 +155,23 @@ class WarheadTypeClass : public AbstractTypeClass
 		bool IsWebby;
 
 		/*
+		 * The blast reaches CellSpread cells from where the warhead goes off. Damage falls off
+		 * in a straight line from the full amount at the point of impact to PercentAtMax of it
+		 * at that distance.
+		 */
+		float CellSpread;
+		float PercentAtMax;
+
+		// A WallAbsoluteDestroyer warhead knocks down any wall in its blast outright.
+		bool IsWallAbsoluteDestroyer;
+
+		/*
+		 * A NukeMaker warhead does no damage where it goes off. Instead it drops the
+		 * NukePayload weapon's projectile onto its target from high above.
+		 */
+		bool IsNukeMaker;
+
+		/*
 		**	If this warhead can destroy wooden walls, then this flag will be true.
 		*/
 		bool IsWoodDestroyer;

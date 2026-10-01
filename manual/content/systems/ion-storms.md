@@ -148,7 +148,7 @@ A bolt strikes the ground of its cell, or the bridge deck when the cell has a br
 - plays [`LightningSound`](/keys/lightningsound/) at full volume, wherever on the map the bolt lands;
 - plays the explosion animation that [`IonLightningDamage`](/keys/ionlightningdamage/) and [`IonStormWarhead`](/keys/ionstormwarhead/) select for the cell's land type;
 - adds a flash of light when that warhead sets [`Bright=yes`](/keys/bright/);
-- deals `IonLightningDamage` through `IonStormWarhead` to everything within the standard explosion radius of 1.5 cells. The bolt has no attacker, so no house gets credit for a kill;
+- deals `IonLightningDamage` through `IonStormWarhead` to everything within that warhead's [`CellSpread`](/keys/cellspread/). The bolt has no attacker, so no house gets credit for a kill;
 - throws debris when the strike changed the cell, as described below;
 - draws the bolt as a jagged line from the strike point up to a height of 200 levels.
 

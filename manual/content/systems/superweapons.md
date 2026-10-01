@@ -34,7 +34,9 @@ keys:
   - IsPowered
   - ManualControl
   - NodHunterSeeker
+  - NukeMaker
   - NukeSilo
+  - NukeTakeOff
   - Organic
   - RechargeTime
   - RechargeVoice
@@ -313,7 +315,24 @@ A repeating missile launches from a silo. The engine finds the first BuildingTyp
 
 The house stores a single missile target. A second launch before the first silo has launched its missile therefore redirects that silo. A missile already in flight keeps its target.
 
-The silo opens its door, launches the missile, closes the door and returns to guard. The projectile, warhead, maximum speed and range come from the `WeaponType=` of the section the [declaration warning](#declaring-a-superweapon) describes. The silo ignores that weapon's `Damage=` and gives the projectile a fixed strength of 200. The missile leaves five eighths of a cell (160 leptons) north of the silo's center, pointing straight up. When the launching house is not the local player's, the player hears the launch-detected announcement.
+The silo opens its door, launches the missile, closes the door and returns to guard. The projectile, warhead, maximum speed and range come from the `WeaponType=` of the section the [declaration warning](#declaring-a-superweapon) describes. The silo ignores that weapon's `Damage=` and gives the projectile a fixed strength of 200. The missile leaves five eighths of a cell (160 leptons) north of the silo's center, pointing straight up, and [`NukeTakeOff`](/keys/nuketakeoff/) plays there. When the launching house is not the local player's, the player hears the launch-detected announcement.
+
+In Yuri's Revenge the missile is a [`Vertical=yes`](/keys/vertical/) projectile with a [`NukeMaker=yes`](/keys/nukemaker/) warhead. It climbs off the top of the screen and explodes at its [`DetonationAltitude`](/keys/detonationaltitude/), and the `NukePayload` weapon's projectile then falls onto the target from the same height and deals the payload's damage.
+
+```ini title="rulesmd.ini"
+[NukeSpecial]
+Type=MultiMissile
+WeaponType=NukeCarrier
+
+[NukeCarrier]          ; climbs out of the silo
+Projectile=GiantNukeUp ; Vertical=yes, DetonationAltitude=20000
+Warhead=NukeMaker      ; NukeMaker=yes
+
+[NukePayload]          ; falls on the target
+Projectile=GiantNukeDown
+Warhead=NUKE
+Damage=600
+```
 
 A one-time missile needs no silo. It enters from the map edge nearest the target. It is built from the hard-coded weapon `MultiLauncher` or `ChemLauncher`, according to the behavior, and deals that weapon's `Damage=`. It is fired with a range of `100000` leptons, longer than any map is wide.
 

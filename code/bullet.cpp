@@ -388,7 +388,42 @@ void BulletClass::AI(void)
 	 * over any terrain in the way. Everything else merely follows the arc it
 	 * was launched along and bounces off whatever it lands on.
 	 */
-	if (Class->ROT > 0) {
+	if (Class->IsVertical) {
+
+		/*
+		 * A vertical projectile speeds up toward its weapon's speed and flies straight,
+		 * with no gravity and no steering (the Vertical branch of BulletClass::AI, 0x4666E0).
+		 */
+		double speed = Velocity.Speed();
+		if ((int)speed < MaxSpeed) {
+			if (Velocity.X == 0 && Velocity.Y == 0 && Velocity.Z == 0) {
+				Velocity = TVelocity3D<double>(100.0, 0.0, 0.0);
+			}
+			Velocity.Set_Speed((int)speed + Class->Acceleration);
+		}
+
+		Coord old_coord = coord;
+		coord.X += (int)Velocity.X;
+		coord.Y += (int)Velocity.Y;
+		coord.Z += (int)Velocity.Z;
+
+		if (coord.Z > Class->DetonationAltitude || coord.Z < Map.Get_Height_GL(coord)) {
+			forced = true;
+			impact = IMPACT_NORMAL;
+		} else if (Map[coord].IsUnderBridge || Map[old_coord].IsUnderBridge) {
+			int bridge_height = Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT;
+			if (coord.Z < bridge_height && old_coord.Z >= bridge_height || coord.Z >= bridge_height && old_coord.Z < bridge_height) {
+				forced = true;
+				impact = IMPACT_NORMAL;
+			}
+		}
+		if (!Map.In_Radar(coord)) {
+			coord = PositionCoord;
+			forced = true;
+			impact = IMPACT_EDGE;
+		}
+
+	} else if (Class->ROT > 0) {
 		double speed = Velocity.Speed();
 		int max_speed = MaxSpeed;
 
@@ -1281,7 +1316,11 @@ void BulletClass::Detonate(Coord const & coord)
 {
 	WarheadTypeClass * warhead = Warhead;
 
-	if (warhead->IsEMEffect) {
+	if (warhead->IsNukeMaker) {
+		Nuke_Maker();
+	}
+
+	else if (warhead->IsEMEffect) {
 		new EMPulseClass(coord.As_Cell(), Warhead->SpreadFactor, Strength, Payback);
 	}
 
@@ -1557,4 +1596,31 @@ void BulletClass::Assign_Target(AbstractClass * target)
 ObjectTypeClass const * BulletClass::Class_Of(void) const
 {
 	return((ObjectTypeClass const *)Class);
+}
+
+
+/// <summary>
+/// Drops the NukePayload weapon's projectile on this projectile's target, as
+/// BulletClass::NukeMaker (0x46B310) does. The payload starts DetonationAltitude leptons
+/// (this projectile's) above the target's cell and falls straight down.
+/// </summary>
+void BulletClass::Nuke_Maker(void)
+{
+	if (TarCom == NULL) {
+		return;
+	}
+	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Or_Make("NukePayload");
+	if (weapon == NULL || weapon->Bullet == NULL) {
+		return;
+	}
+
+	Coord coord = Map[TarCom->Center_Coord()].Center_Coord();
+	coord.Z += Class->DetonationAltitude;
+
+	BulletClass * bullet = Create_Bullet(weapon->Bullet, TarCom, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->ProjectileRange, true);
+	if (bullet != NULL) {
+		if (!bullet->Unlimbo(coord, TVelocity3D<double>(0.0, 0.0, -1.0))) {
+			delete bullet;
+		}
+	}
 }

@@ -15,7 +15,6 @@ keys:
   - IsPowered
   - LaserFencePost
   - MessageDelay
-  - MinDamage
   - MinProductionSpeed
   - MultipleFactory
   - Power
@@ -174,11 +173,9 @@ When the timer expires while the house is short, each structure that passes all 
 
 The tick ignores the on/off switch. A switched-off structure still takes damage, although it no longer adds to the drain. The drain test reads the structure's type only, so a structure whose drain comes entirely from its plugs is never damaged.
 
-A shortfall wears a base down to `ConditionYellow` and stops there. With a 1-point tick, it destroys nothing. Raising [`MinDamage`](/keys/mindamage/) makes every tick larger, and a tick larger than a structure's remaining strength destroys it.
+A shortfall wears a base down to `ConditionYellow` and stops there. With a 1-point tick, it destroys nothing.
 
-:::caution[Verses cannot soften the tick]
-The tick is not forced damage, so the warhead's [`Verses`](/keys/verses/) table applies. A 1-point hit multiplied by any percentage below 200, including 0, still deals 1 point. Only 200 percent and above increases it. To exempt a structure, give its type [`Immune=yes`](/keys/immune/).
-:::
+The tick is not forced damage, so the warhead's [`Verses`](/keys/verses/) table applies. The 1-point hit is multiplied by the entry for the structure's armor and rounded down, so any entry below 100 percent turns the tick into nothing.
 
 ### Production
 

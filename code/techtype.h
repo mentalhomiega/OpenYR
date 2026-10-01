@@ -283,6 +283,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// An organic vehicle is killed by the Iron Curtain instead of being protected.
 		bool IsOrganic;
 
+		// A DamageSelf object is caught in the blasts of its own weapons.
+		bool IsDamageSelf;
+
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
 		**	value specifies the total passenger size it may carry at once.

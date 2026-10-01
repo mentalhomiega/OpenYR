@@ -12,7 +12,7 @@ when_omitted:
 IonLightningDamage=500
 ```
 
-Each lightning bolt deals this damage through [`IonStormWarhead`](/keys/ionstormwarhead/) to every object within 1.5 cells of the strike point. Objects with [`Immune=yes`](/keys/immune/#scope-aircrafttype), and members of a team whose TeamType sets [`IonImmune=yes`](/keys/ionimmune/), take none. The bolt has no attacker, so no house is credited with its kills. The warhead's [`Verses`](/keys/verses/) table and [`Spread`](/keys/spread/#scope-warheadtype) falloff decide what each object loses. [What a strike does](/systems/ion-storms/#what-a-strike-does) lists the rest of the strike.
+Each lightning bolt deals this damage through [`IonStormWarhead`](/keys/ionstormwarhead/) to every object within that warhead's [`CellSpread`](/keys/cellspread/) of the strike point. Objects with [`Immune=yes`](/keys/immune/#scope-aircrafttype), and members of a team whose TeamType sets [`IonImmune=yes`](/keys/ionimmune/), take none. The bolt has no attacker, so no house is credited with its kills. The warhead's [`PercentAtMax`](/keys/percentatmax/) falloff and [`Verses`](/keys/verses/) table decide what each object loses. [What a strike does](/systems/ion-storms/#what-a-strike-does) lists the rest of the strike.
 
 The same figure picks the bolt's explosion animation from the warhead's [`AnimList`](/keys/animlist/), or from [`SplashList`](/keys/splashlist/) when a [`Conventional=yes`](/keys/conventional/) warhead strikes open water. An [`EMEffect=yes`](/keys/emeffect/) warhead picks its `AnimList` entry at random instead of by damage. A bolt on a bridge cell strikes the bridge deck, so it uses `AnimList` even over water.
 

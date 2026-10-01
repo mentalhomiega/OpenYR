@@ -184,6 +184,15 @@ class BulletTypeClass : public ObjectTypeClass
 		int Acceleration;
 
 		/*
+		 * A vertical projectile flies in a straight line with no gravity, speeding up by
+		 * Acceleration each frame until it reaches its weapon's speed. It detonates on
+		 * meeting the ground or on climbing above DetonationAltitude leptons, which is how
+		 * the nuclear missile leaves the top of the screen.
+		 */
+		bool IsVertical;
+		int DetonationAltitude;
+
+		/*
 		 * This is the color scheme index that a voxel projectile is remapped to when it is
 		 * blitted to the screen. Projectiles drawn as shapes are not affected by this.
 		 */

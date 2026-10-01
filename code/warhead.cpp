@@ -102,6 +102,10 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	Particle(NULL),
 	IsWallDestroyer(false),
 	IsWebby(false),
+	CellSpread(0.0f),
+	PercentAtMax(1.0f),
+	IsWallAbsoluteDestroyer(false),
+	IsNukeMaker(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
 	IsOrganic(false),
@@ -178,6 +182,10 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsEMEffect = ini.Get_Bool(Name(), "EMEffect", IsEMEffect);
 
 		IsWebby = ini.Get_Bool(Name(), "Webby", IsWebby);
+		CellSpread = ini.Get_Float(Name(), "CellSpread", CellSpread);
+		PercentAtMax = ini.Get_Float(Name(), "PercentAtMax", PercentAtMax);
+		IsWallAbsoluteDestroyer = ini.Get_Bool(Name(), "WallAbsoluteDestroyer", IsWallAbsoluteDestroyer);
+		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
 			WebDurationVariation = ini.Get_Int(Name(), "WebDurationVariation", WebDurationVariation);
@@ -267,6 +275,10 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Particle);
 	stream.Serialize(IsWallDestroyer);
 	stream.Serialize(IsWebby);
+	stream.Serialize(CellSpread);
+	stream.Serialize(PercentAtMax);
+	stream.Serialize(IsWallAbsoluteDestroyer);
+	stream.Serialize(IsNukeMaker);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);
 	stream.Serialize(IsOrganic);

@@ -265,7 +265,7 @@ void Dump(void)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * object = Buildings[index];
 		if (object->House != PlayerPtr) continue;
-		DebugString("AUTOTEST   building %s cell %d,%d strength %d curtain %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->Strength, (int)object->IronCurtainTimer);
+		DebugString("AUTOTEST   building %s cell %d,%d strength %d curtain %d mission %s silo %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->Strength, (int)object->IronCurtainTimer, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Class->IsNukeSilo);
 	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * object = Units[index];
@@ -413,6 +413,16 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
 			}
+		}
+	} else if (step.Command == "ini") {
+		// ini <section>: every entry of that section of the rules file, as the game read it.
+		CCINIClass const & ini = *RuleINI;
+		int count = ini.Entry_Count(step.Argument.c_str());
+		for (int index = 0; index < count; index++) {
+			char const * entry = ini.Get_Entry(step.Argument.c_str(), index);
+			char value[256] = "";
+			ini.Get_String(step.Argument.c_str(), entry, "", value, sizeof(value));
+			DebugString("AUTOTEST   ini [%s] %s=%s\n", step.Argument.c_str(), entry, value);
 		}
 	} else if (step.Command == "grant") {
 		// grant <SuperWeaponTypeID>: gives the player that super weapon, fully charged.

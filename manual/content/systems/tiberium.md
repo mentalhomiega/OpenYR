@@ -259,17 +259,17 @@ Infantry take damage each time they finish moving into a Tiberium cell. The dama
 
 Infantry whose type sets [`TiberiumProof=yes`](/keys/tiberiumproof/), or that have the [`TIBERIUM_PROOF`](/systems/veterancy/#abilities) veteran ability, take none. When the scenario sets [`TiberiumDeathToVisceroid=yes`](/keys/tiberiumdeathtovisceroid/), infantry killed this way leave a small visceroid owned by the Neutral house, unless a vehicle stands in the cell.
 
-An overlay with [`ChainReaction=yes`](/keys/chainreaction/) lets explosions set off the Tiberium in its cell. For a Tiberium overlay, the explosion's warhead must set [`Tiberium=yes`](/keys/tiberium/#scope-warheadtype). A sonic wave sets the cell off without that warhead test.
+An overlay with [`ChainReaction=yes`](/keys/chainreaction/) lets a sonic wave passing over the cell set off the Tiberium there. Explosions never set it off.
 
 A cell detonates only at stage 2 or higher, with a chance of 5% per stage. The detonation removes half the cell's stages, rounded down. It deals that many stages multiplied by `Power` as damage, through the [`C4Warhead`](/keys/c4warhead/).
 
 After a detonation, each neighboring Tiberium cell above stage 2 has an 80% chance of being hit 1 to 8 seconds later by the `INVISO` animation. With the shipped rules, that hit can set off a neighbor whose overlay has `ChainReaction=yes` in turn. A type with `Power=0` shows no explosion and deals no damage, but its detonation still removes the stages and still hits neighbors.
 
-On an overlay with `ChainReaction=yes`, an explosion that passes the warhead test also removes one stage for every ten points of its damage, whether or not the cell detonates. Explosions never thin or set off a cell whose overlay lacks it. In the shipped rules, the overlays of the `Image=1` set do not set it.
+On an overlay with `ChainReaction=yes`, an explosion that reaches the cell removes one stage for every ten points of its damage, when the explosion's warhead sets [`Tiberium=yes`](/keys/tiberium/#scope-warheadtype). Explosions never thin a cell whose overlay lacks it. In the shipped rules, the overlays of the `Image=1` set do not set it.
 
 An animation with [`TiberiumChainReaction=yes`](/keys/tiberiumchainreaction/) that starts on a Tiberium cell clears the cell and deals [`TiberiumExplosionDamage`](/keys/tiberiumexplosiondamage/) through the `C4Warhead`. One time in three, it also leaves one of the type's [`Debris`](/keys/debris/) animations, recolored with the type's [`Color`](/keys/color/#scope-tiberium).
 
-With [`TiberiumExplosive=yes`](/keys/tiberiumexplosive/#scope-global-rules) in `[CombatDamage]`, a destroyed vehicle carrying Tiberium explodes over a radius of one and a half cells. The damage is the sum, over its compartments, of the amount held multiplied by that type's `Power`. A vehicle with no death explosion from [`Explosion`](/keys/explosion/) never sets it off, and a scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) prevents it. [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) covers when it goes off.
+With [`TiberiumExplosive=yes`](/keys/tiberiumexplosive/#scope-global-rules) in `[CombatDamage]`, a destroyed vehicle carrying Tiberium explodes through [`C4Warhead`](/keys/c4warhead/), which sets the blast's reach. The damage is the sum, over its compartments, of the amount held multiplied by that type's `Power`. A vehicle with no death explosion from [`Explosion`](/keys/explosion/) never sets it off, and a scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) prevents it. [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) covers when it goes off.
 
 Some effects remove stages outright. An animation with [`Crater=yes`](/keys/crater/#scope-animtype) that plays at ground level removes six stages from its cell. If it also sets [`Scorch=yes`](/keys/scorch/), it does so only half the time. Laying a [laser fence](/systems/laser-fences/) clears every cell along the run.
 
