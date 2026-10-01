@@ -35,6 +35,7 @@
 **	unload x y				orders the structure on that cell to unload
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
+**	price <TypeID>			writes what the player pays for the type
 **	schemes					writes the color schemes and the scheme each house draws with
 **	seq <TypeID>			writes an infantry type's art sequences
 **	plan					writes each computer house's base plan
@@ -401,6 +402,12 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
 			}
+		}
+	} else if (step.Command == "price") {
+		// price <TypeID>: what the player pays for one object of the type.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   price %s %d (listed %d)\n", type->Name(), type->Cost_Of(PlayerPtr), type->Raw_Cost());
 		}
 	} else if (step.Command == "count") {
 		// count <TypeID>: the number of live objects of the type on the map, per owner.
