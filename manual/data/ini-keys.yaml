@@ -7815,6 +7815,55 @@ DeathFrames:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+DeathWeapon:
+  key: DeathWeapon
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: DeathWeapon
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DeathWeapon
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DeathWeaponDamageModifier:
+  key: DeathWeaponDamageModifier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: DeathWeaponDamageModifier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Debris:
   key: Debris
   scopes:
@@ -14887,6 +14936,23 @@ InitTime:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+InitialAmmo:
+  key: InitialAmmo
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: InitialAmmo
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 InitialBoost:
   key: InitialBoost
   scopes:
@@ -18820,7 +18886,7 @@ MoveFlash:
     file: rules.ini
     section:
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: class
     status: generated
     _provenance:

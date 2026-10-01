@@ -7,7 +7,7 @@ when_omitted:
   value: "-1"
 ---
 
-Each object starts with a full pool of shots. Firing spends one shot, and an object whose pool is exactly zero cannot fire. A pool that starts below zero never reaches zero, so the default of `-1` gives an unlimited supply. `Ammo=0` leaves the object unable to fire at all.
+Each object starts with a full pool of shots, unless its type sets [`InitialAmmo`](/keys/initialammo/). Firing spends one shot, and an object whose pool is exactly zero cannot fire. A pool that starts below zero never reaches zero, so the default of `-1` gives an unlimited supply. `Ammo=0` leaves the object unable to fire at all.
 
 How an empty pool refills depends on the object:
 

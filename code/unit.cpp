@@ -235,7 +235,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	if (Class != NULL) {
 		PrimaryFacing.Set_ROT(Class->ROT);
 		SecondaryFacing.Set_ROT(Class->ROT);
-		Ammo = Class->MaxAmmo;
+		Ammo = Class->Initial_Ammo();
 		IsCloakable = Class->IsCloakable;
 		Strength = Class->MaxStrength;
 	}

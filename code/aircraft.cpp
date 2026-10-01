@@ -256,7 +256,7 @@ void AircraftClass::Init(void)
 		SecondaryFacing.Set_ROT(Class->ROT);
 		SecondaryFacing.Set(PrimaryFacing.Current());
 		HeightAGL = Class->Flight_Level();
-		Ammo = Class->MaxAmmo;
+		Ammo = Class->Initial_Ammo();
 		Strength = Class->MaxStrength;
 	}
 

@@ -49,7 +49,7 @@ related:
     id: CenterOnRadarEvent
 ---
 
-A destroyed vehicle, structure, infantry soldier or aircraft goes through two steps. The shared step runs first for every kind of object: it throws wreckage and sets off the collateral blast. The step for the object's kind follows. It plays the death animation, lets any survivors walk away, and takes the object off the map. Three cases change that sequence: a fall into water, a vehicle's wreck animation, and a structure whose removal is delayed.
+A destroyed vehicle, structure, infantry soldier or aircraft goes through two steps. The shared step runs first for every kind of object: it throws wreckage and sets off the death weapon. The step for the object's kind follows. It plays the death animation, lets any survivors walk away, and takes the object off the map. Three cases change that sequence: a fall into water, a vehicle's wreck animation, and a structure whose removal is delayed.
 
 This page starts once the object is destroyed. [Projectile flight and impact](/systems/projectile-flight/) covers where a blast lands and how many blasts a shot delivers. [Engineers, capture and sabotage](/systems/capture/#survivors) owns the number of soldiers a destroyed structure releases, because selling a structure uses the same count. That count also decides whether the structure's [footprint walk](#survivors-and-the-scarring-are-one-walk) runs.
 
@@ -59,7 +59,7 @@ Write the per-type settings in the object type's rules section. The wreck animat
 
 ```ini title="rules.ini"
 [MYTANK] ; a UnitType registered in [VehicleTypes]
-Explodes=yes           ; sets off the collateral blast
+Explodes=yes           ; sets off the death weapon
 Crewed=yes             ; lets one crew member escape
 MaxDebris=5            ; at most four pieces of wreckage
 DebrisTypes=TIRE,WTRAK ; VoxelAnimTypes registered in [VoxelAnims], thrown in order
@@ -87,13 +87,13 @@ The shared step runs first, in this order, for a vehicle, a structure, an infant
 
    The infantry step, and the step for a vehicle without [`DeathFrames`](/keys/deathframes/), then leave a wake and a splash in place of the usual death animation.
 6. **The wreckage.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero throws wreckage. A type with a [`DebrisTypes`](/keys/debristypes/) list throws those voxel pieces from its center, and a type with [`DebrisAnims`](/keys/debrisanims/) throws those animations from twenty leptons above it. A type with neither throws [`MetallicDebris`](/keys/metallicdebris/) animations instead. [`MaxDebris`](/keys/maxdebris/) describes how many pieces are thrown.
-7. **The collateral blast.** An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type, or an object whose rank grants [the explodes ability](/systems/veterancy/#abilities), deals area damage sized by [`CollateralDamageCoefficient`](/keys/collateraldamagecoefficient/). The blast plays a combat explosion animation and uses the warhead of the object's current primary weapon: its elite weapon at elite rank, or an upgrade's weapon on a structure. A [`Bright=yes`](/keys/bright/#scope-warheadtype) warhead adds a lighting flash. An object with no weapon in that slot gets no animation, flash or damage from this step. `Explodes` owns the radius and damage figures.
+7. **The death weapon.** An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type, or an object whose rank grants [the explodes ability](/systems/veterancy/#abilities), sets off its death weapon where it dies. [`Explodes`](/keys/explodes/#scope-aircrafttype) owns which weapon that is and how much damage it does.
 
-Because the water exit comes before the wreckage and the blast, a vehicle without `DeathFrames` that falls off a bridge into a river leaves only the splash, whatever its wreckage and explosion settings. A vehicle with `DeathFrames` also skips the wreckage and the blast, but it still becomes [a wreck](#a-vehicle). The wreck gets no splash, and it plays its death explosion when its counter runs out.
+Because the water exit comes before the wreckage and the death weapon, a vehicle without `DeathFrames` that falls off a bridge into a river leaves only the splash, whatever its wreckage and explosion settings. A vehicle with `DeathFrames` also skips the wreckage and the death weapon, but it still becomes [a wreck](#a-vehicle). The wreck gets no splash, and it plays its death explosion when its counter runs out.
 
 ### Spilled harvester loads
 
-An object carrying Tiberium, such as a harvester, spills its load only when it is `Explodes=yes` or holds the explodes ability. It spills even when it has no weapon and so sets off no collateral blast. A harvester that is neither keeps its load and is taken off the map with it. A scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) spills nothing. A structure's stored Tiberium is spilled in [the structure's step](#a-structure) instead.
+An object carrying Tiberium, such as a harvester, spills its load only when it is `Explodes=yes` or holds the explodes ability. It spills even when it sets off no death weapon. A harvester that is neither keeps its load and is taken off the map with it. A scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) spills nothing. A structure's stored Tiberium is spilled in [the structure's step](#a-structure) instead.
 
 The spill is always the first registered Tiberium type, whatever the harvester carried. The number of placements is nine times the fraction of its [`Storage`](/keys/storage/) that it held, rounded down, but at least one. Each placement adds a random stage from 0 to 2 to one neighboring cell. The cells come in a fixed order that starts at the north-west cell and returns to it on the third placement. A full load therefore reaches all eight neighbors, and a smaller load reaches fewer.
 
@@ -121,7 +121,7 @@ A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives th
 Nothing records that a wreck has already died. It stays on the map and holds its cell, and any hit that takes its last point of strength destroys it again and puts it back to one point. Each such hit:
 
 - books the kill again: score and any experience for the attacker, and another entry in both houses' loss and kill counts;
-- runs the whole shared step again, so the wreck throws a fresh batch of wreckage, and an `Explodes=yes` vehicle sets off a fresh collateral blast;
+- runs the whole shared step again, so the wreck throws a fresh batch of wreckage, and an `Explodes=yes` vehicle sets off its death weapon again;
 - offers the destruction events to the wreck's tag again. [Destroyed by any house](/mapping/events/tevent-destroyed/) needs an attacker, and [Destroyed by anything](/mapping/events/tevent-destroyed-any/) does not. [Trigger persistence](/systems/trigger-springing/) decides whether a tag is still there to take them.
 :::
 

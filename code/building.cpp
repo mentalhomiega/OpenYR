@@ -2548,7 +2548,7 @@ void BuildingClass::Init(void)
 	}
 	if (Class != NULL) {
 		Strength = Class->MaxStrength;
-		Ammo = Class->MaxAmmo;
+		Ammo = Class->Initial_Ammo();
 		PrimaryFacing.Set_ROT(Class->ROT);
 
 		/*

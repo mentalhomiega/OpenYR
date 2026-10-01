@@ -30,6 +30,8 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
+**							with it selected
 **	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
 **							weapon at the object on that cell now, and why not
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
@@ -596,6 +598,17 @@ void Run(StepType const & step)
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
 				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration);
+			}
+		}
+	} else if (step.Command == "clickcell") {
+		Cell const cell(step.X, step.Y);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				ActionType const action = techno->What_Action(cell, false, false);
+				DebugString("AUTOTEST   clickcell %s at %d,%d: %s\n", techno->TClass->Name(), step.X, step.Y, ActionName[action]);
+				techno->Active_Click_With(action, cell, false);
+				break;
 			}
 		}
 	} else if (step.Command == "canfire") {

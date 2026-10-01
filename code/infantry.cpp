@@ -314,7 +314,7 @@ void InfantryClass::Init(void)
 		/*
 		**	Civilians carry much less ammo than soldiers do.
 		*/
-		Ammo = Class->MaxAmmo;
+		Ammo = Class->Initial_Ammo();
 
 		IsCloakable = Class->IsCloakable;
 	}

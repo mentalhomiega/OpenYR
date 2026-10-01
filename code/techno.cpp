@@ -5562,33 +5562,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 
 			{
-				/*
-				**	The warhead to use is based on the weapon this object is equipped with.
-				*/
-				WarheadTypeClass const * wh = NULL;
-				if (Get_Class_Weapon_Data(0)->Weapon != NULL) {
-					wh = Get_Class_Weapon_Data(0)->Weapon->WarheadPtr;
-				}
-
-				int colat_damage = Get_Collateral_Damage();
-				AnimTypeClass const * anim = Combat_Anim(colat_damage, wh, Map[Center_Coord()].Land_Type(), Get_Coord());
-				Combat_Lighting(Center_Coord(), colat_damage, wh, false);
-				if (anim != NULL) {
-					new AnimClass(anim, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(Center_Coord()));
-				}
-
-				int radius = (int)((double)(colat_damage / 100) / Rule->ExplosionSpread * CELL_LEPTON);
-				if (radius >= 3 * CELL_LEPTON) {
-					radius = 3 * CELL_LEPTON;
-				} else if (radius <= 1) {
-					radius = 1;
-				}
-
-				int cells = radius / CELL_LEPTON;
-				if (cells < 1) {
-					cells = 1;
-				}
-				Wide_Area_Damage(Center_Coord(), radius, colat_damage * cells, source, wh);
+				Fire_Death_Weapon();
 
 				/*
 				 * A destroyed harvester scatters its tiberium cargo into the surrounding cells.
@@ -9993,4 +9967,36 @@ bool TechnoClass::Is_Bomb_Visible(void) const
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Sets off this dying object's death weapon where it stands (TechnoClass::FireDeathWeapon,
+/// 0x70D690). The type's DeathWeapon, or else its primary weapon, does that weapon's Damage
+/// times DeathWeaponDamageModifier; an object with neither sets off the rules' DeathWeapon for
+/// half its type's Strength. The blast is credited to this object.
+/// </summary>
+void TechnoClass::Fire_Death_Weapon(void)
+{
+	WeaponTypeClass * weapon = TClass->DeathWeapon;
+	int damage = 0;
+	if (weapon == NULL) {
+		weapon = Get_Class_Weapon_Data(0)->Weapon;
+	}
+	if (weapon != NULL) {
+		damage = (int)(weapon->Attack * TClass->DeathWeaponDamageModifier);
+	} else {
+		weapon = Rule->DeathWeapon;
+		damage = (int)(TClass->MaxStrength * 0.5);
+	}
+	if (weapon == NULL || weapon->Bullet == NULL) {
+		return;
+	}
+
+	BulletClass * bullet = Create_Bullet(weapon->Bullet, this, this, damage, weapon->WarheadPtr, 0, 0, weapon->IsBright);
+	if (bullet != NULL) {
+		bullet->Weapon = weapon;
+		bullet->Detonate(Center_Coord());
+		delete bullet;
+	}
 }

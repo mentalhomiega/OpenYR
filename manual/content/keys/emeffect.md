@@ -11,6 +11,6 @@ The projectile [creates a pulse](/systems/emp-pulse/#firing-a-pulse) where it de
 
 The pulse forms where the projectile is when it detonates. An ordinary shot first moves its detonation onto a nearby target or its fuse point; an EM pulse projectile does not. It still moves onto the target's center when it ends within 32 leptons (an eighth of a cell), unless the projectile is [`Airburst=yes`](/keys/airburst/) or [`Inaccurate=yes`](/keys/inaccurate/).
 
-Explosions that do not come from a projectile, such as the collateral blast of a dying [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) object or one with the `EXPLODES` [ability](/systems/veterancy/#abilities), deal ordinary blast damage through the warhead.
+Explosions that do not come from a projectile deal ordinary blast damage through the warhead. The death weapon of a dying [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) object detonates as a projectile, so an `EMEffect=yes` death weapon does form a pulse.
 
 Every explosion that uses the warhead picks its impact animation at random from the warhead's [`AnimList`](/keys/animlist/), so any entry can appear whatever the damage. Over water, a [`Conventional=yes`](/keys/conventional/) warhead still chooses its splash by damage.

@@ -306,6 +306,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		// How near an Ivan bomb must be for this object to show it to its owner, in cells.
 		int BombSight;
 
+		// The weapon an exploding object of this type sets off as it dies, and the share of that weapon's Damage it does.
+		WeaponTypeClass * DeathWeapon;
+		double DeathWeaponDamageModifier;
+
+		// The ammunition a new object of this type starts with, or -1 to start full.
+		int InitialAmmo;
+
+		int Initial_Ammo(void) const { return(InitialAmmo == -1 ? MaxAmmo : InitialAmmo); }
+
 		/*
 		 * Parasites: can one get into this object, how much damage to its victim from others it
 		 * shrugs off, and is it selected again after a weapon with LimboLaunch takes it off the map?

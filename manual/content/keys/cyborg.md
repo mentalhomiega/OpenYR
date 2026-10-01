@@ -35,4 +35,4 @@ A cyborg is the only infantry an [EM pulse](/systems/emp-pulse/#what-a-pulse-rea
 
 `Cyborg=yes` is the only way to give an InfantryType [damage sparks](/keys/conditionredsparkingprobability/).
 
-It also selects a lower starting [`CollateralDamageCoefficient`](/keys/collateraldamagecoefficient/) for the type, except on the first rules layer that names the section. That key's page gives both values. A section that writes `CollateralDamageCoefficient` gets that value only on that rules layer, so repeat the key in every rules file that names the section.
+It also selects a lower starting [`CollateralDamageCoefficient`](/keys/collateraldamagecoefficient/), a value nothing uses any more.

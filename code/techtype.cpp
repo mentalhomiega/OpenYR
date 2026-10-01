@@ -169,6 +169,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsImmuneToRadiation(false),
 	GapRadiusInCells(0),
 	BombSight(0),
+	DeathWeapon(NULL),
+	DeathWeaponDamageModifier(1.0),
+	InitialAmmo(-1),
 	IsParasiteable(true),
 	SuppressionThreshold(0),
 	IsReselectIfLimboed(false),
@@ -636,6 +639,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
 		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
+		DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
+		DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
+		InitialAmmo = ini.Get_Int(Name(), "InitialAmmo", InitialAmmo);
 		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
@@ -1136,6 +1142,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsImmuneToRadiation);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(BombSight);
+	stream.Serialize(DeathWeapon);
+	stream.Serialize(DeathWeaponDamageModifier);
+	stream.Serialize(InitialAmmo);
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
 	stream.Serialize(IsReselectIfLimboed);

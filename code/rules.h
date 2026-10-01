@@ -181,6 +181,9 @@ class RulesClass
 
 		// Can the player set off an Ivan bomb early by clicking the object carrying it?
 		bool IsCanDetonateTimeBomb;
+
+		// The weapon an exploding object without a weapon of its own sets off as it dies.
+		WeaponTypeClass * DeathWeapon;
 		int IvanIconFlickerRate;
 		VocType BombTickingSound;
 		VocType BombAttachSound;

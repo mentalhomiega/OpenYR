@@ -26,7 +26,6 @@ keys:
   - DeformThreshhold
   - DestroyableBridges
   - EMEffect
-  - ExpSpread
   - Explodes
   - Fire
   - HarvesterUnit
@@ -239,11 +238,8 @@ Three more warhead settings act on the damaged object. Each is described on the 
 
 ## The wide-area blast
 
-A wide-area blast raises an ordinary blast in every cell of a square block. The center cell's blast carries the full raw figure. Every other cell's blast carries the figure scaled by that cell's distance from the center, so the figure rises toward the rim instead of falling. [`ExpSpread`](/keys/expspread/) gives the size of the block and the scale.
+A wide-area blast raises an ordinary blast in every cell of a square block. The center cell's blast carries the full raw figure. Every other cell's blast carries the figure scaled by that cell's distance from the center, so the figure rises toward the rim instead of falling.
 
-No landing shot raises a wide-area blast. Two deaths do:
-
-- the collateral blast of a dying object whose type is [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) or that has the `EXPLODES` [ability](/systems/veterancy/#abilities);
-- the extra blast a destroyed harvester adds for the Tiberium it carries, under [`TiberiumExplosive=yes`](/keys/tiberiumexplosive/#scope-global-rules), unless the harvester truce or the scenario's `HarvesterImmune` flag is on.
+No landing shot raises a wide-area blast. One death does: the extra blast a destroyed harvester adds for the Tiberium it carries, under [`TiberiumExplosive=yes`](/keys/tiberiumexplosive/#scope-global-rules), unless the harvester truce or the scenario's `HarvesterImmune` flag is on.
 
 A nuclear detonation has a fallback route to a wide-area blast for when its explosion animation cannot be created. [`AtomDamage`](/keys/atomdamage/) explains why that route is never taken.
