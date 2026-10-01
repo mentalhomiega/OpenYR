@@ -27,12 +27,19 @@ enum PipEnum {
 	PIP_WHITE,			/// Full pip with white coloring.
 	PIP_RED,			/// Full pip with red coloring.
 	PIP_BLUE,			/// Full pip with blue coloring.
-	PIP_MEDIC,			// Little medic red cross.
-	PIP_VETERAN,		/// Veteran unit pip.
-	PIP_ELITE,			/// Elite unit pip.
+	PIP_PERSON_EMPTY,	// Empty garrison slot.
+	PIP_PERSON_GREEN,	// Garrison occupant figures.
+	PIP_PERSON_YELLOW,
+	PIP_PERSON_WHITE,
+	PIP_PERSON_RED,
+	PIP_PERSON_BLUE,
+	PIP_PERSON_PURPLE,
+	PIP_VETERAN = 14,	// Veteran insignia.
+	PIP_ELITE,			// Elite insignia.
 	PIP_HEALTH_GREEN,	/// Green health pip.
 	PIP_HEALTH_YELLOW,	/// Yellow health pip.
 	PIP_HEALTH_RED,		/// Red health pip.
+	PIP_DUMBASS,		// Insignia of a unit with negative experience.
 
 	PIP_COUNT,
 };

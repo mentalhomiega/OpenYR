@@ -2308,6 +2308,33 @@ RadioMessageType FootClass::Receive_Message(RadioClass * from, RadioMessageType 
 int FootClass::Do_MISSION_ENTER(void)
 {
 	/*
+	 * A soldier sent to garrison a structure remembers it and keeps walking there, trying again
+	 * if its path gives out; it goes inside on arrival. It gives up once the structure cannot
+	 * take it.
+	 */
+	if (RTTI == RTTI_INFANTRY && static_cast<InfantryClass *>(this)->Class->IsOccupier) {
+		BuildingClass * building = NULL;
+		if (NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
+			building = (BuildingClass *)NavCom;
+		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
+			building = (BuildingClass *)ArchiveTarget;
+		}
+		if (building != NULL && building->Class->IsCanBeOccupied) {
+			if (building->Can_Be_Occupied_By(static_cast<InfantryClass *>(this))) {
+				ArchiveTarget = building;
+				if (NavCom == NULL) {
+					Assign_Destination(building);
+				}
+				return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+			}
+			ArchiveTarget = NULL;
+			Assign_Destination(NULL);
+			Enter_Idle_Mode();
+			return(Current_Mission_Control().Normal_Delay());
+		}
+	}
+
+	/*
 	**	Find out who to coordinate with. If in radio contact, then this the transporter is
 	**	defined. If not in radio contact, then try the archive target value to see if that
 	**	is suitable.

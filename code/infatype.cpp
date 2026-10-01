@@ -52,6 +52,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "animtype.h"
+#include "weapon.h"
 #include "cell.h"
 #include "findmake.h"
 #include "globals.h"
@@ -95,6 +96,10 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsAgent(false),
 	IsThief(false),
 	IsVehicleThief(false),
+	IsOccupier(false),
+	OccupyWeapon(),
+	EliteOccupyWeapon(),
+	OccupyPip(PIP_PERSON_GREEN),
 	IsDoggie(false),
 	IsNotHuman(false),
 	DeadBodies(),
@@ -353,6 +358,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 
 	if (BASECLASS::Read_INI(ini)) {
 		Pip = ini.Get_PipEnum(Name(), "Pip", Pip);
+		OccupyPip = ini.Get_PipEnum(Name(), "OccupyPip", OccupyPip);
 		VoiceComment = ini.Get_VocType_List(ini, IniName, "VoiceComment", VoiceComment);
 		IsCyborg = ini.Get_Bool(Name(), "Cyborg", IsCyborg);
 		if (IsCyborg) IsDamageSparks = true;
@@ -367,6 +373,9 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsAgent = ini.Get_Bool(Name(), "Agent", IsAgent);
 		IsThief = ini.Get_Bool(Name(), "Thief", IsThief);
 		IsVehicleThief = ini.Get_Bool(Name(), "VehicleThief", IsVehicleThief);
+		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
+		OccupyWeapon.Weapon = TGet_Class(ini, Name(), "OccupyWeapon", OccupyWeapon.Weapon);
+		EliteOccupyWeapon.Weapon = TGet_Class(ini, Name(), "EliteOccupyWeapon", EliteOccupyWeapon.Weapon);
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
 		IsNotHuman = ini.Get_Bool(Name(), "NotHuman", IsNotHuman);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeadBodies", DeadBodies);
@@ -511,6 +520,10 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAgent);
 	stream.Serialize(IsThief);
 	stream.Serialize(IsVehicleThief);
+	stream.Serialize(IsOccupier);
+	stream.Serialize(OccupyWeapon);
+	stream.Serialize(EliteOccupyWeapon);
+	stream.Serialize(OccupyPip);
 	stream.Serialize(IsDoggie);
 	stream.Serialize(IsNotHuman);
 	stream.Serialize(DeadBodies);

@@ -567,13 +567,18 @@ static struct
 {
 	char const * Name;
 	PipEnum Type;
-} _pips[6] = {
-	{ "empty", PIP_EMPTY },
+} _pips[11] = {
 	{ "green", PIP_GREEN },
 	{ "yellow", PIP_YELLOW },
 	{ "white", PIP_WHITE },
 	{ "red", PIP_RED },
-	{ "blue", PIP_BLUE }
+	{ "blue", PIP_BLUE },
+	{ "persongreen", PIP_PERSON_GREEN },
+	{ "personyellow", PIP_PERSON_YELLOW },
+	{ "personwhite", PIP_PERSON_WHITE },
+	{ "personred", PIP_PERSON_RED },
+	{ "personblue", PIP_PERSON_BLUE },
+	{ "personpurple", PIP_PERSON_PURPLE }
 };
 
 
@@ -582,12 +587,14 @@ static struct
 /// This is the color of the little markers drawn under a selected object.
 /// </summary>
 /// <returns>Returns with the pip color that matches the name recorded, or PIP_GREEN if the
-/// name is not recognized.</returns>
+/// name is not recognized. A missing entry yields the color listed after the default rather
+/// than the default itself, as Yuri's Revenge does.</returns>
 PipEnum CCINIClass::Get_PipEnum(char const * section, char const * entry, PipEnum defvalue) const
 {
 	char buffer[32];
 
-	Get_String(section, entry, _pips[defvalue].Name, buffer, sizeof(buffer));
+	char const * fallback = (defvalue >= 0 && defvalue < ARRAY_SIZE(_pips)) ? _pips[defvalue].Name : "";
+	Get_String(section, entry, fallback, buffer, sizeof(buffer));
 	for (int index = 0; index < ARRAY_SIZE(_pips); index++) {
 		if (!strcmpi(buffer, _pips[index].Name)) {
 			return(_pips[index].Type);
@@ -600,11 +607,14 @@ PipEnum CCINIClass::Get_PipEnum(char const * section, char const * entry, PipEnu
 /// <summary>
 /// Stores a pip color to the INI database.
 /// </summary>
-/// <returns>bool; Was the pip color stored? A value of PIP_EMPTY is never stored.</returns>
+/// <returns>bool; Was the pip color stored? A color that has no name, such as PIP_EMPTY, is
+/// never stored.</returns>
 bool CCINIClass::Put_PipEnum(char const * section, char const * entry, PipEnum value)
 {
-	if (value != PIP_EMPTY) {
-		return(Put_String(section, entry, _pips[value].Name));
+	for (int index = 0; index < ARRAY_SIZE(_pips); index++) {
+		if (_pips[index].Type == value) {
+			return(Put_String(section, entry, _pips[index].Name));
+		}
 	}
 	return(false);
 }

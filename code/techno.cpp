@@ -1256,8 +1256,9 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 /// A selected object, or a submerged one the player's sensors have picked up, gets its
 /// selection box and its condition indicator drawn over it, plus its pips when the player
 /// is allied to its owner or spying on that house. Without a selection, the object under
-/// the mouse still shows its condition, and an allied or spied-on object still wears its
-/// insignia. The talk bubble, when the object has something to say, is drawn whether the
+/// the mouse still shows its condition and those pips, and an allied or spied-on object
+/// still wears its insignia. A structure that can be garrisoned shows its pips to every
+/// player. The talk bubble, when the object has something to say, is drawn whether the
 /// object is selected or not.
 /// </summary>
 void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect) const
@@ -1271,6 +1272,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	}
 
 	bool allied = House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr];
+	bool pips_shown = allied || (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Class->IsCanBeOccupied);
 
 	if (IsSelected || sensed_underground) {
 
@@ -1315,7 +1317,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		}
 
 		Draw_Health_Bar(point, cliprect);
-		if (allied) {
+		if (pips_shown) {
 			Draw_Pips(Pip_Origin(point), point, cliprect);
 		}
 
@@ -1327,7 +1329,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			if (hovered) {
 				Draw_Health_Bar(point, cliprect);
 			}
-			if (allied) {
+			if (hovered && pips_shown) {
+				Draw_Pips(Pip_Origin(point), point, cliprect);
+			} else if (allied) {
 				Draw_Insignia(Pip_Origin(point), point, cliprect);
 			}
 		}
@@ -2664,6 +2668,13 @@ AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & co
 			crange = std::max(Weapon_Range(0), Weapon_Range(1)) / CELL_LEPTON;
 			crange++;
 		}
+
+		// A garrison searches OccupyWeaponRange cells beyond half its narrower side, as
+		// BuildingClass::GetOccupyRangeBonus (0x458E00) and its caller work it out.
+		if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire()) {
+			BuildingTypeClass const * type = static_cast<BuildingClass const *>(this)->Class;
+			crange = std::min<int>(type->Width(), type->Height()) / 2 + 1 + Rule->OccupyWeaponRange;
+		}
 		Cell cell = coord.As_Cell();
 
 		/*
@@ -3800,6 +3811,15 @@ int TechnoClass::Rearm_Delay(int which) const
 		if (Has_Ability(ABILITY_ROF)) {
 			delay = (1.0 / (Rule->VeteranROF + 1.0)) * delay;
 		}
+
+		// A garrison fires faster the more occupants it has, as TechnoClass::GetROF (0x6FCFA0) works it out.
+		BuildingClass const * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass const *>(this) : NULL;
+		if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+			delay /= garrison->Occupants.Count();
+			if (Rule->OccupyROFMultiplier > 0) {
+				delay = (int)(delay / Rule->OccupyROFMultiplier);
+			}
+		}
 		return(delay);
 	}
 
@@ -3997,6 +4017,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			firepower = (int)((Rule->VeteranCombat + 1.0) * firepower);
 		}
 	}
+	BuildingClass * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(this) : NULL;
+	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
+	}
 
 	int max_speed = weapon->MaxSpeed;
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->ProjectileRange, weapon->IsBright);
@@ -4125,6 +4149,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				BurstIndex++;
 				Arm = Rearm_Delay(which);
 				BurstIndex %= weapon->Burst;
+
+				// The occupants of a garrison take turns to fire.
+				if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+					garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
+				}
 
 				/*
 				**	Perform any animation effect for this weapon.
@@ -4627,6 +4656,9 @@ bool TechnoClass::Can_Deploy_Now(void) const
 	}
 
 	BuildingClass const * building = dynamic_cast<BuildingClass const *>(this);
+	if (building != NULL && building->Occupants.Count() > 0 && !Is_Immobilized()) {
+		blocked = false;
+	}
 	if (building != NULL && building->Class->Can_Always_Undeploy()) {
 		blocked = false;
 	}
@@ -7556,12 +7588,6 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 {
 	ShapeSet const * pips1 = (ShapeSet const *)Class_Of()->PipShapes;
 
-	// A weapon that averages negative damage is what marks the object out as a healer.
-	if (RTTI == RTTI_INFANTRY && Combat_Damage() < 0) {
-		Point2D xy = bottomleft + Point2D(-5, 0);
-		Draw_Shape(*LogicalSurface, *NormalDrawer, pips1, PIP_MEDIC, xy+Point2D(0,-8), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-	}
-
 	PipEnum veterancy_shape = PIP_NONE;
 	if (Veterancy.Is_Veteran()) {
 		veterancy_shape = PIP_VETERAN;
@@ -7570,7 +7596,7 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 		veterancy_shape = PIP_ELITE;
 	}
 	if (Veterancy.Is_Dumbass()) {
-		veterancy_shape = PIP_COUNT;
+		veterancy_shape = PIP_DUMBASS;
 	}
 	if (veterancy_shape != PIP_NONE) {
 		Point2D drawpoint = center + Point2D(5, 2);
@@ -7615,6 +7641,19 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		xy = bottomleft + Point2D(-5, 0);
 		offset = Point2D(4, 0);
 		pip_shapes = pips2;
+	}
+
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = (BuildingClass const *)this;
+		if (building->Class->IsShowOccupantPips) {
+			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
+				PipEnum pip = PIP_PERSON_EMPTY;
+				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
+					pip = building->Occupants[index]->Class->OccupyPip;
+				}
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
 	}
 
 	/*

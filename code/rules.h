@@ -158,6 +158,12 @@ class RulesClass
 		 */
 		int AmmoCrateDamage;
 
+		// A garrisoned structure multiplies its occupants' damage by OccupyDamageMultiplier,
+		// divides their reload time by OccupyROFMultiplier and searches OccupyWeaponRange cells.
+		double OccupyDamageMultiplier;
+		double OccupyROFMultiplier;
+		int OccupyWeaponRange;
+
 		/*
 		 * These are the two visceroid types. A small visceroid is spawned where infantry
 		 * dies in tiberium, and when two of them meet one is promoted to the large type

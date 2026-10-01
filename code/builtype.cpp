@@ -278,6 +278,11 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsBibbed(false),
 	IsWall(false),
 	IsCaptureable(false),
+	IsCanBeOccupied(false),
+	IsCanOccupyFire(false),
+	IsShowOccupantPips(true),
+	MaxNumberOccupants(0),
+	MuzzleFlash(),
 	IsPowered(false),
 	IsUnsellable(false),
 	IsRadar(false),
@@ -1218,6 +1223,10 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		Speed = ini.Get_Bool(Name(), "WaterBound", Speed == SPEED_FLOAT) ? SPEED_FLOAT : SPEED_NONE;
 		Adjacent = ini.Get_Int(Name(), "Adjacent", Adjacent);
 		IsCaptureable = ini.Get_Bool(Name(), "Capturable", IsCaptureable);
+		IsCanBeOccupied = ini.Get_Bool(Name(), "CanBeOccupied", IsCanBeOccupied);
+		IsCanOccupyFire = ini.Get_Bool(Name(), "CanOccupyFire", IsCanOccupyFire);
+		IsShowOccupantPips = ini.Get_Bool(Name(), "ShowOccupantPips", IsShowOccupantPips);
+		MaxNumberOccupants = ini.Get_Int(Name(), "MaxNumberOccupants", MaxNumberOccupants);
 		IsPowered = ini.Get_Bool(Name(), "Powered", IsPowered);
 		IsBibbed = ini.Get_Bool(Name(), "Bib", IsBibbed);
 		IsUnsellable = ini.Get_Bool(Name(), "Unsellable", IsUnsellable);
@@ -1342,6 +1351,16 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsTerrainPalette = ArtINI.Get_Bool(Graphic_Name(), "TerrainPalette", IsTerrainPalette);
 		GateStages = ArtINI.Get_Int(Graphic_Name(), "GateStages", GateStages);
 		PrimaryFirePixelOffset = ArtINI.Get_Point(Graphic_Name(), "PrimaryFirePixelOffset", PrimaryFirePixelOffset);
+		if (MaxNumberOccupants > 0) MuzzleFlash[0] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash0", MuzzleFlash[0]);
+		if (MaxNumberOccupants > 1) MuzzleFlash[1] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash1", MuzzleFlash[1]);
+		if (MaxNumberOccupants > 2) MuzzleFlash[2] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash2", MuzzleFlash[2]);
+		if (MaxNumberOccupants > 3) MuzzleFlash[3] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash3", MuzzleFlash[3]);
+		if (MaxNumberOccupants > 4) MuzzleFlash[4] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash4", MuzzleFlash[4]);
+		if (MaxNumberOccupants > 5) MuzzleFlash[5] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash5", MuzzleFlash[5]);
+		if (MaxNumberOccupants > 6) MuzzleFlash[6] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash6", MuzzleFlash[6]);
+		if (MaxNumberOccupants > 7) MuzzleFlash[7] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash7", MuzzleFlash[7]);
+		if (MaxNumberOccupants > 8) MuzzleFlash[8] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash8", MuzzleFlash[8]);
+		if (MaxNumberOccupants > 9) MuzzleFlash[9] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash9", MuzzleFlash[9]);
 		SecondaryFirePixelOffset = ArtINI.Get_Point(Graphic_Name(), "SecondaryFirePixelOffset", SecondaryFirePixelOffset);
 		IsExtraDamageStage = ArtINI.Get_Bool(Graphic_Name(), "ExtraDamageStage", IsExtraDamageStage);
 		SpecialZOverlayZAdjust = ArtINI.Get_Int(Graphic_Name(), "SpecialZOverlayZAdjust", SpecialZOverlayZAdjust);
@@ -2200,6 +2219,11 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBibbed);
 	stream.Serialize(IsWall);
 	stream.Serialize(IsCaptureable);
+	stream.Serialize(IsCanBeOccupied);
+	stream.Serialize(IsCanOccupyFire);
+	stream.Serialize(IsShowOccupantPips);
+	stream.Serialize(MaxNumberOccupants);
+	stream.Serialize(MuzzleFlash);
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsUnsellable);
 	stream.Serialize(IsRadar);

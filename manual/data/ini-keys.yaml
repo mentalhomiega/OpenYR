@@ -4734,6 +4734,40 @@ CameraRange:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CanBeOccupied:
+  key: CanBeOccupied
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsCanBeOccupied
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+CanOccupyFire:
+  key: CanOccupyFire
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsCanOccupyFire
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Capturable:
   key: Capturable
   scopes:
@@ -8394,6 +8428,23 @@ EliteAbilities:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EliteOccupyWeapon:
+  key: EliteOccupyWeapon
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: InfantryTypeClass
+      member: EliteOccupyWeapon.Weapon
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 ElitePBarrelLength:
   key: ElitePBarrelLength
   scopes:
@@ -14909,6 +14960,23 @@ MaxMoney:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MaxNumberOccupants:
+  key: MaxNumberOccupants
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: MaxNumberOccupants
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 MaxPips:
   key: MaxPips
   scopes:
@@ -15887,6 +15955,176 @@ MultipleFactoryCap:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MuzzleFlash0:
+  key: MuzzleFlash0
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash1:
+  key: MuzzleFlash1
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash2:
+  key: MuzzleFlash2
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash3:
+  key: MuzzleFlash3
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash4:
+  key: MuzzleFlash4
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash5:
+  key: MuzzleFlash5
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash6:
+  key: MuzzleFlash6
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash7:
+  key: MuzzleFlash7
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash8:
+  key: MuzzleFlash8
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+MuzzleFlash9:
+  key: MuzzleFlash9
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: MuzzleFlash
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 MyEffectivenessCoefficient:
   key: MyEffectivenessCoefficient
   scopes:
@@ -16832,6 +17070,111 @@ NumPlayers:
       source: code/netshare.cpp
       guard: null
     level: RandomMap
+Occupier:
+  key: Occupier
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsOccupier
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+OccupyDamageMultiplier:
+  key: OccupyDamageMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: OccupyDamageMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OccupyPip:
+  key: OccupyPip
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: pipenum
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: InfantryTypeClass
+      member: OccupyPip
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+OccupyROFMultiplier:
+  key: OccupyROFMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: OccupyROFMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OccupyWeapon:
+  key: OccupyWeapon
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: InfantryTypeClass
+      member: OccupyWeapon.Weapon
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+OccupyWeaponRange:
+  key: OccupyWeaponRange
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: RulesClass
+      member: OccupyWeaponRange
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Official:
   key: Official
   scopes:
@@ -21470,6 +21813,23 @@ ShowNavComQueueLines:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+ShowOccupantPips:
+  key: ShowOccupantPips
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: BuildingTypeClass
+      member: IsShowOccupantPips
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ShroudGrow:
   key: ShroudGrow
   scopes:

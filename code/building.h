@@ -61,6 +61,8 @@ class FoggedObjectClass;
 **	these structures. This structure holds information that is specific
 **	and dynamic for a particular building.
 */
+class InfantryClass;
+
 class BuildingClass : public TechnoClass
 {
 		typedef TechnoClass BASECLASS;
@@ -131,6 +133,10 @@ class BuildingClass : public TechnoClass
 
 		// A PoweredEffect animation that losing power stopped, to be restarted when power returns.
 		bool AnimStates[BANIM_COUNT];
+
+		// The infantry garrisoned inside, and which of them fires the next shot.
+		DynamicVectorClass<InfantryClass *> Occupants;
+		int FiringOccupantIndex;
 
 		/*
 		 * These are the building types installed in this building as upgrades, in the order
@@ -535,6 +541,12 @@ class BuildingClass : public TechnoClass
 		void Power_On(void);
 		void Power_Off(void);
 		void Power_Anims_On(void);
+		bool Can_Be_Occupied_By(InfantryClass const * infantry) const;
+		bool Can_Occupy_Fire(void) const;
+		void Occupy(InfantryClass * infantry);
+		void Eject_Occupants(void);
+		void Garrison_AI(void);
+		void Set_Garrison_House(HouseClass * newowner);
 		void Power_Anims_Off(void);
 		bool Open_Gate(void);
 		bool Is_Gate_Open(void) const;

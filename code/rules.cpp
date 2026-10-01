@@ -344,6 +344,9 @@ RulesClass::RulesClass(void) :
 	EngineerCaptureLevel(1),
 	EngineerDamage(0),
 	AmmoCrateDamage(100),
+	OccupyDamageMultiplier(1.0),
+	OccupyROFMultiplier(1.0),
+	OccupyWeaponRange(5),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
 	UnloadingHarvester(NULL),
@@ -1010,6 +1013,9 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 	static char const * const COMBATDAMAGE = "CombatDamage";
 	if (ini.Is_Present(COMBATDAMAGE)) {
 		AmmoCrateDamage = ini.Get_Int(COMBATDAMAGE, "AmmoCrateDamage", AmmoCrateDamage);
+		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
+		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
+		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
 		IonCannonDamage = ini.Get_Int(COMBATDAMAGE, "IonCannonDamage", IonCannonDamage);
 		RailgunDamageRadius = ini.Get_Int(COMBATDAMAGE, "RailgunDamageRadius", RailgunDamageRadius);
 		TiberiumExplosionDamage = ini.Get_Int(COMBATDAMAGE, "TiberiumExplosionDamage", TiberiumExplosionDamage);
@@ -2190,6 +2196,9 @@ void RulesClass::Load(SaveStreamClass & stream)
 void RulesClass::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(AmmoCrateDamage);
+	stream.Serialize(OccupyDamageMultiplier);
+	stream.Serialize(OccupyROFMultiplier);
+	stream.Serialize(OccupyWeaponRange);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
 	stream.Serialize(UnloadingHarvester);

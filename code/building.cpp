@@ -156,6 +156,7 @@
 #include "queue.h"
 #include "revent.h"
 #include "rules.h"
+#include "side.h"
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
@@ -182,6 +183,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 
 char const * const BuildingClass::INI_NAME = "Structures";
@@ -288,6 +290,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 
 	memset(Anims, 0, sizeof(Anims));
 	memset(AnimStates, 0, sizeof(AnimStates));
+	FiringOccupantIndex = 0;
 
 	FactoryPtrTracker.Add(this);
 	AnimPtrTracker.Add(this);
@@ -1650,6 +1653,8 @@ void BuildingClass::AI(void)
 		return;
 	}
 
+	Garrison_AI();
+
 	/*
 	**	Building ammo is instantly reloaded.
 	*/
@@ -2320,6 +2325,8 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						LightSource->Disable(false);
 					}
 
+					Eject_Occupants();
+
 					Do_Destruction(tech, source, forced, offset);
 
 					if (CountDown > 0) {
@@ -2628,6 +2635,10 @@ bool BuildingClass::Active_Click_With(ActionType action, ObjectClass * object, b
 	}
 
 	if (action == ACTION_SELF) {
+		if (Occupants.Count() > 0) {
+			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
+			return(true);
+		}
 		if (Class->Is_Factory()) {
 			OutList.push_back(EventClass(Owner(), EventClass::PRIMARY, TargetClass(this)));
 			return(true);
@@ -3955,7 +3966,11 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
 
-	if (action == ACTION_SELF) {
+	if (action == ACTION_SELF && Occupants.Count() > 0) {
+		if (StunDuration > 0 || House != PlayerPtr) {
+			action = ACTION_NONE;
+		}
+	} else if (action == ACTION_SELF) {
 		int index;
 		if (StunDuration == 0 && Class->Is_Factory() && PlayerPtr == House && *House->Factory_Counter(Class->ToBuild) > 1) {
 			switch (Class->ToBuild) {
@@ -6313,6 +6328,12 @@ DirType BuildingClass::Fire_Direction(void) const
  *=============================================================================================*/
 int BuildingClass::Do_MISSION_UNLOAD(void)
 {
+	if (Occupants.Count() > 0) {
+		Eject_Occupants();
+		Enter_Idle_Mode();
+		return(1);
+	}
+
 	if (Class->IsWeaponsFactory) {
 		// The door cell, as in Yuri's Revenge (BuildingClass::Mission_Unload, 0x44D880): the
 		// eleventh outside cell, moved one cell west.
@@ -6629,6 +6650,14 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
 
 	if (WhomToRepay == target) {
 		WhomToRepay = NULL;
+	}
+	for (int index = Occupants.Count() - 1; index >= 0; index--) {
+		if (Occupants[index] == target) {
+			Occupants.Delete(Occupants[index]);
+		}
+	}
+	if (FiringOccupantIndex >= Occupants.Count()) {
+		FiringOccupantIndex = 0;
 	}
 	if (AnimToTrack == target) {
 		AnimToTrack = NULL;
@@ -8247,6 +8276,141 @@ void BuildingClass::Power_Off(void)
 
 
 /// <summary>
+/// Tells whether the soldier may garrison this structure now, as BuildingClass::CanBeOccupiedBy
+/// (0x457CE0) does: the structure must take occupants, have room, be above red health and be
+/// neither built nor sold, and it must belong to the soldier's house or to a passive house.
+/// </summary>
+bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
+{
+	if (infantry == NULL || !Class->IsCanBeOccupied || !infantry->Class->IsOccupier) {
+		return(false);
+	}
+	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
+		return(false);
+	}
+	if (House != infantry->House && !House->Class->IsMultiplayPassive) {
+		return(false);
+	}
+	return(Occupants.Count() < Class->MaxNumberOccupants && HealthRatio > Rule->ConditionRed);
+}
+
+
+bool BuildingClass::Can_Occupy_Fire(void) const
+{
+	return(Class->IsCanBeOccupied && Class->IsCanOccupyFire && Occupants.Count() > 0);
+}
+
+
+/// <summary>
+/// Takes the soldier inside. The soldier leaves the map until the garrison is ejected.
+/// </summary>
+void BuildingClass::Occupy(InfantryClass * infantry)
+{
+	infantry->Limbo();
+	Occupants.Add(infantry);
+	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Puts every occupant back on the map next to the structure, as gamemd's FUN_00457DE0 does
+/// when a garrison is emptied, sold or destroyed. An occupant with no room to stand is
+/// removed from the game.
+/// </summary>
+void BuildingClass::Eject_Occupants(void)
+{
+	FiringOccupantIndex = 0;
+	if (Occupants.Count() == 0) {
+		return;
+	}
+
+	// Deleting an occupant detaches it from the list, so work from a copy.
+	std::vector<InfantryClass *> occupants;
+	for (int index = 0; index < Occupants.Count(); index++) {
+		occupants.push_back(Occupants[index]);
+	}
+	Occupants.Clear();
+
+	Cell start = Get_Cell() + Cell(0, Class->Height());
+	for (InfantryClass * occupant : occupants) {
+		Cell cell = Map.Nearby_Location(start, occupant->Class->Speed);
+		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
+		ScenarioInit++;
+		bool placed = coord != COORD_NONE && occupant->Unlimbo(coord, DIR_S);
+		ScenarioInit--;
+		if (placed) {
+			occupant->Enter_Idle_Mode();
+		} else {
+			delete occupant;
+		}
+	}
+	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Keeps a garrisonable structure's owner in step with its occupants, as gamemd's FUN_00458200
+/// does every frame: an empty one belongs to the Civilian side's house and an occupied one to
+/// its first occupant's house. A structure at red health throws its occupants out.
+/// </summary>
+void BuildingClass::Garrison_AI(void)
+{
+	if (!Class->IsCanBeOccupied) {
+		return;
+	}
+
+	if (Occupants.Count() > 0 && HealthRatio <= Rule->ConditionRed) {
+		Eject_Occupants();
+	}
+
+	SideType civilian = SideClass::From_Name("Civilian");
+	HouseClass * civilians = NULL;
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index]->Class->Side == civilian) {
+			civilians = Houses[index];
+			break;
+		}
+	}
+	if (civilians == NULL) {
+		return;
+	}
+
+	if (Occupants.Count() == 0 && House != civilians) {
+		Set_Garrison_House(civilians);
+	} else if (Occupants.Count() > 0 && House == civilians) {
+		Set_Garrison_House(Occupants[0]->House);
+	}
+}
+
+
+/// <summary>
+/// Hands the structure to another house without the scoring, speech and triggers of a capture.
+/// </summary>
+void BuildingClass::Set_Garrison_House(HouseClass * newowner)
+{
+	if (newowner == NULL || newowner == House) {
+		return;
+	}
+
+	House->Tracking_Active_Remove(this, false);
+	House->Tracking_Remove(this);
+	newowner->Tracking_Add(this);
+
+	// Units that were heading for the structure, such as more soldiers coming to join, keep it as their goal.
+	House = newowner;
+	IsOwnedByPlayer = (House == PlayerPtr);
+	newowner->Tracking_Active_Add(this, true);
+
+	Assign_Target(NULL);
+	Enter_Idle_Mode();
+	// The guard mission takes over at once so a new garrison starts looking for targets.
+	IsReadyToCommence = true;
+	Radar_Untrack();
+	Radar_Track();
+}
+
+
+/// <summary>
 /// Brings this building's animations back when its house's power recovers. A Powered
 /// animation resumes, a PoweredLight one that is missing starts again, and a PoweredEffect
 /// one that losing power stopped starts again. The SuperLowPower animation ends.
@@ -8421,6 +8585,16 @@ WeaponDataStruct const * BuildingClass::Get_Class_Weapon_Data(int which) const
 				}
 			}
 		}
+	}
+
+	// A garrison fires the current occupant's garrison weapon, or its primary when it has none.
+	if (Can_Occupy_Fire() && FiringOccupantIndex < Occupants.Count()) {
+		InfantryClass const * occupant = Occupants[FiringOccupantIndex];
+		WeaponDataStruct const * weapon = occupant->Veterancy.Is_Elite() ? &occupant->Class->EliteOccupyWeapon : &occupant->Class->OccupyWeapon;
+		if (weapon->Weapon == NULL) {
+			weapon = occupant->Get_Class_Weapon_Data(0);
+		}
+		return(weapon);
 	}
 	return(BASECLASS::Get_Class_Weapon_Data(which));
 }
@@ -8900,6 +9074,10 @@ void BuildingClass::Toggle_Laser_Fence_Post(bool force)
 /// <returns>Returns with the coordinate that the projectile should appear at.</returns>
 Coord BuildingClass::Fire_Coord(int slot) const
 {
+	if (Class->IsCanBeOccupied && Occupants.Count() > 0) {
+		int index = std::min<int>(FiringOccupantIndex, BuildingTypeClass::MUZZLE_FLASH_COUNT - 1);
+		return(Render_Coord() + Coord(TacticalMap->Pixel_To_Lepton(Class->MuzzleFlash[index]), 0));
+	}
 	if (Class->PrimaryFirePixelOffset != Point2D(0xFFFF, 0xFFFF)) {
 		Coord pt(TacticalMap->Pixel_To_Lepton(Class->PrimaryFirePixelOffset), 0);
 		return(Render_Coord() + pt);
@@ -8927,6 +9105,9 @@ Coord BuildingClass::Fire_Coord(int slot) const
 /// <returns>Returns with the coordinate that the projectile should appear at.</returns>
 Coord BuildingClass::Turret_Coord(int slot) const
 {
+	if (Class->IsCanBeOccupied && Occupants.Count() > 0) {
+		return(Fire_Coord(slot));
+	}
 	if (Class->PrimaryFirePixelOffset != Point2D(0xFFFF, 0xFFFF)) {
 		Coord pt(TacticalMap->Pixel_To_Lepton(Class->PrimaryFirePixelOffset), 0);
 		return(Render_Coord() + pt);
@@ -9049,6 +9230,8 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PlacementDelay);
 	stream.Serialize(Anims);
 	stream.Serialize(AnimStates);
+	stream.Serialize(Occupants);
+	stream.Serialize(FiringOccupantIndex);
 	stream.Serialize(Upgrades);
 	stream.Serialize(LastSuperWeaponIndex);
 	stream.Serialize(TurretIndex);

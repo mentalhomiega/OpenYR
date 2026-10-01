@@ -9,7 +9,7 @@ when_omitted:
 
 `PipScale` chooses what the pip row under a selected object counts, and sets the row's default length. Without a `PipScale` the row has no pips, so a transport or harvester shows nothing however full it is.
 
-The row appears only under objects that the player or an ally owns, and under an enemy structure that one of the player's spies has entered. A player who has been given the whole map sees the row under every object, as [observers and coach mode](/systems/observers/) describes.
+The row appears under a selected object and under the object beneath the mouse. It shows only for objects that the player or an ally owns, and for an enemy structure that one of the player's spies has entered. A player who has been given the whole map sees the row under every object, as [observers and coach mode](/systems/observers/) describes. A [garrisonable structure](/systems/garrisons/#pips) shows its rows to every player.
 
 | Value | Row length | What fills it |
 | --- | --- | --- |

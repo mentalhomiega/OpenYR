@@ -752,6 +752,27 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 
 	if (why == PCP_END) {
 
+		// A soldier that reaches the structure it was sent to garrison goes inside, as gamemd's
+		// InfantryClass cell arrival (0x519630) does; one that may no longer enter is turned away.
+		if (Mission == MISSION_ENTER && Class->IsOccupier && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
+			BuildingClass * building = (BuildingClass *)NavCom;
+			if (building == cellptr->Cell_Building()) {
+				if (building->Can_Be_Occupied_By(this)) {
+					if (building->Tag) {
+						building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+					}
+					Assign_Destination(NULL);
+					ArchiveTarget = NULL;
+					building->Occupy(this);
+				} else {
+					Assign_Destination(NULL);
+					Scatter(COORD_NONE, true);
+				}
+				BEnd(BENCH_PCP);
+				return;
+			}
+		}
+
 		/*
 		**	If the infantry unit is entering a cell that contains the building it is trying to
 		**	capture, then capture it.
@@ -2665,6 +2686,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	assert(object != NULL);
 
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
+
+	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Can_Be_Occupied_By(this)) {
+		return(ACTION_ENTER);
+	}
 
 	/*
 	**	If this is an engineer/renovator, we have to make some adjustments.

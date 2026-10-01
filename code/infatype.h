@@ -146,6 +146,15 @@ class InfantryTypeClass : public TechnoTypeClass
 		 */
 		bool IsVehicleThief;
 
+		// An Occupier=yes soldier can garrison a CanBeOccupied structure and fires OccupyWeapon,
+		// or EliteOccupyWeapon at elite rank, from inside it.
+		bool IsOccupier;
+		WeaponDataStruct OccupyWeapon;
+		WeaponDataStruct EliteOccupyWeapon;
+
+		// The figure a garrisoned structure draws for this soldier in its occupant pip row.
+		PipEnum OccupyPip;
+
 		/*
 		 * If this infantry type is an attack dog rather than a soldier, then this flag will
 		 * be true. A dog beds down in tiberium while guarding, panics outright once badly

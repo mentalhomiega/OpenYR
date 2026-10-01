@@ -437,6 +437,18 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsCaptureable;
 
 		/*
+		 * Garrisoning, as in Yuri's Revenge. Up to MaxNumberOccupants infantry with Occupier=yes
+		 * can enter the structure, which fires their weapons from its MuzzleFlash points when
+		 * CanOccupyFire=yes.
+		 */
+		enum { MUZZLE_FLASH_COUNT = 10 };
+		bool IsCanBeOccupied;
+		bool IsCanOccupyFire;
+		bool IsShowOccupantPips;
+		int MaxNumberOccupants;
+		Point2D MuzzleFlash[MUZZLE_FLASH_COUNT];
+
+		/*
 		**	Does this building require power to function? Usually, this isn't the case. The building
 		**	normally either has no effect by power level or is gradually reduced in effectiveness. This
 		**	flag is for those buildings that completely cease to function when the power drops below
