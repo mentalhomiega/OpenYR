@@ -82,6 +82,7 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	ROFBias(1.0),
 	CostBias(1.0),
 	BuildSpeedBias(1.0),
+	IncomeMult(1.0),
 	Scheme(0),
 	Prefix('A'),
 	IsMultiplay(false),
@@ -180,6 +181,7 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		ROFBias = ini.Get_Float(Name(), "ROF", ROFBias);
 		CostBias = ini.Get_Float(Name(), "Cost", CostBias);
 		BuildSpeedBias = ini.Get_Float(Name(), "BuildTime", BuildSpeedBias);
+		IncomeMult = ini.Get_Float(Name(), "IncomeMult", IncomeMult);
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
@@ -224,6 +226,7 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ROFBias);
 	crc(CostBias);
 	crc(BuildSpeedBias);
+	crc(IncomeMult);
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
@@ -249,6 +252,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ROFBias);
 	stream.Serialize(CostBias);
 	stream.Serialize(BuildSpeedBias);
+	stream.Serialize(IncomeMult);
 	stream.Serialize(Suffix);
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);

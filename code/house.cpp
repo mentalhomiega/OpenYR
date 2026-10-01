@@ -1798,52 +1798,18 @@ void HouseClass::Attacked(BuildingClass * source)
 }
 
 
-/***********************************************************************************************
- * HouseClass::Harvested -- Adds Tiberium to the harvest storage.                              *
- *                                                                                             *
- *    Use this routine whenever Tiberium is harvested. The Tiberium is stored equally between  *
- *    all storage capable buildings for the house. Harvested Tiberium adds to the credit       *
- *    value of the house, but only up to the maximum storage capacity that the house can       *
- *    currently maintain.                                                                      *
- *                                                                                             *
- * INPUT:   tiberium -- The number of Tiberium credits to add to the House's total.            *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   01/25/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Pays the house for ore a harvester has delivered. The payment is the ore's CreditValue per
+/// unit, scaled by the country's IncomeMult, and is added to the house's credits in full.
+/// </summary>
+/// <param name="tiberium">The amount of ore delivered.</param>
+/// <param name="slot">The kind of ore delivered.</param>
 void HouseClass::Harvested(int tiberium, TiberiumType slot)
 {
 	PointTotal += tiberium * 5;
 
-	if (Session.Type != GAME_NORMAL && !IsHuman) {
-		Credits += tiberium * Tiberiums[slot]->CreditValue;
-	} else {
-		int oldcap = Capacity;
-		int oldtib = Tiberium.Get_Total_Amount();
-
-		if (tiberium + Tiberium.Get_Total_Amount() > Capacity) {
-			tiberium = Capacity - Tiberium.Get_Total_Amount();
-		}
-
-		for (int index = 0; index < Buildings.Count(); index++) {
-			BuildingClass * b = Buildings[index];
-			if (b && b->IsDown && b->House == this) {
-				if (b->Class->Capacity > 0) {
-					while (tiberium > 0 && b->Class->Capacity > b->Storage.Get_Total_Amount()) {
-						b->Storage.Increase_Amount(1, slot);
-						Tiberium.Increase_Amount(1, slot);
-						tiberium--;
-					}
-				}
-			}
-		}
-
-		Silo_Redraw_Check(oldtib, oldcap);
-	}
+	// Delivered ore is paid out at once with no storage limit, as HouseClass::GiveTiberium (0x4F9610) does.
+	Credits += (int)(Tiberiums[slot]->CreditValue * Class->IncomeMult * tiberium);
 }
 
 

@@ -12015,6 +12015,23 @@ Inaccurate:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+IncomeMult:
+  key: IncomeMult
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: IncomeMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 Incoming:
   key: Incoming
   scopes:

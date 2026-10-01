@@ -61,6 +61,9 @@ class HouseTypeClass : public AbstractTypeClass
 		double CostBias;
 		double BuildSpeedBias;
 
+		// Scales the credits this country earns from delivered ore.
+		double IncomeMult;
+
 		/*
 		**	This is the filename suffix to use when creating a house specific
 		**	file name. It is three characters long.

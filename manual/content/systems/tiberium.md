@@ -234,13 +234,9 @@ A player order that sends the harvester elsewhere while it unloads ends the unlo
 
 ## Credits and storage
 
-Each unit a harvester unloads adds five points to its house's score.
+Each unit a harvester unloads adds five points to its house's score and is paid out at once: its type's [`Value`](/keys/value/) in credits, scaled by the [`IncomeMult`](/keys/incomemult/) of the house's country. Storage capacity does not limit the payment, and nothing is stored, whoever owns the harvester.
 
-A computer-controlled house in a skirmish or multiplayer game converts each unit to credits at once, at its type's [`Value`](/keys/value/). Its storage capacity does not matter.
-
-Every other house stores each unit. Units beyond the house's free storage capacity are lost. The rest fill the house's standing buildings that declare [`Storage`](/keys/storage/), one building at a time.
-
-Stored units become credits only when the house spends. Spending uses loose credits first, then stored units one at a time. Each building gives up its units lowest slot first, before the next building is used. Each unit is priced at its type's `Value` when it is spent, not when it is harvested.
+Buildings that declare [`Storage`](/keys/storage/) can still hold units put there in other ways. Stored units become credits only when the house spends. Spending uses loose credits first, then stored units one at a time. Each building gives up its units lowest slot first, before the next building is used. Each unit is priced at its type's `Value` when it is spent, not when it is harvested.
 
 A captured building keeps its contents. They move from the old house's total to the new house's total, along with the building's capacity.
 

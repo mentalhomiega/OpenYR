@@ -10,7 +10,7 @@ when_omitted:
 
 A harvester lifts one growth stage at a time and carries each as one unit of Tiberium. Each unit is worth `Value` credits.
 
-When the units become credits depends on the house, as [Credits and storage](/systems/tiberium/#credits-and-storage) explains. A computer house in a skirmish or multiplayer game receives the credits as soon as its harvester unloads. Every other house keeps only the units that fit in its free storage. Each stored unit becomes `Value` credits when the house spends it.
+A house receives the credits as soon as its harvester unloads, scaled by its country's [`IncomeMult`](/keys/incomemult/), as [Credits and storage](/systems/tiberium/#credits-and-storage) explains. A unit stored in a building some other way becomes `Value` credits when the house spends it.
 
 The [harvester's patch search](/systems/tiberium/#finding-a-patch) ranks a cell by `Value` multiplied by its growth stage plus one, so a full-grown cell counts twelve times the setting.
 
