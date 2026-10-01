@@ -24,6 +24,8 @@
 #include "rules.h"
 #include "savestream.h"
 #include "team.h"
+#include "teamtype.h"
+#include "dbgprint.h"
 #include "techno.h"
 #include "techtype.h"
 #include "unit.h"
@@ -225,15 +227,106 @@ bool CaptureManagerClass::Is_Link_Shown(int index) const
 
 
 /// <summary>
-/// Decides what a unit does on changing hands (CaptureManagerClass::DecideUnitFate, 0x4723B0):
-/// it leaves its team, and a unit now owned by a computer house hunts.
+/// Sends a soldier or vehicle to the nearest of its owner's grinders, or with absorber set, the
+/// nearest of its owner's InfantryAbsorb or UnitAbsorb structures that would take it in
+/// (FootClass::EnterGrinder, 0x4DFA70, and EnterBioReactor, 0x4DFB70).
+/// </summary>
+/// <returns>bool; Was a structure found?</returns>
+static bool Send_To_Grinder(FootClass * foot, bool absorber)
+{
+	BuildingClass * best = NULL;
+	int bestdist = INT_MAX;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		if (building->House != foot->House || building->IsInLimbo || building->Strength <= 0) continue;
+		bool const fits = absorber ? building->Can_Absorb(foot) : building->Class->IsGrinding;
+		if (!fits) continue;
+		int const dist = foot->Distance(building);
+		if (dist < bestdist) {
+			bestdist = dist;
+			best = building;
+		}
+	}
+	if (best == NULL) {
+		return(false);
+	}
+	foot->Assign_Mission(MISSION_ENTER);
+	foot->Assign_Destination(best);
+	return(true);
+}
+
+
+/// <summary>
+/// Decides what a unit does on changing hands (CaptureManagerClass::DecideUnitFate, 0x4723B0).
+/// It leaves its team. A unit now owned by a computer house then rolls against the AICapture
+/// weights that fit the controlling house's money and power and the unit's health, or follows
+/// the controller's team's MindControlDecision: 1 joins the controller's team, 2 goes to a
+/// grinder, 3 goes to a bio reactor, 5 does nothing, and anything else, or a choice that cannot be
+/// carried out, hunts. A roll above the sum of the weights does nothing.
 /// </summary>
 void CaptureManagerClass::Decide_Unit_Fate(TechnoClass * unit) const
 {
 	if (unit->Is_Foot() && ((FootClass *)unit)->Team != NULL) {
 		((FootClass *)unit)->Team->Remove((FootClass *)unit);
 	}
-	if (!unit->House->Is_Human_Player() && unit->Is_Foot()) {
+	if (unit->House->Is_Human_Player() || !unit->Is_Foot()) {
+		return;
+	}
+	if (Owner == NULL) {
+		unit->Assign_Mission(MISSION_HUNT);
+		return;
+	}
+	FootClass * foot = (FootClass *)unit;
+	HouseClass * house = Owner->House;
+	bool const otherhouse = (unit->House != house);
+
+	TypeList<int> const * weights = &Rule->AICaptureNormal;
+	if (house->Available_Money() < Rule->AICaptureLowMoneyMark) {
+		weights = &Rule->AICaptureLowMoney;
+	} else if (house->Power_Fraction() < 1.0) {
+		weights = &Rule->AICaptureLowPower;
+	} else if ((float)unit->Strength / (float)unit->Techno_Type_Class()->MaxStrength < (float)Rule->AICaptureWoundedMark) {
+		weights = &Rule->AICaptureWounded;
+	}
+
+	int const roll = Sim_Random_Pick(1, 100);
+	int decision = 0;
+	int sum = 0;
+	while (sum < roll) {
+		if (decision == 6 || decision == weights->Count()) {
+			return;
+		}
+		sum += (*weights)[decision];
+		decision++;
+	}
+	DebugString("AICapture: rolled %d and chose %d for %s\n", roll, decision, unit->Techno_Type_Class()->Name());
+
+	if (Owner->Is_Foot() && ((FootClass *)Owner)->Team != NULL) {
+		int const teamdecision = ((FootClass *)Owner)->Team->Class->MindControlDecision;
+		if (teamdecision != 0) {
+			decision = teamdecision;
+		}
+	}
+
+	bool done = false;
+	switch (decision) {
+		case 1:
+			if (!otherhouse && Owner->Is_Foot() && ((FootClass *)Owner)->Team != NULL) {
+				done = ((FootClass *)Owner)->Team->Add(foot);
+			}
+			break;
+		case 2:
+			done = Send_To_Grinder(foot, false);
+			break;
+		case 3:
+			done = Send_To_Grinder(foot, true);
+			break;
+		case 5:
+			return;
+		default:
+			break;
+	}
+	if (!done) {
 		unit->Assign_Mission(MISSION_HUNT);
 	}
 }

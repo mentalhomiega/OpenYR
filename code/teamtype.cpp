@@ -131,6 +131,7 @@ TeamTypeClass::TeamTypeClass(char const * name) :
 	HeapID(-1),
 	Group(-1),
 	VeteranLevel(1),
+	MindControlDecision(0),
 	IsLoadable(false),
 	IsFull(false),
 	IsAnnoyance(false),
@@ -620,6 +621,7 @@ bool TeamTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		VeteranLevel = ini.Get_Int(IniName, "VeteranLevel", VeteranLevel);
+		MindControlDecision = ini.Get_Int(IniName, "MindControlDecision", MindControlDecision);
 		IsLoadable = ini.Get_Bool(IniName, "Loadable", IsLoadable);
 		IsFull = ini.Get_Bool(IniName, "Full", IsFull);
 		IsAnnoyance = ini.Get_Bool(IniName, "Annoyance", IsAnnoyance);
@@ -691,6 +693,7 @@ bool TeamTypeClass::Write_INI(CCINIClass & ini) const
 		**	Output the general data for this team type.
 		*/
 		ini.Put_Int(IniName, "VeteranLevel", VeteranLevel);
+		ini.Put_Int(IniName, "MindControlDecision", MindControlDecision);
 		ini.Put_Bool(IniName, "Loadable", IsLoadable);
 		ini.Put_Bool(IniName, "Full", IsFull);
 		ini.Put_Bool(IniName, "Annoyance", IsAnnoyance);
@@ -854,6 +857,7 @@ void TeamTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HeapID);
 	stream.Serialize(Group);
 	stream.Serialize(VeteranLevel);
+	stream.Serialize(MindControlDecision);
 	stream.Serialize(IsLoadable);
 	stream.Serialize(IsFull);
 	stream.Serialize(IsAnnoyance);

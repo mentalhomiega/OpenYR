@@ -1,0 +1,15 @@
+---
+key: AICaptureWounded
+summary: "The weights for what a computer does with a unit it takes over, for a unit below AICaptureWoundedMark of its health."
+see_also: [AICaptureNormal, AICaptureLowPower, AICaptureLowMoney, "system:mind-control"]
+when_omitted:
+  kind: value
+  value: none
+---
+
+The weights a computer house [rolls against](/systems/mind-control/#what-a-computer-does-with-a-unit) for a unit below AICaptureWoundedMark of its health, to pick what a unit it takes over or gets back does: join the firer's team, go to a grinder, go to a bio reactor, hunt, or do nothing, in that order. Without weights, the unit is left as it is.
+
+```ini title="rulesmd.ini"
+[General]
+AICaptureWounded=15,40,40,5
+```

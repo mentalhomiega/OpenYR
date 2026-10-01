@@ -316,6 +316,14 @@ class RulesClass
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 
+		// The weights a computer house rolls against to decide what a unit it takes over does, by its situation.
+		TypeList<int> AICaptureNormal;
+		TypeList<int> AICaptureWounded;
+		TypeList<int> AICaptureLowPower;
+		TypeList<int> AICaptureLowMoney;
+		int AICaptureLowMoneyMark;
+		double AICaptureWoundedMark;
+
 		/*
 		 * These are the two visceroid types. A small visceroid is spawned where infantry
 		 * dies in tiberium, and when two of them meet one is promoted to the large type

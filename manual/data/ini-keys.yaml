@@ -246,6 +246,114 @@ AIBuildsWalls:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AICaptureLowMoney:
+  key: AICaptureLowMoney
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AICaptureLowMoney
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AICaptureLowMoneyMark:
+  key: AICaptureLowMoneyMark
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: AICaptureLowMoneyMark
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AICaptureLowPower:
+  key: AICaptureLowPower
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AICaptureLowPower
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AICaptureNormal:
+  key: AICaptureNormal
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AICaptureNormal
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AICaptureWounded:
+  key: AICaptureWounded
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AICaptureWounded
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AICaptureWoundedMark:
+  key: AICaptureWoundedMark
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: RulesClass
+      member: AICaptureWoundedMark
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIDetectDisguise:
   key: AIDetectDisguise
   scopes:
@@ -18376,6 +18484,23 @@ MindControlAttackLineFrames:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MindControlDecision:
+  key: MindControlDecision
+  scopes:
+  - applies_to: *id008
+    file: ai.ini or map file
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TeamTypeClass
+      member: MindControlDecision
+      source: code/teamtype.cpp
+      guard: null
+    level: TeamTypeClass
 MindControlRingOffset:
   key: MindControlRingOffset
   scopes:

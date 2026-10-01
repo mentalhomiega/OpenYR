@@ -431,6 +431,12 @@ RulesClass::RulesClass(void) :
 	OverloadDamage(),
 	OverloadFrames(),
 	AIMinorSuperReadyPercent(0.8),
+	AICaptureNormal(),
+	AICaptureWounded(),
+	AICaptureLowPower(),
+	AICaptureLowMoney(),
+	AICaptureLowMoneyMark(0),
+	AICaptureWoundedMark(0.0),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
 	UnloadingHarvester(NULL),
@@ -1336,6 +1342,12 @@ bool RulesClass::General(CCINIClass const & ini)
 		DominatorWarhead = TGet_Class(ini, GENERAL, "DominatorWarhead", DominatorWarhead);
 		DominatorCaptureRange = ini.Get_Int(GENERAL, "DominatorCaptureRange", DominatorCaptureRange);
 		AIMinorSuperReadyPercent = ini.Get_Float(GENERAL, "AIMinorSuperReadyPercent", AIMinorSuperReadyPercent);
+		AICaptureNormal = ini.Get_IntList(GENERAL, "AICaptureNormal", AICaptureNormal);
+		AICaptureWounded = ini.Get_IntList(GENERAL, "AICaptureWounded", AICaptureWounded);
+		AICaptureLowPower = ini.Get_IntList(GENERAL, "AICaptureLowPower", AICaptureLowPower);
+		AICaptureLowMoney = ini.Get_IntList(GENERAL, "AICaptureLowMoney", AICaptureLowMoney);
+		AICaptureLowMoneyMark = ini.Get_Int(GENERAL, "AICaptureLowMoneyMark", AICaptureLowMoneyMark);
+		AICaptureWoundedMark = ini.Get_Float(GENERAL, "AICaptureWoundedMark", AICaptureWoundedMark);
 		SmallVisceroid = TGet_Class(ini, GENERAL, "SmallVisceroid", SmallVisceroid);
 		TiberiumHeal = ini.Get_Float(GENERAL, "TiberiumHeal", TiberiumHeal);
 		PrerequisitePower = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisitePower", PrerequisitePower);
@@ -2519,6 +2531,12 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OverloadDamage);
 	stream.Serialize(OverloadFrames);
 	stream.Serialize(AIMinorSuperReadyPercent);
+	stream.Serialize(AICaptureNormal);
+	stream.Serialize(AICaptureWounded);
+	stream.Serialize(AICaptureLowPower);
+	stream.Serialize(AICaptureLowMoney);
+	stream.Serialize(AICaptureLowMoneyMark);
+	stream.Serialize(AICaptureWoundedMark);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
 	stream.Serialize(UnloadingHarvester);

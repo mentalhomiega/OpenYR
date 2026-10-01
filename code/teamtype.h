@@ -131,6 +131,9 @@ class TeamTypeClass : public AbstractTypeClass
 		 */
 		int VeteranLevel;
 
+		// What a unit a member of this team takes over does, overriding the computer house's roll; 0 lets the house decide.
+		int MindControlDecision;
+
 		/*
 		 * If the player may order infantry aboard the transports of this team, then this flag
 		 * will be true. Otherwise the enter cursor is refused over any member of the team.
