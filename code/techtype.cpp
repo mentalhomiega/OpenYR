@@ -165,6 +165,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDamageSelf(false),
 	IsImmuneToPsionics(false),
 	IsBerserkFriendly(false),
+	IsCanPassiveAquire(true),
+	IsCanRetaliate(true),
+	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
 	GapRadiusInCells(0),
@@ -635,6 +638,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
 		IsBerserkFriendly = ini.Get_Bool(Name(), "BerserkFriendly", IsBerserkFriendly);
+		IsCanPassiveAquire = ini.Get_Bool(Name(), "CanPassiveAquire", IsCanPassiveAquire);
+		IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
+		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
@@ -1138,6 +1144,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDamageSelf);
 	stream.Serialize(IsImmuneToPsionics);
 	stream.Serialize(IsBerserkFriendly);
+	stream.Serialize(IsCanPassiveAquire);
+	stream.Serialize(IsCanRetaliate);
+	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
 	stream.Serialize(GapRadiusInCells);

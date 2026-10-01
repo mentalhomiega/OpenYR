@@ -5431,6 +5431,40 @@ CanOccupyFire:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CanPassiveAquire:
+  key: CanPassiveAquire
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsCanPassiveAquire
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CanRetaliate:
+  key: CanRetaliate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsCanRetaliate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Capturable:
   key: Capturable
   scopes:
@@ -20391,6 +20425,24 @@ Normal:
       source: code/themeini.cpp
       guard: null
     level: ThemeControl
+NormalTargetingDelay:
+  key: NormalTargetingDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '27'
+      declared_in: RulesClass
+      member: NormalTargetingDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 NormalTurretIndex:
   key: NormalTurretIndex
   scopes:
@@ -21032,6 +21084,23 @@ OpenTransportWeapon:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: OpenTransportWeapon
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OpportunityFire:
+  key: OpportunityFire
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsOpportunityFire
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

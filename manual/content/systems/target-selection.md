@@ -113,7 +113,11 @@ The middle column gives each scan's shape and reach. A *ring* scan walks whole r
 
 In Guard, an infantry or vehicle that is not an engineer checks its current target before scanning. If the target is out of range of the weapon chosen against it, the object drops it and scans for another. It therefore does not keep chasing something it can no longer shoot.
 
-Three conditions stop a scan before it starts. **Any of** them is enough, and each applies only to a human-owned object:
+An armed vehicle, infantryman or aircraft whose type sets [`OpportunityFire=yes`](/keys/opportunityfire/) also scans while it is on a Move or Harvest mission, whoever owns it. Every [`NormalTargetingDelay`](/keys/normaltargetingdelay/) frames it drops a target that has left its weapon's range and takes the best target in range, so it fires on the move without leaving its route.
+
+A type with [`CanPassiveAquire=no`](/keys/canpassiveaquire/) never runs the Guard, Guard area or Move scans of a vehicle, infantryman or aircraft, whoever owns it. It still attacks targets it is given, and the Hunt and team scans still run.
+
+Three more conditions stop a scan before it starts. **Any of** them is enough, and each applies only to a human-owned object:
 
 - [`NoAutoFire=yes`](/keys/noautofire/) on the object's type;
 - the object is in Guard, and it can cloak (from its type or a cloaking crate) or holds the `CLOAK` ability;
@@ -349,6 +353,7 @@ Damage is answered without a scan. The engine tests the rows below in order, and
 | Condition | Retaliates |
 | --- | --- |
 | Human-owned and already has a target | No |
+| The type is [`CanRetaliate=no`](/keys/canretaliate/) | No |
 | The warhead is [`Veinhole=yes`](/keys/veinhole/) | Yes, unless the object is human-owned and has a movement destination |
 | No attacker is known | No |
 | The current mission sets [`Retaliate=no`](/keys/retaliate/) | No |

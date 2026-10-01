@@ -190,6 +190,9 @@ class TechnoClass :	public RadioClass,
 		bool IsBerzerk;
 		int BerzerkDuration;
 
+		// The frame of an OpportunityFire object's last scan for targets on the move.
+		int OpportunityScanFrame;
+
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
 		VocType GattlingVoc;

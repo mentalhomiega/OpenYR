@@ -294,6 +294,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Does a berzerk object refuse to fire at objects of this type?
 		bool IsBerserkFriendly;
 
+		// Does an idle object of this type pick targets on its own, and does it fire back when hit?
+		bool IsCanPassiveAquire;
+		bool IsCanRetaliate;
+
+		// Does a moving or harvesting object of this type shoot at targets that come into range?
+		bool IsOpportunityFire;
+
 		// Can a temporal weapon warp an object of this type?
 		bool IsWarpable;
 

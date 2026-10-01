@@ -629,7 +629,7 @@ int FootClass::Do_MISSION_MOVE(void)
 		return(1);
 	}
 
-	if (TarCom == NULL && !House->Is_Human_Player() && (Team == NULL || !Team->Class->IsSuicide)) {
+	if (TarCom == NULL && !House->Is_Human_Player() && (Team == NULL || !Team->Class->IsSuicide) && TClass->IsCanPassiveAquire) {
 		Target_Something_Nearby(Get_Coord(), THREAT_RANGE);
 	}
 
@@ -911,7 +911,8 @@ int FootClass::Do_MISSION_ATTACK(void)
 int FootClass::Do_MISSION_GUARD(void)
 {
 	bool renovator = Is_Renovator();
-	if (!renovator && (TarCom == NULL || RTTI != RTTI_AIRCRAFT || House->Is_Human_Player())) {
+	// A CanPassiveAquire=no type never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
+	if (!renovator && TClass->IsCanPassiveAquire && (TarCom == NULL || RTTI != RTTI_AIRCRAFT || House->Is_Human_Player())) {
 		if (!Target_Something_Nearby(PositionCoord, THREAT_RANGE)) {
 			Random_Animate();
 		}
@@ -1403,7 +1404,7 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 			Assign_Destination(ArchiveTarget);
 		}
 
-		if (TarCom == NULL) {
+		if (TarCom == NULL && TClass->IsCanPassiveAquire) {
 			Target_Something_Nearby(ArchiveTarget->Center_Coord(), THREAT_AREA);
 			if (TarCom != NULL) {
 				return(1);

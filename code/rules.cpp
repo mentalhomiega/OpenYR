@@ -682,6 +682,7 @@ RulesClass::RulesClass(void) :
 	BombParachute(NULL),
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
+	NormalTargetingDelay(27),
 	SplashList(),
 	DefaultMirageDisguises(),
 	InfantryBlinkDisguiseTime(0),
@@ -1324,6 +1325,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		DefaultMirageDisguises = TGet_TypeList<TerrainTypeClass>(ini, GENERAL, "DefaultMirageDisguises", DefaultMirageDisguises);
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
+		NormalTargetingDelay = ini.Get_Int(GENERAL, "NormalTargetingDelay", NormalTargetingDelay);
 		AllyParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AllyParaDropInf", AllyParaDropInf);
 		AllyParaDropNum = ini.Get_IntList(GENERAL, "AllyParaDropNum", AllyParaDropNum);
 		SovParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "SovParaDropInf", SovParaDropInf);
@@ -2809,6 +2811,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombParachute);
 	stream.Serialize(Parachute);
 	stream.Serialize(GuardAreaTargetingDelay);
+	stream.Serialize(NormalTargetingDelay);
 	stream.Serialize(SplashList);
 	stream.Serialize(DefaultMirageDisguises);
 	stream.Serialize(InfantryBlinkDisguiseTime);

@@ -299,6 +299,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BombDetonateFrame(-1),
 	IsBerzerk(false),
 	BerzerkDuration(0),
+	OpportunityScanFrame(0),
 	BombSound(),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
@@ -3129,6 +3130,17 @@ void TechnoClass::AI(void)
 {
 	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
 		IsBerzerk = false;
+	}
+
+	/*
+	 * Every NormalTargetingDelay frames, an OpportunityFire object that is moving or harvesting
+	 * drops a target out of range and takes the best one in range, firing on the move
+	 * (TechnoClass::Update, 0x6F9E50, and CanOpportunityFire, 0x709290).
+	 */
+	if ((Mission == MISSION_MOVE || Mission == MISSION_HARVEST) && TClass->IsOpportunityFire && TClass->IsCanPassiveAquire
+		&& Is_Weapon_Equipped() && Frame - OpportunityScanFrame >= Rule->NormalTargetingDelay) {
+		OpportunityScanFrame = Frame;
+		Target_Something_Nearby(PositionCoord, THREAT_RANGE);
 	}
 
 	if (Is_Voxel_Loaded()) {
@@ -7710,6 +7722,9 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 {
 	if (House->Is_Human_Player() && TarCom != NULL) return(false);
 
+	// A CanRetaliate=no type never fires back (TechnoClass::CanRetaliateToAttacker, 0x7087C0).
+	if (!TClass->IsCanRetaliate) return(false);
+
 	bool has_navqueue = Is_Foot() && ((FootClass const *)this)->NavCom != NULL;
 	if (warhead != NULL && warhead->IsVeinhole && (!has_navqueue || !House->Is_Human_Player())) {
 		return(true);
@@ -8930,6 +8945,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombDetonateFrame);
 	stream.Serialize(IsBerzerk);
 	stream.Serialize(BerzerkDuration);
+	stream.Serialize(OpportunityScanFrame);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);
