@@ -1816,8 +1816,10 @@ void BuildingClass::AI(void)
 	*/
 	if (Strength == 0) {
 		if (CountDown == 0) {
+			Cell const crate_cell = Center_Coord().As_Cell();
 			Limbo();
 			Drop_Debris(WhomToRepay);
+			Leave_Crate(crate_cell);
 			Delete_Me();
 		}
 		return;
@@ -2191,6 +2193,18 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 /// <param name="forced">Should the destruction be forced, leaving no survivors?</param>
 /// <param name="offset">Pointer to the REFRESH_EOL terminated list of cell offsets that
 /// make up the building's footprint.</param>
+/// <summary>
+/// Places a crate at or near the cell once this structure has left the map, if its type has
+/// CrateBeneath (BuildingClass::AfterDestruction, 0x441F60).
+/// </summary>
+void BuildingClass::Leave_Crate(Cell const & cell)
+{
+	if (Class->IsCrateBeneath) {
+		Map.Place_Crate(cell, Class->IsCrateBeneathMoney ? CRATE_MONEY : -1);
+	}
+}
+
+
 void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *source, bool forced, Cell const *offset)
 {
 	int shakes;
@@ -2439,7 +2453,9 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					}
 
 					if (CountDown > 0) {
+						Cell const crate_cell = Center_Coord().As_Cell();
 						Delete_Me();
+						Leave_Crate(crate_cell);
 					}
 
 					break;

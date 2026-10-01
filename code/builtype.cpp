@@ -332,6 +332,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	DelayedFireDelay(0),
 	IsOverpowerable(false),
 	IsClickRepairable(true),
+	IsCrateBeneath(false),
+	IsCrateBeneathMoney(false),
 	WorkingSound(VOC_NONE),
 	NotWorkingSound(VOC_NONE),
 	IsICBMLauncher(false),
@@ -1325,6 +1327,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 		IsOverpowerable = ini.Get_Bool(Name(), "Overpowerable", IsOverpowerable);
 		IsClickRepairable = ini.Get_Bool(Name(), "ClickRepairable", IsClickRepairable);
+		IsCrateBeneath = ini.Get_Bool(Name(), "CrateBeneath", IsCrateBeneath);
+		IsCrateBeneathMoney = ini.Get_Bool(Name(), "CrateBeneathIsMoney", IsCrateBeneathMoney);
 		WorkingSound = ini.Get_VocType(Name(), "WorkingSound", WorkingSound);
 		NotWorkingSound = ini.Get_VocType(Name(), "NotWorkingSound", NotWorkingSound);
 		CloakRadiusInCells = ini.Get_Int(Name(), "CloakRadiusInCells", CloakRadiusInCells);
@@ -2317,6 +2321,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsClickRepairable);
+	stream.Serialize(IsCrateBeneath);
+	stream.Serialize(IsCrateBeneathMoney);
 	stream.Serialize(WorkingSound);
 	stream.Serialize(NotWorkingSound);
 	stream.Serialize(IsICBMLauncher);

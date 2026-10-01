@@ -2530,6 +2530,35 @@ bool MapClass::Place_Random_Crate(void)
 }
 
 
+/// <summary>
+/// Places a crate on the nearest free cell to the one given and returns whether one was placed
+/// (MapClass::PlacePowerupCrate, 0x56BEC0). A powerup of CRATE_FIRST up to CRATE_COUNT fixes what
+/// the crate gives; any other value leaves it random.
+/// </summary>
+bool MapClass::Place_Crate(Cell const & cell, int powerup)
+{
+	int crateindex = 0;
+	for (crateindex = 0; crateindex < ARRAY_SIZE(Crates); crateindex++) {
+		if (!Crates[crateindex].Is_Valid()) break;
+	}
+	if (crateindex == ARRAY_SIZE(Crates)) {
+		return(false);
+	}
+
+	SpeedType speed = (*this)[cell].Land_Type() == LAND_WATER ? SPEED_FLOAT : SPEED_TRACK;
+	Cell place = Nearby_Location(cell, speed);
+	// Unlike a random crate, this one is not moved elsewhere when its cell already holds an overlay.
+	if (place == CELL_NONE || (*this)[place].Overlay != OVERLAY_NONE || !Crates[crateindex].Create_Crate(place)) {
+		return(false);
+	}
+	if (powerup >= CRATE_FIRST && powerup < CRATE_COUNT) {
+		(*this)[Crates[crateindex].Get_Location()].OverlayData = (unsigned char)powerup;
+	}
+	DebugString("Crate placed at %d,%d with powerup %d\n", Crates[crateindex].Get_Location().X, Crates[crateindex].Get_Location().Y, powerup);
+	return(true);
+}
+
+
 /***********************************************************************************************
  * MapClass::Remove_Crate -- Remove a crate from the specified cell.                           *
  *                                                                                             *

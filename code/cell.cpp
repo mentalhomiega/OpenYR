@@ -3513,7 +3513,22 @@ bool CellClass::Goodie_Check(FootClass * object)
 		**	In solo play, the bonus item is dependant upon the rules control.
 		*/
 		CrateType powerup = CRATE_MONEY;
-		if (Session.Type == GAME_NORMAL) {
+		auto random_powerup = [&]() {
+			int pick = Random_Pick(1, total_shares);
+
+			int share_count = 0;
+			CrateType picked;
+			for (picked = CRATE_FIRST; picked < CRATE_COUNT; picked++) {
+				share_count += CrateShares[picked];
+				if (pick <= share_count) break;
+			}
+			assert(picked != CRATE_COUNT);
+			return(picked);
+		};
+
+		// A crate placed with a fixed powerup, such as one left by a CrateBeneath structure, keeps it (CellClass::CollectCrate, 0x481A00).
+		bool const fixed = OverlayData < CRATE_COUNT;
+		if (Session.Type == GAME_NORMAL && OverlayData == 0) {
 
 			/*
 			**	Solo play has money amount determined by rules.ini file.
@@ -3534,15 +3549,10 @@ bool CellClass::Goodie_Check(FootClass * object)
 			}
 #endif
 
+		} else if (Session.Type == GAME_NORMAL) {
+			powerup = fixed ? CrateType(OverlayData) : random_powerup();
 		} else {
-			int pick = Random_Pick(1, total_shares);
-
-			int share_count = 0;
-			for (powerup = CRATE_FIRST; powerup < CRATE_COUNT; powerup++) {
-				share_count += CrateShares[powerup];
-				if (pick <= share_count) break;
-			}
-			assert(powerup != CRATE_COUNT);
+			powerup = fixed ? CrateType(OverlayData) : random_powerup();
 
 			/*
 			**	Possibly force it to be an MCV if there is

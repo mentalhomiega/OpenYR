@@ -663,6 +663,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Can the player repair this structure with the repair cursor?
 		bool IsClickRepairable;
 
+		// Leaves a crate where the structure stood once it is destroyed; a money crate with CrateBeneathIsMoney.
+		bool IsCrateBeneath;
+		bool IsCrateBeneathMoney;
+
 		// Played at the structure when it comes back into service and when it drops out.
 		VocType WorkingSound;
 		VocType NotWorkingSound;

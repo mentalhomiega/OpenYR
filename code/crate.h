@@ -47,6 +47,7 @@ class CrateClass {
 		bool Remove_It(void);
 		bool Is_Expired(void) const {return(Is_Valid() && Timer == 0);}
 		bool Is_Valid(void) const {return(Location != CELL_NONE);}
+		Cell Get_Location(void) const {return(Location);}
 
 		// Carries the crate to or from a save game.
 		template<typename S>

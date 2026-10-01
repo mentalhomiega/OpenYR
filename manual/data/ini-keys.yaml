@@ -7085,6 +7085,40 @@ Crate:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+CrateBeneath:
+  key: CrateBeneath
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsCrateBeneath
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+CrateBeneathIsMoney:
+  key: CrateBeneathIsMoney
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsCrateBeneathMoney
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 CrateGoodie:
   key: CrateGoodie
   scopes:

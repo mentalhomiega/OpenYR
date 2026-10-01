@@ -45,7 +45,7 @@ related:
 
 A crate is an overlay. Any OverlayType with [`Crate=yes`](/keys/crate/) is collected as a crate. Crates the engine places itself always use the overlay type named by [`WoodCrateImg`](/keys/woodcrateimg/). In a campaign, `WoodCrateImg` and [`CrateImg`](/keys/crateimg/) also decide which result a crate gives.
 
-Outside a campaign, the engine places random crates, draws each crate's result from weighted shares, and replaces crates as they expire or are collected. A campaign does none of this: its crates come only from the map and from destroyed vehicles, and each gives a fixed result.
+Outside a campaign, the engine places random crates, draws each crate's result from weighted shares, and replaces crates as they expire or are collected. A campaign does none of this: its crates come only from the map, from destroyed vehicles and from destroyed structures.
 
 ## Placing crates
 
@@ -116,6 +116,12 @@ The map's `[Basic]` section decides whether drops happen. A type with [`IsTrain=
 
 A dropped crate takes no tracking slot, so, like a crate drawn into the map, it never expires.
 
+### Crates left by destroyed structures
+
+A structure whose type sets [`CrateBeneath=yes`](/keys/cratebeneath/) leaves a `WoodCrateImg` crate when it is destroyed. The crate is placed once the structure has left the map, on its center cell or the nearest cell to it in the playable area that is unoccupied and can be crossed by tracked vehicles, or by ships when the center cell is water. If that cell holds any overlay, or all 256 tracking slots are in use, no crate appears.
+
+The crate takes a tracking slot and expires like a random crate. With [`CrateBeneathIsMoney=yes`](/keys/cratebeneathismoney/) it is a money crate; otherwise its result is drawn at random when it is collected, in a campaign too.
+
 ## Collecting a crate
 
 Infantry, walkers, hovercraft and driven vehicles collect a crate when they move into its cell. These are the walking, mech, hovering and driving locomotors. Objects with any other locomotor never collect a crate: jump-jet infantry and flying aircraft pass over the cell, and buildings never move onto one.
@@ -168,7 +174,7 @@ If every share is `0`, about half of the crates collected outside a campaign rea
 
 ### In a campaign
 
-In a campaign, a crate's result depends only on its overlay type, and the shares in `[Powerups]` are ignored. The overlay is tested in this order:
+In a campaign, a crate drawn into the map, or a money crate left by a [destroyed structure](#crates-left-by-destroyed-structures), gives a result that depends only on its overlay type, and the shares in `[Powerups]` are ignored. Crates dropped by destroyed vehicles, and other crates left by destroyed structures, are drawn at random from the `[Powerups]` shares; the free MCV and the conversions to money described [outside a campaign](#outside-a-campaign) do not apply to them, except that `Squad` still becomes money. The overlay is tested in this order:
 
 1. An overlay matching `CrateImg` gives the [`SilverCrate`](/keys/silvercrate/) result.
 2. An overlay matching `WoodCrateImg` gives the [`WoodCrate`](/keys/woodcrate/) result, replacing the result from step 1.
@@ -182,7 +188,7 @@ When `WoodCrateImg` and `CrateImg` name the same overlay type, step 2 always ove
 
 ### Outside a campaign
 
-Outside a campaign, the result is drawn at random, weighted by the shares in `[Powerups]`. Each result's chance is its share divided by the total of all shares, so raising one share lowers the chance of every other result.
+Outside a campaign, the result is drawn at random, weighted by the shares in `[Powerups]`. A money crate left by a [destroyed structure](#crates-left-by-destroyed-structures) skips the draw and starts as `Money`, and so does a crate drawn into a map whose overlay data for that cell is `0`, the value map editors store. Each result's chance is its share divided by the total of all shares, so raising one share lowers the chance of every other result.
 
 The drawn result is then replaced by a free MCV, delivered through the `Unit` result, when the collector's house meets **all of** these conditions:
 

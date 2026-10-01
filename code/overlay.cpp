@@ -332,6 +332,11 @@ bool OverlayClass::Mark(MarkType mark)
 						cellptr->OverlayData = 1;
 						cellptr->Tiberium_Adjust();
 					}
+
+					// A crate holds its fixed powerup here; 0xFF leaves it random.
+					if (Class->IsCrate) {
+						cellptr->OverlayData = 0xFF;
+					}
 				}
 
 				if (Class->CellAnim != NULL) {
