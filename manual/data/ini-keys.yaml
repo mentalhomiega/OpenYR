@@ -16671,6 +16671,23 @@ LightningWarhead:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+LimboLaunch:
+  key: LimboLaunch
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsLimboLaunch
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Limit:
   key: Limit
   scopes:
@@ -20415,6 +20432,40 @@ Paranoid:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Parasite:
+  key: Parasite
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsParasite
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+Parasiteable:
+  key: Parasiteable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsParasiteable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Paratrooper:
   key: Paratrooper
   scopes:
@@ -23859,6 +23910,23 @@ RequiresStolenThirdTech:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRequiresStolenThirdTech
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ReselectIfLimboed:
+  key: ReselectIfLimboed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsReselectIfLimboed
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -29215,6 +29283,23 @@ SuperWeapons:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SuppressionThreshold:
+  key: SuppressionThreshold
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SuppressionThreshold
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Supress:
   key: Supress
   scopes:

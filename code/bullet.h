@@ -112,6 +112,8 @@ class BulletClass : public ObjectClass
 		// The weapon that fired this projectile, if a weapon did.
 		WeaponTypeClass const * Weapon;
 
+		void Set_Payback(TechnoClass * firer) { Payback = firer; }
+
 	private:
 		/*
 		 * This is the fuse that decides when a homing projectile has arrived. It is armed

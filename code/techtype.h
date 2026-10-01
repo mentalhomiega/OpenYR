@@ -296,6 +296,14 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
+
+		/*
+		 * Parasites: can one get into this object, how much damage to its victim from others it
+		 * shrugs off, and is it selected again after a weapon with LimboLaunch takes it off the map?
+		 */
+		bool IsParasiteable;
+		int SuppressionThreshold;
+		bool IsReselectIfLimboed;
 		bool IsBalloonHover;
 
 		// How far above the object's center a mind control ring is drawn, in leptons.

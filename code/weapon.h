@@ -270,6 +270,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// The radiation this weapon leaves where it goes off, reaching its warhead's CellSpread.
 		int RadLevel;
+
+		// Does firing take the firer off the map, to ride its projectile?
+		bool IsLimboLaunch;
 		AnimTypeClass const * OpenToppedAnim;
 
 		/*

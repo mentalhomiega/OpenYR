@@ -3348,6 +3348,10 @@ void FootClass::AI(void)
 {
 	BASECLASS::AI();
 
+	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Update();
+	}
+
 	/*
 	 * As FootClass::Update (0x4DA530): every RadApplicationDelay frames an object on the ground
 	 * takes the radiation of its cell, times RadLevelFactor, as damage through RadSiteWarhead.

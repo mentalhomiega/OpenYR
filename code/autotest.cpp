@@ -288,6 +288,9 @@ void Dump(void)
 		if (object->Class->IsGattling) {
 			DebugString("AUTOTEST     gattling stage %d value %d turret frame %d tar %s\n", object->CurrentGattlingStage, object->GattlingValue, object->TurretAnimFrame, object->TarCom != NULL ? "yes" : "no");
 		}
+		if (object->ParasiteEatingMe != NULL) {
+			DebugString("AUTOTEST     parasite %s inside\n", object->ParasiteEatingMe->TClass->Name());
+		}
 		if (object->Class->IsGunner) {
 			WeaponTypeClass const * weapon = object->Get_Class_Weapon_Data(object->CurrentWeaponNumber)->Weapon;
 			DebugString("AUTOTEST     gunner weapon %d (%s) turret %d passengers %d\n", object->CurrentWeaponNumber, weapon != NULL ? weapon->Name() : "none", object->CurrentTurretNumber, object->Cargo.How_Many());
@@ -326,6 +329,17 @@ void Run(StepType const & step)
 		Move(step.Argument, step.X, step.Y);
 	} else if (step.Command == "attack") {
 		Attack(step.Argument);
+	} else if (step.Command == "strike") {
+		// strike <TypeID> x y: the player's objects of that type attack what stands on that cell.
+		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+		DebugString("AUTOTEST strike %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Target(target);
+				techno->Assign_Mission(MISSION_ATTACK);
+			}
+		}
 	} else if (step.Command == "enemies") {
 		Enemies();
 	} else if (step.Command == "owners") {

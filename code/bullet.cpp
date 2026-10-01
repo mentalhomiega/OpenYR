@@ -1346,6 +1346,15 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	/*
+	 * A parasite warhead puts its firer inside the target (BulletClass::Detonate, 0x469210).
+	 */
+	else if (warhead->IsParasite) {
+		if (Payback != NULL && Payback->ParasiteImUsing) {
+			Payback->ParasiteImUsing->Try_Infect(dynamic_cast<TechnoClass *>(TarCom));
+		}
+	}
+
+	/*
 	 * A temporal warhead starts its firer's warp on the target instead of hurting it
 	 * (BulletClass::Detonate, 0x469210).
 	 */

@@ -180,6 +180,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A radiation warhead does no damage to an ImmuneToRadiation type.
 		bool IsRadiation;
 
+		// A parasite warhead puts its firer inside the target instead of hurting it.
+		bool IsParasite;
+
 		/*
 		**	If this warhead can destroy wooden walls, then this flag will be true.
 		*/

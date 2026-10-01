@@ -166,6 +166,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsImmuneToPsionics(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
+	IsParasiteable(true),
+	SuppressionThreshold(0),
+	IsReselectIfLimboed(false),
 	IsBalloonHover(false),
 	MindControlRingOffset(140),
 	MindClearedSound(VOC_NONE),
@@ -624,6 +627,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
+		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
+		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
 		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
 		MindControlRingOffset = ini.Get_Int(Name(), "MindControlRingOffset", MindControlRingOffset);
 		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
@@ -1112,6 +1118,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsImmuneToPsionics);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
+	stream.Serialize(IsParasiteable);
+	stream.Serialize(SuppressionThreshold);
+	stream.Serialize(IsReselectIfLimboed);
 	stream.Serialize(IsBalloonHover);
 	stream.Serialize(MindControlRingOffset);
 	stream.Serialize(MindClearedSound);

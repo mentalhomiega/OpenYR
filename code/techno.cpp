@@ -287,6 +287,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	TemporalImUsing(),
 	WarpedBy(NULL),
 	IsBeingWarpedOut(false),
+	ParasiteImUsing(),
+	ParasiteEatingMe(NULL),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
 	IsGattlingSoundPlaying(false),
@@ -1886,6 +1888,9 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		}
 		if (!TemporalImUsing && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsTemporal) {
 			TemporalImUsing.emplace(this);
+		}
+		if (!ParasiteImUsing && Is_Foot() && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsParasite) {
+			ParasiteImUsing.emplace(this);
 		}
 
 		House->Tracking_Active_Add(this, false);
@@ -4472,6 +4477,17 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		}
 	}
 
+	// As TechnoClass::Fire (0x6FDD50): a LimboLaunch weapon takes its firer off the map to ride the shot.
+	if (bullet != NULL && weapon->IsLimboLaunch && Is_Foot()) {
+		if (ParasiteImUsing) {
+			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed;
+		}
+		Limbo();
+
+		// Leaving the map detached the shot from its firer; the firer still rides it.
+		bullet->Set_Payback(this);
+	}
+
 	return(bullet);
 }
 
@@ -5282,6 +5298,10 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	if (warhead != NULL && warhead->IsRadiation && TClass->IsImmuneToRadiation) {
 		damage = 0;
 		return(RESULT_NONE);
+	}
+
+	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Victim_Hit(damage, source);
 	}
 
 	/*
@@ -6773,6 +6793,15 @@ void TechnoClass::Delete_Me(void)
 	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
 		TemporalImUsing->Let_Go();
 	}
+
+	// A dying victim lets its parasite out where it stood, unless the parasite is doomed (ParasiteClass::PointerExpired, 0x62A260).
+	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+	}
+	if (ParasiteImUsing && ParasiteImUsing->Victim != NULL) {
+		ParasiteImUsing->Victim->ParasiteEatingMe = NULL;
+		ParasiteImUsing->Victim = NULL;
+	}
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
 	BASECLASS::Delete_Me();
@@ -6884,7 +6913,8 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 {
 	BASECLASS::Detach(target, all);
 
-	if (all) {
+	// The managers this object owns name it as their owner; its own departure from the map leaves them intact.
+	if (all && target != this) {
 		Cargo.Detach((FootClass *)target);
 		if (CaptureManager) {
 			CaptureManager->Detach(target);
@@ -6901,6 +6931,12 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (WarpedBy == target) {
 			WarpedBy = NULL;
 			IsBeingWarpedOut = false;
+		}
+		if (ParasiteImUsing) {
+			ParasiteImUsing->Detach(target);
+		}
+		if (ParasiteEatingMe == target) {
+			ParasiteEatingMe = NULL;
 		}
 	}
 
@@ -8727,6 +8763,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TemporalImUsing);
 	stream.Serialize(WarpedBy);
 	stream.Serialize(IsBeingWarpedOut);
+	stream.Serialize(ParasiteImUsing);
+	stream.Serialize(ParasiteEatingMe);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);
@@ -9353,6 +9391,11 @@ void TechnoClass::Iron_Tint_AI(void)
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
+	// The Iron Curtain drives a parasite out (FootClass::IronCurtain, 0x4DEAE0).
+	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+	}
+
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;

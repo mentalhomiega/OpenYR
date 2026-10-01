@@ -86,6 +86,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsFireInTransport(true),
 	IsRadBeam(false),
 	RadLevel(0),
+	IsLimboLaunch(false),
 	OpenToppedAnim(NULL),
 	IsElectric(false),
 	IsLaser(false),
@@ -200,6 +201,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsFireInTransport = ini.Get_Bool(IniName, "FireInTransport", IsFireInTransport);
 		IsRadBeam = ini.Get_Bool(IniName, "IsRadBeam", IsRadBeam);
 		RadLevel = ini.Get_Int(IniName, "RadLevel", RadLevel);
+		IsLimboLaunch = ini.Get_Bool(IniName, "LimboLaunch", IsLimboLaunch);
 		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
@@ -352,6 +354,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsFireInTransport);
 	crc(IsRadBeam);
 	crc(RadLevel);
+	crc(IsLimboLaunch);
 	crc(IsLaser);
 	crc(IsElectricBolt);
 	crc(IsAlternateColor);
@@ -421,6 +424,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFireInTransport);
 	stream.Serialize(IsRadBeam);
 	stream.Serialize(RadLevel);
+	stream.Serialize(IsLimboLaunch);
 	stream.Serialize(OpenToppedAnim);
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);

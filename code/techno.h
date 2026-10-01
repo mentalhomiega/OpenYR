@@ -35,6 +35,7 @@
 #include "_voxel.h"
 #include "audio/audiohandle.h"
 #include "capture.h"
+#include "parasite.h"
 #include "temporal.h"
 #include "cargo.h"
 #include "door.h"
@@ -165,6 +166,10 @@ class TechnoClass :	public RadioClass,
 		std::optional<TemporalClass> TemporalImUsing;
 		TechnoClass * WarpedBy;
 		bool IsBeingWarpedOut;
+
+		// Parasites: the one this object is when its primary warhead is Parasite, and the one inside this object.
+		std::optional<ParasiteClass> ParasiteImUsing;
+		TechnoClass * ParasiteEatingMe;
 
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
