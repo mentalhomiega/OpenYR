@@ -499,6 +499,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		int InfantryGainSelfHeal;
 		int UnitsGainSelfHeal;
 
+		// While a SpySat=yes structure works, its owner sees the whole map.
+		bool IsSpySat;
+
 		/// Unused
 		bool IsFlat;
 

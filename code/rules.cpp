@@ -405,6 +405,8 @@ RulesClass::RulesClass(void) :
 	PrerequisiteRadar(),
 	PrerequisiteTech(),
 	GateUpSound(VOC_NONE),
+	SpySatActivationSound(VOC_NONE),
+	SpySatDeactivationSound(VOC_NONE),
 	GateDownSound(VOC_NONE),
 	JumpjetTurnRate(3),
 	JumpjetSpeed(30),
@@ -892,6 +894,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		InfantryBrute = TGet_Class(ini, AUDIOVISUAL, "InfantryBrute", InfantryBrute);
 		AtmosphereEntry = TGet_Class(ini, AUDIOVISUAL, "AtmosphereEntry", AtmosphereEntry);
 		GateUpSound = ini.Get_VocType(AUDIOVISUAL, "GateUp", GateUpSound);
+		SpySatActivationSound = ini.Get_VocType(AUDIOVISUAL, "SpySatActivationSound", SpySatActivationSound);
+		SpySatDeactivationSound = ini.Get_VocType(AUDIOVISUAL, "SpySatDeactivationSound", SpySatDeactivationSound);
 		GateDownSound = ini.Get_VocType(AUDIOVISUAL, "GateDown", GateDownSound);
 		IsShroudGrow = ini.Get_Bool(AUDIOVISUAL, "ShroudGrow", IsShroudGrow);
 		ScrollMultiplier = ini.Get_Float(AUDIOVISUAL, "ScrollMultiplier", ScrollMultiplier);
@@ -2279,6 +2283,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrerequisiteRadar);
 	stream.Serialize(PrerequisiteTech);
 	stream.Serialize(GateUpSound);
+	stream.Serialize(SpySatActivationSound);
+	stream.Serialize(SpySatDeactivationSound);
 	stream.Serialize(GateDownSound);
 	stream.Serialize(JumpjetTurnRate);
 	stream.Serialize(JumpjetSpeed);

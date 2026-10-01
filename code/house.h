@@ -356,6 +356,9 @@ class HouseClass : public AbstractClass
 		*/
 		bool IsVisionary;
 
+		// A working spy satellite structure is showing this house the whole map.
+		bool IsSpySatActive;
+
 		/*
 		**	This flag is set to true when the house has determined that
 		**	there is insufficient Tiberium to keep the harvesters busy.

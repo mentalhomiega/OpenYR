@@ -24120,6 +24120,59 @@ SpreadPercentage:
       source: code/tiberium.cpp
       guard: null
     level: TiberiumClass
+SpySat:
+  key: SpySat
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsSpySat
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpySatActivationSound:
+  key: SpySatActivationSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SpySatActivationSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SpySatDeactivationSound:
+  key: SpySatDeactivationSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SpySatDeactivationSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 StandingFrames:
   key: StandingFrames
   scopes:

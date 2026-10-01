@@ -423,6 +423,10 @@ class RulesClass
 		 * let a unit through.
 		 */
 		VocType GateUpSound;
+
+		// Played for the player when a spy satellite starts showing the map, and when it stops.
+		VocType SpySatActivationSound;
+		VocType SpySatDeactivationSound;
 		VocType GateDownSound;
 
 		/*

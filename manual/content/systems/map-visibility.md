@@ -6,6 +6,9 @@ keys:
   - AircraftFogReveal
   - AllowShroudedSubteranneanMoves
   - AllyReveal
+  - SpySat
+  - SpySatActivationSound
+  - SpySatDeactivationSound
   - AttackingAircraftSightRange
   - FlashFrameTime
   - FogRate
@@ -204,11 +207,21 @@ These trigger actions and this team mission reveal ground for every human player
 - [Reveal all map](/mapping/actions/taction-reveal-all/) lifts both covers from every cell of the playfield.
 - [Reveal map](/mapping/missions/tmission-reveal/) lifts the shroud only and leaves the fog.
 
+A working [`SpySat=yes`](/keys/spysat/) structure lifts the shroud from every cell for its owner, as Reveal map does. [The spy satellite](#the-spy-satellite) describes when the structure counts and what happens when the owner loses it.
+
 An observer's seat, and a house's defeat outside coach mode, lift both covers from every cell for that house. [Observers and coach mode](/systems/observers/) owns that view. Under coach mode, defeat changes nothing.
 
 The reveal and darkness crate results act for the player who controls the collecting house, as [crates](/systems/crates/#results-that-reach-the-whole-map) describes.
 
 Reveal all map, Reveal map and the reveal crate mark each house they reveal the map to as fully revealed. After that, the four reveals listed above and the reveal crate do nothing more for that house; only an observer's seat or defeat still reveals everything. Reveal all map therefore cannot lift the fog that Reveal map or the reveal crate left.
+
+### The spy satellite
+
+A house's [`SpySat=yes`](/keys/spysat/) structure counts while it stands on the map, is [operational](/systems/power/#defenses), and is not being sold. In a campaign, a player-controlled house's structure counts only once the player has discovered it. The house checks whenever its power or its structures change.
+
+When the first such structure starts counting, the shroud lifts from every cell for the house, and the local player hears [`SpySatActivationSound`](/keys/spysatactivationsound/). The reveal marks the house as fully revealed, as Reveal map does.
+
+When the last one stops counting, every cell goes back under the shroud and the fog for that house, and its objects look again, so only ground they see stays uncovered. The local player hears [`SpySatDeactivationSound`](/keys/spysatdeactivationsound/). Ground uncovered by earlier reveals is lost too, and the house is no longer marked as fully revealed.
 
 ## The fog of war
 

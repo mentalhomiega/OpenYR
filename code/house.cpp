@@ -262,6 +262,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	LostConnection(false),
 	SelectedPath(PATH_NONE),
 	IsVisionary(false),
+	IsSpySatActive(false),
 	IsTiberiumShort(false),
 	IsSpied(false),
 	IsThieved(false),
@@ -6634,6 +6635,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SelectedPath);
 	stream.Serialize(Paths);
 	stream.Serialize(IsVisionary);
+	stream.Serialize(IsSpySatActive);
 	stream.Serialize(IsTiberiumShort);
 	stream.Serialize(IsSpied);
 	stream.Serialize(IsThieved);
@@ -8349,6 +8351,35 @@ void HouseClass::Recalc_Radar_Availability(void)
 
 		if (Map.Is_Radar_Existing() != radar_on) {
 			Map.Toggle_Radar(radar_on);
+		}
+	}
+
+	/*
+	 * A working spy satellite structure shows its owner the whole map, and losing the last one
+	 * shrouds the map again, as gamemd's FUN_00508F60 does.
+	 */
+	bool spysat = false;
+	for (int i = 0; i < Buildings.Count(); i++) {
+		BuildingClass * b = Buildings[i];
+		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On()) {
+			if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
+			if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
+				spysat = true;
+				break;
+			}
+		}
+	}
+	if (spysat && !IsSpySatActive) {
+		Map.Reveal_The_Map(this);
+		IsSpySatActive = true;
+		if (this == PlayerPtr) {
+			Sound_Effect(Rule->SpySatActivationSound);
+		}
+	} else if (!spysat && IsSpySatActive) {
+		Map.Shroud_The_Map(this);
+		IsSpySatActive = false;
+		if (this == PlayerPtr) {
+			Sound_Effect(Rule->SpySatDeactivationSound);
 		}
 	}
 }

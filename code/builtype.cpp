@@ -293,6 +293,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsOrePurifier(false),
 	InfantryGainSelfHeal(0),
 	UnitsGainSelfHeal(0),
+	IsSpySat(false),
 	IsFlat(false),
 	IsDockUnload(false),
 	IsRecoilless(false),
@@ -1270,6 +1271,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsOrePurifier = ini.Get_Bool(Name(), "OrePurifier", IsOrePurifier);
 		InfantryGainSelfHeal = ini.Get_Int(Name(), "InfantryGainSelfHeal", InfantryGainSelfHeal);
 		UnitsGainSelfHeal = ini.Get_Int(Name(), "UnitsGainSelfHeal", UnitsGainSelfHeal);
+		IsSpySat = ini.Get_Bool(Name(), "SpySat", IsSpySat);
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
 		IsSAM = ini.Get_Bool(Name(), "SAM", IsSAM);
@@ -2240,6 +2242,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOrePurifier);
 	stream.Serialize(InfantryGainSelfHeal);
 	stream.Serialize(UnitsGainSelfHeal);
+	stream.Serialize(IsSpySat);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsDockUnload);
 	stream.Serialize(IsRecoilless);
