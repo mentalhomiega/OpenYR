@@ -336,6 +336,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Can a disguise warhead fired by this object disguise it?
 		bool IsCanDisguise;
+
+		// Is a CanDisguise object of this type always disguised as its side's default soldier?
+		bool IsPermaDisguise;
 		bool IsBalloonHover;
 
 		// How far above the object's center a mind control ring is drawn, in leptons.

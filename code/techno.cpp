@@ -3144,6 +3144,13 @@ void TechnoClass::AI(void)
 		IsBerzerk = false;
 	}
 
+	// A PermaDisguise object always looks like its side's default soldier when it has no other disguise (TechnoClass::Init, 0x6F3F40).
+	if (DisguiseType == NULL && TClass->IsCanDisguise && TClass->IsPermaDisguise) {
+		int const side = (int)House->Class->Side;
+		DisguiseType = side == 0 ? Rule->AlliedDisguise : (side == 1 ? Rule->SovietDisguise : Rule->ThirdDisguise);
+		DisguiseHouse = House;
+	}
+
 	/*
 	 * Every NormalTargetingDelay frames, an OpportunityFire object that is moving or harvesting
 	 * drops a target out of range and takes the best one in range, firing on the move
@@ -5500,6 +5507,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 */
 	if (result != RESULT_NONE) {
 		RadarFlashTimer = Rule->RadarCombatFlashTime;
+	}
+
+	// A hit that hurts a disguised object strips its disguise, unless the disguise is permanent (TechnoClass::ReceiveDamage, 0x701900).
+	if (result != RESULT_NONE && result != RESULT_DESTROYED && TClass->IsCanDisguise && !TClass->IsPermaDisguise && DisguiseType != NULL) {
+		DisguiseType = NULL;
+		DisguiseHouse = NULL;
+		Mark(MARK_CHANGE);
 	}
 
 	/*

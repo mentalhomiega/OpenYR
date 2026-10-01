@@ -700,6 +700,9 @@ RulesClass::RulesClass(void) :
 	LargeFire(NULL),
 	Paratrooper(NULL),
 	Disguise(NULL),
+	AlliedDisguise(NULL),
+	SovietDisguise(NULL),
+	ThirdDisguise(NULL),
 	Technician(NULL),
 	Engineer(NULL),
 	Pilot(NULL),
@@ -1465,6 +1468,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		PadAircraft = TGet_TypeList<AircraftTypeClass>(ini, GENERAL, "PadAircraft", PadAircraft);
 		Paratrooper = TGet_Class(ini, GENERAL, "Paratrooper", Paratrooper);
 		Disguise = TGet_Class(ini, GENERAL, "Disguise", Disguise);
+		AlliedDisguise = TGet_Class(ini, GENERAL, "AlliedDisguise", AlliedDisguise);
+		SovietDisguise = TGet_Class(ini, GENERAL, "SovietDisguise", SovietDisguise);
+		ThirdDisguise = TGet_Class(ini, GENERAL, "ThirdDisguise", ThirdDisguise);
 		Engineer = TGet_Class(ini, GENERAL, "Engineer", Engineer);
 		Technician = TGet_Class(ini, GENERAL, "Technician", Technician);
 		Pilot = TGet_Class(ini, GENERAL, "Pilot", Pilot);
@@ -2849,6 +2855,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LargeFire);
 	stream.Serialize(Paratrooper);
 	stream.Serialize(Disguise);
+	stream.Serialize(AlliedDisguise);
+	stream.Serialize(SovietDisguise);
+	stream.Serialize(ThirdDisguise);
 	stream.Serialize(Technician);
 	stream.Serialize(Engineer);
 	stream.Serialize(Pilot);

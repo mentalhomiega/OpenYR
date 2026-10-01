@@ -7,6 +7,10 @@ keys:
   - CanDisguise
   - Disguised
   - FireOnce
+  - PermaDisguise
+  - AlliedDisguise
+  - SovietDisguise
+  - ThirdDisguise
   - DisguiseWhenStill
   - DefaultMirageDisguises
   - InfantryBlinkDisguiseTime
@@ -33,7 +37,9 @@ Warhead=MySnapshot
 MakesDisguise=yes
 ```
 
-The disguise shows only to players whose house is not an ally of the disguised object's owner; its owner and allies see it as it is. It lasts until the object copies another soldier, or until the house it imitates leaves the game. The warhead does no damage, whether or not it disguises anything.
+The disguise shows only to players whose house is not an ally of the disguised object's owner; its owner and allies see it as it is. It lasts until the object copies another soldier, until a hit hurts it, or until the house it imitates leaves the game. The warhead does no damage, whether or not it disguises anything.
+
+A `CanDisguise=yes` type with [`PermaDisguise=yes`](/keys/permadisguise/) is disguised from the start and never loses its disguise to damage. Whenever it has no other disguise, it looks like its owner's side's default soldier: [`AlliedDisguise`](/keys/allieddisguise/), [`SovietDisguise`](/keys/sovietdisguise/) or [`ThirdDisguise`](/keys/thirddisguise/), in its owner's colors.
 
 An infantry type with [`Disguised=yes`](/keys/disguised/) is a separate, older disguise: it always looks like the rules' `Disguise` type to other houses.
 

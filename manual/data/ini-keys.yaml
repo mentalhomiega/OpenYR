@@ -2104,6 +2104,24 @@ AlliedCrew:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AlliedDisguise:
+  key: AlliedDisguise
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: AlliedDisguise
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Allies:
   key: Allies
   scopes:
@@ -21967,6 +21985,23 @@ PermaControlledAnimationType:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+PermaDisguise:
+  key: PermaDisguise
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsPermaDisguise
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PhysicalSize:
   key: PhysicalSize
   scopes:
@@ -27594,6 +27629,24 @@ SovietCrew:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SovietDisguise:
+  key: SovietDisguise
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SovietDisguise
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Soylent:
   key: Soylent
   scopes:
@@ -31807,6 +31860,24 @@ ThirdCrew:
       default_candidate: none
       declared_in: RulesClass
       member: ThirdCrew
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ThirdDisguise:
+  key: ThirdDisguise
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ThirdDisguise
       source: code/rules.cpp
       guard: null
     level: RulesClass

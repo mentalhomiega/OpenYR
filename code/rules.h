@@ -1458,6 +1458,11 @@ class RulesClass
 		 */
 		InfantryTypeClass const * Disguise;
 
+		// The soldier a PermaDisguise spy of an Allied, Soviet or third-side house always looks like.
+		InfantryTypeClass const * AlliedDisguise;
+		InfantryTypeClass const * SovietDisguise;
+		InfantryTypeClass const * ThirdDisguise;
+
 		/*
 		 * This is the survivor that emerges from a neutral or civilian object, and
 		 * occasionally from an armed one as well.
