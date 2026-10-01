@@ -56,6 +56,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "_tactica.h"
+#include "audio/audioengine.h"
 #include "aircraft.h"
 #include "airctype.h"
 #include "animtype.h"
@@ -83,6 +84,7 @@
 #include "teamtype.h"
 #include "team.h"
 #include "unit.h"
+#include "vox.h"
 #include "unittype.h"
 #include "windowevent.hh"
 
@@ -454,6 +456,17 @@ void Run(StepType const & step)
 			char value[256] = "";
 			ini.Get_String(step.Argument.c_str(), entry, "", value, sizeof(value));
 			DebugString("AUTOTEST   ini [%s] %s=%s\n", step.Argument.c_str(), entry, value);
+		}
+	} else if (step.Command == "speak") {
+		// speak <EVA name>: queues that announcer line.
+		Speak_Eva(step.Argument.c_str());
+	} else if (step.Command == "evafile") {
+		// evafile <EVA name>: opens that announcer line's sample for the player's side at no volume.
+		std::string const file = Eva_Sample_File(step.Argument.c_str());
+		AudioHandle handle = file.empty() ? AudioHandle() : AudioEngine.Open_Stream(file.c_str(), AUDIO_GROUP_SPEECH, 0.0f, false);
+		DebugString("AUTOTEST   evafile %s: %s %s\n", step.Argument.c_str(), file.empty() ? "-" : file.c_str(), handle.Is_Valid() ? "opened" : "failed");
+		if (handle.Is_Valid()) {
+			AudioEngine.Stop_Stream(handle);
 		}
 	} else if (step.Command == "inifile") {
 		// inifile <FILE.INI>: every section and entry of that file, as the game's file system finds it.
