@@ -105,6 +105,8 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsDeployFire(false),
 	DeployFireWeapon(1),
 	DeploySound(VOC_NONE),
+	EnterWaterSound(VOC_NONE),
+	LeaveWaterSound(VOC_NONE),
 	UndeploySound(VOC_NONE),
 	IsDoggie(false),
 	IsNotHuman(false),
@@ -409,6 +411,8 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
 		DeploySound = ini.Get_VocType(Name(), "DeploySound", DeploySound);
 		UndeploySound = ini.Get_VocType(Name(), "UndeploySound", UndeploySound);
+		EnterWaterSound = ini.Get_VocType(Name(), "EnterWaterSound", EnterWaterSound);
+		LeaveWaterSound = ini.Get_VocType(Name(), "LeaveWaterSound", LeaveWaterSound);
 		OccupyWeapon.Weapon = TGet_Class(ini, Name(), "OccupyWeapon", OccupyWeapon.Weapon);
 		EliteOccupyWeapon.Weapon = TGet_Class(ini, Name(), "EliteOccupyWeapon", EliteOccupyWeapon.Weapon);
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
@@ -561,6 +565,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDeployFire);
 	stream.Serialize(DeployFireWeapon);
 	stream.Serialize(DeploySound);
+	stream.Serialize(EnterWaterSound);
+	stream.Serialize(LeaveWaterSound);
 	stream.Serialize(UndeploySound);
 	stream.Serialize(OccupyWeapon);
 	stream.Serialize(EliteOccupyWeapon);

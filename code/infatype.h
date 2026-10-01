@@ -166,6 +166,10 @@ class InfantryTypeClass : public TechnoTypeClass
 		VocType DeploySound;
 		VocType UndeploySound;
 
+		// Played as an AmphibiousDestroyer soldier walks into water and as it walks back onto land.
+		VocType EnterWaterSound;
+		VocType LeaveWaterSound;
+
 		/*
 		 * If this infantry type is an attack dog rather than a soldier, then this flag will
 		 * be true. A dog beds down in tiberium while guarding, panics outright once badly

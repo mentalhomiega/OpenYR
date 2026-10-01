@@ -102,6 +102,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "data.h"
+#include "dbgprint.h"
 #include "draw.h"
 #include "fly.h"
 #include "fog.h"
@@ -262,6 +263,7 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	IsProne(false),
 	IsZoneCheat(false),
 	WasSelected(false),
+	LandState(2),
 	Fear(FEAR_NONE)
 {
 	Create_ID();
@@ -2446,6 +2448,13 @@ int InfantryClass::Do_MISSION_MOVE(void)
 }
 
 
+bool InfantryClass::Is_Amphibian_On_Land(void) const
+{
+	LandType const land = Map[Get_Cell()].Land_Type();
+	return((land != LAND_WATER && land != LAND_BEACH) || IsOnBridge);
+}
+
+
 bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 {
 	// A dug-in soldier stands, fires and idles with its deployed sequences, and never lies down.
@@ -2473,6 +2482,61 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 			default:
 				break;
 		}
+	}
+
+	// An AmphibiousDestroyer soldier off a bridge on water or beach swims, treads water and fights with its wet
+	// sequences, and plays EnterWaterSound or LeaveWaterSound as it changes between land and water.
+	if (Class->MZone == MZONE_AMPHIBIOUS_DESTROYER && todo != DO_NOTHING) {
+		int const on_land = Is_Amphibian_On_Land() ? 1 : 0;
+		if (on_land == 0) {
+			DoType const dry = todo;
+			switch (todo) {
+				case DO_WALK:
+				case DO_CRAWL:
+					todo = DO_SWIM;
+					break;
+
+				case DO_PRONE:
+				case DO_STAND_READY:
+					todo = DO_TREAD;
+					break;
+
+				case DO_IDLE1:
+					todo = DO_WET_IDLE1;
+					break;
+
+				case DO_IDLE2:
+					todo = DO_WET_IDLE2;
+					break;
+
+				case DO_GUN_DEATH:
+					todo = DO_WET_DIE1;
+					break;
+
+				case DO_EXPLOSION_DEATH:
+					todo = DO_WET_DIE2;
+					break;
+
+				case DO_FIRE_WEAPON:
+				case DO_FIRE_PRONE:
+					todo = DO_WET_ATTACK;
+					break;
+
+				default:
+					break;
+			}
+			if (Class->DoControls[todo].Count == 0) {
+				todo = dry;
+			}
+		}
+		if (LandState == 0 && on_land == 1) {
+			DebugString("Water: %s leaves the water at %d,%d\n", Class->Name(), Get_Cell().X, Get_Cell().Y);
+			Sound_Effect(Class->LeaveWaterSound, Center_Coord());
+		} else if (LandState == 1 && on_land == 0) {
+			DebugString("Water: %s enters the water at %d,%d\n", Class->Name(), Get_Cell().X, Get_Cell().Y);
+			Sound_Effect(Class->EnterWaterSound, Center_Coord());
+		}
+		LandState = on_land;
 	}
 
 	if (todo == DO_NOTHING || Class->DoControls[todo].Count == 0) {
@@ -2637,6 +2701,7 @@ bool InfantryClass::Start_Driver(Coord & headto)
  *=============================================================================================*/
 bool InfantryClass::Limbo(void)
 {
+	LandState = 2;
 	Locomotion->Stop_Movement_Animation();
 	return(BASECLASS::Limbo());
 }
@@ -2706,6 +2771,7 @@ BulletClass * InfantryClass::Fire_At(AbstractClass * target, int which)
  *=============================================================================================*/
 bool InfantryClass::Unlimbo(Coord const & xcoord, Dir256 facing)
 {
+	LandState = 2;
 	int height = Map.Get_Height_GL(xcoord);
 	Coord coord = xcoord;
 
@@ -3846,6 +3912,36 @@ void InfantryClass::Firing_AI(void)
  *=============================================================================================*/
 void InfantryClass::Doing_AI(void)
 {
+	// Crossing between land and water restarts the current sequence so that its wet or dry form is shown.
+	if (Class->MZone == MZONE_AMPHIBIOUS_DESTROYER && Doing != DO_NOTHING && LandState != 2 && (Is_Amphibian_On_Land() ? 1 : 0) != LandState) {
+		DoType dry = Doing;
+		switch (Doing) {
+			case DO_SWIM:
+				dry = DO_WALK;
+				break;
+
+			case DO_TREAD:
+				dry = DO_STAND_READY;
+				break;
+
+			case DO_WET_IDLE1:
+				dry = DO_IDLE1;
+				break;
+
+			case DO_WET_IDLE2:
+				dry = DO_IDLE2;
+				break;
+
+			case DO_WET_ATTACK:
+				dry = DO_FIRE_WEAPON;
+				break;
+
+			default:
+				break;
+		}
+		Do_Action(dry, true);
+	}
+
 	if (Doing == DO_NOTHING || Fetch_Stage() >= Class->DoControls[Doing].Count) {
 		switch (Doing) {
 			default:
@@ -3960,7 +4056,7 @@ void InfantryClass::Movement_AI(void)
 			}
 		}
 	} else {
-		if (Doing == DO_WALK || Doing == DO_FLY || Doing == DO_HOVER) {
+		if (Doing == DO_WALK || Doing == DO_SWIM || Doing == DO_FLY || Doing == DO_HOVER) {
 			Do_Action(DO_STAND_READY);
 		}
 		if (Doing == DO_CRAWL) {
@@ -4222,6 +4318,7 @@ void InfantryClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsProne);
 	stream.Serialize(IsZoneCheat);
 	stream.Serialize(WasSelected);
+	stream.Serialize(LandState);
 	stream.Serialize(ProneStruggleTimer);
 	stream.Serialize(LookTimer);
 }
@@ -4245,7 +4342,7 @@ void InfantryClass::Post_Load(void)
 /// </summary>
 void InfantryClass::Stop_Movement_Animation(void)
 {
-	if (Doing == DO_CRAWL || Doing == DO_WALK) {
+	if (Doing == DO_CRAWL || Doing == DO_WALK || Doing == DO_SWIM) {
 		Doing = DO_NOTHING;
 	}
 }

@@ -102,6 +102,11 @@ class InfantryClass : public FootClass
 		*/
 		bool WasSelected;
 
+		// Whether an AmphibiousDestroyer soldier was last animated on land (1), in water (0) or neither yet (2).
+		int LandState;
+
+		bool Is_Amphibian_On_Land(void) const;
+
 		/*
 		 * This is how long this infantry remains paralyzed by a webbing warhead, in game
 		 * frames. While it counts down the infantry cannot move and struggles in place.
