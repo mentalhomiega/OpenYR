@@ -1123,7 +1123,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		*/
 		CellClass * cellptr = &Map[Get_Coord()];
 		LandType land = cellptr->Land_Type();
-		if (!Locomotion->Is_Moving() && !Class->IsBomber && !Has_Ability(ABILITY_C4) && (land == LAND_ROCK || land == LAND_WATER) && (!IsOnBridge || !cellptr->IsUnderBridge)) {
+		if (!Locomotion->Is_Moving() && !Class->IsBomber && !Has_Ability(ABILITY_C4) && (land == LAND_ROCK || land == LAND_WATER) && Ground[land].Cost[Class->Speed] == 0 && (!IsOnBridge || !cellptr->IsUnderBridge)) {
 			int damage = Strength;
 			Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 			BEnd(BENCH_PCP);

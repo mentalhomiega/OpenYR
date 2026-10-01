@@ -1,10 +1,10 @@
 ---
 key: SpeedType
-summary: The terrain table column a vehicle's per-cell throttle and passability are read from.
+summary: The terrain table column an object's per-cell throttle and passability are read from.
 see_also: ["Crusher", "MovementZone", "TrackedUphill", "WheeledUphill", "Speed"]
 when_omitted:
   kind: context-dependent
-  note: "`Track` in a `Crusher=yes` section and `Wheel` in every other."
+  note: "`Foot` for infantry and structures, `Winged` for aircraft, and for vehicles `Track` in a `Crusher=yes` section and `Wheel` in every other."
 ---
 
 `SpeedType` picks which column of the [terrain table](/systems/movement-and-terrain/#the-terrain-table) the vehicle reads. Each land type's section in `rules.ini`, such as `[Clear]`, `[Road]` or `[Water]`, holds one figure per [speed type](/reference/enums/speed-type/). A vehicle with `SpeedType=Hover` reads the `Hover=` figure from each of those sections. A figure of `0` closes that land type to the vehicle. For a vehicle moved by the drive locomotor, any other figure is a fraction of full speed.
@@ -28,6 +28,10 @@ A land type whose figure is `0` is closed to the vehicle in two ways:
 A driven vehicle crosses each cell at that cell's fraction of full speed. On a slope, the speed type also picks the slope multiplier applied on top. `Track` uses [`TrackedUphill`](/keys/trackeduphill/) and [`TrackedDownhill`](/keys/trackeddownhill/). Every other speed type, including `Foot`, `Hover` and `Amphibious`, uses [`WheeledUphill`](/keys/wheeleduphill/) and [`WheeledDownhill`](/keys/wheeleddownhill/).
 
 A vehicle moved by any other locomotor uses its column only to close cells. A hovercraft or a tunneler crosses ground priced at `0.1` as fast as ground priced at `1`. [Movement and terrain](/systems/movement-and-terrain/#what-each-locomotor-drives-its-speed-from) lists where each locomotor takes its speed from.
+
+## Infantry
+
+Infantry read their column the same way. An infantry type with `SpeedType=Amphibious` and [`MovementZone=AmphibiousDestroyer`](/keys/movementzone/), such as Tanya, walks into water and swims there; [`EnterWaterSound`](/keys/enterwatersound/) covers the swimming animations and sounds. A soldier left standing on rock or water whose column for that land type is `0` dies, unless its type can plant C4 or sets `Bomber=yes`.
 
 ## SpeedType and MovementZone
 

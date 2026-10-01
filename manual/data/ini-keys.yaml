@@ -11314,6 +11314,23 @@ EnterTransportSound:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EnterWaterSound:
+  key: EnterWaterSound
+  scopes:
+  - applies_to: *id031
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: EnterWaterSound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 ExitCoord:
   key: ExitCoord
   scopes:
@@ -17559,6 +17576,23 @@ LeaveTransportSound:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+LeaveWaterSound:
+  key: LeaveWaterSound
+  scopes:
+  - applies_to: *id031
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: LeaveWaterSound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 LegalTarget:
   key: LegalTarget
   scopes:
@@ -29109,7 +29143,7 @@ Speed:
 SpeedType:
   key: SpeedType
   scopes:
-  - applies_to: *id024
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -29118,11 +29152,11 @@ SpeedType:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: UnitTypeClass
+      declared_in: TechnoTypeClass
       member: Speed
-      source: code/unittype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 SpiralDeltaPerCoord:
   key: SpiralDeltaPerCoord
   scopes:
