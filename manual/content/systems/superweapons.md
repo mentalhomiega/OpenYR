@@ -31,6 +31,16 @@ keys:
   - IonCannonWarhead
   - IronCurtainDuration
   - IronCurtainInvokeAnim
+  - LightningCellSpread
+  - LightningDamage
+  - LightningDeferment
+  - LightningHitDelay
+  - LightningPrintText
+  - LightningScatterDelay
+  - LightningSeparation
+  - LightningSounds
+  - LightningStormDuration
+  - LightningWarhead
   - IsPowered
   - ManualControl
   - NodHunterSeeker
@@ -41,6 +51,7 @@ keys:
   - RechargeTime
   - RechargeVoice
   - SidebarImage
+  - StormSound
   - SuperWeapon
   - SuperWeapon2
   - SuperWeapons
@@ -48,6 +59,9 @@ keys:
   - Type
   - UseChargeDrain
   - WeaponType
+  - WeatherConBoltExplosion
+  - WeatherConBolts
+  - WeatherConClouds
   - WeedCapacity
 related:
   - type: system
@@ -264,6 +278,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Hunter seeker** is released with no target; the drone chooses one itself.
 - **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
+- **Lightning storm** aims as the ion cannon does, and only while no storm is raging or waiting to break.
 
 The ion cannon's rating is the only one of the four with settings.
 
@@ -367,6 +382,33 @@ IronCurtainDuration=750 ; 50 seconds at normal game speed
 ```
 
 Computer houses do not fire the Iron Curtain on their own. A computer team asks for it with the [Iron Curtain me](/scripting/missions/55/) script line.
+
+### Lightning storm
+
+A `Type=LightningStorm` weapon calls a storm over the target cell. Only one storm exists at a time: a shot while a storm rages moves its center, and a shot while one is waiting to break sets the center and keeps the shorter wait.
+
+The storm breaks [`LightningDeferment`](/keys/lightningdeferment/) frames after the shot. It then rages for [`LightningStormDuration`](/keys/lightningstormduration/) frames:
+
+- The map darkens to the scenario's ion storm lighting, and [`StormSound`](/keys/stormsound/) plays.
+- Every house that is not an ally of the firing house loses its radar for the storm's duration.
+- Every [`LightningHitDelay`](/keys/lightninghitdelay/) frames, a cloud gathers over the center.
+- Every [`LightningScatterDelay`](/keys/lightningscatterdelay/) frames, a cloud gathers over a random cell up to half of [`LightningCellSpread`](/keys/lightningcellspread/) cells from the center along each axis. A cell closer than [`LightningSeparation`](/keys/lightningseparation/) cells to an existing cloud is passed over; after three such cells the chance is lost.
+
+A cloud is one of [`WeatherConClouds`](/keys/weatherconclouds/), hung high enough for a bolt to reach the ground. Halfway through the cloud's animation, a bolt from [`WeatherConBolts`](/keys/weatherconbolts/) strikes the cell below. The strike plays one of [`LightningSounds`](/keys/lightningsounds/) and [`WeatherConBoltExplosion`](/keys/weatherconboltexplosion/), and deals [`LightningDamage`](/keys/lightningdamage/) through [`LightningWarhead`](/keys/lightningwarhead/) with no attacker. A strike that hits empty road, rock, wall or weeds, or changes what stands in the cell, throws up two to four [`MetallicDebris`](/keys/metallicdebris/) animations, unless an infantryman stood there.
+
+The lighting returns to normal once the duration is over and the last cloud has gone.
+
+```ini title="rulesmd.ini"
+[General]
+LightningDeferment=250     ; frames of warning
+LightningStormDuration=180 ; frames the storm rages
+LightningHitDelay=10       ; a cloud over the center this often
+LightningScatterDelay=5    ; a cloud nearby this often
+LightningCellSpread=10
+LightningSeparation=3
+LightningDamage=250
+LightningWarhead=IonWH
+```
 
 ### EM pulse
 

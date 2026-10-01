@@ -650,6 +650,10 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 		return(NULL);
 	}
 
+	if (warhead == Rule->LightningWarhead) {
+		return(Rule->WeatherConBoltExplosion);
+	}
+
 	if (warhead->ExplosionSet.Count()) {
 		if (warhead->IsEMEffect) {
 			return(warhead->ExplosionSet[Random_Pick(0, warhead->ExplosionSet.Count() - 1)]);

@@ -83,6 +83,7 @@
 #include "infatype.h"
 #include "init.h"
 #include "ion.h"
+#include "lstorm.h"
 #include "language/language.h"
 #include "loaddlg.h"
 #include "light.h"
@@ -1219,6 +1220,7 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	stream.Serialize(Ground);
 
 	IonStormClass::Serialize(stream);
+	LightningStormClass::Serialize(stream);
 
 	stream.Serialize(LogicTags);
 	stream.Serialize(MapTags);

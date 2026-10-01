@@ -63,6 +63,7 @@
 #include "inline.h"
 #include "ionblast.h"
 #include "language/language.h"
+#include "lstorm.h"
 #include "mouse.h"
 #include "rules.h"
 #include "savestream.h"
@@ -669,6 +670,16 @@ void SuperClass::Place(Cell const & cell, bool player)
 				Map.IsTargettingMode = SUPER_NONE;
 			}
 			House->IsRecalcNeeded = true;
+			break;
+
+		case SUPER_LIGHTNING_STORM:
+			if (IsReady) {
+				LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, cell, House);
+				if (player) {
+					Map.IsTargettingMode = SUPER_NONE;
+				}
+				House->IsRecalcNeeded = true;
+			}
 			break;
 
 		case SUPER_IRON_CURTAIN:

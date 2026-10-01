@@ -713,7 +713,7 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 
 			int brightness;
 			if (IsOnBridge || (Map[(Coord const &)PositionCoord].IsOvershadowed && PositionCoord.Z > Map.Get_Height_GL(PositionCoord) + (BRIDGE_LEPTON_HEIGHT / 2))) {
-				int light = (IonStormClass::Is_Ion_Storm_Active() ? Scen->IonLevelLight : Scen->LevelLight) * (HeightAGL / (2 * LEVEL_LEPTON_H));
+				int light = (IonStormClass::Is_Storm_Lighting() ? Scen->IonLevelLight : Scen->LevelLight) * (HeightAGL / (2 * LEVEL_LEPTON_H));
 				brightness = Map[tcell].Brightness + light;
 			} else {
 				brightness = Map[tcell].Brightness + (Map[(Coord const &)PositionCoord].IsOvershadowed ? -500 : 0);

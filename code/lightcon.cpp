@@ -80,7 +80,7 @@ LightConvertClass::LightConvertClass(PaletteClass const & artpalette, PaletteCla
 			PrimaryColorMode = (DSurfaceColorMode)DSurface::Get_Primary_Color_Mode();
 		}
 
-		if (IonStormClass::Is_Ion_Storm_Active()) {
+		if (IonStormClass::Is_Storm_Lighting()) {
 			if (red_tint == -1) {
 				NormalRedTint = NORMAL_LIGHT;
 				NormalGreenTint = NORMAL_LIGHT;

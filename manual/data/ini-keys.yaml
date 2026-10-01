@@ -14748,6 +14748,96 @@ LightVisibility:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+LightningCellSpread:
+  key: LightningCellSpread
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '10'
+      declared_in: RulesClass
+      member: LightningCellSpread
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningDamage:
+  key: LightningDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '200'
+      declared_in: RulesClass
+      member: LightningStormDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningDeferment:
+  key: LightningDeferment
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '250'
+      declared_in: RulesClass
+      member: LightningStormDeferment
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningHitDelay:
+  key: LightningHitDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '90'
+      declared_in: RulesClass
+      member: LightningHitDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningPrintText:
+  key: LightningPrintText
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: LightningPrintText
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LightningRod:
   key: LightningRod
   scopes:
@@ -14765,6 +14855,42 @@ LightningRod:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+LightningScatterDelay:
+  key: LightningScatterDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '10'
+      declared_in: RulesClass
+      member: LightningScatterDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningSeparation:
+  key: LightningSeparation
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '3'
+      declared_in: RulesClass
+      member: LightningSeparation
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LightningSound:
   key: LightningSound
   scopes:
@@ -14780,6 +14906,60 @@ LightningSound:
       default_candidate: none
       declared_in: RulesClass
       member: LightningSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningSounds:
+  key: LightningSounds
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: LightningSounds
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningStormDuration:
+  key: LightningStormDuration
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '900'
+      declared_in: RulesClass
+      member: LightningStormDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LightningWarhead:
+  key: LightningWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: LightningWarhead
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -15824,12 +16004,12 @@ MessageDelay:
 MetallicDebris:
   key: MetallicDebris
   scopes:
-  - applies_to:
+  - applies_to: &id027
     - global rules
     file: rules.ini
-    section:
+    section: &id028
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: typelist
     status: generated
     _provenance:
@@ -15838,6 +16018,18 @@ MetallicDebris:
       member: MetallicDebris
       source: code/rules.cpp
       guard: null
+    read_from:
+    - file: rules.ini
+      section:
+        kind: literal
+        name: AudioVisual
+      value_type: typelist
+      applies_to: *id027
+    - file: rules.ini
+      section: *id028
+      value_type: typelist
+      applies_to: *id027
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Meteorites:
   key: Meteorites
@@ -17029,7 +17221,7 @@ NewTheater:
     level: ObjectTypeClass
   - applies_to: *id005
     file: art.ini
-    section: &id027
+    section: &id029
       kind: identifier
       source: object-type
     value_type: boolean
@@ -17048,7 +17240,7 @@ NewTheater:
       value_type: boolean
       applies_to: *id005
     - file: art.ini
-      section: *id027
+      section: *id029
       value_type: boolean
       applies_to: *id005
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -25012,6 +25204,24 @@ Storage:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+StormSound:
+  key: StormSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: StormSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Stray:
   key: Stray
   scopes:
@@ -26999,7 +27209,7 @@ Theater:
     level: ObjectTypeClass
   - applies_to: *id005
     file: art.ini
-    section: &id028
+    section: &id030
       kind: identifier
       source: object-type
     value_type: boolean
@@ -27018,7 +27228,7 @@ Theater:
       value_type: boolean
       applies_to: *id005
     - file: art.ini
-      section: *id028
+      section: *id030
       value_type: boolean
       applies_to: *id005
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -30561,6 +30771,60 @@ WeaponsFactory:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+WeatherConBoltExplosion:
+  key: WeatherConBoltExplosion
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: WeatherConBoltExplosion
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+WeatherConBolts:
+  key: WeatherConBolts
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: WeatherConBolts
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+WeatherConClouds:
+  key: WeatherConClouds
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: WeatherConClouds
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 WebDuration:
   key: WebDuration
   scopes:

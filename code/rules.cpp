@@ -350,6 +350,20 @@ RulesClass::RulesClass(void) :
 	IronCurtainDuration(0),
 	IronCurtainInvokeAnim(NULL),
 	NukeTakeOff(NULL),
+	LightningStormDuration(900),
+	LightningStormDeferment(250),
+	LightningStormDamage(200),
+	LightningWarhead(NULL),
+	LightningHitDelay(90),
+	LightningScatterDelay(10),
+	LightningCellSpread(10),
+	LightningSeparation(3),
+	LightningPrintText(true),
+	WeatherConClouds(),
+	WeatherConBolts(),
+	WeatherConBoltExplosion(NULL),
+	LightningSounds(),
+	StormSound(VOC_NONE),
 	AIMinorSuperReadyPercent(0.8),
 	LargeVisceroid(NULL),
 	SmallVisceroid(NULL),
@@ -936,6 +950,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
+		LightningSounds = ini.Get_VocType_List(ini, AUDIOVISUAL, "LightningSounds", LightningSounds);
+		StormSound = ini.Get_VocType(AUDIOVISUAL, "StormSound", StormSound);
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "MetallicDebris", MetallicDebris);
 		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "BridgeExplosions", BridgeExplosions);
@@ -1139,6 +1155,19 @@ bool RulesClass::General(CCINIClass const & ini)
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
+		LightningStormDuration = ini.Get_Int(GENERAL, "LightningStormDuration", LightningStormDuration);
+		LightningStormDeferment = ini.Get_Int(GENERAL, "LightningDeferment", LightningStormDeferment);
+		LightningStormDamage = ini.Get_Int(GENERAL, "LightningDamage", LightningStormDamage);
+		LightningWarhead = TGet_Class(ini, GENERAL, "LightningWarhead", LightningWarhead);
+		LightningHitDelay = ini.Get_Int(GENERAL, "LightningHitDelay", LightningHitDelay);
+		LightningScatterDelay = ini.Get_Int(GENERAL, "LightningScatterDelay", LightningScatterDelay);
+		LightningCellSpread = ini.Get_Int(GENERAL, "LightningCellSpread", LightningCellSpread);
+		LightningSeparation = ini.Get_Int(GENERAL, "LightningSeparation", LightningSeparation);
+		LightningPrintText = ini.Get_Bool(GENERAL, "LightningPrintText", LightningPrintText);
+		WeatherConClouds = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConClouds", WeatherConClouds);
+		WeatherConBolts = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConBolts", WeatherConBolts);
+		WeatherConBoltExplosion = TGet_Class(ini, GENERAL, "WeatherConBoltExplosion", WeatherConBoltExplosion);
+		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "MetallicDebris", MetallicDebris);
 		AIMinorSuperReadyPercent = ini.Get_Float(GENERAL, "AIMinorSuperReadyPercent", AIMinorSuperReadyPercent);
 		SmallVisceroid = TGet_Class(ini, GENERAL, "SmallVisceroid", SmallVisceroid);
 		TiberiumHeal = ini.Get_Float(GENERAL, "TiberiumHeal", TiberiumHeal);
@@ -2242,6 +2271,20 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IronCurtainDuration);
 	stream.Serialize(IronCurtainInvokeAnim);
 	stream.Serialize(NukeTakeOff);
+	stream.Serialize(LightningStormDuration);
+	stream.Serialize(LightningStormDeferment);
+	stream.Serialize(LightningStormDamage);
+	stream.Serialize(LightningWarhead);
+	stream.Serialize(LightningHitDelay);
+	stream.Serialize(LightningScatterDelay);
+	stream.Serialize(LightningCellSpread);
+	stream.Serialize(LightningSeparation);
+	stream.Serialize(LightningPrintText);
+	stream.Serialize(WeatherConClouds);
+	stream.Serialize(WeatherConBolts);
+	stream.Serialize(WeatherConBoltExplosion);
+	stream.Serialize(LightningSounds);
+	stream.Serialize(StormSound);
 	stream.Serialize(AIMinorSuperReadyPercent);
 	stream.Serialize(LargeVisceroid);
 	stream.Serialize(SmallVisceroid);
@@ -2955,6 +2998,12 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == NukeTakeOff) {
 		NukeTakeOff = NULL;
+	}
+	if (target == LightningWarhead) {
+		LightningWarhead = NULL;
+	}
+	if (target == WeatherConBoltExplosion) {
+		WeatherConBoltExplosion = NULL;
 	}
 	if (target == IonBeam) {
 		IonBeam = NULL;

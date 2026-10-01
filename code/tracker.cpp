@@ -43,6 +43,7 @@
 #include "aircraft.h"
 #include "building.h"
 #include "infantry.h"
+#include "lstorm.h"
 #include "object.h"
 #include "partsys.h"
 #include "rules.h"
@@ -111,6 +112,7 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	}
 
 	if (target->RTTI == RTTI_HOUSE) {
+		LightningStormClass::Detach(target);
 		for (index = 0; index < HousePtrTracker.Count(); index++) {
 			HousePtrTracker[index]->Detach(target, all);
 		}
@@ -122,6 +124,7 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 	}
 
 	if (target->RTTI == RTTI_ANIM) {
+		LightningStormClass::Detach(target);
 		for (index = 0; index < AnimPtrTracker.Count(); index++) {
 			AnimPtrTracker[index]->Detach(target, all);
 		}

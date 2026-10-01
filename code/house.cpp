@@ -195,6 +195,7 @@
 #include "waypoint.h"
 
 #include "color.hh"
+#include "lstorm.h"
 #include "strategy.hh"
 
 #include <algorithm>
@@ -248,6 +249,8 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsWarFactoryInfiltrated(false),
 	PowerBlackout(0),
 	IsPowerBlackout(false),
+	RadarBlackout(0),
+	IsRadarBlackout(false),
 	IsAlerted(false),
 	IsAITriggersOn(false),
 	IsBaseBuilding(false),
@@ -1251,6 +1254,10 @@ void HouseClass::AI(void)
 	if (IsPowerBlackout && PowerBlackout == 0) {
 		IsPowerBlackout = false;
 		RecalcPower = true;
+	}
+	if (IsRadarBlackout && RadarBlackout == 0) {
+		IsRadarBlackout = false;
+		RecalcRadar = true;
 	}
 	if (RecalcPower) {
 		Recalc_Power_Drain();
@@ -6663,6 +6670,8 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsWarFactoryInfiltrated);
 	stream.Serialize(PowerBlackout);
 	stream.Serialize(IsPowerBlackout);
+	stream.Serialize(RadarBlackout);
+	stream.Serialize(IsRadarBlackout);
 	stream.Serialize(IsAlerted);
 	stream.Serialize(IsAITriggersOn);
 	stream.Serialize(IsBaseBuilding);
@@ -8382,7 +8391,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 		// A player given the whole map keeps the radar through storms, blackouts and losses.
 		bool radar_on = Session.ObiWan != 0;
 
-		if (!radar_on && !IonStormClass::Is_Ion_Storm_Active() && Power >= Drain) {
+		if (!radar_on && !IonStormClass::Is_Ion_Storm_Active() && !IsRadarBlackout && Power >= Drain) {
 			if (Scen->IsFreeRadar) {
 				radar_on = true;
 			} else {
@@ -8760,6 +8769,16 @@ void HouseClass::AI_Super_Weapons(void)
 						AI_Drop_Pods(super);
 						break;
 
+					case SUPER_LIGHTNING_STORM:
+						// One storm at a time (HouseClass::Fire_LightningStorm).
+						if (!LightningStormClass::Is_Active_Or_Pending()) {
+							Cell const cell = Pick_Ion_Cannon_Target();
+							if (cell != CELL_NONE) {
+								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+							}
+						}
+						break;
+
 					default:
 						break;
 				}
@@ -8779,7 +8798,22 @@ void HouseClass::AI_Super_Weapons(void)
 /// </summary>
 void HouseClass::AI_Ion_Cannon(SuperClass * super)
 {
-	if (Enemy == HOUSE_NONE) return;
+	Cell const cell = Pick_Ion_Cannon_Target();
+	if (cell != CELL_NONE) {
+		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+	}
+}
+
+
+/// <summary>
+/// Picks the cell of one of the enemy objects whose loss would hurt most, for the ion cannon and
+/// the Yuri's Revenge superweapons that aim the same way (HouseClass::PickIonCannonTarget).
+/// </summary>
+/// <returns>Returns with the cell to strike, or CELL_NONE when the house has no enemy or the
+/// enemy has nothing to strike.</returns>
+Cell HouseClass::Pick_Ion_Cannon_Target(void)
+{
+	if (Enemy == HOUSE_NONE) return(CELL_NONE);
 	HouseClass * enemy = Houses[Enemy];
 
 	DynamicVectorClass<AbstractClass *> targets;
@@ -8876,12 +8910,10 @@ void HouseClass::AI_Ion_Cannon(SuperClass * super)
 	if (targets.Count() > 0) {
 		AbstractClass * target = targets[Random_Pick(0, targets.Count() - 1)];
 		if (target != NULL) {
-			Cell cell = target->Center_Coord().As_Cell();
-			if (cell != CELL_NONE) {
-				Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-			}
+			return(target->Center_Coord().As_Cell());
 		}
 	}
+	return(CELL_NONE);
 }
 
 

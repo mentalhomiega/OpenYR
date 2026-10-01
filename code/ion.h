@@ -32,6 +32,8 @@ class IonStormClass
 		static void Lightning_Bolt(Cell cell);
 		static void Set_Ion_Storm_Active(bool active);
 		static bool Is_Ion_Storm_Active(void);
+		static bool Is_Storm_Lighting(void);
+		static void Set_Storm_Lighting(bool on);
 		static void Ion_Storm_Begin(int duration, int warning=0);
 		static void Ion_Storm_End(void);
 		static void AI(void);

@@ -2966,7 +2966,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				(cptr->IsUnderBridge &&
 					(cptr->IsBridgeEastWest && cptr->Adjacent_Cell(FACING_N).IsUnderBridge ||
 					!cptr->IsBridgeEastWest && cptr->Adjacent_Cell(FACING_W).IsUnderBridge))) {
-			brightness = Map[cell].Brightness + (4 * (IonStormClass::Is_Ion_Storm_Active() ? Scen->IonLevelLight : Scen->LevelLight));
+			brightness = Map[cell].Brightness + (4 * (IonStormClass::Is_Storm_Lighting() ? Scen->IonLevelLight : Scen->LevelLight));
 		} else {
 			brightness = Map[cell].Brightness + (Map[cell].IsOvershadowed ? -500 : 0);
 		}

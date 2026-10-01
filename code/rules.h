@@ -171,6 +171,26 @@ class RulesClass
 		// The animation a missile silo plays where its nuclear missile takes off.
 		AnimTypeClass const * NukeTakeOff;
 
+		/*
+		 * The lightning storm: how long it rages after a warning delay, how often a cloud
+		 * gathers over its center and around it, how far around and how far apart, and
+		 * what each bolt does.
+		 */
+		int LightningStormDuration;
+		int LightningStormDeferment;
+		int LightningStormDamage;
+		WarheadTypeClass const * LightningWarhead;
+		int LightningHitDelay;
+		int LightningScatterDelay;
+		int LightningCellSpread;
+		int LightningSeparation;
+		bool LightningPrintText;
+		TypeList<AnimTypeClass const *> WeatherConClouds;
+		TypeList<AnimTypeClass const *> WeatherConBolts;
+		AnimTypeClass const * WeatherConBoltExplosion;
+		TypeList<int> LightningSounds;
+		VocType StormSound;
+
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 

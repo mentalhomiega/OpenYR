@@ -256,6 +256,10 @@ class HouseClass : public AbstractClass
 		CDTimerClass<FrameTimerClass> PowerBlackout;
 		bool IsPowerBlackout;
 
+		// While the outage runs, this house has no radar (a lightning storm called by an enemy).
+		CDTimerClass<FrameTimerClass> RadarBlackout;
+		bool IsRadarBlackout;
+
 		/*
 		**	When alerted, the house will create teams of the special "auto" type and
 		**	will generate appropriate units to fill those team types.
@@ -803,6 +807,7 @@ class HouseClass : public AbstractClass
 		void Just_Built(TechnoClass * product);
 		void Special_Weapon_AI(SuperWeaponType id);
 		bool Place_Special_Blast(SuperWeaponType id, Cell const & cell);
+		Cell Pick_Ion_Cannon_Target(void);
 		bool Flag_Attach(Cell const & cell, bool set_home = false);
 		bool Flag_Attach(UnitClass * object, bool set_home = false);
 		bool Flag_Remove(AbstractClass * target, bool set_home = false);

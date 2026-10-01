@@ -419,7 +419,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		TacticalMap->Add_To_Selectables((AircraftClass *)this, point);
 
 		int brightness;
-		if (IonStormClass::Is_Ion_Storm_Active()) {
+		if (IonStormClass::Is_Storm_Lighting()) {
 			brightness = Scen->IonLevelLight;
 		} else {
 			brightness = Scen->LevelLight;

@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "ion.h"
+#include "lstorm.h"
 
 #include "_convert.h"
 #include "_map.h"
@@ -331,6 +332,45 @@ void IonStormClass::Ion_Storm_End(void)
 bool IonStormClass::Is_Ion_Storm_Active(void)
 {
 	return(IsActive);
+}
+
+
+/// <summary>
+/// Is the map lit for a storm? An ion storm or a lightning storm darkens it.
+/// </summary>
+bool IonStormClass::Is_Storm_Lighting(void)
+{
+	return(IsActive || LightningStormClass::Is_Active());
+}
+
+
+/// <summary>
+/// Darkens the map with the scenario's ion lighting, or restores the normal lighting, for
+/// a lightning storm. An ion storm does its own lighting.
+/// </summary>
+void IonStormClass::Set_Storm_Lighting(bool on)
+{
+	if (IsActive) {
+		return;
+	}
+
+	Scen->DesiredAmbientLight = on ? Scen->IonAmbientLight : Scen->AmbientLight;
+
+	int const red = on ? NORMAL_LIGHT * Scen->IonRedTint / 100 : -1;
+	int const green = on ? NORMAL_LIGHT * Scen->IonGreenTint / 100 : -1;
+	int const blue = on ? NORMAL_LIGHT * Scen->IonBlueTint / 100 : -1;
+	for (int i = 0; i < TileDrawers.Count(); i++) {
+		TileDrawers[i]->Apply_Tint(red, green, blue, on);
+	}
+	for (int i = 0; i < ColorSchemes.Count(); i++) {
+		ColorScheme * scheme = ColorSchemes[i];
+		if (!on || scheme->IntensityLevels > 1) {
+			scheme->Converter->Apply_Tint(red, green, blue, on);
+		}
+	}
+
+	Map.Update_Cell_Colors();
+	Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
 }
 
 

@@ -4798,7 +4798,7 @@ void CellClass::Init_Light(int & intensity, int & ambient, int & brightness, int
 		brightness += ambient;
 		alt_brightness = brightness;
 
-		if (IonStormClass::Is_Ion_Storm_Active()) {
+		if (IonStormClass::Is_Storm_Lighting()) {
 			brightness += Height * Scen->IonLevelLight - Scen->IonGroundLight;
 			alt_brightness += (Height + BRIDGE_CELL_HEIGHT) * Scen->IonLevelLight - Scen->IonGroundLight;
 		} else {
@@ -4843,7 +4843,7 @@ void CellClass::Recalc_Light(void)
 	Brightness = Ambient + (NORMAL_LIGHT * Scen->CurrentAmbientLight) / 100;
 	AltBrightness = Brightness;
 
-	if (IonStormClass::Is_Ion_Storm_Active()) {
+	if (IonStormClass::Is_Storm_Lighting()) {
 		Brightness += Height * Scen->IonLevelLight - Scen->IonGroundLight;
 		AltBrightness += (Height + BRIDGE_CELL_HEIGHT) * Scen->IonLevelLight - Scen->IonGroundLight;
 	} else {

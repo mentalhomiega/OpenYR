@@ -7,13 +7,14 @@ when_omitted:
   value: ""
 ---
 
-```ini title="rules.ini"
-[AudioVisual]
+```ini title="rulesmd.ini"
+[General]
 MetallicDebris=MYDEBRIS1,MYDEBRIS2 ; AnimTypes registered in [Animations]
 ```
 
-Three events create animations picked at random from this list. Each pick is separate, so one entry can appear more than once.
+Four events create animations picked at random from this list. Each pick is separate, so one entry can appear more than once.
 
+- **Lightning storm strike.** A bolt creates two to four, as [Lightning storm](/systems/superweapons/#lightning-storm) describes.
 - **Ion storm strike.** A lightning bolt creates two to six at the strike point when it [changes the cell](/systems/ion-storms/#what-a-strike-does), for example by destroying what stood there. A bolt that hits an empty cell of road, rock, wall or weeds land always creates them.
 - **Bridge collapse.** Each destroyed bridge cell has a 47.5 percent chance of creating one beside its bridge explosion. This happens only when [`BridgeExplosions`](/keys/bridgeexplosions/) lists at least one animation.
 - **Destroyed object.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero and has neither [`DebrisTypes`](/keys/debristypes/) nor [`DebrisAnims`](/keys/debrisanims/) creates its debris count of them just above its center, or none when this list is empty, unless it has fallen into water as [the water exit](/systems/destruction-and-debris/#the-step-every-kind-shares) describes. [Destruction and debris](/systems/destruction-and-debris/) covers the rest of what a destroyed object leaves.
@@ -21,3 +22,5 @@ Three events create animations picked at random from this list. Each pick is sep
 :::danger[Give the list at least one animation]
 With an empty list, each of the other events crashes the game as soon as it needs an animation.
 :::
+
+The key is read from `[General]`, where Yuri's Revenge keeps it, and also from `[AudioVisual]`; an `[AudioVisual]` entry wins.

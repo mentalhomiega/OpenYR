@@ -56,6 +56,7 @@
 #include "incdec.h"
 #include "infantry.h"
 #include "ion.h"
+#include "lstorm.h"
 #include "ionblast.h"
 #include "laser.h"
 #include "light.h"
@@ -351,6 +352,7 @@ void LogicClass::AI(void)
 	LaserDrawClass::Update_All();
 	EBoltClass::Update_All();
 	IonStormClass::AI();
+	LightningStormClass::AI();
 	LightSourceClass::Process_Lighting(6);
 	EMPulseClass::Update_All();
 	Map.Terrain_Deformation_AI();

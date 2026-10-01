@@ -110,6 +110,7 @@
 #include "inline.h"
 #include "intro.h"
 #include "ion.h"
+#include "lstorm.h"
 #include "ipxmgr.h"
 #include "isotype.h"
 #include "language/language.h"
@@ -1031,6 +1032,7 @@ void Post_Load_Game(void)
 	Search.Update_Map_Dimensions(Map.PlayRect);
 
 	IonStormClass::Apply_Secondary_Effect(false);
+	LightningStormClass::Post_Load_Game();
 
 	AnimClass::Post_Load_Game();
 
@@ -1116,6 +1118,7 @@ void Clear_Scenario(void)
 
 	LightSourceClass::Reset();
 	IonStormClass::Init();
+	LightningStormClass::Clear();
 	EMPulseClass::Reset();
 	VeinholeMonsterClass::Reset();
 
