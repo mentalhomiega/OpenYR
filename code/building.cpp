@@ -240,6 +240,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	PrismTargetCoord(),
 	SupportingPrisms(0),
 	IsOverpowered(false),
+	WasOnline(false),
 	IsCharged(false),
 	IsCaptured(false),
 	HasOpened(false),
@@ -1647,6 +1648,18 @@ void BuildingClass::AI(void)
 
 	if (PrismStage != PRISM_IDLE) {
 		Prism_AI();
+	}
+
+	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
+	{
+		bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+		if (online != WasOnline) {
+			VocType const sound = online ? Class->WorkingSound : Class->NotWorkingSound;
+			if (sound != VOC_NONE) {
+				Sound_Effect(sound, Center_Coord());
+			}
+			WasOnline = online;
+		}
 	}
 
 	// Three charging soldiers overpower the structure; one is enough while its house has full power (BuildingClass::Update, 0x43FB20).
@@ -8830,6 +8843,11 @@ bool BuildingClass::Can_Repair(void) const
 		return(false);
 	}
 
+	// A ClickRepairable=no structure cannot be repaired with the repair cursor (BuildingClass::CanBeRepaired, 0x452630).
+	if (!Class->IsClickRepairable) {
+		return(false);
+	}
+
 	if (Considered_Vehicle()) {
 		return(false);
 	}
@@ -9564,6 +9582,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrismTargetCoord);
 	stream.Serialize(SupportingPrisms);
 	stream.Serialize(IsOverpowered);
+	stream.Serialize(WasOnline);
 	stream.Serialize(IsCharged);
 	stream.Serialize(IsCaptured);
 	stream.Serialize(HasOpened);

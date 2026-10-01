@@ -660,6 +660,13 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Can soldiers with an ElectricAssault weapon charge this structure?
 		bool IsOverpowerable;
 
+		// Can the player repair this structure with the repair cursor?
+		bool IsClickRepairable;
+
+		// Played at the structure when it comes back into service and when it drops out.
+		VocType WorkingSound;
+		VocType NotWorkingSound;
+
 		/*
 		 * If this building is the deployed form of a mobile missile launcher, then this flag
 		 * will be true. It faces east when it deploys and may pack itself up again.

@@ -33,6 +33,7 @@
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
+**	canrepair x y			writes whether the structure on that cell can be repaired with the repair cursor
 **	overpower x y			writes how many objects charge the structure on that cell and whether it is
 **							overpowered
 **	ruleanims				writes the animations some rules settings resolved to
@@ -619,6 +620,11 @@ void Run(StepType const & step)
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
 			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound);
+		}
+	} else if (step.Command == "canrepair") {
+		BuildingClass const * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
+		if (building != NULL) {
+			DebugString("AUTOTEST   canrepair %s %d\n", building->Class->Name(), (int)building->Can_Repair());
 		}
 	} else if (step.Command == "overpower") {
 		BuildingClass const * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();

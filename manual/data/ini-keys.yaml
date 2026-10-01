@@ -6176,6 +6176,23 @@ ClearToSandLat:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+ClickRepairable:
+  key: ClickRepairable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: BuildingTypeClass
+      member: IsClickRepairable
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 CliffBackImpassability:
   key: CliffBackImpassability
   scopes:
@@ -20842,6 +20859,23 @@ NotHuman:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+NotWorkingSound:
+  key: NotWorkingSound
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: BuildingTypeClass
+      member: NotWorkingSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 NukeDown:
   key: NukeDown
   scopes:
@@ -36643,6 +36677,23 @@ WoodCrateImg:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+WorkingSound:
+  key: WorkingSound
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: BuildingTypeClass
+      member: WorkingSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 WorstLowPowerBuildRateCoefficient:
   key: WorstLowPowerBuildRateCoefficient
   scopes:

@@ -280,6 +280,9 @@ class BuildingClass : public TechnoClass
 		// Is this Overpowerable structure charged by enough soldiers to work on its own and fire its second weapon?
 		bool IsOverpowered;
 
+		// Was this structure in service on its last update, for its WorkingSound and NotWorkingSound?
+		bool WasOnline;
+
 		int Overpowerer_Count(void) const;
 
 		bool Prism_Charge(void);
