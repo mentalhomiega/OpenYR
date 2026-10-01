@@ -60,6 +60,7 @@
 #include "airctype.h"
 #include "animtype.h"
 #include "building.h"
+#include "ccfile.h"
 #include "builtype.h"
 #include "cell.h"
 #include "conquer.h"
@@ -453,6 +454,23 @@ void Run(StepType const & step)
 			char value[256] = "";
 			ini.Get_String(step.Argument.c_str(), entry, "", value, sizeof(value));
 			DebugString("AUTOTEST   ini [%s] %s=%s\n", step.Argument.c_str(), entry, value);
+		}
+	} else if (step.Command == "inifile") {
+		// inifile <FILE.INI>: every section and entry of that file, as the game's file system finds it.
+		CCINIClass ini;
+		CCFileClass file(step.Argument.c_str());
+		if (!file.Is_Available() || !ini.Load(file, false)) {
+			DebugString("AUTOTEST   inifile %s: not found\n", step.Argument.c_str());
+		}
+		for (int section = 0; section < ini.Section_Count(); section++) {
+			char const * name = ini.Section_Name(section);
+			int count = ini.Entry_Count(name);
+			for (int index = 0; index < count; index++) {
+				char const * entry = ini.Get_Entry(name, index);
+				char value[256] = "";
+				ini.Get_String(name, entry, "", value, sizeof(value));
+				DebugString("AUTOTEST   inifile [%s] %s=%s\n", name, entry, value);
+			}
 		}
 	} else if (step.Command == "grant") {
 		// grant <SuperWeaponTypeID>: gives the player that super weapon, fully charged.

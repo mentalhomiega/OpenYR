@@ -89,6 +89,7 @@ class INIClass {
 		**	section is present.
 		*/
 		int Section_Count(void) const;
+		char const * Section_Name(int index) const {return(index >= 0 && index < (int)SectionList.size() ? SectionList[index]->Section.c_str() : NULL);}
 		bool Section_Present(char const * section) const {return(Find_Section(section) != NULL);}
 
 		/*
