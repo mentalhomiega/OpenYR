@@ -502,6 +502,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// While a SpySat=yes structure works, its owner sees the whole map.
 		bool IsSpySat;
 
+		// A Cloning=yes structure releases a copy of every soldier its owner's barracks release.
+		bool IsCloning;
+
 		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
 		bool IsFactoryPlant;
 		double InfantryCostBonus;

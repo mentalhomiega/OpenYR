@@ -27,6 +27,7 @@ keys:
   - PlacementDelay
   - Prerequisite
   - PrerequisiteBarracks
+  - Cloning
   - PrerequisiteFactory
   - PrerequisiteGDIFactory
   - PrerequisiteNodFactory
@@ -282,6 +283,8 @@ How a factory lets an object out depends on the factory:
 - Every other factory moves the object out of its footprint to an exit cell beside it. If it finds no exit cell, the attempt fails permanently. A [`GDIBarracks=yes`](/keys/gdibarracks/) or [`NODBarracks=yes`](/keys/nodbarracks/) structure starts the object at its [`ExitCoord`](/keys/exitcoord/) offset when the exit cell is its door cell.
 - A factory lets out one vehicle or infantryman at a time. While it is still in radio contact with the last object to leave, the next attempt is temporarily blocked. [`Hospital=yes`](/keys/hospital/), [`Armory=yes`](/keys/armory/) and `WeaponsFactory=yes` structures are exempt.
 - A refinery or weeder cannot release what it produces. A vehicle briefly appears south-west of it and heads off to harvest, but the order is then canceled and refunded, which removes the vehicle again. Infantry fail the same way.
+
+When a barracks lets an infantryman out, every [`Cloning=yes`](/keys/cloning/) structure its house has on the map lets out a free copy of the same type, through its own exit cell and toward its own rally point. A copy that cannot get out at once is discarded. Copies are not copied again.
 
 A jumpjet infantryman whose route to the rally point calls for flight skips the exit cell and flies straight to the rally point. It releases the factory's radio contact at once, so the next object can leave. Other infantry, and jumpjets with a nearby rally point or none, walk to the exit cell as usual.
 

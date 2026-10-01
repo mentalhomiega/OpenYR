@@ -2973,7 +2973,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						return(2);
 					}
 
-				} else if (Class->ToBuild != RTTI_INFANTRYTYPE && !Class->IsHospital && !Class->IsArmory) {
+				} else if (Class->ToBuild != RTTI_INFANTRYTYPE && !Class->IsHospital && !Class->IsArmory && !Class->IsCloning) {
 
 					Cell exitcell = Find_Exit_Cell(base);
 					if (exitcell == CELL_NONE) {
@@ -3047,6 +3047,23 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					Cell exitcell = Find_Exit_Cell(base);
 					if (exitcell == CELL_NONE) {
 						return(0);
+					}
+
+					/*
+					 * Every cloning vat of the owner releases a copy of a soldier this barracks
+					 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
+					 * get out is discarded.
+					 */
+					if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
+						for (int index = 0; index < Buildings.Count(); index++) {
+							BuildingClass * vat = Buildings[index];
+							if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
+								TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
+								if (clone != NULL && vat->Exit_Object(clone) != 2) {
+									delete clone;
+								}
+							}
+						}
 					}
 
 					Coord exitcellcoord(exitcell);
