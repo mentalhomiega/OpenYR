@@ -32,6 +32,7 @@
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
+**	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
 **	ruleanims				writes the animations some rules settings resolved to
 **	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
 **							weapon at the object on that cell now, and why not
@@ -611,6 +612,11 @@ void Run(StepType const & step)
 				techno->Active_Click_With(action, cell, false);
 				break;
 			}
+		}
+	} else if (step.Command == "typesounds") {
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound);
 		}
 	} else if (step.Command == "ruleanims") {
 		auto name = [](AnimTypeClass const * type) { return type != NULL ? type->Name() : "-"; };

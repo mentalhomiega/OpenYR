@@ -293,6 +293,11 @@ class RulesClass
 		AnimTypeClass const * ControlledAnimationType;
 		VocType YuriMindControlSound;
 
+		// Played where a new vehicle, infantryman or aircraft is when it is built, unless its type sets CreateSound.
+		VocType CreateUnitSound;
+		VocType CreateInfantrySound;
+		VocType CreateAircraftSound;
+
 		// The colors of the beam an IsRadBeam weapon draws: RadColor normally, ChronoBeamColor for a temporal warhead.
 		RGBClass RadColor;
 		RGBClass ChronoBeamColor;

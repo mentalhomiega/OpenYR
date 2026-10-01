@@ -2239,6 +2239,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			if (techno->Can_Fit_Passenger(this) && Transmit_Message(RADIO_IM_IN, techno) == RADIO_ATTACH) {
 				Limbo();
 				techno->Cargo.Attach(this);
+				techno->Play_Transport_Sound(true);
 				Hidden();
 			}
 			BEnd(BENCH_PCP);
@@ -3278,6 +3279,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 					FootClass * passenger = Cargo.Detach_Object();
 
 					if (passenger != NULL) {
+						Play_Transport_Sound(false);
 						/// The 8 grid wrap is deferred until each facing is tested.
 						FacingType toface = (FacingType)(DirType((DirType(DIR_S)-DirType(DIR_STEP_256)).As_Int()) + PrimaryFacing.Current()).Round_To_8();
 						FacingType nextface = toface;

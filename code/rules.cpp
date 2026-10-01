@@ -415,6 +415,9 @@ RulesClass::RulesClass(void) :
 	PermaControlledAnimationType(NULL),
 	ControlledAnimationType(NULL),
 	YuriMindControlSound(VOC_NONE),
+	CreateUnitSound(VOC_NONE),
+	CreateInfantrySound(VOC_NONE),
+	CreateAircraftSound(VOC_NONE),
 	RadColor(0, 0, 0),
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
@@ -1061,6 +1064,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		PsychicDominatorActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicDominatorActivateSound", PsychicDominatorActivateSound);
 		ChronoInSound = ini.Get_VocType(AUDIOVISUAL, "ChronoInSound", ChronoInSound);
 		YuriMindControlSound = ini.Get_VocType(AUDIOVISUAL, "YuriMindControlSound", YuriMindControlSound);
+		CreateUnitSound = ini.Get_VocType(AUDIOVISUAL, "CreateUnitSound", CreateUnitSound);
+		CreateInfantrySound = ini.Get_VocType(AUDIOVISUAL, "CreateInfantrySound", CreateInfantrySound);
+		CreateAircraftSound = ini.Get_VocType(AUDIOVISUAL, "CreateAircraftSound", CreateAircraftSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
 		BombTickingSound = ini.Get_VocType(AUDIOVISUAL, "BombTickingSound", BombTickingSound);
 		BombAttachSound = ini.Get_VocType(AUDIOVISUAL, "BombAttachSound", BombAttachSound);
@@ -2549,6 +2555,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PermaControlledAnimationType);
 	stream.Serialize(ControlledAnimationType);
 	stream.Serialize(YuriMindControlSound);
+	stream.Serialize(CreateUnitSound);
+	stream.Serialize(CreateInfantrySound);
+	stream.Serialize(CreateAircraftSound);
 	stream.Serialize(RadColor);
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);

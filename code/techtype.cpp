@@ -186,6 +186,12 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTeleporter(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
+	CreateSound(VOC_NONE),
+	EnterTransportSound(VOC_NONE),
+	LeaveTransportSound(VOC_NONE),
+	VoiceEnter(VOC_NONE),
+	VoiceCapture(VOC_NONE),
+	VoiceHarvest(VOC_NONE),
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
@@ -659,6 +665,12 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
+		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
+		EnterTransportSound = ini.Get_VocType(Name(), "EnterTransportSound", EnterTransportSound);
+		LeaveTransportSound = ini.Get_VocType(Name(), "LeaveTransportSound", LeaveTransportSound);
+		VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
+		VoiceCapture = ini.Get_VocType(Name(), "VoiceCapture", VoiceCapture);
+		VoiceHarvest = ini.Get_VocType(Name(), "VoiceHarvest", VoiceHarvest);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1165,6 +1177,12 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTeleporter);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
+	stream.Serialize(CreateSound);
+	stream.Serialize(EnterTransportSound);
+	stream.Serialize(LeaveTransportSound);
+	stream.Serialize(VoiceEnter);
+	stream.Serialize(VoiceCapture);
+	stream.Serialize(VoiceHarvest);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);

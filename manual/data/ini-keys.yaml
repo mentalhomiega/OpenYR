@@ -7288,6 +7288,77 @@ Crawls:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+CreateAircraftSound:
+  key: CreateAircraftSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CreateAircraftSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CreateInfantrySound:
+  key: CreateInfantrySound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CreateInfantrySound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CreateSound:
+  key: CreateSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: CreateSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CreateUnitSound:
+  key: CreateUnitSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CreateUnitSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CreditReserve:
   key: CreditReserve
   scopes:
@@ -10945,6 +11016,23 @@ EnterGrinderSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EnterTransportSound:
+  key: EnterTransportSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: EnterTransportSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ExitCoord:
   key: ExitCoord
   scopes:
@@ -17055,6 +17143,23 @@ LeadershipRating:
       default_candidate: '5'
       declared_in: TechnoTypeClass
       member: LeadershipRating
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+LeaveTransportSound:
+  key: LeaveTransportSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: LeaveTransportSound
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -34149,6 +34254,23 @@ VoiceAttack:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceCapture:
+  key: VoiceCapture
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceCapture
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceComment:
   key: VoiceComment
   scopes:
@@ -34183,6 +34305,23 @@ VoiceDie:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceEnter:
+  key: VoiceEnter
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceEnter
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceFeedback:
   key: VoiceFeedback
   scopes:
@@ -34197,6 +34336,23 @@ VoiceFeedback:
       default_candidate: ''
       declared_in: TechnoTypeClass
       member: VoiceFeedback
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoiceHarvest:
+  key: VoiceHarvest
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceHarvest
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

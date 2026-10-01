@@ -354,6 +354,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType ChronoInSound;
 		VocType ChronoOutSound;
 
+		// Played where an object of this type is when it is built, when a passenger boards it and when one leaves it.
+		VocType CreateSound;
+		VocType EnterTransportSound;
+		VocType LeaveTransportSound;
+
+		// What a unit of this type says when the player orders it into something, to capture something, or to harvest.
+		VocType VoiceEnter;
+		VocType VoiceCapture;
+		VocType VoiceHarvest;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.

@@ -2925,6 +2925,21 @@ void HouseClass::Just_Built(TechnoClass * product)
 
 	TechnoTypeClass const * ttype = product->TClass;
 
+	// A new object announces itself where it stands, for every house (HouseClass::RegisterJustBuilt, 0x4FB6B0).
+	VocType sound = VOC_NONE;
+	switch (product->Fetch_RTTI()) {
+		case RTTI_UNIT: sound = Rule->CreateUnitSound; break;
+		case RTTI_INFANTRY: sound = Rule->CreateInfantrySound; break;
+		case RTTI_AIRCRAFT: sound = Rule->CreateAircraftSound; break;
+		default: break;
+	}
+	if (ttype->CreateSound != VOC_NONE) {
+		sound = ttype->CreateSound;
+	}
+	if (sound != VOC_NONE) {
+		Sound_Effect(sound, product->PositionCoord);
+	}
+
 	switch (product->Fetch_RTTI()) {
 		case RTTI_UNIT:
 			JustBuiltUnit = (UnitType)ttype->Fetch_Heap_ID();

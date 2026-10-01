@@ -1003,6 +1003,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						ArchiveTarget = NULL;
 						Limbo();
 						techno->Cargo.Attach(this);
+						techno->Play_Transport_Sound(true);
 						Hidden();
 					} else {
 						Assign_Destination(NULL);

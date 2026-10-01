@@ -4611,9 +4611,24 @@ void TechnoClass::Draw_Target_Laser(void) const
  *=============================================================================================*/
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
+	/*
+	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
+	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,
+	 * 0x6FFBE0, and VoiceEnter, VoiceCapture and VoiceHarvest).
+	 */
 	if (AllowVoice) {
+		VocType voice = VOC_NONE;
+		if (mission == MISSION_ENTER) {
+			voice = TClass->VoiceEnter;
+		} else if (mission == MISSION_CAPTURE) {
+			voice = TClass->VoiceCapture != VOC_NONE ? TClass->VoiceCapture : TClass->VoiceEnter;
+		} else if (mission == MISSION_HARVEST) {
+			voice = TClass->VoiceHarvest;
+		}
 		if (mission == MISSION_ATTACK) {
 			Response_Attack();
+		} else if (voice != VOC_NONE) {
+			Sound_Effect(voice);
 		} else {
 			Response_Move();
 		}
@@ -10014,5 +10029,18 @@ void TechnoClass::Fire_Death_Weapon(void)
 		bullet->Weapon = weapon;
 		bullet->Detonate(Center_Coord());
 		delete bullet;
+	}
+}
+
+
+/// <summary>
+/// Plays this transport's EnterTransportSound or LeaveTransportSound where it stands
+/// (TechnoClass::AddPassenger, 0x710670, and FootClass::RemovePassenger, 0x4DE670).
+/// </summary>
+void TechnoClass::Play_Transport_Sound(bool entering) const
+{
+	VocType const sound = entering ? TClass->EnterTransportSound : TClass->LeaveTransportSound;
+	if (sound != VOC_NONE) {
+		Sound_Effect(sound, Center_Coord());
 	}
 }
