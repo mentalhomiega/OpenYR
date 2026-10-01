@@ -44,6 +44,9 @@
 #include "font.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
+#include "super.h"
+#include "suprtype.h"
 #include "incdec.h"
 #include "inline.h"
 #include "ionblast.h"
@@ -1313,6 +1316,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Waypoints(true);
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
+		Draw_Super_Timers();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
@@ -3821,6 +3825,41 @@ void Tactical::Draw_Radial_Indicators(void)
 		ObjectClass * obj = CurrentObject[i];
 		if (obj->Class_Of() && obj->Class_Of()->IsHasRadialIndicator) {
 			obj->Draw_Radial_Indicator();
+		}
+	}
+}
+
+
+/// <summary>
+/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of
+/// the battlefield, one line each in the owner's colors, as "name  minutes:seconds", with hours
+/// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
+/// of passive houses are left out, as is a suspended weapon that is still fully uncharged in a
+/// campaign.
+/// </summary>
+void Tactical::Draw_Super_Timers(void)
+{
+	int line = 0;
+	for (int h = 0; h < Houses.Count(); h++) {
+		HouseClass * house = Houses[h];
+		if (house == NULL || house->Class->IsMultiplayPassive) continue;
+		for (int s = 0; s < house->SuperWeapon.Count(); s++) {
+			SuperClass const * super = house->SuperWeapon[s];
+			if (super == NULL || !super->Is_Present() || super->Class == NULL || !super->Class->IsShowTimer) continue;
+			int const left = super->Control;
+			if (super->Is_Suspended() && Session.Type == GAME_NORMAL && left == super->Class->RechargeTime) continue;
+
+			int const seconds = left / 15;
+			char buffer[96];
+			char const * name = super->Class->Full_Name() != NULL && super->Class->Full_Name()[0] != '\0' ? super->Class->Full_Name() : super->Class->Name();
+			if (seconds >= 3600) {
+				std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", name, seconds / 3600, (seconds / 60) % 60, seconds % 60);
+			} else {
+				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
+			}
+			Point2D const at(TacticalRect.Width - 3, TacticalRect.Height - 16 * (line + 1));
+			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, at, ColorSchemes[house->Scheme], 0, (TextPrintType)(TPF_RIGHT | TPF_EFNT | TPF_FULLSHADOW), 1);
+			line++;
 		}
 	}
 }

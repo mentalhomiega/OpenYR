@@ -27037,6 +27037,23 @@ ShowOccupantPips:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ShowTimer:
+  key: ShowTimer
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: SuperWeaponTypeClass
+      member: IsShowTimer
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 ShroudGrow:
   key: ShroudGrow
   scopes:

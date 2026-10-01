@@ -3,6 +3,7 @@ title: Superweapons
 summary: "How a house gains, charges and fires each declared superweapon, and what each of the hard-coded behaviors delivers."
 category: superweapons-special
 keys:
+  - ShowTimer
   - AIIonCannonAPCValue
   - AIIonCannonBaseDefenseValue
   - AIIonCannonConYardValue
@@ -251,6 +252,10 @@ Two states change what a full pool does:
 
 - A ready weapon leaves the pool full. The countdown restarts as soon as the weapon fires.
 - A suspended weapon still empties the pool, but its countdown does not start.
+
+### Countdown timers
+
+Every player sees the countdown of each [`ShowTimer=yes`](/keys/showtimer/) superweapon that any house holds, listed in the bottom right corner of the battlefield in the owner's colors, as the weapon's name followed by the minutes and seconds left, with hours in front once there are any. A weapon that is ready shows `00:00`. A house whose country is [`MultiplayPassive=yes`](/keys/multiplaypassive/) shows none, and in a campaign a suspended weapon that has not started charging is left out.
 
 ## Charge-draining weapons
 

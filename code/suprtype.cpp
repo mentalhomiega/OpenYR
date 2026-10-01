@@ -92,6 +92,7 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	IsManualControl(false),
 	IsPreClick(false),
 	IsPostClick(false),
+	IsShowTimer(false),
 	PreDependent(SUPER_NONE)
 {
 	Create_ID();
@@ -164,6 +165,7 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsManualControl);
 	stream.Serialize(IsPreClick);
 	stream.Serialize(IsPostClick);
+	stream.Serialize(IsShowTimer);
 	stream.Serialize(PreDependent);
 }
 
@@ -248,6 +250,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsManualControl = ini.Get_Bool(IniName, "ManualControl", IsManualControl);
 		IsPreClick = ini.Get_Bool(IniName, "PreClick", IsPreClick);
 		IsPostClick = ini.Get_Bool(IniName, "PostClick", IsPostClick);
+		IsShowTimer = ini.Get_Bool(IniName, "ShowTimer", IsShowTimer);
 		ini.Get_String(IniName, "PreDependent", "", buffer, sizeof(buffer));
 		if (strlen(buffer) != 0) {
 			SuperWeaponType type = Special_From_Name(buffer);

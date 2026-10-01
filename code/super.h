@@ -86,6 +86,7 @@ class SuperClass : public AbstractClass
 		bool Is_Powered(void) const;
 		bool Is_Ready(void) const {return(IsReady);}
 		bool Is_Present(void) const {return(IsPresent);}
+		bool Is_Suspended(void) const {return(IsSuspended);}
 		bool Is_One_Time(void) const {return(IsOneTime && IsPresent);}
 
 		char const * State_String(void) const;

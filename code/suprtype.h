@@ -149,6 +149,9 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsPreClick;
 		bool IsPostClick;
+
+		// Does every player see this weapon's countdown in the corner of the battlefield while its owner holds it?
+		bool IsShowTimer;
 		SuperWeaponType PreDependent;
 };
 
