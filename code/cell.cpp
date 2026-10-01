@@ -3513,6 +3513,13 @@ bool CellClass::Goodie_Check(FootClass * object)
 		**	In solo play, the bonus item is dependant upon the rules control.
 		*/
 		CrateType powerup = CRATE_MONEY;
+
+		// Only the player hears a crate's sound (CellClass::CollectCrate, 0x481A00).
+		auto crate_sound = [&](VocType voc) {
+			if (object->House->Is_Player_Control()) {
+				Sound_Effect(voc, Cell_Coord());
+			}
+		};
 		auto random_powerup = [&]() {
 			int pick = Random_Pick(1, total_shares);
 
@@ -3730,6 +3737,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 				if (object->House->Player_View() != NULL) {
 					Map.Reveal_The_Map(object->House->Player_View());
 				}
+				crate_sound(Rule->CrateRevealSound);
 				break;
 
 			/*
@@ -3786,6 +3794,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 					UnitClass * goodie_unit = (UnitClass *)utp->Create_One_Of(object->House);
 					if (goodie_unit != NULL) {
 						if (goodie_unit->Unlimbo(Cell_Coord())) {
+							crate_sound(Rule->CrateUnitSound);
 							return(false);
 						}
 
@@ -3795,6 +3804,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 						*/
 						Cell cell = Map.Nearby_Location(Fetch_CellID(), goodie_unit->Class->Speed);
 						if (cell != CELL_NONE && goodie_unit->Unlimbo(cell)) {
+							crate_sound(Rule->CrateUnitSound);
 							return(false);
 						}
 						delete goodie_unit;
@@ -3841,6 +3851,7 @@ crate_money:
 				} else {
 					PlayerPtr->Refund_Money(force_money);
 				}
+				crate_sound(Rule->CrateMoneySound);
 				break;
 
 			/*
@@ -3896,6 +3907,7 @@ crate_money:
 			 */
 			case CRATE_VETERAN:
 				DebugString("Crate at %d,%d contains veterancy(TM)\n", CellID.X, CellID.Y);
+				crate_sound(Rule->CratePromoteSound);
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
@@ -3958,6 +3970,7 @@ crate_money:
 					}
 				}
 				if (tospeak) Speak(VOX_UPGRADE_ARMOR);
+				crate_sound(Rule->CrateArmourSound);
 				break;
 
 			case CRATE_SPEED:
@@ -3972,6 +3985,7 @@ crate_money:
 					}
 				}
 				if (tospeak) Speak(VOX_UPGRADE_SPEED);
+				crate_sound(Rule->CrateSpeedSound);
 				break;
 
 			case CRATE_FIREPOWER:
@@ -3987,6 +4001,7 @@ crate_money:
 					}
 				}
 				if (tospeak) Speak(VOX_UPGRADE_FIREPOWER);
+				crate_sound(Rule->CrateFireSound);
 				break;
 
 			case CRATE_INVULN:

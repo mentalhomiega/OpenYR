@@ -33,6 +33,7 @@
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
+**	cratesounds				writes the sound numbers the crate pickup sounds resolved to
 **	elite <TypeID>			makes the player's objects of that type elite
 **	canrepair x y			writes whether the structure on that cell can be repaired with the repair cursor
 **	overpower x y			writes how many objects charge the structure on that cell and whether it is
@@ -622,6 +623,8 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound);
 		}
+	} else if (step.Command == "cratesounds") {
+		DebugString("AUTOTEST   cratesounds money %d reveal %d fire %d armour %d speed %d unit %d promote %d\n", (int)Rule->CrateMoneySound, (int)Rule->CrateRevealSound, (int)Rule->CrateFireSound, (int)Rule->CrateArmourSound, (int)Rule->CrateSpeedSound, (int)Rule->CrateUnitSound, (int)Rule->CratePromoteSound);
 	} else if (step.Command == "elite") {
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];

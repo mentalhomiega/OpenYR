@@ -305,6 +305,15 @@ class RulesClass
 		// Played at a structure that a hit takes below half strength or into the red, unless its type sets a DamageSound.
 		VocType BuildingDamageSound;
 
+		// Played at a crate the player collects, by the crate's result.
+		VocType CrateMoneySound;
+		VocType CrateRevealSound;
+		VocType CrateFireSound;
+		VocType CrateArmourSound;
+		VocType CrateSpeedSound;
+		VocType CrateUnitSound;
+		VocType CratePromoteSound;
+
 		// The colors of the beam an IsRadBeam weapon draws: RadColor normally, ChronoBeamColor for a temporal warhead.
 		RGBClass RadColor;
 		RGBClass ChronoBeamColor;

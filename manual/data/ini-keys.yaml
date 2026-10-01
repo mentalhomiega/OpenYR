@@ -7085,6 +7085,24 @@ Crate:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+CrateArmourSound:
+  key: CrateArmourSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CrateArmourSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CrateBeneath:
   key: CrateBeneath
   scopes:
@@ -7119,6 +7137,24 @@ CrateBeneathIsMoney:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CrateFireSound:
+  key: CrateFireSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CrateFireSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CrateGoodie:
   key: CrateGoodie
   scopes:
@@ -7208,6 +7244,42 @@ CrateMoneyBonus:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CrateMoneySound:
+  key: CrateMoneySound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CrateMoneySound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CratePromoteSound:
+  key: CratePromoteSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CratePromoteSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CrateRadius:
   key: CrateRadius
   scopes:
@@ -7244,6 +7316,42 @@ CrateRegen:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CrateRevealSound:
+  key: CrateRevealSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CrateRevealSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CrateSpeedSound:
+  key: CrateSpeedSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CrateSpeedSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CrateTrigger:
   key: CrateTrigger
   scopes:
@@ -7261,6 +7369,24 @@ CrateTrigger:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+CrateUnitSound:
+  key: CrateUnitSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CrateUnitSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Crater:
   key: Crater
   scopes:

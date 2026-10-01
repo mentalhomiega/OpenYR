@@ -421,6 +421,13 @@ RulesClass::RulesClass(void) :
 	ImpactLandSound(VOC_NONE),
 	ImpactWaterSound(VOC_NONE),
 	BuildingDamageSound(VOC_NONE),
+	CrateMoneySound(VOC_NONE),
+	CrateRevealSound(VOC_NONE),
+	CrateFireSound(VOC_NONE),
+	CrateArmourSound(VOC_NONE),
+	CrateSpeedSound(VOC_NONE),
+	CrateUnitSound(VOC_NONE),
+	CratePromoteSound(VOC_NONE),
 	RadColor(0, 0, 0),
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
@@ -1081,6 +1088,13 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ImpactLandSound = ini.Get_VocType(AUDIOVISUAL, "ImpactLandSound", ImpactLandSound);
 		ImpactWaterSound = ini.Get_VocType(AUDIOVISUAL, "ImpactWaterSound", ImpactWaterSound);
 		BuildingDamageSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDamageSound", BuildingDamageSound);
+		CrateMoneySound = ini.Get_VocType(AUDIOVISUAL, "CrateMoneySound", CrateMoneySound);
+		CrateRevealSound = ini.Get_VocType(AUDIOVISUAL, "CrateRevealSound", CrateRevealSound);
+		CrateFireSound = ini.Get_VocType(AUDIOVISUAL, "CrateFireSound", CrateFireSound);
+		CrateArmourSound = ini.Get_VocType(AUDIOVISUAL, "CrateArmourSound", CrateArmourSound);
+		CrateSpeedSound = ini.Get_VocType(AUDIOVISUAL, "CrateSpeedSound", CrateSpeedSound);
+		CrateUnitSound = ini.Get_VocType(AUDIOVISUAL, "CrateUnitSound", CrateUnitSound);
+		CratePromoteSound = ini.Get_VocType(AUDIOVISUAL, "CratePromoteSound", CratePromoteSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
 		BombTickingSound = ini.Get_VocType(AUDIOVISUAL, "BombTickingSound", BombTickingSound);
 		BombAttachSound = ini.Get_VocType(AUDIOVISUAL, "BombAttachSound", BombAttachSound);
@@ -2583,6 +2597,13 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ImpactLandSound);
 	stream.Serialize(ImpactWaterSound);
 	stream.Serialize(BuildingDamageSound);
+	stream.Serialize(CrateMoneySound);
+	stream.Serialize(CrateRevealSound);
+	stream.Serialize(CrateFireSound);
+	stream.Serialize(CrateArmourSound);
+	stream.Serialize(CrateSpeedSound);
+	stream.Serialize(CrateUnitSound);
+	stream.Serialize(CratePromoteSound);
 	stream.Serialize(RadColor);
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);
