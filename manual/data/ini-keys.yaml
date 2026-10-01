@@ -1853,6 +1853,24 @@ AlliedBaseDefenses:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AlliedCrew:
+  key: AlliedCrew
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: AlliedCrew
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Allies:
   key: Allies
   scopes:
@@ -6193,24 +6211,6 @@ Credits:
       source: code/house.cpp
       guard: null
     level: HouseClass
-Crew:
-  key: Crew
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: class
-    status: generated
-    _provenance:
-      default_candidate: none
-      declared_in: RulesClass
-      member: Crew
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 CrewEscape:
   key: CrewEscape
   scopes:
@@ -6734,14 +6734,28 @@ DeaccelerationFactor:
 DeadBodies:
   key: DeadBodies
   scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of AnimTypes
+    status: needs_review
+    _provenance:
+      default_candidate: ''
+      declared_in: InfantryTypeClass
+      member: DeadBodies
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
   - applies_to:
     - global rules
     file: rules.ini
     section:
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: typelist
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: ''
       declared_in: RulesClass
@@ -16663,6 +16677,23 @@ Normalized:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+NotHuman:
+  key: NotHuman
+  scopes:
+  - applies_to: *id016
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsNotHuman
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 NukeDown:
   key: NukeDown
   scopes:
@@ -22011,6 +22042,24 @@ SovietBaseDefenses:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SovietCrew:
+  key: SovietCrew
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SovietCrew
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Soylent:
   key: Soylent
   scopes:
@@ -25815,6 +25864,24 @@ ThirdBaseDefenses:
       default_candidate: ''
       declared_in: RulesClass
       member: ThirdBaseDefenses
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ThirdCrew:
+  key: ThirdCrew
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ThirdCrew
       source: code/rules.cpp
       guard: null
     level: RulesClass

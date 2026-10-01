@@ -1,6 +1,6 @@
 ---
 key: Doggie
-summary: Gives the soldier the attack dog's panic, its habit of bedding down in Tiberium, and a death that leaves no corpse.
+summary: Gives the soldier the attack dog's panic, its habit of bedding down in Tiberium, and a burning death of its own.
 see_also: [Fraidycat, Fearless, ConditionRed, DeadBodies, InfDeath, "system:tiberium"]
 when_omitted:
   kind: value
@@ -26,4 +26,4 @@ A prone dog stands up again when it is given a destination.
 
 ## Death
 
-A dog dies as any soldier does for its warhead's [`InfDeath`](/keys/infdeath/), including the burning and electrocution deaths. When a dog's death sequence finishes, the dog is removed without leaving one of the [`DeadBodies`](/keys/deadbodies/) corpses.
+A dog dies as any soldier does for its warhead's [`InfDeath`](/keys/infdeath/), including the burning and electrocution deaths. When a dog's death sequence finishes, it leaves a corpse as any soldier does; [`NotHuman=yes`](/keys/nothuman/) keeps it from leaving a human one.

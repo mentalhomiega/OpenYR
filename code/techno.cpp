@@ -6597,7 +6597,21 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	**	minigunner. Certain buildings, especially neutral ones, tend to have
 	**	civilians exit them instead.
 	*/
-	InfantryTypeClass const * infantry = Rule->Crew;
+	// The crew follows the side of the owning house, as TechnoClass::GetCrew (0x707D20) does.
+	InfantryTypeClass const * infantry = Rule->Technician;
+	switch (House->Class->Side) {
+		case 0:
+			infantry = Rule->AlliedCrew;
+			break;
+		case 1:
+			infantry = Rule->SovietCrew;
+			break;
+		case 2:
+			infantry = Rule->ThirdCrew;
+			break;
+		default:
+			break;
+	}
 	if (House->Class->Side != SIDE_NONE) {
 		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
 			infantry = Rule->Technician;

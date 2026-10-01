@@ -53,6 +53,15 @@
     type: key
     id: TiberiumLongScan
 - type: key
+  id: Crew
+  route: /keys/crew/
+  search_aliases:
+    - Crew
+  summary: Named the survivor type for every side. Yuri's Revenge names one per side with AlliedCrew, SovietCrew and ThirdCrew.
+  replacement:
+    type: key
+    id: AlliedCrew
+- type: key
   id: ModemName
   route: /keys/modemname/
   search_aliases:

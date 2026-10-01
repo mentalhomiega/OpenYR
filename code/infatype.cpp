@@ -51,6 +51,7 @@
 
 #include "_map.h"
 #include "_rules.h"
+#include "animtype.h"
 #include "cell.h"
 #include "findmake.h"
 #include "globals.h"
@@ -95,6 +96,8 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsThief(false),
 	IsVehicleThief(false),
 	IsDoggie(false),
+	IsNotHuman(false),
+	DeadBodies(),
 	IsJumpJet(false),
 	IsWebImmune(false),
 	HeapID(INFANTRY_NONE),
@@ -365,6 +368,8 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsThief = ini.Get_Bool(Name(), "Thief", IsThief);
 		IsVehicleThief = ini.Get_Bool(Name(), "VehicleThief", IsVehicleThief);
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
+		IsNotHuman = ini.Get_Bool(Name(), "NotHuman", IsNotHuman);
+		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeadBodies", DeadBodies);
 		IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
 		if (IsBomber) IsCapture = true;
 		if (IsEngineer) IsCapture = true;
@@ -507,6 +512,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsThief);
 	stream.Serialize(IsVehicleThief);
 	stream.Serialize(IsDoggie);
+	stream.Serialize(IsNotHuman);
+	stream.Serialize(DeadBodies);
 	stream.Serialize(IsJumpJet);
 	stream.Serialize(IsWebImmune);
 }

@@ -1,7 +1,7 @@
 ---
 key: Sequence
 summary: The art.ini section that lays out the frames of every action an infantry type performs.
-see_also: ["FireUp", "FireProne", "Crawls", "JumpJet", "Crew"]
+see_also: ["FireUp", "FireProne", "Crawls", "JumpJet", "AlliedCrew"]
 when_omitted:
   kind: value
   value: none
@@ -57,7 +57,7 @@ The table lists every entry a sequence section may have and the action each one 
 | `Struggle` | Struggling inside a web |
 
 :::danger[An infantry type with no sequence crashes the game]
-A type with no `Sequence` has no animation table. The game crashes the first time an instance of the type animates, and whenever the game is saved, even if no instance exists. A type registered only by being named elsewhere, as [`Crew`](/keys/crew/) describes, has no section of its own and crashes the same way.
+A type with no `Sequence` has no animation table. The game crashes the first time an instance of the type animates, and whenever the game is saved, even if no instance exists. A type registered only by being named elsewhere, as [`AlliedCrew`](/keys/alliedcrew/) describes, has no section of its own and crashes the same way.
 
 Naming a section the file does not contain is a different failure. Every action then has a frame count of `0`, so the soldier starts no action and stands on the first frame of its artwork.
 :::

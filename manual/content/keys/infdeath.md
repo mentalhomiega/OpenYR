@@ -32,7 +32,7 @@ Any other value behaves as `0`.
 InfDeath=4
 ```
 
-A soldier that plays a death sequence stays in place until the sequence ends, and is then removed. Every type except a dog drops one of the [`DeadBodies`](/keys/deadbodies/) corpses at that point. A soldier removed at once leaves no corpse.
+A soldier that plays a death sequence stays in place until the sequence ends, and is then removed. At that point it drops a corpse from its type's own [`DeadBodies`](/keys/deadbodies/#scope-infantrytype), or from the shared [`DeadBodies`](/keys/deadbodies/#scope-global-rules) unless its type sets [`NotHuman=yes`](/keys/nothuman/). A soldier removed at once leaves no corpse.
 
 These deaths ignore the warhead's value:
 

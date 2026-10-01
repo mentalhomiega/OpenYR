@@ -12,7 +12,7 @@ when_omitted:
 InfantryExplode=MYINFBANG ; an AnimType registered in [Animations]
 ```
 
-When an infantryman dies with this animation, the animation plays at its position and the infantryman is removed at once. It plays no death sequence and leaves no [`DeadBodies`](/keys/deadbodies/) corpse.
+When an infantryman dies with this animation, the animation plays at its position and the infantryman is removed at once. It plays no death sequence and leaves no [`DeadBodies`](/keys/deadbodies/#scope-global-rules) corpse.
 
 When an infantryman is killed, the engine checks these cases in order and uses the first that matches:
 

@@ -189,7 +189,7 @@ A forced kill of a [`Cyborg=yes`](/keys/cyborg/) soldier always removes it, what
 3. a jumpjet soldier, which leaves `InfantryExplode`;
 4. otherwise the death that the killing warhead's [`InfDeath`](/keys/infdeath/) names. A kill by a [laser fence](/systems/laser-fences/) uses the electrocution death, or the burning death on a [`Doggie=yes`](/keys/doggie/) type.
 
-The soldier stays on the map to play three of those deaths: the gun death, the explosion death, and the burning death of a `Doggie=yes` type. When a gun or explosion death finishes, a soldier that is not `Doggie=yes` leaves a corpse from [`DeadBodies`](/keys/deadbodies/). Every other death removes the soldier at once and leaves an animation in its place, or nothing.
+The soldier stays on the map to play three of those deaths: the gun death, the explosion death, and the burning death of a `Doggie=yes` type. When a gun or explosion death finishes, the soldier leaves a corpse from its type's own [`DeadBodies`](/keys/deadbodies/#scope-infantrytype), or from the shared list unless its type sets [`NotHuman=yes`](/keys/nothuman/). Every other death removes the soldier at once and leaves an animation in its place, or nothing.
 
 An aircraft plays one entry of its [`Explosion`](/keys/explosion/) list where it was hit, or of its `ScrapExplosion` list with `ScrapMetal` on. A kill by the firestorm warhead plays seven to nine firestorm particle systems instead. An aircraft on the ground is then removed at once.
 
@@ -209,7 +209,7 @@ The table lists what can remain after each kind of object dies, besides the Tibe
 | A mark from a death animation | Where the animation sets `Scorch` or `Crater` | Where the animation sets `Scorch` or `Crater` | Where the animation sets `Scorch` or `Crater` | Where the animation sets `Scorch` or `Crater` |
 | Marks laid by the object itself | No | The central mark on a structure at least 2×2, and footprint marks on a delayed removal | No | No |
 | Fire animations | Only from a `Flamer=yes` or `Scorch=yes` animation | Up to two per footprint cell | Only from a `Flamer=yes` or `Scorch=yes` animation | Only from a `Flamer=yes` or `Scorch=yes` animation |
-| A corpse | No | No | After a gun or explosion death, except on a `Doggie=yes` type | No |
+| A corpse | No | No | After a gun or explosion death, except on a `NotHuman=yes` type with no corpses of its own | No |
 | Soldiers who walk away | Passengers who can get out, and one crew member on the crew roll or the hijacker who stole it; none from a wreck | Up to five, twice that on a delayed removal | No | No |
 | Tiberium | A harvester's load, when it is `Explodes=yes` or has the explodes ability | Whatever it was storing | No | No |
 

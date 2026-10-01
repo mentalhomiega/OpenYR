@@ -153,6 +153,12 @@ class InfantryTypeClass : public TechnoTypeClass
 		 */
 		bool IsDoggie;
 
+		// A NotHuman= type leaves no body from the shared DeadBodies list when it dies.
+		bool IsNotHuman;
+
+		// The bodies this type leaves when it dies; empty means the shared [General] list.
+		TypeList<AnimTypeClass const *> DeadBodies;
+
 		/*
 		 * If this infantry type gets about on a jump jet, then this flag will be true. While
 		 * airborne it ignores the terrain below it entirely, but an ion storm grounds it and

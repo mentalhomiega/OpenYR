@@ -573,7 +573,9 @@ RulesClass::RulesClass(void) :
 	Technician(NULL),
 	Engineer(NULL),
 	Pilot(NULL),
-	Crew(NULL),
+	AlliedCrew(NULL),
+	SovietCrew(NULL),
+	ThirdCrew(NULL),
 	FlameDamage(NULL),
 	FlameDamage2(NULL),
 	NukeWarhead(NULL),
@@ -909,7 +911,6 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);
-		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "DeadBodies", DeadBodies);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "MetallicDebris", MetallicDebris);
 		BridgeExplosions = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "BridgeExplosions", BridgeExplosions);
 		OnFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "OnFire", OnFire);
@@ -1184,7 +1185,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		Engineer = TGet_Class(ini, GENERAL, "Engineer", Engineer);
 		Technician = TGet_Class(ini, GENERAL, "Technician", Technician);
 		Pilot = TGet_Class(ini, GENERAL, "Pilot", Pilot);
-		Crew = TGet_Class(ini, GENERAL, "Crew", Crew);
+		AlliedCrew = TGet_Class(ini, GENERAL, "AlliedCrew", AlliedCrew);
+		SovietCrew = TGet_Class(ini, GENERAL, "SovietCrew", SovietCrew);
+		ThirdCrew = TGet_Class(ini, GENERAL, "ThirdCrew", ThirdCrew);
 		IsCurleyShuffle = ini.Get_Bool(GENERAL, "CurleyShuffle", IsCurleyShuffle);
 		IsMultiMCV = ini.Get_Bool(GENERAL, "MultiMCV", IsMultiMCV);
 		IsRecheckPrerequisites = ini.Get_Bool(GENERAL, "RecheckPrerequisites", IsRecheckPrerequisites);
@@ -1333,6 +1336,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
+		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "DeadBodies", DeadBodies);
 		return(true);
 	}
 	return(false);
@@ -2415,7 +2419,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Technician);
 	stream.Serialize(Engineer);
 	stream.Serialize(Pilot);
-	stream.Serialize(Crew);
+	stream.Serialize(AlliedCrew);
+	stream.Serialize(SovietCrew);
+	stream.Serialize(ThirdCrew);
 	stream.Serialize(FlameDamage);
 	stream.Serialize(FlameDamage2);
 	stream.Serialize(NukeWarhead);
@@ -2788,8 +2794,14 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	if (target == Pilot) {
 		Pilot = NULL;
 	}
-	if (target == Crew) {
-		Crew = NULL;
+	if (target == AlliedCrew) {
+		AlliedCrew = NULL;
+	}
+	if (target == SovietCrew) {
+		SovietCrew = NULL;
+	}
+	if (target == ThirdCrew) {
+		ThirdCrew = NULL;
 	}
 	if (target == RepairBay) {
 		RepairBay = NULL;

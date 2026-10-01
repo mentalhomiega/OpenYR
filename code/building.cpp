@@ -5027,9 +5027,10 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						**	construction yard.
 						*/
 						const InfantryTypeClass * typ = Crew_Type();
-						while (typ->IsEngineer && engineer) {
+						while (typ != NULL && typ->IsEngineer && engineer) {
 							typ = Crew_Type();
 						}
+						if (typ == NULL) break;
 						if (typ->IsEngineer) engineer = true;
 
 						InfantryClass * infantry = NULL;

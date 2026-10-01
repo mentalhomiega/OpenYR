@@ -2,7 +2,7 @@
 key: Side
 scope: housetype
 label: Country side
-see_also: [Multiplay, Crew, Technician, ActsLike]
+see_also: [Multiplay, AlliedCrew, Technician, ActsLike]
 when_omitted:
   kind: inherited
   note: The side whose [Sides] entry lists this country, or no side at all when none does.
@@ -35,4 +35,4 @@ For the archives and voices, a player's country with no side counts as the first
 
 The side of the country a house [acts as](/keys/actslike/) decides the computer's [base building](/systems/ai-base-building/), the house's [hunter-seeker](/keys/hunterseeker/#scope-side), and whether an [AI trigger](/mapping/ai-triggers/) restricted to a side is open to that house.
 
-The side of the owner's own country decides the survivors of a [`Crewed=yes`](/keys/crewed/) object. A country with no side leaves a [`Technician`](/keys/technician/). A country with a side leaves the [`Crew`](/keys/crew/) type, and an armed object has a 15% chance of leaving a technician instead. The `Crew` page gives the full order, including the engineer a structure can leave.
+The side of the owner's own country decides the survivors of a [`Crewed=yes`](/keys/crewed/) object. A country with no side leaves a [`Technician`](/keys/technician/). A country with a side leaves its side's crew type, [`AlliedCrew`](/keys/alliedcrew/), [`SovietCrew`](/keys/sovietcrew/) or [`ThirdCrew`](/keys/thirdcrew/), and an armed object has a 15% chance of leaving a technician instead. The `AlliedCrew` page gives the full order, including the engineer a structure can leave.

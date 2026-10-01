@@ -1227,10 +1227,12 @@ class RulesClass
 		InfantryTypeClass const * Pilot;
 
 		/*
-		 * This is the infantry type that emerges as the survivor of a destroyed object,
-		 * unless something more specific applies.
+		 * These are the infantry types that emerge as the survivors of a destroyed object owned by
+		 * a house of the first, second or third side, unless something more specific applies.
 		 */
-		InfantryTypeClass const * Crew;
+		InfantryTypeClass const * AlliedCrew;
+		InfantryTypeClass const * SovietCrew;
+		InfantryTypeClass const * ThirdCrew;
 
 		/*
 		 * This is the warhead a napalm crate burns its surroundings with.

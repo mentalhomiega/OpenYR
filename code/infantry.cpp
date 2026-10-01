@@ -3650,7 +3650,10 @@ void InfantryClass::Doing_AI(void)
 			case DO_GRENADE_DEATH:
 			case DO_FIRE_DEATH:
 				if (Fetch_Stage() >= Class->DoControls[Doing].Count) {
-					if (!Class->IsDoggie) {
+					// As gamemd's FUN_00520AE0: the type's own bodies, else the shared list unless NotHuman=yes.
+					if (Class->DeadBodies.Count() > 0) {
+						new AnimClass(Class->DeadBodies.Pick(Scen->RandomNumber), Center_Coord());
+					} else if (!Class->IsNotHuman && Rule->DeadBodies.Count() > 0) {
 						new AnimClass(Rule->DeadBodies.Pick(Scen->RandomNumber), Center_Coord());
 					}
 					Delete_Me();
