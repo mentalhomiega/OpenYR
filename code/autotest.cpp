@@ -254,7 +254,7 @@ void Enemies(void)
 
 void Dump(void)
 {
-	DebugString("AUTOTEST dump frame %d credits %d\n", Frame, PlayerPtr->Available_Money());
+	DebugString("AUTOTEST dump frame %d credits %d power %d drain %d\n", Frame, PlayerPtr->Available_Money(), PlayerPtr->Power, PlayerPtr->Drain);
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * object = Buildings[index];
 		if (object->House != PlayerPtr) continue;
