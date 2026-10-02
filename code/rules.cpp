@@ -421,6 +421,7 @@ RulesClass::RulesClass(void) :
 	ImpactLandSound(VOC_NONE),
 	ImpactWaterSound(VOC_NONE),
 	BuildingDamageSound(VOC_NONE),
+	DiskLaserChargeUp(VOC_NONE),
 	CrateMoneySound(VOC_NONE),
 	CrateRevealSound(VOC_NONE),
 	CrateFireSound(VOC_NONE),
@@ -1094,6 +1095,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ImpactLandSound = ini.Get_VocType(AUDIOVISUAL, "ImpactLandSound", ImpactLandSound);
 		ImpactWaterSound = ini.Get_VocType(AUDIOVISUAL, "ImpactWaterSound", ImpactWaterSound);
 		BuildingDamageSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDamageSound", BuildingDamageSound);
+		DiskLaserChargeUp = ini.Get_VocType(AUDIOVISUAL, "DiskLaserChargeUp", DiskLaserChargeUp);
 		CrateMoneySound = ini.Get_VocType(AUDIOVISUAL, "CrateMoneySound", CrateMoneySound);
 		CrateRevealSound = ini.Get_VocType(AUDIOVISUAL, "CrateRevealSound", CrateRevealSound);
 		CrateFireSound = ini.Get_VocType(AUDIOVISUAL, "CrateFireSound", CrateFireSound);
@@ -2612,6 +2614,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ImpactLandSound);
 	stream.Serialize(ImpactWaterSound);
 	stream.Serialize(BuildingDamageSound);
+	stream.Serialize(DiskLaserChargeUp);
 	stream.Serialize(CrateMoneySound);
 	stream.Serialize(CrateRevealSound);
 	stream.Serialize(CrateFireSound);

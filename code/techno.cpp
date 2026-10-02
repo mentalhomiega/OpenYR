@@ -3186,6 +3186,8 @@ void TechnoClass::AI(void)
 		SpawnManager->AI();
 	}
 
+	DiskLaser.AI();
+
 	if (IsGattlingSoundPlaying) {
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound);
 	}
@@ -4294,6 +4296,16 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
 		int damage = Strength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+		return(NULL);
+	}
+
+	// A DiskLaser weapon draws its ring and strikes when the ring closes (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDiskLaser && target->Is_Techno()) {
+		if (!DiskLaser.Is_Active()) {
+			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias));
+			LastFireFrame = Frame;
+			Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+		}
 		return(NULL);
 	}
 
@@ -7179,6 +7191,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (SpawnManager) {
 			SpawnManager->Detach(target);
 		}
+		DiskLaser.Detach(target);
 		if (SpawnOwner == target) {
 			SpawnOwner = NULL;
 		}
@@ -9048,6 +9061,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPermaControlled);
 	stream.Serialize(SpawnManager);
 	stream.Serialize(SpawnOwner);
+	stream.Serialize(DiskLaser);
 	stream.Serialize(CurrentWeaponNumber);
 	stream.Serialize(CurrentTurretNumber);
 	stream.Serialize(CurrentGattlingStage);

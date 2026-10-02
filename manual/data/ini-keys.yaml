@@ -9482,6 +9482,41 @@ Disguised:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+DiskLaser:
+  key: DiskLaser
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsDiskLaser
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+DiskLaserChargeUp:
+  key: DiskLaserChargeUp
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DiskLaserChargeUp
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DissolveUnfilledTeamDelay:
   key: DissolveUnfilledTeamDelay
   scopes:

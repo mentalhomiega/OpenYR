@@ -312,6 +312,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Firing destroys the firer instead of launching a projectile; its death weapon does the damage.
 		bool IsSuicide;
+
+		// Firing draws a ring of lasers around the firer that ends in a beam at the target, which does the damage.
+		bool IsDiskLaser;
 		bool IsAlternateColor;
 
 		/*

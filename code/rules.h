@@ -305,6 +305,9 @@ class RulesClass
 		// Played at a structure that a hit takes below half strength or into the red, unless its type sets a DamageSound.
 		VocType BuildingDamageSound;
 
+		// Played as a DiskLaser weapon starts drawing its ring.
+		VocType DiskLaserChargeUp;
+
 		// Played at a crate the player collects, by the crate's result.
 		VocType CrateMoneySound;
 		VocType CrateRevealSound;
