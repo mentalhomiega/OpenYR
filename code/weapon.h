@@ -315,6 +315,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Firing draws a ring of lasers around the firer that ends in a beam at the target, which does the damage.
 		bool IsDiskLaser;
+
+		// Firing over a Drainable structure drains its power, or its owner's money for a refinery, until the firer leaves.
+		bool IsDrainWeapon;
 		bool IsAlternateColor;
 
 		/*

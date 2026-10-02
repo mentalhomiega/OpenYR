@@ -177,6 +177,18 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 
 	HeadToCoord = to;
 
+	// A BalloonHover unit never lands, so it goes to the destination itself, over a structure if need be.
+	if (to != COORD_NONE && LinkedTo->TClass->IsBalloonHover && Map.In_Radar(to.As_Cell())) {
+		HeadToCoord = Map[to.As_Cell()].Center_Coord();
+		LinkedTo->NavCom = &Map[HeadToCoord];
+		IsMoving = true;
+		if (CurrentState == DESCENDING) {
+			CurrentState = ASCENDING;
+			FlightLevel = Rule->JumpjetCruiseHeight;
+		}
+		return;
+	}
+
 	if (to != COORD_NONE) {
 		Cell cell = Map.Nearby_Location(to.As_Cell(), LinkedTo->TClass->Speed, -1, MZONE_FLYER, Map[to].IsUnderBridge);
 		Coord free = Closest_Free_Spot(cell);
@@ -203,6 +215,19 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 /// </summary>
 void JumpjetLocomotionClass::Stop_Moving(void)
 {
+	// A BalloonHover unit in the air stops where it is and hovers.
+	if (IsMoving && LinkedTo->TClass->IsBalloonHover && CurrentState != GROUNDED) {
+		if (HeadToCoord != COORD_NONE && IsLanding) {
+			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+			IsLanding = false;
+		}
+		CurrentSpeed = 0;
+		TargetSpeed = 0;
+		HeadToCoord = COORD_NONE;
+		IsMoving = false;
+		CurrentState = HOVERING;
+		return;
+	}
 	if (IsMoving) {
 		if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
 			LinkedTo->Clear_Occupy_Bit(HeadToCoord);

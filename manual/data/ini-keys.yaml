@@ -9764,6 +9764,94 @@ Drag:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+DrainAnimationType:
+  key: DrainAnimationType
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DrainAnimationType
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DrainMoneyAmount:
+  key: DrainMoneyAmount
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '30'
+      declared_in: RulesClass
+      member: DrainMoneyAmount
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DrainMoneyFrameDelay:
+  key: DrainMoneyFrameDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '30'
+      declared_in: RulesClass
+      member: DrainMoneyFrameDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DrainWeapon:
+  key: DrainWeapon
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsDrainWeapon
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+Drainable:
+  key: Drainable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsDrainable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DrawFlat:
   key: DrawFlat
   scopes:

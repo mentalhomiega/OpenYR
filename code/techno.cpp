@@ -278,6 +278,9 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	CurrentRank(-1),
 	MindControlledBy(NULL),
 	SpawnOwner(NULL),
+	DrainTarget(NULL),
+	DrainingMe(NULL),
+	DrainAnim(NULL),
 	IsPermaControlled(false),
 	CurrentWeaponNumber(0),
 	CurrentTurretNumber(-1),
@@ -511,6 +514,15 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 
 	if (IsInOpenToppedTransport && TClass->OpenTransportWeapon != -1 && PrimaryWeapon != NULL && SecondaryWeapon != NULL) {
 		return(TClass->OpenTransportWeapon);
+	}
+
+	// A DrainWeapon second weapon is chosen for an enemy Drainable object while nothing is being drained (0x6F3330).
+	{
+		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
+		TechnoClass const * techno = target->Is_Techno() ? (TechnoClass const *)target : NULL;
+		if (second != NULL && second->IsDrainWeapon && techno != NULL && techno->TClass->IsDrainable && DrainTarget == NULL && !House->Is_Ally(techno)) {
+			return(1);
+		}
 	}
 
 	if (TClass->IsGattling) {
@@ -3188,6 +3200,20 @@ void TechnoClass::AI(void)
 
 	DiskLaser.AI();
 
+	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
+	if (DrainingMe != NULL && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsRefinery && Rule->DrainMoneyFrameDelay > 0 && Frame % Rule->DrainMoneyFrameDelay == 0) {
+		int const amount = std::min(Rule->DrainMoneyAmount, House->Available_Money());
+		if (amount > 0) {
+			House->Spend_Money(amount);
+			DrainingMe->House->Refund_Money(amount);
+		}
+	}
+
+	// Draining ends once the drainer leaves the structure or the structure becomes an ally.
+	if (DrainTarget != NULL && (House->Is_Ally(DrainTarget) || Map[Get_Cell()].Cell_Building() != DrainTarget)) {
+		Stop_Drain();
+	}
+
 	if (IsGattlingSoundPlaying) {
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound);
 	}
@@ -3828,6 +3854,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).
+	// A DrainWeapon needs a Drainable target that nothing is draining yet (TechnoClass::GetFireError, 0x6FC0B0).
+	if (weapon->IsDrainWeapon && (techno == NULL || !techno->TClass->IsDrainable || techno->DrainingMe != NULL)) {
+		return(FIRE_ILLEGAL);
+	}
+
 	if (techno != NULL && TClass->IsNatural && techno->TClass->IsUnnatural) {
 		return(FIRE_ILLEGAL);
 	}
@@ -4296,6 +4327,24 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
 		int damage = Strength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+		return(NULL);
+	}
+
+	// A DrainWeapon starts draining once the firer is over the structure, and sends it there first (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDrainWeapon) {
+		if (target->Is_Techno() && ((TechnoClass *)target)->TClass->IsDrainable && DrainTarget == NULL) {
+			if (Map[Get_Cell()].Cell_Building() == target) {
+				Start_Drain((TechnoClass *)target);
+				Assign_Target(NULL);
+				// The drainer stays over the structure; leaving it ends the drain.
+				if (Is_Foot()) {
+					Assign_Destination(NULL);
+					Assign_Mission(MISSION_GUARD);
+				}
+			} else if (Is_Foot() && ((FootClass *)this)->NavCom == NULL) {
+				Assign_Destination(&Map[((TechnoClass *)target)->Center_Coord().As_Cell()]);
+			}
+		}
 		return(NULL);
 	}
 
@@ -5581,6 +5630,10 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 			if (SpawnManager) {
 				SpawnManager->Kill_Nodes();
+			}
+			Stop_Drain();
+			if (DrainingMe != NULL) {
+				DrainingMe->Stop_Drain();
 			}
 			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
 				TemporalImUsing->Let_Go();
@@ -6995,6 +7048,10 @@ void TechnoClass::Calculate_Sinking_Offset(short height, int y)
 /// </summary>
 void TechnoClass::Delete_Me(void)
 {
+	Stop_Drain();
+	if (DrainingMe != NULL) {
+		DrainingMe->Stop_Drain();
+	}
 	if (CaptureManager) {
 		CaptureManager->Free_All();
 	}
@@ -7192,6 +7249,16 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 			SpawnManager->Detach(target);
 		}
 		DiskLaser.Detach(target);
+		if (DrainTarget == target) {
+			Stop_Drain();
+		}
+		if (DrainingMe == target) {
+			DrainingMe = NULL;
+			House->RecalcPower = true;
+		}
+		if (DrainAnim == target) {
+			DrainAnim = NULL;
+		}
 		if (SpawnOwner == target) {
 			SpawnOwner = NULL;
 		}
@@ -9062,6 +9129,9 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpawnManager);
 	stream.Serialize(SpawnOwner);
 	stream.Serialize(DiskLaser);
+	stream.Serialize(DrainTarget);
+	stream.Serialize(DrainingMe);
+	stream.Serialize(DrainAnim);
 	stream.Serialize(CurrentWeaponNumber);
 	stream.Serialize(CurrentTurretNumber);
 	stream.Serialize(CurrentGattlingStage);
@@ -10166,5 +10236,42 @@ void TechnoClass::Play_Transport_Sound(bool entering) const
 	VocType const sound = entering ? TClass->EnterTransportSound : TClass->LeaveTransportSound;
 	if (sound != VOC_NONE) {
 		Sound_Effect(sound, Center_Coord());
+	}
+}
+
+
+/// <summary>
+/// Starts draining the structure this object hovers over (0x70FD70): its owner loses power,
+/// or pays money for a refinery, until the draining stops.
+/// </summary>
+void TechnoClass::Start_Drain(TechnoClass * target)
+{
+	if (target == NULL || target->DrainingMe != NULL) {
+		return;
+	}
+	target->DrainingMe = this;
+	DrainTarget = target;
+	target->House->RecalcPower = true;
+	if (Rule->DrainAnimationType != NULL) {
+		DrainAnim = new AnimClass(Rule->DrainAnimationType, Center_Coord());
+		if (DrainAnim != NULL) {
+			DrainAnim->Attach_To(this);
+		}
+	}
+	DebugString("Drain: %s drains %s\n", TClass->Name(), target->TClass->Name());
+}
+
+
+void TechnoClass::Stop_Drain(void)
+{
+	if (DrainAnim != NULL) {
+		DrainAnim->Delete_Me();
+		DrainAnim = NULL;
+	}
+	if (DrainTarget != NULL) {
+		DebugString("Drain: %s stops draining %s\n", TClass->Name(), DrainTarget->TClass->Name());
+		DrainTarget->DrainingMe = NULL;
+		DrainTarget->House->RecalcPower = true;
+		DrainTarget = NULL;
 	}
 }

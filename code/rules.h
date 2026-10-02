@@ -1530,6 +1530,12 @@ class RulesClass
 		WarheadTypeClass const * C4Warhead;
 
 		// The warheads V3 rockets and Dreadnought and Boomer missiles explode with, normal and elite.
+		// A drained refinery's owner pays DrainMoneyAmount every DrainMoneyFrameDelay frames to the drainer's owner,
+		// and the drainer shows DrainAnimationType while it drains.
+		int DrainMoneyFrameDelay;
+		int DrainMoneyAmount;
+		AnimTypeClass const * DrainAnimationType;
+
 		WarheadTypeClass const * V3Warhead;
 		WarheadTypeClass const * V3EliteWarhead;
 		WarheadTypeClass const * DMislWarhead;

@@ -406,6 +406,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsSpawned;
 		bool IsMissileSpawn;
 
+		// A DrainWeapon can drain this object.
+		bool IsDrainable;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.

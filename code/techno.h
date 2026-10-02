@@ -150,6 +150,13 @@ class TechnoClass :	public RadioClass,
 		// The ring a DiskLaser weapon is drawing for this object's current shot.
 		DiskLaserClass DiskLaser;
 
+		// The structure this object drains, the object draining this one, and the animation shown while draining.
+		TechnoClass * DrainTarget;
+		TechnoClass * DrainingMe;
+		AnimClass * DrainAnim;
+		void Start_Drain(TechnoClass * target);
+		void Stop_Drain(void);
+
 		/*
 		 * The weapon a multi-turret object fires, and a gattling object's stage and spin. The
 		 * turret's animation frame advances while a gattling object spins, and while any other

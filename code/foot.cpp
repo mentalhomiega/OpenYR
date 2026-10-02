@@ -1117,6 +1117,16 @@ void FootClass::Approach_Target(void)
 	if (TarCom != NULL) {
 		int primary = What_Weapon_Should_I_Use(TarCom);
 
+		// A DrainWeapon can only drain from directly over its target, so the unit heads for the target's center.
+		WeaponTypeClass const * drain = Get_Class_Weapon_Data(primary)->Weapon;
+		if (drain != NULL && drain->IsDrainWeapon && TarCom->Is_Techno() && Map[Get_Cell()].Cell_Building() != TarCom) {
+			Cell const over = ((TechnoClass *)TarCom)->Center_Coord().As_Cell();
+			if (NavCom != &Map[over]) {
+				Assign_Destination(&Map[over]);
+			}
+			return;
+		}
+
 		/*
 		**	If the target is too far away then head toward it.
 		*/

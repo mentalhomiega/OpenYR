@@ -8378,8 +8378,14 @@ void HouseClass::Recalc_Power_Drain(void)
 		}
 	}
 
-	// A spy's blackout leaves the house's structures making nothing, as HouseClass::UpdatePower (0x508C30) does.
-	if (IsPowerBlackout) {
+	// A spy's blackout, or a power-producing structure being drained, leaves the house's structures
+	// making nothing, as HouseClass::UpdatePower (0x508C30) and BuildingClass::IsPowerOnline do.
+	bool drained = false;
+	for (int i = 0; i < Buildings.Count() && !drained; i++) {
+		BuildingClass * b = Buildings[i];
+		drained = b != NULL && b->House == this && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0;
+	}
+	if (IsPowerBlackout || drained) {
 		Power = 0;
 	}
 

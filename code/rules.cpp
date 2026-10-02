@@ -726,6 +726,9 @@ RulesClass::RulesClass(void) :
 	EMPulseWarhead(NULL),
 	EMPulseProjectile(NULL),
 	C4Warhead(NULL),
+	DrainMoneyFrameDelay(30),
+	DrainMoneyAmount(30),
+	DrainAnimationType(NULL),
 	V3Warhead(NULL),
 	V3EliteWarhead(NULL),
 	DMislWarhead(NULL),
@@ -1270,6 +1273,9 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		FlameDamage = TGet_Class(ini, COMBATDAMAGE, "FlameDamage", FlameDamage);
 		FlameDamage2 = TGet_Class(ini, COMBATDAMAGE, "FlameDamage2", FlameDamage2);
 		C4Warhead = TGet_Class(ini, COMBATDAMAGE, "C4Warhead", C4Warhead);
+		DrainMoneyFrameDelay = ini.Get_Int(COMBATDAMAGE, "DrainMoneyFrameDelay", DrainMoneyFrameDelay);
+		DrainMoneyAmount = ini.Get_Int(COMBATDAMAGE, "DrainMoneyAmount", DrainMoneyAmount);
+		DrainAnimationType = TGet_Class(ini, COMBATDAMAGE, "DrainAnimationType", DrainAnimationType);
 		V3Warhead = TGet_Class(ini, COMBATDAMAGE, "V3Warhead", V3Warhead);
 		V3EliteWarhead = TGet_Class(ini, COMBATDAMAGE, "V3EliteWarhead", V3EliteWarhead);
 		DMislWarhead = TGet_Class(ini, COMBATDAMAGE, "DMislWarhead", DMislWarhead);
@@ -2914,6 +2920,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPulseWarhead);
 	stream.Serialize(EMPulseProjectile);
 	stream.Serialize(C4Warhead);
+	stream.Serialize(DrainMoneyFrameDelay);
+	stream.Serialize(DrainMoneyAmount);
+	stream.Serialize(DrainAnimationType);
 	stream.Serialize(V3Warhead);
 	stream.Serialize(V3EliteWarhead);
 	stream.Serialize(DMislWarhead);
@@ -3204,6 +3213,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == C4Warhead) {
 		C4Warhead = NULL;
+	}
+	if (target == DrainAnimationType) {
+		DrainAnimationType = NULL;
 	}
 	for (WarheadTypeClass const ** warhead : {&V3Warhead, &V3EliteWarhead, &DMislWarhead, &DMislEliteWarhead, &CMislWarhead, &CMislEliteWarhead}) {
 		if (target == *warhead) {

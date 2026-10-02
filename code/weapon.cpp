@@ -95,6 +95,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsSpawner(false),
 	IsSuicide(false),
 	IsDiskLaser(false),
+	IsDrainWeapon(false),
 	IsAlternateColor(false),
 	IsIonSensitive(false),
 	Burst(1),
@@ -221,6 +222,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsSpawner = ini.Get_Bool(IniName, "Spawner", IsSpawner);
 		IsSuicide = ini.Get_Bool(IniName, "Suicide", IsSuicide);
 		IsDiskLaser = ini.Get_Bool(IniName, "DiskLaser", IsDiskLaser);
+		IsDrainWeapon = ini.Get_Bool(IniName, "DrainWeapon", IsDrainWeapon);
 		IsAlternateColor = ini.Get_Bool(IniName, "IsAlternateColor", IsAlternateColor);
 		IsElectric = ini.Get_Bool(IniName, "Charges", IsElectric);
 		IsTurboBoosted = ini.Get_Bool(IniName, "TurboBoost", IsTurboBoosted);
@@ -458,6 +460,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpawner);
 	stream.Serialize(IsSuicide);
 	stream.Serialize(IsDiskLaser);
+	stream.Serialize(IsDrainWeapon);
 	stream.Serialize(IsAlternateColor);
 	stream.Serialize(IsIonSensitive);
 }
