@@ -635,7 +635,7 @@ void Run(StepType const & step)
 	} else if (step.Command == "typesounds") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
-			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound);
+			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d primaryattack %d secondaryattack %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound, (int)type->VoicePrimaryWeaponAttack, (int)type->VoiceSecondaryWeaponAttack);
 		}
 	} else if (step.Command == "cratesounds") {
 		DebugString("AUTOTEST   cratesounds money %d reveal %d fire %d armour %d speed %d unit %d promote %d\n", (int)Rule->CrateMoneySound, (int)Rule->CrateRevealSound, (int)Rule->CrateFireSound, (int)Rule->CrateArmourSound, (int)Rule->CrateSpeedSound, (int)Rule->CrateUnitSound, (int)Rule->CratePromoteSound);

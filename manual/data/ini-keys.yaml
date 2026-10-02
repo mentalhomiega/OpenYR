@@ -35374,6 +35374,74 @@ VoiceMove:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoicePrimaryEliteWeaponAttack:
+  key: VoicePrimaryEliteWeaponAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoicePrimaryEliteWeaponAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoicePrimaryWeaponAttack:
+  key: VoicePrimaryWeaponAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoicePrimaryWeaponAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoiceSecondaryEliteWeaponAttack:
+  key: VoiceSecondaryEliteWeaponAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceSecondaryEliteWeaponAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoiceSecondaryWeaponAttack:
+  key: VoiceSecondaryWeaponAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceSecondaryWeaponAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceSelect:
   key: VoiceSelect
   scopes:

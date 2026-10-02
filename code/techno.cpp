@@ -4674,7 +4674,9 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		} else if (mission == MISSION_HARVEST) {
 			voice = TClass->VoiceHarvest;
 		}
-		if (mission == MISSION_ATTACK) {
+		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
+			Sound_Effect(Weapon_Attack_Voice(target));
+		} else if (mission == MISSION_ATTACK) {
 			Response_Attack();
 		} else if (voice != VOC_NONE) {
 			Sound_Effect(voice);
@@ -8141,6 +8143,24 @@ void TechnoClass::Response_Move(void)
  * HISTORY:                                                                                    *
  *   07/29/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
+/// <summary>
+/// Fetches the voice for an attack order on the target from the weapon it would be attacked
+/// with and the object's veterancy (TechnoClass::VoiceAttack, 0x7090A0), or VOC_NONE when the
+/// type sets none, in which case VoiceAttack answers.
+/// </summary>
+VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
+{
+	if (target == NULL) {
+		return(VOC_NONE);
+	}
+	bool const elite = Veterancy.Is_Elite();
+	if (What_Weapon_Should_I_Use(target) == 0) {
+		return(elite ? TClass->VoicePrimaryEliteWeaponAttack : TClass->VoicePrimaryWeaponAttack);
+	}
+	return(elite ? TClass->VoiceSecondaryEliteWeaponAttack : TClass->VoiceSecondaryWeaponAttack);
+}
+
+
 void TechnoClass::Response_Attack(void)
 {
 	if (AllowVoice && TClass->VoiceAttack.Count()) {

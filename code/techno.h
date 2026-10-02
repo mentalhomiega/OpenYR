@@ -677,6 +677,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Response_Select(void);
 		virtual void Response_Move(void);
 		virtual void Response_Attack(void);
+		VocType Weapon_Attack_Voice(AbstractClass * target) const;
 		virtual void Player_Assign_Mission(MissionType order, AbstractClass * target=NULL, AbstractClass * destination=NULL);
 		Coord Predict_Target_Coord(void) const;
 

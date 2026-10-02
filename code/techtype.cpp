@@ -200,6 +200,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ImpactLandSound(VOC_NONE),
 	ImpactWaterSound(VOC_NONE),
 	DamageSound(VOC_NONE),
+	VoicePrimaryWeaponAttack(VOC_NONE),
+	VoicePrimaryEliteWeaponAttack(VOC_NONE),
+	VoiceSecondaryWeaponAttack(VOC_NONE),
+	VoiceSecondaryEliteWeaponAttack(VOC_NONE),
 	IsNatural(false),
 	IsUnnatural(false),
 	Spawns(NULL),
@@ -696,6 +700,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DamageSound = ini.Get_VocType(Name(), "DamageSound", DamageSound);
 		IsNatural = ini.Get_Bool(Name(), "Natural", IsNatural);
 		IsUnnatural = ini.Get_Bool(Name(), "Unnatural", IsUnnatural);
+		VoicePrimaryWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryWeaponAttack", VoicePrimaryWeaponAttack);
+		VoicePrimaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryEliteWeaponAttack", VoicePrimaryEliteWeaponAttack);
+		VoiceSecondaryWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryWeaponAttack", VoiceSecondaryWeaponAttack);
+		VoiceSecondaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryEliteWeaponAttack", VoiceSecondaryEliteWeaponAttack);
 		Spawns = TGet_Class(ini, Name(), "Spawns", Spawns);
 		SpawnsNumber = ini.Get_Int(Name(), "SpawnsNumber", SpawnsNumber);
 		SpawnRegenRate = ini.Get_Int(Name(), "SpawnRegenRate", SpawnRegenRate);
@@ -1226,6 +1234,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageSound);
 	stream.Serialize(IsNatural);
 	stream.Serialize(IsUnnatural);
+	stream.Serialize(VoicePrimaryWeaponAttack);
+	stream.Serialize(VoicePrimaryEliteWeaponAttack);
+	stream.Serialize(VoiceSecondaryWeaponAttack);
+	stream.Serialize(VoiceSecondaryEliteWeaponAttack);
 	stream.Serialize(Spawns);
 	stream.Serialize(SpawnsNumber);
 	stream.Serialize(SpawnRegenRate);

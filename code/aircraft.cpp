@@ -1902,7 +1902,9 @@ bool AircraftClass::Active_Click_With(ActionType action, Cell const & cell, bool
 void AircraftClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
 	if (AllowVoice) {
-		if (mission == MISSION_ATTACK) {
+		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
+			Sound_Effect(Weapon_Attack_Voice(target));
+		} else if (mission == MISSION_ATTACK) {
 			Response_Attack();
 		} else {
 			Response_Move();

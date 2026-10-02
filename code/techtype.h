@@ -383,6 +383,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType DamageSound;
 
 		// A Natural object never fires at an Unnatural one.
+		// Played instead of VoiceAttack when an attack order will use the primary or secondary weapon, by veterancy.
+		VocType VoicePrimaryWeaponAttack;
+		VocType VoicePrimaryEliteWeaponAttack;
+		VocType VoiceSecondaryWeaponAttack;
+		VocType VoiceSecondaryEliteWeaponAttack;
+
 		bool IsNatural;
 		bool IsUnnatural;
 
