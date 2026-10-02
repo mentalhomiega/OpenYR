@@ -3826,6 +3826,11 @@ bool TechnoClass::Select(void)
 		return(false);
 	}
 
+	// A vehicle held by a locomotor warhead cannot be selected (FootClass::CanBeSelected, 0x4DFA50).
+	if (IsAttackedByLocomotor) {
+		return(false);
+	}
+
 	if (BASECLASS::Select()) {
 
 		/*
