@@ -432,6 +432,17 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		Stages = ini.Get_Int(Name(), "End", Stages);
 		LoopStart = ini.Get_Int(Name(), "LoopStart", LoopStart);
 		LoopEnd = ini.Get_Int(Name(), "LoopEnd", LoopEnd);
+
+		// The image was counted before Shadow was known; its second half holds the shadows.
+		if (IsShadow && ImageData != NULL && !ini.Is_Present(Name(), "End")) {
+			int const count = ((ShapeSet const *)ImageData)->Get_Count();
+			if (Stages == count) {
+				Stages = count / 2;
+			}
+			if (LoopEnd == count && !ini.Is_Present(Name(), "LoopEnd")) {
+				LoopEnd = Stages;
+			}
+		}
 		Loops = ini.Get_Int(Name(), "LoopCount", Loops);
 		ChainTo = TGet_Class(ini, Name(), "Next", ChainTo);
 

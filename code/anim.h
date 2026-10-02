@@ -76,6 +76,7 @@ class AnimClass : public ObjectClass, public StageClass
 		static void Post_Load_Game(void);
 
 		void Attach_To(ObjectClass *obj);
+		void Play_Backward(void);
 		void Make_Invisible(void) {IsInvisible = true;};
 		void Make_Visible(void) {IsInvisible = false;};
 		static void Do_Atom_Damage(HousesType ownerhouse, Cell const & cell);
@@ -173,6 +174,9 @@ class AnimClass : public ObjectClass, public StageClass
 		 * true. The building hides it when fogged, so the tactical map leaves it alone.
 		 */
 		bool IsBuildingAnim;
+
+		// The animation plays its frames from last to first, as a Reverse=yes type does or as Play_Backward asks.
+		bool IsReversed;
 
 		/*
 		 * This is the physics state of an animation that travels under its own momentum -- a

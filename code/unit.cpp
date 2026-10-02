@@ -7007,7 +7007,7 @@ int UnitClass::Sort_Y(void) const
 /// <summary>
 /// Deploys or packs up a simple deployer where it stands (the unload mission of an
 /// IsSimpleDeployer unit): a DeployToLand unit in the air lands first, the DeployingAnim plays
-/// in the unit's place when it deploys, and the unit then returns to guard.
+/// in the unit's place, backward when it packs up, and the unit then returns to guard.
 /// </summary>
 int UnitClass::Simple_Deploy_AI(void)
 {
@@ -7023,8 +7023,14 @@ int UnitClass::Simple_Deploy_AI(void)
 				}
 				return(5);
 			}
-			if (!IsSimpleDeployed && Class->DeployingAnim != NULL) {
-				new AnimClass(Class->DeployingAnim, Center_Coord());
+			if (Class->DeployingAnim != NULL) {
+				AnimClass * anim = new AnimClass(Class->DeployingAnim, Center_Coord());
+				// The animation is drawn from unit artwork, so it takes the owner's unit colors.
+				anim->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+				anim->AlternativeBrightness = Map[Get_Cell()].Brightness;
+				if (IsSimpleDeployed) {
+					anim->Play_Backward();
+				}
 				SimpleDeployFrame = Frame + std::max(Class->DeployingAnim->Stages, 1) * std::max(Class->DeployingAnim->Delay, 1);
 			}
 			Status = 1;

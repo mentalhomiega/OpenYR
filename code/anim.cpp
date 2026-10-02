@@ -137,6 +137,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	FlamingGuyCoords(COORD_NONE),
 	FlamingGuyRetries(0),
 	IsBuildingAnim(false),
+	IsReversed(false),
 	Bounce(),
 	Loops(1),
 	IsBouncing(false),
@@ -162,7 +163,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	YSortAdjust = Class->YSortAdjust;
 
 	if (Class->Stages == -1) {
-		Class->Stages = ((ShapeSet *)Class->Get_Image_Data())->Get_Count();
+		Class->Stages = ((ShapeSet *)Class->Get_Image_Data())->Get_Count() / (Class->IsShadow ? 2 : 1);
 	}
 	if (Class->LoopEnd == -1) {
 		Class->LoopEnd = Class->Stages;
@@ -188,6 +189,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	}
 
 	if (Class->IsReverse) {
+		IsReversed = true;
 		Set_Stage(Class->LoopEnd);
 		Set_Step(-Fetch_Step());
 	}
@@ -272,6 +274,7 @@ AnimClass::AnimClass(void) :
 	ZAdjust(0),
 	YSortAdjust(0),
 	IsBuildingAnim(false),
+	IsReversed(false),
 	IsBouncing(false),
 	IsAttachedToCell(false),
 	IsToDeleteOnOverpass(false)
@@ -931,7 +934,7 @@ void AnimClass::AI(void)
 			**	Check to see if the last frame has been displayed. If so, then the
 			**	animation either ends or loops.
 			*/
-			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (Class->IsReverse && stage <= Class->Start)) {
+			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (IsReversed && stage <= Class->Start)) {
 
 				/*
 				**	Determine if this animation should loop another time. If so, then start the loop
@@ -939,7 +942,7 @@ void AnimClass::AI(void)
 				*/
 				if (Loops && Loops != UCHAR_MAX) Loops--;
 				if (Loops) {
-					if (Class->IsReverse) {
+					if (IsReversed) {
 						Set_Stage(Class->LoopEnd);
 					} else {
 						Set_Stage(Class->LoopStart-Class->Start);
@@ -1354,6 +1357,7 @@ void AnimClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FlamingGuyCoords);
 	stream.Serialize(FlamingGuyRetries);
 	stream.Serialize(IsBuildingAnim);
+	stream.Serialize(IsReversed);
 	stream.Serialize(Bounce);
 	stream.Serialize(TranslucencyLevel);
 	stream.Serialize(Delay);
@@ -1808,4 +1812,19 @@ bool AnimClass::Make_Infantry(void)
 		infantry->Assign_Mission(MISSION_HUNT);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Plays this animation from its last frame back to its first, as gamemd's AnimClass constructor
+/// does when asked to reverse (0x421EA0). Call it right after creating the animation.
+/// </summary>
+void AnimClass::Play_Backward(void)
+{
+	if (IsReversed) {
+		return;
+	}
+	IsReversed = true;
+	Set_Stage(std::max(Class->Stages - 1, 0));
+	Set_Step(-std::abs(Fetch_Step()));
 }
