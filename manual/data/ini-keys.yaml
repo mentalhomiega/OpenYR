@@ -5950,6 +5950,23 @@ Category:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CausesDelayKill:
+  key: CausesDelayKill
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsCausesDelayKill
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Cell:
   key: Cell
   scopes:
@@ -9102,6 +9119,40 @@ Delay:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+DelayKillAtMax:
+  key: DelayKillAtMax
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: WarheadTypeClass
+      member: DelayKillAtMax
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+DelayKillFrames:
+  key: DelayKillFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: DelayKillFrames
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 DelayedFireDelay:
   key: DelayedFireDelay
   scopes:
@@ -10835,6 +10886,23 @@ ElectricAssault:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+EligibleForDelayKill:
+  key: EligibleForDelayKill
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsEligibleForDelayKill
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 EliteAbilities:
   key: EliteAbilities
   scopes:

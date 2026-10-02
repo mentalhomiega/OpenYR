@@ -332,6 +332,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsGapGenerator(false),
 	IsBunker(false),
 	PsychicDetectionRadius(0),
+	IsEligibleForDelayKill(false),
 	DelayedFireDelay(0),
 	IsOverpowerable(false),
 	IsClickRepairable(true),
@@ -1332,6 +1333,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 		IsBunker = ini.Get_Bool(Name(), "Bunker", IsBunker);
 		PsychicDetectionRadius = ini.Get_Int(Name(), "PsychicDetectionRadius", PsychicDetectionRadius);
+		IsEligibleForDelayKill = ini.Get_Bool(Name(), "EligibleForDelayKill", IsEligibleForDelayKill);
 		IsOverpowerable = ini.Get_Bool(Name(), "Overpowerable", IsOverpowerable);
 		IsClickRepairable = ini.Get_Bool(Name(), "ClickRepairable", IsClickRepairable);
 		IsCrateBeneath = ini.Get_Bool(Name(), "CrateBeneath", IsCrateBeneath);
@@ -2331,6 +2333,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGapGenerator);
 	stream.Serialize(IsBunker);
 	stream.Serialize(PsychicDetectionRadius);
+	stream.Serialize(IsEligibleForDelayKill);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsClickRepairable);

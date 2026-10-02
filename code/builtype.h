@@ -663,6 +663,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A structure with a PsychicDetectionRadius shows its owner which targets enemies within this many cells have.
 		int PsychicDetectionRadius;
 
+		// An EligibleForDelayKill structure hit by a CausesDelayKill warhead is destroyed after a delay.
+		bool IsEligibleForDelayKill;
+
 		// The frames a prism tower charges before it fires or sends its support beam.
 		int DelayedFireDelay;
 

@@ -221,6 +221,12 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A parasite whose weapon has a Paralyzes warhead holds its victim still for this many frames after each bite.
 		int Paralyzes;
 
+		// A CausesDelayKill warhead leaves an EligibleForDelayKill structure at 1 strength and destroys it
+		// DelayKillFrames later at the blast's center, up to DelayKillAtMax times that at the CellSpread edge.
+		bool IsCausesDelayKill;
+		int DelayKillFrames;
+		float DelayKillAtMax;
+
 		// A disguise warhead makes its firer look like the soldier it hits.
 		bool IsMakesDisguise;
 

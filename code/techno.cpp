@@ -5773,6 +5773,24 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// A CausesDelayKill warhead sets a fuse on an EligibleForDelayKill structure, later the farther it is from the blast (TechnoClass::ReceiveDamage, 0x701E92).
+	if (warhead != NULL && warhead->IsCausesDelayKill && !negative && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsEligibleForDelayKill) {
+		BuildingClass * building = (BuildingClass *)this;
+		float const frames = (float)warhead->DelayKillFrames;
+		int const spread = (int)warhead->CellSpread * CELL_LEPTON_W;
+		int fuse = warhead->DelayKillFrames;
+		if (spread > 0) {
+			fuse = (int)((frames * warhead->DelayKillAtMax - frames) / spread * distance + frames);
+		}
+		if (!building->IsGoingToBlow || fuse < building->CountDown) {
+			building->IsGoingToBlow = true;
+			building->CountDown = fuse;
+		}
+		Strength = 1;
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
 	/*
 	 * A Psychedelic warhead does no damage. It drives a vehicle, soldier or aircraft that is not
 	 * an ally of the attacker, nor ImmuneToPsionics, berzerk for as many frames as the damage
