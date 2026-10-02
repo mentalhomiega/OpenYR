@@ -7516,7 +7516,7 @@ bool MapClass::Break_Ice(CellClass * cellptr, FootClass * object)
 					if (foot != NULL) {
 						MZoneType mzone = foot->TClass->MZone;
 						if (foot->RTTI != RTTI_AIRCRAFT && foot->RTTI != RTTI_INFANTRY) {
-							if (mzone != MZONE_AMPHIBIOUS_DESTROYER && mzone != MZONE_AMPHIBIOUS_CRUSHER && mzone != MZONE_AMPHIBIOUS) {
+							if (mzone != MZONE_AMPHIBIOUS_DESTROYER && mzone != MZONE_AMPHIBIOUS_CRUSHER && mzone != MZONE_AMPHIBIOUS && mzone != MZONE_WATER && mzone != MZONE_WATER_BEACH) {
 								foot->IsSinking = true;
 								foot->Stun();
 								new AnimClass(Rule->Wake, foot->PositionCoord);

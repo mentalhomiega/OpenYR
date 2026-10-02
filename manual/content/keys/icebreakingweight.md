@@ -27,7 +27,7 @@ Breaking affects a two-by-two block of cells: the cell the vehicle is in and thr
 
 Objects on the block are affected by type:
 
-- Vehicles start sinking and are stunned, unless their [movement zone](/reference/enums/movement-zone/) is `Amphibious`, `AmphibiousCrusher` or `AmphibiousDestroyer`.
+- Vehicles start sinking and are stunned, unless their [movement zone](/reference/enums/movement-zone/) is `Amphibious`, `AmphibiousCrusher`, `AmphibiousDestroyer`, `Water` or `WaterBeach`.
 - Infantry and aircraft are removed. Each one fires the destroyed events of any trigger attached to it.
 
 Every object that sinks or is removed leaves a [`Wake`](/keys/wake/) animation.
