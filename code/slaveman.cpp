@@ -158,7 +158,9 @@ void SlaveManagerClass::Unload(NodeType & node)
 		Owner->House->Purified(amount, (TiberiumType)slot);
 		total += amount;
 	}
-	DebugString("Slave: %s unloads %d ore at %s\n", slave->Class->Name(), total, Owner->TClass->Name());
+	if (total > 0) {
+		DebugString("Slave: %s unloads %d ore at %s\n", slave->Class->Name(), total, Owner->TClass->Name());
+	}
 }
 
 

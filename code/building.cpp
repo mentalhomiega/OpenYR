@@ -5330,9 +5330,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				**	Construction yards that deconstruct, really just revert back
 				**	to an MCV.
 				*/
+				// A deployed slave miner moving on to new ore packs up for any owner.
 				if (Class->UndeploysInto != NULL &&
 					(Class->Is_Mobile_Deployer() ||
 					Class->Can_Always_Undeploy() ||
+					(SlaveManager && ArchiveTarget != NULL) ||
 					(Session.Type != GAME_NORMAL && ArchiveTarget != NULL && House->Is_Human_Player() && (Session.Type == GAME_NORMAL || Session.Options.MCVRedeploy)))
 				) {
 
