@@ -21444,6 +21444,37 @@ NoMovingFire:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+NoSpawnAlt:
+  key: NoSpawnAlt
+  scopes:
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: ObjectTypeClass
+      member: IsNoSpawnAlt
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: ObjectTypeClass
+      member: IsNoSpawnAlt
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
 NoThreat:
   key: NoThreat
   scopes:
@@ -22011,6 +22042,23 @@ NumPlayers:
       source: code/netshare.cpp
       guard: null
     level: RandomMap
+OccupantAnim:
+  key: OccupantAnim
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WeaponTypeClass
+      member: OccupantAnim
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Occupier:
   key: Occupier
   scopes:

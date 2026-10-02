@@ -3,6 +3,7 @@ title: Garrisons
 summary: "How soldiers move into a structure, fire from inside it, change its owner, and come back out."
 category: buildings-economy
 keys:
+  - OccupantAnim
   - CanBeOccupied
   - MaxNumberOccupants
   - CanOccupyFire
@@ -66,7 +67,7 @@ Three `[CombatDamage]` settings change a garrison's fire:
 - The delay between shots is the weapon's delay divided by the number of occupants, then divided by [`OccupyROFMultiplier`](/keys/occupyrofmultiplier/). More occupants fire faster.
 - [`OccupyWeaponRange`](/keys/occupyweaponrange/) sets how far the structure searches for targets.
 
-Shots leave from the art entry's [`MuzzleFlash0`](/keys/muzzleflash0/) through `MuzzleFlash9`, one point per occupant.
+Shots leave from the art entry's [`MuzzleFlash0`](/keys/muzzleflash0/) through `MuzzleFlash9`, one point per occupant. The weapon's [`OccupantAnim`](/keys/occupantanim/#scope-weapontype) plays at that point for each shot.
 
 ## Pips
 

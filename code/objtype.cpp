@@ -76,6 +76,7 @@ ObjectTypeClass::ObjectTypeClass(char const * ininame) :
 	AlphaGraphicName(),
 	IsTheater(false),
 	IsCrushable(false),
+	IsNoSpawnAlt(false),
 	IsBombable(true),
 	IsStealthy(false),
 	IsSelectable(true),
@@ -560,6 +561,11 @@ void ObjectTypeClass::Fetch_Voxel_Image(void)
 		}
 	}
 
+	if (!failed && IsNoSpawnAlt) {
+		sprintf(buffer, "%sWO", (const char *)GraphicName);
+		Fetch_Voxel_Pair(buffer, NoSpawnAltVoxel);
+	}
+
 	if (!failed) {
 		int largest = Voxel.VoxLib->Get_Layer_Info(0, 0).XSize;
 		for (int i = 0; i < (int)Voxel.VoxLib->Get_Layer_Count(); i++) {
@@ -697,6 +703,7 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 		CrushSound = ini.Get_VocType(IniName, "CrushSound", CrushSound);
 
 		IsCrushable = ini.Get_Bool(IniName, "Crushable", IsCrushable);
+		IsNoSpawnAlt = ini.Get_Bool(IniName, "NoSpawnAlt", IsNoSpawnAlt);
 		IsBombable = ini.Get_Bool(IniName, "Bombable", IsBombable);
 		IsStealthy = ini.Get_Bool(IniName, "RadarInvisible", IsStealthy);
 		IsSelectable = ini.Get_Bool(IniName, "Selectable", IsSelectable);
@@ -793,6 +800,7 @@ void ObjectTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AlphaGraphicName);
 	stream.Serialize(IsTheater);
 	stream.Serialize(IsCrushable);
+	stream.Serialize(IsNoSpawnAlt);
 	stream.Serialize(IsBombable);
 	stream.Serialize(IsStealthy);
 	stream.Serialize(IsSelectable);
@@ -841,6 +849,12 @@ void ObjectTypeClass::Post_Load(void)
 
 	delete AuxVoxel2.MotLib;
 	AuxVoxel2.MotLib = NULL;
+
+	delete NoSpawnAltVoxel.VoxLib;
+	NoSpawnAltVoxel.VoxLib = NULL;
+
+	delete NoSpawnAltVoxel.MotLib;
+	NoSpawnAltVoxel.MotLib = NULL;
 
 	if (!AlphaGraphicName.empty()) {
 		char filename[_MAX_FNAME + _MAX_EXT];

@@ -293,6 +293,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		bool IsFireOnce;
 		AnimTypeClass const * OpenToppedAnim;
 
+		// Played at the muzzle of a garrisoned structure each time an occupant fires this weapon.
+		AnimTypeClass const * OccupantAnim;
+
 		/*
 		**	If this weapon requires charging before it can fire, then this
 		**	flag is true. In actuality, this only applies to the Tesla coil

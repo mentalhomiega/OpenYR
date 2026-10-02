@@ -4696,11 +4696,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
 				BurstIndex %= weapon->Burst;
 
-				// The occupants of a garrison take turns to fire.
-				if (garrison != NULL && garrison->Can_Occupy_Fire()) {
-					garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
-				}
-
 				/*
 				**	Perform any animation effect for this weapon.
 				*/
@@ -4710,6 +4705,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 				if (a == NULL && IsInOpenToppedTransport) {
 					a = weapon->OpenToppedAnim;
+				}
+				bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
+				if (garrison_fire && weapon->OccupantAnim != NULL) {
+					a = weapon->OccupantAnim;
 				}
 
 				/*
@@ -4733,6 +4732,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					if (anim != NULL && RTTI != RTTI_BUILDING) {
 						anim->Attach_To(this);
 					}
+				}
+
+				// The occupants of a garrison take turns to fire.
+				if (garrison_fire) {
+					garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
 				}
 
 				if (weapon->IsSonic) {

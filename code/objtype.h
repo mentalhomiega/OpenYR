@@ -67,6 +67,9 @@ class ObjectTypeClass : public AbstractTypeClass
 		VoxelDataStruct AuxVoxel;
 		VoxelDataStruct AuxVoxel2;
 
+		// A NoSpawnAlt=yes spawner draws its body from <image>WO while none of its spawns is docked.
+		VoxelDataStruct NoSpawnAltVoxel;
+
 		/*
 		 * This is the largest dimension of this object type's artwork in pixels -- the widest
 		 * voxel layer, or the shape's width or height -- and never less than eight. It stands
@@ -99,6 +102,8 @@ class ObjectTypeClass : public AbstractTypeClass
 		**	can travel over this object and destroy it in the process.
 		*/
 		bool IsCrushable;
+
+		bool IsNoSpawnAlt;
 
 		// Can the player order an Ivan to bomb this object?
 		bool IsBombable;
@@ -187,6 +192,7 @@ class ObjectTypeClass : public AbstractTypeClass
 		VoxelIndexClass AuxVoxelIndex;
 		VoxelIndexClass ShadowVoxelIndex;
 		VoxelIndexClass AuxVoxel2Index;
+		VoxelIndexClass NoSpawnAltVoxelIndex;
 
 		//--------------------------------------------------------------------
 		ObjectTypeClass(char const * ininame = NULL);
@@ -233,6 +239,7 @@ class ObjectTypeClass : public AbstractTypeClass
 			AuxVoxelIndex.Clear();
 			ShadowVoxelIndex.Clear();
 			AuxVoxel2Index.Clear();
+			NoSpawnAltVoxelIndex.Clear();
 		}
 
 		static void const * PipBorderShapes;
