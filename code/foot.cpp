@@ -170,6 +170,8 @@ FootClass::FootClass(HouseClass * house) :
 	IsNewNavCom(false),
 	IsPlanningToLook(false),
 	IsDeploying(false),
+	SensorCell(CELL_NONE),
+	SensorHouse(NULL),
 	IsFiring(false),
 	IsRotating(false),
 	IsUnloading(false),
@@ -431,6 +433,9 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 		MZONE_INFANTRY,
 		MZONE_INFANTRY,
 		MZONE_FLYER,
+		MZONE_WATER,
+		MZONE_WATER,
+		MZONE_NORMAL,
 	};
 
 	PathStruct		* path;			// Pointer to path control structure.
@@ -3404,6 +3409,8 @@ void FootClass::AI(void)
 {
 	BASECLASS::AI();
 
+	Update_Sensors(false);
+
 	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
 		ParasiteEatingMe->ParasiteImUsing->Update();
 	}
@@ -3610,6 +3617,8 @@ void FootClass::Draw_It(Point2D const &, Rect const &) const
  *=============================================================================================*/
 bool FootClass::Limbo(void)
 {
+	Update_Sensors(true);
+
 	if (!IsInLimbo) {
 		Cell cell = LastAdjacencyCell;
 		for (FacingType face = FACING_FIRST; face < FACING_COUNT; face++) {
@@ -3677,6 +3686,8 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNewNavCom);
 	stream.Serialize(IsPlanningToLook);
 	stream.Serialize(IsDeploying);
+	stream.Serialize(SensorCell);
+	stream.Serialize(SensorHouse);
 	stream.Serialize(IsFiring);
 	stream.Serialize(IsRotating);
 	stream.Serialize(IsUnloading);
@@ -4938,4 +4949,46 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 		return;
 	}
 	TechnoClass::Iron_Curtain(duration, source, force_shield);
+}
+
+
+void Cloak_Cell_Occupiers(CellClass * cellptr);
+
+
+/// <summary>
+/// Moves a Sensors=yes object's coverage with it (FootClass::AddSensorsAt, 0x4DE7B0, and
+/// RemoveSensorsAt): its owner senses every cell within SensorsSight cells of where it stands,
+/// which reveals the cloaked objects there. With lift, or once the object is in limbo, the
+/// coverage is taken away.
+/// </summary>
+void FootClass::Update_Sensors(bool lift)
+{
+	int const radius = TClass->IsScanner ? TClass->SensorsSight : 0;
+	Cell const now = (lift || IsInLimbo || radius <= 0) ? CELL_NONE : Get_Cell();
+	if (now == SensorCell && (now == CELL_NONE || House == SensorHouse)) {
+		return;
+	}
+
+	for (int pass = 0; pass < 2; pass++) {
+		Cell const origin = pass == 0 ? SensorCell : now;
+		HouseClass * house = pass == 0 ? SensorHouse : House;
+		if (origin == CELL_NONE || house == NULL) {
+			continue;
+		}
+		for (int y = -radius; y <= radius; y++) {
+			for (int x = -radius; x <= radius; x++) {
+				Cell const cell(origin.X + x, origin.Y + y);
+				if (x * x + y * y > radius * radius || !Map.In_Radar(cell)) {
+					continue;
+				}
+				CellClass * cellptr = &Map[cell];
+				bool const changed = pass == 0 ? cellptr->Remove_Sensor(house) : cellptr->Add_Sensor(house);
+				if (changed) {
+					Cloak_Cell_Occupiers(cellptr);
+				}
+			}
+		}
+	}
+	SensorCell = now;
+	SensorHouse = now == CELL_NONE ? NULL : House;
 }

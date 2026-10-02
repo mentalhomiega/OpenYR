@@ -27668,6 +27668,23 @@ Sensors:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SensorsSight:
+  key: SensorsSight
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SensorsSight
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SeparateAircraft:
   key: SeparateAircraft
   scopes:

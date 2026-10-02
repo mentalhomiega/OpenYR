@@ -422,6 +422,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A CanApproachTarget=no object does not move toward a target out of its weapons' reach.
 		bool IsCanApproachTarget;
 
+		// A mobile Sensors=yes object reveals its owner the cloaked objects within this many cells.
+		int SensorsSight;
+
 		// A PoweredUnit object shuts down while its owner has no working structure whose PowersUnit names its type.
 		bool IsPoweredUnit;
 		UnitTypeClass * PowersUnit;

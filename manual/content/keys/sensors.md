@@ -16,7 +16,7 @@ Only one object is tested in each cell, the one nearest the cell's corner, so a 
 
 Both cases apply only when the detector's owner does not consider the hidden object's house allied. The hidden object's owner may consider the detector allied, and detection still happens.
 
-A detector only ends cloaks. It marks nothing as sensed, so its house cannot see or target anything that is still hidden elsewhere. A [`SensorArray=yes`](/keys/sensorarray/) structure does that instead; [Detection](/systems/cloaking/#detection) compares the two.
+On its own, a detector only ends cloaks. It marks nothing as sensed, so its house cannot see or target anything that is still hidden elsewhere. A [`SensorArray=yes`](/keys/sensorarray/) structure does that, and so does a mobile detector with [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype); [Detection](/systems/cloaking/#detection) compares them.
 
 The `SENSORS` [veteran ability](/systems/veterancy/#abilities) works like this flag in the first case only. A promoted detector uncloaks a vehicle, infantryman or aircraft that moves past it, but has no effect on a cloaked structure.
 

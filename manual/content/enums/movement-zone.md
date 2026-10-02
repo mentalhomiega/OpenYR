@@ -19,9 +19,12 @@ values:
   - { constant: MZONE_INFANTRY, value: 7, input: "Infantry", meaning: "Open land and cells a terrain object partly fills." }
   - { constant: MZONE_INFANTRY_DESTROYER, value: 8, input: "InfantryDestroyer", meaning: "Infantry cells, plus cells with a crushable overlay, wall cells and cells a terrain object fills completely." }
   - { constant: MZONE_FLYER, value: 9, input: "Fly", meaning: "Every cell in the playable area." }
+  - { constant: MZONE_WATER, value: 10, input: "Water", meaning: "Water only." }
+  - { constant: MZONE_WATER_BEACH, value: 11, input: "WaterBeach", meaning: "The same cells as Water." }
+  - { constant: MZONE_CRUSHER_ALL, value: 12, input: "CrusherAll", meaning: "The same cells as Crusher." }
 ---
 
-A movement zone class decides which cells count as crossable when the engine divides the map into [movement zones](/glossary/#movement-zone) and plans routes. [`MovementZone`](/keys/movementzone/) sets a type's class. The ten classes are fixed by the engine.
+A movement zone class decides which cells count as crossable when the engine divides the map into [movement zones](/glossary/#movement-zone) and plans routes. [`MovementZone`](/keys/movementzone/) sets a type's class. The thirteen classes are fixed by the engine.
 
 Each class accepts some of the cell ratings that [the zone map](/systems/movement-and-terrain/#the-zone-map) describes and refuses the rest. The table above names the cells each class accepts. Open land is the rating for a cell that no other rating covers. [`TemperateOccupationBits`](/keys/temperateoccupationbits/) covers how much of a cell a terrain object fills.
 

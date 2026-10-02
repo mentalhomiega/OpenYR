@@ -162,7 +162,7 @@ Every field is drawn on a square grid centered on its generator, and cells outsi
 
 [`Sensors=yes`](/keys/sensors/) makes an object force nearby hidden objects out of their cloak. It uses the two tests listed under [losing a cloak](#losing-a-cloak): the one for vehicles, infantry and aircraft and the one for structures. Both apply only when the detector's owner does not consider the hidden object's house allied. The hidden object's owner may consider the detector allied, and detection still happens.
 
-Neither test marks a cell as sensed. A detector lets its house see or target nothing that is still hidden; it only ends cloaks in the cells around it. Every InfantryType sets the flag unless its section sets `Sensors=no`.
+Neither test marks a cell as sensed. Unless it has [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype), a detector lets its house see or target nothing that is still hidden; it only ends cloaks in the cells around it. Every InfantryType sets the flag unless its section sets `Sensors=no`.
 
 ### Sensor arrays
 
@@ -173,6 +173,10 @@ The array marks its cells when it first opens, in a single frame, and only if it
 Coverage is lifted when the array is taken off the map. Capturing an array moves its coverage: the old owner stops sensing the array's cells, and the new owner senses them at once if the array is operational. A power shortfall never lifts coverage.
 
 Arrays of one house may overlap. A cell stays sensed while any of the house's arrays covers it, so taking one array away leaves the cells the others cover in place.
+
+### Mobile sensors
+
+A vehicle, infantryman or aircraft with `Sensors=yes` and a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, for its owner, every cell within that many cells of the cell it stands on. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers and dolphins use this to find submarines.
 
 ### What sensing changes
 

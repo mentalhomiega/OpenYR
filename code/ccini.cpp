@@ -912,7 +912,10 @@ const char * _mzones[MZONE_COUNT] = {
 	"Subterannean",
 	"Infantry",
 	"InfantryDestroyer",
-	"Fly"
+	"Fly",
+	"Water",
+	"WaterBeach",
+	"CrusherAll"
 };
 
 

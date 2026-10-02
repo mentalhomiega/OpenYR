@@ -297,6 +297,11 @@ class FootClass : public TechnoClass
 		*/
 		bool IsDeploying;
 
+		// The cell and house a Sensors=yes object's SensorsSight coverage was last laid down for.
+		Cell SensorCell;
+		HouseClass * SensorHouse;
+		void Update_Sensors(bool lift);
+
 		/*
 		**	This flag tells the system that the unit is doing a firing animation. This is
 		**	critical to the firing logic.
