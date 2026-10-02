@@ -495,6 +495,13 @@ void FlyLocomotionClass::Movement_AI(void)
 	Coord coord;
 
 	if ((!Is_Powered() || LinkedTo->Strength == 0) && LinkedTo->HeightAGL != 0) {
+		// A destroyed aircraft plays its crashing sounds as it starts to fall (FootClass::Update, 0x4D9920).
+		if (LinkedTo->Strength == 0 && Riser == 0) {
+			Sound_Effect(LinkedTo->TClass->CrashingSound, LinkedTo->Center_Coord());
+			if (LinkedTo->House->Is_Player_Control()) {
+				Sound_Effect(LinkedTo->TClass->VoiceCrashing, LinkedTo->Center_Coord());
+			}
+		}
 		if (LinkedTo->Strength == 0) {
 			Riser += 1;
 		} else {

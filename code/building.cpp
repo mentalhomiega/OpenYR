@@ -2180,6 +2180,11 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			House->Update_Factories(Class->ToBuild);
 		}
 
+		// Another house's RevealToAll structure shows the player its surroundings (BuildingClass::Place, 0x445F80).
+		if (Class->IsRevealToAll && !House->Is_Player_Control() && PlayerPtr != NULL) {
+			Map.Sight_From(Center_Coord(), Class->SightRange, PlayerPtr);
+		}
+
 		return(true);
 	}
 	return(false);

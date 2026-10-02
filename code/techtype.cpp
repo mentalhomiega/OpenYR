@@ -216,6 +216,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDrainable(false),
 	IsPoweredUnit(false),
 	PowersUnit(NULL),
+	CrashingSound(VOC_NONE),
+	VoiceCrashing(VOC_NONE),
+	IsRevealToAll(false),
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
@@ -717,6 +720,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
+		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
+		VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
+		IsRevealToAll = ini.Get_Bool(Name(), "RevealToAll", IsRevealToAll);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1254,6 +1260,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDrainable);
 	stream.Serialize(IsPoweredUnit);
 	stream.Serialize(PowersUnit);
+	stream.Serialize(CrashingSound);
+	stream.Serialize(VoiceCrashing);
+	stream.Serialize(IsRevealToAll);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);

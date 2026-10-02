@@ -413,6 +413,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsPoweredUnit;
 		UnitTypeClass * PowersUnit;
 
+		// Played as the object starts to crash, the voice only for the player's own.
+		VocType CrashingSound;
+		VocType VoiceCrashing;
+
+		// The structure's surroundings are revealed to every player when it is placed.
+		bool IsRevealToAll;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.

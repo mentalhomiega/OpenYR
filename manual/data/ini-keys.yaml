@@ -7104,6 +7104,23 @@ CowTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+CrashingSound:
+  key: CrashingSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: CrashingSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Crate:
   key: Crate
   scopes:
@@ -25972,6 +25989,23 @@ RevealOnFire:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+RevealToAll:
+  key: RevealToAll
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsRevealToAll
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RevealTriggerRadius:
   key: RevealTriggerRadius
   scopes:
@@ -35460,6 +35494,23 @@ VoiceComment:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+VoiceCrashing:
+  key: VoiceCrashing
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceCrashing
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceDie:
   key: VoiceDie
   scopes:
