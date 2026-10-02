@@ -504,11 +504,11 @@ void BulletClass::AI(void)
 		Coord old_coord = coord;
 
 		/*
-		 * A projectile chasing an aircraft flies straight at its quarry rather
+		 * A projectile chasing an aircraft or anything else in the air flies straight at its quarry rather
 		 * than hugging the terrain on the way, since there is no ground between
 		 * the two of them that needs clearing.
 		 */
-		if (TarCom != NULL && TarCom->RTTI == RTTI_AIRCRAFT) {
+		if (TarCom != NULL && (TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air()))) {
 			is_aircraft = true;
 		}
 
@@ -1230,7 +1230,7 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 	**	Bullets are generally more effective when they are fired at aircraft.
 	*/
 	if (Class->IsAntiAircraft && TarCom != NULL &&
-		(TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->RTTI == RTTI_INFANTRY && ((InfantryClass *)TarCom)->Is_JumpJet()) && ((InfantryClass *)TarCom)->HeightAGL > 0) &&
+		(TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air())) &&
 		Distance(TarCom) < CELL_LEPTON / 2) {
 
 		return(true);

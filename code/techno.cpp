@@ -281,6 +281,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	SpawnOwner(NULL),
 	SlaveOwner(NULL),
 	BunkerLinkedItem(NULL),
+	IsCollectingThreats(false),
 	LocomotorTarget(NULL),
 	LocomotorSource(NULL),
 	IsAttackedByLocomotor(false),
@@ -2544,6 +2545,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (value) {
 		value = std::max(1, value);
+		if (IsCollectingThreats) {
+			TechnoClass * candidate = const_cast<TechnoClass *>(object);
+			if (std::none_of(ThreatCandidates.begin(), ThreatCandidates.end(), [candidate](std::pair<TechnoClass *, int> const & entry) { return(entry.first == candidate); })) {
+				ThreatCandidates.emplace_back(candidate, value);
+			}
+		}
 		BEnd(BENCH_EVAL_OBJECT);
 		return(true);
 	}
@@ -2770,6 +2777,19 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
  *=============================================================================================*/
 AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & coord, bool onlyenemy) const
 {
+	// A DistributedFire object keeps every target the scan accepts (TechnoClass::GreatestThreat, 0x6F8F80).
+	IsCollectingThreats = TClass->IsDistributedFire;
+	if (IsCollectingThreats) {
+		ThreatCandidates.clear();
+	}
+	AbstractClass * result = Greatest_Threat_Scan(method, coord, onlyenemy);
+	IsCollectingThreats = false;
+	return(result);
+}
+
+
+AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const & coord, bool onlyenemy) const
+{
 	BStart(BENCH_GREATEST_THREAT);
 
 	ObjectClass const * bestobject = NULL;
@@ -2870,14 +2890,15 @@ AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & co
 		**	Scanning by cell is not possible for aircraft since they are not recorded
 		**	at the cell level.
 		*/
+		// Jumpjet infantry and vehicles in the air are air targets too.
 		if (method & THREAT_AIR) {
-			int _mask = mask|(1 << RTTI_INFANTRY);
+			int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
 			int value;
 			int index;
 			for (index = 0; index < Map.Layer[LAYER_TOP].Count(); index++) {
 				TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_TOP][index];
 
-				if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet)) {
+				if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet) || (object->RTTI == RTTI_UNIT && object->In_Air())) {
 					value = 0;
 					if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->IsDown &&
 						object->In_Which_Layer() != LAYER_GROUND && (!onlyenemy || object->House->HeapID == House->Enemy) &&
@@ -2894,7 +2915,7 @@ AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & co
 			for (index = 0; index < Map.Layer[LAYER_AIR].Count(); index++) {
 				TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_AIR][index];
 
-				if (object->RTTI == RTTI_INFANTRY) {
+				if (object->RTTI == RTTI_INFANTRY || (object->RTTI == RTTI_UNIT && object->In_Air())) {
 					value = 0;
 					if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
 						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->IsDown &&
@@ -4734,6 +4755,16 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					if (anim != NULL && RTTI != RTTI_BUILDING) {
 						anim->Attach_To(this);
 					}
+				}
+
+				// A DistributedFire object moves on to another target after each shot, unless it was
+				// ordered to attack this one (TechnoClass::Fire_At, 0x6FF87C).
+				if (TClass->IsDistributedFire && (Get_Mission() != MISSION_ATTACK || RTTI == RTTI_BUILDING) && target->Is_Techno()) {
+					TechnoClass * shot = (TechnoClass *)target;
+					if (std::find(AttackedTargets.begin(), AttackedTargets.end(), shot) == AttackedTargets.end()) {
+						AttackedTargets.push_back(shot);
+					}
+					Assign_Target(NULL);
 				}
 
 				// The occupants of a garrison take turns to fire.
@@ -7417,6 +7448,8 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (SlaveOwner == target) {
 			SlaveOwner = NULL;
 		}
+		std::erase_if(ThreatCandidates, [target](std::pair<TechnoClass *, int> const & entry) { return(entry.first == target); });
+		std::erase(AttackedTargets, (TechnoClass *)target);
 		if (BunkerLinkedItem == target) {
 			BunkerLinkedItem = NULL;
 			if (RTTI == RTTI_BUILDING) {
@@ -8485,7 +8518,8 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 	**	the target for this unit.
 	*/
 	if (TarCom == NULL) {
-		Assign_Target(Greatest_Threat(threat, coord, false));
+		AbstractClass * best = Greatest_Threat(threat, coord, false);
+		Assign_Target(TClass->IsDistributedFire ? Distributed_Target() : best);
 	}
 
 	/*
@@ -9321,6 +9355,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SlaveManager);
 	stream.Serialize(SlaveOwner);
 	stream.Serialize(BunkerLinkedItem);
+	stream.Serialize(ThreatCandidates);
+	stream.Serialize(AttackedTargets);
 	stream.Serialize(DiskLaser);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);
@@ -10555,4 +10591,38 @@ void TechnoClass::Transfer_Slaves(TechnoClass * to)
 	to->SlaveManager = std::move(SlaveManager);
 	SlaveManager.reset();
 	to->SlaveManager->Set_Owner(to);
+}
+
+
+/// <summary>
+/// Picks a DistributedFire object's next target from its last threat scan
+/// (TechnoClass::DistributedFire, 0x709550): the most threatening target it has not fired at
+/// since it last went through them all, or, once it has fired at every one, the most
+/// threatening of all. Returns NULL when the scan found nothing.
+/// </summary>
+AbstractClass * TechnoClass::Distributed_Target(void)
+{
+	if (ThreatCandidates.empty()) {
+		AttackedTargets.clear();
+		return(NULL);
+	}
+	std::erase_if(AttackedTargets, [this](TechnoClass * shot) {
+		return(std::none_of(ThreatCandidates.begin(), ThreatCandidates.end(), [shot](std::pair<TechnoClass *, int> const & entry) { return(entry.first == shot); }));
+	});
+
+	for (int pass = 0; pass < 2; pass++) {
+		TechnoClass * best = NULL;
+		int bestvalue = -1;
+		for (auto const & entry : ThreatCandidates) {
+			if (entry.second > bestvalue && std::find(AttackedTargets.begin(), AttackedTargets.end(), entry.first) == AttackedTargets.end()) {
+				best = entry.first;
+				bestvalue = entry.second;
+			}
+		}
+		if (best != NULL) {
+			return(best);
+		}
+		AttackedTargets.clear();
+	}
+	return(NULL);
 }

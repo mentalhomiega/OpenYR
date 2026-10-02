@@ -219,6 +219,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SlaveRegenRate(0),
 	SlaveReloadRate(0),
 	IsBunkerable(false),
+	IsDistributedFire(false),
 	IsCanApproachTarget(true),
 	SensorsSight(0),
 	IsPoweredUnit(false),
@@ -738,6 +739,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SlaveRegenRate = ini.Get_Int(Name(), "SlaveRegenRate", SlaveRegenRate);
 		SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
 		IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
+		IsDistributedFire = ini.Get_Bool(Name(), "DistributedFire", IsDistributedFire);
 		IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
 		SensorsSight = ini.Get_Int(Name(), "SensorsSight", SensorsSight);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
@@ -1293,6 +1295,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SlaveRegenRate);
 	stream.Serialize(SlaveReloadRate);
 	stream.Serialize(IsBunkerable);
+	stream.Serialize(IsDistributedFire);
 	stream.Serialize(IsCanApproachTarget);
 	stream.Serialize(SensorsSight);
 	stream.Serialize(IsPoweredUnit);

@@ -154,6 +154,14 @@ class TechnoClass :	public RadioClass,
 
 		// For a vehicle, the bunker it sits in; for a bunker, the vehicle inside it.
 		TechnoClass * BunkerLinkedItem;
+
+		// For a DistributedFire object, the targets its last threat scan accepted with their
+		// values, and the targets it has fired at since it last went through them all.
+		mutable std::vector<std::pair<TechnoClass *, int>> ThreatCandidates;
+		mutable bool IsCollectingThreats;
+		std::vector<TechnoClass *> AttackedTargets;
+		AbstractClass * Distributed_Target(void);
+		AbstractClass * Greatest_Threat_Scan(ThreatType method, Coord const & coord, bool onlyenemy) const;
 		bool Is_Bunkered(void) const { return(BunkerLinkedItem != NULL && RTTI != RTTI_BUILDING); }
 		void Transfer_Slaves(TechnoClass * to);
 

@@ -281,7 +281,12 @@ void Enemies(void)
 	}
 	int units = 0;
 	int infantry = 0;
-	for (int index = 0; index < Units.Count(); index++) if (Units[index]->House != PlayerPtr) units++;
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass const * unit = Units[index];
+		if (unit->House == PlayerPtr) continue;
+		units++;
+		DebugString("AUTOTEST   enemy unit %s cell %d,%d height %d layer %d strength %d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, unit->HeightAGL, (int)unit->In_Which_Layer(), unit->Strength);
+	}
 	for (int index = 0; index < Infantry.Count(); index++) if (Infantry[index]->House != PlayerPtr) infantry++;
 	DebugString("AUTOTEST   enemy units %d infantry %d\n", units, infantry);
 }
@@ -368,6 +373,17 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "enemies") {
 		Enemies();
+	} else if (step.Command == "threat") {
+		// threat <TypeID>: the target the player's first object of the type would pick around itself, and how many it weighed.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				AbstractClass * target = techno->Greatest_Threat(ThreatType(THREAT_RANGE|THREAT_AREA), techno->Center_Coord(), false);
+				ObjectClass const * object = dynamic_cast<ObjectClass const *>(target);
+				DebugString("AUTOTEST   threat %s picks %s (%d candidates)\n", techno->TClass->Name(), object != NULL ? object->Class_Of()->Name() : "-", (int)techno->ThreatCandidates.size());
+				break;
+			}
+		}
 	} else if (step.Command == "bunkers") {
 		// bunkers: each Bunker=yes structure and the vehicle inside it.
 		for (int index = 0; index < Buildings.Count(); index++) {

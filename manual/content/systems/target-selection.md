@@ -323,12 +323,12 @@ When the primary's warhead is `Webby=yes` and the secondary slot is empty, the w
 :::caution[A ring scan does not rank ground candidates]
 A ring scan does not keep the highest score among ground candidates. Each ground candidate that passes replaces the one before it, so the scan returns the last one it reached, not the best one. Every Guard, Area Guard, Patrol, Move and building scan is a ring scan. On a ring scan, the coefficients matter in three places:
 
-- they rank the aircraft and airborne infantry found by the flying-object passes below;
+- they rank the aircraft, airborne infantry and airborne vehicles found by the flying-object passes below;
 - a ground candidate must outscore the best of those to replace it;
 - a score brought to exactly zero rejects the candidate.
 :::
 
-When aircraft are wanted, a ring scan first makes two passes over flying objects, and these passes do keep the highest score. The first pass takes aircraft and [`JumpJet=yes`](/keys/jumpjet/) infantry; the second takes any other infantry that is off the ground. Neither looks at vehicles, so a vehicle with a jumpjet locomotor is found by neither. A ground candidate then replaces the flying one only if it scores higher than the best flying score.
+When aircraft are wanted, a ring scan first makes two passes over flying objects, and these passes do keep the highest score. The first pass takes aircraft, [`JumpJet=yes`](/keys/jumpjet/) infantry and vehicles in the air; the second takes any other infantry or vehicle that is off the ground. A Kirov or Floating Disc in flight is therefore found as a flying target. A ground candidate then replaces the flying one only if it scores higher than the best flying score.
 
 A ring scan can stop early. Once it has found an object, it stops at the end of the ring a quarter of the way out, or at the end of the ring halfway out. An object found beyond the halfway ring does not stop the scan, and later candidates keep replacing it.
 

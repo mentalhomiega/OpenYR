@@ -135,7 +135,7 @@ The blast's cell decides whether the sweep collects objects on bridge decks or o
 
 ### The airborne sweep
 
-When the blast is above the ground level at the center of its cell, a second sweep runs. It checks every aircraft, every infantryman whose type is [`JumpJet=yes`](/keys/jumpjet/), and every vehicle whose type is [`Jellyfish=yes`](/keys/jellyfish/). It collects each one that meets **all of:**
+When the blast is above the ground level at the center of its cell, a second sweep runs. It checks every aircraft, every infantryman whose type is [`JumpJet=yes`](/keys/jumpjet/), every vehicle in the air, such as a Kirov or a Floating Disc, and every vehicle whose type is [`Jellyfish=yes`](/keys/jellyfish/). It collects each one that meets **all of:**
 
 - it is placed on the map and in the air;
 - it has strength left;

@@ -419,6 +419,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A Bunkerable object may enter a Bunker structure.
 		bool IsBunkerable;
 
+		// A DistributedFire object spreads its shots across the targets around it.
+		bool IsDistributedFire;
+
 		// A CanApproachTarget=no object does not move toward a target out of its weapons' reach.
 		bool IsCanApproachTarget;
 

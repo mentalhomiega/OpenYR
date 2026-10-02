@@ -331,7 +331,7 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			if (Infantry[index]->Class->IsJumpJet) flyers.Add(Infantry[index]);
 		}
 		for (int index = 0; index < Units.Count(); index++) {
-			if (Units[index]->Class->IsJellyfish) flyers.Add(Units[index]);
+			if (Units[index]->Class->IsJellyfish || Units[index]->In_Air()) flyers.Add(Units[index]);
 		}
 		for (int index = 0; index < flyers.Count(); index++) {
 			FootClass * flyer = flyers[index];
