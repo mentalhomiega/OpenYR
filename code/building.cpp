@@ -8702,6 +8702,7 @@ bool BuildingClass::Can_Absorb(FootClass const * object) const
 /// </summary>
 void BuildingClass::Absorb(FootClass * object)
 {
+	Sound_Effect(Rule->EnterBioReactorSound, Center_Coord());
 	object->Limbo();
 	Cargo.Attach(object);
 	House->RecalcPower = true;
@@ -8725,6 +8726,7 @@ bool BuildingClass::Release_Passenger(void)
 		ScenarioInit--;
 		if (placed) {
 			passenger->Enter_Idle_Mode();
+			Sound_Effect(Rule->LeaveBioReactorSound, Center_Coord());
 		} else {
 			delete passenger;
 		}

@@ -351,6 +351,8 @@ RulesClass::RulesClass(void) :
 	BunkerWeaponRangeBonus(2),
 	BunkerWallsUpSound(VOC_NONE),
 	BunkerWallsDownSound(VOC_NONE),
+	EnterBioReactorSound(VOC_NONE),
+	LeaveBioReactorSound(VOC_NONE),
 	OpenToppedWarpDistance(5),
 	IvanWarhead(NULL),
 	IvanDamage(0),
@@ -1089,6 +1091,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BuildingDrop = ini.Get_VocType(AUDIOVISUAL, "BuildingDrop", BuildingDrop);
 		BunkerWallsUpSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsUpSound", BunkerWallsUpSound);
 		BunkerWallsDownSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsDownSound", BunkerWallsDownSound);
+		EnterBioReactorSound = ini.Get_VocType(AUDIOVISUAL, "EnterBioReactorSound", EnterBioReactorSound);
+		LeaveBioReactorSound = ini.Get_VocType(AUDIOVISUAL, "LeaveBioReactorSound", LeaveBioReactorSound);
 		StopSound = ini.Get_VocType(AUDIOVISUAL, "StopSound", StopSound);
 		GuardSound = ini.Get_VocType(AUDIOVISUAL, "GuardSound", GuardSound);
 		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
@@ -2574,6 +2578,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BunkerWeaponRangeBonus);
 	stream.Serialize(BunkerWallsUpSound);
 	stream.Serialize(BunkerWallsDownSound);
+	stream.Serialize(EnterBioReactorSound);
+	stream.Serialize(LeaveBioReactorSound);
 	stream.Serialize(OpenToppedWarpDistance);
 	stream.Serialize(IvanWarhead);
 	stream.Serialize(IvanDamage);

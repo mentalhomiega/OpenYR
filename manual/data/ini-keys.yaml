@@ -11896,6 +11896,24 @@ Enslaves:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EnterBioReactorSound:
+  key: EnterBioReactorSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: EnterBioReactorSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 EnterGrinderSound:
   key: EnterGrinderSound
   scopes:
@@ -18278,6 +18296,24 @@ LeadershipRating:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+LeaveBioReactorSound:
+  key: LeaveBioReactorSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: LeaveBioReactorSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LeaveRubble:
   key: LeaveRubble
   scopes:

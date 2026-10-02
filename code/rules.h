@@ -177,6 +177,10 @@ class RulesClass
 		VocType BunkerWallsUpSound;
 		VocType BunkerWallsDownSound;
 
+		// Played as an InfantryAbsorb or UnitAbsorb structure takes an object in and lets it out.
+		VocType EnterBioReactorSound;
+		VocType LeaveBioReactorSound;
+
 		// A temporal weapon fired from an open-topped transport lets go beyond this many cells.
 		int OpenToppedWarpDistance;
 
