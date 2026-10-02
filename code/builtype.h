@@ -528,6 +528,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		/// Unused
 		bool IsFlat;
 
+		// A vehicle in this bunker draws this many height levels up, so that it shows above the walls.
+		int OccupyHeight;
+
 		/*
 		 * If harvesters may dock with this building to unload tiberium, then this flag will
 		 * be true. The harvester is sent into its unload mission once it has attached.
@@ -653,6 +656,9 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// While a GapGenerator=yes structure has power, it shrouds the map around it for players who are not its owner's allies.
 		bool IsGapGenerator;
+
+		// A Bunker=yes structure holds one of its owner's Bunkerable vehicles, which fights from inside it.
+		bool IsBunker;
 
 		// The frames a prism tower charges before it fires or sends its support beam.
 		int DelayedFireDelay;

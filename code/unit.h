@@ -238,6 +238,7 @@ class UnitClass : public FootClass
 		virtual FacingType Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) const override;
 		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void AI(void) override;
+		virtual int Sort_Y(void) const override;
 		virtual bool Ready_To_Commence(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;
 		virtual int Do_MISSION_GUARD_AREA(void) override;

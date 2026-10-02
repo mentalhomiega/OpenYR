@@ -590,6 +590,9 @@ class BuildingClass : public TechnoClass
 		void Absorb(FootClass * object);
 		bool Release_Passenger(void);
 		bool Takes_Walk_Ins(FootClass const * object) const;
+		bool Can_Bunker(FootClass const * object) const;
+		void Bunker_Up(FootClass * object);
+		void Bunker_Down(void);
 		void Garrison_AI(void);
 		void Set_Garrison_House(HouseClass * newowner);
 		void Power_Anims_Off(void);

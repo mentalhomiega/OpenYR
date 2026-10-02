@@ -346,6 +346,11 @@ RulesClass::RulesClass(void) :
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
+	BunkerDamageMultiplier(1.0),
+	BunkerROFMultiplier(1.0),
+	BunkerWeaponRangeBonus(2),
+	BunkerWallsUpSound(VOC_NONE),
+	BunkerWallsDownSound(VOC_NONE),
 	OpenToppedWarpDistance(5),
 	IvanWarhead(NULL),
 	IvanDamage(0),
@@ -1082,6 +1087,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		GenericClick = ini.Get_VocType(AUDIOVISUAL, "GenericClick", GenericClick);
 		GenericBeep = ini.Get_VocType(AUDIOVISUAL, "GenericBeep", GenericBeep);
 		BuildingDrop = ini.Get_VocType(AUDIOVISUAL, "BuildingDrop", BuildingDrop);
+		BunkerWallsUpSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsUpSound", BunkerWallsUpSound);
+		BunkerWallsDownSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsDownSound", BunkerWallsDownSound);
 		StopSound = ini.Get_VocType(AUDIOVISUAL, "StopSound", StopSound);
 		GuardSound = ini.Get_VocType(AUDIOVISUAL, "GuardSound", GuardSound);
 		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
@@ -1251,6 +1258,9 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		AmmoCrateDamage = ini.Get_Int(COMBATDAMAGE, "AmmoCrateDamage", AmmoCrateDamage);
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
+		BunkerDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerDamageMultiplier", BunkerDamageMultiplier);
+		BunkerROFMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerROFMultiplier", BunkerROFMultiplier);
+		BunkerWeaponRangeBonus = ini.Get_Int(COMBATDAMAGE, "BunkerWeaponRangeBonus", BunkerWeaponRangeBonus);
 		OpenToppedWarpDistance = ini.Get_Int(COMBATDAMAGE, "OpenToppedWarpDistance", OpenToppedWarpDistance);
 		IvanWarhead = TGet_Class(ini, COMBATDAMAGE, "IvanWarhead", IvanWarhead);
 		IvanDamage = ini.Get_Int(COMBATDAMAGE, "IvanDamage", IvanDamage);
@@ -2559,6 +2569,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(BunkerDamageMultiplier);
+	stream.Serialize(BunkerROFMultiplier);
+	stream.Serialize(BunkerWeaponRangeBonus);
+	stream.Serialize(BunkerWallsUpSound);
+	stream.Serialize(BunkerWallsDownSound);
 	stream.Serialize(OpenToppedWarpDistance);
 	stream.Serialize(IvanWarhead);
 	stream.Serialize(IvanDamage);

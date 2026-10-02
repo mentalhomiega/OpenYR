@@ -168,6 +168,15 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport multiplies its damage by this.
 		double OpenToppedDamageMultiplier;
 
+		// A vehicle in a bunker multiplies its damage and rate of fire by these and reaches this many cells farther.
+		double BunkerDamageMultiplier;
+		double BunkerROFMultiplier;
+		int BunkerWeaponRangeBonus;
+
+		// Played as a bunker takes a vehicle in and lets it out.
+		VocType BunkerWallsUpSound;
+		VocType BunkerWallsDownSound;
+
 		// A temporal weapon fired from an open-topped transport lets go beyond this many cells.
 		int OpenToppedWarpDistance;
 

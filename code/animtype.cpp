@@ -402,6 +402,16 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
 		MakeInfantry = ini.Get_Int(Name(), "MakeInfantry", MakeInfantry);
 		IsGroundLayer = ini.Get_Bool(Name(), "Surface", IsGroundLayer);
+
+		// Yuri's Revenge names the layer instead; only the ground and the layer above are kept apart here.
+		char layer[16];
+		if (ini.Get_String(Name(), "Layer", "", layer, sizeof(layer)) > 0) {
+			if (stricmp(layer, "ground") == 0 || stricmp(layer, "surface") == 0 || stricmp(layer, "underground") == 0) {
+				IsGroundLayer = true;
+			} else if (stricmp(layer, "air") == 0 || stricmp(layer, "top") == 0) {
+				IsGroundLayer = false;
+			}
+		}
 		IsTranslucent = ini.Get_Bool(Name(), "Translucent", IsTranslucent);
 		IsScorcher = ini.Get_Bool(Name(), "Scorch", IsScorcher);
 		IsCraterForming = ini.Get_Bool(Name(), "Crater", IsCraterForming);

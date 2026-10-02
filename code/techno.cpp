@@ -280,6 +280,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	MindControlledBy(NULL),
 	SpawnOwner(NULL),
 	SlaveOwner(NULL),
+	BunkerLinkedItem(NULL),
 	LocomotorTarget(NULL),
 	LocomotorSource(NULL),
 	IsAttackedByLocomotor(false),
@@ -2047,7 +2048,7 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		coord.Z = target->Center_Coord().Z;
 	}
 
-	return(TClass->In_Range(coord, target, weapon));
+	return(TClass->In_Range(coord, target, weapon, Is_Bunkered() ? Rule->BunkerWeaponRangeBonus * CELL_LEPTON_W : 0));
 }
 
 
@@ -4219,6 +4220,10 @@ int TechnoClass::Rearm_Delay(int which) const
 			delay = (1.0 / (Rule->VeteranROF + 1.0)) * delay;
 		}
 
+		if (Is_Bunkered() && Rule->BunkerROFMultiplier != 0) {
+			delay = (int)(delay / Rule->BunkerROFMultiplier);
+		}
+
 		// A garrison fires faster the more occupants it has, as TechnoClass::GetROF (0x6FCFA0) works it out.
 		BuildingClass const * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass const *>(this) : NULL;
 		if (garrison != NULL && garrison->Can_Occupy_Fire()) {
@@ -4538,6 +4543,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		firepower = (int)(House->FirepowerBias * FirepowerBias * weapon->Attack);
 		if (Has_Ability(ABILITY_FIREPOWER)) {
 			firepower = (int)((Rule->VeteranCombat + 1.0) * firepower);
+		}
+		if (Is_Bunkered()) {
+			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
 		}
 	}
 	BuildingClass * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(this) : NULL;
@@ -7391,6 +7399,13 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (SlaveOwner == target) {
 			SlaveOwner = NULL;
 		}
+		if (BunkerLinkedItem == target) {
+			BunkerLinkedItem = NULL;
+			if (RTTI == RTTI_BUILDING) {
+				((BuildingClass *)this)->End_Anim(BANIM_SPECIAL_ONE);
+				((BuildingClass *)this)->End_Anim(BANIM_SPECIAL_TWO);
+			}
+		}
 		DiskLaser.Detach(target);
 		std::erase(AirstrikePlanes, (AircraftClass *)target);
 		if (LocomotorTarget == target) {
@@ -9287,6 +9302,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpawnOwner);
 	stream.Serialize(SlaveManager);
 	stream.Serialize(SlaveOwner);
+	stream.Serialize(BunkerLinkedItem);
 	stream.Serialize(DiskLaser);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);

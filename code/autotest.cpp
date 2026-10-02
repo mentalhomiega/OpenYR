@@ -368,6 +368,15 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "enemies") {
 		Enemies();
+	} else if (step.Command == "bunkers") {
+		// bunkers: each Bunker=yes structure and the vehicle inside it.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * bunker = Buildings[index];
+			if (bunker->Class->IsBunker && !bunker->IsInLimbo) {
+				TechnoClass const * inside = bunker->BunkerLinkedItem;
+				DebugString("AUTOTEST   bunker %s cell %d,%d holds %s\n", bunker->Class->Name(), bunker->Get_Cell().X, bunker->Get_Cell().Y, inside != NULL ? inside->TClass->Name() : "nothing");
+			}
+		}
 	} else if (step.Command == "owners") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {

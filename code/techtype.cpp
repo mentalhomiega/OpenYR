@@ -218,6 +218,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SlavesNumber(0),
 	SlaveRegenRate(0),
 	SlaveReloadRate(0),
+	IsBunkerable(false),
 	IsPoweredUnit(false),
 	PowersUnit(NULL),
 	CrashingSound(VOC_NONE),
@@ -732,6 +733,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SlavesNumber = ini.Get_Int(Name(), "SlavesNumber", SlavesNumber);
 		SlaveRegenRate = ini.Get_Int(Name(), "SlaveRegenRate", SlaveRegenRate);
 		SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
+		IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
 		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
@@ -1052,7 +1054,7 @@ int TechnoTypeClass::Max_Pips(void) const
  * HISTORY:                                                                                    *
  *   11/14/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, WeaponTypeClass * weapon) const
+bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, WeaponTypeClass * weapon, int bonus) const
 {
 //	//assert(IsActive);
 
@@ -1064,7 +1066,7 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 	}
 
 	if (target != NULL && weapon != NULL) {
-		int range = weapon->Range - CELL_LEPTON / 3;
+		int range = weapon->Range + bonus - CELL_LEPTON / 3;
 		Coord tcoord = target->Center_Coord();
 		int minrange = weapon->MinimumRange;
 
@@ -1282,6 +1284,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SlavesNumber);
 	stream.Serialize(SlaveRegenRate);
 	stream.Serialize(SlaveReloadRate);
+	stream.Serialize(IsBunkerable);
 	stream.Serialize(IsPoweredUnit);
 	stream.Serialize(PowersUnit);
 	stream.Serialize(CrashingSound);

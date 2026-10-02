@@ -2163,10 +2163,22 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			}
 		}
 
+		// A vehicle leaves its bunker once it drives off the bunker's cells.
+		if (BunkerLinkedItem != NULL && BunkerLinkedItem->RTTI == RTTI_BUILDING && Get_Cell_Ptr()->Cell_Building() != BunkerLinkedItem) {
+			((BuildingClass *)BunkerLinkedItem)->Bunker_Down();
+		}
+
 		if (Mission == MISSION_ENTER && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
 			BuildingClass * grinder = (BuildingClass *)NavCom;
 			if (grinder->Class->IsGrinding && grinder->House == House && Get_Cell_Ptr()->Cell_Building() == grinder) {
 				grinder->Grind(this);
+				BEnd(BENCH_PCP);
+				return;
+			}
+			if (grinder->Class->IsBunker && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Bunker(this)) {
+				NavCom = NULL;
+				ArchiveTarget = NULL;
+				grinder->Bunker_Up(this);
 				BEnd(BENCH_PCP);
 				return;
 			}
@@ -2482,7 +2494,8 @@ bool UnitClass::Render(Rect & rect, bool forced, bool extras_only) const
 	/*
 	 * Units have no extras pass (only buildings do), so always render the body.
 	 */
-	return(BASECLASS::Render(rect, forced, false));
+	// A vehicle in a bunker is drawn every frame, since the bunker's animated walls redraw over it.
+	return(BASECLASS::Render(rect, forced || Is_Bunkered(), false));
 }
 
 
@@ -4053,6 +4066,9 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			if (obj == NavCom && Mission == MISSION_ENTER && obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Takes_Walk_Ins(this)) {
 				return(MOVE_OK);
 			}
+			if (obj == BunkerLinkedItem) {
+				return(MOVE_OK);
+			}
 
 			if (Class->IsSmallVisceroid && obj->RTTI == RTTI_UNIT && ((UnitClass *)obj)->Class->IsSmallVisceroid) {
 				return(MOVE_OK);
@@ -4420,6 +4436,12 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 
 	if (action == ACTION_SELF && !Can_Deploy_Now()) {
 		action = ACTION_NO_DEPLOY;
+	}
+
+	// A Bunkerable vehicle may enter its owner's empty bunker.
+	BuildingClass const * bunker = object != NULL && object->RTTI == RTTI_BUILDING ? (BuildingClass const *)object : NULL;
+	if (bunker != NULL && bunker->Class->IsBunker && bunker->House == House && House->Is_Player_Control() && BunkerLinkedItem != bunker) {
+		action = bunker->Can_Bunker(this) ? ACTION_ENTER : ACTION_NO_ENTER;
 	}
 
 	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)object);
@@ -6945,4 +6967,17 @@ DirType UnitClass::Turret_Facing(void) const
 	} else {
 		return(PrimaryFacing.Current());
 	}
+}
+
+
+/// <summary>
+/// Draws a vehicle in a bunker after the bunker and its raised walls, whose animations sort up
+/// to their YSort ahead of the bunker.
+/// </summary>
+int UnitClass::Sort_Y(void) const
+{
+	if (Is_Bunkered()) {
+		return(BunkerLinkedItem->Sort_Y() + 2000);
+	}
+	return(BASECLASS::Sort_Y());
 }

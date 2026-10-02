@@ -416,6 +416,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SlaveRegenRate;
 		int SlaveReloadRate;
 
+		// A Bunkerable object may enter a Bunker structure.
+		bool IsBunkerable;
+
 		// A PoweredUnit object shuts down while its owner has no working structure whose PowersUnit names its type.
 		bool IsPoweredUnit;
 		UnitTypeClass * PowersUnit;
@@ -1007,7 +1010,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		virtual int Time_To_Build(void) const override;
 		virtual int Get_Ownable(void) const override;
 		virtual int Max_Pips(void) const override;
-		bool In_Range(Coord const & coord, AbstractClass * target, WeaponTypeClass * weapon) const;
+		bool In_Range(Coord const & coord, AbstractClass * target, WeaponTypeClass * weapon, int bonus = 0) const;
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
 		WeaponDataStruct const * Get_Weapon(int which) const;

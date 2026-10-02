@@ -5197,6 +5197,130 @@ BuildupTime:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Bunker:
+  key: Bunker
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsBunker
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+BunkerDamageMultiplier:
+  key: BunkerDamageMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: BunkerDamageMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+BunkerROFMultiplier:
+  key: BunkerROFMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: BunkerROFMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+BunkerWallsDownSound:
+  key: BunkerWallsDownSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BunkerWallsDownSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+BunkerWallsUpSound:
+  key: BunkerWallsUpSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BunkerWallsUpSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+BunkerWeaponRangeBonus:
+  key: BunkerWeaponRangeBonus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '2'
+      declared_in: RulesClass
+      member: BunkerWeaponRangeBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+Bunkerable:
+  key: Bunkerable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsBunkerable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Burn:
   key: Burn
   scopes:
@@ -17993,6 +18117,23 @@ LastTilesInSet:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+Layer:
+  key: Layer
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AnimTypeClass
+      member: layer
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 LeadershipRating:
   key: LeadershipRating
   scopes:
@@ -21829,6 +21970,23 @@ OccupyDamageMultiplier:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+OccupyHeight:
+  key: OccupyHeight
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: OccupyHeight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 OccupyPip:
   key: OccupyPip
   scopes:

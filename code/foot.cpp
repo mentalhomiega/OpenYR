@@ -2359,7 +2359,7 @@ int FootClass::Do_MISSION_ENTER(void)
 		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
 			grinder = (BuildingClass *)ArchiveTarget;
 		}
-		if (grinder != NULL && (grinder->Class->IsGrinding || grinder->Class->IsInfantryAbsorb || grinder->Class->IsUnitAbsorb)) {
+		if (grinder != NULL && (grinder->Class->IsGrinding || grinder->Class->IsInfantryAbsorb || grinder->Class->IsUnitAbsorb || grinder->Class->IsBunker)) {
 			if (grinder->Takes_Walk_Ins(this)) {
 				ArchiveTarget = grinder;
 				if (NavCom == NULL) {
@@ -3513,6 +3513,9 @@ int FootClass::Get_Z_Adjust(void) const
 
 	adjust += BASECLASS::Get_Z_Adjust();
 	adjust += max_fudge;
+	if (Is_Bunkered() && BunkerLinkedItem->RTTI == RTTI_BUILDING) {
+		adjust -= TacticalMap->Z_Lepton_To_Pixel(((BuildingClass const *)BunkerLinkedItem)->Class->OccupyHeight * LEVEL_LEPTON_H);
+	}
 	return(adjust);
 }
 

@@ -8613,7 +8613,69 @@ bool BuildingClass::Takes_Walk_Ins(FootClass const * object) const
 	if (Class->IsGrinding) {
 		return(object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT);
 	}
+	if (Class->IsBunker) {
+		return(Can_Bunker(object));
+	}
 	return(Can_Absorb(object));
+}
+
+
+/// <summary>
+/// Tells whether this Bunker=yes structure can take the vehicle in now (TechnoClass::CanBunker,
+/// 0x70FB50): the vehicle must be its owner's, Bunkerable and armed, and the bunker must be
+/// finished and empty.
+/// </summary>
+bool BuildingClass::Can_Bunker(FootClass const * object) const
+{
+	if (!Class->IsBunker || object == NULL || object->RTTI != RTTI_UNIT || object->House != House) {
+		return(false);
+	}
+	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION || BunkerLinkedItem != NULL) {
+		return(false);
+	}
+	if (!object->TClass->IsBunkerable || object->In_Air() || object->Get_Class_Weapon_Data(0)->Weapon == NULL) {
+		return(false);
+	}
+	return(object->Cargo.How_Many() == 0);
+}
+
+
+/// <summary>
+/// Puts the vehicle at the middle of the bunker and raises the walls; the vehicle stays on the
+/// map and fights from there until it drives out.
+/// </summary>
+void BuildingClass::Bunker_Up(FootClass * object)
+{
+	BunkerLinkedItem = object;
+	object->BunkerLinkedItem = this;
+	Cell const corner = PositionCoord.As_Cell();
+	object->Assign_Destination(NULL);
+	object->Stop_Driver();
+	object->Set_Coord(Coord(corner.X * CELL_LEPTON_W + Class->Width() * CELL_LEPTON_W / 2, corner.Y * CELL_LEPTON_H + Class->Height() * CELL_LEPTON_H / 2, object->Get_Coord().Z));
+	DebugString("Bunker: %s takes %s\n", Class->Name(), object->TClass->Name());
+	object->Assign_Mission(MISSION_GUARD);
+	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	Begin_Anim(BANIM_SPECIAL_ONE, damaged);
+	Begin_Anim(BANIM_SPECIAL_TWO, damaged);
+	Sound_Effect(Rule->BunkerWallsUpSound, Center_Coord());
+	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Releases the vehicle in the bunker, if any.
+/// </summary>
+void BuildingClass::Bunker_Down(void)
+{
+	if (BunkerLinkedItem == NULL) {
+		return;
+	}
+	BunkerLinkedItem->BunkerLinkedItem = NULL;
+	BunkerLinkedItem = NULL;
+	End_Anim(BANIM_SPECIAL_ONE);
+	End_Anim(BANIM_SPECIAL_TWO);
+	Sound_Effect(Rule->BunkerWallsDownSound, Center_Coord());
+	Mark(MARK_CHANGE);
 }
 
 

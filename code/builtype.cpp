@@ -307,6 +307,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	BuildingsCostBonus(1.0),
 	DefensesCostBonus(1.0),
 	IsFlat(false),
+	OccupyHeight(0),
 	IsDockUnload(false),
 	IsRecoilless(false),
 	IsHasStupidGuardMode(true),
@@ -329,6 +330,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCloakGenerator(false),
 	IsSensorArray(false),
 	IsGapGenerator(false),
+	IsBunker(false),
 	DelayedFireDelay(0),
 	IsOverpowerable(false),
 	IsClickRepairable(true),
@@ -1327,6 +1329,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCloakGenerator = ini.Get_Bool(Name(), "CloakGenerator", IsCloakGenerator);
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
 		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
+		IsBunker = ini.Get_Bool(Name(), "Bunker", IsBunker);
 		IsOverpowerable = ini.Get_Bool(Name(), "Overpowerable", IsOverpowerable);
 		IsClickRepairable = ini.Get_Bool(Name(), "ClickRepairable", IsClickRepairable);
 		IsCrateBeneath = ini.Get_Bool(Name(), "CrateBeneath", IsCrateBeneath);
@@ -1387,6 +1390,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		DelayedFireDelay = ArtINI.Get_Int(Graphic_Name(), "DelayedFireDelay", DelayedFireDelay);
 		IsRecoilless = ArtINI.Get_Bool(Graphic_Name(), "Recoilless", IsRecoilless);
 		IsFlat = ArtINI.Get_Bool(Graphic_Name(), "Flat", IsFlat);
+		OccupyHeight = ArtINI.Get_Int(Graphic_Name(), "OccupyHeight", OccupyHeight);
 		IsSiloDamage = ArtINI.Get_Bool(Graphic_Name(), "SiloDamage", IsSiloDamage);
 		IsHasChargeAnim = ArtINI.Get_Bool(Graphic_Name(), "ChargeAnim", IsHasChargeAnim);
 		ToOverlay = TGet_Class(ArtINI, Graphic_Name(), "ToOverlay", ToOverlay);
@@ -2300,6 +2304,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingsCostBonus);
 	stream.Serialize(DefensesCostBonus);
 	stream.Serialize(IsFlat);
+	stream.Serialize(OccupyHeight);
 	stream.Serialize(IsDockUnload);
 	stream.Serialize(IsRecoilless);
 	stream.Serialize(IsHasStupidGuardMode);
@@ -2322,6 +2327,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCloakGenerator);
 	stream.Serialize(IsSensorArray);
 	stream.Serialize(IsGapGenerator);
+	stream.Serialize(IsBunker);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsClickRepairable);

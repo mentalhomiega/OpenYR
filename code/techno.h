@@ -151,6 +151,10 @@ class TechnoClass :	public RadioClass,
 		// The slaves an Enslaves object keeps, and for a slave the object it works for.
 		std::optional<SlaveManagerClass> SlaveManager;
 		TechnoClass * SlaveOwner;
+
+		// For a vehicle, the bunker it sits in; for a bunker, the vehicle inside it.
+		TechnoClass * BunkerLinkedItem;
+		bool Is_Bunkered(void) const { return(BunkerLinkedItem != NULL && RTTI != RTTI_BUILDING); }
 		void Transfer_Slaves(TechnoClass * to);
 
 		// The ring a DiskLaser weapon is drawing for this object's current shot.

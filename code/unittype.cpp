@@ -144,6 +144,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 {
 	Create_ID();
 	Rotation = 32;
+	IsBunkerable = true;
 	UnitTypes.Add(this);
 	HeapID = (UnitType)UnitTypes.ID(this);
 	FiringSyncFrame[0] = FiringSyncFrame[1] = -1;

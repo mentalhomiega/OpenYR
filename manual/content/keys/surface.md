@@ -1,7 +1,7 @@
 ---
 key: Surface
 summary: Places the animation in the ground layer, sorted among the objects on the ground, instead of in the layer above them.
-see_also: ["YSortAdjust", "Flat", "Tiled", "FlightLevel"]
+see_also: ["Layer", "YSortAdjust", "Flat", "Tiled", "FlightLevel"]
 when_omitted:
   kind: value
   value: "no"
@@ -16,3 +16,5 @@ With `no`, the animation is in the layer above. That layer is drawn after the wh
 An animation attached to an object is always in the ground layer, so the flag matters only for an animation that stands on its own.
 
 The flag does not change the animation's height. The animation appears at the height the code that created it chose.
+
+A recognised [`Layer`](/keys/layer/#scope-animtype) value on the same animation overrides this flag.
