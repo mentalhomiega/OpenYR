@@ -1148,6 +1148,15 @@ void FootClass::Approach_Target(void)
 			return;
 		}
 
+		// A CanApproachTarget=no object, or a vehicle in a bunker, forgets a target out of reach
+		// instead of chasing it, except while a human player has it guard an area
+		// (FootClass::ApproachTarget, 0x4D5690).
+		if (!inrange && (!TClass->IsCanApproachTarget || BunkerLinkedItem != NULL) && !(CurrentMission == MISSION_GUARD_AREA && House->Is_Human_Player())) {
+			Assign_Target(NULL);
+			Assign_Destination(NULL);
+			return;
+		}
+
 		/*
 		 * A unit that must deploy to fire, and is sitting on ground that it
 		 * cannot deploy upon, must restrict the search to deployable ground

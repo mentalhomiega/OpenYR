@@ -419,6 +419,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A Bunkerable object may enter a Bunker structure.
 		bool IsBunkerable;
 
+		// A CanApproachTarget=no object does not move toward a target out of its weapons' reach.
+		bool IsCanApproachTarget;
+
 		// A PoweredUnit object shuts down while its owner has no working structure whose PowersUnit names its type.
 		bool IsPoweredUnit;
 		UnitTypeClass * PowersUnit;
