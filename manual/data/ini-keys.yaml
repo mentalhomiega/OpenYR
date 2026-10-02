@@ -28140,8 +28140,8 @@ SkipScore:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
-SlaveMinerSlaveScan:
-  key: SlaveMinerSlaveScan
+SlaveMinerKickFrameDelay:
+  key: SlaveMinerKickFrameDelay
   scopes:
   - applies_to:
     - global rules
@@ -28152,7 +28152,79 @@ SlaveMinerSlaveScan:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '14'
+      default_candidate: null
+      declared_in: RulesClass
+      member: SlaveMinerKickFrameDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SlaveMinerLongScan:
+  key: SlaveMinerLongScan
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: SlaveMinerLongScan
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SlaveMinerScanCorrection:
+  key: SlaveMinerScanCorrection
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: SlaveMinerScanCorrection
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SlaveMinerShortScan:
+  key: SlaveMinerShortScan
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: SlaveMinerShortScan
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SlaveMinerSlaveScan:
+  key: SlaveMinerSlaveScan
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: null
       declared_in: RulesClass
       member: SlaveMinerSlaveScan
       source: code/rules.cpp

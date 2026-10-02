@@ -27,10 +27,22 @@ targets:
 - type: key
   id: SlavesFreeSound
   effect: added
+- type: key
+  id: SlaveMinerShortScan
+  effect: added
+- type: key
+  id: SlaveMinerLongScan
+  effect: added
+- type: key
+  id: SlaveMinerScanCorrection
+  effect: added
+- type: key
+  id: SlaveMinerKickFrameDelay
+  effect: added
 - type: system
   id: slave-miners
   effect: added
 credit: [Lucas]
 ---
 
-The Slave Miner now deploys into its refinery, and its slaves gather ore on foot and carry it back for money, as in Yuri's Revenge. Slaves in the field of a destroyed miner join the house that destroyed it.
+The Slave Miner now drives to ore and deploys into its refinery, its slaves gather ore on foot and carry it back for money, and it moves on when the nearby ore runs out, as in Yuri's Revenge. Slaves in the field of a destroyed miner join the house that destroyed it.

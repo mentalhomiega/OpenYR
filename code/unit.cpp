@@ -3587,6 +3587,13 @@ int UnitClass::Do_MISSION_HARVEST(void)
 	*/
 	if (!Class->IsToHarvest && !Class->IsToVeinHarvest) return(TICKS_PER_SECOND*30);
 
+	if (SlaveManager) {
+		if (SlaveManager->Should_Wake_Up()) {
+			SlaveManager->Wake_Up();
+		}
+		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+	}
+
 	// A harvester holds a place in line only while it is still looking for one.
 	if (Status != FINDHOME) {
 		QueuedDock = NULL;
@@ -4582,6 +4589,10 @@ ActionType UnitClass::What_Action(Cell const & cell, bool check_fog, bool disall
  *=============================================================================================*/
 int UnitClass::Do_MISSION_GUARD(void)
 {
+	if (SlaveManager && SlaveManager->Should_Wake_Up()) {
+		SlaveManager->Wake_Up();
+	}
+
 	bool needs_dock = true;
 	if (/*House->IsBaseBuilding &&*/ !House->Is_Human_Player() && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
 		for (int i = 0; i < Class->Dock.Count(); i++) {

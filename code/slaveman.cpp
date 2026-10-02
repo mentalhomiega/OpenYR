@@ -27,6 +27,8 @@
 #include "rules.h"
 #include "savestream.h"
 #include "techno.h"
+#include "unit.h"
+#include "unittype.h"
 
 #include <cstring>
 
@@ -85,6 +87,7 @@ SlaveManagerClass::SlaveManagerClass(TechnoClass * owner, InfantryTypeClass * ty
 		node.Start_Timer(0);
 	}
 	NextUpdateFrame = Frame + 10;
+	MinerTimer = Frame;
 }
 
 
@@ -196,7 +199,7 @@ void SlaveManagerClass::AI(void)
 					Send_Home(node);
 					break;
 				}
-				Cell const ore = slave->Storage.Get_Total_Amount() >= slave->Class->Capacity ? CELL_NONE : slave->Search_For_Tiberium(Rule->SlaveMinerSlaveScan);
+				Cell const ore = slave->Storage.Get_Total_Amount() >= slave->Class->Capacity ? CELL_NONE : slave->Search_For_Tiberium(Rule->SlaveMinerSlaveScan / CELL_LEPTON_W);
 				if (ore == CELL_NONE) {
 					Send_Home(node);
 				} else {
@@ -284,6 +287,218 @@ void SlaveManagerClass::AI(void)
 				break;
 		}
 	}
+
+	Miner_AI();
+}
+
+
+/// <summary>
+/// The richest ore cell within radius cells of the miner, searching outward ring by ring and
+/// stopping at the first ring that has any; CELL_NONE when there is none.
+/// </summary>
+Cell SlaveManagerClass::Find_Ore(int radius) const
+{
+	Cell const center = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
+	if (Map[center].Land_Type() == LAND_TIBERIUM) {
+		return(center);
+	}
+	Cell best = CELL_NONE;
+	int bestvalue = -1;
+	for (int ring = 1; ring < radius && best == CELL_NONE; ring++) {
+		for (int y = -ring; y <= ring; y++) {
+			for (int x = -ring; x <= ring; x++) {
+				if (std::abs(x) != ring && std::abs(y) != ring) {
+					continue;
+				}
+				Cell const cell = center + Cell(x, y);
+				if (!Map.In_Radar(cell) || Map[cell].Land_Type() != LAND_TIBERIUM) {
+					continue;
+				}
+				int const value = Map[cell].Tiberium_Value();
+				if (value > bestvalue) {
+					bestvalue = value;
+					best = cell;
+				}
+			}
+		}
+	}
+	return(best);
+}
+
+
+/// <summary>
+/// The cell the mobile miner stops on to deploy beside the ore: the structure's top-left cell is
+/// the nearest place the miner can reach where its footprint fits, and the miner deploys from one
+/// cell inside that corner.
+/// </summary>
+Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
+{
+	BuildingTypeClass const * type = NULL;
+	if (Owner->RTTI == RTTI_BUILDING) {
+		type = ((BuildingClass const *)Owner)->Class;
+	} else if (Owner->RTTI == RTTI_UNIT) {
+		type = ((UnitClass const *)Owner)->Class->DeploysInto;
+	}
+	if (type == NULL) {
+		return(CELL_NONE);
+	}
+	Cell const from = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
+	Cell const corner = Map.Nearby_Location(ore, SPEED_TRACK, Map.Get_Cell_Zone(from, MZONE_NORMAL), MZONE_NORMAL, false, Point2D(type->Width(), type->Height()));
+	if (corner == CELL_NONE || type->Is_Mobile_Deployer()) {
+		return(corner);
+	}
+	return(corner + Cell(1, 1));
+}
+
+
+/// <summary>
+/// Whether a mobile miner that has stood idle for SlaveMinerKickFrameDelay frames should go and
+/// deploy on its own: a computer player's always, and a human player's when it stands on ore or
+/// has ore within SlaveMinerShortScan (SlaveManagerClass::ShouldWakeUp, 0x6B1020).
+/// </summary>
+bool SlaveManagerClass::Should_Wake_Up(void) const
+{
+	if (Owner == NULL || Owner->RTTI != RTTI_UNIT || MinerStatus != MINER_IDLE || Frame - MinerTimer <= Rule->SlaveMinerKickFrameDelay) {
+		return(false);
+	}
+	if (!Owner->House->Is_Human_Player()) {
+		return(true);
+	}
+	if (Map[Owner->Get_Cell()].Land_Type() == LAND_TIBERIUM) {
+		return(true);
+	}
+	return(Find_Ore(Rule->SlaveMinerShortScan / CELL_LEPTON_W) != CELL_NONE);
+}
+
+
+void SlaveManagerClass::Wake_Up(void)
+{
+	if (MinerStatus == MINER_IDLE) {
+		MinerStatus = MINER_SEEKING;
+	}
+}
+
+
+/// <summary>
+/// Moves the miner itself (SlaveManagerClass::Update, 0x6AFD60): a woken mobile miner drives to
+/// the ore within SlaveMinerLongScan and deploys beside it, and a deployed miner whose ore within
+/// SlaveMinerShortScan has run out packs up and drives to new ore at least SlaveMinerScanCorrection away.
+/// </summary>
+void SlaveManagerClass::Miner_AI(void)
+{
+	if (Owner == NULL) {
+		return;
+	}
+	bool const mobile = Owner->RTTI == RTTI_UNIT;
+	bool const deployed = Owner->RTTI == RTTI_BUILDING;
+
+	switch (MinerStatus) {
+		case MINER_IDLE:
+			if (deployed && Owner->Get_Mission() != MISSION_DECONSTRUCTION && Owner->Get_Mission() != MISSION_CONSTRUCTION) {
+				MinerStatus = MINER_WORKING;
+			}
+			break;
+
+		case MINER_SEEKING: {
+			if (!mobile) {
+				MinerStatus = MINER_IDLE;
+				MinerTimer = Frame;
+				break;
+			}
+			UnitClass * unit = (UnitClass *)Owner;
+			if (unit->NavCom != NULL) {
+				MinerStatus = MINER_MOVING;
+				break;
+			}
+			Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
+			Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
+			if (spot == CELL_NONE) {
+				MinerStatus = MINER_IDLE;
+				MinerTimer = Frame;
+				DebugString("Slave: %s (%s) finds no ore to deploy at\n", unit->Class->Name(), unit->House->Class->Name());
+				break;
+			}
+			unit->Assign_Destination(&Map[spot]);
+			unit->Assign_Mission(MISSION_MOVE);
+			MinerStatus = MINER_MOVING;
+			DebugString("Slave: %s (%s) at %d,%d heads for %d,%d to deploy\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, spot.X, spot.Y);
+			break;
+		}
+
+		case MINER_MOVING:
+		case MINER_WAITING: {
+			if (!mobile) {
+				MinerStatus = MINER_IDLE;
+				MinerTimer = Frame;
+				break;
+			}
+			UnitClass * unit = (UnitClass *)Owner;
+			if (unit->NavCom != NULL || unit->Locomotion->Is_Moving()) {
+				break;
+			}
+			if (MinerStatus == MINER_WAITING && Frame - MinerTimer < 30) {
+				break;
+			}
+			BuildingTypeClass const * type = unit->Class->DeploysInto;
+			unit->Mark(MARK_UP);
+			unit->Locomotion->Mark_All_Occupation_Bits(MARK_UP);
+			bool const legal = type->Legal_Placement(type->Is_Mobile_Deployer() ? unit->Get_Cell() : Adjacent_Cell(unit->Get_Cell(), FACING_NW));
+			unit->Locomotion->Mark_All_Occupation_Bits(MARK_DOWN);
+			unit->Mark(MARK_DOWN);
+			if (legal) {
+				unit->Assign_Mission(MISSION_UNLOAD);
+				MinerStatus = MINER_DEPLOYING;
+			} else if (MinerStatus == MINER_MOVING) {
+				MinerStatus = MINER_WAITING;
+				MinerTimer = Frame;
+			} else {
+				MinerStatus = MINER_SEEKING;
+			}
+			break;
+		}
+
+		case MINER_DEPLOYING:
+			if (deployed) {
+				MinerStatus = MINER_WORKING;
+				DebugString("Slave: %s (%s) deploys at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), Owner->Get_Cell().X, Owner->Get_Cell().Y);
+			} else if (mobile && !((UnitClass *)Owner)->IsDeploying && Owner->Get_Mission() != MISSION_UNLOAD) {
+				MinerStatus = MINER_WAITING;
+				MinerTimer = Frame;
+			}
+			break;
+
+		case MINER_WORKING: {
+			if (mobile) {
+				MinerStatus = MINER_IDLE;
+				MinerTimer = Frame;
+				break;
+			}
+			if (Find_Ore(Rule->SlaveMinerShortScan / CELL_LEPTON_W) != CELL_NONE) {
+				break;
+			}
+			Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
+			Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
+			if (spot == CELL_NONE) {
+				break;
+			}
+			Cell const here = Dock_Cell();
+			int const distance = std::max(std::abs(spot.X - here.X), std::abs(spot.Y - here.Y));
+			if (distance <= Rule->SlaveMinerScanCorrection / CELL_LEPTON_W) {
+				break;
+			}
+			Owner->ArchiveTarget = &Map[spot];
+			Owner->Assign_Mission(MISSION_DECONSTRUCTION);
+			MinerStatus = MINER_PACKING;
+			DebugString("Slave: %s (%s) packs up for ore at %d,%d\n", Owner->TClass->Name(), Owner->House->Class->Name(), spot.X, spot.Y);
+			break;
+		}
+
+		case MINER_PACKING:
+			if (mobile) {
+				MinerStatus = MINER_MOVING;
+			}
+			break;
+	}
 }
 
 
@@ -365,4 +580,6 @@ void SlaveManagerClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RegenRate);
 	stream.Serialize(ReloadRate);
 	stream.Serialize(NextUpdateFrame);
+	stream.Serialize(MinerStatus);
+	stream.Serialize(MinerTimer);
 }

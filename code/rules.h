@@ -314,8 +314,14 @@ class RulesClass
 		// Played when a destroyed slave miner's slaves are freed.
 		VocType SlavesFreeSound;
 
-		// How many cells out a slave looks for ore.
-		int SlaveMinerSlaveScan;
+		// How far a slave looks for ore, how close ore must be for a deployed miner to stay, how far
+		// a mobile miner looks for a place to deploy, how much farther new ore must be before a
+		// deployed miner moves, and the frames before a player's idle miner goes looking itself.
+		LEPTON SlaveMinerSlaveScan;
+		LEPTON SlaveMinerShortScan;
+		LEPTON SlaveMinerLongScan;
+		LEPTON SlaveMinerScanCorrection;
+		int SlaveMinerKickFrameDelay;
 
 		// Played at a crate the player collects, by the crate's result.
 		VocType CrateMoneySound;

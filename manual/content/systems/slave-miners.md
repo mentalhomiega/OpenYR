@@ -10,6 +10,10 @@ keys:
   - Slaved
   - HarvestRate
   - SlaveMinerSlaveScan
+  - SlaveMinerShortScan
+  - SlaveMinerLongScan
+  - SlaveMinerScanCorrection
+  - SlaveMinerKickFrameDelay
   - SlavesFreeSound
 ---
 
@@ -36,11 +40,17 @@ Deploying hands the vehicle's slaves to the structure, and packing up hands them
 
 ## Gathering
 
-The slaves are checked every 10 frames. Each slave inside a deployed miner comes out at the free cell nearest the middle of the structure's right edge and looks for ore within [`SlaveMinerSlaveScan`](/keys/slaveminerslavescan/#scope-global-rules) cells. It walks to the ore it finds and shovels for [`HarvestRate`](/keys/harvestrate/#scope-infantrytype) frames per bail. When its cell runs out, it looks for more.
+The slaves are checked every 10 frames. Each slave inside a deployed miner comes out at the free cell nearest the middle of the structure's right edge and looks for ore closer than [`SlaveMinerSlaveScan`](/keys/slaveminerslavescan/#scope-global-rules) cells. It walks to the ore it finds and shovels for [`HarvestRate`](/keys/harvestrate/#scope-infantrytype) frames per bail. When its cell runs out, it looks for more.
 
 A slave goes back once it carries its `Storage`, or when it finds no ore in range. Within one cell of the middle of the right edge it goes inside and its ore is paid to the owner as a harvester's would be, including the [`PurifierBonus`](/keys/purifierbonus/) bonus. It rests inside for [`SlaveReloadRate`](/keys/slavereloadrate/#scope-aircrafttype) frames and comes out again with full strength.
 
 While the miner is a vehicle, its slaves walk back to it, unload their ore and stay inside.
+
+## Moving the miner
+
+A mobile miner on its guard or harvest mission sets out by itself after [`SlaveMinerKickFrameDelay`](/keys/slaveminerkickframedelay/#scope-global-rules) frames: a computer player's always, and a human player's when it stands on ore or has ore closer than [`SlaveMinerShortScan`](/keys/slaveminershortscan/#scope-global-rules) cells. It picks the richest ore in the nearest ring of cells that has any, closer than [`SlaveMinerLongScan`](/keys/slaveminerlongscan/#scope-global-rules) cells, and drives to the nearest place beside it that it can reach and where its structure fits. When it stops, it deploys if the structure fits there. Otherwise it waits 30 frames, tries once more, and then chooses a new place.
+
+A deployed miner with no ore left closer than `SlaveMinerShortScan` cells of the middle of its right edge looks for ore the same way. If the new place is more than [`SlaveMinerScanCorrection`](/keys/slaveminerscancorrection/#scope-global-rules) cells away, it packs up, drives there and deploys again. Miners of human and computer players both do this.
 
 ## Losing and freeing slaves
 

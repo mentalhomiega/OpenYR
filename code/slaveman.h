@@ -32,6 +32,8 @@ class SlaveManagerClass
 		SlaveManagerClass(TechnoClass * owner, InfantryTypeClass * type, int count, int regenrate, int reloadrate);
 
 		void AI(void);
+		bool Should_Wake_Up(void) const;
+		void Wake_Up(void);
 		void Set_Owner(TechnoClass * owner);
 		void Free_All(TechnoClass * killer);
 		void Discard(void);
@@ -61,6 +63,20 @@ class SlaveManagerClass
 			void Serialize(SaveStreamClass & stream);
 		};
 
+		enum MinerStatusType {
+			MINER_IDLE,
+			MINER_SEEKING,
+			MINER_MOVING,
+			MINER_WAITING,
+			MINER_DEPLOYING,
+			MINER_WORKING,
+			MINER_PACKING,
+		};
+
+		void Miner_AI(void);
+		Cell Find_Ore(int radius) const;
+		Cell Deploy_Cell(Cell ore) const;
+
 		InfantryClass * Create_Slave(void) const;
 		Cell Dock_Cell(void) const;
 		void Send_Home(NodeType & node) const;
@@ -72,4 +88,6 @@ class SlaveManagerClass
 		int RegenRate = 0;
 		int ReloadRate = 0;
 		int NextUpdateFrame = 0;
+		int MinerStatus = MINER_IDLE;
+		int MinerTimer = 0;
 };

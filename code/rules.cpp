@@ -424,7 +424,11 @@ RulesClass::RulesClass(void) :
 	DiskLaserChargeUp(VOC_NONE),
 	AirstrikeAttackVoice(VOC_NONE),
 	SlavesFreeSound(VOC_NONE),
-	SlaveMinerSlaveScan(14),
+	SlaveMinerSlaveScan(LEPTON(0x1000)),
+	SlaveMinerShortScan(LEPTON(0x500)),
+	SlaveMinerLongScan(LEPTON(0x5000)),
+	SlaveMinerScanCorrection(LEPTON(0x300)),
+	SlaveMinerKickFrameDelay(INT_MAX),
 	CrateMoneySound(VOC_NONE),
 	CrateRevealSound(VOC_NONE),
 	CrateFireSound(VOC_NONE),
@@ -1373,7 +1377,11 @@ bool RulesClass::General(CCINIClass const & ini)
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		V3Rocket.Read(ini, GENERAL, "V3Rocket");
-		SlaveMinerSlaveScan = ini.Get_Int(GENERAL, "SlaveMinerSlaveScan", SlaveMinerSlaveScan);
+		SlaveMinerShortScan = ini.Get_Lepton(GENERAL, "SlaveMinerShortScan", SlaveMinerShortScan);
+		SlaveMinerSlaveScan = ini.Get_Lepton(GENERAL, "SlaveMinerSlaveScan", SlaveMinerSlaveScan);
+		SlaveMinerLongScan = ini.Get_Lepton(GENERAL, "SlaveMinerLongScan", SlaveMinerLongScan);
+		SlaveMinerScanCorrection = ini.Get_Lepton(GENERAL, "SlaveMinerScanCorrection", SlaveMinerScanCorrection);
+		SlaveMinerKickFrameDelay = ini.Get_Int(GENERAL, "SlaveMinerKickFrameDelay", SlaveMinerKickFrameDelay);
 		DMisl.Read(ini, GENERAL, "DMisl");
 		CMisl.Read(ini, GENERAL, "CMisl");
 		ChronoPlacement = TGet_Class(ini, GENERAL, "ChronoPlacement", ChronoPlacement);
@@ -2630,6 +2638,10 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AirstrikeAttackVoice);
 	stream.Serialize(SlavesFreeSound);
 	stream.Serialize(SlaveMinerSlaveScan);
+	stream.Serialize(SlaveMinerShortScan);
+	stream.Serialize(SlaveMinerLongScan);
+	stream.Serialize(SlaveMinerScanCorrection);
+	stream.Serialize(SlaveMinerKickFrameDelay);
 	stream.Serialize(CrateMoneySound);
 	stream.Serialize(CrateRevealSound);
 	stream.Serialize(CrateFireSound);
