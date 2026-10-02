@@ -3283,6 +3283,14 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 		return(Simple_Deploy_AI());
 	}
 
+	// A Deployer=yes vehicle, such as the Chaos Drone, fires its AreaFire weapon where it stands.
+	if (Class->IsDeployer) {
+		Assign_Destination(NULL);
+		Assign_Target(&Map[Get_Cell()]);
+		Assign_Mission(MISSION_ATTACK);
+		return(1);
+	}
+
 	if (Class->Max_Passengers() > 0) {
 		/// derives from RA's UNIT_TRUCK
 		switch (Status) {
@@ -4446,7 +4454,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					if (Charge < Class->MaxCharge) {
 						action = ACTION_NO_DEPLOY;
 					}
-				} else if (!Class->IsSimpleDeployer) {
+				} else if (!Class->IsSimpleDeployer && !Class->IsDeployer) {
 					action = ACTION_NONE;
 				}
 			}

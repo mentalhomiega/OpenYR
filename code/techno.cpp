@@ -510,6 +510,16 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		}
 	}
 
+	// An object aimed at its own cell uses the weapon that strikes there.
+	if (target != NULL && target == &Map[Get_Cell()]) {
+		for (int which = 0; which < 2; which++) {
+			WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+			if (weapon != NULL && weapon->IsAreaFire) {
+				return(which);
+			}
+		}
+	}
+
 	// As TechnoClass::SelectWeapon (0x6F3330): a multi-turret object fires its turret's weapon,
 	// and a gattling object its stage's pair, the second only at an aircraft in the air when
 	// the first stage's second weapon can hit aircraft.
@@ -5296,7 +5306,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 
 	if (unit != NULL) {
 		blocked = unit->Is_Immobilized() || unit->CurrentTube >= TUBE_FIRST;
-		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer) {
+		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer) {
 			blocked = true;
 		}
 		if (unit->Class->Max_Passengers() > 0) {

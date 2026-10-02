@@ -8,7 +8,7 @@ when_omitted:
   value: none
 ---
 
-A [`Deployer=yes`](/keys/deployer/) soldier plays this sound at its position when it starts to pack up from a deployment.
+A [`Deployer=yes`](/keys/deployer/#scope-infantrytype) soldier plays this sound at its position when it starts to pack up from a deployment.
 
 ```ini title="rulesmd.ini"
 [MYRIFLEMAN] ; example InfantryType

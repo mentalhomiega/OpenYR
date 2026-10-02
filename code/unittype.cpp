@@ -106,6 +106,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsPassive(false),
 	IsCrateGoodie(false),
 	IsSimpleDeployer(false),
+	IsDeployer(false),
 	IsDeployToLand(false),
 	IsDeployFire(false),
 	DeployFireWeapon(1),
@@ -372,6 +373,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 	if (BASECLASS::Read_INI(ini)) {
 		IsCrateGoodie = ini.Get_Bool(Name(), "CrateGoodie", IsCrateGoodie);
 		IsSimpleDeployer = ini.Get_Bool(Name(), "IsSimpleDeployer", IsSimpleDeployer);
+		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
 		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
 		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
@@ -601,6 +603,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPassive);
 	stream.Serialize(IsCrateGoodie);
 	stream.Serialize(IsSimpleDeployer);
+	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployToLand);
 	stream.Serialize(IsDeployFire);
 	stream.Serialize(DeployFireWeapon);

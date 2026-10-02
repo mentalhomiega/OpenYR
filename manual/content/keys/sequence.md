@@ -56,7 +56,7 @@ The table lists every entry a sequence section may have and the action each one 
 | `FireFly` | Firing while flying |
 | `Struggle` | Struggling inside a web |
 | `Tread`, `Swim`, `WetIdle1`, `WetIdle2`, `WetDie1`, `WetDie2`, `WetAttack` | Actions in water; never played |
-| `Deploy` | Deploying, for a [`Deployer=yes`](/keys/deployer/) type |
+| `Deploy` | Deploying, for a [`Deployer=yes`](/keys/deployer/#scope-infantrytype) type |
 | `Deployed` | Standing deployed |
 | `DeployedFire` | Firing while deployed |
 | `DeployedIdle` | Idling while deployed; never played |

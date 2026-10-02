@@ -9366,7 +9366,7 @@ Deployer:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: 'no'
       declared_in: InfantryTypeClass
@@ -9374,6 +9374,20 @@ Deployer:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsDeployer
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 DeployingAnim:
   key: DeployingAnim
   scopes:

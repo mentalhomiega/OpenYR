@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-A [`Deployer=yes`](/keys/deployer/) soldier with `DeployFire=yes` keeps fighting while it is deployed. It then fires the weapon in the slot [`DeployFireWeapon`](/keys/deployfireweapon/#scope-infantrytype) names, and plays its `DeployedFire` [sequence](/keys/sequence/) for each shot. When it is not deployed, it fires only its first weapon, whatever the target.
+A [`Deployer=yes`](/keys/deployer/#scope-infantrytype) soldier with `DeployFire=yes` keeps fighting while it is deployed. It then fires the weapon in the slot [`DeployFireWeapon`](/keys/deployfireweapon/#scope-infantrytype) names, and plays its `DeployedFire` [sequence](/keys/sequence/) for each shot. When it is not deployed, it fires only its first weapon, whatever the target.
 
 ```ini title="rulesmd.ini"
 [MYRIFLEMAN] ; example InfantryType

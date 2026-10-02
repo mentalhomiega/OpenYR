@@ -66,6 +66,9 @@ class UnitTypeClass : public TechnoTypeClass
 		// An IsSimpleDeployer unit deploys where it stands, landing first with DeployToLand, and
 		// while deployed draws as its UnloadingClass and fires DeployFireWeapon when DeployFire is set.
 		bool IsSimpleDeployer;
+
+		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
+		bool IsDeployer;
 		bool IsDeployToLand;
 		bool IsDeployFire;
 		int DeployFireWeapon;
