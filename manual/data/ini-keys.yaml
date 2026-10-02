@@ -23096,6 +23096,23 @@ PavedRoads:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+PenetratesBunker:
+  key: PenetratesBunker
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsPenetratesBunker
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Percent:
   key: Percent
   scopes:

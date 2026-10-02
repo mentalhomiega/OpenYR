@@ -5670,6 +5670,16 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 {
 	bool negative = damage < 0;
 
+	// A vehicle in its bunker is hurt only by PenetratesBunker warheads, which leave the bunker
+	// itself unharmed (TechnoClass::ReceiveDamage, 0x701B67).
+	if (BunkerLinkedItem != NULL && !forced && warhead != NULL) {
+		bool const penetrates = warhead->IsPenetratesBunker;
+		if (RTTI == RTTI_BUILDING ? penetrates : (!penetrates && Map[Get_Cell()].Cell_Building() == BunkerLinkedItem)) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+	}
+
 	/*
 	 * If not a forced damage condition, adjust damage according to the house and
 	 * object armor bias, veterancy armor bonus, and type-immunity.

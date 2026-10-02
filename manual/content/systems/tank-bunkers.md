@@ -26,7 +26,7 @@ The cursor shows the enter action over such a bunker and the no-entry action ove
 
 ## Fighting from a bunker
 
-While it is inside, the vehicle stays selectable and on the map, and it can be attacked as usual. It does not drive out toward a target beyond its reach; it forgets the target instead, unless a human player has it guard an area. Its shots gain three bonuses:
+While it is inside, the vehicle stays selectable and on the map. It takes no damage except from warheads with [`PenetratesBunker=yes`](/keys/penetratesbunker/#scope-warheadtype), and those warheads leave the bunker unharmed; any other attack has to destroy the bunker first. It does not drive out toward a target beyond its reach; it forgets the target instead, unless a human player has it guard an area. Its shots gain three bonuses:
 
 | Key | Effect |
 | --- | --- |

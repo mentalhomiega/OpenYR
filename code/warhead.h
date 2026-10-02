@@ -203,6 +203,9 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// The warhead lifts the vehicle it hits with the Locomotor it names, and its firer holds it there.
 		bool IsLocomotor;
+
+		// A PenetratesBunker warhead reaches the vehicle inside a bunker and leaves the bunker unharmed.
+		bool IsPenetratesBunker;
 		ClassID Locomotor;
 		bool IsPoison;
 
