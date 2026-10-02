@@ -331,6 +331,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSensorArray(false),
 	IsGapGenerator(false),
 	IsBunker(false),
+	PsychicDetectionRadius(0),
 	DelayedFireDelay(0),
 	IsOverpowerable(false),
 	IsClickRepairable(true),
@@ -1330,6 +1331,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
 		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 		IsBunker = ini.Get_Bool(Name(), "Bunker", IsBunker);
+		PsychicDetectionRadius = ini.Get_Int(Name(), "PsychicDetectionRadius", PsychicDetectionRadius);
 		IsOverpowerable = ini.Get_Bool(Name(), "Overpowerable", IsOverpowerable);
 		IsClickRepairable = ini.Get_Bool(Name(), "ClickRepairable", IsClickRepairable);
 		IsCrateBeneath = ini.Get_Bool(Name(), "CrateBeneath", IsCrateBeneath);
@@ -2328,6 +2330,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSensorArray);
 	stream.Serialize(IsGapGenerator);
 	stream.Serialize(IsBunker);
+	stream.Serialize(PsychicDetectionRadius);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsClickRepairable);

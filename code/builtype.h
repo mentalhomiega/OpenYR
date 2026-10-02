@@ -660,6 +660,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Bunker=yes structure holds one of its owner's Bunkerable vehicles, which fights from inside it.
 		bool IsBunker;
 
+		// A structure with a PsychicDetectionRadius shows its owner which targets enemies within this many cells have.
+		int PsychicDetectionRadius;
+
 		// The frames a prism tower charges before it fires or sends its support beam.
 		int DelayedFireDelay;
 

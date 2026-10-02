@@ -285,7 +285,8 @@ void Enemies(void)
 		UnitClass const * unit = Units[index];
 		if (unit->House == PlayerPtr) continue;
 		units++;
-		DebugString("AUTOTEST   enemy unit %s cell %d,%d height %d layer %d strength %d berzerk %d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, unit->HeightAGL, (int)unit->In_Which_Layer(), unit->Strength, (int)unit->IsBerzerk);
+		Cell const tar = unit->TarCom != NULL ? unit->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		DebugString("AUTOTEST   enemy unit %s cell %d,%d height %d layer %d strength %d berzerk %d tar %d,%d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, unit->HeightAGL, (int)unit->In_Which_Layer(), unit->Strength, (int)unit->IsBerzerk, tar.X, tar.Y);
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass const * soldier = Infantry[index];

@@ -30,6 +30,9 @@
 #include "animtype.h"
 #include "building.h"
 #include "builtype.h"
+#include "actionline.h"
+#include "_uicontrol.h"
+#include "uicontrol.h"
 #include "cell.h"
 #include "convert.h"
 #include "coord.h"
@@ -1304,6 +1307,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		EBoltClass::Draw_All();
 		RadBeamClass::Draw_All();
 		Draw_Mind_Control_Links();
+		Draw_Psychic_Lines();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
@@ -3860,6 +3864,50 @@ void Tactical::Draw_Super_Timers(void)
 			Point2D const at(TacticalRect.Width - 3, TacticalRect.Height - 16 * (line + 1));
 			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, at, ColorSchemes[house->Scheme], 0, (TextPrintType)(TPF_RIGHT | TPF_EFNT | TPF_FULLSHADOW), 1);
 			line++;
+		}
+	}
+}
+
+
+/// <summary>
+/// Shows the player the targets of enemy vehicles, infantry and aircraft whose target lies
+/// within the PsychicDetectionRadius of one of the player's working structures, by drawing a
+/// line from each such enemy to its target (Tactical::Render, 0x6D4766, and
+/// BuildingClass::IsWithinPsychicRange, 0x43B150).
+/// </summary>
+void Tactical::Draw_Psychic_Lines(void)
+{
+	if (PlayerPtr == NULL) {
+		return;
+	}
+
+	std::vector<BuildingClass const *> sensors;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == PlayerPtr && building->Class->PsychicDetectionRadius > 0 && !building->IsInLimbo && building->Is_Powered_On()) {
+			sensors.push_back(building);
+		}
+	}
+	if (sensors.empty()) {
+		return;
+	}
+
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (!techno->Is_Foot() || techno->IsInLimbo || techno->TarCom == NULL || techno->House->Is_Ally(PlayerPtr)) {
+			continue;
+		}
+		Coord const target = techno->TarCom->Center_Coord();
+		bool sensed = false;
+		for (BuildingClass const * sensor : sensors) {
+			int const reach = sensor->Class->PsychicDetectionRadius * CELL_LEPTON_W;
+			if ((Point2D(target) - Point2D(sensor->Center_Coord())).Length() <= reach) {
+				sensed = true;
+				break;
+			}
+		}
+		if (sensed) {
+			Draw_Action_Line_Segment(*LogicalSurface, techno->Center_Coord(), target, UIControls.Target_Line_Style(), 3, 4, 64);
 		}
 	}
 }
