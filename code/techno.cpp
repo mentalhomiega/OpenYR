@@ -494,7 +494,8 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	if (RTTI == RTTI_INFANTRY) {
 		InfantryClass const * infantry = static_cast<InfantryClass const *>(this);
 		if (infantry->Class->IsDeployFire) {
-			if (infantry->Is_Deployed()) {
+			// An AreaFire deploy weapon is also used against the soldier's own cell.
+			if (infantry->Is_Deployed() || (infantry->Is_Area_Fire_Deployer() && target != NULL && target == &Map[infantry->Get_Cell()])) {
 				return(infantry->Class->DeployFireWeapon);
 			}
 			return(IsInOpenToppedTransport && TClass->OpenTransportWeapon != -1 ? TClass->OpenTransportWeapon : 0);
@@ -2044,6 +2045,11 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 	}
 
 	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
+
+	// An AreaFire weapon always reaches the firer's own cell, where its shots land.
+	if (weapon != NULL && weapon->IsAreaFire && target == &Map[Get_Cell()]) {
+		return(true);
+	}
 
 	// A CellRangefinding weapon measures from the center of the firer's cell (TechnoClass::IsCloseEnough, 0x6F77B0).
 	Coord coord = Center_Coord();
@@ -4445,6 +4451,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	*/
 	if (Debug_Map || target == NULL) {
 		return(NULL);
+	}
+
+	// An AreaFire weapon strikes the firer's own cell, whatever it was aimed at (TechnoClass::Fire, 0x6FE140).
+	if (weapon->IsAreaFire) {
+		target = &Map[Get_Cell()];
 	}
 
 	// A Suicide weapon destroys the firer, whose death weapon then explodes (TechnoClass::Fire, 0x6FDD50).

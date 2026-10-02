@@ -287,7 +287,12 @@ void Enemies(void)
 		units++;
 		DebugString("AUTOTEST   enemy unit %s cell %d,%d height %d layer %d strength %d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, unit->HeightAGL, (int)unit->In_Which_Layer(), unit->Strength);
 	}
-	for (int index = 0; index < Infantry.Count(); index++) if (Infantry[index]->House != PlayerPtr) infantry++;
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass const * soldier = Infantry[index];
+		if (soldier->House == PlayerPtr) continue;
+		infantry++;
+		DebugString("AUTOTEST   enemy infantry %s cell %d,%d strength %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, soldier->Strength);
+	}
 	DebugString("AUTOTEST   enemy units %d infantry %d\n", units, infantry);
 }
 

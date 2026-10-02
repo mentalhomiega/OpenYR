@@ -144,6 +144,7 @@ class InfantryClass : public FootClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual bool Is_Ready_To_Random_Animate(void) const override;
 		bool Is_Deployed(void) const;
+		bool Is_Area_Fire_Deployer(void) const;
 		virtual void const * Get_Image_Data(void) const override;
 		int Shape_Number(void) const;
 		virtual ObjectTypeClass const * Class_Of(void) const override;

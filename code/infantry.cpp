@@ -1493,6 +1493,11 @@ void InfantryClass::AI(void)
 		return;
 	}
 
+	// A deployed soldier with an AreaFire deploy weapon keeps striking its own cell.
+	if (IsActive && !IsInLimbo && TarCom == NULL && Is_Deployed() && Is_Area_Fire_Deployer()) {
+		Assign_Target(&Map[Get_Cell()]);
+	}
+
 	if (CurrentTube >= 0) {
 		Tunnel_AI();
 		Update_Radar_Position();
@@ -2414,6 +2419,16 @@ int InfantryClass::Do_MISSION_UNLOAD(void)
 {
 	if (!Class->IsDeployer) {
 		return(BASECLASS::Do_MISSION_UNLOAD());
+	}
+
+	// A soldier whose deploy weapon is AreaFire fires it on the spot instead of deploying; the
+	// Desolator alone deploys as usual (InfantryClass::What_Action, 0x51ECDB, and 0x51F76D).
+	if (Is_Area_Fire_Deployer() && stricmp(Class->Name(), "DESO") != 0 && !Is_Deployed()) {
+		Assign_Destination(NULL);
+		Assign_Target(&Map[Get_Cell()]);
+		Assign_Mission(MISSION_ATTACK);
+		Commence();
+		return(1);
 	}
 
 	if (Is_Deployed()) {
@@ -4686,4 +4701,17 @@ void InfantryClass::Iron_Curtain(int, HouseClass *, bool)
 {
 	int damage = Class->MaxStrength;
 	Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+}
+
+
+/// <summary>
+/// Does this soldier deploy to fire, with an AreaFire weapon in its DeployFireWeapon slot?
+/// </summary>
+bool InfantryClass::Is_Area_Fire_Deployer(void) const
+{
+	if (!Class->IsDeployer || !Class->IsDeployFire) {
+		return(false);
+	}
+	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon;
+	return(weapon != NULL && weapon->IsAreaFire);
 }

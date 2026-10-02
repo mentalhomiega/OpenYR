@@ -247,6 +247,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// A DecloakToFire=no weapon fires while its owner stays cloaked.
 		bool IsDecloakToFire;
 
+		// An AreaFire weapon always strikes the firer's own cell.
+		bool IsAreaFire;
+
 		// Is this weapon's range measured from the center of the firer's cell rather than from the firer itself?
 		bool IsCellRangefinding;
 
