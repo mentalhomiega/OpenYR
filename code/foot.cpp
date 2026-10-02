@@ -170,6 +170,8 @@ FootClass::FootClass(HouseClass * house) :
 	IsNewNavCom(false),
 	IsPlanningToLook(false),
 	IsDeploying(false),
+	IsLocomotorProcessing(false),
+	IsPiggybackEndPending(false),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
 	IsFiring(false),
@@ -493,8 +495,11 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 
 			Cell nearby = Map.Nearby_Location(cell, TClass->Speed, Map.Get_Cell_Zone(PositionCell, mzone, IsOnBridge), mzone, IsOnBridge, Point2D(1, 1), false, true, check, true, PositionCell);
 
-			Assign_Destination(&Map[nearby]);
-			cell = nearby;
+			// Without a nearby cell the destination stays as it is; Map[CELL_NONE] is no cell.
+			if (nearby != CELL_NONE) {
+				Assign_Destination(&Map[nearby]);
+				cell = nearby;
+			}
 		}
 	}
 
@@ -3446,9 +3451,19 @@ void FootClass::AI(void)
 		}
 
 		if (Locomotion != NULL && !IsSinking && !IsFalling) {
+			IsLocomotorProcessing = true;
 			Locomotion->Process();
+			IsLocomotorProcessing = false;
 			if (!IsActive) {
 				return;
+			}
+			if (IsPiggybackEndPending) {
+				IsPiggybackEndPending = false;
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+				if (piggy != NULL && piggy->Is_Piggybacking()) {
+					Locomotion = piggy->End_Piggyback();
+					Assign_Mission(MISSION_ENTER);
+				}
 			}
 			if (Locomotion->Is_Moving_Now() && (Frame % TClass->WalkRate) == 0) {
 				TotalFramesWalked++;

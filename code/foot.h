@@ -297,6 +297,12 @@ class FootClass : public TechnoClass
 		*/
 		bool IsDeploying;
 
+		// The locomotor is running its Process, so it must not be replaced until that returns;
+		// a teleporter that reaches its refinery's dock meanwhile hands back to its own
+		// locomotor afterwards.
+		bool IsLocomotorProcessing;
+		bool IsPiggybackEndPending;
+
 		// The cell and house a Sensors=yes object's SensorsSight coverage was last laid down for.
 		Cell SensorCell;
 		HouseClass * SensorHouse;

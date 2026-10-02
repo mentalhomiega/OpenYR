@@ -5448,8 +5448,12 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 		} else if (current != ClassID_TeleportLocomotion) {
 			IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 			if (piggy != NULL && piggy->Is_Piggybacking()) {
-				Locomotion = piggy->End_Piggyback();
-				Assign_Mission(MISSION_ENTER);
+				if (IsLocomotorProcessing) {
+					IsPiggybackEndPending = true;
+				} else {
+					Locomotion = piggy->End_Piggyback();
+					Assign_Mission(MISSION_ENTER);
+				}
 			}
 		}
 	}
