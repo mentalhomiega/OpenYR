@@ -8748,6 +8748,23 @@ Decay:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+DecloakToFire:
+  key: DecloakToFire
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WeaponTypeClass
+      member: IsDecloakToFire
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 DefaultDebrisSmokeSystem:
   key: DefaultDebrisSmokeSystem
   scopes:

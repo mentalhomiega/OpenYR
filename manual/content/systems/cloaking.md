@@ -109,7 +109,7 @@ Attackers lose the object as a target when it starts to hide, and any that picke
 
 Each event below ends the cloak and starts the full fade back into view:
 
-- **Firing:** an object that is not fully visible cannot fire. When it tries to, it uncloaks and does not fire. An aircraft is the exception: it may fire during either fade, and uncloaks only when it tries to fire while fully hidden.
+- **Firing:** an object that is not fully visible cannot fire. When it tries to, it uncloaks and does not fire. An aircraft is the exception: it may fire during either fade, and uncloaks only when it tries to fire while fully hidden. A weapon with [`DecloakToFire=no`](/keys/decloaktofire/#scope-weapontype) fires without either rule, so the object stays hidden.
 - **Being hit:** any hit that does not destroy the object, including a heal and a hit its armor reduces to nothing.
 - **Crushing:** a vehicle that crushes anything.
 - **Planting a demolition charge:** an infantryman that plants one on a structure.

@@ -4067,9 +4067,9 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	/*
-	**	If cloaked, then firing is disabled.
+	**	If cloaked, then firing is disabled, unless the weapon fires from cloak.
 	*/
-	if (Cloak != UNCLOAKED) {
+	if (Cloak != UNCLOAKED && weapon->IsDecloakToFire) {
 		if (RTTI != RTTI_AIRCRAFT || Cloak == CLOAKED) {
 			return(FIRE_CLOAKED);
 		}

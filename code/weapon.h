@@ -244,6 +244,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// The weapon draws a magnetron beam to its target.
 		bool IsMagBeam;
 
+		// A DecloakToFire=no weapon fires while its owner stays cloaked.
+		bool IsDecloakToFire;
+
 		// Is this weapon's range measured from the center of the firer's cell rather than from the firer itself?
 		bool IsCellRangefinding;
 
