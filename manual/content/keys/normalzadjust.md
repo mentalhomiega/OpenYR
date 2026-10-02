@@ -18,6 +18,6 @@ The bias applies to the main shape wherever it is drawn, including the frames a 
 
 The main shape ignores this value in three cases:
 
-- The frames drawn from [`DeployingAnim`](/keys/deployinganim/) while the structure is unloading use no bias.
+- The frames drawn from [`DeployingAnim`](/keys/deployinganim/#scope-buildingtype) while the structure is unloading use no bias.
 - A [`FirestormWall=yes`](/keys/firestormwall/) structure is always drawn one pixel toward the viewer.
 - A [`LaserFence=yes`](/keys/laserfence/) segment is drawn one pixel toward the viewer while its run is slack. Its live frames use this value.

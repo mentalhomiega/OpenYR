@@ -9122,7 +9122,7 @@ DeployFire:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: 'no'
       declared_in: InfantryTypeClass
@@ -9130,6 +9130,20 @@ DeployFire:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsDeployFire
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 DeployFireWeapon:
   key: DeployFireWeapon
   scopes:
@@ -9139,7 +9153,7 @@ DeployFireWeapon:
       kind: identifier
       source: object-type
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '1'
       declared_in: InfantryTypeClass
@@ -9147,6 +9161,20 @@ DeployFireWeapon:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '1'
+      declared_in: UnitTypeClass
+      member: DeployFireWeapon
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 DeploySound:
   key: DeploySound
   scopes:
@@ -9227,6 +9255,23 @@ DeployToFire:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+DeployToLand:
+  key: DeployToLand
+  scopes:
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsDeployToLand
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 Deployer:
   key: Deployer
   scopes:
@@ -9247,6 +9292,20 @@ Deployer:
 DeployingAnim:
   key: DeployingAnim
   scopes:
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: DeployingAnim
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
   - applies_to:
     - BuildingType
     file: art.ini
@@ -9254,7 +9313,7 @@ DeployingAnim:
       kind: image
       fallback: object-type
     value_type: string
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: ''
       declared_in: BuildingTypeClass
@@ -17507,6 +17566,23 @@ IsScoreShuffle:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+IsSimpleDeployer:
+  key: IsSimpleDeployer
+  scopes:
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsSimpleDeployer
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 IsSonic:
   key: IsSonic
   scopes:
@@ -27584,13 +27660,27 @@ SetName:
 Shadow:
   key: Shadow
   scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AnimTypeClass
+      member: IsShadow
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
   - applies_to: *id001
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: 'yes'
       declared_in: BulletTypeClass

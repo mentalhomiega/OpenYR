@@ -123,6 +123,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "dbgprint.h"
 #include "draw.h"
 #include "drive.h"
 #include "fog.h"
@@ -210,6 +211,8 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	Flagged(HOUSE_NONE),
 	IsDumping(false),
 	IsHarvesting(false),
+	IsSimpleDeployed(false),
+	SimpleDeployFrame(-1),
 	GunnerPassengers(0),
 	MirageType(NULL),
 	MirageBlockedUntil(0),
@@ -3086,6 +3089,11 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 	**	If drawing of this unit is not explicitly prohibited, then proceed
 	**	with the render process.
 	*/
+	// A simple deployer is hidden while its deploying animation plays in its place.
+	if (SimpleDeployFrame != -1) {
+		return;
+	}
+
 	if (Visual_Character(false, NULL) != VISUAL_HIDDEN) {
 
 		TacticalMap->Add_To_Selectables((ObjectClass *)this, adjusted_point);
@@ -3111,6 +3119,9 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		}
 
 		UnitTypeClass * oldclass = Class;
+		if (IsSimpleDeployed && Class->UnloadingClass != NULL && Class->UnloadingClass->RTTI == RTTI_UNITTYPE) {
+			((UnitClass *)this)->Class = (UnitTypeClass *)Class->UnloadingClass;
+		}
 		if (IsDumping && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
 
 			// The rules default has only ever covered Tiberium harvesters, so a weeder
@@ -3263,6 +3274,10 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 	FacingType	dir;
 	Cell		cell;
 	BuildingClass * building;
+
+	if (Class->IsSimpleDeployer) {
+		return(Simple_Deploy_AI());
+	}
 
 	if (Class->Max_Passengers() > 0) {
 		/// derives from RA's UNIT_TRUCK
@@ -4427,7 +4442,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					if (Charge < Class->MaxCharge) {
 						action = ACTION_NO_DEPLOY;
 					}
-				} else {
+				} else if (!Class->IsSimpleDeployer) {
 					action = ACTION_NONE;
 				}
 			}
@@ -6324,6 +6339,8 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFollowing);
 	stream.Serialize(IsDumping);
 	stream.Serialize(IsHarvesting);
+	stream.Serialize(IsSimpleDeployed);
+	stream.Serialize(SimpleDeployFrame);
 	stream.Serialize(GunnerPassengers);
 	stream.Serialize(MirageType);
 	stream.Serialize(MirageBlockedUntil);
@@ -6980,4 +6997,45 @@ int UnitClass::Sort_Y(void) const
 		return(BunkerLinkedItem->Sort_Y() + 2000);
 	}
 	return(BASECLASS::Sort_Y());
+}
+
+
+/// <summary>
+/// Deploys or packs up a simple deployer where it stands (the unload mission of an
+/// IsSimpleDeployer unit): a DeployToLand unit in the air lands first, the DeployingAnim plays
+/// in the unit's place when it deploys, and the unit then returns to guard.
+/// </summary>
+int UnitClass::Simple_Deploy_AI(void)
+{
+	switch (Status) {
+		case 0:
+			if (Locomotion->Is_Moving()) {
+				return(5);
+			}
+			if (!IsSimpleDeployed && Class->IsDeployToLand && HeightAGL > 0) {
+				Assign_Target(NULL);
+				if (NavCom == NULL) {
+					Assign_Destination(&Map[Get_Cell()]);
+				}
+				return(5);
+			}
+			if (!IsSimpleDeployed && Class->DeployingAnim != NULL) {
+				new AnimClass(Class->DeployingAnim, Center_Coord());
+				SimpleDeployFrame = Frame + std::max(Class->DeployingAnim->Stages, 1) * std::max(Class->DeployingAnim->Delay, 1);
+			}
+			Status = 1;
+			return(1);
+
+		case 1:
+			if (SimpleDeployFrame != -1 && Frame < SimpleDeployFrame) {
+				return(1);
+			}
+			SimpleDeployFrame = -1;
+			IsSimpleDeployed = !IsSimpleDeployed;
+			DebugString("Deploy: %s %s\n", Class->Name(), IsSimpleDeployed ? "deploys" : "packs up");
+			Mark(MARK_CHANGE);
+			Assign_Mission(MISSION_GUARD);
+			return(1);
+	}
+	return(1);
 }

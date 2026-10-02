@@ -53,6 +53,7 @@
 #include "_mixfile.h"
 #include "_palette.h"
 #include "_rules.h"
+#include "animtype.h"
 #include "bsurface.h"
 #include "convert.h"
 #include "face.h"
@@ -104,6 +105,11 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	HalfDamageSmokeLocation(0, 0, 0),
 	IsPassive(false),
 	IsCrateGoodie(false),
+	IsSimpleDeployer(false),
+	IsDeployToLand(false),
+	IsDeployFire(false),
+	DeployFireWeapon(1),
+	DeployingAnim(NULL),
 	IsToHarvest(false),
 	IsToVeinHarvest(false),
 	IsFireAnim(false),
@@ -365,6 +371,11 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 {
 	if (BASECLASS::Read_INI(ini)) {
 		IsCrateGoodie = ini.Get_Bool(Name(), "CrateGoodie", IsCrateGoodie);
+		IsSimpleDeployer = ini.Get_Bool(Name(), "IsSimpleDeployer", IsSimpleDeployer);
+		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
+		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
+		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
+		DeployingAnim = TGet_Class(ini, Name(), "DeployingAnim", DeployingAnim);
 		IsNoFireWhileMoving = ini.Get_Bool(Name(), "NoMovingFire", IsNoFireWhileMoving);
 		IsDeployToFire = ini.Get_Bool(Name(), "DeployToFire", IsDeployToFire);
 		IsToHarvest = ini.Get_Bool(Name(), "Harvester", IsToHarvest);
@@ -589,6 +600,11 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HalfDamageSmokeLocation);
 	stream.Serialize(IsPassive);
 	stream.Serialize(IsCrateGoodie);
+	stream.Serialize(IsSimpleDeployer);
+	stream.Serialize(IsDeployToLand);
+	stream.Serialize(IsDeployFire);
+	stream.Serialize(DeployFireWeapon);
+	stream.Serialize(DeployingAnim);
 	stream.Serialize(IsToHarvest);
 	stream.Serialize(IsToVeinHarvest);
 	stream.Serialize(IsFireAnim);

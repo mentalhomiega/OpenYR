@@ -297,7 +297,7 @@ Damaged artwork is a second block of frames after the healthy ones, shown at or 
 Four more shapes are drawn with the structure, but none of them is an attached animation. Each is a shape file named in the Image ID art entry, and the structure chooses its frame, so none plays on its own:
 
 - [`BibShape`](/keys/bibshape/) is drawn under the structure.
-- [`DeployingAnim`](/keys/deployinganim/) replaces the structure's artwork while it releases a unit.
+- [`DeployingAnim`](/keys/deployinganim/#scope-buildingtype) replaces the structure's artwork while it releases a unit.
 - [`DoorAnim`](/keys/dooranim/) and [`UnderDoorAnim`](/keys/underdooranim/) are drawn around its factory door while it releases a unit.
 
 Despite its name, [`Bib=yes`](/keys/bib/) does not draw the apron. It draws nothing, and lets vehicles drive onto the eastern edge of the structure's footprint.

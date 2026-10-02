@@ -1101,7 +1101,7 @@ void FootClass::Stun(void)
  *=============================================================================================*/
 void FootClass::Approach_Target(void)
 {
-	if (RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsJellyfish) {
+	if (RTTI == RTTI_UNIT && (((UnitClass *)this)->Class->IsJellyfish || ((UnitClass *)this)->IsSimpleDeployed)) {
 		return;
 	}
 

@@ -105,6 +105,11 @@ class UnitClass : public FootClass
 		 */
 		bool IsHarvesting;
 
+		// A simple deployer that has deployed, and the frame its deploying animation ends.
+		bool IsSimpleDeployed;
+		int SimpleDeployFrame;
+		int Simple_Deploy_AI(void);
+
 		// The passenger count a gunner vehicle last acted on.
 		int GunnerPassengers;
 

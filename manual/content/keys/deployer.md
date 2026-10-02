@@ -20,7 +20,7 @@ While a human player's soldier is deployed:
 
 - it ignores move orders, and the cursor shows that it cannot move;
 - it never lies down and plays no idle animations;
-- it fires only if its type sets [`DeployFire=yes`](/keys/deployfire/), and then only at targets within the reach of its [`DeployFireWeapon`](/keys/deployfireweapon/). Without `DeployFire`, it takes no targets at all.
+- it fires only if its type sets [`DeployFire=yes`](/keys/deployfire/#scope-infantrytype), and then only at targets within the reach of its [`DeployFireWeapon`](/keys/deployfireweapon/#scope-infantrytype). Without `DeployFire`, it takes no targets at all.
 
 A computer player's soldier that is told to move packs up first and then walks off. A soldier that starts walking any other way while deployed leaves its deployment without playing `Undeploy`.
 

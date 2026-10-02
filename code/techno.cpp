@@ -500,6 +500,14 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		}
 	}
 
+	// A DeployFire=yes simple deployer fires DeployFireWeapon while deployed and its first weapon otherwise.
+	if (RTTI == RTTI_UNIT) {
+		UnitClass const * unit = static_cast<UnitClass const *>(this);
+		if (unit->Class->IsSimpleDeployer && unit->Class->IsDeployFire) {
+			return(unit->IsSimpleDeployed ? unit->Class->DeployFireWeapon : 0);
+		}
+	}
+
 	// As TechnoClass::SelectWeapon (0x6F3330): a multi-turret object fires its turret's weapon,
 	// and a gattling object its stage's pair, the second only at an aircraft in the air when
 	// the first stage's second weapon can hit aircraft.
@@ -5185,6 +5193,10 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
  *=============================================================================================*/
 bool TechnoClass::Can_Player_Move(void) const
 {
+	// A deployed simple deployer must pack up before it can move.
+	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsSimpleDeployed) {
+		return(false);
+	}
 	// A Slaved infantryman takes orders only from the miner it works for.
 	if (SlaveOwner != NULL && RTTI == RTTI_INFANTRY && ((InfantryClass const *)this)->Class->IsSlaved) {
 		return(false);
@@ -5228,7 +5240,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 
 	if (unit != NULL) {
 		blocked = unit->Is_Immobilized() || unit->CurrentTube >= TUBE_FIRST;
-		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP) {
+		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer) {
 			blocked = true;
 		}
 		if (unit->Class->Max_Passengers() > 0) {

@@ -63,6 +63,14 @@ class UnitTypeClass : public TechnoTypeClass
 		*/
 		bool IsCrateGoodie;
 
+		// An IsSimpleDeployer unit deploys where it stands, landing first with DeployToLand, and
+		// while deployed draws as its UnloadingClass and fires DeployFireWeapon when DeployFire is set.
+		bool IsSimpleDeployer;
+		bool IsDeployToLand;
+		bool IsDeployFire;
+		int DeployFireWeapon;
+		AnimTypeClass * DeployingAnim;
+
 		/*
 		**	Does this unit go into harvesting mode when it stops on a tiberium
 		**	field?  Typically, only one unit does this and that is the harvester.

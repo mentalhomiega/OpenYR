@@ -422,6 +422,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		bool IsReverse;
 
+		// A Shadow=yes animation keeps a shadow for each frame in the second half of its file.
+		bool IsShadow;
+
 		/*
 		 * If this animation should be hidden while the cell it occupies is fogged, then
 		 * this flag will be true. An animation belonging to a building is exempt from it,

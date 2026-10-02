@@ -18,7 +18,7 @@ NewTheater=yes ; draws GTFENC.SHP in temperate and GAFENC.SHP in snow
 Whether the renamed shape is drawn depends on the kind of type:
 
 - Overlays, projectiles and particles draw the renamed shape.
-- Structures are renamed whether or not the flag is set. The rename covers the structure's shape and the art named by [`Buildup`](/keys/buildup/), [`DeployingAnim`](/keys/deployinganim/), [`DoorAnim`](/keys/dooranim/), [`UnderDoorAnim`](/keys/underdooranim/), [`SpecialZOverlay`](/keys/specialzoverlay/) and [`BibShape`](/keys/bibshape/).
+- Structures are renamed whether or not the flag is set. The rename covers the structure's shape and the art named by [`Buildup`](/keys/buildup/), [`DeployingAnim`](/keys/deployinganim/#scope-buildingtype), [`DoorAnim`](/keys/dooranim/), [`UnderDoorAnim`](/keys/underdooranim/), [`SpecialZOverlay`](/keys/specialzoverlay/) and [`BibShape`](/keys/bibshape/).
 - Aircraft, infantry, vehicles, smudges and terrain objects ignore the flag in a new game. They draw `<Image ID>.SHP`, and have no shape if only the renamed file exists.
 
 A structure whose renamed file is missing draws the file with `G` as its second letter instead, such as `GGCNST.SHP` for `GACNST`. For every other type the renamed shape is the only name tried, and a type whose file for the current theater is missing has no shape, so provide one file for each theater.

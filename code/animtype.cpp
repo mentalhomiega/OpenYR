@@ -152,6 +152,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsSticky(false),
 	IsPingPong(false),
 	IsReverse(false),
+	IsShadow(false),
 	IsShouldFogRemove(true)
 {
 	Create_ID();
@@ -301,7 +302,7 @@ void AnimTypeClass::Load_Image(TheaterType theater)
 	ShapeSet const * shape = (ShapeSet const *)ImageData;
 	if (shape != NULL) {
 		if (Stages == 0) {
-			Stages = shape->Get_Count();
+			Stages = IsShadow ? shape->Get_Count() / 2 : shape->Get_Count();
 		}
 		if (LoopEnd == 0) {
 			LoopEnd = Stages;
@@ -418,6 +419,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsSticky = ini.Get_Bool(Name(), "Sticky", IsSticky);
 		IsPingPong = ini.Get_Bool(Name(), "PingPong", IsPingPong);
 		IsReverse = ini.Get_Bool(Name(), "Reverse", IsReverse);
+		IsShadow = ini.Get_Bool(Name(), "Shadow", IsShadow);
 		IsTiberiumChainReaction = ini.Get_Bool(Name(), "TiberiumChainReaction", IsTiberiumChainReaction);
 
 		int delay = ini.Get_Int(Name(), "Rate", -1);
@@ -597,6 +599,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSticky);
 	stream.Serialize(IsPingPong);
 	stream.Serialize(IsReverse);
+	stream.Serialize(IsShadow);
 	stream.Serialize(IsShouldFogRemove);
 }
 
@@ -626,6 +629,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsSticky);
 	crc(IsPingPong);
 	crc(IsReverse);
+	crc(IsShadow);
 	crc(Biggest);
 	crc(Damage);
 	crc(IsTiberiumChainReaction);
