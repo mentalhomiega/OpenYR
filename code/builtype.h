@@ -670,6 +670,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Leaves rubble where the structure stood once it is destroyed.
 		bool IsLeaveRubble;
 
+		// Demolition charges and airstrikes can be aimed at this structure.
+		bool IsCanC4;
+
 		bool Get_Rubble_Image(ShapeSet const * & image, int & frame, bool shadow) const;
 
 		// Played at the structure when it comes back into service and when it drops out.

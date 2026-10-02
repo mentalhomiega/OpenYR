@@ -420,6 +420,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The structure's surroundings are revealed to every player when it is placed.
 		bool IsRevealToAll;
 
+		// An Airstrike warhead weapon calls this many planes of this type, and the next call waits this many frames;
+		// the Elite values apply while the caller is elite.
+		int AirstrikeTeam;
+		int EliteAirstrikeTeam;
+		AircraftTypeClass * AirstrikeTeamType;
+		AircraftTypeClass * EliteAirstrikeTeamType;
+		int AirstrikeRechargeTime;
+		int EliteAirstrikeRechargeTime;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.

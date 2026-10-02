@@ -278,6 +278,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	CurrentRank(-1),
 	MindControlledBy(NULL),
 	SpawnOwner(NULL),
+	AirstrikeReadyFrame(0),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
 	DrainAnim(NULL),
@@ -515,6 +516,14 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 
 	if (IsInOpenToppedTransport && TClass->OpenTransportWeapon != -1 && PrimaryWeapon != NULL && SecondaryWeapon != NULL) {
 		return(TClass->OpenTransportWeapon);
+	}
+
+	// An Airstrike second weapon is chosen for a structure that allows C4 (TechnoClass::SelectWeapon, 0x6F3330).
+	{
+		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
+		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsAirstrike && targetbuilding != NULL && targetbuilding->Class->IsCanC4) {
+			return(1);
+		}
 	}
 
 	// A DrainWeapon second weapon is chosen for an enemy Drainable object while nothing is being drained (0x6F3330).
@@ -4354,6 +4363,40 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		return(NULL);
 	}
 
+	// An Airstrike warhead calls the firer's planes onto the target (AirstrikeClass::StartMission, 0x41D830).
+	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
+		bool const elite = Veterancy.Is_Elite();
+		AircraftTypeClass const * type = elite && TClass->EliteAirstrikeTeamType != NULL ? TClass->EliteAirstrikeTeamType : TClass->AirstrikeTeamType;
+		int const count = elite ? TClass->EliteAirstrikeTeam : TClass->AirstrikeTeam;
+		// While the last strike's planes are out, a new target only redirects those with ammunition left.
+		if (!AirstrikePlanes.empty()) {
+			for (AircraftClass * plane : AirstrikePlanes) {
+				if (plane->Ammo > 0 && plane->TarCom != target) {
+					plane->Assign_Target(target);
+					plane->Assign_Mission(MISSION_ATTACK);
+				}
+			}
+			return(NULL);
+		}
+		if (type != NULL && count > 0 && Frame >= AirstrikeReadyFrame && target->As_ObjectClass() != NULL) {
+			Cell const cell = target->As_ObjectClass()->Center_Coord().As_Cell();
+			for (int index = 0; index < count; index++) {
+				AircraftClass * plane = House->Send_Plane(type, MISSION_ATTACK, cell, NULL, 0, target);
+				if (plane != NULL) {
+					AirstrikePlanes.push_back(plane);
+				}
+			}
+			AirstrikeReadyFrame = Frame + (elite ? TClass->EliteAirstrikeRechargeTime : TClass->AirstrikeRechargeTime);
+			if (House->Is_Player_Control()) {
+				Sound_Effect(Rule->AirstrikeAttackVoice);
+			}
+			DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
+			LastFireFrame = Frame;
+			Arm = Rearm_Delay(which);
+		}
+		return(NULL);
+	}
+
 	// A DrainWeapon starts draining once the firer is over the structure, and sends it there first (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsDrainWeapon) {
 		if (target->Is_Techno() && ((TechnoClass *)target)->TClass->IsDrainable && DrainTarget == NULL) {
@@ -7273,6 +7316,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 			SpawnManager->Detach(target);
 		}
 		DiskLaser.Detach(target);
+		std::erase(AirstrikePlanes, (AircraftClass *)target);
 		if (DrainTarget == target) {
 			Stop_Drain();
 		}
@@ -9153,6 +9197,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpawnManager);
 	stream.Serialize(SpawnOwner);
 	stream.Serialize(DiskLaser);
+	stream.Serialize(AirstrikeReadyFrame);
+	stream.Serialize(AirstrikePlanes);
 	stream.Serialize(DrainTarget);
 	stream.Serialize(DrainingMe);
 	stream.Serialize(DrainAnim);

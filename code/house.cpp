@@ -8875,21 +8875,21 @@ SourceType HouseClass::Entry_Edge(void) const
 
 /// <summary>
 /// Brings one plane of the type in from this house's map edge to carry out the mission against
-/// the target cell, carrying count infantry of the type given (HouseClass::SendParadropPlanes,
-/// 0x65E660). Nothing comes when the plane cannot be placed.
+/// the target object, or the target cell without one, carrying count infantry of the type given
+/// (HouseClass::SendParadropPlanes, 0x65E660). Returns the plane, or NULL when it cannot be placed.
 /// </summary>
-void HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry, int count)
+AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry, int count, AbstractClass * target_object)
 {
 	Cell const cell = Map.Calculated_Cell(Entry_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
 	if (type == NULL || cell == CELL_NONE) {
-		return;
+		return(NULL);
 	}
 
 	ScenarioInit++;
 	AircraftClass * plane = static_cast<AircraftClass *>(type->Create_One_Of(this));
 	ScenarioInit--;
 	if (plane == NULL) {
-		return;
+		return(NULL);
 	}
 	plane->IsALoaner = true;
 
@@ -8900,9 +8900,9 @@ void HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission,
 	ScenarioInit--;
 	if (!placed) {
 		delete plane;
-		return;
+		return(NULL);
 	}
-	plane->Assign_Target(&Map[target]);
+	plane->Assign_Target(target_object != NULL ? target_object : &Map[target]);
 	plane->Assign_Mission(mission);
 
 	if (infantry != NULL) {
@@ -8916,6 +8916,7 @@ void HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission,
 		}
 	}
 	plane->Commence();
+	return(plane);
 }
 
 

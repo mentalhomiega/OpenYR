@@ -335,6 +335,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCrateBeneath(false),
 	IsCrateBeneathMoney(false),
 	IsLeaveRubble(false),
+	IsCanC4(true),
 	WorkingSound(VOC_NONE),
 	NotWorkingSound(VOC_NONE),
 	IsICBMLauncher(false),
@@ -1331,6 +1332,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCrateBeneath = ini.Get_Bool(Name(), "CrateBeneath", IsCrateBeneath);
 		IsCrateBeneathMoney = ini.Get_Bool(Name(), "CrateBeneathIsMoney", IsCrateBeneathMoney);
 		IsLeaveRubble = ini.Get_Bool(Name(), "LeaveRubble", IsLeaveRubble);
+		IsCanC4 = ini.Get_Bool(Name(), "CanC4", IsCanC4);
 		WorkingSound = ini.Get_VocType(Name(), "WorkingSound", WorkingSound);
 		NotWorkingSound = ini.Get_VocType(Name(), "NotWorkingSound", NotWorkingSound);
 		CloakRadiusInCells = ini.Get_Int(Name(), "CloakRadiusInCells", CloakRadiusInCells);
@@ -2326,6 +2328,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrateBeneath);
 	stream.Serialize(IsCrateBeneathMoney);
 	stream.Serialize(IsLeaveRubble);
+	stream.Serialize(IsCanC4);
 	stream.Serialize(WorkingSound);
 	stream.Serialize(NotWorkingSound);
 	stream.Serialize(IsICBMLauncher);

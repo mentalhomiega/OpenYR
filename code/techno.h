@@ -150,6 +150,10 @@ class TechnoClass :	public RadioClass,
 		// The ring a DiskLaser weapon is drawing for this object's current shot.
 		DiskLaserClass DiskLaser;
 
+		// The frame this object can call its next airstrike, and the planes of the strike still out.
+		int AirstrikeReadyFrame;
+		std::vector<AircraftClass *> AirstrikePlanes;
+
 		// The structure this object drains, the object draining this one, and the animation shown while draining.
 		TechnoClass * DrainTarget;
 		TechnoClass * DrainingMe;

@@ -219,6 +219,12 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CrashingSound(VOC_NONE),
 	VoiceCrashing(VOC_NONE),
 	IsRevealToAll(false),
+	AirstrikeTeam(0),
+	EliteAirstrikeTeam(0),
+	AirstrikeTeamType(NULL),
+	EliteAirstrikeTeamType(NULL),
+	AirstrikeRechargeTime(0),
+	EliteAirstrikeRechargeTime(0),
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
@@ -723,6 +729,12 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
 		VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
 		IsRevealToAll = ini.Get_Bool(Name(), "RevealToAll", IsRevealToAll);
+		AirstrikeTeam = ini.Get_Int(Name(), "AirstrikeTeam", AirstrikeTeam);
+		EliteAirstrikeTeam = ini.Get_Int(Name(), "EliteAirstrikeTeam", EliteAirstrikeTeam);
+		AirstrikeTeamType = TGet_Class(ini, Name(), "AirstrikeTeamType", AirstrikeTeamType);
+		EliteAirstrikeTeamType = TGet_Class(ini, Name(), "EliteAirstrikeTeamType", EliteAirstrikeTeamType);
+		AirstrikeRechargeTime = ini.Get_Int(Name(), "AirstrikeRechargeTime", AirstrikeRechargeTime);
+		EliteAirstrikeRechargeTime = ini.Get_Int(Name(), "EliteAirstrikeRechargeTime", EliteAirstrikeRechargeTime);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1263,6 +1275,12 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CrashingSound);
 	stream.Serialize(VoiceCrashing);
 	stream.Serialize(IsRevealToAll);
+	stream.Serialize(AirstrikeTeam);
+	stream.Serialize(EliteAirstrikeTeam);
+	stream.Serialize(AirstrikeTeamType);
+	stream.Serialize(EliteAirstrikeTeamType);
+	stream.Serialize(AirstrikeRechargeTime);
+	stream.Serialize(EliteAirstrikeRechargeTime);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);

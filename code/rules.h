@@ -308,6 +308,9 @@ class RulesClass
 		// Played as a DiskLaser weapon starts drawing its ring.
 		VocType DiskLaserChargeUp;
 
+		// Played when an airstrike is called in.
+		VocType AirstrikeAttackVoice;
+
 		// Played at a crate the player collects, by the crate's result.
 		VocType CrateMoneySound;
 		VocType CrateRevealSound;

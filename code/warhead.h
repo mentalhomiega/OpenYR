@@ -197,6 +197,9 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// An ElectricAssault warhead charges an allied Overpowerable structure instead of hurting it.
 		bool IsElectricAssault;
+
+		// The weapon calls its firer's airstrike planes onto the target instead of hitting it.
+		bool IsAirstrike;
 		bool IsPoison;
 
 		// The range, in pixels, of the sideways and vertical screen shake the warhead's detonation starts.
