@@ -22523,6 +22523,24 @@ OpenToppedDamageMultiplier:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+OpenToppedRangeBonus:
+  key: OpenToppedRangeBonus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: OpenToppedRangeBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 OpenToppedWarpDistance:
   key: OpenToppedWarpDistance
   scopes:
@@ -36746,12 +36764,12 @@ VoxelIndex:
 Wake:
   key: Wake
   scopes:
-  - applies_to:
+  - applies_to: &id087
     - global rules
     file: rules.ini
-    section:
+    section: &id088
       kind: literal
-      name: AudioVisual
+      name: General
     value_type: class
     status: generated
     _provenance:
@@ -36760,6 +36778,18 @@ Wake:
       member: Wake
       source: code/rules.cpp
       guard: null
+    read_from:
+    - file: rules.ini
+      section:
+        kind: literal
+        name: AudioVisual
+      value_type: class
+      applies_to: *id087
+    - file: rules.ini
+      section: *id088
+      value_type: class
+      applies_to: *id087
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 WalkFrames:
   key: WalkFrames

@@ -749,11 +749,19 @@ void AnimClass::AI(void)
 			bool bridge = PositionCoord.Z >= Map.Get_Height_GL(PositionCoord) + BRIDGE_LEPTON_HEIGHT;
 
 			if (water && !bridge) {
+				// Rules may leave Wake or SplashList empty; then nothing is shown.
+				int const splashes = Rule->SplashList.Count();
 				if (Class->IsMeteor) {
-					new AnimClass(Rule->SplashList[Rule->SplashList.Count()-1], PositionCoord + Coord(0, 0, 3));
+					if (splashes > 0 && Rule->SplashList[splashes - 1] != NULL) {
+						new AnimClass(Rule->SplashList[splashes - 1], PositionCoord + Coord(0, 0, 3));
+					}
 				} else {
-					new AnimClass(Rule->Wake, PositionCoord);
-					new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0, 0, 3));
+					if (Rule->Wake != NULL) {
+						new AnimClass(Rule->Wake, PositionCoord);
+					}
+					if (splashes > 0 && Rule->SplashList[0] != NULL) {
+						new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0, 0, 3));
+					}
 				}
 			} else {
 				if (Class->ExpireAnim != NULL) {

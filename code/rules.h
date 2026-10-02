@@ -168,6 +168,9 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport multiplies its damage by this.
 		double OpenToppedDamageMultiplier;
 
+		// A passenger firing from inside an open-topped transport reaches this many cells farther.
+		int OpenToppedRangeBonus;
+
 		// A vehicle in a bunker multiplies its damage and rate of fire by these and reaches this many cells farther.
 		double BunkerDamageMultiplier;
 		double BunkerROFMultiplier;

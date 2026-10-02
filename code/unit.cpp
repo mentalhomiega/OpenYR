@@ -1484,7 +1484,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 					count--;
 				} ;
 			} else if (HeightAGL <= 10 && IsToExplode && Map[Get_Coord()].Land_Type() == LAND_WATER) {
-				new AnimClass(Rule->Wake, PositionCoord);
+				if (Rule->Wake != NULL) new AnimClass(Rule->Wake, PositionCoord);
 				new AnimClass(Rule->SplashList[Rule->SplashList.Count() - 1], PositionCoord + Coord(0, 0, 5));
 			} else {
 				Explode();

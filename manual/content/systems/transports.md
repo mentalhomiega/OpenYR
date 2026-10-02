@@ -17,6 +17,7 @@ keys:
   - FireInTransport
   - OpenToppedAnim
   - OpenToppedDamageMultiplier
+  - OpenToppedRangeBonus
 ---
 
 A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero is a transport. A structure or infantry type that sets `Passengers` admits nobody, except a structure with [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/), which its owner's infantry or vehicles can enter. A player can order infantry and vehicles aboard a transport, but not aircraft.
@@ -79,6 +80,7 @@ The passengers of an [`OpenTopped=yes`](/keys/opentopped/) vehicle fight from in
 - A passenger fires only a weapon with [`FireInTransport=yes`](/keys/fireintransport/), and none while the transport is itself off the map, such as inside another transport.
 - A passenger with both a primary and a secondary weapon fires the weapon its type's [`OpenTransportWeapon`](/keys/opentransportweapon/) names, if any, instead of choosing between them. So does a [`DeployFire=yes`](/keys/deployfire/#scope-infantrytype) soldier that has not deployed.
 - Each shot's damage is multiplied by [`OpenToppedDamageMultiplier`](/keys/opentoppeddamagemultiplier/), after the passenger's own firepower bonuses, and rounded down.
+- The passenger can fire at targets [`OpenToppedRangeBonus`](/keys/opentoppedrangebonus/#scope-global-rules) whole cells beyond its weapon's `Range`, except with arcing projectiles.
 - A weapon with no [`Anim`](/keys/anim/) plays its [`OpenToppedAnim`](/keys/opentoppedanim/) when fired from the transport.
 
 ```ini title="rulesmd.ini"

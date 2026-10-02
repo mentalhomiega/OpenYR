@@ -346,6 +346,7 @@ RulesClass::RulesClass(void) :
 	AmmoCrateDamage(100),
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
+	OpenToppedRangeBonus(0),
 	BunkerDamageMultiplier(1.0),
 	BunkerROFMultiplier(1.0),
 	BunkerWeaponRangeBonus(2),
@@ -1036,6 +1037,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BarrelParticle = TGet_Class(ini, AUDIOVISUAL, "BarrelParticle", BarrelParticle);
 		BarrelParticle = TGet_Class(ini, YR_GENERAL, "BarrelParticle", BarrelParticle);
 		Wake = TGet_Class(ini, AUDIOVISUAL, "Wake", Wake);
+		// Yuri's Revenge keeps Wake under [General]; that entry wins when both are present.
+		Wake = TGet_Class(ini, "General", "Wake", Wake);
 		FlamingInfantry = TGet_Class(ini, AUDIOVISUAL, "FlamingInfantry", FlamingInfantry);
 		FlamingInfantry = TGet_Class(ini, YR_GENERAL, "FlamingInfantry", FlamingInfantry);
 		VeinAttack = TGet_Class(ini, AUDIOVISUAL, "VeinAttack", VeinAttack);
@@ -1262,6 +1265,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		AmmoCrateDamage = ini.Get_Int(COMBATDAMAGE, "AmmoCrateDamage", AmmoCrateDamage);
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
+		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
 		BunkerDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerDamageMultiplier", BunkerDamageMultiplier);
 		BunkerROFMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerROFMultiplier", BunkerROFMultiplier);
 		BunkerWeaponRangeBonus = ini.Get_Int(COMBATDAMAGE, "BunkerWeaponRangeBonus", BunkerWeaponRangeBonus);
@@ -2573,6 +2577,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmmoCrateDamage);
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(OpenToppedRangeBonus);
 	stream.Serialize(BunkerDamageMultiplier);
 	stream.Serialize(BunkerROFMultiplier);
 	stream.Serialize(BunkerWeaponRangeBonus);

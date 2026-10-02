@@ -2057,7 +2057,15 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		coord.Z = target->Center_Coord().Z;
 	}
 
-	return(TClass->In_Range(coord, target, weapon, Is_Bunkered() ? Rule->BunkerWeaponRangeBonus * CELL_LEPTON_W : 0));
+	// A bunkered vehicle and a passenger of an open-topped transport reach farther (TechnoClass::InRange, 0x6F72A2).
+	int bonus = 0;
+	if (Is_Bunkered()) {
+		bonus += Rule->BunkerWeaponRangeBonus * CELL_LEPTON_W;
+	}
+	if (IsInOpenToppedTransport) {
+		bonus += Rule->OpenToppedRangeBonus * CELL_LEPTON_W;
+	}
+	return(TClass->In_Range(coord, target, weapon, bonus));
 }
 
 
