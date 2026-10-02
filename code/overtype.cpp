@@ -120,6 +120,7 @@ OverlayTypeClass::OverlayTypeClass(char const * ininame) :
 	IsOverrides(false),
 	CellAnim(NULL),
 	IsDrawFlat(true),
+	IsRubble(false),
 	IsARock(false),
 	IsBuildableOver(false)
 {
@@ -373,6 +374,7 @@ bool OverlayTypeClass::Read_INI(CCINIClass const & ini)
 		IsVeins = ini.Get_Bool(IniName, "IsVeins", IsVeins);
 		IsChainReaction = ini.Get_Bool(IniName, "ChainReaction", IsChainReaction);
 		IsDrawFlat = ini.Get_Bool(IniName, "DrawFlat", IsDrawFlat);
+		IsRubble = ini.Get_Bool(IniName, "IsRubble", IsRubble);
 		IsARock = ini.Get_Bool(IniName, "IsARock", IsARock);
 		IsBuildableOver = ini.Get_Bool(IniName, "BuildableOver", IsBuildableOver);
 
@@ -479,6 +481,7 @@ void OverlayTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsChainReaction);
 	stream.Serialize(IsOverrides);
 	stream.Serialize(IsDrawFlat);
+	stream.Serialize(IsRubble);
 	stream.Serialize(IsARock);
 	stream.Serialize(IsBuildableOver);
 }

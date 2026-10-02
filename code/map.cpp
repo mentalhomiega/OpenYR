@@ -2546,7 +2546,7 @@ bool MapClass::Place_Crate(Cell const & cell, int powerup)
 	}
 
 	SpeedType speed = (*this)[cell].Land_Type() == LAND_WATER ? SPEED_FLOAT : SPEED_TRACK;
-	Cell place = Nearby_Location(cell, speed);
+	Cell place = Nearby_Location(cell, speed, -1, MZONE_NORMAL, false, Point2D(1, 1), true);
 	// Unlike a random crate, this one is not moved elsewhere when its cell already holds an overlay.
 	if (place == CELL_NONE || (*this)[place].Overlay != OVERLAY_NONE || !Crates[crateindex].Create_Crate(place)) {
 		return(false);

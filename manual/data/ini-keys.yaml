@@ -16896,6 +16896,23 @@ IsRailgun:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+IsRubble:
+  key: IsRubble
+  scopes:
+  - applies_to: *id034
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OverlayTypeClass
+      member: IsRubble
+      source: code/overtype.cpp
+      guard: null
+    level: OverlayTypeClass
 IsScoreRepeat:
   key: IsScoreRepeat
   scopes:
@@ -17559,6 +17576,23 @@ LeadershipRating:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+LeaveRubble:
+  key: LeaveRubble
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsLeaveRubble
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 LeaveTransportSound:
   key: LeaveTransportSound
   scopes:

@@ -1819,7 +1819,7 @@ void BuildingClass::AI(void)
 			Cell const crate_cell = Center_Coord().As_Cell();
 			Limbo();
 			Drop_Debris(WhomToRepay);
-			Leave_Crate(crate_cell);
+			After_Destruction(crate_cell);
 			Delete_Me();
 		}
 		return;
@@ -2183,6 +2183,45 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 
 
 /// <summary>
+/// Leaves this structure's rubble on its footprint and a crate at or near the given cell, as its
+/// type asks, once the structure has left the map (BuildingClass::AfterDestruction, 0x441F60).
+/// Rubble needs an OverlayType with IsRubble=yes and a LeaveRubble image.
+/// </summary>
+void BuildingClass::After_Destruction(Cell const & crate_cell)
+{
+	ShapeSet const * image = NULL;
+	int frame = 0;
+	if (Class->Get_Rubble_Image(image, frame, false)) {
+		OverlayTypeClass * rubble = NULL;
+		for (int index = 0; index < OverlayTypes.Count() && rubble == NULL; index++) {
+			if (OverlayTypes[index]->IsRubble) {
+				rubble = OverlayTypes[index];
+			}
+		}
+		if (rubble != NULL) {
+			for (Cell const * offset = Class->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+				Cell const cell = PositionCell + *offset;
+				if (Map.In_Radar(cell)) {
+					CellClass & cellptr = Map[cell];
+					cellptr.Rubble = NULL;
+					new OverlayClass(rubble, cell);
+					cellptr.Register_For_Redraw();
+				}
+			}
+			if (Map.In_Radar(PositionCell) && Map[PositionCell].Overlay == rubble->HeapID) {
+				Map[PositionCell].Rubble = Class;
+				DebugString("Rubble: %s leaves rubble at %d,%d\n", Class->Name(), PositionCell.X, PositionCell.Y);
+			}
+		}
+	}
+
+	if (Class->IsCrateBeneath) {
+		Map.Place_Crate(crate_cell, Class->IsCrateBeneathMoney ? CRATE_MONEY : -1);
+	}
+}
+
+
+/// <summary>
 /// Handles the destruction of the building.
 /// This routine performs everything that must happen the moment a structure is reduced
 /// to rubble. The occupants die with it, the ground is scorched, fire and explosions are
@@ -2193,18 +2232,6 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 /// <param name="forced">Should the destruction be forced, leaving no survivors?</param>
 /// <param name="offset">Pointer to the REFRESH_EOL terminated list of cell offsets that
 /// make up the building's footprint.</param>
-/// <summary>
-/// Places a crate at or near the cell once this structure has left the map, if its type has
-/// CrateBeneath (BuildingClass::AfterDestruction, 0x441F60).
-/// </summary>
-void BuildingClass::Leave_Crate(Cell const & cell)
-{
-	if (Class->IsCrateBeneath) {
-		Map.Place_Crate(cell, Class->IsCrateBeneathMoney ? CRATE_MONEY : -1);
-	}
-}
-
-
 void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *source, bool forced, Cell const *offset)
 {
 	int shakes;
@@ -2455,7 +2482,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					if (CountDown > 0) {
 						Cell const crate_cell = Center_Coord().As_Cell();
 						Delete_Me();
-						Leave_Crate(crate_cell);
+						After_Destruction(crate_cell);
 					}
 
 					break;

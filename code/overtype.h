@@ -148,6 +148,9 @@ class OverlayTypeClass: public ObjectTypeClass
 		 */
 		bool IsDrawFlat;
 
+		// Marks the cells of a destroyed LeaveRubble structure; it draws that structure's rubble instead of its own image.
+		bool IsRubble;
+
 		/*
 		 * If this overlay is a rock formation, then this flag will be true. Rocks skip the
 		 * vertical lift given to other upright overlays, and a unit on a ramp beside one takes

@@ -568,7 +568,7 @@ class BuildingClass : public TechnoClass
 		virtual void AI(void) override;
 		virtual void Cloaking_AI(bool fast) override;
 		virtual void Assign_Target(AbstractClass * target) override;
-		void Leave_Crate(Cell const & cell);
+		void After_Destruction(Cell const & crate_cell);
 		virtual void Do_Destruction(TechnoClass * last_contact, TechnoClass * source, bool forced, Cell const * offset);
 		virtual bool Toggle_Primary(void);
 		virtual unsigned entry_380(void); /// Returns 0. A reserved vtable slot that nothing implements.

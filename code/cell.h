@@ -51,6 +51,7 @@ class LightConvertClass;
 class TagClass;
 class TiberiumClass;
 class BuildingClass;
+class BuildingTypeClass;
 class UnitClass;
 class TechnoClass;
 class TerrainClass;
@@ -79,6 +80,9 @@ class CellClass : public AbstractClass
 
 		// The number of gap generators shrouding this cell for the local player.
 		int GapCount;
+
+		// The destroyed structure whose rubble this cell draws, set on the structure's top left cell only.
+		BuildingTypeClass * Rubble;
 
 		/*
 		 * When the cell falls under fog, the objects standing in it are replaced by

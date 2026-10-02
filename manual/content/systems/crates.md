@@ -118,7 +118,7 @@ A dropped crate takes no tracking slot, so, like a crate drawn into the map, it 
 
 ### Crates left by destroyed structures
 
-A structure whose type sets [`CrateBeneath=yes`](/keys/cratebeneath/) leaves a `WoodCrateImg` crate when it is destroyed. The crate is placed once the structure has left the map, on its center cell or the nearest cell to it in the playable area that is unoccupied and can be crossed by tracked vehicles, or by ships when the center cell is water. If that cell holds any overlay, or all 256 tracking slots are in use, no crate appears.
+A structure whose type sets [`CrateBeneath=yes`](/keys/cratebeneath/) leaves a `WoodCrateImg` crate when it is destroyed. The crate is placed once the structure has left the map, on its center cell or the nearest cell to it in the playable area that is unoccupied, holds no overlay, and can be crossed by tracked vehicles, or by ships when the center cell is water. A structure that also sets [`LeaveRubble=yes`](/keys/leaverubble/) covers its footprint with ruins first, so its crate lands beside them. If no such cell is found, or all 256 tracking slots are in use, no crate appears.
 
 The crate takes a tracking slot and expires like a random crate. With [`CrateBeneathIsMoney=yes`](/keys/cratebeneathismoney/) it is a money crate; otherwise its result is drawn at random when it is collected, in a campaign too.
 

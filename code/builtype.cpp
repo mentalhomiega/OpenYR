@@ -334,6 +334,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsClickRepairable(true),
 	IsCrateBeneath(false),
 	IsCrateBeneathMoney(false),
+	IsLeaveRubble(false),
 	WorkingSound(VOC_NONE),
 	NotWorkingSound(VOC_NONE),
 	IsICBMLauncher(false),
@@ -1329,6 +1330,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsClickRepairable = ini.Get_Bool(Name(), "ClickRepairable", IsClickRepairable);
 		IsCrateBeneath = ini.Get_Bool(Name(), "CrateBeneath", IsCrateBeneath);
 		IsCrateBeneathMoney = ini.Get_Bool(Name(), "CrateBeneathIsMoney", IsCrateBeneathMoney);
+		IsLeaveRubble = ini.Get_Bool(Name(), "LeaveRubble", IsLeaveRubble);
 		WorkingSound = ini.Get_VocType(Name(), "WorkingSound", WorkingSound);
 		NotWorkingSound = ini.Get_VocType(Name(), "NotWorkingSound", NotWorkingSound);
 		CloakRadiusInCells = ini.Get_Int(Name(), "CloakRadiusInCells", CloakRadiusInCells);
@@ -2323,6 +2325,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsClickRepairable);
 	stream.Serialize(IsCrateBeneath);
 	stream.Serialize(IsCrateBeneathMoney);
+	stream.Serialize(IsLeaveRubble);
 	stream.Serialize(WorkingSound);
 	stream.Serialize(NotWorkingSound);
 	stream.Serialize(IsICBMLauncher);
@@ -2643,4 +2646,23 @@ RTTIType BuildingTypeClass::Fetch_RTTI(void) const
 int BuildingTypeClass::Fetch_Heap_ID(void) const
 {
 	return(HeapID);
+}
+
+
+/// <summary>
+/// Fetches the image and frame this structure's rubble is drawn with, or its shadow, and returns
+/// whether it has any (BuildingTypeClass::Get_Rubble_Image, 0x45F160 and 0x45F1D0). A LeaveRubble
+/// type uses frame 3 of its own image, so an image needs more than four frames before shadows.
+/// </summary>
+bool BuildingTypeClass::Get_Rubble_Image(ShapeSet const * & image, int & frame, bool shadow) const
+{
+	if (!IsLeaveRubble) {
+		return(false);
+	}
+	image = (ShapeSet const *)Get_Image_Data();
+	if (image == NULL || image->Get_Count() / 2 <= 3) {
+		return(false);
+	}
+	frame = shadow ? image->Get_Count() / 2 + 3 : 3;
+	return(true);
 }

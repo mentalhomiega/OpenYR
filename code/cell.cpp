@@ -249,6 +249,7 @@ CellClass::CellClass(void) :
 	CellID(CELL_NONE),
 	RadLevel(0.0),
 	GapCount(0),
+	Rubble(NULL),
 	IsPlot(false),
 	IsCursorHere(false),
 	IsMapped(),
@@ -2215,6 +2216,19 @@ static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumC
 }
 
 
+// Finds the rubble image this cell draws and the window point its frame is centred on, from the
+// cell's top left corner; the point matches where the structure itself was drawn.
+static bool Rubble_Image(CellClass const & cell, ShapeSet const * & image, int & frame, Point2D & point, bool shadow)
+{
+	if (cell.Rubble == NULL || !cell.Rubble->Get_Rubble_Image(image, frame, shadow)) {
+		return(false);
+	}
+	TacticalMap->Coord_To_Pixel(Coord_Whole(cell.CellID), point);
+	point.Y += TacticalRect.Y - LEVEL_PIXEL_H_1 * cell.Height;
+	return(true);
+}
+
+
 /// <summary>
 /// Draws the shadow cast by the overlay on this cell.
 /// This routine is the darkened companion pass to Draw_Overlay, drawing the shadow artwork
@@ -2232,6 +2246,19 @@ void CellClass::Draw_Overlay_Shadow(Point2D const & xpoint, Rect const & cliprec
 		if (tibtype == TIBERIUM_NONE) return;
 		ShapeSet const * tiberium_image = Tiberium_Overlay_Image(*this, *Tiberiums[tibtype]);
 		if (tiberium_image == NULL || OverlayData >= tiberium_image->Get_Count() / 2) return;
+	}
+
+	if (overlay->IsRubble) {
+		ShapeSet const * image = NULL;
+		int frame = 0;
+		Point2D point;
+		if (Rubble_Image(*this, image, frame, point, true)) {
+			if (Drawer == NULL) {
+				Init_Drawer();
+			}
+			Draw_Shape(*LogicalSurface, *Drawer, image, frame, point - cliprect.Top_Left(), cliprect, ShapeFlags_Type(SHAPE_ZWRITE|SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_DARKEN), 0, -2 - yoffset);
+		}
+		return;
 	}
 
 	ShapeSet *shape = (ShapeSet *)overlay->Get_Image_Data();
@@ -2278,6 +2305,21 @@ void CellClass::Draw_Overlay(Point2D const & xpoint, Rect const & cliprect)
 	}
 
 	OverlayTypeClass * otype = OverlayTypes[Overlay];
+
+	if (otype->IsRubble) {
+		ShapeSet const * image = NULL;
+		int frame = 0;
+		Point2D rubblepoint;
+		// The rubble frame is drawn in the theater palette, whatever palette the structure used.
+		if (Rubble_Image(*this, image, frame, rubblepoint, false)) {
+			if (Drawer == NULL) {
+				Init_Drawer();
+			}
+			int const zoffset = LEVEL_PIXEL_H_1 * Height;
+			Draw_Shape(*LogicalSurface, *Drawer, image, frame, rubblepoint - cliprect.Top_Left(), cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - zoffset, ZGRAD_GROUND, TileBrightness);
+		}
+		return;
+	}
 
 	ShapeSet const * shape = (ShapeSet const *)otype->Get_Image_Data();
 
@@ -2370,6 +2412,15 @@ Rect CellClass::Overlay_Render_Rect(void) const
 	ShapeSet const * image = NULL;
 	OverlayTypeClass const * overlay = OverlayTypes[Overlay];
 
+	if (overlay->IsRubble) {
+		int frame = 0;
+		Point2D point;
+		if (!Rubble_Image(*this, image, frame, point, false)) {
+			return(Rect(0, 0, 0, 0));
+		}
+		return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+	}
+
 	if (overlay->IsTiberium) {
 		TiberiumType tib = Tiberium_Type_Here();
 		if (tib != TIBERIUM_NONE) {
@@ -2411,6 +2462,14 @@ Rect CellClass::Overlay_Shadow_Render_Rect(void) const
 
 	if (Overlay != OVERLAY_NONE) {
 		OverlayTypeClass const * overlay = OverlayTypes[Overlay];
+		if (overlay->IsRubble) {
+			int frame = 0;
+			Point2D point;
+			if (!Rubble_Image(*this, image, frame, point, true)) {
+				return(Rect(0, 0, 0, 0));
+			}
+			return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+		}
 		if (overlay->IsTiberium) {
 			TiberiumType tibtype = Tiberium_Type_Here();
 			if (tibtype == TIBERIUM_NONE) return(Rect(0, 0, 0, 0));
@@ -4433,6 +4492,7 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CellID);
 	stream.Serialize(RadLevel);
 	stream.Serialize(GapCount);
+	stream.Serialize(Rubble);
 
 	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate
 	// that names none is refused here, while the record can still be thrown away whole.
