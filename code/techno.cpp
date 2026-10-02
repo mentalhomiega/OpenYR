@@ -277,6 +277,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IronTintStage(10),
 	CurrentRank(-1),
 	MindControlledBy(NULL),
+	SpawnOwner(NULL),
 	IsPermaControlled(false),
 	CurrentWeaponNumber(0),
 	CurrentTurretNumber(-1),
@@ -1928,6 +1929,9 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		if (!TemporalImUsing && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsTemporal) {
 			TemporalImUsing.emplace(this);
 		}
+		if (!SpawnManager && TClass->Spawns != NULL && TClass->SpawnsNumber > 0) {
+			SpawnManager.emplace(this, TClass->Spawns, TClass->SpawnsNumber, TClass->SpawnRegenRate, TClass->SpawnReloadRate);
+		}
 		if (!ParasiteImUsing && Is_Foot() && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsParasite) {
 			ParasiteImUsing.emplace(this);
 		}
@@ -3178,6 +3182,10 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	if (SpawnManager) {
+		SpawnManager->AI();
+	}
+
 	if (IsGattlingSoundPlaying) {
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound);
 	}
@@ -4278,6 +4286,14 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	**	Perform a quick legality check to see if firing can occur.
 	*/
 	if (Debug_Map || target == NULL) {
+		return(NULL);
+	}
+
+	// A Spawner weapon sends the carried aircraft or missiles instead of a projectile (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsSpawner) {
+		if (SpawnManager) {
+			SpawnManager->Set_Target(target);
+		}
 		return(NULL);
 	}
 
@@ -5540,6 +5556,9 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
 			if (CaptureManager) {
 				CaptureManager->Free_All();
+			}
+			if (SpawnManager) {
+				SpawnManager->Kill_Nodes();
 			}
 			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
 				TemporalImUsing->Let_Go();
@@ -6957,6 +6976,9 @@ void TechnoClass::Delete_Me(void)
 	if (CaptureManager) {
 		CaptureManager->Free_All();
 	}
+	if (SpawnManager) {
+		SpawnManager->Kill_Nodes();
+	}
 	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
 		TemporalImUsing->Let_Go();
 	}
@@ -7143,6 +7165,12 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		Cargo.Detach((FootClass *)target);
 		if (CaptureManager) {
 			CaptureManager->Detach(target);
+		}
+		if (SpawnManager) {
+			SpawnManager->Detach(target);
+		}
+		if (SpawnOwner == target) {
+			SpawnOwner = NULL;
 		}
 		if (MindControlledBy == target) {
 			MindControlledBy = NULL;
@@ -8990,6 +9018,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CaptureManager);
 	stream.Serialize(MindControlledBy);
 	stream.Serialize(IsPermaControlled);
+	stream.Serialize(SpawnManager);
+	stream.Serialize(SpawnOwner);
 	stream.Serialize(CurrentWeaponNumber);
 	stream.Serialize(CurrentTurretNumber);
 	stream.Serialize(CurrentGattlingStage);

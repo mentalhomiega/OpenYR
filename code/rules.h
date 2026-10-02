@@ -1526,6 +1526,40 @@ class RulesClass
 		 */
 		WarheadTypeClass const * C4Warhead;
 
+		// The warheads V3 rockets and Dreadnought and Boomer missiles explode with, normal and elite.
+		WarheadTypeClass const * V3Warhead;
+		WarheadTypeClass const * V3EliteWarhead;
+		WarheadTypeClass const * DMislWarhead;
+		WarheadTypeClass const * DMislEliteWarhead;
+		WarheadTypeClass const * CMislWarhead;
+		WarheadTypeClass const * CMislEliteWarhead;
+
+		// How a spawned missile type flies, read from the [General] keys named by its prefix.
+		struct RocketTypeStruct {
+			int PauseFrames = 0;
+			int TiltFrames = 60;
+			float PitchInitial = 0.0f;
+			float PitchFinal = 1.0f;
+			float TurnRate = 0.05f;
+			int RaiseRate = 1;
+			float Acceleration = 0.4f;
+			int Altitude = 768;
+			int Damage = 1000;
+			int EliteDamage = 1000;
+			int BodyLength = 256;
+			bool IsLazyCurve = true;
+			AircraftTypeClass * Type = nullptr;
+
+			void Read(CCINIClass const & ini, char const * section, char const * prefix);
+			void Serialize(SaveStreamClass & stream);
+		};
+		RocketTypeStruct V3Rocket;
+		RocketTypeStruct DMisl;
+		RocketTypeStruct CMisl;
+
+		// The rocket settings for a missile type, or nothing when it is none of the three.
+		RocketTypeStruct const * Rocket_Of(AircraftTypeClass const * type) const;
+
 		/*
 		 * This is the warhead an Ion Cannon strike damages with. It always destroys a
 		 * wall or a bridge outright rather than rolling for it.

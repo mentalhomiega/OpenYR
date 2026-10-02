@@ -5315,6 +5315,42 @@ CD:
       source: code/campaign.cpp
       guard: null
     level: CampaignClass
+CMislEliteWarhead:
+  key: CMislEliteWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CMislEliteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+CMislWarhead:
+  key: CMislWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CMislWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Cameo:
   key: Cameo
   scopes:
@@ -7918,6 +7954,42 @@ Cyborg:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+DMislEliteWarhead:
+  key: DMislEliteWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DMislEliteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DMislWarhead:
+  key: DMislWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DMislWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Damage:
   key: Damage
   scopes:
@@ -19637,6 +19709,23 @@ MissileROTVar:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MissileSpawn:
+  key: MissileSpawn
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsMissileSpawn
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 MissileSpeedVar:
   key: MissileSpeedVar
   scopes:
@@ -26472,6 +26561,23 @@ ScrollRate:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+SecondSpawnOffset:
+  key: SecondSpawnOffset
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: TechnoTypeClass
+      member: SecondSpawnOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Secondary:
   key: Secondary
   scopes:
@@ -28179,6 +28285,40 @@ SpawnRadius:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+SpawnRegenRate:
+  key: SpawnRegenRate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SpawnRegenRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SpawnReloadRate:
+  key: SpawnReloadRate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SpawnReloadRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SpawnSparkPercentage:
   key: SpawnSparkPercentage
   scopes:
@@ -28213,9 +28353,57 @@ SpawnTranslucencyCutoff:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+Spawned:
+  key: Spawned
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsSpawned
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Spawner:
+  key: Spawner
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsSpawner
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Spawns:
   key: Spawns
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: Spawns
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to: *id005
     file: art.ini
     section:
@@ -28258,6 +28446,23 @@ Spawns:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+SpawnsNumber:
+  key: SpawnsNumber
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SpawnsNumber
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SpawnsTiberium:
   key: SpawnsTiberium
   scopes:
@@ -34398,6 +34603,42 @@ UseTurretShadow:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+V3EliteWarhead:
+  key: V3EliteWarhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: V3EliteWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+V3Warhead:
+  key: V3Warhead
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: V3Warhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 VShift:
   key: VShift
   scopes:

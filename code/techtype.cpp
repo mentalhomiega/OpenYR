@@ -18,6 +18,7 @@
 #include "_map.h"
 #include "_mixfile.h"
 #include "_rules.h"
+#include "airctype.h"
 #include "animtype.h"
 #include "building.h"
 #include "builtype.h"
@@ -201,6 +202,13 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	DamageSound(VOC_NONE),
 	IsNatural(false),
 	IsUnnatural(false),
+	Spawns(NULL),
+	SpawnsNumber(0),
+	SpawnRegenRate(0),
+	SpawnReloadRate(0),
+	SecondSpawnOffset(0, 0, 0),
+	IsSpawned(false),
+	IsMissileSpawn(false),
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
@@ -688,6 +696,13 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DamageSound = ini.Get_VocType(Name(), "DamageSound", DamageSound);
 		IsNatural = ini.Get_Bool(Name(), "Natural", IsNatural);
 		IsUnnatural = ini.Get_Bool(Name(), "Unnatural", IsUnnatural);
+		Spawns = TGet_Class(ini, Name(), "Spawns", Spawns);
+		SpawnsNumber = ini.Get_Int(Name(), "SpawnsNumber", SpawnsNumber);
+		SpawnRegenRate = ini.Get_Int(Name(), "SpawnRegenRate", SpawnRegenRate);
+		SpawnReloadRate = ini.Get_Int(Name(), "SpawnReloadRate", SpawnReloadRate);
+		SecondSpawnOffset = ini.Get_Point(Name(), "SecondSpawnOffset", SecondSpawnOffset);
+		IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
+		IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1211,6 +1226,13 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageSound);
 	stream.Serialize(IsNatural);
 	stream.Serialize(IsUnnatural);
+	stream.Serialize(Spawns);
+	stream.Serialize(SpawnsNumber);
+	stream.Serialize(SpawnRegenRate);
+	stream.Serialize(SpawnReloadRate);
+	stream.Serialize(SecondSpawnOffset);
+	stream.Serialize(IsSpawned);
+	stream.Serialize(IsMissileSpawn);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);

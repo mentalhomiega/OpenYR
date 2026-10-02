@@ -92,6 +92,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsElectric(false),
 	IsLaser(false),
 	IsElectricBolt(false),
+	IsSpawner(false),
 	IsAlternateColor(false),
 	IsIonSensitive(false),
 	Burst(1),
@@ -215,6 +216,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
+		IsSpawner = ini.Get_Bool(IniName, "Spawner", IsSpawner);
 		IsAlternateColor = ini.Get_Bool(IniName, "IsAlternateColor", IsAlternateColor);
 		IsElectric = ini.Get_Bool(IniName, "Charges", IsElectric);
 		IsTurboBoosted = ini.Get_Bool(IniName, "TurboBoost", IsTurboBoosted);
@@ -449,6 +451,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);
 	stream.Serialize(IsElectricBolt);
+	stream.Serialize(IsSpawner);
 	stream.Serialize(IsAlternateColor);
 	stream.Serialize(IsIonSensitive);
 }

@@ -566,7 +566,7 @@ void AircraftClass::AI(void)
 		return;
 	}
 
-	if (Mission == MISSION_SLEEP && HeightAGL > 0) {
+	if (Mission == MISSION_SLEEP && HeightAGL > 0 && !Class->IsMissileSpawn) {
 		Assign_Mission(MISSION_GUARD);
 	}
 

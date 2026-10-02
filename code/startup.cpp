@@ -115,6 +115,7 @@
 #include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shapeset.h"
+#include "rocket.h"
 #include "ship.h"
 #include "side.h"
 #include "sidebar.h"
@@ -287,6 +288,7 @@ static void RegisterClasses(void)
 	REGISTER_CLASS(MechLocomotionClass, ClassID_MechLocomotion);
 	REGISTER_CLASS(LevitateLocomotionClass, ClassID_LevitateLocomotion);
 	REGISTER_CLASS(ShipLocomotionClass, ClassID_ShipLocomotion);
+	REGISTER_CLASS(RocketLocomotionClass, ClassID_RocketLocomotion);
 	REGISTER_CLASS(BulletClass, ClassID_BulletClass);
 	REGISTER_CLASS(FactoryClass, ClassID_FactoryClass);
 	REGISTER_CLASS(WarheadTypeClass, ClassID_WarheadTypeClass);

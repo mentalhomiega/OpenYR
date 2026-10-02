@@ -32,6 +32,7 @@ class UnitTypeClass;
 class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WeaponTypeClass;
+class AircraftTypeClass;
 
 /***************************************************************************
 **	This class is the common data for all objects that can be owned, produced,
@@ -384,6 +385,20 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A Natural object never fires at an Unnatural one.
 		bool IsNatural;
 		bool IsUnnatural;
+
+		// The aircraft a Spawner weapon launches, how many the object carries, the frames to
+		// replace a lost one and to rearm a returned one.
+		AircraftTypeClass * Spawns;
+		int SpawnsNumber;
+		int SpawnRegenRate;
+		int SpawnReloadRate;
+
+		// Where the second of a pair of spawned missiles leaves, relative to the object's center.
+		TPoint3D<int> SecondSpawnOffset;
+
+		// The object is launched by a spawner; a MissileSpawn one flies as a missile and is spent on impact.
+		bool IsSpawned;
+		bool IsMissileSpawn;
 
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries

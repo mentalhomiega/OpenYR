@@ -35,6 +35,7 @@
 #include "_voxel.h"
 #include "audio/audiohandle.h"
 #include "capture.h"
+#include "spawnman.h"
 #include "parasite.h"
 #include "temporal.h"
 #include "cargo.h"
@@ -140,6 +141,10 @@ class TechnoClass :	public RadioClass,
 		std::optional<CaptureManagerClass> CaptureManager;
 		TechnoClass * MindControlledBy;
 		bool IsPermaControlled;
+
+		// The aircraft or missiles a Spawns type carries, and for a spawned object the one that launched it.
+		std::optional<SpawnManagerClass> SpawnManager;
+		TechnoClass * SpawnOwner;
 
 		/*
 		 * The weapon a multi-turret object fires, and a gattling object's stage and spin. The

@@ -725,6 +725,12 @@ RulesClass::RulesClass(void) :
 	EMPulseWarhead(NULL),
 	EMPulseProjectile(NULL),
 	C4Warhead(NULL),
+	V3Warhead(NULL),
+	V3EliteWarhead(NULL),
+	DMislWarhead(NULL),
+	DMislEliteWarhead(NULL),
+	CMislWarhead(NULL),
+	CMislEliteWarhead(NULL),
 	IonCannonWarhead(NULL),
 	FirestormWarhead(NULL),
 	VeinholeWarhead(NULL),
@@ -1262,6 +1268,12 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		FlameDamage = TGet_Class(ini, COMBATDAMAGE, "FlameDamage", FlameDamage);
 		FlameDamage2 = TGet_Class(ini, COMBATDAMAGE, "FlameDamage2", FlameDamage2);
 		C4Warhead = TGet_Class(ini, COMBATDAMAGE, "C4Warhead", C4Warhead);
+		V3Warhead = TGet_Class(ini, COMBATDAMAGE, "V3Warhead", V3Warhead);
+		V3EliteWarhead = TGet_Class(ini, COMBATDAMAGE, "V3EliteWarhead", V3EliteWarhead);
+		DMislWarhead = TGet_Class(ini, COMBATDAMAGE, "DMislWarhead", DMislWarhead);
+		DMislEliteWarhead = TGet_Class(ini, COMBATDAMAGE, "DMislEliteWarhead", DMislEliteWarhead);
+		CMislWarhead = TGet_Class(ini, COMBATDAMAGE, "CMislWarhead", CMislWarhead);
+		CMislEliteWarhead = TGet_Class(ini, COMBATDAMAGE, "CMislEliteWarhead", CMislEliteWarhead);
 		IonCannonWarhead = TGet_Class(ini, COMBATDAMAGE, "IonCannonWarhead", IonCannonWarhead);
 		FirestormWarhead = TGet_Class(ini, COMBATDAMAGE, "FirestormWarhead", FirestormWarhead);
 		VeinholeWarhead = TGet_Class(ini, COMBATDAMAGE, "VeinholeWarhead", VeinholeWarhead);
@@ -1347,6 +1359,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
+		V3Rocket.Read(ini, GENERAL, "V3Rocket");
+		DMisl.Read(ini, GENERAL, "DMisl");
+		CMisl.Read(ini, GENERAL, "CMisl");
 		ChronoPlacement = TGet_Class(ini, GENERAL, "ChronoPlacement", ChronoPlacement);
 		ChronoBlast = TGet_Class(ini, GENERAL, "ChronoBlast", ChronoBlast);
 		ChronoBlastDest = TGet_Class(ini, GENERAL, "ChronoBlastDest", ChronoBlastDest);
@@ -2896,6 +2911,15 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPulseWarhead);
 	stream.Serialize(EMPulseProjectile);
 	stream.Serialize(C4Warhead);
+	stream.Serialize(V3Warhead);
+	stream.Serialize(V3EliteWarhead);
+	stream.Serialize(DMislWarhead);
+	stream.Serialize(DMislEliteWarhead);
+	stream.Serialize(CMislWarhead);
+	stream.Serialize(CMislEliteWarhead);
+	stream.Serialize(V3Rocket);
+	stream.Serialize(DMisl);
+	stream.Serialize(CMisl);
 	stream.Serialize(IonCannonWarhead);
 	stream.Serialize(FirestormWarhead);
 	stream.Serialize(VeinholeWarhead);
@@ -3177,6 +3201,16 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == C4Warhead) {
 		C4Warhead = NULL;
+	}
+	for (WarheadTypeClass const ** warhead : {&V3Warhead, &V3EliteWarhead, &DMislWarhead, &DMislEliteWarhead, &CMislWarhead, &CMislEliteWarhead}) {
+		if (target == *warhead) {
+			*warhead = NULL;
+		}
+	}
+	for (RocketTypeStruct * rocket : {&V3Rocket, &DMisl, &CMisl}) {
+		if (target == rocket->Type) {
+			rocket->Type = NULL;
+		}
 	}
 	if (target == IonCannonWarhead) {
 		IonCannonWarhead = NULL;
@@ -3688,4 +3722,65 @@ void RulesClass::Load_Art_INI(void)
 	ArtINI.Clear();
 	CCFileClass art(DeploymentConfig.ArtFile.c_str());
 	ArtINI.Load(art, false);
+}
+
+
+/// <summary>
+/// Reads one missile type's flight settings from the keys named "<prefix>PauseFrames" and so on
+/// (RulesClass::General, 0x66D530), keeping the current value of any key that is absent.
+/// </summary>
+void RulesClass::RocketTypeStruct::Read(CCINIClass const & ini, char const * section, char const * prefix)
+{
+	auto key = [prefix](char const * name) {
+		return(std::string(prefix) + name);
+	};
+	PauseFrames = ini.Get_Int(section, key("PauseFrames").c_str(), PauseFrames);
+	TiltFrames = ini.Get_Int(section, key("TiltFrames").c_str(), TiltFrames);
+	PitchInitial = (float)ini.Get_Float(section, key("PitchInitial").c_str(), PitchInitial);
+	PitchFinal = (float)ini.Get_Float(section, key("PitchFinal").c_str(), PitchFinal);
+	TurnRate = (float)ini.Get_Float(section, key("TurnRate").c_str(), TurnRate);
+	RaiseRate = ini.Get_Int(section, key("RaiseRate").c_str(), RaiseRate);
+	Acceleration = (float)ini.Get_Float(section, key("Acceleration").c_str(), Acceleration);
+	Altitude = ini.Get_Int(section, key("Altitude").c_str(), Altitude);
+	Damage = ini.Get_Int(section, key("Damage").c_str(), Damage);
+	EliteDamage = ini.Get_Int(section, key("EliteDamage").c_str(), EliteDamage);
+	BodyLength = ini.Get_Int(section, key("BodyLength").c_str(), BodyLength);
+	IsLazyCurve = ini.Get_Bool(section, key("LazyCurve").c_str(), IsLazyCurve);
+	Type = TGet_Class(ini, section, key("Type").c_str(), Type);
+}
+
+
+void RulesClass::RocketTypeStruct::Serialize(SaveStreamClass & stream)
+{
+	stream.Serialize(PauseFrames);
+	stream.Serialize(TiltFrames);
+	stream.Serialize(PitchInitial);
+	stream.Serialize(PitchFinal);
+	stream.Serialize(TurnRate);
+	stream.Serialize(RaiseRate);
+	stream.Serialize(Acceleration);
+	stream.Serialize(Altitude);
+	stream.Serialize(Damage);
+	stream.Serialize(EliteDamage);
+	stream.Serialize(BodyLength);
+	stream.Serialize(IsLazyCurve);
+	stream.Serialize(Type);
+}
+
+
+RulesClass::RocketTypeStruct const * RulesClass::Rocket_Of(AircraftTypeClass const * type) const
+{
+	if (type == NULL) {
+		return(NULL);
+	}
+	if (type == V3Rocket.Type) {
+		return(&V3Rocket);
+	}
+	if (type == CMisl.Type) {
+		return(&CMisl);
+	}
+	if (type == DMisl.Type) {
+		return(&DMisl);
+	}
+	return(NULL);
 }
