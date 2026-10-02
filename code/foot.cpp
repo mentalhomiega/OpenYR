@@ -3680,6 +3680,7 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TryTryAgain);
 	stream.Serialize(BaseAttackTimer);
 	stream.Serialize(BlockagePathDelay);
+	stream.Serialize(ParalysisTimer);
 
 	/*
 	 * The locomotor is a sub-object rather than a member, so it travels as a record of

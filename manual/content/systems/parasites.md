@@ -8,6 +8,7 @@ keys:
   - Parasiteable
   - SuppressionThreshold
   - ReselectIfLimboed
+  - Paralyzes
 related:
   - type: system
     id: temporal-weapons
@@ -38,10 +39,16 @@ A weapon with [`LimboLaunch=yes`](/keys/limbolaunch/) takes its firer off the ma
 
 The victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time.
 
+## Holding the victim
+
+A parasite whose warhead has [`Paralyzes`](/keys/paralyzes/) set paralyzes its victim for that many frames with each bite, so a bite at least every `Paralyzes` frames holds the victim for as long as the parasite stays inside. A paralyzed vehicle or ship that drives or sails does not start a move and ignores move orders, and a paralyzed object does not launch spawned aircraft or missiles. The paralysis ends as soon as the parasite comes out.
+
 ## Coming out
 
 When the victim dies, leaves the map or comes under the Iron Curtain, the parasite comes back out on the victim's cell, or the nearest cell it can stand on. It guards there, and a [`ReselectIfLimboed=yes`](/keys/reselectiflimboed/) parasite the player had selected when it leapt is selected again. A parasite with no room to come out is lost.
 
+A parasite that comes out is paralyzed for one `ROF` of its primary weapon. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time.
+
 Heavy damage to the victim can kill the parasite instead. A hit from anyone else above the parasite type's [`SuppressionThreshold`](/keys/suppressionthreshold/) dooms the parasite for twice the damage less the threshold, in frames; if the victim dies or the parasite is driven out in that time, the parasite dies with it. Healing the victim kills the parasite.
 
-Yuri's Revenge also lets the giant squid grab ships with its own animation, and rocks a vehicle each time the parasite bites. Neither is done yet.
+Yuri's Revenge also draws the giant squid wrapped around the ship it holds, and rocks a vehicle each time the parasite bites. Neither is done yet.

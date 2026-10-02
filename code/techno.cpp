@@ -4013,6 +4013,16 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A paralyzed object launches no spawned craft, and a paralyzed Organic one does not fire at all (TechnoClass::GetFireError, 0x6FC339).
+	if (Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
+		if (weapon->IsSpawner) {
+			goto CANT_FIRE;
+		}
+		if (TClass->IsOrganic) {
+			return(FIRE_ILLEGAL);
+		}
+	}
+
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
 		return(FIRE_ILLEGAL);

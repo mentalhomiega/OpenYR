@@ -112,6 +112,10 @@ void ParasiteClass::Update(void)
 			}
 		}
 	}
+	// Each bite of a Paralyzes warhead restarts the victim's paralysis (ParasiteClass::Update, 0x629FD0).
+	if (weapon->WarheadPtr != nullptr && weapon->WarheadPtr->Paralyzes > 0 && victim->Is_Foot()) {
+		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr->Paralyzes;
+	}
 	int damage = weapon->Attack;
 	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner);
 }
@@ -156,6 +160,9 @@ void ParasiteClass::Release(bool doomed)
 	}
 	victim->ParasiteEatingMe = nullptr;
 	Victim = nullptr;
+	if (victim->Is_Foot()) {
+		((FootClass *)victim)->ParalysisTimer = 0;
+	}
 
 	if (doomed) {
 		Owner->Delete_Me();
@@ -172,6 +179,11 @@ void ParasiteClass::Release(bool doomed)
 	if (!placed) {
 		Owner->Delete_Me();
 		return;
+	}
+	// The parasite itself is paralyzed for one rearm delay after it comes out (ParasiteClass::ExitUnit, 0x62A4A0).
+	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
+	if (weapon != nullptr && Owner->Is_Foot()) {
+		((FootClass *)Owner)->ParalysisTimer = weapon->ROF;
 	}
 	if (IsReselect && Owner->House->Is_Player_Control()) {
 		Owner->Select();

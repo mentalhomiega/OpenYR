@@ -125,6 +125,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	ShakeYlo(0),
 	ShakeYhi(0),
 	IsBombDisarm(false),
+	Paralyzes(0),
 	IsMakesDisguise(false),
 	IsWoodDestroyer(false),
 	IsTiberiumDestroyer(false),
@@ -225,6 +226,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		ShakeYlo = ini.Get_Int(Name(), "ShakeYlo", ShakeYlo);
 		ShakeYhi = ini.Get_Int(Name(), "ShakeYhi", ShakeYhi);
 		IsBombDisarm = ini.Get_Bool(Name(), "BombDisarm", IsBombDisarm);
+		Paralyzes = ini.Get_Int(Name(), "Paralyzes", Paralyzes);
 		IsMakesDisguise = ini.Get_Bool(Name(), "MakesDisguise", IsMakesDisguise);
 		if (IsWebby) {
 			WebDuration = ini.Get_Int(Name(), "WebDuration", WebDuration);
@@ -338,6 +340,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ShakeYlo);
 	stream.Serialize(ShakeYhi);
 	stream.Serialize(IsBombDisarm);
+	stream.Serialize(Paralyzes);
 	stream.Serialize(IsMakesDisguise);
 	stream.Serialize(IsWoodDestroyer);
 	stream.Serialize(IsTiberiumDestroyer);

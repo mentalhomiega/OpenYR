@@ -22899,6 +22899,23 @@ Paralyzed:
       source: code/mission.cpp
       guard: null
     level: MissionControlClass
+Paralyzes:
+  key: Paralyzes
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: Paralyzes
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Paranoid:
   key: Paranoid
   scopes:

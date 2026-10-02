@@ -349,7 +349,8 @@ Coord DriveLocomotionClass::Head_To_Coord(void)
 /// <param name="to">The location to drive to.</param>
 void DriveLocomotionClass::Move_To(Coord to)
 {
-	if (LinkedTo->StunDuration <= 0) {
+	// A paralyzed unit ignores the order too (DriveLocomotionClass::Move_To, 0x4AFD40).
+	if (LinkedTo->StunDuration <= 0 && LinkedTo->ParalysisTimer == 0) {
 		DestinationCoord = to;
 		if (Coord(to) != COORD_NONE) {
 			if (Map[to].IsUnderBridge) {
@@ -1335,7 +1336,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 
 	if (DestinationCoord == COORD_NONE) return(false);
 
-	if (LinkedTo->StunDuration > 0) return(true);
+	if (LinkedTo->StunDuration > 0 || LinkedTo->ParalysisTimer != 0) return(true);
 
 	/*
 	**	Reduce the path length if the target is a unit and the

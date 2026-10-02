@@ -218,6 +218,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A BombDisarm warhead removes the Ivan bomb from its target instead of hurting it.
 		bool IsBombDisarm;
 
+		// A parasite whose weapon has a Paralyzes warhead holds its victim still for this many frames after each bite.
+		int Paralyzes;
+
 		// A disguise warhead makes its firer look like the soldier it hits.
 		bool IsMakesDisguise;
 

@@ -205,6 +205,9 @@ class FootClass : public TechnoClass
 		 */
 		CDTimerClass<FrameTimerClass> BlockagePathDelay;
 
+		// While this runs, the object cannot start a move, launch spawned craft or, if Organic, fire.
+		CDTimerClass<FrameTimerClass> ParalysisTimer;
+
 		/*
 		 * This is the locomotor that actually moves the object, created from the class ID
 		 * named by its type. It can be swapped while the game runs -- a falling object is
