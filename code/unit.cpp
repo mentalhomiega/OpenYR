@@ -2006,6 +2006,7 @@ bool UnitClass::Try_To_Deploy(void)
 			if (building != NULL) {
 				building->Assign_Mission(MISSION_CONSTRUCTION);
 				if (building->Unlimbo(cell)) {
+					Transfer_Slaves(building);
 
 					Transmit_Message(RADIO_OVER_OUT);
 
@@ -3339,7 +3340,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 				break;
 		}
 		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
-	} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {
+	} else if ((Class->IsToHarvest || Class->IsToVeinHarvest) && Class->DeploysInto == NULL) {
 		/// derives from RA's UNIT_HARVESTER
 		if (!In_Radio_Contact()) {
 			Enter_Idle_Mode();

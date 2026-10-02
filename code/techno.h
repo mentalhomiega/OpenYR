@@ -36,6 +36,7 @@
 #include "audio/audiohandle.h"
 #include "capture.h"
 #include "disklaser.h"
+#include "slaveman.h"
 #include "spawnman.h"
 #include "parasite.h"
 #include "temporal.h"
@@ -146,6 +147,11 @@ class TechnoClass :	public RadioClass,
 		// The aircraft or missiles a Spawns type carries, and for a spawned object the one that launched it.
 		std::optional<SpawnManagerClass> SpawnManager;
 		TechnoClass * SpawnOwner;
+
+		// The slaves an Enslaves object keeps, and for a slave the object it works for.
+		std::optional<SlaveManagerClass> SlaveManager;
+		TechnoClass * SlaveOwner;
+		void Transfer_Slaves(TechnoClass * to);
 
 		// The ring a DiskLaser weapon is drawing for this object's current shot.
 		DiskLaserClass DiskLaser;

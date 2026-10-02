@@ -5388,6 +5388,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						Limbo();
 						Dir256 dir = Class->Deploy_Facing();
 						if (unit->Unlimbo(place, dir)) {
+							Transfer_Slaves(unit);
 							unit->Strength = (int)(unit->Class_Of()->MaxStrength * ratio);
 							unit->Strength = std::max(unit->Strength, 1);
 							unit->ActLike = ActLike;

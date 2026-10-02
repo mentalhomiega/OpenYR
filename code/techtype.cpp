@@ -214,6 +214,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsSpawned(false),
 	IsMissileSpawn(false),
 	IsDrainable(false),
+	Enslaves(NULL),
+	SlavesNumber(0),
+	SlaveRegenRate(0),
+	SlaveReloadRate(0),
 	IsPoweredUnit(false),
 	PowersUnit(NULL),
 	CrashingSound(VOC_NONE),
@@ -724,6 +728,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
 		IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
 		IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
+		Enslaves = TGet_Class(ini, Name(), "Enslaves", Enslaves);
+		SlavesNumber = ini.Get_Int(Name(), "SlavesNumber", SlavesNumber);
+		SlaveRegenRate = ini.Get_Int(Name(), "SlaveRegenRate", SlaveRegenRate);
+		SlaveReloadRate = ini.Get_Int(Name(), "SlaveReloadRate", SlaveReloadRate);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
 		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
@@ -1270,6 +1278,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpawned);
 	stream.Serialize(IsMissileSpawn);
 	stream.Serialize(IsDrainable);
+	stream.Serialize(Enslaves);
+	stream.Serialize(SlavesNumber);
+	stream.Serialize(SlaveRegenRate);
+	stream.Serialize(SlaveReloadRate);
 	stream.Serialize(IsPoweredUnit);
 	stream.Serialize(PowersUnit);
 	stream.Serialize(CrashingSound);

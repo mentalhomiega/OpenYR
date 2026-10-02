@@ -423,6 +423,8 @@ RulesClass::RulesClass(void) :
 	BuildingDamageSound(VOC_NONE),
 	DiskLaserChargeUp(VOC_NONE),
 	AirstrikeAttackVoice(VOC_NONE),
+	SlavesFreeSound(VOC_NONE),
+	SlaveMinerSlaveScan(14),
 	CrateMoneySound(VOC_NONE),
 	CrateRevealSound(VOC_NONE),
 	CrateFireSound(VOC_NONE),
@@ -1101,6 +1103,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BuildingDamageSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDamageSound", BuildingDamageSound);
 		DiskLaserChargeUp = ini.Get_VocType(AUDIOVISUAL, "DiskLaserChargeUp", DiskLaserChargeUp);
 		AirstrikeAttackVoice = ini.Get_VocType(AUDIOVISUAL, "AirstrikeAttackVoice", AirstrikeAttackVoice);
+		SlavesFreeSound = ini.Get_VocType(AUDIOVISUAL, "SlavesFreeSound", SlavesFreeSound);
 		CrateMoneySound = ini.Get_VocType(AUDIOVISUAL, "CrateMoneySound", CrateMoneySound);
 		CrateRevealSound = ini.Get_VocType(AUDIOVISUAL, "CrateRevealSound", CrateRevealSound);
 		CrateFireSound = ini.Get_VocType(AUDIOVISUAL, "CrateFireSound", CrateFireSound);
@@ -1370,6 +1373,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		V3Rocket.Read(ini, GENERAL, "V3Rocket");
+		SlaveMinerSlaveScan = ini.Get_Int(GENERAL, "SlaveMinerSlaveScan", SlaveMinerSlaveScan);
 		DMisl.Read(ini, GENERAL, "DMisl");
 		CMisl.Read(ini, GENERAL, "CMisl");
 		ChronoPlacement = TGet_Class(ini, GENERAL, "ChronoPlacement", ChronoPlacement);
@@ -2624,6 +2628,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingDamageSound);
 	stream.Serialize(DiskLaserChargeUp);
 	stream.Serialize(AirstrikeAttackVoice);
+	stream.Serialize(SlavesFreeSound);
+	stream.Serialize(SlaveMinerSlaveScan);
 	stream.Serialize(CrateMoneySound);
 	stream.Serialize(CrateRevealSound);
 	stream.Serialize(CrateFireSound);

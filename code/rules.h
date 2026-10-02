@@ -311,6 +311,12 @@ class RulesClass
 		// Played when an airstrike is called in.
 		VocType AirstrikeAttackVoice;
 
+		// Played when a destroyed slave miner's slaves are freed.
+		VocType SlavesFreeSound;
+
+		// How many cells out a slave looks for ore.
+		int SlaveMinerSlaveScan;
+
 		// Played at a crate the player collects, by the crate's result.
 		VocType CrateMoneySound;
 		VocType CrateRevealSound;

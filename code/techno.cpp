@@ -279,6 +279,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	CurrentRank(-1),
 	MindControlledBy(NULL),
 	SpawnOwner(NULL),
+	SlaveOwner(NULL),
 	LocomotorTarget(NULL),
 	LocomotorSource(NULL),
 	IsAttackedByLocomotor(false),
@@ -1959,6 +1960,9 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		if (!SpawnManager && TClass->Spawns != NULL && TClass->SpawnsNumber > 0) {
 			SpawnManager.emplace(this, TClass->Spawns, TClass->SpawnsNumber, TClass->SpawnRegenRate, TClass->SpawnReloadRate);
 		}
+		if (!SlaveManager && TClass->Enslaves != NULL && TClass->SlavesNumber > 0) {
+			SlaveManager.emplace(this, TClass->Enslaves, TClass->SlavesNumber, TClass->SlaveRegenRate, TClass->SlaveReloadRate);
+		}
 		if (!ParasiteImUsing && Is_Foot() && primary != NULL && primary->WarheadPtr != NULL && primary->WarheadPtr->IsParasite) {
 			ParasiteImUsing.emplace(this);
 		}
@@ -3211,6 +3215,10 @@ void TechnoClass::AI(void)
 
 	if (SpawnManager) {
 		SpawnManager->AI();
+	}
+
+	if (SlaveManager) {
+		SlaveManager->AI();
 	}
 
 	DiskLaser.AI();
@@ -5169,6 +5177,10 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
  *=============================================================================================*/
 bool TechnoClass::Can_Player_Move(void) const
 {
+	// A Slaved infantryman takes orders only from the miner it works for.
+	if (SlaveOwner != NULL && RTTI == RTTI_INFANTRY && ((InfantryClass const *)this)->Class->IsSlaved) {
+		return(false);
+	}
 	if (House->Is_Player_Control() && !Is_Immobilized()) {
 		return(true);
 	}
@@ -5742,6 +5754,10 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 			if (SpawnManager) {
 				SpawnManager->Kill_Nodes();
+			}
+			if (SlaveManager) {
+				SlaveManager->Free_All(source);
+				SlaveManager.reset();
 			}
 			Stop_Drain();
 			if (DrainingMe != NULL) {
@@ -7164,6 +7180,10 @@ void TechnoClass::Calculate_Sinking_Offset(short height, int y)
 /// </summary>
 void TechnoClass::Delete_Me(void)
 {
+	if (SlaveManager) {
+		SlaveManager->Free_All(NULL);
+		SlaveManager.reset();
+	}
 	Stop_Drain();
 	if (DrainingMe != NULL) {
 		DrainingMe->Stop_Drain();
@@ -7364,6 +7384,12 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		if (SpawnManager) {
 			SpawnManager->Detach(target);
+		}
+		if (SlaveManager) {
+			SlaveManager->Detach(target);
+		}
+		if (SlaveOwner == target) {
+			SlaveOwner = NULL;
 		}
 		DiskLaser.Detach(target);
 		std::erase(AirstrikePlanes, (AircraftClass *)target);
@@ -9259,6 +9285,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPermaControlled);
 	stream.Serialize(SpawnManager);
 	stream.Serialize(SpawnOwner);
+	stream.Serialize(SlaveManager);
+	stream.Serialize(SlaveOwner);
 	stream.Serialize(DiskLaser);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);
@@ -10474,4 +10502,23 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 	Assign_Target(NULL);
 	foot->Locomotion->Move_To(Center_Coord());
 	DebugString("Locomotor: %s lifts %s\n", source->TClass->Name(), TClass->Name());
+}
+
+
+/// <summary>
+/// Hands this object's slaves to the object it turns into, as a slave miner does when it
+/// deploys or packs up (SlaveManagerClass::SetOwner, 0x6AF580). The new object's own fresh
+/// slaves are removed.
+/// </summary>
+void TechnoClass::Transfer_Slaves(TechnoClass * to)
+{
+	if (!SlaveManager || to == NULL) {
+		return;
+	}
+	if (to->SlaveManager) {
+		to->SlaveManager->Discard();
+	}
+	to->SlaveManager = std::move(SlaveManager);
+	SlaveManager.reset();
+	to->SlaveManager->Set_Owner(to);
 }

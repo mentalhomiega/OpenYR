@@ -11645,6 +11645,23 @@ EngineerDamage:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Enslaves:
+  key: Enslaves
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: Enslaves
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 EnterGrinderSound:
   key: EnterGrinderSound
   scopes:
@@ -14034,6 +14051,23 @@ Handle:
       source: code/session.cpp
       guard: null
     level: SessionClass
+HarvestRate:
+  key: HarvestRate
+  scopes:
+  - applies_to: *id031
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: InfantryTypeClass
+      member: HarvestRate
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 Harvester:
   key: Harvester
   scopes:
@@ -28106,6 +28140,110 @@ SkipScore:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+SlaveMinerSlaveScan:
+  key: SlaveMinerSlaveScan
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '14'
+      declared_in: RulesClass
+      member: SlaveMinerSlaveScan
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SlaveRegenRate:
+  key: SlaveRegenRate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SlaveRegenRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SlaveReloadRate:
+  key: SlaveReloadRate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SlaveReloadRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Slaved:
+  key: Slaved
+  scopes:
+  - applies_to: *id031
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsSlaved
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
+SlavesFreeSound:
+  key: SlavesFreeSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SlavesFreeSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SlavesNumber:
+  key: SlavesNumber
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: SlavesNumber
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SlopeSetPieces:
   key: SlopeSetPieces
   scopes:

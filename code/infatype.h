@@ -163,6 +163,10 @@ class InfantryTypeClass : public TechnoTypeClass
 		bool IsDeployer;
 		bool IsDeployFire;
 		int DeployFireWeapon;
+
+		// A slave shovels one bail of ore every HarvestRate frames.
+		bool IsSlaved;
+		int HarvestRate;
 		VocType DeploySound;
 		VocType UndeploySound;
 

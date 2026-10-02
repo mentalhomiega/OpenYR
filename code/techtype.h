@@ -33,6 +33,7 @@ class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WeaponTypeClass;
 class AircraftTypeClass;
+class InfantryTypeClass;
 
 /***************************************************************************
 **	This class is the common data for all objects that can be owned, produced,
@@ -408,6 +409,12 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A DrainWeapon can drain this object.
 		bool IsDrainable;
+
+		// The slaves an Enslaves object keeps, the frames to replace a lost one and to rest one that has unloaded.
+		InfantryTypeClass * Enslaves;
+		int SlavesNumber;
+		int SlaveRegenRate;
+		int SlaveReloadRate;
 
 		// A PoweredUnit object shuts down while its owner has no working structure whose PowersUnit names its type.
 		bool IsPoweredUnit;
