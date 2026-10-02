@@ -1211,32 +1211,28 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 		remap(isotype->NonMarbleMadness, "NonMarbleMadness");
 	}
 
-	/// Remap ice tiles to water
+	// Ice tiles count as water. The remap stops at the end of a set shorter than the Tiberian Sun
+	// layout instead of running into the next set.
 	if (data.IsIceGrowth) {
-		if (Ice1Set != ISOTILE_INVALID) {
-			for (k = ICE_EDGE; k < ICE1_COUNT; k++) {
-				IsoTileRecord * record = ((IsoTileSet *)IsometricTileTypes[Ice1Set + k]->Get_Image_Data())->Fetch_Record_Pointer_Unsafe(0);
-				if (record) {
+		auto remap_ice = [](IsometricTileType set, int count) {
+			if (set == ISOTILE_INVALID) {
+				return;
+			}
+			for (int k = ICE_EDGE; k < count; k++) {
+				int const index = set + k;
+				if (index < 0 || index >= IsometricTileTypes.Count() || IsometricTileTypes[index]->TileSetBaseID != set) {
+					break;
+				}
+				IsoTileSet * tiles = (IsoTileSet *)IsometricTileTypes[index]->Get_Image_Data();
+				IsoTileRecord * record = tiles != NULL ? tiles->Fetch_Record_Pointer_Unsafe(0) : NULL;
+				if (record != NULL) {
 					record->TileType = 9;
 				}
 			}
-		}
-		if (Ice2Set != ISOTILE_INVALID) {
-			for (k = ICE_EDGE; k < ICE2_COUNT; k++) {
-				IsoTileRecord * record = ((IsoTileSet *)(IsometricTileTypes[Ice2Set + k])->Get_Image_Data())->Fetch_Record_Pointer_Unsafe(0);
-				if (record) {
-					record->TileType = 9;
-				}
-			}
-		}
-		if (Ice3Set != ISOTILE_INVALID) {
-			for (k = ICE_EDGE; k < ICE3_COUNT; k++) {
-				IsoTileRecord * record = ((IsoTileSet *)(IsometricTileTypes[Ice3Set + k])->Get_Image_Data())->Fetch_Record_Pointer_Unsafe(0);
-				if (record) {
-					record->TileType = 9;
-				}
-			}
-		}
+		};
+		remap_ice(Ice1Set, ICE1_COUNT);
+		remap_ice(Ice2Set, ICE2_COUNT);
+		remap_ice(Ice3Set, ICE3_COUNT);
 	}
 }
 

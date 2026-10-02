@@ -24,6 +24,8 @@ Every ice set holds 64 tiles in the same fixed layout, and replacement artwork m
 | 16 | Cracked ice, also laid for full ice with no full-ice neighbor |
 | 17 to 63 | Edge pieces, where ice meets open water |
 
+The edge pieces are given the water terrain type when the theater loads. A set with fewer than 64 tiles still loads: only its own edge pieces become water, and the tiles of the next set keep their terrain type.
+
 A full-ice cell's tile depends on which of its four side neighbors hold full ice (offsets 0 to 15 of any ice set). Cracked ice does not count as full ice. With all four neighbors full, the cell gets offset 0. Each of the other fifteen patterns selects one of offsets 2 to 16, and the pattern with no full-ice neighbor selects offset 16. A cracked cell keeps its tile until it refreezes or breaks.
 
 A cell that holds open water or an edge piece gets an edge piece chosen from all eight neighbors. A neighbor counts toward that choice when it holds anything other than open water, an edge piece or a [`ShorePieces`](/keys/shorepieces/) tile. The land-side pieces of [`IceShoreSet`](/keys/iceshoreset/) are chosen through the same table of patterns, with a different test for which neighbors count.
