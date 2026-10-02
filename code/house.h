@@ -256,6 +256,9 @@ class HouseClass : public AbstractClass
 		CDTimerClass<FrameTimerClass> PowerBlackout;
 		bool IsPowerBlackout;
 
+		// How many of this house's structures with a PowersUnit type are working.
+		int PoweredUnitCenters;
+
 		// While the outage runs, this house has no radar (a lightning storm called by an enemy).
 		CDTimerClass<FrameTimerClass> RadarBlackout;
 		bool IsRadarBlackout;

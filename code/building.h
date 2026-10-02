@@ -280,6 +280,10 @@ class BuildingClass : public TechnoClass
 		// Is this Overpowerable structure charged by enough soldiers to work on its own and fire its second weapon?
 		bool IsOverpowered;
 
+		// The house this PowersUnit structure counts as a working control structure for, if any.
+		HouseClass * PoweredUnitHouse;
+		void Update_Powered_Unit_Source(bool working);
+
 		// Was this structure in service on its last update, for its WorkingSound and NotWorkingSound?
 		bool WasOnline;
 

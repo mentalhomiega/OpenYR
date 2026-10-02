@@ -240,6 +240,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	PrismTargetCoord(),
 	SupportingPrisms(0),
 	IsOverpowered(false),
+	PoweredUnitHouse(NULL),
 	WasOnline(false),
 	IsCharged(false),
 	IsCaptured(false),
@@ -1653,6 +1654,9 @@ void BuildingClass::AI(void)
 	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
 	{
 		bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+		if (Class->PowersUnit != NULL) {
+			Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
+		}
 		if (online != WasOnline) {
 			VocType const sound = online ? Class->WorkingSound : Class->NotWorkingSound;
 			if (sound != VOC_NONE) {
@@ -3566,6 +3570,8 @@ bool BuildingClass::Limbo(void)
 	int i;
 
 	if (!IsInLimbo) {
+
+		Update_Powered_Unit_Source(false);
 
 		if (Class->IsLaserFencePost) {
 			Update_Laser_Fence_Connections(false);
@@ -9640,6 +9646,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrismTargetCoord);
 	stream.Serialize(SupportingPrisms);
 	stream.Serialize(IsOverpowered);
+	stream.Serialize(PoweredUnitHouse);
 	stream.Serialize(WasOnline);
 	stream.Serialize(IsCharged);
 	stream.Serialize(IsCaptured);
@@ -11428,4 +11435,24 @@ int BuildingClass::Overpowerer_Count(void) const
 		}
 	}
 	return(count);
+}
+
+
+/// <summary>
+/// Counts this PowersUnit structure for its owner while it works, and stops counting it when it
+/// stops working, is removed or changes hands (BuildingClass::Update, HouseClass::LostPoweredCenter 0x50E6D0).
+/// </summary>
+void BuildingClass::Update_Powered_Unit_Source(bool working)
+{
+	HouseClass * const wanted = working ? House : NULL;
+	if (wanted == PoweredUnitHouse) {
+		return;
+	}
+	if (PoweredUnitHouse != NULL) {
+		PoweredUnitHouse->PoweredUnitCenters--;
+	}
+	PoweredUnitHouse = wanted;
+	if (PoweredUnitHouse != NULL) {
+		PoweredUnitHouse->PoweredUnitCenters++;
+	}
 }

@@ -251,6 +251,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsWarFactoryInfiltrated(false),
 	PowerBlackout(0),
 	IsPowerBlackout(false),
+	PoweredUnitCenters(0),
 	RadarBlackout(0),
 	IsRadarBlackout(false),
 	IsAlerted(false),
@@ -6687,6 +6688,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsWarFactoryInfiltrated);
 	stream.Serialize(PowerBlackout);
 	stream.Serialize(IsPowerBlackout);
+	stream.Serialize(PoweredUnitCenters);
 	stream.Serialize(RadarBlackout);
 	stream.Serialize(IsRadarBlackout);
 	stream.Serialize(IsAlerted);

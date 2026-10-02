@@ -214,6 +214,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsSpawned(false),
 	IsMissileSpawn(false),
 	IsDrainable(false),
+	IsPoweredUnit(false),
+	PowersUnit(NULL),
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
@@ -713,6 +715,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsSpawned = ini.Get_Bool(Name(), "Spawned", IsSpawned);
 		IsMissileSpawn = ini.Get_Bool(Name(), "MissileSpawn", IsMissileSpawn);
 		IsDrainable = ini.Get_Bool(Name(), "Drainable", IsDrainable);
+		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
+		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
 		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, IniName, "DebrisTypes", DebrisTypes);
 		DebrisMaximums = ini.Get_IntList(IniName, "DebrisMaximums", DebrisMaximums);
 		DebrisAnims = TGet_TypeList<AnimTypeClass>(ini, IniName, "DebrisAnims", DebrisAnims);
@@ -1248,6 +1252,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpawned);
 	stream.Serialize(IsMissileSpawn);
 	stream.Serialize(IsDrainable);
+	stream.Serialize(IsPoweredUnit);
+	stream.Serialize(PowersUnit);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);

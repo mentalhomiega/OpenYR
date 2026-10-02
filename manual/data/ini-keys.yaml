@@ -23133,6 +23133,40 @@ Powered:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+PoweredUnit:
+  key: PoweredUnit
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsPoweredUnit
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+PowersUnit:
+  key: PowersUnit
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: PowersUnit
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PowersUpBuilding:
   key: PowersUpBuilding
   scopes:

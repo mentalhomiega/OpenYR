@@ -343,6 +343,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsOnWaypointPatrol(false),
 	NearbyObject(NULL),
 	StunDuration(0),
+	IsDeactivated(false),
 	LimpetType()
 {
 	if (house != NULL) {
@@ -3200,6 +3201,29 @@ void TechnoClass::AI(void)
 
 	DiskLaser.AI();
 
+	// A PoweredUnit object shuts down while its owner has no working control structure, unless it
+	// stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
+	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
+		bool const off = House->PoweredUnitCenters <= 0 && Map[Get_Cell()].Cell_Building() == NULL;
+		if (off != IsDeactivated) {
+			IsDeactivated = off;
+			FootClass * foot = (FootClass *)this;
+			if (off) {
+				DebugString("Powered unit: %s shuts down\n", TClass->Name());
+				Assign_Target(NULL);
+				foot->Assign_Destination(NULL);
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_Off();
+				}
+			} else {
+				DebugString("Powered unit: %s starts up\n", TClass->Name());
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_On();
+				}
+			}
+		}
+	}
+
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
 	if (DrainingMe != NULL && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsRefinery && Rule->DrainMoneyFrameDelay > 0 && Frame % Rule->DrainMoneyFrameDelay == 0) {
 		int const amount = std::min(Rule->DrainMoneyAmount, House->Available_Money());
@@ -5181,7 +5205,7 @@ bool TechnoClass::Can_Player_Fire(void) const
 /// <returns>bool; is the object currently immobilized?</returns>
 bool TechnoClass::Is_Immobilized(void) const
 {
-	return(StunDuration > 0);
+	return(StunDuration > 0 || IsDeactivated);
 }
 
 
@@ -9213,6 +9237,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOnWaypointPatrol);
 	stream.Serialize(NearbyObject);
 	stream.Serialize(StunDuration);
+	stream.Serialize(IsDeactivated);
 	stream.Serialize(LimpetType);
 	stream.Serialize(LimpetSpeedFactor);
 	// ActionLineTimer -- static, shared by every object rather than owned by one.

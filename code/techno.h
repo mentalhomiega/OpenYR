@@ -561,6 +561,9 @@ class TechnoClass :	public RadioClass,
 		 */
 		int StunDuration;
 
+		// A PoweredUnit object without a working control structure is shut down: it cannot move or fire.
+		bool IsDeactivated;
+
 		/*
 		 * This is a list of bits of which houses have attached a "limpet" drone to this
 		 * object. A house that has limpeted an object sees whatever that object sees, so the

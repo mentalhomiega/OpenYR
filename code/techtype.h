@@ -409,6 +409,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A DrainWeapon can drain this object.
 		bool IsDrainable;
 
+		// A PoweredUnit object shuts down while its owner has no working structure whose PowersUnit names its type.
+		bool IsPoweredUnit;
+		UnitTypeClass * PowersUnit;
+
 		/*
 		 * A type with at least one turret reads its weapons from WeaponCount numbered entries
 		 * instead of Primary and Secondary.
