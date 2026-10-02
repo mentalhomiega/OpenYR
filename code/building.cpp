@@ -8801,11 +8801,12 @@ void BuildingClass::Eject_Occupants(void)
 /// <summary>
 /// Keeps a garrisonable structure's owner in step with its occupants, as gamemd's FUN_00458200
 /// does every frame: an empty one belongs to the Civilian side's house and an occupied one to
-/// its first occupant's house. A structure at red health throws its occupants out.
+/// its first occupant's house. A structure at red health throws its occupants out. A structure
+/// that can be built (TechLevel other than -1), such as the Battle Bunker, is left alone.
 /// </summary>
 void BuildingClass::Garrison_AI(void)
 {
-	if (!Class->IsCanBeOccupied) {
+	if (!Class->IsCanBeOccupied || Class->Level != -1) {
 		return;
 	}
 

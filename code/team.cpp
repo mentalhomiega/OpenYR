@@ -84,6 +84,7 @@
 #include "building.h"
 #include "cell.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
@@ -691,6 +692,9 @@ void TeamClass::AI(void)
 			INVOKE(GATHER_AT_ENEMY);
 			INVOKE(GATHER_AT_BASE);
 			INVOKE(IRON_CURTAIN_ME);
+			INVOKE(ENTER_TANK_BUNKER);
+			INVOKE(ENTER_BIO_REACTOR);
+			INVOKE(ENTER_BATTLE_BUNKER);
 
 			// A step this engine cannot carry out yet is passed over, as gamemd does for any unknown step.
 			default:
@@ -4035,4 +4039,75 @@ bool TeamClass::Ammo_Check(void) const
 RTTIType TeamClass::Fetch_RTTI(void) const
 {
 	return(RTTI_TEAM);
+}
+
+
+/// <summary>
+/// Sends each member that one of its owner's structures accepts into the nearest such structure
+/// and drops it from the team; members no structure accepts stay. The step then ends.
+/// </summary>
+void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member))
+{
+	FootClass * member = Member;
+	while (member != NULL) {
+		FootClass * next = member->Member;
+		BuildingClass * best = NULL;
+		int best_distance = INT_MAX;
+		if (member->IsActive && !member->IsInLimbo && member->Strength > 0) {
+			for (int index = 0; index < Buildings.Count(); index++) {
+				BuildingClass * building = Buildings[index];
+				if (building->House != member->House || building->IsInLimbo || !accepts(building, member)) {
+					continue;
+				}
+				int const distance = member->Distance(building);
+				if (distance < best_distance) {
+					best_distance = distance;
+					best = building;
+				}
+			}
+		}
+		if (best != NULL) {
+			DebugString("Team %s sends %s into %s\n", Class->Name(), member->TClass->Name(), best->Class->Name());
+			Remove(member);
+			member->Assign_Mission(MISSION_ENTER);
+			member->Assign_Destination(best);
+		}
+		member = next;
+	}
+	IsNextMission = true;
+}
+
+
+/// <summary>
+/// Sends each Bunkerable vehicle into its owner's nearest empty Tank Bunker (FootClass::GoBunker, 0x4DFF40).
+/// </summary>
+void TeamClass::TMission_ENTER_TANK_BUNKER(TeamMissionClass *, bool)
+{
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member) {
+		return(building->Can_Bunker(member) && !building->In_Radio_Contact());
+	});
+}
+
+
+/// <summary>
+/// Sends each soldier or vehicle into its owner's nearest structure that absorbs it, such as a Bio
+/// Reactor with room (FootClass::GoBioReactor, 0x4DFB70).
+/// </summary>
+void TeamClass::TMission_ENTER_BIO_REACTOR(TeamMissionClass *, bool)
+{
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member) {
+		return(building->Can_Absorb(member));
+	});
+}
+
+
+/// <summary>
+/// Sends each occupier soldier into its owner's nearest structure it can garrison, such as a Battle
+/// Bunker (FootClass::GoBattleBunker, 0x4DFCB0).
+/// </summary>
+void TeamClass::TMission_ENTER_BATTLE_BUNKER(TeamMissionClass *, bool)
+{
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member) {
+		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member));
+	});
 }

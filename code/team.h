@@ -374,6 +374,10 @@ class TeamClass : public AbstractClass
 		void TMission_GATHER_AT_ENEMY(TeamMissionClass * mission, bool);
 		void TMission_GATHER_AT_BASE(TeamMissionClass * mission, bool);
 		void TMission_IRON_CURTAIN_ME(TeamMissionClass * mission, bool);
+		void TMission_ENTER_TANK_BUNKER(TeamMissionClass * mission, bool);
+		void TMission_ENTER_BIO_REACTOR(TeamMissionClass * mission, bool);
+		void TMission_ENTER_BATTLE_BUNKER(TeamMissionClass * mission, bool);
+		void Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member));
 		void Gather_Near(FootClass * leader, Coord const & base, Coord const & toward);
 
 		/*

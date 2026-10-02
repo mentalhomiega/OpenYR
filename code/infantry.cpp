@@ -1241,6 +1241,13 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 		*/
 		if (!In_Radio_Contact()) {
 			TechnoClass * techno = Dynamic_Cast<TechnoClass *>(target);
+
+			// A soldier heading into a structure to garrison it walks straight in without a radio
+			// handshake, so several soldiers can head for the same structure at once.
+			if (techno != NULL && techno->RTTI == RTTI_BUILDING && Class->IsOccupier && ((BuildingClass *)techno)->Class->IsCanBeOccupied) {
+				ArchiveTarget = target;
+				techno = NULL;
+			}
 			if (techno != NULL) {
 
 				/*

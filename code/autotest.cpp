@@ -29,6 +29,7 @@
 **	spawn <TypeID> x y		puts an object owned by the first computer house with a
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
+**	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
@@ -292,7 +293,8 @@ void Enemies(void)
 		InfantryClass const * soldier = Infantry[index];
 		if (soldier->House == PlayerPtr) continue;
 		infantry++;
-		DebugString("AUTOTEST   enemy infantry %s cell %d,%d strength %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, soldier->Strength);
+		Cell const nav = soldier->NavCom != NULL ? soldier->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		DebugString("AUTOTEST   enemy infantry %s cell %d,%d strength %d mission %s nav %d,%d limbo %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, soldier->Strength, MissionClass::Mission_Name(soldier->Get_Mission()), nav.X, nav.Y, (int)soldier->IsInLimbo);
 	}
 	DebugString("AUTOTEST   enemy units %d infantry %d\n", units, infantry);
 }
@@ -798,6 +800,30 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   plan %s difficulty %d: %s\n", owner->Class->Name(), (int)owner->Difficulty, line.c_str());
 		}
+	} else if (step.Command == "team") {
+		// team <TeamTypeID>: makes a team of that type for the first computer house and puts in every unit of that house no team holds.
+		HouseClass * enemy = NULL;
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
+				enemy = Houses[index];
+				break;
+			}
+		}
+		TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
+		TeamClass * team = enemy != NULL && type != NULL ? type->Create_One_Of(enemy) : NULL;
+		int added = 0;
+		if (team != NULL) {
+			team->IsForcedActive = true;
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass * techno = Technos[index];
+				if (techno->House == enemy && techno->Is_Foot() && !techno->IsInLimbo && ((FootClass *)techno)->Team == NULL && techno->RTTI != RTTI_AIRCRAFT) {
+					if (team->Add((FootClass *)techno)) {
+						added++;
+					}
+				}
+			}
+		}
+		DebugString("AUTOTEST team %s: %s, %d members\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added);
 	} else if (step.Command == "teams") {
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];

@@ -49,11 +49,11 @@ An occupant is off the map while it is inside. It cannot be selected, attacked o
 
 ## Owner
 
-An empty garrisonable structure belongs to the first house whose country is on the `Civilian` side. When the first soldier moves in, the structure passes to that soldier's house; when the last one leaves, it passes back. The change of owner scores nothing and springs no triggers.
+A garrisonable structure with `TechLevel=-1`, such as a civilian building, belongs to the first house whose country is on the `Civilian` side while it is empty. When the first soldier moves in, the structure passes to that soldier's house; when the last one leaves, it passes back. The change of owner scores nothing and springs no triggers.
 
 The player hears [`BuildingGarrisonedSound`](/keys/buildinggarrisonedsound/) at the first soldier of theirs to move in, and [`BuildingAbandonedSound`](/keys/buildingabandonedsound/) when their garrison empties. With [EVAMD.INI](/formats/eva-ini/), the announcer adds `EVA_StructureGarrisoned` and `EVA_StructureAbandoned`. Units already heading for the structure keep it as their goal.
 
-If no house is on the `Civilian` side, the structure keeps its owner.
+A structure that can be built, such as the Battle Bunker, keeps its owner whether or not anyone is inside, and so does every structure when no house is on the `Civilian` side.
 
 ## Firing
 
@@ -77,6 +77,6 @@ A garrisonable structure under the mouse, or selected, shows a row of figures wi
 
 The owner empties a garrison with the Deploy command while the structure is selected, or by clicking the structure while it is the only object selected.
 
-Occupants also leave when the structure falls to the `ConditionRed` health ratio or below, and when it is destroyed.
+Occupants also leave when the structure is destroyed. In a `TechLevel=-1` structure they also leave when it falls to the `ConditionRed` health ratio or below.
 
 Each occupant leaving is placed on the nearest cell next to the structure that it could walk into, and stands guard there. An occupant with no such cell is removed from the game.
