@@ -262,7 +262,7 @@ Damage from an allied house leaves the team's target and its members' orders alo
 
 With [`Annoyance=yes`](/keys/annoyance/), damage that passes those conditions makes the team drop its center and reform. With the center gone, the team keeps an armed current target and does not switch to the attacker.
 
-[`Suicide=yes`](/keys/suicide/) switches the whole response off.
+[`Suicide=yes`](/keys/suicide/#scope-teamtype) switches the whole response off.
 
 ## Leaving the map
 
@@ -286,7 +286,7 @@ Belonging to a team changes a member in the ways listed below. The group number 
 - On joining, its group number is set to the team's group, and [its autocreate-recruitable state](/systems/ai-team-production/#recruitment) to the TeamType's setting.
 - A team of strictly higher [`Priority`](/keys/priority/#scope-teamtype) can take it. It is removed from its team when a base defense call-up suspends teams below the [base defense threshold](/systems/base-attacked/#teams-are-emptied-first).
 - [`IonImmune=yes`](/keys/ionimmune/) keeps ion storm bolts from aiming at it, unless its type is a lightning rod, and keeps the ion storm warhead from damaging it.
-- [`Suicide=yes`](/keys/suicide/) stops it retaliating, and stops a computer-owned member from looking for targets while it is on the Move mission.
+- [`Suicide=yes`](/keys/suicide/#scope-teamtype) stops it retaliating, and stops a computer-owned member from looking for targets while it is on the Move mission.
 - [`AvoidThreats=yes`](/keys/avoidthreats/) sets the member's [threat avoidance](/systems/base-attacked/#what-reads-the-map) coefficient to `1`, whatever its type says.
 - When its destination is temporarily blocked, it switches to a nearby free cell only while it is farther than [`Stray`](/keys/stray/) from the destination. An object on no team uses [`CloseEnough`](/keys/closeenough/) for the same test.
 - When it is a transport, [`Loadable`](/keys/loadable/) decides whether the player may order passengers into it.

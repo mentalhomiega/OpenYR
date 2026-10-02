@@ -309,6 +309,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Firing hands the target to the firer's spawned aircraft or missiles instead of launching a projectile.
 		bool IsSpawner;
+
+		// Firing destroys the firer instead of launching a projectile; its death weapon does the damage.
+		bool IsSuicide;
 		bool IsAlternateColor;
 
 		/*

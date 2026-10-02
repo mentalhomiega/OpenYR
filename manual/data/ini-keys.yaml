@@ -30379,13 +30379,27 @@ Suffix:
 Suicide:
   key: Suicide
   scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsSuicide
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
   - applies_to: *id009
     file: ai.ini or map file
     section:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: 'no'
       declared_in: TeamTypeClass

@@ -23,4 +23,4 @@ When the conditions hold, a team without this setting takes the attacker as its 
 The regroup comes before the team decides whether to switch targets, and a team with no center keeps a current target that has a primary weapon. A team of this type that is shooting at something armed therefore stops to reform and never turns on its attacker. A team whose current target is unarmed, or that has no target, takes the attacker as its new target, unless the attacker is an aircraft.
 :::
 
-[`Suicide=yes`](/keys/suicide/) switches off the whole response to damage, including this setting.
+[`Suicide=yes`](/keys/suicide/#scope-teamtype) switches off the whole response to damage, including this setting.
