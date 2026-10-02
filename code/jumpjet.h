@@ -46,6 +46,7 @@ class JumpjetLocomotionClass : public LocomotionClass
 		void Process_Grounded(void);
 		void Process_Ascent(void);
 		void Process_Hover(void);
+		void Arrive_Aloft(void);
 		void Process_Cruise(void);
 		void Process_Descent(void);
 		void Process_Unknown(void);

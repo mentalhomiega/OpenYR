@@ -96,7 +96,7 @@ bool JumpjetLocomotionClass::Process(void)
 {
 	LayerType layer = In_Which_Layer();
 
-	if (Is_Moving() || Is_Moving_Now()) {
+	if (Is_Moving() || Is_Moving_Now() || (LinkedTo->TClass->IsBalloonHover && CurrentState != HOVERING)) {
 		Movement_AI();
 		if (!LinkedTo->IsActive) {
 			return(false);
@@ -296,7 +296,8 @@ LayerType JumpjetLocomotionClass::In_Which_Layer(void)
 /// </summary>
 void JumpjetLocomotionClass::Process_Grounded(void)
 {
-	if (Is_Moving()) {
+	// A BalloonHover unit takes off even with nowhere to go (JumpjetLocomotionClass, 0x54D0F0).
+	if (Is_Moving() || LinkedTo->TClass->IsBalloonHover) {
 		LinkedTo->Set_Speed(1.0);
 		Facing.Set(LinkedTo->PrimaryFacing.Current());
 		CurrentSpeed = 0;
@@ -326,7 +327,7 @@ void JumpjetLocomotionClass::Process_Ascent(void)
 
 	if (height >= FlightLevel) {
 		CurrentState = HOVERING;
-	} else if (height > FlightLevel / 4) {
+	} else if (height > FlightLevel / 4 && Is_Moving()) {
 		TargetSpeed = Rule->JumpjetSpeed;
 		Facing.Set_Desired(DirType().Direction(LinkedTo->PositionCoord, HeadToCoord));
 	}
@@ -345,13 +346,29 @@ void JumpjetLocomotionClass::Process_Hover(void)
 		Coord position = LinkedTo->PositionCoord;
 		if (Point2D(headto) == Point2D(position)) {
 			if (LinkedTo->TarCom == NULL) {
-				CurrentState = DESCENDING;
+				if (LinkedTo->TClass->IsBalloonHover) {
+					Arrive_Aloft();
+				} else {
+					CurrentState = DESCENDING;
+				}
 			}
 		} else {
 			Facing.Set_Desired(DirType().Direction(LinkedTo->PositionCoord, HeadToCoord));
 			CurrentState = CRUISING;
 		}
 	}
+}
+
+
+/// <summary>
+/// Ends a BalloonHover unit's move at its destination while it stays in the air.
+/// </summary>
+void JumpjetLocomotionClass::Arrive_Aloft(void)
+{
+	HeadToCoord = COORD_NONE;
+	IsMoving = false;
+	LinkedTo->Assign_Destination(NULL);
+	LinkedTo->Per_Cell_Process(PCP_END);
 }
 
 
@@ -376,7 +393,8 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 		LinkedTo->IsDown = false;
 		LinkedTo->Set_Coord(position);
 		LinkedTo->IsDown = down;
-		if (LinkedTo->TarCom == NULL) {
+		// A BalloonHover unit stays in the air at its destination (JumpjetLocomotionClass, 0x54BD30).
+		if (LinkedTo->TarCom == NULL && !LinkedTo->TClass->IsBalloonHover) {
 			FlightLevel = 0;
 			CurrentState = DESCENDING;
 		} else {
@@ -384,7 +402,7 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 		}
 	} else if (distance < CELL_LEPTON) {
 		TargetSpeed = Rule->JumpjetSpeed * 0.3;
-		if (LinkedTo->TarCom == NULL) {
+		if (LinkedTo->TarCom == NULL && !LinkedTo->TClass->IsBalloonHover) {
 			FlightLevel = Rule->JumpjetCruiseHeight * 0.75;
 		}
 	} else if (distance < CELL_LEPTON * 2) {

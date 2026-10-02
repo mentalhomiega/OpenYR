@@ -1,17 +1,18 @@
 ---
 key: BalloonHover
-summary: "Marks a hovering type that the psychic dominator cannot take over."
+summary: "Keeps a jumpjet type in the air when it stops, and shields it from the psychic dominator."
 see_also: [ImmuneToPsionics, "system:superweapons"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-The psychic dominator does not take over an object whose type is `BalloonHover=yes`. Yuri's Revenge also uses the key for how such objects fly, which is not ported yet.
+A jumpjet object whose type sets `BalloonHover=yes` stays in the air. It takes off on its own when it is on the ground, and when it reaches a destination it hovers there instead of landing. An ion storm still destroys it, as it does any airborne jumpjet. The Rocketeer, the Floating Disc and the Cosmonaut set it.
+
+The psychic dominator does not take over an object whose type is `BalloonHover=yes`. The object still takes the blast's damage.
 
 ```ini title="rulesmd.ini"
-[MYUNIT] ; example AircraftType
+[MYHOVERER] ; example VehicleType with the jumpjet locomotor
+Locomotor={92612C46-F71F-11d1-AC9F-006008055BB5}
 BalloonHover=yes
 ```
-
-The object still takes the blast's damage.
