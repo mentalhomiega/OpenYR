@@ -15,7 +15,7 @@ AuxSound1=MYHELI_Takeoff ; a sound ID registered in SOUND.INI
 Two unrelated events play this sound at the object's position:
 
 - A **structure** plays it when its build-up animation starts, whichever house owns it.
-- An object moved by the flyer [locomotor](/keys/locomotor/) plays it each time it takes off, unless it is stunned.
+- An object moved by the flyer [locomotor](/keys/locomotor/#scope-aircrafttype) plays it each time it takes off, unless it is stunned.
 
 On any other vehicle or infantry type the key has no effect.
 

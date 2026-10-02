@@ -99,6 +99,7 @@ WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, Tec
 
 	switch (Type) {
 		case WAVE_SONIC:
+		case WAVE_MAGNETRON:
 			break;
 
 		case WAVE_BIG_LASER:
@@ -183,6 +184,15 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 	int red = rgb.Get_Red();
 	int green = rgb.Get_Green();
 	int blue = rgb.Get_Blue();
+
+	// The magnetron beam tints toward violet instead (0x760190).
+	if (Type == WAVE_MAGNETRON) {
+		red += (((mult / 2) * red) >> 8);
+		blue += ((blue * mult * 4) >> 8);
+		*buffer = DSurface::Build_Hicolor_Pixel(std::min(255, red), green, std::min(255, blue));
+		return;
+	}
+
 	green += ((green * mult) >> 8);
 	blue += ((blue * mult) >> 8);
 
@@ -563,6 +573,7 @@ void WaveClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 
 	switch (Type) {
 		case WAVE_SONIC:
+		case WAVE_MAGNETRON:
 			((WaveClass *)this)->Draw_Sonic(point, cliprect);
 			break;
 		case WAVE_BIG_LASER:
@@ -916,6 +927,18 @@ void WaveClass::AI(void)
 		case WAVE_SONIC:
 			Sonic_AI();
 			break;
+		case WAVE_MAGNETRON:
+			Wave_Shape_AI();
+			if (!IsActive) {
+				return;
+			}
+			WaveEC -= 1;
+			if (WaveEC < 0) {
+				Delete_Me();
+			} else {
+				BASECLASS::AI();
+			}
+			break;
 		case WAVE_BIG_LASER:
 		case WAVE_LASER:
 			Laser_AI();
@@ -1012,7 +1035,7 @@ void WaveClass::Wave_Recalc_Affected_Cells(void)
 }
 
 
-static const float WaveLengthFactor[] = { 1.0f, 1.05f, 1.05f };
+static const float WaveLengthFactor[] = { 1.0f, 1.05f, 1.05f, 1.0f };
 
 
 /// <summary>
@@ -1041,12 +1064,19 @@ void WaveClass::Build_Wave_Shape(Coord const & source_coord, Coord const & targe
 			Vector3(-27.0, 34.0, 0.0),		/// END_RIGHT
 			Vector3(27.0, -34.0, 0.0),		/// START_LEFT
 			Vector3(27.0, 34.0, 0.0)		/// START_RIGHT
+		},
+		// The magnetron beam is an even band 100 leptons wide (WaveClass::Draw_Magnetic, 0x762070).
+		{
+			Vector3(0.0, -50.0, 0.0),
+			Vector3(0.0, 50.0, 0.0),
+			Vector3(0.0, -50.0, 0.0),
+			Vector3(0.0, 50.0, 0.0)
 		}
 	};
 
 	Coord start_coord = source_coord;
 	Coord end_coord = Lerp(start_coord, target_coord, WaveLengthFactor[Type]);
-	if (Type == WAVE_SONIC) {
+	if (Type == WAVE_SONIC || Type == WAVE_MAGNETRON) {
 		end_coord.Z += 50;
 	}
 
@@ -1139,8 +1169,13 @@ void WaveClass::Build_Wave_Shape(Coord const & source_coord, Coord const & targe
 /// </summary>
 void WaveClass::Wave_Shape_AI(void)
 {
+	// A magnetron beam keeps rippling for as long as it holds its target (WaveClass::Update_Wave, 0x762AF0).
+	if (Type == WAVE_MAGNETRON && WaveEC == (int)(1.0 / WaveStep)) {
+		WaveEC = 64;
+	}
+
 	if (Target != NULL && Source != NULL && WaveEC != (int)(1.0 / WaveStep) && Source->TarCom == Target) {
-		if ((Source->PositionCoord - Target->As_Coord()).Length() > CELL_LEPTON_DIAG * 6.0) {
+		if (Type != WAVE_MAGNETRON && (Source->PositionCoord - Target->As_Coord()).Length() > CELL_LEPTON_DIAG * 6.0) {
 			IsWaveActive = false;
 		}
 	} else {
@@ -1148,7 +1183,12 @@ void WaveClass::Wave_Shape_AI(void)
 	}
 
 	if (IsWaveActive) {
-		Build_Wave_Shape(Source->Fire_Coord(0), Target->As_Coord());
+		// A magnetron beam on a vehicle runs from the vehicle back to the firer.
+		if (Type == WAVE_MAGNETRON && Target->RTTI == RTTI_UNIT) {
+			Build_Wave_Shape(Target->Center_Coord(), Source->Fire_Coord(0));
+		} else {
+			Build_Wave_Shape(Source->Fire_Coord(0), Target->As_Coord());
+		}
 	}
 
 	if (WaveProgress < 1.0 && IsWaveActive) {

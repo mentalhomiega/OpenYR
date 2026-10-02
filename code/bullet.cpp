@@ -1380,6 +1380,18 @@ void BulletClass::Detonate(Coord const & coord)
 	else if (warhead->IsElectricAssault && dynamic_cast<BuildingClass *>(TarCom) != NULL && static_cast<BuildingClass *>(TarCom)->Class->IsOverpowerable) {
 	}
 
+	/*
+	 * A locomotor warhead lifts the vehicle it hits instead of hurting it (BulletClass::Detonate, 0x469210).
+	 */
+	else if (warhead->IsLocomotor) {
+		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+		if (Payback != NULL && target != NULL && target->RTTI == RTTI_UNIT && target != Payback
+			&& Payback->LocomotorTarget != target && target->LocomotorSource == NULL && Payback->LocomotorSource == NULL) {
+			Payback->Release_Locomotor(false);
+			target->Imbue_Locomotor(Payback, warhead->Locomotor);
+		}
+	}
+
 	else if (warhead->IsIvanBomb) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		if (target != NULL) {

@@ -200,6 +200,10 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// The weapon calls its firer's airstrike planes onto the target instead of hitting it.
 		bool IsAirstrike;
+
+		// The warhead lifts the vehicle it hits with the Locomotor it names, and its firer holds it there.
+		bool IsLocomotor;
+		ClassID Locomotor;
 		bool IsPoison;
 
 		// The range, in pixels, of the sideways and vertical screen shake the warhead's detonation starts.

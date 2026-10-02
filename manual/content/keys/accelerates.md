@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-Only the drive locomotor reads the flag. A type moved by any other [`Locomotor=`](/keys/locomotor/) gets its speed from that locomotor, whatever this flag says.
+Only the drive locomotor reads the flag. A type moved by any other [`Locomotor=`](/keys/locomotor/#scope-aircrafttype) gets its speed from that locomotor, whatever this flag says.
 
 With `Accelerates=no`, the vehicle moves at its target speed from the first step and does not brake as it nears its destination. The target speed depends on the terrain of the cell the vehicle is entering, and slopes and damage change it.
 

@@ -1114,6 +1114,11 @@ void FootClass::Approach_Target(void)
 	**	Determine that if there is an existing target it is still legal
 	**	and within range.
 	*/
+	// A holder stays where it is while it holds its target (FootClass::ApproachTarget, 0x4D5690).
+	if (LocomotorTarget != NULL && LocomotorTarget == TarCom) {
+		return;
+	}
+
 	if (TarCom != NULL) {
 		int primary = What_Weapon_Should_I_Use(TarCom);
 
@@ -2477,6 +2482,14 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 	// As FootClass::SetDestination (0x4D94B0): a passenger of an open-topped transport takes no destination.
 	if (IsInOpenToppedTransport && target != NULL) {
 		return;
+	}
+
+	// A held vehicle takes no orders, and a holder that moves lets go of its vehicle (0x4D94B0).
+	if (IsAttackedByLocomotor && target != NULL) {
+		return;
+	}
+	if (LocomotorTarget != NULL && target != NULL) {
+		Release_Locomotor(true);
 	}
 
 	NavCom = target;

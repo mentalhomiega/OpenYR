@@ -150,6 +150,15 @@ class TechnoClass :	public RadioClass,
 		// The ring a DiskLaser weapon is drawing for this object's current shot.
 		DiskLaserClass DiskLaser;
 
+		// The vehicle this object holds with a locomotor warhead, the object holding this one, whether
+		// this one is being held, and whether it was let go in the air and is falling to its destruction.
+		TechnoClass * LocomotorTarget;
+		TechnoClass * LocomotorSource;
+		bool IsAttackedByLocomotor;
+		bool IsLetGoByLocomotor;
+		void Release_Locomotor(bool clear_target);
+		void Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor);
+
 		// The frame this object can call its next airstrike, and the planes of the strike still out.
 		int AirstrikeReadyFrame;
 		std::vector<AircraftClass *> AirstrikePlanes;

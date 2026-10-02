@@ -17112,6 +17112,40 @@ IsLimpetMine:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+IsLocomotor:
+  key: IsLocomotor
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsLocomotor
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+IsMagBeam:
+  key: IsMagBeam
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsMagBeam
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IsMeteor:
   key: IsMeteor
   scopes:
@@ -18557,7 +18591,7 @@ Locomotor:
       kind: identifier
       source: object-type
     value_type: Locomotor class identifier
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: the Teleport locomotor
       declared_in: TechnoTypeClass
@@ -18565,6 +18599,20 @@ Locomotor:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: Locomotor class identifier
+    status: needs_review
+    _provenance:
+      default_candidate: the Teleport locomotor
+      declared_in: WarheadTypeClass
+      member: Locomotor
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Loop:
   key: Loop
   scopes:

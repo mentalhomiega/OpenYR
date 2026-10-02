@@ -241,6 +241,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsSonic;
 
+		// The weapon draws a magnetron beam to its target.
+		bool IsMagBeam;
+
 		// Is this weapon's range measured from the center of the firer's cell rather than from the firer itself?
 		bool IsCellRangefinding;
 

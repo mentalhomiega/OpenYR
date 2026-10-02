@@ -173,6 +173,7 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
+#include "ipiggy.h"
 #include "ion.h"
 #include "isotile.h"
 #include "isotype.h"
@@ -278,6 +279,10 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	CurrentRank(-1),
 	MindControlledBy(NULL),
 	SpawnOwner(NULL),
+	LocomotorTarget(NULL),
+	LocomotorSource(NULL),
+	IsAttackedByLocomotor(false),
+	IsLetGoByLocomotor(false),
 	AirstrikeReadyFrame(0),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
@@ -3210,6 +3215,36 @@ void TechnoClass::AI(void)
 
 	DiskLaser.AI();
 
+	// A vehicle let go in the air by its holder is destroyed when it reaches the ground (ReleaseLocomotor, 0x70FEE0).
+	if (IsLetGoByLocomotor && HeightAGL <= 0) {
+		IsLetGoByLocomotor = false;
+		int damage = Strength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+		if (!IsActive) {
+			return;
+		}
+	}
+
+	// A held vehicle is let go when the holder turns to something else, and is otherwise pulled
+	// toward the holder (TechnoClass::AI and ReleaseLocomotor, 0x70FEE0).
+	if (LocomotorTarget != NULL) {
+		if (TarCom != LocomotorTarget || Strength <= 0) {
+			Release_Locomotor(false);
+		} else if (Frame % 15 == 0 && LocomotorTarget->Is_Foot()) {
+			Coord const here = Center_Coord();
+			Coord const there = LocomotorTarget->Center_Coord();
+			double const dx = double(there.X - here.X);
+			double const dy = double(there.Y - here.Y);
+			double const distance = std::hypot(dx, dy);
+			if (distance > CELL_LEPTON * 2) {
+				Coord pull = here;
+				pull.X += int(dx / distance * CELL_LEPTON * 2);
+				pull.Y += int(dy / distance * CELL_LEPTON * 2);
+				((FootClass *)LocomotorTarget)->Locomotion->Move_To(pull);
+			}
+		}
+	}
+
 	// A PoweredUnit object shuts down while its owner has no working control structure, unless it
 	// stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
 	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
@@ -4675,6 +4710,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					Wave = new WaveClass(Fire_Coord(which), target_coord, this, WAVE_SONIC, (TechnoClass *)target);
 				}
 
+				// A magnetron beam is drawn while none is showing (TechnoClass::Fire, 0x6FDD50).
+				if (weapon->IsMagBeam && Wave == NULL && target->Is_Techno()) {
+					Wave = new WaveClass(Fire_Coord(which), target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
+				}
+
 				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
 					TargetingLaserTimer = UIControls.TargetLaserTime;
 				}
@@ -5248,7 +5288,7 @@ bool TechnoClass::Can_Player_Fire(void) const
 /// <returns>bool; is the object currently immobilized?</returns>
 bool TechnoClass::Is_Immobilized(void) const
 {
-	return(StunDuration > 0 || IsDeactivated);
+	return(StunDuration > 0 || IsDeactivated || IsAttackedByLocomotor);
 }
 
 
@@ -5701,6 +5741,10 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			Stop_Drain();
 			if (DrainingMe != NULL) {
 				DrainingMe->Stop_Drain();
+			}
+			Release_Locomotor(false);
+			if (LocomotorSource != NULL) {
+				LocomotorSource->Release_Locomotor(false);
 			}
 			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
 				TemporalImUsing->Let_Go();
@@ -7119,6 +7163,7 @@ void TechnoClass::Delete_Me(void)
 	if (DrainingMe != NULL) {
 		DrainingMe->Stop_Drain();
 	}
+	Release_Locomotor(false);
 	if (CaptureManager) {
 		CaptureManager->Free_All();
 	}
@@ -7317,6 +7362,19 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		DiskLaser.Detach(target);
 		std::erase(AirstrikePlanes, (AircraftClass *)target);
+		if (LocomotorTarget == target) {
+			LocomotorTarget = NULL;
+		}
+		if (LocomotorSource == target) {
+			LocomotorSource = NULL;
+			if (IsAttackedByLocomotor) {
+				IsAttackedByLocomotor = false;
+				IsLetGoByLocomotor = HeightAGL > 0;
+				if (Is_Foot() && ((FootClass *)this)->Locomotion != NULL) {
+					((FootClass *)this)->Locomotion->Stop_Moving();
+				}
+			}
+		}
 		if (DrainTarget == target) {
 			Stop_Drain();
 		}
@@ -9197,6 +9255,10 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpawnManager);
 	stream.Serialize(SpawnOwner);
 	stream.Serialize(DiskLaser);
+	stream.Serialize(LocomotorTarget);
+	stream.Serialize(LocomotorSource);
+	stream.Serialize(IsAttackedByLocomotor);
+	stream.Serialize(IsLetGoByLocomotor);
 	stream.Serialize(AirstrikeReadyFrame);
 	stream.Serialize(AirstrikePlanes);
 	stream.Serialize(DrainTarget);
@@ -10345,4 +10407,66 @@ void TechnoClass::Stop_Drain(void)
 		DrainTarget->House->RecalcPower = true;
 		DrainTarget = NULL;
 	}
+}
+
+
+/// <summary>
+/// Lets go of the vehicle this object holds (TechnoClass::ReleaseLocomotor, 0x70FEE0). One let
+/// go in the air falls and is destroyed when it lands; one on the ground gets its own
+/// locomotor back once it has stopped.
+/// </summary>
+void TechnoClass::Release_Locomotor(bool clear_target)
+{
+	if (LocomotorTarget == NULL) {
+		return;
+	}
+	TechnoClass * target = LocomotorTarget;
+	LocomotorTarget = NULL;
+	target->LocomotorSource = NULL;
+	target->IsAttackedByLocomotor = false;
+	target->IsLetGoByLocomotor = target->HeightAGL > 0;
+	DebugString("Locomotor: %s lets go of %s%s\n", TClass->Name(), target->TClass->Name(), target->IsLetGoByLocomotor ? " in the air" : "");
+	if (target->Is_Foot() && ((FootClass *)target)->Locomotion != NULL) {
+		((FootClass *)target)->Locomotion->Stop_Moving();
+	}
+	if (clear_target) {
+		Assign_Target(NULL);
+	}
+}
+
+
+/// <summary>
+/// Puts this vehicle under the source's control: the locomotor named carries it, with its own
+/// locomotor riding along until it is let go (FootClass::ImbueLocomotor, 0x710000). Nothing
+/// happens when the named locomotor cannot carry another.
+/// </summary>
+void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor)
+{
+	if (!Is_Foot() || source == NULL) {
+		return;
+	}
+	FootClass * foot = (FootClass *)this;
+	std::unique_ptr<ILocomotion> carrier = Create_Locomotor(locomotor);
+	IPiggyback * piggy = carrier != nullptr ? Piggyback_Of(carrier.get()) : NULL;
+	if (piggy == NULL) {
+		return;
+	}
+	if (SpawnManager) {
+		SpawnManager->Kill_Nodes();
+	}
+	foot->Locomotion->Stop_Moving();
+	Mark(MARK_UP);
+	carrier->Link_To_Object(this);
+	std::unique_ptr<ILocomotion> own = std::move(foot->Locomotion);
+	piggy->Begin_Piggyback(own);
+	foot->Locomotion = std::move(carrier);
+	Mark(MARK_DOWN);
+
+	IsAttackedByLocomotor = true;
+	IsLetGoByLocomotor = false;
+	LocomotorSource = source;
+	source->LocomotorTarget = this;
+	Assign_Target(NULL);
+	foot->Locomotion->Move_To(Center_Coord());
+	DebugString("Locomotor: %s lifts %s\n", source->TClass->Name(), TClass->Name());
 }

@@ -20,7 +20,7 @@ Every aircraft, infantryman and vehicle moves through one locomotor: the `ILocom
 
 ## Object locomotion
 
-The [`Locomotor`](/keys/locomotor/) key sets `TechnoTypeClass::Locomotor`, the class identifier of the type's ordinary locomotor. The aircraft, infantry and vehicle constructors create a locomotor of that class, link it to the new object with `Link_To_Object`, and store it in `FootClass::Locomotion`.
+The [`Locomotor`](/keys/locomotor/#scope-aircrafttype) key sets `TechnoTypeClass::Locomotor`, the class identifier of the type's ordinary locomotor. The aircraft, infantry and vehicle constructors create a locomotor of that class, link it to the new object with `Link_To_Object`, and store it in `FootClass::Locomotion`.
 
 Movement, destination, layer, cell occupation and locomotor-specific drawing queries all go to the locomotor currently in `FootClass::Locomotion`. That locomotor can be a temporary one, so code that depends on how an object moves must check the class of the current `Locomotion` pointer. The type's `Locomotor` identifier names only the ordinary locomotor.
 

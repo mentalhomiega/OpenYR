@@ -10,10 +10,13 @@
 #pragma once
 
 #include "facing.h"
+#include "ipiggy.h"
 #include "loco.h"
 
+#include <memory>
 
-class JumpjetLocomotionClass : public LocomotionClass
+
+class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 {
 		typedef LocomotionClass BASECLASS;
 
@@ -39,6 +42,12 @@ class JumpjetLocomotionClass : public LocomotionClass
 		virtual LayerType In_Which_Layer(void) override;
 		virtual bool Is_Moving_Now(void) override;
 		virtual void Mark_All_Occupation_Bits(int mark) override;
+
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
+		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
+		virtual bool Is_Ok_To_End(void) override;
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
+		bool Stays_Aloft(void) const;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
@@ -118,4 +127,7 @@ class JumpjetLocomotionClass : public LocomotionClass
 		 * descends, and it is given up if the unit is ordered away again.
 		 */
 		bool IsLanding;
+
+		// The unit's own locomotor, carried while a locomotor warhead's holder controls the unit.
+		std::unique_ptr<ILocomotion> Piggybacker;
 };

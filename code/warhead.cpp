@@ -116,6 +116,8 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsPsychicDamage(false),
 	IsElectricAssault(false),
 	IsAirstrike(false),
+	IsLocomotor(false),
+	Locomotor(ClassID_TeleportLocomotion),
 	IsPoison(false),
 	ShakeXlo(0),
 	ShakeXhi(0),
@@ -213,6 +215,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsPsychicDamage = ini.Get_Bool(Name(), "PsychicDamage", IsPsychicDamage);
 		IsElectricAssault = ini.Get_Bool(Name(), "ElectricAssault", IsElectricAssault);
 		IsAirstrike = ini.Get_Bool(Name(), "Airstrike", IsAirstrike);
+		IsLocomotor = ini.Get_Bool(Name(), "IsLocomotor", IsLocomotor);
+		Locomotor = ini.Get_ClassID(Name(), "Locomotor", Locomotor);
 		IsPoison = ini.Get_Bool(Name(), "Poison", IsPoison);
 		ShakeXlo = ini.Get_Int(Name(), "ShakeXlo", ShakeXlo);
 		ShakeXhi = ini.Get_Int(Name(), "ShakeXhi", ShakeXhi);
@@ -323,6 +327,8 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPsychicDamage);
 	stream.Serialize(IsElectricAssault);
 	stream.Serialize(IsAirstrike);
+	stream.Serialize(IsLocomotor);
+	stream.Serialize_Bytes(&Locomotor, sizeof(Locomotor));
 	stream.Serialize(IsPoison);
 	stream.Serialize(ShakeXlo);
 	stream.Serialize(ShakeXhi);
