@@ -427,6 +427,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A PoweredUnit object shuts down while its owner has no working structure whose PowersUnit names its type.
 		bool IsPoweredUnit;
+
+		// Played where a PoweredUnit object starts up again and where it shuts down.
+		VocType ActivateSound;
+		VocType DeactivateSound;
 		UnitTypeClass * PowersUnit;
 
 		// Played as the object starts to crash, the voice only for the player's own.

@@ -222,6 +222,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsCanApproachTarget(true),
 	SensorsSight(0),
 	IsPoweredUnit(false),
+	ActivateSound(VOC_NONE),
+	DeactivateSound(VOC_NONE),
 	PowersUnit(NULL),
 	CrashingSound(VOC_NONE),
 	VoiceCrashing(VOC_NONE),
@@ -739,6 +741,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
 		SensorsSight = ini.Get_Int(Name(), "SensorsSight", SensorsSight);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
+		ActivateSound = ini.Get_VocType(Name(), "ActivateSound", ActivateSound);
+		DeactivateSound = ini.Get_VocType(Name(), "DeactivateSound", DeactivateSound);
 		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
 		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
 		VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
@@ -1292,6 +1296,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanApproachTarget);
 	stream.Serialize(SensorsSight);
 	stream.Serialize(IsPoweredUnit);
+	stream.Serialize(ActivateSound);
+	stream.Serialize(DeactivateSound);
 	stream.Serialize(PowersUnit);
 	stream.Serialize(CrashingSound);
 	stream.Serialize(VoiceCrashing);

@@ -1004,6 +1004,23 @@ Action:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+ActivateSound:
+  key: ActivateSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: ActivateSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ActiveAnim:
   key: ActiveAnim
   scopes:
@@ -8510,6 +8527,23 @@ DeaccelerationFactor:
       default_candidate: '.002'
       declared_in: TechnoTypeClass
       member: DeaccelerationFactor
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+DeactivateSound:
+  key: DeactivateSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: DeactivateSound
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

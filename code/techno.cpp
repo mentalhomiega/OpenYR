@@ -3271,6 +3271,7 @@ void TechnoClass::AI(void)
 			FootClass * foot = (FootClass *)this;
 			if (off) {
 				DebugString("Powered unit: %s shuts down\n", TClass->Name());
+				Sound_Effect(TClass->DeactivateSound, Center_Coord());
 				Assign_Target(NULL);
 				foot->Assign_Destination(NULL);
 				if (foot->Locomotion != NULL) {
@@ -3278,6 +3279,7 @@ void TechnoClass::AI(void)
 				}
 			} else {
 				DebugString("Powered unit: %s starts up\n", TClass->Name());
+				Sound_Effect(TClass->ActivateSound, Center_Coord());
 				if (foot->Locomotion != NULL) {
 					foot->Locomotion->Power_On();
 				}
