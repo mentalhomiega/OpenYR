@@ -598,13 +598,14 @@ void Sync_Delay(void)
 				// A draw is skipped when less time is left before the next game frame than recent draws took, so drawing never slows the game.
 				if ((int)(now - next_draw) >= 0 && FrameTimer > RenderCost) {
 					next_draw = now + spacing;
-					RenderBlend = std::clamp(1.0 - (double)FrameTimer / period, 0.0, 1.0);
 					KeyNumType input = KN_NONE;
 					int x, y;
 					Map.Input(input, x, y);
 					Keyboard_Process(input);
 					TacticalMap->AI();
+					RenderBlend = std::clamp(1.0 - (double)FrameTimer / period, 0.0, 1.0);
 					Map.Render();
+					RenderBlend = 1.0;
 					Note_Render_Cost(timeGetTime() - now);
 					stat_draws++;
 				}

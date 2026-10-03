@@ -44,6 +44,9 @@
 #include <intrin.h>
 
 
+extern double RenderBlend;
+
+
 /***********************************************************************************************
  * FacingClass::FacingClass -- Default constructor for the facing class.                       *
  *                                                                                             *
@@ -153,7 +156,13 @@ DirType FacingClass::Current(void) const
 		DirType dir = DesiredFacing;
 
 		if (rot > 0) {
-			dir.Facing -= RotationTimer * (diff / rot);
+			// Between game frames, drawing reads the facing part way back toward the previous frame's; game logic always runs with RenderBlend at 1.
+			if (RenderBlend < 1.0) {
+				double const frames = std::min<double>(RotationTimer + (1.0 - RenderBlend), rot);
+				dir.Facing -= (short)(frames * (diff / rot));
+			} else {
+				dir.Facing -= RotationTimer * (diff / rot);
+			}
 		}
 		return(dir);
 	}
