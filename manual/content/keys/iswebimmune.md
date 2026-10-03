@@ -15,5 +15,3 @@ A soldier without immunity takes no damage from a web hit. Instead it plays its 
 [MYCYBORG] ; example InfantryType
 IsWebImmune=yes
 ```
-
-Immunity also changes which weapon is fired at the soldier. An object armed with a web weapon treats an immune soldier as a target it cannot web, as it treats a vehicle, and picks its other weapon slot. [An empty second slot is a hazard](/systems/target-selection/#which-weapon-the-score-assumes) on any object with a web weapon.

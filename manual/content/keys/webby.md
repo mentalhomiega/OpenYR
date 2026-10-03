@@ -25,7 +25,7 @@ The web deals no blast damage, so [`Verses`](/keys/verses/), [`Spread`](/keys/sp
 
 A web warhead can also be used by an ordinary blast, such as the death explosion of an object whose first weapon carries it. That blast entangles the infantry it reaches that are not `IsWebImmune=yes`, as a web would, and damages everything else as usual. It goes ahead even when its damage is zero, where a blast from any other warhead would do nothing.
 
-The flag also affects targeting. [Which weapon the score assumes](/systems/target-selection/#which-weapon-the-score-assumes) covers how an object with a web weapon in one slot picks between its two weapons, and why a web primary needs a secondary weapon. [`WebDuration`](/keys/webduration/) covers when an entangled infantryman is worth webbing again.
+The flag also affects targeting. [`WebDuration`](/keys/webduration/) covers when an entangled infantryman is worth webbing again.
 
 :::caution[Set the other web keys with the flag]
 [`WebDuration`](/keys/webduration/), [`WebDurationVariation`](/keys/webdurationvariation/) and [`WebRadius`](/keys/webradius/) are read only when the warhead is already `Webby=yes` as its section is read, whether this file or an earlier one set it. Set them in the same file as `Webby=yes` or in a later one. Values set in an earlier file, before the flag was on, are ignored.

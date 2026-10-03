@@ -562,102 +562,92 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		}
 	}
 
-	if (TClass->IsGattling) {
-		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
-		if (second != NULL && PrimaryWeapon != NULL) {
-			TechnoClass const * techno = target->As_TechnoClass();
-			if (second->Bullet != NULL && second->Bullet->IsAntiAircraft && techno != NULL && techno->In_Air()) {
-				return(CurrentGattlingStage * 2 + 1);
-			}
-			return(CurrentGattlingStage * 2);
-		}
-	}
+	WeaponTypeClass const * first = Get_Class_Weapon_Data(0)->Weapon;
+	WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
 
-	bool webby1 = false;
-	bool webby2 = false;
-
-	/*
-	**	Fetch the armor of the candidate target object. Presume that if the target
-	**	is not an object, then its armor is equivalent to wood. Who knows why?
-	*/
-	ArmorType armor = ARMOR_NONE;
-	ObjectClass const * object = target->As_ObjectClass();
-	if (object != NULL) {
-		armor = object->Class_Of()->Armor;
-	}
-
-	/*
-	**	Get the value of the primary weapon verses the candidate target. Increase the
-	**	value of the weapon if it happens to be in range.
-	*/
-	int w1 = 0;
-	FireErrorType ok = Can_Fire(target, 0);
-	if (ok == FIRE_CANT || ok == FIRE_ILLEGAL || ok == FIRE_REARM) {
-		w1 = 0;
-	} else {
-		WeaponTypeClass const * wptr = PrimaryWeapon;
-		if (wptr != NULL) {
-			if (wptr->WarheadPtr != NULL) {
-				webby1 = wptr->WarheadPtr->IsWebby;
-				w1 = wptr->WarheadPtr->Modifier[armor] * 1000;
-			}
-			if (In_Range(target, 0)) w1 *= 2;
-		}
-	}
-
-
-	/*
-	**	Calculate a similar value for the secondary weapon.
-	*/
-	int w2 = 0;
-	ok = Can_Fire(target, 1);
-	if (ok == FIRE_CANT || ok == FIRE_ILLEGAL || ok == FIRE_REARM) {
-		w2 = 0;
-	} else {
-		WeaponTypeClass const * wptr = SecondaryWeapon;
-		if (wptr != NULL) {
-			if (wptr->WarheadPtr != NULL) {
-				webby2 = wptr->WarheadPtr->IsWebby;
-				w2 = wptr->WarheadPtr->Modifier[armor] * 1000;
-			}
-		}
-		if (In_Range(target, 1)) w2 *= 2;
-	}
-
-	/*
-	**	Return with the weapon identifier that should be used to fire upon the
-	**	candidate target.
-	*/
-	if (!webby1 && !webby2) {
-		if (w2 > w1) return(1);
+	// From here on the choice follows TechnoClass::SelectWeapon (0x6F3330): the first weapon unless
+	// a rule below picks the second.
+	if (first == NULL || second == NULL || second->IsNeverUse) {
 		return(0);
 	}
 
-	bool is_web_target = false;
-	if (object == NULL) {
-		CellClass * cellptr = target->As_CellClass();
-		if (cellptr != NULL) {
-			is_web_target = true;
-			if (cellptr->ITType == IsometricTileTypeClass::DestroyableCliffs || cellptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1
-				|| cellptr->IsUnderBridge || cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_26) {
-				is_web_target = false;
-			}
+	TechnoClass const * techno = target->As_TechnoClass();
+
+	if (TClass->IsGattling) {
+		if (second->Bullet != NULL && second->Bullet->IsAntiAircraft && techno != NULL && techno->In_Air()) {
+			return(CurrentGattlingStage * 2 + 1);
 		}
-	} else {
-		if (object->Is_Foot()) {
-			InfantryClass const * inf = dynamic_cast<InfantryClass const *>(object);
-			if (inf != NULL && !inf->Is_Immobilized() && !inf->Class->IsWebImmune) {
-				is_web_target = true;
-			} else {
-				is_web_target = false;
-			}
-		} else {
-			//is_web_target = object->As_IsometricTileClass() != NULL;
-			is_web_target = dynamic_cast<IsometricTileClass const *>(object) != NULL;
-		}
+		return(CurrentGattlingStage * 2);
 	}
 
-	return(is_web_target == webby2);
+	// A Locomotor first weapon leaves structures to the second.
+	if (first->WarheadPtr != NULL && first->WarheadPtr->IsLocomotor && techno != NULL && techno->RTTI == RTTI_BUILDING) {
+		return(1);
+	}
+
+	if (second->IsAreaFire && Get_Mission() == MISSION_UNLOAD) {
+		return(1);
+	}
+
+	// A naval object with LandTargeting=2 fires its second weapon at a land cell.
+	CellClass const * cell = target->As_CellClass();
+	if (cell != NULL) {
+		if (TClass->IsNaval && TClass->LandTargeting == 2 && cell->Land_Type() != LAND_WATER && cell->Land_Type() != LAND_BEACH) {
+			return(1);
+		}
+		return(0);
+	}
+	if (techno == NULL) {
+		return(0);
+	}
+
+	// A weapon that cannot hurt the target's armor is passed over.
+	ArmorType const armor = techno->Class_Of()->Armor;
+	if (second->WarheadPtr != NULL && second->WarheadPtr->Modifier[armor] == 0.0) {
+		return(0);
+	}
+	if (first->WarheadPtr != NULL && first->WarheadPtr->Modifier[armor] == 0.0) {
+		return(1);
+	}
+
+	LandType const land = techno->Get_Cell_Ptr()->Land_Type();
+	bool const on_water = (land == LAND_WATER || land == LAND_BEACH) && !techno->In_Air();
+	if (on_water && !techno->IsOnBridge) {
+		return(std::max(Naval_Weapon(techno), 0));
+	}
+	if (!techno->In_Air() && TClass->LandTargeting == 2) {
+		return(1);
+	}
+	if (second->Bullet != NULL && second->Bullet->IsAntiAircraft && techno->In_Air()) {
+		return(1);
+	}
+	return(0);
+}
+
+
+/// <summary>
+/// Returns the weapon this object uses against a target on water, or -1 when it may not fire at
+/// it, as its type's NavalTargeting sets (TechnoClass::SelectNavalTargeting, 0x6F3820).
+/// </summary>
+int TechnoClass::Naval_Weapon(TechnoClass const * target) const
+{
+	TechnoTypeClass const * type = target->TClass;
+	switch (TClass->NavalTargeting) {
+		case 0:
+			return((type->IsUnderwater && target->Cloak != UNCLOAKED) ? -1 : 0);
+		case 1:
+			return(type->IsUnderwater ? 1 : 0);
+		case 2:
+			return(type->IsUnderwater ? 0 : -1);
+		case 3:
+			return((type->IsOrganic || type->IsUnnatural) ? 1 : 0);
+		case 4:
+			return((type->Speed == SPEED_HOVER || type->IsOrganic) ? 0 : 1);
+		case 6:
+			return(-1);
+		default:
+			return(0);
+	}
 }
 
 
@@ -3988,6 +3978,24 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 
 	if (IsBerzerk && techno != NULL && techno->TClass->IsBerserkFriendly) {
 		return(FIRE_ILLEGAL);
+	}
+
+	// NavalTargeting can forbid firing at something on water, and LandTargeting=1 at anything on
+	// land (TechnoClass::GetFireError, 0x6FC339).
+	{
+		LandType const land = techno != NULL ? techno->Get_Cell_Ptr()->Land_Type() : cellptr->Land_Type();
+		bool const watery = land == LAND_WATER || land == LAND_BEACH;
+		if (techno != NULL && !techno->In_Air()) {
+			bool const on_water = watery && !techno->IsOnBridge;
+			if (on_water && Naval_Weapon(techno) == -1) {
+				return(FIRE_ILLEGAL);
+			}
+			if (!on_water && TClass->LandTargeting == 1) {
+				return(FIRE_ILLEGAL);
+			}
+		} else if (techno == NULL && !watery && TClass->LandTargeting == 1) {
+			return(FIRE_ILLEGAL);
+		}
 	}
 
 	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).

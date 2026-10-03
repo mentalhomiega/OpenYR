@@ -206,6 +206,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceSecondaryEliteWeaponAttack(VOC_NONE),
 	IsNatural(false),
 	IsUnnatural(false),
+	IsUnderwater(false),
+	NavalTargeting(0),
+	LandTargeting(0),
 	Spawns(NULL),
 	SpawnsNumber(0),
 	SpawnRegenRate(0),
@@ -722,6 +725,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DamageSound = ini.Get_VocType(Name(), "DamageSound", DamageSound);
 		IsNatural = ini.Get_Bool(Name(), "Natural", IsNatural);
 		IsUnnatural = ini.Get_Bool(Name(), "Unnatural", IsUnnatural);
+		IsUnderwater = ini.Get_Bool(Name(), "Underwater", IsUnderwater);
+		NavalTargeting = ini.Get_Int(Name(), "NavalTargeting", NavalTargeting);
+		LandTargeting = ini.Get_Int(Name(), "LandTargeting", LandTargeting);
 		VoicePrimaryWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryWeaponAttack", VoicePrimaryWeaponAttack);
 		VoicePrimaryEliteWeaponAttack = ini.Get_VocType(Name(), "VoicePrimaryEliteWeaponAttack", VoicePrimaryEliteWeaponAttack);
 		VoiceSecondaryWeaponAttack = ini.Get_VocType(Name(), "VoiceSecondaryWeaponAttack", VoiceSecondaryWeaponAttack);
@@ -1278,6 +1284,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageSound);
 	stream.Serialize(IsNatural);
 	stream.Serialize(IsUnnatural);
+	stream.Serialize(IsUnderwater);
+	stream.Serialize(NavalTargeting);
+	stream.Serialize(LandTargeting);
 	stream.Serialize(VoicePrimaryWeaponAttack);
 	stream.Serialize(VoicePrimaryEliteWeaponAttack);
 	stream.Serialize(VoiceSecondaryWeaponAttack);

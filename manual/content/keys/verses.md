@@ -21,7 +21,7 @@ An empty `Verses=` counts as leaving the key out.
 
 The same table also decides how objects armed with this warhead choose and answer targets:
 
-- An object with two weapons prefers the one whose warhead has the higher entry against the target's class, as [Which weapon the score assumes](/systems/target-selection/#which-weapon-the-score-assumes) describes.
+- An object with two weapons passes over one whose warhead has `0%` against the target's class, as [Which weapon the score assumes](/systems/target-selection/#which-weapon-the-score-assumes) describes.
 - The [threat score](/systems/target-selection/#the-threat-score) weighs how well each side's warhead does against the other's armor.
 - An object whose chosen weapon has `0%` against its attacker's class does not [retaliate](/systems/target-selection/#retaliation).
 - When the computer's base is attacked, it does not [call up](/systems/base-attacked/#which-objects-qualify) an object whose primary weapon has `0%` against the attacker's class.

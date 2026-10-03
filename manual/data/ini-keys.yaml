@@ -18174,6 +18174,23 @@ Land:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+LandTargeting:
+  key: LandTargeting
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: LandTargeting
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Landable:
   key: Landable
   scopes:
@@ -21500,6 +21517,40 @@ Naval:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+NavalTargeting:
+  key: NavalTargeting
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: NavalTargeting
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+NeverUse:
+  key: NeverUse
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsNeverUse
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 NewINIFormat:
   key: NewINIFormat
   scopes:
@@ -35320,6 +35371,23 @@ UnderDoorAnim:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+Underwater:
+  key: Underwater
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsUnderwater
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 UnitAbsorb:
   key: UnitAbsorb
   scopes:

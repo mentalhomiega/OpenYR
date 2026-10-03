@@ -301,22 +301,18 @@ These adjustments apply after the score is calculated, in this order:
 
 ## Which weapon the score assumes
 
-The effectiveness terms and every range test in the rejection table use the weapon each side would choose against the other. Unless a web weapon is involved, the choice compares the two weapon slots:
+The effectiveness terms and every range test in the rejection table use the weapon each side would choose against the other. An object fires its primary slot unless a rule picks the secondary. After the rules for deployed, garrisoned, gattling and other special weapons, these are checked in order, and the first that applies decides:
 
-- Each slot scores its warhead's `Verses` percentage against the target's armor, multiplied by `1000`.
-- The score doubles when the target is within that slot's range.
-- The score is zero when the slot cannot fire at the target at that moment: the target is illegal for it, it is reloading, or something else stops it firing, such as an unpowered building.
-- The higher score wins, and a tie goes to the primary slot.
-
-A web weapon replaces those scores. When either slot has a [`Webby=yes`](/keys/webby/) warhead and can fire at the target at that moment, the web slot is chosen against infantry that can be webbed and against most map cells. Infantry can be webbed unless it is [`IsWebImmune=yes`](/keys/iswebimmune/) or immobilized. The other slot is chosen against everything else.
-
-A target that is not an object, such as a cell, counts as armor class `none`.
+- An empty slot, or a secondary weapon with [`NeverUse=yes`](/keys/neveruse/), means the primary.
+- A primary with an [`IsLocomotor=yes`](/keys/islocomotor/) warhead leaves structures to the secondary.
+- A secondary with `AreaFire=yes` is used while the object is on the Unload mission.
+- Against a map cell, a naval object with [`LandTargeting=2`](/keys/landtargeting/) uses the secondary on land; otherwise the primary.
+- When the secondary's warhead has `0%` `Verses` against the target's armor, the primary is used. Otherwise, when the primary's has, the secondary is used.
+- Against an object on water or a beach, not in the air and not on a bridge, the object's [`NavalTargeting`](/keys/navaltargeting/) decides.
+- Against an object on the ground elsewhere, `LandTargeting=2` picks the secondary.
+- Against an object in the air, the secondary is used when its projectile is `AA=yes`.
 
 The primary slot does not always hold [`Primary`](/keys/primary/). An elite object uses its [`ElitePrimary`](/keys/eliteprimary/) weapon in that slot when it has one, and a building's plugged-in upgrades can replace the weapon in either case; [the elite weapons](/systems/veterancy/#the-elite-weapons) covers both. On this page, "primary weapon" means whatever weapon that slot holds.
-
-:::danger[A web primary with no secondary reads an empty weapon slot]
-When the primary's warhead is `Webby=yes` and the secondary slot is empty, the web rule above picks the empty secondary slot for any target the web weapon can fire at but cannot web. That covers every vehicle and building, a landed aircraft, and every `IsWebImmune=yes` or immobilized infantry. Scoring copes with the empty slot and uses `GuardRange` as the range. The retaliation check does not: when such an object is damaged by something its web weapon can fire at but cannot web, the check reads the warhead of the empty slot, which is an invalid memory access. Give any object with a web primary a secondary weapon.
-:::
 
 ## Picking the winner
 

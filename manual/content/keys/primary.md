@@ -15,7 +15,7 @@ Primary=MyCannon ; names the [MyCannon] weapon section
 The first weapon slot decides whether an object counts as armed. It also decides two other things:
 
 - If the first slot's projectile is not anti-ground ([`AG=no`](/keys/ag/)), a target scan skips targets standing at the map's lowest height level, such as an aircraft landed there. The test uses absolute height, so a landed aircraft on raised ground can still be picked.
-- When neither slot's warhead is [`Webby=yes`](/keys/webby/) and both slots rate equally against a target, the object fires the first slot.
+- The object fires the first slot unless a [weapon choice rule](/systems/target-selection/#which-weapon-the-score-assumes) picks the second.
 
 Writing `none` or `<none>` empties the slot. A name with no matching weapon section is still accepted, and the slot gets a weapon of that name with every setting at its default.
 

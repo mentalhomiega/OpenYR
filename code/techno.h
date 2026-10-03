@@ -647,6 +647,7 @@ class TechnoClass :	public RadioClass,
 		virtual int How_Many_Survivors(void) const;
 		virtual void Scatter_Incoming_Infantry(void) const;
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
+		int Naval_Weapon(TechnoClass const * target) const;
 		void Set_Turret_Weapon(int position);
 		bool Temporal_AI(void);
 		void Plant_Bomb(TechnoClass * planter);

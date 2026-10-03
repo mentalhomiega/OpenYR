@@ -393,6 +393,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsNatural;
 		bool IsUnnatural;
 
+		// An Underwater object is a submerged target for NavalTargeting=1.
+		bool IsUnderwater;
+
+		// Which weapon the object uses against targets on water (0 to 7) and on land (0, 1 can't fire, 2 secondary).
+		int NavalTargeting;
+		int LandTargeting;
+
 		// The aircraft a Spawner weapon launches, how many the object carries, the frames to
 		// replace a lost one and to rearm a returned one.
 		AircraftTypeClass * Spawns;

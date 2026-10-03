@@ -42,7 +42,8 @@
 **							overpowered
 **	ruleanims				writes the animations some rules settings resolved to
 **	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
-**							weapon at the object on that cell now, and why not
+**							weapon at the object on that cell now, and why not, then the
+**							weapon it would choose and whether that one could fire
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	kill <TypeID>			destroys the objects of that type other houses own
@@ -700,7 +701,8 @@ void Run(StepType const & step)
 		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-				DebugString("AUTOTEST   canfire %s at %s: %d facing %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing());
+				int const which = techno->What_Weapon_Should_I_Use(target);
+				DebugString("AUTOTEST   canfire %s at %s: %d facing %d weapon %d fire %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing(), which, (int)techno->Can_Fire(target, which));
 				break;
 			}
 		}

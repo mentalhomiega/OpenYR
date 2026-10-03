@@ -250,6 +250,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// An AreaFire weapon always strikes the firer's own cell.
 		bool IsAreaFire;
 
+		// A NeverUse second weapon is never chosen; the object always fires its first.
+		bool IsNeverUse;
+
 		// Is this weapon's range measured from the center of the firer's cell rather than from the firer itself?
 		bool IsCellRangefinding;
 

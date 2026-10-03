@@ -124,6 +124,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsMagBeam(false),
 	IsDecloakToFire(true),
 	IsAreaFire(false),
+	IsNeverUse(false),
 	IsCellRangefinding(false),
 	IsOmniFire(false),
 	IsRevealOnFire(true),
@@ -190,6 +191,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsMagBeam = ini.Get_Bool(IniName, "IsMagBeam", IsMagBeam);
 		IsDecloakToFire = ini.Get_Bool(IniName, "DecloakToFire", IsDecloakToFire);
 		IsAreaFire = ini.Get_Bool(IniName, "AreaFire", IsAreaFire);
+		IsNeverUse = ini.Get_Bool(IniName, "NeverUse", IsNeverUse);
 		IsCellRangefinding = ini.Get_Bool(IniName, "CellRangefinding", IsCellRangefinding);
 		IsOmniFire = ini.Get_Bool(IniName, "OmniFire", IsOmniFire);
 		IsRevealOnFire = ini.Get_Bool(IniName, "RevealOnFire", IsRevealOnFire);
@@ -451,6 +453,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMagBeam);
 	stream.Serialize(IsDecloakToFire);
 	stream.Serialize(IsAreaFire);
+	stream.Serialize(IsNeverUse);
 	stream.Serialize(IsCellRangefinding);
 	stream.Serialize(IsOmniFire);
 	stream.Serialize(IsRevealOnFire);
