@@ -107,6 +107,7 @@
 #include "suprtype.h"
 #include "teamtype.h"
 #include "team.h"
+#include "anim.h"
 #include "voc.h"
 #include "unit.h"
 #include "vox.h"
@@ -861,6 +862,15 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
 		}
 		DebugString("AUTOTEST   anim count %d\n", AnimTypes.Count());
+	} else if (step.Command == "liveanims") {
+		// liveanims <AnimType>: how many animations of that type are playing.
+		int count = 0;
+		for (int index = 0; index < Anims.Count(); index++) {
+			if (Anims[index]->Class != NULL && stricmp(Anims[index]->Class->Name(), step.Argument.c_str()) == 0) {
+				count++;
+			}
+		}
+		DebugString("AUTOTEST   liveanims %s %d\n", step.Argument.c_str(), count);
 	} else if (step.Command == "record") {
 		RecordInterval = std::max(0, std::atoi(step.Argument.c_str()));
 	} else if (step.Command == "dump") {

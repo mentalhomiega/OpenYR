@@ -22945,6 +22945,42 @@ OrePurifier:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+OreTwinkle:
+  key: OreTwinkle
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: OreTwinkle
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OreTwinkleChance:
+  key: OreTwinkleChance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: OreTwinkleChance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Organic:
   key: Organic
   scopes:

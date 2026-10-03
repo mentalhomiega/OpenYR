@@ -1000,6 +1000,16 @@ void Fill_In_Data(void)
 	if (GasSystem == NULL) {
 		GasSystem = new ParticleSystemClass(ParticleSystemTypes[ParticleSystemTypeClass::From_Name("GasCloudSys")], Cell(10, 10));
 	}
+
+	// One ore cell in OreTwinkleChance gets a sparkle that plays for the rest of the game.
+	if (Rule->OreTwinkle != NULL && Rule->OreTwinkleChance > 0) {
+		Map.Reset_Iterator();
+		for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+			if (cell->Tiberium_Value() > 0 && Random_Pick(0, Rule->OreTwinkleChance - 1) == 0) {
+				new AnimClass(Rule->OreTwinkle, cell->Center_Coord());
+			}
+		}
+	}
 }
 
 

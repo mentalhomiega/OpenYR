@@ -491,6 +491,8 @@ RulesClass::RulesClass(void) :
 	RadarCombatFlashTime(21),
 	MaxWaypointPathLength(15),
 	Wake(NULL),
+	OreTwinkle(NULL),
+	OreTwinkleChance(0),
 	FlamingInfantry(NULL),
 	AITriggerSuccessWeightDelta(1),
 	AITriggerFailureWeightDelta(-1),
@@ -1041,6 +1043,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		Wake = TGet_Class(ini, AUDIOVISUAL, "Wake", Wake);
 		// Yuri's Revenge keeps Wake under [General]; that entry wins when both are present.
 		Wake = TGet_Class(ini, "General", "Wake", Wake);
+		OreTwinkle = TGet_Class(ini, "General", "OreTwinkle", OreTwinkle);
+		OreTwinkleChance = ini.Get_Int(AUDIOVISUAL, "OreTwinkleChance", OreTwinkleChance);
 		FlamingInfantry = TGet_Class(ini, AUDIOVISUAL, "FlamingInfantry", FlamingInfantry);
 		FlamingInfantry = TGet_Class(ini, YR_GENERAL, "FlamingInfantry", FlamingInfantry);
 		VeinAttack = TGet_Class(ini, AUDIOVISUAL, "VeinAttack", VeinAttack);
@@ -2726,6 +2730,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadarCombatFlashTime);
 	stream.Serialize(MaxWaypointPathLength);
 	stream.Serialize(Wake);
+	stream.Serialize(OreTwinkle);
+	stream.Serialize(OreTwinkleChance);
 	stream.Serialize(FlamingInfantry);
 	stream.Serialize(AITriggerSuccessWeightDelta);
 	stream.Serialize(AITriggerFailureWeightDelta);
@@ -3245,6 +3251,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == Wake) {
 		Wake = NULL;
+	}
+	if (target == OreTwinkle) {
+		OreTwinkle = NULL;
 	}
 	if (target == FlamingInfantry) {
 		FlamingInfantry = NULL;

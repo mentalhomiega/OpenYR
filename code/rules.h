@@ -503,6 +503,10 @@ class RulesClass
 		 */
 		AnimTypeClass const * Wake;
 
+		// At the start of a scenario, one ore cell in OreTwinkleChance gets a looping OreTwinkle animation.
+		AnimTypeClass const * OreTwinkle;
+		int OreTwinkleChance;
+
 		/*
 		 * This is the animation of a burning body, played when infantry that is not a dog
 		 * is killed by a warhead that sets its victims alight.
