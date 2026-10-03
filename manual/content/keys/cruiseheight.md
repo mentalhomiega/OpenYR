@@ -24,3 +24,5 @@ A moving jumpjet also looks one cell ahead. When the cell ahead is taller, it st
 The same value decides which layer a jumpjet is drawn in. Between the ground and this height, it is drawn in the air layer, above ground objects. At or above this height, it is drawn in the top layer, over everything. Beneath a bridge, a jumpjet that has risen past the deck is measured from the deck for this test.
 
 A hovering or cruising jumpjet bobs above and below its flight level by up to [`WobbleDeviation`](/keys/wobbledeviation/). At the full flight level over open ground, that bobbing is centered on the boundary between the two layers, so any nonzero deviation makes the jumpjet switch layers as it bobs.
+
+This is the default for every type; a type's [`JumpjetHeight`](/keys/jumpjetheight/) replaces it for that type.

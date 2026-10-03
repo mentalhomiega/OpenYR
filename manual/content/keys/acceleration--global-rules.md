@@ -27,3 +27,5 @@ With these values, a jumpjet at its flight height reaches full speed seven frame
 :::caution[At `Acceleration=0` a jumpjet hovers and never sets off]
 The counter is the only thing that moves the unit, and nothing else raises it. At `Acceleration=0` the counter never leaves zero, so a jumpjet climbs to its flight level, turns toward its destination and hovers there without ever setting off.
 :::
+
+This is the default for every type; a type's [`JumpjetAccel`](/keys/jumpjetaccel/) replaces it for that type.

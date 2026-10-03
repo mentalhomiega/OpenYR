@@ -19,3 +19,5 @@ Use a whole number. A jumpjet's height is kept in whole leptons, so a climb drop
 A descent stops at ground level. A climb has no such limit, so the jumpjet can rise up to one step past its flight level and sink back on the next frame. That overshoot adds to the bobbing of a hovering jumpjet.
 
 `Climb` also sets how quickly a jumpjet lifts over terrain and structures. While moving, a jumpjet raises the height it wants to clear the cell ahead. It also slows down while it is well below that height. A small value therefore makes a jumpjet slow down and climb late at each obstacle.
+
+This is the default for every type; a type's [`JumpjetClimb`](/keys/jumpjetclimb/) replaces it for that type.

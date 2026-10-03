@@ -18188,6 +18188,142 @@ JumpJet:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+JumpjetAccel:
+  key: JumpjetAccel
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '2'
+      declared_in: TechnoTypeClass
+      member: JumpjetAccel
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetClimb:
+  key: JumpjetClimb
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: TechnoTypeClass
+      member: JumpjetClimb
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetDeviation:
+  key: JumpjetDeviation
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '40'
+      declared_in: TechnoTypeClass
+      member: JumpjetDeviation
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetHeight:
+  key: JumpjetHeight
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '500'
+      declared_in: TechnoTypeClass
+      member: JumpjetHeight
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetNoWobbles:
+  key: JumpjetNoWobbles
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsJumpjetNoWobbles
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetSpeed:
+  key: JumpjetSpeed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '14'
+      declared_in: TechnoTypeClass
+      member: JumpjetSpeed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetTurnRate:
+  key: JumpjetTurnRate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '4'
+      declared_in: TechnoTypeClass
+      member: JumpjetTurnRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+JumpjetWobbles:
+  key: JumpjetWobbles
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.15'
+      declared_in: TechnoTypeClass
+      member: JumpjetWobbles
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Land:
   key: Land
   scopes:

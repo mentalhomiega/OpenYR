@@ -96,6 +96,7 @@ Coord JumpjetLocomotionClass::Destination(void)
 /// </summary>
 bool JumpjetLocomotionClass::Process(void)
 {
+	Facing.Set_ROT(LinkedTo->TClass->JumpjetTurnRate);
 	LayerType layer = In_Which_Layer();
 
 	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING)) {
@@ -186,7 +187,7 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 		IsMoving = true;
 		if (CurrentState == DESCENDING) {
 			CurrentState = ASCENDING;
-			FlightLevel = Rule->JumpjetCruiseHeight;
+			FlightLevel = LinkedTo->TClass->JumpjetHeight;
 		}
 		return;
 	}
@@ -200,7 +201,7 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 			IsMoving = true;
 			if (CurrentState == DESCENDING) {
 				CurrentState = ASCENDING;
-				FlightLevel = Rule->JumpjetCruiseHeight;
+				FlightLevel = LinkedTo->TClass->JumpjetHeight;
 			}
 		}
 	} else {
@@ -353,7 +354,7 @@ LayerType JumpjetLocomotionClass::In_Which_Layer(void)
 
 	if (height == 0) {
 		return(LAYER_GROUND);
-	} else if (height < Rule->JumpjetCruiseHeight) {
+	} else if (height < LinkedTo->TClass->JumpjetHeight) {
 		return(LAYER_AIR);
 	} else {
 		return(LAYER_TOP);
@@ -374,7 +375,7 @@ void JumpjetLocomotionClass::Process_Grounded(void)
 		Facing.Set(LinkedTo->PrimaryFacing.Current());
 		CurrentSpeed = 0;
 		TargetSpeed = 0;
-		FlightLevel = Rule->JumpjetCruiseHeight;
+		FlightLevel = LinkedTo->TClass->JumpjetHeight;
 		if (!IonStormClass::Is_Ion_Storm_Active()) {
 			CurrentState = ASCENDING;
 		}
@@ -400,7 +401,7 @@ void JumpjetLocomotionClass::Process_Ascent(void)
 	if (height >= FlightLevel) {
 		CurrentState = HOVERING;
 	} else if (height > FlightLevel / 4 && Is_Moving()) {
-		TargetSpeed = Rule->JumpjetSpeed;
+		TargetSpeed = LinkedTo->TClass->JumpjetSpeed;
 		Facing.Set_Desired(DirType().Direction(LinkedTo->PositionCoord, HeadToCoord));
 	}
 }
@@ -417,12 +418,12 @@ void JumpjetLocomotionClass::Process_Hover(void)
 		Coord headto = HeadToCoord;
 		Coord position = LinkedTo->PositionCoord;
 		if (Point2D(headto) == Point2D(position)) {
-			if (LinkedTo->TarCom == NULL) {
-				if (Stays_Aloft()) {
-					Arrive_Aloft();
-				} else {
-					CurrentState = DESCENDING;
-				}
+			// A BalloonHover unit ends its move on arrival even while it has a target, so it is
+			// no longer moving and can fire from where it hovers.
+			if (Stays_Aloft()) {
+				Arrive_Aloft();
+			} else if (LinkedTo->TarCom == NULL) {
+				CurrentState = DESCENDING;
 			}
 		} else {
 			Facing.Set_Desired(DirType().Direction(LinkedTo->PositionCoord, HeadToCoord));
@@ -473,15 +474,15 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 			CurrentState = HOVERING;
 		}
 	} else if (distance < CELL_LEPTON) {
-		TargetSpeed = Rule->JumpjetSpeed * 0.3;
+		TargetSpeed = LinkedTo->TClass->JumpjetSpeed * 0.3;
 		if (LinkedTo->TarCom == NULL && !Stays_Aloft()) {
-			FlightLevel = Rule->JumpjetCruiseHeight * 0.75;
+			FlightLevel = LinkedTo->TClass->JumpjetHeight * 0.75;
 		}
 	} else if (distance < CELL_LEPTON * 2) {
-		TargetSpeed = Rule->JumpjetSpeed * 0.5;
+		TargetSpeed = LinkedTo->TClass->JumpjetSpeed * 0.5;
 	} else {
-		TargetSpeed = Rule->JumpjetSpeed;
-		FlightLevel = Rule->JumpjetCruiseHeight;
+		TargetSpeed = LinkedTo->TClass->JumpjetSpeed;
+		FlightLevel = LinkedTo->TClass->JumpjetHeight;
 	}
 }
 
@@ -590,25 +591,25 @@ void JumpjetLocomotionClass::Movement_AI(void)
 	}
 
 	if (TargetSpeed > CurrentSpeed) {
-		CurrentSpeed += Rule->JumpjetAcceleration;
-		CurrentSpeed = std::min<double>(CurrentSpeed, Rule->JumpjetSpeed);
+		CurrentSpeed += LinkedTo->TClass->JumpjetAccel;
+		CurrentSpeed = std::min<double>(CurrentSpeed, LinkedTo->TClass->JumpjetSpeed);
 	}
 	if (TargetSpeed < CurrentSpeed) {
-		CurrentSpeed -= Rule->JumpjetAcceleration * 1.5;
+		CurrentSpeed -= LinkedTo->TClass->JumpjetAccel * 1.5;
 		CurrentSpeed = std::max(CurrentSpeed, 0.0);
 	}
 
-	LinkedTo->Set_Speed(CurrentSpeed / Rule->JumpjetSpeed);
+	LinkedTo->Set_Speed(CurrentSpeed / LinkedTo->TClass->JumpjetSpeed);
 
 	bool at_destination = LinkedTo->Get_Cell() == HeadToCoord.As_Cell();
 
 	if (CurrentState == HOVERING || CurrentState == CRUISING) {
-		CurrentWobble += DEG_TO_RAD(360) / (15.0 / Rule->JumpjetWobblesPerSecond);
+		CurrentWobble += DEG_TO_RAD(360) / (15.0 / LinkedTo->TClass->JumpjetWobbles);
 	} else {
 		CurrentWobble = 0;
 	}
 
-	int desired_height = std::sin(CurrentWobble) * Rule->JumpjetWobbleDeviation + FlightLevel;
+	int desired_height = std::sin(CurrentWobble) * (LinkedTo->TClass->IsJumpjetNoWobbles ? 0 : LinkedTo->TClass->JumpjetDeviation) + FlightLevel;
 	int height = LinkedTo->Height;
 	int ground_height = Map.Get_Height_GL(LinkedTo->PositionCoord);
 
@@ -635,11 +636,11 @@ void JumpjetLocomotionClass::Movement_AI(void)
 			LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
 			LinkedTo->IsOnBridge = false;
 		}
-		height += Rule->JumpjetClimb;
+		height += LinkedTo->TClass->JumpjetClimb;
 		moved = true;
 	}
 	if (height_diff > desired_height) {
-		height -= Rule->JumpjetClimb;
+		height -= LinkedTo->TClass->JumpjetClimb;
 		if (height <= ground_height) {
 			height = ground_height;
 		}

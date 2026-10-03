@@ -18,3 +18,5 @@ Speed=20  ; about 1.2 cells a second
 A jumpjet unit's own [`Speed=`](/keys/speed/#scope-aircrafttype) does not set how fast it travels. It still matters when another object aims ahead of a moving jumpjet vehicle. The lead is worked out from `Speed=` with the same modifiers a ground vehicle's speed gets, multiplied by the jumpjet's current speed as a fraction of this ceiling.
 
 A jumpjet slows down as it arrives, to fractions of this value. Within two cells of its destination it flies at half this speed, and within one cell at three tenths. Within 20 leptons it stops.
+
+This is the default for every type; a type's [`JumpjetSpeed`](/keys/jumpjetspeed/) replaces it for that type.

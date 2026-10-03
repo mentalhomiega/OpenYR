@@ -455,6 +455,17 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType SinkingSound;
 		VocType VoiceSinking;
 
+		// How a jumpjet of this type flies; unset values come from [JumpjetControls].
+		bool IsJumpjetDataSet;
+		int JumpjetTurnRate;
+		int JumpjetSpeed;
+		double JumpjetClimb;
+		int JumpjetHeight;
+		double JumpjetAccel;
+		double JumpjetWobbles;
+		int JumpjetDeviation;
+		bool IsJumpjetNoWobbles;
+
 		// The structure's surroundings are revealed to every player when it is placed.
 		bool IsRevealToAll;
 

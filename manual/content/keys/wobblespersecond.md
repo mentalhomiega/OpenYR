@@ -17,3 +17,5 @@ WobblesPerSecond=.15
 The wave advances only while the jumpjet is hovering or cruising. Taking off, descending and standing on the ground restart it from its midpoint, so every jumpjet starts bobbing from the same point.
 
 `0` stops the bobbing, and the jumpjet holds its flight height. A negative value runs the wave backward, so the jumpjet dips before it rises.
+
+This is the default for every type; a type's [`JumpjetWobbles`](/keys/jumpjetwobbles/) replaces it for that type.

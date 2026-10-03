@@ -17,3 +17,5 @@ WobbleDeviation=40
 Only a jumpjet that is hovering or cruising bobs. The bobbing starts when the jumpjet reaches its flight height after taking off, and stops when it begins to descend.
 
 The bobbing can also cost ground speed. While a jumpjet is short of the cell it is heading for, its speed drops by a tenth each frame it flies below half its target height, and by another tenth below a quarter. The target includes the bob. With a deviation that is large next to the flight height, the target can rise faster than the jumpjet climbs, leaving it below half the target and slowing it.
+
+This is the default for every type; a type's [`JumpjetDeviation`](/keys/jumpjetdeviation/) replaces it for that type.

@@ -19,3 +19,5 @@ A jumpjet takes the rate when it is created and keeps it for the rest of the gam
 A jumpjet does not wait for a turn to finish before it moves. Once it has climbed past a quarter of its flight level, it accelerates along whatever heading it currently faces, and that heading keeps swinging toward the destination as it flies. A low rate therefore sends it off in a wide curve.
 
 A value above `127` is treated as `127`, half a rotation per frame. At `0`, or at any value down to `-128`, the jumpjet snaps to each new heading without turning. Lower values wrap around as they do for `ROT`, and some of them give an ordinary turning rate.
+
+This is the default for every type; a type's [`JumpjetTurnRate`](/keys/jumpjetturnrate/) replaces it for that type.

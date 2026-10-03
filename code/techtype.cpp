@@ -235,6 +235,15 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceCrashing(VOC_NONE),
 	SinkingSound(VOC_NONE),
 	VoiceSinking(VOC_NONE),
+	IsJumpjetDataSet(false),
+	JumpjetTurnRate(4),
+	JumpjetSpeed(14),
+	JumpjetClimb(5),
+	JumpjetHeight(500),
+	JumpjetAccel(2),
+	JumpjetWobbles(0.15),
+	JumpjetDeviation(40),
+	IsJumpjetNoWobbles(false),
 	IsRevealToAll(false),
 	AirstrikeTeam(0),
 	EliteAirstrikeTeam(0),
@@ -762,6 +771,26 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
 		SinkingSound = ini.Get_VocType(Name(), "SinkingSound", SinkingSound);
 		VoiceSinking = ini.Get_VocType(Name(), "VoiceSinking", VoiceSinking);
+
+		// The first read takes its jumpjet defaults from [JumpjetControls], read before the types.
+		if (!IsJumpjetDataSet) {
+			IsJumpjetDataSet = true;
+			JumpjetTurnRate = Rule->JumpjetTurnRate;
+			JumpjetSpeed = Rule->JumpjetSpeed;
+			JumpjetClimb = Rule->JumpjetClimb;
+			JumpjetHeight = Rule->JumpjetCruiseHeight;
+			JumpjetAccel = Rule->JumpjetAcceleration;
+			JumpjetWobbles = Rule->JumpjetWobblesPerSecond;
+			JumpjetDeviation = Rule->JumpjetWobbleDeviation;
+		}
+		JumpjetTurnRate = ini.Get_Int(Name(), "JumpjetTurnRate", JumpjetTurnRate);
+		JumpjetSpeed = ini.Get_Int(Name(), "JumpjetSpeed", JumpjetSpeed);
+		JumpjetClimb = ini.Get_Float(Name(), "JumpjetClimb", JumpjetClimb);
+		JumpjetHeight = ini.Get_Int(Name(), "JumpjetHeight", JumpjetHeight);
+		JumpjetAccel = ini.Get_Float(Name(), "JumpjetAccel", JumpjetAccel);
+		JumpjetWobbles = ini.Get_Float(Name(), "JumpjetWobbles", JumpjetWobbles);
+		JumpjetDeviation = ini.Get_Int(Name(), "JumpjetDeviation", JumpjetDeviation);
+		IsJumpjetNoWobbles = ini.Get_Bool(Name(), "JumpjetNoWobbles", IsJumpjetNoWobbles);
 		IsRevealToAll = ini.Get_Bool(Name(), "RevealToAll", IsRevealToAll);
 		AirstrikeTeam = ini.Get_Int(Name(), "AirstrikeTeam", AirstrikeTeam);
 		EliteAirstrikeTeam = ini.Get_Int(Name(), "EliteAirstrikeTeam", EliteAirstrikeTeam);
@@ -1325,6 +1354,15 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoiceCrashing);
 	stream.Serialize(SinkingSound);
 	stream.Serialize(VoiceSinking);
+	stream.Serialize(IsJumpjetDataSet);
+	stream.Serialize(JumpjetTurnRate);
+	stream.Serialize(JumpjetSpeed);
+	stream.Serialize(JumpjetClimb);
+	stream.Serialize(JumpjetHeight);
+	stream.Serialize(JumpjetAccel);
+	stream.Serialize(JumpjetWobbles);
+	stream.Serialize(JumpjetDeviation);
+	stream.Serialize(IsJumpjetNoWobbles);
 	stream.Serialize(IsRevealToAll);
 	stream.Serialize(AirstrikeTeam);
 	stream.Serialize(EliteAirstrikeTeam);
