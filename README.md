@@ -1,145 +1,108 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/OpenTS-Developers/.github/main/assets/opents-logo.png" alt="OpenTS" width="512">
+  <img src="docs/assets/openyr-banner.svg" alt="OpenYR: an open-source rebuild of the Yuri's Revenge engine" width="100%">
 </p>
 
-<p align="center">
-  <a href="https://github.com/OpenTS-Developers/OpenTS/releases"><img src="https://img.shields.io/github/downloads/OpenTS-Developers/OpenTS/total?label=downloads" alt="Downloads"></a>
-  <a href="https://github.com/OpenTS-Developers/OpenTS/actions/workflows/engine.yml"><img src="https://github.com/OpenTS-Developers/OpenTS/actions/workflows/engine.yml/badge.svg" alt="Engine build"></a>
-  <a href="https://opents-developers.github.io/OpenTS/"><img src="https://github.com/OpenTS-Developers/OpenTS/actions/workflows/manual-pages.yml/badge.svg" alt="Manual"></a>
-  <a href="https://www.patreon.com/c/ZivDero"><img src="https://img.shields.io/badge/Patreon-ZivDero-F96854?logo=patreon&logoColor=white" alt="Patreon"></a>
-</p>
+# OpenYR
 
-# OpenTS
+OpenYR is an open-source engine for *Command & Conquer: Red Alert 2 — Yuri's Revenge*. It
+builds on [OpenTS](https://github.com/OpenTS-Developers/OpenTS), the community rebuild of the
+Tiberian Sun engine, and extends it until it runs Yuri's Revenge (version 1.001) from the game's
+own data files, behaving as the original does.
 
-OpenTS is a community-led, open-source reconstruction of *Command & Conquer:
-Tiberian Sun*. Instead of patching or extending the retail executable, it
-rebuilds the engine as a standalone program.
+The goal is the same as OpenTS's: a playable engine that people can read, fix and extend,
+without patching the original executable.
 
-OpenTS gives equal weight to two goals: maintaining a playable engine and
-providing a capable platform for modding and engine development. Work on one
-goal should not come at the expense of the other.
+OpenYR is an independent community project. It is not affiliated with or endorsed by Electronic
+Arts, and it contains no game assets: you need your own copy of Yuri's Revenge to play.
 
-OpenTS is:
+> **Status: early development.** OpenYR runs skirmish games against the computer on Yuri's
+> Revenge maps, but it is not yet a full replacement for the original game. Expect missing
+> features and bugs.
 
-- an independent, community-led source reconstruction targeting Tiberian Sun
-  2.03 Firestorm;
-- a playable engine based on Electronic Arts' GPL-released source for related
-  Command & Conquer games and Tiberian Sun-specific reverse engineering; and
-- the active base for maintenance, documentation, modernization, bug fixes,
-  and new modding capabilities.
+## What works
 
-OpenTS is not:
+Skirmish games start, play and end with the original rules, art, sounds and maps. Among the
+parts already rebuilt to match Yuri's Revenge:
 
-- a remaster or remake;
-- an official Electronic Arts source release; or
-- a distribution of the original game assets.
+- **Interface:** the tabbed sidebar, command bar, radar layout, cursors, fonts, rank insignia,
+  health bars, string tables and the announcer.
+- **Factions and economy:** countries and their bonuses, ore and gems, Slave Miners, Chrono
+  Miners, ore purifiers, cloning vats, grinders and Bio Reactors.
+- **Combat:** Yuri's Revenge armor and weapon rules, mind control, Ivan bombs, temporal weapons,
+  radiation, parasites (terror drones and giant squids), magnetrons, gattling weapons, prism
+  towers, garrisons, Tank Bunkers, open-topped transports, ship sinking and the Iron Curtain.
+- **Superweapons:** nuclear missile, lightning storm, Chronosphere, Iron Curtain, Genetic
+  Mutator, Psychic Dominator, paradrops and spy planes.
+- **Units:** naval units and shipyards, carriers, V3 and Dreadnought missiles, jumpjets such as
+  the Rocketeer, Siege Choppers, spies and their disguises, and deployable units.
+- **Computer players:** base planning by side and country, team scripts, and use of bunkers,
+  Battle Bunkers and Bio Reactors.
 
-OpenTS is an independent community project and is not affiliated with or
-endorsed by Electronic Arts.
+About 1,290 of the 1,585 rules keys that Yuri's Revenge reads are supported.
 
-## Community
+## Running it
 
-- Discord: <https://opents.net/discord>
-- Bug reports and proposals:
-  [GitHub issues](https://github.com/OpenTS-Developers/OpenTS/issues)
+OpenYR needs the data files of an installed copy of Yuri's Revenge, for example from
+*Command & Conquer: The Ultimate Collection* on Steam or the EA App.
 
-## Downloads
+1. Build OpenYR as described below. There are no prebuilt releases yet.
+2. Start `Game.exe`, naming the Yuri's Revenge folder with `-DATADIR` and a folder for your
+   settings and saves with `-USERDIR`:
 
-- **Releases** are the recommended builds. Every release on the
-  [releases page](https://github.com/OpenTS-Developers/OpenTS/releases) carries
-  a zip per platform, `OpenTS-<version>-Win32.zip` and
-  `OpenTS-<version>-x64.zip`, each containing `Game.exe`, `Language.dll`, and
-  `Game.pdb`. The 32-bit build runs on both 32-bit and 64-bit Windows and has
-  the longer runtime history; the 64-bit build runs on 64-bit Windows only.
-- **Nightly builds** are development snapshots from the
-  [Engine nightly](https://github.com/OpenTS-Developers/OpenTS/actions/workflows/engine-nightly.yml)
-  workflow. Download the latest one without a GitHub account through
-  [nightly.link](https://nightly.link/OpenTS-Developers/OpenTS/workflows/engine-nightly/main).
-  Nightlies contain the latest merged changes without release validation and
-  expire after 90 days.
+   ```
+   Game.exe -DATADIR="C:\Games\Yuri's Revenge" -USERDIR="C:\Games\OpenYR-user" -SPAWN -WIN
+   ```
 
-## Installing
+The tested way to play is a skirmish launched with `-SPAWN`, which reads the game setup from
+`SPAWN.INI` in the user folder:
 
-1. Install Tiberian Sun from Command & Conquer The Ultimate Collection on
-   Steam or the EA App.
-2. Extract the release zip into the Tiberian Sun game directory.
-3. Run `Game.exe`.
+```ini
+[Settings]
+Name=Commander
+Scenario=XMP08T2.MAP
+Side=0
+Color=0
+AIPlayers=1
+Credits=10000
 
-OpenTS supports Windows 10 version 1903 (build 18362) and newer. Earlier
-Windows versions are untested and unsupported. Wine may work, but there is no
-supported native Linux build.
+[HouseCountries]
+Multi2=8
 
-Keep a saved game with the platform that wrote it, and play a network game with
-peers on the same platform. The 32-bit and 64-bit builds write saves and
-network packets at their own pointer widths, and neither checks which platform
-produced what it is reading, so a mismatch surfaces as a failed load or a
-desync.
+[HouseColors]
+Multi2=1
+```
 
-OpenTS supplies the engine, not the game data: the installation above
-provides the original assets. There is no installer, and no extra runtime
-library or launch argument is required.
-
-## Documentation
-
-The [OpenTS manual](https://opents-developers.github.io/OpenTS/) documents
-setup, runtime behavior, INI configuration, mapping, and source-level
-internals.
-
-## State and plans
-
-Release 0.1.0 runs the full Tiberian Sun 2.03 Firestorm game. The GDI, Nod,
-and Firestorm campaigns, skirmish, and save/load have received full
-play-through testing. LAN multiplayer has had more limited testing. No
-user-visible regression from the original game is currently known. The
-renderer uses
-[bgfx](https://github.com/bkaradzic/bgfx) and supports modern resolutions
-through 4K, including ultrawide.
-
-The first of the project's three development milestones is the current focus:
-
-1. CnCNet and CnCNet client support, including porting the parts of
-   [ts-patches](https://github.com/CnCNet/ts-patches) this requires.
-2. Feature parity with
-   [Vinifera](https://github.com/Vinifera-Developers/Vinifera) and the rest
-   of ts-patches.
-3. Extending Tiberian Sun with new features, striving toward feature parity
-   with Red Alert 2 and Yuri's Revenge, and growing engine capabilities that
-   match or exceed the popular Yuri's Revenge engine extensions.
-
-Alongside these goals, the engine is modernized incrementally toward an
-entity-component architecture, and new development is shaped so that
-migration stays possible. [Project direction](docs/DIRECTION.md) explains the
-reasoning.
+`Side` and the `HouseCountries` entries are country numbers: 0 America, 1 Korea, 2 France,
+3 Germany, 4 Great Britain, 5 Libya, 6 Iraq, 7 Cuba, 8 Russia and 9 Yuri. The campaigns and the
+in-game menus have not been tested.
 
 ## Building
 
-OpenTS builds for 32-bit and 64-bit Windows with Visual Studio 2022 and CMake.
-[Building OpenTS](docs/BUILDING.md) documents the exact requirements,
-commands, and outputs.
+OpenYR builds like OpenTS: for Windows with Visual Studio 2022 and CMake.
+[Building OpenTS](docs/BUILDING.md) lists the exact requirements, commands and outputs.
+
+## Documentation
+
+The [manual](manual/) documents runtime behavior, INI configuration and engine internals. Every
+Yuri's Revenge feature added in OpenYR is described there, and `manual/changes/` lists each
+change.
 
 ## Contributing
 
-Bug reports, proposals, documentation improvements, and focused pull requests
-are welcome. Review capacity is limited, so discuss non-trivial work with the
-maintainers before implementing it. [CONTRIBUTING.md](CONTRIBUTING.md)
-explains the current priorities and review policy; source conventions are in
-[Style](docs/STYLE.md).
+OpenYR follows the OpenTS rules for code, comments and documentation: see
+[CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and [Style](docs/STYLE.md).
+Never commit game assets, original binaries or decompiled code.
 
-## Origins
+## Credits and license
 
-OpenTS continues the community reconstruction preserved in the
-[TibSun archive](https://github.com/OpenTS-Developers/TibSun), built from
-Electronic Arts' published source for related Command & Conquer games and
-completed through reverse engineering against the original executable.
-[History](docs/HISTORY.md) records the reconstruction's lineage and methods.
+OpenYR is built on [OpenTS](https://github.com/OpenTS-Developers/OpenTS) and the
+[TibSun](https://github.com/OpenTS-Developers/TibSun) reconstruction, which in turn rest on
+Electronic Arts' GPL-released source for related Command & Conquer games.
+[ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) thanks the people and projects behind that work.
 
-## License and acknowledgements
+OpenYR is licensed under the GNU General Public License, version 3 or later. Material derived
+from Electronic Arts source remains subject to the additional GPL Section 7 terms in
+[LICENSE.md](LICENSE.md). [Third-party notices](THIRD_PARTY_NOTICES.md) list bundled
+dependencies and their licenses.
 
-OpenTS is licensed under the GNU General Public License, version 3 or later.
-Material derived from Electronic Arts source remains subject to the additional
-GPL Section 7 terms in [LICENSE.md](LICENSE.md).
-[Third-party notices](THIRD_PARTY_NOTICES.md) identify bundled dependencies
-and their licenses.
-
-[ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) thanks the people, projects, and
-communities whose work made OpenTS possible.
+*Command & Conquer*, *Red Alert* and *Yuri's Revenge* are trademarks of Electronic Arts.
