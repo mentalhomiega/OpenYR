@@ -52,7 +52,7 @@ The owner's priority is a playable "modern" build for play-testers. That work is
 7. **Unit tests that need no game files.** Add tests for self-contained logic, for example weapon choice (`TechnoClass::What_Weapon_Should_I_Use` and `Naval_Weapon`), mission numbering (`code/mission.hh`, `code/_mission.cpp`) and rules defaults. Use the existing test setup; no test may load game data.
 8. **Mechanical cleanup.** Remove unused constants, stale comments and dead code. Keep each cleanup in its own commit, separate from behaviour changes.
 
-Research on Ares and Phobos is done by a separate twice-weekly routine that follows `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone.
+Research on Ares and Phobos is done by a separate research routine that follows `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone.
 
 ## Night log
 

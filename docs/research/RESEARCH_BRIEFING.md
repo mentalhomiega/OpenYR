@@ -1,6 +1,6 @@
 # Research briefing: Ares and Phobos compatibility
 
-This briefing drives a twice-weekly cloud session. Its work is research documents and one tool, not engine changes. The hard rules in `CLOUD_BRIEFING.md` at the repository root apply here too; read that file first.
+This briefing drives a regular cloud research session. Its work is research documents and one tool, not engine changes. The hard rules in `CLOUD_BRIEFING.md` at the repository root apply here too; read that file first.
 
 ## Goal
 
