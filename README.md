@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/assets/openyr-logo.png" alt="OpenYR" width="640">
-</p>
-
 # OpenYR
 
 OpenYR is an open-source engine for *Command & Conquer: Red Alert 2 — Yuri's Revenge*. It
