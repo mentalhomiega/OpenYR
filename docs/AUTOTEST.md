@@ -29,6 +29,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `enemies` | Writes the other houses' structures and their unit and infantry counts to the debug log |
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `anims` | Writes the first entries of the animation list to the debug log |
+| `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |
 
@@ -46,3 +47,11 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 2000 command ScreenCapture
 2100 quit
 ```
+
+## Comparing builds
+
+`hash` covers what decides play: each structure, vehicle, aircraft and soldier's position, facing,
+strength, mission, limbo state and owner, each house's credits, and the scenario's random-number
+state. Logging it does not change the game. Run the same script, map and seed in two builds; the
+first frame whose hash differs is where their gameplay diverged. A script that starts with
+`1 hash 60` logs once a second at 60 game frames a second.

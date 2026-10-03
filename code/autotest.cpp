@@ -102,6 +102,7 @@
 #include "tactical.h"
 #include "scheme.h"
 #include "rules.h"
+#include "scenario.h"
 #include "script.h"
 #include "super.h"
 #include "suprtype.h"
@@ -144,6 +145,7 @@ std::size_t Next = 0;
 
 // Frames between the screenshots of a recording, or 0 when not recording.
 int RecordInterval = 0;
+int HashInterval = 0;
 
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
@@ -351,6 +353,56 @@ void Dump(void)
 			DebugString("AUTOTEST     disguised as %s of %s\n", object->DisguiseType->Name(), object->DisguiseHouse != NULL ? object->DisguiseHouse->Class->Name() : "-");
 		}
 	}
+}
+
+
+void Hash_Value(unsigned int & hash, unsigned int value)
+{
+	for (int byte = 0; byte < 4; byte++) {
+		hash = (hash ^ ((value >> (byte * 8)) & 0xFF)) * 16777619u;
+	}
+}
+
+
+template<class T>
+void Hash_Technos(unsigned int & hash, DynamicVectorClass<T *> & list)
+{
+	Hash_Value(hash, list.Count());
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		Hash_Value(hash, object->PositionCoord.X);
+		Hash_Value(hash, object->PositionCoord.Y);
+		Hash_Value(hash, object->PositionCoord.Z);
+		Hash_Value(hash, object->PrimaryFacing.Current().As_Int());
+		Hash_Value(hash, object->Strength);
+		Hash_Value(hash, object->Get_Mission());
+		Hash_Value(hash, object->IsInLimbo);
+		Hash_Value(hash, Houses.ID(object->House));
+	}
+}
+
+
+/// <summary>
+/// Logs a hash of the game state that decides play: every building, vehicle, aircraft and soldier
+/// (position, facing, strength, mission, limbo, owner), each house's credits and the scenario's
+/// random-number state. Two builds given the same script and seed should log the same hashes.
+/// Reading the state does not change it.
+/// </summary>
+void Log_State_Hash(void)
+{
+	unsigned int hash = 2166136261u;
+	Hash_Technos(hash, Buildings);
+	Hash_Technos(hash, Units);
+	Hash_Technos(hash, Aircraft);
+	Hash_Technos(hash, Infantry);
+	for (int index = 0; index < Houses.Count(); index++) {
+		Hash_Value(hash, Houses[index]->Credits);
+	}
+	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
+	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
+		hash = (hash ^ random[index]) * 16777619u;
+	}
+	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
 }
 
 
@@ -888,6 +940,10 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "hash") {
+		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
+		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
+		Log_State_Hash();
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
 	} else if (step.Command == "quit") {
@@ -979,6 +1035,10 @@ void AutoTest_Frame(void)
 
 	if (RecordInterval > 0 && (Frame % RecordInterval) == 0) {
 		Execute_Command("ScreenCapture");
+	}
+
+	if (HashInterval > 0 && (Frame % HashInterval) == 0) {
+		Log_State_Hash();
 	}
 }
 
