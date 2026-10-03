@@ -28,7 +28,8 @@ class DirType;
 
 int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor, int distance);
 void Chain_Reaction_Damage(Cell const & cell);
-void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL);
+// Returns whether the blast struck an Iron Curtained object at its center, which nullifies it.
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL);
 
 // The cells within a radius of up to CELL_SPREAD_MAX, nearest first, as gamemd's CellSpreadTable lists them.
 static int const CELL_SPREAD_MAX = 11;

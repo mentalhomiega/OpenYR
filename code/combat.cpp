@@ -289,7 +289,7 @@ Cell Cell_Spread_Offset(int index)
 HouseClass * DamageSourceHouse = NULL;
 
 
-void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse)
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse)
 {
 	Cell								cell;		// Cell number under explosion.
 	ObjectClass *						object;		// Working object pointer.
@@ -297,9 +297,9 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	int									distance;	// Distance to unit.
 	int									range;		// Damage effect radius.
 
-	if (Scen->Special.IsInert || warhead == NULL) return;
+	if (Scen->Special.IsInert || warhead == NULL) return(false);
 
-	if (!strength && !warhead->IsWebby) return;
+	if (!strength && !warhead->IsWebby) return(false);
 
 	/*
 	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance
@@ -609,6 +609,7 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			Map.Recalc_Ice_Cells();
 		}
 	}
+	return(curtain_hit);
 }
 
 

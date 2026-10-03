@@ -1321,6 +1321,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 void BulletClass::Detonate(Coord const & coord)
 {
 	WarheadTypeClass * warhead = Warhead;
+	bool nullified = false;
 
 	if (Class->ShrapnelWeapon != NULL) {
 		Shrapnel();
@@ -1466,7 +1467,7 @@ void BulletClass::Detonate(Coord const & coord)
 	**	Non-aircraft targets apply damage to the ground.
 	*/
 	else {
-		Explosion_Damage(coord, Strength, Payback, warhead, true);
+		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true);
 		if (!IsActive) return;
 	}
 
@@ -1489,7 +1490,8 @@ void BulletClass::Detonate(Coord const & coord)
 		land = Map[(Coord const &)PositionCoord].Land_Type();
 	}
 
-	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
+	// A shot the Iron Curtain turned away shows WeaponNullifyAnim instead (BulletClass::Detonate, 0x469BE2).
+	const AnimTypeClass * anim = (nullified && Rule->WeaponNullifyAnim != NULL) ? Rule->WeaponNullifyAnim : Combat_Anim(Strength, Warhead, land, PositionCoord);
 
 	if (IsBright) {
 		Combat_Lighting(blast_coord, Strength, Warhead, true);

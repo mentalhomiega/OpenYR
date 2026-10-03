@@ -505,6 +505,9 @@ class RulesClass
 
 		// At the start of a scenario, one ore cell in OreTwinkleChance gets a looping OreTwinkle animation.
 		AnimTypeClass const * OreTwinkle;
+
+		// Plays instead of a weapon's explosion when an Iron Curtain turns the shot away.
+		AnimTypeClass const * WeaponNullifyAnim;
 		int OreTwinkleChance;
 
 		/*
