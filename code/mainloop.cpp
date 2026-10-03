@@ -353,10 +353,11 @@ bool Main_Loop(void)
 	// Remember where moving objects stand before this frame's logic, so drawing between frames can blend toward their new places.
 	if (Options.RenderFrameRate > 0) {
 		for (int index = 0; index < Feet.Count(); index++) {
-			Feet[index]->RenderPrevCoord = Feet[index]->Render_Coord();
+			// An object off the map has no position to blend from when it is placed again.
+			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
 		}
 		for (int index = 0; index < Bullets.Count(); index++) {
-			Bullets[index]->RenderPrevCoord = Bullets[index]->Render_Coord();
+			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
 		}
 	}
 

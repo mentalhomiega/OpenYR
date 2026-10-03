@@ -117,6 +117,7 @@ bool TeleportLocomotionClass::Process(void)
 	if (Is_Moving()) {
 		LinkedTo->Mark(MARK_UP);
 		LinkedTo->PositionCoord = DestinationCoord;
+		LinkedTo->RenderPrevCoord = COORD_NONE;
 		LinkedTo->Mark(MARK_DOWN);
 		Stop_Moving();
 		LinkedTo->Per_Cell_Process(PCP_END);
