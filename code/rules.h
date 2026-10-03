@@ -1144,6 +1144,9 @@ class RulesClass
 		// Played as a vehicle starts to sink when its type sets no SinkingSound.
 		VocType SinkingSound;
 
+		// Played at a bridge repair hut when an engineer repairs its bridge.
+		VocType RepairBridgeSound;
+
 		/*
 		 * These are the rates at which a house short of power was meant to build, at its
 		 * worst and at its best, expressed as a fraction of its full build speed.

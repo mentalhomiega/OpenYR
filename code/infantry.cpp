@@ -859,6 +859,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					// are we trying to repair a bridge?
 					if (tech->RTTI == RTTI_BUILDING && ((BuildingClass*)tech)->Class->IsBridgeRepairHut) {
 						if (House->Is_Player_Control()) Speak(VOX_BRIDGE_REPAIRED);
+						Sound_Effect(Rule->RepairBridgeSound, tech->Center_Coord());
 
 						bool train = false;
 						for (int y = -2; y < 3; y++) {

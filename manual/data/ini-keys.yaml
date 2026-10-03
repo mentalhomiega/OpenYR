@@ -26633,6 +26633,24 @@ RepairBay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+RepairBridgeSound:
+  key: RepairBridgeSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: RepairBridgeSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 RepairDelay:
   key: RepairDelay
   scopes:
