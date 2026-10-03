@@ -126,6 +126,8 @@ BulletClass::BulletClass(void) :
 	BASECLASS(),
 	Class(NULL),
 	Payback(NULL),
+	SourceCoord(COORD_NONE),
+	LastCell(CELL_NONE),
 	Weapon(NULL),
 	IsInaccurate(false),
 	Fuse(),
@@ -862,6 +864,7 @@ void BulletClass::AI(void)
 				forced = Is_Forced_To_Explode(cur_coord);
 				PositionCoord = cur_coord;
 			}
+			LastCell = PositionCoord.As_Cell();
 
 			/*
 			**	If the bullet is not to explode, then perform normal flight
@@ -1098,6 +1101,8 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 	*/
 	if (BASECLASS::Unlimbo(coord)) {
 		Velocity = velocity;
+		SourceCoord = coord;
+		LastCell = coord.As_Cell();
 		Map.Remove(this);
 
 		Coord tcoord = TarCom->As_Coord();
@@ -1216,10 +1221,24 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 	int height = HeightAGL;
 
 	/*
-	**	Check for impact on a wall or other high obstacle.
-	*/
-	if (!Class->IsHigh && cellptr->Overlay != OVERLAY_NONE && OverlayTypes[cellptr->Overlay]->IsHigh && height < 100) {
-		return(true);
+	 * A SubjectToCliffs projectile stops on entering a cell at least four levels above the one it
+	 * left and above its firer's cell. A SubjectToWalls one stops at a wall short of its target's
+	 * cell, unless it was fired from higher ground than the target or AlliedWallTransparency lets
+	 * it through a wall its owner is allied with (BulletClass::AI, 0x468BEC, and 0x4CC360).
+	 */
+	if (SourceCoord != COORD_NONE && LastCell != CELL_NONE) {
+		CellClass const * source = &Map[SourceCoord];
+		if (Class->IsSubjectToCliffs && cellptr->Height - Map[LastCell].Height >= 4 && cellptr->Height > source->Height) {
+			return(true);
+		}
+		if (Class->IsSubjectToWalls && cellptr->Overlay != OVERLAY_NONE && OverlayTypes[cellptr->Overlay]->IsWall) {
+			CellClass const * target = TarCom != NULL ? &Map[TarCom->Center_Coord()] : cellptr;
+			bool const allied = Rule->IsAlliedWallTransparency && Payback != NULL && cellptr->Owner != HOUSE_NONE
+				&& cellptr->Owner < Houses.Count() && Payback->House->Is_Ally(Houses[cellptr->Owner]);
+			if (cellptr != target && source->Height <= target->Height && !allied) {
+				return(true);
+			}
+		}
 	}
 
 	if (height < 0) {
@@ -1585,6 +1604,8 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(Class);
 	stream.Serialize(Payback);
+	stream.Serialize(SourceCoord);
+	stream.Serialize(LastCell);
 	stream.Serialize(Weapon);
 	stream.Serialize(IsInaccurate);
 	stream.Serialize(Fuse);

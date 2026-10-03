@@ -54,6 +54,10 @@ class BulletTypeClass : public ObjectTypeClass
 		*/
 		bool IsHigh;
 
+		// A SubjectToCliffs projectile stops at a cliff it flies into, and a SubjectToWalls one at a wall.
+		bool IsSubjectToCliffs;
+		bool IsSubjectToWalls;
+
 		/*
 		 * If this homing projectile cruises at extra altitude, then this flag will be true. It
 		 * holds ten terrain levels of clearance instead of five and does not begin its dive

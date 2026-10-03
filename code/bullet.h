@@ -68,6 +68,10 @@ class BulletClass : public ObjectClass
 		*/
 		TechnoClass * Payback;
 
+		// Where the projectile was launched, and the cell it was in on the previous frame.
+		Coord SourceCoord;
+		Cell LastCell;
+
 	public:
 
 		/*---------------------------------------------------------------------

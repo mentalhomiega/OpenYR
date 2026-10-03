@@ -580,6 +580,7 @@ RulesClass::RulesClass(void) :
 	IceCrackingWeight(2),
 	IceBreakingWeight(4),
 	ShipSinkingWeight(3),
+	IsAlliedWallTransparency(false),
 	ParachuteMaxFallRate(-3),
 	NoParachuteMaxFallRate(-100),
 	IceCrackSounds(),
@@ -1526,6 +1527,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IceCrackingWeight = ini.Get_Float(GENERAL, "IceCrackingWeight", IceCrackingWeight);
 		IceBreakingWeight = ini.Get_Float(GENERAL, "IceBreakingWeight", IceBreakingWeight);
 		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
+		IsAlliedWallTransparency = ini.Get_Bool("WallModel", "AlliedWallTransparency", IsAlliedWallTransparency);
 		ParachuteMaxFallRate = ini.Get_Int(GENERAL, "ParachuteMaxFallRate", ParachuteMaxFallRate);
 		NoParachuteMaxFallRate = ini.Get_Int(GENERAL, "NoParachuteMaxFallRate", NoParachuteMaxFallRate);
 		CliffBackImpassability = ini.Get_Int(GENERAL, "CliffBackImpassability", CliffBackImpassability);
@@ -2827,6 +2829,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IceCrackingWeight);
 	stream.Serialize(IceBreakingWeight);
 	stream.Serialize(ShipSinkingWeight);
+	stream.Serialize(IsAlliedWallTransparency);
 	stream.Serialize(ParachuteMaxFallRate);
 	stream.Serialize(NoParachuteMaxFallRate);
 	stream.Serialize(IceCrackSounds);

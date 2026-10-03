@@ -107,6 +107,8 @@
 #include "suprtype.h"
 #include "teamtype.h"
 #include "team.h"
+#include "overlay.h"
+#include "overtype.h"
 #include "anim.h"
 #include "voc.h"
 #include "unit.h"
@@ -862,6 +864,14 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
 		}
 		DebugString("AUTOTEST   anim count %d\n", AnimTypes.Count());
+	} else if (step.Command == "wall") {
+		// wall <OverlayType> x y: builds a section of that wall, owned by the player, on that cell.
+		OverlayType const type = OverlayTypeClass::From_Name(step.Argument.c_str());
+		if (type != OVERLAY_NONE) {
+			Map.PendingHouse = HousesType(PlayerPtr->HeapID);
+			new OverlayClass(OverlayTypes[type], Cell(step.X, step.Y), HousesType(PlayerPtr->HeapID));
+			DebugString("AUTOTEST wall %s at %d,%d: overlay %d\n", step.Argument.c_str(), step.X, step.Y, (int)Map[Cell(step.X, step.Y)].Overlay);
+		}
 	} else if (step.Command == "liveanims") {
 		// liveanims <AnimType>: how many animations of that type are playing.
 		int count = 0;

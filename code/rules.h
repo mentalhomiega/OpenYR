@@ -922,6 +922,9 @@ class RulesClass
 		// A destroyed ship at least this heavy sinks instead of vanishing.
 		double ShipSinkingWeight;
 
+		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
+		bool IsAlliedWallTransparency;
+
 		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
 		int ParachuteMaxFallRate;
 		int NoParachuteMaxFallRate;

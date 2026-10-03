@@ -79,6 +79,8 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsAirburst(false),
 	IsFloater(false),
 	IsHigh(false),
+	IsSubjectToCliffs(false),
+	IsSubjectToWalls(false),
 	IsVeryHigh(false),
 	IsShadow(true),
 	IsArcing(false),
@@ -170,6 +172,8 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsArcing = ini.Get_Bool(Name(), "Arcing", IsArcing);
 		IsFloater = ini.Get_Bool(Name(), "Floater", IsFloater);
 		IsHigh = ini.Get_Bool(Name(), "High", IsHigh);
+		IsSubjectToCliffs = ini.Get_Bool(Name(), "SubjectToCliffs", IsSubjectToCliffs);
+		IsSubjectToWalls = ini.Get_Bool(Name(), "SubjectToWalls", IsSubjectToWalls);
 		IsVeryHigh = ini.Get_Bool(Name(), "VeryHigh", IsVeryHigh);
 		IsShadow = ini.Get_Bool(Name(), "Shadow", IsShadow);
 		IsDropping = ini.Get_Bool(Name(), "Dropping", IsDropping);
@@ -285,6 +289,8 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(IsAirburst);
 	crc(IsHigh);
+	crc(IsSubjectToCliffs);
+	crc(IsSubjectToWalls);
 	crc(IsShadow);
 	crc(IsArcing);
 	crc(IsDropping);
@@ -331,6 +337,8 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAirburst);
 	stream.Serialize(IsFloater);
 	stream.Serialize(IsHigh);
+	stream.Serialize(IsSubjectToCliffs);
+	stream.Serialize(IsSubjectToWalls);
 	stream.Serialize(IsVeryHigh);
 	stream.Serialize(IsShadow);
 	stream.Serialize(IsArcing);

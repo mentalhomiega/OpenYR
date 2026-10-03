@@ -2225,6 +2225,24 @@ AlliedDisguise:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AlliedWallTransparency:
+  key: AlliedWallTransparency
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: WallModel
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsAlliedWallTransparency
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Allies:
   key: Allies
   scopes:
@@ -31908,6 +31926,40 @@ StretchMovies:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+SubjectToCliffs:
+  key: SubjectToCliffs
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsSubjectToCliffs
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
+SubjectToWalls:
+  key: SubjectToWalls
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsSubjectToWalls
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 Suffix:
   key: Suffix
   scopes:
