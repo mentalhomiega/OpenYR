@@ -692,6 +692,7 @@ void TeamClass::AI(void)
 			INVOKE(GATHER_AT_ENEMY);
 			INVOKE(GATHER_AT_BASE);
 			INVOKE(IRON_CURTAIN_ME);
+			INVOKE(MOVE_TO_OWN_BUILDING);
 			INVOKE(ENTER_TANK_BUNKER);
 			INVOKE(ENTER_BIO_REACTOR);
 			INVOKE(ENTER_BATTLE_BUNKER);
@@ -3620,6 +3621,34 @@ void TeamClass::TMission_MOVETO_BUILDING_WITH_PROPERTY(TeamMissionClass * missio
 				} else {
 					Assign_Mission_Target(NULL);
 				}
+			}
+			if (MissionTarget == NULL) {
+				IsNextMission = true;
+			}
+		}
+	}
+	Coordinate_Move();
+}
+
+
+/// <summary>
+/// Sends the team to a cell alongside the team's own building that best matches the scripted
+/// type and property (TeamClass script line 58, 0x6EE5C0). The step ends at once when the house
+/// has no such building.
+/// </summary>
+void TeamClass::TMission_MOVE_TO_OWN_BUILDING(TeamMissionClass * mission, bool)
+{
+	if (MissionTarget == NULL) {
+		FootClass * unit = Member;
+		if (unit != NULL) {
+			TargetPropertyType prop = TargetPropertyType((unsigned short)mission->Data.Prop);
+			BuildingTypeClass * btype = BuildingTypes[mission->Data.Type];
+			BuildingClass * bptr = Pick_Building_With_Property(btype, unit->House, unit, prop, true);
+			if (bptr != NULL) {
+				MZoneType mzone = unit->TClass->MZone;
+				Cell cell = bptr->PositionCoord.As_Cell();
+				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(cell, mzone, unit->IsOnBridge), mzone, false, Point2D(3,3));
+				Assign_Mission_Target(newcell != CELL_NONE ? &Map[newcell] : NULL);
 			}
 			if (MissionTarget == NULL) {
 				IsNextMission = true;
