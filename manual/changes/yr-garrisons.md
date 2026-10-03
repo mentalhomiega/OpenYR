@@ -72,4 +72,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Soldiers with `Occupier=yes` can now move into `CanBeOccupied=yes` structures, take them over, and fire their `OccupyWeapon` from inside, as in Yuri's Revenge. The owner empties a garrison with the Deploy command, and the occupants also leave when the structure falls to red health or is destroyed. A garrisonable structure shows one figure per occupant slot to every player.
+Soldiers with `Occupier=yes` can now move into `CanBeOccupied=yes` structures, take them over, and fire their `OccupyWeapon` from inside, as in Yuri's Revenge. The owner empties a garrison with the Deploy command, and the occupants also leave when the structure is destroyed. A `TechLevel=-1` structure also empties at red health. A garrisonable structure shows one figure per occupant slot to every player.
