@@ -243,6 +243,10 @@ class ObjectClass : public AbstractClass
 		virtual Coord Docking_Coord(void) const {return(Center_Coord());}
 		virtual Coord Center_Coord(void) const override;
 		virtual Coord Render_Coord(void) const {return(Center_Coord());}
+
+		// Where the object was drawn at the start of the current game frame, or COORD_NONE.
+		Coord RenderPrevCoord;
+		Point2D Render_Blend_Offset(void) const;
 		virtual Coord Fire_Coord(int which) const {return(Center_Coord() + Coord(0, 0, 50));}
 		virtual Coord Exit_Coord(void) const {return(Center_Coord());}
 		virtual int Sort_Y(void) const;
@@ -386,6 +390,9 @@ class ObjectClass : public AbstractClass
 		virtual void Debug_Dump(MonoClass *mono) const override;
 #endif
 };
+
+// How far drawing has moved from the previous game frame toward the current one, 0 to 1.
+extern double RenderBlend;
 
 
 inline ObjectClass * AbstractClass::As_ObjectClass(void)

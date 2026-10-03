@@ -71,6 +71,9 @@
 #include "special.hh"
 
 #include <algorithm>
+#include "bullet.h"
+#include "foot.h"
+#include "object.h"
 
 //
 // Special module globals for recording and playback
@@ -312,6 +315,9 @@ bool Main_Loop(void)
 				Ipx.Store_Stats();
 			}
 			Update_Fogged_Objects();
+			if (Options.RenderFrameRate > 0) {
+				Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+			}
 			Map.Render();
 		}
 	}
@@ -333,6 +339,16 @@ bool Main_Loop(void)
 	**	the order of this layer will remain in sync.
 	*/
 	DisplayClass::Layer[LAYER_GROUND].Sort();
+
+	// Remember where moving objects stand before this frame's logic, so drawing between frames can blend toward their new places.
+	if (Options.RenderFrameRate > 0) {
+		for (int index = 0; index < Feet.Count(); index++) {
+			Feet[index]->RenderPrevCoord = Feet[index]->Render_Coord();
+		}
+		for (int index = 0; index < Bullets.Count(); index++) {
+			Bullets[index]->RenderPrevCoord = Bullets[index]->Render_Coord();
+		}
+	}
 
 	/*
 	**	AI logic operations are performed here.
@@ -551,6 +567,35 @@ void Sync_Delay(void)
 	**	Accumulate the number of 'spare' ticks that are frittered away here.
 	*/
 	SpareTicks += FrameTimer;
+
+	// With RenderFrameRate set, the wait is filled with redraws at that rate, each drawing moving
+	// objects further along their move from the previous game frame.
+	if (Options.RenderFrameRate > 0 && !Session.Play) {
+		unsigned int const period = std::max<unsigned int>(FrameTimer, 1);
+		unsigned int const spacing = std::max(1000 / Options.RenderFrameRate, 1);
+		unsigned int next_draw = timeGetTime();
+		while (FrameTimer) {
+			Call_Back();
+			if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
+				unsigned int const now = timeGetTime();
+				if ((int)(now - next_draw) >= 0) {
+					next_draw = now + spacing;
+					RenderBlend = std::clamp(1.0 - (double)FrameTimer / period, 0.0, 1.0);
+					KeyNumType input = KN_NONE;
+					int x, y;
+					Map.Input(input, x, y);
+					Keyboard_Process(input);
+					TacticalMap->AI();
+					Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+					Map.Render();
+				}
+			} else {
+				UI_Serve_Screen();
+			}
+			Sleep(GameInFocus ? 0 : 1);
+		}
+		RenderBlend = 1.0;
+	}
 
 	while (FrameTimer) {
 		Call_Back();

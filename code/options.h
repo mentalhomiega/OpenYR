@@ -189,6 +189,10 @@ class OptionsClass {
 		 */
 		bool IntegerScaling;
 
+		// Redraws a second between game frames, drawing moving objects between their positions;
+		// 0 draws once per game frame, as the original game does.
+		int RenderFrameRate;
+
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
 		 * Presents are already limited to the refresh rate without it.

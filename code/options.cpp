@@ -140,6 +140,7 @@ OptionsClass::OptionsClass(void) :
 	WindowHeight(-1),
 	ScaleMode(VIDEO_SCALE_PIXELART),
 	IntegerScaling(false),
+	RenderFrameRate(0),
 	VSync(false),
 	Renderer(0),
 	CursorScale(0),
@@ -428,6 +429,8 @@ void OptionsClass::Load_Settings(void)
 	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
+	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), 0, 1000);
+	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
 	char scalename[32];
 	ConfigINI.Get_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode), scalename, sizeof(scalename));

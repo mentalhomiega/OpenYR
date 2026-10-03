@@ -157,6 +157,7 @@
  *=============================================================================================*/
 ObjectClass::ObjectClass(void) :
 	BASECLASS(),
+	RenderPrevCoord(COORD_NONE),
 	IsActive(true),
 	IsDown(false),
 	IsToDamage(false),
@@ -1192,6 +1193,7 @@ bool ObjectClass::Render(Rect & cliprect, bool forced, bool extras_only) const
 		IsToDisplay = false;
 
 		if (TacticalMap->Coord_To_Pixel(Render_Coord(), point) || RTTI == RTTI_PARTICLESYSTEM) {
+			point += Render_Blend_Offset();
 
 			cliprect = Intersect(cliprect, TacticalRect);
 
@@ -2746,4 +2748,29 @@ bool ObjectClass::Not_Underground(void) const
 	assert(this != NULL);
 
 	return(HeightAGL > -20);
+}
+
+
+double RenderBlend = 1.0;
+
+
+/// <summary>
+/// Returns how far, in screen pixels, the object is drawn from its current position so that it
+/// appears part way along its move from the previous game frame. The offset is zero while
+/// RenderBlend is 1, for an object with no previous position, and for one that moved more than
+/// two cells in a frame. It changes only where the object is drawn, never the game state.
+/// </summary>
+Point2D ObjectClass::Render_Blend_Offset(void) const
+{
+	if (RenderBlend >= 1.0 || RenderPrevCoord == COORD_NONE) {
+		return(Point2D(0, 0));
+	}
+	Coord const current = Render_Coord();
+	Coord const delta = RenderPrevCoord - current;
+	if (std::abs(delta.X) > CELL_LEPTON * 2 || std::abs(delta.Y) > CELL_LEPTON * 2 || std::abs(delta.Z) > CELL_LEPTON * 2) {
+		return(Point2D(0, 0));
+	}
+	double const back = 1.0 - RenderBlend;
+	Coord const drawn(current.X + int(delta.X * back), current.Y + int(delta.Y * back), current.Z + int(delta.Z * back));
+	return(TacticalMap->Coord_To_Pixel_Absolute(drawn) - TacticalMap->Coord_To_Pixel_Absolute(current));
 }
