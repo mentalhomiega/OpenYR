@@ -19,7 +19,7 @@ targets:
   id: Range
   scope: weapontype
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `CanDisguise=yes` object now takes on the look of a soldier it hits with a `MakesDisguise=yes` warhead, as the Yuri's Revenge spy does. `Range=-2` weapons reach any target, and `FireOnce` weapons drop their target after a shot.

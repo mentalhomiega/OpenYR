@@ -6,7 +6,7 @@ targets:
 - type: command
   id: launch:autotest
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 `-AUTOTEST=<script>` plays a test script inside the engine with the window hidden and the real mouse and keyboard ignored, so a test can run while someone uses the computer. docs/AUTOTEST.md describes the script.

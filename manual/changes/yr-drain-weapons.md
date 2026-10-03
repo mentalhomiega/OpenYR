@@ -21,7 +21,7 @@ targets:
 - type: key
   id: BalloonHover
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The Floating Disc now drains enemy power plants and refineries from above, as in Yuri's Revenge.

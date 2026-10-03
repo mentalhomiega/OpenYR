@@ -9,7 +9,7 @@ targets:
 - type: format
   id: opents-ini
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Hotkeys are now read from and saved to `KEYBOARDMD.INI`, the file Yuri's Revenge uses, instead of `KEYBOARD.INI`. `Keyboard=` in the `[Files]` section of `OPENTS.INI` names a different file.

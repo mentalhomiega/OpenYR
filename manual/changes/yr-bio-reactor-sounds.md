@@ -9,7 +9,7 @@ targets:
 - type: key
   id: LeaveBioReactorSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The Bio Reactor now sounds when infantry go in and come out, as in Yuri's Revenge.

@@ -18,7 +18,7 @@ targets:
 - type: key
   id: ShakeYhi
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A projectile whose warhead sets the `Shake` ranges now shakes the screen when it detonates, swinging back and forth as in Yuri's Revenge.

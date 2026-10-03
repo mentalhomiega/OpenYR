@@ -6,7 +6,7 @@ targets:
 - type: key
   id: WeaponNullifyAnim
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A shot that an Iron Curtain turns away now shows `WeaponNullifyAnim` instead of its explosion, as in Yuri's Revenge.

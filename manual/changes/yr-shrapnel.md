@@ -9,7 +9,7 @@ targets:
 - type: key
   id: ShrapnelCount
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Projectiles with a `ShrapnelWeapon`, such as the elite Tesla bolt, now fire that weapon at nearby enemies where they hit, as in Yuri's Revenge.

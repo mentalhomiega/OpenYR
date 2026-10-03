@@ -12,7 +12,7 @@ targets:
 - type: key
   id: DetectDisguiseRange
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `DetectDisguise=yes` structure now shows its owner disguised spies and Mirage tanks within `DetectDisguiseRange` cells as they are, as the Yuri's Revenge Psychic Sensor does.

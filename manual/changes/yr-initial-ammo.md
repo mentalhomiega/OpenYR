@@ -9,7 +9,7 @@ targets:
 - type: key
   id: Ammo
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A type's `InitialAmmo` now sets how many shots its new objects start with, as in Yuri's Revenge.

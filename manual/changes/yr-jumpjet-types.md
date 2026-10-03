@@ -27,7 +27,7 @@ targets:
 - type: key
   id: JumpjetNoWobbles
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Jumpjet types now read their own speed, climb, height, acceleration, turn rate and bobbing, falling back to `[JumpjetControls]`, as in Yuri's Revenge. A Rocketeer that reaches its spot with a target now stops there and fires instead of hovering in place unable to shoot.

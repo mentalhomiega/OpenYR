@@ -9,7 +9,7 @@ targets:
 - type: key
   id: CanDetonateTimeBomb
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 With `CanDetonateTimeBomb=yes`, the player can now set off a bomb their house planted by clicking the unit carrying it, as in Yuri's Revenge.

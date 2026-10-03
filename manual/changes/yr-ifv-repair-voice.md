@@ -6,7 +6,7 @@ targets:
 - type: key
   id: VoiceIFVRepair
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 An IFV ordered to repair now answers with `VoiceIFVRepair`, as in Yuri's Revenge.

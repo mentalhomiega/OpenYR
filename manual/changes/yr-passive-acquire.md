@@ -12,7 +12,7 @@ targets:
 - type: key
   id: CanRetaliate
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Types such as the Yuri's Revenge Demolition Truck and spy, which set `CanPassiveAquire=no` and `CanRetaliate=no`, no longer pick targets while idle or fire back when hit.

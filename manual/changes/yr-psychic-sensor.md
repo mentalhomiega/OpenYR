@@ -6,7 +6,7 @@ targets:
 - type: key
   id: PsychicDetectionRadius
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A powered structure with `PsychicDetectionRadius`, such as the Psychic Sensor, now shows its owner a line from each enemy unit to a target it has picked within that radius, as in Yuri's Revenge.

@@ -23,7 +23,7 @@ targets:
 - type: system
   id: walls-and-gates
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Projectiles now stop at walls and cliffs according to their `SubjectToWalls` and `SubjectToCliffs` settings, as in Yuri's Revenge, so a tank's shells hit a wall in their path while artillery flies over it. The `High` keys no longer affect projectiles.

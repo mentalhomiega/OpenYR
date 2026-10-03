@@ -21,7 +21,7 @@ targets:
 - type: key
   id: LeaveTransportSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Newly built units now play their `CreateSound`, such as Tanya's or the Kirov's, and transports play `EnterTransportSound` and `LeaveTransportSound` as passengers board and leave, as in Yuri's Revenge.

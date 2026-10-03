@@ -6,7 +6,7 @@ targets:
 - type: system
   id: veterancy
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Veteran, elite and below-rookie insignia now show on every object the player can see, enemy objects included, as in Yuri's Revenge. Before, only allied objects and those of a house the player had spied on showed them.

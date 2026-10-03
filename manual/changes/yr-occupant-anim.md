@@ -6,7 +6,7 @@ targets:
 - type: key
   id: OccupantAnim
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Garrisoned structures now show their occupants' muzzle flashes, as in Red Alert 2.

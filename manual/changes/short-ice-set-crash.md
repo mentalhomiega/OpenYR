@@ -12,7 +12,7 @@ targets:
 - type: key
   id: Ice3Set
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A snow theater whose ice sets have fewer tiles than the Tiberian Sun layout no longer crashes the game while the map loads.

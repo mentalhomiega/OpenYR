@@ -30,7 +30,7 @@ targets:
 - type: key
   id: CanC4
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Boris now calls in MiGs on the structures he targets, as in Yuri's Revenge.

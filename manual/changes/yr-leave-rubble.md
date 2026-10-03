@@ -12,7 +12,7 @@ targets:
 - type: system
   id: crates
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Destroyed structures with `LeaveRubble=yes`, such as most civilian landmarks, now leave their ruins on the ground, as in Yuri's Revenge. A crate such a structure leaves lands beside the ruins.

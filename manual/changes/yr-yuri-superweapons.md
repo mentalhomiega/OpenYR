@@ -98,7 +98,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The psychic reveal, genetic mutator, force shield and psychic dominator superweapons now work as in Yuri's Revenge, and computer houses fire all but the force shield. Infantry killed by an `InfDeath=9` warhead now mutate into new infantry of the attacker's house.

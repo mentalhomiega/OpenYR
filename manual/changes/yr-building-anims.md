@@ -492,7 +492,7 @@ targets:
 - type: key
   id: TurretAnimZAdjust
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Structures now have Yuri's Revenge's twenty-one animation slots, adding special slot four, four super slots, an idle slot and two low power slots. Every slot except the upgrade and turret slots reads a garrisoned name and the `PoweredEffect` and `PoweredSpecial` flags, and the production slots gain power flags. The idle animation starts when a structure comes online. All of a slot's settings now come from the structure's art entry, and the depth and sort biases are no longer limited to -128 to 127. Only a `Powered=yes` structure that drains power reacts to power changes with its animations.

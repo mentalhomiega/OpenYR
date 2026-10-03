@@ -6,7 +6,7 @@ targets:
 - type: key
   id: NoSpawnAlt
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A V3 launcher or Dreadnought whose missiles have all left now shows its empty-launcher model, as in Red Alert 2.

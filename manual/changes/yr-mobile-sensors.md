@@ -6,7 +6,7 @@ targets:
 - type: key
   id: SensorsSight
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Units with `Sensors=yes` and `SensorsSight`, such as destroyers and dolphins, now reveal cloaked submarines within that many cells to their owner, as in Red Alert 2.

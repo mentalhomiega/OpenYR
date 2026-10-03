@@ -6,7 +6,7 @@ targets:
 - type: key
   id: TurretRotateSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A turret with a `TurretRotateSound`, such as the Grand Cannon's, now plays it while it turns, as in Yuri's Revenge.

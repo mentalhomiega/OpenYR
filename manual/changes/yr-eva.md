@@ -24,7 +24,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The announcer now speaks the lines EVAMD.INI lists, in the voice of the player's side, with each line's queue type and priority. Superweapons announce when they are ready, when they fire, and when an enemy builds one. Play speech numbers name a line's position in that file.

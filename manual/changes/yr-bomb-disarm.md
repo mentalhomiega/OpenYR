@@ -12,7 +12,7 @@ targets:
 - type: key
   id: BombSight
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Engineers now show the disarm cursor over bombs the player sees and remove them with a `BombDisarm=yes` warhead, and `BombSight` objects show the player nearby bombs, as in Yuri's Revenge.

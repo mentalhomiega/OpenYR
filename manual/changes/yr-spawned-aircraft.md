@@ -49,7 +49,7 @@ targets:
 - type: system
   id: spawned-aircraft
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Aircraft carriers launch their Hornets, V3 launchers fire V3 rockets, and Dreadnoughts and Boomers fire their missiles, as in Yuri's Revenge.

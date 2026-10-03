@@ -48,7 +48,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A primary weapon with a `MindControl=yes` warhead now takes its target over for the firer's house, as in Yuri's Revenge. The firer holds up to the weapon's `Damage` in objects, which go back to their houses when it dies. An `InfiniteMindControl=yes` firer holds any number and takes overload damage.

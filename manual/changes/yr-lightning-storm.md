@@ -55,7 +55,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `Type=LightningStorm` superweapon now darkens the sky over its target, gathers clouds there and strikes with lightning for `LightningStormDuration` frames, and takes away its enemies' radar, as in Yuri's Revenge. Computer houses fire it at the same targets they pick for the ion cannon.

@@ -18,7 +18,7 @@ targets:
 - type: key
   id: BerzerkAllowed
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `Psychedelic=yes` warhead now drives vehicles, infantry and aircraft berzerk for a while, as the Yuri's Revenge Chaos Drone does. Every berzerk object now fires twice as fast, ignores its owner's orders, spares `BerserkFriendly=yes` types and never targets itself.

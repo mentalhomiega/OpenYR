@@ -6,7 +6,7 @@ targets:
 - type: key
   id: RepairBridgeSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 An engineer repairing a bridge now plays `RepairBridgeSound` at the repair hut, as in Yuri's Revenge.

@@ -6,7 +6,7 @@ targets:
 - type: key
   id: OpenToppedRangeBonus
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Infantry firing from a Battle Fortress or another open-topped transport now reach `OpenToppedRangeBonus` cells farther, as in Yuri's Revenge.

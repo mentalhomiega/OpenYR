@@ -21,7 +21,7 @@ targets:
 - type: key
   id: ReselectIfLimboed
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A primary weapon with a `Parasite=yes` warhead now puts its firer inside its target, which it eats from inside, as the Yuri's Revenge terror drone does.

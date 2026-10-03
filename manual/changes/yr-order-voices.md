@@ -12,7 +12,7 @@ targets:
 - type: key
   id: VoiceHarvest
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Units now answer enter, capture and harvest orders with their `VoiceEnter`, `VoiceCapture` and `VoiceHarvest`, as in Yuri's Revenge.

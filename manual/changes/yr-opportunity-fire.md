@@ -12,7 +12,7 @@ targets:
 - type: key
   id: NormalTargetingDelay
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Vehicles with `OpportunityFire=yes`, such as most Yuri's Revenge tanks, now shoot at targets that come into range while they move or harvest.

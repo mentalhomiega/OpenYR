@@ -12,7 +12,7 @@ targets:
 - type: key
   id: RevealToAll
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Falling aircraft play their crash sounds, and every player sees where an enemy builds a superweapon structure, as in Yuri's Revenge.

@@ -12,7 +12,7 @@ targets:
 - type: key
   id: ElectricAssault
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Soldiers with an `ElectricAssault` weapon now charge `Overpowerable=yes` structures, which then fire their overcharged weapon and keep working through low power, as Tesla troopers and Tesla coils do in Yuri's Revenge.

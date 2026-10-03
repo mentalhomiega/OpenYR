@@ -18,7 +18,7 @@ targets:
 - type: system
   id: target-selection
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Objects now choose between their two weapons by Yuri's Revenge's rules instead of scoring them, so a Boomer fires missiles at land targets, a destroyer uses its second weapon on submarines, and a giant squid or attack dog no longer attacks targets it cannot reach.

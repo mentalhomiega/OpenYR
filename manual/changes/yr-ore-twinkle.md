@@ -9,7 +9,7 @@ targets:
 - type: key
   id: OreTwinkleChance
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Some ore cells now sparkle from the start of a game, as in Yuri's Revenge.

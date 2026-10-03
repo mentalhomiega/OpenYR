@@ -9,7 +9,7 @@ targets:
 - type: system
   id: map-visibility
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A shot from a `RevealOnFire=no` weapon, such as the Yuri's Revenge sniper rifle, no longer reveals the firer to the player it hits.

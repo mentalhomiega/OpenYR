@@ -9,7 +9,7 @@ targets:
 - type: key
   id: ImageLetter
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Theater art is now renamed only when its name starts with `G`, `N`, `C` or `Y` and its second letter is `A` or `T`, instead of whenever its second letter is some theater's image letter. A structure whose renamed file is missing now draws the generic file, with `G` as its second letter.

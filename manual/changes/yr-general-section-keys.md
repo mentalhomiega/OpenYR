@@ -42,7 +42,7 @@ targets:
 - type: format
   id: multiplayer-rules
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Animation keys that Yuri's Revenge keeps in `[General]`, such as `InfantryExplode` and `BridgeExplosions`, and the lobby defaults it keeps in `[MultiplayerDialogSettings]`, are now read from those sections. They used to stay unset with Yuri's Revenge rules.

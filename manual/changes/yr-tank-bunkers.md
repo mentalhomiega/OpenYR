@@ -36,7 +36,7 @@ targets:
 - type: system
   id: tank-bunkers
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Vehicles can now drive into a Tank Bunker and fight from it with more damage, a faster rate of fire and longer range, shielded from all but `PenetratesBunker` warheads, as in Yuri's Revenge. Animations with `Layer=ground` in the art file now sort among the objects on the ground.

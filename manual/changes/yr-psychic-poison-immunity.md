@@ -18,7 +18,7 @@ targets:
 - type: key
   id: ImmuneToPoison
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 `ImmuneToPsionicWeapons=yes` types, such as Yuri Prime, now take no damage from `PsychicDamage=yes` warheads, and `ImmuneToPoison=yes` types, such as the virus sniper, none from `Poison=yes` warheads, as in Yuri's Revenge.

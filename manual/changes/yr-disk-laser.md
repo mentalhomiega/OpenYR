@@ -9,7 +9,7 @@ targets:
 - type: key
   id: DiskLaserChargeUp
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The Floating Disc's laser now runs around a ring before its beam strikes, as in Yuri's Revenge.

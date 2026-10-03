@@ -45,7 +45,7 @@ targets:
 - type: mission
   id: TMISSION_GARRISON_STRUCTURE
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Computer teams now carry out Yuri's Revenge's Gather at enemy base and Regroup at friendly base script lines, so their attack teams leave home instead of stalling. A team skips the other new lines, and any line it does not know, instead of stopping on it. A team's leader is now the member with the highest `LeadershipRating`.

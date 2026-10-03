@@ -16,7 +16,7 @@ targets:
 - type: key
   id: C4Warhead
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A destroyed aircraft that crashes now sets off its death weapon and plays its `ImpactLandSound` or `ImpactWaterSound`, as in Yuri's Revenge, instead of a `C4Warhead` blast.

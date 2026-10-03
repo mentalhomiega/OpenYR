@@ -6,7 +6,7 @@ targets:
 - type: key
   id: Teleporter
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `Teleporter=yes` harvester sent onto its refinery's dock while driving no longer crashes the game. It switches back to its own locomotor once its current move step is over.
