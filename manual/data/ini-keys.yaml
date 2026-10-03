@@ -5213,6 +5213,23 @@ Buildup:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+BuildupSound:
+  key: BuildupSound
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: BuildingTypeClass
+      member: BuildupSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 BuildupTime:
   key: BuildupTime
   scopes:
@@ -9342,6 +9359,20 @@ DeploySound:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: AuxSound1
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -35336,6 +35367,20 @@ UndeploySound:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id024
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: AuxSound2
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 UndeploysInto:
   key: UndeploysInto
   scopes:
@@ -36593,6 +36638,23 @@ VoiceCrashing:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceDeploy:
+  key: VoiceDeploy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceDeploy
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceDie:
   key: VoiceDie
   scopes:
@@ -36760,6 +36822,23 @@ VoiceSelect:
       default_candidate: ''
       declared_in: TechnoTypeClass
       member: VoiceSelect
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoiceUndeploy:
+  key: VoiceUndeploy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceUndeploy
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

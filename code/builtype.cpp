@@ -333,6 +333,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsBunker(false),
 	PsychicDetectionRadius(0),
 	IsEligibleForDelayKill(false),
+	BuildupSound(VOC_NONE),
 	DelayedFireDelay(0),
 	IsOverpowerable(false),
 	IsClickRepairable(true),
@@ -1286,6 +1287,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
+		BuildupSound = ini.Get_VocType(Name(), "BuildupSound", BuildupSound);
 		ToBuild = ini.Get_RTTIType(Name(), "Factory", ToBuild);
 		FreeUnit = ini.Get_Foot_Type(Name(), "FreeUnit", FreeUnit);
 		IsHoverPad = ini.Get_Bool(Name(), "HoverPad", IsHoverPad);
@@ -2334,6 +2336,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBunker);
 	stream.Serialize(PsychicDetectionRadius);
 	stream.Serialize(IsEligibleForDelayKill);
+	stream.Serialize(BuildupSound);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsClickRepairable);
@@ -2535,8 +2538,17 @@ void const * BuildingTypeClass::Get_Buildup_Data(void) const
 		if (!BuildupFilename.empty()) {
 			_makepath(fullname, NULL, NULL, BuildupFilename, ".SHP");
 			Theater_Naming_Convention(fullname, Scen->Theater);
-			CCFileClass file(fullname);
-			ShapeSet * data = (ShapeSet *)Load_Alloc_Data(file);
+			ShapeSet * data = NULL;
+			{
+				CCFileClass file(fullname);
+				data = (ShapeSet *)Load_Alloc_Data(file);
+			}
+			// Generic art stands in when the theater has none, as Retrieve_Theater_Art does.
+			if (data == NULL && fullname[0] != '\0' && fullname[1] != '\0') {
+				fullname[1] = 'G';
+				CCFileClass file(fullname);
+				data = (ShapeSet *)Load_Alloc_Data(file);
+			}
 			((void const *&)BuildupData) = data;
 			if (BuildupData != NULL) {
 				int timedelay = 1;

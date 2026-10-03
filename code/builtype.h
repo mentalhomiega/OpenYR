@@ -666,6 +666,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// An EligibleForDelayKill structure hit by a CausesDelayKill warhead is destroyed after a delay.
 		bool IsEligibleForDelayKill;
 
+		// Played as the structure starts to build up.
+		VocType BuildupSound;
+
 		// The frames a prism tower charges before it fires or sends its support beam.
 		int DelayedFireDelay;
 

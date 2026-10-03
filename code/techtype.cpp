@@ -195,6 +195,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	EnterTransportSound(VOC_NONE),
 	LeaveTransportSound(VOC_NONE),
 	VoiceEnter(VOC_NONE),
+	VoiceDeploy(VOC_NONE),
+	VoiceUndeploy(VOC_NONE),
 	VoiceCapture(VOC_NONE),
 	VoiceHarvest(VOC_NONE),
 	ImpactLandSound(VOC_NONE),
@@ -718,6 +720,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		EnterTransportSound = ini.Get_VocType(Name(), "EnterTransportSound", EnterTransportSound);
 		LeaveTransportSound = ini.Get_VocType(Name(), "LeaveTransportSound", LeaveTransportSound);
 		VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
+		VoiceDeploy = ini.Get_VocType(Name(), "VoiceDeploy", VoiceDeploy);
+		VoiceUndeploy = ini.Get_VocType(Name(), "VoiceUndeploy", VoiceUndeploy);
 		VoiceCapture = ini.Get_VocType(Name(), "VoiceCapture", VoiceCapture);
 		VoiceHarvest = ini.Get_VocType(Name(), "VoiceHarvest", VoiceHarvest);
 		ImpactLandSound = ini.Get_VocType(Name(), "ImpactLandSound", ImpactLandSound);
@@ -1277,6 +1281,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EnterTransportSound);
 	stream.Serialize(LeaveTransportSound);
 	stream.Serialize(VoiceEnter);
+	stream.Serialize(VoiceDeploy);
+	stream.Serialize(VoiceUndeploy);
 	stream.Serialize(VoiceCapture);
 	stream.Serialize(VoiceHarvest);
 	stream.Serialize(ImpactLandSound);

@@ -373,6 +373,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// What a unit of this type says when the player orders it into something, to capture something, or to harvest.
 		VocType VoiceEnter;
+
+		// The voice that answers a deploy order, and the one a dug-in soldier answers it with.
+		VocType VoiceDeploy;
+		VocType VoiceUndeploy;
 		VocType VoiceCapture;
 		VocType VoiceHarvest;
 

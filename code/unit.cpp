@@ -2032,13 +2032,9 @@ bool UnitClass::Try_To_Deploy(void)
 					building->LimpetType = LimpetType;
 					building->LimpetSpeedFactor = LimpetSpeedFactor;
 
-					/*
-					**	Play the buildup sound for the player if this is the players
-					**	MCV.
-					*/
-					if (building->House->Is_Player_Control()) {
-						Sound_Effect(Rule->BuildingDrop, Center_Coord());
-					} else {
+					// The vehicle's DeploySound plays as it unpacks (UnitClass::TryToDeploy, 0x7393C0).
+					Sound_Effect(Class->AuxSound1, Center_Coord());
+					if (!building->House->Is_Player_Control()) {
 						building->IsToRebuild = true;
 						building->IsToRepair = true;
 					}
@@ -7045,6 +7041,8 @@ int UnitClass::Simple_Deploy_AI(void)
 				}
 				SimpleDeployFrame = Frame + std::max(Class->DeployingAnim->Stages, 1) * std::max(Class->DeployingAnim->Delay, 1);
 			}
+			// As UnitClass::Deploy (0x739AC0) and Undeploy (0x739CD0).
+			Sound_Effect(IsSimpleDeployed ? Class->AuxSound2 : Class->AuxSound1, Center_Coord());
 			Status = 1;
 			return(1);
 

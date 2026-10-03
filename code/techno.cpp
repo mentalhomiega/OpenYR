@@ -4963,6 +4963,12 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		} else if (mission == MISSION_HARVEST) {
 			voice = TClass->VoiceHarvest;
 		}
+
+		// A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier, and never with the move voice (TechnoClass::ClickedMission, 0x6FFBE0).
+		if (mission == MISSION_UNLOAD) {
+			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
+			Sound_Effect(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+		} else
 		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
 			Sound_Effect(Weapon_Attack_Voice(target));
 		} else if (mission == MISSION_ATTACK) {

@@ -5071,9 +5071,7 @@ int BuildingClass::Do_MISSION_CONSTRUCTION(void)
 		case INITIAL:
 			Begin_Mode(BSTATE_CONSTRUCTION);
 			Transmit_Message(RADIO_BUILDING);
-			if (Class->AuxSound1 != VOC_NONE /*&& House->IsPlayerControl*/) {
-				Sound_Effect(Class->AuxSound1, PositionCoord);
-			}
+			Sound_Effect(Class->BuildupSound, PositionCoord);
 			IsToDisplay = true;
 			Status = DURING;
 			break;
@@ -5348,6 +5346,12 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					UnitClass * unit = new UnitClass(Class->UndeploysInto, House);
 					ScenarioInit--;
 					if (unit != NULL) {
+
+						// A structure turning back into its vehicle plays its DeploySound, and its VoiceDeploy for its owner.
+						Sound_Effect(Class->AuxSound1, PositionCoord);
+						if (House->Is_Player_Control()) {
+							Sound_Effect(Class->VoiceDeploy);
+						}
 
 						/*
 						**	Unlimbo the MCV onto the map. The MCV should start in the same
