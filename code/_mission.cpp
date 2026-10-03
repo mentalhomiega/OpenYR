@@ -30,6 +30,7 @@ char const * Missions[MISSION_COUNT] = {
 	"Sticky",
 	"Enter",
 	"Capture",
+	"Eaten",
 	"Harvest",
 	"Area Guard",
 	"Return",
@@ -48,6 +49,8 @@ char const * Missions[MISSION_COUNT] = {
 	"Patrol",
 	"Paradrop Approach",
 	"Paradrop Overfly",
+	"Wait",
+	"Attack Move",
 	"Spyplane Approach",
 	"Spyplane Overfly",
 };

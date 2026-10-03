@@ -32,6 +32,7 @@ enum MissionType {
 	MISSION_STICKY,         // Stay still -- never recruit.
 	MISSION_ENTER,          // Move into object cooperatively.
 	MISSION_CAPTURE,        // Move into in order to capture.
+	MISSION_EATEN,          // Unused; keeps the numbering of Yuri's Revenge game data.
 	MISSION_HARVEST,        // Hunt for and collect nearby Tiberium.
 	MISSION_GUARD_AREA,     // Active guard of area.
 	MISSION_RETURN,         // Head back to refinery.
@@ -50,6 +51,8 @@ enum MissionType {
 	MISSION_PATROL,
 	MISSION_PARADROP_APPROACH,  // Fly to the target with paratroopers aboard.
 	MISSION_PARADROP_OVERFLY,   // Drop the paratroopers over the target.
+	MISSION_WAIT,               // Unused; keeps the numbering of Yuri's Revenge game data.
+	MISSION_ATTACK_MOVE,        // Unused; keeps the numbering of Yuri's Revenge game data.
 	MISSION_SPYPLANE_APPROACH,  // Fly to the target and photograph it.
 	MISSION_SPYPLANE_OVERFLY,   // Fly on past the target and off the map.
 
