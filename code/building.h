@@ -483,10 +483,12 @@ class BuildingClass : public TechnoClass
 		*/
 		virtual Coord Target_Coord(void) const override;
 		virtual Coord Docking_Coord(void) const override;
+		Coord Docking_Coord_For(RadioClass const * docker) const;
 		virtual Coord Render_Coord(void) const override;
 		virtual Coord Fire_Coord(int which) const override;
 		virtual Coord Center_Coord(void) const override;
 		virtual Coord Destination_Coord(void) const override;
+		virtual Coord Destination_Coord_For(RadioClass const * docker) const override;
 		virtual int Sort_Y(void) const override;
 		virtual Coord Exit_Coord(void) const override;
 

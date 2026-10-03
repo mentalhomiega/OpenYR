@@ -1229,7 +1229,7 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 				Enter_Idle_Mode();
 				return(1);
 			} else {
-				Locomotion->Move_To(NavCom->Destination_Coord());
+				Locomotion->Move_To(NavCom->Destination_Coord_For(this));
 				Status = FLY_TO_LZ;
 				return(1);
 			}
@@ -1256,7 +1256,7 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 			}
 
 			if (Locomotion->Is_Moving()) {
-				if (NavCom != NULL && !Cell_Seems_Ok(NavCom->Destination_Coord().As_Cell(), false)) {
+				if (NavCom != NULL && !Cell_Seems_Ok(NavCom->Destination_Coord_For(this).As_Cell(), false)) {
 					Status = VALIDATE_LZ;
 				} else {
 					Status = LAND;
@@ -1275,7 +1275,7 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 		*/
 		case LAND:
 			if (Locomotion->Is_Moving()) {
-				if (NavCom != NULL && !Cell_Seems_Ok(NavCom->Destination_Coord().As_Cell(), true)) {
+				if (NavCom != NULL && !Cell_Seems_Ok(NavCom->Destination_Coord_For(this).As_Cell(), true)) {
 					Status = VALIDATE_LZ;
 				}
 			} else {
@@ -1539,7 +1539,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 				Enter_Idle_Mode();
 				return(1);
 			} else {
-				Locomotion->Move_To(NavCom->Destination_Coord());
+				Locomotion->Move_To(NavCom->Destination_Coord_For(this));
 				Status = FLY_TO_LZ;
 				return(1);
 			}
@@ -1593,7 +1593,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 			if (!Locomotion->Is_Moving()) {
 				Status = IDLE;
 			} else {
-				if (NavCom != NULL && !Cell_Seems_Ok(NavCom->Destination_Coord(), true)) {
+				if (NavCom != NULL && !Cell_Seems_Ok(NavCom->Destination_Coord_For(this), true)) {
 					Status = VALIDATE_LZ;
 				} else {
 					Status = LAND;
@@ -1613,7 +1613,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 				Status = IDLE;
 			} else {
 				if (NavCom != NULL) {
-					if (!Cell_Seems_Ok(NavCom->Destination_Coord(), true)) {
+					if (!Cell_Seems_Ok(NavCom->Destination_Coord_For(this), true)) {
 						Status = VALIDATE_LZ;
 					}
 				}
@@ -1970,7 +1970,7 @@ ActionType AircraftClass::What_Action(ObjectClass const * target, bool disallow_
 	*/
 	if (House->Is_Player_Control() && (action == ACTION_SELECT || action == ACTION_MOVE) && target->RTTI == RTTI_BUILDING) {
 		BuildingClass * building = (BuildingClass *)target;
-		if ((building->Class->IsCanUnitRepair || building->Class->IsHelipad) && !building->In_Radio_Contact() && !building->Cargo.Is_Something_Attached()) {
+		if ((building->Class->IsCanUnitRepair || building->Class->IsHelipad) && building->Has_Free_Link(this) && !building->Cargo.Is_Something_Attached()) {
 			if (((AircraftClass *)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER) {
 				action = ACTION_ENTER;
 			}
@@ -3011,7 +3011,8 @@ int AircraftClass::Do_MISSION_ENTER(void)
 		case LANDING:
 			if (Locomotion->Get_Status() == 1) {
 				if (NavCom != NULL) {
-					Coord nav = NavCom->Center_Coord();
+					// At a building with several docks, each aircraft settles onto its own dock.
+					Coord nav = NavCom->RTTI == RTTI_BUILDING ? NavCom->Destination_Coord_For(this) : NavCom->Center_Coord();
 					Coord pos = PositionCoord;
 					int x = nav.X - pos.X;
 					int y = nav.Y - pos.Y;
@@ -3513,7 +3514,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 					 * The destination building is already occupied (in radio contact).
 					 * Try to find an alternate docking bay to head for instead.
 					 */
-					if (((TechnoClass *)dest)->In_Radio_Contact()) {
+					if (!destination->Has_Free_Link(this)) {
 						ArchiveTarget = dest;
 
 						if (destination->Class->IsHelipad) {
@@ -3578,7 +3579,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 					 */
 					TechnoClass * building = Dynamic_Cast<TechnoClass *>(dest);
 					if (building != NULL) {
-						if (building->In_Radio_Contact()) {
+						if (building->Contains_Link(this) || !building->Has_Free_Link(this)) {
 							if (Contact_With_Whom() != building) {
 								ArchiveTarget = dest;
 							}

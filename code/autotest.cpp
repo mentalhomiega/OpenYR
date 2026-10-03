@@ -342,7 +342,8 @@ void Dump(void)
 	for (int index = 0; index < Aircraft.Count(); index++) {
 		AircraftClass * object = Aircraft[index];
 		if (object->House != PlayerPtr) continue;
-		DebugString("AUTOTEST   aircraft %s cell %d,%d height %d mission %s ammo %d limbo %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->HeightAGL, MissionClass::Mission_Name(object->Get_Mission()), object->Ammo, (int)object->IsInLimbo);
+		TechnoClass const * contact = object->Contact_With_Whom();
+		DebugString("AUTOTEST   aircraft %s cell %d,%d height %d mission %s ammo %d limbo %d radio %s slot %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, object->HeightAGL, MissionClass::Mission_Name(object->Get_Mission()), object->Ammo, (int)object->IsInLimbo, contact != NULL ? contact->TClass->Name() : "-", contact != NULL ? contact->Find_Link_Index(object) : -1);
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];

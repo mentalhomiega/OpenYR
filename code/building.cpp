@@ -312,6 +312,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 			UnitRepairFacilities.Add(this);
 		}
 		IsCloakable = Class->IsCloakable;
+		Set_Link_Count(std::max(Class->NumberOfDocks, 1));
 	}
 }
 
@@ -422,7 +423,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 		case RADIO_CAN_LOAD:
 			BASECLASS::Receive_Message(from, message, param);
 			if (!House->Is_Ally(from)) return(RADIO_STATIC);
-			if (Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION || BState == BSTATE_CONSTRUCTION || (!ScenarioInit && In_Radio_Contact() && Contact_With_Whom() != from)) return(RADIO_NEGATIVE);
+			if (Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION || BState == BSTATE_CONSTRUCTION || (!ScenarioInit && !Has_Free_Link(from))) return(RADIO_NEGATIVE);
 			if (!IsOn) return(RADIO_NEGATIVE);
 			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
 				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && Takes_Walk_Ins((FootClass const *)from)) {
@@ -541,19 +542,19 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			}
 
 			/*
-			**	Establish contact with the object if this building isn't already in contact
-			**	with another.
+			**	Establish contact with the sender when it holds no slot here and one is free
+			**	(BuildingClass::ReceiveCommand, DOCKING case).
 			*/
-			if (!In_Radio_Contact()) {
+			if (!Contains_Link(from) && Has_Free_Link(from)) {
 				Transmit_Message(RADIO_HELLO, from);
 			}
 
 			bool needs_to_move = false;
 
-			if (Contact_With_Whom() != NULL) {
+			if (Contains_Link(from)) {
 				if (Class->IsDockUnload || Class->IsWeeder) {
-					CellClass * docking_cell = &Map[Docking_Coord()];
-					AbstractClass * navcom = ((FootClass *)Contact_With_Whom())->NavCom;
+					CellClass * docking_cell = &Map[Docking_Coord_For(from)];
+					AbstractClass * navcom = ((FootClass *)from)->NavCom;
 					if (navcom != NULL && docking_cell != navcom) {
 						needs_to_move = true;
 					}
@@ -568,7 +569,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				}
 			}
 
-			if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER || needs_to_move) {
+			if (Transmit_Message(RADIO_NEED_TO_MOVE, from) == RADIO_ROGER || needs_to_move) {
 				param = (intptr_t)this;
 				if (Class->IsDockUnload || Class->IsWeeder) {
 					param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
@@ -576,20 +577,20 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 					/*
 					**	Tell the harvester to move to the docking pad of the building.
 					*/
-					if (Transmit_Message(RADIO_MOVE_HERE, param) == RADIO_YEA_NOW_WHAT) {
+					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
 
 						/*
 						**	Since the harvester is already there, tell it to begin the backup
 						**	procedure now. If it can't, then tell it to get outta here.
 						*/
-						Transmit_Message(RADIO_TETHER);
+						Transmit_Message(RADIO_TETHER, from);
 						if (Transmit_Message(RADIO_BACKUP_NOW, from) != RADIO_ROGER) {
 							from->Scatter(COORD_NONE, true, true);
 						}
 					}
 				} else if (Class->IsHelipad) {
 					param = (intptr_t)this;
-					if (Transmit_Message(RADIO_MOVE_HERE, param) == RADIO_YEA_NOW_WHAT) {
+					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
 						Transmit_Message(RADIO_TETHER);
 					}
 				}
@@ -3006,7 +3007,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 			House->Update_Production_Mode(RTTI_AIRCRAFT);
 			House->BuildAircraft = AIRCRAFT_NONE;
 
-			if (!In_Radio_Contact() || IonStormClass::Is_Ion_Storm_Active()) {
+			if (Has_Free_Link(base) || IonStormClass::Is_Ion_Storm_Active()) {
 				AircraftClass * air = (AircraftClass *)base;
 
 				air->Set_Height(0);
@@ -3019,9 +3020,14 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						return(2);
 					}
 				} else {
-					if (air->Unlimbo(Docking_Coord(), air->Pose_Dir())) {
+					if (air->Unlimbo(Docking_Coord_For(air), air->Pose_Dir())) {
 						Transmit_Message(RADIO_HELLO, air);
-						Transmit_Message(RADIO_TETHER);
+						Transmit_Message(RADIO_TETHER, air);
+
+						// Holding a slot now, the aircraft moves onto that slot's dock (BuildingClass::KickOutUnit, 0x443C60).
+						air->Mark(MARK_UP);
+						air->PositionCoord = Docking_Coord_For(air);
+						air->Mark(MARK_DOWN);
 
 						AbstractClass * rally = Rally_Point_For(air);
 						if (rally != NULL) {
@@ -4398,6 +4404,18 @@ Coord BuildingClass::Center_Coord(void) const
  *=============================================================================================*/
 Coord BuildingClass::Docking_Coord(void) const
 {
+	return(Docking_Coord_For(NULL));
+}
+
+
+/// <summary>
+/// Returns where the object given docks at this building (BuildingClass::GetDockCoords,
+/// 0x447B20). A helipad or repair building with docks puts each docker at the building's
+/// center plus its dock's DockingOffset; with several docks, a docker that holds no radio
+/// slot here, or no docker, gets the center.
+/// </summary>
+Coord BuildingClass::Docking_Coord_For(RadioClass const * docker) const
+{
 	if (Class->IsWeeder) {
 		Cell cell = PositionCell + Cell(2, 1);
 		Coord coord = cell.As_Coord();
@@ -4407,6 +4425,20 @@ Coord BuildingClass::Docking_Coord(void) const
 	if (Class->IsRefinery) {
 		Coord coord = Center_Coord();
 		return(coord + Coord(CELL_LEPTON_W/2, 0, 0));
+	}
+	if ((Class->IsHelipad || Class->IsCanUnitRepair) && Class->NumberOfDocks > 0) {
+		int dock = 0;
+		if (Class->NumberOfDocks > 1) {
+			dock = Find_Link_Index(docker);
+			if (dock < 0 || dock >= Class->NumberOfDocks) {
+				return(Center_Coord());
+			}
+		}
+		if (dock >= (int)Class->DockingOffsets.size()) {
+			return(Center_Coord());
+		}
+		TPoint3D<int> const & offset = Class->DockingOffsets[dock];
+		return(Center_Coord() + Coord(offset.X, offset.Y, offset.Z));
 	}
 	return(Center_Coord());
 }
@@ -4421,8 +4453,18 @@ Coord BuildingClass::Docking_Coord(void) const
 /// <returns>Returns with the coordinate to move to.</returns>
 Coord BuildingClass::Destination_Coord(void) const
 {
-	if (Class->IsHelipad) {
-		return(Docking_Coord());
+	return(Destination_Coord_For(NULL));
+}
+
+
+/// <summary>
+/// Returns where the object given should head for (BuildingClass::GetDestination, 0x447E90):
+/// its dock at a helipad or repair building, and the center of any other building.
+/// </summary>
+Coord BuildingClass::Destination_Coord_For(RadioClass const * docker) const
+{
+	if (Class->IsHelipad || Class->IsCanUnitRepair) {
+		return(Docking_Coord_For(docker));
 	}
 	return(Center_Coord());
 }
@@ -6125,73 +6167,37 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 		return(Current_Mission_Control().Normal_Delay());
 	}
 
+	/*
+	**	A rearming pad serves every docked object each pass (BuildingClass::Mission_Repair,
+	**	0x44B780): one that is ready and undamaged is released to guard, a sleeping one is
+	**	reloaded or else repaired, and any other one still on its dock is put to sleep first.
+	*/
 	if (Class->IsCanUnitReload) {
-		enum {
-			INITIAL,
-			DURING
-		};
-		switch (Status) {
-			case INITIAL:
-				if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && Transmit_Message(RADIO_PREPARED) == RADIO_NEGATIVE) {
-					Begin_Mode(BSTATE_ACTIVE);
-					Contact_With_Whom()->Assign_Mission(MISSION_SLEEP);
-					Status = DURING;
-					return(int(Rule->ReloadRate * TICKS_PER_MINUTE)); //return(1);
+		bool serving = false;
+		for (int slot = 0; slot < Link_Count(); slot++) {
+			TechnoClass * docked = Link(slot);
+			if (docked == NULL) {
+				continue;
+			}
+			bool release = Transmit_Message(RADIO_PREPARED, docked) == RADIO_ROGER && docked->Strength == docked->TClass->MaxStrength;
+			if (!release && docked->Get_Mission() != MISSION_ENTER && Transmit_Message(RADIO_NEED_TO_MOVE, docked) == RADIO_ROGER) {
+				serving = true;
+				if (docked->Get_Mission() == MISSION_SLEEP) {
+					release = Transmit_Message(RADIO_RELOAD, docked) != RADIO_ROGER && Transmit_Message(RADIO_REPAIR, docked) != RADIO_ROGER;
+				} else {
+					docked->Assign_Mission(MISSION_SLEEP);
 				}
-				if (In_Radio_Contact()) {
-					Contact_With_Whom()->Advance_Waypoint_Path();
-				}
-				Assign_Mission(MISSION_GUARD);
-				break;
-
-			case DURING:
-				//if (IsReadyToCommence) {
-					if (!In_Radio_Contact() || Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_NEGATIVE) {
-						if (In_Radio_Contact()) {
-							TechnoClass *contact = Contact_With_Whom();
-							contact->Enter_Idle_Mode();
-							contact->Advance_Waypoint_Path();
-						}
-						Assign_Mission(MISSION_GUARD);
-						return(1);
-					}
-
-					if (Transmit_Message(RADIO_PREPARED) == RADIO_ROGER) {
-						if (In_Radio_Contact()) {
-							TechnoClass *contact = Contact_With_Whom();
-							contact->Assign_Mission(MISSION_GUARD);
-							contact->Enter_Idle_Mode();
-							contact->Advance_Waypoint_Path();
-						}
-						Assign_Mission(MISSION_GUARD);
-						return(1);
-					}
-
-					if (Transmit_Message(RADIO_RELOAD) != RADIO_ROGER) {
-						if (In_Radio_Contact()) {
-							TechnoClass *contact = Contact_With_Whom();
-							contact->Assign_Mission(MISSION_GUARD);
-							contact->Enter_Idle_Mode();
-							contact->Advance_Waypoint_Path();
-						}
-						Assign_Mission(MISSION_GUARD);
-						return(1);
-					} else {
-						//fixed pfrac = Saturate(House->Power_Fraction(), 1);
-						//if (pfrac < fixed::_1_2) pfrac = fixed::_1_2;
-						//int time;// = Inverse(pfrac) * Rule->ReloadRate * TICKS_PER_MINUTE;
-//						int time = std::clamp((int)(TICKS_PER_SECOND * Saturate(House->Power_Fraction(), 1)), 0, TICKS_PER_SECOND);
-//						time = (TICKS_PER_SECOND*3) - time;
-						//IsReadyToCommence = false;
-						//return(time);
-						return(int(Rule->ReloadRate * TICKS_PER_MINUTE)); //return(1);
-					}
-				//}
-				break;
-
-			default:
-				break;
+			}
+			if (release) {
+				docked->Enter_Idle_Mode(false, true);
+				docked->Set_Mission(MISSION_GUARD);
+				docked->Advance_Waypoint_Path();
+			}
 		}
+		if (serving) {
+			return(int(Rule->ReloadRate * TICKS_PER_MINUTE));
+		}
+		Assign_Mission(MISSION_GUARD);
 		return(3);
 	}
 	return(TICKS_PER_SECOND);

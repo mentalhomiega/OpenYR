@@ -90,6 +90,7 @@
 #include "weapon.h"
 
 #include <algorithm>
+#include <cstdio>
 
 void const * BuildingTypeClass::BuildingZShape;
 void const * BuildingTypeClass::PowerOffShapes;
@@ -346,6 +347,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsICBMLauncher(false),
 	IsArtillary(false),
 	IsHelipad(false),
+	NumberOfDocks(1),
 	IsGDIBarracks(false),
 	IsNODBarracks(false),
 	SuperWeapon(SUPER_NONE),
@@ -1267,6 +1269,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsWall = ini.Get_Bool(Name(), "Wall", IsWall);
 		IsWeeder = ini.Get_Bool(Name(), "Weeder", IsWeeder);
 		IsHelipad = ini.Get_Bool(Name(), "Helipad", IsHelipad);
+		NumberOfDocks = ini.Get_Int(Name(), "NumberOfDocks", NumberOfDocks);
 		IsLimpetMine = ini.Get_Bool(Name(), "IsLimpetMine", IsLimpetMine);
 		IsMobileWar = ini.Get_Bool(Name(), "IsMobileWar", IsMobileWar);
 		IsMobileStealth = ini.Get_Bool(Name(), "IsMobileStealth", IsMobileStealth);
@@ -1393,6 +1396,14 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		ZHeight = ArtINI.Get_Int(Graphic_Name(), "Height", ZHeight);
+		if (NumberOfDocks > (int)DockingOffsets.size()) {
+			DockingOffsets.resize(NumberOfDocks, TPoint3D<int>(0, 0, 0));
+		}
+		for (int dock = 0; dock < NumberOfDocks; dock++) {
+			char entry[32];
+			std::snprintf(entry, sizeof(entry), "DockingOffset%d", dock);
+			DockingOffsets[dock] = ArtINI.Get_Point(Graphic_Name(), entry, DockingOffsets[dock]);
+		}
 		DelayedFireDelay = ArtINI.Get_Int(Graphic_Name(), "DelayedFireDelay", DelayedFireDelay);
 		IsRecoilless = ArtINI.Get_Bool(Graphic_Name(), "Recoilless", IsRecoilless);
 		IsFlat = ArtINI.Get_Bool(Graphic_Name(), "Flat", IsFlat);
@@ -2110,6 +2121,7 @@ Point3D BuildingTypeClass::Lepton_Dimensions(void) const
 void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(NumberOfDocks);
 	crc(GateCloseDelay);
 	crc(LightVisibility);
 	crc(LightIntensity);
@@ -2349,6 +2361,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsICBMLauncher);
 	stream.Serialize(IsArtillary);
 	stream.Serialize(IsHelipad);
+	stream.Serialize(NumberOfDocks);
+	stream.Serialize(DockingOffsets);
 	stream.Serialize(IsGDIBarracks);
 	stream.Serialize(IsNODBarracks);
 	stream.Serialize(SuperWeapon);
