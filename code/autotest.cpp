@@ -107,6 +107,7 @@
 #include "suprtype.h"
 #include "teamtype.h"
 #include "team.h"
+#include "voc.h"
 #include "unit.h"
 #include "vox.h"
 #include "unittype.h"
@@ -864,6 +865,9 @@ void Run(StepType const & step)
 		RecordInterval = std::max(0, std::atoi(step.Argument.c_str()));
 	} else if (step.Command == "dump") {
 		Dump();
+	} else if (step.Command == "sounds") {
+		// sounds <0|1>: stops or starts writing every sound effect played to the log.
+		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
 	} else if (step.Command == "quit") {

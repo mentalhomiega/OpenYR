@@ -22,6 +22,7 @@
 #include "audio/audioengine.h"
 #include "ccini.h"
 #include "cell.h"
+#include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -208,10 +209,16 @@ AudioHandle VocClass::Play_Voice(float vol)
 }
 
 
+bool LogSoundEffects = false;
+
+
 AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handle)
 {
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
 		return(AudioHandle());
+	}
+	if (LogSoundEffects) {
+		DebugString("Sound: %s\n", Voc_Name(voc));
 	}
 	VocClass & sound = *Vocs[voc];
 
@@ -301,6 +308,9 @@ AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle)
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
 		return(AudioHandle());
 	}
+	if (LogSoundEffects) {
+		DebugString("Sound: %s at %d,%d\n", Voc_Name(voc), coord.As_Cell().X, coord.As_Cell().Y);
+	}
 	VocClass & sound = *Vocs[voc];
 
 	int pan;
@@ -313,7 +323,10 @@ AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle)
 		return(AudioHandle());
 	}
 
+	bool const logging = LogSoundEffects;
+	LogSoundEffects = false;
 	AudioHandle played = Sound_Effect(voc, volume, pan, handle);
+	LogSoundEffects = logging;
 	Track_Positional(played, coord, volume, pan);
 	return(played);
 }

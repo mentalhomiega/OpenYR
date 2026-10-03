@@ -79,6 +79,9 @@ void Static_Sounds_Serialize(SaveStreamClass & stream);
 VocClass * VocClass_From_Name(char const * name);
 char const * Voc_Name(VocType voc);
 
+// While set, every sound effect started is written to the debug log; tests use it.
+extern bool LogSoundEffects;
+
 /***************************************************************************
 **	Controls what special effects may occur on the sound effect.
 */
