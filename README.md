@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/openyr-banner.svg" alt="OpenYR: an open-source rebuild of the Yuri's Revenge engine" width="100%">
+  <img src="docs/assets/openyr-logo.png" alt="OpenYR" width="640">
 </p>
 
 # OpenYR
