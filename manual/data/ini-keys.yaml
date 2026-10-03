@@ -27052,6 +27052,40 @@ ReselectIfLimboed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ResourceDestination:
+  key: ResourceDestination
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsResourceDestination
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ResourceGatherer:
+  key: ResourceGatherer
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsResourceGatherer
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Retaliate:
   key: Retaliate
   scopes:
@@ -35565,6 +35599,23 @@ TurretOffset:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+TurretRotateSound:
+  key: TurretRotateSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: TurretRotateSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 TurretSpins:
   key: TurretSpins
   scopes:
@@ -37051,6 +37102,24 @@ VoiceHarvest:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceIFVRepair:
+  key: VoiceIFVRepair
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: VoiceIFVRepair
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 VoiceMove:
   key: VoiceMove
   scopes:

@@ -1154,6 +1154,9 @@ class RulesClass
 		// Played at a bridge repair hut when an engineer repairs its bridge.
 		VocType RepairBridgeSound;
 
+		// The voice an IFV answers an order to repair with.
+		VocType VoiceIFVRepair;
+
 		/*
 		 * These are the rates at which a house short of power was meant to build, at its
 		 * worst and at its best, expressed as a fraction of its full build speed.

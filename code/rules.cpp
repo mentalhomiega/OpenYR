@@ -627,6 +627,7 @@ RulesClass::RulesClass(void) :
 	LightningSound(VOC_NONE),
 	SinkingSound(VOC_NONE),
 	RepairBridgeSound(VOC_NONE),
+	VoiceIFVRepair(VOC_NONE),
 	WorstLowPowerBuildRateCoefficient(.3),
 	BestLowPowerBuildRateCoefficient(.75),
 	WallBuildSpeedCoefficient(.5),
@@ -1120,6 +1121,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
 		SinkingSound = ini.Get_VocType(AUDIOVISUAL, "SinkingSound", SinkingSound);
 		RepairBridgeSound = ini.Get_VocType(AUDIOVISUAL, "RepairBridgeSound", RepairBridgeSound);
+		VoiceIFVRepair = ini.Get_VocType(AUDIOVISUAL, "VoiceIFVRepair", VoiceIFVRepair);
 		LightningSounds = ini.Get_VocType_List(ini, AUDIOVISUAL, "LightningSounds", LightningSounds);
 		StormSound = ini.Get_VocType(AUDIOVISUAL, "StormSound", StormSound);
 		PsychicRevealActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicRevealActivateSound", PsychicRevealActivateSound);
@@ -2876,6 +2878,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightningSound);
 	stream.Serialize(SinkingSound);
 	stream.Serialize(RepairBridgeSound);
+	stream.Serialize(VoiceIFVRepair);
 	stream.Serialize(WorstLowPowerBuildRateCoefficient);
 	stream.Serialize(BestLowPowerBuildRateCoefficient);
 	stream.Serialize(WallBuildSpeedCoefficient);

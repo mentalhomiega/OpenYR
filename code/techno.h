@@ -245,6 +245,10 @@ class TechnoClass :	public RadioClass,
 		VocType GattlingVoc;
 		bool IsGattlingSoundPlaying;
 
+		// The TurretRotateSound playing while the turret turns.
+		AudioHandle TurretSound;
+		bool IsTurretSoundPlaying;
+
 		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
 		 * tracking table is keyed by it, so a moved object untracks here before plotting anew.

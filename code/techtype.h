@@ -376,6 +376,14 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// The voice that answers a deploy order, and the one a dug-in soldier answers it with.
 		VocType VoiceDeploy;
+
+		// Played while the object's turret turns.
+		VocType TurretRotateSound;
+
+		// A ResourceGatherer collects ore; a ResourceDestination takes it in. A structure that is both
+		// is not a target for an Airstrike weapon.
+		bool IsResourceGatherer;
+		bool IsResourceDestination;
 		VocType VoiceUndeploy;
 		VocType VoiceCapture;
 		VocType VoiceHarvest;

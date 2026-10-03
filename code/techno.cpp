@@ -317,6 +317,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
 	IsGattlingSoundPlaying(false),
+	TurretSound(),
+	IsTurretSoundPlaying(false),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -545,11 +547,15 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		return(TClass->OpenTransportWeapon);
 	}
 
-	// An Airstrike second weapon is chosen for a structure that allows C4 (TechnoClass::SelectWeapon, 0x6F3330).
+	// An Airstrike second weapon is used only against a structure that allows C4 and is not both a
+	// ResourceGatherer and a ResourceDestination; everything else gets the first (TechnoClass::SelectWeapon, 0x6F3477).
 	{
 		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
-		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsAirstrike && targetbuilding != NULL && targetbuilding->Class->IsCanC4) {
-			return(1);
+		if (second != NULL && second->WarheadPtr != NULL && second->WarheadPtr->IsAirstrike) {
+			if (targetbuilding == NULL || !targetbuilding->Class->IsCanC4) {
+				return(0);
+			}
+			return((targetbuilding->Class->IsResourceDestination && targetbuilding->Class->IsResourceGatherer) ? 0 : 1);
 		}
 	}
 
@@ -1912,6 +1918,8 @@ bool TechnoClass::Limbo(void)
 
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
+	TurretSound.Stop();
+	IsTurretSoundPlaying = false;
 
 	if (!IsInLimbo) {
 		House->Tracking_Active_Remove(this, false);
@@ -3338,6 +3346,21 @@ void TechnoClass::AI(void)
 
 	if (IsGattlingSoundPlaying) {
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound);
+	}
+
+	// A turret starts its TurretRotateSound as it begins to turn and stops it when it stops (TechnoClass::AI, 0x6F9FA9).
+	if (TClass->IsTurretEquipped && TClass->TurretRotateSound != VOC_NONE) {
+		bool const turning = RTTI == RTTI_BUILDING ? PrimaryFacing.Is_Rotating() : SecondaryFacing.Is_Rotating();
+		if (turning && !IsTurretSoundPlaying) {
+			TurretSound.Stop();
+			Sound_Effect(TClass->TurretRotateSound, Center_Coord(), &TurretSound);
+			IsTurretSoundPlaying = true;
+		} else if (turning) {
+			Play_If_In_Range(TClass->TurretRotateSound, Center_Coord(), &TurretSound);
+		} else if (IsTurretSoundPlaying) {
+			TurretSound.Stop();
+			IsTurretSoundPlaying = false;
+		}
 	}
 
 	// As TechnoClass::Update (0x6F9E50) and BombListClass::Update (0x438BF0): the bomb ticks where the planter's player can hear it, and goes off on time.
@@ -8546,7 +8569,15 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 		return(VOC_NONE);
 	}
 	bool const elite = Veterancy.Is_Elite();
-	if (What_Weapon_Should_I_Use(target) == 0) {
+
+	// The IFV, type FV, answers with VoiceIFVRepair when the weapon it would use repairs (TechnoClass::Weapon_Attack_Voice, 0x7090A0).
+	int const which = What_Weapon_Should_I_Use(target);
+	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+	if (weapon != NULL && weapon->Attack < 0 && Rule->VoiceIFVRepair != VOC_NONE && stricmp(TClass->Name(), "FV") == 0) {
+		return(Rule->VoiceIFVRepair);
+	}
+
+	if (which == 0) {
 		return(elite ? TClass->VoicePrimaryEliteWeaponAttack : TClass->VoicePrimaryWeaponAttack);
 	}
 	return(elite ? TClass->VoiceSecondaryEliteWeaponAttack : TClass->VoiceSecondaryWeaponAttack);

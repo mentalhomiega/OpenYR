@@ -197,6 +197,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceEnter(VOC_NONE),
 	VoiceDeploy(VOC_NONE),
 	VoiceUndeploy(VOC_NONE),
+	TurretRotateSound(VOC_NONE),
+	IsResourceGatherer(false),
+	IsResourceDestination(false),
 	VoiceCapture(VOC_NONE),
 	VoiceHarvest(VOC_NONE),
 	ImpactLandSound(VOC_NONE),
@@ -733,6 +736,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
 		VoiceDeploy = ini.Get_VocType(Name(), "VoiceDeploy", VoiceDeploy);
 		VoiceUndeploy = ini.Get_VocType(Name(), "VoiceUndeploy", VoiceUndeploy);
+		TurretRotateSound = ini.Get_VocType(Name(), "TurretRotateSound", TurretRotateSound);
+		IsResourceGatherer = ini.Get_Bool(Name(), "ResourceGatherer", IsResourceGatherer);
+		IsResourceDestination = ini.Get_Bool(Name(), "ResourceDestination", IsResourceDestination);
 		VoiceCapture = ini.Get_VocType(Name(), "VoiceCapture", VoiceCapture);
 		VoiceHarvest = ini.Get_VocType(Name(), "VoiceHarvest", VoiceHarvest);
 		ImpactLandSound = ini.Get_VocType(Name(), "ImpactLandSound", ImpactLandSound);
@@ -1316,6 +1322,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoiceEnter);
 	stream.Serialize(VoiceDeploy);
 	stream.Serialize(VoiceUndeploy);
+	stream.Serialize(TurretRotateSound);
+	stream.Serialize(IsResourceGatherer);
+	stream.Serialize(IsResourceDestination);
 	stream.Serialize(VoiceCapture);
 	stream.Serialize(VoiceHarvest);
 	stream.Serialize(ImpactLandSound);
