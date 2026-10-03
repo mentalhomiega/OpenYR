@@ -17,7 +17,7 @@ targets:
 - type: key
   id: LeaveWaterSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Infantry and aircraft now read `SpeedType`, so Tanya, the Navy SEAL and Yuri Prime walk into water as in Yuri's Revenge. In water they use their swimming sequences and play their water sounds, and they no longer die for standing there.

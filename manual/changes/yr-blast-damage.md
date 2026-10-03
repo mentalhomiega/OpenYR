@@ -31,7 +31,7 @@ targets:
 - type: system
   id: warheads
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A blast now reaches as far as its warhead's `CellSpread` and loses damage in a straight line to `PercentAtMax` at that distance, as in Yuri's Revenge. Before, every blast reached a cell and a half and thinned by `Spread`. A blast hits a large structure once for each of its cells in reach, knocks down walls throughout its reach, and no longer sets off Tiberium. `MinDamage` has no effect, so a hit can come to nothing.

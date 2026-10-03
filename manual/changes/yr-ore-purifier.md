@@ -12,7 +12,7 @@ targets:
 - type: key
   id: AIVirtualPurifiers
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Each `OrePurifier=yes` structure now adds `PurifierBonus` to the ore its owner's harvesters deliver, and skirmish computer houses count their `AIVirtualPurifiers` as purifiers, as in Yuri's Revenge.

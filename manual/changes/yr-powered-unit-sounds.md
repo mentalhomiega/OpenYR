@@ -9,7 +9,7 @@ targets:
 - type: key
   id: DeactivateSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Robot Tanks now sound when they go offline and come back online, as in Yuri's Revenge.

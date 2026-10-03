@@ -9,7 +9,7 @@ targets:
 - type: system
   id: parasites
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A parasite with a `Paralyzes` warhead, such as the giant squid, now holds its victim in place and stops it launching spawned craft until the parasite comes out, as in Yuri's Revenge.

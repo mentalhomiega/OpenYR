@@ -6,7 +6,7 @@ targets:
 - type: key
   id: OmniFire
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A vehicle with an `OmniFire=yes` weapon, such as the Chaos Drone, now fires without turning to face its target, as in Yuri's Revenge.

@@ -21,7 +21,7 @@ targets:
 - type: key
   id: OpenToppedDamageMultiplier
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The passengers of an `OpenTopped=yes` vehicle now fire from inside it, as in Yuri's Revenge, and the vehicle passes its attack and stop orders on to them.

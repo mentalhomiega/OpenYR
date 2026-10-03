@@ -19,7 +19,7 @@ targets:
 - type: key
   id: ExpSpread
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A dying `Explodes=yes` object now sets off its `DeathWeapon`, its primary weapon, or the rules' default death weapon, as Yuri's Revenge does, instead of the Tiberian Sun collateral blast. `CollateralDamageCoefficient` and `ExpSpread` no longer have an effect.

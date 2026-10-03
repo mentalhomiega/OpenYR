@@ -21,7 +21,7 @@ targets:
 - type: system
   id: production
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 `RequiredHouses` and `ForbiddenHouses` limit a type to some countries, and the three `RequiresStolen*Tech` keys make a type wait for stolen technology, as in Yuri's Revenge. Nothing steals technology yet, so types needing it cannot be built.

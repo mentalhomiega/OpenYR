@@ -6,7 +6,7 @@ targets:
 - type: key
   id: DecloakToFire
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Submarines, the Boomer, dolphins and the giant squid now attack without surfacing when their weapon sets `DecloakToFire=no`, as in Yuri's Revenge.

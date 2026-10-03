@@ -12,7 +12,7 @@ targets:
 - type: key
   id: NotWorkingSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Structures now play `WorkingSound` and `NotWorkingSound` as they come into and drop out of service, and `ClickRepairable=no` structures, such as most civilian buildings, can no longer be repaired with the repair cursor, as in Yuri's Revenge.

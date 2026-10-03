@@ -6,7 +6,7 @@ targets:
 - type: key
   id: CanApproachTarget
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Units with `CanApproachTarget=no`, such as the Mirage Tank, and vehicles in a Tank Bunker no longer drive toward targets out of range, as in Yuri's Revenge.

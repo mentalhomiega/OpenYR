@@ -18,7 +18,7 @@ targets:
 - type: key
   id: ThirdDisguise
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `PermaDisguise=yes` spy is now always disguised as its side's default soldier, and any other disguise is lost when its wearer is hurt, as in Yuri's Revenge.

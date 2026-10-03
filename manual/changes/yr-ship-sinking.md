@@ -12,7 +12,7 @@ targets:
 - type: key
   id: VoiceSinking
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A heavy ship destroyed on open water now sinks to the bottom with its `SinkingSound` instead of vanishing, as in Yuri's Revenge.

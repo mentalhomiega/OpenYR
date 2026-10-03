@@ -15,7 +15,7 @@ targets:
 - type: key
   id: EligibleForDelayKill
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `CausesDelayKill` warhead, such as an exploding barrel's, now sets a fuse on nearby `EligibleForDelayKill` structures, which go off one after another, the farther ones later, as in Yuri's Revenge.

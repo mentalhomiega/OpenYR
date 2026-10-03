@@ -6,7 +6,7 @@ targets:
 - type: key
   id: WeaponsFactory
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A weapons factory now lets vehicles out from the door cell Yuri's Revenge uses. Before, vehicles started one cell outside the factory, beyond its door, and were removed from the game as they left.

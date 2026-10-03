@@ -12,7 +12,7 @@ targets:
 - type: system
   id: crates
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Destroyed structures with `CrateBeneath=yes`, such as the Washington monuments, now leave a crate, as in Yuri's Revenge. Crates dropped by destroyed vehicles now give a random result in campaigns too, and a crate drawn into a multiplayer map gives money unless its overlay data marks it random.

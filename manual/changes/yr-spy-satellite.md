@@ -12,7 +12,7 @@ targets:
 - type: key
   id: SpySatDeactivationSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A working `SpySat=yes` structure now lifts the shroud from the whole map for its owner, and losing the last one shrouds the map again, as in Yuri's Revenge.

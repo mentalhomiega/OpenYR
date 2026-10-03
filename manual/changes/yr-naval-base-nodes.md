@@ -6,7 +6,7 @@ targets:
 - type: key
   id: Naval
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A computer house that fails to place a `Naval=yes` structure now drops naval structures from its base plan, as Yuri's Revenge does, instead of starting the same structure again every frame.

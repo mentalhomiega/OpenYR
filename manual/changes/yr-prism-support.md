@@ -24,7 +24,7 @@ targets:
 - type: key
   id: DelayedFireDelay
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Prism towers now recruit nearby idle towers to beam support to them before firing, and each supporter adds to the shot's damage, as in Yuri's Revenge.

@@ -48,7 +48,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The chronosphere now works as in Yuri's Revenge: one click picks the units and a second click warps them, killing organic units and crushing what stands where they land. `Teleporter=` is read for every object type, and infantry are `Organic=yes` unless their type says otherwise.

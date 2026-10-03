@@ -27,7 +27,7 @@ Anything that changes how the game behaves has to be verified later on the owner
 - Do not open pull requests, issues or comments on the upstream OpenTS project. The project forbids AI-written communication there; the owner submits anything upstream personally.
 - Commit messages: an imperative subject of at most 72 characters, no body, and no `Co-authored-by` or other AI-attribution lines (see `AGENTS.md`).
 - Do not rewrite history on `yr` or force-push. Push your work to a new branch, for example `cloud/review-1`, so the owner can merge it after checking.
-- Every behaviour change needs its manual update: the key or system page, plus a record in `manual/changes/` (release `0.2.0`, `credit: [Lucas]`). Run `python manual/tools/manage.py update` and `python manual/tools/manage.py check` from the repository root. A "site dependencies are missing" message from `check` is expected and can be ignored. Afterwards, discard the regenerated churn with `git checkout -- manual/data/commands.yaml manual/data/scripting.yaml`.
+- Every behaviour change needs its manual update: the key or system page, plus a record in `manual/changes/` (release `0.2.0`, `credit: [MentalHomiega]`). Run `python manual/tools/manage.py update` and `python manual/tools/manage.py check` from the repository root. A "site dependencies are missing" message from `check` is expected and can be ignored. Afterwards, discard the regenerated churn with `git checkout -- manual/data/commands.yaml manual/data/scripting.yaml`.
 
 ## Wanted tasks, in order of value
 

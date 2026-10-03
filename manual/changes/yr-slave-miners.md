@@ -42,7 +42,7 @@ targets:
 - type: system
   id: slave-miners
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The Slave Miner now drives to ore and deploys into its refinery, its slaves gather ore on foot and carry it back for money, and it moves on when the nearby ore runs out, as in Yuri's Revenge. Slaves in the field of a destroyed miner join the house that destroyed it.

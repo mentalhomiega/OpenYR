@@ -9,7 +9,7 @@ targets:
 - type: key
   id: AffectsAllies
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 An `AffectsAllies=no` warhead, such as Yuri's psychic wave, now leaves the attacker's own and allied objects unharmed, as in Yuri's Revenge.

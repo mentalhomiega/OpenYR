@@ -117,7 +117,7 @@ targets:
 - type: key
   id: TurretCount
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `Gunner=yes` vehicle now fires the weapon its first passenger's `IFVMode` names and shows the numbered turret for it, as the Yuri's Revenge IFV does.

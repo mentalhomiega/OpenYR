@@ -15,7 +15,7 @@ targets:
 - type: key
   id: TiberiumLongScan
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Harvester search distances now come from `TiberiumShortScan` and `TiberiumLongScan` in `[General]`, as in Yuri's Revenge. `[AI]` `TiberiumNearScan=` and `TiberiumFarScan=` are no longer read; move them to the new names.

@@ -12,7 +12,7 @@ targets:
 - type: key
   id: ThirdBaseDefenses
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A computer house now picks its base defenses only from the `[AI]` list for its side: `AlliedBaseDefenses`, `SovietBaseDefenses` or `ThirdBaseDefenses`. Before, any structure with a defense value was a candidate, so a Soviet computer could build a Yuri Gattling Cannon.

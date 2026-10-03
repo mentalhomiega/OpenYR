@@ -45,7 +45,7 @@ targets:
 - type: key
   id: RadColor
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A weapon with `RadLevel` now leaves radiation that damages vehicles, soldiers and landed aircraft standing in it, and glows in `RadColor` while it fades, as the Yuri's Revenge Desolator's does.

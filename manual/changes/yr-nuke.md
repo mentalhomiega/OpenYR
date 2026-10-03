@@ -18,7 +18,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A missile silo's nuclear missile now climbs off the screen and drops its `NukePayload` onto the target, as in Yuri's Revenge. Before, the missile fell back beside the silo.

@@ -10,7 +10,7 @@ targets:
   id: Range
   scope: weapontype
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `CellRangefinding=yes` weapon now measures its range from the center of the firer's cell, as in Yuri's Revenge.

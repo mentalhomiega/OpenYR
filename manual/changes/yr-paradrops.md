@@ -52,7 +52,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The paradrop, American paradrop and spy plane superweapons now work as in Yuri's Revenge, and computer houses fire them. Aircraft on `Retreat` now fly off the map, `Parachute` is also read from `[General]`, and a missing canopy no longer crashes the game.

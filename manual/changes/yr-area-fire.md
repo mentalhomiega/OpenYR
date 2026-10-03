@@ -6,7 +6,7 @@ targets:
 - type: key
   id: AreaFire
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Yuri's psychic wave and the Desolator's deployed radiation now strike the area around the soldier, as in Yuri's Revenge.

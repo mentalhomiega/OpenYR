@@ -6,7 +6,7 @@ targets:
 - type: key
   id: BalloonHover
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Rocketeers, Floating Discs and Cosmonauts now take off on their own and hover where they stop instead of landing, as in Yuri's Revenge.

@@ -21,7 +21,7 @@ targets:
 - type: key
   id: SelfHealUnitAmount
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Structures with `InfantryGainSelfHeal` or `UnitsGainSelfHeal`, such as the hospital and the machine shop, now heal all of their owner's infantry or vehicles over time, as in Yuri's Revenge.

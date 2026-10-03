@@ -7,7 +7,7 @@ targets:
   id: Deployer
   effect: added
   scope: unittype
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `Deployer=yes` vehicle, such as the Chaos Drone, now fires its area weapon where it stands when told to deploy, as in Yuri's Revenge.

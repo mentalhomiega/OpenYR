@@ -6,7 +6,7 @@ targets:
 - type: system
   id: superweapons
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A lightning storm shot while a storm rages or waits to break, and a psychic dominator shot while a blast runs, now do nothing and keep the weapon charged, as in Yuri's Revenge. Before, a player's shot moved the storm or replaced the blast.

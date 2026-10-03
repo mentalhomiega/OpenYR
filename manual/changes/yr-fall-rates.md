@@ -9,7 +9,7 @@ targets:
 - type: key
   id: NoParachuteMaxFallRate
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The fastest an object falls with and without a parachute is now set by `ParachuteMaxFallRate` and `NoParachuteMaxFallRate`, as in Yuri's Revenge. The defaults match the speeds used before.

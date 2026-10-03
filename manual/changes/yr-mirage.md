@@ -15,7 +15,7 @@ targets:
 - type: key
   id: InfantryBlinkDisguiseTime
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `DisguiseWhenStill=yes` vehicle now looks like a tree to other houses while it stands still, as the Yuri's Revenge Mirage tank does.

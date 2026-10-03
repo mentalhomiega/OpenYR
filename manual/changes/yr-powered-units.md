@@ -9,7 +9,7 @@ targets:
 - type: key
   id: PowersUnit
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Robot Tanks now shut down while their owner has no working Robot Control Center, as in Yuri's Revenge.

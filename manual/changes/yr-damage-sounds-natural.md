@@ -18,7 +18,7 @@ targets:
 - type: key
   id: BlowupSound
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Objects now play `DamageSound` on light hits and structures `BuildingDamageSound` as they lose condition, in place of the Tiberian Sun blow-up sound, and `Natural=yes` objects such as dogs no longer fire at `Unnatural=yes` ones, as in Yuri's Revenge.

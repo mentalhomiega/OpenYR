@@ -30,7 +30,7 @@ targets:
 - type: key
   id: ChronoBeamColor
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A primary weapon with a `Temporal=yes` warhead now freezes its target and erases it, as the Yuri's Revenge Chrono Legionnaire does. `IsRadBeam=yes` weapons draw their wavy beam.

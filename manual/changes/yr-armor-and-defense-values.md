@@ -18,7 +18,7 @@ targets:
 - type: key
   id: AntiInfantryValue
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Armor now has Yuri's Revenge's eleven classes, `none` through `special_2`, and a warhead's `Verses` lists eleven entries in that order. A rules file written for five classes must be rewritten: its armor names and `Verses` lists no longer line up.

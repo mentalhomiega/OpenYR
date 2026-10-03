@@ -27,7 +27,7 @@ targets:
 - type: key
   id: BombAttachSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A soldier's weapon with an `IvanBomb=yes` warhead now fixes a time bomb to its target, as the Yuri's Revenge Crazy Ivan does.

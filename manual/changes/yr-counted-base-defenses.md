@@ -18,7 +18,7 @@ targets:
 - type: key
   id: AISlaveMinerNumber
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A computer house whose side has a base defense count list now plans its base as Yuri's Revenge does: a fixed number of defenses for its difficulty, spread at random through the plan, extra refineries from `AIExtraRefineries`, no extra helipads and no wall. Sides without a list keep the cost-based plan.

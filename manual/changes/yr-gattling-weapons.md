@@ -331,7 +331,7 @@ targets:
   id: Report
   scope: weapontype
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A type with `TurretCount` above 0 now reads a numbered weapon list, as in Yuri's Revenge, and an `IsGattling=yes` type moves through weapon stages as its spin rises while it fires. A gattling weapon's `Report` loops while it spins, and voxel turrets play their animation frames.

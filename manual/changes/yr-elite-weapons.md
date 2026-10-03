@@ -30,7 +30,7 @@ targets:
 - type: key
   id: EliteSBarrelThickness
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 An elite object now takes its weapons from `ElitePrimary` and `EliteSecondary`, which replace the primary and secondary weapons. `Elite=` is no longer read; rename it to `ElitePrimary=`. Each elite slot has its own firing offset and barrel keys in the art file, defaulting to the normal slot's values.

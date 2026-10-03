@@ -36,7 +36,7 @@ targets:
 - type: key
   id: DefensesCostBonus
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A `FactoryPlant=yes` structure, such as the Industrial Plant, now lowers its owner's prices by its `CostBonus` factors, and a country's `Cost...Mult` keys scale the prices it pays for each kind of object, as in Yuri's Revenge.

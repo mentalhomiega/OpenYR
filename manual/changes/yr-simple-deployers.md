@@ -25,7 +25,7 @@ targets:
   id: Shadow
   effect: added
   scope: animtype
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The Siege Chopper now lands and deploys into artillery when told to deploy, and packs up again, as in Yuri's Revenge. Animations with `Shadow=yes` now draw their shadow frames as shadows instead of playing them as extra frames.

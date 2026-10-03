@@ -15,7 +15,7 @@ targets:
 - type: key
   id: VoiceSecondaryEliteWeaponAttack
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Units such as Boris, the Magnetron and the Boomer now answer an attack order with the voice for the weapon they will use, as in Yuri's Revenge.

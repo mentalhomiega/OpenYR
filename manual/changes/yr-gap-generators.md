@@ -12,7 +12,7 @@ targets:
 - type: key
   id: GapRadiusInCells
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A working `GapGenerator=yes` structure now shrouds the ground around it for players who are not its owner's allies, as the Yuri's Revenge gap generator does.

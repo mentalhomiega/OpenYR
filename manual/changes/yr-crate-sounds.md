@@ -24,7 +24,7 @@ targets:
 - type: key
   id: CratePromoteSound
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 Crates the player collects now play the Yuri's Revenge pickup sounds for money, reveal, firepower, armor, speed, free vehicle and veterancy results.

@@ -30,7 +30,7 @@ targets:
 - type: system
   id: production
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 The player now hears promotions, garrisons entered and abandoned, spy infiltration results and new rally points, as in Yuri's Revenge, and an object that becomes elite flashes.

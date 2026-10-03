@@ -27,7 +27,7 @@ targets:
 - type: key
   id: MindControlDecision
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A computer house now rolls against the `AICapture` weights to decide whether a unit it takes over joins a team, goes to a grinder or bio reactor, hunts or waits, as Yuri's Revenge does.

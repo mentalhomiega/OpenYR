@@ -12,7 +12,7 @@ targets:
 - type: key
   id: ExtraPower
   effect: added
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A player can now send their own infantry into an `InfantryAbsorb=yes` structure, such as the Bio Reactor, or vehicles into a `UnitAbsorb=yes` one. Each object inside adds `ExtraPower` to the structure's output, as in Yuri's Revenge.

@@ -9,7 +9,7 @@ targets:
 - type: system
   id: ai-base-building
   effect: changed
-credit: [Lucas]
+credit: [MentalHomiega]
 ---
 
 A computer house now passes over role structures meant for another side (`AIBasePlanningSide`) or barred to its country (`RequiredHouses`, `ForbiddenHouses`) when it plans its base. Yuri's Revenge lets every country own most structures, so a Soviet computer player built Allied barracks and refineries before.
