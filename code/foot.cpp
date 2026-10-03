@@ -172,6 +172,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsDeploying(false),
 	IsLocomotorProcessing(false),
 	IsPiggybackEndPending(false),
+	WasSinking(false),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
 	IsFiring(false),
@@ -3414,6 +3415,15 @@ void FootClass::AI(void)
 {
 	BASECLASS::AI();
 
+	// An object that starts to sink plays its VoiceSinking and its SinkingSound, or the rules' (FootClass::Update, 0x4DA530).
+	if (IsSinking != WasSinking) {
+		WasSinking = IsSinking;
+		if (IsSinking) {
+			Sound_Effect(TClass->VoiceSinking, Center_Coord());
+			Sound_Effect(TClass->SinkingSound != VOC_NONE ? TClass->SinkingSound : Rule->SinkingSound, Center_Coord());
+		}
+	}
+
 	Update_Sensors(false);
 
 	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
@@ -3681,6 +3691,7 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BaseAttackTimer);
 	stream.Serialize(BlockagePathDelay);
 	stream.Serialize(ParalysisTimer);
+	stream.Serialize(WasSinking);
 
 	/*
 	 * The locomotor is a sub-object rather than a member, so it travels as a record of

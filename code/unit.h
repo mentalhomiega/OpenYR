@@ -147,6 +147,9 @@ class UnitClass : public FootClass
 		 */
 		int DeathCounter;
 
+		// A destroyed ship sinking to the bottom; it takes no more damage and its loss is already counted.
+		bool IsSinkingWreck;
+
 		/// Unused
 		int Unused1;
 

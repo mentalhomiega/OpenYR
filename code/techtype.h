@@ -451,6 +451,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType CrashingSound;
 		VocType VoiceCrashing;
 
+		// Played as the object starts to sink.
+		VocType SinkingSound;
+		VocType VoiceSinking;
+
 		// The structure's surroundings are revealed to every player when it is placed.
 		bool IsRevealToAll;
 

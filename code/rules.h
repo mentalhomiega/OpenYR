@@ -912,6 +912,9 @@ class RulesClass
 		 */
 		double IceBreakingWeight;
 
+		// A destroyed ship at least this heavy sinks instead of vanishing.
+		double ShipSinkingWeight;
+
 		/*
 		 * These are the sound effects that cracking ice may play, one of which is picked
 		 * at random each time a cell cracks.
@@ -1130,6 +1133,9 @@ class RulesClass
 		 * This is the sound effect played when an ion storm throws down a lightning bolt.
 		 */
 		VocType LightningSound;
+
+		// Played as a vehicle starts to sink when its type sets no SinkingSound.
+		VocType SinkingSound;
 
 		/*
 		 * These are the rates at which a house short of power was meant to build, at its

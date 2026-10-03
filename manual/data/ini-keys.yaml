@@ -28361,6 +28361,24 @@ ShareTurretData:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+ShipSinkingWeight:
+  key: ShipSinkingWeight
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '3'
+      declared_in: RulesClass
+      member: ShipSinkingWeight
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ShockTurretIndex:
   key: ShockTurretIndex
   scopes:
@@ -28739,6 +28757,38 @@ SimulateWhileUnfocused:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+SinkingSound:
+  key: SinkingSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: SinkingSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: SinkingSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Size:
   key: Size
   scopes:
@@ -36822,6 +36872,23 @@ VoiceSelect:
       default_candidate: ''
       declared_in: TechnoTypeClass
       member: VoiceSelect
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoiceSinking:
+  key: VoiceSinking
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: VoiceSinking
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

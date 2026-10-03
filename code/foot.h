@@ -208,6 +208,9 @@ class FootClass : public TechnoClass
 		// While this runs, the object cannot start a move, launch spawned craft or, if Organic, fire.
 		CDTimerClass<FrameTimerClass> ParalysisTimer;
 
+		// Whether the object was sinking last frame, so the sinking sounds play once as it starts.
+		bool WasSinking;
+
 		/*
 		 * This is the locomotor that actually moves the object, created from the class ID
 		 * named by its type. It can be swapped while the game runs -- a falling object is

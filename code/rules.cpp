@@ -576,6 +576,7 @@ RulesClass::RulesClass(void) :
 	RevealTriggerRadius(5),
 	IceCrackingWeight(2),
 	IceBreakingWeight(4),
+	ShipSinkingWeight(3),
 	IceCrackSounds(),
 	CliffBackImpassability(0),
 	VeteranRatio(10),
@@ -618,6 +619,7 @@ RulesClass::RulesClass(void) :
 	ScatterSound(VOC_NONE),
 	DeploySound(VOC_NONE),
 	LightningSound(VOC_NONE),
+	SinkingSound(VOC_NONE),
 	WorstLowPowerBuildRateCoefficient(.3),
 	BestLowPowerBuildRateCoefficient(.75),
 	WallBuildSpeedCoefficient(.5),
@@ -1106,6 +1108,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
+		SinkingSound = ini.Get_VocType(AUDIOVISUAL, "SinkingSound", SinkingSound);
 		LightningSounds = ini.Get_VocType_List(ini, AUDIOVISUAL, "LightningSounds", LightningSounds);
 		StormSound = ini.Get_VocType(AUDIOVISUAL, "StormSound", StormSound);
 		PsychicRevealActivateSound = ini.Get_VocType(AUDIOVISUAL, "PsychicRevealActivateSound", PsychicRevealActivateSound);
@@ -1512,6 +1515,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		CloakingStages = ini.Get_Int(GENERAL, "CloakingStages", CloakingStages);
 		IceCrackingWeight = ini.Get_Float(GENERAL, "IceCrackingWeight", IceCrackingWeight);
 		IceBreakingWeight = ini.Get_Float(GENERAL, "IceBreakingWeight", IceBreakingWeight);
+		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
 		CliffBackImpassability = ini.Get_Int(GENERAL, "CliffBackImpassability", CliffBackImpassability);
 		PlacementDelay = ini.Get_Float(GENERAL, "PlacementDelay", PlacementDelay);
 		TrackedUphill = ini.Get_Float(GENERAL, "TrackedUphill", TrackedUphill);
@@ -2807,6 +2811,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RevealTriggerRadius);
 	stream.Serialize(IceCrackingWeight);
 	stream.Serialize(IceBreakingWeight);
+	stream.Serialize(ShipSinkingWeight);
 	stream.Serialize(IceCrackSounds);
 	stream.Serialize(CliffBackImpassability);
 	stream.Serialize(VeteranRatio);
@@ -2849,6 +2854,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ScatterSound);
 	stream.Serialize(DeploySound);
 	stream.Serialize(LightningSound);
+	stream.Serialize(SinkingSound);
 	stream.Serialize(WorstLowPowerBuildRateCoefficient);
 	stream.Serialize(BestLowPowerBuildRateCoefficient);
 	stream.Serialize(WallBuildSpeedCoefficient);

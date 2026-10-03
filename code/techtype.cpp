@@ -233,6 +233,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	PowersUnit(NULL),
 	CrashingSound(VOC_NONE),
 	VoiceCrashing(VOC_NONE),
+	SinkingSound(VOC_NONE),
+	VoiceSinking(VOC_NONE),
 	IsRevealToAll(false),
 	AirstrikeTeam(0),
 	EliteAirstrikeTeam(0),
@@ -758,6 +760,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		PowersUnit = TGet_Class(ini, Name(), "PowersUnit", PowersUnit);
 		CrashingSound = ini.Get_VocType(Name(), "CrashingSound", CrashingSound);
 		VoiceCrashing = ini.Get_VocType(Name(), "VoiceCrashing", VoiceCrashing);
+		SinkingSound = ini.Get_VocType(Name(), "SinkingSound", SinkingSound);
+		VoiceSinking = ini.Get_VocType(Name(), "VoiceSinking", VoiceSinking);
 		IsRevealToAll = ini.Get_Bool(Name(), "RevealToAll", IsRevealToAll);
 		AirstrikeTeam = ini.Get_Int(Name(), "AirstrikeTeam", AirstrikeTeam);
 		EliteAirstrikeTeam = ini.Get_Int(Name(), "EliteAirstrikeTeam", EliteAirstrikeTeam);
@@ -1319,6 +1323,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PowersUnit);
 	stream.Serialize(CrashingSound);
 	stream.Serialize(VoiceCrashing);
+	stream.Serialize(SinkingSound);
+	stream.Serialize(VoiceSinking);
 	stream.Serialize(IsRevealToAll);
 	stream.Serialize(AirstrikeTeam);
 	stream.Serialize(EliteAirstrikeTeam);

@@ -220,6 +220,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	FiringSyncDelay(-1),
 	VisceroidFacing(FACING_NONE),
 	DeathCounter(-1),
+	IsSinkingWreck(false),
 	FollowingMe(NULL),
 	QueuedDock(NULL),
 	IsFollowing(false),
@@ -541,7 +542,9 @@ void UnitClass::AI(void)
 		PositionCoord = coord - Coord(0, 0, 9);
 
 		if (HeightAGL < -400) {
-			Record_The_Kill(NULL);
+			if (!IsSinkingWreck) {
+				Record_The_Kill(NULL);
+			}
 			Delete_Me();
 			return;
 		}
@@ -1449,6 +1452,11 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 		}
 	}
 
+	if (IsSinkingWreck) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
 	ResultType res = RESULT_NONE;
 
 	/*
@@ -1474,6 +1482,16 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			}
 			Strength = 1;
 			IsActive = true;
+		} else if (Class->IsNaval && !Class->IsUnderwater && !Class->IsOrganic && Class->Weight >= Rule->ShipSinkingWeight
+			&& !IsOnBridge && Map[Get_Coord()].Land_Type() == LAND_WATER) {
+
+			// A heavy ship on open water sinks instead of vanishing (UnitClass::ReceiveDamage, 0x737D80).
+			Death_Announcement(source);
+			Strength = 1;
+			IsActive = true;
+			IsSinking = true;
+			IsSinkingWreck = true;
+			Stun();
 		} else {
 			Death_Announcement(source);
 			if (warhead == Rule->FirestormWarhead) {
@@ -6360,6 +6378,7 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VisceroidFacing);
 	stream.Serialize(Charge);
 	stream.Serialize(DeathCounter);
+	stream.Serialize(IsSinkingWreck);
 	stream.Serialize(Unused1);
 }
 
