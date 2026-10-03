@@ -153,6 +153,8 @@ class AbstractClass : public IPersistent
 		*/
 		virtual Coord Center_Coord(void) const;
 		virtual Coord Destination_Coord(void) const;
+		// Where the object given should head for; it differs from Destination_Coord only for a building with docks.
+		virtual Coord Destination_Coord_For(class RadioClass const * docker) const {return(Destination_Coord());}
 
 		virtual bool On_Ground(void) const;
 		virtual bool In_Air(void) const;

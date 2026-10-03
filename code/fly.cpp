@@ -1105,7 +1105,7 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 	Coord aim = coord;
 	BuildingClass * building = Map[Coord(coord).As_Cell()].Cell_Building();
 	if (building != NULL && !LinkedTo->TClass->IsHunterSeeker) {
-		aim = building->Docking_Coord();
+		aim = building->Docking_Coord_For(LinkedTo);
 	}
 
 	LinkedTo->Get_Height();

@@ -9007,7 +9007,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 				(friendly ? building->House->Is_Ally(this) : building->House == House) &&
 				!building->IsInLimbo &&
 				building->Class == b &&
-				(!unoccupied || !building->In_Radio_Contact()) &&
+				(!unoccupied || building->Has_Free_Link(this)) &&
 				(RTTI == RTTI_AIRCRAFT || Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), building->Center_Coord().As_Cell(), TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) &&
 				((TechnoClass *)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER) {
 

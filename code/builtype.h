@@ -22,6 +22,8 @@
 #include "struct.hh"
 #include "super.hh"
 
+#include <vector>
+
 class OverlayTypeClass;
 class IsometricTileTypeClass;
 class BSurface;
@@ -711,6 +713,14 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * true. An aircraft out of ammunition goes looking for one of its owner's.
 		 */
 		bool IsHelipad;
+
+		/*
+		 * The number of aircraft or vehicles this building services at once, one per radio
+		 * slot, from NumberOfDocks. Each has its landing spot at the building's center plus
+		 * the matching DockingOffsetN from the art file.
+		 */
+		int NumberOfDocks;
+		std::vector<TPoint3D<int>> DockingOffsets;
 
 		/*
 		 * If this building is the GDI barracks, then this flag will be true. Infantry leaving

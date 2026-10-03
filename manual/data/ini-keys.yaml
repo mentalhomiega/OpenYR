@@ -22516,6 +22516,23 @@ NumPlayers:
       source: code/netshare.cpp
       guard: null
     level: RandomMap
+NumberOfDocks:
+  key: NumberOfDocks
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: BuildingTypeClass
+      member: NumberOfDocks
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 OccupantAnim:
   key: OccupantAnim
   scopes:

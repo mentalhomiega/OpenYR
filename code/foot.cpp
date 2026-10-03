@@ -2526,7 +2526,7 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 			PathDelay = 1;
 		}
 
-		Locomotion->Move_To(NavCom->Destination_Coord());
+		Locomotion->Move_To(NavCom->Destination_Coord_For(this));
 
 	} else if (RTTI != RTTI_AIRCRAFT || (CurrentMission != MISSION_ATTACK && MissionQueue != MISSION_ATTACK) || TarCom == NULL) {
 		Locomotion->Stop_Moving();

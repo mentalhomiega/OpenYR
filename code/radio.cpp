@@ -96,7 +96,7 @@ char const * RadioClass::Messages[RADIO_COUNT] = {
 /// </summary>
 RadioClass::RadioClass(void) :
 	BASECLASS(),
-	Radio(NULL)
+	Links(1, NULL)
 {
 	for (int i = 0; i < 3; i++) {
 		Old[i] = RADIO_STATIC;
@@ -124,8 +124,8 @@ void RadioClass::Debug_Dump(MonoClass * mono) const
 	mono->Set_Cursor(29, 7);mono->Printf("0-%-47s", Messages[Old[0]]);
 	mono->Set_Cursor(29, 8);mono->Printf("1-%-47s", Messages[Old[1]]);
 	mono->Set_Cursor(29, 9);mono->Printf("2-%-47s", Messages[Old[2]]);
-	if (Radio != NULL) {
-		mono->Set_Cursor(20, 7);mono->Printf("%08X", Radio);
+	if (Links[0] != NULL) {
+		mono->Set_Cursor(20, 7);mono->Printf("%08X", Links[0]);
 	}
 	BASECLASS::Debug_Dump(mono);
 }
@@ -170,25 +170,31 @@ RadioMessageType RadioClass::Receive_Message(RadioClass * from, RadioMessageType
 
 	/*
 	**	When this message is received, it means that the other object
-	**	has already turned its radio off. Turn this radio off as well.
-	**	This only applies if the message is coming from the object that
-	**	has an established conversation with this object.
+	**	has already turned its radio off. Free the slot it held. This
+	**	only applies if the sender holds a slot in this radio.
 	*/
-	if (from == Radio && message == RADIO_OVER_OUT) {
-		BASECLASS::Receive_Message(from, message, param);
-		Radio_Off();
-		return(RADIO_ROGER);
+	if (message == RADIO_OVER_OUT) {
+		int const slot = Find_Link_Index(from);
+		if (slot != -1) {
+			BASECLASS::Receive_Message(from, message, param);
+			Links[slot] = NULL;
+			return(RADIO_ROGER);
+		}
 	}
 
 	/*
-	**	The "hello" message is an attempt to establish contact. If this radio
-	**	is already in an established conversation with another object, then
-	**	return with "negative". If all is well, return with "roger".
+	**	The "hello" message is an attempt to establish contact. The sender keeps
+	**	the slot it already holds or takes the first empty one; with every slot
+	**	held by others, the answer is "negative".
 	*/
 	if (message == RADIO_HELLO && Strength) {
-		if (Radio == NULL || Radio == from) {
-			if (from != NULL && ((TechnoClass *)from)->House->Is_Ally(this) && Is_Techno() && ((TechnoClass *)this)->House->Is_Ally(from)) {
-				Radio = from;
+		if (from != NULL && ((TechnoClass *)from)->House->Is_Ally(this) && Is_Techno() && ((TechnoClass *)this)->House->Is_Ally(from)) {
+			int slot = Find_Link_Index(from);
+			if (slot == -1) {
+				slot = Find_Free_Slot();
+			}
+			if (slot != -1) {
+				Links[slot] = from;
 				return(RADIO_ROGER);
 			}
 		}
@@ -234,20 +240,31 @@ RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, intptr_t
 	**	Handle some special case processing that occurs when certain messages
 	**	are transmitted.
 	*/
-	if (to == Radio && message == RADIO_OVER_OUT) {
-		Radio = NULL;
+	if (message == RADIO_OVER_OUT) {
+		for (RadioClass * & link : Links) {
+			if (link == to) {
+				link = NULL;
+			}
+		}
 	}
 
 	/*
-	**	If this object is not in radio contact but the message
-	**	indicates that radio contact should be established, then
-	**	try to do so. If the other party agrees then contact
-	**	is established.
+	**	Contact with an object that already holds a slot needs no message. Otherwise
+	**	the object goes in the first empty slot; with none empty, contact with the
+	**	first slot's object is broken off to make room (RadioClass::SendCommandWithData,
+	**	0x65A970).
 	*/
 	if (message == RADIO_HELLO) {
-		Transmit_Message(RADIO_OVER_OUT);
+		if (Contains_Link(to)) {
+			return(RADIO_ROGER);
+		}
+		int slot = Find_Free_Slot();
+		if (slot == -1) {
+			Transmit_Message(RADIO_OVER_OUT, Links[0]);
+			slot = 0;
+		}
 		if (to->Receive_Message(Dynamic_Cast<TechnoClass *>(this), message, param) == RADIO_ROGER) {
-			Radio = to;
+			Links[slot] = to;
 			return(RADIO_ROGER);
 		}
 		return(RADIO_NEGATIVE);
@@ -274,7 +291,11 @@ RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, intptr_t
 bool RadioClass::Limbo(void)
 {
 	if (!IsInLimbo) {
-		Transmit_Message(RADIO_OVER_OUT);
+		for (size_t index = 0; index < Links.size(); index++) {
+			if (Links[index] != NULL) {
+				Transmit_Message(RADIO_OVER_OUT, Links[index]);
+			}
+		}
 	}
 	return(BASECLASS::Limbo());
 }
@@ -316,9 +337,74 @@ RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, RadioCla
 void RadioClass::Detach(AbstractClass const * target, bool all)
 {
 	BASECLASS::Detach(target, all);
-	if (Radio == target && all) {
-		Radio = NULL;
+	if (all) {
+		for (RadioClass * & link : Links) {
+			if (link == target) {
+				link = NULL;
+			}
+		}
 	}
+}
+
+
+bool RadioClass::In_Radio_Contact(void) const
+{
+	for (RadioClass const * link : Links) {
+		if (link != NULL) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Grows the number of radio slots to the count given, leaving the new slots empty. A smaller
+/// count changes nothing (RadioClass::SetLinkCount, 0x65AE60).
+/// </summary>
+void RadioClass::Set_Link_Count(int count)
+{
+	if (count > (int)Links.size()) {
+		Links.resize(count, NULL);
+	}
+}
+
+
+/// <summary>
+/// Returns the slot the object holds, or -1 when it holds none or is NULL.
+/// </summary>
+int RadioClass::Find_Link_Index(RadioClass const * object) const
+{
+	if (object != NULL) {
+		for (size_t index = 0; index < Links.size(); index++) {
+			if (Links[index] == object) {
+				return((int)index);
+			}
+		}
+	}
+	return(-1);
+}
+
+
+int RadioClass::Find_Free_Slot(void) const
+{
+	for (size_t index = 0; index < Links.size(); index++) {
+		if (Links[index] == NULL) {
+			return((int)index);
+		}
+	}
+	return(-1);
+}
+
+
+bool RadioClass::Has_Free_Link(RadioClass const * object) const
+{
+	for (RadioClass const * link : Links) {
+		if (link == NULL || (object != NULL && link == object)) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -331,11 +417,12 @@ void RadioClass::Detach(AbstractClass const * target, bool all)
 void RadioClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
-	if (Radio != NULL) {
-		crc(Radio->Fetch_ID());
-	}
-	if (Radio != NULL) {
-		crc((RTTIType)Radio->RTTI);
+	crc((int)Links.size());
+	for (RadioClass const * link : Links) {
+		if (link != NULL) {
+			crc(link->Fetch_ID());
+			crc((RTTIType)link->RTTI);
+		}
 	}
 }
 
@@ -349,5 +436,5 @@ void RadioClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(Old);
-	stream.Serialize(Radio);
+	stream.Serialize(Links);
 }

@@ -36,6 +36,7 @@
 #include "mission.h"
 
 #include <cstdint>
+#include <vector>
 
 class ObjectClass;
 class TechnoClass;
@@ -59,12 +60,14 @@ class RadioClass : public MissionClass
 		RadioMessageType Old[3];
 
 		/*
-		**	This is the object that radio communication has been established
-		**	with. Although is is only a one-way reference, it is required that
-		**	the receiving radio is also tuned to the object that contains this
-		**	radio set.
+		**	These are the objects that radio communication has been established
+		**	with, one per slot; an empty slot is NULL. There is one slot unless
+		**	Set_Link_Count adds more, as a building with several docks does. Each
+		**	receiving radio must also be tuned to the object that holds this set.
 		*/
-		RadioClass * Radio;
+		std::vector<RadioClass *> Links;
+
+		int Find_Free_Slot(void) const;
 
 #ifdef _DEBUG
 		/*
@@ -88,9 +91,18 @@ class RadioClass : public MissionClass
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
 		*/
-		bool In_Radio_Contact(void) const {return(Radio != 0);};
-		void Radio_Off(void) {Radio = 0;};
-		TechnoClass * Contact_With_Whom(void) const {return((TechnoClass *)Radio);};
+		// Is any slot in contact?
+		bool In_Radio_Contact(void) const;
+		// The object in the first slot, which receives messages sent to no one in particular.
+		TechnoClass * Contact_With_Whom(void) const {return((TechnoClass *)Links[0]);};
+
+		int Link_Count(void) const {return((int)Links.size());}
+		TechnoClass * Link(int index) const {return((TechnoClass *)Links[index]);}
+		void Set_Link_Count(int count);
+		int Find_Link_Index(RadioClass const * object) const;
+		bool Contains_Link(RadioClass const * object) const {return(Find_Link_Index(object) != -1);}
+		// Is a slot empty, or held by the object given?
+		bool Has_Free_Link(RadioClass const * object = NULL) const;
 
 		// Inherited from base class(es).
 		virtual void Detach(AbstractClass const * target, bool all = true) override;
