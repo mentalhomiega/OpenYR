@@ -49,6 +49,14 @@ The owner's priority is a playable "modern" build for play-testers. That work is
 4. **Unit tests that need no game files.** Add tests for self-contained logic, for example weapon choice (`TechnoClass::What_Weapon_Should_I_Use` and `Naval_Weapon`), mission numbering (`code/mission.hh`, `code/_mission.cpp`) and rules defaults. Use the existing test setup; no test may load game data.
 5. **Mechanical cleanup.** Remove unused constants, stale comments and dead code. Keep each cleanup in its own commit, separate from behaviour changes.
 
+## Night log
+
+Each nightly session keeps a log so the next one can carry on from it.
+
+- Before starting, read every earlier log: for each branch from `git branch -r --list 'origin/cloud/*'`, run `git show <branch>:cloud-log/` to list its files and `git show <branch>:cloud-log/<file>` to read them. Carry forward any finding, idea or unfinished task they mention that no later log or `yr` commit has closed.
+- Before finishing, add `cloud-log/YYYY-MM-DD.md` (today's UTC date) to your branch, in its own commit, holding the report below plus: what you started and did not finish, ideas for the next night, and questions for the owner. Copy forward the open items from earlier logs, so the newest log is a complete list on its own.
+- Never put the log on `yr` itself; it lives on the `cloud/*` branches until the owner merges them.
+
 ## What to report back
 
 End each session with a short report covering:
