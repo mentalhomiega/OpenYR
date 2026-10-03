@@ -52,7 +52,7 @@ The sender passed to `Receive_Message` is `Dynamic_Cast<TechnoClass*>(this)`, so
 
 ### `RADIO_HELLO` acceptance
 
-No override handles `RADIO_HELLO`, so `RadioClass::Receive_Message` decides it. The receiver accepts only when all of these are true, tested in this order:
+A grinding or absorbing structure always refuses `RADIO_HELLO`. For every other receiver, `RadioClass::Receive_Message` decides it. The receiver accepts only when all of these are true, tested in this order:
 
 1. The receiver's `Strength` is nonzero.
 2. The sender is non-null.
