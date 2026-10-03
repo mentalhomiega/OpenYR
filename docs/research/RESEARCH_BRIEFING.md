@@ -21,7 +21,7 @@ All files go under `docs/research/`.
 
 1. `phobos-tags.md` and `ares-tags.md`: one table each. Columns: tag, the section or type it belongs to, what it does in one sentence, a source link, the files in `code/` it would touch, a size estimate (small, medium or large), and other tags it depends on. Group by system (weapons, warheads, superweapons, AI, interface and so on). Mark a tag this engine already reads.
 2. `priorities.md`: a ranked plan. Put first the tags that are cheap and widely used, then the ones that unlock whole mods. Explain each ranking in a sentence.
-3. `tools/mod_scan.py`: a command-line tool the owner runs on his PC against a mod folder. It reads the mod's INI files (rulesmd, artmd and the files they include), lists every section key, and counts each key by origin: read by this engine, an Ares tag, a Phobos tag, or unknown. It prints the counts and a coverage percentage. Use only the Python standard library. It must never copy the mod's files or their values anywhere; it prints key names and counts only. Add unit tests with small made-up INI files in `docs/research/tools/tests/`.
+3. `tools/mod_scan.py`: a command-line tool the owner runs on their PC against a mod folder. It reads the mod's INI files (rulesmd, artmd and the files they include), lists every section key, and counts each key by origin: read by this engine, an Ares tag, a Phobos tag, or unknown. It prints the counts and a coverage percentage. Use only the Python standard library. It must never copy the mod's files or their values anywhere; it prints key names and counts only. Add unit tests with small made-up INI files in `docs/research/tools/tests/`.
 
 Build these up across sessions; one session will not finish the tables.
 

@@ -63,3 +63,11 @@
     ]
   }
 }
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push fork yr)"
+    ]
+  }
+}
+
