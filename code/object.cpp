@@ -2752,6 +2752,7 @@ bool ObjectClass::Not_Underground(void) const
 
 
 double RenderBlend = 1.0;
+unsigned int RenderBlendShifts = 0;
 
 
 /// <summary>
@@ -2772,5 +2773,9 @@ Point2D ObjectClass::Render_Blend_Offset(void) const
 	}
 	double const back = 1.0 - RenderBlend;
 	Coord const drawn(current.X + int(delta.X * back), current.Y + int(delta.Y * back), current.Z + int(delta.Z * back));
-	return(TacticalMap->Coord_To_Pixel_Absolute(drawn) - TacticalMap->Coord_To_Pixel_Absolute(current));
+	Point2D const offset = TacticalMap->Coord_To_Pixel_Absolute(drawn) - TacticalMap->Coord_To_Pixel_Absolute(current);
+	if (offset.X != 0 || offset.Y != 0) {
+		RenderBlendShifts++;
+	}
+	return(offset);
 }

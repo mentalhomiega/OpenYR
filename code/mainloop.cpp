@@ -72,6 +72,7 @@
 
 #include <algorithm>
 #include "bullet.h"
+#include "dbgprint.h"
 #include "foot.h"
 #include "object.h"
 
@@ -571,6 +572,12 @@ void Sync_Delay(void)
 	// With RenderFrameRate set, the wait is filled with redraws at that rate, each drawing moving
 	// objects further along their move from the previous game frame.
 	if (Options.RenderFrameRate > 0 && !Session.Play) {
+		static unsigned int stat_start = timeGetTime();
+		static unsigned int stat_frames = 0;
+		static unsigned int stat_draws = 0;
+		static unsigned int stat_wait = 0;
+		stat_frames++;
+		stat_wait += FrameTimer;
 		unsigned int const period = std::max<unsigned int>(FrameTimer, 1);
 		unsigned int const spacing = std::max(1000 / Options.RenderFrameRate, 1);
 		unsigned int next_draw = timeGetTime();
@@ -588,6 +595,7 @@ void Sync_Delay(void)
 					TacticalMap->AI();
 					Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
 					Map.Render();
+					stat_draws++;
 				}
 			} else {
 				UI_Serve_Screen();
@@ -595,6 +603,17 @@ void Sync_Delay(void)
 			Sleep(GameInFocus ? 0 : 1);
 		}
 		RenderBlend = 1.0;
+
+		unsigned int const stat_now = timeGetTime();
+		if (stat_now - stat_start >= 1000) {
+			DebugString("Render: %u game frames, %u extra draws, %u presents, %u ms waiting in the last %u ms, %u shifted draws\n",
+				stat_frames, stat_draws, Video_Presents_Per_Second(), stat_wait, stat_now - stat_start, RenderBlendShifts);
+			RenderBlendShifts = 0;
+			stat_start = stat_now;
+			stat_frames = 0;
+			stat_draws = 0;
+			stat_wait = 0;
+		}
 	}
 
 	while (FrameTimer) {

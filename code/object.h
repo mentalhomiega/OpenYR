@@ -393,6 +393,7 @@ class ObjectClass : public AbstractClass
 
 // How far drawing has moved from the previous game frame toward the current one, 0 to 1.
 extern double RenderBlend;
+extern unsigned int RenderBlendShifts;
 
 
 inline ObjectClass * AbstractClass::As_ObjectClass(void)
