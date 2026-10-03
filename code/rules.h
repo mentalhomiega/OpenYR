@@ -922,6 +922,10 @@ class RulesClass
 		// A destroyed ship at least this heavy sinks instead of vanishing.
 		double ShipSinkingWeight;
 
+		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
+		int ParachuteMaxFallRate;
+		int NoParachuteMaxFallRate;
+
 		/*
 		 * These are the sound effects that cracking ice may play, one of which is picked
 		 * at random each time a cell cracks.

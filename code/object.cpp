@@ -289,10 +289,10 @@ void ObjectClass::AI(void)
 		if (!IsInLimbo) {
 			if (IsAnimAttached) {
 				Riser.Z -= 1;
-				Riser.Z = std::max<int>(Riser.Z, PARACHUTE_MAX_FALL_RATE);
+				Riser.Z = std::max<int>(Riser.Z, Rule->ParachuteMaxFallRate);
 			} else {
 				Riser.Z -= GRAVITY;
-				Riser.Z = std::max<int>(Riser.Z, NO_PARACHUTE_MAX_FALL_RATE);
+				Riser.Z = std::max<int>(Riser.Z, Rule->NoParachuteMaxFallRate);
 			}
 
 			if (layer != In_Which_Layer()) {

@@ -21882,6 +21882,24 @@ NoMovingFire:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+NoParachuteMaxFallRate:
+  key: NoParachuteMaxFallRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-100'
+      declared_in: RulesClass
+      member: NoParachuteMaxFallRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 NoSpawnAlt:
   key: NoSpawnAlt
   scopes:
@@ -23184,6 +23202,24 @@ Parachute:
       value_type: class
       applies_to: *id076
     precedence: accepted under more than one entry heading; the last one the engine reads wins
+    level: RulesClass
+ParachuteMaxFallRate:
+  key: ParachuteMaxFallRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-3'
+      declared_in: RulesClass
+      member: ParachuteMaxFallRate
+      source: code/rules.cpp
+      guard: null
     level: RulesClass
 ParadropRadius:
   key: ParadropRadius

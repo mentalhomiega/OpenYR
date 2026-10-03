@@ -580,6 +580,8 @@ RulesClass::RulesClass(void) :
 	IceCrackingWeight(2),
 	IceBreakingWeight(4),
 	ShipSinkingWeight(3),
+	ParachuteMaxFallRate(-3),
+	NoParachuteMaxFallRate(-100),
 	IceCrackSounds(),
 	CliffBackImpassability(0),
 	VeteranRatio(10),
@@ -1524,6 +1526,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		IceCrackingWeight = ini.Get_Float(GENERAL, "IceCrackingWeight", IceCrackingWeight);
 		IceBreakingWeight = ini.Get_Float(GENERAL, "IceBreakingWeight", IceBreakingWeight);
 		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
+		ParachuteMaxFallRate = ini.Get_Int(GENERAL, "ParachuteMaxFallRate", ParachuteMaxFallRate);
+		NoParachuteMaxFallRate = ini.Get_Int(GENERAL, "NoParachuteMaxFallRate", NoParachuteMaxFallRate);
 		CliffBackImpassability = ini.Get_Int(GENERAL, "CliffBackImpassability", CliffBackImpassability);
 		PlacementDelay = ini.Get_Float(GENERAL, "PlacementDelay", PlacementDelay);
 		TrackedUphill = ini.Get_Float(GENERAL, "TrackedUphill", TrackedUphill);
@@ -2823,6 +2827,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IceCrackingWeight);
 	stream.Serialize(IceBreakingWeight);
 	stream.Serialize(ShipSinkingWeight);
+	stream.Serialize(ParachuteMaxFallRate);
+	stream.Serialize(NoParachuteMaxFallRate);
 	stream.Serialize(IceCrackSounds);
 	stream.Serialize(CliffBackImpassability);
 	stream.Serialize(VeteranRatio);
