@@ -223,6 +223,16 @@ static int Target_Frame_Rate(void)
 	return(Session.Play ? 0 : Session.DesiredFrameRate);
 }
 
+// Recent time a view redraw took, in milliseconds, averaged over the last few draws.
+static unsigned int RenderCost = 0;
+
+
+static void Note_Render_Cost(unsigned int took)
+{
+	RenderCost = (RenderCost * 3 + took + 3) / 4;
+}
+
+
 /***********************************************************************************************
  * Main_Loop -- This is the main game loop (as a single loop).                                 *
  *                                                                                             *
@@ -316,10 +326,9 @@ bool Main_Loop(void)
 				Ipx.Store_Stats();
 			}
 			Update_Fogged_Objects();
-			if (Options.RenderFrameRate > 0) {
-				Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
-			}
+			unsigned int const render_start = timeGetTime();
 			Map.Render();
+			Note_Render_Cost(timeGetTime() - render_start);
 		}
 	}
 
@@ -585,7 +594,8 @@ void Sync_Delay(void)
 			Call_Back();
 			if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
 				unsigned int const now = timeGetTime();
-				if ((int)(now - next_draw) >= 0) {
+				// A draw is skipped when less time is left before the next game frame than recent draws took, so drawing never slows the game.
+				if ((int)(now - next_draw) >= 0 && FrameTimer > RenderCost) {
 					next_draw = now + spacing;
 					RenderBlend = std::clamp(1.0 - (double)FrameTimer / period, 0.0, 1.0);
 					KeyNumType input = KN_NONE;
@@ -593,8 +603,8 @@ void Sync_Delay(void)
 					Map.Input(input, x, y);
 					Keyboard_Process(input);
 					TacticalMap->AI();
-					Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
 					Map.Render();
+					Note_Render_Cost(timeGetTime() - now);
 					stat_draws++;
 				}
 			} else {
