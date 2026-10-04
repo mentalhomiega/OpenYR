@@ -107,3 +107,4 @@ add_subdirectory(code/language)
 
 enable_testing()
 add_subdirectory(tests)
+add_subdirectory(tools/inicheck)
