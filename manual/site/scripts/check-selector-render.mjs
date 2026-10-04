@@ -23,7 +23,11 @@ const art = html('reference/art/buildingtype/index.html');
 requireText(art, 'Image-selected sections only', 'Art reference filter');
 requireText(art, '<th>Image-selected section</th>', 'Art reference table');
 requireText(art, 'data-via-image="yes"', 'Art reference table');
-requireText(art, 'data-via-image="no"', 'Art reference table');
+rejectText(art, 'data-via-image="no"', 'Art reference table');
+
+const animArt = html('reference/art/animtype/index.html');
+requireText(animArt, 'data-via-image="yes"', 'Animation art reference table');
+requireText(animArt, 'data-via-image="no"', 'Animation art reference table');
 
 for (const [relative, title, selector] of [
 	['reference/other/campaign/index.html', 'Campaign sections in BATTLE*.INI', '[&lt;Campaign ID&gt;]'],
