@@ -6,6 +6,13 @@ This briefing drives a regular cloud research session. Its work is research docu
 
 The owner wants the improved build of OpenYR to run mods written for Ares and Phobos, the two Yuri's Revenge extensions most mods depend on, with Mental Omega as the long-term target. Before any of that is built, the project needs to know which tags exist, what each does, where it would hook into this engine, how hard it is, and which ones mods actually use.
 
+Phobos comes first. The owner knows that the next major version of Mental Omega will rely heavily on Phobos, so finish the Phobos catalogue across every category, and rank Phobos systems high in `priorities.md`, alongside the Ares families the current version uses most.
+
+How each extension may be used:
+
+- **Ares: documentation and observed behaviour only.** Never disassemble, decompile or otherwise reverse engineer `Ares.dll`. Its behaviour is learned from its documentation, and later from comparison tests the owner runs with the real Ares on their PC.
+- **Phobos: read its source freely** to understand exactly what a tag does, and describe that behaviour. Whether Phobos code may be copied into this project is still the owner's decision (Phobos is GPL-3.0 only, this project GPL-3.0 or later); until then, write your own code from the behaviour.
+
 ## Sources
 
 - Phobos (https://github.com/Phobos-developers/Phobos) is open source under GPL-3.0, the same licence as this project. Read its documentation and source to understand each tag. Describe behaviour in your own words and link the page or file; do not copy its code into this repository.

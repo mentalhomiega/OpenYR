@@ -24,6 +24,7 @@ Anything that changes how the game behaves has to be verified later on the owner
 ## Hard rules
 
 - Never add game assets, original binaries, decompiled code or build output to the repository.
+- Never disassemble, decompile or otherwise reverse engineer `Ares.dll`; reimplement Ares behaviour from its documentation. Phobos source may be read; do not copy Phobos code until the owner decides on it (see `docs/research/RESEARCH_BRIEFING.md`).
 - Do not open pull requests, issues or comments on the upstream OpenTS project. The project forbids AI-written communication there; the owner submits anything upstream personally.
 - Commit messages: an imperative subject of at most 72 characters, no body, and no `Co-authored-by` or other AI-attribution lines (see `AGENTS.md`).
 - Never write the owner's real name anywhere: not in files, credits, commit authors or messages. The owner is `MentalHomiega`, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>`.
