@@ -86,3 +86,8 @@ When a unit is taken over, `CaptureManagerClass::Capture_Unit` (`code/capture.cp
 - `python3 manual/tools/manage.py check` passed every validation. Its only action item was the expected "site dependencies are missing".
 - `git checkout -- manual/data/commands.yaml manual/data/scripting.yaml` had no changes to discard.
 - Not run: any build, unit tests, the game or the in-game autotests.
+
+## Owner's answers
+
+- Grinders keep taking controlled units, as implemented.
+- A controlled engineer may enter a non-allied `Capturable=yes` structure to capture it. "Let mind-controlled engineers capture Capturable structures" restores the capture cursor (`code/infantry.cpp`, the engineer rules and the `Infiltrate=yes` rule) and lets the engineer go in on arrival (`InfantryClass::Per_Cell_Process`). A controlled engineer still may not repair an allied structure or a bridge hut, and a controlled spy or other `Infiltrate=yes` soldier still may not go in. The mind-control and capture pages and the change record say so.
