@@ -1,0 +1,3 @@
+# A small catalog for the inicheck-cli test; the real one comes from export_catalog.py.
+Speed	rules.ini	*	UnitType	integer
+Gravity	rules.ini	General	global rules	integer
