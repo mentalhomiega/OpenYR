@@ -179,8 +179,10 @@ test('Art uses effective type views and keeps image selectors as row data', () =
 	const building = referenceGroups(keys, 'art').find((group) => group.slug === 'buildingtype');
 	assert.ok(building);
 	assert.ok(building.rows.length > 20);
-	assert.ok(building.rows.some((row) => row.viaImage));
-	assert.ok(building.rows.some((row) => !row.viaImage));
+	assert.ok(building.rows.every((row) => row.viaImage));
+	const anim = referenceGroups(keys, 'art').find((group) => group.slug === 'animtype');
+	assert.ok(anim);
+	assert.ok(anim.rows.some((row) => !row.viaImage));
 	assert.equal(isImageSection({ kind: 'image', fallback: 'object-type' }), true);
 	assert.equal(isImageSection({ kind: 'identifier', source: 'object-type' }), false);
 });
