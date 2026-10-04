@@ -440,7 +440,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				return(RADIO_NEGATIVE);
 			}
 			if ((Class->IsArmory || Class->IsHospital) && from->RTTI == RTTI_INFANTRY) {
-				if (Ammo != 0 && Mission != MISSION_REPAIR) {
+				// A soldier under mind control may not go inside, as in Yuri's Revenge.
+				if (Ammo != 0 && Mission != MISSION_REPAIR && ((TechnoClass *)from)->MindControlledBy == NULL) {
 					return(RADIO_ROGER);
 				}
 				return(RADIO_NEGATIVE);
