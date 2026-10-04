@@ -29,7 +29,7 @@ Documents, style sheets and pictures are found by bare file name through the gam
 
 Text fields accept any character typed. A player whose keyboard writes Cyrillic, Greek or accented Latin can type their name and their messages, and the text fields draw those letters.
 
-`BitmapSystemFont` under `[Options]` in `SUN.INI` chooses the face of the screens' lists, text boxes, tooltips, hotkey fields and group headings. At `yes` they use the bitmap face the old dialogs used, and at `no` the scalable face of the same design. The bitmap face cannot be resized, so even at `yes` it is used only where the game draws one screen pixel per game pixel.
+`BitmapSystemFont` under `[Options]` in `RA2MD.INI` chooses the face of the screens' lists, text boxes, tooltips, hotkey fields and group headings. At `yes` they use the bitmap face the old dialogs used, and at `no` the scalable face of the same design. The bitmap face cannot be resized, so even at `yes` it is used only where the game draws one screen pixel per game pixel.
 
 Canceling the keyboard screen now drops the key assignments made in it. The old dialog kept them whenever `KEYBOARD.INI` was missing. A reset to the default keys takes effect as soon as it is confirmed, and canceling does not undo it.
 

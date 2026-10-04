@@ -28,7 +28,7 @@ def read_record(key, declared_in, member, line, source, **overrides):
         "line": line,
         "src": source,
         "group": "client settings",
-        "file_hint": "sun.ini",
+        "file_hint": "ra2md.ini",
     }
     record.update(overrides)
     return record
@@ -99,7 +99,7 @@ class ScopeRouteOrderTests(unittest.TestCase):
     def test_indistinguishable_scopes_fail_instead_of_taking_a_route_by_position(self):
         scope = {
             "applies_to": ["client settings"],
-            "file": "sun.ini",
+            "file": "ra2md.ini",
             "section": {"kind": "literal", "name": "Video"},
             "value_type": "integer",
             "_provenance": {"declared_in": "OptionsClass", "member": "ScreenWidth"},

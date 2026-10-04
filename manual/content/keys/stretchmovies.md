@@ -13,4 +13,4 @@ A stretched movie keeps its proportions. It is scaled until it meets the screen'
 
 Any full screen movie that does not cover the whole screen, stretched or not, is surrounded by black.
 
-The display options screen has the same switch. Accepting that screen changes the setting, and leaving the options menu saves it to `sun.ini`.
+The display options screen has the same switch. Accepting that screen changes the setting, and leaving the options menu saves it to `RA2MD.INI`.

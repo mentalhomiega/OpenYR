@@ -237,7 +237,7 @@ UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist--ui-controls/): 
 
 No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos, the size of a cameo slot and the 225-entry capacity are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row scroll step, the timing of the power bar's blink, and the timing of the radar animation.
 
-The panel always sits on the right edge of the screen. Neither `sun.ini` nor the rules can move it.
+The panel always sits on the right edge of the screen. Neither `RA2MD.INI` nor the rules can move it.
 
 The number of cameos a strip shows depends on the screen height. The panel shows as many rows of two 50-pixel cameos as fit between the top of the cameo area and the scroll arrows, at least one row and at most 30. A taller screen therefore shows more cameos and a shorter one fewer. The backdrop repeats its middle piece once per row.
 

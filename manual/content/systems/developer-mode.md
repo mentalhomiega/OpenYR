@@ -98,7 +98,7 @@ The file opens with the frame count, the average frame rate, the largest look-ah
 
 A network game that goes out of sync writes an [out-of-sync report](/using/out-of-sync-reports/) into the `Debug` folder beside the executable, in either configuration. The [`PrintCRC`](/keys/printcrc/) playback trap writes the same report at a chosen frame and then exits. The report page describes what the report holds.
 
-Seven `sun.ini` settings exist for tracking down a desynchronized game, and only `PrintCRC` has an effect:
+Seven `RA2MD.INI` settings exist for tracking down a desynchronized game, and only `PrintCRC` has an effect:
 
 - [`Frame`](/keys/frame/), [`Type`](/keys/type/#scope-multiplayer-settings), [`Coord`](/keys/coord/), [`Target`](/keys/target/) and [`Cell`](/keys/cell/) describe an object to watch frame by frame. The code that would watch it is compiled into neither configuration.
 - [`CheckHeap`](/keys/checkheap/) raises a flag that nothing reads.

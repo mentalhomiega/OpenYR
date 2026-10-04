@@ -11,4 +11,4 @@ when_omitted:
 
 [`ScrollMultiplier`](/keys/scrollmultiplier/) scales only edge scrolling, so it has no effect while this is off. [`ScrollRate`](/keys/scrollrate/) also sets the speed of right-button dragging, and keeps that effect.
 
-The game controls dialog has the same switch. Closing the dialog with OK, or leaving it through its Sound or Keyboard button, applies the change and writes it to `sun.ini`. Cancel discards it.
+The game controls dialog has the same switch. Closing the dialog with OK, or leaving it through its Sound or Keyboard button, applies the change and writes it to `RA2MD.INI`. Cancel discards it.

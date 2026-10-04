@@ -99,7 +99,7 @@ ADAPTER_UNITS = [
           "Graphic_Name()": section_selectors.image(),
       }}),
     ("startup.cpp", "Startup", [":WinMain"],
-     {"file": "sun.ini", "group": "client settings"}),
+     {"file": "ra2md.ini", "group": "client settings"}),
     # Outside campaign the house holding a start position reads its own spawn house
     # section, [Spawn1]..[Spawn8]; the section name is the house identifier.
     ("scenario.cpp", "HouseClass", [":Read_Spawn_House_Allies"],

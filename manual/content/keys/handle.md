@@ -8,7 +8,7 @@ when_omitted:
   note: The English placeholder text; a localized build supplies its own.
 ---
 
-The game reads the name when the player picks multiplayer play from the main menu and puts it in the name field of the LAN and skirmish dialogs. Leaving either dialog saves the name, including any edit made there, back to `sun.ini`.
+The game reads the name when the player picks multiplayer play from the main menu and puts it in the name field of the LAN and skirmish dialogs. Leaving either dialog saves the name, including any edit made there, back to `RA2MD.INI`.
 
 When the player hosts a LAN game, other players see the game listed under this name.
 

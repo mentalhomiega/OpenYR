@@ -2,6 +2,8 @@
 
 Ready-made prompts for cloud sessions the owner starts by hand. A cloud session started from claude.ai/code (or the "Start a cloud session" button) on `mentalhomiega/OpenYR` uses the cloud session credits; routines do not.
 
+Keep sessions cheap: choose Sonnet at default effort, and give each session one job with a clear end. A session told to keep going until a set time spends far more. The credits last until 5 November; about $7 a day uses them evenly.
+
 To start one, open a new cloud session on the repository, paste the shared opening below, then one job underneath it. Several jobs can run at once in separate sessions; each pushes its own branch, and the morning test on the owner's PC picks them up.
 
 ## Shared opening
