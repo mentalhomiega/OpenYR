@@ -127,6 +127,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	TiberiumSpreadRadius(0),
 	YSortAdjust(0),
 	YDrawOffset(0),
+	ZAdjust(0),
 	RunningFrames(0),
 	IsFlamingGuy(false),
 	IsVeins(false),
@@ -479,6 +480,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsFlamingGuy = ini.Get_Bool(Name(), "IsFlamingGuy", IsFlamingGuy);
 		RunningFrames = ini.Get_Int(Name(), "RunningFrames", RunningFrames);
 		YDrawOffset = ini.Get_Int(Name(), "YDrawOffset", YDrawOffset);
+		ZAdjust = ini.Get_Int(Name(), "ZAdjust", ZAdjust);
 
 		StartSound = ini.Get_VocType(Name(), "StartSound", StartSound);
 		BounceSound = ini.Get_VocType(Name(), "BounceSound", BounceSound);
@@ -585,6 +587,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumSpreadRadius);
 	stream.Serialize(YSortAdjust);
 	stream.Serialize(YDrawOffset);
+	stream.Serialize(ZAdjust);
 	stream.Serialize(RunningFrames);
 	stream.Serialize(IsFlamingGuy);
 	stream.Serialize(IsVeins);

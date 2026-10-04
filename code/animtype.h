@@ -254,6 +254,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		int YDrawOffset;
 
+		// The depth correction an animation of this type starts with when its creator gives none (AnimTypeClass::ZAdjust).
+		int ZAdjust;
+
 		/*
 		 * This is the number of frames devoted to each of the eight facings of a burning
 		 * victim's run cycle. The stage to display is worked out from the direction he is

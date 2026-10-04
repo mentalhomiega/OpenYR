@@ -132,7 +132,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	OwnerHouse(HOUSE_NONE),
 	AlternativeDrawer(NULL),
 	AlternativeBrightness(NORMAL_LIGHT),
-	ZAdjust(zadjust),
+	ZAdjust(zadjust != 0 ? zadjust : (type != NULL ? ((AnimTypeClass const *)type)->ZAdjust : 0)),
 	YSortAdjust(0),
 	FlamingGuyCoords(COORD_NONE),
 	FlamingGuyRetries(0),
