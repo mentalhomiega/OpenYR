@@ -236,7 +236,7 @@ A computer house sells a harvester or weeder that has run out of places to harve
 
 ### `UnitReload` is a different service
 
-[`UnitReload=yes`](/keys/unitreload/) makes a building give the docked object one ammunition point per [`ReloadRate`](/keys/reloadrate/) interval, 45 frames at the engine default. It repairs nothing. A helipad needs this flag to rearm the aircraft that land on it.
+[`UnitReload=yes`](/keys/unitreload/) makes a building give each docked object one ammunition point per [`ReloadRate`](/keys/reloadrate/) interval, 45 frames at the engine default. Once an object's ammunition is full, the building repairs it a step at a time at the depot's cost per step, and releases it when it is full and undamaged. A helipad needs this flag to rearm and repair the aircraft that land on it.
 
 A building runs only one service. Its service mission checks these flags in order and runs the first one the type sets:
 

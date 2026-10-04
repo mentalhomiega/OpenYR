@@ -3305,10 +3305,10 @@ void TechnoClass::AI(void)
 		}
 	}
 
-	// A PoweredUnit object shuts down while its owner has no working control structure, unless it
-	// stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
+	// A PoweredUnit object shuts down while its owner has no working control structure for its
+	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
 	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = House->PoweredUnitCenters <= 0 && Map[Get_Cell()].Cell_Building() == NULL;
+		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
 		if (off != IsDeactivated) {
 			IsDeactivated = off;
 			FootClass * foot = (FootClass *)this;

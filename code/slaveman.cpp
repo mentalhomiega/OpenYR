@@ -262,7 +262,9 @@ void SlaveManagerClass::AI(void)
 				int const distance = std::max(std::abs(here.X - dock.X), std::abs(here.Y - dock.Y));
 				if (distance <= 1) {
 					Unload(node);
+					// Limbo detaches the slave from this manager as if it had died, so keep it.
 					slave->Limbo();
+					node.Slave = slave;
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
 				} else if (slave->NavCom == NULL) {

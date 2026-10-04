@@ -45,9 +45,37 @@ The owner's priority is a playable "modern" build for play-testers. That work is
 
 1. **Fixes for the open review findings.** Write each fix on its own branch, such as `cloud/fix-slaveman`, with a test where one is possible without game files, and its manual update. Say in the report which fixes could only be read and not run.
 2. **Code review of the commits after `8dbd8a3`.** Look for logic bugs, missed edge cases, null pointers, and new fields missing from `Serialize` (save games) or `crc` calls. Check that comments and manual pages still match the code. Report findings with file, line, the failing case and a suggested fix. List new findings instead of fixing them in the same session.
-3. **Manual audit.** For manual pages changed on `yr` (`manual/content/keys/`, `manual/content/systems/`, `manual/changes/`), check each claim against the source and flag or narrow any claim the code does not support. Follow `manual/AGENTS.md` and the prose rules in `AGENTS.md`.
-4. **Unit tests that need no game files.** Add tests for self-contained logic, for example weapon choice (`TechnoClass::What_Weapon_Should_I_Use` and `Naval_Weapon`), mission numbering (`code/mission.hh`, `code/_mission.cpp`) and rules defaults. Use the existing test setup; no test may load game data.
-5. **Mechanical cleanup.** Remove unused constants, stale comments and dead code. Keep each cleanup in its own commit, separate from behaviour changes.
+3. **A GitHub build check.** The OpenTS workflows in `.github/workflows/` (`engine.yml`, which calls `engine-build.yml`, and `manual-pages.yml`) already build, test and check the manual, but only for pushes to `main` and for pull requests. Add `yr` and `cloud/**` to their `push: branches` lists, changing nothing else, and push that on its own `cloud/ci` branch. If the push is refused because the token may not change workflow files, put the edited files under `docs/ci/` instead and say so in the report; the owner will move them. Actions may also be switched off on the fork; say in the report that the owner must enable them under the fork's Settings, Actions.
+4. **INI validation.** Write a checker that warns about INI keys the engine does not read, and about values of the wrong type, using the key list in `manual/data/ini-keys.yaml` (generated; do not edit it). It must only report: it never changes how a value is read or what the game does. Start as a library with unit tests and a small command-line tool that checks a given INI file against the list; wiring it into the game's loading comes later. Document it in `docs/`.
+5. **Static analysis.** Run `cppcheck` (and `clang-tidy` if it can be set up) over `code/`. Fix only what the code itself proves wrong, such as an uninitialized member or a pointer used before its null check, each in its own commit. List the rest with file and line.
+6. **Manual audit.** For manual pages changed on `yr` (`manual/content/keys/`, `manual/content/systems/`, `manual/changes/`), check each claim against the source and flag or narrow any claim the code does not support. Follow `manual/AGENTS.md` and the prose rules in `AGENTS.md`.
+7. **Unit tests that need no game files.** Add tests for self-contained logic, for example weapon choice (`TechnoClass::What_Weapon_Should_I_Use` and `Naval_Weapon`), mission numbering (`code/mission.hh`, `code/_mission.cpp`) and rules defaults. Use the existing test setup; no test may load game data.
+8. **Mechanical cleanup.** Remove unused constants, stale comments and dead code. Keep each cleanup in its own commit, separate from behaviour changes.
+
+### Answers from the owner
+
+The owner knows Yuri's Revenge well. These answers settle questions from earlier night logs:
+
+- **Mind-controlled units cannot enter transports or structures, except Bio Reactors.** So the `code/capture.cpp:341` finding is about the wrong path: check that the port refuses a mind-controlled unit's attempt to enter a transport, garrison, bunker or other structure (cursor, order and AI), and fix it where it does not. A controlled unit entering a Bio Reactor is used up, so releasing its control node there is correct.
+- **A `UnitReload=yes` pad both rearms and repairs docked aircraft**, as the code does now (`code/building.cpp`, the rearm loop sends `RADIO_RELOAD`, then `RADIO_REPAIR`). The manual pages were corrected on 2026-10-04; that finding is closed.
+
+Research on Ares and Phobos is done in separate sessions that follow `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone. `CLOUD_JOBS.md` holds the prompts the owner uses to start one-off sessions.
+
+## The combined nightly branch
+
+The owner's PC tests only the newest `cloud/nightly-YYYY-MM-DD` branch in the real game, and treats any other branch whose commits it contains as tested. So the nightly session also gathers the day's work:
+
+1. Find every `origin/cloud/*` branch that changes `code/`, `tests/` or `CMakeLists.txt`, is not merged into `yr`, and is not yet contained in an earlier nightly branch (`git cherry origin/cloud/nightly-<earlier date> <branch>` shows only `-` lines when it is). Include branches from one-off sessions started with `CLOUD_JOBS.md`, such as `cloud/docks-*` or `cloud/mind-control-enter-*`.
+2. Review each one first, as in task 2. Merge the ones that pass into tonight's nightly branch with `git merge --no-ff`, together with tonight's own fixes.
+3. Leave out a branch that conflicts with another or that the review rejects, and say why in the night log. The owner's PC then tests it on its own.
+
+## Night log
+
+Each nightly session keeps a log so the next one can carry on from it.
+
+- Before starting, read every earlier log: for each branch from `git branch -r --list 'origin/cloud/*'`, run `git show <branch>:cloud-log/` to list its files and `git show <branch>:cloud-log/<file>` to read them. Carry forward any finding, idea or unfinished task they mention that no later log or `yr` commit has closed.
+- Before finishing, add `cloud-log/YYYY-MM-DD.md` (today's UTC date) to your branch, in its own commit, holding the report below plus: what you started and did not finish, ideas for the next night, and questions for the owner. Copy forward the open items from earlier logs, so the newest log is a complete list on its own.
+- Never put the log on `yr` itself; it lives on the `cloud/*` branches until the owner merges them.
 
 ## What to report back
 
