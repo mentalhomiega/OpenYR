@@ -2197,6 +2197,24 @@ bool HouseClass::Is_Player_View(void) const
 
 
 /// <summary>
+/// Does this house have a working structure whose PowersUnit names this type?
+/// </summary>
+bool HouseClass::Has_Powered_Unit_Source(TechnoTypeClass const * type) const
+{
+	if (PoweredUnitCenters <= 0 || type == NULL) {
+		return(false);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->PoweredUnitHouse == this && building->Class->PowersUnit == type) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Does this house see the other as its owner does? True for an ally, and either way round
 /// once the local player has the whole map. Display only; never a simulation rule.
 /// </summary>
