@@ -399,6 +399,9 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 
 		Sound = ArtINI.Get_VocType(Name(), "Report", Sound);
 		IsAltPalette = ArtINI.Get_Bool(Name(), "AltPalette", IsAltPalette);
+		char palette[64];
+		ArtINI.Get_String(Name(), "CustomPalette", CustomPalette.c_str(), palette, sizeof(palette));
+		CustomPalette = palette;
 		IsFlat = ini.Get_Bool(Name(), "Flat", IsFlat);
 		IsFlameThrower = ini.Get_Bool(Name(), "Flamer", IsFlameThrower);
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
@@ -602,6 +605,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFreeAfterPlaying);
 	stream.Serialize(IsAnimatedTiberium);
 	stream.Serialize(IsAltPalette);
+	stream.Serialize(CustomPalette);
 	stream.Serialize(IsNormalized);
 	stream.Serialize(MakeInfantry);
 	stream.Serialize(IsGroundLayer);

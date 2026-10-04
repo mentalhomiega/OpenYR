@@ -954,6 +954,12 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   banim slot %d used %d garrisoned %d effect %d e.g. %s\n", slot, count, garrisoned, effect, example);
 		}
+	} else if (step.Command == "playanim") {
+		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
+		AnimTypeClass const * type = AnimTypeClass::Find_Or_Make(step.Argument.c_str());
+		if (type != NULL) {
+			new AnimClass(type, Map[Cell(step.X, step.Y)].Center_Coord());
+		}
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");

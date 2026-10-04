@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "objtype.h"
 
 #include "anim.hh"
@@ -354,6 +356,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 * instead of the shared animation drawer, then this flag will be true.
 		 */
 		bool IsAltPalette;
+
+		// A palette file the animation is drawn with instead of the animation palette (Ares CustomPalette).
+		std::string CustomPalette;
 
 		/*
 		**	If this animation should run at a constant apparent rate regardless
