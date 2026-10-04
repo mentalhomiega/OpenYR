@@ -69,18 +69,18 @@ When the [psychic dominator](/systems/superweapons/#psychic-dominator) takes a u
 
 ## Going into transports and structures
 
-An infantryman or vehicle under mind control cannot go into a transport or a structure, except a [`Grinding=yes`](/keys/grinding/) structure, an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure such as the Bio Reactor, or, for an [`Engineer=yes`](/keys/engineer/#scope-infantrytype) soldier, a non-allied [`Capturable=yes`](/keys/capturable/) structure it [captures](/systems/capture/). Those still take it in under their usual conditions. It may not:
+An infantryman or vehicle under mind control may not:
 
 - board a [transport](/systems/transports/);
 - [garrison](/systems/garrisons/) a structure;
 - enter a [tank bunker](/systems/tank-bunkers/);
-- enter a [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure;
-- enter a structure as an engineer to repair it, including a bridge repair hut;
-- enter a structure as any other [`Infiltrate=yes`](/keys/infiltrate/) soldier, such as a spy.
+- enter a [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure.
 
 A player pointing such an object at one of these gets the cannot-enter cursor. Over a structure it could otherwise garrison, it gets the cursor a soldier that is not an `Occupier=yes` type would get there.
 
-Taking an object over gives it a new order, so one that was on its way in does not go in. An engineer or `Infiltrate=yes` soldier that reaches a structure it may not enter anyway, such as a computer engineer on area guard, steps aside without going in, and the structure's entered trigger does not spring. A deployed vehicle is the exception: the soldier still goes in, as the [vehicle branch](/systems/capture/#the-vehicle-branch) of capture describes. A computer team that loads its transport leaves its members under mind control outside.
+Other structures take it in under their usual conditions: a [`Grinding=yes`](/keys/grinding/) structure, an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure such as the Bio Reactor, and a structure an [`Engineer=yes`](/keys/engineer/#scope-infantrytype) or [`Infiltrate=yes`](/keys/infiltrate/) soldier goes into to [repair, capture or infiltrate](/systems/capture/) it.
+
+Taking an object over gives it a new order, so one that was on its way in does not go in. A computer team that loads its transport leaves its members under mind control outside.
 
 An object the psychic dominator took is no longer under mind control, so it may go in anywhere its house's other objects may.
 

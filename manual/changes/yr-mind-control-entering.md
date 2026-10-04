@@ -1,5 +1,5 @@
 ---
-title: Keep mind-controlled units out of transports and structures
+title: Keep mind-controlled units out of transports, garrisons and bunkers
 category: fix
 release: 0.2.0
 targets:
@@ -15,9 +15,6 @@ targets:
 - type: system
   id: tank-bunkers
   effect: changed
-- type: system
-  id: capture
-  effect: changed
 - type: key
   id: Hospital
   effect: changed
@@ -27,4 +24,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-An infantryman or vehicle under mind control could board a transport, garrison a structure, enter a tank bunker, hospital or armory, and enter a structure to repair or infiltrate it. It is now refused, as in Yuri's Revenge. Grinders, structures such as the Bio Reactor, and an engineer capturing a `Capturable=yes` structure are still allowed.
+An infantryman or vehicle under mind control can no longer board a transport, garrison a structure, or enter a tank bunker, hospital or armory, as in Yuri's Revenge. Grinders and structures such as the Bio Reactor still take it in, and a controlled engineer or spy still repairs, captures and infiltrates.

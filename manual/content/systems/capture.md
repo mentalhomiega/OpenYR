@@ -78,9 +78,7 @@ An `IsMobileWar=yes` structure therefore always reaches these rules, and any oth
 
 Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point.
 
-An engineer under [mind control](/systems/mind-control/#going-into-transports-and-structures) gets the cannot-enter cursor in place of the bridge hut and allied rows. The rows for a non-allied `Capturable=yes` structure apply to it unchanged.
-
-Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. For an [`Agent=yes`](/keys/agent/) spy, the structure must be [`Spyable=yes`](/keys/spyable/) instead of `Capturable=yes`. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`. A soldier under mind control other than an engineer gets the cannot-enter cursor from this rule instead of the enter cursor.
+Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. For an [`Agent=yes`](/keys/agent/) spy, the structure must be [`Spyable=yes`](/keys/spyable/) instead of `Capturable=yes`. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`.
 
 The shared rule shows the no-move cursor instead when the soldier cannot walk up to the structure. That happens when no cell next to the structure's footprint is in the soldier's [movement zone](/glossary/#movement-zone), as with a naval yard that no land route reaches.
 
@@ -131,7 +129,7 @@ A [cell](/glossary/#cell) has three standing places for infantry. On the capture
 
 An ordinary soldier drops a destination in another [movement zone](/glossary/#movement-zone). An `Infiltrate=yes` type keeps it, and so does any soldier on the enter mission.
 
-When a soldier walks into its target structure, the structure's entered trigger springs first, whatever kind of soldier it is. A soldier under [mind control](/systems/mind-control/#going-into-transports-and-structures) is the exception, unless it is an engineer reaching a non-allied `Capturable=yes` structure: it steps aside without going in, and nothing springs. The exception does not cover a deployed vehicle, which [the vehicle branch](#the-vehicle-branch) handles.
+When a soldier walks into its target structure, the structure's entered trigger springs first, whatever kind of soldier it is.
 
 ### The vehicle branch
 
