@@ -26673,7 +26673,7 @@ RenderFrameRate:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
