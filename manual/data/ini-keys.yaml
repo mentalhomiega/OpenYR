@@ -5647,6 +5647,23 @@ Cameo:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CameoPCX:
+  key: CameoPCX
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: pcx
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CameoSortOrder:
   key: CameoSortOrder
   scopes:
@@ -6279,6 +6296,24 @@ ChronoInSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoInfantryCrush:
+  key: ChronoInfantryCrush
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsChronoInfantryCrush
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoOutSound:
   key: ChronoOutSound
   scopes:
@@ -6381,6 +6416,40 @@ ChronoTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Chronoshift.Allow:
+  key: Chronoshift.Allow
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsChronoshiftAllowed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Chronoshift.Crushable:
+  key: Chronoshift.Crushable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsChronoshiftCrushable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ChuteSound:
   key: ChuteSound
   scopes:
@@ -28961,6 +29030,23 @@ SidebarImage:
       default_candidate: ''
       declared_in: SuperWeaponTypeClass
       member: SidebarImage
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SidebarPCX:
+  key: SidebarPCX
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: pcx
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
