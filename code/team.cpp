@@ -2900,10 +2900,8 @@ void TeamClass::TMission_LOAD(TeamMissionClass * mission, bool)
 	while (unit != NULL && Total > 1) {
 		Coordinate_Conscript(unit);
 
-		/*
-		**	Only assign the mission if the unit is not the transport.
-		*/
-		if (_Is_It_Playing(unit) && unit != trans) {
+		// Every member but the transport boards, except one under mind control, which no transport takes.
+		if (_Is_It_Playing(unit) && unit != trans && unit->MindControlledBy == NULL) {
 			finished = false;
 			if (unit->Mission != MISSION_ENTER) {
 				unit->Assign_Mission(MISSION_ENTER);
