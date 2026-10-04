@@ -496,12 +496,9 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				return(RADIO_NEGATIVE);
 			}
 
-			if (Class->IsCanUnitRepair) {
-				RadioClass * radio = Contact_With_Whom();
-				if (radio != NULL && radio == from) {
-					if (Transmit_Message(RADIO_NEED_REPAIR) == RADIO_NEGATIVE) {
-						return(RADIO_NEGATIVE);
-					}
+			if (Class->IsCanUnitRepair && Contains_Link(from)) {
+				if (Transmit_Message(RADIO_NEED_REPAIR, from) == RADIO_NEGATIVE) {
+					return(RADIO_NEGATIVE);
 				}
 			}
 
@@ -512,7 +509,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			*/
 			if (Class->IsCanUnitReload) {
 				FootClass * radio = (FootClass *)Contact_With_Whom();
-				if (radio != NULL && radio != from) {
+				// A sender that holds a dock, or has one free, bumps no one.
+				if (radio != NULL && radio != from && !Has_Free_Link(from)) {
 					if (Transmit_Message(RADIO_ON_DEPOT) == RADIO_ROGER) {
 						if (Transmit_Message(RADIO_ALL_DONE) == RADIO_ROGER) {
 							radio->Assign_Destination(&Map[radio->Nearby_Location(this)]);
