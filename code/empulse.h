@@ -45,6 +45,7 @@ class EMPulseClass : public AbstractClass
 
 	private:
 		void Create(TechnoClass * source);
+		void Stun(TechnoClass * techno, DynamicVectorClass<TechnoClass *> & doomed) const;
 		void Destroy(void);
 
 		/*

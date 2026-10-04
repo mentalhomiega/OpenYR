@@ -406,6 +406,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether the health bar is left undrawn (Phobos HealthBar.Hide).
 		bool IsHealthBarHidden;
 
+		// The multiplier on how long an EM pulse stuns this object (Ares EMP.Modifier).
+		double EMPModifier;
+
+		/*
+		 * The longest stun the object survives: above a positive value an EM pulse destroys it, above
+		 * the size of a negative value only while it is in the air, and 0 never (Ares EMP.Threshold,
+		 * where yes is 1 and inair is -1).
+		 */
+		int EMPThreshold;
+
 		void Load_Insignia_Shapes(void);
 
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.

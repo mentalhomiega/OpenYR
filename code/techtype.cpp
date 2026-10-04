@@ -203,6 +203,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
 	IsHealthBarHidden(false),
+	EMPModifier(1.0),
+	EMPThreshold(0),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -789,6 +791,18 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
 		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
+		EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
+		if (ini.Get_String(Name(), "EMP.Threshold", "", value, sizeof(value)) > 0) {
+			if (stricmp(value, "inair") == 0) {
+				EMPThreshold = -1;
+			} else if (stricmp(value, "yes") == 0 || stricmp(value, "true") == 0) {
+				EMPThreshold = 1;
+			} else if (stricmp(value, "no") == 0 || stricmp(value, "false") == 0) {
+				EMPThreshold = 0;
+			} else {
+				EMPThreshold = atoi(value);
+			}
+		}
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -1410,6 +1424,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
 	stream.Serialize(IsHealthBarHidden);
+	stream.Serialize(EMPModifier);
+	stream.Serialize(EMPThreshold);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

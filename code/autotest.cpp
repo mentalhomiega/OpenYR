@@ -120,6 +120,7 @@
 #include "rawfile.h"
 #include "armortypes.h"
 #include "cameopcx.h"
+#include "empulse.h"
 #include "surface.h"
 #include "weapon.h"
 #include "windowevent.hh"
@@ -960,6 +961,9 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			new AnimClass(type, Map[Cell(step.X, step.Y)].Center_Coord());
 		}
+	} else if (step.Command == "emp") {
+		// emp <duration> x y: an EM pulse of radius 2 and that duration on the cell, from no source.
+		new EMPulseClass(Cell(step.X, step.Y), 2, std::atoi(step.Argument.c_str()), NULL);
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
