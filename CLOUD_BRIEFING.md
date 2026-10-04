@@ -52,7 +52,14 @@ The owner's priority is a playable "modern" build for play-testers. That work is
 7. **Unit tests that need no game files.** Add tests for self-contained logic, for example weapon choice (`TechnoClass::What_Weapon_Should_I_Use` and `Naval_Weapon`), mission numbering (`code/mission.hh`, `code/_mission.cpp`) and rules defaults. Use the existing test setup; no test may load game data.
 8. **Mechanical cleanup.** Remove unused constants, stale comments and dead code. Keep each cleanup in its own commit, separate from behaviour changes.
 
-Research on Ares and Phobos is done by a separate research routine that follows `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone.
+### Answers from the owner
+
+The owner knows Yuri's Revenge well. These answers settle questions from earlier night logs:
+
+- **Mind-controlled units cannot enter transports or structures, except Bio Reactors.** So the `code/capture.cpp:341` finding is about the wrong path: check that the port refuses a mind-controlled unit's attempt to enter a transport, garrison, bunker or other structure (cursor, order and AI), and fix it where it does not. A controlled unit entering a Bio Reactor is used up, so releasing its control node there is correct.
+- **A `UnitReload=yes` pad both rearms and repairs docked aircraft**, as the code does now (`code/building.cpp`, the rearm loop sends `RADIO_RELOAD`, then `RADIO_REPAIR`). The manual pages were corrected on 2026-10-04; that finding is closed.
+
+Research on Ares and Phobos is done in separate sessions that follow `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone. `CLOUD_JOBS.md` holds the prompts the owner uses to start one-off sessions.
 
 ## Night log
 
