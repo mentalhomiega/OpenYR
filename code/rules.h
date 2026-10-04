@@ -198,6 +198,9 @@ class RulesClass
 		// Can the player set off an Ivan bomb early by clicking the object carrying it?
 		bool IsCanDetonateTimeBomb;
 
+		// Whether chronoshifted infantry destroys a vehicle it lands on; when not, the infantry dies (Ares ChronoInfantryCrush).
+		bool IsChronoInfantryCrush;
+
 		// The weapon an exploding object without a weapon of its own sets off as it dies.
 		WeaponTypeClass * DeathWeapon;
 		int IvanIconFlickerRate;

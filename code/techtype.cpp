@@ -189,6 +189,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MindClearedSound(VOC_NONE),
 	LeptonMindControlOffset(70),
 	IsTeleporter(false),
+	IsChronoshiftAllowed(true),
+	IsChronoshiftCrushable(true),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -728,6 +730,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
 		LeptonMindControlOffset = ini.Get_Int(Name(), "LeptonMindControlOffset", LeptonMindControlOffset);
 		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
+		IsChronoshiftAllowed = ini.Get_Bool(Name(), "Chronoshift.Allow", IsChronoshiftAllowed);
+		IsChronoshiftCrushable = ini.Get_Bool(Name(), "Chronoshift.Crushable", IsChronoshiftCrushable);
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -1314,6 +1318,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MindClearedSound);
 	stream.Serialize(LeptonMindControlOffset);
 	stream.Serialize(IsTeleporter);
+	stream.Serialize(IsChronoshiftAllowed);
+	stream.Serialize(IsChronoshiftCrushable);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

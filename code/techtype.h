@@ -362,6 +362,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsTeleporter;
 
+		// Whether the Chronosphere moves this object (Ares Chronoshift.Allow).
+		bool IsChronoshiftAllowed;
+
+		// Whether a unit the Chronosphere sets down on this object destroys it; when not, the arriving unit is destroyed (Ares Chronoshift.Crushable).
+		bool IsChronoshiftCrushable;
+
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.
 		VocType ChronoInSound;
 		VocType ChronoOutSound;

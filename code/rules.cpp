@@ -360,6 +360,7 @@ RulesClass::RulesClass(void) :
 	IvanDamage(0),
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
+	IsChronoInfantryCrush(true),
 	DeathWeapon(NULL),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
@@ -1414,6 +1415,7 @@ bool RulesClass::General(CCINIClass const & ini)
 	if (ini.Is_Present(GENERAL)) {
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
+		IsChronoInfantryCrush = ini.Get_Bool(GENERAL, "ChronoInfantryCrush", IsChronoInfantryCrush);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		V3Rocket.Read(ini, GENERAL, "V3Rocket");
 		SlaveMinerShortScan = ini.Get_Lepton(GENERAL, "SlaveMinerShortScan", SlaveMinerShortScan);
@@ -2615,6 +2617,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
 	stream.Serialize(IsCanDetonateTimeBomb);
+	stream.Serialize(IsChronoInfantryCrush);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);
