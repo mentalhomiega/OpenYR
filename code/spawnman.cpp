@@ -272,7 +272,9 @@ void SpawnManagerClass::AI(void)
 				Coord const home = Owner->Center_Coord();
 				Coord const here = unit->Get_Coord();
 				if (std::hypot(double(home.X - here.X), double(home.Y - here.Y)) < CELL_LEPTON * 3 / 2) {
+					// Limbo detaches the spawn from this manager as if it had died, so keep it.
 					unit->Limbo();
+					node.Unit = unit;
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
 				} else {
