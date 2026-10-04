@@ -14,6 +14,7 @@
 #include "always.h"
 
 #include "tactical.h"
+#include "flyingtext.h"
 
 #include "_alpha.h"
 #include "_convert.h"
@@ -1321,6 +1322,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
 		Draw_Super_Timers();
+		Draw_Flying_Texts();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];

@@ -426,6 +426,12 @@ class RulesClass
 		 */
 		TypeList<BuildingTypeClass const *> HSBuilding;
 
+		// A house earns bounty only while it owns one of these, or always when the list is empty (Ares BountyEnablers).
+		TypeList<BuildingTypeClass const *> BountyEnablers;
+
+		// Whether bounty earned is shown where the victim died, for types that do not say (Ares BountyDisplay).
+		bool IsBountyDisplay;
+
 		/// Unused
 		bool IsFreeMCV;
 

@@ -131,6 +131,7 @@
 #include "always.h"
 
 #include "techno.h"
+#include "flyingtext.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -6204,6 +6205,40 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
  *   07/08/1995 JLB : Created.                                                                 *
  *   08/23/1995 JLB : Building loss is only counted if it received damage.                     *
  *=============================================================================================*/
+/// <summary>
+/// Pays the destroyer's owner this object's bounty when the destroyer hunts bounty, this object
+/// belonged to an enemy of a country that gives bounty, and the owner has a building from
+/// BountyEnablers or the list is empty. A negative bounty is taken from the owner instead.
+/// </summary>
+void TechnoClass::Pay_Bounty(TechnoClass * source) const
+{
+	if (source == NULL || !source->TClass->IsBounty || source->House == NULL || House == NULL) {
+		return;
+	}
+	if (source->House == House || source->House->Is_Ally(House) || !House->Class->IsGivesBounty) {
+		return;
+	}
+	if (Rule->BountyEnablers.Count() > 0 && source->House->Count_Owned(source->House->BQuantity, Rule->BountyEnablers) == 0) {
+		return;
+	}
+
+	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const value = TClass->BountyValue[rank];
+	if (value > 0) {
+		source->House->Refund_Money(value);
+	} else if (value < 0) {
+		source->House->Spend_Money(-value);
+	}
+
+	bool const display = source->TClass->BountyDisplay < 0 ? Rule->IsBountyDisplay : source->TClass->BountyDisplay != 0;
+	if (display && value != 0) {
+		char text[32];
+		snprintf(text, sizeof(text), "%c$%d", value > 0 ? '+' : '-', value > 0 ? value : -value);
+		Add_Flying_Text(text, Center_Coord(), source->House->Scheme);
+	}
+}
+
+
 void TechnoClass::Record_The_Kill(TechnoClass * source)
 {
 	int total_recorded = 0;
@@ -6232,6 +6267,8 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		}
 
 		House->WhoLastHurtMe = source->Owner();
+
+		Pay_Bounty(source);
 
 		/*
 		**	Add up the score for killing this unit

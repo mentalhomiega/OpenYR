@@ -191,6 +191,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTeleporter(false),
 	IsChronoshiftAllowed(true),
 	IsChronoshiftCrushable(true),
+	IsBounty(false),
+	BountyDisplay(-1),
+	BountyValue{0, 0, 0},
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -732,6 +735,18 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
 		IsChronoshiftAllowed = ini.Get_Bool(Name(), "Chronoshift.Allow", IsChronoshiftAllowed);
 		IsChronoshiftCrushable = ini.Get_Bool(Name(), "Chronoshift.Crushable", IsChronoshiftCrushable);
+		IsBounty = ini.Get_Bool(Name(), "Bounty", IsBounty);
+		if (ini.Is_Present(Name(), "Bounty.Display")) {
+			BountyDisplay = ini.Get_Bool(Name(), "Bounty.Display", false) ? 1 : 0;
+		}
+		// Bounty.Value sets every rank's value, and a rank's own key then overrides it.
+		if (ini.Is_Present(Name(), "Bounty.Value")) {
+			int const value = ini.Get_Int(Name(), "Bounty.Value", 0);
+			BountyValue[0] = BountyValue[1] = BountyValue[2] = value;
+		}
+		BountyValue[0] = ini.Get_Int(Name(), "Bounty.RookieValue", BountyValue[0]);
+		BountyValue[1] = ini.Get_Int(Name(), "Bounty.VeteranValue", BountyValue[1]);
+		BountyValue[2] = ini.Get_Int(Name(), "Bounty.EliteValue", BountyValue[2]);
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -1327,6 +1342,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTeleporter);
 	stream.Serialize(IsChronoshiftAllowed);
 	stream.Serialize(IsChronoshiftCrushable);
+	stream.Serialize(IsBounty);
+	stream.Serialize(BountyDisplay);
+	stream.Serialize(BountyValue);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

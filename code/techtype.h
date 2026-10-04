@@ -370,6 +370,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether a unit the Chronosphere sets down on this object destroys it; when not, the arriving unit is destroyed (Ares Chronoshift.Crushable).
 		bool IsChronoshiftCrushable;
 
+		// Whether destroying an enemy pays this object's owner the victim's bounty (Ares Bounty).
+		bool IsBounty;
+
+		// Whether the bounty this object earns is shown where its victim died: 1, 0, or -1 to follow BountyDisplay (Ares Bounty.Display).
+		signed char BountyDisplay;
+
+		// The credits paid for destroying this object as a rookie, veteran and elite (Ares Bounty.Value and its rank variants).
+		int BountyValue[3];
+
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.
 		VocType ChronoInSound;
 		VocType ChronoOutSound;
