@@ -194,6 +194,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsBounty(false),
 	BountyDisplay(-1),
 	BountyValue{0, 0, 0},
+	InsigniaShapes{NULL, NULL, NULL},
+	InsigniaFrame{-1, -1, -1},
+	InsigniaShowEnemy(-1),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -747,6 +750,32 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		BountyValue[0] = ini.Get_Int(Name(), "Bounty.RookieValue", BountyValue[0]);
 		BountyValue[1] = ini.Get_Int(Name(), "Bounty.VeteranValue", BountyValue[1]);
 		BountyValue[2] = ini.Get_Int(Name(), "Bounty.EliteValue", BountyValue[2]);
+
+		// The shorthand keys set every rank, and a rank's own key then overrides it.
+		static char const * const RANKS[3] = {"Rookie", "Veteran", "Elite"};
+		char key[48];
+		char value[64];
+		if (ini.Get_String(Name(), "Insignia", "", value, sizeof(value)) > 0) {
+			InsigniaFile[0] = InsigniaFile[1] = InsigniaFile[2] = value;
+		}
+		if (ini.Is_Present(Name(), "InsigniaFrame")) {
+			InsigniaFrame[0] = InsigniaFrame[1] = InsigniaFrame[2] = ini.Get_Int(Name(), "InsigniaFrame", -1);
+		}
+		if (ini.Get_String(Name(), "InsigniaFrames", "", value, sizeof(value)) > 0) {
+			sscanf(value, "%d,%d,%d", &InsigniaFrame[0], &InsigniaFrame[1], &InsigniaFrame[2]);
+		}
+		for (int rank = 0; rank < 3; rank++) {
+			snprintf(key, sizeof(key), "Insignia.%s", RANKS[rank]);
+			if (ini.Get_String(Name(), key, "", value, sizeof(value)) > 0) {
+				InsigniaFile[rank] = value;
+			}
+			snprintf(key, sizeof(key), "InsigniaFrame.%s", RANKS[rank]);
+			InsigniaFrame[rank] = ini.Get_Int(Name(), key, InsigniaFrame[rank]);
+		}
+		if (ini.Is_Present(Name(), "Insignia.ShowEnemy")) {
+			InsigniaShowEnemy = ini.Get_Bool(Name(), "Insignia.ShowEnemy", true) ? 1 : 0;
+		}
+		Load_Insignia_Shapes();
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -1244,6 +1273,20 @@ void TechnoTypeClass::Post_Load(void)
 
 		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
 		CameoPCX = buffer;
+
+		Load_Insignia_Shapes();
+}
+
+
+void TechnoTypeClass::Load_Insignia_Shapes(void)
+{
+	for (int rank = 0; rank < 3; rank++) {
+		InsigniaShapes[rank] = NULL;
+		if (!InsigniaFile[rank].empty()) {
+			std::string const filename = InsigniaFile[rank] + ".SHP";
+			InsigniaShapes[rank] = (ShapeSet const *)MFCD::Retrieve(filename.c_str());
+		}
+	}
 }
 
 
@@ -1345,6 +1388,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBounty);
 	stream.Serialize(BountyDisplay);
 	stream.Serialize(BountyValue);
+	stream.Serialize(InsigniaFile);
+	stream.Serialize(InsigniaFrame);
+	stream.Serialize(InsigniaShowEnemy);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

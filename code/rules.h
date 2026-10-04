@@ -432,6 +432,9 @@ class RulesClass
 		// Whether bounty earned is shown where the victim died, for types that do not say (Ares BountyDisplay).
 		bool IsBountyDisplay;
 
+		// Whether players see the rank insignia of objects not allied with them, for types that do not say (Ares EnemyInsignia).
+		bool IsEnemyInsignia;
+
 		/// Unused
 		bool IsFreeMCV;
 

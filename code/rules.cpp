@@ -362,6 +362,7 @@ RulesClass::RulesClass(void) :
 	IsCanDetonateTimeBomb(false),
 	IsChronoInfantryCrush(true),
 	IsBountyDisplay(false),
+	IsEnemyInsignia(true),
 	DeathWeapon(NULL),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
@@ -1419,6 +1420,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
 		IsChronoInfantryCrush = ini.Get_Bool(GENERAL, "ChronoInfantryCrush", IsChronoInfantryCrush);
 		BountyEnablers = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "BountyEnablers", BountyEnablers);
+		IsEnemyInsignia = ini.Get_Bool(GENERAL, "EnemyInsignia", IsEnemyInsignia);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		V3Rocket.Read(ini, GENERAL, "V3Rocket");
 		SlaveMinerShortScan = ini.Get_Lepton(GENERAL, "SlaveMinerShortScan", SlaveMinerShortScan);
@@ -2739,6 +2741,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HSBuilding);
 	stream.Serialize(BountyEnablers);
 	stream.Serialize(IsBountyDisplay);
+	stream.Serialize(IsEnemyInsignia);
 	stream.Serialize(IsFreeMCV);
 	stream.Serialize(IsBerzerkAllowed);
 	stream.Serialize(PoseDir);

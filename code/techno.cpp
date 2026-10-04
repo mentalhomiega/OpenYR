@@ -8789,15 +8789,33 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 {
 	ShapeSet const * pips1 = (ShapeSet const *)Class_Of()->PipShapes;
 
-	PipEnum veterancy_shape = PIP_NONE;
+	// Players not allied with the owner see the insignia only when the type or EnemyInsignia allows it; observers see every one.
+	bool const showenemy = TClass->InsigniaShowEnemy < 0 ? Rule->IsEnemyInsignia : TClass->InsigniaShowEnemy != 0;
+	if (!showenemy && PlayerPtr != NULL && !PlayerPtr->IsObserver && !House->Is_Ally(PlayerPtr)) {
+		return;
+	}
+
+	int veterancy_shape = PIP_NONE;
+	int rank = 0;
 	if (Veterancy.Is_Veteran()) {
 		veterancy_shape = PIP_VETERAN;
+		rank = 1;
 	}
 	if (Veterancy.Is_Elite()) {
 		veterancy_shape = PIP_ELITE;
+		rank = 2;
 	}
 	if (Veterancy.Is_Dumbass()) {
 		veterancy_shape = PIP_DUMBASS;
+		rank = -1;
+	}
+	if (rank >= 0) {
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
+		}
+		if (TClass->InsigniaShapes[rank] != NULL) {
+			pips1 = TClass->InsigniaShapes[rank];
+		}
 	}
 	if (veterancy_shape != PIP_NONE) {
 		Point2D drawpoint = center + Point2D(5, 2);

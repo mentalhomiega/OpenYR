@@ -15,6 +15,8 @@
 
 #include <string>
 
+class ShapeSet;
+
 #include "_weapon.h"
 #include "classids.h"
 #include "objtype.h"
@@ -378,6 +380,17 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// The credits paid for destroying this object as a rookie, veteran and elite (Ares Bounty.Value and its rank variants).
 		int BountyValue[3];
+
+		// The rank insignia per rank (rookie, veteran, elite): the shape file without extension, empty for
+		// the stock pips, its loaded shapes, and the frame, -1 for the stock frame (Ares and Phobos Insignia keys).
+		std::string InsigniaFile[3];
+		ShapeSet const * InsigniaShapes[3];
+		int InsigniaFrame[3];
+
+		// Whether players not allied with the owner see the insignia: 1, 0, or -1 to follow EnemyInsignia (Insignia.ShowEnemy).
+		signed char InsigniaShowEnemy;
+
+		void Load_Insignia_Shapes(void);
 
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.
 		VocType ChronoInSound;
