@@ -119,7 +119,7 @@ await expectRoute('radio contact protocol', `${base}/internals/radio/`);
 await expectRoute('Locomotion and piggybacking', `${base}/internals/locomotion/`);
 await expectRoute('MISSION_HUNT', `${base}/reference/enums/mission/`);
 await expectRoute('RTTI_VEINHOLEMONSTER', `${base}/reference/enums/rtti-type/`);
-await expectRoute('developer builds', `${base}/using/project-status/`);
+await expectRoute('nightly developer builds', `${base}/using/project-status/`);
 await expectRoute('Toggle follow state', `${base}/commands/follow/`);
 await expectRoute('Command-line help', `${base}/using/command-line/help/`);
 await expectRoute('CRC-indexed archive members', `${base}/formats/mix/`);
