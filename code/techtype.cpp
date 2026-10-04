@@ -197,6 +197,12 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	InsigniaShapes{NULL, NULL, NULL},
 	InsigniaFrame{-1, -1, -1},
 	InsigniaShowEnemy(-1),
+	IsVehicleThiefAllowed(true),
+	BuildTimeMultipleFactory(-1.0),
+	IsCrashable(true),
+	PromoteVeteranSound(VOC_NONE),
+	PromoteEliteSound(VOC_NONE),
+	IsHealthBarHidden(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -776,6 +782,13 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			InsigniaShowEnemy = ini.Get_Bool(Name(), "Insignia.ShowEnemy", true) ? 1 : 0;
 		}
 		Load_Insignia_Shapes();
+
+		IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
+		BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
+		IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
+		PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
+		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -1391,6 +1404,12 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InsigniaFile);
 	stream.Serialize(InsigniaFrame);
 	stream.Serialize(InsigniaShowEnemy);
+	stream.Serialize(IsVehicleThiefAllowed);
+	stream.Serialize(BuildTimeMultipleFactory);
+	stream.Serialize(IsCrashable);
+	stream.Serialize(PromoteVeteranSound);
+	stream.Serialize(PromoteEliteSound);
+	stream.Serialize(IsHealthBarHidden);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

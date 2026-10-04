@@ -390,6 +390,22 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether players not allied with the owner see the insignia: 1, 0, or -1 to follow EnemyInsignia (Insignia.ShowEnemy).
 		signed char InsigniaShowEnemy;
 
+		// Whether a vehicle thief may take this vehicle (Ares VehicleThief.Allowed).
+		bool IsVehicleThiefAllowed;
+
+		// The build time factor per extra factory, or below 0 for [General] MultipleFactory (Ares BuildTime.MultipleFactory).
+		double BuildTimeMultipleFactory;
+
+		// Whether a destroyed aircraft falls and crashes; when not, it is destroyed where it flies (Ares Crashable).
+		bool IsCrashable;
+
+		// The sounds played on promotion to veteran and elite, or VOC_NONE for the [AudioVisual] ones (Ares Promote.*Sound).
+		VocType PromoteVeteranSound;
+		VocType PromoteEliteSound;
+
+		// Whether the health bar is left undrawn (Phobos HealthBar.Hide).
+		bool IsHealthBarHidden;
+
 		void Load_Insignia_Shapes(void);
 
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.

@@ -1802,7 +1802,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				return(MOVE_NO);
 			}
 
-			if (Class->IsVehicleThief && obj->Considered_Vehicle() && NavCom == obj && !obj->TClass->IsTrain) {
+			if (Class->IsVehicleThief && obj->Considered_Vehicle() && NavCom == obj && !obj->TClass->IsTrain && obj->TClass->IsVehicleThiefAllowed) {
 				return(MOVE_OK);
 			}
 
@@ -2863,7 +2863,7 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	}
 
 	if (Class->IsVehicleThief) {
-		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && Distance(NavCom) < 15 * CELL_LEPTON) {
+		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && ((TechnoClass *)NavCom)->TClass->IsVehicleThiefAllowed && Distance(NavCom) < 15 * CELL_LEPTON) {
 			return(NavCom);
 		}
 	}
@@ -3019,7 +3019,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	**	See if it's a thief attacking an enemy vehicle, let him CAPTURE it.
 	*/
 	if (House->Is_Player_Control() && Class->IsVehicleThief && object->RTTI != RTTI_BUILDING && object->Considered_Vehicle()) {
-		if (object->TClass->IsTrain) {
+		if (object->TClass->IsTrain || !object->TClass->IsVehicleThiefAllowed) {
 			return(ACTION_SELECT);
 		}
 		if (((UnitClass *)object)->House != House) {

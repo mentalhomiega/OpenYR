@@ -974,9 +974,10 @@ int TechnoClass::Time_To_Build(void) const
 	if (Rule->MultipleFactoryCap > 0) {
 		extra = std::min(extra, Rule->MultipleFactoryCap - 1);
 	}
-	if (Rule->MultipleFactory > 0) {
+	double const multiple = TClass->BuildTimeMultipleFactory >= 0 ? TClass->BuildTimeMultipleFactory : Rule->MultipleFactory;
+	if (multiple > 0) {
 		for (; extra > 0; extra--) {
-			val *= Rule->MultipleFactory;
+			val *= multiple;
 		}
 	}
 	if (RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsWall) {
@@ -1443,7 +1444,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 				Draw_Double_Selection_Bracket(center + Coord(x, -y, 0), center + Coord(x, -y, dim.Z), color);
 			}
 
-			if (Strength > 0 && (House->Is_Ally(PlayerPtr) || Rule->IsHealthBar)) {
+			if (Strength > 0 && (House->Is_Ally(PlayerPtr) || Rule->IsHealthBar) && !TClass->IsHealthBarHidden) {
 				Draw_Health_Bar_Old(point, cliprect);
 			}
 
@@ -1459,7 +1460,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			}
 		}
 
-		Draw_Health_Bar(point, cliprect);
+		if (!TClass->IsHealthBarHidden) {
+			Draw_Health_Bar(point, cliprect);
+		}
 		if (pips_shown) {
 			Draw_Pips(Pip_Origin(point), point, cliprect);
 		}
@@ -1469,7 +1472,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		bool hovered = Map.HoverObject == this && Class_Of()->IsSelectable && !IsALoaner;
 
 		if (hovered && Is_Decoration_Visible()) {
-			Draw_Health_Bar(point, cliprect);
+			if (!TClass->IsHealthBarHidden) {
+				Draw_Health_Bar(point, cliprect);
+			}
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
 			}
@@ -3412,7 +3417,8 @@ void TechnoClass::AI(void)
 	if (rank != CurrentRank) {
 		if (CurrentRank != -1 && rank > 0) {
 			if (House->Is_Player_Control()) {
-				Sound_Effect(rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound, PositionCoord);
+				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
+				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
 				Speak_Eva("EVA_UnitPromoted");
 			}
 			if (rank == 2) {
