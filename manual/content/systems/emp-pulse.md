@@ -105,7 +105,7 @@ The pulse catches an aircraft when **all of**:
 
 The distance also counts the aircraft's height above the map's lowest ground level. Each terrain height level adds about four tenths of a cell, so over raised terrain the reach shrinks. On high ground a small pulse can miss an aircraft in its own cell.
 
-A caught aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its trigger. If it is off the ground, it crashes unless its type is immune. Its strength drops to zero, the firer is credited with the kill, and its passengers die. An aircraft taking off or landing is caught this way.
+A caught aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its trigger. If it is off the ground, it crashes unless its type is immune. A type with [`Crashable=no`](/keys/crashable/) that is not immune is destroyed instead, on the ground or off it. Its strength drops to zero, the firer is credited with the kill, and its passengers die. An aircraft taking off or landing is caught this way.
 
 An aircraft standing on the ground does not crash. The cell sweep below then treats it like a vehicle, so it springs Paralyzed a second time and, unless immune, is stunned. The sweep skips it if it stands in a structure's cell.
 

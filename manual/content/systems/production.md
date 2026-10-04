@@ -217,7 +217,7 @@ The 1-to-255 range on the step sets the shortest build at 54 frames (3.6 seconds
 
 ### More than one factory
 
-Extra factories of a category can shorten its build times, depending on [`MultipleFactory`](/keys/multiplefactory/). The house counts its structures whose `Factory=` names the product's category, including ones switched off or still in buildup. The build time is multiplied by `MultipleFactory` once for each factory past the first and truncated after each multiplication. [`MultipleFactoryCap`](/keys/multiplefactorycap/) limits how many factories count; at `0` every factory counts.
+Extra factories of a category can shorten its build times, depending on [`MultipleFactory`](/keys/multiplefactory/). The house counts its structures whose `Factory=` names the product's category, including ones switched off or still in buildup. The build time is multiplied by `MultipleFactory` once for each factory past the first, or by the product type's [`BuildTime.MultipleFactory`](/keys/buildtime.multiplefactory/) when it sets one and truncated after each multiplication. [`MultipleFactoryCap`](/keys/multiplefactorycap/) limits how many factories count; at `0` every factory counts.
 
 | Factories | Multiplier at `MultipleFactory=0.8` | With `MultipleFactoryCap=3` as well |
 | ---: | --- | --- |

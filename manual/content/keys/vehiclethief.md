@@ -1,7 +1,7 @@
 ---
 key: VehicleThief
 summary: Lets a soldier be ordered onto another house's vehicle and walk into its cell to take it.
-see_also: ["system:capture"]
+see_also: [VehicleThief.Allowed, "system:capture"]
 when_omitted:
   kind: value
   value: "no"
@@ -14,6 +14,7 @@ For a player-controlled soldier, the enter cursor appears over any vehicle that 
 - any vehicle, when the soldier's weapon heals;
 - a structure, including a deployed vehicle;
 - a type with [`NonVehicle=yes`](/keys/nonvehicle/);
+- a type with [`VehicleThief.Allowed=no`](/keys/vehiclethief.allowed/), which gets the select cursor;
 - an [`IsTrain=yes`](/keys/istrain/) type, which gets the select cursor;
 - while the [`HarvesterImmune`](/keys/harvesterimmune/) truce is on, a type listed in [`HarvesterUnit`](/keys/harvesterunit/), which gets the select cursor.
 

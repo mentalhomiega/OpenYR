@@ -5155,6 +5155,23 @@ BuildTime:
       source: code/rules.cpp
       guard: null
     level: DifficultyClass
+BuildTime.MultipleFactory:
+  key: BuildTime.MultipleFactory
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BuildTimeMultipleFactory
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 BuildWeapons:
   key: BuildWeapons
   scopes:
@@ -7641,6 +7658,23 @@ CowTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Crashable:
+  key: Crashable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCrashable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CrashingSound:
   key: CrashingSound
   scopes:
@@ -8474,6 +8508,23 @@ CursorScale:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+CustomPalette:
+  key: CustomPalette
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AnimTypeClass
+      member: palette
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 CustomRotor:
   key: CustomRotor
   scopes:
@@ -12200,6 +12251,24 @@ EnemyHouseThreatBonus:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EnemyInsignia:
+  key: EnemyInsignia
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsEnemyInsignia
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Engineer:
   key: Engineer
   scopes:
@@ -14913,6 +14982,23 @@ HealCrateSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+HealthBar.Hide:
+  key: HealthBar.Hide
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsHealthBarHidden
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Height:
   key: Height
   scopes:
@@ -16791,6 +16877,74 @@ InitiateTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Insignia:
+  key: Insignia
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Insignia.ShowEnemy:
+  key: Insignia.ShowEnemy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: InsigniaShowEnemy
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+InsigniaFrame:
+  key: InsigniaFrame
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: InsigniaFrame
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+InsigniaFrames:
+  key: InsigniaFrames
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Insignificant:
   key: Insignificant
   scopes:
@@ -25505,6 +25659,40 @@ ProjectileRange:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Promote.EliteSound:
+  key: Promote.EliteSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteEliteSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Promote.VeteranSound:
+  key: Promote.VeteranSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteVeteranSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ProneDamage:
   key: ProneDamage
   scopes:
@@ -36696,6 +36884,23 @@ VehicleThief:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+VehicleThief.Allowed:
+  key: VehicleThief.Allowed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsVehicleThiefAllowed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VeinAttack:
   key: VeinAttack
   scopes:
@@ -39644,6 +39849,23 @@ YuriPrimeTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+ZAdjust:
+  key: ZAdjust
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: AnimTypeClass
+      member: ZAdjust
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 ZFudgeBridge:
   key: ZFudgeBridge
   scopes:
