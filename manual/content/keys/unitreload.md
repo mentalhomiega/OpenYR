@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-`UnitReload=yes` makes a building rearm the objects docked with it, every docked object in turn on a building with several [docks](/keys/numberofdocks--buildingtype/). Each gains one point of [`Ammo`](/keys/ammo/) every [`ReloadRate`](/keys/reloadrate/) interval until its ammunition is full. Rearming is free. An object with full ammunition that is damaged is then repaired a step at a time, at the same cost per step as at a repair depot; once it is full and undamaged, the building releases it.
+`UnitReload=yes` makes a building rearm the objects docked with it, every docked object in turn on a building with several [docks](/keys/numberofdocks/). Each gains one point of [`Ammo`](/keys/ammo/) every [`ReloadRate`](/keys/reloadrate/) interval until its ammunition is full. Rearming is free. An object with full ammunition that is damaged is then repaired a step at a time, at the same cost per step as at a repair depot; once it is full and undamaged, the building releases it.
 
 A helipad rearms the aircraft that land on it only if it also sets this flag.
 

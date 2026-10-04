@@ -38,7 +38,7 @@ Yuri=cyur048
 Priority=LOW
 ```
 
-A line's position in `[DialogList]`, counting the first as 0, is the number that [Play speech...](/mapping/actions/taction-play-speech/) and the [Play speech...](/scripting/missions/24/) team mission name. The order of the entries decides the positions; the numbers before the `=` do not. The game also asks for lines by name, so renaming a line it uses silences that announcement.
+A line's position in `[DialogList]`, counting the first as 0, is the number that [Play speech...](/mapping/actions/taction-play-speech/) and the [Play speech...](/mapping/missions/24/) team mission name. The order of the entries decides the positions; the numbers before the `=` do not. The game also asks for lines by name, so renaming a line it uses silences that announcement.
 
 Each line's section takes these keys:
 

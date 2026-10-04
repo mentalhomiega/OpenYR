@@ -221,7 +221,7 @@ The two buttons above the tabs toggle the same modes as [Repair Mode](/commands/
 
 The command bar fills the bottom 32 rows of the screen to the left of the panel. It holds a row of command buttons, and the round cap at its left end closes it into a plain strip or opens it again. The bar starts open in every game.
 
-UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist--ui-controls/): the `[AdvancedCommandBar]` list in a campaign or skirmish, and the `[MultiplayerAdvancedCommandBar]` list in any other game. The buttons sit left to right in list order, one per button slot. Each name takes up a slot even when the engine does not know it, so an unknown name leaves a gap. A button whose slot falls past the right end of the bar is not shown, so a narrow screen shows fewer buttons.
+UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist/): the `[AdvancedCommandBar]` list in a campaign or skirmish, and the `[MultiplayerAdvancedCommandBar]` list in any other game. The buttons sit left to right in list order, one per button slot. Each name takes up a slot even when the engine does not know it, so an unknown name leaves a gap. A button whose slot falls past the right end of the bar is not shown, so a narrow screen shows fewer buttons.
 
 | Name | What a click does |
 | --- | --- |

@@ -20,7 +20,7 @@ source_files:
 
 ## Contact state
 
-Each radio holds a list of contact slots, non-owning `RadioClass*` pointers named `Links`. There is one slot unless `Set_Link_Count` adds more; a structure has one slot per [`NumberOfDocks=`](/keys/numberofdocks--buildingtype/), and at least one. An empty slot is null. "The contact" below means the object in the first slot. `Transmit_Message` sends to it when the caller names no destination. Sending to an explicit destination does not put that object in a slot, unless the message is a `RADIO_HELLO` the receiver accepts.
+Each radio holds a list of contact slots, non-owning `RadioClass*` pointers named `Links`. There is one slot unless `Set_Link_Count` adds more; a structure has one slot per [`NumberOfDocks=`](/keys/numberofdocks/), and at least one. An empty slot is null. "The contact" below means the object in the first slot. `Transmit_Message` sends to it when the caller names no destination. Sending to an explicit destination does not put that object in a slot, unless the message is a `RADIO_HELLO` the receiver accepts.
 
 | Member or interface | Contract |
 | --- | --- |

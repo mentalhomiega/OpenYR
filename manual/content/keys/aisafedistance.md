@@ -7,7 +7,7 @@ when_omitted:
   value: "8"
 ---
 
-The [Gather at enemy base](/scripting/missions/53/) and [Regroup at friendly base](/scripting/missions/54/) script lines send a team to a spot this many cells from a base center, along the line toward the other base. The spot then moves to the nearest clear area the team's leader can stand in.
+The [Gather at enemy base](/mapping/missions/53/) and [Regroup at friendly base](/mapping/missions/54/) script lines send a team to a spot this many cells from a base center, along the line toward the other base. The spot then moves to the nearest clear area the team's leader can stand in.
 
 ```ini title="rulesmd.ini"
 [General]

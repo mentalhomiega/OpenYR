@@ -7,7 +7,7 @@ when_omitted:
   value: "0.8"
 ---
 
-A computer team on the [Iron Curtain me](/scripting/missions/55/) script line waits for its house's Iron Curtain only while the weapon has charged at least this share of its [`RechargeTime`](/keys/rechargetime/). A weapon charged less than that is passed over, and the team takes its next line.
+A computer team on the [Iron Curtain me](/mapping/missions/55/) script line waits for its house's Iron Curtain only while the weapon has charged at least this share of its [`RechargeTime`](/keys/rechargetime/). A weapon charged less than that is passed over, and the team takes its next line.
 
 ```ini title="rulesmd.ini"
 [General]

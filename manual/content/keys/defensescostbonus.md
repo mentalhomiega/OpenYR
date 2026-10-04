@@ -7,7 +7,7 @@ when_omitted:
   value: "1.0"
 ---
 
-While a [`FactoryPlant=yes`](/keys/factoryplant/) structure stands, its owner pays the price of a defense, a structure whose [`BuildCat`](/keys/buildcat--buildingtype/) is `Combat`, times this value. Each such structure applies its own factor, so two plants with `0.75` make the price `0.5625` of what it was.
+While a [`FactoryPlant=yes`](/keys/factoryplant/) structure stands, its owner pays the price of a defense, a structure whose [`BuildCat`](/keys/buildcat/) is `Combat`, times this value. Each such structure applies its own factor, so two plants with `0.75` make the price `0.5625` of what it was.
 
 ```ini title="rulesmd.ini"
 [MYPLANT] ; example BuildingType
