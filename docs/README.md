@@ -11,6 +11,8 @@ The developer guides are split by subject:
 - [Project direction](DIRECTION.md) — long-term architecture.
 - [The saved game format](SAVE-FORMAT.md) — the layout of a `.SAV` file: its
   header, listing fields, compressed content, and object records.
+- [INI checker](INICHECK.md) — reports rules keys the engine does not read
+  and values it cannot read.
 - [ts-patches in OpenTS](TS-PATCHES.md) — each CnCNet ts-patches patch and
   what OpenTS does in its place.
 

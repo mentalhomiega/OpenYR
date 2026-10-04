@@ -14,7 +14,7 @@ on:
       - "CMakeLists.txt"
       - ".github/workflows/manual-pages.yml"
   push:
-    branches: [main]
+    branches: [main, yr, "cloud/**"]
     paths:
       - "manual/**"
       - "README.md"
