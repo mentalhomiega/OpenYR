@@ -27,4 +27,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-An infantryman or vehicle under mind control could board a transport, garrison a structure, enter a tank bunker, hospital or armory, and enter a structure to repair, capture or infiltrate it. It is now refused, as in Yuri's Revenge. Grinders and structures such as the Bio Reactor still take it in.
+An infantryman or vehicle under mind control could board a transport, garrison a structure, enter a tank bunker, hospital or armory, and enter a structure to repair or infiltrate it. It is now refused, as in Yuri's Revenge. Grinders, structures such as the Bio Reactor, and an engineer capturing a `Capturable=yes` structure are still allowed.
