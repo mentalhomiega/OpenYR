@@ -119,6 +119,8 @@
 #include "warhead.h"
 #include "rawfile.h"
 #include "armortypes.h"
+#include "cameopcx.h"
+#include "surface.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -676,6 +678,25 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   rules %s: not found\n", step.Argument.c_str());
 		}
+	} else if (step.Command == "art") {
+		// art <path>: reads that INI file over the art, then has the types it names read themselves again.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		RawFileClass artfile(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false) && ArtINI.Load(artfile, false)) {
+			Rule->Addition(ini);
+		} else {
+			DebugString("AUTOTEST   art %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "pcxcameo") {
+		// pcxcameo <path>: the size of that PCX cameo and two of its pixels, as the sidebar gets them.
+		Surface const * picture = PCX_Cameo(step.Argument);
+		if (picture != NULL) {
+			unsigned short const * pixels = (unsigned short const *)picture->Lock();
+			DebugString("AUTOTEST   pcxcameo %dx%d bpp %d corner %04X far %04X\n", picture->Get_Width(), picture->Get_Height(), picture->Bytes_Per_Pixel(),
+				pixels != NULL ? pixels[0] : 0, pixels != NULL ? pixels[picture->Get_Width() * picture->Get_Height() - 1] : 0);
+			picture->Unlock();
+		}
 	} else if (step.Command == "versus") {
 		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
 		std::string const & argument = step.Argument;
@@ -1008,8 +1029,8 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string text = argument;
 		// A rules step's path is the rest of the line, so it may hold spaces.
-		if (std::strcmp(command, "rules") == 0) {
-			char const * rest = std::strstr(line, "rules") + 5;
+		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0) {
+			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
 		}

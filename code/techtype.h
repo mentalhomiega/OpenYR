@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "_weapon.h"
 #include "classids.h"
 #include "objtype.h"
@@ -627,6 +629,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	the sidebar for construction selection purposes.
 		*/
 		TStringID<24> CameoFilename;
+
+		// A PCX picture drawn as the sidebar cameo instead of the cameo shape (Ares CameoPCX in the art).
+		std::string CameoPCX;
 		const void * CameoData;
 
 		/*

@@ -961,6 +961,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsVisibleLoad = ArtINI.Get_Bool(Graphic_Name(), "VisibleLoad", IsVisibleLoad);
 		ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
 
+		char pcx[64];
+		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
+		CameoPCX = pcx;
+
 		TStringID<24> cameo;
 		if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
 			CameoFilename = cameo;
@@ -1222,6 +1226,9 @@ void TechnoTypeClass::Post_Load(void)
 		}
 		_makepath(fname, NULL, NULL, buffer, ".SHP");
 		CameoData = (const ShapeSet *)MFCD::Retrieve(fname);
+
+		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
+		CameoPCX = buffer;
 }
 
 
