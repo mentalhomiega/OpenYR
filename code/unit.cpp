@@ -1092,7 +1092,7 @@ void UnitClass::Jellyfish_AI(void)
 									}
 
 									if (!visceroid && !invisible && !House->Is_Ally(techno)) {
-										int damage = weapon->Attack * warhead->Modifier[techno->TClass->Armor];
+										int damage = weapon->Attack * warhead->Versus(techno->TClass->Armor);
 										techno->Take_Damage(damage, 0, warhead, this);
 										attacked = true;
 									}
