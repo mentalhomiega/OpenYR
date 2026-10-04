@@ -9,6 +9,7 @@
 
 #include "always.h"
 
+#include "armortypes.h"
 #include "dropship.h"
 
 #include "_alpha.h"
@@ -1144,7 +1145,7 @@ void Draw_Unit_Info(Surface *surface, ConvertClass *drawer, TechnoTypeClass *tec
 			sprintf(armament, "Armament: NONE");
 		}
 
-		sprintf(armor, "Armor: %s", ArmorName[techtype->Armor]);
+		sprintf(armor, "Armor: %s", Armor_Type_Name(techtype->Armor));
 
 		ColorScheme *scheme;
 		if (allowed) {

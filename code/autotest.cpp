@@ -121,6 +121,8 @@
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
+#include "rawfile.h"
+#include "armortypes.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -680,6 +682,25 @@ void Run(StepType const & step)
 		if (id != SUPER_NONE) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, id, Cell(step.X, step.Y)));
 		}
+	} else if (step.Command == "rules") {
+		// rules <path>: reads that INI file over the rules, as a map's rule overrides are read.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false)) {
+			Rule->Addition(ini);
+		} else {
+			DebugString("AUTOTEST   rules %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "versus") {
+		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
+		std::string const & argument = step.Argument;
+		size_t const colon = argument.find(':');
+		WarheadTypeClass const * warhead = colon != std::string::npos ? WarheadTypeClass::Find_Or_Make(argument.substr(0, colon).c_str()) : NULL;
+		TechnoTypeClass const * type = colon != std::string::npos ? Find_Type(argument.substr(colon + 1)) : NULL;
+		if (warhead != NULL && type != NULL) {
+			DebugString("AUTOTEST   versus %s armor %s %.4f forcefire %d retaliate %d passive %d\n", argument.c_str(), Armor_Type_Name(type->Armor),
+				warhead->Versus(type->Armor), (int)warhead->Can_Force_Fire(type->Armor), (int)warhead->Can_Retaliate(type->Armor), (int)warhead->Can_Passive_Acquire(type->Armor));
+		}
 	} else if (step.Command == "damage") {
 		// damage <TypeID> <amount>: hits every player object of the type for that much unforced damage.
 		for (int index = 0; index < Technos.Count(); index++) {
@@ -1020,7 +1041,14 @@ bool AutoTest_Load(char const * filename)
 		if (line[0] == ';' || std::sscanf(line, "%d %63s %255s %d %d", &frame, command, argument, &x, &y) < 2) {
 			continue;
 		}
-		Steps.push_back(StepType{frame, command, argument, x, y});
+		std::string text = argument;
+		// A rules step's path is the rest of the line, so it may hold spaces.
+		if (std::strcmp(command, "rules") == 0) {
+			char const * rest = std::strstr(line, "rules") + 5;
+			text = rest + std::strspn(rest, " \t");
+			text.erase(text.find_last_not_of(" \t\r\n") + 1);
+		}
+		Steps.push_back(StepType{frame, command, text, x, y});
 	}
 	std::fclose(file);
 

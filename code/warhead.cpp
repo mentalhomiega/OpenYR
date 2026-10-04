@@ -37,6 +37,8 @@
 
 #include "always.h"
 
+#include "armortypes.h"
+#include <cstdio>
 #include "warhead.h"
 
 #include "_warhead.h"
@@ -146,9 +148,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	Warheads.Add(this);
 	AbstractTypePtrTracker.Add(this);
 
-	for (int armor = ARMOR_FIRST; armor < ARMOR_COUNT; armor++) {
-		Modifier[armor] = 1;
-	}
+	Size_Armor_Tables();
 }
 
 
@@ -244,6 +244,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		ProneDamage = ini.Get_Float(Name(), "ProneDamage", ProneDamage);
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
 
+		Size_Armor_Tables();
+
 		char buffer[128];
 		if (ini.Get_String(Name(), "Verses", "100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%", buffer, sizeof(buffer))) {
 			char * aval = strtok(buffer, ",");
@@ -253,6 +255,27 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 				double percent = _Parse_Percentage(aval);
 				Modifier[armor] = percent;
 				aval = strtok(NULL, ",");
+			}
+		}
+
+		// Versus.<armor> and its targeting switches, for declared armor types and the original eleven alike (Ares).
+		for (int armor = ARMOR_FIRST; armor < Armor_Type_Count(); armor++) {
+			char key[96];
+			char const * armorname = Armor_Type_Name(ArmorType(armor));
+
+			snprintf(key, sizeof(key), "Versus.%s", armorname);
+			if (ini.Get_String(Name(), key, "", buffer, sizeof(buffer)) && buffer[0] != '\0') {
+				Modifier[armor] = _Parse_Percentage(buffer);
+				IsModifierSet[armor] = true;
+			}
+
+			static char const * const SWITCHES[3] = {"ForceFire", "Retaliate", "PassiveAcquire"};
+			std::vector<signed char> * tables[3] = {&ForceFire, &Retaliate, &PassiveAcquire};
+			for (int which = 0; which < 3; which++) {
+				snprintf(key, sizeof(key), "Versus.%s.%s", armorname, SWITCHES[which]);
+				if (ini.Is_Present(Name(), key)) {
+					(*tables[which])[armor] = ini.Get_Bool(Name(), key, true) ? 1 : 0;
+				}
 			}
 		}
 
@@ -286,8 +309,11 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(DeformThreshhold);
 	crc(ProneDamage);
 	crc(IsVeinhole);
-	for (int armor = ARMOR_FIRST; armor < ARMOR_COUNT; armor++) {
+	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
+		crc(int(ForceFire[armor]));
+		crc(int(Retaliate[armor]));
+		crc(int(PassiveAcquire[armor]));
 	}
 
 	crc(ExplosionSet.Count());
@@ -302,6 +328,70 @@ ClassID WarheadTypeClass::Class_ID(void) const
 
 
 /// <summary>
+/// Gives the armor tables an entry for every armor type known now, starting new entries at
+/// 100% with their targeting switches following the multiplier.
+/// </summary>
+void WarheadTypeClass::Size_Armor_Tables(void)
+{
+	size_t const count = (size_t)Armor_Type_Count();
+	if (Modifier.size() < count) {
+		Modifier.resize(count, 1.0);
+		IsModifierSet.resize(count, false);
+		ForceFire.resize(count, -1);
+		Retaliate.resize(count, -1);
+		PassiveAcquire.resize(count, -1);
+	}
+}
+
+
+// A declared armor type without its own Versus.<armor> follows its [ArmorTypes] default.
+double WarheadTypeClass::Versus(ArmorType armor) const
+{
+	if (armor >= ARMOR_FIRST && armor < ARMOR_COUNT) {
+		return(Modifier[armor]);
+	}
+	if (armor >= 0 && armor < (int)Modifier.size() && IsModifierSet[armor]) {
+		return(Modifier[armor]);
+	}
+	ArmorType base;
+	double fraction;
+	if (Declared_Armor_Default(armor, base, fraction)) {
+		return((base >= ARMOR_FIRST && base < armor) ? Versus(base) : fraction);
+	}
+	return(1.0);
+}
+
+
+// Yuri's Revenge refuses to fire at an armor its warhead does nothing to (TechnoClass::GetFireError, 0x6FC3FE).
+bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
+{
+	if (armor >= 0 && armor < (int)ForceFire.size() && ForceFire[armor] >= 0) {
+		return(ForceFire[armor] != 0);
+	}
+	return(Versus(armor) != 0.0);
+}
+
+
+// Yuri's Revenge fires back only when the multiplier is above the single-precision 0.01 (TechnoClass::CanRetaliateToAttacker), which a 1% entry passes.
+bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
+{
+	if (armor >= 0 && armor < (int)Retaliate.size() && Retaliate[armor] >= 0) {
+		return(Retaliate[armor] != 0);
+	}
+	return(Versus(armor) >= 0.0099999997);
+}
+
+
+bool WarheadTypeClass::Can_Passive_Acquire(ArmorType armor) const
+{
+	if (armor >= 0 && armor < (int)PassiveAcquire.size() && PassiveAcquire[armor] >= 0) {
+		return(PassiveAcquire[armor] != 0);
+	}
+	return(Versus(armor) != 0.0);
+}
+
+
+/// <summary>
 /// Lists the members this warhead carries.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -311,6 +401,10 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(Deform);
 	stream.Serialize(Modifier);
+	stream.Serialize(IsModifierSet);
+	stream.Serialize(ForceFire);
+	stream.Serialize(Retaliate);
+	stream.Serialize(PassiveAcquire);
 	stream.Serialize(ProneDamage);
 	stream.Serialize(DeformThreshhold);
 	stream.Serialize(ExplosionSet);

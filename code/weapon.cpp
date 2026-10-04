@@ -41,6 +41,7 @@
 
 #include "always.h"
 
+#include "armortypes.h"
 #include "weapon.h"
 
 #include "_rules.h"
@@ -307,9 +308,9 @@ ArmorType Armor_From_Name(char const * name)
 {
 	if (!name) return(ARMOR_NONE);
 
-	for (ArmorType index = ARMOR_FIRST; index < ARMOR_COUNT; index++) {
-		if (stricmp(ArmorName[index], name) == 0) {
-			return(index);
+	for (int index = ARMOR_FIRST; index < Armor_Type_Count(); index++) {
+		if (stricmp(Armor_Type_Name(ArmorType(index)), name) == 0) {
+			return(ArmorType(index));
 		}
 	}
 

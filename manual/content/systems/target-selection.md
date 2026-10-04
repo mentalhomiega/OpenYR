@@ -355,7 +355,7 @@ Damage is answered without a scan. The engine tests the rows below in order, and
 | The current mission sets [`Retaliate=no`](/keys/retaliate/) | No |
 | The attacker is an ally | No |
 | The object's weapons average zero damage or less, or it has no primary weapon | No |
-| The chosen weapon's `Verses` against the attacker's armor is `0%` | No |
+| The chosen weapon's warhead does not allow retaliation against the attacker's armor: by default a `Verses` figure below `1%`, or [`Versus.<armor>.Retaliate=no`](/systems/armor-types/#switch-forced-fire-retaliation-and-automatic-targeting) | No |
 | The attacker is an aircraft and the chosen weapon's projectile is `AA=no` | No |
 | Human-owned `C4=yes` infantry, or any human-owned object holding the `C4` ability, damaged by a building | No |
 | Human-owned vehicle whose [`DeploysInto`](/keys/deploysinto/) type is [`Artillary=yes`](/keys/artillary/) | No |

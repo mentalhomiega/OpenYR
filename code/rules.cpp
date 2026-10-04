@@ -48,6 +48,7 @@
 
 #include "always.h"
 
+#include "armortypes.h"
 #include "rules.h"
 
 #include "_bench.h"
@@ -867,6 +868,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	while (::Warheads.Count()) {
 		delete ::Warheads[0];
 	}
+	Clear_Armor_Types();
 	while (VoxelAnimTypes.Count()) {
 		delete VoxelAnimTypes[0];
 	}
@@ -953,6 +955,9 @@ void RulesClass::Initialize(CCINIClass const & ini)
 bool RulesClass::Addition(CCINIClass const & ini)
 {
 	BStart(BENCH_RULES);
+
+	// Declared armor types come first, so warheads and objects can name them.
+	Read_Armor_Types(ini);
 
 	Color_Schemes(ini);
 	Do_HouseTypes(ini);

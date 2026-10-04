@@ -609,10 +609,10 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 
 	// A weapon that cannot hurt the target's armor is passed over.
 	ArmorType const armor = techno->Class_Of()->Armor;
-	if (second->WarheadPtr != NULL && second->WarheadPtr->Modifier[armor] == 0.0) {
+	if (second->WarheadPtr != NULL && second->WarheadPtr->Versus(armor) == 0.0) {
 		return(0);
 	}
-	if (first->WarheadPtr != NULL && first->WarheadPtr->Modifier[armor] == 0.0) {
+	if (first->WarheadPtr != NULL && first->WarheadPtr->Versus(armor) == 0.0) {
 		return(1);
 	}
 
@@ -2351,6 +2351,14 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		}
 	}
 
+	if (Is_Weapon_Equipped()) {
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
+			BEnd(BENCH_EVAL_OBJECT);
+			return(false);
+		}
+	}
+
 	/*
 	**	If the object is not visible, then bail. Human controlled units
 	**	are always considered to be visible.
@@ -4056,6 +4064,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
+		return(FIRE_ILLEGAL);
+	}
+
+	// A warhead that does nothing to the target's armor does not fire at it, even when ordered to (TechnoClass::GetFireError, 0x6FC3FE).
+	if (techno != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Force_Fire(techno->Class_Of()->Armor)) {
 		return(FIRE_ILLEGAL);
 	}
 
@@ -8012,7 +8025,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Don't allow a response if it doesn't have a weapon that will affect the
 			**	enemy object.
 			*/
-			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->TClass->Armor] == 0) {
+			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
 				continue;
 			}
 
@@ -8101,7 +8114,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Don't allow a response if it doesn't have a weapon that will affect the
 			**	enemy object.
 			*/
-			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->TClass->Armor] == 0) {
+			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
 				continue;
 			}
 
@@ -8270,7 +8283,7 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	int which = What_Weapon_Should_I_Use((AbstractClass *)source);
 	WeaponDataStruct const * wdata = Get_Class_Weapon_Data(which);
 	if (wdata->Weapon->WarheadPtr != NULL &&
-		wdata->Weapon->WarheadPtr->Modifier[source->TClass->Armor] == 0) {
+		!wdata->Weapon->WarheadPtr->Can_Retaliate(source->TClass->Armor)) {
 			return(false);
 	}
 
@@ -9879,9 +9892,9 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 			WarheadTypeClass const * target_warhead = target_weapon != NULL ? target_weapon->WarheadPtr : NULL;
 			if (target_warhead != NULL) {
 				if (target->TarCom == (AbstractClass *)this) {
-					threat = -target_effectiveness_coefficient * target_warhead->Modifier[ttype->Armor];
+					threat = -target_effectiveness_coefficient * target_warhead->Versus(ttype->Armor);
 				} else {
-					threat = target_effectiveness_coefficient * target_warhead->Modifier[ttype->Armor];
+					threat = target_effectiveness_coefficient * target_warhead->Versus(ttype->Armor);
 				}
 			}
 
@@ -9894,7 +9907,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 	}
 
 	if (my_weapon && my_weapon->WarheadPtr) {
-		threat += my_effectiveness_coefficient * my_weapon->WarheadPtr->Modifier[target->Class_Of()->Armor];
+		threat += my_effectiveness_coefficient * my_weapon->WarheadPtr->Versus(target->Class_Of()->Armor);
 	}
 
 	threat += target->HealthRatio * target_strength_coefficient;
