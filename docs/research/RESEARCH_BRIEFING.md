@@ -25,6 +25,17 @@ All files go under `docs/research/`.
 
 Build these up across sessions; one session will not finish the tables.
 
+## Findings from the owner's scan (2026-10-04)
+
+The owner ran the scanner over Mental Omega on their PC. Its rules sit inside the mod's `expandmo*.mix` archives (as `rulesmo.ini`, `artmo.ini` and `aimo.ini`), not as loose files. Of about 4,460 distinct keys, the engine reads 32%; 12% are stock Yuri's Revenge keys the engine does not read yet; 11% matched the Ares list and 1% the Phobos list; 44% were unknown.
+
+Nearly all the unknown keys are Ares tags missing from `ares.txt`. By prefix, the most used are `Foundation.*` and `FoundationOutline.*` (custom building shapes), `SW.*` (superweapon extensions), `UC.*` (units passing through buildings), `EVA.*`, `IronCurtain.*`, `IvanBomb.*`, `Message.*`, `ForceShield.*`, `ParaDrop.*`, `SpyEffect.*` and `Money.*`. Catalogue these Ares families next, and rank them high in `priorities.md`.
+
+Two changes to `mod_scan.py`, with tests:
+
+1. Read `rulesmd.ini`, `artmd.ini`, `aimd.ini` and their `mo` counterparts from unencrypted MIX archives in the folder, in memory, when no loose file exists. Use the Westwood file ID (CRC-32 of the upper-case name, padded as the MIX format requires). Skip encrypted archives.
+2. Add the origin "stock Yuri's Revenge, not read by this engine", for keys in the stock rules files that `engine.txt` does not list. The scanner cannot read the stock files on a cloud machine, so take the list as an optional file argument and test it with a made-up file.
+
 ## Working across sessions
 
 - Before starting, read the logs on earlier research branches: `git branch -r --list 'origin/cloud/research-*'`, then `git show <branch>:docs/research/log/` and the files in it. Start from the newest branch's documents so work is not repeated.
