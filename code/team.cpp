@@ -122,6 +122,8 @@
 #include "target.hh"
 #include "tube.hh"
 
+#include <map>
+
 
 BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *house, FootClass *unit, TargetPropertyType prop, bool only_enemy);
 
@@ -4073,10 +4075,13 @@ RTTIType TeamClass::Fetch_RTTI(void) const
 
 /// <summary>
 /// Sends each member that one of its owner's structures accepts into the nearest such structure
-/// and drops it from the team; members no structure accepts stay. The step then ends.
+/// and drops it from the team; members no structure accepts stay. The step then ends. A structure
+/// is offered only the room left after the members this step has already sent to it.
 /// </summary>
-void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member))
+void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent))
 {
+	std::map<BuildingClass const *, int> sent;
+
 	FootClass * member = Member;
 	while (member != NULL) {
 		FootClass * next = member->Member;
@@ -4085,7 +4090,7 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 		if (member->IsActive && !member->IsInLimbo && member->Strength > 0) {
 			for (int index = 0; index < Buildings.Count(); index++) {
 				BuildingClass * building = Buildings[index];
-				if (building->House != member->House || building->IsInLimbo || !accepts(building, member)) {
+				if (building->House != member->House || building->IsInLimbo || !accepts(building, member, sent.contains(building) ? sent[building] : 0)) {
 					continue;
 				}
 				int const distance = member->Distance(building);
@@ -4100,6 +4105,7 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 			Remove(member);
 			member->Assign_Mission(MISSION_ENTER);
 			member->Assign_Destination(best);
+			sent[best]++;
 		}
 		member = next;
 	}
@@ -4112,8 +4118,8 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 /// </summary>
 void TeamClass::TMission_ENTER_TANK_BUNKER(TeamMissionClass *, bool)
 {
-	Send_Members_Into([](BuildingClass const * building, FootClass const * member) {
-		return(building->Can_Bunker(member) && !building->In_Radio_Contact());
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
+		return(sent == 0 && building->Can_Bunker(member) && !building->In_Radio_Contact());
 	});
 }
 
@@ -4124,8 +4130,8 @@ void TeamClass::TMission_ENTER_TANK_BUNKER(TeamMissionClass *, bool)
 /// </summary>
 void TeamClass::TMission_ENTER_BIO_REACTOR(TeamMissionClass *, bool)
 {
-	Send_Members_Into([](BuildingClass const * building, FootClass const * member) {
-		return(building->Can_Absorb(member));
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
+		return(building->Can_Absorb(member) && building->Cargo.How_Many() + sent < building->Class->Max_Passengers());
 	});
 }
 
@@ -4136,7 +4142,7 @@ void TeamClass::TMission_ENTER_BIO_REACTOR(TeamMissionClass *, bool)
 /// </summary>
 void TeamClass::TMission_ENTER_BATTLE_BUNKER(TeamMissionClass *, bool)
 {
-	Send_Members_Into([](BuildingClass const * building, FootClass const * member) {
-		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member));
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
+		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
 	});
 }
