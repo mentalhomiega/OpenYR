@@ -21,8 +21,8 @@ SDKs, credentials, personal data, IDE state, or build output.
 
 ## Current priorities
 
-Work toward the first [development milestone](README.md#state-and-plans) has
-review priority. Portability planning and preparatory work may proceed in
+Work that brings [what already works](README.md#what-works) closer to Yuri's
+Revenge has review priority. Portability planning and preparatory work may proceed in
 parallel. Other pull requests are deprioritized and may wait for review;
 simple bug fixes are reviewed as time permits.
 
