@@ -389,6 +389,8 @@ void GScreenClass::Render(void)
 {
 	BStart(BENCH_GSCREEN_RENDER);
 
+	Update_Display_Zoom();
+
 	Surface * oldpage = LogicalSurface;
 	LogicalSurface = CompositeSurface;
 
@@ -424,7 +426,7 @@ void GScreenClass::Render(void)
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	use_map_surfaces(false);
 	if (zoomed) {
-		CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, TacticalRect);
+		CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
 	}
 
 	if (Buttons) Buttons->Draw_All(false);

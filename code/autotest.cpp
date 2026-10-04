@@ -955,9 +955,15 @@ void Run(StepType const & step)
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
 	} else if (step.Command == "zoom") {
-		// zoom <factor>: sets the map view zoom, as the mouse wheel does (0.5 shows twice as much).
+		// zoom <factor>: sets the map view zoom at once (0.5 shows twice as much).
 		Set_View_Zoom(std::atof(step.Argument.c_str()));
 		DebugString("AUTOTEST zoom %.2f view %dx%d on screen %dx%d\n", ViewZoom, TacticalRect.Width, TacticalRect.Height, ScreenTacticalRect.Width, ScreenTacticalRect.Height);
+	} else if (step.Command == "wheel") {
+		// wheel <step>: glides the zoom by that step, as the mouse wheel does.
+		Request_View_Zoom_Step(std::atof(step.Argument.c_str()));
+	} else if (step.Command == "glideclock") {
+		// glideclock: times zoom glides by game frames, for recordings.
+		ViewZoomGameClock = true;
 	} else if (step.Command == "hash") {
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
