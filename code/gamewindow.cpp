@@ -14,6 +14,7 @@
 #include "_keyboar.h"
 #include "_map.h"
 #include "_surface.h"
+#include "_tactica.h"
 #include "_tooltip.h"
 #include "_ui.h"
 #include "_xmouse.h"
@@ -32,6 +33,7 @@
 #include "ui/uishell.h"
 #include "video.h"
 #include "vidscale.h"
+#include "viewzoom.h"
 #include "windowevent.hh"
 #include "winstub.h"
 #include "wwmouse.h"
@@ -111,7 +113,12 @@ static void On_Mouse_Wheel(int delta)
 	}
 
 	_HandlingMouseWheel = true;
-	Execute_Command(delta < 0 ? "SidebarDown" : "SidebarUp");
+	// Over the map the wheel zooms; anywhere else it scrolls the sidebar.
+	if (GameActive && TacticalMap != NULL && MouseCursor != NULL && ScreenTacticalRect.Is_Point_Within(MouseCursor->Get_Mouse_Point())) {
+		Request_View_Zoom_Step(delta > 0 ? 0.1 : -0.1);
+	} else {
+		Execute_Command(delta < 0 ? "SidebarDown" : "SidebarUp");
+	}
 	_HandlingMouseWheel = false;
 }
 

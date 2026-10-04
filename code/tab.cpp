@@ -63,6 +63,7 @@
 #include "surface.h"
 #include "techno.h"
 #include "uicontrol.h"
+#include "viewzoom.h"
 
 #include <cstdio>
 #include <cstring>
@@ -197,7 +198,7 @@ void TabClass::Draw_Credits_Tab(void)
 
 	if (Scen->MissionTimer.Is_Active()) {
 		bool light = ((int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning) || Map.FlasherTimer > 0;
-		Draw_Shape(*CompositeSurface, *SidebarDrawer, TabShape, /*light ? 4 :*/ 2, Point2D(TacticalRect.Width - TabShape->Get_Width(), 0), VisibleRect);
+		Draw_Shape(*CompositeSurface, *SidebarDrawer, TabShape, /*light ? 4 :*/ 2, Point2D(ScreenTacticalRect.Width - TabShape->Get_Width(), 0), VisibleRect);
 
 		int time = Scen->MissionTimer;
 
@@ -210,11 +211,11 @@ void TabClass::Draw_Credits_Tab(void)
 
 		if (hours != 0) {
 			Fancy_Text_Print(TXT_TIME_FORMAT_HOURS, *CompositeSurface, CompositeSurface->Get_Rect(),
-				Point2D(TacticalRect.Width - TabShape->Get_Width() / 2, 0), ColorSchemes[0], TBLACK,
+				Point2D(ScreenTacticalRect.Width - TabShape->Get_Width() / 2, 0), ColorSchemes[0], TBLACK,
 				TextPrintType(TPF_METAL12 | TPF_CENTER | TPF_USE_GRAD_PAL), hours, minutes, seconds);
 		} else {
 			Fancy_Text_Print(TXT_TIME_FORMAT_NO_HOURS, *CompositeSurface, CompositeSurface->Get_Rect(),
-				Point2D(TacticalRect.Width - TabShape->Get_Width() / 2, 0), ColorSchemes[0], TBLACK,
+				Point2D(ScreenTacticalRect.Width - TabShape->Get_Width() / 2, 0), ColorSchemes[0], TBLACK,
 				TextPrintType(TPF_METAL12 | TPF_CENTER | TPF_USE_GRAD_PAL), minutes, seconds);
 		}
 	}

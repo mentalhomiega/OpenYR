@@ -66,6 +66,7 @@
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "video.h"
+#include "viewzoom.h"
 
 #include "bench.hh"
 #include "special.hh"
@@ -325,6 +326,7 @@ bool Main_Loop(void)
 			if ((Frame & 7) == 7 && Session.Type == GAME_INTERNET) {
 				Ipx.Store_Stats();
 			}
+			Apply_Pending_View_Zoom();
 			Update_Fogged_Objects();
 			unsigned int const render_start = timeGetTime();
 			Map.Render();

@@ -20,4 +20,6 @@ Surface * AlternateSurface;
 Surface * LogicalSurface;
 Surface * Unk2Surface;
 Surface * CompositeSurface;
+Surface * MapCompositeSurface;
+Surface * MapTileSurface;
 Surface * PreviewSurface;

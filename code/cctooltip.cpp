@@ -19,6 +19,7 @@
 #include "dsurface.h"
 #include "goptions.h"
 #include "scheme.h"
+#include "viewzoom.h"
 #include "wwfont.h"
 
 #include "color.hh"
@@ -47,8 +48,8 @@ bool CCToolTip::Update(ToolTipText * text)
 
 		Rect * trect;
 		if (Options.IsSidebarOnRight == true) {
-			if (text->Pos.X <= TacticalRect.X + TacticalRect.Width) {
-				trect = &TacticalRect;
+			if (text->Pos.X <= ScreenTacticalRect.X + ScreenTacticalRect.Width) {
+				trect = &ScreenTacticalRect;
 			} else {
 				trect = &SidebarRect;
 				Map.SidebarClass::IsToRedraw = true;
@@ -58,7 +59,7 @@ bool CCToolTip::Update(ToolTipText * text)
 				trect = &SidebarRect;
 				Map.SidebarClass::IsToRedraw = true;
 			} else {
-				trect = &TacticalRect;
+				trect = &ScreenTacticalRect;
 			}
 		}
 
@@ -103,7 +104,7 @@ void CCToolTip::Reset(const ToolTipText * text)
 {
 	bool redraw = false;
 	if (Options.IsSidebarOnRight == true) {
-		if (text->Pos.X >= TacticalRect.X + TacticalRect.Width) {
+		if (text->Pos.X >= ScreenTacticalRect.X + ScreenTacticalRect.Width) {
 			redraw = true;
 		}
 	} else {
@@ -150,7 +151,7 @@ void CCToolTip::Draw(const ToolTipText * text)
 	Surface * surface = NULL;
 
 	if (Options.IsSidebarOnRight == true) {
-		int offset = TacticalRect.X + TacticalRect.Width;
+		int offset = ScreenTacticalRect.X + ScreenTacticalRect.Width;
 		if (point.X + text->TextWidth <= offset) {
 			surface = CompositeSurface;
 		} else if (UseSidebarSurface == true && point.X >= offset) {

@@ -65,6 +65,7 @@
 #include "surface.h"
 #include "tactical.h"
 #include "video.h"
+#include "viewzoom.h"
 
 #include "bench.hh"
 
@@ -394,10 +395,37 @@ void GScreenClass::Render(void)
 	bool redraw = DrawFlags != GS_REDRAW_DIRTY;
 	bool complete = DrawFlags == GS_REDRAW_ALL;
 
+	// While zoomed, the map's passes draw into the map's own surfaces; the panning pass may swap them.
+	bool const zoomed = (MapCompositeSurface != NULL && MapTileSurface != NULL);
+	Surface * screen_composite = CompositeSurface;
+	Surface * screen_tile = TileSurface;
+	auto use_map_surfaces = [&](bool map) {
+		if (!zoomed) {
+			return;
+		}
+		if (map) {
+			CompositeSurface = MapCompositeSurface;
+			TileSurface = MapTileSurface;
+		} else {
+			MapCompositeSurface = CompositeSurface;
+			MapTileSurface = TileSurface;
+			CompositeSurface = screen_composite;
+			TileSurface = screen_tile;
+		}
+		LogicalSurface = CompositeSurface;
+	};
+
+	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
+	use_map_surfaces(false);
 	Draw_It(complete);
+	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
+	use_map_surfaces(false);
+	if (zoomed) {
+		CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, TacticalRect);
+	}
 
 	if (Buttons) Buttons->Draw_All(false);
 

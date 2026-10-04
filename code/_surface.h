@@ -25,4 +25,8 @@ extern Surface * Unk2Surface; /// unused
 
 extern Surface * CompositeSurface;
 
+// The map's own surfaces while the view is zoomed (see viewzoom.h); NULL at zoom 1.
+extern Surface * MapCompositeSurface;
+extern Surface * MapTileSurface;
+
 extern Surface * PreviewSurface; /// unused

@@ -113,6 +113,8 @@
 #include "anim.h"
 #include "voc.h"
 #include "unit.h"
+#include "viewzoom.h"
+#include "_rect.h"
 #include "vox.h"
 #include "unittype.h"
 #include "light.h"
@@ -485,6 +487,17 @@ void Run(StepType const & step)
 		Keyboard->Handle_Window_Event(event);
 		event.Type = WINDOW_EVENT_MOUSE_UP;
 		Keyboard->Handle_Window_Event(event);
+	} else if (step.Command == "mapclick") {
+		// mapclick x y: a left click at that screen point, given straight to the map the way the window gives it.
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_DOWN;
+		event.Button = WINDOW_BUTTON_LEFT;
+		event.Clicks = 1;
+		event.X = std::atoi(step.Argument.c_str());
+		event.Y = step.X;
+		Map.Handle_Window_Event(event);
+		event.Type = WINDOW_EVENT_MOUSE_UP;
+		Map.Handle_Window_Event(event);
 	} else if (step.Command == "cell") {
 		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
 		ObjectClass const * occupier = cell.Cell_Occupier();
@@ -941,6 +954,10 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "zoom") {
+		// zoom <factor>: sets the map view zoom, as the mouse wheel does (0.5 shows twice as much).
+		Set_View_Zoom(std::atof(step.Argument.c_str()));
+		DebugString("AUTOTEST zoom %.2f view %dx%d on screen %dx%d\n", ViewZoom, TacticalRect.Width, TacticalRect.Height, ScreenTacticalRect.Width, ScreenTacticalRect.Height);
 	} else if (step.Command == "hash") {
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
