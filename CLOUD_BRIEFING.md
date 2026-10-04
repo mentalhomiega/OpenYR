@@ -59,7 +59,7 @@ The owner knows Yuri's Revenge well. These answers settle questions from earlier
 - **Mind-controlled units cannot enter transports or structures, except Bio Reactors.** So the `code/capture.cpp:341` finding is about the wrong path: check that the port refuses a mind-controlled unit's attempt to enter a transport, garrison, bunker or other structure (cursor, order and AI), and fix it where it does not. A controlled unit entering a Bio Reactor is used up, so releasing its control node there is correct.
 - **A `UnitReload=yes` pad both rearms and repairs docked aircraft**, as the code does now (`code/building.cpp`, the rearm loop sends `RADIO_RELOAD`, then `RADIO_REPAIR`). The manual pages were corrected on 2026-10-04; that finding is closed.
 
-Research on Ares and Phobos is done by a separate research routine that follows `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone.
+Research on Ares and Phobos is done in separate sessions that follow `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone. `CLOUD_JOBS.md` holds the prompts the owner uses to start one-off sessions.
 
 ## Night log
 
