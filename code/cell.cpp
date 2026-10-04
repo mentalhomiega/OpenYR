@@ -4254,7 +4254,7 @@ bool CellClass::Is_Clear_To_Move(SpeedType loco, bool ignoreinfantry, bool ignor
 	 	overlay = OverlayTypes[Overlay];
 	}
 	if (overlay != NULL && overlay->IsWall) {
-		if (check != MZONE_DESTROYER && check != MZONE_AMPHIBIOUS_DESTROYER && check != MZONE_INFANTRY_DESTROYER && (check != MZONE_CRUSHER && check != MZONE_AMPHIBIOUS_CRUSHER || !overlay->IsCrushable)) {
+		if (check != MZONE_DESTROYER && check != MZONE_AMPHIBIOUS_DESTROYER && check != MZONE_INFANTRY_DESTROYER && (check != MZONE_CRUSHER && check != MZONE_AMPHIBIOUS_CRUSHER && check != MZONE_CRUSHER_ALL || !overlay->IsCrushable)) {
 			return(false);
 		}
 
