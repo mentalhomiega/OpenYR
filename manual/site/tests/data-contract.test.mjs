@@ -213,7 +213,7 @@ test('authored enum domains are complete, uniquely bound, and include representa
 	assert.equal(new Set(keyBindings).size, keyBindings.length);
 	assert.equal(new Set(parameterBindings).size, parameterBindings.length);
 	const mission = records.find((record) => record.enum_id === 'MissionType');
-	assert.equal(mission.values.find((value) => value.constant === 'MISSION_HUNT').value, 14);
+	assert.equal(mission.values.find((value) => value.constant === 'MISSION_HUNT').value, 15);
 	const action = records.find((record) => record.enum_id === 'ActionType');
 	assert.equal(action.values.find((value) => value.constant === 'ACTION_DROP_POD').input, 'DropPod');
 	assert.ok(records.every((record) => !Object.hasOwn(record, 'status') && record.source_files.length > 0));
