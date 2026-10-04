@@ -133,13 +133,16 @@ Rect Shown_Map_Rect(void)
 }
 
 
-bool Draw_Map_Layer_Into(Surface & frame)
+std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 {
 	if (MapCompositeSurface == NULL || !Video_Map_Layer_Supported()) {
-		return(false);
+		return(nullptr);
 	}
-	frame.Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
-	return(true);
+	Rect const all(0, 0, frame.Get_Width(), frame.Get_Height());
+	auto composed = std::make_unique<DSurface>(all.Width, all.Height);
+	composed->Blit_From(all, frame, all);
+	composed->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+	return(composed);
 }
 
 
