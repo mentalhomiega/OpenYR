@@ -850,18 +850,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 
 			TechnoClass * tech = cellptr->Cell_Building();
 
-			// A soldier under mind control is turned away instead of going inside, except to capture
-			// an enemy Capturable=yes structure.
-			bool const captures = tech != NULL && tech->RTTI == RTTI_BUILDING && Class->IsEngineer && !House->Is_Ally(tech) && ((BuildingClass *)tech)->Class->IsCaptureable;
-			if (tech != NULL && (tech == NavCom || tech == TarCom) && MindControlledBy != NULL && !captures) {
-				Assign_Target(NULL);
-				Assign_Destination(NULL);
-				Enter_Idle_Mode();
-				Scatter(COORD_NONE, true);
-				BEnd(BENCH_PCP);
-				return;
-			}
-
 			if (tech != NULL && (tech == NavCom || tech == TarCom)) {
 				if (tech->Tag) {
 					tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
@@ -2981,10 +2969,6 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 		BuildingClass const * bldg = (BuildingClass *)object;
 		if (!bldg->Considered_Vehicle() || bldg->Class->IsMobileWar) {
 			if (bldg->Class->IsRepairable || bldg->Class->IsMobileWar) {
-				// An engineer under mind control may capture but not go inside to repair.
-				if (MindControlledBy != NULL && (bldg->Class->IsBridgeRepairHut || House->Is_Ally(bldg))) {
-					return(ACTION_NO_ENTER);
-				}
 				if (bldg->Class->IsBridgeRepairHut) {
 					return(Map.Can_Repair_Bridge(bldg->Center_Coord()) ? ACTION_GREPAIR : ACTION_NO_GREPAIR);
 				}
@@ -3140,8 +3124,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 					**	the shore - a total island.  In that case, we can't capture
 					**	it, so we shouldn't show the action-capture cursor.
 					*/
-					// Under mind control, only an engineer may go inside, to capture.
-					action = MindControlledBy != NULL && !Class->IsEngineer ? ACTION_NO_ENTER : ACTION_CAPTURE;
+					action = ACTION_CAPTURE;
 					if (object->RTTI == RTTI_BUILDING) {
 						Cell cell = object->Center_Coord().As_Cell();
 						int targzone = Map.Get_Cell_Zone(Get_Target_Cell(), Class->MZone, IsOnBridge);
