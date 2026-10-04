@@ -14,8 +14,9 @@
 
 /*
  * Map view zoom. The map is drawn into its own surfaces at TacticalRect's size and scaled
- * into ScreenTacticalRect, the map's area on screen. A zoom below 1 shows more of the map;
- * at 1 the two rectangles are the same and no separate surfaces exist.
+ * into ScreenTacticalRect, the map's area on screen. A zoom below 1 shows more of the map and
+ * one above 1 magnifies it; at 1 the two rectangles are the same and, outside a glide, no
+ * separate surfaces exist.
  */
 extern double ViewZoom;
 // The zoom shown on screen. It differs from ViewZoom, the zoom the map is drawn at, only during a glide.
@@ -28,7 +29,7 @@ extern bool ViewZoomGameClock;
 
 // The smallest and largest zoom the mouse wheel reaches.
 double const VIEW_ZOOM_MIN = 0.5;
-double const VIEW_ZOOM_MAX = 1.0;
+double const VIEW_ZOOM_MAX = 2.0;
 
 // Converts a screen offset from ScreenTacticalRect's corner into an offset from TacticalRect's corner.
 Point2D Screen_To_View_Offset(Point2D const & screen_offset);

@@ -139,7 +139,8 @@ void Allocate_Map_Surfaces(void)
 	delete MapTileSurface;
 	MapTileSurface = NULL;
 
-	if (ViewZoom == 1.0) {
+	// A glide to or from 1 still shows the map scaled, so it keeps the surfaces until it ends.
+	if (ViewZoom == 1.0 && !_Gliding) {
 		return;
 	}
 
@@ -249,6 +250,9 @@ void Apply_Pending_View_Zoom(void)
 
 			if (target < ViewZoom) {
 				Set_Drawn_Zoom(target, wantx, wanty);
+			} else if (MapCompositeSurface == NULL) {
+				Allocate_Map_Surfaces();
+				Map.Flag_To_Redraw(GS_REDRAW_ALL);
 			}
 
 			// Where the view will end: the wanted middle held inside what is drawn. _From and _To keep
@@ -268,6 +272,9 @@ void Apply_Pending_View_Zoom(void)
 		_Gliding = false;
 		if (std::abs(_TargetZoom - ViewZoom) >= 0.001) {
 			Set_Drawn_Zoom(_TargetZoom, _ToMiddleX, _ToMiddleY);
+		} else if (ViewZoom == 1.0 && MapCompositeSurface != NULL) {
+			Allocate_Map_Surfaces();
+			Map.Flag_To_Redraw(GS_REDRAW_ALL);
 		}
 	}
 }
