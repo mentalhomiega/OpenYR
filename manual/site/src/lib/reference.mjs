@@ -25,7 +25,7 @@ export const REFERENCE_PAGES = {
 	},
 	other: {
 		title: 'Other INI files',
-		files: ['sun.ini', 'theme01.ini', 'battle.ini', 'sound01.ini'],
+		files: ['ra2md.ini', 'theme01.ini', 'battle.ini', 'sound01.ini'],
 		blurb: 'Player options, campaign catalogs, sound definitions, and music metadata grouped by source file.',
 	},
 };
@@ -33,9 +33,9 @@ export const REFERENCE_PAGES = {
 export const OTHER_INI_FILES = [
 	{
 		id: 'sun',
-		label: 'SUN.INI',
+		label: 'RA2MD.INI',
 		title: 'Options file',
-		sourceFiles: ['sun.ini'],
+		sourceFiles: ['ra2md.ini'],
 		purpose: 'Local player options, display and audio preferences, and multiplayer connection settings.',
 		loadBehavior: 'The game reads and writes this per-install options file. Its settings use named sections.',
 		groupOrder: ['options', 'video', 'audio', 'network', 'multiplayer', 'serialdefaults', 'syncbug'],

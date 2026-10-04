@@ -48,6 +48,6 @@ credit: [ZivDero]
 
 Games played over a modem or a null-modem cable are no longer supported. The serial connection, its dialing and answering screens, the phone book, and the modem settings editor are all gone. Network, internet, skirmish, and campaign play are unaffected.
 
-`sun.ini` no longer reads or writes the `[SerialDefaults]`, `[InitStrings]`, and `[PhoneBook]` sections, nor `[MultiPlayer] PhoneIndex`, and stops rewriting them when it saves its settings.
+`RA2MD.INI` no longer reads or writes the `[SerialDefaults]`, `[InitStrings]`, and `[PhoneBook]` sections, nor `[MultiPlayer] PhoneIndex`, and stops rewriting them when it saves its settings.
 
 The two session types the removed modes used keep their stored values, so saves are unaffected.

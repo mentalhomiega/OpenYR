@@ -13,4 +13,4 @@ At `SystemCursor=no`, the arrow is `cursor.png` from the [UI files](/systems/ui-
 
 The Windows pointer keeps the size and colors set in Windows, so `CursorScale` does not change it. Use `SystemCursor=yes` when those settings make the pointer easier to see.
 
-The display options screen has the same switch. Accepting that screen changes the pointer at once, and leaving the options menu saves the setting to `sun.ini`.
+The display options screen has the same switch. Accepting that screen changes the pointer at once, and leaving the options menu saves the setting to `RA2MD.INI`.

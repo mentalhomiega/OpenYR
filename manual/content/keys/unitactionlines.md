@@ -11,4 +11,4 @@ when_omitted:
 
 The lines do not stay up all the time even when the setting is on. [Action lines](/systems/action-lines/) covers when they appear and how `UI.INI` styles them.
 
-The game controls dialog has the same switch. Accepting the dialog applies the change on the next frame and saves it to `sun.ini`.
+The game controls dialog has the same switch. Accepting the dialog applies the change on the next frame and saves it to `RA2MD.INI`.

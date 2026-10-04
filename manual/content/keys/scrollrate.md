@@ -21,7 +21,7 @@ A right-button press on the map switches to coast scrolling. If the button went 
 
 For coast scrolling, `ScrollRate` plus one divides the distance the map moves for a given drag, as described on [`ScrollMethod`](/keys/scrollmethod/). `0` gives the full distance and `3` a quarter of it.
 
-The game controls dialog offers seven positions and saves the choice to `sun.ini` when accepted. The slider's fastest position, at its right end, stores `0`, and its slowest stores `6`.
+The game controls dialog offers seven positions and saves the choice to `RA2MD.INI` when accepted. The slider's fastest position, at its right end, stores `0`, and its slowest stores `6`.
 
 :::caution[Keep the value between 0 and 7]
 The value is not range-checked. A value of `8` or more, or `-2` or less, makes edge scrolling read past the end of its table of steps, so the map scrolls by an unpredictable distance. `-1` lets edge scrolling reach the fastest step, but makes coast scrolling divide by zero, with the same unpredictable result.

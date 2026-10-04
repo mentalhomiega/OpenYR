@@ -39,7 +39,7 @@ related:
 
 Action lines show a selected object's current orders on the tactical map. A target line runs to what the object is attacking, and a movement line runs to where it is going. Vehicles, infantry and aircraft draw them while they are selected and belong to a house the player controls. Structures never draw action lines, and an object with neither a target nor a destination draws none.
 
-[`UnitActionLines=no`](/keys/unitactionlines/) in `sun.ini` turns action lines off, and the in-game game controls dialog has the same switch. It does not affect the [sighting laser](#the-sighting-laser).
+[`UnitActionLines=no`](/keys/unitactionlines/) in `RA2MD.INI` turns action lines off, and the in-game game controls dialog has the same switch. It does not affect the [sighting laser](#the-sighting-laser).
 
 ## When the lines are shown
 

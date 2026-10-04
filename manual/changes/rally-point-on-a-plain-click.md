@@ -4,7 +4,7 @@ category: feature
 release: 0.2.0
 breaking: true
 migration:
-- Set `AltToRally=yes` under `[Options]` in `sun.ini` to keep the old controls, where the force-move key set the rally point and the plain click moved a deployed factory.
+- Set `AltToRally=yes` under `[Options]` in `RA2MD.INI` to keep the old controls, where the force-move key set the rally point and the plain click moved a deployed factory.
 targets:
 - type: key
   id: AltToRally
@@ -22,6 +22,6 @@ A plain click on the ground with a vehicle, infantry or aircraft factory selecte
 
 On a factory that can pack up, such as Firestorm's mobile war factory, the plain click used to pack it up and now sets the rally point. The force-move key packs it up instead.
 
-`AltToRally=yes` under `[Options]` in `sun.ini` restores the old controls for the player who sets it.
+`AltToRally=yes` under `[Options]` in `RA2MD.INI` restores the old controls for the player who sets it.
 
 AlexB is credited for the ts-patches option this follows.

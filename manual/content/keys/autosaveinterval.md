@@ -15,4 +15,4 @@ The interval counts frames, so a faster [`GameSpeed`](/keys/gamespeed/) saves mo
 
 A multiplayer game arranged from the menu makes no timed saves, whatever this value. A game started by a [launch file](/formats/spawn-ini/#automatic-saves) uses the file's interval instead, and a file that names none turns automatic saves off.
 
-The game reads the value from `sun.ini` at startup and writes it back with the other options. No dialog offers it.
+The game reads the value from `RA2MD.INI` at startup and writes it back with the other options. No dialog offers it.
