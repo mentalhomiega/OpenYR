@@ -5,6 +5,7 @@ category: interface-controls
 keys:
   - BuildCat
   - Cameo
+  - CameoPCX
   - CameoSortOrder
   - CreditTicks
   - MaximumQueuedObjects
@@ -99,7 +100,7 @@ When a cameo is removed, the rest of the strip closes up. The topmost cameo that
 
 ## What a cameo shows
 
-A cameo is drawn from the art [`Cameo=`](/keys/cameo/) selects. It is darkened when **Any of** these applies:
+A cameo is drawn from the art [`Cameo=`](/keys/cameo/) selects, or from the PCX picture [`CameoPCX=`](/keys/cameopcx/) names when that picture can be read. It is darkened when **Any of** these applies:
 
 - it is a structure cameo and the house has any structure order outstanding, which [the queue](/systems/production/#the-queue) covers;
 - no switched-on structure could produce the type;

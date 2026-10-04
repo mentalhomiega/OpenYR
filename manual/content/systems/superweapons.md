@@ -92,6 +92,7 @@ keys:
   - RechargeTime
   - RechargeVoice
   - SidebarImage
+  - SidebarPCX
   - SovParaDropInf
   - SovParaDropNum
   - SpecialSound
@@ -287,7 +288,7 @@ Two events outside the cycle also change the wall. Damage aimed at a raised sect
 
 ### The sidebar cameo
 
-A superweapon's cameo is the shape file named by [`SidebarImage=`](/keys/sidebarimage/), or `XXICON.SHP` when that file cannot be found. The cameo shows no numeric countdown. Its charge appears as a clock and a short caption. [The sidebar](/systems/sidebar/) covers where the cameo sits, how it is announced, how it is captioned, and when it leaves.
+A superweapon's cameo is the shape file named by [`SidebarImage=`](/keys/sidebarimage/), or `XXICON.SHP` when that file cannot be found. A readable PCX picture named by [`SidebarPCX=`](/keys/sidebarpcx/) is drawn on the sidebar instead. The cameo shows no numeric countdown. Its charge appears as a clock and a short caption. [The sidebar](/systems/sidebar/) covers where the cameo sits, how it is announced, how it is captioned, and when it leaves.
 
 The caption depends on the weapon's state. A charge-draining weapon has a caption while it charges and a fourth state that ordinary weapons lack.
 
