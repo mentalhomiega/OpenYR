@@ -98,7 +98,7 @@ test('accepted-setting tables are derived from generated file, section, and appl
 
 test('binary roles and companions use closed, resolvable identities', () => {
 	const byId = new Map(formats.map((format) => [format.format_id, format]));
-	const roles = new Set(['archive', 'image', 'model', 'audio', 'video', 'persistence']);
+	const roles = new Set(['archive', 'image', 'model', 'audio', 'video', 'persistence', 'text']);
 	const binary = formats.filter((format) => format.kind === 'binary');
 	assert.deepEqual(new Set(binary.map((format) => format.role)), roles);
 	for (const format of binary) {
