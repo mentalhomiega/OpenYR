@@ -40,6 +40,13 @@ static double _TargetZoom = 1.0;
 static double _GlideFrom = 1.0;
 static unsigned int _GlideStart = 0;
 static bool _Gliding = false;
+static double _GlideProgress = 1.0;
+
+// The middle of the shown part of the map, in map pixels, at the start and end of a glide.
+static double _FromMiddleX = 0.0;
+static double _FromMiddleY = 0.0;
+static double _ToMiddleX = 0.0;
+static double _ToMiddleY = 0.0;
 
 
 static unsigned int Glide_Clock(void)
@@ -48,18 +55,31 @@ static unsigned int Glide_Clock(void)
 }
 
 
+// The map pixel at the top left of TacticalRect; the tactical position is the view's middle.
+static Point2D View_Corner(void)
+{
+	return(TacticalMap->Get_Tactical_Position() - Point2D(TacticalRect.Width / 2, TacticalRect.Height / 2));
+}
+
+
 /// <summary>
 /// The part of TacticalRect shown on screen, as an offset from TacticalRect's corner and a size.
-/// It is all of TacticalRect except while a glide shows less than the map surfaces hold.
+/// It is all of TacticalRect except during a glide, when its middle slides from where the glide
+/// started to where it will end so the view never jumps where the map edge holds it back.
 /// </summary>
 static Rect Shown_View_Area(void)
 {
-	if (DisplayZoom == ViewZoom) {
+	if (!_Gliding || TacticalMap == NULL) {
 		return(Rect(0, 0, TacticalRect.Width, TacticalRect.Height));
 	}
 	int const width = std::min(TacticalRect.Width, int(ScreenTacticalRect.Width / DisplayZoom));
 	int const height = std::min(TacticalRect.Height, int(ScreenTacticalRect.Height / DisplayZoom));
-	return(Rect((TacticalRect.Width - width) / 2, (TacticalRect.Height - height) / 2, width, height));
+	Point2D const corner = View_Corner();
+	double const middlex = _FromMiddleX + (_ToMiddleX - _FromMiddleX) * _GlideProgress;
+	double const middley = _FromMiddleY + (_ToMiddleY - _FromMiddleY) * _GlideProgress;
+	int const x = std::clamp(int(middlex - corner.X - width / 2.0), 0, TacticalRect.Width - width);
+	int const y = std::clamp(int(middley - corner.Y - height / 2.0), 0, TacticalRect.Height - height);
+	return(Rect(x, y, width, height));
 }
 
 
@@ -117,24 +137,27 @@ void Allocate_Map_Surfaces(void)
 
 
 /// <summary>
-/// Draws the map at the given zoom from the next draw on, keeping the point at the middle of the
-/// view where it was. The zoom on screen is left alone. Returns false when nothing changed.
+/// Draws the map at the given zoom from the next draw on, with the view's middle as near the given
+/// map pixel as the map edges allow. The zoom on screen is left alone.
 /// </summary>
-static bool Set_Drawn_Zoom(double zoom)
+static void Set_Drawn_Zoom(double zoom, double middlex, double middley)
 {
-	if (std::abs(zoom - ViewZoom) < 0.001 || TacticalMap == NULL) {
-		return(false);
+	if (TacticalMap == NULL) {
+		return;
 	}
-
-	Point2D const corner = TacticalMap->Get_Tactical_Position();
-	Point2D const middle = corner + Point2D(TacticalRect.Width / 2, TacticalRect.Height / 2);
-
 	ViewZoom = zoom;
 	Map.Set_View_Dimensions(ScreenTacticalRect);
-
-	TacticalMap->Set_Tactical_Position(middle - Point2D(TacticalRect.Width / 2, TacticalRect.Height / 2));
+	TacticalMap->Set_Tactical_Position(Point2D(int(middlex), int(middley)));
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
-	return(true);
+}
+
+
+static void Shown_Middle(double & middlex, double & middley)
+{
+	Rect const shown = Shown_View_Area();
+	Point2D const corner = View_Corner();
+	middlex = corner.X + shown.X + shown.Width / 2.0;
+	middley = corner.Y + shown.Y + shown.Height / 2.0;
 }
 
 
@@ -145,10 +168,16 @@ static bool Set_Drawn_Zoom(double zoom)
 bool Set_View_Zoom(double zoom)
 {
 	zoom = std::clamp(zoom, VIEW_ZOOM_MIN, VIEW_ZOOM_MAX);
+	if (TacticalMap == NULL || (!_Gliding && std::abs(zoom - ViewZoom) < 0.001)) {
+		return(false);
+	}
+	double middlex, middley;
+	Shown_Middle(middlex, middley);
 	_Gliding = false;
 	_TargetZoom = zoom;
 	DisplayZoom = zoom;
-	return(Set_Drawn_Zoom(zoom));
+	Set_Drawn_Zoom(zoom, middlex, middley);
+	return(true);
 }
 
 
@@ -164,11 +193,8 @@ void Update_Display_Zoom(void)
 		return;
 	}
 	double const t = std::min(1.0, double(Glide_Clock() - _GlideStart) / ZOOM_GLIDE_MS);
-	double const eased = 1.0 - (1.0 - t) * (1.0 - t);
-	DisplayZoom = (t >= 1.0) ? _TargetZoom : _GlideFrom + (_TargetZoom - _GlideFrom) * eased;
-	if (t >= 1.0) {
-		_Gliding = false;
-	}
+	_GlideProgress = 1.0 - (1.0 - t) * (1.0 - t);
+	DisplayZoom = (t >= 1.0) ? _TargetZoom : _GlideFrom + (_TargetZoom - _GlideFrom) * _GlideProgress;
 }
 
 
@@ -179,22 +205,40 @@ void Update_Display_Zoom(void)
 /// </summary>
 void Apply_Pending_View_Zoom(void)
 {
+	if (TacticalMap == NULL) {
+		return;
+	}
+
 	if (_PendingZoomStep != 0.0) {
 		double const target = std::clamp(_TargetZoom + _PendingZoomStep, VIEW_ZOOM_MIN, VIEW_ZOOM_MAX);
 		_PendingZoomStep = 0.0;
 		if (std::abs(target - _TargetZoom) >= 0.001) {
 			Update_Display_Zoom();
+			Shown_Middle(_FromMiddleX, _FromMiddleY);
 			_GlideFrom = DisplayZoom;
 			_TargetZoom = target;
 			_GlideStart = Glide_Clock();
+			_GlideProgress = 0.0;
 			_Gliding = true;
+
 			if (target < ViewZoom) {
-				Set_Drawn_Zoom(target);
+				Set_Drawn_Zoom(target, _FromMiddleX, _FromMiddleY);
 			}
+
+			// Where the view will end: the target's view around the same middle, held inside what is drawn.
+			Point2D const corner = View_Corner();
+			double const halfwidth = std::min(TacticalRect.Width, int(ScreenTacticalRect.Width / target)) / 2.0;
+			double const halfheight = std::min(TacticalRect.Height, int(ScreenTacticalRect.Height / target)) / 2.0;
+			_ToMiddleX = std::clamp(_FromMiddleX, corner.X + halfwidth, corner.X + TacticalRect.Width - halfwidth);
+			_ToMiddleY = std::clamp(_FromMiddleY, corner.Y + halfheight, corner.Y + TacticalRect.Height - halfheight);
 		}
 	}
 
-	if (!_Gliding && std::abs(DisplayZoom - ViewZoom) >= 0.001) {
-		Set_Drawn_Zoom(DisplayZoom);
+	if (_Gliding && Glide_Clock() - _GlideStart >= ZOOM_GLIDE_MS) {
+		Update_Display_Zoom();
+		_Gliding = false;
+		if (std::abs(_TargetZoom - ViewZoom) >= 0.001) {
+			Set_Drawn_Zoom(_TargetZoom, _ToMiddleX, _ToMiddleY);
+		}
 	}
 }
