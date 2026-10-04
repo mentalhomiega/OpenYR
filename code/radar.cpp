@@ -67,6 +67,7 @@
 #include "always.h"
 
 #include "radar.h"
+#include "viewzoom.h"
 
 #include "_convert.h"
 #include "_keyboar.h"
@@ -535,7 +536,7 @@ int RadarClass::RTacticalClass::Action(unsigned flags, KeyNumType & key)
 	}
 
 
-	x -= Options.IsSidebarOnRight ? TacticalRect.Width : 0;
+	x -= Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0;
 
 	/*
 	**	See if the mouse is over the radar general area, but not yet
@@ -845,7 +846,7 @@ void RadarClass::Draw_Names(void)
 void RadarClass::Reposition_Sidebar(void)
 {
 	BASECLASS::Reposition_Sidebar();
-	RadarButton.Set_Position(RadX + (Options.IsSidebarOnRight ? TacticalRect.Width : 0), RadY);
+	RadarButton.Set_Position(RadX + (Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), RadY);
 	RadarButton.Flag_To_Redraw();
 	FullRedraw = true;
 }

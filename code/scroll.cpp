@@ -643,7 +643,8 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	Point2D			point;						/// click position relative to the tactical view
 
 	// The map does not act on the second press of a double click.
-	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1);
+	// A press outside the map's screen area belongs to the sidebar or bars, even where the zoomed view's map pixels reach under them.
+	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1 && ScreenTacticalRect.Is_Point_Within(Point2D(event.X, event.Y)));
 	bool const release = (event.Type == WINDOW_EVENT_MOUSE_UP);
 
 	if (event.Type == WINDOW_EVENT_CAPTURE_LOST) {
