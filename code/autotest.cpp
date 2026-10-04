@@ -114,6 +114,8 @@
 #include "voc.h"
 #include "unit.h"
 #include "viewzoom.h"
+#include "bgfxbackend.h"
+#include "gamedirs.h"
 #include "_rect.h"
 #include "vox.h"
 #include "unittype.h"
@@ -966,6 +968,11 @@ void Run(StepType const & step)
 			point = Point2D(step.X, step.Y);
 		}
 		Request_View_Zoom_Step(std::atof(step.Argument.c_str()), point);
+	} else if (step.Command == "windowshot") {
+		// windowshot <name>: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
+		static std::string path;
+		path = Screenshot_Name((step.Argument + ".tga").c_str());
+		Backend_Request_Window_Capture(path.c_str());
 	} else if (step.Command == "glideclock") {
 		// glideclock: times zoom glides by game frames, for recordings.
 		ViewZoomGameClock = true;

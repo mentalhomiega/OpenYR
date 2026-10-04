@@ -64,6 +64,16 @@ static bool _FrameIs565 = false;
 static unsigned int * _ConvertBuffer = NULL;
 static unsigned int _ConvertTable[65536];
 
+// The layer under the frame, and the frame copy with see-through key pixels drawn over it.
+static bgfx::TextureHandle _LayerTexture = BGFX_INVALID_HANDLE;
+static int _LayerWidth = 0;
+static int _LayerHeight = 0;
+static bool _LayerUploaded = false;
+static bool _KeyedFrameUploaded = false;
+static unsigned int * _LayerConvertBuffer = NULL;
+static bgfx::TextureHandle _KeyedFrameTexture = BGFX_INVALID_HANDLE;
+static unsigned int * _KeyedFrameBuffer = NULL;
+
 
 struct BackendVertex
 {
@@ -111,7 +121,27 @@ class BackendCallback : public bgfx::CallbackI
 		virtual uint32_t cacheReadSize(uint64_t) override { return(0); }
 		virtual bool cacheRead(uint64_t, void *, uint32_t) override { return(false); }
 		virtual void cacheWrite(uint64_t, const void *, uint32_t) override {}
-		virtual void screenShot(const char *, uint32_t, uint32_t, uint32_t, bgfx::TextureFormat::Enum, const void *, uint32_t, bool) override {}
+		// Writes a capture of the window as a 32-bit TGA file.
+		virtual void screenShot(const char * filepath, uint32_t width, uint32_t height, uint32_t pitch, bgfx::TextureFormat::Enum, const void * data, uint32_t, bool yflip) override
+		{
+			FILE * file = std::fopen(filepath, "wb");
+			if (file == NULL) {
+				return;
+			}
+			unsigned char header[18] = {};
+			header[2] = 2;
+			header[12] = (unsigned char)(width & 0xFF);
+			header[13] = (unsigned char)(width >> 8);
+			header[14] = (unsigned char)(height & 0xFF);
+			header[15] = (unsigned char)(height >> 8);
+			header[16] = 32;
+			header[17] = yflip ? 0x08 : 0x28;
+			std::fwrite(header, 1, sizeof(header), file);
+			for (uint32_t y = 0; y < height; y++) {
+				std::fwrite((unsigned char const *)data + y * pitch, 4, width, file);
+			}
+			std::fclose(file);
+		}
 		virtual void captureBegin(uint32_t, uint32_t, uint32_t, bgfx::TextureFormat::Enum, bool) override {}
 		virtual void captureEnd(void) override {}
 		virtual void captureFrame(const void *, uint32_t) override {}
@@ -163,7 +193,7 @@ static void Build_Convert_Table(void)
 /// Submits one textured rectangle covering the given destination. False means the
 /// transient vertex memory ran out and nothing was submitted.
 /// </summary>
-static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false)
+static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false)
 {
 	bgfx::TransientVertexBuffer buffer;
 
@@ -188,7 +218,7 @@ static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 
 	bgfx::setVertexBuffer(0, &buffer);
 	bgfx::setTexture(0, _TextureSampler, texture, samplerflags);
-	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | (blend ? BGFX_STATE_BLEND_ALPHA : 0));
 	bgfx::submit(view, _Program);
 	return(true);
 }
@@ -266,6 +296,110 @@ static bool Ensure_Prescale_Target(int width, int height)
 
 	_PrescaleWidth = width;
 	_PrescaleHeight = height;
+	return(true);
+}
+
+
+static void Destroy_Layer(void)
+{
+	if (bgfx::isValid(_LayerTexture)) {
+		bgfx::destroy(_LayerTexture);
+		_LayerTexture = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_KeyedFrameTexture)) {
+		bgfx::destroy(_KeyedFrameTexture);
+		_KeyedFrameTexture = BGFX_INVALID_HANDLE;
+	}
+	delete [] _LayerConvertBuffer;
+	_LayerConvertBuffer = NULL;
+	delete [] _KeyedFrameBuffer;
+	_KeyedFrameBuffer = NULL;
+	_LayerWidth = 0;
+	_LayerHeight = 0;
+	_LayerUploaded = false;
+	_KeyedFrameUploaded = false;
+}
+
+
+/// <summary>
+/// Uploads a new layer picture, making its texture first when the size changed. False means the
+/// layer cannot be drawn.
+/// </summary>
+static bool Upload_Layer(BackendLayer const & layer)
+{
+	if (layer.Width <= 0 || layer.Height <= 0) {
+		return(false);
+	}
+
+	if (!bgfx::isValid(_LayerTexture) || _LayerWidth != layer.Width || _LayerHeight != layer.Height) {
+		if (bgfx::isValid(_LayerTexture)) {
+			bgfx::destroy(_LayerTexture);
+		}
+		delete [] _LayerConvertBuffer;
+		_LayerConvertBuffer = NULL;
+
+		const bgfx::Caps * caps = bgfx::getCaps();
+		if (layer.Width > caps->limits.maxTextureSize || layer.Height > caps->limits.maxTextureSize) {
+			_LayerTexture = BGFX_INVALID_HANDLE;
+			return(false);
+		}
+		_LayerTexture = bgfx::createTexture2D((uint16_t)layer.Width, (uint16_t)layer.Height, false, 1, _FrameIs565 ? bgfx::TextureFormat::B5G6R5 : bgfx::TextureFormat::BGRA8);
+		if (!bgfx::isValid(_LayerTexture)) {
+			return(false);
+		}
+		if (!_FrameIs565) {
+			_LayerConvertBuffer = new unsigned int[layer.Width * layer.Height];
+		}
+		_LayerWidth = layer.Width;
+		_LayerHeight = layer.Height;
+		_LayerUploaded = false;
+	}
+
+	if (_FrameIs565) {
+		// The last row is copied only up to the picture's edge, which may be the end of its surface.
+		uint32_t const size = (uint32_t)((layer.Height - 1) * layer.Pitch + layer.Width * 2);
+		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, bgfx::copy(layer.Pixels, size), (uint16_t)layer.Pitch);
+	} else {
+		for (int y = 0; y < layer.Height; y++) {
+			unsigned short const * source = (unsigned short const *)((char const *)layer.Pixels + y * layer.Pitch);
+			unsigned int * dest = _LayerConvertBuffer + y * layer.Width;
+			for (int x = 0; x < layer.Width; x++) {
+				dest[x] = _ConvertTable[source[x]];
+			}
+		}
+		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, bgfx::copy(_LayerConvertBuffer, (uint32_t)(layer.Width * layer.Height * 4)), (uint16_t)(layer.Width * 4));
+	}
+	_LayerUploaded = true;
+	return(true);
+}
+
+
+/// <summary>
+/// Uploads the frame with its key pixels made see-through. False means it could not be.
+/// </summary>
+static bool Upload_Keyed_Frame(void const * pixels, int pitch)
+{
+	if (!bgfx::isValid(_KeyedFrameTexture)) {
+		_KeyedFrameTexture = bgfx::createTexture2D((uint16_t)_FrameWidth, (uint16_t)_FrameHeight, false, 1, bgfx::TextureFormat::BGRA8);
+		if (!bgfx::isValid(_KeyedFrameTexture)) {
+			return(false);
+		}
+		delete [] _KeyedFrameBuffer;
+		_KeyedFrameBuffer = new unsigned int[_FrameWidth * _FrameHeight];
+	}
+	if (_ConvertTable[0xFFFF] == 0) {
+		Build_Convert_Table();
+	}
+
+	for (int y = 0; y < _FrameHeight; y++) {
+		unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
+		unsigned int * dest = _KeyedFrameBuffer + y * _FrameWidth;
+		for (int x = 0; x < _FrameWidth; x++) {
+			unsigned short const pixel = source[x];
+			dest[x] = (pixel == BACKEND_LAYER_KEY) ? 0 : _ConvertTable[pixel];
+		}
+	}
+	bgfx::updateTexture2D(_KeyedFrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_KeyedFrameBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
 	return(true);
 }
 
@@ -367,6 +501,7 @@ void Backend_Shutdown(void)
 	}
 
 	Destroy_Prescale_Target();
+	Destroy_Layer();
 
 	if (bgfx::isValid(_FrameTexture)) {
 		bgfx::destroy(_FrameTexture);
@@ -412,6 +547,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 		bgfx::destroy(_FrameTexture);
 		_FrameTexture = BGFX_INVALID_HANDLE;
 	}
+	Destroy_Layer();
 
 	// bgfx names packed formats from their low bits up, so its B5G6R5 is the layout the
 	// game already draws in. Emulated support would convert every upload on the way
@@ -461,6 +597,50 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 
 
 /// <summary>
+/// Submits the layer and then the frame over it, with the frame's key pixels see-through. False
+/// means nothing was submitted and the frame should be presented without the layer.
+/// </summary>
+static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer)
+{
+	if (layer.Pixels != NULL) {
+		if (!Upload_Layer(layer)) {
+			return(false);
+		}
+	} else if (!_LayerUploaded) {
+		return(false);
+	}
+
+	if (pixels != NULL) {
+		if (!Upload_Keyed_Frame(pixels, pitch)) {
+			return(false);
+		}
+		_KeyedFrameUploaded = true;
+		// The plain frame texture now holds an older picture than the screen shows.
+		_FrameUploaded = false;
+	} else if (!_KeyedFrameUploaded) {
+		return(false);
+	}
+
+	bgfx::setViewFrameBuffer(VIEW_PRESENT, BGFX_INVALID_HANDLE);
+	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
+	bgfx::setViewMode(VIEW_PRESENT, bgfx::ViewMode::Sequential);
+	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
+
+	unsigned int const clamp = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+
+	// The map keeps whole pixels while it is drawn at its own size or larger, and is smoothed when shrunk.
+	bool const layer_shrunk = layer.DestWidth < _LayerWidth || layer.DestHeight < _LayerHeight;
+	if (!Submit_Quad(VIEW_PRESENT, _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
+		return(false);
+	}
+
+	unsigned int const framesampler = clamp | (mode == BACKEND_SCALE_LINEAR ? 0 : BGFX_SAMPLER_POINT);
+	_FramePointSampled = (framesampler & BGFX_SAMPLER_POINT) != 0;
+	return(Submit_Quad(VIEW_PRESENT, _KeyedFrameTexture, (float)destx, (float)desty, (float)destwidth, (float)destheight, framesampler, false, true));
+}
+
+
+/// <summary>
 /// Submits the frame to the window, uploading new pixels first when given any.
 /// The frame reaches the screen when Backend_End_Frame runs; whatever is submitted in
 /// between draws over it.
@@ -473,9 +653,10 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 /// <param name="destwidth">How wide the frame is drawn.</param>
 /// <param name="destheight">How tall the frame is drawn.</param>
 /// <param name="mode">How the frame is filtered when it is drawn larger than it is.</param>
+/// <param name="layer">A picture to draw under the frame, or NULL for none.</param>
 /// <returns>bool; Was a frame submitted? When not, the window is unchanged and nothing should
 /// be drawn over it.</returns>
-bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode)
+bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer)
 {
 	if (!_Initialized || !bgfx::isValid(_FrameTexture)) {
 		return(false);
@@ -491,6 +672,10 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	}
 
 	_FramePending = true;
+
+	if (layer != NULL && Present_With_Layer(pixels, pitch, destx, desty, destwidth, destheight, mode, *layer)) {
+		return(true);
+	}
 
 	if (pixels != NULL) {
 		if (_FrameIs565) {
@@ -570,6 +755,14 @@ void Backend_End_Frame(void)
 
 	_FramePending = false;
 	bgfx::frame();
+}
+
+
+void Backend_Request_Window_Capture(char const * filepath)
+{
+	if (_Initialized) {
+		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
+	}
 }
 
 

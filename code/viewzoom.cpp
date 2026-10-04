@@ -22,6 +22,7 @@
 #include "map.h"
 #include "mmsys.h"
 #include "tactical.h"
+#include "video.h"
 
 #include <algorithm>
 #include <cmath>
@@ -132,8 +133,19 @@ Rect Shown_Map_Rect(void)
 }
 
 
+bool Draw_Map_Layer_Into(Surface & frame)
+{
+	if (MapCompositeSurface == NULL || !Video_Map_Layer_Supported()) {
+		return(false);
+	}
+	frame.Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+	return(true);
+}
+
+
 void Allocate_Map_Surfaces(void)
 {
+	Video_Set_Map_Layer(NULL, Rect(), Rect());
 	delete MapCompositeSurface;
 	MapCompositeSurface = NULL;
 	delete MapTileSurface;

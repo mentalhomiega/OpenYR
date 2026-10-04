@@ -12,6 +12,8 @@
 #include "point.h"
 #include "rect.h"
 
+class Surface;
+
 /*
  * Map view zoom. The map is drawn into its own surfaces at TacticalRect's size and scaled
  * into ScreenTacticalRect, the map's area on screen. A zoom below 1 shows more of the map and
@@ -42,6 +44,10 @@ Rect Shown_Map_Rect(void);
 
 // Moves DisplayZoom along a glide in progress. Call it before each draw.
 void Update_Display_Zoom(void);
+
+// Draws the map layer into a copy of the frame, as the presenter shows it. Returns false, leaving
+// the copy alone, when the map is drawn into the frame itself.
+bool Draw_Map_Layer_Into(Surface & frame);
 
 // Builds or frees the map's own surfaces to match TacticalRect and ViewZoom.
 void Allocate_Map_Surfaces(void);

@@ -75,6 +75,7 @@
 #include "_rules.h"
 #include "_script.h"
 #include "_surface.h"
+#include "viewzoom.h"
 #include "_tactica.h"
 #include "_theater.h"
 #include "_timer.h"
@@ -209,6 +210,7 @@
 #include "scrnsel.hh"
 
 #include <algorithm>
+#include <memory>
 #include <conio.h>
 #include <ctime>
 #include <dos.h>
@@ -4599,6 +4601,18 @@ class ScreenCaptureCommandClass : public CommandClass
 			{
 				// The presented frame, at render resolution whatever the window size.
 				DSurface const * surface = (DSurface const *)VisibleSurface;
+
+				// While the map is its own layer the frame holds only the interface, so the map is put back in a copy.
+				std::unique_ptr<DSurface> composed;
+				if (MapCompositeSurface != NULL) {
+					Rect const all(0, 0, surface->Get_Width(), surface->Get_Height());
+					composed = std::make_unique<DSurface>(all.Width, all.Height);
+					composed->Blit_From(all, *surface, all);
+					if (Draw_Map_Layer_Into(*composed)) {
+						surface = composed.get();
+					}
+				}
+
 				unsigned short const * pixels = (unsigned short const *)surface->Get_Buffer();
 				if (pixels == NULL) {
 					return;

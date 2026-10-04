@@ -54,6 +54,12 @@ static VideoScaleInfo _ScaleInfo;
 
 static VideoDirtyStateClass _Dirty;
 
+// The map layer drawn under the frame, and whether its pixels changed since the last present.
+static Surface const * _LayerSurface = NULL;
+static Rect _LayerSource;
+static Rect _LayerDest;
+static bool _LayerFresh = false;
+
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
 
@@ -289,6 +295,21 @@ void Video_Set_Refresh_Rate(int refreshrate)
 }
 
 
+bool Video_Map_Layer_Supported(void)
+{
+	return(_Initialized);
+}
+
+
+void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & dest)
+{
+	_LayerSurface = surface;
+	_LayerSource = source;
+	_LayerDest = dest;
+	_LayerFresh = (surface != NULL);
+}
+
+
 /// <summary>
 /// Records that the visible surface has been drawn to since the last present.
 /// </summary>
@@ -328,7 +349,29 @@ static void Present(void)
 	_LastPresentTime = timeGetTime();
 
 	_Presenting = true;
-	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode());
+
+	BackendLayer layer;
+	BackendLayer const * layerptr = NULL;
+	if (_LayerSurface != NULL) {
+		DSurface const * source = (DSurface const *)_LayerSurface;
+		char const * base = (char const *)source->Get_Buffer();
+		if (base != NULL) {
+			layer.Pixels = _LayerFresh ? base + _LayerSource.Y * source->Stride() + _LayerSource.X * 2 : NULL;
+			layer.Pitch = source->Stride();
+			layer.Width = _LayerSource.Width;
+			layer.Height = _LayerSource.Height;
+			layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
+			layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
+			layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
+			layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+			layerptr = &layer;
+		}
+	}
+
+	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr);
+	if (presented && layerptr != NULL) {
+		_LayerFresh = false;
+	}
 	if (presented) {
 		if (snapshot.Upload) {
 			_Dirty.Upload_Completed();

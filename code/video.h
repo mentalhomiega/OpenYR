@@ -10,6 +10,7 @@
 #pragma once
 
 #include "nativewindow.hh"
+#include "rect.h"
 
 #include <cstdint>
 
@@ -50,6 +51,19 @@ void Video_Set_Refresh_Rate(int refreshrate);
 void Video_Mark_Dirty(void);
 void Video_Mark_Overlay_Dirty(void);
 void Video_Present(void);
+
+class Surface;
+
+// The frame colour that shows the map layer through it.
+unsigned short const VIDEO_LAYER_KEY = 0xF81F;
+
+// Whether the presenter can draw the map as its own layer under the frame.
+bool Video_Map_Layer_Supported(void);
+
+// Draws part of a surface under the frame area dest (in frame pixels) wherever the frame holds
+// VIDEO_LAYER_KEY, from the next present on. Call it after each draw of the surface; a NULL
+// surface removes the layer.
+void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & dest);
 void Video_Present_If_Dirty(void);
 void Video_Present_Now(void);
 

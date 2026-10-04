@@ -425,8 +425,15 @@ void GScreenClass::Render(void)
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	use_map_surfaces(false);
-	if (zoomed) {
-		CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+	if (zoomed && Video_Map_Layer_Supported()) {
+		// The presenter draws the map under the frame at the window's own resolution.
+		CompositeSurface->Fill_Rect(ScreenTacticalRect, VIDEO_LAYER_KEY);
+		Video_Set_Map_Layer(MapCompositeSurface, Shown_Map_Rect(), ScreenTacticalRect);
+	} else {
+		if (zoomed) {
+			CompositeSurface->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+		}
+		Video_Set_Map_Layer(NULL, Rect(), Rect());
 	}
 
 	if (Buttons) Buttons->Draw_All(false);
