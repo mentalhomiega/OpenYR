@@ -850,6 +850,16 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 
 			TechnoClass * tech = cellptr->Cell_Building();
 
+			// A soldier under mind control is turned away instead of going inside, as in Yuri's Revenge.
+			if (tech != NULL && (tech == NavCom || tech == TarCom) && MindControlledBy != NULL) {
+				Assign_Target(NULL);
+				Assign_Destination(NULL);
+				Enter_Idle_Mode();
+				Scatter(COORD_NONE, true);
+				BEnd(BENCH_PCP);
+				return;
+			}
+
 			if (tech != NULL && (tech == NavCom || tech == TarCom)) {
 				if (tech->Tag) {
 					tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
@@ -2969,6 +2979,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 		BuildingClass const * bldg = (BuildingClass *)object;
 		if (!bldg->Considered_Vehicle() || bldg->Class->IsMobileWar) {
 			if (bldg->Class->IsRepairable || bldg->Class->IsMobileWar) {
+				// An engineer under mind control may not go inside to repair or capture, as in Yuri's Revenge.
+				if (MindControlledBy != NULL && (bldg->Class->IsBridgeRepairHut || House->Is_Ally(bldg) || bldg->Class->IsCaptureable)) {
+					return(ACTION_NO_ENTER);
+				}
 				if (bldg->Class->IsBridgeRepairHut) {
 					return(Map.Can_Repair_Bridge(bldg->Center_Coord()) ? ACTION_GREPAIR : ACTION_NO_GREPAIR);
 				}
@@ -3124,7 +3138,8 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 					**	the shore - a total island.  In that case, we can't capture
 					**	it, so we shouldn't show the action-capture cursor.
 					*/
-					action = ACTION_CAPTURE;
+					// A soldier under mind control may not go inside to capture or infiltrate, as in Yuri's Revenge.
+					action = MindControlledBy != NULL ? ACTION_NO_ENTER : ACTION_CAPTURE;
 					if (object->RTTI == RTTI_BUILDING) {
 						Cell cell = object->Center_Coord().As_Cell();
 						int targzone = Map.Get_Cell_Zone(Get_Target_Cell(), Class->MZone, IsOnBridge);
