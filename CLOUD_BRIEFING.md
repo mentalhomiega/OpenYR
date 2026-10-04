@@ -61,6 +61,14 @@ The owner knows Yuri's Revenge well. These answers settle questions from earlier
 
 Research on Ares and Phobos is done in separate sessions that follow `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone. `CLOUD_JOBS.md` holds the prompts the owner uses to start one-off sessions.
 
+## The combined nightly branch
+
+The owner's PC tests only the newest `cloud/nightly-YYYY-MM-DD` branch in the real game, and treats any other branch whose commits it contains as tested. So the nightly session also gathers the day's work:
+
+1. Find every `origin/cloud/*` branch that changes `code/`, `tests/` or `CMakeLists.txt`, is not merged into `yr`, and is not yet contained in an earlier nightly branch (`git cherry origin/cloud/nightly-<earlier date> <branch>` shows only `-` lines when it is). Include branches from one-off sessions started with `CLOUD_JOBS.md`, such as `cloud/docks-*` or `cloud/mind-control-enter-*`.
+2. Review each one first, as in task 2. Merge the ones that pass into tonight's nightly branch with `git merge --no-ff`, together with tonight's own fixes.
+3. Leave out a branch that conflicts with another or that the review rejects, and say why in the night log. The owner's PC then tests it on its own.
+
 ## Night log
 
 Each nightly session keeps a log so the next one can carry on from it.
