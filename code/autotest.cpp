@@ -959,8 +959,13 @@ void Run(StepType const & step)
 		Set_View_Zoom(std::atof(step.Argument.c_str()));
 		DebugString("AUTOTEST zoom %.2f view %dx%d on screen %dx%d\n", ViewZoom, TacticalRect.Width, TacticalRect.Height, ScreenTacticalRect.Width, ScreenTacticalRect.Height);
 	} else if (step.Command == "wheel") {
-		// wheel <step>: glides the zoom by that step, as the mouse wheel does.
-		Request_View_Zoom_Step(std::atof(step.Argument.c_str()));
+		// wheel <step> [x y]: glides the zoom by that step around a screen point, as the mouse wheel
+		// does; without a point the zoom centers on the middle of the map view.
+		Point2D point = ScreenTacticalRect.Top_Left() + Point2D(ScreenTacticalRect.Width / 2, ScreenTacticalRect.Height / 2);
+		if (step.X != 0 || step.Y != 0) {
+			point = Point2D(step.X, step.Y);
+		}
+		Request_View_Zoom_Step(std::atof(step.Argument.c_str()), point);
 	} else if (step.Command == "glideclock") {
 		// glideclock: times zoom glides by game frames, for recordings.
 		ViewZoomGameClock = true;

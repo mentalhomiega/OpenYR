@@ -48,8 +48,9 @@ void Allocate_Map_Surfaces(void);
 // Changes the zoom at once, keeping the map centered where it was. Returns whether it changed.
 bool Set_View_Zoom(double zoom);
 
-// Asks for a zoom change by the given step; the next Apply_Pending_View_Zoom starts a glide to it.
-void Request_View_Zoom_Step(double step);
+// Asks for a zoom change by the given step around a screen point, which stays over the same part
+// of the map; the next Apply_Pending_View_Zoom starts a glide to it.
+void Request_View_Zoom_Step(double step, Point2D const & screen_point);
 
 // Applies a requested zoom change. Call it between frames, never while the map is being drawn.
 void Apply_Pending_View_Zoom(void);

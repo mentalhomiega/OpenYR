@@ -48,6 +48,14 @@ static double _FromMiddleY = 0.0;
 static double _ToMiddleX = 0.0;
 static double _ToMiddleY = 0.0;
 
+// The screen point the zoom is centered on, as an offset from ScreenTacticalRect's corner, and the
+// map pixel under it when the glide started.
+static Point2D _PendingAnchor;
+static double _AnchorScreenX = 0.0;
+static double _AnchorScreenY = 0.0;
+static double _AnchorMapX = 0.0;
+static double _AnchorMapY = 0.0;
+
 
 static unsigned int Glide_Clock(void)
 {
@@ -62,10 +70,18 @@ static Point2D View_Corner(void)
 }
 
 
+// The view's middle at the given zoom that keeps the anchor's map pixel under the anchor.
+static void Glide_Middle(double zoom, double & middlex, double & middley)
+{
+	middlex = _AnchorMapX + (ScreenTacticalRect.Width / 2.0 - _AnchorScreenX) / zoom;
+	middley = _AnchorMapY + (ScreenTacticalRect.Height / 2.0 - _AnchorScreenY) / zoom;
+}
+
+
 /// <summary>
 /// The part of TacticalRect shown on screen, as an offset from TacticalRect's corner and a size.
-/// It is all of TacticalRect except during a glide, when its middle slides from where the glide
-/// started to where it will end so the view never jumps where the map edge holds it back.
+/// It is all of TacticalRect except during a glide, when it keeps the map under the anchor in place,
+/// shifted step by step toward where the map edges let the glide end.
 /// </summary>
 static Rect Shown_View_Area(void)
 {
@@ -75,8 +91,10 @@ static Rect Shown_View_Area(void)
 	int const width = std::min(TacticalRect.Width, int(ScreenTacticalRect.Width / DisplayZoom));
 	int const height = std::min(TacticalRect.Height, int(ScreenTacticalRect.Height / DisplayZoom));
 	Point2D const corner = View_Corner();
-	double const middlex = _FromMiddleX + (_ToMiddleX - _FromMiddleX) * _GlideProgress;
-	double const middley = _FromMiddleY + (_ToMiddleY - _FromMiddleY) * _GlideProgress;
+	double middlex, middley;
+	Glide_Middle(DisplayZoom, middlex, middley);
+	middlex += (_ToMiddleX - _FromMiddleX) * _GlideProgress;
+	middley += (_ToMiddleY - _FromMiddleY) * _GlideProgress;
 	int const x = std::clamp(int(middlex - corner.X - width / 2.0), 0, TacticalRect.Width - width);
 	int const y = std::clamp(int(middley - corner.Y - height / 2.0), 0, TacticalRect.Height - height);
 	return(Rect(x, y, width, height));
@@ -181,9 +199,10 @@ bool Set_View_Zoom(double zoom)
 }
 
 
-void Request_View_Zoom_Step(double step)
+void Request_View_Zoom_Step(double step, Point2D const & screen_point)
 {
 	_PendingZoomStep += step;
+	_PendingAnchor = screen_point - ScreenTacticalRect.Top_Left();
 }
 
 
@@ -214,23 +233,33 @@ void Apply_Pending_View_Zoom(void)
 		_PendingZoomStep = 0.0;
 		if (std::abs(target - _TargetZoom) >= 0.001) {
 			Update_Display_Zoom();
-			Shown_Middle(_FromMiddleX, _FromMiddleY);
+			Rect const shown = Shown_View_Area();
+			Point2D const was_corner = View_Corner();
+			_AnchorScreenX = std::clamp(_PendingAnchor.X, 0, ScreenTacticalRect.Width);
+			_AnchorScreenY = std::clamp(_PendingAnchor.Y, 0, ScreenTacticalRect.Height);
+			_AnchorMapX = was_corner.X + shown.X + _AnchorScreenX * shown.Width / ScreenTacticalRect.Width;
+			_AnchorMapY = was_corner.Y + shown.Y + _AnchorScreenY * shown.Height / ScreenTacticalRect.Height;
 			_GlideFrom = DisplayZoom;
+			double wantx, wanty;
+			Glide_Middle(target, wantx, wanty);
 			_TargetZoom = target;
 			_GlideStart = Glide_Clock();
 			_GlideProgress = 0.0;
 			_Gliding = true;
 
 			if (target < ViewZoom) {
-				Set_Drawn_Zoom(target, _FromMiddleX, _FromMiddleY);
+				Set_Drawn_Zoom(target, wantx, wanty);
 			}
 
-			// Where the view will end: the target's view around the same middle, held inside what is drawn.
+			// Where the view will end: the wanted middle held inside what is drawn. _From and _To keep
+			// only the difference the edges make, which the glide adds in step by step.
 			Point2D const corner = View_Corner();
 			double const halfwidth = std::min(TacticalRect.Width, int(ScreenTacticalRect.Width / target)) / 2.0;
 			double const halfheight = std::min(TacticalRect.Height, int(ScreenTacticalRect.Height / target)) / 2.0;
-			_ToMiddleX = std::clamp(_FromMiddleX, corner.X + halfwidth, corner.X + TacticalRect.Width - halfwidth);
-			_ToMiddleY = std::clamp(_FromMiddleY, corner.Y + halfheight, corner.Y + TacticalRect.Height - halfheight);
+			_FromMiddleX = wantx;
+			_FromMiddleY = wanty;
+			_ToMiddleX = std::clamp(wantx, corner.X + halfwidth, corner.X + TacticalRect.Width - halfwidth);
+			_ToMiddleY = std::clamp(wanty, corner.Y + halfheight, corner.Y + TacticalRect.Height - halfheight);
 		}
 	}
 

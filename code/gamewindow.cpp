@@ -115,7 +115,7 @@ static void On_Mouse_Wheel(int delta)
 	_HandlingMouseWheel = true;
 	// Over the map the wheel zooms; anywhere else it scrolls the sidebar.
 	if (GameActive && TacticalMap != NULL && MouseCursor != NULL && ScreenTacticalRect.Is_Point_Within(MouseCursor->Get_Mouse_Point())) {
-		Request_View_Zoom_Step(delta > 0 ? 0.1 : -0.1);
+		Request_View_Zoom_Step(delta > 0 ? 0.1 : -0.1, MouseCursor->Get_Mouse_Point());
 	} else {
 		Execute_Command(delta < 0 ? "SidebarDown" : "SidebarUp");
 	}
