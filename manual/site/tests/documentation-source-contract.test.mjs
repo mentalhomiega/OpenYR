@@ -883,7 +883,7 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 4, 'the buildable scan and the three defense scans ask the seam');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 7, 'the buildable scan, the three defense scans, RequiredHouses, ForbiddenHouses and the harvester check ask the seam');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 
@@ -1107,7 +1107,7 @@ test('A map naming no declared theater falls back rather than indexing', () => {
 	], 'an unmatched name is reported and replaced by the default');
 });
 
-test('New theater artwork is renamed by image letter, not by a prefix list', () => {
+test('Theater artwork takes the theater\'s image letter when its name starts with a theater prefix', () => {
 	const objtype = source('code/objtype.cpp');
 	const rename = functionBody(
 		objtype,
@@ -1115,7 +1115,7 @@ test('New theater artwork is renamed by image letter, not by a prefix list', () 
 	);
 
 	assert.match(rename, /TheaterClass::As_Reference\(theater\)\.ImageLetter/, 'the letter comes from the theater');
-	assert.match(rename, /Theaters\[index\]->ImageLetter/, 'a name qualifies by carrying some theater letter');
+	assert.match(rename, /first == 'g' \|\| first == 'n' \|\| first == 'c' \|\| first == 'y'/, 'a name qualifies by its first letter, as Yuri\'s Revenge does');
 	assert.doesNotMatch(objtype, /"ga"|"na"|"gt"|"nt"|"ca"|"ct"/, 'no fixed prefix list remains');
 	assert.match(
 		functionBody(objtype, 'void ObjectTypeClass::Fetch_Normal_Image(void)'),
