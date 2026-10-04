@@ -78,6 +78,12 @@ class ModScanTest(unittest.TestCase):
         self.assertIn("unknown: secretkey", text)
         self.assertNotIn("hunter2", text)
 
+    def test_shipped_phobos_patterns(self):
+        origins = mod_scan.load_origins()
+        for key in ("PrimaryFireFLH.Burst0", "VoiceWeapon3Attack", "Insignia.Weapon2.Elite",
+                    "TiberiumEater.Cell4", "AircraftDockingDir1"):
+            self.assertEqual(mod_scan.classify(key, origins), "phobos", key)
+
     def test_missing_files(self):
         self.assertEqual(mod_scan.main([str(self.root)]), 2)
 

@@ -5,6 +5,7 @@
 178
 <Sequence>Normalized
 <Sequence>Rate
+<x>FLH.Burst<n>
 AbsorbOverDamage
 AbsorbPercent
 Adjacent.Allowed
@@ -49,6 +50,7 @@ AirburstWeapon.SourceScatterMax
 AirburstWeapon.SourceScatterMin
 AirburstWeapon.UseFiringEffects
 Aircraft.DefaultDigitalDisplayTypes
+AircraftDockingDir
 AircraftDockingDir(N)
 AircraftDockingDir.DefaultToPoseDir
 AircraftFiringForceScatter
@@ -578,6 +580,7 @@ ExtendedAircraftMissions.UnlandDamage
 ExtendedPlayerRepair
 ExtendedToolTips
 ExtraBarrelCount
+ExtraBarrelOffset<n>
 ExtraBarrelOffsetX
 ExtraRange.FirerMoving
 ExtraRange.Prefiring
@@ -591,6 +594,7 @@ ExtraThreatCoefficient.DistanceToLastTarget
 ExtraThreatCoefficient.Facing
 ExtraThreatCoefficient.InRangeDistance
 ExtraTurretCount
+ExtraTurretOffset<n>
 ExtraTurretOffsetX
 ExtraWarheads
 ExtraWarheads.DamageOverrides
@@ -746,6 +750,7 @@ InitialStrength
 InitialStrength.Cloning
 Insignia
 Insignia.Elite
+Insignia.Passengers<n>
 Insignia.PassengersN
 Insignia.PassengersN.Elite
 Insignia.PassengersN.Rookie
@@ -753,24 +758,29 @@ Insignia.PassengersN.Veteran
 Insignia.Rookie
 Insignia.ShowEnemy
 Insignia.Veteran
+Insignia.Weapon<n>
 Insignia.WeaponN
 Insignia.WeaponN.Elite
 Insignia.WeaponN.Rookie
 Insignia.WeaponN.Veteran
 InsigniaFrame
 InsigniaFrame.Elite
+InsigniaFrame.Passengers<n>
 InsigniaFrame.PassengersN
 InsigniaFrame.PassengersN.Elite
 InsigniaFrame.PassengersN.Rookie
 InsigniaFrame.PassengersN.Veteran
 InsigniaFrame.Rookie
 InsigniaFrame.Veteran
+InsigniaFrame.Weapon<n>
 InsigniaFrame.WeaponN
 InsigniaFrame.WeaponN.Elite
 InsigniaFrame.WeaponN.Rookie
 InsigniaFrame.WeaponN.Veteran
 InsigniaFrames
+InsigniaFrames.Passengers<n>
 InsigniaFrames.PassengersN
+InsigniaFrames.Weapon<n>
 InsigniaFrames.WeaponN
 Interceptable
 Interceptable.DeleteOnIntercept
@@ -1425,6 +1435,7 @@ TiberiumEater.Anims.Tiberium1
 TiberiumEater.Anims.Tiberium2
 TiberiumEater.Anims.Tiberium3
 TiberiumEater.CashMultiplier
+TiberiumEater.Cell<n>
 TiberiumEater.CellN
 TiberiumEater.Display
 TiberiumEater.Display.Houses
@@ -1590,9 +1601,11 @@ VisualScatter
 VisualScatter.Max
 VisualScatter.Min
 VoiceCreated
+VoiceEliteWeapon<n>Attack
 VoiceEliteWeaponNAttack
 VoiceEnterGrinder
 VoicePickup
+VoiceWeapon<n>Attack
 VoiceWeaponNAttack
 VoxelLightSource
 Wake
@@ -1614,6 +1627,7 @@ WarpOutWeapon
 WaterImage.ConditionRed
 WaterImage.ConditionYellow
 Weapon
+WeaponGroupAs<n>
 WeaponGroupAsN
 WeaponRange.AllowWeapons
 WeaponRange.DisallowWeapons

@@ -1,6 +1,6 @@
 # Phobos tags
 
-Sources: the [Phobos documentation](https://github.com/Phobos-developers/Phobos/tree/develop/docs). A tick (✔) marks a tag this engine already reads. Sizes, file lists and dependencies are estimates from file names, not traced through the code; effects are unverified until tested with the real game. Covered so far: projectiles, weapons, warheads, superweapons and global settings.
+Sources: the [Phobos documentation](https://github.com/Phobos-developers/Phobos/tree/develop/docs). A tick (✔) marks a tag this engine already reads. Sizes, file lists and dependencies are estimates from file names, not traced through the code; effects are unverified until tested with the real game. Covered so far: projectiles, weapons, superweapons, warheads, global settings, technos (with the vehicle, infantry and aircraft pages), buildings, interface and animations. A row whose section ends in "default", such as "[General] default", holds the value used by types that do not set their own. Rows for `[Phobos]` in RA2MD.INI are player settings, not mod settings. On a TechnoType row the tick means the engine reads the key for vehicles, infantry and aircraft; a key read only for buildings gets no tick there.
 
 ## Projectiles
 
