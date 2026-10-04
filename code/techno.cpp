@@ -7702,13 +7702,15 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 
 
 /// <summary>
-/// Whether this transport accepts the passenger: its kind against IsVehicleTransport, and
-/// its Size against both the room left in the hold and this transport's SizeLimit.
+/// Whether this transport accepts the passenger: not one under mind control, as in Yuri's
+/// Revenge; its kind against IsVehicleTransport; and its Size against both the room left in
+/// the hold and this transport's SizeLimit.
 /// Every route into a hold consults this, from a player's order to the check on arrival.
 /// </summary>
 bool TechnoClass::Can_Fit_Passenger(ObjectClass const * passenger) const
 {
 	if (passenger == NULL) return(false);
+	if (passenger->Is_Techno() && ((TechnoClass const *)passenger)->MindControlledBy != NULL) return(false);
 
 	TechnoTypeClass const * ptype = passenger->TClass;
 	if (ptype == NULL) return(false);
