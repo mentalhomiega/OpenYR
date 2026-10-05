@@ -871,6 +871,17 @@ void Run(StepType const & step)
 			}
 		}
 		if (highest != NULL) DebugString("AUTOTEST   highcell %d,%d height %d\n", highest->Fetch_CellID().X, highest->Fetch_CellID().Y, highest->Height);
+	} else if (step.Command == "inrange") {
+		// inrange <TypeID>: whether each of the player's objects of that type has each other player object in primary weapon range.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			for (int other = 0; other < Technos.Count(); other++) {
+				TechnoClass * target = Technos[other];
+				if (target == techno || target->House != PlayerPtr) continue;
+				DebugString("AUTOTEST   inrange %s -> %s at %d leptons: %d fire error %d turret %d wants %d\n", techno->TClass->Name(), target->TClass->Name(), (int)(Point2D(techno->Center_Coord()) - Point2D(target->Center_Coord())).Length(), (int)techno->In_Range(target, 0), (int)techno->Can_Fire(target, 0), (int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256());
+			}
+		}
 	} else if (step.Command == "elevation") {
 		// elevation <TypeID>: the elevation range bonus each of the player's objects of that type has against each other one.
 		for (int index = 0; index < Technos.Count(); index++) {

@@ -289,6 +289,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	RateDown(0),
 	IsGunner(false),
 	IFVMode(0),
+	AirRangeBonus(0),
 	IsOpenTopped(false),
 	OpenTransportWeapon(-1),
 	FlightLevel(-1),
@@ -929,6 +930,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
 		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
+		AirRangeBonus = ini.Get_Lepton(Name(), "AirRangeBonus", AirRangeBonus);
 		IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
 		OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
 		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
@@ -1234,7 +1236,11 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 	}
 
 	if (target != NULL && weapon != NULL) {
-		int range = weapon->Range + bonus - CELL_LEPTON / 3;
+		// A target in the air is reached AirRangeBonus farther (TechnoClass::InRange, 0x6F7274).
+		int range = weapon->Range + bonus;
+		if (target->In_Air()) {
+			range += AirRangeBonus;
+		}
 		Coord tcoord = target->Center_Coord();
 		int minrange = weapon->MinimumRange;
 
@@ -1244,6 +1250,9 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 
 		if (weapon->Bullet->IsArcing) {
 			int dist = (Point2D(coord) - Point2D(tcoord)).Length();
+			if (dist > range) {
+				return(false);
+			}
 			int height = tcoord.Z - coord.Z;
 			double gravity = weapon->Bullet->IsFloater ? Get_Floater_Gravity() : Rule->Gravity;
 			if (!Is_Projectile_Trajectory_Valid(weapon->MaxSpeed, dist, height, gravity) || (Map[tcoord].IsUnderBridge && tcoord.Z - coord.Z >= 3 * LEVEL_LEPTON_H)) {
@@ -1552,6 +1561,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RateDown);
 	stream.Serialize(IsGunner);
 	stream.Serialize(IFVMode);
+	stream.Serialize(AirRangeBonus);
 	stream.Serialize(TurretWeapon);
 	stream.Serialize(IsOpenTopped);
 	stream.Serialize(OpenTransportWeapon);

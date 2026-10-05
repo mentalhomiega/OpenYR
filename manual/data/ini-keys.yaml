@@ -1875,6 +1875,23 @@ Aggressive:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+AirRangeBonus:
+  key: AirRangeBonus
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AirRangeBonus
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Airburst:
   key: Airburst
   scopes:
