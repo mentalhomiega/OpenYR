@@ -78,6 +78,7 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	BASECLASS(name),
 	IsAirburst(false),
 	IsFloater(false),
+	IsSubjectToElevation(false),
 	IsHigh(false),
 	IsSubjectToCliffs(false),
 	IsSubjectToWalls(false),
@@ -171,6 +172,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		Color = ini.Get_Scheme_Index(Name(), "Color", Color);
 		IsArcing = ini.Get_Bool(Name(), "Arcing", IsArcing);
 		IsFloater = ini.Get_Bool(Name(), "Floater", IsFloater);
+		IsSubjectToElevation = ini.Get_Bool(Name(), "SubjectToElevation", IsSubjectToElevation);
 		IsHigh = ini.Get_Bool(Name(), "High", IsHigh);
 		IsSubjectToCliffs = ini.Get_Bool(Name(), "SubjectToCliffs", IsSubjectToCliffs);
 		IsSubjectToWalls = ini.Get_Bool(Name(), "SubjectToWalls", IsSubjectToWalls);
@@ -336,6 +338,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(IsAirburst);
 	stream.Serialize(IsFloater);
+	stream.Serialize(IsSubjectToElevation);
 	stream.Serialize(IsHigh);
 	stream.Serialize(IsSubjectToCliffs);
 	stream.Serialize(IsSubjectToWalls);

@@ -453,6 +453,9 @@ RulesClass::RulesClass(void) :
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
 	RadLevelMax(0),
+	ElevationIncrement(0),
+	ElevationIncrementBonus(1.0),
+	ElevationBonusCap(0.0),
 	RadLevelDelay(0),
 	RadLightDelay(0),
 	RadLevelFactor(0.0),
@@ -998,6 +1001,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Audio_Visual_Rules(ini);
 	Special_Weapons(ini);
 	Radiation(ini);
+	Elevation_Model(ini);
 
 	BEnd(BENCH_RULES);
 
@@ -1279,6 +1283,23 @@ bool RulesClass::Radiation(CCINIClass const & ini)
 		RadLightFactor = ini.Get_Float(RADIATION, "RadLightFactor", RadLightFactor);
 		RadTintFactor = ini.Get_Float(RADIATION, "RadTintFactor", RadTintFactor);
 		RadSiteWarhead = TGet_Class(ini, RADIATION, "RadSiteWarhead", RadSiteWarhead);
+		return(true);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Fetches the range bonus a firer gets for standing above its target (RulesClass::ElevationModel).
+/// </summary>
+/// <returns>bool; Was the [ElevationModel] section found and processed?</returns>
+bool RulesClass::Elevation_Model(CCINIClass const & ini)
+{
+	static char const * const ELEVATIONMODEL = "ElevationModel";
+	if (ini.Is_Present(ELEVATIONMODEL)) {
+		ElevationIncrement = ini.Get_Int(ELEVATIONMODEL, "ElevationIncrement", ElevationIncrement);
+		ElevationIncrementBonus = ini.Get_Float(ELEVATIONMODEL, "ElevationIncrementBonus", ElevationIncrementBonus);
+		ElevationBonusCap = ini.Get_Float(ELEVATIONMODEL, "ElevationBonusCap", ElevationBonusCap);
 		return(true);
 	}
 	return(false);
@@ -2717,6 +2738,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);
 	stream.Serialize(RadLevelMax);
+	stream.Serialize(ElevationIncrement);
+	stream.Serialize(ElevationIncrementBonus);
+	stream.Serialize(ElevationBonusCap);
 	stream.Serialize(RadLevelDelay);
 	stream.Serialize(RadLightDelay);
 	stream.Serialize(RadLevelFactor);

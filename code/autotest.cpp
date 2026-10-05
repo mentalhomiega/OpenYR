@@ -860,6 +860,28 @@ void Run(StepType const & step)
 				break;
 			}
 		}
+	} else if (step.Command == "highcell") {
+		// highcell: the highest cell on the map.
+		CellClass const * highest = NULL;
+		for (int y = 0; y < 512; y++) {
+			for (int x = 0; x < 512; x++) {
+				if (!Map.In_Radar(Cell(x, y))) continue;
+				CellClass const * cell = &Map[Cell(x, y)];
+				if (highest == NULL || cell->Height > highest->Height) highest = cell;
+			}
+		}
+		if (highest != NULL) DebugString("AUTOTEST   highcell %d,%d height %d\n", highest->Fetch_CellID().X, highest->Fetch_CellID().Y, highest->Height);
+	} else if (step.Command == "elevation") {
+		// elevation <TypeID>: the elevation range bonus each of the player's objects of that type has against each other one.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			for (int other = 0; other < Technos.Count(); other++) {
+				TechnoClass * target = Technos[other];
+				if (target == techno || target->House != PlayerPtr || stricmp(target->TClass->Name(), step.Argument.c_str()) != 0) continue;
+				DebugString("AUTOTEST   elevation %d,%d height %d -> %d,%d height %d bonus %d\n", techno->Get_Cell().X, techno->Get_Cell().Y, Map[techno->Get_Cell()].Height, target->Get_Cell().X, target->Get_Cell().Y, Map[target->Get_Cell()].Height, techno->Elevation_Range_Bonus(target));
+			}
+		}
 	} else if (step.Command == "types") {
 		// types <prefix>: every structure type whose ID starts with the prefix.
 		for (int index = 0; index < BuildingTypes.Count(); index++) {

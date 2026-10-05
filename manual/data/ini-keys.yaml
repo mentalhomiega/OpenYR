@@ -11399,6 +11399,60 @@ ElectricAssault:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+ElevationBonusCap:
+  key: ElevationBonusCap
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: ElevationModel
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: RulesClass
+      member: ElevationBonusCap
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ElevationIncrement:
+  key: ElevationIncrement
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: ElevationModel
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: ElevationIncrement
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ElevationIncrementBonus:
+  key: ElevationIncrementBonus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: ElevationModel
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: ElevationIncrementBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 EligibleForDelayKill:
   key: EligibleForDelayKill
   scopes:
@@ -32763,6 +32817,23 @@ SubjectToCliffs:
       default_candidate: 'no'
       declared_in: BulletTypeClass
       member: IsSubjectToCliffs
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
+SubjectToElevation:
+  key: SubjectToElevation
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsSubjectToElevation
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass

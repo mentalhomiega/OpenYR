@@ -745,6 +745,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
+		int Elevation_Range_Bonus(AbstractClass const * target) const;
 		virtual void Death_Announcement(TechnoClass const * source=0) const = 0;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which=0) const;
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const;

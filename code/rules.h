@@ -104,6 +104,7 @@ class RulesClass
 		bool Crate_Rules(CCINIClass const & ini);
 		bool Combat_Damage(CCINIClass const & ini);
 		bool Radiation(CCINIClass const & ini);
+		bool Elevation_Model(CCINIClass const & ini);
 		bool Color_Schemes(CCINIClass const & ini);
 
 		bool General(CCINIClass const & ini);
@@ -367,6 +368,15 @@ class RulesClass
 		int RadDurationMultiple;
 		int RadApplicationDelay;
 		int RadLevelMax;
+
+		/*
+		 * Elevation model: a firer whose projectile is SubjectToElevation gains ElevationIncrementBonus
+		 * cells of range for every ElevationIncrement levels it stands above its target, up to
+		 * ElevationBonusCap cells.
+		 */
+		int ElevationIncrement;
+		double ElevationIncrementBonus;
+		double ElevationBonusCap;
 		int RadLevelDelay;
 		int RadLightDelay;
 		double RadLevelFactor;
