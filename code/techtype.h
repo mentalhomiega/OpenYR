@@ -604,6 +604,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsGunner;
 		int IFVMode;
+
+		// Extra range, in leptons, against a target in the air (TechnoTypeClass::AirRangeBonus).
+		int AirRangeBonus;
 		int TurretWeapon[WEAPON_SLOT_COUNT];
 
 		// The passengers of an open-topped transport fire from inside it; OpenTransportWeapon picks their weapon there.

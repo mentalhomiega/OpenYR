@@ -469,13 +469,6 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 		}
 	}
 
-	bool drop_pod = false;
-	if (teamtype->IsDroppod) {
-		if (teamtype->TaskForce->Has_Only_Infantry()) {
-			drop_pod = true;
-		}
-	}
-
 	FootClass * object = _Create_Group(teamtype);
 
 	/*
@@ -493,11 +486,24 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 		origin = Scen->Get_Waypoint_Cell(wp);
 	}
 
+	// A Droppod team is flown in aboard a paradrop plane and dropped over its waypoint
+	// (Do_Reinforcements, 0x65D8E0). The plane enters from the house's map edge, or starts at the
+	// team's TransportWaypoint when UseTransportOrigin is set.
+	if (teamtype->IsDroppod) {
+		AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
+		Cell const start = (teamtype->UseTransportOrigin && teamtype->TransportWaypoint != -1) ? Scen->Get_Waypoint_Cell(teamtype->TransportWaypoint) : CELL_NONE;
+		if (plane != AIRCRAFT_NONE && teamtype->House->Send_Plane(AircraftTypes[plane], MISSION_PARADROP_APPROACH, origin, NULL, 0, NULL, object, start) != NULL && teamtype->House->Is_Ally(PlayerPtr)) {
+			LastRadarEventCell = origin;
+			Speak(VOX_REINFORCEMENTS);
+		}
+		return(true);
+	}
+
 	/*
 	**	Special case code to handle infantry types that run from a building. This presumes
 	**	that infantry are never a transport (which is safe to do).
 	*/
-	if (!drop_pod && origin != CELL_NONE && _Consists_Only_Of_Infantry(object)) {
+	if (origin != CELL_NONE && _Consists_Only_Of_Infantry(object)) {
 
 		/*
 		**	Search for an object that these infantry can pop out of.

@@ -154,6 +154,8 @@ TeamTypeClass::TeamTypeClass(char const * name) :
 	TechLevel(0),
 	Tag(NULL),
 	Origin(-1),
+	TransportWaypoint(-1),
+	UseTransportOrigin(false),
 	Number(0),
 	Script(NULL),
 	TaskForce(NULL),
@@ -657,6 +659,10 @@ bool TeamTypeClass::Read_INI(CCINIClass const & ini)
 		if (ini.Get_String(IniName, "Waypoint", Waypoint_To_Name(Origin), waypt, sizeof(waypt)) > 0) {
 			Origin = Waypoint_From_Name(waypt);
 		}
+		if (ini.Get_String(IniName, "TransportWaypoint", Waypoint_To_Name(TransportWaypoint), waypt, sizeof(waypt)) > 0) {
+			TransportWaypoint = Waypoint_From_Name(waypt);
+		}
+		UseTransportOrigin = ini.Get_Bool(IniName, "UseTransportOrigin", UseTransportOrigin);
 
 		Script = TGet_Class(ini, IniName, "Script", Script);
 		TaskForce = TGet_Class(ini, IniName, "TaskForce", TaskForce);
@@ -725,6 +731,8 @@ bool TeamTypeClass::Write_INI(CCINIClass & ini) const
 		}
 
 		ini.Put_String(IniName, "Waypoint", Waypoint_To_Name(Origin));
+		ini.Put_String(IniName, "TransportWaypoint", Waypoint_To_Name(TransportWaypoint));
+		ini.Put_Bool(IniName, "UseTransportOrigin", UseTransportOrigin);
 
 		/*
 		**	Record the # of missions, and each mission name & argument value.
@@ -880,6 +888,8 @@ void TeamTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TechLevel);
 	stream.Serialize(Tag);
 	stream.Serialize(Origin);
+	stream.Serialize(TransportWaypoint);
+	stream.Serialize(UseTransportOrigin);
 	stream.Serialize(Number);
 	stream.Serialize(Script);
 	stream.Serialize(TaskForce);
@@ -936,6 +946,8 @@ void TeamTypeClass::Compute_CRC(CRCEngine & crc) const
 	}
 
 	crc(Origin);
+	crc(TransportWaypoint);
+	crc(UseTransportOrigin);
 	crc(Number);
 
 	if (Script != NULL) {

@@ -114,7 +114,9 @@
 #include "script.h"
 #include "super.h"
 #include "suprtype.h"
+#include "taskforc.h"
 #include "teamtype.h"
+#include "reinf.h"
 #include "team.h"
 #include "overlay.h"
 #include "overtype.h"
@@ -910,6 +912,41 @@ void Run(StepType const & step)
 			}
 		}
 		if (highest != NULL) DebugString("AUTOTEST   highcell %d,%d height %d\n", highest->Fetch_CellID().X, highest->Fetch_CellID().Y, highest->Height);
+	} else if (step.Command == "teamini") {
+		// teamini <path>: reads the task forces, scripts and team types in that INI file, as a map's are read.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false)) {
+			TaskForceClass::Read_All(ini, SCOPE_LOCAL);
+			ScriptTypeClass::Read_All(ini, SCOPE_LOCAL);
+			TeamTypeClass::Read_All(ini, SCOPE_LOCAL);
+		} else {
+			DebugString("AUTOTEST   teamini %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "reinforce") {
+		// reinforce <TeamType>: brings that team type on as a reinforcement for the player, as the trigger action does.
+		TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
+		if (type != NULL) {
+			type->House = PlayerPtr;
+		}
+		DebugString("AUTOTEST   reinforce %s: %d\n", step.Argument.c_str(), type != NULL ? (int)Do_Reinforcements(type) : -1);
+	} else if (step.Command == "planes") {
+		// planes: each aircraft on the map, its cell, mission and passenger count.
+		for (int index = 0; index < Aircraft.Count(); index++) {
+			AircraftClass const * plane = Aircraft[index];
+			DebugString("AUTOTEST   plane %s cell %d,%d mission %s passengers %d\n", plane->Class->Name(), plane->Get_Cell().X, plane->Get_Cell().Y, MissionClass::Mission_Name(plane->Get_Mission()), plane->Cargo.How_Many());
+		}
+	} else if (step.Command == "inrange") {
+		// inrange <TypeID>: whether each of the player's objects of that type has each other player object in primary weapon range.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			for (int other = 0; other < Technos.Count(); other++) {
+				TechnoClass * target = Technos[other];
+				if (target == techno || target->House != PlayerPtr) continue;
+				DebugString("AUTOTEST   inrange %s -> %s at %d leptons: %d fire error %d turret %d wants %d\n", techno->TClass->Name(), target->TClass->Name(), (int)(Point2D(techno->Center_Coord()) - Point2D(target->Center_Coord())).Length(), (int)techno->In_Range(target, 0), (int)techno->Can_Fire(target, 0), (int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256());
+			}
+		}
 	} else if (step.Command == "elevation") {
 		// elevation <TypeID>: the elevation range bonus each of the player's objects of that type has against each other one.
 		for (int index = 0; index < Technos.Count(); index++) {
@@ -1179,7 +1216,7 @@ bool AutoTest_Load(char const * filename)
 		std::string text = argument;
 		// A rules step's path is the rest of the line, so it may hold spaces.
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
-			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0) {
+			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);

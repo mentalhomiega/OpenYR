@@ -2059,12 +2059,14 @@ int TechnoClass::Get_Sight_Bonus(Coord const & coord)
 /// Works out the extra range a firer on higher ground has against the target, as gamemd's
 /// FUN_006F6F60 does. Every ElevationIncrement levels the firer's cell stands above the
 /// target's cell are worth ElevationIncrementBonus cells, up to ElevationBonusCap cells; the
-/// whole height difference is then added on, so the bonus is the length of that range step
-/// combined with the drop to the target.
+/// whole height difference is then added on for a direct-fire weapon, so its bonus is the
+/// length of that range step combined with the drop to the target; an arcing weapon, which is
+/// ranged by flat distance, gets the range step alone (FUN_006F70E0).
 /// </summary>
 /// <param name="target">The target being ranged.</param>
+/// <param name="withheight">Should the height difference be combined with the range step?</param>
 /// <returns>int; The extra range in leptons, or 0 when either side is off the ground.</returns>
-int TechnoClass::Elevation_Range_Bonus(AbstractClass const * target) const
+int TechnoClass::Elevation_Range_Bonus(AbstractClass const * target, bool withheight) const
 {
 	if (!On_Ground() || !target->On_Ground() || Rule->ElevationIncrement == 0) {
 		return(0);
@@ -2083,6 +2085,9 @@ int TechnoClass::Elevation_Range_Bonus(AbstractClass const * target) const
 		cells = Rule->ElevationBonusCap;
 	}
 	int across = (int)cells * CELL_LEPTON_W;
+	if (!withheight) {
+		return(across);
+	}
 	int down = levels * LEVEL_LEPTON_H;
 	return((int)std::sqrt((double)(across * across + down * down)));
 }
@@ -2139,9 +2144,9 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		bonus += Rule->OpenToppedRangeBonus * CELL_LEPTON_W;
 	}
 
-	// A direct-fire projectile SubjectToElevation reaches farther from higher ground (TechnoClass::InRange, 0x6F7398).
-	if (weapon != NULL && weapon->Bullet->IsSubjectToElevation && !weapon->Bullet->IsArcing) {
-		bonus += Elevation_Range_Bonus(target);
+	// A projectile SubjectToElevation reaches farther from higher ground (TechnoClass::InRange, 0x6F7398 and 0x6F7473).
+	if (weapon != NULL && weapon->Bullet->IsSubjectToElevation) {
+		bonus += Elevation_Range_Bonus(target, !weapon->Bullet->IsArcing);
 	}
 	return(TClass->In_Range(coord, target, weapon, bonus));
 }
