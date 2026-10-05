@@ -3255,14 +3255,14 @@ const char * InfantryClass::Full_Name(void) const
 	}
 
 	if (Is_Disguised_To_Player()) {
-		return(DisguiseType->GivenName);
+		return(DisguiseType->Full_Name());
 	}
 
 	if (Class->IsDisguised && !House->Is_Player_Control() && Rule->Disguise != NULL) {
-		return(Rule->Disguise->GivenName);
+		return(Rule->Disguise->Full_Name());
 	}
 
-	return(Class->GivenName);
+	return(Class->Full_Name());
 }
 
 
