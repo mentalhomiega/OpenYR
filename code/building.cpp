@@ -11405,7 +11405,7 @@ RTTIType BuildingClass::Fetch_RTTI(void) const
 /// <returns>Returns with a pointer to the human readable name of this building.</returns>
 char const * BuildingClass::Full_Name(void) const
 {
-	return(Class->GivenName);
+	return(Class->Full_Name());
 }
 
 

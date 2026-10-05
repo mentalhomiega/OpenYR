@@ -4342,7 +4342,7 @@ ClassID AircraftClass::Class_ID(void) const
 /// <returns>Returns with a pointer to the name given to this aircraft's type.</returns>
 char const * AircraftClass::Full_Name(void) const
 {
-	return(Class->GivenName);
+	return(Class->Full_Name());
 }
 
 

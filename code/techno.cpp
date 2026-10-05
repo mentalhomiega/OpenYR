@@ -5960,6 +5960,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				Sound_Effect(voc, Get_Coord());
 			}
 
+			// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
+			if (TClass->DieSound.Count() > 0) {
+				VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
+				Sound_Effect(voc, Get_Coord());
+			}
+
 			Transmit_Message(RADIO_OVER_OUT);
 			Stun();
 

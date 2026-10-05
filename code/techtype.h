@@ -247,6 +247,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		TypeList<int> VoiceMove;
 		TypeList<int> VoiceAttack;
 		TypeList<int> VoiceDie;
+
+		// The sounds, one picked at random, played where the object is destroyed (TechnoTypeClass::DieSound).
+		TypeList<int> DieSound;
 		TypeList<int> VoiceFeedback;	/// Given when the object is first badly hurt.
 
 		/*

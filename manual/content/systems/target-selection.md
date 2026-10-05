@@ -5,8 +5,11 @@ category: combat-targeting
 keys:
   - AA
   - AG
+  - AttackCursorOnFriendlies
+  - AttackFriendlies
   - AV
   - ComputerBaseDefenseResponse
+  - DefaultToGuardArea
   - ElitePrimary
   - EnemyHouseThreatBonus
   - FireSupress
@@ -90,6 +93,8 @@ An object scans for a target only when its current mission calls for a scan. Fiv
 | Candidate | Rejects what may not be attacked, then scores what is left |
 
 The object takes the chosen candidate as its target. Retaliation is a separate path that never scans.
+
+An object whose type sets [`AttackFriendlies=yes`](/keys/attackfriendlies/) skips the ally row on its own scans, the way a berzerk object does. [`AttackCursorOnFriendlies`](/keys/attackcursoronfriendlies/) leaves the scans alone and only gives the player's selected object the attack cursor over allies.
 
 ## When an object scans
 
@@ -207,7 +212,7 @@ The engine tests each candidate against these rows in order and rejects it at th
 | Its current mission sets [`NoThreat=yes`](/keys/nothreat/) | |
 | It is more than 20 leptons below ground level | A cell is 256 leptons across |
 | It is in a different [movement zone](/glossary/#movement-zone) | A ring scan tests the cell and a whole-map scan tests the candidate. Neither test runs for a range scan, or when the scanning object is a building or an aircraft |
-| It is an ally | Unless this object heals or is an engineer and the ally is damaged. A healer also rejects an allied aircraft that is airborne or standing in a building's cell, and an ally of a kind it does not mend. A [berzerk](#berzerk-objects) object skips this row and attacks whatever is near it. Infantry goes berzerk through the [Go Berzerk](/mapping/actions/taction-go-berzerk/) trigger action or [team mission](/mapping/missions/tmission-berzerk/), or from damage when its type is [`Cyborg=yes`](/keys/cyborg/) under [`BerzerkAllowed=yes`](/keys/berzerkallowed/) |
+| It is an ally | Unless this object's type sets [`AttackFriendlies=yes`](/keys/attackfriendlies/), which skips this row, or this object heals or is an engineer and the ally is damaged. A healer also rejects an allied aircraft that is airborne or standing in a building's cell, and an ally of a kind it does not mend. A [berzerk](#berzerk-objects) object skips this row and attacks whatever is near it. Infantry goes berzerk through the [Go Berzerk](/mapping/actions/taction-go-berzerk/) trigger action or [team mission](/mapping/missions/tmission-berzerk/), or from damage when its type is [`Cyborg=yes`](/keys/cyborg/) under [`BerzerkAllowed=yes`](/keys/berzerkallowed/) |
 | Harvester immunity is on and its type is listed in [`HarvesterUnit`](/keys/harvesterunit/) | Immunity comes from the multiplayer harvester truce or from a scenario's [`HarvesterImmune`](/keys/harvesterimmune/) setting |
 | It is beyond the scan radius | Or, when the scan uses weapon range, out of range of the weapon chosen against it |
 | Campaigns only, when the scanning house is the player's: the candidate is not the player's, the player has never discovered it, and it is not an aircraft | A computer house's campaign scan skips this row |
