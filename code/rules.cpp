@@ -76,6 +76,7 @@
 #include "infatype.h"
 #include "levitate.h"
 #include "mission.h"
+#include "mods.h"
 #include "movie.h"
 #include "overtype.h"
 #include "psystype.h"
@@ -905,6 +906,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 			ArtINI.Load(artfsfile, false);
 		}
 	}
+	Load_Mod_Overlays(ModOverlayType::ART, ArtINI);
 
 	Heap_Maximums(ini);
 	Addition(ini);

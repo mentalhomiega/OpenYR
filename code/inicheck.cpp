@@ -518,6 +518,20 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 
 
 /// <summary>
+/// Checks a file read over the rules, such as a mod's rules overlay, against the rules keys.
+/// A type section is placed through the rules lists in the file or in the rules it is read over.
+/// </summary>
+Report Check_Rules_Overlay(Catalog const & catalog, std::string_view text, std::string_view rules)
+{
+	std::vector<Section> const sections = Parse(text);
+	KindMap kinds;
+	Add_Listed_Kinds(Parse(rules), RULES_REGISTRIES, kinds);
+	Add_Listed_Kinds(sections, RULES_REGISTRIES, kinds);
+	return(Check_Sections(catalog, sections, kinds, {"rules.ini"}));
+}
+
+
+/// <summary>
 /// Checks a map file against the catalog: its own keys and its rule overrides. A type section is
 /// placed through the rules lists in the map or in the rules file, and a house, team or task
 /// force section through the map's own lists.

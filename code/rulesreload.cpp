@@ -19,6 +19,7 @@
 #include "deploymentconfig.h"
 #include "globals.h"
 #include "house.h"
+#include "mods.h"
 #include "rules.h"
 #include "rulescheck.h"
 #include "scenario.h"
@@ -27,7 +28,8 @@
 
 
 /// <summary>
-/// Reads rulesmd.ini, art.ini and the map's rule overrides over the running game.
+/// Reads rulesmd.ini, art.ini, the mods' rules and art overlays and the map's rule overrides
+/// over the running game.
 /// </summary>
 /// <returns>bool; Were the rules read again? False in a multiplayer game or when the rules
 /// file cannot be loaded, in which case nothing changes.</returns>
@@ -49,11 +51,13 @@ bool Reload_Rules(void)
 	if (art_file.Is_Available()) {
 		ArtINI.Clear();
 		ArtINI.Load(art_file, false);
+		Load_Mod_Overlays(ModOverlayType::ART, ArtINI);
 	}
 
 	RuleINI->Clear();
 	CCFileClass rules_again(DeploymentConfig.RulesFile.c_str());
 	RuleINI->Load(rules_again, false);
+	Load_Mod_Overlays(ModOverlayType::RULES, *RuleINI);
 	Rule->Addition(*RuleINI);
 
 	// The map's own overrides were read over the rules when the game started, so they win again.
@@ -75,6 +79,6 @@ bool Reload_Rules(void)
 	}
 
 	Check_Rules_File(DeploymentConfig.RulesFile.c_str(), DeploymentConfig.ArtFile.c_str());
-	DebugString("Reload_Rules: rules, art and map overrides read again.\n");
+	DebugString("Reload_Rules: rules, art, mod overlays and map overrides read again.\n");
 	return(true);
 }

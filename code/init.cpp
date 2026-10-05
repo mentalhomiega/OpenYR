@@ -144,6 +144,7 @@
 #include "mainopt.h"
 #include "misc.h"
 #include "mixfile.h"
+#include "mods.h"
 #include "mono.h"
 #include "movie.h"
 #include "mplayer.h"
@@ -732,6 +733,7 @@ static CampaignType Choose_Campaign(void)
 /// Loads the rules and the art control files.
 /// This routine loads the configured rules file, then the art, expansion, multiplayer, AI and
 /// language override files, and seeds the multiplayer defaults from the rules just read. The
+/// mods' rules, art and AI overlays are read into the same databases as the base files. The
 /// addon is chosen later, so the multiplayer expansion file cannot seed them.
 /// </summary>
 /// <returns>bool; Were the rules loaded successfully?</returns>
@@ -740,6 +742,7 @@ static bool Init_Rules(void)
 	CCINIClass * rules = new CCINIClass;
 	CCFileClass rules_file(DeploymentConfig.RulesFile.c_str());
 	rules->Load(rules_file, false);
+	Load_Mod_Overlays(ModOverlayType::RULES, *rules);
 	Check_Rules_File(DeploymentConfig.RulesFile.c_str(), DeploymentConfig.ArtFile.c_str());
 
 	CCFileClass art_file(DeploymentConfig.ArtFile.c_str());
@@ -748,6 +751,7 @@ static bool Init_Rules(void)
 		DebugString("Failed to load %s!\n", DeploymentConfig.ArtFile.c_str());
 		return(false);
 	}
+	Load_Mod_Overlays(ModOverlayType::ART, ArtINI);
 
 	CCINIClass art_ini;
 	CCFileClass art_fs_file(DeploymentConfig.ArtExpansionFile.c_str());
@@ -820,6 +824,7 @@ static bool Init_Rules(void)
 
 	CCFileClass ai_file(DeploymentConfig.AIFile.c_str());
 	AIINI.Load(ai_file, true);
+	Load_Mod_Overlays(ModOverlayType::AI, AIINI);
 
 	if (Addon_Installed(ADDON_FIRESTORM)) {
 		CCFileClass ai_fs_file(DeploymentConfig.AIExpansionFile.c_str());
@@ -1528,6 +1533,11 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 		if (strnicmp(string, "-USERDIR=", strlen("-USERDIR=")) == 0) {
 			Set_User_Directory(&original[strlen("-USERDIR=")]);
+			continue;
+		}
+
+		if (strnicmp(string, "-MOD=", strlen("-MOD=")) == 0) {
+			Add_Command_Line_Mod(&original[strlen("-MOD=")]);
 			continue;
 		}
 

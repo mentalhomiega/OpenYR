@@ -8,13 +8,16 @@ the tool nor its library changes how the game reads a value.
 
 On the `modern` branch the game checks its rules file (`rulesmd.ini`) and art file
 (`artmd.ini`) each time it loads the rules at startup, and each map's own keys and rule
-overrides when the map loads. The findings go to the debug log as `INI check:` lines: the first
+overrides when the map loads. It also checks each active mod's rules and art overlays and logs
+their findings under the overlay's path. The findings go to the debug log as `INI check:` lines: the first
 200 for each file, then its totals. The check needs `inicheck-catalog.tsv` beside the
 executable; the build writes it there when Python 3 with PyYAML is installed. Without the
 catalog the log says the file was not checked, and the game runs as usual.
 
 An art section is checked when a type in the rules names it with `Image=`, or has its name and
-no `Image=`. A map's type sections are placed through the rules lists in the map or the rules
+no `Image=`; the mods' rules overlays count as part of the rules. A section in a mod's rules
+overlay is placed through the lists in the rules file, in earlier mods' overlays and in the
+overlay itself. A map's type sections are placed through the rules lists in the map or the rules
 file, and its house, team and task force sections through the map's `[Houses]`, `[TeamTypes]`
 and `[TaskForces]` lists.
 

@@ -1,12 +1,14 @@
 ---
 format_id: opents-ini
 title: OPENTS.INI
-summary: Names the folders a deployment sorts its game files into, the names of the files the game reads, and what its saves hold.
+summary: Names the folders a deployment sorts its game files into, the mods it starts with, the names of the files the game reads, and what its saves hold.
 kind: file
 source_files:
+  - code/cdfile.cpp
   - code/deploymentconfig.cpp
   - code/gamedirs.cpp
   - code/init.cpp
+  - code/mods.cpp
 filenames:
   - OPENTS.INI
 related:
@@ -14,8 +16,12 @@ related:
     id: launch:data-directory
   - type: command
     id: launch:user-directory
+  - type: command
+    id: launch:mod
   - type: using
     id: game-data
+  - type: using
+    id: mods
 ---
 
 `OPENTS.INI` belongs to the deployment and describes how it lays out the game's files. A player's options are kept in a separate settings file, `RA2MD.INI` unless `Settings` below names another. The game reads `OPENTS.INI` once at startup.
@@ -30,6 +36,15 @@ SearchPaths=INI,MIX,Maps,Addons
 Without the file, or without the key, the game searches `INI`, `MIX` and `Maps`, as though `SearchPaths=INI,MIX,Maps` were written. A distribution can therefore sort its files into those three folders and ship no configuration at all. A written list replaces the default, so a deployment that wants those folders as well as its own must name them again.
 
 `SearchPaths=.` adds no folder to the search. The `.` entry names the game data directory, which is always searched already, so the game skips it. An empty `SearchPaths=` does not have this effect: the game ignores a key with nothing after the equals sign, so the default list stays in force.
+
+## The mods it starts with
+
+```ini title="OPENTS.INI"
+[Paths]
+Mods=HighTech,MapPack
+```
+
+`Mods` lists the [mods](/using/mods/) the game starts with, in the order they are read, so a later mod overrides an earlier one. Separate the names with commas; spaces around a name are ignored. A name is a folder in the `Mods` folder of the game data directory, and a path that starts with a drive letter or a backslash is used as written. Without the key no mod is active. [`-MOD=`](/using/command-line/mod/) adds further mods after the ones this list names.
 
 ## The files it reads
 
@@ -116,10 +131,13 @@ The game data directory is the one [`-DATADIR`](/using/command-line/data-directo
 ## The order files are searched for in
 
 1. the user data directory, when [`-USERDIR`](/using/command-line/user-directory/) names one;
-2. the game's own directory;
-3. the game data directory, when [`-DATADIR`](/using/command-line/data-directory/) names one;
-4. the folders `SearchPaths` lists, in the order written;
-5. the `ui` folder in the game's own directory.
+2. the folders of the active [mods](/using/mods/), the last mod first;
+3. the game's own directory;
+4. the game data directory, when [`-DATADIR`](/using/command-line/data-directory/) names one;
+5. the folders `SearchPaths` lists, in the order written;
+6. the `ui` folder in the game's own directory.
+
+The game looks in the mods' folders only for a name that carries no directory of its own.
 
 The game opens every file in this order, including archives, INI files, scenarios and launch files, and uses the first copy it finds. A loose copy in any of these directories is used ahead of an archived copy of the same name. The exception is data the game reads straight from a cached archive, such as the palettes above and many shapes, where a loose copy is not used; [MIX archives](/formats/mix/#caching) covers it.
 

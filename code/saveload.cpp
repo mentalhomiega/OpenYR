@@ -88,6 +88,7 @@
 #include "loaddlg.h"
 #include "light.h"
 #include "logic.h"
+#include "mods.h"
 #include "overlay.h"
 #include "overtype.h"
 #include "ovrlight.h"
@@ -781,6 +782,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 			ArtINI.Load(artfs, false);
 		}
 	}
+	Load_Mod_Overlays(ModOverlayType::ART, ArtINI);
 
 	Rule->Load(stream);
 

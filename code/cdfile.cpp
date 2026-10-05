@@ -43,6 +43,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 /*
 **	Pointer to the first search path record.
@@ -53,11 +54,14 @@ CDFileClass::SearchDriveType * CDFileClass::First = NULL;
 // has no directory of their own.
 static std::string UserPath;
 
+// The directories searched ahead of the current directory, in the order they are searched.
+static std::vector<std::string> PriorityPaths;
+
 
 /// <summary>
 /// Constructs a CD file object for the file specified.
-/// The name is searched for in the player's own directory, the current directory and every
-/// configured path, so the object refers to the first matching local file.
+/// The name is searched for as Set_Name searches for it, so the object refers to the first
+/// matching local file.
 /// </summary>
 /// <param name="filename">The name of the file this object should refer to.</param>
 CDFileClass::CDFileClass(char const *filename) :
@@ -284,11 +288,40 @@ char const * CDFileClass::Search_Path(int index)
 }
 
 
+/// <summary>
+/// Adds a directory that is searched after the player's own directory and before the current
+/// directory and the search list. A directory added later is searched before one added
+/// earlier, so of two directories holding the same name, the one added last supplies it.
+/// </summary>
+/// <param name="path">The directory, ending in a separator.</param>
+void CDFileClass::Add_Priority_Drive(char const * path)
+{
+	if (path != NULL && *path != '\0') {
+		PriorityPaths.insert(PriorityPaths.begin(), path);
+	}
+}
+
+
+/// <summary>
+/// Reports the priority directory at a position, counting from zero in the order the
+/// directories are searched.
+/// </summary>
+/// <returns>The directory at that position, or NULL once the end is passed.</returns>
+char const * CDFileClass::Priority_Path(int index)
+{
+	if (index < 0 || index >= (int)PriorityPaths.size()) {
+		return(NULL);
+	}
+
+	return(PriorityPaths[index].c_str());
+}
+
+
 /***********************************************************************************************
  * CDFileClass::Clear_Search_Drives -- Removes all record of a search path.                    *
  *                                                                                             *
  *    Use this routine to clear out any previous path(s) set with Add_Search_Drive()           *
- *    function.                                                                                *
+ *    or Add_Priority_Drive().                                                                 *
  *                                                                                             *
  * INPUT:   none                                                                               *
  *                                                                                             *
@@ -316,11 +349,14 @@ void CDFileClass::Clear_Search_Drives(void)
 		chain = next;
 	}
 	First = 0;
+
+	PriorityPaths.clear();
 }
 
 
 /// <summary>
-/// Searches the current directory and configured local data paths for a file.
+/// Searches the player's own directory, the priority directories, the current directory and
+/// configured local data paths for a file, in that order.
 /// The first match becomes this object's filename; if none is found, the raw filename is kept.
 /// </summary>
 /// <param name="filename">The file name to search for.</param>
@@ -340,6 +376,22 @@ char const * CDFileClass::Set_Name(char const *filename)
 			BASECLASS::Set_Name(path);
 			if (BASECLASS::Is_Available()) {
 				return(File_Name());
+			}
+		}
+
+		if (filename != NULL && !Has_Directory(filename)) {
+			for (std::string const & priority : PriorityPaths) {
+				if (priority.length() + strlen(filename) >= sizeof(path)) {
+					continue;
+				}
+
+				strcpy(path, priority.c_str());
+				strcat(path, filename);
+
+				BASECLASS::Set_Name(path);
+				if (BASECLASS::Is_Available()) {
+					return(File_Name());
+				}
 			}
 		}
 	}

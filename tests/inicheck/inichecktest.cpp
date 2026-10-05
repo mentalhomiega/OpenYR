@@ -206,6 +206,25 @@ void Test_Map_Listing(void)
 	Check(!Has(alone, IniCheck::FindingType::BAD_VALUE, "Crusher", 7), "without the rules' lists the map's type section is not placed");
 }
 
+
+void Test_Rules_Overlay(void)
+{
+	IniCheck::Catalog const catalog = Load_Catalog();
+	char const overlay[] =
+		"[MTNK]\n"
+		"Crusher=maybe\n"
+		"[InfantryTypes]\n"
+		"900=NEWGI\n"
+		"[NEWGI]\n"
+		"Speed=fast\n"
+		"Bogus=1\n";
+	IniCheck::Report const report = IniCheck::Check_Rules_Overlay(catalog, overlay, "[VehicleTypes]\n1=MTNK\n");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Crusher", 2), "an overlay's section for a type the rules list is checked");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Speed", 6) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Bogus", 7), "a type the overlay lists itself is checked");
+	IniCheck::Report const alone = IniCheck::Check_Rules(catalog, overlay);
+	Check(!Has(alone, IniCheck::FindingType::BAD_VALUE, "Crusher", 2), "checked as a rules file of its own, the overlay's type section is not placed");
+}
+
 }
 
 
@@ -216,6 +235,7 @@ int main(void)
 	Test_Rules();
 	Test_Art();
 	Test_Map_Listing();
+	Test_Rules_Overlay();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);

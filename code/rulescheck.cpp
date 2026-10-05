@@ -14,6 +14,8 @@
 #include "ccfile.h"
 #include "dbgprint.h"
 #include "inicheck.h"
+#include "mods.h"
+#include "rawfile.h"
 
 #include <windows.h>
 
@@ -54,9 +56,8 @@ static bool Load_Catalog(IniCheck::Catalog & catalog, char const * filename)
 }
 
 
-static bool Read_Game_File(char const * filename, std::string & text)
+static bool Read_Whole_File(FileClass & file, char const * filename, std::string & text)
 {
-	CCFileClass file(filename);
 	if (!file.Is_Available()) {
 		DebugString("INI check: %s not found.\n", filename);
 		return(false);
@@ -69,6 +70,21 @@ static bool Read_Game_File(char const * filename, std::string & text)
 	}
 	file.Close();
 	return(true);
+}
+
+
+static bool Read_Game_File(char const * filename, std::string & text)
+{
+	CCFileClass file(filename);
+	return(Read_Whole_File(file, filename, text));
+}
+
+
+// A mod's overlay is read from its own path, as the game reads it, never through the search.
+static bool Read_Overlay_File(std::string const & path, std::string & text)
+{
+	RawFileClass file(path.c_str());
+	return(Read_Whole_File(file, path.c_str(), text));
 }
 
 
@@ -86,11 +102,13 @@ static void Log_Report(char const * filename, IniCheck::Report const & report)
 
 
 /// <summary>
-/// Checks the rules file and the art file against the engine's key catalog and logs what the
-/// engine will not read.
+/// Checks the rules file and the art file, and each active mod's rules and art overlays,
+/// against the engine's key catalog and logs what the engine will not read. Each overlay's
+/// findings are logged under the overlay's path.
 /// </summary>
 /// <param name="rulesname">The rules file, found the way the game finds any data file.</param>
-/// <param name="artname">The art file; its type sections are found through the rules.</param>
+/// <param name="artname">The art file; its type sections are found through the rules and the
+/// mods' rules overlays.</param>
 void Check_Rules_File(char const * rulesname, char const * artname)
 {
 	IniCheck::Catalog catalog;
@@ -100,9 +118,31 @@ void Check_Rules_File(char const * rulesname, char const * artname)
 	}
 	Log_Report(rulesname, IniCheck::Check_Rules(catalog, rules, "rules.ini"));
 
+	// Each overlay's type sections are placed through the lists of everything read before it.
+	std::string combined = rules;
+	for (ModClass const & mod : Active_Mods()) {
+		std::string overlay;
+		if (!mod.RulesFile.empty() && Read_Overlay_File(mod.RulesFile, overlay)) {
+			Log_Report(mod.RulesFile.c_str(), IniCheck::Check_Rules_Overlay(catalog, overlay, combined));
+			combined += '\n';
+			combined += overlay;
+		}
+	}
+
+	if (artname == NULL) {
+		return;
+	}
+
 	std::string art;
-	if (artname != NULL && Read_Game_File(artname, art)) {
-		Log_Report(artname, IniCheck::Check_Art(catalog, art, rules));
+	if (Read_Game_File(artname, art)) {
+		Log_Report(artname, IniCheck::Check_Art(catalog, art, combined));
+	}
+
+	for (ModClass const & mod : Active_Mods()) {
+		std::string overlay;
+		if (!mod.ArtFile.empty() && Read_Overlay_File(mod.ArtFile, overlay)) {
+			Log_Report(mod.ArtFile.c_str(), IniCheck::Check_Art(catalog, overlay, combined));
+		}
 	}
 }
 

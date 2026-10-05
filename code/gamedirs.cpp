@@ -355,6 +355,15 @@ std::vector<std::string> Search_Files(char const * pattern)
 		Scan_Folder(user, pattern, names);
 	}
 
+	for (int index = 0; ; index++) {
+		char const * path = CDFileClass::Priority_Path(index);
+		if (path == NULL) {
+			break;
+		}
+
+		Scan_Folder(path, pattern, names);
+	}
+
 	Scan_Folder("", pattern, names);
 
 	for (int index = 0; ; index++) {

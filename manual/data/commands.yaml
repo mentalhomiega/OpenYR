@@ -2285,6 +2285,18 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:mod
+  route_id: mod
+  kind: launch
+  title: Mod folder
+  description: Adds a mod folder after those OPENTS.INI lists. Repeat the option for more mods; a later
+    mod overrides an earlier one.
+  audience: player
+  availability: *id001
+  syntax: -MOD=<name or path>
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:autotest
   route_id: autotest
   kind: launch

@@ -135,6 +135,23 @@ void Test_Search_Paths(void)
 }
 
 
+void Test_Mods(void)
+{
+	DeploymentConfigClass config;
+
+	Check(config.Mods.empty(), "with no file no mod is named");
+
+	Write_File(Root + "\\OPENTS.INI", "[Paths]\nMods=First, Second\n");
+
+	Check(config.Read_File(""), "a file naming mods is read");
+	Check(config.Mods == "First, Second", "the mod list is taken as written");
+
+	Remove_File(Root + "\\OPENTS.INI");
+	config.Read_File("");
+	Check(config.Mods.empty(), "with the file gone no mod is named");
+}
+
+
 void Test_Where_The_File_Is_Looked_For(void)
 {
 	DeploymentConfigClass config;
@@ -316,6 +333,7 @@ int main(void)
 
 	Test_Defaults();
 	Test_Search_Paths();
+	Test_Mods();
 	Test_Where_The_File_Is_Looked_For();
 	Test_The_Directory_Named();
 	Test_A_Read_Starts_Over();

@@ -23,6 +23,9 @@ class DeploymentConfigClass
 		// The folders its files are searched in, in the order written; a written list replaces this.
 		std::string SearchPaths = "INI,MIX,Maps";
 
+		// The mods in force, in the order they are read; the command line can add more.
+		std::string Mods = "";
+
 		// Whether a save carries the scenario file it was played from, which enlarges a save by half again.
 		bool CarryScenarioFile = false;
 

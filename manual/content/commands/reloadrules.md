@@ -2,7 +2,7 @@
 command_id: ReloadRules
 ---
 
-Reads `rulesmd.ini`, `art.ini` and the current map's rule overrides again without leaving the game, so an edit to a loose `rulesmd.ini` or `art.ini` in the game folder takes effect at once. The default key is Ctrl+Shift+R when the keyboard file does not use that key for another command.
+Reads `rulesmd.ini`, `art.ini`, the rules and art overlays of the active [mods](/formats/mod-ini/) and the current map's rule overrides again without leaving the game, so an edit to a loose `rulesmd.ini` or `art.ini` in the game folder, or to a mod's overlay, takes effect at once. The default key is Ctrl+Shift+R when the keyboard file does not use that key for another command.
 
 The command works in single-player missions and skirmish games. In a multiplayer game it only shows a message, because every player must run the same rules.
 

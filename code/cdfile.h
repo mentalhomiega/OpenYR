@@ -37,13 +37,16 @@
 /*
  * This class is derived from the BufferIOFileClass, and adds the ability to search across
  * several directories for a file. A file this player's own game wrote is found first, then
- * the current directory, then every directory in the search list in turn.
+ * the priority directories, then the current directory, then every directory in the search
+ * list in turn.
  *
  * A file opened for writing, created or deleted is not searched for at all. It resolves to
  * the player's own directory, so that what a deployment ships is read from and never written
  * over. A name that already carries a directory of its own is left exactly as it was given.
  *
- * The search order is whatever order the directories were handed to Add_Search_Drive().
+ * The search list is searched in the order the directories were handed to Add_Search_Drive().
+ * The priority directories are searched in the reverse of the order they were handed to
+ * Add_Priority_Drive(), and only for a name that carries no directory of its own.
  */
 class CDFileClass : public BufferIOFileClass
 {
@@ -68,6 +71,9 @@ class CDFileClass : public BufferIOFileClass
 		static void Add_Search_Drive(char const * path);
 		static void Clear_Search_Drives(void);
 		static char const * Search_Path(int index);
+
+		static void Add_Priority_Drive(char const * path);
+		static char const * Priority_Path(int index);
 
 		static void Set_User_Path(char const * path);
 		static char const * User_Path(void);

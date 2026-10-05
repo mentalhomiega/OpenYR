@@ -98,6 +98,7 @@
 #include "mech.h"
 #include "misc.h"
 #include "mixfile.h"
+#include "mods.h"
 #include "movie.h"
 #include "msgloop.h"
 #include "netdlg.h" // for Shutdown_Network.
@@ -516,10 +517,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		/*
 		 * Before anything is read, so that every file the game goes on to open is looked
 		 * for where this deployment actually keeps it: the directories are applied, then
-		 * the deployment's own file is read, then the folders it names are installed.
+		 * the deployment's own file is read, then the folders and mods it names are installed.
 		 */
 		DeploymentConfig.Read_File(Data_Directory().c_str());
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
+		Init_Mods(DeploymentConfig.Mods.c_str());
 
 		std::string uidirectory = path;
 		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {

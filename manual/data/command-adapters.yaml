@@ -525,6 +525,14 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-USERDIR=' }
+  - id: launch:mod
+    title: Mod folder
+    syntax: -MOD=<name or path>
+    description: Adds a mod folder after those OPENTS.INI lists. Repeat the option for more mods; a later mod overrides an earlier one.
+    audience: player
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MOD=' }
   - id: launch:autotest
     title: Unattended test run
     syntax: -AUTOTEST=<script>
