@@ -14,6 +14,22 @@ registered_commands:
     source: code/init.cpp
     class: FollowCommandClass
     guard: null
+- id: ReloadRules
+  route_id: reloadrules
+  kind: registered
+  title: Reload rules
+  description: Reads rulesmd.ini, art.ini and the map's rule overrides again (single-player and skirmish
+    only).
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: ReloadRulesCommandClass
+    guard: null
 - id: View1
   route_id: view1
   kind: registered

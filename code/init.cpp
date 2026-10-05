@@ -58,6 +58,7 @@
 
 #include "init.h"
 #include "rulescheck.h"
+#include "rulesreload.h"
 
 #include "_bench.h"
 #include "_command.h"
@@ -4499,6 +4500,30 @@ class SetView4CommandClass : public CommandClass
 };
 
 
+class ReloadRulesCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("ReloadRules");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Reload rules");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Reads rulesmd.ini, art.ini and the map's rule overrides again (single-player and skirmish only).");
+		}
+
+		virtual void Execute(void) const {
+			char const * text = Reload_Rules() ? "Rules reloaded." : "Rules can only be reloaded in single-player and skirmish games.";
+			Session.Messages.Add_Message(NULL, 0, text, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+			Map.Flag_To_Redraw();
+		}
+};
+
+
 class FollowCommandClass : public CommandClass
 {
 	public:
@@ -5429,6 +5454,8 @@ static void Claim_Free_Key(KeyNumType key, CommandClass const * command)
 static void Init_Commands(void)
 {
 	AllCommands.Add(new FollowCommandClass);
+	CommandClass * reloadcmd = new ReloadRulesCommandClass;
+	AllCommands.Add(reloadcmd);
 
 	AllCommands.Add(new View1CommandClass);
 	AllCommands.Add(new View2CommandClass);
@@ -5598,6 +5625,7 @@ static void Init_Commands(void)
 	HotkeyCommands.Add_Index(KN_ESC, optcmd);
 
 	Claim_Free_Key(KN_RETURN, chatallcmd);
+	Claim_Free_Key((KeyNumType)(KN_R | KN_CTRL_BIT | KN_SHIFT_BIT), reloadcmd);
 	Claim_Free_Key(KN_BACKSPACE, chatteamcmd);
 }
 

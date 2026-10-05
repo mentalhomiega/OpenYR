@@ -78,6 +78,7 @@
 #include "always.h"
 
 #include "autotest.h"
+#include "rulesreload.h"
 
 #include "_keyboar.h"
 #include "_map.h"
@@ -716,6 +717,9 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   rules %s: not found\n", step.Argument.c_str());
 		}
+	} else if (step.Command == "reload") {
+		// reload: reads the rules, art and map overrides again, as the Reload rules command does.
+		DebugString("AUTOTEST   reload %d\n", (int)Reload_Rules());
 	} else if (step.Command == "art") {
 		// art <path>: reads that INI file over the art, then has the types it names read themselves again.
 		CCINIClass ini;
