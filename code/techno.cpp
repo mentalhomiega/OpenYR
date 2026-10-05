@@ -1947,6 +1947,8 @@ bool TechnoClass::Limbo(void)
 	TurretSound.Stop();
 	IsTurretSoundPlaying = false;
 
+	AttachedEffects.Limbo(this);
+
 	if (!IsInLimbo) {
 		House->Tracking_Active_Remove(this, false);
 		int risk = Risk();
@@ -3352,6 +3354,8 @@ void TechnoClass::AI(void)
 
 	DiskLaser.AI();
 
+	AttachedEffects.AI(this);
+
 	// A vehicle let go in the air by its holder is destroyed when it reaches the ground (ReleaseLocomotor, 0x70FEE0).
 	if (IsLetGoByLocomotor && HeightAGL <= 0) {
 		IsLetGoByLocomotor = false;
@@ -4393,7 +4397,7 @@ int TechnoClass::Rearm_Delay(int which) const
 		return(delay);
 
 	} else {
-		int delay = weapon->ROF * House->ROFBias + Random_Pick(0, 2);
+		int delay = weapon->ROF * House->ROFBias * AttachedEffects.ROF_Multiplier() + Random_Pick(0, 2);
 
 		if (Has_Ability(ABILITY_ROF)) {
 			delay = (1.0 / (Rule->VeteranROF + 1.0)) * delay;
@@ -4655,7 +4659,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	// A DiskLaser weapon draws its ring and strikes when the ring closes (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsDiskLaser && target->Is_Techno()) {
 		if (!DiskLaser.Is_Active()) {
-			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias));
+			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias * AttachedEffects.Firepower_Multiplier()));
 			LastFireFrame = Frame;
 			Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
 		}
@@ -4724,7 +4728,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		firepower = 0;
 	}
 	if (firepower > 0) {
-		firepower = (int)(House->FirepowerBias * FirepowerBias * weapon->Attack);
+		firepower = (int)(House->FirepowerBias * FirepowerBias * AttachedEffects.Firepower_Multiplier() * weapon->Attack);
 		if (Has_Ability(ABILITY_FIREPOWER)) {
 			firepower = (int)((Rule->VeteranCombat + 1.0) * firepower);
 		}
@@ -5844,7 +5848,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * object armor bias, veterancy armor bonus, and type-immunity.
 	 */
 	if (!forced && damage > 0) {
-		damage = (int)(1.0 / (House->ArmorBias * ArmorBias) * (double)damage);
+		damage = (int)(1.0 / (House->ArmorBias * ArmorBias * AttachedEffects.Armor_Multiplier()) * (double)damage);
 
 		if (Has_Ability(ABILITY_STRONGER)) {
 			damage = (int)(1.0 / (Rule->VeteranArmor + 1.0) * (double)damage);
@@ -5867,14 +5871,6 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 	}
 
-	/*
-	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
-	 */
-	if (Is_Iron_Curtained() && !forced && !negative) {
-		damage = 0;
-		return(RESULT_NONE);
-	}
-
 	// A radiation warhead does nothing to a type immune to radiation (TechnoClass::ReceiveDamage, 0x701900).
 	if (warhead != NULL && warhead->IsRadiation && TClass->IsImmuneToRadiation) {
 		damage = 0;
@@ -5889,6 +5885,20 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, unless the damage is forced.
 	if (warhead != NULL && !warhead->IsAffectsAllies && !forced && source != NULL && House->Is_Ally(source->House)) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
+	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
+	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
+		AttachedEffects.Attach(this, warhead);
+	}
+
+	/*
+	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
+	 */
+	if (Is_Iron_Curtained() && !forced && !negative) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -7687,6 +7697,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 			}
 		}
 		DiskLaser.Detach(target);
+		AttachedEffects.Detach(target);
 		std::erase(AirstrikePlanes, (AircraftClass *)target);
 		if (LocomotorTarget == target) {
 			LocomotorTarget = NULL;
@@ -9613,6 +9624,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ThreatCandidates);
 	stream.Serialize(AttackedTargets);
 	stream.Serialize(DiskLaser);
+	stream.Serialize(AttachedEffects);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);
 	stream.Serialize(IsAttackedByLocomotor);
@@ -9728,6 +9740,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(ActLike);
 	crc(ArmorBias);
 	crc(FirepowerBias);
+	AttachedEffects.Compute_CRC(crc);
 	crc((int)IdleTimer);
 	SpiedBy.Compute_CRC(crc);
 	crc(Cloak);
@@ -9785,7 +9798,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
  *=============================================================================================*/
 bool TechnoClass::Is_Allowed_To_Recloak(void) const
 {
-	if (IsCloakable) {
+	if (IsCloakable || AttachedEffects.Is_Cloakable()) {
 		return(true);
 	}
 	return(false);

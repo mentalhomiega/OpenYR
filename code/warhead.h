@@ -33,6 +33,7 @@
 #pragma once
 
 #include "abstype.h"
+#include "attacheffect.h"
 #include "typelist.h"
 
 #include "armor.hh"
@@ -323,5 +324,8 @@ class WarheadTypeClass : public AbstractTypeClass
 		 * retaliates against the veinhole that owns the veins it is standing in.
 		 */
 		bool IsVeinhole;
+
+		// The effect this warhead attaches to the objects it hits (Ares AttachEffect).
+		AttachEffectTypeClass AttachEffect;
 
 };
