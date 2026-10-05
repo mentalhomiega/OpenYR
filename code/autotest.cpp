@@ -749,6 +749,16 @@ void Run(StepType const & step)
 	} else if (step.Command == "truecolourdir") {
 		// truecolourdir <path>: adds a directory the game searches for files, PNG sprites included.
 		TrueColour_Add_Directory(step.Argument.c_str());
+	} else if (step.Command == "exportshape") {
+		// exportshape <NAME.SHP> <out.png>: writes the shape's frames as a PNG sheet, plus a house-colour mask.
+		std::string const & argument = step.Argument;
+		size_t const gap = argument.find_first_of(" \t");
+		size_t const start = gap != std::string::npos ? argument.find_first_not_of(" \t", gap) : std::string::npos;
+		if (start != std::string::npos) {
+			TrueColour_Export(argument.substr(0, gap).c_str(), argument.substr(start).c_str());
+		} else {
+			DebugString("AUTOTEST   exportshape %s: needs a shape name and an output path\n", argument.c_str());
+		}
 	} else if (step.Command == "versus") {
 		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
 		std::string const & argument = step.Argument;
@@ -1169,7 +1179,7 @@ bool AutoTest_Load(char const * filename)
 		std::string text = argument;
 		// A rules step's path is the rest of the line, so it may hold spaces.
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
-			|| std::strcmp(command, "truecolourdir") == 0) {
+			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);

@@ -74,6 +74,7 @@
 #include "sun.h"
 #include "swizzle.h"
 #include "tracker.h"
+#include "truecolour.h"
 
 
 /// <summary>
@@ -81,6 +82,7 @@
 /// </summary>
 static void Free_Demand_Loaded_Shape(void const *& data)
 {
+	TrueColour_Forget_Range(data, 1);
 	delete [] (char *)data;
 	data = NULL;
 }

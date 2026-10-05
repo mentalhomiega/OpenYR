@@ -36,6 +36,7 @@
 #include "always.h"
 
 #include "data.h"
+#include "truecolour.h"
 
 #include "sdl/sdlwindow.h"
 #include "utf8.h"
@@ -69,7 +70,10 @@ void * Load_Alloc_Data(FileClass & file)
 
 		ptr = new char[size];
 		if (ptr != NULL) {
-			file.Read(ptr, size);
+			// Only a file at least as long as a shape header can be a shape.
+			if (file.Read(ptr, size) == size && size >= 8) {
+				TrueColour_Note_Shape(ptr, file.File_Name());
+			}
 		}
 	}
 	return(ptr);

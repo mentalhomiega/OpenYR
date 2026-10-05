@@ -82,7 +82,7 @@ void Draw_Shape(Surface & surface, ConvertClass & convert, ShapeSet const * shap
 	assert(shapefile != NULL);
 	assert(shapenum != -1);
 
-	if (TrueColour_Draw(surface, convert, shapefile, shapenum, point, window, flags, remap, height_offset, zgrad, intensity)) {
+	if (TrueColour_Draw(surface, convert, shapefile, shapenum, point, window, flags, remap, height_offset, zgrad, intensity, z_shapefile, z_shapenum, z_off)) {
 		return;
 	}
 

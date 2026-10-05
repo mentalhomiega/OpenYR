@@ -96,6 +96,7 @@ class ConvertClass
 		// The full table holds one 256-entry row per lighting band; Translator is the middle row.
 		void const * Get_Intensity_Table(void) const {return(IntensityTranslator);}
 		int Get_Intensity_Levels(void) const {return(IntensityLevels);}
+		int Get_Halfbright_Mask(void) const {return(HalfbrightMask);}
 
 		// Tint in thousandths that the lighting bands are built with; 1000 leaves a channel alone.
 		virtual void Get_Tint(int & red, int & green, int & blue) const {red = green = blue = 1000;}
