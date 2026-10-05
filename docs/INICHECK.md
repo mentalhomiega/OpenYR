@@ -19,7 +19,7 @@ file, and its house, team and task force sections through the map's `[Houses]`, 
 and `[TaskForces]` lists.
 
 Stock Yuri's Revenge files give about 900 findings in the rules and 1,200 in the art, most of
-them keys the engine does not read yet, so the lists double as a to-do list for engine work.
+them keys the engine does not read yet, so we use the lists as a to-do list for engine work.
 
 ## Running it
 
@@ -47,7 +47,7 @@ catalog or the file cannot be read.
 ## What it reports
 
 - A key the engine does not read in that section, such as a misspelling, a key
-  of another section, or a key the engine has not ported yet.
+  of another section, or a key we have not ported yet.
 - A key whose spelling matches a read key only when case is ignored. The engine
   matches section and key names exactly, so `speed=` is not `Speed=`.
 - A value the engine would not read as the key's form. The forms checked are
