@@ -273,6 +273,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	CloakGeneratorState(CLOAK_SETTLED),
 	CurrentCloakRadius(0),
 	IsGeneratingGap(false),
+	DamageFireAnims{},
+	IsRequiresDamageFires(false),
 	IsGapCounted(false),
 	IsSensing(false),
 	IsDetectingDisguise(false),
@@ -1667,6 +1669,19 @@ void BuildingClass::AI(void)
 		}
 	}
 
+	// A structure below yellow health burns, or below red if it can be garrisoned (BuildingClass::Update).
+	{
+		bool const burning = HealthRatio <= (Class->IsCanBeOccupied ? Rule->ConditionRed : Rule->ConditionYellow);
+		if (burning != IsRequiresDamageFires) {
+			if (burning) {
+				Create_Damage_Fires();
+			} else {
+				Remove_Damage_Fires();
+			}
+			IsRequiresDamageFires = burning;
+		}
+	}
+
 	// Three charging soldiers overpower the structure; one is enough while its house has full power (BuildingClass::Update, 0x43FB20).
 	if (Class->IsOverpowerable) {
 		int const count = Overpowerer_Count();
@@ -1820,6 +1835,7 @@ void BuildingClass::AI(void)
 	**	are presumed to be in progress at this time.
 	*/
 	if (Strength == 0) {
+		Remove_Damage_Fires();
 		if (CountDown == 0) {
 			Cell const crate_cell = Center_Coord().As_Cell();
 			Limbo();
@@ -3582,6 +3598,8 @@ bool BuildingClass::Limbo(void)
 
 	if (!IsInLimbo) {
 
+		Remove_Damage_Fires();
+		IsRequiresDamageFires = false;
 		Update_Powered_Unit_Source(false);
 
 		if (Class->IsLaserFencePost) {
@@ -8322,8 +8340,61 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 /// stage of its repair animation.
 /// </summary>
 /// <param name="anim">The animation that is going away.</param>
+/// <summary>
+/// Starts a fire, of the types in DamageFireTypes taken in turn from a random first one, at each
+/// of the structure's DamageFireOffset points up to the first that already has one burning
+/// (FUN_0043C0D0). Each fire starts on a random frame.
+/// </summary>
+void BuildingClass::Create_Damage_Fires(void)
+{
+	int const count = Rule->DamageFireTypes.Count();
+	if (count == 0) {
+		return;
+	}
+	int pick = Random_Pick(0, count - 1);
+	for (int index = 0; index < 8; index++) {
+		if (index >= Class->DamageFireOffsetCount || DamageFireAnims[index] != NULL) {
+			return;
+		}
+		Point2D const offset = Class->DamageFireOffset[index];
+		Point2D const lepton = TacticalMap->Pixel_To_Lepton(offset);
+		Coord coord = Render_Coord();
+		coord.X += lepton.X;
+		coord.Y += lepton.Y;
+		AnimClass * fire = new AnimClass(Rule->DamageFireTypes[pick], coord, 0, 1);
+		if (fire != NULL) {
+			DamageFireAnims[index] = fire;
+			int const zadjust = ((offset.Y - (Class->Height() + Class->Width()) * 15) * 3 >> 1) - 10;
+			fire->ZAdjust = std::min(zadjust, 0);
+			int const end = fire->Class->Stages;
+			if (end > 0) {
+				fire->Set_Stage(Random_Pick(0, end - 1));
+			}
+			pick = (pick + 1 < count) ? pick + 1 : 0;
+		}
+	}
+}
+
+
+void BuildingClass::Remove_Damage_Fires(void)
+{
+	for (AnimClass * & fire : DamageFireAnims) {
+		if (fire != NULL) {
+			AnimClass * const doomed = fire;
+			fire = NULL;
+			doomed->Delete_Me();
+		}
+	}
+}
+
+
 void BuildingClass::Detach_Anim(AnimClass * anim)
 {
+	for (AnimClass * & fire : DamageFireAnims) {
+		if (fire == anim) {
+			fire = NULL;
+		}
+	}
 	if (IsActive) {
 		for (int i = 0; i < BANIM_COUNT; i++) {
 			if (Anims[i] == anim) {
@@ -9764,6 +9835,8 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CloakGeneratorState);
 	stream.Serialize(CurrentCloakRadius);
 	stream.Serialize(IsGeneratingGap);
+	stream.Serialize(DamageFireAnims);
+	stream.Serialize(IsRequiresDamageFires);
 	stream.Serialize(IsGapCounted);
 	stream.Serialize(CloakFieldCells);
 	stream.Serialize(IsSensing);

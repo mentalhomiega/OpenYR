@@ -303,6 +303,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsUnitAbsorb(false),
 	ExtraPowerBonus(0),
 	IsFactoryPlant(false),
+	DamageFireOffset{},
+	DamageFireOffsetCount(0),
 	InfantryCostBonus(1.0),
 	UnitsCostBonus(1.0),
 	AircraftCostBonus(1.0),
@@ -1312,6 +1314,21 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsUnitAbsorb = ini.Get_Bool(Name(), "UnitAbsorb", IsUnitAbsorb);
 		ExtraPowerBonus = ini.Get_Int(Name(), "ExtraPower", ExtraPowerBonus);
 		IsFactoryPlant = ini.Get_Bool(Name(), "FactoryPlant", IsFactoryPlant);
+
+		DamageFireOffsetCount = 0;
+		for (int index = 0; index < 8; index++) {
+			char key[32];
+			char value[32];
+			snprintf(key, sizeof(key), "DamageFireOffset%d", index);
+			if (ArtINI.Get_String(Graphic_Name(), key, "", value, sizeof(value)) <= 0) {
+				break;
+			}
+			int x = 0;
+			int y = 0;
+			sscanf(value, "%d,%d", &x, &y);
+			DamageFireOffset[index] = Point2D(x, y);
+			DamageFireOffsetCount = index + 1;
+		}
 		InfantryCostBonus = ini.Get_Float(Name(), "InfantryCostBonus", InfantryCostBonus);
 		UnitsCostBonus = ini.Get_Float(Name(), "UnitsCostBonus", UnitsCostBonus);
 		AircraftCostBonus = ini.Get_Float(Name(), "AircraftCostBonus", AircraftCostBonus);
@@ -2319,6 +2336,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsUnitAbsorb);
 	stream.Serialize(ExtraPowerBonus);
 	stream.Serialize(IsFactoryPlant);
+	stream.Serialize(DamageFireOffset);
+	stream.Serialize(DamageFireOffsetCount);
 	stream.Serialize(InfantryCostBonus);
 	stream.Serialize(UnitsCostBonus);
 	stream.Serialize(AircraftCostBonus);

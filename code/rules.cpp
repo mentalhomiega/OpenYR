@@ -1469,6 +1469,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LightningPrintText = ini.Get_Bool(GENERAL, "LightningPrintText", LightningPrintText);
 		WeatherConClouds = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConClouds", WeatherConClouds);
 		WeatherConBolts = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConBolts", WeatherConBolts);
+		DamageFireTypes = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "DamageFireTypes", DamageFireTypes);
 		WeatherConBoltExplosion = TGet_Class(ini, GENERAL, "WeatherConBoltExplosion", WeatherConBoltExplosion);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "MetallicDebris", MetallicDebris);
 		MutateExplosion = ini.Get_Bool(GENERAL, "MutateExplosion", MutateExplosion);
@@ -2663,6 +2664,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightningPrintText);
 	stream.Serialize(WeatherConClouds);
 	stream.Serialize(WeatherConBolts);
+	stream.Serialize(DamageFireTypes);
 	stream.Serialize(WeatherConBoltExplosion);
 	stream.Serialize(LightningSounds);
 	stream.Serialize(StormSound);
