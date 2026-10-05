@@ -89,6 +89,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.AutoScroll = on;
 		}
 
+		virtual void Set_Show_Hidden(bool on) override
+		{
+			Options.ShowHidden = on;
+		}
+
 		virtual void Set_Difficulty(int difficulty) override
 		{
 			Options.Difficulty = difficulty;
@@ -133,6 +138,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.ToolTips = Options.ToolTips;
 	state.Coasting = (Options.ScrollMethod == 0);
 	state.EdgeScroll = Options.AutoScroll;
+	state.ShowHidden = Options.ShowHidden;
 	state.InGame = GameActive;
 	state.HasSpeed = !(GameActive && Session.Type == GAME_INTERNET);
 	state.HasDifficulty = !GameActive;

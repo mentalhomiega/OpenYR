@@ -63,6 +63,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.Coasting = (intent.Value != 0);
 	} else if (intent.Name == "edge") {
 		State.EdgeScroll = (intent.Value != 0);
+	} else if (intent.Name == "hidden") {
+		State.ShowHidden = (intent.Value != 0);
 	} else if (intent.Name == "ok") {
 		Apply();
 		Result = UI_RESULT_ACCEPTED;
@@ -101,6 +103,7 @@ void UIGameControlsPresenterClass::Apply(void)
 	Service.Set_Tool_Tips(State.ToolTips);
 	Service.Set_Scroll_Coasting(State.Coasting);
 	Service.Set_Edge_Scroll(State.EdgeScroll);
+	Service.Set_Show_Hidden(State.ShowHidden);
 	if (State.HasDifficulty) {
 		Service.Set_Difficulty(State.Difficulty);
 	}
@@ -140,6 +143,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("tooltips");
 			Model.DirtyVariable("coasting");
 			Model.DirtyVariable("edge");
+			Model.DirtyVariable("hidden");
 			Model.DirtyVariable("speedname");
 			Model.DirtyVariable("scrollname");
 			Model.DirtyVariable("detailname");
@@ -159,6 +163,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("tooltips", &state.ToolTips)
 				&& model.Bind("coasting", &state.Coasting)
 				&& model.Bind("edge", &state.EdgeScroll)
+				&& model.Bind("hidden", &state.ShowHidden)
 				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("hasspeed", &state.HasSpeed)
 				&& model.Bind("hasdifficulty", &state.HasDifficulty)

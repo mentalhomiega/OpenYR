@@ -1262,6 +1262,7 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Action_Lines(bool on) override { Calls.push_back(on ? "lines on" : "lines off"); }
 		virtual void Set_Tool_Tips(bool on) override { Calls.push_back(on ? "tooltips on" : "tooltips off"); }
 		virtual void Set_Scroll_Coasting(bool on) override { Calls.push_back(on ? "coasting on" : "coasting off"); }
+		virtual void Set_Show_Hidden(bool on) override { Calls.push_back(on ? "hidden on" : "hidden off"); }
 		virtual void Set_Edge_Scroll(bool on) override { Calls.push_back(on ? "edge on" : "edge off"); }
 		virtual void Set_Difficulty(int difficulty) override { Calls.push_back("difficulty " + std::to_string(difficulty)); }
 		virtual void Save(void) override { Calls.push_back("save"); }
@@ -1316,7 +1317,7 @@ void Test_Game_Controls_Presenter(void)
 
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "OK accepts the game controls");
-		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
+		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; hidden off; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
 	}
 
 	{
@@ -1333,7 +1334,7 @@ void Test_Game_Controls_Presenter(void)
 		presenter.State.SoundEnabled = true;
 		Drive(presenter, "sound");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts and names the sound options next");
-		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; save", "an Internet game applies no game speed and no difficulty");
+		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; save", "an Internet game applies no game speed and no difficulty");
 	}
 
 	{
@@ -2204,7 +2205,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 			Click(context, sound);
 			presenter.Drain();
 			Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts the screen and names the sound options next");
-			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; save", "the Sound button applies the edited settings in order and saves");
+			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; save", "the Sound button applies the edited settings in order and saves");
 		}
 
 		view->Release();
@@ -2287,7 +2288,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; hidden off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
 
 		view->Release();
 		context.Update();
@@ -5433,7 +5434,7 @@ void Test_Shell(void)
 
 		Check(found && dragged && presenter.State.Speed == 0 && named == "Fastest", "the speed slider runs backwards, so dragging it to the far end takes the fastest setting");
 		Check(!presenter.State.CameoText && quiet, "a switch and a slider change the screen without reaching the engine");
-		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
+		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; hidden off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "and asks for the screen its button names");
 	}
 

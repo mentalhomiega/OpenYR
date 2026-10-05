@@ -25,6 +25,7 @@
 	</div><div class="column">
 		<label class="check" id="switch-tooltips"><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/>Tooltips</label>
 		<label class="check" id="switch-coasting"><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/>Scroll Coasting</label>
+		<label class="check" id="switch-hidden"><input type="checkbox" id="hidden" data-attrif-checked="hidden" data-event-click="queue('hidden', hidden ? 0 : 1)"/>Hidden Units</label>
 	</div></div>
 	<div id="buttons">
 		<button id="sound" data-if="ingame" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>

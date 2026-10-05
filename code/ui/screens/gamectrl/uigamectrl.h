@@ -30,6 +30,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Tool_Tips(bool on) = 0;
 		virtual void Set_Scroll_Coasting(bool on) = 0;
 		virtual void Set_Edge_Scroll(bool on) = 0;
+		virtual void Set_Show_Hidden(bool on) = 0;
 		virtual void Set_Difficulty(int difficulty) = 0;
 		virtual void Save(void) = 0;
 };
@@ -46,6 +47,7 @@ struct UIGameControlsState
 	bool ToolTips = false;
 	bool Coasting = false;
 	bool EdgeScroll = false;
+	bool ShowHidden = false;
 	bool InGame = false;
 	bool HasSpeed = true;
 	bool HasDifficulty = true;
