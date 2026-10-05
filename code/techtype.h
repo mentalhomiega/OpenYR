@@ -441,6 +441,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether the object guards an area rather than its spot when it falls idle (TechnoTypeClass::DefaultToGuardArea).
 		bool IsDefaultToGuardArea;
 
+		// Whether a structure joins a box selection of units (TechnoTypeClass::IsSelectableCombatant).
+		bool IsSelectableCombatant;
+
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;
 

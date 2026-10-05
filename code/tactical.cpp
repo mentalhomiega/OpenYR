@@ -3311,7 +3311,7 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 
 				if (obj->RTTI == RTTI_BUILDING) {
 					BuildingTypeClass * type = ((BuildingClass *)obj)->Class;
-					if (type->UndeploysInto && !type->IsConstructionYard) {
+					if ((type->UndeploysInto && !type->IsConstructionYard) || type->IsSelectableCombatant) {
 						force = true;
 					}
 				}
