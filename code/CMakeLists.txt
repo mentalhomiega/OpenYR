@@ -80,6 +80,18 @@ set_target_properties(OpenTS PROPERTIES
     VS_DEBUGGER_COMMAND_ARGUMENTS "-DATADIR=${OPENTS_GAME_DIR}"
 )
 
+# The INI check at rules load reads this catalog beside the executable; without Python and
+# PyYAML the game builds and the check logs that it was skipped.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_custom_command(TARGET OpenTS POST_BUILD
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tools/inicheck/export_catalog.py"
+            --output "$<TARGET_FILE_DIR:OpenTS>/inicheck-catalog.tsv"
+            || ${CMAKE_COMMAND} -E echo "inicheck catalog not written"
+        VERBATIM
+    )
+endif()
+
 #
 # ---------------------------------------------------------
 # Compile flags

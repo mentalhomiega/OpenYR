@@ -2,8 +2,19 @@
 
 `inicheck` reads a rules file and lists the keys the engine does not read there
 and the values it cannot read in the expected form. It only reports. Neither
-the tool nor its library changes how the game reads a value, and the game does
-not run the checker yet.
+the tool nor its library changes how the game reads a value.
+
+## In the game
+
+On the `modern` branch the game checks its rules file (`rulesmd.ini`) each time it loads
+the rules at startup and writes the findings to the debug log as `INI check:` lines. The log
+lists the first 200 findings and then the totals. The check needs `inicheck-catalog.tsv`
+beside the executable; the build writes it there when Python 3 with PyYAML is installed.
+Without the catalog the log says the file was not checked, and the game runs as usual.
+
+Stock Yuri's Revenge rules give about 900 findings, most of them keys the engine does not
+read yet, so the list doubles as a to-do list for engine work. Map rule overrides and
+`art.ini` are not checked in the game.
 
 ## Running it
 
