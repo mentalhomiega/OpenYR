@@ -125,6 +125,7 @@ OptionsClass::OptionsClass(void) :
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
+	ShowHidden(false),
 	ToolTips(true),
 	AltToRally(false),
 	SimulateWhileUnfocused(false),
@@ -406,6 +407,9 @@ void OptionsClass::Load_Settings(void)
 	ActionLines = ConfigINI.Get_Bool("Options", "UnitActionLines", ActionLines);
 	DebugString("ActionLines are %s\n", ActionLines == true ? "ON" : "OFF");
 
+	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
+	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
+
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
 	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
 
@@ -493,6 +497,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SidebarCameoText", SidebarCameoText);
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
+	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);

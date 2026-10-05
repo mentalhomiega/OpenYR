@@ -305,6 +305,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	Capacity(0),
 	TurretNotExportedOnGround(false),
 	IsTypeImmune(false),
+	IsCanBeHidden(true),
 	IsDetectDisguise(false),
 	DetectDisguiseRange(0),
 	IsMoveToShroud(true),
@@ -678,6 +679,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 {
 	if (BASECLASS::Read_INI(ini)) {
 
+		// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).
+		IsCanBeHidden = ArtINI.Get_Bool(Name(), "CanBeHidden", IsCanBeHidden);
 		IsTypeImmune = ini.Get_Bool(Name(), "TypeImmune", IsTypeImmune);
 		IsDetectDisguise = ini.Get_Bool(Name(), "DetectDisguise", IsDetectDisguise);
 		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
@@ -1588,6 +1591,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Weapons);
 	stream.Serialize(EliteWeapons);
 	stream.Serialize(IsTypeImmune);
+	stream.Serialize(IsCanBeHidden);
 	stream.Serialize(IsDetectDisguise);
 	stream.Serialize(DetectDisguiseRange);
 	stream.Serialize(IsMoveToShroud);

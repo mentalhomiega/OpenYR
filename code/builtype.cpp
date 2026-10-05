@@ -312,6 +312,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	DefensesCostBonus(1.0),
 	IsFlat(false),
 	OccupyHeight(0),
+	IsCanHideThings(true),
+	AddOccupy{},
+	RemoveOccupy{},
 	IsDockUnload(false),
 	IsRecoilless(false),
 	IsHasStupidGuardMode(true),
@@ -390,6 +393,11 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Create_ID();
 	BuildingTypes.Add(this);
 	HeapID = (StructType)BuildingTypes.ID(this);
+
+	for (int i = 0; i < ARRAY_SIZE(AddOccupy); i++) {
+		AddOccupy[i] = Point2D(0xFFFF, 0xFFFF);
+		RemoveOccupy[i] = Point2D(0xFFFF, 0xFFFF);
+	}
 
 	Init_Anim(BSTATE_CONSTRUCTION, 0, 1, 0);
 	Init_Anim(BSTATE_IDLE, 0, 1, 0);
@@ -1427,6 +1435,16 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsRecoilless = ArtINI.Get_Bool(Graphic_Name(), "Recoilless", IsRecoilless);
 		IsFlat = ArtINI.Get_Bool(Graphic_Name(), "Flat", IsFlat);
 		OccupyHeight = ArtINI.Get_Int(Graphic_Name(), "OccupyHeight", OccupyHeight);
+
+		// CanHideThings is read from the art section named after the type, not its image (BuildingTypeClass::LoadFromINI, 0x45FE50).
+		IsCanHideThings = ArtINI.Get_Bool(Name(), "CanHideThings", IsCanHideThings);
+		for (int i = 0; i < ARRAY_SIZE(AddOccupy); i++) {
+			char entry[32];
+			std::snprintf(entry, sizeof(entry), "AddOccupy%d", i + 1);
+			AddOccupy[i] = ArtINI.Get_Point(Graphic_Name(), entry, Point2D(0xFFFF, 0xFFFF));
+			std::snprintf(entry, sizeof(entry), "RemoveOccupy%d", i + 1);
+			RemoveOccupy[i] = ArtINI.Get_Point(Graphic_Name(), entry, Point2D(0xFFFF, 0xFFFF));
+		}
 		IsSiloDamage = ArtINI.Get_Bool(Graphic_Name(), "SiloDamage", IsSiloDamage);
 		IsHasChargeAnim = ArtINI.Get_Bool(Graphic_Name(), "ChargeAnim", IsHasChargeAnim);
 		ToOverlay = TGet_Class(ArtINI, Graphic_Name(), "ToOverlay", ToOverlay);
@@ -2345,6 +2363,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DefensesCostBonus);
 	stream.Serialize(IsFlat);
 	stream.Serialize(OccupyHeight);
+	stream.Serialize(IsCanHideThings);
+	stream.Serialize(AddOccupy);
+	stream.Serialize(RemoveOccupy);
 	stream.Serialize(IsDockUnload);
 	stream.Serialize(IsRecoilless);
 	stream.Serialize(IsHasStupidGuardMode);

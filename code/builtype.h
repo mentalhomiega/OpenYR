@@ -542,6 +542,20 @@ class BuildingTypeClass : public TechnoTypeClass
 		int OccupyHeight;
 
 		/*
+		 * If this building screens the cells behind it from view, then this flag will be
+		 * true. Placing it then marks the cells it covers, so that objects standing there
+		 * can show that they are hidden behind it.
+		 */
+		bool IsCanHideThings;
+
+		/*
+		 * These are extra cells, as offsets from the building's origin, that its cover is
+		 * added to or taken from. An entry of (0xFFFF, 0xFFFF) is unused.
+		 */
+		Point2D AddOccupy[8];
+		Point2D RemoveOccupy[8];
+
+		/*
 		 * If harvesters may dock with this building to unload tiberium, then this flag will
 		 * be true. The harvester is sent into its unload mission once it has attached.
 		 */

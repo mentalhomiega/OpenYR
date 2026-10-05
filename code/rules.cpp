@@ -453,6 +453,9 @@ RulesClass::RulesClass(void) :
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
 	RadLevelMax(0),
+	ElevationIncrement(0),
+	ElevationIncrementBonus(1.0),
+	ElevationBonusCap(0.0),
 	RadLevelDelay(0),
 	RadLightDelay(0),
 	RadLevelFactor(0.0),
@@ -723,6 +726,7 @@ RulesClass::RulesClass(void) :
 	FirestormAirAnim(NULL),
 	FirestormGroundAnim(NULL),
 	MoveFlash(NULL),
+	Behind(NULL),
 	BombParachute(NULL),
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
@@ -997,6 +1001,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Audio_Visual_Rules(ini);
 	Special_Weapons(ini);
 	Radiation(ini);
+	Elevation_Model(ini);
 
 	BEnd(BENCH_RULES);
 
@@ -1284,6 +1289,23 @@ bool RulesClass::Radiation(CCINIClass const & ini)
 }
 
 
+/// <summary>
+/// Fetches the range bonus a firer gets for standing above its target (RulesClass::ElevationModel).
+/// </summary>
+/// <returns>bool; Was the [ElevationModel] section found and processed?</returns>
+bool RulesClass::Elevation_Model(CCINIClass const & ini)
+{
+	static char const * const ELEVATIONMODEL = "ElevationModel";
+	if (ini.Is_Present(ELEVATIONMODEL)) {
+		ElevationIncrement = ini.Get_Int(ELEVATIONMODEL, "ElevationIncrement", ElevationIncrement);
+		ElevationIncrementBonus = ini.Get_Float(ELEVATIONMODEL, "ElevationIncrementBonus", ElevationIncrementBonus);
+		ElevationBonusCap = ini.Get_Float(ELEVATIONMODEL, "ElevationBonusCap", ElevationBonusCap);
+		return(true);
+	}
+	return(false);
+}
+
+
 bool RulesClass::Combat_Damage(CCINIClass const & ini)
 {
 	static char const * const COMBATDAMAGE = "CombatDamage";
@@ -1440,6 +1462,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
 		MoveFlash = TGet_Class(ini, GENERAL, "MoveFlash", MoveFlash);
+		Behind = TGet_Class(ini, GENERAL, "Behind", Behind);
 		DefaultMirageDisguises = TGet_TypeList<TerrainTypeClass>(ini, GENERAL, "DefaultMirageDisguises", DefaultMirageDisguises);
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
@@ -2715,6 +2738,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);
 	stream.Serialize(RadLevelMax);
+	stream.Serialize(ElevationIncrement);
+	stream.Serialize(ElevationIncrementBonus);
+	stream.Serialize(ElevationBonusCap);
 	stream.Serialize(RadLevelDelay);
 	stream.Serialize(RadLightDelay);
 	stream.Serialize(RadLevelFactor);
@@ -2984,6 +3010,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirestormAirAnim);
 	stream.Serialize(FirestormGroundAnim);
 	stream.Serialize(MoveFlash);
+	stream.Serialize(Behind);
 	stream.Serialize(BombParachute);
 	stream.Serialize(Parachute);
 	stream.Serialize(GuardAreaTargetingDelay);
@@ -3383,6 +3410,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == MoveFlash) {
 		MoveFlash = NULL;
+	}
+	if (target == Behind) {
+		Behind = NULL;
 	}
 	if (target == BombParachute) {
 		BombParachute = NULL;

@@ -8827,6 +8827,14 @@ bool BuildingClass::Release_Passenger(void)
 /// </summary>
 void BuildingClass::Grind(FootClass * object)
 {
+	// The ground object's death voice (heard only by its owner) and death sound play first, as gamemd's UnitClass and InfantryClass grinder entry does.
+	if (object->TClass->VoiceDie.Count() > 0 && object->House->Is_Player_Control()) {
+		Sound_Effect((VocType)object->TClass->VoiceDie.Pick(NonCriticalRandomNumber()), object->Get_Coord());
+	}
+	if (object->TClass->DieSound.Count() > 0) {
+		Sound_Effect((VocType)object->TClass->DieSound.Pick(NonCriticalRandomNumber()), object->Get_Coord());
+	}
+
 	int refund = object->Refund_Amount();
 	for (FootClass * passenger = (FootClass *)object->Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
 		refund += passenger->Refund_Amount();

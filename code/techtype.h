@@ -815,6 +815,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsTypeImmune;
 
+		// If an object of this type can show that it is hidden behind a building, then this flag will be true.
+		bool IsCanBeHidden;
+
 		/*
 		 * If this object sees a disguised object for what it really is when it scans for a
 		 * target, then this flag will be true.

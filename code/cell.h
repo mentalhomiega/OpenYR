@@ -190,6 +190,9 @@ class CellClass : public AbstractClass
 		HouseArray<std::uint16_t> DisguiseSensorCount;
 		HouseSet OccupiedBy;
 
+		// The number of placed buildings whose bulk screens this cell from view.
+		int OccupyHeightsCoveringMe;
+
 	private:
 
 		/*
@@ -596,6 +599,7 @@ class CellClass : public AbstractClass
 		virtual Coord As_Coord(void) const override;
 
 		bool Is_Cloaked(HouseClass const * house) const;
+		bool Is_Covered(void) const;
 		bool Is_Sensed(HouseClass const * house) const;
 		bool Add_Cloak(HouseClass const * house);
 		bool Remove_Cloak(HouseClass const * house);

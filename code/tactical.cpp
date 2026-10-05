@@ -47,6 +47,7 @@
 #include "fog.h"
 #include "font.h"
 #include "globals.h"
+#include "goptions.h"
 #include "house.h"
 #include "houstype.h"
 #include "super.h"
@@ -65,6 +66,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
+#include "shapeset.h"
 #include "stimer.h"
 #include "sun.h"
 #include "terrain.h"
@@ -77,6 +79,7 @@
 #include "ramp.hh"
 #include "scrspeed.hh"
 
+#include <algorithm>
 #include <utility>
 
 
@@ -1309,6 +1312,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		RadBeamClass::Draw_All();
 		Draw_Mind_Control_Links();
 		Draw_Psychic_Lines();
+		Draw_Hidden_Markers();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
@@ -3867,6 +3871,71 @@ void Tactical::Draw_Super_Timers(void)
 			Point2D const at(TacticalRect.Width - 3, TacticalRect.Height - 16 * (line + 1));
 			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, at, ColorSchemes[house->Scheme], 0, (TextPrintType)(TPF_RIGHT | TPF_EFNT | TPF_FULLSHADOW), 1);
 			line++;
+		}
+	}
+}
+
+
+/// <summary>
+/// Marks each visible object that a building screens from view (FUN_0070F1D0, called from
+/// TechnoClass::Update, 0x6F9E50). With a Behind animation in the rules, its frames are drawn
+/// over the object, and only while the ShowHidden option is on. Without one, blinking corner
+/// brackets are drawn around the object instead.
+/// </summary>
+void Tactical::Draw_Hidden_Markers(void)
+{
+	AnimTypeClass const * behind = Rule->Behind;
+	if (behind != NULL && !Options.ShowHidden) {
+		return;
+	}
+
+	ShapeSet const * shapes = NULL;
+	if (behind != NULL) {
+		shapes = (ShapeSet const *)behind->Get_Image_Data();
+		if (shapes == NULL) {
+			return;
+		}
+	}
+
+	// The original's second bracket colour is not recovered; white stands in for it.
+	int const color = NormalDrawer->Convert_Pixel(12);
+	int const highlight = NormalDrawer->Convert_Pixel(WHITE);
+
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (!techno->Is_Hidden_Behind_Building() || !techno->Is_Decoration_Visible()) {
+			continue;
+		}
+		if (techno->RTTI != RTTI_BUILDING && Scen->Special.IsFogOfWar && Map.Is_Fogged(techno->PositionCoord)) {
+			continue;
+		}
+		Point2D center;
+		if (!Coord_To_Pixel(techno->Center_Coord(), center)) {
+			continue;
+		}
+
+		if (shapes != NULL) {
+			// The frames repeat from LoopStart to LoopEnd, as the looping animation would play them.
+			int const loop = std::max(behind->LoopEnd - behind->LoopStart, 1);
+			int const frame = behind->Start + behind->LoopStart + (Frame / std::max(behind->Delay, 1)) % loop;
+			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, center, TacticalRect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
+			continue;
+		}
+
+		// The brackets grow every eight frames; a second copy is drawn one pixel down and to the right.
+		int const outer = (Frame & 8) ? 12 : 10;
+		int const inner = (Frame & 8) ? 8 : 6;
+		for (int pass = 0; pass < 2; pass++) {
+			int const pen = (pass == 0) ? color : highlight;
+			int const x = center.X + pass;
+			int const y = center.Y + pass;
+			for (int sx = -1; sx <= 1; sx += 2) {
+				for (int sy = -1; sy <= 1; sy += 2) {
+					Point2D const corner(x + sx * outer, y + sy * outer);
+					LogicalSurface->Draw_Line(TacticalRect, corner, Point2D(x + sx * inner, corner.Y), pen);
+					LogicalSurface->Draw_Line(TacticalRect, corner, Point2D(corner.X, y + sy * inner), pen);
+				}
+			}
 		}
 	}
 }

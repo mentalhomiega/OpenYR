@@ -1626,6 +1626,23 @@ bool TechnoClass::Is_Decoration_Visible(void) const
 
 
 /// <summary>
+/// Checks whether this object stands where a building screens it from view, so that a marker
+/// shows where it is (TechnoClass::Update, 0x6F9E50). Aircraft, objects whose type has
+/// CanBeHidden=no, and objects that are cloaked, disguised or out of the map never count.
+/// </summary>
+bool TechnoClass::Is_Hidden_Behind_Building(void) const
+{
+	if (!TClass->IsCanBeHidden || RTTI == RTTI_AIRCRAFT || IsInLimbo) {
+		return(false);
+	}
+	if (Visual_Character() != VISUAL_NORMAL) {
+		return(false);
+	}
+	return(Map[Center_Coord()].Is_Covered());
+}
+
+
+/// <summary>
 /// Returns the point this object's pips run from: the near corner of the footprint for a
 /// building or core defender, and a fixed offset below the center for anything else.
 /// </summary>
@@ -2038,6 +2055,39 @@ int TechnoClass::Get_Sight_Bonus(Coord const & coord)
 }
 
 
+/// <summary>
+/// Works out the extra range a firer on higher ground has against the target, as gamemd's
+/// FUN_006F6F60 does. Every ElevationIncrement levels the firer's cell stands above the
+/// target's cell are worth ElevationIncrementBonus cells, up to ElevationBonusCap cells; the
+/// whole height difference is then added on, so the bonus is the length of that range step
+/// combined with the drop to the target.
+/// </summary>
+/// <param name="target">The target being ranged.</param>
+/// <returns>int; The extra range in leptons, or 0 when either side is off the ground.</returns>
+int TechnoClass::Elevation_Range_Bonus(AbstractClass const * target) const
+{
+	if (!On_Ground() || !target->On_Ground() || Rule->ElevationIncrement == 0) {
+		return(0);
+	}
+
+	// A cell's height counts a bridge deck on it as four more levels (CellClass, 0x487D50).
+	CellClass const & mycell = Map[Center_Coord()];
+	CellClass const & theircell = Map[target->Center_Coord()];
+	int levels = (mycell.Height + (mycell.IsBridgeDeck ? 4 : 0)) - (theircell.Height + (theircell.IsBridgeDeck ? 4 : 0));
+	if (levels < 0) {
+		levels = 0;
+	}
+
+	double cells = (levels / Rule->ElevationIncrement) * Rule->ElevationIncrementBonus;
+	if (!(cells < Rule->ElevationBonusCap)) {
+		cells = Rule->ElevationBonusCap;
+	}
+	int across = (int)cells * CELL_LEPTON_W;
+	int down = levels * LEVEL_LEPTON_H;
+	return((int)std::sqrt((double)(across * across + down * down)));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::In_Range -- Determines if specified target is within weapon range.             *
  *                                                                                             *
@@ -2087,6 +2137,11 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 	}
 	if (IsInOpenToppedTransport) {
 		bonus += Rule->OpenToppedRangeBonus * CELL_LEPTON_W;
+	}
+
+	// A direct-fire projectile SubjectToElevation reaches farther from higher ground (TechnoClass::InRange, 0x6F7398).
+	if (weapon != NULL && weapon->Bullet->IsSubjectToElevation && !weapon->Bullet->IsArcing) {
+		bonus += Elevation_Range_Bonus(target);
 	}
 	return(TClass->In_Range(coord, target, weapon, bonus));
 }

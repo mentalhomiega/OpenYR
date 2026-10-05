@@ -745,6 +745,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
+		int Elevation_Range_Bonus(AbstractClass const * target) const;
 		virtual void Death_Announcement(TechnoClass const * source=0) const = 0;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which=0) const;
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const;
@@ -818,6 +819,7 @@ class TechnoClass :	public RadioClass,
 		SurfaceRegion Techno_Render_Voxel_Shadow(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int layer_index, ShapeFlags_Type flags, bool cached) const;
 
 		bool Is_Decoration_Visible(void) const;
+		bool Is_Hidden_Behind_Building(void) const;
 		Point2D Pip_Origin(Point2D const & point) const;
 		virtual void Draw_Health_Bar_Old(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
