@@ -6,15 +6,20 @@ the tool nor its library changes how the game reads a value.
 
 ## In the game
 
-On the `modern` branch the game checks its rules file (`rulesmd.ini`) each time it loads
-the rules at startup and writes the findings to the debug log as `INI check:` lines. The log
-lists the first 200 findings and then the totals. The check needs `inicheck-catalog.tsv`
-beside the executable; the build writes it there when Python 3 with PyYAML is installed.
-Without the catalog the log says the file was not checked, and the game runs as usual.
+On the `modern` branch the game checks its rules file (`rulesmd.ini`) and art file
+(`artmd.ini`) each time it loads the rules at startup, and each map's own keys and rule
+overrides when the map loads. The findings go to the debug log as `INI check:` lines: the first
+200 for each file, then its totals. The check needs `inicheck-catalog.tsv` beside the
+executable; the build writes it there when Python 3 with PyYAML is installed. Without the
+catalog the log says the file was not checked, and the game runs as usual.
 
-Stock Yuri's Revenge rules give about 900 findings, most of them keys the engine does not
-read yet, so the list doubles as a to-do list for engine work. Map rule overrides and
-`art.ini` are not checked in the game.
+An art section is checked when a type in the rules names it with `Image=`, or has its name and
+no `Image=`. A map's type sections are placed through the rules lists in the map or the rules
+file, and its house, team and task force sections through the map's `[Houses]`, `[TeamTypes]`
+and `[TaskForces]` lists.
+
+Stock Yuri's Revenge files give about 900 findings in the rules and 1,200 in the art, most of
+them keys the engine does not read yet, so the lists double as a to-do list for engine work.
 
 ## Running it
 

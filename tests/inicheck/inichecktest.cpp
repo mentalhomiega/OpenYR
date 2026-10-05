@@ -42,7 +42,9 @@ char const CATALOG[] =
 	"Gravity\trules.ini\tGeneral\tglobal rules\tinteger\n"
 	"Veteran\trules.ini\tGeneral\tglobal rules\tfloating point\n"
 	"Easy\trules.ini\t@difficulty\tdifficulty settings\tfloating point\n"
-	"Image\tart.ini\t*\tAnimType\tstring\n";
+	"Image\tart.ini\t*\tAnimType\tstring\n"
+	"TechLevel\tmap file\t@house\tHouse (per-scenario)\tinteger\n"
+	"Voxel\tart.ini\t@image\tAircraftType,BuildingType,InfantryType,UnitType\tboolean\n";
 
 
 IniCheck::Catalog Load_Catalog(void)
@@ -161,6 +163,49 @@ void Test_Rules(void)
 	Check(IniCheck::Format(report.Findings.front()) == "line 3: [General] Speeed=5: the engine does not read this key in this section", "a finding formats as one line");
 }
 
+
+void Test_Art(void)
+{
+	IniCheck::Catalog const catalog = Load_Catalog();
+	char const rules[] =
+		"[VehicleTypes]\n"
+		"1=MTNK\n"
+		"2=HTNK\n"
+		"[HTNK]\n"
+		"Image=APOC\n";
+	char const art[] =
+		"[MTNK]\n"
+		"Voxel=yes\n"
+		"Bogus=1\n"
+		"[APOC]\n"
+		"Voxel=maybe\n"
+		"[HTNK]\n"
+		"Voxel=yes\n";
+	IniCheck::Report const report = IniCheck::Check_Art(catalog, art, rules);
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Bogus", 3) && !Has(report, IniCheck::FindingType::BAD_VALUE, "Voxel", 2), "a type's art section is checked under its own name");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Voxel", 5), "a type with Image= is checked under the image's section");
+	Check(report.UncheckedSections.size() == 1 && report.UncheckedSections.front() == "HTNK", "a type's own name is not its art section when Image= names another");
+}
+
+
+void Test_Map_Listing(void)
+{
+	IniCheck::Catalog const catalog = Load_Catalog();
+	char const map[] =
+		"[Houses]\n"
+		"0=Americans\n"
+		"[Americans]\n"
+		"TechLevel=8\n"
+		"Bogus=1\n"
+		"[MTNK]\n"
+		"Crusher=maybe\n";
+	IniCheck::Report const report = IniCheck::Check_Map(catalog, map, "[VehicleTypes]\n1=MTNK\n");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Crusher", 7), "a map override of a type the rules list is checked");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "TechLevel", 4) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Bogus", 5), "a house the map lists is checked against the map's house keys");
+	IniCheck::Report const alone = IniCheck::Check_Map(catalog, map, "");
+	Check(!Has(alone, IniCheck::FindingType::BAD_VALUE, "Crusher", 7), "without the rules' lists the map's type section is not placed");
+}
+
 }
 
 
@@ -169,6 +214,8 @@ int main(void)
 	Test_Values();
 	Test_Catalog();
 	Test_Rules();
+	Test_Art();
+	Test_Map_Listing();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);

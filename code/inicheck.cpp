@@ -388,29 +388,48 @@ std::string Catalog::Find_Other_Case(std::string const & key) const
 }
 
 
-/// <summary>
-/// Checks rules text against the catalog scopes for file. Sections named in a rules list such as
-/// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
-/// [General] against their own keys. Every other section is listed as unchecked. Findings come
-/// in line order.
-/// </summary>
-Report Check_Rules(Catalog const & catalog, std::string_view text, std::string const & file)
-{
-	std::vector<Section> const sections = Parse(text);
+using KindMap = std::map<std::string, std::set<std::string>>;
 
-	std::set<std::string> lists;
-	std::map<std::string, std::set<std::string>> kinds;
-	for (RegistryType const & registry : RULES_REGISTRIES) {
-		lists.insert(registry.List);
-	}
+
+// The lists in a map file that name its own sections, and the kind the catalog uses for each.
+RegistryType const MAP_REGISTRIES[] = {
+	{"Houses", "@house"},
+	{"TeamTypes", "TeamType"},
+	{"TaskForces", "TaskForce"},
+};
+
+
+// Records the type kind of every section a list in these sections names.
+template<std::size_t N>
+static void Add_Listed_Kinds(std::vector<Section> const & sections, RegistryType const (&registries)[N], KindMap & kinds)
+{
 	for (Section const & section : sections) {
-		for (RegistryType const & registry : RULES_REGISTRIES) {
+		for (RegistryType const & registry : registries) {
 			if (section.Name == registry.List) {
 				for (Entry const & entry : section.Entries) {
 					kinds[entry.Value].insert(registry.Kind);
 				}
 			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Checks INI sections against the catalog scopes for the files given. Sections named in a rules list such as
+/// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
+/// [General] against their own keys. A kind starting with @, such as a map's houses, matches
+/// scopes with that section. Every other section is listed as unchecked. Findings come
+/// in line order.
+/// </summary>
+static Report Check_Sections(Catalog const & catalog, std::vector<Section> const & sections, KindMap const & kinds, std::set<std::string> const & files)
+{
+	std::set<std::string> lists;
+	for (RegistryType const & registry : RULES_REGISTRIES) {
+		lists.insert(registry.List);
+	}
+	for (RegistryType const & registry : MAP_REGISTRIES) {
+		lists.insert(registry.List);
 	}
 
 	Report report;
@@ -420,7 +439,10 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 		}
 		auto const kind = kinds.find(section.Name);
 		bool const is_object = kind != kinds.end();
-		bool const is_literal = catalog.Has_Section(file, section.Name);
+		bool is_literal = false;
+		for (std::string const & file : files) {
+			is_literal = is_literal || catalog.Has_Section(file, section.Name);
+		}
 		if (!is_object && !is_literal) {
 			report.UncheckedSections.push_back(section.Name);
 			continue;
@@ -430,11 +452,14 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 			std::vector<KeyScope const *> matches;
 			if (auto const * scopes = catalog.Find(entry.Key)) {
 				for (KeyScope const & scope : *scopes) {
-					if (scope.File != file) {
+					if (!files.contains(scope.File)) {
 						continue;
 					}
 					bool applies = is_literal && scope.Section == section.Name;
-					if (!applies && is_object && scope.Section.empty()) {
+					if (!applies && is_object && !scope.Section.empty() && scope.Section[0] == '@' && kind->second.contains(scope.Section)) {
+						applies = true;
+					}
+					if (!applies && is_object && (scope.Section.empty() || scope.Section == "@image")) {
 						for (std::string const & type : scope.AppliesTo) {
 							if (kind->second.contains(type)) {
 								applies = true;
@@ -481,6 +506,58 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 
 	std::stable_sort(report.Findings.begin(), report.Findings.end(), [](Finding const & a, Finding const & b) { return(a.Line < b.Line); });
 	return(report);
+}
+
+Report Check_Rules(Catalog const & catalog, std::string_view text, std::string const & file)
+{
+	std::vector<Section> const sections = Parse(text);
+	KindMap kinds;
+	Add_Listed_Kinds(sections, RULES_REGISTRIES, kinds);
+	return(Check_Sections(catalog, sections, kinds, {file}));
+}
+
+
+/// <summary>
+/// Checks a map file against the catalog: its own keys and its rule overrides. A type section is
+/// placed through the rules lists in the map or in the rules file, and a house, team or task
+/// force section through the map's own lists.
+/// </summary>
+Report Check_Map(Catalog const & catalog, std::string_view text, std::string_view rules)
+{
+	std::vector<Section> const sections = Parse(text);
+	KindMap kinds;
+	Add_Listed_Kinds(Parse(rules), RULES_REGISTRIES, kinds);
+	Add_Listed_Kinds(sections, RULES_REGISTRIES, kinds);
+	Add_Listed_Kinds(sections, MAP_REGISTRIES, kinds);
+	return(Check_Sections(catalog, sections, kinds, {"rules.ini", "map file", "ai.ini or map file"}));
+}
+
+
+/// <summary>
+/// Checks art.ini against the catalog. A type's art section is the one its Image= key in the
+/// rules names, or the type's own name without one.
+/// </summary>
+Report Check_Art(Catalog const & catalog, std::string_view text, std::string_view rules)
+{
+	std::vector<Section> const rules_sections = Parse(rules);
+	KindMap types;
+	Add_Listed_Kinds(rules_sections, RULES_REGISTRIES, types);
+
+	std::map<std::string, std::string> images;
+	for (Section const & section : rules_sections) {
+		for (Entry const & entry : section.Entries) {
+			if (entry.Key == "Image" && !entry.Value.empty()) {
+				images[section.Name] = entry.Value;
+			}
+		}
+	}
+
+	KindMap kinds;
+	for (auto const & [name, type_kinds] : types) {
+		auto const image = images.find(name);
+		kinds[image != images.end() ? image->second : name].insert(type_kinds.begin(), type_kinds.end());
+	}
+	return(Check_Sections(catalog, Parse(text), kinds, {"art.ini"}));
 }
 
 

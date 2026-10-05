@@ -740,7 +740,7 @@ static bool Init_Rules(void)
 	CCINIClass * rules = new CCINIClass;
 	CCFileClass rules_file(DeploymentConfig.RulesFile.c_str());
 	rules->Load(rules_file, false);
-	Check_Rules_File(DeploymentConfig.RulesFile.c_str());
+	Check_Rules_File(DeploymentConfig.RulesFile.c_str(), DeploymentConfig.ArtFile.c_str());
 
 	CCFileClass art_file(DeploymentConfig.ArtFile.c_str());
 

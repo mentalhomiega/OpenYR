@@ -74,7 +74,7 @@ bool Reload_Rules(void)
 		Houses[index]->Assign_Handicap(Houses[index]->Difficulty);
 	}
 
-	Check_Rules_File(DeploymentConfig.RulesFile.c_str());
+	Check_Rules_File(DeploymentConfig.RulesFile.c_str(), DeploymentConfig.ArtFile.c_str());
 	DebugString("Reload_Rules: rules, art and map overrides read again.\n");
 	return(true);
 }
