@@ -440,7 +440,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				return(RADIO_NEGATIVE);
 			}
 			if ((Class->IsArmory || Class->IsHospital) && from->RTTI == RTTI_INFANTRY) {
-				if (Ammo != 0 && Mission != MISSION_REPAIR) {
+				// A soldier under mind control may not go inside, as in Yuri's Revenge.
+				if (Ammo != 0 && Mission != MISSION_REPAIR && ((TechnoClass *)from)->MindControlledBy == NULL) {
 					return(RADIO_ROGER);
 				}
 				return(RADIO_NEGATIVE);
@@ -8572,10 +8573,11 @@ void BuildingClass::Power_Off(void)
 /// Tells whether the soldier may garrison this structure now, as BuildingClass::CanBeOccupiedBy
 /// (0x457CE0) does: the structure must take occupants, have room, be above red health and be
 /// neither built nor sold, and it must belong to the soldier's house or to a passive house.
+/// A soldier under mind control may not garrison, as in Yuri's Revenge.
 /// </summary>
 bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
 {
-	if (infantry == NULL || !Class->IsCanBeOccupied || !infantry->Class->IsOccupier) {
+	if (infantry == NULL || !Class->IsCanBeOccupied || !infantry->Class->IsOccupier || infantry->MindControlledBy != NULL) {
 		return(false);
 	}
 	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
@@ -8633,11 +8635,11 @@ bool BuildingClass::Takes_Walk_Ins(FootClass const * object) const
 /// <summary>
 /// Tells whether this Bunker=yes structure can take the vehicle in now (TechnoClass::CanBunker,
 /// 0x70FB50): the vehicle must be its owner's, Bunkerable and armed, and the bunker must be
-/// finished and empty.
+/// finished and empty. A vehicle under mind control may not enter, as in Yuri's Revenge.
 /// </summary>
 bool BuildingClass::Can_Bunker(FootClass const * object) const
 {
-	if (!Class->IsBunker || object == NULL || object->RTTI != RTTI_UNIT || object->House != House) {
+	if (!Class->IsBunker || object == NULL || object->RTTI != RTTI_UNIT || object->House != House || object->MindControlledBy != NULL) {
 		return(false);
 	}
 	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION || BunkerLinkedItem != NULL) {

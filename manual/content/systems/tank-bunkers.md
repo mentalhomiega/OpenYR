@@ -20,7 +20,7 @@ A [`Bunker=yes`](/keys/bunker/#scope-buildingtype) structure holds one vehicle. 
 The player can send a vehicle into a bunker when all of these hold:
 
 - The bunker and the vehicle have the same owner, and the bunker is finished, not being sold, and empty.
-- The vehicle is [`Bunkerable=yes`](/keys/bunkerable/#scope-aircrafttype), has a primary weapon, is on the ground and carries no passengers.
+- The vehicle is [`Bunkerable=yes`](/keys/bunkerable/#scope-aircrafttype), has a primary weapon, is on the ground, carries no passengers and is not under [mind control](/systems/mind-control/#going-into-transports-and-structures).
 
 The cursor shows the enter action over such a bunker and the no-entry action over one that cannot take the vehicle. The vehicle drives onto the bunker and stops at its middle. The bunker's `SpecialAnim` and `SpecialAnimTwo` art animations play as its walls rise, in their damaged forms when the bunker is at yellow health or lower, and [`BunkerWallsUpSound`](/keys/bunkerwallsupsound/#scope-global-rules) plays. A computer player's vehicles enter a bunker only when a team script line sends them; see [Enter tank bunker](/scripting/missions/61/).
 
