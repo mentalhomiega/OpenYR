@@ -1626,6 +1626,23 @@ bool TechnoClass::Is_Decoration_Visible(void) const
 
 
 /// <summary>
+/// Checks whether this object stands where a building screens it from view, so that a marker
+/// shows where it is (TechnoClass::Update, 0x6F9E50). Aircraft, objects whose type has
+/// CanBeHidden=no, and objects that are cloaked, disguised or out of the map never count.
+/// </summary>
+bool TechnoClass::Is_Hidden_Behind_Building(void) const
+{
+	if (!TClass->IsCanBeHidden || RTTI == RTTI_AIRCRAFT || IsInLimbo) {
+		return(false);
+	}
+	if (Visual_Character() != VISUAL_NORMAL) {
+		return(false);
+	}
+	return(Map[Center_Coord()].Is_Covered());
+}
+
+
+/// <summary>
 /// Returns the point this object's pips run from: the near corner of the footprint for a
 /// building or core defender, and a fixed offset below the center for anything else.
 /// </summary>

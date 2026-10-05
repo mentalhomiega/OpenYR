@@ -31,6 +31,9 @@
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	cover x y			writes how many buildings screen that cell and whether it counts as covered
+**	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
+**							the Behind animation
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
@@ -92,6 +95,7 @@
 #include "dbgprint.h"
 #include "event.h"
 #include "globals.h"
+#include "goptions.h"
 #include "house.h"
 #include "houstype.h"
 #include "infantry.h"
@@ -598,6 +602,24 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
 			}
+		}
+	} else if (step.Command == "cover") {
+		// cover x y: how many buildings screen the cell, and whether an object there counts as hidden.
+		Cell cell(std::atoi(step.Argument.c_str()), step.X);
+		CellClass const & cellptr = Map[cell];
+		DebugString("AUTOTEST   cover %d,%d count %d covered %d\n", cell.X, cell.Y, cellptr.OccupyHeightsCoveringMe, (int)cellptr.Is_Covered());
+		for (ObjectClass const * object = cellptr.Cell_Occupier(); object != NULL; object = object->Next) {
+			if (object->Is_Techno()) {
+				TechnoClass const * techno = static_cast<TechnoClass const *>(object);
+				DebugString("AUTOTEST   cover   %s hidden %d\n", techno->TClass->Name(), (int)techno->Is_Hidden_Behind_Building());
+			}
+		}
+	} else if (step.Command == "hiddenmarker") {
+		// hiddenmarker <mode>: 0 hides the Behind marker, 1 shows it, 2 drops the Behind animation so brackets are drawn.
+		int mode = std::atoi(step.Argument.c_str());
+		Options.ShowHidden = (mode != 0);
+		if (mode == 2) {
+			Rule->Behind = NULL;
 		}
 	} else if (step.Command == "reveal") {
 		// reveal: uncovers the whole map, shroud and fog, for the player.

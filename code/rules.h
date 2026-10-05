@@ -1498,6 +1498,9 @@ class RulesClass
 		 */
 		AnimTypeClass const * MoveFlash;
 
+		// The marker drawn over an object hidden behind a building; without one, brackets are drawn instead.
+		AnimTypeClass const * Behind;
+
 		/*
 		 * These are the parachutes used when something is dropped from the air -- one
 		 * for falling ordnance, the other for a parachuting object.

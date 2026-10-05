@@ -3880,6 +3880,24 @@ BehavesLike:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+Behind:
+  key: Behind
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: Behind
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BerserkFriendly:
   key: BerserkFriendly
   scopes:
@@ -5953,6 +5971,23 @@ CanApproachTarget:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanBeHidden:
+  key: CanBeHidden
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanBeHidden
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CanBeOccupied:
   key: CanBeOccupied
   scopes:
@@ -6039,6 +6074,23 @@ CanDisguise:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanHideThings:
+  key: CanHideThings
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsCanHideThings
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 CanOccupyFire:
   key: CanOccupyFire
   scopes:
@@ -29445,6 +29497,24 @@ ShouldUseCellDrawer:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ShowHidden:
+  key: ShowHidden
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: ShowHidden
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 ShowNavComQueueLines:
   key: ShowNavComQueueLines
   scopes:

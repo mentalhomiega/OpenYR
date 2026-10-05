@@ -723,6 +723,7 @@ RulesClass::RulesClass(void) :
 	FirestormAirAnim(NULL),
 	FirestormGroundAnim(NULL),
 	MoveFlash(NULL),
+	Behind(NULL),
 	BombParachute(NULL),
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
@@ -1440,6 +1441,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
 		MoveFlash = TGet_Class(ini, GENERAL, "MoveFlash", MoveFlash);
+		Behind = TGet_Class(ini, GENERAL, "Behind", Behind);
 		DefaultMirageDisguises = TGet_TypeList<TerrainTypeClass>(ini, GENERAL, "DefaultMirageDisguises", DefaultMirageDisguises);
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
@@ -2984,6 +2986,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirestormAirAnim);
 	stream.Serialize(FirestormGroundAnim);
 	stream.Serialize(MoveFlash);
+	stream.Serialize(Behind);
 	stream.Serialize(BombParachute);
 	stream.Serialize(Parachute);
 	stream.Serialize(GuardAreaTargetingDelay);
@@ -3383,6 +3386,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == MoveFlash) {
 		MoveFlash = NULL;
+	}
+	if (target == Behind) {
+		Behind = NULL;
 	}
 	if (target == BombParachute) {
 		BombParachute = NULL;
