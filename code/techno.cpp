@@ -4036,12 +4036,12 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		}
 	}
 
-	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).
 	// A DrainWeapon needs a Drainable target that nothing is draining yet (TechnoClass::GetFireError, 0x6FC0B0).
 	if (weapon->IsDrainWeapon && (techno == NULL || !techno->TClass->IsDrainable || techno->DrainingMe != NULL)) {
 		return(FIRE_ILLEGAL);
 	}
 
+	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && TClass->IsNatural && techno->TClass->IsUnnatural) {
 		return(FIRE_ILLEGAL);
 	}
