@@ -207,6 +207,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	EMPThreshold(0),
 	IsCanBeReversed(true),
 	KeepAlive(-1),
+	IsAttackFriendlies(false),
+	IsAttackCursorOnFriendlies(false),
+	IsDefaultToGuardArea(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -795,6 +798,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
 		EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
 		IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
+		IsAttackFriendlies = ini.Get_Bool(Name(), "AttackFriendlies", IsAttackFriendlies);
+		IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
+		IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
@@ -1453,6 +1459,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ReversedAs);
 	stream.Serialize(GroupAs);
 	stream.Serialize(KeepAlive);
+	stream.Serialize(IsAttackFriendlies);
+	stream.Serialize(IsAttackCursorOnFriendlies);
+	stream.Serialize(IsDefaultToGuardArea);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

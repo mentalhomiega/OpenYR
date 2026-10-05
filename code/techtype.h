@@ -429,6 +429,15 @@ class TechnoTypeClass : public ObjectTypeClass
 		// which is any building that is not Insignificant (Ares KeepAlive).
 		signed char KeepAlive;
 
+		// Whether the object picks allied objects as targets too, and may be ordered to attack them (TechnoTypeClass::AttackFriendlies).
+		bool IsAttackFriendlies;
+
+		// Whether the attack cursor shows over allied objects (TechnoTypeClass::AttackCursorOnFriendlies).
+		bool IsAttackCursorOnFriendlies;
+
+		// Whether the object guards an area rather than its spot when it falls idle (TechnoTypeClass::DefaultToGuardArea).
+		bool IsDefaultToGuardArea;
+
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;
 

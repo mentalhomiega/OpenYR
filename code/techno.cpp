@@ -2299,7 +2299,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	object is a friend.  Unless we're a medic, of course.  But then,
 	**	only consider it a target if it's injured.
 	*/
-	if (!IsBerzerk && House->Is_Ally(object)) {
+	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
 		if (Combat_Damage() < 0 || engineer) {
 			if (object->HealthRatio == Rule->ConditionGreen) {
 				BEnd(BENCH_EVAL_OBJECT);
@@ -5121,7 +5121,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	If firing is possible and legal, then return this action potential.
 		*/
 		TechnoTypeClass const * ttype = TClass;
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object)) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
 
 			if (Is_Weapon_Equipped() ||
 					(RTTI == RTTI_INFANTRY &&

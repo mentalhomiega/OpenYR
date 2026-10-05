@@ -1764,7 +1764,7 @@ MissionType UnitClass::Idle_Guard_Mission(void) const
 	if (!Is_Weapon_Equipped()) {
 		return(MISSION_GUARD);
 	}
-	if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) || Team != NULL) {
+	if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) && !Class->IsDefaultToGuardArea || Team != NULL) {
 		return(MISSION_GUARD);
 	}
 	return(MISSION_GUARD_AREA);

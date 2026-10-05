@@ -2158,7 +2158,7 @@ bool InfantryClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 			}
 
 			if (House->Is_Human_Player() || Team != NULL) {
-				if (CurrentMission == MISSION_GUARD_AREA || (Has_Ability(ABILITY_GUARD_AREA) && Team == NULL)) {
+				if (CurrentMission == MISSION_GUARD_AREA || ((Has_Ability(ABILITY_GUARD_AREA) || Class->IsDefaultToGuardArea) && Team == NULL)) {
 					order = MISSION_GUARD_AREA;
 				} else {
 					order = MISSION_GUARD;
