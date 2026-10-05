@@ -5919,6 +5919,23 @@ CanBeOccupied:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CanBeReversed:
+  key: CanBeReversed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanBeReversed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CanC4:
   key: CanC4
   scopes:
@@ -11012,6 +11029,40 @@ EMEffect:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+EMP.Modifier:
+  key: EMP.Modifier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EMPModifier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EMP.Threshold:
+  key: EMP.Threshold
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 EMPulseCannon:
   key: EMPulseCannon
   scopes:
@@ -27637,6 +27688,40 @@ Reverse:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ReverseEngineersVictims:
+  key: ReverseEngineersVictims
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsReverseEngineersVictims
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ReversedAs:
+  key: ReversedAs
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Rocker:
   key: Rocker
   scopes:
