@@ -18,6 +18,7 @@
 class ShapeSet;
 
 #include "_weapon.h"
+#include "attacheffect.h"
 #include "classids.h"
 #include "objtype.h"
 #include "typelist.h"
@@ -421,6 +422,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * where yes is 1 and inair is -1).
 		 */
 		int EMPThreshold;
+
+		// The effect this object attaches to itself (Ares AttachEffect).
+		AttachEffectTypeClass AttachEffect;
 
 		// Whether grinding this object in a reverse engineering building teaches its type (Ares CanBeReversed).
 		bool IsCanBeReversed;

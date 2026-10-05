@@ -65,6 +65,8 @@
 **	houses					writes each house's money, power and spy effects
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
+**	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
+**							reload countdown of every live object of that type
 **	price <TypeID>			writes what the player pays for the type
 **	types <prefix>			writes every structure type whose ID starts with the prefix
 **	schemes					writes the color schemes and the scheme each house draws with
@@ -995,6 +997,17 @@ void Run(StepType const & step)
 			}
 			if (count > 0) {
 				DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
+			}
+		}
+	} else if (step.Command == "effects") {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				AttachedEffectsClass const & effects = techno->AttachedEffects;
+				int const speed = techno->Is_Foot() ? static_cast<FootClass *>(techno)->Current_Speed() : 0;
+				DebugString("AUTOTEST   effects %s of %s: count %d speed x%.3f armor x%.3f firepower x%.3f rof x%.3f cloakable %d | speed %d strength %d arm %d limbo %d\n",
+					techno->TClass->Name(), techno->House->Class->Name(), effects.Count(), effects.Speed_Multiplier(), effects.Armor_Multiplier(),
+					effects.Firepower_Multiplier(), effects.ROF_Multiplier(), (int)effects.Is_Cloakable(), speed, (int)techno->Strength, (int)techno->Arm, (int)techno->IsInLimbo);
 			}
 		}
 	} else if (step.Command == "schemes") {

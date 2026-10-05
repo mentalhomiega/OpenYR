@@ -3255,6 +3255,415 @@ AtomDamage:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AttachEffect.AnimResetOnReapply:
+  key: AttachEffect.AnimResetOnReapply
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsAnimResetOnReapply
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Animation:
+  key: AttachEffect.Animation
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.Animation
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.Animation
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.ArmorMultiplier:
+  key: AttachEffect.ArmorMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.ArmorMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.ArmorMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Cloakable:
+  key: AttachEffect.Cloakable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsCloakable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsCloakable
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Cumulative:
+  key: AttachEffect.Cumulative
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsCumulative
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Delay:
+  key: AttachEffect.Delay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.Delay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+AttachEffect.DiscardOnEntry:
+  key: AttachEffect.DiscardOnEntry
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsDiscardOnEntry
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsDiscardOnEntry
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Duration:
+  key: AttachEffect.Duration
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.Duration
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.Duration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.FirepowerMultiplier:
+  key: AttachEffect.FirepowerMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.FirepowerMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.FirepowerMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.ForceDecloak:
+  key: AttachEffect.ForceDecloak
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsForceDecloak
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsForceDecloak
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.InitialDelay:
+  key: AttachEffect.InitialDelay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.InitialDelay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+AttachEffect.PenetratesIronCurtain:
+  key: AttachEffect.PenetratesIronCurtain
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsPenetratesIronCurtain
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsPenetratesIronCurtain
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.ROFMultiplier:
+  key: AttachEffect.ROFMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.ROFMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.ROFMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.SpeedMultiplier:
+  key: AttachEffect.SpeedMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.SpeedMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.SpeedMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.TemporalHidesAnim:
+  key: AttachEffect.TemporalHidesAnim
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsTemporalHidesAnim
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsTemporalHidesAnim
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 AttachedParticleSystem:
   key: AttachedParticleSystem
   scopes:

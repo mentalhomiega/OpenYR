@@ -34,6 +34,7 @@
 
 #include "_voxel.h"
 #include "audio/audiohandle.h"
+#include "attacheffect.h"
 #include "capture.h"
 #include "disklaser.h"
 #include "slaveman.h"
@@ -167,6 +168,9 @@ class TechnoClass :	public RadioClass,
 
 		// The ring a DiskLaser weapon is drawing for this object's current shot.
 		DiskLaserClass DiskLaser;
+
+		// The Ares AttachEffect instances on this object.
+		AttachedEffectsClass AttachedEffects;
 
 		// The vehicle this object holds with a locomotor warhead, the object holding this one, whether
 		// this one is being held, and whether it was let go in the air and is falling to its destruction.

@@ -3622,7 +3622,7 @@ void FootClass::Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_i
 /// <returns>Returns with the current speed of the object.</returns>
 int FootClass::Current_Speed(void)
 {
-	int speed = Get_Max_Speed() * House->GroundspeedBias * SpeedBias;
+	int speed = Get_Max_Speed() * House->GroundspeedBias * SpeedBias * AttachedEffects.Speed_Multiplier();
 	if (Has_Ability(ABILITY_FASTER)) {
 		speed *= (1 + Rule->VeteranSpeed);
 	}
