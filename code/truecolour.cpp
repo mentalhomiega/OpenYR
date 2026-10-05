@@ -18,6 +18,7 @@
 #include "blitter.h"
 #include "bsurface.h"
 #include "ccfile.h"
+#include "ccini.h"
 #include "cdfile.h"
 #include "convert.h"
 #include "data.h"
@@ -33,6 +34,7 @@
 #include <miniz/miniz.h>
 
 #include <algorithm>
+#include <climits>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -85,8 +87,35 @@ struct EntryType
 	int Count = 0;
 };
 
+// A shape made for a PNG sheet that has no SHP. Its data is kept for the rest of the session, so
+// the address the game holds stays valid.
+struct MadeShapeType
+{
+	StateType State = STATE_UNKNOWN;
+	std::vector<char> Data;
+};
+
+// An SHP frame record as ShapeSet reads it.
+struct FrameRecord
+{
+	short X;
+	short Y;
+	short Width;
+	short Height;
+	short Flags;
+	short Size;
+	unsigned char Color[3];
+	unsigned char Unused[5];
+	int Data;
+};
+static_assert(sizeof(FrameRecord) == 24, "a SHP frame record is 24 bytes");
+
+// ShapeSet's frame flags for a frame with transparent pixels, stored run-length encoded.
+constexpr short FRAME_TRANSPARENT_RLE = 0x01 | 0x02;
+
 std::unordered_map<void const *, EntryType> Entries;
 std::unordered_map<std::string, SheetRecord> Sheets;
+std::unordered_map<std::string, MadeShapeType> MadeShapes;
 
 
 std::string Upper(std::string text)
@@ -293,6 +322,155 @@ SheetType const * Sheet_For(void const * data)
 }
 
 
+// The sidecar "<sheet>.ini" sets any of the values; without it a sheet is one row of square
+// cells, or a single cell when its width is not a multiple of its height, and has twice as many
+// frames as cells.
+void Png_Only_Layout(std::string const & pngname, int width, int height, int & cellwidth, int & cellheight, int & frames)
+{
+	static char const * const SHEET = "Sheet";
+	CCINIClass ini;
+	CCFileClass file((pngname + ".ini").c_str());
+	if (file.Is_Available()) {
+		ini.Load(file, false);
+	}
+	cellheight = ini.Get_Int(SHEET, "FrameHeight", height);
+	cellwidth = ini.Get_Int(SHEET, "FrameWidth", cellheight > 0 && width % cellheight == 0 ? cellheight : width);
+	int const cells = cellwidth > 0 && cellheight > 0 ? (width / cellwidth) * (height / cellheight) : 0;
+	frames = ini.Get_Int(SHEET, "Frames", cells * 2);
+}
+
+
+// Each frame of the shape covers the pixels of its cell that are not fully transparent, and every
+// pixel of it is transparent; a frame with no such pixels, or with no cell, is empty.
+void Build_Shape(std::vector<char> & data, SheetType const & sheet, int count)
+{
+	std::vector<FrameRecord> records((size_t)count, FrameRecord{});
+	std::vector<char> lines;
+	for (int frame = 0; frame < std::min(sheet.Frames, count); frame++) {
+		int const left = (frame % sheet.Columns) * sheet.CellWidth;
+		int const top = (frame / sheet.Columns) * sheet.CellHeight;
+		int x0 = INT_MAX;
+		int y0 = INT_MAX;
+		int x1 = -1;
+		int y1 = -1;
+		long long sums[3] = {0, 0, 0};
+		long long opaque = 0;
+		for (int y = 0; y < sheet.CellHeight; y++) {
+			std::uint32_t const * row = &sheet.Pixels[(size_t)(top + y) * sheet.Width + left];
+			for (int x = 0; x < sheet.CellWidth; x++) {
+				std::uint32_t const value = row[x];
+				if ((value >> 24) == 0) {
+					continue;
+				}
+				x0 = std::min(x0, x);
+				x1 = std::max(x1, x);
+				y0 = std::min(y0, y);
+				y1 = std::max(y1, y);
+				sums[0] += value & 0xFF;
+				sums[1] += (value >> 8) & 0xFF;
+				sums[2] += (value >> 16) & 0xFF;
+				opaque++;
+			}
+		}
+		if (opaque == 0) {
+			continue;
+		}
+
+		FrameRecord & record = records[(size_t)frame];
+		record.X = (short)x0;
+		record.Y = (short)y0;
+		record.Width = (short)(x1 - x0 + 1);
+		record.Height = (short)(y1 - y0 + 1);
+		record.Flags = FRAME_TRANSPARENT_RLE;
+		for (int channel = 0; channel < 3; channel++) {
+			record.Color[channel] = (unsigned char)(sums[channel] / opaque);
+		}
+		record.Data = (int)lines.size();
+
+		// Each line is its length in bytes, then runs of at most 255 transparent pixels.
+		int const length = 2 + 2 * ((record.Width + 254) / 255);
+		for (int line = 0; line < record.Height; line++) {
+			lines.push_back((char)(length & 0xFF));
+			lines.push_back((char)(length >> 8));
+			for (int remaining = record.Width; remaining > 0; remaining -= 255) {
+				lines.push_back(0);
+				lines.push_back((char)std::min(remaining, 255));
+			}
+		}
+		record.Size = (short)std::min(length * record.Height, (int)SHRT_MAX);
+	}
+
+	size_t const recordsize = sizeof(FrameRecord) * records.size();
+	size_t const start = sizeof(ShapeHeader) + recordsize;
+	for (FrameRecord & record : records) {
+		if (record.Width > 0) {
+			record.Data += (int)start;
+		}
+	}
+	ShapeHeader const header = {0, (short)sheet.CellWidth, (short)sheet.CellHeight, (short)count};
+	data.assign(start + lines.size(), 0);
+	std::memcpy(data.data(), &header, sizeof(header));
+	std::memcpy(data.data() + sizeof(header), records.data(), recordsize);
+	if (!lines.empty()) {
+		std::memcpy(data.data() + start, lines.data(), lines.size());
+	}
+}
+
+
+void Make_Shape(MadeShapeType & made, std::string const & name)
+{
+	made.State = STATE_MISSING;
+	std::string const pngname = Png_Name(name, "");
+	std::vector<unsigned char> bytes;
+	if (pngname.empty() || !Read_File(pngname, bytes)) {
+		return;
+	}
+
+	made.State = STATE_REJECTED;
+	int width = 0;
+	int height = 0;
+	int channels = 0;
+	if (!stbi_info_from_memory(bytes.data(), (int)bytes.size(), &width, &height, &channels) || width <= 0 || height <= 0) {
+		DebugString("TRUECOLOUR: %s did not decode: %s\n", pngname.c_str(), stbi_failure_reason());
+		return;
+	}
+
+	int cellwidth = 0;
+	int cellheight = 0;
+	int frames = 0;
+	Png_Only_Layout(pngname, width, height, cellwidth, cellheight, frames);
+	if (cellwidth <= 0 || cellheight <= 0 || cellwidth > SHRT_MAX || cellheight > SHRT_MAX || frames <= 0 || frames > SHRT_MAX) {
+		DebugString("TRUECOLOUR: %s cannot stand in for %s: %d frames of %dx%d\n", pngname.c_str(), name.c_str(), frames, cellwidth, cellheight);
+		return;
+	}
+
+	SheetRecord & record = Sheets[Upper(name)];
+	record = SheetRecord();
+	record.Width = cellwidth;
+	record.Height = cellheight;
+	record.Count = frames;
+	Load(record, name);
+	if (record.State != STATE_LOADED) {
+		return;
+	}
+
+	Build_Shape(made.Data, *record.Sheet, frames);
+	made.State = STATE_LOADED;
+	DebugString("TRUECOLOUR: %s has no SHP; %s stands in for it with %d frames of %dx%d\n", name.c_str(), pngname.c_str(), frames, cellwidth, cellheight);
+}
+
+
+bool Is_Made_Shape(void const * data)
+{
+	for (auto const & [name, made] : MadeShapes) {
+		if (made.State == STATE_LOADED && made.Data.data() == data) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 inline unsigned short Pack_565(int red, int green, int blue)
 {
 	return((unsigned short)(((red >> 3) << 11) | ((green >> 2) << 5) | (blue >> 3)));
@@ -471,6 +649,32 @@ void TrueColour_Note_Shape(void const * data, char const * name)
 
 
 /// <summary>
+/// Returns a shape for a PNG sheet that has no SHP, or NULL when the name is not a shape file
+/// name, no sheet of that name is found, or the sheet does not fit its layout. The shape has the
+/// cell size and frame count the sheet's layout gives, see docs/TRUECOLOUR.md, and only
+/// transparent pixels; its frames are drawn from the sheet. Every request for one name returns
+/// the same shape, which stays valid for the rest of the session.
+/// </summary>
+void const * TrueColour_Png_Only_Shape(char const * name)
+{
+	std::string stem;
+	std::string extension;
+	if (name == NULL || !Is_Shape_Name(name, stem, extension)) {
+		return(NULL);
+	}
+	MadeShapeType & made = MadeShapes[Upper(name)];
+	if (made.State == STATE_UNKNOWN) {
+		Make_Shape(made, name);
+	}
+	if (made.State != STATE_LOADED) {
+		return(NULL);
+	}
+	TrueColour_Note_Shape(made.Data.data(), name);
+	return(made.Data.data());
+}
+
+
+/// <summary>
 /// Drops every recorded shape inside a block of memory that is about to be freed.
 /// </summary>
 void TrueColour_Forget_Range(void const * begin, std::size_t size)
@@ -501,6 +705,11 @@ void TrueColour_Add_Directory(char const * path)
 	for (auto & [name, record] : Sheets) {
 		if (record.State != STATE_LOADED) {
 			record.State = STATE_UNKNOWN;
+		}
+	}
+	for (auto & [name, made] : MadeShapes) {
+		if (made.State != STATE_LOADED) {
+			made.State = STATE_UNKNOWN;
 		}
 	}
 	DebugString("TRUECOLOUR: searching %s\n", directory.c_str());
@@ -641,8 +850,9 @@ void TrueColour_Report(char const * name)
 	int x = sheet->CellWidth / 2;
 	int y = sheet->CellHeight / 2;
 	std::uint32_t pixel = sheet->Pixels[(size_t)y * sheet->Width + x];
-	DebugString("AUTOTEST   truecolour %s shp %d frames %dx%d: png %s sheet %dx%d frames %d house %d shadows %s pixel %d,%d rgba %d,%d,%d,%d\n", name, header.Count,
-		header.Width, header.Height, record->PngName.c_str(), sheet->Width, sheet->Height, sheet->Frames, (int)sheet->HasHouse, sheet->Frames == header.Count ? "png" : "shp", x, y,
+	DebugString("AUTOTEST   truecolour %s %s %d frames %dx%d: png %s sheet %dx%d frames %d house %d shadows %s pixel %d,%d rgba %d,%d,%d,%d\n", name,
+		Is_Made_Shape(data) ? "png-only" : "shp", header.Count, header.Width, header.Height, record->PngName.c_str(), sheet->Width, sheet->Height, sheet->Frames,
+		(int)sheet->HasHouse, sheet->Frames == header.Count ? "png" : "shp", x, y,
 		(int)(pixel & 0xFF), (int)((pixel >> 8) & 0xFF), (int)((pixel >> 16) & 0xFF), (int)(pixel >> 24));
 }
 

@@ -149,3 +149,9 @@ site_exclusions:
     keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, ShortGame, SkipScoreScreen, TechLevel, UnitCount]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.
+
+  - path: code/truecolour.cpp
+    function: Png_Only_Layout
+    keys: [FrameWidth, FrameHeight, Frames]
+    classification: excluded
+    reason: Each is a setting of a PNG sprite sheet's own .ini file, documented as that format in docs/TRUECOLOUR.md rather than as game data.

@@ -273,7 +273,8 @@ MixFileClass::~MixFileClass(void)
  * INPUT:   filename -- Pointer to the filename of the data file to retrieve a pointer to.     *
  *                                                                                             *
  * OUTPUT:  Returns with a pointer to the data file's data. If the file is not in RAM, then    *
- *          NULL is returned.                                                                  *
+ *          NULL is returned. A shape file in no mixfile returns the shape made for its PNG    *
+ *          sheet instead, when there is one (see TRUECOLOUR.md).                              *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
  *                                                                                             *
@@ -283,7 +284,9 @@ MixFileClass::~MixFileClass(void)
 void const * MixFileClass::Retrieve(char const * filename)
 {
 	void * ptr = NULL;
-	Offset(filename, &ptr);
+	if (!Offset(filename, &ptr)) {
+		return(TrueColour_Png_Only_Shape(filename));
+	}
 	TrueColour_Note_Shape(ptr, filename);
 	return(ptr);
 };
