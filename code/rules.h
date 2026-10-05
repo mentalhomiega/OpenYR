@@ -198,6 +198,9 @@ class RulesClass
 		// Can the player set off an Ivan bomb early by clicking the object carrying it?
 		bool IsCanDetonateTimeBomb;
 
+		// Whether chronoshifted infantry destroys a vehicle it lands on; when not, the infantry dies (Ares ChronoInfantryCrush).
+		bool IsChronoInfantryCrush;
+
 		// The weapon an exploding object without a weapon of its own sets off as it dies.
 		WeaponTypeClass * DeathWeapon;
 		int IvanIconFlickerRate;
@@ -422,6 +425,18 @@ class RulesClass
 		 * picks one of them out of the owner's structures and sends the drone out beside it.
 		 */
 		TypeList<BuildingTypeClass const *> HSBuilding;
+
+		// A house earns bounty only while it owns one of these, or always when the list is empty (Ares BountyEnablers).
+		TypeList<BuildingTypeClass const *> BountyEnablers;
+
+		// Whether bounty earned is shown where the victim died, for types that do not say (Ares BountyDisplay).
+		bool IsBountyDisplay;
+
+		// Whether players see the rank insignia of objects not allied with them, for types that do not say (Ares EnemyInsignia).
+		bool IsEnemyInsignia;
+
+		// Whether any type sets KeepAlive, which switches the short game defeat test to the KeepAlive rule.
+		bool IsKeepAliveSet;
 
 		/// Unused
 		bool IsFreeMCV;

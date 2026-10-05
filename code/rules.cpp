@@ -360,6 +360,10 @@ RulesClass::RulesClass(void) :
 	IvanDamage(0),
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
+	IsChronoInfantryCrush(true),
+	IsBountyDisplay(false),
+	IsEnemyInsignia(true),
+	IsKeepAliveSet(false),
 	DeathWeapon(NULL),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
@@ -1042,6 +1046,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 	static char const * const YR_GENERAL = "General";
 	if (ini.Is_Present(AUDIOVISUAL)) {
 		UnloadingHarvester = TGet_Class(ini, AUDIOVISUAL, "UnloadingHarvester", UnloadingHarvester);
+		IsBountyDisplay = ini.Get_Bool(AUDIOVISUAL, "BountyDisplay", IsBountyDisplay);
 		PoseDir = (Dir256)ini.Get_Int(AUDIOVISUAL, "PoseDir", PoseDir);
 		DropPodPuff = TGet_Class(ini, AUDIOVISUAL, "DropPodPuff", DropPodPuff);
 		WaypointAnimationSpeed = ini.Get_Int(AUDIOVISUAL, "WaypointAnimationSpeed", WaypointAnimationSpeed);
@@ -1414,6 +1419,9 @@ bool RulesClass::General(CCINIClass const & ini)
 	if (ini.Is_Present(GENERAL)) {
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
+		IsChronoInfantryCrush = ini.Get_Bool(GENERAL, "ChronoInfantryCrush", IsChronoInfantryCrush);
+		BountyEnablers = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "BountyEnablers", BountyEnablers);
+		IsEnemyInsignia = ini.Get_Bool(GENERAL, "EnemyInsignia", IsEnemyInsignia);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		V3Rocket.Read(ini, GENERAL, "V3Rocket");
 		SlaveMinerShortScan = ini.Get_Lepton(GENERAL, "SlaveMinerShortScan", SlaveMinerShortScan);
@@ -2615,6 +2623,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
 	stream.Serialize(IsCanDetonateTimeBomb);
+	stream.Serialize(IsChronoInfantryCrush);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);
@@ -2731,6 +2740,10 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TunnelSpeed);
 	stream.Serialize(TiberiumHeal);
 	stream.Serialize(HSBuilding);
+	stream.Serialize(BountyEnablers);
+	stream.Serialize(IsBountyDisplay);
+	stream.Serialize(IsEnemyInsignia);
+	stream.Serialize(IsKeepAliveSet);
 	stream.Serialize(IsFreeMCV);
 	stream.Serialize(IsBerzerkAllowed);
 	stream.Serialize(PoseDir);

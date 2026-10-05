@@ -10,6 +10,7 @@ keys:
   - BuildTime
   - BuildupTime
   - ConstructionYard
+  - CanBeReversed
   - Cost
   - DoubleOwned
   - Factory
@@ -34,6 +35,8 @@ keys:
   - PrerequisitePower
   - PrerequisiteRadar
   - PrerequisiteTech
+  - ReverseEngineersVictims
+  - ReversedAs
   - ScoldSound
   - SeparateAircraft
   - TechLevel
@@ -116,7 +119,7 @@ A newly placed factory is flagged primary when its house owns more than one stru
 
 ## What a house may build
 
-Five gates decide whether a house may build an object type, and a type must pass all five.
+Five gates decide whether a house may build an object type, and a type must pass all five unless the house has [reverse engineered](#reverse-engineering) it.
 
 With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all five gates again and cancels production of any type that fails.
 
@@ -159,11 +162,30 @@ This gate applies only to structures. A BuildingType passes when both of these h
 
 [`MultiMCV=yes`](/keys/multimcv/) removes the construction-yard requirement, both here and in the factory search. [`DoubleOwned=yes`](/keys/doubleowned/) opens the type to every country, but only outside campaign games.
 
-Vehicles, infantry and aircraft skip this gate. The factory search enforces their ownership instead, by requiring the factory's `Owner=` to share a country with the product's.
+Vehicles, infantry and aircraft skip this gate. The factory search enforces their ownership instead, by requiring the factory's `Owner=` to share a country with the product's, except for a [reverse engineered](#reverse-engineering) type.
 
 ### Build-limit gate
 
 The last gate is the [build limit](#build-limits). It is the only gate the factory search applies again when an order is placed.
+
+### Reverse engineering
+
+A house that has reverse engineered an infantry, vehicle or aircraft type skips the tech-level, country and stolen-technology, and prerequisite gates for it. [`TechLevel=-1`](/keys/techlevel/#scope-aircrafttype) does not block it. The [build limit](#build-limits) still applies, and structures cannot be reverse engineered.
+
+A house reverse engineers a type when a structure with [`Grinding=yes`](/keys/grinding/) and [`ReverseEngineersVictims=yes`](/keys/reverseengineersvictims/) grinds up an infantryman or vehicle. It learns the victim's type, or the type the victim names with [`ReversedAs`](/keys/reversedas/), whichever side the type belongs to. A victim with [`CanBeReversed=no`](/keys/canbereversed/) teaches nothing. A saved game keeps what the house has learned.
+
+Any factory of the matching kind that the house owns can then build the type, whatever side the factory's [`Owner=`](/keys/owner/) names. The factory must still be on the map, switched on and not being sold. A naval vehicle still needs a naval factory.
+
+When the player's house learns a new type, the announcer says `EVA_ReverseEngineeredInfantry` or `EVA_ReverseEngineeredVehicle`, then `EVA_NewTechnologyAcquired`.
+
+```ini title="rulesmd.ini"
+[MYGRINDER]                 ; example BuildingType
+Grinding=yes                ; takes in the owner's infantry and vehicles
+ReverseEngineersVictims=yes ; and teaches the owner their types
+
+[ENGINEER]                  ; example InfantryType
+CanBeReversed=no            ; grinding an engineer teaches nothing
+```
 
 ### Computer houses
 
@@ -217,7 +239,7 @@ The 1-to-255 range on the step sets the shortest build at 54 frames (3.6 seconds
 
 ### More than one factory
 
-Extra factories of a category can shorten its build times, depending on [`MultipleFactory`](/keys/multiplefactory/). The house counts its structures whose `Factory=` names the product's category, including ones switched off or still in buildup. The build time is multiplied by `MultipleFactory` once for each factory past the first and truncated after each multiplication. [`MultipleFactoryCap`](/keys/multiplefactorycap/) limits how many factories count; at `0` every factory counts.
+Extra factories of a category can shorten its build times, depending on [`MultipleFactory`](/keys/multiplefactory/). The house counts its structures whose `Factory=` names the product's category, including ones switched off or still in buildup. The build time is multiplied by `MultipleFactory` once for each factory past the first, or by the product type's [`BuildTime.MultipleFactory`](/keys/buildtime.multiplefactory/) when it sets one and truncated after each multiplication. [`MultipleFactoryCap`](/keys/multiplefactorycap/) limits how many factories count; at `0` every factory counts.
 
 | Factories | Multiplier at `MultipleFactory=0.8` | With `MultipleFactoryCap=3` as well |
 | ---: | --- | --- |

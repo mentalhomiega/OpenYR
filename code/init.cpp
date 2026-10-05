@@ -4736,7 +4736,7 @@ class SelectSameTypeCommandClass : public CommandClass
 				if (!obj->Is_Techno() || !((TechnoClass *)obj)->House->Is_Player_Control()) {
 					continue;
 				}
-				SoughtTypes.insert(obj->TClass);
+				SoughtTypes.insert(obj->TClass->Select_Group());
 			}
 
 			if (SoughtTypes.empty()) {
@@ -4766,12 +4766,12 @@ class SelectSameTypeCommandClass : public CommandClass
 		/// <remarks>SoughtTypes must hold the desired types before calling this routine.</remarks>
 		static void Select_Callback(ObjectClass * obj)
 		{
-			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->TClass) && ((TechnoClass *)obj)->House->Is_Player_Control()) {
+			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->TClass->Select_Group()) && ((TechnoClass *)obj)->House->Is_Player_Control()) {
 				obj->Select();
 			}
 		}
 
-		inline static std::unordered_set<TechnoTypeClass const *> SoughtTypes;
+		inline static std::unordered_set<std::string> SoughtTypes;
 		inline static int LastTick = -1;
 };
 

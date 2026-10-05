@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "abstype.h"
 
 #include "action.hh"
@@ -121,6 +123,9 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		 * the rules section. The cameo is looked up under it whenever the type is read in.
 		 */
 		TStringID<24> SidebarImage;
+
+		// A PCX picture drawn as the sidebar cameo instead of the SidebarImage shape (Ares SidebarPCX).
+		std::string SidebarPCX;
 
 		/*
 		 * If this super weapon stays switched on once fired and drains its charge back down

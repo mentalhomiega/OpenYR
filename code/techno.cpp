@@ -131,6 +131,7 @@
 #include "always.h"
 
 #include "techno.h"
+#include "flyingtext.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -973,9 +974,10 @@ int TechnoClass::Time_To_Build(void) const
 	if (Rule->MultipleFactoryCap > 0) {
 		extra = std::min(extra, Rule->MultipleFactoryCap - 1);
 	}
-	if (Rule->MultipleFactory > 0) {
+	double const multiple = TClass->BuildTimeMultipleFactory >= 0 ? TClass->BuildTimeMultipleFactory : Rule->MultipleFactory;
+	if (multiple > 0) {
 		for (; extra > 0; extra--) {
-			val *= Rule->MultipleFactory;
+			val *= multiple;
 		}
 	}
 	if (RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsWall) {
@@ -1442,7 +1444,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 				Draw_Double_Selection_Bracket(center + Coord(x, -y, 0), center + Coord(x, -y, dim.Z), color);
 			}
 
-			if (Strength > 0 && (House->Is_Ally(PlayerPtr) || Rule->IsHealthBar)) {
+			if (Strength > 0 && (House->Is_Ally(PlayerPtr) || Rule->IsHealthBar) && !TClass->IsHealthBarHidden) {
 				Draw_Health_Bar_Old(point, cliprect);
 			}
 
@@ -1458,7 +1460,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			}
 		}
 
-		Draw_Health_Bar(point, cliprect);
+		if (!TClass->IsHealthBarHidden) {
+			Draw_Health_Bar(point, cliprect);
+		}
 		if (pips_shown) {
 			Draw_Pips(Pip_Origin(point), point, cliprect);
 		}
@@ -1468,7 +1472,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		bool hovered = Map.HoverObject == this && Class_Of()->IsSelectable && !IsALoaner;
 
 		if (hovered && Is_Decoration_Visible()) {
-			Draw_Health_Bar(point, cliprect);
+			if (!TClass->IsHealthBarHidden) {
+				Draw_Health_Bar(point, cliprect);
+			}
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
 			}
@@ -2293,7 +2299,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	object is a friend.  Unless we're a medic, of course.  But then,
 	**	only consider it a target if it's injured.
 	*/
-	if (!IsBerzerk && House->Is_Ally(object)) {
+	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
 		if (Combat_Damage() < 0 || engineer) {
 			if (object->HealthRatio == Rule->ConditionGreen) {
 				BEnd(BENCH_EVAL_OBJECT);
@@ -3411,7 +3417,8 @@ void TechnoClass::AI(void)
 	if (rank != CurrentRank) {
 		if (CurrentRank != -1 && rank > 0) {
 			if (House->Is_Player_Control()) {
-				Sound_Effect(rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound, PositionCoord);
+				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
+				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
 				Speak_Eva("EVA_UnitPromoted");
 			}
 			if (rank == 2) {
@@ -5114,7 +5121,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	If firing is possible and legal, then return this action potential.
 		*/
 		TechnoTypeClass const * ttype = TClass;
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object)) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
 
 			if (Is_Weapon_Equipped() ||
 					(RTTI == RTTI_INFANTRY &&
@@ -6204,6 +6211,40 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
  *   07/08/1995 JLB : Created.                                                                 *
  *   08/23/1995 JLB : Building loss is only counted if it received damage.                     *
  *=============================================================================================*/
+/// <summary>
+/// Pays the destroyer's owner this object's bounty when the destroyer hunts bounty, this object
+/// belonged to an enemy of a country that gives bounty, and the owner has a building from
+/// BountyEnablers or the list is empty. A negative bounty is taken from the owner instead.
+/// </summary>
+void TechnoClass::Pay_Bounty(TechnoClass * source) const
+{
+	if (source == NULL || !source->TClass->IsBounty || source->House == NULL || House == NULL) {
+		return;
+	}
+	if (source->House == House || source->House->Is_Ally(House) || !House->Class->IsGivesBounty) {
+		return;
+	}
+	if (Rule->BountyEnablers.Count() > 0 && source->House->Count_Owned(source->House->BQuantity, Rule->BountyEnablers) == 0) {
+		return;
+	}
+
+	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const value = TClass->BountyValue[rank];
+	if (value > 0) {
+		source->House->Refund_Money(value);
+	} else if (value < 0) {
+		source->House->Spend_Money(-value);
+	}
+
+	bool const display = source->TClass->BountyDisplay < 0 ? Rule->IsBountyDisplay : source->TClass->BountyDisplay != 0;
+	if (display && value != 0) {
+		char text[32];
+		snprintf(text, sizeof(text), "%c$%d", value > 0 ? '+' : '-', value > 0 ? value : -value);
+		Add_Flying_Text(text, Center_Coord(), source->House->Scheme);
+	}
+}
+
+
 void TechnoClass::Record_The_Kill(TechnoClass * source)
 {
 	int total_recorded = 0;
@@ -6232,6 +6273,8 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		}
 
 		House->WhoLastHurtMe = source->Owner();
+
+		Pay_Bounty(source);
 
 		/*
 		**	Add up the score for killing this unit
@@ -8752,15 +8795,33 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 {
 	ShapeSet const * pips1 = (ShapeSet const *)Class_Of()->PipShapes;
 
-	PipEnum veterancy_shape = PIP_NONE;
+	// Players not allied with the owner see the insignia only when the type or EnemyInsignia allows it; observers see every one.
+	bool const showenemy = TClass->InsigniaShowEnemy < 0 ? Rule->IsEnemyInsignia : TClass->InsigniaShowEnemy != 0;
+	if (!showenemy && PlayerPtr != NULL && !PlayerPtr->IsObserver && !House->Is_Ally(PlayerPtr)) {
+		return;
+	}
+
+	int veterancy_shape = PIP_NONE;
+	int rank = 0;
 	if (Veterancy.Is_Veteran()) {
 		veterancy_shape = PIP_VETERAN;
+		rank = 1;
 	}
 	if (Veterancy.Is_Elite()) {
 		veterancy_shape = PIP_ELITE;
+		rank = 2;
 	}
 	if (Veterancy.Is_Dumbass()) {
 		veterancy_shape = PIP_DUMBASS;
+		rank = -1;
+	}
+	if (rank >= 0) {
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
+		}
+		if (TClass->InsigniaShapes[rank] != NULL) {
+			pips1 = TClass->InsigniaShapes[rank];
+		}
 	}
 	if (veterancy_shape != PIP_NONE) {
 		Point2D drawpoint = center + Point2D(5, 2);

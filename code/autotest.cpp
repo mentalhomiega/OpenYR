@@ -123,6 +123,9 @@
 #include "warhead.h"
 #include "rawfile.h"
 #include "armortypes.h"
+#include "cameopcx.h"
+#include "empulse.h"
+#include "surface.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -691,6 +694,25 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   rules %s: not found\n", step.Argument.c_str());
 		}
+	} else if (step.Command == "art") {
+		// art <path>: reads that INI file over the art, then has the types it names read themselves again.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		RawFileClass artfile(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false) && ArtINI.Load(artfile, false)) {
+			Rule->Addition(ini);
+		} else {
+			DebugString("AUTOTEST   art %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "pcxcameo") {
+		// pcxcameo <path>: the size of that PCX cameo and two of its pixels, as the sidebar gets them.
+		Surface const * picture = PCX_Cameo(step.Argument);
+		if (picture != NULL) {
+			unsigned short const * pixels = (unsigned short const *)picture->Lock();
+			DebugString("AUTOTEST   pcxcameo %dx%d bpp %d corner %04X far %04X\n", picture->Get_Width(), picture->Get_Height(), picture->Bytes_Per_Pixel(),
+				pixels != NULL ? pixels[0] : 0, pixels != NULL ? pixels[picture->Get_Width() * picture->Get_Height() - 1] : 0);
+			picture->Unlock();
+		}
 	} else if (step.Command == "versus") {
 		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
 		std::string const & argument = step.Argument;
@@ -948,6 +970,36 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   banim slot %d used %d garrisoned %d effect %d e.g. %s\n", slot, count, garrisoned, effect, example);
 		}
+	} else if (step.Command == "playanim") {
+		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
+		AnimTypeClass const * type = AnimTypeClass::Find_Or_Make(step.Argument.c_str());
+		if (type != NULL) {
+			new AnimClass(type, Map[Cell(step.X, step.Y)].Center_Coord());
+		}
+	} else if (step.Command == "emp") {
+		// emp <duration> x y: an EM pulse of radius 2 and that duration on the cell, from no source.
+		new EMPulseClass(Cell(step.X, step.Y), 2, std::atoi(step.Argument.c_str()), NULL);
+	} else if (step.Command == "canbuild") {
+		// canbuild <TypeID>: whether the player may build the type and which factory would.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			BuildingClass const * factory = type->Who_Can_Build_Me(true, false, true, PlayerPtr);
+			DebugString("AUTOTEST   canbuild %s %d factory %s\n", type->Name(), PlayerPtr->Can_Build(type, false, true), factory != NULL ? factory->Class->Name() : "-");
+		}
+	} else if (step.Command == "selected") {
+		// selected: the number of selected objects and their types.
+		std::string types;
+		for (int index = 0; index < CurrentObject.Count(); index++) {
+			types += " ";
+			types += CurrentObject[index]->Class_Of()->Name();
+		}
+		DebugString("AUTOTEST   selected %d:%s\n", CurrentObject.Count(), types.c_str());
+	} else if (step.Command == "fullname") {
+		// fullname <TypeID>: the name players see for the type, and the string label it comes from.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   fullname %s [%s] label [%s]\n", type->Name(), type->Full_Name(), type->UINameLabel.c_str());
+		}
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
@@ -1043,8 +1095,8 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string text = argument;
 		// A rules step's path is the rest of the line, so it may hold spaces.
-		if (std::strcmp(command, "rules") == 0) {
-			char const * rest = std::strstr(line, "rules") + 5;
+		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0) {
+			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
 		}

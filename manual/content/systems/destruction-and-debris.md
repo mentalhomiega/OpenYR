@@ -193,7 +193,7 @@ The soldier stays on the map to play three of those deaths: the gun death, the e
 
 An aircraft plays one entry of its [`Explosion`](/keys/explosion/) list where it was hit, or of its `ScrapExplosion` list with `ScrapMetal` on. A kill by the firestorm warhead plays seven to nine firestorm particle systems instead. An aircraft on the ground is then removed at once.
 
-An aircraft in the air falls instead. Its passengers are killed, and it falls faster and faster until it reaches the ground. There it explodes with a fixed 1000 points of area damage through [`C4Warhead`](/keys/c4warhead/), credited to no one. The crash plays a combat explosion animation sized to that figure, with a lighting flash when `C4Warhead` is `Bright=yes`, and the aircraft is removed. Its wreckage and its `Explosion` entry appear where it was hit, not where it crashes.
+An aircraft in the air falls instead, unless its type sets [`Crashable=no`](/keys/crashable/), which removes it at once as on the ground. Its passengers are killed, and it falls faster and faster until it reaches the ground. There it explodes with a fixed 1000 points of area damage through [`C4Warhead`](/keys/c4warhead/), credited to no one. The crash plays a combat explosion animation sized to that figure, with a lighting flash when `C4Warhead` is `Bright=yes`, and the aircraft is removed. Its wreckage and its `Explosion` entry appear where it was hit, not where it crashes.
 
 ## What the ground keeps
 

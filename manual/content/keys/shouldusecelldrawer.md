@@ -11,7 +11,7 @@ Only an animation that a structure runs in one of its animation slots uses this 
 
 A [`Tiled=yes`](/keys/tiled/) animation is drawn in the shared animation palette with either value; only its brightness follows this flag.
 
-With `no`, the animation is drawn in the shared animation palette, or in the first declared color scheme if it also sets [`AltPalette=yes`](/keys/altpalette/). It takes its brightness from the cell it stands on. Use `no` for a fireball or a light glow that should look the same for every house. Keep `yes` for smoke or machinery that should take the owner's colors.
+With `no`, the animation is drawn in the shared animation palette, or in the first declared color scheme if it also sets [`AltPalette=yes`](/keys/altpalette/), or through its [`CustomPalette`](/keys/custompalette/) file if it sets one. It takes its brightness from the cell it stands on. Use `no` for a fireball or a light glow that should look the same for every house. Keep `yes` for smoke or machinery that should take the owner's colors.
 
 With either value, [`UseNormalLight=yes`](/keys/usenormallight/) draws the animation at normal brightness instead.
 

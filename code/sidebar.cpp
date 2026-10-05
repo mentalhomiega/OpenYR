@@ -75,6 +75,7 @@
 #include "always.h"
 
 #include "sidebar.h"
+#include "cameopcx.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -1992,6 +1993,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 
 			char const * name = NULL;
 			TechnoTypeClass const * obj = NULL;
+			Surface const * pcx = NULL;
 
 			/*
 			**	Fetch the shape number for the object type located at this current working
@@ -2025,6 +2027,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 						}
 
 						shapefile = (ShapeSet const *)obj->Get_Cameo_Data();
+						pcx = PCX_Cameo(obj->CameoPCX);
 						factory = Buildables[index].Factory;
 						if (factory != NULL) {
 							production	= true;
@@ -2053,6 +2056,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					spc = SuperWeaponType(Buildables[index].BuildableID);
 					name = SuperWeaponTypes[spc]->Full_Name();
 					shapefile = Get_Special_Cameo(spc);
+					pcx = PCX_Cameo(SuperWeaponTypes[spc]->SidebarPCX);
 
 					production = true;
 					completed = PlayerPtr->SuperWeapon[spc]->Is_Charging() == false;
@@ -2088,7 +2092,9 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 			*/
 			if (shapefile != LogoShapes) {
 
-				if (shapefile != NULL) {
+				if (pcx != NULL) {
+					Draw_PCX_Cameo(*SidebarSurface, *pcx, Point2D(x, y), cliprect);
+				} else if (shapefile != NULL) {
 					Draw_Shape(*SidebarSurface, *CameoDrawer, shapefile, 0, Point2D(x, y), cliprect, ShapeFlags_Type(SHAPE_WIN_REL));
 				}
 

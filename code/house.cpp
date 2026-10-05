@@ -906,9 +906,63 @@ HouseStaticClass::HouseStaticClass(void) :
  * 0 = can't build
  * -1 = build limit reached
  */
+/// <summary>
+/// Whether this house reverse engineered the type, so that it builds it without the type's
+/// prerequisites, tech level, stolen tech and house limits (Ares).
+/// </summary>
+/// <summary>
+/// Whether the house owns an object that keeps it in a short game: one whose type sets
+/// KeepAlive=yes, or by default a building that is not Insignificant (Ares).
+/// </summary>
+bool HouseClass::Has_Keep_Alive(void) const
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno->House != this || !techno->IsActive || techno->Strength <= 0) {
+			continue;
+		}
+		signed char const keep = techno->TClass->KeepAlive;
+		if (keep > 0 || (keep < 0 && techno->RTTI == RTTI_BUILDING && !techno->TClass->IsInsignificant)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+bool HouseClass::Is_Reversed(ObjectTypeClass const * type) const
+{
+	for (std::string const & name : ReversedTypes) {
+		if (stricmp(name.c_str(), type->Name()) == 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Records a reverse engineered type. Returns false when the house already had it.
+/// </summary>
+bool HouseClass::Add_Reversed(TechnoTypeClass const * type)
+{
+	if (type == NULL || Is_Reversed(type)) {
+		return(false);
+	}
+	ReversedTypes.push_back(type->Name());
+	Production_Status_Changed();
+	return(true);
+}
+
+
 int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool include_in_progress) const
 {
 	assert(type != NULL);
+
+	if (!forced && type->RTTI != RTTI_BUILDINGTYPE && !ReversedTypes.empty() && Is_Reversed(type)) {
+		if (((TechnoTypeClass const *)type)->IsUnbuildable) return(0);
+		forced = true;
+	}
 
 	if (!forced) {
 
@@ -1530,7 +1584,9 @@ void HouseClass::AI(void)
 	if (Session.Type != GAME_NORMAL && !IsDefeated && Frame > 0 && !Class->IsMultiplayPassive) {
 		bool defeated = false;
 		if (Session.Options.ShortGame) {
-			if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
+			if (Rule->IsKeepAliveSet) {
+				defeated = !Has_Keep_Alive() && Count_Owned(UQuantity, Rule->BaseUnit) == 0;
+			} else if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
 				defeated = true;
 			}
 		} else {
@@ -6702,6 +6758,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSide0TechStolen);
 	stream.Serialize(IsSide1TechStolen);
 	stream.Serialize(IsSide2TechStolen);
+	stream.Serialize(ReversedTypes);
 	stream.Serialize(IsBarracksInfiltrated);
 	stream.Serialize(IsWarFactoryInfiltrated);
 	stream.Serialize(PowerBlackout);

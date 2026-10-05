@@ -986,6 +986,14 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 		cell = nearby;
 		cellptr = &Map[cell];
 	} else {
+		// A unit that may not be crushed, or a vehicle under infantry when ChronoInfantryCrush is off, destroys the arriving unit instead.
+		for (int index = 0; index < crushed.Count(); index++) {
+			TechnoClass const * victim = crushed[index];
+			if (!victim->TClass->IsChronoshiftCrushable || (foot->RTTI == RTTI_INFANTRY && victim->RTTI != RTTI_INFANTRY && !Rule->IsChronoInfantryCrush)) {
+				Chrono_Kill(foot);
+				return;
+			}
+		}
 		for (int index = 0; index < crushed.Count(); index++) {
 			Chrono_Kill(crushed[index]);
 		}
@@ -1078,6 +1086,9 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 				FootClass * foot = (FootClass *)object;
 				BuildingClass const * building = cellptr.Cell_Building();
 				if (foot->RTTI == RTTI_UNIT && building != NULL && building->Class->IsWeaponsFactory) {
+					continue;
+				}
+				if (!foot->TClass->IsChronoshiftAllowed) {
 					continue;
 				}
 				if (foot->TClass->IsOrganic && !foot->TClass->IsTeleporter) {

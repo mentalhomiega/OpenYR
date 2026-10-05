@@ -13,6 +13,10 @@
 
 #pragma once
 
+#include <string>
+
+class ShapeSet;
+
 #include "_weapon.h"
 #include "classids.h"
 #include "objtype.h"
@@ -362,6 +366,83 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsTeleporter;
 
+		// Whether the Chronosphere moves this object (Ares Chronoshift.Allow).
+		bool IsChronoshiftAllowed;
+
+		// Whether a unit the Chronosphere sets down on this object destroys it; when not, the arriving unit is destroyed (Ares Chronoshift.Crushable).
+		bool IsChronoshiftCrushable;
+
+		// Whether destroying an enemy pays this object's owner the victim's bounty (Ares Bounty).
+		bool IsBounty;
+
+		// Whether the bounty this object earns is shown where its victim died: 1, 0, or -1 to follow BountyDisplay (Ares Bounty.Display).
+		signed char BountyDisplay;
+
+		// The credits paid for destroying this object as a rookie, veteran and elite (Ares Bounty.Value and its rank variants).
+		int BountyValue[3];
+
+		// The rank insignia per rank (rookie, veteran, elite): the shape file without extension, empty for
+		// the stock pips, its loaded shapes, and the frame, -1 for the stock frame (Ares and Phobos Insignia keys).
+		std::string InsigniaFile[3];
+		ShapeSet const * InsigniaShapes[3];
+		int InsigniaFrame[3];
+
+		// Whether players not allied with the owner see the insignia: 1, 0, or -1 to follow EnemyInsignia (Insignia.ShowEnemy).
+		signed char InsigniaShowEnemy;
+
+		// Whether a vehicle thief may take this vehicle (Ares VehicleThief.Allowed).
+		bool IsVehicleThiefAllowed;
+
+		// The build time factor per extra factory, or below 0 for [General] MultipleFactory (Ares BuildTime.MultipleFactory).
+		double BuildTimeMultipleFactory;
+
+		// Whether a destroyed aircraft falls and crashes; when not, it is destroyed where it flies (Ares Crashable).
+		bool IsCrashable;
+
+		// The sounds played on promotion to veteran and elite, or VOC_NONE for the [AudioVisual] ones (Ares Promote.*Sound).
+		VocType PromoteVeteranSound;
+		VocType PromoteEliteSound;
+
+		// Whether the health bar is left undrawn (Phobos HealthBar.Hide).
+		bool IsHealthBarHidden;
+
+		// The multiplier on how long an EM pulse stuns this object (Ares EMP.Modifier).
+		double EMPModifier;
+
+		/*
+		 * The longest stun the object survives: above a positive value an EM pulse destroys it, above
+		 * the size of a negative value only while it is in the air, and 0 never (Ares EMP.Threshold,
+		 * where yes is 1 and inair is -1).
+		 */
+		int EMPThreshold;
+
+		// Whether grinding this object in a reverse engineering building teaches its type (Ares CanBeReversed).
+		bool IsCanBeReversed;
+
+		// The type grinding this object teaches instead of its own, or empty for its own (Ares ReversedAs).
+		std::string ReversedAs;
+
+		// The name type select groups this type under, or empty for its own name (Ares GroupAs).
+		std::string GroupAs;
+
+		// Whether owning this object keeps a player in a short game: 1, 0, or -1 for the default,
+		// which is any building that is not Insignificant (Ares KeepAlive).
+		signed char KeepAlive;
+
+		// Whether the object picks allied objects as targets too, and may be ordered to attack them (TechnoTypeClass::AttackFriendlies).
+		bool IsAttackFriendlies;
+
+		// Whether the attack cursor shows over allied objects (TechnoTypeClass::AttackCursorOnFriendlies).
+		bool IsAttackCursorOnFriendlies;
+
+		// Whether the object guards an area rather than its spot when it falls idle (TechnoTypeClass::DefaultToGuardArea).
+		bool IsDefaultToGuardArea;
+
+		// The group type select matches: GroupAs, or the type's own name, upper case.
+		std::string Select_Group(void) const;
+
+		void Load_Insignia_Shapes(void);
+
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.
 		VocType ChronoInSound;
 		VocType ChronoOutSound;
@@ -621,6 +702,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	the sidebar for construction selection purposes.
 		*/
 		TStringID<24> CameoFilename;
+
+		// A PCX picture drawn as the sidebar cameo instead of the cameo shape (Ares CameoPCX in the art).
+		std::string CameoPCX;
 		const void * CameoData;
 
 		/*

@@ -127,6 +127,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	TiberiumSpreadRadius(0),
 	YSortAdjust(0),
 	YDrawOffset(0),
+	ZAdjust(0),
 	RunningFrames(0),
 	IsFlamingGuy(false),
 	IsVeins(false),
@@ -398,6 +399,9 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 
 		Sound = ArtINI.Get_VocType(Name(), "Report", Sound);
 		IsAltPalette = ArtINI.Get_Bool(Name(), "AltPalette", IsAltPalette);
+		char palette[64];
+		ArtINI.Get_String(Name(), "CustomPalette", CustomPalette.c_str(), palette, sizeof(palette));
+		CustomPalette = palette;
 		IsFlat = ini.Get_Bool(Name(), "Flat", IsFlat);
 		IsFlameThrower = ini.Get_Bool(Name(), "Flamer", IsFlameThrower);
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
@@ -479,6 +483,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsFlamingGuy = ini.Get_Bool(Name(), "IsFlamingGuy", IsFlamingGuy);
 		RunningFrames = ini.Get_Int(Name(), "RunningFrames", RunningFrames);
 		YDrawOffset = ini.Get_Int(Name(), "YDrawOffset", YDrawOffset);
+		ZAdjust = ini.Get_Int(Name(), "ZAdjust", ZAdjust);
 
 		StartSound = ini.Get_VocType(Name(), "StartSound", StartSound);
 		BounceSound = ini.Get_VocType(Name(), "BounceSound", BounceSound);
@@ -585,6 +590,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumSpreadRadius);
 	stream.Serialize(YSortAdjust);
 	stream.Serialize(YDrawOffset);
+	stream.Serialize(ZAdjust);
 	stream.Serialize(RunningFrames);
 	stream.Serialize(IsFlamingGuy);
 	stream.Serialize(IsVeins);
@@ -599,6 +605,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFreeAfterPlaying);
 	stream.Serialize(IsAnimatedTiberium);
 	stream.Serialize(IsAltPalette);
+	stream.Serialize(CustomPalette);
 	stream.Serialize(IsNormalized);
 	stream.Serialize(MakeInfantry);
 	stream.Serialize(IsGroundLayer);
