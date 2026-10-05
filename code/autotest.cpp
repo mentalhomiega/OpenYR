@@ -78,6 +78,7 @@
 #include "always.h"
 
 #include "autotest.h"
+#include "session.h"
 #include "rulesreload.h"
 
 #include "_keyboar.h"
@@ -1086,6 +1087,12 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "lansession") {
+		// lansession: marks the game as a network game, so steps can see the multiplayer limits.
+		Session.Type = GAME_IPX;
+	} else if (step.Command == "zoomlevel") {
+		// zoomlevel: the current map view zoom.
+		DebugString("AUTOTEST zoomlevel %.2f\n", ViewZoom);
 	} else if (step.Command == "zoom") {
 		// zoom <factor>: sets the map view zoom at once (0.5 shows twice as much).
 		Set_View_Zoom(std::atof(step.Argument.c_str()));

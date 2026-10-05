@@ -35,6 +35,13 @@ extern bool ViewZoomGameClock;
 double const VIEW_ZOOM_MIN = 0.5;
 double const VIEW_ZOOM_MAX = 2.0;
 
+// The furthest out a multiplayer game zooms, the same for every player, since seeing more of
+// the map is an advantage.
+double const VIEW_ZOOM_MIN_MULTIPLAYER = 0.75;
+
+// The furthest out the current game zooms: VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game.
+double View_Zoom_Min(void);
+
 // Converts a screen offset from ScreenTacticalRect's corner into an offset from TacticalRect's corner.
 Point2D Screen_To_View_Offset(Point2D const & screen_offset);
 

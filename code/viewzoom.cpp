@@ -21,6 +21,7 @@
 #include "gscreen.h"
 #include "map.h"
 #include "mmsys.h"
+#include "session.h"
 #include "tactical.h"
 #include "video.h"
 
@@ -195,13 +196,19 @@ static void Shown_Middle(double & middlex, double & middley)
 }
 
 
+double View_Zoom_Min(void)
+{
+	return((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER);
+}
+
+
 /// <summary>
-/// Sets the map view zoom at once, clamped to VIEW_ZOOM_MIN..VIEW_ZOOM_MAX, and ends any glide.
+/// Sets the map view zoom at once, clamped to View_Zoom_Min()..VIEW_ZOOM_MAX, and ends any glide.
 /// The point at the middle of the view stays put. Returns false when the zoom did not change.
 /// </summary>
 bool Set_View_Zoom(double zoom)
 {
-	zoom = std::clamp(zoom, VIEW_ZOOM_MIN, VIEW_ZOOM_MAX);
+	zoom = std::clamp(zoom, View_Zoom_Min(), VIEW_ZOOM_MAX);
 	if (TacticalMap == NULL || (!_Gliding && std::abs(zoom - ViewZoom) < 0.001)) {
 		return(false);
 	}
@@ -244,8 +251,13 @@ void Apply_Pending_View_Zoom(void)
 		return;
 	}
 
+	// A zoom kept from an earlier skirmish is brought in to the multiplayer limit.
+	if (!_Gliding && _TargetZoom < View_Zoom_Min() - 0.001) {
+		Set_View_Zoom(View_Zoom_Min());
+	}
+
 	if (_PendingZoomStep != 0.0) {
-		double const target = std::clamp(_TargetZoom + _PendingZoomStep, VIEW_ZOOM_MIN, VIEW_ZOOM_MAX);
+		double const target = std::clamp(_TargetZoom + _PendingZoomStep, View_Zoom_Min(), VIEW_ZOOM_MAX);
 		_PendingZoomStep = 0.0;
 		if (std::abs(target - _TargetZoom) >= 0.001) {
 			Update_Display_Zoom();
