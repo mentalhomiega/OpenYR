@@ -3291,6 +3291,23 @@ Attack:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+AttackCursorOnFriendlies:
+  key: AttackCursorOnFriendlies
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsAttackCursorOnFriendlies
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AttackDelay:
   key: AttackDelay
   scopes:
@@ -3309,6 +3326,23 @@ AttackDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AttackFriendlies:
+  key: AttackFriendlies
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsAttackFriendlies
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AttackInterval:
   key: AttackInterval
   scopes:
@@ -9307,6 +9341,23 @@ DefaultTestParticleSystem:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DefaultToGuardArea:
+  key: DefaultToGuardArea
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsDefaultToGuardArea
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DefenseLimit:
   key: DefenseLimit
   scopes:
@@ -10028,6 +10079,23 @@ DetonationAltitude:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+DieSound:
+  key: DieSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: DieSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Difficulty:
   key: Difficulty
   scopes:
@@ -14551,6 +14619,23 @@ Group:
       source: code/taskforc.cpp
       guard: null
     level: TaskForceClass
+GroupAs:
+  key: GroupAs
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Growth:
   key: Growth
   scopes:
@@ -18771,6 +18856,23 @@ JumpjetWobbles:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+KeepAlive:
+  key: KeepAlive
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: KeepAlive
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Land:
   key: Land
   scopes:
@@ -21869,7 +21971,7 @@ NSGates:
 Name:
   key: Name
   scopes:
-  - applies_to:
+  - applies_to: &id085
     - AITriggerType
     - AircraftType
     - AnimType
@@ -26262,6 +26364,23 @@ Radar:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+RadarColor:
+  key: RadarColor
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: TerrainTypeClass
+      member: RadarColor
+      source: code/terrtype.cpp
+      guard: null
+    level: TerrainTypeClass
 RadarCombatFlashTime:
   key: RadarCombatFlashTime
   scopes:
@@ -36228,6 +36347,23 @@ TypeImmune:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+UIName:
+  key: UIName
+  scopes:
+  - applies_to: *id085
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AbstractTypeClass
+      member: label
+      source: code/abstype.cpp
+      guard: null
+    level: AbstractTypeClass
 URepairRate:
   key: URepairRate
   scopes:
@@ -36381,10 +36517,10 @@ UnitActionLines:
 UnitCount:
   key: UnitCount
   scopes:
-  - applies_to: &id085
+  - applies_to: &id086
     - global rules
     file: rules.ini
-    section: &id086
+    section: &id087
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -36401,11 +36537,11 @@ UnitCount:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id085
+      applies_to: *id086
     - file: rules.ini
-      section: *id086
+      section: *id087
       value_type: integer
-      applies_to: *id085
+      applies_to: *id086
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 UnitCrateType:
@@ -38006,10 +38142,10 @@ VoxelIndex:
 Wake:
   key: Wake
   scopes:
-  - applies_to: &id087
+  - applies_to: &id088
     - global rules
     file: rules.ini
-    section: &id088
+    section: &id089
       kind: literal
       name: General
     value_type: class
@@ -38026,11 +38162,11 @@ Wake:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id087
+      applies_to: *id088
     - file: rules.ini
-      section: *id088
+      section: *id089
       value_type: class
-      applies_to: *id087
+      applies_to: *id088
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 WalkFrames:

@@ -13,6 +13,7 @@ keys:
   - DeathFrames
   - DebrisMaximums
   - DebrisTypes
+  - DieSound
   - Doggie
   - Explodes
   - Explosion
@@ -76,7 +77,7 @@ MaxDeathCounter=16 ; game frames the wreck stands before it explodes
 
 The shared step runs first, in this order, for a vehicle, a structure, an infantry soldier and an aircraft alike.
 
-1. One of the type's [`VoiceDie`](/keys/voicedie/) sounds plays at the object's position.
+1. One of the type's [`VoiceDie`](/keys/voicedie/) sounds plays at the object's position, then one of its [`DieSound`](/keys/diesound/) sounds.
 2. The object breaks radio contact, stops, and drops its target and destination.
 3. A [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type seeds [Tiberium](/systems/tiberium/) in the five cells to its north-west, north, east, south and west. Each cell that accepts growth gets a random stage from 0 to 2 of the first registered Tiberium type. The object's cell gets none.
 4. Any flame particle system attached to the object is removed.
