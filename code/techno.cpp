@@ -960,6 +960,9 @@ int TechnoClass::Time_To_Build(void) const
 
 	val *= House->BuildSpeedBias;
 
+	// The type's own multiplier follows the house's, each step rounded down (TechnoClass::TimeToBuild).
+	val *= TClass->BuildTimeMultiplier;
+
 	/*
 	**	Adjust the time to build based on the power output of the owning house.
 	*/

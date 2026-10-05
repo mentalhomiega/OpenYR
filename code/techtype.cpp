@@ -212,6 +212,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsAttackCursorOnFriendlies(false),
 	IsDefaultToGuardArea(false),
 	IsSelectableCombatant(false),
+	BuildTimeMultiplier(1.0),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -804,6 +805,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
 		IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
 		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
+		BuildTimeMultiplier = ini.Get_Float(Name(), "BuildTimeMultiplier", BuildTimeMultiplier);
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
@@ -1468,6 +1470,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAttackCursorOnFriendlies);
 	stream.Serialize(IsDefaultToGuardArea);
 	stream.Serialize(IsSelectableCombatant);
+	stream.Serialize(BuildTimeMultiplier);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

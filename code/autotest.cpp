@@ -829,6 +829,15 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			DebugString("AUTOTEST   price %s %d (listed %d)\n", type->Name(), type->Cost_Of(PlayerPtr), type->Raw_Cost());
 		}
+	} else if (step.Command == "buildtime") {
+		// buildtime <TypeID>: the build time, in game frames, of the player's first object of that type.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   buildtime %s %d\n", techno->TClass->Name(), techno->Time_To_Build());
+				break;
+			}
+		}
 	} else if (step.Command == "types") {
 		// types <prefix>: every structure type whose ID starts with the prefix.
 		for (int index = 0; index < BuildingTypes.Count(); index++) {
