@@ -10332,7 +10332,7 @@ DirtRoadTile::DirtRoadTile()// :
 /// </summary>
 DirtRoadTile::~DirtRoadTile(void)
 {
-	delete Links;
+	delete [] Links;
 	Links = NULL;
 }
 
