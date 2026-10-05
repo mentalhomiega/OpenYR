@@ -979,6 +979,12 @@ void Run(StepType const & step)
 			types += CurrentObject[index]->Class_Of()->Name();
 		}
 		DebugString("AUTOTEST   selected %d:%s\n", CurrentObject.Count(), types.c_str());
+	} else if (step.Command == "fullname") {
+		// fullname <TypeID>: the name players see for the type, and the string label it comes from.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   fullname %s [%s] label [%s]\n", type->Name(), type->Full_Name(), type->UINameLabel.c_str());
+		}
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
