@@ -39,6 +39,7 @@
 #include "bsurface.h"
 #include "convert.h"
 #include "shapeset.h"
+#include "truecolour.h"
 
 #include "zgrad.hh"
 
@@ -80,6 +81,10 @@ void Draw_Shape(Surface & surface, ConvertClass & convert, ShapeSet const * shap
 	assert((flags & SHAPE_PREDATOR) == 0);	// Not yet supported.
 	assert(shapefile != NULL);
 	assert(shapenum != -1);
+
+	if (TrueColour_Draw(surface, convert, shapefile, shapenum, point, window, flags, remap, height_offset, zgrad, intensity)) {
+		return;
+	}
 
 	convert.Set_Remap(remap);
 	int x = point.X;

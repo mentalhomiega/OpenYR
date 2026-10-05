@@ -29,6 +29,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `enemies` | Writes the other houses' structures and their unit and infantry counts to the debug log |
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `anims` | Writes the first entries of the animation list to the debug log |
+| `truecolour <NAME.SHP>` | Writes whether a PNG replaces that shape (see [TRUECOLOUR.md](TRUECOLOUR.md)), with the shape's frame count and size, the sheet's size, the frames it covers, whether it has a house-colour mask, and the centre pixel of its first frame |
+| `truecolourdir <path>` | Adds a directory to the places the game looks for files, so a test can supply PNG sprites without copying them into the game directory; a PNG not found before is looked for again |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |

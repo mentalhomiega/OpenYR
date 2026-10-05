@@ -248,6 +248,18 @@ void LightConvertClass::Apply_Tint(int red_tint, int green_tint, int blue_tint, 
 
 
 /// <summary>
+/// Fetches the tint the lighting bands were last built with: the ion storm tint while it is
+/// in force, the normal tint otherwise.
+/// </summary>
+void LightConvertClass::Get_Tint(int & red, int & green, int & blue) const
+{
+	red = UseIonLighting ? IonRedTint : NormalRedTint;
+	green = UseIonLighting ? IonGreenTint : NormalGreenTint;
+	blue = UseIonLighting ? IonBlueTint : NormalBlueTint;
+}
+
+
+/// <summary>
 /// Destroys the lighting conversion object.
 /// </summary>
 LightConvertClass::~LightConvertClass(void)

@@ -27,6 +27,7 @@ class LightConvertClass : public ConvertClass
 		virtual ~LightConvertClass(void) override;
 
 		virtual void Apply_Tint(int red_tint, int green_tint, int blue_tint, bool ion_light);
+		virtual void Get_Tint(int & red, int & green, int & blue) const override;
 
 		void Add_Reference(void) {ReferenceCount++;}
 		void Remove_Reference(void) {ReferenceCount--;}

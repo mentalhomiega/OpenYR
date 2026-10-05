@@ -70,6 +70,8 @@
 **	schemes					writes the color schemes and the scheme each house draws with
 **	seq <TypeID>			writes an infantry type's art sequences
 **	plan					writes each computer house's base plan
+**	truecolour <NAME.SHP>	writes whether a PNG replaces that shape, with its sheet size and one pixel
+**	truecolourdir <path>	adds a directory the game searches for files, such as PNG sprites
 **	dump					writes the player's credits, objects and missions to the log
 **	log <text>				writes the text to the log
 **	quit					ends the process
@@ -132,6 +134,7 @@
 #include "cameopcx.h"
 #include "empulse.h"
 #include "surface.h"
+#include "truecolour.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -740,6 +743,12 @@ void Run(StepType const & step)
 				pixels != NULL ? pixels[0] : 0, pixels != NULL ? pixels[picture->Get_Width() * picture->Get_Height() - 1] : 0);
 			picture->Unlock();
 		}
+	} else if (step.Command == "truecolour") {
+		// truecolour <NAME.SHP>: whether a PNG replaces that shape, its sheet size, frames and one pixel.
+		TrueColour_Report(step.Argument.c_str());
+	} else if (step.Command == "truecolourdir") {
+		// truecolourdir <path>: adds a directory the game searches for files, PNG sprites included.
+		TrueColour_Add_Directory(step.Argument.c_str());
 	} else if (step.Command == "versus") {
 		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
 		std::string const & argument = step.Argument;
@@ -1159,7 +1168,8 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string text = argument;
 		// A rules step's path is the rest of the line, so it may hold spaces.
-		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0) {
+		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
+			|| std::strcmp(command, "truecolourdir") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);

@@ -93,6 +93,13 @@ class ConvertClass
 		*/
 		void const * Get_Translate_Table(void) const {return(Translator);}
 
+		// The full table holds one 256-entry row per lighting band; Translator is the middle row.
+		void const * Get_Intensity_Table(void) const {return(IntensityTranslator);}
+		int Get_Intensity_Levels(void) const {return(IntensityLevels);}
+
+		// Tint in thousandths that the lighting bands are built with; 1000 leaves a channel alone.
+		virtual void Get_Tint(int & red, int & green, int & blue) const {red = green = blue = 1000;}
+
 		/*
 		**	Sets the dynamic remap table so that the remapping blitters will use
 		**	it without having to recreate the blitter objects.

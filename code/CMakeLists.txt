@@ -196,8 +196,8 @@ if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     )
 endif()
 
-# The texture loader decodes images with the stb_image header from bimg; no other file needs it.
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmltexture.cpp" APPEND PROPERTY
+# The texture loader and the true-colour sprites decode images with the stb_image header from bimg.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmltexture.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/truecolour.cpp" APPEND PROPERTY
     INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/stb"
 )
 

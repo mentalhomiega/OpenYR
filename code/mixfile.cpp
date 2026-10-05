@@ -53,6 +53,7 @@
 #include "globals.h"
 #include "pk.h"
 #include "pkstraw.h"
+#include "truecolour.h"
 #include "shastraw.h"
 #include "xstraw.h"
 
@@ -240,6 +241,9 @@ MixFileClass::~MixFileClass(void)
 	if (Filename) {
 		free((char *)Filename);
 	}
+	if (Data != NULL) {
+		TrueColour_Forget_Range(Data, (std::size_t)DataSize);
+	}
 	if (Data != NULL && IsAllocated) {
 		delete [] Data;
 		IsAllocated = false;
@@ -280,6 +284,7 @@ void const * MixFileClass::Retrieve(char const * filename)
 {
 	void * ptr = NULL;
 	Offset(filename, &ptr);
+	TrueColour_Note_Shape(ptr, filename);
 	return(ptr);
 };
 
@@ -482,6 +487,9 @@ bool MixFileClass::Cache(Buffer const * buffer)
  *=============================================================================================*/
 void MixFileClass::Free(void)
 {
+	if (Data != NULL) {
+		TrueColour_Forget_Range(Data, (std::size_t)DataSize);
+	}
 	if (Data != NULL && IsAllocated) {
 		delete [] Data;
 	}
