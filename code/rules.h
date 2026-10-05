@@ -264,6 +264,9 @@ class RulesClass
 		bool LightningPrintText;
 		TypeList<AnimTypeClass const *> WeatherConClouds;
 		TypeList<AnimTypeClass const *> WeatherConBolts;
+
+		// The fires that burn on a badly damaged structure (RulesClass::DamageFireTypes).
+		TypeList<AnimTypeClass const *> DamageFireTypes;
 		AnimTypeClass const * WeatherConBoltExplosion;
 		TypeList<int> LightningSounds;
 		VocType StormSound;

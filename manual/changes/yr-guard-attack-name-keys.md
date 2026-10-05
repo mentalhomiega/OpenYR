@@ -26,4 +26,4 @@ credit: [MentalHomiega]
 
 Yuri's Revenge keys that the engine ignored now work in rulesmd.ini. `AttackFriendlies=yes` lets a type pick allied targets and show the attack cursor over allies, `AttackCursorOnFriendlies=yes` gives only the cursor, and `DefaultToGuardArea=yes` sends an idle soldier or armed vehicle to Area Guard.
 
-Cameos and superweapon countdowns now show the string table text that `UIName=` names, where they showed `Name=`. `DieSound=` plays one of its sounds where an object is destroyed. `RadarColor=` on a TerrainType sets the color its objects show on the radar.
+Cameos, superweapon countdowns and objects on the map now show the string table text that `UIName=` names, where they showed `Name=`. `DieSound=` plays one of its sounds where an object is destroyed. `RadarColor=` on a TerrainType sets the color its objects show on the radar.

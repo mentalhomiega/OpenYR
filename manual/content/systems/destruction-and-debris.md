@@ -146,7 +146,7 @@ The rest follows in this order:
 A structure's step runs in the order below. Its *origin cell* is the cell at the top corner of its footprint.
 
 1. A unit in radio contact with it, such as a harvester docked at a refinery or an aircraft on its pad, is destroyed when its center is less than one cell from the structure's center. No attacker is credited for that kill. A unit farther away is told to move off.
-2. The structure's light source is switched off.
+2. The structure's light source is switched off, and its [damage fires](/systems/structure-damage-fires/) go out.
 3. Everything inside it is killed. The effects it supplied end: vision from a spied radar structure, a cloak generator's field, and a laser fence post's connections.
 4. **The central ground mark.** A structure at least two cells wide *and* two cells deep lays one mark on its origin cell. A smaller structure lays none. The mark is a **smudge**, a flat stain on the ground that stays once laid. It is a scorch or a crater, with even odds, and it lands only where a smudge type of that kind fits; [`Scorch`](/keys/scorch/) lists what makes a spot fit. The structure standing on the cell does not block this mark, but Tiberium or another overlay there does. A multiple-cell smudge type is preferred, and a single-cell type is used when no larger one fits.
 5. **Fire and explosions over the footprint.** Each footprint cell has an even chance of a [`SmallFire`](/keys/smallfire/), and a cell that gets one has an even chance of a [`LargeFire`](/keys/largefire/) beside it. Each cell also plays one entry of the type's [`Explosion`](/keys/explosion/) list, or its `ScrapExplosion` list with `ScrapMetal` on, drawn separately for each cell.

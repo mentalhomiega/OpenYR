@@ -524,6 +524,11 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
 		bool IsFactoryPlant;
+
+		// Where fires burn on the structure when it is badly damaged, in pixels from its corner, and how many
+		// of the eight are set; the art's DamageFireOffset0 onward, read up to the first one missing.
+		Point2D DamageFireOffset[8];
+		int DamageFireOffsetCount;
 		double InfantryCostBonus;
 		double UnitsCostBonus;
 		double AircraftCostBonus;

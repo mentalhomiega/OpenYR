@@ -361,6 +361,12 @@ class BuildingClass : public TechnoClass
 
 		// Is this gap generator's shroud in place, and did it count against the local player's view?
 		bool IsGeneratingGap;
+
+		// The fires burning on the structure while it is badly damaged, and whether it should have them.
+		AnimClass * DamageFireAnims[8];
+		bool IsRequiresDamageFires;
+		void Create_Damage_Fires(void);
+		void Remove_Damage_Fires(void);
 		bool IsGapCounted;
 
 		void Create_Gap(void);

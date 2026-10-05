@@ -250,6 +250,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// The sounds, one picked at random, played where the object is destroyed (TechnoTypeClass::DieSound).
 		TypeList<int> DieSound;
+
+		// The sounds, one picked at random, played while the object moves (TechnoTypeClass::MoveSound).
+		TypeList<int> MoveSound;
 		TypeList<int> VoiceFeedback;	/// Given when the object is first badly hurt.
 
 		/*
@@ -440,6 +443,12 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Whether the object guards an area rather than its spot when it falls idle (TechnoTypeClass::DefaultToGuardArea).
 		bool IsDefaultToGuardArea;
+
+		// Whether a structure joins a box selection of units (TechnoTypeClass::IsSelectableCombatant).
+		bool IsSelectableCombatant;
+
+		// The multiplier on this type's build time (TechnoTypeClass::BuildTimeMultiplier).
+		double BuildTimeMultiplier;
 
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;

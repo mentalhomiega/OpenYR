@@ -208,7 +208,7 @@ AIBuildThis:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: CanAIBuildThis
       source: code/builtype.cpp
@@ -1938,7 +1938,7 @@ AircraftCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: AircraftCostBonus
       source: code/builtype.cpp
@@ -3179,7 +3179,7 @@ Armory:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsArmory
       source: code/builtype.cpp
@@ -3196,7 +3196,7 @@ Artillary:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsArtillary
       source: code/builtype.cpp
@@ -3632,7 +3632,7 @@ BarrelAnimIsVoxel:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBarrelAnimAVoxel
       source: code/builtype.cpp
@@ -4690,7 +4690,7 @@ BridgeRepairHut:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBridgeRepairHut
       source: code/builtype.cpp
@@ -5206,6 +5206,23 @@ BuildTime.MultipleFactory:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+BuildTimeMultiplier:
+  key: BuildTimeMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BuildTimeMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 BuildWeapons:
   key: BuildWeapons
   scopes:
@@ -5397,7 +5414,7 @@ BuildingsCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: BuildingsCostBonus
       source: code/builtype.cpp
@@ -5431,7 +5448,7 @@ BuildupSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: BuildupSound
       source: code/builtype.cpp
@@ -5466,7 +5483,7 @@ Bunker:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBunker
       source: code/builtype.cpp
@@ -5981,7 +5998,7 @@ CanC4:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCanC4
       source: code/builtype.cpp
@@ -6846,7 +6863,7 @@ ClickRepairable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsClickRepairable
       source: code/builtype.cpp
@@ -6971,7 +6988,7 @@ CloakGenerator:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCloakGenerator
       source: code/builtype.cpp
@@ -6988,7 +7005,7 @@ CloakRadiusInCells:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '20'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: CloakRadiusInCells
       source: code/builtype.cpp
@@ -7434,7 +7451,7 @@ ConstructionYard:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsConstructionYard
       source: code/builtype.cpp
@@ -7789,7 +7806,7 @@ CrateBeneath:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCrateBeneath
       source: code/builtype.cpp
@@ -7806,7 +7823,7 @@ CrateBeneathIsMoney:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCrateBeneathMoney
       source: code/builtype.cpp
@@ -8723,6 +8740,24 @@ DamageDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DamageFireTypes:
+  key: DamageFireTypes
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DamageFireTypes
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DamageLevels:
   key: DamageLevels
   scopes:
@@ -8868,7 +8903,7 @@ DamagedDoor:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDamagedDoor
       source: code/builtype.cpp
@@ -9405,7 +9440,7 @@ DefensesCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: DefensesCostBonus
       source: code/builtype.cpp
@@ -9525,7 +9560,7 @@ DelayedFireDelay:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: DelayedFireDelay
       source: code/builtype.cpp
@@ -9559,7 +9594,7 @@ DemandLoad:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDemandLoad
       source: code/builtype.cpp
@@ -9604,7 +9639,7 @@ DemandLoadBuildup:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDemandLoadBuildup
       source: code/builtype.cpp
@@ -10425,7 +10460,7 @@ DockUnload:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDockUnload
       source: code/builtype.cpp
@@ -11142,7 +11177,7 @@ EMPulseCannon:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsEMPulseCannon
       source: code/builtype.cpp
@@ -11323,7 +11358,7 @@ EligibleForDelayKill:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsEligibleForDelayKill
       source: code/builtype.cpp
@@ -12769,7 +12804,7 @@ ExtraDamageStage:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsExtraDamageStage
       source: code/builtype.cpp
@@ -13381,7 +13416,7 @@ FirestormWall:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsFirestormWall
       source: code/builtype.cpp
@@ -13620,7 +13655,7 @@ Flat:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsFlat
       source: code/builtype.cpp
@@ -13929,7 +13964,7 @@ FreeBuildup:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsFreeBuildup
       source: code/builtype.cpp
@@ -14034,7 +14069,7 @@ GDIBarracks:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsGDIBarracks
       source: code/builtype.cpp
@@ -14285,7 +14320,7 @@ GapGenerator:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsGapGenerator
       source: code/builtype.cpp
@@ -14319,7 +14354,7 @@ Gate:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsGate
       source: code/builtype.cpp
@@ -14371,7 +14406,7 @@ GateStages:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '9'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: GateStages
       source: code/builtype.cpp
@@ -15094,7 +15129,7 @@ HasStupidGuardMode:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsHasStupidGuardMode
       source: code/builtype.cpp
@@ -15210,7 +15245,7 @@ Helipad:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsHelipad
       source: code/builtype.cpp
@@ -15365,7 +15400,7 @@ Hospital:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsHospital
       source: code/builtype.cpp
@@ -15645,7 +15680,7 @@ ICBMLauncher:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsICBMLauncher
       source: code/builtype.cpp
@@ -16647,7 +16682,7 @@ InfantryCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: InfantryCostBonus
       source: code/builtype.cpp
@@ -17212,7 +17247,7 @@ InvisibleInGame:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsInvisibleInGame
       source: code/builtype.cpp
@@ -17839,7 +17874,7 @@ IsBaseDefense:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBaseDefense
       source: code/builtype.cpp
@@ -17887,7 +17922,7 @@ IsCoreDefender:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCoreDefender
       source: code/builtype.cpp
@@ -18037,7 +18072,7 @@ IsJuggernaut:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsJuggernaut
       source: code/builtype.cpp
@@ -18088,7 +18123,7 @@ IsLimpetMine:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLimpetMine
       source: code/builtype.cpp
@@ -18187,7 +18222,7 @@ IsMobileStealth:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsMobileStealth
       source: code/builtype.cpp
@@ -18204,7 +18239,7 @@ IsMobileWar:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsMobileWar
       source: code/builtype.cpp
@@ -18331,6 +18366,23 @@ IsScoreShuffle:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+IsSelectableCombatant:
+  key: IsSelectableCombatant
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsSelectableCombatant
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IsSimpleDeployer:
   key: IsSimpleDeployer
   scopes:
@@ -18393,7 +18445,7 @@ IsThreatRatingNode:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsThreatRatingNode
       source: code/builtype.cpp
@@ -19036,7 +19088,7 @@ LaserFence:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLaserFence
       source: code/builtype.cpp
@@ -19053,7 +19105,7 @@ LaserFencePost:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLaserFencePost
       source: code/builtype.cpp
@@ -19191,7 +19243,7 @@ LeaveRubble:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLeaveRubble
       source: code/builtype.cpp
@@ -21374,6 +21426,23 @@ MoveFlash:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MoveSound:
+  key: MoveSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: MoveSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 MoveToShroud:
   key: MoveToShroud
   scopes:
@@ -21944,7 +22013,7 @@ NODBarracks:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsNODBarracks
       source: code/builtype.cpp
@@ -22885,7 +22954,7 @@ NotWorkingSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: NotWorkingSound
       source: code/builtype.cpp
@@ -22955,7 +23024,7 @@ NukeSilo:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsNukeSilo
       source: code/builtype.cpp
@@ -23058,7 +23127,7 @@ NumberOfDocks:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '1'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: NumberOfDocks
       source: code/builtype.cpp
@@ -23127,7 +23196,7 @@ OccupyHeight:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: OccupyHeight
       source: code/builtype.cpp
@@ -23647,7 +23716,7 @@ Overpowerable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsOverpowerable
       source: code/builtype.cpp
@@ -24390,7 +24459,7 @@ PlaceAnywhere:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCanPlaceAnywhere
       source: code/builtype.cpp
@@ -24858,7 +24927,7 @@ PowersUpToLevel:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: PowersUpToLevel
       source: code/builtype.cpp
@@ -25482,7 +25551,7 @@ ProduceCashAmount:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashAmount
       source: code/builtype.cpp
@@ -25499,7 +25568,7 @@ ProduceCashBudget:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashBudget
       source: code/builtype.cpp
@@ -25516,7 +25585,7 @@ ProduceCashDelay:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashDelay
       source: code/builtype.cpp
@@ -25533,7 +25602,7 @@ ProduceCashResetOnCapture:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsProduceCashResetOnCapture
       source: code/builtype.cpp
@@ -25550,7 +25619,7 @@ ProduceCashStartup:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashStartup
       source: code/builtype.cpp
@@ -25567,7 +25636,7 @@ ProduceCashStartupOneTime:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsProduceCashStartupOneTime
       source: code/builtype.cpp
@@ -25961,7 +26030,7 @@ PsychicDetectionRadius:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: PsychicDetectionRadius
       source: code/builtype.cpp
@@ -27033,7 +27102,7 @@ Recoilless:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsRecoilless
       source: code/builtype.cpp
@@ -27103,7 +27172,7 @@ Refinery:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsRefinery
       source: code/builtype.cpp
@@ -28060,7 +28129,7 @@ SAM:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsSAM
       source: code/builtype.cpp
@@ -28928,7 +28997,7 @@ SensorArray:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsSensorArray
       source: code/builtype.cpp
@@ -30232,7 +30301,7 @@ SortCameoAsBaseDefense:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsSortCameoAsBaseDefense
       source: code/builtype.cpp
@@ -33670,7 +33739,7 @@ SuperWeapon:
     value_type: SuperWeaponType
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: SuperWeapon
       source: code/builtype.cpp
@@ -33687,7 +33756,7 @@ SuperWeapon2:
     value_type: SuperWeaponType
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: SuperWeapon2
       source: code/builtype.cpp
@@ -34502,7 +34571,7 @@ TerrainPalette:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTerrainPalette
       source: code/builtype.cpp
@@ -35265,7 +35334,7 @@ TickTank:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTickTank
       source: code/builtype.cpp
@@ -36091,7 +36160,7 @@ TurretAnimIsExclusive:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTurretAnimExclusive
       source: code/builtype.cpp
@@ -36108,7 +36177,7 @@ TurretAnimIsVoxel:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTurretAnimAVoxel
       source: code/builtype.cpp
@@ -36193,7 +36262,7 @@ TurretChargeAnimRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '3'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: TurretChargeAnimRate
       source: code/builtype.cpp
@@ -36661,7 +36730,7 @@ UnitsCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: UnitsCostBonus
       source: code/builtype.cpp
@@ -38134,7 +38203,7 @@ VoxelBarrelScale:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: VoxelBarrelScale
       source: code/builtype.cpp
@@ -39405,7 +39474,7 @@ WeaponsFactory:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsWeaponsFactory
       source: code/builtype.cpp
@@ -39580,7 +39649,7 @@ Weeder:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsWeeder
       source: code/builtype.cpp
@@ -39891,7 +39960,7 @@ WorkingSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: WorkingSound
       source: code/builtype.cpp

@@ -119,7 +119,7 @@ related:
     id: shp
 ---
 
-A structure animates in two independent ways. Its artwork steps through a few frame sequences, covered in [the last section](#the-structures-own-frames). It can also run up to twenty-one attached animations. Each is a separate animation from the [`[Animations]` list](/formats/rules-registries/), pinned to a point on the structure's artwork and playing at its own rate. The structure creates and removes these animations as its state changes. Most of this page covers attached animations.
+A badly damaged structure also burns; [structure damage fires](/systems/structure-damage-fires/) covers those fires, which are not slots. A structure animates in two independent ways. Its artwork steps through a few frame sequences, covered in [the last section](#the-structures-own-frames). It can also run up to twenty-one attached animations. Each is a separate animation from the [`[Animations]` list](/formats/rules-registries/), pinned to a point on the structure's artwork and playing at its own rate. The structure creates and removes these animations as its state changes. Most of this page covers attached animations.
 
 Each attached animation occupies an animation slot. A BuildingType has one set of settings per slot, and a structure runs at most one animation in each slot at a time. Events on the structure fill and empty the slots. A slot that no event fills never runs anything, whatever settings are written for it.
 

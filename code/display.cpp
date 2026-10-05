@@ -2283,7 +2283,7 @@ void Bandbox_Selection_Callback(ObjectClass *object)
 		if (object->Class_Of()->IsSelectable) {
 			bool selectable = false;
 			if (bptr != NULL) {
-				if (bptr->Class->UndeploysInto != NULL && !bptr->Class->IsConstructionYard && !bptr->Class->IsMobileWar) {
+				if ((bptr->Class->UndeploysInto != NULL && !bptr->Class->IsConstructionYard && !bptr->Class->IsMobileWar) || bptr->Class->IsSelectableCombatant) {
 					selectable = true;
 				}
 			} else {

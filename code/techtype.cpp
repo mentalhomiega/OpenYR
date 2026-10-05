@@ -157,6 +157,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceAttack(),
 	VoiceDie(),
 	DieSound(),
+	MoveSound(),
 	VoiceFeedback(),
 	AuxSound1(VOC_NONE),
 	AuxSound2(VOC_NONE),
@@ -211,6 +212,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsAttackFriendlies(false),
 	IsAttackCursorOnFriendlies(false),
 	IsDefaultToGuardArea(false),
+	IsSelectableCombatant(false),
+	BuildTimeMultiplier(1.0),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -802,6 +805,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsAttackFriendlies = ini.Get_Bool(Name(), "AttackFriendlies", IsAttackFriendlies);
 		IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
 		IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
+		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
+		BuildTimeMultiplier = ini.Get_Float(Name(), "BuildTimeMultiplier", BuildTimeMultiplier);
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
@@ -941,6 +946,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
 		VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
 		DieSound = ini.Get_VocType_List(ini, IniName, "DieSound", DieSound);
+		MoveSound = ini.Get_VocType_List(ini, IniName, "MoveSound", MoveSound);
 		VoiceFeedback = ini.Get_VocType_List(ini, IniName, "VoiceFeedback", VoiceFeedback);
 		AuxSound1 = ini.Get_VocType(Name(), "AuxSound1", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "AuxSound2", AuxSound2);
@@ -1407,6 +1413,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoiceAttack);
 	stream.Serialize(VoiceDie);
 	stream.Serialize(DieSound);
+	stream.Serialize(MoveSound);
 	stream.Serialize(VoiceFeedback);
 	stream.Serialize(AuxSound1);
 	stream.Serialize(AuxSound2);
@@ -1465,6 +1472,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAttackFriendlies);
 	stream.Serialize(IsAttackCursorOnFriendlies);
 	stream.Serialize(IsDefaultToGuardArea);
+	stream.Serialize(IsSelectableCombatant);
+	stream.Serialize(BuildTimeMultiplier);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);
