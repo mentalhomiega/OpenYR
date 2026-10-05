@@ -422,6 +422,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The type grinding this object teaches instead of its own, or empty for its own (Ares ReversedAs).
 		std::string ReversedAs;
 
+		// The name type select groups this type under, or empty for its own name (Ares GroupAs).
+		std::string GroupAs;
+
+		// Whether owning this object keeps a player in a short game: 1, 0, or -1 for the default,
+		// which is any building that is not Insignificant (Ares KeepAlive).
+		signed char KeepAlive;
+
+		// The group type select matches: GroupAs, or the type's own name, upper case.
+		std::string Select_Group(void) const;
+
 		void Load_Insignia_Shapes(void);
 
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.

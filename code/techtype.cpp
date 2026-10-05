@@ -206,6 +206,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	EMPModifier(1.0),
 	EMPThreshold(0),
 	IsCanBeReversed(true),
+	KeepAlive(-1),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -794,6 +795,13 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
 		EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
 		IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
+		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
+			GroupAs = value;
+		}
+		if (ini.Is_Present(Name(), "KeepAlive")) {
+			KeepAlive = ini.Get_Bool(Name(), "KeepAlive", false) ? 1 : 0;
+			Rule->IsKeepAliveSet = true;
+		}
 		if (ini.Get_String(Name(), "ReversedAs", "", value, sizeof(value)) > 0) {
 			ReversedAs = value;
 		}
@@ -1310,6 +1318,16 @@ void TechnoTypeClass::Post_Load(void)
 }
 
 
+std::string TechnoTypeClass::Select_Group(void) const
+{
+	std::string group = GroupAs.empty() ? std::string(Name()) : GroupAs;
+	for (char & letter : group) {
+		letter = (char)toupper((unsigned char)letter);
+	}
+	return(group);
+}
+
+
 void TechnoTypeClass::Load_Insignia_Shapes(void)
 {
 	for (int rank = 0; rank < 3; rank++) {
@@ -1433,6 +1451,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPThreshold);
 	stream.Serialize(IsCanBeReversed);
 	stream.Serialize(ReversedAs);
+	stream.Serialize(GroupAs);
+	stream.Serialize(KeepAlive);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

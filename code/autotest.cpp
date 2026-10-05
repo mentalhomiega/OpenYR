@@ -971,6 +971,14 @@ void Run(StepType const & step)
 			BuildingClass const * factory = type->Who_Can_Build_Me(true, false, true, PlayerPtr);
 			DebugString("AUTOTEST   canbuild %s %d factory %s\n", type->Name(), PlayerPtr->Can_Build(type, false, true), factory != NULL ? factory->Class->Name() : "-");
 		}
+	} else if (step.Command == "selected") {
+		// selected: the number of selected objects and their types.
+		std::string types;
+		for (int index = 0; index < CurrentObject.Count(); index++) {
+			types += " ";
+			types += CurrentObject[index]->Class_Of()->Name();
+		}
+		DebugString("AUTOTEST   selected %d:%s\n", CurrentObject.Count(), types.c_str());
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");

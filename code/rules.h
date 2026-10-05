@@ -435,6 +435,9 @@ class RulesClass
 		// Whether players see the rank insignia of objects not allied with them, for types that do not say (Ares EnemyInsignia).
 		bool IsEnemyInsignia;
 
+		// Whether any type sets KeepAlive, which switches the short game defeat test to the KeepAlive rule.
+		bool IsKeepAliveSet;
+
 		/// Unused
 		bool IsFreeMCV;
 

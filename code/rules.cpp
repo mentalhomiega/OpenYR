@@ -363,6 +363,7 @@ RulesClass::RulesClass(void) :
 	IsChronoInfantryCrush(true),
 	IsBountyDisplay(false),
 	IsEnemyInsignia(true),
+	IsKeepAliveSet(false),
 	DeathWeapon(NULL),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
@@ -2742,6 +2743,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BountyEnablers);
 	stream.Serialize(IsBountyDisplay);
 	stream.Serialize(IsEnemyInsignia);
+	stream.Serialize(IsKeepAliveSet);
 	stream.Serialize(IsFreeMCV);
 	stream.Serialize(IsBerzerkAllowed);
 	stream.Serialize(PoseDir);
