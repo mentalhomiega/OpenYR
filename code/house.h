@@ -32,6 +32,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "_house.h"
 #include "base.h"
 #include "coord.h"
@@ -246,6 +249,9 @@ class HouseClass : public AbstractClass
 		bool IsSide0TechStolen;
 		bool IsSide1TechStolen;
 		bool IsSide2TechStolen;
+
+		// The types this house has reverse engineered, by name; it builds them without their prerequisites.
+		std::vector<std::string> ReversedTypes;
 
 		// Set once a spy of this house has entered another house's barracks or war factory: the
 		// trainable infantry or vehicles this house builds from then on start as veterans.
@@ -906,6 +912,8 @@ class HouseClass : public AbstractClass
 		void Set_Factory(RTTIType rtti, FactoryClass * factory);
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
+		bool Is_Reversed(ObjectTypeClass const * type) const;
+		bool Add_Reversed(TechnoTypeClass const * type);
 
 		int Can_Build(ObjectTypeClass const * type, bool illegal, bool nofactory) const;
 		FactoryClass * Factory_Producing_This(ObjectTypeClass const * object) const;

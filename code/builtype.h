@@ -510,6 +510,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Grinding=yes structure takes in its owner's infantry and vehicles and pays their refund.
 		bool IsGrinding;
 
+		// Whether a grinding building teaches its owner to build the types it grinds (Ares ReverseEngineersVictims).
+		bool IsReverseEngineersVictims;
+
 		// An InfantryAbsorb=yes or UnitAbsorb=yes structure takes in its owner's infantry or
 		// vehicles, up to Passengers, and makes ExtraPower more power for each one inside.
 		bool IsInfantryAbsorb;

@@ -205,6 +205,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsHealthBarHidden(false),
 	EMPModifier(1.0),
 	EMPThreshold(0),
+	IsCanBeReversed(true),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -792,6 +793,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
 		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
 		EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
+		IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
+		if (ini.Get_String(Name(), "ReversedAs", "", value, sizeof(value)) > 0) {
+			ReversedAs = value;
+		}
 		if (ini.Get_String(Name(), "EMP.Threshold", "", value, sizeof(value)) > 0) {
 			if (stricmp(value, "inair") == 0) {
 				EMPThreshold = -1;
@@ -1426,6 +1431,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHealthBarHidden);
 	stream.Serialize(EMPModifier);
 	stream.Serialize(EMPThreshold);
+	stream.Serialize(IsCanBeReversed);
+	stream.Serialize(ReversedAs);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

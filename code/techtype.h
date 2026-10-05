@@ -416,6 +416,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		int EMPThreshold;
 
+		// Whether grinding this object in a reverse engineering building teaches its type (Ares CanBeReversed).
+		bool IsCanBeReversed;
+
+		// The type grinding this object teaches instead of its own, or empty for its own (Ares ReversedAs).
+		std::string ReversedAs;
+
 		void Load_Insignia_Shapes(void);
 
 		// Played where the chronosphere picks this object up and sets it down; VOC_NONE uses the rules' sounds.

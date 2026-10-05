@@ -964,6 +964,13 @@ void Run(StepType const & step)
 	} else if (step.Command == "emp") {
 		// emp <duration> x y: an EM pulse of radius 2 and that duration on the cell, from no source.
 		new EMPulseClass(Cell(step.X, step.Y), 2, std::atoi(step.Argument.c_str()), NULL);
+	} else if (step.Command == "canbuild") {
+		// canbuild <TypeID>: whether the player may build the type and which factory would.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			BuildingClass const * factory = type->Who_Can_Build_Me(true, false, true, PlayerPtr);
+			DebugString("AUTOTEST   canbuild %s %d factory %s\n", type->Name(), PlayerPtr->Can_Build(type, false, true), factory != NULL ? factory->Class->Name() : "-");
+		}
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");

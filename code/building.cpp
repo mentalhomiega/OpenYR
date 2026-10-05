@@ -8762,6 +8762,27 @@ void BuildingClass::Grind(FootClass * object)
 	}
 	House->Refund_Money(refund);
 
+	// A reverse engineering grinder teaches its owner the type of what it grinds, or the type it names as ReversedAs (Ares).
+	if (Class->IsReverseEngineersVictims && object->TClass->IsCanBeReversed) {
+		TechnoTypeClass const * learned = object->TClass;
+		if (!object->TClass->ReversedAs.empty()) {
+			learned = NULL;
+			for (int index = 0; learned == NULL && index < UnitTypes.Count(); index++) {
+				if (stricmp(UnitTypes[index]->Name(), object->TClass->ReversedAs.c_str()) == 0) learned = UnitTypes[index];
+			}
+			for (int index = 0; learned == NULL && index < InfantryTypes.Count(); index++) {
+				if (stricmp(InfantryTypes[index]->Name(), object->TClass->ReversedAs.c_str()) == 0) learned = InfantryTypes[index];
+			}
+			for (int index = 0; learned == NULL && index < AircraftTypes.Count(); index++) {
+				if (stricmp(AircraftTypes[index]->Name(), object->TClass->ReversedAs.c_str()) == 0) learned = AircraftTypes[index];
+			}
+		}
+		if (House->Add_Reversed(learned) && House->Is_Player_Control()) {
+			Speak_Eva(object->RTTI == RTTI_INFANTRY ? "EVA_ReverseEngineeredInfantry" : "EVA_ReverseEngineeredVehicle");
+			Speak_Eva("EVA_NewTechnologyAcquired");
+		}
+	}
+
 	Sound_Effect(Rule->EnterGrinderSound, object->Center_Coord());
 	if (Anims[BANIM_ACTIVE_ONE] != NULL) {
 		End_Anim(BANIM_ACTIVE_ONE);
