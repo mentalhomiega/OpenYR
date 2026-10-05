@@ -36045,6 +36045,23 @@ Translucent50State:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+TransportWaypoint:
+  key: TransportWaypoint
+  scopes:
+  - applies_to: *id009
+    file: ai.ini or map file
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TeamTypeClass
+      member: waypt
+      source: code/teamtype.cpp
+      guard: null
+    level: TeamTypeClass
 TransportsReturnOnUnload:
   key: TransportsReturnOnUnload
   scopes:
@@ -37191,6 +37208,23 @@ UseTransitions:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
+UseTransportOrigin:
+  key: UseTransportOrigin
+  scopes:
+  - applies_to: *id009
+    file: ai.ini or map file
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TeamTypeClass
+      member: UseTransportOrigin
+      source: code/teamtype.cpp
+      guard: null
+    level: TeamTypeClass
 UseTurretShadow:
   key: UseTurretShadow
   scopes:

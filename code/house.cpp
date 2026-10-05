@@ -8949,13 +8949,15 @@ SourceType HouseClass::Entry_Edge(void) const
 
 
 /// <summary>
-/// Brings one plane of the type in from this house's map edge to carry out the mission against
-/// the target object, or the target cell without one, carrying count infantry of the type given
-/// (HouseClass::SendParadropPlanes, 0x65E660). Returns the plane, or NULL when it cannot be placed.
+/// Brings one plane of the type in from this house's map edge, or from the start cell when one is
+/// given, to carry out the mission against the target object, or the target cell without one,
+/// carrying count infantry of the type given and the cargo chain given
+/// (HouseClass::SendParadropPlanes, 0x65E660). Returns the plane, or NULL when it cannot be placed;
+/// the cargo is then left as it was.
 /// </summary>
-AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry, int count, AbstractClass * target_object)
+AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry, int count, AbstractClass * target_object, FootClass * cargo, Cell const & start)
 {
-	Cell const cell = Map.Calculated_Cell(Entry_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
+	Cell const cell = start != CELL_NONE ? start : Map.Calculated_Cell(Entry_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
 	if (type == NULL || cell == CELL_NONE) {
 		return(NULL);
 	}
@@ -8989,6 +8991,10 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 			}
 			plane->Cargo.Attach(trooper);
 		}
+	}
+	if (cargo != NULL) {
+		plane->Passenger = true;
+		plane->Cargo.Attach_Group(cargo);
 	}
 	plane->Commence();
 	return(plane);
