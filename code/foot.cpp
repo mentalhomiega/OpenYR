@@ -173,6 +173,9 @@ FootClass::FootClass(HouseClass * house) :
 	IsLocomotorProcessing(false),
 	IsPiggybackEndPending(false),
 	WasSinking(false),
+	MoveSoundHandle(),
+	IsMoveSoundPlaying(false),
+	MoveSoundDelay(0),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
 	IsFiring(false),
@@ -3426,6 +3429,23 @@ void FootClass::AI(void)
 
 	Update_Sensors(false);
 
+	// A moving object plays a sound from its MoveSound list and ends its loop three frames after it stops (FootClass::Update).
+	if (IsActive && !IsInLimbo && Locomotion && Locomotion->Is_Moving_Now()) {
+		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
+			MoveSoundHandle.Stop();
+			Sound_Effect((VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber()), Center_Coord(), &MoveSoundHandle);
+			IsMoveSoundPlaying = true;
+		}
+		MoveSoundDelay = 3;
+	} else if (IsMoveSoundPlaying) {
+		if (MoveSoundDelay == 0) {
+			MoveSoundHandle.End_Looping();
+			IsMoveSoundPlaying = false;
+		} else {
+			MoveSoundDelay--;
+		}
+	}
+
 	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
 		ParasiteEatingMe->ParasiteImUsing->Update();
 	}
@@ -3643,6 +3663,9 @@ void FootClass::Draw_It(Point2D const &, Rect const &) const
 bool FootClass::Limbo(void)
 {
 	Update_Sensors(true);
+
+	MoveSoundHandle.Stop();
+	IsMoveSoundPlaying = false;
 
 	if (!IsInLimbo) {
 		Cell cell = LastAdjacencyCell;
