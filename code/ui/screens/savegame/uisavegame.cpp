@@ -117,6 +117,7 @@ class UISaveGameViewClass : public UIRmlViewClass
 			entry.RegisterMember("description", &UISaveGameEntry::Description);
 			entry.RegisterMember("date", &UISaveGameEntry::Date);
 			entry.RegisterMember("time", &UISaveGameEntry::Time);
+			entry.RegisterMember("unloadable", &UISaveGameEntry::Unloadable);
 
 			UISaveGameState & state = Data.State;
 			return(model.RegisterArray<std::vector<UISaveGameEntry>>()

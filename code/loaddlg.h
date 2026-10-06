@@ -51,13 +51,16 @@ class FileEntryClass {
 		FILETIME DateTime;  // date/time stamp of file
 		bool Valid;         // Is the scenario valid?
 		GameType Type;
+		// False for a save of another layout revision, which the load dialog lists but will not load.
+		bool Loadable;
 
 		FileEntryClass(void) :
 			Scenario(0),
 			House(HOUSE_NONE),
 			Num(-1),
 			Valid(true),
-			Type(GAME_NORMAL)
+			Type(GAME_NORMAL),
+			Loadable(true)
 		{
 			Descr[0] = '\0';
 			Filename[0] = '\0';
@@ -86,7 +89,7 @@ class LoadOptionsClass
 		 * else, so every earlier stamp is refused outright.
 		 *
 		 * It is the packed project version. Development snapshots within one version
-		 * share this value without promising that their saves interoperate.
+		 * share this value; SaveVersionInfo::REVISION tells their save layouts apart.
 		 */
 		enum {
 			GAMEVER_OPENTS = OPENTS_VERSION_PACKED

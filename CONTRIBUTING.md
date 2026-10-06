@@ -76,6 +76,10 @@ the release process in
 [Maintaining](manual/MAINTAINING.md). [Build identity](docs/BUILDING.md#build-identity)
 explains the version and diagnostic commit identifiers.
 
+A change to what a save holds must also raise the save revision, so that
+snapshots refuse each other's saves instead of misreading them;
+[Versions](docs/SAVE-FORMAT.md#versions) in the saved game format says how.
+
 ## Source changes
 
 - Use C++20 for new or substantially rewritten C++, while modernizing inherited

@@ -29,7 +29,8 @@ SaveVersionInfo::SaveVersionInfo(void) :
 	CampaignNumber(-1),
 	ScenarioNumber(0),
 	GameType(GAME_NORMAL),
-	HasMods(false)
+	HasMods(false),
+	Revision(0)
 {
 	ScenarioDescription[0] = '\0';
 	PlayerHouse[0] = '\0';
@@ -307,6 +308,37 @@ bool SaveVersionInfo::Has_Mods(void)
 
 
 /// <summary>
+/// Records the layout revision of the game state being saved.
+/// </summary>
+/// <param name="num">The revision to stamp the save with, normally REVISION.</param>
+void SaveVersionInfo::Set_Revision(int num)
+{
+	Revision = num;
+}
+
+
+/// <summary>
+/// Fetches the layout revision of the game state the save holds.
+/// </summary>
+/// <returns>Returns with the revision recorded in the save, or 0 when it records none.</returns>
+int SaveVersionInfo::Get_Revision(void) const
+{
+	return(Revision);
+}
+
+
+/// <summary>
+/// Tells whether the save holds game state in the layout this build reads. A save stamped
+/// with another revision, or with none, does not.
+/// </summary>
+/// <returns>bool; Does the save carry this build's REVISION?</returns>
+bool SaveVersionInfo::Is_Current_Revision(void) const
+{
+	return(Revision == REVISION);
+}
+
+
+/// <summary>
 /// Writes every listing field into the file's field table.
 /// </summary>
 void SaveVersionInfo::Save(SaveFileClass & file) const
@@ -325,6 +357,7 @@ void SaveVersionInfo::Save(SaveFileClass & file) const
 	if (HasMods) {
 		file.Set_String(PIDSI_MODS, Mods);
 	}
+	file.Set_Int(PIDSI_SAVE_REVISION, Revision);
 }
 
 
@@ -345,6 +378,9 @@ bool SaveVersionInfo::Load(SaveFileClass const & file)
 	file.Get_Int(PIDSI_CAMPAIGN_NUM, &CampaignNumber);
 	file.Get_Int(PIDSI_GAME_TYPE, &GameType);
 	HasMods = file.Get_String(PIDSI_MODS, Mods, sizeof(Mods));
+	if (!file.Get_Int(PIDSI_SAVE_REVISION, &Revision)) {
+		Revision = 0;
+	}
 
 	return(file.Get_Int(PIDSI_INTERNAL_VER, &InternalVersion));
 }

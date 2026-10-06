@@ -59,7 +59,7 @@ The save supplies the kind of game, its scenario, its options and its houses, so
 
 A restart after the resume replays the scenario the save names, or the [copy of it](/formats/save-games/#what-the-file-holds) the save carries when `CarryScenarioFile` in `OPENTS.INI` asks saves to include one.
 
-The launch is refused when `SaveGameName` is empty, or when the save is missing, unreadable, made by another version of the game, or from a game the menu arranged over the local network.
+The launch is refused when `SaveGameName` is empty, or when the save is missing, unreadable, made by another version of the game, made with another [save revision](/formats/save-games/#what-is-checked), or from a game the menu arranged over the local network.
 
 A game against other machines resumes the same way, and each machine loads the save it wrote itself. A save made during such a game writes one file on every machine, [numbered alike](/formats/save-games/#numbered-multiplayer-saves). Each machine's file seats the people again under the names they played with, at the addresses their machines use now.
 

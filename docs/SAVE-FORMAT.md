@@ -120,15 +120,30 @@ on where the objects were in memory.
 
 ## Versions
 
-Two numbers gate a save. The format version in the header says how to parse
+Three numbers gate a save. The format version in the header says how to parse
 the file, and a reader refuses a version above its own. The header flags are
 gated the same way: a reader refuses a file with a flag bit it does not know,
 so a later version can mark content it stores differently without moving the
 format version. The internal version in the field table,
 `PIDSI_INTERNAL_VER`, is `ExpectedGameVersion`, the packed project version,
 and a save whose value differs from the running build's is not offered to the
-player. The format version moves only when the layout in this document
-changes; the internal version moves with every release.
+player.
+
+The save revision in the field table, `PIDSI_SAVE_REVISION`, is
+`SaveVersionInfo::REVISION` in `code/savever.h`. It stands for the layout of
+the content, which the classes' `Serialize` members define, so raise it by one
+in any change to what `Put_All` writes, such as a member added to a
+`Serialize` or a saved array resized. Builds of one version share the internal
+version, and the revision is what tells their content apart. A save without
+the field, written before saves recorded a revision, reads as revision 0, which
+no build writes. `Load_Game` refuses a save whose revision differs from the
+running build's before it reads the content. The load dialog lists such a save
+when its internal version matches, marked as incompatible, and refuses to load
+it.
+
+The format version moves only when the layout in this document changes, the
+internal version moves with every release, and the save revision moves with
+every change to the layout of the content.
 
 ## What the reader refuses
 
@@ -176,3 +191,9 @@ table and the content, a field table above its limit, a gap before the
 content, a block that ends before or expands past its declared length, and a
 write above each limit that leaves the earlier save in place. It reads no game
 data.
+
+`tests/saverevision` builds `code/savever.cpp` with the file code and checks
+that a save stamped with `REVISION` reads back as current, both from the field
+table and from a file on disk, and that a save without the field, with any
+other revision, or with the field stored as text is not. It reads no game data
+either.

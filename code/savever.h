@@ -31,6 +31,7 @@ enum {
 	PIDSI_CAMPAIGN_NUM,
 	PIDSI_GAME_TYPE,
 	PIDSI_MODS,
+	PIDSI_SAVE_REVISION,
 };
 
 class SaveVersionInfo
@@ -38,6 +39,13 @@ class SaveVersionInfo
 	public:
 		// The room kept for the mod list, terminator included; a longer list is cut to fit.
 		enum { MODS_LENGTH = 1024 };
+
+		/*
+		 * The layout of the game state this build saves and loads. Raise it by one with every
+		 * change to what a save holds, such as a member added to a Serialize or a saved array
+		 * resized; a build refuses a save of any other revision before reading its state.
+		 */
+		static constexpr int REVISION = 1;
 
 		SaveVersionInfo(void);
 
@@ -77,6 +85,10 @@ class SaveVersionInfo
 		void Set_Mods(const char * list);
 		const char * Get_Mods(void);
 		bool Has_Mods(void);
+
+		void Set_Revision(int num);
+		int Get_Revision(void) const;
+		bool Is_Current_Revision(void) const;
 
 		void Save(SaveFileClass & file) const;
 		bool Load(SaveFileClass const & file);
@@ -138,4 +150,10 @@ class SaveVersionInfo
 		 */
 		char Mods[MODS_LENGTH];
 		bool HasMods;
+
+		/*
+		 * This is the layout revision of the game state the save holds. It is 0 for a save
+		 * written before saves recorded one, and no build writes 0.
+		 */
+		int Revision;
 };

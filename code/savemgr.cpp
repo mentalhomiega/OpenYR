@@ -461,7 +461,8 @@ bool SaveManagerClass::Multiplayer_Load_Prompt(void)
 
 /// <summary>
 /// Schedules the numbered multiplayer save on this machine and asks every other seat to do the
-/// same. The file must be here with the running version's stamp and this kind of game.
+/// same. The file must be here with the running version's stamp and layout revision, and
+/// from this kind of game.
 /// </summary>
 /// <returns>bool; Was the load scheduled?</returns>
 bool SaveManagerClass::Multiplayer_Load_Request(int slot)
@@ -473,7 +474,7 @@ bool SaveManagerClass::Multiplayer_Load_Request(int slot)
 	std::string file_name = Multiplayer_Save_File_Name(slot);
 	SaveVersionInfo info;
 	if (!Get_Savefile_Info(file_name.c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion
-		|| (GameType)info.Get_Game_Type() != Session.Type) {
+		|| !info.Is_Current_Revision() || (GameType)info.Get_Game_Type() != Session.Type) {
 		DebugString("Refusing to request the multiplayer save %s\n", file_name.c_str());
 		return(false);
 	}

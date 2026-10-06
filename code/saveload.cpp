@@ -1140,6 +1140,7 @@ bool Save_Game(const char *file_name, char const * descr)
 	info.Set_Executable_Name("SUN.EXE");
 	info.Set_Game_Type(Session.Type);
 	info.Set_Mods(Active_Mod_List().c_str());
+	info.Set_Revision(SaveVersionInfo::REVISION);
 
 	FILETIME FileTime;
 	GetSystemTimeAsFileTime(&FileTime);
@@ -1275,6 +1276,11 @@ bool Load_Game(const char *file_name)
 		return(false);
 	}
 	if (info.Get_Internal_Version() != ExpectedGameVersion) {
+		return(false);
+	}
+	if (!info.Is_Current_Revision()) {
+		DebugString("\t***** REFUSED! (the save holds game state revision %d, and this build reads revision %d)\n",
+			info.Get_Revision(), SaveVersionInfo::REVISION);
 		return(false);
 	}
 

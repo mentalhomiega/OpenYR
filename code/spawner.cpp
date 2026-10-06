@@ -353,6 +353,11 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("The saved game was made by another version of the game."));
 	}
 
+	if (!info.Is_Current_Revision()) {
+		return(Spawner_Refuse("The saved game was made by a build that stores games differently: it holds "
+			"game state revision %d, and this build reads revision %d.", info.Get_Revision(), SaveVersionInfo::REVISION));
+	}
+
 	// A client never arranges a local network game, so no launch file describes one.
 	GameType type = (GameType)info.Get_Game_Type();
 	if (type == GAME_IPX) {

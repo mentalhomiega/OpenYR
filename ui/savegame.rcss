@@ -96,6 +96,12 @@
 	white-space: nowrap;
 }
 
+/* A save the load dialog lists but will not load, dimmed even while selected. */
+#files .item.unloadable
+{
+	color: #848a84;
+}
+
 .cell-description
 {
 	left: 2dp;

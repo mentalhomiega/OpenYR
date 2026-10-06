@@ -2,7 +2,7 @@
 command_id: QuickLoad
 ---
 
-Loads the quick save for the kind of game being played: `QUICKSAVE.SAV` in a campaign or `QUICKSAVE_SKIRMISH.SAV` in a skirmish. If that file is missing or was written by another version, the message list shows `No quick save to load.` and nothing else happens.
+Loads the quick save for the kind of game being played: `QUICKSAVE.SAV` in a campaign or `QUICKSAVE_SKIRMISH.SAV` in a skirmish. If that file is missing or was written by another version, the message list shows `No quick save to load.` and nothing else happens. If it was written by this version but has another [save revision](/formats/save-games/#what-is-checked), or none, the message list shows `This save was made by a build that stores games differently, so it cannot be loaded.` and nothing else happens.
 
 Otherwise the load runs at the end of the frame, and play resumes in the restored game. If the restore fails partway, the game shows `Error loading game!` and leaves the player in the options menu, as a failed load from the load dialog does.
 

@@ -218,6 +218,13 @@ bool LoadOptionsClass::Dialog(void)
 			FileEntryClass const * file = Files[index];
 			UISaveGameEntry entry;
 			entry.Description = file->Descr;
+			// Saving over such a save is allowed, so the save list shows it as it shows any other.
+			if (!file->Loadable && Style != SAVE) {
+				char marked[sizeof(file->Descr) + 64];
+				std::snprintf(marked, sizeof(marked), Fetch_String(TXT_SAVE_INCOMPATIBLE_TAG), file->Descr);
+				entry.Description = marked;
+				entry.Unloadable = (Style == LOAD);
+			}
 			entry.Valid = file->Valid;
 			char date[128];
 			char timeofday[128];
@@ -262,6 +269,11 @@ bool LoadOptionsClass::Dialog(void)
 		switch (Style) {
 
 			case LOAD:
+				if (!entry->Loadable) {
+					WWMessageBox().Process(TXT_SAVE_INCOMPATIBLE, TXT_OK, TXT_NONE, TXT_NONE);
+					State = STATE_PENDING;
+					break;
+				}
 				if (entry->Num != -1) {
 					Init_Campaigns();
 				}
@@ -519,7 +531,7 @@ int LoadOptionsClass::Initial_Row(void) const
 {
 	if (Style == LOAD) {
 		for (int index = 0; index < Files.Count(); index++) {
-			if (Files[index]->Valid) {
+			if (Files[index]->Valid && Files[index]->Loadable) {
 				return(index);
 			}
 		}
@@ -529,12 +541,13 @@ int LoadOptionsClass::Initial_Row(void) const
 
 
 /// <summary>
-/// Are there any save games available to load?
+/// Are there any save games for the load dialog to list?
 /// This routine is used to decide whether the load option should be offered to the
 /// player at all. It settles the question as cheaply as it can, so it stops at the
-/// first save game it can actually read.
+/// first save game the dialog would list. That can be a save of another layout revision,
+/// which the dialog lists, marked, but will not load.
 /// </summary>
-/// <returns>bool; Was at least one loadable save game found?</returns>
+/// <returns>bool; Was at least one save game found that the load dialog lists?</returns>
 bool LoadOptionsClass::Files_Present(void)
 {
 	bool files_found = false;
@@ -654,8 +667,8 @@ bool LoadOptionsClass::Delete_File(const char * file_name)
 /// <summary>
 /// Fills in a save game list entry from a file found on disk.
 /// This routine peeks at the save game's header to recover the description, scenario
-/// and player it belongs to. A save written by an older game version is still accepted,
-/// but its description is marked so the player can tell.
+/// and player it belongs to. A save written by another game version is passed over. One
+/// written by this version in another layout revision is accepted with Loadable cleared.
 /// </summary>
 /// <param name="fdata">The list entry to fill in.</param>
 /// <param name="ff">The find record naming the file to examine.</param>
@@ -683,6 +696,7 @@ bool LoadOptionsClass::Read_File(FileEntryClass * fdata, WIN32_FIND_DATAA * ff)
 	snprintf(fdata->Descr, sizeof(fdata->Descr), "%s", savever.Get_Scenario_Description());
 
 	fdata->Valid = ok;
+	fdata->Loadable = savever.Is_Current_Revision();
 	fdata->Scenario = savever.Get_Scenario_Number();
 	fdata->Num = savever.Get_Campaign_Number();
 	fdata->Type = (GameType)savever.Get_Game_Type();

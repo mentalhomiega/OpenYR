@@ -22,7 +22,6 @@ The campaign and skirmish load dialog lists only `.SAV` files. Saves from a game
 
 OpenTS cannot load saves from the original game. There is no converter for those saves or for saves from another OpenTS version, so finish or abandon a game in progress before you move to another version.
 
-Two builds with the same stamp can still store a save differently, and such a save is listed but can fail to load:
+Development snapshots of one version share its stamp, but a save also records a save revision, which changes whenever a build stores the game differently. A snapshot lists a save of another revision as `(Incompatible)` and refuses to load it; see [What is checked](/formats/save-games/#what-is-checked). Finish or abandon a game in progress before replacing a snapshot.
 
-- Development snapshots of one version share its stamp. Finish or abandon a game in progress before replacing a snapshot.
-- The Win32 and x64 builds share the stamp. Load a save with the platform that wrote it, and play a network game with every player on the same platform; a mixed network game can go out of sync.
+The Win32 and x64 builds share both the stamp and the revision but store a save differently, so such a save is listed but can fail to load. Load a save with the platform that wrote it, and play a network game with every player on the same platform; a mixed network game can go out of sync.

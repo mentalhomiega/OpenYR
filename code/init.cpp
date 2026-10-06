@@ -5374,6 +5374,12 @@ class QuickLoadCommandClass : public CommandClass
 				SaveManager.Post_Save_Notice(TXT_NO_QUICKSAVE);
 				return;
 			}
+			if (!info.Is_Current_Revision()) {
+				DebugString("Not loading %s: it holds game state revision %d, and this build reads revision %d\n",
+					Quick_Save_File_Name(kind).c_str(), info.Get_Revision(), SaveVersionInfo::REVISION);
+				SaveManager.Post_Save_Notice(TXT_SAVE_INCOMPATIBLE);
+				return;
+			}
 
 			// The load has to wait until the frame is over, where the menu dialogs run.
 			SpecialDialog = SDLG_QUICKLOAD;

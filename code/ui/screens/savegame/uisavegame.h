@@ -32,6 +32,8 @@ struct UISaveGameEntry
 	std::string Date;
 	std::string Time;
 	bool Valid = false;
+	// Set for a listed save the load dialog will not load; its row is drawn dimmed.
+	bool Unloadable = false;
 };
 
 
