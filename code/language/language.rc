@@ -269,7 +269,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    TXT_NONAME              "[NONAME]"
+    TXT_NONAME              "Player"
     TXT_DEFAULT             "Default"
     TXT_SETTINGS            "Settings"
     TXT_NAME_COLON          "Name:"
