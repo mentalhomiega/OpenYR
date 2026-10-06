@@ -632,6 +632,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				Assign_Mission(MISSION_GUARD);
 				if (Class->IsConstructionYard) {
 					End_Anim(BANIM_PRE_PRODUCTION);
+					End_Anim(BANIM_IDLE);
 					Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
 				}
 			}
@@ -6668,6 +6669,7 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 				Door.Open_Door(Class->DeployTime);
 				Status = CLEAR_BIB;
 				IsToDisplay = true;
+				End_Anim(BANIM_IDLE);
 				Begin_Anim(BANIM_PRODUCTION, false);
 				break;
 
@@ -8403,6 +8405,19 @@ void BuildingClass::Detach_Anim(AnimClass * anim)
 					if (In_Radio_Contact() && Mission == MISSION_REPAIR) {
 						Begin_Anim(BANIM_SPECIAL_TWO, false);
 					}
+				}
+
+				/*
+				**	An animation that ran its course hands the building back to the one it replaced,
+				**	as BuildingClass::PointerExpired (0x44E8F0) does. The production animation, which a
+				**	factory or yard plays instead of its idle one, gives the idle animation back when it
+				**	ends. A grinder that has finished chewing goes back to its active animation.
+				*/
+				if (!IsInLimbo && i == BANIM_PRODUCTION) {
+					Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
+				}
+				if (!IsInLimbo && i == BANIM_SPECIAL_ONE && Class->IsGrinding) {
+					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 				}
 				break;
 			}
