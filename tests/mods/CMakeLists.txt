@@ -7,6 +7,7 @@ opents_add_test(Mods
     SOURCES modscontract.cpp
     ENGINE
         mods.cpp
+        modchoice.cpp
         gamedirs.cpp
         cdfile.cpp
         bfiofile.cpp

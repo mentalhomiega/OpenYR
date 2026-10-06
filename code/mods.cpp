@@ -17,6 +17,7 @@
 #include "ini.h"
 #include "rawfile.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <system_error>
 
@@ -137,6 +138,12 @@ void Add_Command_Line_Mod(char const * name)
 }
 
 
+std::vector<std::string> const & Command_Line_Mods(void)
+{
+	return(CommandLineMods);
+}
+
+
 static std::string Folder_Own_Name(std::string const & folder)
 {
 	std::filesystem::path path(folder);
@@ -176,6 +183,100 @@ static void Read_Manifest(ModClass & mod)
 	mod.RulesFile = Overlay_Path(ini, mod.Folder, "Rules");
 	mod.ArtFile = Overlay_Path(ini, mod.Folder, "Art");
 	mod.AIFile = Overlay_Path(ini, mod.Folder, "AI");
+}
+
+
+/// <summary>
+/// Describes the mod in a folder from its mod.ini. Without mod.ini, or for a folder that does
+/// not exist, the mod takes the folder's own name and has no description or overlays.
+/// </summary>
+/// <param name="folder">The folder, ending in a separator.</param>
+ModClass Read_Mod(std::string const & folder)
+{
+	ModClass mod;
+	mod.Folder = folder;
+	Read_Manifest(mod);
+	return(mod);
+}
+
+
+/// <summary>
+/// Lists every folder in the Mods folder of the data directory, ordered by folder name
+/// without regard to case, each described as Read_Mod describes it. Files in the Mods folder
+/// are passed over, and a missing Mods folder gives an empty list.
+/// </summary>
+/// <param name="datadirectory">The data directory, empty or ending in a separator.</param>
+std::vector<ModClass> Find_Mods(std::string const & datadirectory)
+{
+	std::vector<ModClass> mods;
+
+	std::error_code error;
+	std::filesystem::directory_iterator entry(datadirectory + ModsFolder, error);
+	std::filesystem::directory_iterator const end;
+
+	for (; !error && entry != end; entry.increment(error)) {
+		std::error_code kind;
+		if (entry->is_directory(kind)) {
+			mods.push_back(Read_Mod(Terminate_Folder(entry->path().string())));
+		}
+	}
+
+	std::sort(mods.begin(), mods.end(), [](ModClass const & left, ModClass const & right) {
+		return(_stricmp(Folder_Own_Name(left.Folder).c_str(), Folder_Own_Name(right.Folder).c_str()) < 0);
+	});
+
+	return(mods);
+}
+
+
+static ModChoiceType Choice_Of(ModClass const & mod, std::string const & entry)
+{
+	ModChoiceType choice;
+	choice.Entry = entry;
+	choice.Folder = mod.Folder;
+	choice.Name = mod.Name;
+	choice.Description = mod.Description;
+	return(choice);
+}
+
+
+static std::vector<ModChoiceType> Named_Choices(std::vector<std::string> const & names, std::string const & datadirectory)
+{
+	std::vector<ModChoiceType> choices;
+
+	for (std::string const & name : names) {
+		std::string const entry = Trim(name);
+		if (entry.empty()) {
+			continue;
+		}
+
+		std::string const folder = Mod_Folder_Name(entry, datadirectory);
+		ModChoiceType choice = Choice_Of(Read_Mod(folder), entry);
+
+		std::error_code error;
+		choice.Found = std::filesystem::is_directory(folder, error);
+		choices.push_back(choice);
+	}
+
+	return(choices);
+}
+
+
+/// <summary>
+/// Gathers what the Mods screen offers: the mods the list names, those the command line
+/// names, and every folder in the Mods folder of the data directory. A folder found there
+/// that neither names is offered by its folder's own name.
+/// </summary>
+/// <param name="list">The comma separated mod list Mods= holds.</param>
+/// <param name="datadirectory">The data directory, empty or ending in a separator.</param>
+ModChoiceClass Mod_Choices(char const * list, std::string const & datadirectory)
+{
+	std::vector<ModChoiceType> found;
+	for (ModClass const & mod : Find_Mods(datadirectory)) {
+		found.push_back(Choice_Of(mod, Folder_Own_Name(mod.Folder)));
+	}
+
+	return(ModChoiceClass(Named_Choices(Parse_Mod_List(list), datadirectory), Named_Choices(CommandLineMods, datadirectory), found));
 }
 
 
@@ -231,9 +332,7 @@ void Init_Mods(char const * list)
 			continue;
 		}
 
-		ModClass mod;
-		mod.Folder = folder;
-		Read_Manifest(mod);
+		ModClass const mod = Read_Mod(folder);
 
 		CDFileClass::Add_Priority_Drive(mod.Folder.c_str());
 		Mods.push_back(mod);

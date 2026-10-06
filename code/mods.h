@@ -10,6 +10,7 @@
 #pragma once
 
 #include "dbgprint.h"
+#include "modchoice.h"
 #include "rawfile.h"
 
 #include <string>
@@ -47,8 +48,14 @@ class ModClass
 std::vector<std::string> Parse_Mod_List(char const * list);
 std::string Mod_Folder_Name(std::string const & name, std::string const & datadirectory);
 
+ModClass Read_Mod(std::string const & folder);
+std::vector<ModClass> Find_Mods(std::string const & datadirectory);
+
 // Records a mod the command line names; Init_Mods adds it after the configured list.
 void Add_Command_Line_Mod(char const * name);
+std::vector<std::string> const & Command_Line_Mods(void);
+
+ModChoiceClass Mod_Choices(char const * list, std::string const & datadirectory);
 
 void Init_Mods(char const * list);
 void Clear_Mods(void);
