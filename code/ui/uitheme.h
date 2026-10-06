@@ -14,8 +14,11 @@
 // Records the folder the UI files are read from, ending in a separator.
 void UI_Theme_Set_Directory(std::string const & directory);
 
+// The folder the UI files are read from, ending in a separator.
+std::string UI_Theme_Base_Directory(void);
+
 // The folder holding the files of the menu style in force, ending in a separator. A file there
-// replaces the UI file of the same name.
+// replaces the shipped UI file of the same name.
 std::string UI_Theme_Directory(void);
 
 // The screen size the menu style in force is laid out for; the menus scale with the window

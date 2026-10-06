@@ -11,7 +11,9 @@
 
 #include "ui/rml/rmlfile.h"
 
+#include "_mixfile.h"
 #include "ccfile.h"
+#include "mixfile.h"
 #include "ui/uitheme.h"
 
 #include <string>
@@ -26,6 +28,17 @@ static Rml::String Base_Name(Rml::String const & path)
 }
 
 
+// Is the file a loose copy found ahead of the UI directory, such as a mod's?
+static bool Is_Found_Ahead_Of_UI(CCFileClass & file, Rml::String const & name)
+{
+	if (MFCD::Offset(file.File_Name()) || !file.CDFileClass::Is_Available()) {
+		return(false);
+	}
+	std::string const shipped = UI_Theme_Base_Directory() + name;
+	return(stricmp(file.File_Name(), shipped.c_str()) != 0);
+}
+
+
 Rml::FileHandle UIRmlFileClass::Open(Rml::String const & path)
 {
 	Rml::String name = Base_Name(path);
@@ -33,12 +46,17 @@ Rml::FileHandle UIRmlFileClass::Open(Rml::String const & path)
 		return(0);
 	}
 
-	// The menu style in force replaces any UI file it holds a copy of.
-	std::string const themed = UI_Theme_Directory() + name;
-	CCFileClass * file = new CCFileClass(themed.c_str());
-	if (!file->Is_Available()) {
-		delete file;
-		file = new CCFileClass(name.c_str());
+	// The menu style in force replaces the shipped copy, or one in a mix file, with its own.
+	CCFileClass * file = new CCFileClass(name.c_str());
+	if (!Is_Found_Ahead_Of_UI(*file, name)) {
+		std::string const themed = UI_Theme_Directory() + name;
+		CCFileClass * styled = new CCFileClass(themed.c_str());
+		if (styled->Is_Available()) {
+			delete file;
+			file = styled;
+		} else {
+			delete styled;
+		}
 	}
 	if (!file->Is_Available() || !file->Open(FileClass::READ)) {
 		delete file;

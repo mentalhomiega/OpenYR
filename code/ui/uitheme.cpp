@@ -29,6 +29,12 @@ void UI_Theme_Set_Directory(std::string const & directory)
 }
 
 
+std::string UI_Theme_Base_Directory(void)
+{
+	return(Directory);
+}
+
+
 std::string UI_Theme_Directory(void)
 {
 	char const separator = (char)std::filesystem::path::preferred_separator;
