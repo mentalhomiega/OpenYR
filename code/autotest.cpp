@@ -74,6 +74,8 @@
 **	plan					writes each computer house's base plan
 **	dump					writes the player's credits, objects and missions to the log
 **	log <text>				writes the text to the log
+**	searchdir <path>		adds a directory the game searches for files; it is added as the
+**							script is read, before the game reads any file, whatever the frame
 **	quit					ends the process
 */
 
@@ -1123,6 +1125,8 @@ void Run(StepType const & step)
 		Log_State_Hash();
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
+	} else if (step.Command == "searchdir") {
+		// searchdir <path>: added to the search path when the script was read (AutoTest_Load).
 	} else if (step.Command == "quit") {
 		DebugString("AUTOTEST quit\n");
 		std::exit(0);
@@ -1163,10 +1167,20 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string text = argument;
 		// A rules step's path is the rest of the line, so it may hold spaces.
-		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0 || std::strcmp(command, "teamini") == 0) {
+		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0 || std::strcmp(command, "teamini") == 0
+				|| std::strcmp(command, "searchdir") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
+		}
+		// A search directory has to be in place before startup reads the files it holds, such
+		// as the extra string tables, so it is added now rather than at its frame.
+		if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
+			std::string path = text;
+			if (path.back() != '\\' && path.back() != '/') {
+				path += '\\';
+			}
+			CDFileClass::Add_Search_Drive(path.c_str());
 		}
 		Steps.push_back(StepType{frame, command, text, x, y});
 	}

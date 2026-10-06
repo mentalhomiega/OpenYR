@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // Pins the string table reader against tables built in memory: lookup by label, the extra
-// value, whitespace clean-up, repeated labels, the language field, and what a damaged file
-// leaves behind.
+// value, whitespace clean-up, repeated labels, the language field, what a damaged file
+// leaves behind, and the extra tables added over the main one.
 
 #include <cstdio>
 #include <cstring>
@@ -176,6 +176,92 @@ void Test_Damage(void)
 }
 
 
+bool Merge(CSFClass & table, std::vector<char> const & data)
+{
+	BufferStraw straw(data.data(), (int)data.size());
+	return(table.Merge(straw));
+}
+
+
+void Test_Merge(void)
+{
+	Builder main_table(3, 0);
+	main_table.Add("Name:Kept", L"kept");
+	main_table.Add("Name:Replaced", L"main");
+	main_table.Add("Name:Twice", L"main first");
+	main_table.Add("NAME:TWICE", L"main second");
+	CSFClass table;
+	Load(table, main_table.Data());
+
+	Builder extra(3, 0);
+	extra.Add("name:replaced", L"extra");
+	extra.Add("Name:New", L"new", "ivoice");
+	extra.Add("Name:Twice", L"extra");
+	extra.Add("Name:New", L"new again");
+	Check(Merge(table, extra.Data()), "an extra table in the main table's language is added");
+	Check(Is(table.Find("Name:Kept"), L"kept"), "a label only the main table holds stays");
+	Check(Is(table.Find("NAME:REPLACED"), L"extra"), "a label both hold takes the added string, whatever its case");
+	char const * voice = nullptr;
+	Check(Is(table.Find("Name:New", &voice), L"new") && voice != nullptr && std::strcmp(voice, "ivoice") == 0,
+		"a new label is added with its extra value; its first copy counts");
+	Check(Is(table.Find("Name:Twice"), L"extra"), "every copy of a label the main table repeats is replaced");
+	Check(table.Count() == 4, "and the table holds each label once after taking it over");
+
+	Builder other_language(3, 3);
+	other_language.Add("Name:Kept", L"wrong language");
+	other_language.Add("Name:Foreign", L"foreign");
+	Check(!Merge(table, other_language.Data()), "a table in another language is skipped");
+	Check(Is(table.Find("Name:Kept"), L"kept") && table.Find("Name:Foreign") == nullptr, "and changes nothing");
+
+	Builder neutral(3, CSFClass::LANGUAGE_NEUTRAL);
+	neutral.Add("Name:Replaced", L"neutral");
+	Check(Merge(table, neutral.Data()), "a language-neutral table is added whatever the main language");
+	Check(Is(table.Find("Name:Replaced"), L"neutral"), "and the table added later wins");
+
+	Builder old_version(1, 3);
+	old_version.Add("Name:Old", L"old");
+	Check(Merge(table, old_version.Data()) && Is(table.Find("Name:Old"), L"old"), "a table older than version 2 counts as language 0");
+
+	std::vector<char> bad = extra.Data();
+	bad[0] = 'X';
+	int const before = table.Count();
+	Check(!Merge(table, bad) && table.Count() == before && table.Is_Loaded(), "data that is not a string table is skipped");
+
+	CSFClass empty;
+	Check(!Merge(empty, extra.Data()) && !empty.Is_Loaded() && empty.Count() == 0, "nothing is added to a table that has not loaded");
+
+	Builder foreign_main(3, 3);
+	foreign_main.Add("Name:Kept", L"kept");
+	CSFClass french;
+	Load(french, foreign_main.Data());
+	Check(!Merge(french, extra.Data()), "a language-0 table is skipped when the main table is in another language");
+	Check(Merge(french, neutral.Data()) && Is(french.Find("Name:Replaced"), L"neutral"), "while a neutral one is still added");
+}
+
+
+void Test_Many_Strings(void)
+{
+	// Ares raises the string limit to 20000; this table has none, so check well past it.
+	Builder big;
+	char label[32];
+	for (int index = 0; index < 25000; index++) {
+		std::snprintf(label, sizeof(label), "Big:%05d", index);
+		big.Add(label, L"x");
+	}
+	CSFClass table;
+	Check(Load(table, big.Data()) && table.Count() == 25000, "a table of 25000 strings loads whole");
+
+	Builder more;
+	for (int index = 24000; index < 26000; index++) {
+		std::snprintf(label, sizeof(label), "BIG:%05d", index);
+		more.Add(label, L"y");
+	}
+	Check(Merge(table, more.Data()) && table.Count() == 26000, "and an extra table takes it to 26000");
+	Check(Is(table.Find("Big:00000"), L"x") && Is(table.Find("Big:24500"), L"y") && Is(table.Find("Big:25999"), L"y"),
+		"with every label found");
+}
+
+
 void Test_Fetch(void)
 {
 	StringTable.Clear();
@@ -198,6 +284,8 @@ int main(void)
 	Test_Whitespace();
 	Test_Header();
 	Test_Damage();
+	Test_Merge();
+	Test_Many_Strings();
 	Test_Fetch();
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "There were failures.");
