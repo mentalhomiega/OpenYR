@@ -6641,6 +6641,22 @@ HouseClass * House_From_Name(char const * name)
 
 
 /// <summary>
+/// Fetches the house that receives an object a scenario places on the map. Outside a campaign
+/// a country owner names only a passive house, such as Neutral, and never a player playing
+/// that country, as in Yuri's Revenge; a spawn house still names the player at its position.
+/// </summary>
+/// <returns>The house, or NULL when the object is not to be created.</returns>
+HouseClass * Placed_Object_House(char const * name)
+{
+	HouseClass * house = House_From_Name(name);
+	if (house != NULL && Session.Type != GAME_NORMAL && Spawn_House_Waypoint(name) == -1 && !house->Class->IsMultiplayPassive) {
+		return(NULL);
+	}
+	return(house);
+}
+
+
+/// <summary>
 /// Does a house parameter select this house? A spawn house selects the one house at that
 /// position, while a country selects every house playing it.
 /// </summary>

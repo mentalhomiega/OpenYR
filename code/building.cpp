@@ -7379,7 +7379,7 @@ void BuildingClass::Read_INI(CCINIClass const & ini)
 		/*
 		**	1st token: house name.
 		*/
-		bhptr = House_From_Name(strtok(buf, ","));
+		bhptr = Placed_Object_House(strtok(buf, ","));
 
 		if (bhptr == NULL) {
 			continue;

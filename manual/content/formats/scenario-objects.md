@@ -45,9 +45,11 @@ An object row creates an object only when its owner names a house playing in the
 - A country, by its ID or its [`Name=`](/keys/name/) string. It names the first house in the game that plays that country. A country that the rules define but nobody plays in this game names no house.
 - A [spawn house](#spawn-houses), which names the house that starts at that position.
 
+In a skirmish or multiplayer game, an object row's country owner names a house only when that country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), as the stock `Neutral` and `Special` countries do. A row owned by a country that a player or a computer opponent plays is skipped. A spawn house still names the player at that position.
+
 A row is skipped when its owner names no house or its ObjectType ID names no type of that section's kind. Nothing is created and the rest of the row is not read. An object that is created but cannot be placed at its location is deleted.
 
-`[Triggers]` definitions follow the same owner rule. They also accept the owner `<none>`, which names the house playing the first country the rules register. A definition whose owner names no house is deleted.
+`[Triggers]` definitions follow the same owner rule, except that in a skirmish or multiplayer game a country owner still names the first house playing that country. They also accept the owner `<none>`, which names the house playing the first country the rules register. A definition whose owner names no house is deleted.
 
 A trigger can link to a definition that appears later in `[Triggers]`. A link to a definition that is missing or was deleted stays empty. A `[Tags]` row that names such a definition has no trigger and never fires.
 
