@@ -543,7 +543,9 @@ bool Spawner_Prepare(bool & gameloaded)
 	}
 
 	Disable_Addon(ADDON_ANY);
-	if (SpawnConfig.Firestorm) {
+	// A save records the add-on the game requires and loads only if it is installed, so a
+	// deployment without the expansion plays as the base game.
+	if (SpawnConfig.Firestorm && Addon_Installed(ADDON_FIRESTORM)) {
 		Enable_Addon(ADDON_FIRESTORM);
 		Set_Required_Addon(ADDON_FIRESTORM);
 	}

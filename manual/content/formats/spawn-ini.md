@@ -120,6 +120,8 @@ These `[Settings]` keys set the rules of a skirmish or a game against other mach
 
 A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty settings](/systems/difficulty/#from-the-setting-to-a-slot) describes, unless its seat sets its own difficulty under [Who is playing](#who-is-playing).
 
+`Firestorm=yes` plays the expansion only when it is installed, which takes a file named by `RulesExpansion=` in [`OPENTS.INI`](/formats/opents-ini/). Without one, the game is played as the base game whatever `Firestorm` says.
+
 `CoachMode` decides what a defeated player keeps; [observers and coach mode](/systems/observers/#coach-mode) owns it.
 
 `AutoSurrender=yes` destroys the base of a player who leaves, and `AutoSurrender=no` hands it to the computer instead; [leaving a match](/systems/leaving-a-match/) owns it. Each machine applies its own file's value, so machines whose files disagree fall out of step as soon as somebody leaves.
