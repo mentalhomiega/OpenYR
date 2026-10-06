@@ -51,6 +51,8 @@
 #include "_deploymentconfig.h"
 #include "_keyboar.h"
 #include "_map.h"
+#include "_mixfile.h"
+#include "_pk.h"
 #include "_rules.h"
 #include "addon.h"
 #include "ccini.h"
@@ -63,6 +65,7 @@
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "mixfile.h"
 #include "msgloop.h"
 #include "netglobal.h"
 #include "progress.h"
@@ -91,6 +94,9 @@ int SessionClass::CountMin[2] = {1,1};
 int SessionClass::CountMax[2] = {50,10};
 
 static char const MAIN_SCENARIO_PACKET[] = "MISSIONSMD.PKT";
+
+// Yuri's Revenge never lists a map pack of this name.
+static char const RESERVED_MAP_PACK[] = "MISSIONS.YRO";
 
 //---------------------------------------------------------------------------
 // This is a list of all the names of the multiplayer scenarios
@@ -870,6 +876,27 @@ void SessionClass::Write_MultiPlayer_Settings(void)
 	}
 }
 
+
+/// <summary>
+/// Mounts a map pack's archive, so the files it holds open like any other game file. A pack
+/// already mounted is left as it is, and every pack stays mounted until shutdown.
+/// </summary>
+/// <param name="filename">The pack's file name, without a directory.</param>
+static void Mount_Map_Pack(char const * filename)
+{
+	for (int index = 0; index < MapsMixLocal.Count(); index++) {
+		char name[_MAX_FNAME];
+		char ext[_MAX_EXT];
+		_splitpath(MapsMixLocal[index]->Filename, NULL, NULL, name, ext);
+		if (stricmp((std::string(name) + ext).c_str(), filename) == 0) {
+			return;
+		}
+	}
+
+	MapsMixLocal.Add(new MFCD(filename, &FastKey));
+}
+
+
 /***************************************************************************
  * SessionClass::Read_Scenario_Descriptions -- reads scen. descriptions    *
  *                                                                         *
@@ -959,25 +986,58 @@ void SessionClass::Read_Scenario_Descriptions(void)
 		}
 	}
 
+	// A map pack lists its maps in the packet named after the pack, which it holds with the maps.
+	for (std::string const & pack : Search_Files("*.YRO")) {
+		if (stricmp(pack.c_str(), RESERVED_MAP_PACK) == 0) {
+			continue;
+		}
+
+		Mount_Map_Pack(pack.c_str());
+
+		std::string const packet = pack.substr(0, pack.size() - 3) + "PKT";
+		file.Close();
+		file.Set_Name(packet.c_str());
+		if (!file.Is_Available()) {
+			DebugString("Map pack %s holds no %s\n", pack.c_str(), packet.c_str());
+			continue;
+		}
+
+		ini.Clear();
+		ini.Load(file);
+
+		int count = ini.Entry_Count("MultiMaps");
+		DebugString("Map pack %s lists %d maps\n", pack.c_str(), count);
+		for (int index = 0; index < count; index++) {
+			if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
+				MultiMission * mission = new MultiMission(ini, name_buffer);
+				mission->Add_Player_Count();
+				Scenarios.Add(mission);
+			}
+		}
+	}
+
 	ini.Clear();
 	file.Close();
 
 
-	/*
-	**	Scan the current directory for any loose .MPR files and build the appropriate entries
-	**	into the scenario list list
-	*/
+	// Yuri's Revenge lists only the loose .YRM maps; the .MPR maps after them are listed as Red
+	// Alert 2 lists them.
 	char digest_buffer[32];
 
-	for (std::string const & file_name : Search_Files("*.MPR")) {
-		file.Set_Name(file_name.c_str());
-		ini.Load(file);
+	for (char const * pattern : {"*.YRM", "*.MPR"}) {
+		for (std::string const & file_name : Search_Files(pattern)) {
+			file.Set_Name(file_name.c_str());
+			ini.Clear();
+			ini.Load(file);
 
-		ini.Get_String("Basic", "Name", "No Name", name_buffer, sizeof(name_buffer) );
-		ini.Get_String("Digest", "1", "No Digest", digest_buffer, sizeof(digest_buffer) );
-		Scenarios.Add(new MultiMission(file_name.c_str(), name_buffer, digest_buffer,ini.Get_Bool("Basic", "Official", false)));
+			ini.Get_String("Basic", "Name", "No Name", name_buffer, sizeof(name_buffer) );
+			ini.Get_String("Digest", "1", "No Digest", digest_buffer, sizeof(digest_buffer) );
+			DebugString("Loose map %s: %s\n", file_name.c_str(), name_buffer);
+			Scenarios.Add(new MultiMission(file_name.c_str(), name_buffer, digest_buffer,ini.Get_Bool("Basic", "Official", false)));
+		}
 	}
 
+	ini.Clear();
 	Options.ScenarioIndex = 0;
 }
 
@@ -1304,11 +1364,17 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 		strcpy(Filename, name);
 		strcat(Filename, ".MAP");
 
-		// The shipped packet names a string table label; a value no label matches is shown as written.
+		// DescriptionText is shown as written. Description names a string table label, and a value
+		// no label matches is shown as written.
 		char description[128];
-		ini.Get_String(name, "Description", "", description, sizeof(description));
-		std::string const text = StringTable.Find_UTF8(description);
-		UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), text.empty() ? description : text.c_str());
+		if (ini.Is_Present(name, "DescriptionText")) {
+			ini.Get_String(name, "DescriptionText", "", description, sizeof(description));
+			UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), description);
+		} else {
+			ini.Get_String(name, "Description", "", description, sizeof(description));
+			std::string const text = StringTable.Find_UTF8(description);
+			UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), text.empty() ? description : text.c_str());
+		}
 
 		MinPlayers = ini.Get_Int(name, "MinPlayers", MinPlayers);
 		MaxPlayers = ini.Get_Int(name, "MaxPlayers", MaxPlayers);
@@ -1387,8 +1453,7 @@ MultiMission::MultiMission(char const * filename, char const * description, char
 void MultiMission::Set_Description(char const * description)
 {
 	if (description != NULL) {
-		strncpy(ScenarioDescription, description, ARRAY_SIZE(ScenarioDescription));
-		ScenarioDescription[ARRAY_SIZE(ScenarioDescription) - 1] = '\0';
+		UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), description);
 	} else {
 		strcpy(ScenarioDescription, "No Description");
 	}
@@ -1434,6 +1499,22 @@ void MultiMission::Set_Digest(char const * digest)
 void MultiMission::Set_Official(bool official)
 {
 	IsOfficial = official;
+}
+
+
+/// <summary>
+/// Appends the mission's player limits to its description, as " (2-4)", or as " (2)" when
+/// both limits are the same. Whatever does not fit the description is cut.
+/// </summary>
+void MultiMission::Add_Player_Count(void)
+{
+	char text[DESCRIP_MAX + 16];
+	if (MinPlayers == MaxPlayers) {
+		snprintf(text, sizeof(text), "%s (%d)", ScenarioDescription, MinPlayers);
+	} else {
+		snprintf(text, sizeof(text), "%s (%d-%d)", ScenarioDescription, MinPlayers, MaxPlayers);
+	}
+	Set_Description(text);
 }
 
 

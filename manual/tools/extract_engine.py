@@ -947,12 +947,12 @@ GLOBAL_UNITS = [
       "section_vars": {"hname": section_selectors.identifier("house")}}),
     ("session.cpp", "SessionClass", ["Read_MultiPlayer_Settings"],
      {"file": "ra2md.ini", "group": "multiplayer settings"}),
-    # Only the loose *.MPR directory scan reads settings here. The packet path
-    # above it builds each entry through MultiMission's own constructor, which
-    # reads a different section from a different file and is enrolled as its
-    # own adapter unit.
+    # Only the loose *.YRM and *.MPR directory scan reads settings here. The
+    # packet paths above it build each entry through MultiMission's own
+    # constructor, which reads a different section from a different file and
+    # is enrolled as its own adapter unit.
     ("session.cpp", "SessionClass", ["Read_Scenario_Descriptions"],
-     {"file": "map file (.mpr)", "group": "multiplayer maps"}),
+     {"file": "map file (.yrm, .mpr)", "group": "multiplayer maps"}),
     ("options.cpp", "OptionsClass", ["Load_Settings"],
      {"group": "client settings"}),
     # Every sound section and [Defaults] go through the same free functions,

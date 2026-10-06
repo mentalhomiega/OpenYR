@@ -50,6 +50,8 @@ If a required archive is missing or cannot be cached, the game stops during star
 
 A music track or movie whose file is not found in any archive or folder is skipped.
 
+The game also mounts [map packs](/formats/map-packs/) when it builds the multiplayer map list.
+
 ### Theater, side and speech archives
 
 Archives mounted after startup are searched after every startup archive.

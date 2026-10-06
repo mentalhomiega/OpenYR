@@ -15,6 +15,7 @@ filenames:
 - "<scenario>.INI"
 - "*.MAP"
 - "*.MPR"
+- "*.YRM"
 related:
 - type: format
   id: ini-syntax

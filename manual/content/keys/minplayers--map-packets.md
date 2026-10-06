@@ -3,7 +3,6 @@ key: MinPlayers
 scope: map-packets
 label: Packet-listed player minimum
 see_also: [MaxPlayers, Description]
-no_effect: true
 when_omitted:
   kind: value
   value: "2"
@@ -14,4 +13,4 @@ when_omitted:
 MinPlayers=2
 ```
 
-The value is stored with the map's entry in the multiplayer map list, and nothing reads it afterwards. No lobby waits for this many players before a game can start, and starting positions and houses are assigned without it.
+For a map listed by a [map pack](/formats/map-packs/), the map list shows the value after the map's name, as in `Four player canyon (2-4)`. Nothing else reads it. No lobby waits for this many players before a game can start, and starting positions and houses are assigned without it.

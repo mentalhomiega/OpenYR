@@ -52,14 +52,14 @@ ADAPTER_UNITS = [
     # from different places: SessionClass::Read_Scenario_Descriptions builds a
     # packet entry through the first, which reads the section the .PKT named,
     # and a loose map through the second, which reads [Multiplay] out of the
-    # .MPR itself. Neither is covered by any Read_INI reader.
+    # .YRM or .MPR itself. Neither is covered by any Read_INI reader.
     ("session.cpp", "MultiMission", [":MultiMission(INIClass"],
      {"file": "scenario packet (.pkt)", "group": "map packets",
       "section_vars": {
           "name": section_selectors.identifier("multiplayer-map"),
       }}),
     ("session.cpp", "MultiMission", [":MultiMission(char const * filename"],
-     {"file": "map file (.mpr)", "group": "multiplayer maps"}),
+     {"file": "map file (.yrm, .mpr)", "group": "multiplayer maps"}),
     ("isotype.cpp", "IsometricTileTypeClass", ["Read_Control_File"],
      {"file": "theater control file", "group": "tile controls",
       "section_vars": {
