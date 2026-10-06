@@ -14,6 +14,8 @@ On a [`Helipad=yes`](/keys/helipad/) or [`UnitRepair=yes`](/keys/unitrepair/) st
 
 When an aircraft asks to dock at a [`Helipad=yes`](/keys/helipad/) structure that also sets `UnitRepair=yes`, the structure orders it onto the pad if the aircraft stands more than half a cell from the structure's center. An aircraft that holds a dock is measured itself; one that holds none is measured by the object on the first dock.
 
+When infantry asks to dock at a [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure, infantry that holds a dock is sent to the structure's own cell. Infantry that holds none disturbs the infantry on the first dock only when every dock is taken.
+
 A `UnitRepair=yes` structure starts a repair only when the object on its first dock stands within a quarter of a cell of the structure's center, or 150 leptons for a hovercraft. Keep `DockingOffset0=` within that distance on such a structure; otherwise the object on the first dock is never repaired.
 
 An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.

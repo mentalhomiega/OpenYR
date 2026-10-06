@@ -529,14 +529,15 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			}
 
 			if (Class->IsHospital || Class->IsArmory) {
-				if (Contact_With_Whom() != from) {
+				if (Contains_Link(from)) {
+					param = (intptr_t)&Map[Get_Coord()];
+					Transmit_Message(RADIO_MOVE_HERE, param, from);
+				} else if (!Has_Free_Link(from)) {
+					// With every dock taken, the object on the first dock makes room, as RADIO_HELLO does.
 					if (Transmit_Message(RADIO_NEED_REPAIR) != RADIO_NEGATIVE) {
 						return(RADIO_ROGER);
 					}
 					Transmit_Message(RADIO_RUN_AWAY);
-				} else {
-					param = (intptr_t)&Map[Get_Coord()];
-					Transmit_Message(RADIO_MOVE_HERE, param);
 				}
 				return(RADIO_ROGER);
 			}
