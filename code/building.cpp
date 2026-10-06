@@ -10165,6 +10165,12 @@ void BuildingClass::Destroy_Gap(void)
 			cell.GapCount--;
 		}
 	});
+
+	// Objects deleted while the game is inactive stay in the map's layers, where All_To_Look
+	// would read them after they are freed.
+	if (!GameActive) {
+		return;
+	}
 	if (PlayerPtr != NULL) {
 		PlayerPtr->IsVisionary = false;
 		if (PlayerPtr->IsSpySatActive) {
