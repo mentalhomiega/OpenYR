@@ -52,6 +52,7 @@
 #include "_mixfile.h"
 #include "_rules.h"
 #include "aircraft.h"
+#include "animtype.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -85,6 +86,8 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	IsLandable(false),
 	IsFighter(false),
 	IsAirportBound(false),
+	Trailer(NULL),
+	SpawnDelay(3),
 	IsRotorEquipped(false),
 	IsRotorCustom(false),
 	IsCarryall(false),
@@ -276,6 +279,8 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
 		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
+		Trailer = TGet_Class(ArtINI, Graphic_Name(), "Trailer", Trailer);
+		SpawnDelay = ArtINI.Get_Int(Graphic_Name(), "SpawnDelay", SpawnDelay);
 		return(true);
 	}
 	return(false);
@@ -298,6 +303,7 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLandable);
 	crc(IsFighter);
 	crc(IsAirportBound);
+	crc(SpawnDelay);
 	crc(HeapID);
 }
 
@@ -331,6 +337,8 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLandable);
 	stream.Serialize(IsFighter);
 	stream.Serialize(IsAirportBound);
+	stream.Serialize(Trailer);
+	stream.Serialize(SpawnDelay);
 }
 
 

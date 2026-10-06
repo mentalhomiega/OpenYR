@@ -591,6 +591,10 @@ void AircraftClass::AI(void)
 		return;
 	}
 
+	if (Class->Trailer != NULL && Class->SpawnDelay > 0 && Frame % Class->SpawnDelay == 0) {
+		new AnimClass(Class->Trailer, PositionCoord, 1, 1);
+	}
+
 	if (!Map.In_Local_Radar(PositionCell) && Should_Delete_Off_Map()) {
 		Delete_Me();
 		return;
