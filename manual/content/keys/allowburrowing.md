@@ -19,7 +19,7 @@ A cell lets a subterranean unit burrow there under **All of:**
 
 A unit ordered to move tests the cell it is heading for and, unless it is already underground, the cell it starts from. If a tested cell fails, it plans a route on the surface instead of tunneling.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0631]        ; example cliff set
 SetName=Riverbank cliffs
 FileName=RVCLIF

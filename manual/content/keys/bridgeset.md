@@ -12,7 +12,7 @@ when_omitted:
 
 The retail temperate theater lays out its road bridge set like this:
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [General]
 BridgeSet = 19          ; road bridge pieces come from [TileSet0019]
 BridgeTopLeft1 = 1      ; the first piece of that set

@@ -15,7 +15,7 @@ when_omitted:
 
 A cell with no valid tile counts as morphable for height changes and for `ToTile=` structures. The smudge test uses the setting of the theater's first tile for such a cell instead.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0631]      ; example cliff set
 SetName=Riverbank cliffs
 FileName=RVCLIF

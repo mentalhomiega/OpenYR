@@ -31,7 +31,7 @@ A tile at positions 20 through 32 also shades a fixed group of nearby cells. Inf
 
 A flagged set's tiles that are also among the first ten pieces of [`SlopeSetPieces`](/keys/slopesetpieces/) or [`SlopeSetPieces2`](/keys/slopesetpieces2/) take their shadow from a separate slope table instead.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0010]        ; example cliff set
 SetName=Cliffs
 FileName=CLIFF

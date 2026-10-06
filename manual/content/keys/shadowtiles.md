@@ -10,7 +10,7 @@ when_omitted:
 
 Any non-zero value lets the tiles of a [`ShadowCaster=yes`](/keys/shadowcaster/) set cast shadows, and `0` stops all of them. The key is read only on a set with `ShadowCaster=yes`.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0010]      ; example cliff set
 SetName=Cliffs
 FileName=CLIFF

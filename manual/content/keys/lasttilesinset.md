@@ -10,7 +10,7 @@ when_omitted:
 
 `LastTilesInSet` keeps older maps drawing the right terrain after a tile set grows. A map stores each cell's terrain as a tile index counted across every set in the theater, so adding tiles to one set moves the tiles of every later set up. Give this key the count the set had when the older maps were made; [`TilesInSet`](/keys/tilesinset/) gives the count it has now.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0042]      ; example set that gained four tiles after release
 SetName=Shore pieces
 FileName=SHORE

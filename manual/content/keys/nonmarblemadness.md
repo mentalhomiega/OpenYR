@@ -12,7 +12,7 @@ when_omitted:
 
 When a tile's file with the theater's extension is missing, the loader tries the same name with the theater's [`MMSuffix`](/keys/mmsuffix/), if the theater has one (`.MMT` in temperate and `.MMS` in snow). The tile uses that artwork if the file exists. With `NonMarbleMadness=0`, the second attempt is skipped and the tile has no artwork.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0631]         ; example set that has no alternate artwork
 SetName=Riverbank cliffs
 FileName=RVCLIF
