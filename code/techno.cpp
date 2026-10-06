@@ -2143,7 +2143,9 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		bonus += Rule->BunkerWeaponRangeBonus * CELL_LEPTON_W;
 	}
 	if (IsInOpenToppedTransport) {
-		bonus += Rule->OpenToppedRangeBonus * CELL_LEPTON_W;
+		// The transport's OpenTopped.RangeBonus and the passenger's OpenTransport.RangeBonus both apply (Phobos).
+		int const transport = Transporter != NULL ? Transporter->TClass->OpenToppedRangeBonus.value_or(Rule->OpenToppedRangeBonus) : Rule->OpenToppedRangeBonus;
+		bonus += (transport + TClass->OpenTransportRangeBonus.value_or(Rule->OpenTransportRangeBonus)) * CELL_LEPTON_W;
 	}
 
 	// A projectile SubjectToElevation reaches farther from higher ground (TechnoClass::InRange, 0x6F7398 and 0x6F7473).
@@ -4741,7 +4743,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
 	}
 	if (IsInOpenToppedTransport) {
-		firepower = (int)(firepower * Rule->OpenToppedDamageMultiplier);
+		// The transport's OpenTopped.DamageMultiplier and the passenger's OpenTransport.DamageMultiplier both apply (Phobos).
+		double const transport = Transporter != NULL ? Transporter->TClass->OpenToppedDamageMultiplier.value_or(Rule->OpenToppedDamageMultiplier) : Rule->OpenToppedDamageMultiplier;
+		firepower = (int)(firepower * transport * TClass->OpenTransportDamageMultiplier.value_or(Rule->OpenTransportDamageMultiplier));
 	}
 
 	int max_speed = weapon->MaxSpeed;

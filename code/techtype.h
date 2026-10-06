@@ -611,6 +611,17 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Extra range, in leptons, against a target in the air (TechnoTypeClass::AirRangeBonus).
 		int AirRangeBonus;
+
+		// This open-topped transport's own OpenTopped.RangeBonus, OpenTopped.DamageMultiplier and
+		// OpenTopped.WarpDistance; unset, the [CombatDamage] OpenTopped values apply (Phobos).
+		std::optional<int> OpenToppedRangeBonus;
+		std::optional<double> OpenToppedDamageMultiplier;
+		std::optional<int> OpenToppedWarpDistance;
+
+		// What this passenger adds when firing out of any open-topped transport; unset, the
+		// [CombatDamage] OpenTransport values apply (Phobos).
+		std::optional<int> OpenTransportRangeBonus;
+		std::optional<double> OpenTransportDamageMultiplier;
 		int TurretWeapon[WEAPON_SLOT_COUNT];
 
 		// The passengers of an open-topped transport fire from inside it; OpenTransportWeapon picks their weapon there.

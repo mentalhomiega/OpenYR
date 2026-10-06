@@ -172,6 +172,12 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport reaches this many cells farther.
 		int OpenToppedRangeBonus;
 
+		// What a passenger itself adds when firing out of any open-topped transport, on top of the
+		// transport's own values, unless its type sets OpenTransport.RangeBonus or
+		// OpenTransport.DamageMultiplier (Phobos).
+		int OpenTransportRangeBonus;
+		double OpenTransportDamageMultiplier;
+
 		// A vehicle in a bunker multiplies its damage and rate of fire by these and reaches this many cells farther.
 		double BunkerDamageMultiplier;
 		double BunkerROFMultiplier;
