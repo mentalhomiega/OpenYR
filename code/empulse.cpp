@@ -153,7 +153,7 @@ void EMPulseClass::Create(TechnoClass * source)
 			if (aircraft->IsDown && !aircraft->IsInLimbo && !aircraft->In_Air() && aircraft->Strength > 0) {
 				if (aircraft->Center_Coord().Distance_To(CellID.As_Coord()) < Spread * CELL_LEPTON) {
 					aircraft->Spring_Tag(TEVENT_PARALYZED, aircraft, CELL_NONE, false, source);
-					if (!aircraft->Class->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {
+					if (!aircraft->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {
 						int damage = aircraft->Class->MaxStrength;
 						aircraft->Take_Damage(damage, 0, Rule->C4Warhead, source, true);
 					}
@@ -167,7 +167,7 @@ void EMPulseClass::Create(TechnoClass * source)
 			int x = center.X - CellID.X;
 			int y = center.Y - CellID.Y;
 			if (x * x + y * y < spread_sq) {
-				if (!foot->TClass->Is_Immune_To_EMP()) {
+				if (!foot->Is_Immune_To_EMP()) {
 					foot->Locomotion->Power_Off();
 					if (foot->Locomotion->Is_Moving()) {
 						foot->Locomotion->Stop_Moving();
@@ -196,7 +196,7 @@ void EMPulseClass::Create(TechnoClass * source)
 							if (building != NULL) {
 								if (building->Center_Coord().As_Cell() == cell) {
 									if (!building->Class->IsInvisibleInGame) {
-										if (!building->Class->Is_Immune_To_EMP()) {
+										if (!building->Is_Immune_To_EMP()) {
 											if (building->Class->IsLimpetMine == true) {
 												building->Do_Destruction(NULL, source, true, building->Occupy_List());
 											} else {
@@ -223,7 +223,7 @@ void EMPulseClass::Create(TechnoClass * source)
 							} else {
 								TechnoClass * techno = cellptr.Cell_Techno();
 								while (techno != NULL) {
-									bool immune = techno->TClass->Is_Immune_To_EMP();
+									bool immune = techno->Is_Immune_To_EMP();
 
 									bool caught = false;
 									if ((techno->RTTI == RTTI_UNIT || techno->RTTI == RTTI_AIRCRAFT) && techno->Is_Foot()) {

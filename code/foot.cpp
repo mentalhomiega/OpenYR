@@ -3454,7 +3454,7 @@ void FootClass::AI(void)
 	 * As FootClass::Update (0x4DA530): every RadApplicationDelay frames an object on the ground
 	 * takes the radiation of its cell, times RadLevelFactor, as damage through RadSiteWarhead.
 	 */
-	if (IsActive && !IsInLimbo && Rule->RadApplicationDelay > 0 && Frame % Rule->RadApplicationDelay == 0 && !TClass->IsImmuneToRadiation && !In_Air()) {
+	if (IsActive && !IsInLimbo && Rule->RadApplicationDelay > 0 && Frame % Rule->RadApplicationDelay == 0 && !Is_Immune_To_Radiation() && !In_Air()) {
 		int const level = Map[Center_Coord()].Rad_Level();
 		if (level > 0 && Rule->RadSiteWarhead != NULL) {
 			int damage = (int)(level * Rule->RadLevelFactor);

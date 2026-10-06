@@ -60,7 +60,7 @@ void TemporalClass::Clear(void)
 /// </summary>
 bool TemporalClass::Can_Warp_Target(TechnoClass const * target) const
 {
-	if (target == nullptr || !target->TClass->IsWarpable || target->Is_Iron_Curtained()) {
+	if (target == nullptr || !target->Is_Warpable() || target->Is_Iron_Curtained()) {
 		return(false);
 	}
 	if (target->RTTI == RTTI_UNIT) {

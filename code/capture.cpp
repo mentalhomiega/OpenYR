@@ -53,7 +53,7 @@ bool CaptureManagerClass::Can_Capture(TechnoClass const * target) const
 	if (target == NULL || Owner == NULL || target->House == Owner->House) {
 		return(false);
 	}
-	if (target->TClass->IsImmuneToPsionics || target->MindControlledBy != NULL || target->IsPermaControlled) {
+	if (target->Is_Immune_To_Psionics() || target->MindControlledBy != NULL || target->IsPermaControlled) {
 		return(false);
 	}
 	if (target->Is_Iron_Curtained()) {
