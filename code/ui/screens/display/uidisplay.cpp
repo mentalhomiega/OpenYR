@@ -33,9 +33,13 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "systemcursor") {
 		State.SystemCursor = (intent.Value != 0);
 
+	} else if (intent.Name == "classicmenus") {
+		State.ClassicMenus = (intent.Value != 0);
+
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
+		Service.Set_Classic_Menus(State.ClassicMenus);
 		if (State.Selected >= 0 && State.Selected != Initial) {
 			Picked = State.Modes[State.Selected];
 		}
@@ -104,6 +108,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("selected");
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
+			Model.DirtyVariable("classicmenus");
 		}
 
 	protected:
@@ -122,7 +127,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("modes", &state.Modes)
 				&& model.Bind("selected", &state.Selected)
 				&& model.Bind("stretch", &state.StretchMovies)
-				&& model.Bind("systemcursor", &state.SystemCursor));
+				&& model.Bind("systemcursor", &state.SystemCursor)
+				&& model.Bind("classicmenus", &state.ClassicMenus));
 		}
 
 	private:

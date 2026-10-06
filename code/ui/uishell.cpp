@@ -245,6 +245,23 @@ void UIShellClass::Apply_Dimensions(void)
 }
 
 
+/// <summary>
+/// Takes up a new menu style: the screens opened from now on are read from its files and laid
+/// out at its scale. A screen already open keeps the style it was opened with.
+/// </summary>
+void UIShellClass::On_Menu_Style_Change(void)
+{
+	if (!Ready) {
+		return;
+	}
+
+	Rml::Factory::ClearStyleSheetCache();
+	Rml::Factory::ClearTemplateCache();
+	Apply_Dimensions();
+	Host.Mark_Overlay_Dirty();
+}
+
+
 void UIShellClass::Drop_Cached_Files(void)
 {
 	Rml::ReleaseTextures(Render.get());

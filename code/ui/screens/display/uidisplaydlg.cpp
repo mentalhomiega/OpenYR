@@ -46,6 +46,14 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.SystemCursor = on;
 			Refresh_Window_Arrow();
 		}
+
+		virtual void Set_Classic_Menus(bool on) override
+		{
+			if (Options.IsClassicMenus != on) {
+				Options.IsClassicMenus = on;
+				UIShell.On_Menu_Style_Change();
+			}
+		}
 };
 
 UIDisplayEngineServiceClass _Service;
@@ -64,6 +72,7 @@ void UI_Display_State(UIDisplayState & state)
 	state = UIDisplayState();
 	state.StretchMovies = Options.StretchMovies;
 	state.SystemCursor = Options.SystemCursor;
+	state.ClassicMenus = Options.IsClassicMenus;
 
 	int * modes = EnumDisplayModes(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 	if (modes == NULL) {

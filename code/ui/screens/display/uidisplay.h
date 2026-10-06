@@ -33,6 +33,7 @@ class UIDisplayServiceClass
 		virtual ~UIDisplayServiceClass(void) = default;
 		virtual void Set_Stretch_Movies(bool on) = 0;
 		virtual void Set_System_Cursor(bool on) = 0;
+		virtual void Set_Classic_Menus(bool on) = 0;
 };
 
 
@@ -42,6 +43,7 @@ struct UIDisplayState
 	int Selected = -1;
 	bool StretchMovies = false;
 	bool SystemCursor = false;
+	bool ClassicMenus = false;
 };
 
 

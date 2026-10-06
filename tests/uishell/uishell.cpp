@@ -913,6 +913,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 
 		virtual void Set_Stretch_Movies(bool on) override { Calls.push_back(on ? "stretch on" : "stretch off"); }
 		virtual void Set_System_Cursor(bool on) override { Calls.push_back(on ? "system cursor on" : "system cursor off"); }
+		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 };
 
 
@@ -945,7 +946,7 @@ void Test_Display_Presenter(void)
 		Check(presenter.State.Selected == 2 && presenter.State.StretchMovies && presenter.State.SystemCursor && service.Calls.empty() && !presenter.Picked.has_value(), "display edits are held until the player accepts");
 
 		Drive(presenter, "ok");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on" }, "accepting the display options applies both switches");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off" }, "accepting the display options applies the switches");
 		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
 	}
 
@@ -955,7 +956,16 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "select", 2);
 		Drive(presenter, "select", 1);
 		Drive(presenter, "ok");
-		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off" }, "accepting on the starting row applies the switches and tries no mode");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off" }, "accepting on the starting row applies the switches and tries no mode");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "classicmenus", 1);
+		Check(presenter.State.ClassicMenus && service.Calls.empty(), "the menu style switch is held until the player accepts");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus on" }, "accepting applies the classic menu style");
 	}
 
 	{
@@ -2351,13 +2361,13 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		if (ok != nullptr && reveal != nullptr) {
 			float bottom = ok->GetAbsoluteOffset(Rml::BoxArea::Border).y + ok->GetBox().GetSize(Rml::BoxArea::Border).y;
 			float frame = reveal->GetAbsoluteOffset(Rml::BoxArea::Border).y + reveal->GetBox().GetSize(Rml::BoxArea::Border).y;
-			Check(bottom <= frame - 19.0f, "the buttons keep the dialog's bottom margin below the pointer switch");
+			Check(bottom <= frame - 19.0f, "the buttons keep the dialog's bottom margin below the switches");
 		}
 
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
-			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on" }, "OK applies both switches");
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off" }, "OK applies the switches");
 			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
 		}
 
@@ -2620,6 +2630,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Rml::Element * modes = document->GetElementById("modes");
 		Rml::Element * stretch = document->GetElementById("stretch");
 		Rml::Element * cursor = document->GetElementById("system-cursor");
+		Rml::Element * classic = document->GetElementById("classic-menus");
 		Rml::Element * ok = document->GetElementById("ok");
 		Rml::Element * cancel = document->GetElementById("cancel");
 
@@ -2642,6 +2653,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == cursor, "the pointer switch follows the movie switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == classic, "the menu style switch follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the switches");
 		Press(context, Rml::Input::KI_TAB);

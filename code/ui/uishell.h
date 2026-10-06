@@ -58,6 +58,7 @@ class UIShellClass
 		void Play_Click(void);
 
 		void On_Video_Change(void);
+		void On_Menu_Style_Change(void);
 		void On_Archives_Change(int side);
 		std::string Side_Sheet(void) const;
 		void Tick(void);
