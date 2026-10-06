@@ -4157,6 +4157,9 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		Check(slots[2]->IsClassSet("off") && !slots[1]->IsClassSet("off"), "a seat nobody plays is marked as off");
 	}
 
+	Check(document->GetElementById("kind1") != nullptr && document->GetElementById("side0") != nullptr && document->GetElementById("color3") != nullptr
+		&& document->GetElementById("start2") != nullptr && document->GetElementById("team1") != nullptr, "each row's drop-downs carry an id of their field and row, so a script can open one");
+
 	Rml::Element * switches = document->GetElementById("switches");
 	Check(switches != nullptr && switches->GetBox().GetSize(Rml::BoxArea::Border).x == 484.0f, "the switch frame spans the player list");
 
@@ -4166,6 +4169,19 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map preview");
 	Rml::Element * caption = document->GetElementById("preview-caption");
 	Check(caption != nullptr && !caption->IsVisible(), "the map picture covers the preview caption");
+
+	// A drop-down's change reaches the presenter with its row and the chosen position.
+	Rml::ElementFormControlSelect * kind = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("kind2"));
+	Rml::ElementFormControlSelect * team = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("team1"));
+	Check(kind != nullptr && team != nullptr, "the drop-downs are select elements");
+	if (kind != nullptr && team != nullptr) {
+		kind->SetSelection(UI_SKIRMISH_SLOT_HARD);
+		team->SetSelection(3);
+		presenter.Drain();
+		Check(presenter.State.Slots[2].Kind == UI_SKIRMISH_SLOT_HARD && presenter.State.Slots[1].Team == 3, "choosing in a row's drop-down changes that row");
+		Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_OPEN);
+		Choose_Slot(presenter, "slotteam", 1, 0);
+	}
 
 	// Seats and what they hold.
 	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_HARD);
@@ -4183,6 +4199,10 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Choose_Slot(presenter, "slotcolor", 0, second);
 	Check(presenter.State.Slots[0].Color == second && presenter.State.Slots[1].Color == first, "a color another row holds changes places with it");
 	Check(presenter.State.Slots[0].Swatch == "#ff1818", "a row carries the swatch of its color");
+	view->Sync();
+	context.Update();
+	Rml::ElementFormControlSelect * shown = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("color1"));
+	Check(shown != nullptr && shown->GetSelection() == first, "the drop-down of the row that gave up a color shows its new one");
 
 	// Numbered starts are the same, and Random may repeat.
 	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_EASY);
