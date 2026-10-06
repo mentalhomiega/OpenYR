@@ -14,6 +14,7 @@ opents_add_test(UIShell
         ui/uireveal.cpp
         utf8.cpp
         hsv.cpp
+        modchoice.cpp
         rgb.cpp
         ui/rml/rmlfont.cpp
         ui/rml/rmlfontfon.cpp
@@ -35,6 +36,7 @@ opents_add_test(UIShell
         ui/screens/desync/uidesync.cpp
         ui/screens/mapgen/uimapgen.cpp
         ui/screens/menu/uimenu.cpp
+        ui/screens/mods/uimods.cpp
         ui/screens/reconnect/uireconnect.cpp
         ui/screens/restate/uirestate.cpp
         ui/screens/msgbox/uimsgbox.cpp

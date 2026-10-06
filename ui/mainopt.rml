@@ -18,6 +18,7 @@
 	<button class="wide" id="display" data-event-click="queue('display')">Display</button>
 	<button class="wide" id="sound" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
 	<button class="wide" id="keyboard" data-event-click="queue('keyboard')">Keyboard</button>
+	<button class="wide" id="mods" data-event-click="queue('mods')">Mods</button>
 	<button class="wide" id="mainmenu" data-event-click="queue('ok')">Main Menu</button>
 </body>
 </rml>

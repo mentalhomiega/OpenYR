@@ -1,0 +1,138 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 560dp;
+	height: 424dp;
+	top: 50%;
+	margin-top: -212dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#title
+{
+	height: 18dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#mods
+{
+	margin-top: 7dp;
+	height: 182dp;
+}
+
+/* Taller rows than the kit's, to hold a check box. */
+#mods .item
+{
+	display: flex;
+	align-items: center;
+	height: 20dp;
+	line-height: 18dp;
+	white-space: nowrap;
+}
+
+#mods .item input
+{
+	flex: 0 0 auto;
+	margin: 0 6dp 0 1dp;
+	tab-index: none;
+}
+
+#mods .place
+{
+	flex: 0 0 auto;
+	width: 18dp;
+	margin-right: 8dp;
+	text-align: right;
+}
+
+#mods .name
+{
+	flex: 1 1 0;
+	overflow: hidden;
+}
+
+#mods .note
+{
+	flex: 0 0 auto;
+	margin: 0 6dp 0 8dp;
+}
+
+#about
+{
+	margin-top: 15dp;
+	height: 92dp;
+}
+
+#description
+{
+	height: 48dp;
+	line-height: 16dp;
+	overflow: hidden;
+}
+
+#folder
+{
+	margin-top: 4dp;
+	height: 16dp;
+	line-height: 16dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#status
+{
+	margin-top: 8dp;
+	height: 32dp;
+	line-height: 16dp;
+	overflow: hidden;
+}
+
+#status.problem
+{
+	color: #ff7070;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 8dp;
+}
+
+#buttons button
+{
+	white-space: nowrap;
+}
+
+#toggle, #up, #down
+{
+	width: 100dp;
+}
+
+#up, #down, #cancel
+{
+	margin-left: 6dp;
+}
+
+#ok, #cancel
+{
+	width: 76dp;
+}
+
+#ok
+{
+	margin-left: 24dp;
+}

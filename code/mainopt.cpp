@@ -35,6 +35,7 @@
 #include "surface.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
+#include "ui/screens/mods/uimods.h"
 #include "video.h"
 
 #include "color.hh"
@@ -49,9 +50,9 @@ static void Display_Options_Dialog(void);
 
 /// <summary>
 /// Brings up the main options dialog.
-/// Opens the sound, display, keyboard and game settings screens on request until the player
-/// backs out. A resolution change is offered as a trial first, and the settings are written
-/// out when the player leaves.
+/// Opens the sound, display, keyboard, mods and game settings screens on request until the
+/// player backs out. A resolution change is offered as a trial first, and the settings are
+/// written out when the player leaves.
 /// </summary>
 /// <remarks>Game logic is suspended for the duration of this routine.</remarks>
 void Main_Options_Dialog(void)
@@ -71,6 +72,10 @@ void Main_Options_Dialog(void)
 
 			case UI_MAIN_OPTIONS_KEYBOARD:
 				Options.Hotkey_Dialog();
+				break;
+
+			case UI_MAIN_OPTIONS_MODS:
+				UI_Mods_Dialog();
 				break;
 
 			case UI_MAIN_OPTIONS_SETTINGS:

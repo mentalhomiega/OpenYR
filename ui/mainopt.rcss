@@ -11,9 +11,9 @@
 #reveal
 {
 	width: 300dp;
-	height: 241dp;
+	height: 277dp;
 	top: 50%;
-	margin-top: -120dp;
+	margin-top: -138dp;
 }
 
 #content

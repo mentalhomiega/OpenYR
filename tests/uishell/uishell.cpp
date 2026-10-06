@@ -24,6 +24,7 @@
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mapgen/uimapgen.h"
 #include "ui/screens/menu/uimenu.h"
+#include "ui/screens/mods/uimods.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/netlobby/uinetlobby.h"
 #include "ui/screens/reconnect/uireconnect.h"
@@ -1189,6 +1190,143 @@ void Test_Keyboard_Presenter(void)
 		Drive(reset, "reset");
 		Check(confirmed.Calls == std::vector<std::string>{ "confirm", "reset" } && reset.Key_Of(3) == 65 && reset.Key_Of(0) == 0, "a confirmed reset reloads the table from the game");
 		Check(reset.State.Category == 0 && reset.State.Selected == -1 && reset.State.Description.empty(), "a reset reopens the first category with nothing selected");
+	}
+}
+
+
+class RecordingModsServiceClass : public UIModsServiceClass
+{
+	public:
+		std::vector<std::string> Saved;
+		bool Writable = true;
+
+		virtual bool Save(std::string const & list) override { Saved.push_back(list); return(Writable); }
+		virtual std::string File_Name(void) override { return("D:\\Game\\OPENTS.INI"); }
+};
+
+
+ModChoiceType Mod_Fixture(char const * entry, char const * name, char const * description, bool found = true)
+{
+	ModChoiceType mod;
+	mod.Entry = entry;
+	mod.Folder = std::string("D:\\Game\\Mods\\") + entry + "\\";
+	mod.Name = name;
+	mod.Description = description;
+	mod.Found = found;
+	return(mod);
+}
+
+
+/*
+ * High Tech and a missing folder are listed, Map Pack comes from the command line, and Extra
+ * Units and a folder whose name Mods= cannot hold are found but off.
+ */
+ModChoiceClass Mods_Fixture(void)
+{
+	ModChoiceType const tech = Mod_Fixture("HighTech", "High Tech", "Adds a laser tank.");
+	ModChoiceType const gone = Mod_Fixture("Gone", "Gone", "", false);
+	ModChoiceType const maps = Mod_Fixture("MapPack", "Map Pack", "");
+	ModChoiceType const extra = Mod_Fixture("Extra", "Extra Units", "Two more tanks.");
+	ModChoiceType const odd = Mod_Fixture("A;B", "A;B", "");
+	return(ModChoiceClass({ tech, gone }, { maps }, { extra, tech, maps, odd }));
+}
+
+
+std::vector<std::string> Mod_Row_Names(UIModsState const & state)
+{
+	std::vector<std::string> names;
+	for (UIModRow const & row : state.Rows) {
+		names.push_back(row.Name);
+	}
+	return(names);
+}
+
+
+char const * const ModsHint = "Each mod overrides the ones above it. Changes take effect after a restart.";
+
+
+void Test_Mods_Presenter(void)
+{
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		UIModsState const & state = presenter.State;
+
+		Check(Mod_Row_Names(state) == std::vector<std::string>{ "High Tech", "Gone", "Map Pack", "A;B", "Extra Units" }, "the mods screen lists the list's mods, the command line's, then the rest");
+		Check(state.Rows.size() == 5 && state.Rows[0].Place == "1" && state.Rows[1].Place.empty() && state.Rows[2].Place == "2" && state.Rows[4].Place.empty(), "the mods the game reads are numbered in its order");
+		Check(state.Rows.size() == 5 && state.Rows[0].On && state.Rows[1].On && state.Rows[2].On && !state.Rows[3].On && !state.Rows[4].On, "the listed and command line mods are on");
+		Check(state.Rows.size() == 5 && state.Rows[1].Note == "not found" && state.Rows[2].Note == "command line" && state.Rows[2].Locked && !state.Rows[0].Locked, "a missing folder and a command line mod say so");
+		Check(state.Selected == state.Rows[0].Id && state.Description == "Adds a laser tank." && state.Folder == "D:\\Game\\Mods\\HighTech\\", "the first mod starts selected with its description and folder");
+		Check(state.ToggleCaption == "Turn Off" && state.CanToggle && !state.CanRaise && state.CanLower && state.Status == ModsHint, "a listed mod can be turned off and moved down");
+
+		int const maps = state.Rows[2].Id;
+		int const extra = state.Rows[4].Id;
+		int const odd = state.Rows[3].Id;
+
+		Drive(presenter, "select", maps);
+		Check(!state.CanToggle && !state.CanRaise && !state.CanLower && state.ToggleCaption == "Turn Off" && state.Description == "This mod has no description.", "a command line mod can be neither turned off nor moved");
+		Check(state.Status.find("command line") != std::string::npos, "and the screen says why");
+
+		Drive(presenter, "toggle", maps);
+		Check(presenter.Choice.List() == "HighTech,Gone" && state.Rows[2].On, "toggling it changes nothing");
+
+		Drive(presenter, "toggle", extra);
+		Check(state.Selected == extra && Mod_Row_Names(state) == std::vector<std::string>{ "High Tech", "Gone", "Extra Units", "Map Pack", "A;B" }, "a mod turned on is selected and joins the end of the list");
+		Check(state.Rows[2].Place == "2" && state.Rows[3].Place == "3" && state.ToggleCaption == "Turn Off" && state.CanRaise && !state.CanLower, "it is read before the command line's mods and can move up");
+
+		Drive(presenter, "move", -1);
+		Check(presenter.Choice.List() == "HighTech,Extra,Gone" && state.Rows[1].Id == extra && state.Selected == extra, "Move Up moves the selected mod up one place");
+
+		Drive(presenter, "select", odd);
+		Check(!state.CanToggle && state.ToggleCaption == "Turn On" && state.Status.find("comma") != std::string::npos, "a folder Mods= cannot list cannot be turned on, and the screen says why");
+		Drive(presenter, "toggle", odd);
+		Check(presenter.Choice.List() == "HighTech,Extra,Gone", "toggling it changes nothing");
+
+		Drive(presenter, "select", 999);
+		Check(state.Selected == odd, "selecting no mod keeps the selection");
+
+		Check(service.Saved.empty() && !presenter.Result.has_value(), "nothing is saved before OK");
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Saved && service.Saved == std::vector<std::string>{ "HighTech,Extra,Gone" }, "OK saves the changed list");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		Drive(presenter, "toggle", presenter.State.Rows[4].Id);
+		Drive(presenter, "toggle", presenter.State.Rows[2].Id);
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.Saved && service.Saved.empty(), "OK on a list turned back to how it was saves nothing");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !presenter.Saved && service.Saved.empty(), "Cancel drops the changes");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		service.Writable = false;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
+		Drive(presenter, "ok");
+		Check(!presenter.Result.has_value() && !presenter.Saved && presenter.State.Problem && service.Saved == std::vector<std::string>{ "Gone" }, "a list that cannot be saved keeps the screen open");
+		Check(presenter.State.Status == "The list could not be saved to D:\\Game\\OPENTS.INI.", "and names the file");
+		Drive(presenter, "select", presenter.State.Rows[0].Id);
+		Check(!presenter.State.Problem && presenter.State.Status != "The list could not be saved to D:\\Game\\OPENTS.INI.", "the next step clears the message");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, ModChoiceClass());
+		Check(presenter.State.Rows.empty() && presenter.State.Selected == 0 && !presenter.State.CanToggle && presenter.State.Description.empty(), "with no mods the screen lists nothing and selects nothing");
+		Drive(presenter, "toggle", 0);
+		Drive(presenter, "move", 1);
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Saved.empty(), "and OK leaves");
 	}
 }
 
@@ -2971,9 +3109,9 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		Check(system.Problems == problems, "the options menu raises no RmlUi warning or error");
 
 		std::vector<Rml::Element *> buttons = Buttons_Top_Down(Rml(*view).Document());
-		Check(buttons.size() == 5, "the options menu has five buttons");
-		bool ordered = buttons.size() == 5 && buttons[0]->GetId() == "settings" && buttons[1]->GetId() == "display" && buttons[2]->GetId() == "sound" && buttons[3]->GetId() == "keyboard" && buttons[4]->GetId() == "mainmenu";
-		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Main Menu from the top");
+		Check(buttons.size() == 6, "the options menu has six buttons");
+		bool ordered = buttons.size() == 6 && buttons[0]->GetId() == "settings" && buttons[1]->GetId() == "display" && buttons[2]->GetId() == "sound" && buttons[3]->GetId() == "keyboard" && buttons[4]->GetId() == "mods" && buttons[5]->GetId() == "mainmenu";
+		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Mods, Main Menu from the top");
 
 		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
 		float center = (float)context.GetDimensions().y * 0.5f;
@@ -2985,7 +3123,7 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		if (dialog != nullptr) {
 			Rml::Vector2f at = dialog->GetAbsoluteOffset(Rml::BoxArea::Border).Round();
 			for (Rml::Rectanglei const & scissor : render.Scissors) {
-				if (scissor.Left() == (int)at.x && scissor.Top() == (int)at.y && scissor.Width() == 300 && scissor.Height() == 241) {
+				if (scissor.Left() == (int)at.x && scissor.Top() == (int)at.y && scissor.Width() == 300 && scissor.Height() == 277) {
 					clipped = true;
 				}
 			}
@@ -2994,13 +3132,13 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 
 		context.SetDensityIndependentPixelRatio(2.0f);
 		context.Update();
-		bool doubled = dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(600.0f, 482.0f)
-			&& buttons.size() == 5 && buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(380.0f, 48.0f);
+		bool doubled = dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(600.0f, 554.0f)
+			&& buttons.size() == 6 && buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(380.0f, 48.0f);
 		Check(doubled, "the menu and its buttons are twice the size at twice the ratio");
 		context.SetDensityIndependentPixelRatio(1.0f);
 		context.Update();
 
-		if (buttons.size() == 5) {
+		if (buttons.size() == 6) {
 			Click(context, buttons[1]);
 			presenter.Drain();
 			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "the Display button closes the menu with the display choice");
@@ -3053,9 +3191,164 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		Drive(keyboard, "keyboard");
 		UIMainOptionsPresenterClass settings(state);
 		Drive(settings, "settings");
+		UIMainOptionsPresenterClass mods(state);
+		Drive(mods, "mods");
 		UIMainOptionsPresenterClass leave(state);
 		Drive(leave, "ok");
 		Check(keyboard.Choice == UI_MAIN_OPTIONS_KEYBOARD && settings.Choice == UI_MAIN_OPTIONS_SETTINGS && leave.Choice == UI_MAIN_OPTIONS_LEAVE && leave.Result.has_value() && *leave.Result == UI_RESULT_ACCEPTED, "Keyboard, Game Settings and Main Menu each answer with their choice");
+		Check(mods.Result.has_value() && *mods.Result == UI_RESULT_ACCEPTED && mods.Choice == UI_MAIN_OPTIONS_MODS, "Mods answers with the mods choice");
+	}
+}
+
+
+Rml::Element * Mod_Row_Part(Rml::Element * row, char const * part)
+{
+	Rml::ElementList found;
+	if (row != nullptr) {
+		row->GetElementsByClassName(found, part);
+	}
+	return(found.empty() ? nullptr : found[0]);
+}
+
+
+void Test_Mods_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Mods_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the mods view prepares against the test context");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the mods screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		std::vector<Rml::Element *> rows = Visible_Rows(document, "mods");
+		Check(rows.size() == 5, "the mods screen lists one row per mod");
+		if (rows.size() == 5) {
+			Rml::Element * name = Mod_Row_Part(rows[0], "name");
+			Rml::Element * place = Mod_Row_Part(rows[0], "place");
+			Rml::Element * note = Mod_Row_Part(rows[2], "note");
+			Check(rows[0]->GetId() == "mod-1" && rows[0]->IsClassSet("selected"), "a row carries its mod's id and the first starts selected");
+			Check(name != nullptr && name->GetInnerRML() == "High Tech" && place != nullptr && place->GetInnerRML() == "1", "a row shows its mod's name and place");
+			Check(note != nullptr && note->GetInnerRML() == "command line", "and what holds it on");
+
+			Rml::Element * list = document->GetElementById("mods");
+			float right = (list != nullptr) ? list->GetAbsoluteOffset(Rml::BoxArea::Border).x + list->GetBox().GetSize(Rml::BoxArea::Border).x : 0.0f;
+			Check(note != nullptr && note->GetAbsoluteOffset(Rml::BoxArea::Border).x + note->GetBox().GetSize(Rml::BoxArea::Border).x <= right, "the note fits inside the list");
+		}
+
+		Rml::Element * tech = document->GetElementById("mod-1-on");
+		Rml::Element * maps = document->GetElementById("mod-3-on");
+		Rml::Element * extra = document->GetElementById("mod-4-on");
+		Check(tech != nullptr && tech->HasAttribute("checked") && !tech->HasAttribute("disabled"), "a listed mod's box is ticked and live");
+		Check(maps != nullptr && maps->HasAttribute("checked") && maps->HasAttribute("disabled"), "a command line mod's box is ticked and disabled");
+		Check(extra != nullptr && !extra->HasAttribute("checked"), "a mod that is off has an empty box");
+
+		Rml::Element * description = document->GetElementById("description");
+		Rml::Element * folder = document->GetElementById("folder");
+		Rml::Element * status = document->GetElementById("status");
+		Check(description != nullptr && description->GetInnerRML() == "Adds a laser tank." && folder != nullptr && folder->GetInnerRML() == "D:\\Game\\Mods\\HighTech\\", "the selected mod's description and folder show");
+		Check(status != nullptr && status->GetInnerRML() == ModsHint, "the status line says how the order and a restart work");
+
+		if (extra != nullptr) {
+			Click(context, extra);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			rows = Visible_Rows(document, "mods");
+			Check(presenter.Choice.List() == "HighTech,Gone,Extra" && presenter.State.Selected == 4, "a click on a box turns the mod on and selects it");
+			Check(rows.size() == 5 && rows[2]->GetId() == "mod-4" && rows[2]->IsClassSet("selected") && !rows[0]->IsClassSet("selected"), "the row moves to the end of the list and shows selected");
+			Rml::Element * ticked = document->GetElementById("mod-4-on");
+			Check(ticked != nullptr && ticked->HasAttribute("checked") && service.Saved.empty(), "its box shows ticked with nothing saved");
+		}
+
+		Rml::Element * toggle = document->GetElementById("toggle");
+		Rml::Element * up = document->GetElementById("up");
+		Rml::Element * down = document->GetElementById("down");
+		Check(toggle != nullptr && toggle->GetInnerRML() == "Turn Off" && !toggle->IsClassSet("disabled"), "the switch button offers to turn the selected mod off");
+		Check(up != nullptr && !up->IsClassSet("disabled") && down != nullptr && down->IsClassSet("disabled"), "the last listed mod can move up only");
+
+		if (up != nullptr) {
+			Click(context, up);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.Choice.List() == "HighTech,Extra,Gone", "Move Up moves it");
+		}
+
+		rows = Visible_Rows(document, "mods");
+		if (rows.size() == 5) {
+			Click(context, rows[3]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(rows[3]->GetId() == "mod-3" && presenter.State.Selected == 3 && toggle != nullptr && toggle->IsClassSet("disabled") && up->IsClassSet("disabled"), "a click on a command line mod's row selects it with its buttons disabled");
+			Check(status != nullptr && status->GetInnerRML().find("command line") != std::string::npos, "and the status line says why");
+		}
+
+		Rml::Element * ok = document->GetElementById("ok");
+		Rml::Element * cancel = document->GetElementById("cancel");
+		Rml::Element * reveal = document->GetElementById("reveal");
+		bool level = toggle != nullptr && ok != nullptr && cancel != nullptr && down != nullptr
+			&& toggle->GetAbsoluteOffset(Rml::BoxArea::Border).y == cancel->GetAbsoluteOffset(Rml::BoxArea::Border).y
+			&& down->GetAbsoluteOffset(Rml::BoxArea::Border).x < ok->GetAbsoluteOffset(Rml::BoxArea::Border).x
+			&& ok->GetAbsoluteOffset(Rml::BoxArea::Border).x < cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+		Check(level, "the buttons stand in one row with OK and Cancel on the right");
+
+		if (cancel != nullptr && reveal != nullptr) {
+			float bottom = cancel->GetAbsoluteOffset(Rml::BoxArea::Border).y + cancel->GetBox().GetSize(Rml::BoxArea::Border).y;
+			float frame = reveal->GetAbsoluteOffset(Rml::BoxArea::Border).y + reveal->GetBox().GetSize(Rml::BoxArea::Border).y;
+			float edge = reveal->GetAbsoluteOffset(Rml::BoxArea::Border).x + reveal->GetBox().GetSize(Rml::BoxArea::Border).x;
+			Check(bottom <= frame - 19.0f, "the buttons keep the dialog's bottom margin");
+			Check(cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x + cancel->GetBox().GetSize(Rml::BoxArea::Border).x <= edge - 33.0f, "and Cancel its right margin");
+		}
+
+		context.SetDensityIndependentPixelRatio(2.0f);
+		context.Update();
+		Check(reveal != nullptr && reveal->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(1120.0f, 848.0f), "the dialog is twice the size at twice the ratio");
+		context.SetDensityIndependentPixelRatio(1.0f);
+		context.Update();
+
+		if (ok != nullptr) {
+			Click(context, ok);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Saved && service.Saved == std::vector<std::string>{ "HighTech,Extra,Gone" }, "OK saves the list");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Mods_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "a second mods view prepares");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * tech = Rml(*view).Document()->GetElementById("mod-1-on");
+		if (tech != nullptr) {
+			Click(context, tech);
+			presenter.Drain();
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Choice.List() == "Gone" && presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Saved.empty(), "Escape leaves the mods screen with nothing saved");
+
+		view->Release();
+		context.Update();
 	}
 }
 
@@ -4443,6 +4736,7 @@ void Test_Documents(void)
 		Test_List_Scrolling(*context, system);
 		Test_Menu_Screen(*context, system);
 		Test_Main_Options_Screen(*context, system, render);
+		Test_Mods_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
 		Test_Restate_Screen(*context, system, render);
 	}
@@ -5659,6 +5953,7 @@ int main(void)
 	Test_Game_Controls_Presenter();
 	Test_Keys();
 	Test_Keyboard_Presenter();
+	Test_Mods_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();
 	Test_Reconnect_Presenter();

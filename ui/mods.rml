@@ -1,0 +1,35 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Mods</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="mods.rcss"/>
+</head>
+<body template="dialog" data-model="mods">
+	<p id="title">Mods</p>
+	<div id="mods" class="list"><div class="rows">
+		<div class="item" data-for="row : rows" data-attr-id="row.key" data-class-selected="row.id == selected" data-event-click="queue('select', row.id)"><input type="checkbox" data-attr-id="row.key + '-on'" data-attrif-checked="row.on" data-attrif-disabled="row.locked" data-event-click="queue('toggle', row.id)"/><span class="place">{{row.place}}</span><span class="name">{{row.name}}</span><span class="note">{{row.note}}</span></div>
+	</div></div>
+	<div class="group" id="about">
+		<div class="rule"><span></span><label>Description:</label><span></span></div>
+		<div id="description">{{description}}</div>
+		<div id="folder">{{folder}}</div>
+	</div>
+	<p id="status" data-class-problem="problem">{{status}}</p>
+	<div id="buttons">
+		<button id="toggle" data-class-disabled="!cantoggle" data-event-click="queue('toggle', selected)">{{togglecaption}}</button>
+		<button id="up" data-class-disabled="!canraise" data-event-click="queue('move', -1)">Move Up</button>
+		<button id="down" data-class-disabled="!canlower" data-event-click="queue('move', 1)">Move Down</button>
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

@@ -44,6 +44,10 @@ void UIMainOptionsPresenterClass::Execute(UIIntent const & intent)
 		Choice = UI_MAIN_OPTIONS_KEYBOARD;
 		Result = UI_RESULT_ACCEPTED;
 
+	} else if (intent.Name == "mods") {
+		Choice = UI_MAIN_OPTIONS_MODS;
+		Result = UI_RESULT_ACCEPTED;
+
 	} else if (intent.Name == "ok") {
 		Choice = UI_MAIN_OPTIONS_LEAVE;
 		Result = UI_RESULT_ACCEPTED;
