@@ -338,3 +338,20 @@ select selectarrow, select:disabled selectarrow, select.disabled selectarrow
 	background-color: #2a1c44;
 	decorator: image(arrow-down.png fill);
 }
+
+/* The version and copyright in the bottom bar of the main menu screen. */
+#stamp
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 480dp;
+	margin-left: -88dp;
+	margin-top: 271dp;
+	text-align: right;
+	font-family: fullfnt;
+	font-size: 11dp;
+	line-height: 13dp;
+	color: #c8b8e8;
+	pointer-events: none;
+}

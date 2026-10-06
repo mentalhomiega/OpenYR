@@ -310,3 +310,18 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 {
 	decorator: image(arrow-down.png fill);
 }
+
+/* The version and copyright in the bottom right corner of the main menu. */
+#stamp
+{
+	position: absolute;
+	right: 16dp;
+	bottom: 10dp;
+	width: 480dp;
+	text-align: right;
+	font-family: fullfnt;
+	font-size: 12dp;
+	line-height: 16dp;
+	color: #8f84a8;
+	pointer-events: none;
+}

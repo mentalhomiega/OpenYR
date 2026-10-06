@@ -2914,6 +2914,7 @@ void Test_Menu_Screen(Rml::Context & context, CountingSystemInterfaceClass & sys
 	state.Items.push_back(UIMenuItemType{"Internet", 101, false});
 	state.Items.push_back(UIMenuItemType{"Network", 102, true});
 	state.Items.push_back(UIMenuItemType{"Main Menu", 2, true});
+	state.Stamp = { "V1.0 <test>", "Copyright line" };
 	state.Top = 400;
 
 	UIMenuPresenterClass presenter(state);
@@ -2931,6 +2932,9 @@ void Test_Menu_Screen(Rml::Context & context, CountingSystemInterfaceClass & sys
 	Rml::Element * dialog = document->GetElementById("reveal");
 	Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y == 400.0f, "the menu sits at the top edge it was given");
 	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(296.0f, 206.0f), "the expansion's template is its own size");
+
+	Rml::Element * stamp = document->GetElementById("stamp");
+	Check(stamp != nullptr && stamp->GetNumChildren() == 2 && stamp->GetChild(0)->GetInnerRML().find("V1.0 &lt;test&gt;") != Rml::String::npos, "the menu prints each stamp line as plain text");
 
 	std::vector<Rml::Element *> buttons = Buttons_Top_Down(document);
 	Check(buttons.size() == 3, "the menu has a button for each item it was given");

@@ -101,6 +101,17 @@ class UIMenuViewClass : public UIRmlViewClass
 				Document()->SetClass("firestorm", true);
 			}
 
+			if (!Data.State.Stamp.empty()) {
+				Rml::ElementPtr stamp = Document()->CreateElement("div");
+				stamp->SetId("stamp");
+				for (std::string const & line : Data.State.Stamp) {
+					Rml::ElementPtr row = Document()->CreateElement("p");
+					row->AppendChild(Document()->CreateTextNode(line));
+					stamp->AppendChild(std::move(row));
+				}
+				Document()->AppendChild(std::move(stamp));
+			}
+
 			Rml::Element * dialog = Document()->GetElementById("reveal");
 			if (dialog == nullptr || Data.State.Top < 0) {
 				return;

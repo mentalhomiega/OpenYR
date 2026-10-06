@@ -41,6 +41,9 @@ struct UIMenuState
 	UIMenuKindType Kind = UI_MENU_MAIN;
 	std::string Title;
 
+	// Lines the styles print in a corner of the screen, such as the version; empty prints none.
+	std::vector<std::string> Stamp;
+
 	bool Wide = true;
 	std::vector<UIMenuItemType> Items;
 	int Top = -1;

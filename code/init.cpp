@@ -291,6 +291,7 @@ static CheatEntryStruct CheatEntries[] = {
 static void Cheat_Disable(void);
 static bool Cheat_Key_Process(char chr);
 static void Cheat_Version_Suffix(char * string);
+static std::string Version_Text(void);
 
 
 
@@ -2980,6 +2981,8 @@ int Main_Menu(unsigned int timeout)
 	menu.Items.push_back(UIMenuItemType{"Intro / Sneak Peek", SEL_INTRO, true});
 	menu.Items.push_back(UIMenuItemType{"Options", SEL_OPTIONS, true});
 	menu.Items.push_back(UIMenuItemType{"Exit Game", SEL_EXIT, true});
+	menu.Stamp.push_back(Version_Text());
+	menu.Stamp.push_back(Fetch_String(TXT_COPYRIGHT));
 	UI_Menu_Place(menu);
 
 	char * background = Get_New_Menu()->Background;
@@ -3019,6 +3022,16 @@ void Title_Screen_Restore(bool force)
 }
 
 
+// Returns the version the title screen shows, with the suffixes of any cheats in force.
+static std::string Version_Text(void)
+{
+	char version[128];
+	strcpy(version, Version_Name());
+	Cheat_Version_Suffix(version);
+	return(std::string("V") + version);
+}
+
+
 /// <summary>
 /// Draws the version and copyright text onto the surface.
 /// This routine is used to stamp the bottom right corner of the title screen. It does
@@ -3034,15 +3047,12 @@ void Draw_Version_Text(Surface * surface)
 		return;
 	}
 
-	version[0] = '\0';
-	strcpy(version, Version_Name());
-
-	Cheat_Version_Suffix(version);
+	strcpy(version, Version_Text().c_str());
 
 	rect = surface->Get_Rect();
 
 	Fancy_Text_Print(
-		"V%s",
+		"%s",
 		*surface,
 		rect,
 		Point2D(rect.X + rect.Width - 2, rect.Y + rect.Height - 20),
