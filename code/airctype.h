@@ -54,6 +54,13 @@ class AircraftTypeClass : public TechnoTypeClass
 		*/
 		bool IsLandable;
 
+		/*
+		 * Is this aircraft a fighter? A fighter that attacks with a guided weapon fires as it
+		 * passes the target and flies on, where other aircraft stop and hover to fire.
+		 * (Rules key Fighter.)
+		 */
+		bool IsFighter;
+
 		AircraftTypeClass(char const * ininame = NULL);
 		virtual ~AircraftTypeClass(void) override;
 

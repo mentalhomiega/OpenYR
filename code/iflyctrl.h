@@ -36,6 +36,11 @@ struct IFlyControl
 	virtual LONG Is_Strafe(void) = 0;
 
 	/*
+	 * Does it fire on the way past rather than stop to hover over the target?
+	 */
+	virtual LONG Is_Fighter(void) = 0;
+
+	/*
 	 * Is the aircraft locked into straight flight?
 	 */
 	virtual LONG Is_Locked(void) = 0;

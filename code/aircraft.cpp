@@ -2174,7 +2174,12 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					}
 					Assign_Destination(TarCom);
 				} else {
-					if (!Locomotion->Is_Moving_Now()) {
+
+					/*
+					**	A fighter does not wait to arrive. It tries to fire at once and
+					**	keeps flying toward the firing position until it can.
+					*/
+					if (Is_Fighter() || !Locomotion->Is_Moving_Now()) {
 						Status = FIRE_AT_TARGET;
 						return(1);
 					}
@@ -2234,7 +2239,11 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 						Status = RETURN_TO_BASE;
 					} else {
 						if (In_Range(TarCom) && !Is_Strafe()) {
-							Status = Rule->IsCurleyShuffle ? PICK_ATTACK_LOCATION : FIRE_AT_TARGET;
+							if (Is_Fighter()) {
+								Status = FIRE_AT_TARGET;
+							} else {
+								Status = Rule->IsCurleyShuffle ? PICK_ATTACK_LOCATION : FIRE_AT_TARGET;
+							}
 						} else {
 							Status = PICK_ATTACK_LOCATION;
 						}
@@ -2254,6 +2263,14 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					}
 					if (Is_Strafe()) {
 						Status = STRAFE_SHOT2;
+						IsLockedStraight = true;
+					} else if (Is_Fighter()) {
+
+						/*
+						**	A fighter flies straight on after firing instead of stopping to
+						**	fire again, so the next pass is picked once its shot is spent.
+						*/
+						Status = Ammo > 0 ? PICK_ATTACK_LOCATION : RETURN_TO_BASE;
 						IsLockedStraight = true;
 					} else {
 						Status = FIRE_AT_TARGET2;
@@ -4035,6 +4052,18 @@ LONG AircraftClass::Is_Strafe(void)
 		return(false);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Does this aircraft fire as it passes the target?
+/// A fighter attacking with a guided weapon fires once it is in range and facing the target,
+/// then flies on, where other aircraft stop to hover over the target and turn to face it.
+/// </summary>
+/// <returns>Returns with true if the aircraft type has Fighter=yes.</returns>
+LONG AircraftClass::Is_Fighter(void)
+{
+	return(Class->IsFighter);
 }
 
 

@@ -13551,6 +13551,23 @@ Fearless:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+Fighter:
+  key: Fighter
+  scopes:
+  - applies_to: *id039
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AircraftTypeClass
+      member: IsFighter
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 FileName:
   key: FileName
   scopes:
