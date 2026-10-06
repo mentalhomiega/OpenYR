@@ -11,6 +11,7 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "ccfile.h"
 #include "data.h"
 #include "globals.h"
 #include "goptions.h"
@@ -59,6 +60,17 @@ static void Refresh_Preview(void)
 	if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
 		Update_Network_Dialog_Preview();
 	}
+}
+
+
+static int First_Available_Scenario(void)
+{
+	for (int index = 0; index < Session.Scenarios.Count(); index++) {
+		if (CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available()) {
+			return(index);
+		}
+	}
+	return(-1);
 }
 
 
@@ -216,8 +228,8 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.ShortGame = Session.Options.ShortGame;
 	state.MultiEngineer = Session.Options.CrapEngineers;
 
-	Set_Scenario_Info_From_Index(0);
-	Session.Options.ScenarioIndex = 0;
+	Session.Options.ScenarioIndex = First_Available_Scenario();
+	Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
 	state.MapName = Session.Options.ScenarioDescription;
 
 	Clear_Vector(&Session.Players);

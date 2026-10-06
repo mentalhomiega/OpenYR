@@ -9,7 +9,7 @@
 
 // Pins the string table reader against tables built in memory: lookup by label, the extra
 // value, whitespace clean-up, repeated labels, the language field, what a damaged file
-// leaves behind, and the extra tables added over the main one.
+// leaves behind, the extra tables added over the main one, and a string's UTF-8 form.
 
 #include <cstdio>
 #include <cstring>
@@ -262,6 +262,23 @@ void Test_Many_Strings(void)
 }
 
 
+void Test_UTF8(void)
+{
+	Builder b;
+	b.Add("DESC:Plain", L"The Alamo (2)");
+	b.Add("DESC:Accents", L"Café €");
+	b.Add("DESC:Pair", L"\xD83D\xDE00!");
+	b.Add("DESC:Lone", L"a\xD800" L"b");
+	CSFClass table;
+	Load(table, b.Data());
+	Check(table.Find_UTF8("desc:plain") == "The Alamo (2)", "a label's string comes back as UTF-8, whatever the label's case");
+	Check(table.Find_UTF8("DESC:Accents") == "Caf\xC3\xA9 \xE2\x82\xAC", "with characters beyond ASCII encoded");
+	Check(table.Find_UTF8("DESC:Pair") == "\xF0\x9F\x98\x80!", "a surrogate pair makes one character");
+	Check(table.Find_UTF8("DESC:Lone") == "a\xEF\xBF\xBD" "b", "a lone surrogate becomes the replacement character");
+	Check(table.Find_UTF8("DESC:Gone").empty(), "an unknown label gives an empty string");
+}
+
+
 void Test_Fetch(void)
 {
 	StringTable.Clear();
@@ -286,6 +303,7 @@ int main(void)
 	Test_Damage();
 	Test_Merge();
 	Test_Many_Strings();
+	Test_UTF8();
 	Test_Fetch();
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "There were failures.");

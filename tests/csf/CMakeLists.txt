@@ -9,6 +9,7 @@ opents_add_test(CsfContract
         csf.cpp
         dbgprint.cpp
         straw.cpp
+        utf8.cpp
         xstraw.cpp
     INCLUDES ${OPENTS_GENERATED_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
