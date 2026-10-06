@@ -122,6 +122,17 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	ProneLaunch(false),
 	VoiceComment()
 {
+	// A type whose art names no sequence keeps these empty controls, so saves, the sync
+	// check and drawing can read them for every infantry type.
+	DoInfoStruct * control = new DoInfoStruct[DO_COUNT];
+	for (int i = 0; i < DO_COUNT; i++) {
+		control[i].Frame = 0;
+		control[i].Count = 0;
+		control[i].Jump = 0;
+		control[i].Facing = FACING_NONE;
+	}
+	DoControls = control;
+
 	Create_ID();
 	InfantryTypes.Add(this);
 	HeapID = (InfantryType)InfantryTypes.ID(this);
@@ -148,7 +159,7 @@ InfantryTypeClass::~InfantryTypeClass(void)
 {
 	Detach_This_From_All(this);
 	InfantryTypes.Delete(this);
-	delete (DoInfoStruct *)DoControls;
+	delete[] (DoInfoStruct *)DoControls;
 	DoControls = NULL;
 }
 
@@ -328,16 +339,6 @@ void InfantryTypeClass::Read_Sequence_INI(void)
 
 		DoInfoStruct * control = (DoInfoStruct *)DoControls;
 
-		if (control == NULL) {
-			control = new DoInfoStruct[DO_COUNT];
-			for (int i = 0; i < DO_COUNT; i++) {
-				control[i].Frame = 0;
-				control[i].Count = 0;
-				control[i].Jump = 0;
-				control[i].Facing = FACING_NONE;
-			}
-		}
-
 		for (int i = 0; i < DO_COUNT; i++) {
 			char dostring[32];
 			char facing[10] = {""};
@@ -365,7 +366,6 @@ void InfantryTypeClass::Read_Sequence_INI(void)
 				}
 			}
 		}
-		DoControls = (DoInfoStruct const *)control;
 	}
 }
 
@@ -538,13 +538,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HeapID);
 	stream.Serialize(Pip);
 
-	/*
-	 * The animation sequence data hangs off the type rather than living inside it, so the
-	 * pointer means nothing to a save game and the block it names travels instead.
-	 */
-	if (stream.Is_Loading()) {
-		DoControls = new DoInfoStruct[DO_COUNT];
-	}
+	// The block the pointer names travels in place of the pointer; a loading type reads it
+	// into the block its constructor made.
 	stream.Serialize_Bytes((void *)DoControls, sizeof(*DoControls) * DO_COUNT);
 
 	stream.Serialize(FireLaunch);
