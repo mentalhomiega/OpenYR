@@ -9,7 +9,7 @@ when_omitted:
 
 On a [generated map](/systems/map-generation/#what-the-theater-must-supply), the artwork of a set with `RequiredForRMG=yes` is loaded when the map is read, even if no cell uses the set yet. On any other map the flag has no effect.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0042]        ; example set the generator lays down as it works
 SetName=Shore pieces
 FileName=SHORE

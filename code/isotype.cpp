@@ -758,9 +758,15 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 	}
 	IsometricTileTypeClass::Init_Drawers();
 
+	// Yuri's Revenge reads only <Root>MD.INI; <Root>.INI is read when that file is missing.
 	char ininame[_MAX_PATH];
-	sprintf(ininame, "%s.INI", data.Root.c_str());
+	sprintf(ininame, "%sMD.INI", data.Root.c_str());
 	CCFileClass inifile(ininame);
+	if (!inifile.Is_Available()) {
+		sprintf(ininame, "%s.INI", data.Root.c_str());
+		inifile.Set_Name(ininame);
+	}
+	DebugString("Reading tile sets from %s\n", ininame);
 	ini.Load(inifile, false, false);
 
 	int setid = 0;

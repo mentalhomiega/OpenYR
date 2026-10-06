@@ -4,6 +4,7 @@ title: Theater control files
 summary: Defines theater-wide tile-set indices and the properties of each tile set.
 kind: file
 filenames:
+  - "<Theater root>MD.INI"
   - "<Theater root>.INI"
 key_scopes:
   - file: theater control file
@@ -13,7 +14,9 @@ source_files:
   - code/theater.h
 ---
 
-A theater's control file is its [`Root`](/keys/root/) plus `.INI`: `TEMPERAT.INI` for the temperate theater and `SNOW.INI` for snow. The game reads it when a scenario starts in a theater other than the one already loaded, after mounting that theater's archives, so the file can ship inside them. A loose copy is used ahead of an archived one; [OPENTS.INI](/formats/opents-ini/#the-order-files-are-searched-for-in) lists the folders searched and their order.
+A theater's control file is its [`Root`](/keys/root/) plus `MD.INI`: `TEMPERATMD.INI` for the temperate theater and `URBANNMD.INI` for new urban. When no file has that name, the game reads `Root` plus `.INI` instead, such as `TEMPERAT.INI`. Yuri's Revenge ships an `MD.INI` control file for each of its six theaters, so change a built-in theater's tile sets in that file; a `TEMPERAT.INI` is not read while `TEMPERATMD.INI` exists.
+
+The game reads the control file when a scenario starts in a theater other than the one already loaded, after mounting that theater's archives, so the file can ship inside them. A loose copy is used ahead of an archived one of the same name; [OPENTS.INI](/formats/opents-ini/#the-order-files-are-searched-for-in) lists the folders searched and their order.
 
 Starting a scenario in the theater already loaded keeps the tile sets read earlier and does not read the file again. Loading a saved game always reads it again. Each read replaces the previous theater's tile sets.
 
@@ -33,7 +36,7 @@ When a tile file with the theater's `Suffix` is missing, the game tries the same
 
 A set can also have a section of per-tile animations, the section whose heading is the set's [`SetName`](/keys/setname/) value. `Tile<NN>Anim` names the animation for tile `NN` of the set, with `NN` matching the tile's file number. `Tile<NN>XOffset`, `Tile<NN>YOffset`, `Tile<NN>AttachesTo`, and `Tile<NN>ZAdjust` are read only for a tile whose `Tile<NN>Anim` names an animation. Alternate artwork never has an animation.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [General]
 ClearTile=0     ; example tile-set numbers, not tile indices
 WaterSet=21

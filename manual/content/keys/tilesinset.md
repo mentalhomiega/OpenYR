@@ -10,7 +10,7 @@ when_omitted:
 
 The count is how many tiles the set adds to the theater. The tiles are numbered on from the last tile of the previous set, and a tile's lettered alternates share its number. [Theater control files](/formats/theater-control/) covers how each tile's artwork file is named from [`FileName`](/keys/filename/).
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0631]      ; example set
 SetName=Riverbank cliffs
 FileName=RVCLIF

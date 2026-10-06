@@ -9,7 +9,7 @@ when_omitted:
 
 Each tile of the set loads the file named by this stem, the tile number and the theater's file extension. The tile number counts from `01` and has at least two digits. [Theater control files](/formats/theater-control/) covers the lettered alternates built on the same stem and the second extension tried when a file is missing.
 
-```ini title="TEMPERAT.INI"
+```ini title="TEMPERATMD.INI"
 [TileSet0631]      ; example set
 SetName=Riverbank cliffs
 FileName=RVCLIF    ; loads RVCLIF01.TEM through RVCLIF08.TEM

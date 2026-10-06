@@ -12,15 +12,15 @@ when_omitted:
 
 - `<Root>.MIX`, the theater's main archive
 - `<Root>.PAL`, the theater palette
-- `<Root>.INI`, the [theater control file](/formats/theater-control/), which lists the theater's tile sets
+- `<Root>MD.INI`, or `<Root>.INI` when there is no such file, the [theater control file](/formats/theater-control/), which lists the theater's tile sets
 
 ```ini title="rules.ini"
 [DESERT]
-Root=DESERT     ; DESERT.MIX, DESERT.PAL and DESERT.INI
+Root=DESERT     ; DESERT.MIX, DESERT.PAL and DESERTMD.INI
 ```
 
 The game reads up to 16 characters of the value and cuts a longer one short.
 
 A theater with no `<Root>.PAL` still loads in a Release build, which substitutes a placeholder gradient palette. A Debug build stops at an assertion first.
 
-A theater with no `<Root>.INI` has no tile sets, so give every theater a control file.
+A theater with neither `<Root>MD.INI` nor `<Root>.INI` has no tile sets, so give every theater a control file.
