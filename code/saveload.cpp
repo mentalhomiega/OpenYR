@@ -752,11 +752,13 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	Disable_Addon(ADDON_ANY);
 	Set_Required_Addon(Scen->RequiredAddOn);
 	if (!Addon_Installed(Scen->RequiredAddOn)) {
+		DebugString("The save needs add-on %d, which is not installed\n", (int)Scen->RequiredAddOn);
 		return(false);
 	}
 	Enable_Addon(Scen->RequiredAddOn);
 
 	if (Prep_For_Side_Or_First(Scen->PlayerSide) == SIDE_NONE) {
+		DebugString("Neither side %d nor the first side could be prepared for the save\n", (int)Scen->PlayerSide);
 		return(false);
 	}
 
@@ -1045,6 +1047,7 @@ bool Save_Game(const char *file_name, char const * descr)
 	info.Set_Scenario_Number(Scen->Scenario);
 	info.Set_Executable_Name("SUN.EXE");
 	info.Set_Game_Type(Session.Type);
+	info.Set_Mods(Active_Mod_List().c_str());
 
 	FILETIME FileTime;
 	GetSystemTimeAsFileTime(&FileTime);
@@ -1194,6 +1197,18 @@ bool Load_Game(const char *file_name)
 	Sync_Recorder_Arm();
 	Sync_Report_Reset();
 	SaveManager.Autosave.Schedule(Frame);
+
+	// Only a save that records its mods is compared; a load under a different list goes
+	// ahead and tells the player.
+	if (info.Has_Mods()) {
+		std::string const active = Active_Mod_List();
+		if (_strnicmp(info.Get_Mods(), active.c_str(), SaveVersionInfo::MODS_LENGTH - 1) != 0) {
+			DebugString("[Mods] The save was made with mods \"%s\"; the mods in force are \"%s\".\n",
+				info.Get_Mods(), active.c_str());
+			SaveManager.Note_Different_Mods(info.Get_Mods(), active.c_str());
+		}
+	}
+
 	DebugString("LOADING GAME [%s] - Complete\n\n", file_name);
 	return(true);
 }

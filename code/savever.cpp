@@ -28,11 +28,13 @@ SaveVersionInfo::SaveVersionInfo(void) :
 	Version(0),
 	CampaignNumber(-1),
 	ScenarioNumber(0),
-	GameType(GAME_NORMAL)
+	GameType(GAME_NORMAL),
+	HasMods(false)
 {
 	ScenarioDescription[0] = '\0';
 	PlayerHouse[0] = '\0';
 	ExecutableName[0] = '\0';
+	Mods[0] = '\0';
 
 	StartTime.dwLowDateTime = 0;
 	StartTime.dwHighDateTime = 0;
@@ -272,6 +274,39 @@ int SaveVersionInfo::Get_Game_Type(void)
 
 
 /// <summary>
+/// Records the mods in force as the game is saved.
+/// The list is truncated if it will not fit the buffer it is kept in.
+/// </summary>
+/// <param name="list">The mods' folder names, comma separated, or an empty string for none.</param>
+void SaveVersionInfo::Set_Mods(const char * list)
+{
+	Mods[sizeof(Mods) - 1] = 0;
+	strncpy(Mods, list, sizeof(Mods) - 1);
+	HasMods = true;
+}
+
+
+/// <summary>
+/// Fetches the mods that were in force when the game was saved.
+/// </summary>
+/// <returns>Returns with the mods' folder names, comma separated; empty when there were none.</returns>
+const char * SaveVersionInfo::Get_Mods(void)
+{
+	return(Mods);
+}
+
+
+/// <summary>
+/// Tells whether the save records its mods at all.
+/// </summary>
+/// <returns>bool; Was the save written by a build that records the mods in force?</returns>
+bool SaveVersionInfo::Has_Mods(void)
+{
+	return(HasMods);
+}
+
+
+/// <summary>
 /// Writes every listing field into the file's field table.
 /// </summary>
 void SaveVersionInfo::Save(SaveFileClass & file) const
@@ -287,6 +322,9 @@ void SaveVersionInfo::Save(SaveFileClass & file) const
 	file.Set_Int(PIDSI_SCENARIO_NUM, ScenarioNumber);
 	file.Set_Int(PIDSI_CAMPAIGN_NUM, CampaignNumber);
 	file.Set_Int(PIDSI_GAME_TYPE, GameType);
+	if (HasMods) {
+		file.Set_String(PIDSI_MODS, Mods);
+	}
 }
 
 
@@ -306,6 +344,7 @@ bool SaveVersionInfo::Load(SaveFileClass const & file)
 	file.Get_Int(PIDSI_SCENARIO_NUM, &ScenarioNumber);
 	file.Get_Int(PIDSI_CAMPAIGN_NUM, &CampaignNumber);
 	file.Get_Int(PIDSI_GAME_TYPE, &GameType);
+	HasMods = file.Get_String(PIDSI_MODS, Mods, sizeof(Mods));
 
 	return(file.Get_Int(PIDSI_INTERNAL_VER, &InternalVersion));
 }

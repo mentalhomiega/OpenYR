@@ -30,11 +30,15 @@ enum {
 	PIDSI_SCENARIO_NUM = 100,
 	PIDSI_CAMPAIGN_NUM,
 	PIDSI_GAME_TYPE,
+	PIDSI_MODS,
 };
 
 class SaveVersionInfo
 {
 	public:
+		// The room kept for the mod list, terminator included; a longer list is cut to fit.
+		enum { MODS_LENGTH = 1024 };
+
 		SaveVersionInfo(void);
 
 		void Set_Version(int num);
@@ -69,6 +73,10 @@ class SaveVersionInfo
 
 		void Set_Game_Type(int id);
 		int Get_Game_Type(void);
+
+		void Set_Mods(const char * list);
+		const char * Get_Mods(void);
+		bool Has_Mods(void);
 
 		void Save(SaveFileClass & file) const;
 		bool Load(SaveFileClass const & file);
@@ -122,4 +130,12 @@ class SaveVersionInfo
 		 * This is the kind of session the save was made in, and the one it is restored into.
 		 */
 		int GameType;
+
+		/*
+		 * This is the list of mods that were in force when the save was made, as their
+		 * folders' own names. HasMods is false for a save written before saves recorded
+		 * them, which says nothing about the mods it was made with.
+		 */
+		char Mods[MODS_LENGTH];
+		bool HasMods;
 };

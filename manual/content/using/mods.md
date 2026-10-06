@@ -7,6 +7,7 @@ source_files:
   - code/cdfile.cpp
   - code/gamedirs.cpp
   - code/init.cpp
+  - code/saveload.cpp
   - code/startup.cpp
 related:
   - type: format
@@ -61,7 +62,16 @@ At startup the debug log lists each active mod with its folder and overlays, the
 [Mods] High Tech: read D:\Game\Mods\HighTech\rules.ini.
 ```
 
+## Saved games
+
+A saved game records the folder names of the mods that were active when it was saved. A save made under different mods still loads, but its rules come from the save while its art and every other file come from the mods active now, so load a save with the mods it was played with. When the lists differ, the message list shows both after the load and the debug log records them:
+
+```text
+[Mods] The save was made with mods "HighTech"; the mods in force are "".
+```
+
+The folder names are compared without regard to case. A save from a build that did not record mods loads without the comparison.
+
 ## Limits
 
 - The game does not check that players run the same mods. Give every player in a multiplayer game the same mods in the same order; a game between players whose mods differ can go out of sync.
-- A saved game does not record the mods. Load a save with the mods it was played with.

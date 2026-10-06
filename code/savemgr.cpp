@@ -91,6 +91,22 @@ void SaveManagerClass::Post_Save_Notice(int text)
 
 
 /// <summary>
+/// Queues a line for the message list naming the mods a just-loaded save was made with and
+/// the mods in force now. The line is posted at the next frame boundary if a scenario is in
+/// play there, and dropped otherwise.
+/// </summary>
+/// <param name="saved">The mods the save records, comma separated; empty when there were none.</param>
+/// <param name="active">The mods in force now, in the same form.</param>
+void SaveManagerClass::Note_Different_Mods(char const * saved, char const * active)
+{
+	char buffer[200];
+	std::snprintf(buffer, sizeof(buffer), "This save was made with mods: %s. Mods in force now: %s.",
+		*saved != '\0' ? saved : "none", *active != '\0' ? active : "none");
+	ModsNotice = buffer;
+}
+
+
+/// <summary>
 /// Accepts a save request at the boundary shared by every engine caller.
 /// Solo and skirmish games save immediately. A synchronized multiplayer request is held
 /// until the frame has finished retiring dead objects. A quiet request is written without
@@ -187,6 +203,15 @@ void SaveManagerClass::Record_Save_Outcome(NoticeType notice, bool saved)
 /// </summary>
 void SaveManagerClass::Post_Pending_Notice(void)
 {
+	if (!ModsNotice.empty()) {
+		if (ScenarioActive && !Session.Play && PlayerPtr != NULL) {
+			Session.Messages.Add_Message(NULL, 0, ModsNotice.c_str(), PlayerPtr->Scheme,
+				TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Save_Message_Timeout());
+			Map.Flag_To_Redraw();
+		}
+		ModsNotice.clear();
+	}
+
 	if (OutcomeNotice == NoticeType::None) return;
 
 	NoticeType notice = OutcomeNotice;

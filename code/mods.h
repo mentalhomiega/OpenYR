@@ -56,6 +56,9 @@ void Clear_Mods(void);
 // The mods in force, in the order they are read; a later one overrides an earlier one.
 std::vector<ModClass> const & Active_Mods(void);
 
+// The mods in force as their folders' own names, comma separated in the order they are read.
+std::string Active_Mod_List(void);
+
 
 /*
  * Reads each active mod's overlay of the type over the database, in mod order, and logs each

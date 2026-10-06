@@ -37,6 +37,7 @@ class SaveManagerClass
 		void Request_Quick_Save(void);
 		bool Request_Multiplayer_Save(char const * descr, bool quiet, NoticeType notice);
 		void Post_Save_Notice(int text);
+		void Note_Different_Mods(char const * saved, char const * active);
 
 		void Reset_Multiplayer_Save_State(void);
 		void Disable_Multiplayer_Saving(void);
@@ -79,6 +80,9 @@ class SaveManagerClass
 		// The outcome the frame boundary still owes the message list.
 		NoticeType OutcomeNotice = NoticeType::None;
 		bool OutcomeSaved = false;
+
+		// The line a load made under a different set of mods still owes the message list.
+		std::string ModsNotice;
 };
 
 extern SaveManagerClass SaveManager;

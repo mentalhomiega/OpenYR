@@ -265,3 +265,23 @@ std::vector<ModClass> const & Active_Mods(void)
 {
 	return(Mods);
 }
+
+
+/// <summary>
+/// Names the mods in force by their folders' own names, in the order they are read, in the
+/// comma separated form the Mods= list takes. A save records this so that a load can tell
+/// whether the same mods are in force.
+/// </summary>
+std::string Active_Mod_List(void)
+{
+	std::string list;
+
+	for (ModClass const & mod : Mods) {
+		if (!list.empty()) {
+			list += ", ";
+		}
+		list += Folder_Own_Name(mod.Folder);
+	}
+
+	return(list);
+}

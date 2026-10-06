@@ -206,6 +206,8 @@ void Test_Manifests(void)
 	Check_Text(mods[1].Name, "Second", "without mod.ini a mod is named after its folder");
 	Check(mods[1].RulesFile.empty() && mods[1].ArtFile.empty() && mods[1].AIFile.empty(), "and has no overlays");
 	Check_Text(mods[2].Name, "Third", "a command line name is a folder in Mods too");
+
+	Check_Text(Active_Mod_List(), "First, Second, Third", "a save lists the mods by their folders' own names");
 }
 
 
@@ -269,6 +271,7 @@ void Test_No_Mods(void)
 
 	Check(Active_Mods().empty(), "an empty list makes no mod active");
 	Check(CDFileClass::Priority_Path(0) == NULL, "and adds no folder to the search");
+	Check_Text(Active_Mod_List(), "", "and a save lists no mods");
 }
 
 
