@@ -5072,10 +5072,17 @@ int BuildingClass::Do_MISSION_GUARD(void)
 				break;
 		}
 
-		if (Class->IsCanUnitReload && In_Radio_Contact()) {
-			if (Transmit_Message(RADIO_PREPARED) != RADIO_ROGER &&
-				Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
-				Assign_Mission(MISSION_REPAIR);
+		if (Class->IsCanUnitReload) {
+			// A pad that also repairs runs the repair mission, which serves the first dock only.
+			int slots = Class->IsCanUnitRepair ? 1 : Link_Count();
+			for (int slot = 0; slot < slots; slot++) {
+				TechnoClass * docked = Link(slot);
+				if (docked != NULL &&
+					Transmit_Message(RADIO_PREPARED, docked) != RADIO_ROGER &&
+					Transmit_Message(RADIO_NEED_TO_MOVE, docked) == RADIO_ROGER) {
+					Assign_Mission(MISSION_REPAIR);
+					break;
+				}
 			}
 		}
 
