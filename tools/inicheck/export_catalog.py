@@ -7,7 +7,8 @@ Each output line holds one scope as tab separated fields: key, file, section,
 applies-to list and value type. The section is the literal section name, "*"
 for an object section, or "@" and the section source for a section the checker
 cannot place. A key holding a range such as "Weapon{1-18}" stands for every key
-the engine builds from a number in that range.
+the engine builds from a number in that range. A lower bound with a leading zero, as in
+"Tile{01-}Anim", stands for a number printed with at least that many digits.
 """
 
 import argparse
@@ -19,8 +20,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 # Keys the engine builds from a number that the manual's extractor does not list. Each range
-# starts where the reading loop starts; the loops end at NumberOfDocks and Upgrades, which have
-# no fixed limit.
+# starts where the reading loop starts; the loops end at NumberOfDocks, Upgrades and TilesInSet,
+# which have no fixed limit.
 PATTERN_SCOPES = [
     # BuildingTypeClass::Read_INI.
     ("DockingOffset{0-}", "art.ini", "@image", ["BuildingType"], "point (x,y,z)"),
@@ -30,6 +31,13 @@ PATTERN_SCOPES = [
     ("PowerUp{1-}LocYY", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}LocZZ", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}YSort", "art.ini", "@image", ["BuildingType"], "integer"),
+    # IsometricTileTypeClass loading: the keys of a tile set, numbered from 1 as "%02d", up to the
+    # set's TilesInSet. A lower bound written with a leading zero stands for that printed width.
+    ("Tile{01-}Anim", "theater control file", "@tile-set", ["tile controls"], "string"),
+    ("Tile{01-}XOffset", "theater control file", "@tile-set", ["tile controls"], "integer"),
+    ("Tile{01-}YOffset", "theater control file", "@tile-set", ["tile controls"], "integer"),
+    ("Tile{01-}AttachesTo", "theater control file", "@tile-set", ["tile controls"], "integer"),
+    ("Tile{01-}ZAdjust", "theater control file", "@tile-set", ["tile controls"], "integer"),
 ]
 
 

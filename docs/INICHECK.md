@@ -69,9 +69,11 @@ such as difficulty settings whose names the catalog does not give.
 
 The catalog holds the keys the manual's extractor finds in the source, plus the
 numbered `art.ini` structure keys `DockingOffset0=` and up and `PowerUp1Anim=`
-and up, which the export script adds. Another key the engine builds from a
-number may be missing and is then reported although the engine reads it. Treat
-a finding as something to look at, not as proof of an error.
+and up, and the numbered `Tile01Anim=` keys of a theater tile set, which the
+export script adds. The checker does not read theater control files yet, so
+the tile set keys have no effect until it does. Another key the engine builds
+from a number may be missing and is then reported although the engine reads
+it. Treat a finding as something to look at, not as proof of an error.
 
 ## The catalog format
 
@@ -81,8 +83,11 @@ value type. The section is the literal section name, `*` for an object
 section, or `@` followed by the section source for a section the checker does
 not place. A key holding a range, such as `Weapon{1-18}` or
 `DockingOffset{0-}` with an open end, stands for each key with a number in that
-range written without leading zeros. Lines starting with `#` are skipped. Do not edit a written catalog;
-export it again after `manual/data/ini-keys.yaml` changes.
+range written without leading zeros. A lower bound with a leading zero, as in
+`Tile{01-}Anim`, stands for numbers printed with at least that many digits:
+`Tile01Anim` and `Tile12Anim` match, `Tile1Anim` does not. Lines starting with
+`#` are skipped. Do not edit a written catalog; export it again after
+`manual/data/ini-keys.yaml` changes.
 
 ## Tests
 
