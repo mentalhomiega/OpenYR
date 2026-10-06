@@ -3372,11 +3372,11 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	}
 
 	/*
-	**	If the aircraft cannot attack anything because of lack of ammo,
-	**	abort any normal guard logic in order to look for a helipad
-	**	to rearm.
+	**	If the aircraft is armed and has used up any of its ammo, then abort
+	**	any normal guard logic in order to look for a helipad or airfield
+	**	to rearm. Like the original, this applies to every owner.
 	*/
-	if (!House->Is_Human_Player() && Ammo == 0 && Is_Weapon_Equipped()) {
+	if (Ammo != -1 && Ammo < Class->MaxAmmo && Is_Weapon_Equipped()) {
 		if (!In_Radio_Contact()) {
 			BuildingClass * building = NULL;
 			for (int index = 0; index < Class->Dock.Count(); index++) {
