@@ -28,13 +28,13 @@ A mod is a folder of files that the game reads ahead of its own. A file in a mod
 
 ## Choosing mods
 
-Choose mods on the [Mods screen](#the-mods-screen), list them in `Mods=` in [`OPENTS.INI`](/formats/opents-ini/#the-mods-it-starts-with), or name each one with [`-MOD=`](/using/command-line/mod/) on the command line:
+Choose mods on the [Mods screen](#the-mods-screen), list them in [`Mods=` in `RA2MD.INI`](/keys/mods/) or [in `OPENTS.INI`](/formats/opents-ini/#the-mods-it-starts-with), or name each one with [`-MOD=`](/using/command-line/mod/) on the command line:
 
 ```text
 Game.exe -MOD=HighTech -MOD="D:\Mods\Map Pack"
 ```
 
-The game takes the mods `OPENTS.INI` lists first, then the command line's mods in the order given, and reads them in that order. Where two mods hold the same file or write the same key, the later mod's version is used. The mods are chosen at startup and stay in force until the game exits.
+The game takes the mods the list names first, then the command line's mods in the order given, and reads them in that order. The list is the player's `Mods=` under `[Options]` in `RA2MD.INI` when the file has that key, and otherwise the `Mods=` under `[Paths]` in `OPENTS.INI`, which a deployment can ship as a default. A player's list replaces the deployment's; it does not add to it, and `Mods=,` in `RA2MD.INI` turns off every mod the deployment lists. Where two mods hold the same file or write the same key, the later mod's version is used. The mods are chosen at startup and stay in force until the game exits.
 
 A name is a folder inside the `Mods` folder of the game data directory, so `HighTech` is `Mods\HighTech\`. The game data directory is the one [`-DATADIR`](/using/command-line/data-directory/) names, or the game's own directory. A path that starts with a drive letter or a backslash names the folder directly.
 
@@ -43,17 +43,17 @@ A name is a folder inside the `Mods` folder of the game data directory, so `High
 
 ### The Mods screen
 
-**Options**, then **Mods**, on the main menu opens a list of every folder in the `Mods` folder of the game data directory, together with the mods `Mods=` lists and the mods the command line names. Each row shows the mod's name from its [`mod.ini`](/formats/mod-ini/), or its folder's name, and selecting a row shows the mod's description and folder. A ticked mod is on. The mods the game can read are numbered in the order it reads them, so each mod overrides the ones above it.
+**Options**, then **Mods**, on the main menu opens a list of every folder in the `Mods` folder of the game data directory, together with the mods the list names and the mods the command line names. Each row shows the mod's name from its [`mod.ini`](/formats/mod-ini/), or its folder's name, and selecting a row shows the mod's description and folder. A ticked mod is on. The mods the game can read are numbered in the order it reads them, so each mod overrides the ones above it.
 
-- Tick a mod, or select it and choose **Turn On**, to add it to the end of `Mods=`. Untick it, or choose **Turn Off**, to take it out.
-- **Move Up** and **Move Down** move the selected mod within `Mods=`.
+- Tick a mod, or select it and choose **Turn On**, to add it to the end of the list. Untick it, or choose **Turn Off**, to take it out.
+- **Move Up** and **Move Down** move the selected mod within the list.
 - **OK** writes a changed list and shows a message that the change takes effect after a restart. The mods in force stay the same until the game starts again. **Cancel** discards the changes.
 
-A mod only the command line names is marked *command line*. It stays ticked, cannot be moved, and is never written to `Mods=`, so it is on only while the game is started with its `-MOD=`. A listed mod that the command line also names keeps its listed place; turning it off moves it below the listed mods, where the command line puts it.
+A mod only the command line names is marked *command line*. It stays ticked, cannot be moved, and is never written to the list, so it is on only while the game is started with its `-MOD=`. A listed mod that the command line also names keeps its listed place; turning it off moves it below the listed mods, where the command line puts it.
 
-A listed mod whose folder does not exist is marked *not found* and has no number. It stays in `Mods=` until it is turned off. A folder whose name holds a comma or a semicolon, or starts or ends with a space, cannot be turned on, because `Mods=` cannot hold that name; rename the folder to use it.
+A listed mod whose folder does not exist is marked *not found* and has no number. It stays in the list until it is turned off. A folder whose name holds a comma or a semicolon, or starts or ends with a space, cannot be turned on, because the list cannot hold that name; rename the folder to use it.
 
-OK writes `Mods=` into the `OPENTS.INI` the game read at startup, or creates `OPENTS.INI` in the game data directory when there was none. The file's other keys and comments are kept, but `Mods=` moves to the end of `[Paths]`, and turning every mod off removes the key along with the comment lines directly above it. Because the file belongs to the game data directory, the list applies to every player who shares that directory. If the file cannot be written, the screen stays open and names the file.
+OK writes the list as `Mods=` under `[Options]` in the player's `RA2MD.INI`, which is in the [user data directory](/using/game-data/#keeping-the-data-somewhere-else) when [`-USERDIR`](/using/command-line/user-directory/) names one. The file's other settings are kept, and the game data directory is never written to, so players who share one data directory keep separate lists. Turning every mod off writes `Mods=,` rather than removing the key, so the choice overrides a list in `OPENTS.INI`. If the file cannot be written, the screen stays open and names the file.
 
 ## What a mod folder holds
 

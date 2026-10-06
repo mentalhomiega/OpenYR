@@ -44,7 +44,9 @@ Without the file, or without the key, the game searches `INI`, `MIX` and `Maps`,
 Mods=HighTech,MapPack
 ```
 
-`Mods` lists the [mods](/using/mods/) the game starts with, in the order they are read, so a later mod overrides an earlier one. Separate the names with commas; spaces around a name are ignored. A name is a folder in the `Mods` folder of the game data directory, and a path that starts with a drive letter or a backslash is used as written. Without the key no mod is active. [`-MOD=`](/using/command-line/mod/) adds further mods after the ones this list names. The [Mods screen](/using/mods/#the-mods-screen) writes this key.
+`Mods` lists the [mods](/using/mods/) a deployment starts the game with, in the order they are read, so a later mod overrides an earlier one. Separate the names with commas; spaces around a name are ignored. A name is a folder in the `Mods` folder of the game data directory, and a path that starts with a drive letter or a backslash is used as written. Without the key no mod is active. [`-MOD=`](/using/command-line/mod/) adds further mods after the ones this list names.
+
+The list is a default. A player whose [`RA2MD.INI`](/keys/mods/) has its own `Mods=` under `[Options]` gets that list instead, and the [Mods screen](/using/mods/#the-mods-screen) writes it there. The game never writes this key.
 
 ## The files it reads
 
@@ -128,7 +130,7 @@ Each save keeps what it was written with. Turning the key off makes new saves sm
 
 The game data directory is the one [`-DATADIR`](/using/command-line/data-directory/) names, or the game's own directory when that option is not used.
 
-The game writes to the file only when the [Mods screen](/using/mods/#the-mods-screen) saves `Mods=`. It writes the copy it read at startup, or creates `OPENTS.INI` in the game data directory when it found none.
+The game never writes to the file.
 
 ## The order files are searched for in
 
