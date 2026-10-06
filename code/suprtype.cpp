@@ -160,6 +160,7 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpecialSound);
 	stream.Serialize(AuxBuilding);
 	stream.Serialize(SidebarImage);
+	stream.Serialize(SidebarPCX);
 	stream.Serialize(UseChargeDrain);
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsManualControl);
@@ -264,6 +265,9 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		ini.Get_String(IniName, "SidebarImage", SidebarImage);
+		char pcx[64];
+		ini.Get_String(IniName, "SidebarPCX", SidebarPCX.c_str(), pcx, sizeof(pcx));
+		SidebarPCX = pcx;
 
 		char fullname[_MAX_FNAME+_MAX_EXT];
 		_makepath(fullname, NULL, NULL, SidebarImage, ".SHP");

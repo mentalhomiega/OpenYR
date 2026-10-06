@@ -120,6 +120,21 @@ void EMPulseClass::Update_All(void)
 
 
 /// <summary>
+/// Stuns the object for the pulse's duration scaled by its EMP.Modifier, and adds it to doomed
+/// when the stun is longer than its EMP.Threshold allows (Ares).
+/// </summary>
+void EMPulseClass::Stun(TechnoClass * techno, DynamicVectorClass<TechnoClass *> & doomed) const
+{
+	TechnoTypeClass const * type = techno->TClass;
+	techno->StunDuration = type->EMPModifier == 1.0 ? Duration : int(Duration * type->EMPModifier);
+	int const threshold = type->EMPThreshold;
+	if (threshold != 0 && techno->StunDuration > std::abs(threshold) && (threshold > 0 || techno->In_Air())) {
+		doomed.Add(techno);
+	}
+}
+
+
+/// <summary>
 /// Applies the pulse's effect to everything within its radius.
 /// Aircraft that are aloft are brought down, subterranean and surface units are stunned
 /// and left sparking, and buildings are powered off for as long as the pulse lasts. A limpet
@@ -131,14 +146,16 @@ void EMPulseClass::Create(TechnoClass * source)
 {
 	if (Duration + CreationFrame > Frame) {
 		int spread_sq = Spread * Spread;
+		DynamicVectorClass<TechnoClass *> doomed;
 
 		for (int i = 0; i < Aircraft.Count(); i++) {
 			AircraftClass * aircraft = Aircraft[i];
 			if (aircraft->IsDown && !aircraft->IsInLimbo && !aircraft->In_Air() && aircraft->Strength > 0) {
 				if (aircraft->Center_Coord().Distance_To(CellID.As_Coord()) < Spread * CELL_LEPTON) {
 					aircraft->Spring_Tag(TEVENT_PARALYZED, aircraft, CELL_NONE, false, source);
-					if (!aircraft->Class->Is_Immune_To_EMP()) {
-						aircraft->Crash(source);
+					if (!aircraft->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {
+						int damage = aircraft->Class->MaxStrength;
+						aircraft->Take_Damage(damage, 0, Rule->C4Warhead, source, true);
 					}
 				}
 			}
@@ -150,12 +167,12 @@ void EMPulseClass::Create(TechnoClass * source)
 			int x = center.X - CellID.X;
 			int y = center.Y - CellID.Y;
 			if (x * x + y * y < spread_sq) {
-				if (!foot->TClass->Is_Immune_To_EMP()) {
+				if (!foot->Is_Immune_To_EMP()) {
 					foot->Locomotion->Power_Off();
 					if (foot->Locomotion->Is_Moving()) {
 						foot->Locomotion->Stop_Moving();
 					}
-					foot->StunDuration = Duration;
+					Stun(foot, doomed);
 					AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
 					if (sparks != NULL) {
 						sparks->Attach_To(foot);
@@ -179,12 +196,12 @@ void EMPulseClass::Create(TechnoClass * source)
 							if (building != NULL) {
 								if (building->Center_Coord().As_Cell() == cell) {
 									if (!building->Class->IsInvisibleInGame) {
-										if (!building->Class->Is_Immune_To_EMP()) {
+										if (!building->Is_Immune_To_EMP()) {
 											if (building->Class->IsLimpetMine == true) {
 												building->Do_Destruction(NULL, source, true, building->Occupy_List());
 											} else {
 												building->Power_Off();
-												building->StunDuration = Duration;
+												Stun(building, doomed);
 												if (building->Class->IsRadar) {
 													building->House->RecalcRadar = true;
 												}
@@ -206,7 +223,7 @@ void EMPulseClass::Create(TechnoClass * source)
 							} else {
 								TechnoClass * techno = cellptr.Cell_Techno();
 								while (techno != NULL) {
-									bool immune = techno->TClass->Is_Immune_To_EMP();
+									bool immune = techno->Is_Immune_To_EMP();
 
 									bool caught = false;
 									if ((techno->RTTI == RTTI_UNIT || techno->RTTI == RTTI_AIRCRAFT) && techno->Is_Foot()) {
@@ -227,7 +244,7 @@ void EMPulseClass::Create(TechnoClass * source)
 											if (foot->Locomotion->Is_Moving()) {
 												foot->Locomotion->Stop_Moving();
 											}
-											foot->StunDuration = Duration;
+											Stun(foot, doomed);
 											AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
 											if (sparks != NULL) {
 												sparks->Attach_To(foot);
@@ -242,6 +259,15 @@ void EMPulseClass::Create(TechnoClass * source)
 						}
 					}
 				}
+			}
+		}
+
+		// Objects whose stun passed their EMP.Threshold are destroyed once every object in reach is stunned.
+		for (int index = 0; index < doomed.Count(); index++) {
+			TechnoClass * techno = doomed[index];
+			if (techno->IsActive && !techno->IsInLimbo && techno->Strength > 0) {
+				int damage = techno->TClass->MaxStrength;
+				techno->Take_Damage(damage, 0, Rule->C4Warhead, source, true);
 			}
 		}
 	}

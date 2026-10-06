@@ -28,6 +28,20 @@ class CSFClass
 		 */
 		bool Load(Straw & straw);
 
+		/*
+		 * Adds a further table to this loaded one, as Ares's extra string tables are added: each
+		 * of its labels is added, or takes over a label this table already holds. Of labels
+		 * repeated in the added table, the first one in it counts. A table in a language other
+		 * than this one's is skipped unless its language is LANGUAGE_NEUTRAL. Returns false,
+		 * leaving this table unchanged, when the table is skipped, does not load, or this table
+		 * has not loaded.
+		 */
+		bool Merge(CSFClass const & other);
+		bool Merge(Straw & straw);
+
+		// The header language of a table that is added whatever the main table's language.
+		static constexpr int LANGUAGE_NEUTRAL = -1;
+
 		void Clear(void);
 
 		bool Is_Loaded(void) const {return(Loaded);}

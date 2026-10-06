@@ -11,4 +11,4 @@ when_omitted:
 
 While this is on, [`IsScoreShuffle`](/keys/isscoreshuffle/) affects only the first track after silence, because each track that ends plays again.
 
-The sound options dialog shows repeat and shuffle as two check boxes, and checking one clears the other. A file that sets both is read as written, and both take effect. Both settings are written to `sun.ini` when the player leaves the options menu or, during a game, closes the game controls dialog with OK.
+The sound options dialog shows repeat and shuffle as two check boxes, and checking one clears the other. A file that sets both is read as written, and both take effect. Both settings are written to `RA2MD.INI` when the player leaves the options menu or, during a game, closes the game controls dialog with OK.

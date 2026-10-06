@@ -24,6 +24,7 @@ Anything that changes how the game behaves has to be verified later on the owner
 ## Hard rules
 
 - Never add game assets, original binaries, decompiled code or build output to the repository.
+- Never disassemble, decompile or otherwise reverse engineer `Ares.dll`; reimplement Ares behaviour from its documentation. Phobos source may be read; do not copy Phobos code until the owner decides on it (see `docs/research/RESEARCH_BRIEFING.md`).
 - Do not open pull requests, issues or comments on the upstream OpenTS project. The project forbids AI-written communication there; the owner submits anything upstream personally.
 - Commit messages: an imperative subject of at most 72 characters, no body, and no `Co-authored-by` or other AI-attribution lines (see `AGENTS.md`).
 - Never write the owner's real name anywhere: not in files, credits, commit authors or messages. The owner is `MentalHomiega`, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>`.
@@ -60,6 +61,14 @@ The owner knows Yuri's Revenge well. These answers settle questions from earlier
 - **A `UnitReload=yes` pad both rearms and repairs docked aircraft**, as the code does now (`code/building.cpp`, the rearm loop sends `RADIO_RELOAD`, then `RADIO_REPAIR`). The manual pages were corrected on 2026-10-04; that finding is closed.
 
 Research on Ares and Phobos is done in separate sessions that follow `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone. `CLOUD_JOBS.md` holds the prompts the owner uses to start one-off sessions.
+
+## The combined nightly branch
+
+The owner's PC tests only the newest `cloud/nightly-YYYY-MM-DD` branch in the real game, and treats any other branch whose commits it contains as tested. So the nightly session also gathers the day's work:
+
+1. Find every `origin/cloud/*` branch that changes `code/`, `tests/` or `CMakeLists.txt`, is not merged into `yr`, and is not yet contained in an earlier nightly branch (`git cherry origin/cloud/nightly-<earlier date> <branch>` shows only `-` lines when it is). Include branches from one-off sessions started with `CLOUD_JOBS.md`, such as `cloud/docks-*` or `cloud/mind-control-enter-*`.
+2. Review each one first, as in task 2. Merge the ones that pass into tonight's nightly branch with `git merge --no-ff`, together with tonight's own fixes.
+3. Leave out a branch that conflicts with another or that the review rejects, and say why in the night log. The owner's PC then tests it on its own.
 
 ## Night log
 

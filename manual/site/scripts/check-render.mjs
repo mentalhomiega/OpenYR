@@ -45,7 +45,7 @@ const cases = [
 	['keys/image/index.html', ['scope-aircrafttype', 'scope-animtype', 'scope-tiberium', 'scope-buildingtype']],
 	['reference/rules/buildingtype/index.html', ['data-reference-table', 'Filter keys', 'Settings read from']],
 	['reference/art/buildingtype/index.html', ['Image-selected sections only', 'data-via-image="yes"', 'data-via-image="no"']],
-	['reference/other/options/index.html', ['[Options] in SUN.INI', '<code>SUN.INI</code>']],
+	['reference/other/options/index.html', ['[Options] in RA2MD.INI', '<code>RA2MD.INI</code>']],
 	['reference/other/campaign/index.html', ['Campaign sections in BATTLE*.INI', '[&lt;Campaign ID&gt;]']],
 	['reference/other/sounds/index.html', ['Sound sections in SOUND.INI / SOUND01.INI', '[&lt;Sound ID&gt;]']],
 	['reference/other/themes/index.html', ['Theme sections in THEME.INI + THEME01.INI', '[&lt;Theme ID&gt;]']],
@@ -166,7 +166,7 @@ const indexContracts = [
 		['Object types', 'data-compact-index'],
 		['Object and entry types', 'Search all INI keys', 'By effective type', 'Global sections']],
 	['reference/other/index.html',
-		['SUN.INI', 'Options file', 'Load behavior:', 'data-compact-index'],
+		['RA2MD.INI', 'Options file', 'Load behavior:', 'data-compact-index'],
 		['Loading:', 'Search all INI keys']],
 	['internals/index.html',
 		['Source-level descriptions', 'Architecture', 'Object model, type system, and engine-wide structural invariants.', 'Object and type system', 'Simulation systems', 'Locomotion and piggybacking', 'Radio contact protocol', 'sl-link-card'],
@@ -646,7 +646,7 @@ if (!locomotionNavigationLink?.includes('aria-current="page"')) {
 
 const otherMain = renderedMain('reference/other/index.html');
 for (const text of [
-	'SUN.INI', 'Options file', 'BATTLE*.INI', 'Campaign definitions',
+	'RA2MD.INI', 'Options file', 'BATTLE*.INI', 'Campaign definitions',
 	'SOUND.INI / SOUND01.INI', 'Sound effects', 'THEME.INI + THEME01.INI', 'Music tracks',
 ]) {
 	if (!otherMain.includes(text)) throw new Error(`Other INI landing does not contain ${JSON.stringify(text)}`);

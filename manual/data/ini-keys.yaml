@@ -208,7 +208,7 @@ AIBuildThis:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: CanAIBuildThis
       source: code/builtype.cpp
@@ -1015,7 +1015,7 @@ ActivateSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ActivateSound
       source: code/techtype.cpp
@@ -1875,6 +1875,23 @@ Aggressive:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+AirRangeBonus:
+  key: AirRangeBonus
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AirRangeBonus
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Airburst:
   key: Airburst
   scopes:
@@ -1938,7 +1955,7 @@ AircraftCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: AircraftCostBonus
       source: code/builtype.cpp
@@ -2077,7 +2094,7 @@ AirstrikeRechargeTime:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: AirstrikeRechargeTime
       source: code/techtype.cpp
@@ -2094,7 +2111,7 @@ AirstrikeTeam:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: AirstrikeTeam
       source: code/techtype.cpp
@@ -2111,7 +2128,7 @@ AirstrikeTeamType:
     value_type: class
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: AirstrikeTeamType
       source: code/techtype.cpp
@@ -2561,7 +2578,7 @@ AltToRally:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -3179,7 +3196,7 @@ Armory:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsArmory
       source: code/builtype.cpp
@@ -3196,7 +3213,7 @@ Artillary:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsArtillary
       source: code/builtype.cpp
@@ -3238,6 +3255,415 @@ AtomDamage:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AttachEffect.AnimResetOnReapply:
+  key: AttachEffect.AnimResetOnReapply
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsAnimResetOnReapply
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Animation:
+  key: AttachEffect.Animation
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.Animation
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.Animation
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.ArmorMultiplier:
+  key: AttachEffect.ArmorMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.ArmorMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.ArmorMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Cloakable:
+  key: AttachEffect.Cloakable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsCloakable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsCloakable
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Cumulative:
+  key: AttachEffect.Cumulative
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsCumulative
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Delay:
+  key: AttachEffect.Delay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.Delay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+AttachEffect.DiscardOnEntry:
+  key: AttachEffect.DiscardOnEntry
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsDiscardOnEntry
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsDiscardOnEntry
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.Duration:
+  key: AttachEffect.Duration
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.Duration
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.Duration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.FirepowerMultiplier:
+  key: AttachEffect.FirepowerMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.FirepowerMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.FirepowerMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.ForceDecloak:
+  key: AttachEffect.ForceDecloak
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsForceDecloak
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsForceDecloak
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.InitialDelay:
+  key: AttachEffect.InitialDelay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.InitialDelay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+AttachEffect.PenetratesIronCurtain:
+  key: AttachEffect.PenetratesIronCurtain
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsPenetratesIronCurtain
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsPenetratesIronCurtain
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.ROFMultiplier:
+  key: AttachEffect.ROFMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.ROFMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.ROFMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.SpeedMultiplier:
+  key: AttachEffect.SpeedMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.SpeedMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.SpeedMultiplier
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+AttachEffect.TemporalHidesAnim:
+  key: AttachEffect.TemporalHidesAnim
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: AttachEffect.IsTemporalHidesAnim
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: AttachEffect.IsTemporalHidesAnim
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 AttachedParticleSystem:
   key: AttachedParticleSystem
   scopes:
@@ -3291,6 +3717,23 @@ Attack:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+AttackCursorOnFriendlies:
+  key: AttackCursorOnFriendlies
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsAttackCursorOnFriendlies
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AttackDelay:
   key: AttackDelay
   scopes:
@@ -3309,6 +3752,23 @@ AttackDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AttackFriendlies:
+  key: AttackFriendlies
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsAttackFriendlies
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AttackInterval:
   key: AttackInterval
   scopes:
@@ -3382,7 +3842,7 @@ AutoSaveInterval:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -3400,7 +3860,7 @@ AutoScroll:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -3598,7 +4058,7 @@ BarrelAnimIsVoxel:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBarrelAnimAVoxel
       source: code/builtype.cpp
@@ -3846,6 +4306,24 @@ BehavesLike:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+Behind:
+  key: Behind
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: Behind
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BerserkFriendly:
   key: BerserkFriendly
   scopes:
@@ -3957,7 +4435,7 @@ BitmapSystemFont:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -4305,6 +4783,144 @@ Bouncy:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Bounty:
+  key: Bounty
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsBounty
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Bounty.Display:
+  key: Bounty.Display
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: BountyDisplay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Bounty.EliteValue:
+  key: Bounty.EliteValue
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BountyValue
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Bounty.RookieValue:
+  key: Bounty.RookieValue
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BountyValue
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Bounty.Value:
+  key: Bounty.Value
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Bounty.VeteranValue:
+  key: Bounty.VeteranValue
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BountyValue
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+BountyDisplay:
+  key: BountyDisplay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsBountyDisplay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+BountyEnablers:
+  key: BountyEnablers
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: BountyEnablers
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BrainBlastTurretIndex:
   key: BrainBlastTurretIndex
   scopes:
@@ -4518,7 +5134,7 @@ BridgeRepairHut:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBridgeRepairHut
       source: code/builtype.cpp
@@ -5017,6 +5633,40 @@ BuildTime:
       source: code/rules.cpp
       guard: null
     level: DifficultyClass
+BuildTime.MultipleFactory:
+  key: BuildTime.MultipleFactory
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BuildTimeMultipleFactory
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+BuildTimeMultiplier:
+  key: BuildTimeMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: BuildTimeMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 BuildWeapons:
   key: BuildWeapons
   scopes:
@@ -5208,7 +5858,7 @@ BuildingsCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: BuildingsCostBonus
       source: code/builtype.cpp
@@ -5242,7 +5892,7 @@ BuildupSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: BuildupSound
       source: code/builtype.cpp
@@ -5277,7 +5927,7 @@ Bunker:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBunker
       source: code/builtype.cpp
@@ -5384,7 +6034,7 @@ Bunkerable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsBunkerable
       source: code/techtype.cpp
@@ -5647,6 +6297,23 @@ Cameo:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CameoPCX:
+  key: CameoPCX
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: pcx
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CameoSortOrder:
   key: CameoSortOrder
   scopes:
@@ -5724,9 +6391,26 @@ CanApproachTarget:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsCanApproachTarget
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CanBeHidden:
+  key: CanBeHidden
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanBeHidden
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -5747,6 +6431,23 @@ CanBeOccupied:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CanBeReversed:
+  key: CanBeReversed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanBeReversed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CanC4:
   key: CanC4
   scopes:
@@ -5758,7 +6459,7 @@ CanC4:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCanC4
       source: code/builtype.cpp
@@ -5799,6 +6500,23 @@ CanDisguise:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanHideThings:
+  key: CanHideThings
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsCanHideThings
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 CanOccupyFire:
   key: CanOccupyFire
   scopes:
@@ -6007,7 +6725,7 @@ Cell:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: SyncBug
@@ -6180,7 +6898,7 @@ CheckHeap:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: MultiPlayer
@@ -6258,7 +6976,7 @@ ChronoInSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ChronoInSound
       source: code/techtype.cpp
@@ -6279,6 +6997,24 @@ ChronoInSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoInfantryCrush:
+  key: ChronoInfantryCrush
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsChronoInfantryCrush
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoOutSound:
   key: ChronoOutSound
   scopes:
@@ -6290,7 +7026,7 @@ ChronoOutSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ChronoOutSound
       source: code/techtype.cpp
@@ -6381,6 +7117,40 @@ ChronoTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Chronoshift.Allow:
+  key: Chronoshift.Allow
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsChronoshiftAllowed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Chronoshift.Crushable:
+  key: Chronoshift.Crushable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: IsChronoshiftCrushable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ChuteSound:
   key: ChuteSound
   scopes:
@@ -6571,7 +7341,7 @@ ClickRepairable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsClickRepairable
       source: code/builtype.cpp
@@ -6696,7 +7466,7 @@ CloakGenerator:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCloakGenerator
       source: code/builtype.cpp
@@ -6713,7 +7483,7 @@ CloakRadiusInCells:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '20'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: CloakRadiusInCells
       source: code/builtype.cpp
@@ -6957,7 +7727,7 @@ Color:
     level: HouseClass
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: MultiPlayer
@@ -7159,7 +7929,7 @@ ConstructionYard:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsConstructionYard
       source: code/builtype.cpp
@@ -7256,7 +8026,7 @@ Coord:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: SyncBug
@@ -7434,6 +8204,23 @@ CowTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Crashable:
+  key: Crashable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCrashable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CrashingSound:
   key: CrashingSound
   scopes:
@@ -7445,7 +8232,7 @@ CrashingSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: CrashingSound
       source: code/techtype.cpp
@@ -7497,7 +8284,7 @@ CrateBeneath:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCrateBeneath
       source: code/builtype.cpp
@@ -7514,7 +8301,7 @@ CrateBeneathIsMoney:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCrateBeneathMoney
       source: code/builtype.cpp
@@ -7931,7 +8718,7 @@ CreateSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: CreateSound
       source: code/techtype.cpp
@@ -8254,7 +9041,7 @@ CursorScale:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -8267,6 +9054,23 @@ CursorScale:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+CustomPalette:
+  key: CustomPalette
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AnimTypeClass
+      member: palette
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 CustomRotor:
   key: CustomRotor
   scopes:
@@ -8414,6 +9218,24 @@ DamageDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DamageFireTypes:
+  key: DamageFireTypes
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: DamageFireTypes
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DamageLevels:
   key: DamageLevels
   scopes:
@@ -8524,7 +9346,7 @@ DamageSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: DamageSound
       source: code/techtype.cpp
@@ -8559,7 +9381,7 @@ DamagedDoor:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDamagedDoor
       source: code/builtype.cpp
@@ -8610,7 +9432,7 @@ DeactivateSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: DeactivateSound
       source: code/techtype.cpp
@@ -9032,6 +9854,23 @@ DefaultTestParticleSystem:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DefaultToGuardArea:
+  key: DefaultToGuardArea
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsDefaultToGuardArea
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DefenseLimit:
   key: DefenseLimit
   scopes:
@@ -9079,7 +9918,7 @@ DefensesCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: DefensesCostBonus
       source: code/builtype.cpp
@@ -9199,7 +10038,7 @@ DelayedFireDelay:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: DelayedFireDelay
       source: code/builtype.cpp
@@ -9233,7 +10072,7 @@ DemandLoad:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDemandLoad
       source: code/builtype.cpp
@@ -9278,7 +10117,7 @@ DemandLoadBuildup:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDemandLoadBuildup
       source: code/builtype.cpp
@@ -9689,7 +10528,7 @@ DetailLevel:
     level: AnimTypeClass
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -9753,12 +10592,29 @@ DetonationAltitude:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+DieSound:
+  key: DieSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: DieSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Difficulty:
   key: Difficulty
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -10048,7 +10904,7 @@ DistributedFire:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsDistributedFire
       source: code/techtype.cpp
@@ -10082,7 +10938,7 @@ DockUnload:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsDockUnload
       source: code/builtype.cpp
@@ -10365,7 +11221,7 @@ Drainable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsDrainable
       source: code/techtype.cpp
@@ -10754,6 +11610,40 @@ EMEffect:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+EMP.Modifier:
+  key: EMP.Modifier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EMPModifier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+EMP.Threshold:
+  key: EMP.Threshold
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 EMPulseCannon:
   key: EMPulseCannon
   scopes:
@@ -10765,7 +11655,7 @@ EMPulseCannon:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsEMPulseCannon
       source: code/builtype.cpp
@@ -10935,6 +11825,60 @@ ElectricAssault:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+ElevationBonusCap:
+  key: ElevationBonusCap
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: ElevationModel
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: RulesClass
+      member: ElevationBonusCap
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ElevationIncrement:
+  key: ElevationIncrement
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: ElevationModel
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: ElevationIncrement
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ElevationIncrementBonus:
+  key: ElevationIncrementBonus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: ElevationModel
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: ElevationIncrementBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 EligibleForDelayKill:
   key: EligibleForDelayKill
   scopes:
@@ -10946,7 +11890,7 @@ EligibleForDelayKill:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsEligibleForDelayKill
       source: code/builtype.cpp
@@ -10980,7 +11924,7 @@ EliteAirstrikeRechargeTime:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: EliteAirstrikeRechargeTime
       source: code/techtype.cpp
@@ -10997,7 +11941,7 @@ EliteAirstrikeTeam:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: EliteAirstrikeTeam
       source: code/techtype.cpp
@@ -11014,7 +11958,7 @@ EliteAirstrikeTeamType:
     value_type: class
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: EliteAirstrikeTeamType
       source: code/techtype.cpp
@@ -11993,6 +12937,24 @@ EnemyHouseThreatBonus:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EnemyInsignia:
+  key: EnemyInsignia
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsEnemyInsignia
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Engineer:
   key: Engineer
   scopes:
@@ -12072,7 +13034,7 @@ Enslaves:
     value_type: class
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: Enslaves
       source: code/techtype.cpp
@@ -12125,7 +13087,7 @@ EnterTransportSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: EnterTransportSound
       source: code/techtype.cpp
@@ -12374,7 +13336,7 @@ ExtraDamageStage:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsExtraDamageStage
       source: code/builtype.cpp
@@ -12986,7 +13948,7 @@ FirestormWall:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsFirestormWall
       source: code/builtype.cpp
@@ -13225,7 +14187,7 @@ Flat:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsFlat
       source: code/builtype.cpp
@@ -13493,7 +14455,7 @@ Frame:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: SyncBug
@@ -13534,7 +14496,7 @@ FreeBuildup:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsFreeBuildup
       source: code/builtype.cpp
@@ -13615,7 +14577,7 @@ Fullscreen:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -13639,7 +14601,7 @@ GDIBarracks:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsGDIBarracks
       source: code/builtype.cpp
@@ -13848,7 +14810,7 @@ GameSpeed:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -13890,7 +14852,7 @@ GapGenerator:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsGapGenerator
       source: code/builtype.cpp
@@ -13924,7 +14886,7 @@ Gate:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsGate
       source: code/builtype.cpp
@@ -13976,7 +14938,7 @@ GateStages:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '9'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: GateStages
       source: code/builtype.cpp
@@ -14054,6 +15016,23 @@ GeneticMutatorActivateSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GivesBounty:
+  key: GivesBounty
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: HouseTypeClass
+      member: IsGivesBounty
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 Gravity:
   key: Gravity
   scopes:
@@ -14207,6 +15186,23 @@ Group:
       source: code/taskforc.cpp
       guard: null
     level: TaskForceClass
+GroupAs:
+  key: GroupAs
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Growth:
   key: Growth
   scopes:
@@ -14472,7 +15468,7 @@ Handle:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: MultiPlayer
@@ -14665,7 +15661,7 @@ HasStupidGuardMode:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsHasStupidGuardMode
       source: code/builtype.cpp
@@ -14689,6 +15685,23 @@ HealCrateSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+HealthBar.Hide:
+  key: HealthBar.Hide
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsHealthBarHidden
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Height:
   key: Height
   scopes:
@@ -14764,7 +15777,7 @@ Helipad:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsHelipad
       source: code/builtype.cpp
@@ -14919,7 +15932,7 @@ Hospital:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsHospital
       source: code/builtype.cpp
@@ -15199,7 +16212,7 @@ ICBMLauncher:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsICBMLauncher
       source: code/builtype.cpp
@@ -15932,7 +16945,7 @@ ImpactLandSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ImpactLandSound
       source: code/techtype.cpp
@@ -15964,7 +16977,7 @@ ImpactWaterSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: ImpactWaterSound
       source: code/techtype.cpp
@@ -16201,7 +17214,7 @@ InfantryCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: InfantryCostBonus
       source: code/builtype.cpp
@@ -16567,6 +17580,74 @@ InitiateTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+Insignia:
+  key: Insignia
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Insignia.ShowEnemy:
+  key: Insignia.ShowEnemy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: TechnoTypeClass
+      member: InsigniaShowEnemy
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+InsigniaFrame:
+  key: InsigniaFrame
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: InsigniaFrame
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+InsigniaFrames:
+  key: InsigniaFrames
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Insignificant:
   key: Insignificant
   scopes:
@@ -16603,7 +17684,7 @@ IntegerScaling:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -16698,7 +17779,7 @@ InvisibleInGame:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsInvisibleInGame
       source: code/builtype.cpp
@@ -17325,7 +18406,7 @@ IsBaseDefense:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsBaseDefense
       source: code/builtype.cpp
@@ -17373,7 +18454,7 @@ IsCoreDefender:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCoreDefender
       source: code/builtype.cpp
@@ -17472,7 +18553,7 @@ IsGattling:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsGattling
       source: code/techtype.cpp
@@ -17523,7 +18604,7 @@ IsJuggernaut:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsJuggernaut
       source: code/builtype.cpp
@@ -17574,7 +18655,7 @@ IsLimpetMine:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLimpetMine
       source: code/builtype.cpp
@@ -17673,7 +18754,7 @@ IsMobileStealth:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsMobileStealth
       source: code/builtype.cpp
@@ -17690,7 +18771,7 @@ IsMobileWar:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsMobileWar
       source: code/builtype.cpp
@@ -17786,7 +18867,7 @@ IsScoreRepeat:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Audio
@@ -17804,7 +18885,7 @@ IsScoreShuffle:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Audio
@@ -17817,6 +18898,23 @@ IsScoreShuffle:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+IsSelectableCombatant:
+  key: IsSelectableCombatant
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsSelectableCombatant
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IsSimpleDeployer:
   key: IsSimpleDeployer
   scopes:
@@ -17879,7 +18977,7 @@ IsThreatRatingNode:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsThreatRatingNode
       source: code/builtype.cpp
@@ -18217,7 +19315,7 @@ JumpjetAccel:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '2'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetAccel
       source: code/techtype.cpp
@@ -18234,7 +19332,7 @@ JumpjetClimb:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '5'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetClimb
       source: code/techtype.cpp
@@ -18251,7 +19349,7 @@ JumpjetDeviation:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '40'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetDeviation
       source: code/techtype.cpp
@@ -18268,7 +19366,7 @@ JumpjetHeight:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '500'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetHeight
       source: code/techtype.cpp
@@ -18285,7 +19383,7 @@ JumpjetNoWobbles:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsJumpjetNoWobbles
       source: code/techtype.cpp
@@ -18302,7 +19400,7 @@ JumpjetSpeed:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '14'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetSpeed
       source: code/techtype.cpp
@@ -18319,7 +19417,7 @@ JumpjetTurnRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '4'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetTurnRate
       source: code/techtype.cpp
@@ -18336,9 +19434,26 @@ JumpjetWobbles:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '0.15'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: JumpjetWobbles
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+KeepAlive:
+  key: KeepAlive
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: KeepAlive
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -18370,7 +19485,7 @@ LandTargeting:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: LandTargeting
       source: code/techtype.cpp
@@ -18505,7 +19620,7 @@ LaserFence:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLaserFence
       source: code/builtype.cpp
@@ -18522,7 +19637,7 @@ LaserFencePost:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLaserFencePost
       source: code/builtype.cpp
@@ -18660,7 +19775,7 @@ LeaveRubble:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsLeaveRubble
       source: code/builtype.cpp
@@ -18677,7 +19792,7 @@ LeaveTransportSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: LeaveTransportSound
       source: code/techtype.cpp
@@ -20735,7 +21850,7 @@ MissileSpawn:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsMissileSpawn
       source: code/techtype.cpp
@@ -20843,6 +21958,23 @@ MoveFlash:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MoveSound:
+  key: MoveSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: MoveSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 MoveToShroud:
   key: MoveToShroud
   scopes:
@@ -21413,7 +22545,7 @@ NODBarracks:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsNODBarracks
       source: code/builtype.cpp
@@ -21440,7 +22572,7 @@ NSGates:
 Name:
   key: Name
   scopes:
-  - applies_to:
+  - applies_to: &id085
     - AITriggerType
     - AircraftType
     - AnimType
@@ -21555,7 +22687,7 @@ Natural:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsNatural
       source: code/techtype.cpp
@@ -21713,7 +22845,7 @@ NavalTargeting:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: NavalTargeting
       source: code/techtype.cpp
@@ -22354,7 +23486,7 @@ NotWorkingSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: NotWorkingSound
       source: code/builtype.cpp
@@ -22424,7 +23556,7 @@ NukeSilo:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsNukeSilo
       source: code/builtype.cpp
@@ -22527,7 +23659,7 @@ NumberOfDocks:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '1'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: NumberOfDocks
       source: code/builtype.cpp
@@ -22596,7 +23728,7 @@ OccupyHeight:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: OccupyHeight
       source: code/builtype.cpp
@@ -22858,6 +23990,57 @@ OpenTopped:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+OpenTopped.DamageMultiplier:
+  key: OpenTopped.DamageMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: OpenToppedDamageMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OpenTopped.RangeBonus:
+  key: OpenTopped.RangeBonus
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: OpenToppedRangeBonus
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OpenTopped.WarpDistance:
+  key: OpenTopped.WarpDistance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: OpenToppedWarpDistance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 OpenToppedAnim:
   key: OpenToppedAnim
   scopes:
@@ -22926,6 +24109,70 @@ OpenToppedWarpDistance:
       default_candidate: '5'
       declared_in: RulesClass
       member: OpenToppedWarpDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OpenTransport.DamageMultiplier:
+  key: OpenTransport.DamageMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: OpenTransportDamageMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: OpenTransportDamageMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OpenTransport.RangeBonus:
+  key: OpenTransport.RangeBonus
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: OpenTransportRangeBonus
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: OpenTransportRangeBonus
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -23116,7 +24363,7 @@ Overpowerable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsOverpowerable
       source: code/builtype.cpp
@@ -23859,7 +25106,7 @@ PlaceAnywhere:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsCanPlaceAnywhere
       source: code/builtype.cpp
@@ -23888,7 +25135,7 @@ PlayIntro:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Intro
@@ -24276,7 +25523,7 @@ PoweredUnit:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsPoweredUnit
       source: code/techtype.cpp
@@ -24293,7 +25540,7 @@ PowersUnit:
     value_type: class
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: PowersUnit
       source: code/techtype.cpp
@@ -24327,7 +25574,7 @@ PowersUpToLevel:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '-1'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: PowersUpToLevel
       source: code/builtype.cpp
@@ -24805,7 +26052,7 @@ PrintCRC:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: SyncBug
@@ -24951,7 +26198,7 @@ ProduceCashAmount:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashAmount
       source: code/builtype.cpp
@@ -24968,7 +26215,7 @@ ProduceCashBudget:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashBudget
       source: code/builtype.cpp
@@ -24985,7 +26232,7 @@ ProduceCashDelay:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashDelay
       source: code/builtype.cpp
@@ -25002,7 +26249,7 @@ ProduceCashResetOnCapture:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsProduceCashResetOnCapture
       source: code/builtype.cpp
@@ -25019,7 +26266,7 @@ ProduceCashStartup:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: ProduceCashStartup
       source: code/builtype.cpp
@@ -25036,7 +26283,7 @@ ProduceCashStartupOneTime:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsProduceCashStartupOneTime
       source: code/builtype.cpp
@@ -25281,6 +26528,40 @@ ProjectileRange:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Promote.EliteSound:
+  key: Promote.EliteSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteEliteSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Promote.VeteranSound:
+  key: Promote.VeteranSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: PromoteVeteranSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ProneDamage:
   key: ProneDamage
   scopes:
@@ -25396,7 +26677,7 @@ PsychicDetectionRadius:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: PsychicDetectionRadius
       source: code/builtype.cpp
@@ -25799,6 +27080,23 @@ Radar:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+RadarColor:
+  key: RadarColor
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: TerrainTypeClass
+      member: RadarColor
+      source: code/terrtype.cpp
+      guard: null
+    level: TerrainTypeClass
 RadarCombatFlashTime:
   key: RadarCombatFlashTime
   scopes:
@@ -26451,7 +27749,7 @@ Recoilless:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsRecoilless
       source: code/builtype.cpp
@@ -26521,7 +27819,7 @@ Refinery:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsRefinery
       source: code/builtype.cpp
@@ -26673,7 +27971,7 @@ Renderer:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -27080,7 +28378,7 @@ ResourceDestination:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsResourceDestination
       source: code/techtype.cpp
@@ -27097,7 +28395,7 @@ ResourceGatherer:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsResourceGatherer
       source: code/techtype.cpp
@@ -27184,7 +28482,7 @@ RevealToAll:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsRevealToAll
       source: code/techtype.cpp
@@ -27225,6 +28523,40 @@ Reverse:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ReverseEngineersVictims:
+  key: ReverseEngineersVictims
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsReverseEngineersVictims
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ReversedAs:
+  key: ReversedAs
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Rocker:
   key: Rocker
   scopes:
@@ -27426,7 +28758,7 @@ SAM:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsSAM
       source: code/builtype.cpp
@@ -27507,7 +28839,7 @@ ScaleMode:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -27733,7 +29065,7 @@ ScoreVolume:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Audio
@@ -27804,7 +29136,7 @@ ScreenHeight:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -27819,7 +29151,7 @@ ScreenHeight:
     level: OptionsClass
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -27837,7 +29169,7 @@ ScreenWidth:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -27852,7 +29184,7 @@ ScreenWidth:
     level: OptionsClass
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -27887,7 +29219,7 @@ ScrollMethod:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -27923,7 +29255,7 @@ ScrollRate:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -27947,7 +29279,7 @@ SecondSpawnOffset:
     value_type: point (x,y,z)
     status: generated
     _provenance:
-      default_candidate: 0,0,0
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SecondSpawnOffset
       source: code/techtype.cpp
@@ -28294,7 +29626,7 @@ SensorArray:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsSensorArray
       source: code/builtype.cpp
@@ -28328,7 +29660,7 @@ SensorsSight:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SensorsSight
       source: code/techtype.cpp
@@ -28760,6 +30092,24 @@ ShouldUseCellDrawer:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ShowHidden:
+  key: ShowHidden
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: ShowHidden
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 ShowNavComQueueLines:
   key: ShowNavComQueueLines
   scopes:
@@ -28901,7 +30251,7 @@ Side:
     level: HouseTypeClass
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: MultiPlayer
@@ -28934,7 +30284,7 @@ SidebarCameoText:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -28964,12 +30314,29 @@ SidebarImage:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SidebarPCX:
+  key: SidebarPCX
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: pcx
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SidebarSorting:
   key: SidebarSorting
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -29039,7 +30406,7 @@ SimulateWhileUnfocused:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -29063,7 +30430,7 @@ SinkingSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SinkingSound
       source: code/techtype.cpp
@@ -29270,7 +30637,7 @@ SlaveRegenRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SlaveRegenRate
       source: code/techtype.cpp
@@ -29287,7 +30654,7 @@ SlaveReloadRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SlaveReloadRate
       source: code/techtype.cpp
@@ -29339,7 +30706,7 @@ SlavesNumber:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SlavesNumber
       source: code/techtype.cpp
@@ -29581,7 +30948,7 @@ SortCameoAsBaseDefense:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsSortCameoAsBaseDefense
       source: code/builtype.cpp
@@ -29610,7 +30977,7 @@ SoundLatency:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Audio
@@ -29628,7 +30995,7 @@ SoundVolume:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Audio
@@ -29928,7 +31295,7 @@ SpawnRegenRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SpawnRegenRate
       source: code/techtype.cpp
@@ -29945,7 +31312,7 @@ SpawnReloadRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SpawnReloadRate
       source: code/techtype.cpp
@@ -29996,7 +31363,7 @@ Spawned:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsSpawned
       source: code/techtype.cpp
@@ -30030,7 +31397,7 @@ Spawns:
     value_type: class
     status: needs_review
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: Spawns
       source: code/techtype.cpp
@@ -30089,7 +31456,7 @@ SpawnsNumber:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: SpawnsNumber
       source: code/techtype.cpp
@@ -31964,7 +33331,7 @@ StretchMovies:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -31991,6 +33358,23 @@ SubjectToCliffs:
       default_candidate: 'no'
       declared_in: BulletTypeClass
       member: IsSubjectToCliffs
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
+SubjectToElevation:
+  key: SubjectToElevation
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsSubjectToElevation
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
@@ -33019,7 +34403,7 @@ SuperWeapon:
     value_type: SuperWeaponType
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: SuperWeapon
       source: code/builtype.cpp
@@ -33036,7 +34420,7 @@ SuperWeapon2:
     value_type: SuperWeaponType
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: SuperWeapon2
       source: code/builtype.cpp
@@ -33223,7 +34607,7 @@ SystemCursor:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -33294,7 +34678,7 @@ Target:
   scopes:
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: SyncBug
@@ -33851,7 +35235,7 @@ TerrainPalette:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTerrainPalette
       source: code/builtype.cpp
@@ -33968,7 +35352,7 @@ TextBackgroundColor:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -34614,7 +35998,7 @@ TickTank:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTickTank
       source: code/builtype.cpp
@@ -34853,7 +36237,7 @@ ToolTips:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -35185,6 +36569,23 @@ Translucent50State:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+TransportWaypoint:
+  key: TransportWaypoint
+  scopes:
+  - applies_to: *id009
+    file: ai.ini or map file
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TeamTypeClass
+      member: waypt
+      source: code/teamtype.cpp
+      guard: null
+    level: TeamTypeClass
 TransportsReturnOnUnload:
   key: TransportsReturnOnUnload
   scopes:
@@ -35440,7 +36841,7 @@ TurretAnimIsExclusive:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTurretAnimExclusive
       source: code/builtype.cpp
@@ -35457,7 +36858,7 @@ TurretAnimIsVoxel:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsTurretAnimAVoxel
       source: code/builtype.cpp
@@ -35542,7 +36943,7 @@ TurretChargeAnimRate:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '3'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: TurretChargeAnimRate
       source: code/builtype.cpp
@@ -35559,7 +36960,7 @@ TurretCount:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: TurretCount
       source: code/techtype.cpp
@@ -35627,7 +37028,7 @@ TurretRotateSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: TurretRotateSound
       source: code/techtype.cpp
@@ -35669,7 +37070,7 @@ Type:
     level: SuperWeaponTypeClass
   - applies_to:
     - multiplayer settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: SyncBug
@@ -35714,6 +37115,23 @@ TypeImmune:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+UIName:
+  key: UIName
+  scopes:
+  - applies_to: *id085
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AbstractTypeClass
+      member: label
+      source: code/abstype.cpp
+      guard: null
+    level: AbstractTypeClass
 URepairRate:
   key: URepairRate
   scopes:
@@ -35823,7 +37241,7 @@ Underwater:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsUnderwater
       source: code/techtype.cpp
@@ -35851,7 +37269,7 @@ UnitActionLines:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Options
@@ -35867,10 +37285,10 @@ UnitActionLines:
 UnitCount:
   key: UnitCount
   scopes:
-  - applies_to: &id085
+  - applies_to: &id086
     - global rules
     file: rules.ini
-    section: &id086
+    section: &id087
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -35887,11 +37305,11 @@ UnitCount:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id085
+      applies_to: *id086
     - file: rules.ini
-      section: *id086
+      section: *id087
       value_type: integer
-      applies_to: *id085
+      applies_to: *id086
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 UnitCrateType:
@@ -35993,7 +37411,7 @@ UnitsCostBonus:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: UnitsCostBonus
       source: code/builtype.cpp
@@ -36062,7 +37480,7 @@ Unnatural:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: IsUnnatural
       source: code/techtype.cpp
@@ -36314,6 +37732,23 @@ UseTransitions:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
+UseTransportOrigin:
+  key: UseTransportOrigin
+  scopes:
+  - applies_to: *id009
+    file: ai.ini or map file
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TeamTypeClass
+      member: UseTransportOrigin
+      source: code/teamtype.cpp
+      guard: null
+    level: TeamTypeClass
 UseTurretShadow:
   key: UseTurretShadow
   scopes:
@@ -36390,7 +37825,7 @@ VSync:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -36455,6 +37890,23 @@ VehicleThief:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+VehicleThief.Allowed:
+  key: VehicleThief.Allowed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsVehicleThiefAllowed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VeinAttack:
   key: VeinAttack
   scopes:
@@ -36994,7 +38446,7 @@ VoiceCapture:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceCapture
       source: code/techtype.cpp
@@ -37028,7 +38480,7 @@ VoiceCrashing:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceCrashing
       source: code/techtype.cpp
@@ -37045,7 +38497,7 @@ VoiceDeploy:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceDeploy
       source: code/techtype.cpp
@@ -37079,7 +38531,7 @@ VoiceEnter:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceEnter
       source: code/techtype.cpp
@@ -37113,7 +38565,7 @@ VoiceHarvest:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceHarvest
       source: code/techtype.cpp
@@ -37165,7 +38617,7 @@ VoicePrimaryEliteWeaponAttack:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoicePrimaryEliteWeaponAttack
       source: code/techtype.cpp
@@ -37182,7 +38634,7 @@ VoicePrimaryWeaponAttack:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoicePrimaryWeaponAttack
       source: code/techtype.cpp
@@ -37199,7 +38651,7 @@ VoiceSecondaryEliteWeaponAttack:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceSecondaryEliteWeaponAttack
       source: code/techtype.cpp
@@ -37216,7 +38668,7 @@ VoiceSecondaryWeaponAttack:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceSecondaryWeaponAttack
       source: code/techtype.cpp
@@ -37250,7 +38702,7 @@ VoiceSinking:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceSinking
       source: code/techtype.cpp
@@ -37267,7 +38719,7 @@ VoiceUndeploy:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceUndeploy
       source: code/techtype.cpp
@@ -37278,7 +38730,7 @@ VoiceVolume:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Audio
@@ -37449,7 +38901,7 @@ VoxelBarrelScale:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: VoxelBarrelScale
       source: code/builtype.cpp
@@ -37475,10 +38927,10 @@ VoxelIndex:
 Wake:
   key: Wake
   scopes:
-  - applies_to: &id087
+  - applies_to: &id088
     - global rules
     file: rules.ini
-    section: &id088
+    section: &id089
       kind: literal
       name: General
     value_type: class
@@ -37495,11 +38947,11 @@ Wake:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id087
+      applies_to: *id088
     - file: rules.ini
-      section: *id088
+      section: *id089
       value_type: class
-      applies_to: *id087
+      applies_to: *id088
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 WalkFrames:
@@ -38651,7 +40103,7 @@ WeaponCount:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: WeaponCount
       source: code/techtype.cpp
@@ -38686,7 +40138,7 @@ WeaponStages:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: null
       declared_in: TechnoTypeClass
       member: WeaponStages
       source: code/techtype.cpp
@@ -38720,7 +40172,7 @@ WeaponsFactory:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsWeaponsFactory
       source: code/builtype.cpp
@@ -38895,7 +40347,7 @@ Weeder:
     value_type: boolean
     status: reviewed
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: IsWeeder
       source: code/builtype.cpp
@@ -39075,7 +40527,7 @@ WindowHeight:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -39093,7 +40545,7 @@ WindowWidth:
   scopes:
   - applies_to:
     - client settings
-    file: sun.ini
+    file: ra2md.ini
     section:
       kind: literal
       name: Video
@@ -39206,7 +40658,7 @@ WorkingSound:
     value_type: sound
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: null
       declared_in: BuildingTypeClass
       member: WorkingSound
       source: code/builtype.cpp
@@ -39403,6 +40855,23 @@ YuriPrimeTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+ZAdjust:
+  key: ZAdjust
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: AnimTypeClass
+      member: ZAdjust
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 ZFudgeBridge:
   key: ZFudgeBridge
   scopes:

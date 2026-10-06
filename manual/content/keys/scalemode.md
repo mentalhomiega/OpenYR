@@ -18,6 +18,6 @@ The game renders at [`ScreenWidth`](/keys/screenwidth/) by [`ScreenHeight`](/key
 
 When the picture is not enlarged, `PixelArt` filters the way `Linear` does. `Nearest` samples the same way at every size.
 
-A name the game does not recognize is read as `PixelArt`, and the setting is written back to `sun.ini` that way.
+A name the game does not recognize is read as `PixelArt`, and the setting is written back to `RA2MD.INI` that way.
 
 To keep the picture at whole multiples and accept unused space around it, set [`IntegerScaling`](/keys/integerscaling/).

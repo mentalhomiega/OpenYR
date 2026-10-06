@@ -1,6 +1,6 @@
 ---
 title: Drop pods
-summary: "Delivers infantry through the GDI Drop Pods superweapon or an infantry-only TeamType."
+summary: "Delivers infantry through the GDI Drop Pods superweapon."
 category: superweapons-special
 keys:
   - AtmosphereEntry
@@ -31,31 +31,7 @@ The squad can arrive smaller than the chosen size. The superweapon allows three 
 
 ### Droppod TeamType
 
-The other path is a reinforcement team. A **TeamType** is the INI definition a team is built from, and it names a **TaskForce**, the roster of object types and counts the team is filled with. [TeamTypes and AI triggers in brief](/systems/ai-team-production/#teamtypes-and-ai-triggers-in-brief) introduces both and the sections that declare them.
-
-[`Droppod=yes`](/keys/droppod-teamtype/) on the TeamType makes the team arrive by pod. It applies only when the team is delivered by the [Reinforcement (team)](/mapping/actions/taction-reinforcements/) or [Reinforcement (team) [at waypoint]](/mapping/actions/taction-reinforcements-special/) trigger action. Teams the AI builds and recruits never arrive by pod.
-
-```ini title="AI.INI, AIFS.INI, or map file"
-[TaskForces]
-0=MyInfantryTaskForce
-
-[MyInfantryTaskForce] ; example TaskForce
-Name=Drop infantry
-0=2,E1
-1=1,E2
-
-[TeamTypes]
-0=MyDropTeam
-
-[MyDropTeam] ; example TeamType
-Name=Drop team
-TaskForce=MyInfantryTaskForce
-Droppod=yes
-```
-
-Every TaskForce member must be an InfantryType. If any member is another kind of type, such as a vehicle or aircraft, the whole team arrives as an ordinary reinforcement. Its infantry do not drop.
-
-The first member lands at the nearest usable cell to the team's waypoint, or to the waypoint the action names. Each later member is aimed at the cell north of the previous member's cell. When that cell is outside the playfield, the next neighbor clockwise is used instead. Those later cells are not checked for room, so a member aimed at a blocked cell can be destroyed on landing, as [Touchdown](#touchdown) describes.
+A reinforcement team with [`Droppod=yes`](/keys/droppod-teamtype/) does not use drop pods. It flies in aboard a paradrop plane and parachutes over its waypoint; the [`Droppod` key page](/keys/droppod-teamtype/) describes the flight.
 
 ## Approach and descent
 

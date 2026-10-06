@@ -313,6 +313,11 @@ bool ObjectTypeClass::Can_Be_Built_At(BuildingClass const * building, bool needs
 		return(false);
 	}
 
+	// A reverse engineered type comes from any factory of its kind, whichever side built the factory.
+	if (house != NULL && RTTI != RTTI_BUILDINGTYPE && house->Is_Reversed(this)) {
+		return(true);
+	}
+
 	int const ownable = Get_Ownable();
 	if ((building->Class->Get_Ownable() & ownable) == 0) {
 		return(false);

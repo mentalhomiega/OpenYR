@@ -44,7 +44,7 @@ Every house plays at a difficulty slot of 0, 1 or 2. The slot selects the rules 
 
 A scenario holds two difficulties, one for the player and one for the computer:
 
-- In a campaign game, both come from [`Difficulty=`](/keys/difficulty/), the campaign setting kept in `sun.ini`. The player's difficulty is that setting, and the computer's is `2` minus it.
+- In a campaign game, both come from [`Difficulty=`](/keys/difficulty/), the campaign setting kept in `RA2MD.INI`. The player's difficulty is that setting, and the computer's is `2` minus it.
 - A [launch file](/formats/spawn-ini/#a-campaign-mission) that starts a campaign mission sets the two separately instead, so it can pair any player difficulty with any computer difficulty.
 - Outside a campaign, both come from the difficulty chosen for the session. The computer's is again `2` minus the player's.
 

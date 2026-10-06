@@ -33,9 +33,12 @@
 #pragma once
 
 #include "abstype.h"
+#include "attacheffect.h"
 #include "typelist.h"
 
 #include "armor.hh"
+
+#include <vector>
 
 class AnimTypeClass;
 class ParticleSystemTypeClass;
@@ -64,6 +67,23 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		bool Read_INI(CCINIClass const & ini);
 
+		// The damage multiplier against an armor type; 1 for a type this warhead has not read.
+		double Versus(ArmorType armor) const;
+
+		// Whether this warhead's weapons may fire at an object of the armor type at all, as when ordered to.
+		bool Can_Force_Fire(ArmorType armor) const;
+
+		// Whether this warhead's weapons may fire back at an attacker of the armor type.
+		bool Can_Retaliate(ArmorType armor) const;
+
+		// Whether this warhead's weapons may pick an object of the armor type as a target on their own.
+		bool Can_Passive_Acquire(ArmorType armor) const;
+
+	private:
+		void Size_Armor_Tables(void);
+
+	public:
+
 		static WarheadTypeClass *Find_Or_Make(const char *name);
 		static WarheadTypeClass *From_Name(char const * name);
 
@@ -77,8 +97,20 @@ class WarheadTypeClass : public AbstractTypeClass
 		/*
 		**	The warhead damage is reduced depending on the the type of armor the
 		**	defender has. This table is what gives weapons their "character".
+		**	It has an entry for every armor type, declared ones included.
 		*/
-		double Modifier[ARMOR_COUNT];
+		std::vector<double> Modifier;
+
+		// Whether Versus.<armor> set the entry, so a declared armor's default no longer applies.
+		std::vector<bool> IsModifierSet;
+
+		/*
+		 * The targeting switches per armor type: -1 follows the multiplier, 0 forbids and 1
+		 * allows, from Versus.<armor>.ForceFire, .Retaliate and .PassiveAcquire.
+		 */
+		std::vector<signed char> ForceFire;
+		std::vector<signed char> Retaliate;
+		std::vector<signed char> PassiveAcquire;
 
 		/*
 		 * This is the fraction of the damage that reaches an infantryman who is lying prone,
@@ -292,5 +324,8 @@ class WarheadTypeClass : public AbstractTypeClass
 		 * retaliates against the veinhole that owns the veins it is standing in.
 		 */
 		bool IsVeinhole;
+
+		// The effect this warhead attaches to the objects it hits (Ares AttachEffect).
+		AttachEffectTypeClass AttachEffect;
 
 };

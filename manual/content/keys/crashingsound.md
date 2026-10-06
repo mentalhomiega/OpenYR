@@ -1,7 +1,7 @@
 ---
 key: CrashingSound
 summary: "The sound played as a destroyed aircraft starts to fall."
-see_also: [VoiceCrashing]
+see_also: [VoiceCrashing, Crashable]
 when_omitted:
   kind: value
   value: none

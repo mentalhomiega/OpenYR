@@ -8,8 +8,15 @@ keys:
   - EliteAbilities
   - ElitePrimary
   - EliteSecondary
+  - EnemyInsignia
   - IRepairRate
   - InitialVeteran
+  - Insignia
+  - Insignia.ShowEnemy
+  - InsigniaFrame
+  - InsigniaFrames
+  - Promote.EliteSound
+  - Promote.VeteranSound
   - Trainable
   - VeteranAbilities
   - VeteranArmor
@@ -155,6 +162,12 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `TIBERIUM_HEAL` | Standing in Tiberium repairs the object, as with [`TiberiumHeal=yes`](/keys/tiberiumheal/). |
 | `GUARD_AREA` | An idle armed vehicle, and an idle human-owned infantry, takes the Guard Area mission instead of Guard. A member of a team is unaffected, and so is a computer-owned infantry, whose idle handling never reads the ability. |
 | `CRUSHER` | A vehicle crushes crushable objects and overlays, as with [`Crusher=yes`](/keys/crusher/). |
+| `EMPIMMUNE` | EMP does not disable the object, as with [`ImmuneToEMP=yes`](/keys/immunetoemp/) (Ares). |
+| `RADIMMUNE` | Radiation warheads and lingering radiation do not harm the object, as with [`ImmuneToRadiation=yes`](/keys/immunetoradiation/) (Ares). |
+| `UNWARPABLE` | Temporal weapons cannot warp the object, as with [`Warpable=no`](/keys/warpable/) (Ares). |
+| `POISONIMMUNE` | `Poison=yes` warheads do not harm the object, as with [`ImmuneToPoison=yes`](/keys/immunetopoison/) (Ares). |
+| `PSIONICWEAPONIMMUNE` | `PsychicDamage=yes` warheads do not harm the object, as with [`ImmuneToPsionicWeapons=yes`](/keys/immunetopsionicweapons/) (Ares). |
+| `PSIONICSIMMUNE` | Mind control, `Psychedelic=yes` warheads and the Psychic Dominator treat the object as they treat [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) (Ares). |
 
 Unknown or misspelled ability names are ignored without a warning.
 
@@ -200,7 +213,7 @@ Promotion bonuses apply the next time the object fires, takes damage, or moves. 
 
 Extra sight reveals more terrain the next time the object reveals its surroundings. Promotion itself does not reveal the larger area.
 
-When one of the player's objects becomes a veteran or elite, the player hears [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) at the object, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
+When one of the player's objects becomes a veteran or elite, the player hears the type's [`Promote.VeteranSound`](/keys/promote.veteransound/) or [`Promote.EliteSound`](/keys/promote.elitesound/) at the object, or [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) when the type sets none, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
 
 ## Carrying rank between objects
 
@@ -212,6 +225,12 @@ Passengers who survive a destroyed transport keep their ranks. Crew created when
 
 Veteran and elite objects display different rank insignia beside them, even when unselected. Buildings display them too. The insignia sits farther from vehicles, aircraft, and buildings than from infantry.
 
-Every player sees an object's rank insignia, whoever owns it. Shroud, fog, or an undetected cloak hides the insignia along with the object.
+Players see an object's rank insignia whoever owns it, unless [`EnemyInsignia=no`](/keys/enemyinsignia/) or the type's [`Insignia.ShowEnemy=no`](/keys/insignia.showenemy/) limits it to the owner and the owner's allies. An observer sees every insignia. Shroud, fog, or an undetected cloak hides the insignia along with the object.
 
-The insignia comes from `PIPS.SHP`: frame 14 for a veteran, frame 15 for an elite object and frame 19 for a below-rookie object.
+The insignia comes from `PIPS.SHP`: frame 14 for a veteran, frame 15 for an elite object and frame 19 for a below-rookie object. A rookie has none.
+
+### Custom insignia
+
+A type can draw its own insignia for the rookie, veteran and elite ranks. [`Insignia`](/keys/insignia/) names the shape file, and [`InsigniaFrame`](/keys/insigniaframe/) or [`InsigniaFrames`](/keys/insigniaframes/) names the frame. A frame the type sets for a rank replaces the stock frame, so setting one for a rookie shows an insignia where there was none. The file and the frame are chosen separately: a rank with a file and no frame draws the stock frame number from the new file, and a rank with a frame and no file draws that frame from `PIPS.SHP`.
+
+Each key has per-rank forms, such as `Insignia.Elite` and `InsigniaFrame.Veteran`. For each rank the shorthand sets the value first, and the rank's own key then overrides it. The below-rookie insignia is not affected.

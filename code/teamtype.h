@@ -259,6 +259,11 @@ class TeamTypeClass : public AbstractTypeClass
 		*/
 		WAYPOINT Origin;
 
+		// Where a Droppod team's transport plane starts when UseTransportOrigin is set
+		// (TeamTypeClass::TransportWaypoint); otherwise it enters from the house's map edge.
+		WAYPOINT TransportWaypoint;
+		bool UseTransportOrigin;
+
 		/*
 		**	This records the number of teams of this type that are currently
 		**	active.

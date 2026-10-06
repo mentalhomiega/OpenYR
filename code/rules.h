@@ -104,6 +104,7 @@ class RulesClass
 		bool Crate_Rules(CCINIClass const & ini);
 		bool Combat_Damage(CCINIClass const & ini);
 		bool Radiation(CCINIClass const & ini);
+		bool Elevation_Model(CCINIClass const & ini);
 		bool Color_Schemes(CCINIClass const & ini);
 
 		bool General(CCINIClass const & ini);
@@ -171,6 +172,12 @@ class RulesClass
 		// A passenger firing from inside an open-topped transport reaches this many cells farther.
 		int OpenToppedRangeBonus;
 
+		// What a passenger itself adds when firing out of any open-topped transport, on top of the
+		// transport's own values, unless its type sets OpenTransport.RangeBonus or
+		// OpenTransport.DamageMultiplier (Phobos).
+		int OpenTransportRangeBonus;
+		double OpenTransportDamageMultiplier;
+
 		// A vehicle in a bunker multiplies its damage and rate of fire by these and reaches this many cells farther.
 		double BunkerDamageMultiplier;
 		double BunkerROFMultiplier;
@@ -197,6 +204,9 @@ class RulesClass
 
 		// Can the player set off an Ivan bomb early by clicking the object carrying it?
 		bool IsCanDetonateTimeBomb;
+
+		// Whether chronoshifted infantry destroys a vehicle it lands on; when not, the infantry dies (Ares ChronoInfantryCrush).
+		bool IsChronoInfantryCrush;
 
 		// The weapon an exploding object without a weapon of its own sets off as it dies.
 		WeaponTypeClass * DeathWeapon;
@@ -261,6 +271,9 @@ class RulesClass
 		bool LightningPrintText;
 		TypeList<AnimTypeClass const *> WeatherConClouds;
 		TypeList<AnimTypeClass const *> WeatherConBolts;
+
+		// The fires that burn on a badly damaged structure (RulesClass::DamageFireTypes).
+		TypeList<AnimTypeClass const *> DamageFireTypes;
 		AnimTypeClass const * WeatherConBoltExplosion;
 		TypeList<int> LightningSounds;
 		VocType StormSound;
@@ -361,6 +374,15 @@ class RulesClass
 		int RadDurationMultiple;
 		int RadApplicationDelay;
 		int RadLevelMax;
+
+		/*
+		 * Elevation model: a firer whose projectile is SubjectToElevation gains ElevationIncrementBonus
+		 * cells of range for every ElevationIncrement levels it stands above its target, up to
+		 * ElevationBonusCap cells.
+		 */
+		int ElevationIncrement;
+		double ElevationIncrementBonus;
+		double ElevationBonusCap;
 		int RadLevelDelay;
 		int RadLightDelay;
 		double RadLevelFactor;
@@ -422,6 +444,18 @@ class RulesClass
 		 * picks one of them out of the owner's structures and sends the drone out beside it.
 		 */
 		TypeList<BuildingTypeClass const *> HSBuilding;
+
+		// A house earns bounty only while it owns one of these, or always when the list is empty (Ares BountyEnablers).
+		TypeList<BuildingTypeClass const *> BountyEnablers;
+
+		// Whether bounty earned is shown where the victim died, for types that do not say (Ares BountyDisplay).
+		bool IsBountyDisplay;
+
+		// Whether players see the rank insignia of objects not allied with them, for types that do not say (Ares EnemyInsignia).
+		bool IsEnemyInsignia;
+
+		// Whether any type sets KeepAlive, which switches the short game defeat test to the KeepAlive rule.
+		bool IsKeepAliveSet;
 
 		/// Unused
 		bool IsFreeMCV;
@@ -1479,6 +1513,9 @@ class RulesClass
 		 * a unit to move there.
 		 */
 		AnimTypeClass const * MoveFlash;
+
+		// The marker drawn over an object hidden behind a building; without one, brackets are drawn instead.
+		AnimTypeClass const * Behind;
 
 		/*
 		 * These are the parachutes used when something is dropped from the air -- one

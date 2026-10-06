@@ -92,6 +92,7 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	Prefix('A'),
 	IsMultiplay(false),
 	IsMultiplayPassive(false),
+	IsGivesBounty(true),
 	IsWallOwner(true),
 	IsSmartAI(false)
 {
@@ -195,6 +196,7 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
+		IsGivesBounty = ini.Get_Bool(Name(), "GivesBounty", IsGivesBounty);
 		IsWallOwner = ini.Get_Bool(Name(), "WallOwner", IsWallOwner);
 		IsSmartAI = ini.Get_Bool(Name(), "SmartAI", IsSmartAI);
 
@@ -277,6 +279,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);
 	stream.Serialize(IsMultiplayPassive);
+	stream.Serialize(IsGivesBounty);
 	stream.Serialize(IsWallOwner);
 	stream.Serialize(IsSmartAI);
 }

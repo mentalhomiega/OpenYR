@@ -510,6 +510,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Grinding=yes structure takes in its owner's infantry and vehicles and pays their refund.
 		bool IsGrinding;
 
+		// Whether a grinding building teaches its owner to build the types it grinds (Ares ReverseEngineersVictims).
+		bool IsReverseEngineersVictims;
+
 		// An InfantryAbsorb=yes or UnitAbsorb=yes structure takes in its owner's infantry or
 		// vehicles, up to Passengers, and makes ExtraPower more power for each one inside.
 		bool IsInfantryAbsorb;
@@ -521,6 +524,11 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
 		bool IsFactoryPlant;
+
+		// Where fires burn on the structure when it is badly damaged, in pixels from its corner, and how many
+		// of the eight are set; the art's DamageFireOffset0 onward, read up to the first one missing.
+		Point2D DamageFireOffset[8];
+		int DamageFireOffsetCount;
 		double InfantryCostBonus;
 		double UnitsCostBonus;
 		double AircraftCostBonus;
@@ -532,6 +540,20 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// A vehicle in this bunker draws this many height levels up, so that it shows above the walls.
 		int OccupyHeight;
+
+		/*
+		 * If this building screens the cells behind it from view, then this flag will be
+		 * true. Placing it then marks the cells it covers, so that objects standing there
+		 * can show that they are hidden behind it.
+		 */
+		bool IsCanHideThings;
+
+		/*
+		 * These are extra cells, as offsets from the building's origin, that its cover is
+		 * added to or taken from. An entry of (0xFFFF, 0xFFFF) is unused.
+		 */
+		Point2D AddOccupy[8];
+		Point2D RemoveOccupy[8];
 
 		/*
 		 * If harvesters may dock with this building to unload tiberium, then this flag will

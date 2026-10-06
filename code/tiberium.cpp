@@ -203,14 +203,33 @@ ClassID TiberiumClass::Class_ID(void) const
 /// they track are about to be replaced with the saved ones.
 /// </summary>
 /// <returns>bool; Was the record read whole?</returns>
-/// <remarks>The spread and growth systems are not saved, so they come back empty. They
-/// must be rebuilt once the game has finished loading.</remarks>
+/// <remarks>The spread and growth queues come back as the save holds them; a system the
+/// save does not hold is rebuilt from the map by Post_Load_Game.</remarks>
 bool TiberiumClass::Load(SaveStreamClass & stream)
 {
 	Clear_Spread();
 	Clear_Growth();
 
 	return(Load_Members(stream));
+}
+
+
+// A per-cell flag array travels as a presence flag and then one byte per map cell. A loading
+// type gets an array sized to the map the save restored, which is read before the tiberiums.
+static void Serialize_Cell_Flags(SaveStreamClass & stream, bool * & flags)
+{
+	bool present = (flags != NULL);
+	stream.Serialize(present);
+	if (!present) {
+		return;
+	}
+
+	int const count = Map_Cell_Count();
+	if (stream.Is_Loading()) {
+		delete [] flags;
+		flags = new bool [count];
+	}
+	stream.Serialize_Bytes(flags, count);
 }
 
 
@@ -236,13 +255,12 @@ void TiberiumClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Variety);
 	stream.Serialize(RampVariety);
 	stream.Serialize(SpreadCount);
-	// SpreadQueue -- sized to the map rather than to saved state; Load drops these and the
-	// tiberium systems build them again from the map itself.
-	// SpreadState
+	SpreadQueue.Serialize(stream);
+	Serialize_Cell_Flags(stream, SpreadState);
 	stream.Serialize(SpreadTimer);
 	stream.Serialize(GrowthCount);
-	// GrowthQueue -- the growth records, dropped and rebuilt the same way.
-	// GrowthState
+	GrowthQueue.Serialize(stream);
+	Serialize_Cell_Flags(stream, GrowthState);
 	stream.Serialize(GrowthTimer);
 }
 
@@ -685,12 +703,17 @@ void TiberiumClass::Queue_Growth(Cell const & cell)
 
 
 /// <summary>
-/// Handles the post load processing for the tiberium types.
-/// This routine is called by the save game loader once every object has been read back
-/// in, giving the tiberium types a chance to repair anything that does not survive the
-/// trip.
+/// Builds, from the map, any spread or growth system a loaded tiberium type has no saved
+/// queue for. The save game loader calls this once every object has been read back in.
 /// </summary>
 void TiberiumClass::Post_Load_Game(void)
 {
-	// nothing
+	for (int i = 0; i < Tiberiums.Count(); i++) {
+		if (Tiberiums[i]->SpreadState == NULL) {
+			Tiberiums[i]->Init_Spread();
+		}
+		if (Tiberiums[i]->GrowthState == NULL) {
+			Tiberiums[i]->Init_Growth();
+		}
+	}
 }

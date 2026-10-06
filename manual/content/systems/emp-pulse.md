@@ -5,6 +5,8 @@ category: weapons-projectiles
 keys:
   - Damage
   - EMEffect
+  - EMP.Modifier
+  - EMP.Threshold
   - EMPulseCannon
   - EMPulseSparkles
   - ImmuneToEMP
@@ -105,7 +107,7 @@ The pulse catches an aircraft when **all of**:
 
 The distance also counts the aircraft's height above the map's lowest ground level. Each terrain height level adds about four tenths of a cell, so over raised terrain the reach shrinks. On high ground a small pulse can miss an aircraft in its own cell.
 
-A caught aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its trigger. If it is off the ground, it crashes unless its type is immune. Its strength drops to zero, the firer is credited with the kill, and its passengers die. An aircraft taking off or landing is caught this way.
+A caught aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its trigger. If it is off the ground, it crashes unless its type is immune. A type with [`Crashable=no`](/keys/crashable/) that is not immune is destroyed instead, on the ground or off it. Its strength drops to zero, the firer is credited with the kill, and its passengers die. An aircraft taking off or landing is caught this way.
 
 An aircraft standing on the ground does not crash. The cell sweep below then treats it like a vehicle, so it springs Paralyzed a second time and, unless immune, is stunned. The sweep skips it if it stands in a structure's cell.
 
@@ -155,7 +157,7 @@ Only cyborgs among infantry are stunned. Other soldiers walk through a pulse unt
 
 ## While stunned
 
-A stun lasts the pulse's full duration. A second pulse sets the stun to its own duration, which can shorten a stun already running.
+A stun lasts the pulse's duration multiplied by the object type's [`EMP.Modifier`](/keys/emp.modifier/), which is `1` when the type does not set it. A second pulse sets the stun to its own scaled duration, which can shorten a stun already running.
 
 A stunned vehicle, cyborg or aircraft stops where it is and cannot move. It is given an [`EMPulseSparkles`](/keys/empulsesparkles/) animation. The player cannot deploy it, and a mobile EMP vehicle neither charges nor discharges.
 
@@ -164,6 +166,18 @@ A stunned object cannot fire. Unless it has the `CLOAK` ability or stands in its
 A stunned structure is powered off: its lights, laser fence and cloaking field stop. Its powered animations stop too, but restart the next time its house's power balance changes while the house has enough power. The player cannot switch it back on or undeploy it. It cannot serve as a launch site for the EM pulse cannon. A stunned [`Radar=yes`](/keys/radar/) structure can take away the player's radar map, as [radar](/systems/power/#radar) describes.
 
 A stun does not change a structure's power output or drain. A stunned power plant keeps feeding the grid, as [what each structure contributes](/systems/power/#what-each-structure-contributes) describes.
+
+### Destruction by a long stun
+
+A type that sets [`EMP.Threshold`](/keys/emp.threshold/) is destroyed when a pulse stuns it for more frames than the threshold allows. A negative threshold destroys it only if it is in the air when stunned. Every object in reach is stunned first, and the pulse then destroys the objects over their threshold one by one. Each takes damage equal to its full strength from [`C4Warhead`](/keys/c4warhead/), credited to the firer.
+
+The threshold applies to every stun [a pulse gives](#what-a-pulse-reaches): to structures, vehicles, cyborgs and aircraft standing on the ground, and to burrowing objects. An aircraft that the pulse crashes or destroys in the air is not stunned and is not checked against it.
+
+```ini title="rulesmd.ini"
+[HTNK]               ; example VehicleType
+EMP.Modifier=150%    ; stunned for one and a half times the pulse's duration
+EMP.Threshold=1500   ; destroyed when that stun is longer than 1500 frames
+```
 
 ## Recovery
 

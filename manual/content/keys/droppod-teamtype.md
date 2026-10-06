@@ -1,29 +1,23 @@
 ---
 key: Droppod
-summary: Makes an infantry-only TeamType arrive by drop pod.
-see_also: [DropPod, "system:drop-pods"]
+summary: Makes a reinforcement TeamType fly in aboard a paradrop plane and parachute over its waypoint.
+see_also: [UseTransportOrigin, TransportWaypoint, Waypoint]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-`Droppod=yes` makes a reinforcement team of infantry arrive by drop pod, landing near its waypoint instead of arriving the ordinary way. [Drop pods](/systems/drop-pods/#droppod-teamtype) describes where each member lands and what can destroy it on landing.
+`Droppod=yes` makes a reinforcement team arrive by air. The game creates a `PDPLANE` for the team's house, loads every member of the team aboard it, and sends it to paradrop them over the team's [`Waypoint`](/keys/waypoint/), or over the waypoint the trigger action names. Despite the key's name, no drop pods are used.
+
+The plane enters from the house's map edge, or from the north edge when the house names none. With [`UseTransportOrigin=yes`](/keys/usetransportorigin/), it starts at the team's [`TransportWaypoint`](/keys/transportwaypoint/) instead. The team arrives this way only when it is delivered by the [Reinforcement (team)](/mapping/actions/taction-reinforcements/) or [Reinforcement (team) at waypoint](/mapping/actions/taction-reinforcements-special/) trigger action; teams the AI builds and recruits are not flown in.
+
+When the map has no `PDPLANE` aircraft type, or the plane cannot be placed, the team does not arrive.
 
 ```ini title="ai.ini or map file"
 [MyDropTeam] ; example TeamType
 Droppod=yes
 TaskForce=MyInfantryTaskForce ; defined under [TaskForces]
+Waypoint=A
 ```
-
-The pods are used only under **all of:**
-
-- the team is delivered by the [Reinforcement (team)](/mapping/actions/taction-reinforcements/) or [Reinforcement (team) at waypoint](/mapping/actions/taction-reinforcements-special/) trigger action;
-- every member of the team's TaskForce is an InfantryType.
-
-Teams the AI creates and fills by recruiting never arrive by pod.
-
-:::caution[One non-infantry member cancels the pods]
-If any TaskForce member is a vehicle, aircraft or other non-infantry type, the whole team arrives as an ordinary reinforcement. Its infantry do not drop.
-:::
 
 The `[AudioVisual]` animation list is a different key, spelled [`DropPod`](/keys/droppod-global-rules/) with an uppercase second `P`.

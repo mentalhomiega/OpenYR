@@ -337,6 +337,8 @@ bool TerrainTypeClass::Read_INI(CCINIClass const & ini)
 		if (image) {
 			RadarColor = image->Get_Color(0);
 		}
+		// A RadarColor entry overrides the colour taken from the artwork (TerrainTypeClass::LoadFromINI).
+		RadarColor = ini.Get_RGBClass(Name(), "RadarColor", RadarColor);
 
 		IsAnimated = ini.Get_Bool(Name(), "IsAnimated", IsAnimated);
 		AnimationRate = ini.Get_Int(Name(), "AnimationRate", AnimationRate);

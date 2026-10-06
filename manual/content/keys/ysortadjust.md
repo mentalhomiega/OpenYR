@@ -1,7 +1,7 @@
 ---
 key: YSortAdjust
 summary: Biases where the animation falls in the ground layer's drawing order, in leptons.
-see_also: ["YDrawOffset", "Surface", "ActiveAnimYSort", "MoveFlash"]
+see_also: ["ZAdjust", "YDrawOffset", "Surface", "ActiveAnimYSort", "MoveFlash"]
 when_omitted:
   kind: value
   value: "0"

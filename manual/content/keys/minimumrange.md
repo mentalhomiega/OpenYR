@@ -19,6 +19,6 @@ A target refused this way counts as out of range. An object on the [`Sticky`](/r
 
 When no cell qualifies, the object gives up the target and moves to a free cell nearby. A hunter-seeker or a vehicle thief heads straight for the target instead.
 
-The limit also applies to an [`Arcing=yes`](/keys/arcing/) projectile, which skips the `Range=` distance comparison. Unlike `Range=`, the value is compared as written, with no third of a cell taken off.
+The limit also applies to an [`Arcing=yes`](/keys/arcing/) projectile.
 
 `0` turns the limit off, and so does any negative value except `-1`. `-1` counts as not set, so it keeps whatever an earlier rules file set.

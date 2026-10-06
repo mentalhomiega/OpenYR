@@ -7,9 +7,9 @@ keys: [ScoreVolume, IsScoreRepeat, IsScoreShuffle]
 
 The game plays one music track at a time; two overlap only while one fades out as the other starts. [THEME.INI](/formats/theme-ini/) declares the tracks, and each track streams from the file its [`Sound=`](/keys/sound/) names, or from the file named after its ID. The file can be a `.WAV`, `.OGG`, `.FLAC`, `.MP3` or `.AUD` file; [AUD audio](/formats/aud/) explains where the game looks for it. A track's [`Volume=`](/keys/volume/#scope-themes) sets its loudness relative to the other tracks.
 
-The player's music settings are stored in `sun.ini` under `[Audio]`, and the sound options screen changes them. [`ScoreVolume`](/keys/scorevolume/) sets the music volume. [`IsScoreShuffle`](/keys/isscoreshuffle/) picks the next track at random, and [`IsScoreRepeat`](/keys/isscorerepeat/) plays every track again when it ends. The values below are examples; the key pages give the defaults.
+The player's music settings are stored in `RA2MD.INI` under `[Audio]`, and the sound options screen changes them. [`ScoreVolume`](/keys/scorevolume/) sets the music volume. [`IsScoreShuffle`](/keys/isscoreshuffle/) picks the next track at random, and [`IsScoreRepeat`](/keys/isscorerepeat/) plays every track again when it ends. The values below are examples; the key pages give the defaults.
 
-```ini title="sun.ini"
+```ini title="RA2MD.INI"
 [Audio]
 ScoreVolume=1.0
 IsScoreShuffle=yes

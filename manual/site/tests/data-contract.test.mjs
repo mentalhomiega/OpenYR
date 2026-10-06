@@ -257,8 +257,8 @@ test('Other INI references are file-first, ordered, and use selector labels', ()
 			.map((group) => group.slug);
 		assert.deepEqual(rendered, named, `${file.id} groups are out of registry order`);
 	}
-	assert.equal(groups.find((group) => group.slug === 'options').displayTitle, '[Options] in SUN.INI');
-	assert.equal(groups.find((group) => group.slug === 'multiplayer').displayTitle, '[MultiPlayer] in SUN.INI');
+	assert.equal(groups.find((group) => group.slug === 'options').displayTitle, '[Options] in RA2MD.INI');
+	assert.equal(groups.find((group) => group.slug === 'multiplayer').displayTitle, '[MultiPlayer] in RA2MD.INI');
 	assert.equal(groups.find((group) => group.slug === 'campaign').displayTitle, 'Campaign sections in BATTLE*.INI');
 	assert.equal(referenceFileLabel('sound01.ini'), 'SOUND.INI / SOUND01.INI');
 	assert.equal(referenceFileLabel('theme01.ini'), 'THEME.INI + THEME01.INI');

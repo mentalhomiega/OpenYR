@@ -13,7 +13,7 @@ The step between copies is the height the shape file records for its first frame
 
 A tiled animation is drawn differently from an ordinary one:
 
-- Every copy uses the shared animation palette. [`AltPalette=yes`](/keys/altpalette/), the house colors that [`ShouldUseCellDrawer`](/keys/shouldusecelldrawer/) gives a structure's animation, and the tinted terrain palette of an animation that a terrain tile starts are ignored.
+- Every copy uses the shared animation palette. [`AltPalette=yes`](/keys/altpalette/), a [`CustomPalette`](/keys/custompalette/), the house colors that [`ShouldUseCellDrawer`](/keys/shouldusecelldrawer/) gives a structure's animation, and the tinted terrain palette of an animation that a terrain tile starts are ignored.
 - [`Flat=yes`](/keys/flat/#scope-animtype) has no effect.
 
 The animation's brightness and fade still apply, and every copy is drawn at the same fade level.

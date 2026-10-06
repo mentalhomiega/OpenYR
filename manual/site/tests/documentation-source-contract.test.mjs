@@ -1428,7 +1428,7 @@ test('An EM pulse can be refused by type', () => {
 	assertOrdered(
 		pulse,
 		[
-			'if (!aircraft->Class->Is_Immune_To_EMP()) {',
+			'if (!aircraft->Class->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {',
 			'if (!foot->TClass->Is_Immune_To_EMP()) {',
 			'if (!building->Class->Is_Immune_To_EMP()) {',
 			'bool immune = techno->TClass->Is_Immune_To_EMP();',

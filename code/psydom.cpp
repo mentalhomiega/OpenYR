@@ -122,7 +122,7 @@ void PsychicDominatorClass::AI(void)
 /// </summary>
 bool PsychicDominatorClass::Can_Be_Dominated(TechnoClass const * techno)
 {
-	return(techno != NULL && techno->RTTI != RTTI_BUILDING && !techno->TClass->IsImmuneToPsionics
+	return(techno != NULL && techno->RTTI != RTTI_BUILDING && !techno->Is_Immune_To_Psionics()
 		&& !techno->Is_Iron_Curtained() && !techno->TClass->IsBalloonHover && !techno->In_Air());
 }
 

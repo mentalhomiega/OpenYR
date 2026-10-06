@@ -29,9 +29,12 @@ keys:
   - ChargingVoice
   - ChronoBlast
   - ChronoBlastDest
+  - ChronoInfantryCrush
   - ChronoInSound
   - ChronoOutSound
   - ChronoPlacement
+  - Chronoshift.Allow
+  - Chronoshift.Crushable
   - DominatorCaptureRange
   - DominatorDamage
   - DominatorFireAtPercentage
@@ -89,6 +92,7 @@ keys:
   - RechargeTime
   - RechargeVoice
   - SidebarImage
+  - SidebarPCX
   - SovParaDropInf
   - SovParaDropNum
   - SpecialSound
@@ -284,7 +288,7 @@ Two events outside the cycle also change the wall. Damage aimed at a raised sect
 
 ### The sidebar cameo
 
-A superweapon's cameo is the shape file named by [`SidebarImage=`](/keys/sidebarimage/), or `XXICON.SHP` when that file cannot be found. The cameo shows no numeric countdown. Its charge appears as a clock and a short caption. [The sidebar](/systems/sidebar/) covers where the cameo sits, how it is announced, how it is captioned, and when it leaves.
+A superweapon's cameo is the shape file named by [`SidebarImage=`](/keys/sidebarimage/), or `XXICON.SHP` when that file cannot be found. A readable PCX picture named by [`SidebarPCX=`](/keys/sidebarpcx/) is drawn on the sidebar instead. The cameo shows no numeric countdown. Its charge appears as a clock and a short caption. [The sidebar](/systems/sidebar/) covers where the cameo sits, how it is announced, how it is captioned, and when it leaves.
 
 The caption depends on the weapon's state. A charge-draining weapon has a caption while it charges and a fourth state that ordinary weapons lack.
 
@@ -600,12 +604,13 @@ A `Type=ChronoSphere` weapon picks the units to move, and a `Type=ChronoWarp` we
 When the warp fires, [`ChronoBlast`](/keys/chronoblast/) plays over the picked cell and [`ChronoBlastDest`](/keys/chronoblastdest/) over the target. Then each vehicle, infantryman and landed aircraft on the picked cell and the eight cells around it is handled in turn. On a cell with a bridge, only those on the bridge count.
 
 - An [`Organic=yes`](/keys/organic/) unit, which every infantryman is by default, is destroyed unless its type is [`Teleporter=yes`](/keys/teleporter/).
-- A unit under the Iron Curtain, and a vehicle standing on a war factory, stays where it is.
+- A unit under the Iron Curtain, and a vehicle standing on a war factory, stays where it is. So does a unit whose type sets [`Chronoshift.Allow=no`](/keys/chronoshift.allow/), even when it is organic.
 - Every other unit moves to the cell in the same position relative to the target, keeping its place within the cell. [`WarpOut`](/keys/warpout/) plays where it leaves and where it lands, with [`ChronoOutSound`](/keys/chronooutsound/) and [`ChronoInSound`](/keys/chronoinsound/).
 
 What stands where a unit lands decides what happens to it:
 
 - Another vehicle, infantryman or aircraft is destroyed, unless the warp is moving it too. An arriving infantryman destroys only infantry on its own spot in the cell.
+- If that object's type sets [`Chronoshift.Crushable=no`](/keys/chronoshift.crushable/), the arriving unit is destroyed instead and everything on the cell stays. This also happens to an arriving infantryman when [`ChronoInfantryCrush=no`](/keys/chronoinfantrycrush/) and the object is a vehicle or aircraft. Neither key is read when a structure or terrain object is on the cell, because the unit then moves to another cell.
 - Anything under the Iron Curtain or the force shield destroys the arriving unit instead.
 - A structure or a terrain object, such as a tree, sends the arriving unit to the nearest cell it could stand on. With no such cell, the unit is destroyed.
 

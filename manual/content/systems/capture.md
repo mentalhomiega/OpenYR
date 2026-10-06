@@ -96,7 +96,7 @@ A `C4=yes` soldier also gets the demolitions cursor over a non-allied `Capturabl
 
 ### A vehicle thief over a vehicle
 
-A player-controlled `VehicleThief=yes` soldier gets the enter cursor over any vehicle owned by another house. That includes a landed aircraft but not a deployed vehicle. A [`NonVehicle=yes`](/keys/nonvehicle/) type does not count as a vehicle. An [`IsTrain=yes`](/keys/istrain/) type gives the select cursor instead. The test compares houses, not alliances, so an allied player's vehicle gets the enter cursor too.
+A player-controlled `VehicleThief=yes` soldier gets the enter cursor over any vehicle owned by another house. That includes a landed aircraft but not a deployed vehicle. A [`NonVehicle=yes`](/keys/nonvehicle/) type does not count as a vehicle. An [`IsTrain=yes`](/keys/istrain/) type, or a type with [`VehicleThief.Allowed=no`](/keys/vehiclethief.allowed/), gives the select cursor instead. The test compares houses, not alliances, so an allied player's vehicle gets the enter cursor too.
 
 :::note[The harvester truce withholds the enter cursor]
 While the [`HarvesterImmune`](/keys/harvesterimmune/) truce is on, a vehicle whose type is listed in [`HarvesterUnit`](/keys/harvesterunit/) gives the select cursor instead of the enter cursor. [Target selection](/systems/target-selection/#why-a-candidate-is-rejected) applies the same exemption when it rejects a candidate.
@@ -315,7 +315,7 @@ A structure destroyed by its charge produces no survivors, because forced damage
 
 `VehicleThief=yes` and `Thief=yes` are separate settings with separate cursors, targeting and limits. Both record the soldier type that took the vehicle. When a vehicle stolen either way is destroyed, a soldier of that type steps back out of the wreck. It is created at the wreck with strength between 5 and half its maximum, whatever `Crewed=` says and with no crew-escape roll. It hunts for a computer house and stands guard for a human one. A stolen aircraft does not return its thief.
 
-A `VehicleThief=yes` soldier is the one with a cursor. It takes the vehicle through [the vehicle branch](#the-vehicle-branch).
+A `VehicleThief=yes` soldier is the one with a cursor. It takes the vehicle through [the vehicle branch](#the-vehicle-branch). A victim type with [`VehicleThief.Allowed=no`](/keys/vehiclethief.allowed/) is refused: the soldier gets the select cursor over it, cannot step into its cell and does not keep it as a target. `Thief=yes` soldiers ignore that key.
 
 A hunting vehicle thief turns its target into a capture order. An idle computer-owned one outside a team goes on area guard once its house's IQ reaches [`GuardArea`](/keys/guardarea/).
 

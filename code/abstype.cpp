@@ -14,6 +14,7 @@
 #include "always.h"
 
 #include "abstype.h"
+#include "csf.h"
 
 #include "ccini.h"
 #include "crc.h"
@@ -88,11 +89,46 @@ AbstractTypeClass::~AbstractTypeClass(void)
  * HISTORY:                                                                                    *
  *   07/19/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
+// Yuri's Revenge names an object by its UIName string (AbstractTypeClass::Read_INI); a label the table lacks falls back to Name.
+const char * AbstractTypeClass::Full_Name(void) const
+{
+	if (!UINameLabel.empty()) {
+		// Ares: a UIName starting with NOSTR: is the name itself rather than a label.
+		static char const NOSTR_PREFIX[] = "NOSTR:";
+		size_t const prefix = sizeof(NOSTR_PREFIX) - 1;
+		if (_strnicmp(UINameLabel.c_str(), NOSTR_PREFIX, prefix) == 0) {
+			return(UINameLabel.size() > prefix ? UINameLabel.c_str() + prefix : (char const *)GivenName);
+		}
+
+		if (UINameText.empty()) {
+			wchar_t const * text = StringTable.Find(UINameLabel.c_str());
+			if (text != NULL && *text != L'\0') {
+				int const size = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
+				if (size > 1) {
+					UINameText.resize(size - 1);
+					WideCharToMultiByte(CP_UTF8, 0, text, -1, UINameText.data(), size, NULL, NULL);
+				}
+			}
+		}
+		if (!UINameText.empty()) {
+			return(UINameText.c_str());
+		}
+	}
+	return(GivenName);
+}
+
+
 bool AbstractTypeClass::Read_INI(CCINIClass const & ini)
 {
 	if (ini.Section_Present(IniName)) {
 
 		ini.Get_String(IniName, "Name", GivenName);
+		// Up to 63 characters, an Ares NOSTR: prefix included; Ares documents 31.
+		char label[64];
+		if (ini.Get_String(IniName, "UIName", UINameLabel.c_str(), label, sizeof(label)) > 0 && UINameLabel != label) {
+			UINameLabel = label;
+			UINameText.clear();
+		}
 		return(true);
 	}
 	return(false);
@@ -135,4 +171,5 @@ void AbstractTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(IniName);
 	stream.Serialize(GivenName);
+	stream.Serialize(UINameLabel);
 }
