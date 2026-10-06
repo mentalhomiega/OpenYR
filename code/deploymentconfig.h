@@ -23,7 +23,7 @@ class DeploymentConfigClass
 		// The folders its files are searched in, in the order written; a written list replaces this.
 		std::string SearchPaths = "INI,MIX,Maps";
 
-		// The mods in force, in the order they are read; the command line can add more.
+		// The mods read when the player's RA2MD.INI gives no list, in the order they are read; the command line can add more.
 		std::string Mods = "";
 
 		// Whether a save carries the scenario file it was played from, which enlarges a save by half again.
@@ -72,7 +72,4 @@ class DeploymentConfigClass
 		 * empty or separator-terminated, or from its INI or MIX folder; false when there is none.
 		 */
 		bool Read_File(char const * directory);
-
-		std::string Mods_File_Name(char const * directory) const;
-		bool Write_Mods(char const * directory, std::string const & list);
 };

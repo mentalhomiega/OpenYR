@@ -1201,7 +1201,7 @@ class RecordingModsServiceClass : public UIModsServiceClass
 		bool Writable = true;
 
 		virtual bool Save(std::string const & list) override { Saved.push_back(list); return(Writable); }
-		virtual std::string File_Name(void) override { return("D:\\Game\\OPENTS.INI"); }
+		virtual std::string File_Name(void) override { return("D:\\Users\\Player\\RA2MD.INI"); }
 };
 
 
@@ -1314,9 +1314,9 @@ void Test_Mods_Presenter(void)
 		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
 		Drive(presenter, "ok");
 		Check(!presenter.Result.has_value() && !presenter.Saved && presenter.State.Problem && service.Saved == std::vector<std::string>{ "Gone" }, "a list that cannot be saved keeps the screen open");
-		Check(presenter.State.Status == "The list could not be saved to D:\\Game\\OPENTS.INI.", "and names the file");
+		Check(presenter.State.Status == "The list could not be saved to D:\\Users\\Player\\RA2MD.INI.", "and names the file");
 		Drive(presenter, "select", presenter.State.Rows[0].Id);
-		Check(!presenter.State.Problem && presenter.State.Status != "The list could not be saved to D:\\Game\\OPENTS.INI.", "the next step clears the message");
+		Check(!presenter.State.Problem && presenter.State.Status != "The list could not be saved to D:\\Users\\Player\\RA2MD.INI.", "the next step clears the message");
 	}
 
 	{

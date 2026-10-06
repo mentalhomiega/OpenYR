@@ -518,11 +518,17 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		/*
 		 * Before anything is read, so that every file the game goes on to open is looked
 		 * for where this deployment actually keeps it: the directories are applied, then
-		 * the deployment's own file is read, then the folders and mods it names are installed.
+		 * the deployment's own file is read, then the folders it names are installed, then the
+		 * player's settings are read and the mods they or the deployment name are installed.
 		 */
 		DeploymentConfig.Read_File(Data_Directory().c_str());
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
-		Init_Mods(DeploymentConfig.Mods.c_str());
+
+		// The player's settings are read before the mods are installed, so that their Mods= is
+		// known and no mod can supply a settings file of its own.
+		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
+		ConfigINI.Load(*cfile, false);
+		Init_Mods(ConfigINI.Get_String("Options", "Mods", DeploymentConfig.Mods.c_str()).c_str());
 
 		std::string uidirectory = path;
 		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {
@@ -536,9 +542,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		// anywhere for a player's files to go. Naming it again settles it where it belongs.
 		Session.RecordFile.Set_Name("RECORD.BIN");
 
-		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
-
-		ConfigINI.Load(*cfile, false);
 		Options.ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", Options.ScreenWidth);
 		Options.ScreenHeight = ConfigINI.Get_Int("Video", "ScreenHeight", Options.ScreenHeight);
 		Options.Load_Menu_Style();

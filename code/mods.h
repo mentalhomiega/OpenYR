@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+class INIClass;
+
 /*
  * Mod folders hold game files that are found ahead of the game's own. Each may carry a mod.ini
  * naming INI files that are read over the rules, art and AI files.
@@ -54,6 +56,17 @@ std::vector<ModClass> Find_Mods(std::string const & datadirectory);
 // Records a mod the command line names; Init_Mods adds it after the configured list.
 void Add_Command_Line_Mod(char const * name);
 std::vector<std::string> const & Command_Line_Mods(void);
+
+/*
+ * The mod list is a player's own choice, kept in their settings file as Mods= in [Options]. When
+ * that key is present it replaces the list the deployment gives in [Paths] Mods= of OPENTS.INI;
+ * when it is absent the deployment's list stands. An INI file cannot hold an empty value, so a
+ * choice of no mods is written as a lone comma, which names no mod.
+ */
+std::string Configured_Mod_List(INIClass const & settings, char const * deploymentlist);
+bool Has_Mod_List(INIClass const & settings);
+void Put_Mod_List(INIClass & settings, std::string const & list);
+void Clear_Mod_List(INIClass & settings);
 
 ModChoiceClass Mod_Choices(char const * list, std::string const & datadirectory);
 

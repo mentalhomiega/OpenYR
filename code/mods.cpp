@@ -262,6 +262,43 @@ static std::vector<ModChoiceType> Named_Choices(std::vector<std::string> const &
 }
 
 
+static char const * const SettingsSection = "Options";
+static char const * const SettingsKey = "Mods";
+
+
+bool Has_Mod_List(INIClass const & settings)
+{
+	return(settings.Is_Present(SettingsSection, SettingsKey));
+}
+
+
+void Clear_Mod_List(INIClass & settings)
+{
+	settings.Clear(SettingsSection, SettingsKey);
+}
+
+
+/// <summary>
+/// Gives the mod list in force before the command line adds to it: the player's Mods= in
+/// [Options] of their settings when it is present, otherwise the deployment's own list.
+/// </summary>
+std::string Configured_Mod_List(INIClass const & settings, char const * deploymentlist)
+{
+	return(settings.Get_String(SettingsSection, SettingsKey, deploymentlist != NULL ? deploymentlist : ""));
+}
+
+
+/// <summary>
+/// Sets the player's Mods= in the settings, leaving every other key as it is. An empty list
+/// is stored as a lone comma, since the file cannot carry an empty value, so that the key
+/// stays and an empty choice still overrides the deployment's list.
+/// </summary>
+void Put_Mod_List(INIClass & settings, std::string const & list)
+{
+	settings.Put_String(SettingsSection, SettingsKey, list.empty() ? "," : list.c_str());
+}
+
+
 /// <summary>
 /// Gathers what the Mods screen offers: the mods the list names, those the command line
 /// names, and every folder in the Mods folder of the data directory. A folder found there

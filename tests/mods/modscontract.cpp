@@ -411,6 +411,60 @@ void Test_Choice_Rules(void)
 }
 
 
+void Test_Player_Mod_List(void)
+{
+	INIClass settings;
+	Check(!Has_Mod_List(settings), "settings without Mods= have no player list");
+	Check_Text(Configured_Mod_List(settings, "Shipped,Other"), "Shipped,Other", "so the deployment's list stands");
+
+	Put_Mod_List(settings, "Mine, D:\\Mods\\Other");
+	Check(Has_Mod_List(settings), "a written list is present");
+	Check_Text(Configured_Mod_List(settings, "Shipped"), "Mine, D:\\Mods\\Other", "and replaces the deployment's list");
+	Check(settings.Is_Present("Options", "Mods"), "under Mods= in [Options]");
+
+	Put_Mod_List(settings, "");
+	Check(Has_Mod_List(settings) && Parse_Mod_List(Configured_Mod_List(settings, "Shipped").c_str()).empty(), "an empty choice stays present and names no mod, so it overrides the deployment");
+
+	Clear_Mod_List(settings);
+	Check_Text(Configured_Mod_List(settings, "Shipped"), "Shipped", "clearing the key brings the deployment's list back");
+	Check_Text(Configured_Mod_List(settings, NULL), "", "no deployment list is no mod");
+
+	// The list goes through a file as the settings do, beside keys that must survive.
+	std::string const path = Root + "\\PLAYER.INI";
+	Write_File(path, "[Video]\nFullscreen=no\n[Options]\nGameSpeed=3\n");
+	{
+		INIClass player;
+		RawFileClass in(path.c_str());
+		player.Load(in, true);
+		Put_Mod_List(player, "");
+		RawFileClass out(path.c_str());
+		out.Open(FileClass::WRITE);
+		player.Save(out);
+		out.Close();
+	}
+	{
+		INIClass player;
+		RawFileClass in(path.c_str());
+		player.Load(in, true);
+		Check(Has_Mod_List(player) && Parse_Mod_List(Configured_Mod_List(player, "Shipped").c_str()).empty(), "an empty choice is still there after the file is read again");
+		Check(player.Get_Int("Options", "GameSpeed", 0) == 3 && !player.Get_Bool("Video", "Fullscreen", true), "and the other settings are kept");
+	}
+	DeleteFile(path.c_str());
+
+	// Startup installs the list the settings pick, with the command line's mods after it.
+	Reset();
+	Set_Data_Directory((Root + "\\Data").c_str());
+	Apply_Game_Directories();
+	Init_Search_Folders(".");
+	Add_Command_Line_Mod("Third");
+	INIClass chosen;
+	Put_Mod_List(chosen, "Third,First");
+	Init_Mods(Configured_Mod_List(chosen, "First,Third").c_str());
+	Check_Text(Active_Mod_List(), "Third, First", "the player's list decides the mods read, the command line's mod keeping its first place");
+	Reset();
+}
+
+
 void Test_No_Mods(void)
 {
 	Reset();
@@ -473,6 +527,7 @@ int main(void)
 	Test_Finding();
 	Test_Choices();
 	Test_Choice_Rules();
+	Test_Player_Mod_List();
 	Test_No_Mods();
 
 	Reset();

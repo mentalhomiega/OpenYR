@@ -24,7 +24,7 @@ class UIModsServiceClass
 	public:
 		virtual ~UIModsServiceClass(void) = default;
 
-		// Writes the list to Mods=; false when the file cannot be written.
+		// Writes the list as the player's Mods= setting; false when the settings file cannot be written.
 		virtual bool Save(std::string const & list) = 0;
 		virtual std::string File_Name(void) = 0;
 };

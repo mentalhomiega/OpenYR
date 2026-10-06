@@ -10,6 +10,10 @@
 #include "always.h"
 
 #include "_deploymentconfig.h"
+#include "_rules.h"
+#include "cdfile.h"
+#include "ccfile.h"
+#include "ccini.h"
 #include "deploymentconfig.h"
 #include "gamedirs.h"
 #include "mods.h"
@@ -27,12 +31,27 @@ class UIModsEngineServiceClass : public UIModsServiceClass
 	public:
 		virtual bool Save(std::string const & list) override
 		{
-			return(DeploymentConfig.Write_Mods(Data_Directory().c_str(), list));
+			std::string const before = Configured_Mod_List(ConfigINI, "");
+			bool const present = Has_Mod_List(ConfigINI);
+			Put_Mod_List(ConfigINI, list);
+
+			CCFileClass file(DeploymentConfig.SettingsFile.c_str());
+			if (ConfigINI.Save(file, false) > 0) {
+				return(true);
+			}
+
+			if (present) {
+				Put_Mod_List(ConfigINI, before);
+			} else {
+				Clear_Mod_List(ConfigINI);
+			}
+			return(false);
 		}
 
 		virtual std::string File_Name(void) override
 		{
-			return(DeploymentConfig.Mods_File_Name(Data_Directory().c_str()));
+			char const * user = CDFileClass::User_Path();
+			return(std::string(user != NULL ? user : "") + DeploymentConfig.SettingsFile);
 		}
 };
 
@@ -48,12 +67,13 @@ UIModsServiceClass & UI_Mods_Service(void)
 
 
 /// <summary>
-/// Shows the Mods screen over the list in OPENTS.INI, as last saved, and the mods the command
-/// line names. When OK saves a changed list, a message says it takes effect after a restart.
+/// Shows the Mods screen over the player's list, as last saved in their settings file or else
+/// the deployment's, and the mods the command line names. When OK saves a changed list, a
+/// message says it takes effect after a restart.
 /// </summary>
 void UI_Mods_Dialog(void)
 {
-	UIModsPresenterClass presenter(UI_Mods_Service(), Mod_Choices(DeploymentConfig.Mods.c_str(), Data_Directory()));
+	UIModsPresenterClass presenter(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory()));
 	std::unique_ptr<UIViewClass> view = UI_Mods_View(presenter);
 
 	if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED || !presenter.Saved) {
