@@ -719,7 +719,7 @@ bool Read_Scenario(char const * fname)
 		Progress.Initialize(100, players);
 
 		// A picture from a launch file, or one the scenario kept, is shown in place of the Yuri's Revenge screen.
-		bool const yr_screen = source == NULL && LoadScreen.Begin(name);
+		bool const yr_screen = source == NULL && LoadScreen.Begin(name, file_read ? &requested : NULL, players);
 		if (yr_screen) {
 			DebugString("Loading screen %s\n", LoadScreen.Picture_Name().c_str());
 		} else {
@@ -2052,6 +2052,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	if (!Map.Read_INI(ini)) {
 		return(ScenarioState::TerrainDamaged);
 	}
+	LoadScreen.Show_Start_Positions();
 	Call_Back();
 
 	/*
