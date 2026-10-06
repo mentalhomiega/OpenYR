@@ -86,6 +86,8 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	IsLandable(false),
 	IsFighter(false),
 	IsAirportBound(false),
+	IsFlyBy(false),
+	IsFlyBack(false),
 	Trailer(NULL),
 	SpawnDelay(3),
 	IsRotorEquipped(false),
@@ -276,6 +278,8 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 		IsLandable = ini.Get_Bool(Name(), "Landable", IsLandable);
 		IsFighter = ini.Get_Bool(Name(), "Fighter", IsFighter);
 		IsAirportBound = ini.Get_Bool(Name(), "AirportBound", IsAirportBound);
+		IsFlyBy = ini.Get_Bool(Name(), "FlyBy", IsFlyBy);
+		IsFlyBack = ini.Get_Bool(Name(), "FlyBack", IsFlyBack);
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
 		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
@@ -303,6 +307,8 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLandable);
 	crc(IsFighter);
 	crc(IsAirportBound);
+	crc(IsFlyBy);
+	crc(IsFlyBack);
 	crc(SpawnDelay);
 	crc(HeapID);
 }
@@ -337,6 +343,8 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLandable);
 	stream.Serialize(IsFighter);
 	stream.Serialize(IsAirportBound);
+	stream.Serialize(IsFlyBy);
+	stream.Serialize(IsFlyBack);
 	stream.Serialize(Trailer);
 	stream.Serialize(SpawnDelay);
 }
