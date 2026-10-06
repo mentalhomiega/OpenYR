@@ -471,7 +471,7 @@ void OptionsClass::Load_Settings(void)
 void OptionsClass::Load_Menu_Style(void)
 {
 	char menustyle[32];
-	ConfigINI.Get_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern", menustyle, sizeof(menustyle));
+	ConfigINI.Get_String("Options", "MenuStyle", "Modern", menustyle, sizeof(menustyle));
 	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
 }
 

@@ -21415,6 +21415,24 @@ Medians:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+MenuStyle:
+  key: MenuStyle
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Modern
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 MessageDelay:
   key: MessageDelay
   scopes:

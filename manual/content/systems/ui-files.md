@@ -21,6 +21,8 @@ The `ui` directory sits beside the executable and holds everything the screens a
 | `side-<name>.rcss` | Rules every screen takes while that side is the player's, such as `side-gdi.rcss` and `side-nod.rcss` |
 | `glow.png` | The glow the template draws around a screen |
 | `cursor.png` | The arrow pointer shown over the screens, with its tip at the top-left pixel. [`SystemCursor`](/keys/systemcursor/) replaces it with the Windows pointer |
+| `arrow-up.png`, `arrow-down.png` | The arrows the menu styles draw on scroll bars and drop-down lists |
+| `themes/<style>/` | The files of each [menu style](#menu-styles) |
 | `Arimo.ttf` | The face a font family uses when its own face is missing, with its license in `OFL.txt` |
 
 ## The dialog kit
@@ -29,9 +31,15 @@ The `ui` directory sits beside the executable and holds everything the screens a
 
 The pictures, and the dialog font that captions and buttons are drawn in, are the game's interface art, read from its mix files. Where a picture is missing, the control draws a plain fill in its place.
 
-The kit gives every layout size in `dp`, RmlUi's scaled pixel, so a screen matches the dialog it replaced at the game's own resolution and grows with the game picture when that is drawn larger.
+The kit gives every layout size in `dp`, RmlUi's scaled pixel, so a screen grows with the window. The [menu style](#menu-styles) in force sets how large a `dp` is.
 
 A screen opens the way the original dialogs did: it slides out from the middle behind a pair of side bars, with the dialog sound once as it starts. Put `reveal="none"` on a document's `<body>` for a screen that should appear at once instead.
+
+## Menu styles
+
+[`MenuStyle`](/keys/menustyle/) picks one of two folders under `ui/themes`: `modern` or `classic`. Each holds its own `dialog.rml`, the frame with the style's background art, and a `theme.rcss` that the frame reads after `kit.rcss`, restyling the controls in Yuri's Revenge's colors. A file in the folder of the style in force replaces the shipped `ui` file of the same name, or a copy in a mix file. A copy of that name in a folder the game searches before `ui`, such as a mod's folder, is used ahead of both.
+
+The two styles lay a screen out for different sizes: `modern` for 1280 by 720 and `classic` for 800 by 600. One `dp` is the window's size divided by that size, taking whichever of width and height gives the smaller result.
 
 ## How a file is found
 
