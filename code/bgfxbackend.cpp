@@ -662,7 +662,10 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		return(false);
 	}
 
-	if (pixels == NULL && !_FrameUploaded) {
+	// While the map is drawn as a layer, the frame lives in the keyed texture, so a present that
+	// only redraws the overlay, such as a menu opened over a zoomed-out map, uses that one.
+	bool const keyed = layer != NULL && _KeyedFrameUploaded;
+	if (pixels == NULL && !_FrameUploaded && !keyed) {
 		return(false);
 	}
 
@@ -675,6 +678,10 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	if (layer != NULL && Present_With_Layer(pixels, pitch, destx, desty, destwidth, destheight, mode, *layer)) {
 		return(true);
+	}
+
+	if (pixels == NULL && !_FrameUploaded) {
+		return(false);
 	}
 
 	if (pixels != NULL) {
