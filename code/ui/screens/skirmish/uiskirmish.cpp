@@ -115,6 +115,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Model.DirtyVariable("handle");
 			Model.DirtyVariable("side");
 			Model.DirtyVariable("color");
+			Model.DirtyVariable("mapname");
 			Model.DirtyVariable("bases");
 			Model.DirtyVariable("crates");
 			Model.DirtyVariable("fog");
