@@ -3938,13 +3938,7 @@ void BuildingClass::Grand_Opening(bool captured)
 {
 	if (!HasOpened || captured) {
 		if (!HasOpened) {
-			if (!Class->IsRefinery) {
-				Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
-			}
-			Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow, Class->IsSensorArray ? 30 : 0);
-			Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
-			Begin_Anim(BANIM_ACTIVE_THREE, HealthRatio <= Rule->ConditionYellow);
-			Begin_Anim(BANIM_ACTIVE_FOUR, HealthRatio <= Rule->ConditionYellow);
+			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow, Class->IsSensorArray ? 30 : 0);
 
 			if (Is_Turret_Equipped() || Class->IsHasChargeAnim) {
 				if (!Class->IsTurretAnimAVoxel) {
@@ -4358,17 +4352,7 @@ void BuildingClass::Begin_Mode(BStateType bstate)
 		BuildingTypeClass::AnimControlType const * ctrl = Fetch_Anim_Control();
 
 		if (ScenarioInit) {
-			Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
-			Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
-			Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
-		}
-
-		if (ScenarioInit) {
-			Begin_Anim(BANIM_ACTIVE_THREE, HealthRatio <= Rule->ConditionYellow);
-		}
-
-		if (ScenarioInit) {
-			Begin_Anim(BANIM_ACTIVE_FOUR, HealthRatio <= Rule->ConditionYellow);
+			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow);
 		}
 
 		int rate = ctrl->Rate;
@@ -8034,6 +8018,14 @@ void BuildingClass::Animation_AI(void)
 		End_Anim(BANIM_SPECIAL_TWO);
 	}
 
+	if (Class->IsRefinery) {
+		Update_Storage_Anims();
+	}
+
+	if (Class->IsInfantryAbsorb && Class->ExtraPowerBonus > 0 && BState != BSTATE_NONE && !IsInLimbo) {
+		Update_Absorber_Anims();
+	}
+
 	if (Class->IsSiloDamage) {
 		int amount = 0;
 		if (Class->Capacity > 0) {
@@ -8262,6 +8254,84 @@ void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay)
 	}
 	if (name != NULL && name[0] != '\0') {
 		Create_Anim(name, anim, damaged, delay);
+	}
+}
+
+
+/// <summary>
+/// Starts the animations a building shows from the moment it is on the map, as
+/// BuildingClass::Place (0x442D50) and BuildingClass::BeginMode (0x447780) do. A building
+/// other than a refinery gets its idle animation and the four active ones. A refinery gets
+/// only the active animation for how full it is, and so shows one ore level at a time.
+/// </summary>
+/// <param name="damaged">Should the damaged form of the animations be used?</param>
+/// <param name="delay">The delay in game frames before the first active animation begins.</param>
+void BuildingClass::Begin_Opening_Anims(bool damaged, int delay)
+{
+	if (Class->IsRefinery) {
+		Begin_Anim((BAnimType)(BANIM_ACTIVE_ONE + Storage_Anim_Level()), damaged, delay);
+		return;
+	}
+	Begin_Anim(BANIM_IDLE, damaged);
+	Begin_Anim(BANIM_ACTIVE_ONE, damaged, delay);
+	Begin_Anim(BANIM_ACTIVE_TWO, damaged);
+	Begin_Anim(BANIM_ACTIVE_THREE, damaged);
+	Begin_Anim(BANIM_ACTIVE_FOUR, damaged);
+}
+
+
+/// <summary>
+/// Tells how full this refinery is, as a number from 0 for under a quarter of what it can
+/// hold to 3 for three quarters or more. This is the ore level the refinery's active
+/// animations show, one level to each of its four.
+/// </summary>
+int BuildingClass::Storage_Anim_Level(void) const
+{
+	int level = 0;
+	if (Class->Capacity > 0) {
+		level = (Storage.Get_Total_Amount() * 4) / Class->Capacity;
+	}
+	return(std::clamp(level, 0, 3));
+}
+
+
+/// <summary>
+/// Keeps a refinery's active animation in step with how full it is, as the refinery part of
+/// BuildingClass::UpdateAnimations (0x450BD0) does: when the ore level changes, the animation
+/// for the old level ends and the one for the new level begins.
+/// </summary>
+void BuildingClass::Update_Storage_Anims(void)
+{
+	int const level = Storage_Anim_Level();
+	for (int slot = BANIM_ACTIVE_ONE; slot <= BANIM_ACTIVE_FOUR; slot++) {
+		if (slot - BANIM_ACTIVE_ONE != level) {
+			End_Anim((BAnimType)slot);
+		}
+	}
+	if (Anims[BANIM_ACTIVE_ONE + level] == NULL) {
+		Begin_Anim((BAnimType)(BANIM_ACTIVE_ONE + level), HealthRatio <= Rule->ConditionYellow);
+	}
+}
+
+
+/// <summary>
+/// Shows a power absorber that makes more power for each soldier inside, such as the
+/// bio reactor, in the state it is in: its first active animation while it is empty and its
+/// second one while it has someone inside, as BuildingClass::UpdateAnimations (0x450BD0) does.
+/// </summary>
+void BuildingClass::Update_Absorber_Anims(void)
+{
+	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	if (Cargo.How_Many() < 1) {
+		End_Anim(BANIM_ACTIVE_TWO);
+		if (Anims[BANIM_ACTIVE_ONE] == NULL) {
+			Begin_Anim(BANIM_ACTIVE_ONE, damaged);
+		}
+	} else {
+		End_Anim(BANIM_ACTIVE_ONE);
+		if (Anims[BANIM_ACTIVE_TWO] == NULL) {
+			Begin_Anim(BANIM_ACTIVE_TWO, damaged);
+		}
 	}
 }
 
