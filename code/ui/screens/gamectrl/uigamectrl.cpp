@@ -79,6 +79,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		Next = NEXT_KEYBOARD;
 		Result = UI_RESULT_ACCEPTED;
 	} else if (intent.Name == "cancel") {
+		// The screen has no cancel button, so leaving it with Escape keeps what was set.
+		Apply();
 		Result = UI_RESULT_CANCELLED;
 	}
 

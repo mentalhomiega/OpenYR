@@ -70,6 +70,8 @@ void Game_Options_Dialog(void)
 			break;
 
 		default:
+			// Settings changed in game, such as a volume, are kept when the menu closes.
+			Options.Save_Settings();
 			break;
 	}
 

@@ -1491,7 +1491,9 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "scroll", 1);
 		Drive(presenter, "cancel");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Cancel applies nothing");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED &&
+			service.Joined() == "speed 0; scroll 1; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; difficulty 0; save",
+			"Escape keeps and saves what was set");
 	}
 }
 
@@ -2399,7 +2401,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Escape leaves the game controls with nothing applied");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !service.Calls.empty() && service.Calls.back() == "save", "Escape leaves the game controls and saves what was set");
 
 		view->Release();
 		context.Update();
