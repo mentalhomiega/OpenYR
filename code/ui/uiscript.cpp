@@ -74,7 +74,7 @@ std::string Plain_Text(Rml::Element * element)
 	}
 	text.erase(0, text.find_first_not_of(" \t\r\n"));
 	text.erase(text.find_last_not_of(" \t\r\n") + 1);
-	return(text);
+	return(Rml::StringUtilities::DecodeRml(text));
 }
 
 
