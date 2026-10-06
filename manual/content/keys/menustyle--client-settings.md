@@ -11,8 +11,8 @@ when_omitted:
 
 | Value | Result |
 | --- | --- |
-| `Modern` | Yuri's Revenge's title art fills the screen behind centered panels in Yuri's purple, with the text in a smooth face |
-| `Classic` | Yuri's Revenge's own 800 by 600 menu screen, with the main and multiplayer buttons in the column down its right-hand side |
+| `Modern` | Yuri's Revenge's title art fills the screen. The title screen menus and the options menu stand in a panel on the left, other screens are centered panels in Yuri's purple, and the text is in a smooth face |
+| `Classic` | Yuri's Revenge's own 800 by 600 menu screen, with the title screen menus' buttons in the column down its right-hand side where Yuri's Revenge placed them |
 
 Both styles scale with the window. `Modern` is laid out for 1280 by 720, so it is drawn one and a half times as large at 1920 by 1080 and three times as large at 3840 by 2160. `Classic` is laid out for 800 by 600 and is centered, with black bars at the sides on a wide screen.
 
