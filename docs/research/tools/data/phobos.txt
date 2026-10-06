@@ -1125,6 +1125,7 @@ RadDurationMultiple
 RadHasInvoker
 RadHasOwner
 RadialIndicatorVisibility
+RadiationTypes
 RadLevelDelay
 RadLevelFactor
 RadLevelMax
