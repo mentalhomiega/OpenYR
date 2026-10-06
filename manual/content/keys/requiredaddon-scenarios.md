@@ -16,7 +16,7 @@ RequiredAddOn=1
 
 A campaign mission that names an expansion that is not installed does not load. It does not fall back to the base game. Without Firestorm installed, every mission that sets `RequiredAddOn=1` fails this way.
 
-The number also selects the file a campaign mission's title and briefing text come from: `MISSION.INI` for `0` and `MISSION1.INI` for `1`. The objectives screen reads the briefing from the same file when the scenario does not already hold its text.
+The number also selects the file a campaign mission's title and briefing text come from: `MISSION.INI` for `0` and `MISSION1.INI` for `1`. The objectives screen shows this briefing only when `MISSIONMD.INI` names none for the mission, as [`Brief`](/keys/brief/) describes, and reads it from the same file when the scenario does not already hold its text.
 
 Outside a campaign, the lobby or the launch file decides the expansion, and this key switches no expansion on or off when the match starts. The map's number is still stored with the match, and a saved game of the match loads under that expansion. A map that sets `RequiredAddOn=0` and is played under Firestorm therefore loads back as the base game.
 
