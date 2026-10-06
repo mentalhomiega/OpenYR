@@ -1269,6 +1269,7 @@ Shield.SelfHealing.Types
 Shield.SkipHitAnim
 ShieldApplyArmorMult
 ShieldType
+ShieldTypes
 ShipLocomotorMakesWake
 ShowDesignatorRange
 ShowFlashOnSelecting
