@@ -16,44 +16,34 @@ Your job:
 
 ## Jobs
 
-### Research: Ares and Phobos tables
+The seven jobs of 4 October (research, INI checker, static analysis, unit tests, docks and radio, mind-controlled units entering buildings, green manual checks) have run; their branches wait for the owner's review, so do not repeat them. The jobs below follow on from them or cover work added to `yr` since. Jobs marked "needs `yr` pushed" read commits that must be on `origin/yr` first (they are, once `yr` is past `f3c7520`).
+
+### Research: Phobos attached effects and shields
 
 ```text
-Follow docs/research/RESEARCH_BRIEFING.md. Continue from the newest `origin/cloud/research-*` branch and its log. Next: the Phobos tags for Technos and buildings, then interface and animation tags; then merge the Ares table's single-page groups into the systems used in phobos-tags.md. Branch: cloud/research-YYYY-MM-DD.
+Follow docs/research/RESEARCH_BRIEFING.md. Continue from the 2026-10-04 research log (`cloud-log/2026-10-04-research.md`, now on `yr`) at its "Next session" list: table the Phobos attached-effect types and shields first, then the remaining Phobos sections it lists, then the Ares bugfix pages and `whatsnew`, regenerating `tools/data/ares.txt` once the Ares table is complete. Stop after the attached effects and shields if the session runs long, and say where you stopped. Branch: cloud/research-YYYY-MM-DD.
 ```
 
-### INI checker, next stage
+### INI checker, stage three
 
 ```text
-Continue the INI checker from `origin/cloud/inicheck` (read docs/INICHECK.md and the 2026-10-04 night log on `origin/cloud/nightly-2026-10-04`). Add keys the engine builds from a pattern, such as `DockingOffset%d` and `Weapon%d`, to the catalog export; check weapon, projectile and warhead sections by following `Primary=`, `Secondary=`, `Projectile=` and `Warhead=`; keep it report-only, with tests for each addition. Branch: cloud/inicheck-YYYY-MM-DD, begun from `origin/cloud/inicheck` merged with `yr`.
+Continue the INI checker from `origin/cloud/inicheck-2026-10-04` merged with `yr` (read docs/INICHECK.md and `cloud-log/2026-10-04-inicheck.md` on that branch). Do its "Open" items: support zero-padded numbered keys such as `Tile%02dAnim` and `Territory%02d` in the catalog's range syntax and the checker, and place `art.ini` image sections so the art patterns apply. Keep it report-only, with tests for each addition. Leave where the game calls the checker to the owner. Branch: cloud/inicheck-YYYY-MM-DD.
 ```
 
-### Static analysis
+### Static analysis follow-up
 
 ```text
-Do task 5 of CLOUD_BRIEFING.md. Install cppcheck (and clang-tidy if possible) in the container, run it over `code/`, fix only what the code itself proves wrong, one fix per commit, and list the rest with file and line in your log. Branch: cloud/static-YYYY-MM-DD.
+Start from `origin/cloud/static-2026-10-04` merged with `yr` and read `cloud-log/2026-10-04-static.md`. Go through its "Remaining findings" list (skip `duplInheritedMember`): for each, read the code and decide whether the code itself proves it wrong. Fix only those, one fix per commit, keeping save-game layouts and simulation unchanged; for the rest, give a one-line reason in your log. Branch: cloud/static-YYYY-MM-DD.
 ```
 
-### Unit tests
+### Review of the new `yr` fixes (needs `yr` pushed)
 
 ```text
-Add unit tests that need no game files for the radio slot functions (`code/radio.*`: Set_Link_Count, Find_Link_Index, Has_Free_Link, the HELLO and OVER_OUT slot rules) and for weapon choice (`TechnoClass::What_Weapon_Should_I_Use`, `Naval_Weapon`), using the existing test setup. If a function cannot be tested without large engine state, say so in the log instead of forcing it. Branch: cloud/tests-YYYY-MM-DD.
+Review the `yr` commits after `7832f3a` (run `git log --oneline 7832f3a..origin/yr`): theater tile sets from `<Root>MD.INI`, 702 waypoints, the Yuri's Revenge multiplayer map list (MISSIONSMD.PKT, `.YRO` packs, loose `.YRM` maps), campaign names, mission briefings from MISSIONMD.INI, map objects owned by a playing country in multiplayer, and the gap generator exit hang. Look for bugs, unhandled cases (missing files, empty sections, long names, a comma in a map name), buffer sizes, and claims in comments or the manual that the code does not support. Fix what the code proves wrong, one commit each; list the rest with file and line. Branch: cloud/review-YYYY-MM-DD.
 ```
 
-### Dock and radio follow-ups
+### Unit tests for the map list and theater readers (needs `yr` pushed)
 
 ```text
-Fix the open dock and radio findings listed in the 2026-10-04 night log on `origin/cloud/nightly-2026-10-04` (findings 1 and 4 to 11: the carrier spawn leak in `code/spawnman.cpp`, untargeted radio messages that reach slot 0 at a multi-dock building, and the manual wording). The owner's answers in CLOUD_BRIEFING.md apply: a `UnitReload` pad rearms and repairs. Each fix gets its own commit and its manual update. Branch: cloud/docks-YYYY-MM-DD.
-```
-
-### Mind-controlled units entering buildings
-
-```text
-The owner confirmed that in Yuri's Revenge a mind-controlled unit cannot enter a transport or a structure, except a Bio Reactor. Check every path where a unit can enter something (the cursor and action checks, the order handling, the AI and team scripts) and make the port refuse a controlled unit everywhere except a Bio Reactor. Document it on the mind-control system page with a change record. Branch: cloud/mind-control-enter-YYYY-MM-DD.
-```
-
-### Green manual checks on `yr`
-
-```text
-The Manual workflow fails on `yr` because upstream tests pin things this fork changed on purpose (see finding 3 in the 2026-10-04 night log on `origin/cloud/nightly-2026-10-04`). For each failing test, update the test to the fork's intended behaviour and say why in the log; restore the pinned behaviour only where the fork's change looks accidental, and list those for the owner. Fix the dead `README.md#state-and-plans` link in CONTRIBUTING.md. Branch: cloud/manual-ci-YYYY-MM-DD.
+Add unit tests that need no game files for the code the new map list uses: reading a `.YRM` map's `[Basic]` section (Name, missing Name gives "No Name", player limits), a packet entry's `DescriptionText=` against `Description=` labels, the " (2-4)" / " (2)" player-limit suffix for maps from a `.YRO` pack, and the theater control file name (`<Root>MD.INI`, falling back to `<Root>.INI`). Use the existing test setup; if a function needs too much engine state, test the smallest piece you can lift out without changing behaviour, or say so in the log. Branch: cloud/tests-YYYY-MM-DD.
 ```
