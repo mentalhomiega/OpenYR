@@ -5872,13 +5872,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	// A radiation warhead does nothing to a type immune to radiation (TechnoClass::ReceiveDamage, 0x701900).
-	if (warhead != NULL && warhead->IsRadiation && TClass->IsImmuneToRadiation) {
+	if (warhead != NULL && warhead->IsRadiation && Is_Immune_To_Radiation()) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
 
 	// Nor does a PsychicDamage warhead to an ImmuneToPsionicWeapons type, or a Poison warhead to an ImmuneToPoison one.
-	if (warhead != NULL && ((warhead->IsPsychicDamage && TClass->IsImmuneToPsionicWeapons) || (warhead->IsPoison && TClass->IsImmuneToPoison))) {
+	if (warhead != NULL && ((warhead->IsPsychicDamage && Is_Immune_To_Psionic_Weapons()) || (warhead->IsPoison && Is_Immune_To_Poison()))) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -5929,7 +5929,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 */
 	if (warhead != NULL && warhead->IsPsychedelic && !forced && !negative) {
 		bool const ally = source != NULL && House->Is_Ally(source->House);
-		if (!ally && !TClass->IsImmuneToPsionics && RTTI != RTTI_BUILDING) {
+		if (!ally && !Is_Immune_To_Psionics() && RTTI != RTTI_BUILDING) {
 			BerzerkDuration = Modify_Damage(damage, warhead, TClass->Armor, distance);
 			if (!IsBerzerk) {
 				IsBerzerk = true;
@@ -10089,6 +10089,63 @@ bool TechnoClass::Has_Ability(AbilityType ability) const
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Is this object unaffected by EMP, through its type or a veteran ability (Ares EMPIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_EMP(void) const
+{
+	return(TClass->Is_Immune_To_EMP() || Has_Ability(ABILITY_EMP_IMMUNE));
+}
+
+
+/// <summary>
+/// Is this object unharmed by radiation, through its type or a veteran ability (Ares RADIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Radiation(void) const
+{
+	return(TClass->IsImmuneToRadiation || Has_Ability(ABILITY_RAD_IMMUNE));
+}
+
+
+/// <summary>
+/// Can temporal weapons warp this object? A veteran ability (Ares UNWARPABLE) works as Warpable=no.
+/// </summary>
+bool TechnoClass::Is_Warpable(void) const
+{
+	return(TClass->IsWarpable && !Has_Ability(ABILITY_UNWARPABLE));
+}
+
+
+/// <summary>
+/// Is this object unharmed by Poison=yes warheads, through its type or a veteran ability (Ares
+/// POISONIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Poison(void) const
+{
+	return(TClass->IsImmuneToPoison || Has_Ability(ABILITY_POISON_IMMUNE));
+}
+
+
+/// <summary>
+/// Is this object unharmed by PsychicDamage=yes warheads, through its type or a veteran ability
+/// (Ares PSIONICWEAPONIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Psionic_Weapons(void) const
+{
+	return(TClass->IsImmuneToPsionicWeapons || Has_Ability(ABILITY_PSIONIC_WEAPON_IMMUNE));
+}
+
+
+/// <summary>
+/// Is this object out of reach of mind control and Psychedelic=yes warheads, through its type or
+/// a veteran ability (Ares PSIONICSIMMUNE)? The Psychic Dominator treats both the same way.
+/// </summary>
+bool TechnoClass::Is_Immune_To_Psionics(void) const
+{
+	return(TClass->IsImmuneToPsionics || Has_Ability(ABILITY_PSIONICS_IMMUNE));
 }
 
 

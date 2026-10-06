@@ -93,6 +93,7 @@
 #include "partsys.h"
 #include "psystype.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "smartdeform.h"
 #include "tactical.h"
@@ -267,6 +268,7 @@ void MapClass::Serialize(SaveStreamClass & stream)
 
 	// ZoneAdjacency -- scratch for the zone rebuild, which fills it again from the loaded terrain.
 	// Zones
+	Dump_Mark(stream, "Map class");
 	stream.Serialize(ZoneCount);
 	// ZoneConnections -- likewise part of the zone graph, read outside the archive.
 	// CellZones
@@ -312,8 +314,10 @@ void MapClass::Serialize(SaveStreamClass & stream)
 		return;
 	}
 
+	Dump_Mark(stream, "Map crates");
 	stream.Serialize(Crates);
 	stream.Serialize(Redraws);
+	Dump_Mark(stream, "Map tagged cells");
 	stream.Serialize(TaggedCells);
 }
 

@@ -162,6 +162,12 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `TIBERIUM_HEAL` | Standing in Tiberium repairs the object, as with [`TiberiumHeal=yes`](/keys/tiberiumheal/). |
 | `GUARD_AREA` | An idle armed vehicle, and an idle human-owned infantry, takes the Guard Area mission instead of Guard. A member of a team is unaffected, and so is a computer-owned infantry, whose idle handling never reads the ability. |
 | `CRUSHER` | A vehicle crushes crushable objects and overlays, as with [`Crusher=yes`](/keys/crusher/). |
+| `EMPIMMUNE` | EMP does not disable the object, as with [`ImmuneToEMP=yes`](/keys/immunetoemp/) (Ares). |
+| `RADIMMUNE` | Radiation warheads and lingering radiation do not harm the object, as with [`ImmuneToRadiation=yes`](/keys/immunetoradiation/) (Ares). |
+| `UNWARPABLE` | Temporal weapons cannot warp the object, as with [`Warpable=no`](/keys/warpable/) (Ares). |
+| `POISONIMMUNE` | `Poison=yes` warheads do not harm the object, as with [`ImmuneToPoison=yes`](/keys/immunetopoison/) (Ares). |
+| `PSIONICWEAPONIMMUNE` | `PsychicDamage=yes` warheads do not harm the object, as with [`ImmuneToPsionicWeapons=yes`](/keys/immunetopsionicweapons/) (Ares). |
+| `PSIONICSIMMUNE` | Mind control, `Psychedelic=yes` warheads and the Psychic Dominator treat the object as they treat [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) (Ares). |
 
 Unknown or misspelled ability names are ignored without a warning.
 

@@ -768,6 +768,12 @@ class TechnoClass :	public RadioClass,
 		int Get_Sight_Bonus(Coord const & coord);
 		static void Remove_Target(AbstractClass * target);
 		bool Has_Ability(AbilityType ability) const;
+		bool Is_Immune_To_EMP(void) const;
+		bool Is_Immune_To_Radiation(void) const;
+		bool Is_Warpable(void) const;
+		bool Is_Immune_To_Poison(void) const;
+		bool Is_Immune_To_Psionic_Weapons(void) const;
+		bool Is_Immune_To_Psionics(void) const;
 		bool Should_Use_High_Arc(int which) const;
 		double Target_Threat(TechnoClass * target, Coord const & firing_coord = COORD_NONE) const;
 
