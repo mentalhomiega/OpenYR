@@ -2514,6 +2514,8 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 
 			case DO_FIRE_WEAPON:
 			case DO_FIRE_PRONE:
+			case DO_SECONDARY_FIRE:
+			case DO_SECONDARY_PRONE:
 				todo = DO_DEPLOYED_FIRE;
 				break;
 
@@ -2562,6 +2564,8 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 
 				case DO_FIRE_WEAPON:
 				case DO_FIRE_PRONE:
+				case DO_SECONDARY_FIRE:
+				case DO_SECONDARY_PRONE:
 					todo = DO_WET_ATTACK;
 					break;
 
@@ -3900,11 +3904,10 @@ void InfantryClass::Firing_AI(void)
 					if (Is_JumpJet()) {
 						Do_Action(DO_FIREFLY);
 					} else {
-						if (IsProne) {
-							Do_Action(DO_FIRE_PRONE);
-						} else {
-							Do_Action(DO_FIRE_WEAPON);
-						}
+						// The secondary weapon plays its own sequence when the art defines one.
+						DoType const fire = IsProne ? DO_FIRE_PRONE : DO_FIRE_WEAPON;
+						DoType const secondary = IsProne ? DO_SECONDARY_PRONE : DO_SECONDARY_FIRE;
+						Do_Action(primary == 1 && Class->DoControls[secondary].Count > 0 ? secondary : fire);
 					}
 
 					IsFiring = true;
@@ -3931,6 +3934,11 @@ void InfantryClass::Firing_AI(void)
 		*/
 		int firestage = Class->FireLaunch;
 		if (IsProne) firestage = Class->ProneLaunch;
+		if (Doing == DO_SECONDARY_FIRE || Doing == DO_SECONDARY_PRONE) {
+			firestage = (Doing == DO_SECONDARY_PRONE) ? Class->SecondaryProneLaunch : Class->SecondaryLaunch;
+			// A short secondary sequence launches on its last frame at the latest.
+			if (firestage >= Class->DoControls[Doing].Count) firestage = Class->DoControls[Doing].Count - 1;
+		}
 
 		if (IsFiring && Fetch_Stage() == firestage) {
 

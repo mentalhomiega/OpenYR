@@ -120,6 +120,8 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	DoControls(NULL),
 	FireLaunch(false),
 	ProneLaunch(false),
+	SecondaryLaunch(false),
+	SecondaryProneLaunch(false),
 	VoiceComment()
 {
 	// A type whose art names no sequence keeps these empty controls, so saves, the sync
@@ -429,6 +431,9 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsCrawling = ArtINI.Get_Bool(Graphic_Name(), "Crawls", IsCrawling);
 		FireLaunch = ArtINI.Get_Int(Graphic_Name(), "FireUp", FireLaunch);
 		ProneLaunch = ArtINI.Get_Int(Graphic_Name(), "FireProne", ProneLaunch);
+		// The secondary weapon launches on the same frame as the primary unless the art names its own.
+		SecondaryLaunch = ArtINI.Get_Int(Graphic_Name(), "SecondaryFire", FireLaunch);
+		SecondaryProneLaunch = ArtINI.Get_Int(Graphic_Name(), "SecondaryProne", ProneLaunch);
 		Read_Sequence_INI();
 		return(true);
 	}
@@ -497,6 +502,8 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(DoControls, sizeof(*DoControls) * DO_COUNT);
 	crc(FireLaunch);
 	crc(ProneLaunch);
+	crc(SecondaryLaunch);
+	crc(SecondaryProneLaunch);
 	crc(VoiceComment.Count());
 	crc(IsFearless);
 	crc(IsCrawling);
@@ -544,6 +551,8 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(FireLaunch);
 	stream.Serialize(ProneLaunch);
+	stream.Serialize(SecondaryLaunch);
+	stream.Serialize(SecondaryProneLaunch);
 	stream.Serialize(VoiceComment);
 	stream.Serialize(IsCyborg);
 	stream.Serialize(IsFearless);
