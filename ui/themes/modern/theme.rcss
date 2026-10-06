@@ -16,8 +16,7 @@ body
 	color: #ece6f7;
 }
 
-/* Yuri's Revenge's title art fills the window behind the menus, dimmed; over a game in
-   progress the game shows instead. */
+/* Yuri's Revenge's title art fills the window behind the menus, dimmed. */
 #screen-bg
 {
 	position: absolute;
@@ -50,9 +49,22 @@ body
 	decorator: vertical-gradient(#0a061299 #05030ae6);
 }
 
+/* Over a game in progress the art gives way to a light shade, so the panel stands out from the
+   battlefield. */
 .ingame #screen-bg
 {
+	background-color: transparent;
+}
+
+.ingame #screen-art
+{
 	display: none;
+}
+
+.ingame #screen-shade
+{
+	background-color: #0000006c;
+	decorator: none;
 }
 
 /* The panel replaces Tiberian Sun's chrome: no side bars, glow or teal backdrop. */
