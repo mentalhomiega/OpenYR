@@ -1343,7 +1343,7 @@ void Test_Game_Controls_Presenter(void)
 		Drive(presenter, "scroll", 1);
 		Drive(presenter, "cancel");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED &&
-			service.Joined() == "speed 0; scroll 1; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; difficulty 0; save",
+			service.Joined() == "speed 0; scroll 1; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; difficulty 0; save",
 			"Escape keeps and saves what was set");
 	}
 }
