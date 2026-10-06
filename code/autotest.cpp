@@ -407,6 +407,44 @@ void Hash_Technos(unsigned int & hash, DynamicVectorClass<T *> & list)
 }
 
 
+template<class T>
+void Log_Technos_Parts(char const * kind, DynamicVectorClass<T *> & list)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		DebugString("AUTOTEST   %s %d %s at %d,%d,%d facing %d strength %d mission %s limbo %d house %d\n",
+			kind, index, object->Class->Name(), object->PositionCoord.X, object->PositionCoord.Y, object->PositionCoord.Z,
+			object->PrimaryFacing.Current().As_Int(), object->Strength, MissionClass::Mission_Name(object->Get_Mission()),
+			(int)object->IsInLimbo, Houses.ID(object->House));
+	}
+}
+
+
+/// <summary>
+/// Logs each value the state hash covers, one object per line, so two runs whose hashes differ
+/// can be compared line by line.
+/// </summary>
+void Log_State_Parts(void)
+{
+	DebugString("AUTOTEST hashparts frame %d\n", Frame);
+	Log_Technos_Parts("building", Buildings);
+	Log_Technos_Parts("unit", Units);
+	Log_Technos_Parts("aircraft", Aircraft);
+	Log_Technos_Parts("infantry", Infantry);
+	for (int index = 0; index < Houses.Count(); index++) {
+		DebugString("AUTOTEST   house %d credits %d\n", index, Houses[index]->Credits);
+	}
+	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
+	std::string bytes;
+	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
+		char text[4];
+		std::snprintf(text, sizeof(text), "%02X", random[index]);
+		bytes += text;
+	}
+	DebugString("AUTOTEST   random %s\n", bytes.c_str());
+}
+
+
 /// <summary>
 /// Logs a hash of the game state that decides play: every building, vehicle, aircraft and soldier
 /// (position, facing, strength, mission, limbo, owner), each house's credits and the scenario's
@@ -1184,6 +1222,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "glideclock") {
 		// glideclock: times zoom glides by game frames, for recordings.
 		ViewZoomGameClock = true;
+	} else if (step.Command == "hashparts") {
+		// hashparts: logs each value the state hash covers, one object per line.
+		Log_State_Parts();
 	} else if (step.Command == "hash") {
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
