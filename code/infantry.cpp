@@ -2582,6 +2582,11 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 		LandState = on_land;
 	}
 
+	// A type with Crawls=no never lies down, so it keeps running when it is shot at.
+	if (todo == DO_LIE_DOWN && !Class->IsCrawling) {
+		return(false);
+	}
+
 	// A soldier still falling on its parachute keeps its paradrop pose.
 	if (Doing == DO_PARADROP && IsFalling) {
 		return(false);
