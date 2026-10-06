@@ -54,7 +54,9 @@ char const CATALOG[] =
 	"FirePower\trules.ini\tEasy\tdifficulty settings\tfloating point\n"
 	"FirePower\trules.ini\tDifficult\tdifficulty settings\tfloating point\n"
 	"BuildSlowdown\trules.ini\tEasy\tdifficulty settings\tboolean\n"
-	"BuildSlowdown\trules.ini\tDifficult\tdifficulty settings\tboolean\n";
+	"BuildSlowdown\trules.ini\tDifficult\tdifficulty settings\tboolean\n"
+	"Voxel\tart.ini\t@image\tAircraftType,BuildingType,InfantryType,UnitType\tboolean\n"
+	"Trailer\tart.ini\t@image\tBulletType\tclass\n";
 
 
 IniCheck::Catalog Load_Catalog(void)
@@ -116,7 +118,7 @@ void Test_Catalog(void)
 	Check(good.Find("Speed") != nullptr && good.Find("Speed")->size() == 2, "a key keeps every scope");
 	Check(good.Find("speed") == nullptr && good.Find_Other_Case("speed") == "Speed", "lookups are case sensitive, with a case-blind hint");
 	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "@difficulty"), "only literal sections count as known sections");
-	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 19, "a key holding a range is kept as a pattern");
+	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 21, "a key holding a range is kept as a pattern");
 }
 
 
@@ -213,6 +215,68 @@ void Test_Difficulty(void)
 }
 
 
+void Test_Art(void)
+{
+	IniCheck::Catalog catalog = Load_Catalog();
+	char const rules[] =
+		"[VehicleTypes]\n"                  // 1
+		"0=MYTANK\n"                        // 2
+		"1=MYTRUCK\n"                       // 3
+		"[BuildingTypes]\n"                 // 4
+		"0=MYPLANT\n"                       // 5
+		"[Animations]\n"                    // 6
+		"0=MYFLASH\n"                       // 7
+		"[MYTANK]\n"                        // 8
+		"Primary=MYGUN\n"                   // 9
+		"[MYTRUCK]\n"                       // 10
+		"Image=MYTANK\n"                    // 11
+		"[MYPLANT]\n"                       // 12
+		"Image=MYSKIN\n"                    // 13
+		"[MYGUN]\n"                         // 14
+		"Projectile=MYSHELL\n"              // 15
+		"[MYSHELL]\n"                       // 16
+		"Image=MYSHELLART\n"                // 17
+		"Arcing=yes\n"                      // 18
+		"[MYWARHEAD]\n"                     // 19
+		"Verses=100%\n";                    // 20
+
+	char const art[] =
+		"[MYTANK]\n"                        // 1
+		"Voxel=yes\n"                       // 2
+		"Voxel=maybe\n"                     // 3
+		"DockingOffset0=1,2,3\n"            // 4
+		"[MYTRUCK]\n"                       // 5
+		"Voxel=yes\n"                       // 6
+		"[MYPLANT]\n"                       // 7
+		"Voxel=yes\n"                       // 8
+		"[MYSKIN]\n"                        // 9
+		"DockingOffset1=1,2\n"              // 10
+		"Voxel=yes\n"                       // 11
+		"[MYFLASH]\n"                       // 12
+		"Image=FLASHART\n"                  // 13
+		"Voxel=yes\n"                       // 14
+		"[MYSHELLART]\n"                    // 15
+		"Trailer=MYTRAIL\n"                 // 16
+		"Voxel=yes\n"                       // 17
+		"[MYSHELL]\n"                       // 18
+		"Trailer=MYTRAIL\n"                 // 19
+		"[MYGUN]\n"                         // 20
+		"Voxel=yes\n";                      // 21
+
+	IniCheck::Report const report = IniCheck::Check_Art(catalog, rules, art);
+
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Voxel", 3), "an object's art section takes the art key forms");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "DockingOffset0", 4), "a structure art key in a vehicle's art section is reported");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 2) && !Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 11), "a section is checked as the kinds that read it");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "DockingOffset1", 10), "the section an Image= names is checked as that structure's art");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 14) && !Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Image", 13), "an animation reads the section of its own name");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Trailer", 16) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 17), "a projectile with an Image= reads that section as a projectile");
+	Check(report.UncheckedSections.size() == 4 && report.UncheckedSections[0] == "MYTRUCK" && report.UncheckedSections[1] == "MYPLANT" && report.UncheckedSections[2] == "MYSHELL" && report.UncheckedSections[3] == "MYGUN",
+		"a type's own name is unchecked when its Image= names another section, and a weapon has no art section");
+	Check(report.Findings.size() == 5, "nothing else is reported");
+}
+
+
 void Test_Rules(void)
 {
 	IniCheck::Catalog catalog = Load_Catalog();
@@ -280,6 +344,7 @@ int main(void)
 	Test_Rules();
 	Test_References();
 	Test_Difficulty();
+	Test_Art();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);
