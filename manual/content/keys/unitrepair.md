@@ -1,13 +1,13 @@
 ---
 key: UnitRepair
-summary: Makes the building take in one vehicle or aircraft at a time and repair it for credits.
+summary: Makes the building take in vehicles and aircraft, one per dock, and repair them for credits.
 see_also: ["system:repair"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-`UnitRepair=yes` makes a building a service depot. It takes in one vehicle or aircraft at a time and repairs it step by step, charging credits for each step. [The repair cycle](/systems/repair/#one-step-at-a-time) covers the steps and their cost.
+`UnitRepair=yes` makes a building a service depot. It takes in one vehicle or aircraft per [dock](/keys/numberofdocks--buildingtype/), one dock unless the type sets more, and repairs each step by step, charging credits for each step. [The repair cycle](/systems/repair/#one-step-at-a-time) covers the steps and their cost.
 
 The flag also has these effects:
 
