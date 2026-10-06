@@ -72,6 +72,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		virtual LONG Landing_Direction(void) override;
 		virtual BOOL Is_Loaded(void) override;
 		virtual LONG Is_Strafe(void) override;
+		virtual LONG Is_Fighter(void) override;
 		virtual LONG Is_Locked(void) override;
 
 		virtual void Init(void) override;

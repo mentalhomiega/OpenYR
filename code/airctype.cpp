@@ -83,6 +83,7 @@ void const * AircraftTypeClass::RRotorData = NULL;
 AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	BASECLASS(ininame, SPEED_WINGED),
 	IsLandable(false),
+	IsFighter(false),
 	IsRotorEquipped(false),
 	IsRotorCustom(false),
 	IsCarryall(false),
@@ -269,6 +270,7 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 	if (BASECLASS::Read_INI(ini)) {
 
 		IsLandable = ini.Get_Bool(Name(), "Landable", IsLandable);
+		IsFighter = ini.Get_Bool(Name(), "Fighter", IsFighter);
 		IsCarryall = ini.Get_Bool(Name(), "Carryall", IsCarryall);
 		IsRotorEquipped = ArtINI.Get_Bool(Graphic_Name(), "Rotors", IsRotorEquipped);
 		IsRotorCustom = ArtINI.Get_Bool(Graphic_Name(), "CustomRotor", IsRotorCustom);
@@ -292,6 +294,7 @@ void AircraftTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsRotorEquipped);
 	crc(IsRotorCustom);
 	crc(IsLandable);
+	crc(IsFighter);
 	crc(HeapID);
 }
 
@@ -323,6 +326,7 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRotorEquipped);
 	stream.Serialize(IsRotorCustom);
 	stream.Serialize(IsLandable);
+	stream.Serialize(IsFighter);
 }
 
 

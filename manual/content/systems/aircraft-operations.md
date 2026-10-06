@@ -1,6 +1,6 @@
 ---
 title: Aircraft operations
-summary: "How aircraft choose and recheck landing zones, finish moves, unload cargo and accept attack orders."
+summary: "How aircraft choose and recheck landing zones, finish moves, unload cargo, make attack passes and accept attack orders."
 category: units-movement
 keys: []
 related:
@@ -57,6 +57,18 @@ The aircraft checks again when it lands to unload and before each passenger leav
 - A computer player's aircraft takes off and looks for another landing zone.
 
 An aircraft carrying passengers lets them out one at a time, each into a free neighboring cell. If no neighboring cell can take the next passenger, that passenger stays aboard and is the next one the aircraft tries to place. Carryalls set their vehicle down by a different route.
+
+## Attack passes
+
+An aircraft attacks in one of three styles, chosen by its primary weapon and its type.
+
+| Style | Applies when | What the aircraft does |
+| --- | --- | --- |
+| Strafing run | The weapon's projectile has no guidance (`ROT=1` or less) and is visible | Flies straight at the target and fires five shots in a row; the pass uses one point of [`Ammo`](/keys/ammo/) |
+| Fighter pass | The projectile is guided and the type sets [`Fighter=yes`](/keys/fighter/) | Heads for a firing position, fires as soon as it is in range and facing the target, flies on without turning for the weapon's `ROF` delay, then picks its next position or returns to land |
+| Hover attack | The projectile is guided and the type is not a fighter | Flies to a firing position, stops, turns to face the target and fires from a hover |
+
+A hover attack and a fighter pass both start from a firing position chosen on a ring around the target, inside the weapon's range, at one of the two positions nearest the aircraft.
 
 ## Issuing attack orders without ammunition
 

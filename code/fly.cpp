@@ -1715,12 +1715,18 @@ void FlyLocomotionClass::Acquire_Hunter_Seeker_Target(void)
 /// <summary>
 /// Does the aircraft need to settle down toward the ground?
 /// This routine is used while nearing a destination to decide whether the approach should
-/// be staged down into a landing. A strafing aircraft with ammunition left is exempt, since
-/// it is making an attack run rather than an approach.
+/// be staged down into a landing. An aircraft locked to straight flight, and a strafing or
+/// fighter aircraft with ammunition left, are exempt, since they pass through the destination
+/// rather than stopping at it.
 /// </summary>
 /// <returns>bool; Should the aircraft slow down and land?</returns>
 bool FlyLocomotionClass::Needs_To_Land(void)
 {
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
+	if (flyctrl != NULL && flyctrl->Is_Locked()) {
+		return(false);
+	}
+
 	if (IsLanding) {
 		return(true);
 	}
@@ -1729,9 +1735,10 @@ bool FlyLocomotionClass::Needs_To_Land(void)
 		return(true);
 	}
 
-	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
-	if (flyctrl != NULL && !flyctrl->Is_Strafe()) {
-		return(true);
+	if (flyctrl != NULL) {
+		if (!flyctrl->Is_Strafe() && !flyctrl->Is_Fighter()) {
+			return(true);
+		}
 	}
 
 	if (LinkedTo->Ammo == 0) {
