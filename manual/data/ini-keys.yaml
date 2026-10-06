@@ -10427,7 +10427,7 @@ Description:
     level: MultiMission
   - applies_to:
     - multiplayer maps
-    file: map file (.mpr)
+    file: map file (.yrm, .mpr)
     section:
       kind: literal
       name: Multiplay
@@ -10455,6 +10455,24 @@ Description:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
+DescriptionText:
+  key: DescriptionText
+  scopes:
+  - applies_to:
+    - map packets
+    file: scenario packet (.pkt)
+    section:
+      kind: identifier
+      source: multiplayer-map
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: MultiMission
+      member: null
+      source: code/session.cpp
+      guard: null
+    level: MultiMission
 DestroyAnim:
   key: DestroyAnim
   scopes:
@@ -21192,7 +21210,7 @@ MaxPlayers:
     level: MultiMission
   - applies_to:
     - multiplayer maps
-    file: map file (.mpr)
+    file: map file (.yrm, .mpr)
     section:
       kind: literal
       name: Multiplay
@@ -21605,7 +21623,7 @@ MinPlayers:
     level: MultiMission
   - applies_to:
     - multiplayer maps
-    file: map file (.mpr)
+    file: map file (.yrm, .mpr)
     section:
       kind: literal
       name: Multiplay
@@ -22664,7 +22682,7 @@ Name:
     level: ScenarioClass
   - applies_to:
     - multiplayer maps
-    file: map file (.mpr)
+    file: map file (.yrm, .mpr)
     section:
       kind: literal
       name: Basic
@@ -23874,7 +23892,7 @@ Official:
     level: ScenarioClass
   - applies_to:
     - multiplayer maps
-    file: map file (.mpr)
+    file: map file (.yrm, .mpr)
     section:
       kind: literal
       name: Basic

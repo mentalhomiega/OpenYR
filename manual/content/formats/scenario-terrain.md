@@ -6,6 +6,7 @@ kind: file
 filenames:
   - "*.MAP"
   - "*.MPR"
+  - "*.YRM"
 source_files:
   - code/display.cpp
   - code/map.cpp

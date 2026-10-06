@@ -420,6 +420,7 @@ class MultiMission
 		void Set_Filename(char const * filename);
 		void Set_Digest(char const * digest);
 		void Set_Official(bool official);
+		void Add_Player_Count(void);
 		char const * Description(void) const {return(ScenarioDescription);}
 		char const * Get_Filename(void) const {return(Filename);}
 		char const * Get_Digest(void) const {return(Digest);}
@@ -432,8 +433,8 @@ class MultiMission
 		bool IsOfficial;
 
 		/*
-		 * These are the player limits the mission declares in its own "Multiplay" section.
-		 * Nothing consults them, so a mission's limits are not actually enforced.
+		 * These are the player limits the mission declares. Only a map pack's listing reads
+		 * them, to show them in the description, so a mission's limits are not enforced.
 		 */
 		int MinPlayers;
 		int MaxPlayers;

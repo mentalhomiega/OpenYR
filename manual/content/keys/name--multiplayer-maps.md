@@ -6,10 +6,9 @@ see_also: ["Official"]
 when_omitted:
   kind: value
   value: "No Name"
-  note: "Shown only when no earlier .mpr file sets a title. The .mpr files are read in alphabetical order of file name, and a file without Name= takes the title of the nearest earlier file that has one."
 ---
 
-`[Basic] Name=` is the map's title in the skirmish and multiplayer map list. It applies to loose `.mpr` files, the ones found on their own in the folders the game searches (see [Game data](/using/game-data/)). A map listed in a `.pkt` packet takes its title from the packet's [`Description`](/keys/description/#scope-map-packets) instead and never reads this setting.
+`[Basic] Name=` is the map's title in the skirmish and multiplayer map list. It applies to loose `.yrm` and `.mpr` files, the ones found on their own in the folders the game searches (see [Game data](/using/game-data/)). A map listed in a `.pkt` packet takes its title from the packet's [`Description`](/keys/description/#scope-map-packets) instead and never reads this setting.
 
 A non-empty [`Description`](/keys/description/#scope-multiplayer-maps) in the same file's `[Multiplay]` section replaces the title. The list keeps at most 43 bytes of either one; an accented letter takes two.
 
