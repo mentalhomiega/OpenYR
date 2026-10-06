@@ -884,9 +884,13 @@ LaserPositionUpdate.StopOnFirerConvert
 LaserTargetColor
 LaserTrail.Type
 LaserTrail.Types
+LaserTrail<n>.FLH
+LaserTrail<n>.IsOnTurret
+LaserTrail<n>.Type
 LaserTrailN.FLH
 LaserTrailN.IsOnTurret
 LaserTrailN.Type
+LaserTrailTypes
 LaserZAdjust
 LaunchSW
 LaunchSW.DisplayMoney
