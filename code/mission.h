@@ -34,6 +34,7 @@
 
 #include "ccini.h"
 #include "ftimer.h"
+#include "missionrules.h"
 #include "object.h"
 #include "timer.h"
 
@@ -155,8 +156,8 @@ class MissionControlClass
 		MissionControlClass(void);
 
 		bool Read_INI(CCINIClass const & ini);
-		int Normal_Delay(void) const {return(int(TICKS_PER_MINUTE * Rate));}
-		int AA_Delay(void) const {return(int(TICKS_PER_MINUTE * AARate));}
+		int Normal_Delay(void) const {return(MissionRules::Delay_Frames(Rate, TICKS_PER_MINUTE));}
+		int AA_Delay(void) const {return(MissionRules::Delay_Frames(AARate, TICKS_PER_MINUTE));}
 
 		/*
 		**	This is the mission identifier that this mission represents.
