@@ -46,6 +46,9 @@ catalog or the file cannot be read.
 
 A section is checked when the catalog names it, such as `[General]` or
 `[AI]`, or when a rules list such as `[VehicleTypes]` or `[Warheads]` names it.
+The difficulty sections `[Easy]`, `[Normal]` and `[Difficult]` are checked
+against the difficulty keys, such as `FirePower=` and `BuildTime=`; the
+export script writes them under those three names.
 A listed section is checked against the keys of that type kind, so a vehicle
 section accepts vehicle keys and the keys every object type reads.
 
@@ -63,7 +66,7 @@ A section named both in a list and by a key is checked against the keys of
 both kinds.
 
 Every other section is skipped, such as a weapon nothing names and sections
-such as difficulty settings whose names the catalog does not give.
+whose names the catalog does not give, such as the land types.
 
 ## Limits
 

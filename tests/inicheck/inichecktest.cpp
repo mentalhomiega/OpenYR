@@ -50,7 +50,11 @@ char const CATALOG[] =
 	"Verses\trules.ini\t*\tWarheadType\tstring\n"
 	"Weapon{1-18}\trules.ini\t*\tAircraftType,BuildingType,InfantryType,UnitType\tclass\n"
 	"BurstDelay{0-3}\trules.ini\t*\tWeaponType\tinteger\n"
-	"DockingOffset{0-}\tart.ini\t@image\tBuildingType\tpoint (x,y,z)\n";
+	"DockingOffset{0-}\tart.ini\t@image\tBuildingType\tpoint (x,y,z)\n"
+	"FirePower\trules.ini\tEasy\tdifficulty settings\tfloating point\n"
+	"FirePower\trules.ini\tDifficult\tdifficulty settings\tfloating point\n"
+	"BuildSlowdown\trules.ini\tEasy\tdifficulty settings\tboolean\n"
+	"BuildSlowdown\trules.ini\tDifficult\tdifficulty settings\tboolean\n";
 
 
 IniCheck::Catalog Load_Catalog(void)
@@ -111,8 +115,8 @@ void Test_Catalog(void)
 	IniCheck::Catalog good = Load_Catalog();
 	Check(good.Find("Speed") != nullptr && good.Find("Speed")->size() == 2, "a key keeps every scope");
 	Check(good.Find("speed") == nullptr && good.Find_Other_Case("speed") == "Speed", "lookups are case sensitive, with a case-blind hint");
-	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "Easy"), "only literal sections count as known sections");
-	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 17, "a key holding a range is kept as a pattern");
+	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "@difficulty"), "only literal sections count as known sections");
+	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 19, "a key holding a range is kept as a pattern");
 }
 
 
@@ -178,6 +182,34 @@ void Test_References(void)
 	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Weapon01", 6) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Projectile", 7), "keys the type does not read are reported");
 	Check(report.Findings.size() == 7, "nothing else is reported");
 	Check(report.UncheckedSections.size() == 2 && report.UncheckedSections[0] == "ZEROGUN" && report.UncheckedSections[1] == "NOTREAD", "a reference from a key the type does not read is not followed");
+}
+
+
+void Test_Difficulty(void)
+{
+	IniCheck::Catalog catalog = Load_Catalog();
+	char const text[] =
+		"[Easy]\n"                          // 1
+		"FirePower=1.1\n"                   // 2
+		"BuildSlowdown=maybe\n"             // 3
+		"Cost=1\n"                          // 4
+		"[Difficult]\n"                     // 5
+		"FirePower=big\n"                   // 6
+		"BuildSlowdown=no\n"                // 7
+		"[VehicleTypes]\n"                  // 8
+		"0=MYTANK\n"                        // 9
+		"[MYTANK]\n"                        // 10
+		"FirePower=1\n"                     // 11
+		"[Hard]\n"                          // 12
+		"FirePower=1\n";                    // 13
+
+	IniCheck::Report const report = IniCheck::Check_Rules(catalog, text);
+
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "BuildSlowdown", 3) && Has(report, IniCheck::FindingType::BAD_VALUE, "FirePower", 6), "a difficulty section's values are checked by its keys' forms");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Cost", 4), "a key the catalog does not give a difficulty section is reported");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "FirePower", 11), "a difficulty key in a vehicle section is reported");
+	Check(report.Findings.size() == 4, "nothing else is reported");
+	Check(report.UncheckedSections.size() == 1 && report.UncheckedSections[0] == "Hard", "a section the engine does not read as a difficulty is left unchecked");
 }
 
 
@@ -247,6 +279,7 @@ int main(void)
 	Test_Patterns();
 	Test_Rules();
 	Test_References();
+	Test_Difficulty();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);
