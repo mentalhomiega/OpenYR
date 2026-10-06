@@ -1173,6 +1173,21 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   banim slot %d used %d garrisoned %d effect %d e.g. %s\n", slot, count, garrisoned, effect, example);
 		}
+	} else if (step.Command == "banimstate") {
+		// banimstate <TypeID>: for each building of that type, the animation in each slot with its stage, rate and whether it is held still.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   banimstate %s at %d,%d health %d/%d bstate %d stage %d rate %d power %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+				(int)building->Strength, (int)building->Class->MaxStrength, (int)building->BState, building->Fetch_Stage(), building->Fetch_Rate(), (int)building->Is_Powered_On());
+			for (int slot = 0; slot < BANIM_COUNT; slot++) {
+				AnimClass const * anim = building->Anims[slot];
+				char const * wanted = building->Class->AnimData[slot].Anim;
+				if (anim == NULL && wanted[0] == '\0') continue;
+				DebugString("AUTOTEST     slot %d wants %s damaged %s: %s stage %d rate %d disabled %d\n", slot, wanted, building->Class->AnimData[slot].AnimDamaged,
+					anim != NULL ? anim->Class->Name() : "(none)", anim != NULL ? anim->Fetch_Stage() : -1, anim != NULL ? anim->Fetch_Rate() : -1, anim != NULL ? (int)anim->Is_Disabled() : -1);
+			}
+		}
 	} else if (step.Command == "playanim") {
 		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
 		AnimTypeClass const * type = AnimTypeClass::Find_Or_Make(step.Argument.c_str());

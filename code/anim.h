@@ -107,6 +107,7 @@ class AnimClass : public ObjectClass, public StageClass
 
 		void Disable(void);
 		void Enable(void);
+		bool Is_Disabled(void) const {return IsDisabled;}
 
 		void Vein_Attack_AI(void);
 		void Flaming_Guy_AI(void);
