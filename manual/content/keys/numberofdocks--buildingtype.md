@@ -12,6 +12,8 @@ A structure keeps one radio contact per dock, so that many objects can dock with
 
 On a [`Helipad=yes`](/keys/helipad/) or [`UnitRepair=yes`](/keys/unitrepair/) structure, each dock has its own landing spot: the structure's center plus that dock's `DockingOffsetN=` from the structure's art section, where `N` counts from `0`. An offset is three numbers in leptons (X, Y, height), and an offset the art does not set is `0,0,0`. With one dock, every visitor uses `DockingOffset0=`. With several, an object takes the first free dock when it makes contact and keeps it until contact ends; an object that holds no dock is sent to the center. With `NumberOfDocks=0`, visitors use the center.
 
+When an aircraft asks to dock at a [`Helipad=yes`](/keys/helipad/) structure that also sets `UnitRepair=yes`, the structure orders it onto the pad if the aircraft stands more than half a cell from the structure's center. An aircraft that holds a dock is measured itself; one that holds none is measured by the object on the first dock.
+
 A `UnitRepair=yes` structure starts a repair only when the object on its first dock stands within a quarter of a cell of the structure's center, or 150 leptons for a hovercraft. Keep `DockingOffset0=` within that distance on such a structure; otherwise the object on the first dock is never repaired.
 
 An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.

@@ -561,9 +561,11 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				}
 			}
 
-			if (Contact_With_Whom() != NULL) {
+			// The sender's own dock is measured when it holds one, so a second dock's object is not judged by the first's.
+			TechnoClass * measured = Contains_Link(from) ? (TechnoClass *)from : Contact_With_Whom();
+			if (measured != NULL) {
 				if (Class->IsCanUnitRepair) {
-					if (Distance_To(Contact_With_Whom()) > CELL_LEPTON / 2) {
+					if (Distance_To(measured) > CELL_LEPTON / 2) {
 						needs_to_move = true;
 					}
 				}
