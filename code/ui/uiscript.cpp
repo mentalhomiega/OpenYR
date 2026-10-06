@@ -14,6 +14,7 @@
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
+#include "video.h"
 
 #include <RmlUi/Core.h>
 
@@ -210,6 +211,8 @@ void UIScript_Tick(Rml::Context * context)
 		} else if (step.Command == "shot") {
 			ShotPath = Screenshot_Name((step.Argument + ".tga").c_str());
 			Backend_Request_Window_Capture(ShotPath.c_str());
+			// A still screen is not shown again until something changes, so one is asked for.
+			Video_Mark_Overlay_Dirty();
 			WaitUntil = now + 500;
 			return;
 		} else if (step.Command == "ids") {

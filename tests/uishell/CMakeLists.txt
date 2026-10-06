@@ -6,7 +6,7 @@
 # for the developer overlays.
 opents_add_test(UIShell
     NAME uishell
-    SOURCES uishell.cpp uidevstub.cpp uitexturestub.cpp
+    SOURCES uishell.cpp uidevstub.cpp uiscriptstub.cpp uitexturestub.cpp
     ENGINE
         ui/uiscreen.cpp
         ui/uiinput.cpp
