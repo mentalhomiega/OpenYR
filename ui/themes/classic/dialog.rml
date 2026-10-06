@@ -1,0 +1,42 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+
+	The classic menu style's frame: Yuri's Revenge's 800x600 menu screen (title art, the
+	right-hand button column and the bottom bar) centred in the window behind the shared
+	dialog frame, and the style's own sheet read after the shared kit.
+-->
+<template name="dialog" content="content">
+<head>
+	<link type="text/rcss" href="kit.rcss"/>
+	<link type="text/rcss" href="theme.rcss"/>
+</head>
+<body>
+	<div id="screen-bg">
+		<div id="stage">
+			<div id="stage-art"></div>
+			<div id="stage-column"></div>
+			<div id="stage-bar"></div>
+		</div>
+	</div>
+	<div id="backdrop">
+		<div id="reveal">
+			<div id="chrome">
+				<div id="wallpaper"><div id="wallpaper-art"></div></div>
+				<div id="glow"></div>
+				<div id="bar-left"></div>
+				<div id="bar-right"></div>
+				<div id="content"></div>
+			</div>
+			<div id="edge-left"></div>
+			<div id="edge-right"></div>
+		</div>
+		<div id="tip" class="tooltip"></div>
+	</div>
+</body>
+</template>

@@ -1,0 +1,253 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The classic menu style: Yuri's Revenge's own menu screen and dialog art. Sizes are in dp,
+   laid out for 800x600; the stage is centred in the window and scales with it. */
+
+body
+{
+	color: #e8dcff;
+}
+
+@spritesheet title
+{
+	src: Title.PCX;
+	title-column: 472px 0px 168px 448px;
+	title-bar: 0px 448px 472px 32px;
+}
+
+/* The menu screen behind every menu; over a game in progress the game shows instead. */
+#screen-bg
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -2;
+	background-color: #000000;
+	pointer-events: none;
+}
+
+#stage
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 800dp;
+	height: 600dp;
+	margin-left: -400dp;
+	margin-top: -300dp;
+}
+
+#stage-art
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 632dp;
+	height: 568dp;
+	decorator: image(GLSLMD.SHP@GLSMD.PAL cover left top);
+}
+
+#stage-column
+{
+	position: absolute;
+	left: 632dp;
+	top: 0;
+	width: 168dp;
+	height: 568dp;
+	decorator: image(title-column fill);
+}
+
+#stage-bar
+{
+	position: absolute;
+	left: 0;
+	top: 568dp;
+	width: 800dp;
+	height: 32dp;
+	decorator: image(title-bar fill);
+}
+
+.ingame #screen-bg
+{
+	display: none;
+}
+
+/* Dialogs sit on Yuri's Revenge's dialog backdrop in Yuri's colours. */
+#bar-left, #bar-right, #edge-left, #edge-right, #glow, #wallpaper-art,
+.revealing #edge-left, .revealing #edge-right
+{
+	display: none;
+}
+
+/* Yuri's Revenge's dialog backdrops are read only once a game is under way, so the dialogs
+   take a plain backdrop in the same colours. */
+#wallpaper
+{
+	background-color: #0a0612;
+	decorator: vertical-gradient(#24163cf0 #07040cf0);
+	border: 2dp #7d5cb8;
+}
+
+/* The main menu's buttons stand in the right-hand column, as in Yuri's Revenge. */
+body.main #backdrop #reveal, body.multiplayer #backdrop #reveal
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 168dp;
+	height: 300dp;
+	margin-left: 232dp;
+	margin-top: -270dp;
+}
+
+body.main #wallpaper, body.multiplayer #wallpaper
+{
+	background-color: transparent;
+	decorator: none;
+	border-width: 0;
+}
+
+body.main #content button, body.multiplayer #content button
+{
+	left: 21dp;
+	width: 126dp;
+	height: 25dp;
+}
+
+body.main #content button:nth-child(1) { top: 10dp; }
+body.main #content button:nth-child(2) { top: 45dp; }
+body.main #content button:nth-child(3) { top: 80dp; }
+body.main #content button:nth-child(4) { top: 115dp; }
+body.main #content button:nth-child(5) { top: 150dp; }
+body.main #content button:nth-child(6) { top: 185dp; }
+
+body.multiplayer #title { left: 0; top: 10dp; width: 168dp; }
+body.multiplayer #content button:nth-child(1) { top: 40dp; }
+body.multiplayer #content button:nth-child(2) { top: 75dp; }
+body.multiplayer #content button:nth-child(3) { top: 110dp; }
+body.multiplayer #content button:nth-child(4) { top: 145dp; }
+
+/* Buttons are Yuri's Revenge's menu button in its three states. */
+button, button.wide, button.tall
+{
+	height: 25dp;
+	border-width: 0;
+	padding: 5dp 4dp 0 4dp;
+	color: #e8dcff;
+	background-color: transparent;
+	decorator: image(MNBTTN.SHP@DIALOGY.PAL@0 fill);
+}
+
+button:hover, button.wide:hover, button.tall:hover
+{
+	color: #ffffff;
+	decorator: image(MNBTTN.SHP@DIALOGY.PAL@1 fill);
+}
+
+button:active, button.wide:active, button.tall:active
+{
+	position: relative;
+	top: 0;
+	border-width: 0;
+	padding: 6dp 4dp 0 4dp;
+	color: #ffffff;
+	decorator: image(MNBTTN.SHP@DIALOGY.PAL@2 fill);
+}
+
+button.disabled, button:disabled, button.wide.disabled, button.wide:disabled, button.tall.disabled, button.tall:disabled,
+button.disabled:active, button:disabled:active, button.wide.disabled:active, button.wide:disabled:active,
+button.tall.disabled:active, button.tall:disabled:active
+{
+	position: relative;
+	top: 0;
+	border-width: 0;
+	padding: 5dp 4dp 0 4dp;
+	color: #6c6080;
+	decorator: image(MNBTTN.SHP@DIALOGY.PAL@0 fill);
+}
+
+/* Fields and lists */
+input[type='range'], input[type='text'], input[type='password'], textarea, select, .hotkey, .list
+{
+	border-color: #8a6cc4;
+	background-color: #000000c0;
+}
+
+.list .item, select option
+{
+	color: #e8dcff;
+}
+
+.list .item:checked, .list .item.selected, select option:checked
+{
+	background-color: #5a3c8c;
+	color: #ffffff;
+}
+
+.caption, .value
+{
+	color: #f0e6ff;
+}
+
+.tooltip
+{
+	background-color: #000000e0;
+	border: 1dp #8a6cc4;
+	color: #e8dcff;
+}
+
+/* Fields and value boxes in Yuri's colours. */
+input[type='text'], input[type='password'], textarea, .hotkey, select, select option
+{
+	color: #e8dcff;
+	caret-color: #e8dcff;
+}
+
+input selection, textarea selection
+{
+	background-color: #5a3c8c;
+	color: #ffffff;
+}
+
+.trough, .trough.disabled
+{
+	border: 1dp #8a6cc4;
+	background-color: #000000c0;
+	color: #e8dcff;
+	decorator: none;
+}
+
+.trough-edge, .trough-edge.disabled
+{
+	background-color: transparent;
+}
+
+.frame, .group, progress, select selectbox
+{
+	border-color: #8a6cc4;
+}
+
+.group > .rule
+{
+	color: #f0e6ff;
+}
+
+.group > .rule > span
+{
+	background-color: #8a6cc4;
+}
+
+progress fill
+{
+	background-color: #8a6cc4;
+	decorator: horizontal-gradient(#5a3c8c #b48cff);
+}

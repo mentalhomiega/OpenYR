@@ -224,3 +224,84 @@ scrollbarvertical sliderarrowdec:active, scrollbarvertical sliderarrowinc:active
 	border: 1dp #6b43a8;
 	color: #ece6f7;
 }
+
+/* Text everywhere in the vector face, a notch smaller than the bitmap font it replaces. */
+body
+{
+	font-size: 14dp;
+}
+
+.sans, input[type='text'], input[type='password'], textarea, .list, .tooltip, .hotkey, .group > label, .group > .rule
+{
+	font-family: fullfnt;
+	font-size: 14dp;
+}
+
+input[type='text'], input[type='password'], textarea, .hotkey, select, select option
+{
+	color: #ece6f7;
+	caret-color: #d29bff;
+}
+
+input selection, textarea selection
+{
+	background-color: #4a2f78;
+	color: #ffffff;
+}
+
+select:disabled, select.disabled, .trough.disabled
+{
+	color: #5f5873;
+}
+
+/* Value boxes, frames and group outlines */
+.trough, .trough.disabled
+{
+	border: 1dp #4d3d6b;
+	background-color: #0b0812d0;
+	color: #ece6f7;
+	decorator: none;
+}
+
+.trough-edge, .trough-edge.disabled
+{
+	background-color: transparent;
+}
+
+.frame, .group, progress, select selectbox
+{
+	border-color: #4d3d6b;
+}
+
+.group > .rule
+{
+	color: #d9c8ff;
+}
+
+.group > .rule > span
+{
+	background-color: #4d3d6b;
+}
+
+progress fill
+{
+	background-color: #b46bff;
+	decorator: horizontal-gradient(#6b43a8 #b46bff);
+}
+
+/* Arrows */
+select selectarrow, select:disabled selectarrow, select.disabled selectarrow
+{
+	background-color: #2e2640;
+	decorator: image(arrow-down.png fill);
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowdec:active
+{
+	decorator: image(arrow-up.png fill);
+}
+
+scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
+{
+	decorator: image(arrow-down.png fill);
+}
