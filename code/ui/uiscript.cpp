@@ -200,7 +200,7 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
 /// id), press (a button's label, ignoring case), key (escape, return, tab, space or an arrow),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
-/// visible screen) and quit.
+/// visible screen), box (logs where an element and each element around it lie) and quit.
 /// </summary>
 void UIScript_Tick(Rml::Context * context)
 {
@@ -255,6 +255,17 @@ void UIScript_Tick(Rml::Context * context)
 					Log_Ids(document, 1);
 					Log_Buttons(document);
 				}
+			}
+		} else if (step.Command == "box") {
+			Rml::Element * element = Find_Element(context, step.Argument);
+			if (element == nullptr) {
+				DebugString("UISCRIPT   box %s: no such visible element\n", step.Argument.c_str());
+			}
+			for (Rml::Element * at = element; at != nullptr; at = at->GetParentNode()) {
+				Rml::Vector2f const offset = at->GetAbsoluteOffset(Rml::BoxArea::Border);
+				Rml::Vector2f const size = at->GetBox().GetSize(Rml::BoxArea::Border);
+				DebugString("UISCRIPT   box #%s <%s> at %.1f,%.1f size %.1fx%.1f position %d\n", at->GetId().c_str(), at->GetTagName().c_str(),
+					offset.x, offset.y, size.x, size.y, (int)at->GetComputedValues().position());
 			}
 		} else if (step.Command == "click") {
 			Rml::Element * element = Find_Element(context, step.Argument);
