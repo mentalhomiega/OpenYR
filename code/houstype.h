@@ -74,9 +74,10 @@ class HouseTypeClass : public AbstractTypeClass
 
 		/*
 		**	This is the filename suffix to use when creating a house specific
-		**	file name. It is three characters long.
+		**	file name. Longer suffixes such as "Allied" are kept whole, up to
+		**	31 characters.
 		*/
-		char Suffix[4];
+		char Suffix[32];
 
 		/*
 		**	This is a unique ASCII character used when constructing filenames. It
@@ -112,6 +113,11 @@ class HouseTypeClass : public AbstractTypeClass
 		/// Unused
 		bool IsSmartAI;
 
+		// The country this one is based on, set by ParentCountry= or by a house taking its
+		// Country=, or HOUSE_NONE for a country that stands alone. It is not saved: a house
+		// records the country it acts as in ActLike.
+		HousesType ParentCountry;
+
 		//------------------------------------------------------------------------
 		HouseTypeClass(char const * ininame = NULL);
 		virtual ~HouseTypeClass() override;
@@ -128,6 +134,10 @@ class HouseTypeClass : public AbstractTypeClass
 		static HousesType From_Name(char const * name);
 		static void One_Time(void);
 		static HouseTypeClass * Find_Or_Make(char const * ininame);
+
+		HousesType Root_Country(void) const;
+		void Inherit_Country(HouseTypeClass const & parent);
+		void Inherit_Side(HouseTypeClass const & parent);
 
 		virtual bool Read_INI(CCINIClass const & ini) override;
 };

@@ -149,3 +149,10 @@ site_exclusions:
     keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, ShortGame, SkipScoreScreen, TechLevel, UnitCount]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.
+
+  - path: code/house.cpp
+    function: House_Type_For_Entry
+    keys: [Country]
+    classification: duplicate
+    canonical_key: Country
+    reason: The house record picks its type from the same Country setting that HouseClass::Read_INI reads for the tech tree.

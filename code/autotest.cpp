@@ -981,9 +981,17 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "houses") {
-		// houses: each house's money, power and spy effects.
+		// houses: each house's money, power and spy effects, after a "who" line naming the country
+		// the house acts as and counting the objects it owns.
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
+			int owned = 0;
+			for (int object = 0; object < Technos.Count(); object++) {
+				if (Technos[object]->House == house && !Technos[object]->IsInLimbo) {
+					owned++;
+				}
+			}
+			DebugString("AUTOTEST   who %s country %s player %d objects %d\n", house->Class->Name(), house->ActLike != HOUSE_NONE ? HouseTypes[house->ActLike]->Name() : "<none>", (int)(house == PlayerPtr), owned);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
 		}

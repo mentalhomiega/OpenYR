@@ -1115,7 +1115,7 @@ bool CCINIClass::Put_Owners(char const * section, char const * entry, int value)
 
 	for (HousesType house = HOUSE_FIRST; house < HouseTypes.Count(); house++) {
 		HouseTypeClass * type = HouseTypes[house];
-		if ((value & (1 << type->House)) != 0) {
+		if (type->House < 32 && (value & (1 << type->House)) != 0) {
 			if (buffer[0] != '\0') {
 				strcat(buffer, ",");
 			}
