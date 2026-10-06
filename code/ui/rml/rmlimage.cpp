@@ -29,6 +29,109 @@ static int Read_16(std::span<std::uint8_t const> bytes, std::size_t offset)
 }
 
 
+static std::uint16_t Read_U16(std::span<std::uint8_t const> data, std::size_t at)
+{
+	return((std::uint16_t)(data[at] | (data[at + 1] << 8)));
+}
+
+
+static std::uint32_t Read_U32(std::span<std::uint8_t const> data, std::size_t at)
+{
+	return((std::uint32_t)data[at] | ((std::uint32_t)data[at + 1] << 8) | ((std::uint32_t)data[at + 2] << 16) | ((std::uint32_t)data[at + 3] << 24));
+}
+
+
+bool UI_Decode_SHP(std::span<std::uint8_t const> encoded, int frame, UIImageIndexed & image)
+{
+	image = UIImageIndexed();
+
+	static const std::size_t HEADER = 8;
+	static const std::size_t FRAME_HEADER = 24;
+	if (encoded.size() < HEADER) {
+		return(false);
+	}
+
+	int const width = Read_U16(encoded, 2);
+	int const height = Read_U16(encoded, 4);
+	int const count = Read_U16(encoded, 6);
+	if (width <= 0 || height <= 0 || frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
+		return(false);
+	}
+
+	std::size_t const at = HEADER + (std::size_t)frame * FRAME_HEADER;
+	int const x = Read_U16(encoded, at);
+	int const y = Read_U16(encoded, at + 2);
+	int const w = Read_U16(encoded, at + 4);
+	int const h = Read_U16(encoded, at + 6);
+	int const kind = encoded[at + 8];
+	std::size_t offset = Read_U32(encoded, at + 20);
+
+	image.Width = width;
+	image.Height = height;
+	image.Pixels.assign((std::size_t)width * (std::size_t)height, 0);
+	if (offset == 0 || w == 0 || h == 0) {
+		return(true);
+	}
+	if (x + w > width || y + h > height) {
+		return(false);
+	}
+
+	for (int row = 0; row < h; row++) {
+		std::uint8_t * out = image.Pixels.data() + (std::size_t)(y + row) * width + x;
+		if (kind == 2 || kind == 3) {
+			if (offset + 2 > encoded.size()) {
+				return(false);
+			}
+			std::size_t const end = offset + Read_U16(encoded, offset);
+			if (end > encoded.size() || end < offset + 2) {
+				return(false);
+			}
+			std::size_t pos = offset + 2;
+			int column = 0;
+			while (pos < end && column < w) {
+				std::uint8_t const value = encoded[pos++];
+				if (kind == 3 && value == 0) {
+					if (pos >= end) {
+						break;
+					}
+					column += encoded[pos++];
+				} else {
+					out[column++] = value;
+				}
+			}
+			offset = end;
+		} else {
+			if (offset + (std::size_t)w > encoded.size()) {
+				return(false);
+			}
+			std::memcpy(out, encoded.data() + offset, (std::size_t)w);
+			offset += (std::size_t)w;
+		}
+	}
+
+	return(true);
+}
+
+
+bool UI_Apply_PAL(std::span<std::uint8_t const> pal, UIImageIndexed & image)
+{
+	if (pal.size() < 768) {
+		return(false);
+	}
+
+	for (std::size_t index = 0; index < 768; index++) {
+		int const level = pal[index] & 0x3F;
+		image.Palette[index] = (std::uint8_t)((level << 2) | (level >> 4));
+	}
+
+	// UI_Indexed_To_RGBA treats magenta as the transparent colour.
+	image.Palette[0] = 255;
+	image.Palette[1] = 0;
+	image.Palette[2] = 255;
+	return(true);
+}
+
+
 bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image)
 {
 	image = UIImageIndexed();

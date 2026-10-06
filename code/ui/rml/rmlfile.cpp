@@ -12,6 +12,9 @@
 #include "ui/rml/rmlfile.h"
 
 #include "ccfile.h"
+#include "ui/uitheme.h"
+
+#include <string>
 
 #include <climits>
 
@@ -30,7 +33,13 @@ Rml::FileHandle UIRmlFileClass::Open(Rml::String const & path)
 		return(0);
 	}
 
-	CCFileClass * file = new CCFileClass(name.c_str());
+	// The menu style in force replaces any UI file it holds a copy of.
+	std::string const themed = UI_Theme_Directory() + name;
+	CCFileClass * file = new CCFileClass(themed.c_str());
+	if (!file->Is_Available()) {
+		delete file;
+		file = new CCFileClass(name.c_str());
+	}
 	if (!file->Is_Available() || !file->Open(FileClass::READ)) {
 		delete file;
 		return(0);

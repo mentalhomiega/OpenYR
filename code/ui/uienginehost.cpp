@@ -31,6 +31,7 @@
 #include "session.h"
 #include "side.h"
 #include "ui/uishell.h"
+#include "ui/uitheme.h"
 #include "video.h"
 #include "voc.h"
 #include "wwmouse.h"
@@ -222,6 +223,21 @@ class UIEngineHostClass : public UIShellHostClass
 		virtual int Milliseconds(void) const override
 		{
 			return((int)GetTickCount64());
+		}
+
+		virtual float Menu_Reference_Width(void) const override
+		{
+			return(UI_Theme_Reference_Width());
+		}
+
+		virtual float Menu_Reference_Height(void) const override
+		{
+			return(UI_Theme_Reference_Height());
+		}
+
+		virtual bool Game_Running(void) const override
+		{
+			return(ScenarioActive);
 		}
 
 		virtual void Log(char const * text) override

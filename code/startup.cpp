@@ -147,6 +147,7 @@
 #include "tunnel.h"
 #include "tutorial.h"
 #include "ui/uishell.h"
+#include "ui/uitheme.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
@@ -529,6 +530,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		}
 		uidirectory += "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
+		UI_Theme_Set_Directory(uidirectory);
 
 		// The recording's name was settled during static initialization, before there was
 		// anywhere for a player's files to go. Naming it again settles it where it belongs.

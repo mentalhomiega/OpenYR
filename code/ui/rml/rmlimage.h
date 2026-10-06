@@ -25,6 +25,13 @@ struct UIImageIndexed
 
 bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image);
 
+// Decodes one frame of a shape (SHP) file at the shape's full size. Colour 0 is transparent, and
+// the palette is left for the caller to fill from a PAL file with UI_Apply_PAL.
+bool UI_Decode_SHP(std::span<std::uint8_t const> encoded, int frame, UIImageIndexed & image);
+
+// Fills the image's palette from a 768-byte PAL file of 6-bit levels, keeping colour 0 transparent.
+bool UI_Apply_PAL(std::span<std::uint8_t const> pal, UIImageIndexed & image);
+
 bool UI_Indexed_To_RGBA(UIImageIndexed const & image, std::vector<std::uint8_t> & rgba);
 
 bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int height, int pitch, std::vector<std::uint8_t> & rgba);

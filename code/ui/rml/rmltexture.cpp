@@ -20,7 +20,9 @@
 #define STBI_ONLY_PNG
 #define STBI_ONLY_TGA
 #define STBI_NO_STDIO
+#include <cstdlib>
 #include <cstring>
+#include <string>
 #include <stb_image.h>
 
 
@@ -112,6 +114,38 @@ UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba
 
 	if (name == NULL) {
 		return(UI_IMAGE_MISSING);
+	}
+
+	// A shape names its palette, and optionally a frame: NAME.SHP@PALETTE.PAL@frame.
+	char const * at = std::strchr(name, '@');
+	if (at != NULL) {
+		std::string const shape(name, at);
+		std::string palette = at + 1;
+		int frame = 0;
+		std::string::size_type const second = palette.find('@');
+		if (second != std::string::npos) {
+			frame = std::atoi(palette.c_str() + second + 1);
+			palette.erase(second);
+		}
+
+		std::vector<unsigned char> encoded;
+		std::vector<unsigned char> pal;
+		if (!Has_Extension(shape.c_str(), ".shp") || !Read_Whole_File(shape.c_str(), encoded) || !Read_Whole_File(palette.c_str(), pal)) {
+			return(UI_IMAGE_MISSING);
+		}
+
+		UIImageIndexed image;
+		if (!UI_Decode_SHP(std::span<std::uint8_t const>(encoded.data(), encoded.size()), frame, image)
+			|| !UI_Apply_PAL(std::span<std::uint8_t const>(pal.data(), pal.size()), image)
+			|| !UI_Indexed_To_RGBA(image, rgba)) {
+			DebugString("UI: %s did not decode as a shape frame with its palette\n", name);
+			rgba.clear();
+			return(UI_IMAGE_UNREADABLE);
+		}
+
+		width = image.Width;
+		height = image.Height;
+		return(UI_IMAGE_LOADED);
 	}
 
 	bool pcx = Has_Extension(name, ".pcx");

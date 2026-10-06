@@ -216,6 +216,14 @@ void UIShellClass::Apply_Dimensions(void)
 	UIFrameRect frame = Host.Frame();
 
 	float ratio = frame.ScaleX < frame.ScaleY ? frame.ScaleX : frame.ScaleY;
+
+	// A menu style laid out for one screen size scales with the window, so the menus look the
+	// same at 1080 and 2160 lines.
+	float const width = Host.Menu_Reference_Width();
+	float const height = Host.Menu_Reference_Height();
+	if (width > 0.0f && height > 0.0f && frame.Width > 0 && frame.Height > 0) {
+		ratio = std::min((float)frame.Width / width, (float)frame.Height / height);
+	}
 	if (ratio <= 0.0f) {
 		ratio = 1.0f;
 	}
@@ -779,6 +787,12 @@ void UIShellClass::Tick(void)
 
 	// A scripted menu step acts before the tick takes its guard, so a screen it opens can tick.
 	UIScript_Tick(Context);
+
+	// A style tells the menus over a game apart from the ones at the title by this class.
+	bool const ingame = Host.Game_Running();
+	for (int index = 0; index < Context->GetNumDocuments(); index++) {
+		Context->GetDocument(index)->SetClass("ingame", ingame);
+	}
 
 	UIReentryGuardClass ticking(InTick);
 

@@ -126,6 +126,7 @@ OptionsClass::OptionsClass(void) :
 	SidebarSorting(true),
 	ActionLines(true),
 	ShowHidden(false),
+	IsClassicMenus(false),
 	ToolTips(true),
 	AltToRally(false),
 	SimulateWhileUnfocused(false),
@@ -410,6 +411,10 @@ void OptionsClass::Load_Settings(void)
 	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
 	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
 
+	char menustyle[32];
+	ConfigINI.Get_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern", menustyle, sizeof(menustyle));
+	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
+
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
 	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
 
@@ -498,6 +503,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
+	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);

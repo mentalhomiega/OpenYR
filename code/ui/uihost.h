@@ -59,4 +59,11 @@ class UIShellHostClass
 		virtual char const * String(int id) const = 0;
 		virtual void Log(char const * text) = 0;
 		virtual int Milliseconds(void) const = 0;
+
+		// The screen size the menus are laid out for; zero leaves them at the game's own scale.
+		virtual float Menu_Reference_Width(void) const { return(0.0f); }
+		virtual float Menu_Reference_Height(void) const { return(0.0f); }
+
+		// Is a game in progress behind the menus?
+		virtual bool Game_Running(void) const { return(false); }
 };

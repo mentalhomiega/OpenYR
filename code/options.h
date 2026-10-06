@@ -125,6 +125,10 @@ class OptionsClass {
 		// If the marker over an object hidden behind a building is to be shown, then this flag will be true.
 		bool ShowHidden;
 
+		// The look of the menus: false for Yuri's Revenge art in a modern layout, true for
+		// Yuri's Revenge's own screens (MenuStyle=Modern or Classic in the settings).
+		bool IsClassicMenus;
+
 		/*
 		 * If tooltips are to pop up over the user interface, then this flag will be true.
 		 */
