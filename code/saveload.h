@@ -60,6 +60,7 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info);
 bool Save_Game(const char *file_name, char const * descr);
 bool Load_Game(const char *file_name);
 bool Dump_Game_State(char const * path);
+void Dump_Mark(SaveStreamClass const & stream, char const * name);
 bool Reconcile_Players(void);
 void Print_Heap_CRCs(FILE * fp);
 
