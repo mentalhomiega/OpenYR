@@ -364,6 +364,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	PowersUpToLevel(-1),
 	VoxelBarrelScale(1.0),
 	TurretChargeAnimRate(3),
+	ChargedAnimTime(999.0f),
 	StartPitch(DIR_E),
 	IsLimpetMine(false),
 	IsMobileWar(false),
@@ -1299,6 +1300,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		StartPitch = Dir256(ini.Get_Int(Name(), "StartPitch", StartPitch >> 5) << 5);
 		VoxelBarrelScale = ini.Get_Float(Name(), "VoxelBarrelScale", VoxelBarrelScale);
 		TurretChargeAnimRate = ini.Get_Int(Name(), "TurretChargeAnimRate", TurretChargeAnimRate);
+		ChargedAnimTime = ini.Get_Float(Name(), "ChargedAnimTime", ChargedAnimTime);
 		IsTurretAnimExclusive = ini.Get_Bool(Name(), "TurretAnimIsExclusive", IsTurretAnimExclusive);
 
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
@@ -2224,6 +2226,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsCoreDefender);
 	crc(IsBarrelAnimAVoxel);
 	crc(TurretChargeAnimRate);
+	crc(ChargedAnimTime);
 	crc(IsTurretAnimExclusive);
 	crc(IsExtraDamageStage);
 	crc(IsHospital);
@@ -2421,6 +2424,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoxelBarrelOffsetToBuildingPivotPoint);
 	stream.Serialize(VoxelBarrelOffsetToBarrelEnd);
 	stream.Serialize(TurretChargeAnimRate);
+	stream.Serialize(ChargedAnimTime);
 	stream.Serialize(StartPitch);
 	stream.Serialize(IsLimpetMine);
 	stream.Serialize(IsMobileWar);

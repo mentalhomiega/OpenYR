@@ -8026,6 +8026,8 @@ void BuildingClass::Animation_AI(void)
 		Update_Absorber_Anims();
 	}
 
+	Update_Super_Anims();
+
 	if (Class->IsSiloDamage) {
 		int amount = 0;
 		if (Class->Capacity > 0) {
@@ -8332,6 +8334,50 @@ void BuildingClass::Update_Absorber_Anims(void)
 		if (Anims[BANIM_ACTIVE_TWO] == NULL) {
 			Begin_Anim(BANIM_ACTIVE_TWO, damaged);
 		}
+	}
+}
+
+
+/// <summary>
+/// Plays the animations that show how charged a superweapon building is, after the
+/// superweapon parts of BuildingClass::Place (0x442D50) and BuildingClass::UpdateAnimations
+/// (0x450BD0). The first animation plays while the weapon charges. When it has less than
+/// ChargedAnimTime minutes left to charge, the second one takes over and plays through once.
+/// The third plays for as long as the weapon is ready, and when the weapon is fired and starts
+/// charging again, the fourth plays through once and the first begins again.
+/// </summary>
+void BuildingClass::Update_Super_Anims(void)
+{
+	if (Class->SuperWeapon == SUPER_NONE || Class->SuperWeapon >= House->SuperWeapon.Count() || Class->ChargedAnimTime > 990.0f) {
+		return;
+	}
+	if (IsInLimbo || !HasOpened || Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION) {
+		return;
+	}
+	SuperClass const * super = House->SuperWeapon[Class->SuperWeapon];
+	if (super == NULL || !super->Is_Present()) {
+		return;
+	}
+
+	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	if (super->Is_Ready()) {
+		if (Anims[BANIM_SUPER_THREE] == NULL) {
+			End_Anim(BANIM_SUPER_ONE);
+			End_Anim(BANIM_SUPER_TWO);
+			End_Anim(BANIM_SUPER_FOUR);
+			Begin_Anim(BANIM_SUPER_THREE, damaged);
+		}
+	} else if (Class->ChargedAnimTime < super->Control.Value() * 0.0011111111f) {
+		if (Anims[BANIM_SUPER_THREE] != NULL || Anims[BANIM_SUPER_TWO] != NULL) {
+			End_Anim(BANIM_SUPER_TWO);
+			End_Anim(BANIM_SUPER_THREE);
+			Begin_Anim(BANIM_SUPER_FOUR, damaged);
+		} else if (Anims[BANIM_SUPER_FOUR] == NULL && Anims[BANIM_SUPER_ONE] == NULL) {
+			Begin_Anim(BANIM_SUPER_ONE, damaged);
+		}
+	} else if (Anims[BANIM_SUPER_ONE] != NULL) {
+		End_Anim(BANIM_SUPER_ONE);
+		Begin_Anim(BANIM_SUPER_TWO, damaged);
 	}
 }
 
