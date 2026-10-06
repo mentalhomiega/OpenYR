@@ -5269,13 +5269,21 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			**	it will be sold. If there is nothing on the repair bay, then
 			**	the repair bay itself will be sold.
 			*/
-			if (Class->IsCanUnitRepair && Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && ::Distance(Center_Coord(), Contact_With_Whom()->Center_Coord()) < CELL_LEPTON / 2) {
-				TechnoClass * tech = Contact_With_Whom();
-				Transmit_Message(RADIO_OVER_OUT);
-				if (IsOwnedByPlayer) Speak(VOX_UNIT_SOLD);
-				tech->Sell_Back(1);
-				Assign_Mission(MISSION_GUARD);
-				return(1);
+			if (Class->IsCanUnitRepair) {
+				bool sold = false;
+				for (int slot = 0; slot < Link_Count(); slot++) {
+					TechnoClass * tech = Link(slot);
+					if (tech != NULL && Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && ::Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON / 2) {
+						Transmit_Message(RADIO_OVER_OUT, tech);
+						if (IsOwnedByPlayer) Speak(VOX_UNIT_SOLD);
+						tech->Sell_Back(1);
+						sold = true;
+					}
+				}
+				if (sold) {
+					Assign_Mission(MISSION_GUARD);
+					return(1);
+				}
 			}
 
 			if (UpgradeLevel) {
@@ -5305,7 +5313,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			End_Anim(BANIM_ALL);
 
 			IsReadyToCommence = false;
-			Transmit_Message(RADIO_RUN_AWAY);
+			for (int slot = 0; slot < Link_Count(); slot++) {
+				if (Link(slot) != NULL) {
+					Transmit_Message(RADIO_RUN_AWAY, Link(slot));
+				}
+			}
 
 			if (Class->IsLaserFencePost) {
 				Toggle_Laser_Fence_Post(false);
