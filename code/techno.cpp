@@ -183,6 +183,7 @@
 #include "lightcon.h"
 #include "logic.h"
 #include "mono.h"
+#include "navalweapon.h"
 #include "overtype.h"
 #include "partsys.h"
 #include "psystype.h"
@@ -639,22 +640,13 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 int TechnoClass::Naval_Weapon(TechnoClass const * target) const
 {
 	TechnoTypeClass const * type = target->TClass;
-	switch (TClass->NavalTargeting) {
-		case 0:
-			return((type->IsUnderwater && target->Cloak != UNCLOAKED) ? -1 : 0);
-		case 1:
-			return(type->IsUnderwater ? 1 : 0);
-		case 2:
-			return(type->IsUnderwater ? 0 : -1);
-		case 3:
-			return((type->IsOrganic || type->IsUnnatural) ? 1 : 0);
-		case 4:
-			return((type->Speed == SPEED_HOVER || type->IsOrganic) ? 0 : 1);
-		case 6:
-			return(-1);
-		default:
-			return(0);
-	}
+	NavalTargetFacts facts;
+	facts.IsUnderwater = type->IsUnderwater;
+	facts.IsCloakedOrCloaking = target->Cloak != UNCLOAKED;
+	facts.IsOrganic = type->IsOrganic;
+	facts.IsUnnatural = type->IsUnnatural;
+	facts.IsHover = type->Speed == SPEED_HOVER;
+	return(Naval_Weapon_Choice(TClass->NavalTargeting, facts));
 }
 
 
