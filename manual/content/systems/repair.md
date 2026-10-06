@@ -222,6 +222,8 @@ The depot acts on the object's answer to each request:
 - **Unaffordable.** The depot announces insufficient funds and stops the cycle. The object stays parked, and the depot asks again at each mission update as it does for the first step.
 - **Anything else.** This covers a step that finishes the repair, an object that needs nothing, and an object that has been given a destination. The depot announces that the unit is repaired and releases the object. A computer-owned object with a remembered position returns there, as a computer vehicle does after [reaching the pad](#reaching-the-pad) on its own. Every other object moves to an exit cell beside the depot.
 
+A depot with several [docks](/keys/numberofdocks--buildingtype/) runs the same cycle for the object on each dock. Each object pays for its own steps, and the depot releases each one when it is repaired. With one dock, which is the default, the depot serves one object at a time.
+
 ### What a depot does for free
 
 Each request to an object with no destination clears its limpet mine and resets its turret and body turn rates to the type's [`ROT`](/keys/rot/#scope-aircrafttype), at no charge.

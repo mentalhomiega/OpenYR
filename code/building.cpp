@@ -6005,34 +6005,120 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						return(1);
 					}
 					IsReadyToCommence = false;
-					int distance = CELL_LEPTON / 4;
-					FootClass *tech = (FootClass *)Contact_With_Whom();
+					bool ready = false;
+					for (int slot = 0; slot < Link_Count(); slot++) {
+						FootClass * tech = (FootClass *)Link(slot);
+						if (tech == NULL) {
+							continue;
+						}
+						int distance = CELL_LEPTON / 4;
 
-					/*
-					**	BG: If the unit to repair is an aircraft, and the aircraft is
-					**	fixed-wing, and it's landed, be much more liberal with the
-					**	distance check.  Fixed-wing aircraft are very inaccurate with
-					**	their landings.
-					*/
-					ClassID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
-					bool hover = (clsid == ClassID_HoverLocomotion) != 0;
-					if (hover) {
-						distance = 0x96;
+						/*
+						**	BG: If the unit to repair is an aircraft, and the aircraft is
+						**	fixed-wing, and it's landed, be much more liberal with the
+						**	distance check.  Fixed-wing aircraft are very inaccurate with
+						**	their landings.
+						*/
+						ClassID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
+						bool hover = (clsid == ClassID_HoverLocomotion) != 0;
+						if (hover) {
+							distance = 0x96;
+						}
+						if (Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && ::Distance(Center_Coord(), tech->Center_Coord()) < distance) {
+							ready = true;
+							continue;
+						}
+						if (!IonStormClass::Is_Ion_Storm_Active()) {
+							tech->Locomotion->Power_On();
+						}
 					}
-					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && ::Distance(Center_Coord(), Contact_With_Whom()->Center_Coord()) < distance) {
+					if (ready) {
 						Status = IDLE;
 						return(TICKS_PER_SECOND/4);
-					}
-					if (!IonStormClass::Is_Ion_Storm_Active()) {
-						tech->Locomotion->Power_On();
 					}
 					break;
 				}
 
 			case IDLE:
 				{
-					FootClass * radio = (FootClass *)Contact_With_Whom();
-					if (radio == NULL) {
+					bool any_docked = false;
+					bool quick = false;
+					for (int slot = 0; slot < Link_Count(); slot++) {
+						FootClass * radio = (FootClass *)Link(slot);
+						if (radio == NULL) {
+							continue;
+						}
+						any_docked = true;
+
+						if (Distance(radio->Center_Coord()) < 150) {
+							if (radio->Locomotion->Is_Powered()) {
+								if (!radio->Locomotion->Is_Moving()) {
+									radio->Locomotion->Power_Off();
+								}
+								quick = true;
+								continue;
+							}
+							if (radio->NavCom != NULL) {
+								radio->NavCom = NULL;
+							}
+						}
+
+						if (Transmit_Message(RADIO_NEED_TO_MOVE, radio) == RADIO_ROGER) {
+							TechnoClass * client = radio;
+							bool damaged = client->HealthRatio < Rule->ConditionGreen;
+							bool manual_reload = client->TClass->IsManualReload;
+							RadioMessageType msg = Transmit_Message(RADIO_REPAIR, client);
+							bool roger = msg == RADIO_ROGER;
+							bool all_done = msg == RADIO_ALL_DONE;
+							if (!damaged && !manual_reload || !roger && !all_done) {
+								if (((FootClass *)client)->HealthRatio == Rule->ConditionGreen) {
+									if (!((FootClass *)client)->Locomotion->Is_Powered()) {
+										FootClass * mover = radio;
+										mover->Locomotion->Power_On();
+										if (mover->ArchiveTarget != NULL && !mover->House->Is_Human_Player()) {
+											mover->Assign_Mission(MISSION_MOVE);
+											mover->Assign_Destination(mover->ArchiveTarget);
+											mover->ArchiveTarget = NULL;
+											mover->NearbyObject = NULL;
+											Transmit_Message(RADIO_OVER_OUT, mover);
+										} else {
+											Cell exit = Find_Exit_Cell(mover);
+											if (exit != CELL_NONE) {
+												mover->Assign_Mission(MISSION_MOVE);
+												mover->Assign_Destination(&Map[exit]);
+												mover->ArchiveTarget = NULL;
+												Transmit_Message(RADIO_OVER_OUT, mover);
+												mover->NearbyObject = NULL;
+											}
+										}
+									}
+								}
+							} else {
+
+								/*
+								**	If the object over the repair bay is marked as useless, then
+								**	sell it back to get some money.
+								*/
+								if (client->IsUseless && !client->House->Is_Human_Player()) {
+									client->Sell_Back(1);
+									Status = INITIAL;
+									IsReadyToCommence = true;
+								} else {
+									if (IsOwnedByPlayer) Speak(VOX_REPAIRING);
+									Status = DURING;
+									Begin_Anim(BANIM_PRODUCTION, false);
+									Begin_Anim(BANIM_SPECIAL_ONE, false);
+									End_Anim(BANIM_ACTIVE_ONE);
+									IsReadyToCommence = false;
+									BuildingStage.Set_Stage(0);
+									BuildingStage.Set_Rate(1);
+								}
+							}
+						} else if (!IonStormClass::Is_Ion_Storm_Active() && !radio->Locomotion->Is_Powered()) {
+							radio->Locomotion->Power_On();
+						}
+					}
+					if (!any_docked) {
 						if (Anims[BANIM_PRODUCTION] || Anims[BANIM_SPECIAL_TWO]) {
 							Begin_Anim(BANIM_SPECIAL_THREE, false);
 							Begin_Anim(BANIM_ACTIVE_ONE, false);
@@ -6042,77 +6128,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
-
-					if (Distance(radio->Center_Coord()) < 150) {
-						if (radio->Locomotion->Is_Powered()) {
-							if (radio->Locomotion->Is_Moving()) {
-								return(1);
-							} else {
-								radio->Locomotion->Power_Off();
-								return(1);
-							}
-						}
-						if (!radio->Locomotion->Is_Powered()) {
-							FootClass * contact = (FootClass *)Contact_With_Whom();
-							if (contact->NavCom != NULL) {
-								contact->NavCom = NULL;
-							}
-						}
-					}
-
-					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
-						TechnoClass * client = Contact_With_Whom();
-						bool damaged = client->HealthRatio < Rule->ConditionGreen;
-						bool manual_reload = client->TClass->IsManualReload;
-						RadioMessageType msg = Transmit_Message(RADIO_REPAIR);
-						bool roger = msg == RADIO_ROGER;
-						bool all_done = msg == RADIO_ALL_DONE;
-						if (!damaged && !manual_reload || !roger && !all_done) {
-							if (((FootClass *)client)->HealthRatio == Rule->ConditionGreen) {
-								if (!((FootClass *)client)->Locomotion->Is_Powered()) {
-									FootClass * mover = dynamic_cast<FootClass *>(Contact_With_Whom());
-									mover->Locomotion->Power_On();
-									if (mover->ArchiveTarget != NULL && !mover->House->Is_Human_Player()) {
-										mover->Assign_Mission(MISSION_MOVE);
-										mover->Assign_Destination(mover->ArchiveTarget);
-										mover->ArchiveTarget = NULL;
-										mover->NearbyObject = NULL;
-										Transmit_Message(RADIO_OVER_OUT);
-									} else {
-										Cell exit = Find_Exit_Cell(Contact_With_Whom());
-										if (exit != CELL_NONE) {
-											mover->Assign_Mission(MISSION_MOVE);
-											mover->Assign_Destination(&Map[exit]);
-											mover->ArchiveTarget = NULL;
-											Transmit_Message(RADIO_OVER_OUT);
-											mover->NearbyObject = NULL;
-										}
-									}
-								}
-							}
-						} else {
-
-							/*
-							**	If the object over the repair bay is marked as useless, then
-							**	sell it back to get some money.
-							*/
-							if (client->IsUseless && !client->House->Is_Human_Player()) {
-								client->Sell_Back(1);
-								Status = INITIAL;
-								IsReadyToCommence = true;
-							} else {
-								if (IsOwnedByPlayer) Speak(VOX_REPAIRING);
-								Status = DURING;
-								Begin_Anim(BANIM_PRODUCTION, false);
-								Begin_Anim(BANIM_SPECIAL_ONE, false);
-								End_Anim(BANIM_ACTIVE_ONE);
-								IsReadyToCommence = false;
-								BuildingStage.Set_Stage(0);
-								BuildingStage.Set_Rate(1);
-							}
-						}
-					} else if (!IonStormClass::Is_Ion_Storm_Active() && !((FootClass *)Contact_With_Whom())->Locomotion->Is_Powered()) {
-						((FootClass *)Contact_With_Whom())->Locomotion->Power_On();
+					if (quick) {
+						return(1);
 					}
 				}
 				break;
@@ -6134,70 +6151,78 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				**	unit is not doing something else. If these conditions are favorable,
 				**	the repair can proceed another step.
 				*/
-				if (BuildingStage.Fetch_Stage() >= (Rule->URepairRate * TICKS_PER_MINUTE) && Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
-					IsReadyToCommence = false;
-					BuildingStage.Set_Stage(0);
-
-					/*
-					**	Tell the attached unit to repair one step. It will respond with how
-					**	it fared.
-					*/
-					switch (Transmit_Message(RADIO_REPAIR)) {
-
-						/*
-						**	The repair step proceeded smoothly. Proceed normally with the
-						**	repair process.
-						*/
-						case RADIO_ROGER:
-							break;
+				if (BuildingStage.Fetch_Stage() >= (Rule->URepairRate * TICKS_PER_MINUTE)) {
+					bool stepped = false;
+					for (int slot = 0; slot < Link_Count(); slot++) {
+						TechnoClass * docked = Link(slot);
+						if (docked == NULL || Transmit_Message(RADIO_NEED_TO_MOVE, docked) != RADIO_ROGER) {
+							continue;
+						}
+						if (!stepped) {
+							stepped = true;
+							IsReadyToCommence = false;
+							BuildingStage.Set_Stage(0);
+						}
 
 						/*
-						**	The repair operation was aborted because of some reason. Presume
-						**	that the reason is because of low cash.
+						**	Tell the attached unit to repair one step. It will respond with how
+						**	it fared.
 						*/
-						case RADIO_CANT:
-							if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
-							End_Anim(BANIM_PRODUCTION);
-							End_Anim(BANIM_SPECIAL_TWO);
-							Begin_Anim(BANIM_SPECIAL_THREE, false);
-							Begin_Anim(BANIM_ACTIVE_ONE, false);
-							Status = IDLE;
-							break;
+						switch (Transmit_Message(RADIO_REPAIR, docked)) {
 
-						/*
-						**	The repair step resulted in a completely repaired unit.
-						*/
-						case RADIO_ALL_DONE:
-						default:
-							{
-								if (IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
+							/*
+							**	The repair step proceeded smoothly. Proceed normally with the
+							**	repair process.
+							*/
+							case RADIO_ROGER:
+								break;
+
+							/*
+							**	The repair operation was aborted because of some reason. Presume
+							**	that the reason is because of low cash.
+							*/
+							case RADIO_CANT:
+								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
 								End_Anim(BANIM_PRODUCTION);
 								End_Anim(BANIM_SPECIAL_TWO);
 								Begin_Anim(BANIM_SPECIAL_THREE, false);
 								Begin_Anim(BANIM_ACTIVE_ONE, false);
 								Status = IDLE;
+								break;
 
-								FootClass * foot = dynamic_cast<FootClass *>(Contact_With_Whom());
-								if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
-									foot->Assign_Mission(MISSION_MOVE);
-									foot->Assign_Destination(foot->ArchiveTarget);
-									foot->ArchiveTarget = NULL;
-									Transmit_Message(RADIO_OVER_OUT);
-									foot->NearbyObject = NULL;
-								} else {
-									Cell exit = Find_Exit_Cell(Contact_With_Whom());
-									if (exit != CELL_NONE) {
+							/*
+							**	The repair step resulted in a completely repaired unit.
+							*/
+							case RADIO_ALL_DONE:
+							default:
+								{
+									if (IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
+									End_Anim(BANIM_PRODUCTION);
+									End_Anim(BANIM_SPECIAL_TWO);
+									Begin_Anim(BANIM_SPECIAL_THREE, false);
+									Begin_Anim(BANIM_ACTIVE_ONE, false);
+									Status = IDLE;
+
+									FootClass * foot = dynamic_cast<FootClass *>(docked);
+									if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
 										foot->Assign_Mission(MISSION_MOVE);
-										foot->Assign_Destination(&Map[exit]);
-										Transmit_Message(RADIO_OVER_OUT);
+										foot->Assign_Destination(foot->ArchiveTarget);
+										foot->ArchiveTarget = NULL;
+										Transmit_Message(RADIO_OVER_OUT, foot);
 										foot->NearbyObject = NULL;
-										return(1);
+									} else {
+										Cell exit = Find_Exit_Cell(foot);
+										if (exit != CELL_NONE) {
+											foot->Assign_Mission(MISSION_MOVE);
+											foot->Assign_Destination(&Map[exit]);
+											Transmit_Message(RADIO_OVER_OUT, foot);
+											foot->NearbyObject = NULL;
+										}
 									}
 								}
-								return(1);
-							}
-							break;
+								break;
 
+						}
 					}
 				}
 				return(1);
