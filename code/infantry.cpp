@@ -484,6 +484,17 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				infdeath = 3;
 			}
 
+			// A NotHuman= type dies with its own first death sequence from every warhead, and plays
+			// the virus animation beside it when the warhead is a virus.
+			bool const own_death = Class->IsNotHuman && Doing != DO_PARADROP;
+			if (own_death) {
+				Do_Action(DO_GUN_DEATH, true);
+				if (infdeath == 8 && Rule->InfantryVirus != NULL) {
+					new AnimClass(Rule->InfantryVirus, PositionCoord);
+				}
+				infdeath = 1;
+			}
+
 			switch (infdeath) {
 				default:
 				case 0:
