@@ -54,8 +54,9 @@ class CampaignClass : public AbstractTypeClass
 		VQType FinalMovie;
 
 		/*
-		 * This is the campaign's title as it appears in the mission selection list. Until the
-		 * rules supply one, it is borrowed from the campaign's given name.
+		 * This is the campaign's title as it appears in the mission selection list, either a
+		 * string table label or the text itself. Until the rules supply one, it is borrowed from
+		 * the campaign's given name.
 		 */
 		char Description[128];
 
@@ -65,6 +66,10 @@ class CampaignClass : public AbstractTypeClass
 		 * available.
 		 */
 		int RequiredAddon;
+
+		// Set for a campaign kept for testing, which the mission selection list leaves out. It
+		// affects only that list, so it is neither saved nor part of the sync check.
+		bool DebugOnly;
 };
 
 void Read_Battle_INI(CCINIClass const & ini);

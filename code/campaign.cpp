@@ -32,7 +32,8 @@ CampaignClass::CampaignClass(char const * name) :
 	BASECLASS(name),
 	CDNumber(-1),
 	FinalMovie(VQ_NONE),
-	RequiredAddon(0)
+	RequiredAddon(0),
+	DebugOnly(false)
 {
 	Campaigns.Add(this);
 
@@ -75,7 +76,8 @@ CampaignType CampaignClass::From_Name(char const * name)
 /// <summary>
 /// Fetches this campaign's settings from the rules.
 /// This routine picks up the disc the campaign lives on, the scenario it starts
-/// with, the movie that closes it out, and the expansion it requires.
+/// with, the movie that closes it out, the expansion it requires, and whether it is
+/// kept for testing only.
 /// </summary>
 /// <param name="ini">The rules database to read the campaign settings from.</param>
 /// <returns>bool; Was the campaign found and read?</returns>
@@ -88,6 +90,7 @@ bool CampaignClass::Read_INI(CCINIClass const & ini)
 		strupr(ScenarioName);
 		ini.Get_String(IniName, "Description", Description, Description, sizeof(Description));
 		RequiredAddon = ini.Get_Int(IniName, "RequiredAddon", RequiredAddon);
+		DebugOnly = ini.Get_Bool(IniName, "DebugOnly", DebugOnly);
 		return(true);
 	}
 	return(false);

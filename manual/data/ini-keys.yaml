@@ -9621,6 +9621,23 @@ DebrisTypes:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DebugOnly:
+  key: DebugOnly
+  scopes:
+  - applies_to: *id041
+    file: battle.ini
+    section:
+      kind: identifier
+      source: campaign
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: CampaignClass
+      member: DebugOnly
+      source: code/campaign.cpp
+      guard: null
+    level: CampaignClass
 Decay:
   key: Decay
   scopes:
