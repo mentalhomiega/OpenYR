@@ -1,0 +1,226 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The modern menu style: Yuri's Revenge's title art behind dark, crisp panels. It restyles the
+   shared kit and keeps every screen's layout. Sizes are in dp, laid out for 1280x720. */
+
+body
+{
+	font-family: fullfnt;
+	color: #ece6f7;
+}
+
+/* Yuri's Revenge's title art fills the window behind the menus, dimmed; over a game in
+   progress the game shows instead. */
+#screen-bg
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	z-index: -2;
+	background-color: #05040a;
+	pointer-events: none;
+}
+
+#screen-art
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	decorator: image(GLSLMD.SHP@GLSMD.PAL cover center top);
+}
+
+#screen-shade
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	decorator: vertical-gradient(#0a061299 #05030ae6);
+}
+
+.ingame #screen-bg
+{
+	display: none;
+}
+
+/* The panel replaces Tiberian Sun's chrome: no side bars, glow or teal backdrop. */
+#bar-left, #bar-right, #edge-left, #edge-right, #glow, #wallpaper-art,
+.revealing #edge-left, .revealing #edge-right
+{
+	display: none;
+}
+
+#wallpaper
+{
+	background-color: #120d1ce8;
+	border: 1dp #6b43a8;
+	border-radius: 6dp;
+}
+
+/* Text */
+.caption, .value
+{
+	color: #d9c8ff;
+}
+
+/* Buttons */
+button, button.wide, button.tall
+{
+	height: 26dp;
+	border: 1dp #4d3d6b;
+	border-radius: 3dp;
+	padding: 4dp 8dp 0 8dp;
+	color: #ece6f7;
+	background-color: transparent;
+	decorator: vertical-gradient(#2e2640 #18131f);
+}
+
+button.tall
+{
+	height: 32dp;
+	padding-top: 7dp;
+}
+
+button:hover, button.wide:hover, button.tall:hover
+{
+	border-color: #b46bff;
+	color: #ffffff;
+	decorator: vertical-gradient(#3d2f57 #1f1829);
+}
+
+button:active, button.wide:active, button.tall:active
+{
+	position: relative;
+	top: 0;
+	border: 1dp #d29bff;
+	padding: 5dp 8dp 0 8dp;
+	decorator: vertical-gradient(#1a1424 #2a203a);
+}
+
+button.disabled, button:disabled, button.wide.disabled, button.wide:disabled, button.tall.disabled, button.tall:disabled,
+button.disabled:active, button:disabled:active, button.wide.disabled:active, button.wide:disabled:active,
+button.tall.disabled:active, button.tall:disabled:active
+{
+	position: relative;
+	top: 0;
+	border: 1dp #2c2638;
+	padding: 4dp 8dp 0 8dp;
+	color: #5f5873;
+	decorator: vertical-gradient(#1c1825 #141119);
+}
+
+.keys button:focus, .keys label.check:focus
+{
+	color: #ffffff;
+	border-color: #d29bff;
+}
+
+.keys button.disabled:focus
+{
+	color: #5f5873;
+}
+
+/* Fields, lists and drop-down boxes */
+input[type='range'], input[type='text'], input[type='password'], textarea, select, .hotkey, .list
+{
+	border-color: #4d3d6b;
+	background-color: #0b0812d0;
+}
+
+.keys .list:focus, .keys select:focus, .keys input[type='range']:focus
+{
+	border-color: #d29bff;
+}
+
+.list .item, select option
+{
+	color: #ece6f7;
+}
+
+.list .item:checked, .list .item.selected, select option:checked
+{
+	background-color: #4a2f78;
+	color: #ffffff;
+}
+
+select selectbox
+{
+	background-color: #120d1c;
+	border: 1dp #6b43a8;
+}
+
+/* Check boxes */
+input[type='checkbox']
+{
+	border: 1dp #6b43a8;
+	border-radius: 3dp;
+	background-color: #0b0812;
+	decorator: none;
+}
+
+input[type='checkbox']:checked
+{
+	background-color: #b46bff;
+	decorator: none;
+}
+
+input[type='checkbox']:disabled, input[type='checkbox']:checked:disabled
+{
+	border-color: #2c2638;
+	background-color: #1c1825;
+	decorator: none;
+}
+
+/* Sliders */
+input[type='range'] slidertrack
+{
+	background-color: #1c1528;
+	decorator: none;
+}
+
+input[type='range'] sliderbar
+{
+	border-radius: 2dp;
+	background-color: #b46bff;
+	decorator: none;
+}
+
+/* Scroll bars */
+scrollbarvertical slidertrack
+{
+	background-color: #0b0812;
+	decorator: none;
+}
+
+scrollbarvertical sliderbar
+{
+	border-radius: 2dp;
+	background-color: #4d3d6b;
+	decorator: none;
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc,
+scrollbarvertical sliderarrowdec:active, scrollbarvertical sliderarrowinc:active
+{
+	background-color: #2e2640;
+	decorator: none;
+}
+
+.tooltip
+{
+	background-color: #120d1cf0;
+	border: 1dp #6b43a8;
+	color: #ece6f7;
+}

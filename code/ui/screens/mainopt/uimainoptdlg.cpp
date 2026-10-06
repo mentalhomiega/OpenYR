@@ -23,9 +23,8 @@ void UI_Main_Options_State(UIMainOptionsState & state)
 {
 	state = UIMainOptionsState();
 	state.SoundEnabled = AudioEngine.Is_Available();
-	if (HiddenSurface != NULL) {
-		state.Top = (HiddenSurface->Get_Height() - 400) / 2 + 147;
-	}
+	// The menu styles place the screen themselves, so it keeps the position its sheet gives it.
+	state.Top = -1;
 }
 
 

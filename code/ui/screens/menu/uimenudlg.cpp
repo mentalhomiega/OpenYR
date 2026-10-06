@@ -19,9 +19,10 @@
 #include "ui/uiview.h"
 
 
+// The menu styles place the menus themselves, so the menu keeps the position its sheet gives it.
 void UI_Menu_Place(UIMenuState & state)
 {
-	state.Top = (HiddenSurface != NULL) ? (HiddenSurface->Get_Height() - 400) / 2 + 147 : -1;
+	state.Top = -1;
 }
 
 

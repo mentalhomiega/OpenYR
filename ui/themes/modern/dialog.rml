@@ -1,0 +1,35 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+
+	The modern menu style's frame: the shared dialog frame with Yuri's Revenge's title art
+	filling the window behind it, and the style's own sheet read after the shared kit.
+-->
+<template name="dialog" content="content">
+<head>
+	<link type="text/rcss" href="kit.rcss"/>
+	<link type="text/rcss" href="theme.rcss"/>
+</head>
+<body>
+	<div id="screen-bg"><div id="screen-art"></div><div id="screen-shade"></div></div>
+	<div id="backdrop">
+		<div id="reveal">
+			<div id="chrome">
+				<div id="wallpaper"><div id="wallpaper-art"></div></div>
+				<div id="glow"></div>
+				<div id="bar-left"></div>
+				<div id="bar-right"></div>
+				<div id="content"></div>
+			</div>
+			<div id="edge-left"></div>
+			<div id="edge-right"></div>
+		</div>
+		<div id="tip" class="tooltip"></div>
+	</div>
+</body>
+</template>

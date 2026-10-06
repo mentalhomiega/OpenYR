@@ -49,9 +49,8 @@ void UI_Campaign_State(UICampaignState & state)
 
 	state.Difficulty = Options.Difficulty;
 
-	if (HiddenSurface != NULL) {
-		state.Top = (HiddenSurface->Get_Height() - 400) / 2 + 147;
-	}
+	// The menu styles place the screen themselves, so it keeps the position its sheet gives it.
+	state.Top = -1;
 }
 
 
