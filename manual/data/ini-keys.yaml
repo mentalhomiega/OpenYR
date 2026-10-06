@@ -6876,6 +6876,23 @@ ChargeToDrainRatio:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChargedAnimTime:
+  key: ChargedAnimTime
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: ChargedAnimTime
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Charges:
   key: Charges
   scopes:

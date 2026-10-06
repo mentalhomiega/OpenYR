@@ -824,6 +824,13 @@ class BuildingTypeClass : public TechnoTypeClass
 		int TurretChargeAnimRate;
 
 		/*
+		 * This is how many minutes of charge a superweapon building must have left before it
+		 * changes from its charging animation to its charged one. The default keeps a building
+		 * with no such setting from changing animation at all.
+		 */
+		float ChargedAnimTime;
+
+		/*
 		 * This is the barrel pitch to give this building when it is first constructed,
 		 * expressed on the compass dial where DIR_E is level. A deployed artillery piece
 		 * returns its barrel to this pitch whenever it has nothing to shoot at.

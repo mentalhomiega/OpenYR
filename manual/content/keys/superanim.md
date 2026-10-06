@@ -16,4 +16,4 @@ SuperAnimX=10
 SuperAnimY=-20
 ```
 
-No event fills the super slots yet; Yuri's Revenge fills them as a superweapon structure charges. Until then the slot runs only when the house's full-power pass starts it, which needs `SuperAnimPowered=no` with `SuperAnimPoweredLight=yes` on a [`Powered=yes`](/keys/powered/) structure that drains power.
+A structure with a superweapon fills the super slots as its weapon charges, becomes ready and is fired; [`ChargedAnimTime`](/keys/chargedanimtime/) gives the order. The house's full-power pass can also start the slot, which needs `SuperAnimPowered=no` with `SuperAnimPoweredLight=yes` on a [`Powered=yes`](/keys/powered/) structure that drains power.
