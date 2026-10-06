@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-The waypoint this key names is the team's origin. The value is a letter label, not a number. `A` is waypoint `0` and `Z` is `25`. Two-letter labels continue from `AA` at `26`, so `AB` is `27` and `BA` is `52`.
+The waypoint this key names is the team's origin. The value is a letter label, not a number. `A` is waypoint `0` and `Z` is `25`. Two-letter labels continue from `AA` at `26`, so `AB` is `27` and `BA` is `52`. `ZZ`, waypoint `701`, is the last of a scenario's 702 waypoints.
 
 Case does not matter, and only the first two characters count. A second character that is not a letter is ignored, so `A1` reads as `A`. A value that does not begin with a letter, such as a bare waypoint number, gives the team no origin.
 
@@ -31,7 +31,3 @@ The origin controls five things:
 - After a Reinforcement (team) delivery that EVA announces, [Goto Radar Event](/commands/centeronradarevent/) jumps to the origin, not to the cell where the group entered.
 
 The origin is not the team's center. A new team uses the origin as its center only until its first logic pass, which [computes the center from the team's members](/systems/ai-team-execution/#the-teams-center).
-
-:::danger[Keep the label at `CW` or earlier]
-A scenario has 101 waypoints, `A` through `CW`. `A` through `CT` are the 98 ordinary ones. `CU`, `CV` and `CW` are reserved for the scenario's home cell, reinforcement cell and special airdrop cell. A label from `CX` onward names a waypoint past the end of the list. A Release build then reads the origin cell from unrelated memory, and a Debug build stops at a failed assertion.
-:::

@@ -22,5 +22,6 @@ enum WaypointType {
 	WAYPT_REINF,					// cell where reinforcements arrive
 	WAYPT_SPECIAL,					// Used by special airdrop reinforcements.
 
-	WAYPT_COUNT
+	// Yuri's Revenge keeps 702 waypoints, "A" through "ZZ", and its maps use numbers past 100.
+	WAYPT_COUNT = 702
 };
