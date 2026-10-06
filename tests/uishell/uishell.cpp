@@ -3923,10 +3923,15 @@ class RecordingSkirmishServiceClass : public UISkirmishServiceClass
 		bool Startable = true;
 		int Asked = 0;
 
+		bool Shrink = false;
+
 		virtual void Pick_Map(UISkirmishState & state) override
 		{
 			Picked++;
 			state.MapName = "Picked map";
+			if (Shrink) {
+				state.Starts.resize(3);
+			}
 		}
 
 		virtual bool Can_Start(UISkirmishState const &) override
@@ -4033,24 +4038,70 @@ void Test_List_Scrolling(Rml::Context & context, CountingSystemInterfaceClass & 
 }
 
 
+static void Fill_Skirmish_Lists(UISkirmishState & state)
+{
+	char const * const kinds[UI_SKIRMISH_SLOT_KINDS] = {"Open", "Closed", "Easy AI", "Medium AI", "Hard AI"};
+	for (int index = 0; index < UI_SKIRMISH_SLOT_KINDS; index++) {
+		UISkirmishOption kind;
+		kind.Label = kinds[index];
+		kind.Value = index;
+		state.Kinds.push_back(kind);
+	}
+
+	UISkirmishOption random;
+	random.Label = "Random";
+	random.Value = -1;
+	state.Sides.push_back(random);
+	char const * const names[3] = {"Americans", "Russians", "Yuri"};
+	for (int index = 0; index < 3; index++) {
+		UISkirmishOption side;
+		side.Label = names[index];
+		side.Value = 10 + index;
+		state.Sides.push_back(side);
+	}
+
+	for (int index = 0; index < 8; index++) {
+		UISkirmishOption color;
+		color.Label = "Color " + std::to_string(index);
+		color.Value = index;
+		color.Color = "#ff1818";
+		state.Colors.push_back(color);
+	}
+
+	for (int index = 0; index <= UI_SKIRMISH_MAX_TEAMS; index++) {
+		UISkirmishOption team;
+		team.Label = index == 0 ? "None" : std::to_string(index);
+		team.Value = index;
+		state.Teams.push_back(team);
+	}
+
+	UISkirmishOption start;
+	start.Label = "Random";
+	state.Starts.push_back(start);
+	for (int index = 1; index <= 4; index++) {
+		start.Label = std::to_string(index);
+		start.Value = index;
+		state.Starts.push_back(start);
+	}
+}
+
+
+static void Choose_Slot(UIPresenterClass & presenter, char const * field, int row, int index)
+{
+	Drive(presenter, field, row, std::to_string(index).c_str());
+}
+
+
 void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
 
 	UISkirmishState state;
 	state.Handle = "Player";
-	for (int index = 0; index < 2; index++) {
-		UISkirmishOption side;
-		side.Label = index == 0 ? "GDI" : "Nod";
-		side.Value = index;
-		state.Sides.push_back(side);
-
-		UISkirmishOption color;
-		color.Label = index == 0 ? "Gold" : "Red";
-		color.Value = index;
-		color.Color = index == 0 ? "#ffdf5a" : "#ff1818";
-		state.Colors.push_back(color);
-	}
+	Fill_Skirmish_Lists(state);
+	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
+	state.Slots[0].Side = 1;
+	state.Slots[1].Kind = UI_SKIRMISH_SLOT_MEDIUM;
 	state.MapName = "Grand Canyon (2-4)";
 	state.UnitCountMax = 10;
 	state.CreditsMin = 2500;
@@ -4067,6 +4118,10 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	UISkirmishPresenterClass presenter(service, state);
 	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
 
+	Check(presenter.State.Rows == 4, "the map's start positions set how many rows the list shows");
+	Check(presenter.State.Slots[0].Active && presenter.State.Slots[1].Active && !presenter.State.Slots[2].Active, "the person and a computer play and an open seat does not");
+	Check(presenter.State.Slots[1].Color != presenter.State.Slots[0].Color, "the rows start with colors of their own");
+
 	Check(Rml(*view).Prepare(context), "the skirmish view prepares against the test context");
 	view->Show(false);
 	view->Sync();
@@ -4076,17 +4131,107 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	Rml::ElementDocument * document = Rml(*view).Document();
 	Rml::Element * dialog = document->GetElementById("reveal");
-	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the setup is the size its template comes to");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(780.0f, 504.0f), "the setup is the size its template comes to");
+
+	Rml::ElementList everyone;
+	Rml::ElementList slots;
+	document->GetElementsByClassName(everyone, "slot");
+	for (Rml::Element * row : everyone) {
+		if (row->IsVisible()) {
+			slots.push_back(row);
+		}
+	}
+	Check(slots.size() == 4, "the player list holds a row for each start position the map has");
+	if (slots.size() == 4) {
+		auto visible = [](Rml::Element * row, char const * tag) {
+			Rml::ElementList found;
+			row->GetElementsByTagName(found, tag);
+			int count = 0;
+			for (Rml::Element * element : found) {
+				count += element->IsVisible() ? 1 : 0;
+			}
+			return(count);
+		};
+		Check(visible(slots[0], "select") == 4 && visible(slots[0], "input") == 1, "the first row holds the person's name field and four drop-downs");
+		Check(visible(slots[1], "select") == 5 && visible(slots[1], "input") == 0, "a computer's row adds a drop-down for what plays it");
+		Check(slots[2]->IsClassSet("off") && !slots[1]->IsClassSet("off"), "a seat nobody plays is marked as off");
+	}
 
 	Rml::Element * switches = document->GetElementById("switches");
-	Check(switches != nullptr && switches->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(252.0f, 158.0f), "the switch frame is its rect and the pixel the layer adds");
+	Check(switches != nullptr && switches->GetBox().GetSize(Rml::BoxArea::Border).x == 484.0f, "the switch frame spans the player list");
 
 	Rml::Element * settings = document->GetElementById("settings");
-	Check(settings != nullptr && settings->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(167.0f, 297.0f), "the setting frame is its rect and the pixel the layer adds");
+	Check(settings != nullptr && settings->GetBox().GetSize(Rml::BoxArea::Border).x == 254.0f, "the setting frame fills the right column");
 
 	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map preview");
 	Rml::Element * caption = document->GetElementById("preview-caption");
 	Check(caption != nullptr && !caption->IsVisible(), "the map picture covers the preview caption");
+
+	// Seats and what they hold.
+	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_HARD);
+	Check(presenter.State.Slots[2].Active && presenter.State.Computer_Count() == 2, "a computer taken into an open seat plays");
+	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_CLOSED);
+	Check(!presenter.State.Slots[2].Active && presenter.State.Computer_Count() == 1, "a closed seat does not");
+	Choose_Slot(presenter, "slotkind", 0, UI_SKIRMISH_SLOT_HARD);
+	Check(presenter.State.Slots[0].Active && presenter.State.Computer_Count() == 1, "the person's row cannot be given to a computer");
+	Choose_Slot(presenter, "slotkind", 7, UI_SKIRMISH_SLOT_HARD);
+	Check(!presenter.State.Slots[7].Active && presenter.State.Slots[7].Kind == UI_SKIRMISH_SLOT_OPEN, "a row the map does not hold cannot be filled");
+
+	// Colors never repeat: choosing one another row holds hands that row the old one.
+	int const first = presenter.State.Slots[0].Color;
+	int const second = presenter.State.Slots[1].Color;
+	Choose_Slot(presenter, "slotcolor", 0, second);
+	Check(presenter.State.Slots[0].Color == second && presenter.State.Slots[1].Color == first, "a color another row holds changes places with it");
+	Check(presenter.State.Slots[0].Swatch == "#ff1818", "a row carries the swatch of its color");
+
+	// Numbered starts are the same, and Random may repeat.
+	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_EASY);
+	Choose_Slot(presenter, "slotstart", 0, 3);
+	Choose_Slot(presenter, "slotstart", 1, 4);
+	Choose_Slot(presenter, "slotstart", 1, 3);
+	Check(presenter.State.Slots[1].Start == 3 && presenter.State.Slots[0].Start == 4, "a start another playing row holds changes places with it");
+	Choose_Slot(presenter, "slotstart", 2, 0);
+	Choose_Slot(presenter, "slotstart", 1, 0);
+	Check(presenter.State.Slots[1].Start == 0 && presenter.State.Slots[2].Start == 0, "Random is open to every row");
+	Choose_Slot(presenter, "slotstart", 1, 9);
+	Check(presenter.State.Slots[1].Start == 0, "a start past the list is ignored");
+
+	Choose_Slot(presenter, "slotside", 1, 3);
+	Choose_Slot(presenter, "slotteam", 1, 2);
+	Check(presenter.State.Slots[1].Side == 3 && presenter.State.Slots[1].Team == 2, "a row takes a country and a team");
+	Choose_Slot(presenter, "slotteam", 1, 9);
+	Check(presenter.State.Slots[1].Team == 2, "a team past the last is ignored");
+
+	// What the settings file keeps.
+	UISkirmishState reread = presenter.State;
+	std::string const kept = UI_Skirmish_Slot_Text(reread, 1);
+	Check(kept.rfind("3,12,", 0) == 0 && kept.size() > 5 && kept.back() == '2', "a row's text holds its kind, its country's value, its color, its start and its team");
+	reread.Slots[1] = UISkirmishSlot();
+	UI_Skirmish_Slot_Parse(reread, 1, kept);
+	Check(UI_Skirmish_Slot_Text(reread, 1) == kept, "a row's text reads back as it was written");
+	UI_Skirmish_Slot_Parse(reread, 1, "4,99,1,9,3");
+	Check(reread.Slots[1].Kind == UI_SKIRMISH_SLOT_HARD && reread.Slots[1].Side == 0 && reread.Slots[1].Start == 0, "a country or start the lists no longer hold reads back as Random");
+	UI_Skirmish_Slot_Parse(reread, 1, "garbage");
+	Check(reread.Slots[1].Kind == UI_SKIRMISH_SLOT_HARD, "text that is not a row's leaves the row alone");
+
+	// The map's size changes the list.
+	service.Shrink = true;
+	Drive(presenter, "map");
+	Check(!presenter.Result.has_value() && service.Picked == 1, "the map button runs the map dialog over the setup, which stays open");
+	Check(presenter.State.MapName == "Picked map" && presenter.State.Rows == 2, "the setup takes the map that came back and shows the rows it holds");
+	Check(presenter.State.Slots[1].Start <= 2 && !presenter.State.Slots[2].Active, "a start the new map lacks becomes Random and rows past the new count do not play");
+
+	// Starting needs an opponent who is not an ally of everyone.
+	Choose_Slot(presenter, "slotkind", 1, UI_SKIRMISH_SLOT_OPEN);
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value() && !presenter.State.Notice.empty() && service.Asked == 0, "a game against nobody does not start, and says why");
+	Choose_Slot(presenter, "slotkind", 1, UI_SKIRMISH_SLOT_MEDIUM);
+	Choose_Slot(presenter, "slotteam", 0, 1);
+	Choose_Slot(presenter, "slotteam", 1, 1);
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value() && !presenter.State.Notice.empty() && service.Asked == 0, "players who are all on one team do not start a game, and the notice says why");
+	Choose_Slot(presenter, "slotteam", 1, 2);
+	Check(presenter.State.Notice.empty(), "a change to the list takes the notice away");
 
 	presenter.State.Bases = false;
 	presenter.State.ShortGame = false;
@@ -4098,16 +4243,17 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Drive(presenter, "credits", 99999);
 	Check(presenter.State.Credits == 10000, "a reading past its bound is held at it");
 
-	Drive(presenter, "map");
-	Check(!presenter.Result.has_value() && service.Picked == 1, "the map button runs the map dialog over the setup, which stays open");
-	Check(presenter.State.MapName == "Picked map", "and the setup takes the map that came back");
-
 	service.Startable = false;
 	Drive(presenter, "ok");
 	Check(!presenter.Result.has_value() && service.Asked == 1, "a map that cannot hold the players leaves the setup open");
 	service.Startable = true;
 	Drive(presenter, "ok");
 	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_START, "and one that can starts the game");
+
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "changing the player list raises no RmlUi warning or error");
 
 	view->Release();
 	context.Update();

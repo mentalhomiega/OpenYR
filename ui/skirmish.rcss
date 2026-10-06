@@ -7,18 +7,20 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+/* The player list stands on the left and the map and its settings on the right. The size
+   below fits the classic style's 800x600; the modern style widens the panel and the list. */
 
 #reveal
 {
-	width: 640dp;
-	height: 391dp;
+	width: 780dp;
+	height: 504dp;
 	top: 50%;
-	margin-top: -195dp;
+	margin-top: -252dp;
 }
 
 #content
 {
-	padding: 19dp 32dp 0 33dp;
+	padding: 14dp 14dp 0 14dp;
 }
 
 #columns
@@ -28,96 +30,111 @@
 
 #left
 {
-	width: 394dp;
+	width: 484dp;
 	margin-right: 14dp;
 }
 
 #right
 {
-	width: 167dp;
+	width: 254dp;
 }
 
-#top
+/* The player list */
+#players
+{
+	padding: 6dp 6dp 4dp 6dp;
+}
+
+#headings, .slot
 {
 	display: flex;
+	align-items: center;
 }
 
-#identity
+#headings
 {
-	width: 118dp;
-	height: 178dp;
-	margin-right: 24dp;
+	height: 20dp;
 }
 
-#identity > .caption
+#headings > .caption
 {
 	display: block;
-	height: 14dp;
-	line-height: 17dp;
+	height: 20dp;
+	line-height: 20dp;
 }
 
-#handle
+.slot
 {
-	width: 116dp;
+	height: 34dp;
+}
+
+.col-player { width: 132dp; margin-right: 6dp; }
+.col-side { width: 104dp; margin-right: 6dp; }
+.col-color { width: 104dp; margin-right: 6dp; }
+.col-start { width: 68dp; margin-right: 6dp; }
+.col-team { width: 60dp; margin-right: 0; }
+
+.cell
+{
+	display: flex;
+	align-items: center;
+	height: 28dp;
+}
+
+.cell > .pick, .cell > .handle
+{
+	flex: 1;
+	margin: 0;
+	min-width: 0;
+}
+
+.cell > .handle
+{
 	height: 18dp;
-	padding: 0 1dp 1dp 0;
-	margin-top: 5dp;
-	margin-left: 0;
+	margin-right: 2dp;
 }
 
-#cap-side
+.chip
 {
-	margin-top: 9dp;
+	display: block;
+	flex: none;
+	width: 12dp;
+	height: 16dp;
+	margin-right: 4dp;
+	border: 1dp #00000099;
 }
 
-#side
+.slot.off .chip
 {
-	width: 118dp;
-	margin-top: 1dp;
+	opacity: 0.35;
 }
 
-#cap-color
+/* A seat nobody plays fades, so the seats in use stand out. */
+.slot.off .cell > select
 {
-	margin-top: 8dp;
+	opacity: 0.55;
 }
 
-#color
-{
-	width: 118dp;
-	margin-top: 2dp;
-}
-
-#cap-map
-{
-	height: 17dp;
-	margin-top: 1dp;
-}
-
-#mapname
-{
-	width: 403dp;
-	height: 17dp;
-	margin-top: 9dp;
-}
-
+/* What the game is played with */
 #switches
 {
-	width: 252dp;
-	height: 158dp;
-	padding: 14dp 0 0 8dp;
+	margin-top: 8dp;
+	padding: 8dp 8dp 4dp 8dp;
 }
 
-#switches > label:nth-child(even)
+#switches > label.check
 {
-	margin-top: 1dp;
+	display: inline-block;
+	width: 50%;
+	margin-bottom: 1dp;
 }
 
+/* The map */
 #map
 {
 	position: relative;
-	width: 324dp;
-	height: 174dp;
-	margin-top: 1dp;
+	width: 254dp;
+	height: 136dp;
 }
 
 #preview
@@ -125,18 +142,17 @@
 	position: absolute;
 	left: -1dp;
 	top: -1dp;
-	width: 323dp;
-	height: 173dp;
+	width: 252dp;
+	height: 134dp;
 }
 
 #preview-caption
 {
 	position: absolute;
 	left: -1dp;
-	top: 70dp;
-	width: 323dp;
+	top: 54dp;
+	width: 252dp;
 	height: 22dp;
-	padding-right: 1dp;
 	line-height: 17dp;
 	text-align: center;
 }
@@ -147,11 +163,32 @@
 	display: none;
 }
 
+#mapname
+{
+	display: block;
+	width: 254dp;
+	height: 18dp;
+	margin-top: 5dp;
+	line-height: 17dp;
+	overflow: hidden;
+}
+
+#pick
+{
+	width: 254dp;
+	margin-top: 4dp;
+}
+
 #settings
 {
-	width: 167dp;
-	height: 297dp;
-	padding: 9dp 0 0 5dp;
+	width: 254dp;
+	margin-top: 8dp;
+	padding: 6dp 0 2dp 8dp;
+}
+
+.setting
+{
+	height: 46dp;
 }
 
 .setting > .caption
@@ -163,13 +200,14 @@
 
 .setting > .row
 {
-	height: 23dp;
+	height: 24dp;
+	margin-top: 4dp;
 	white-space: nowrap;
 }
 
 .setting input[type='range']
 {
-	width: 100dp;
+	width: 150dp;
 	height: 23dp;
 }
 
@@ -183,37 +221,28 @@
 	line-height: 23dp;
 }
 
-#setting-units { height: 47dp; }
-#setting-units > .row { margin-top: 5dp; }
-#setting-credits { height: 47dp; }
-#setting-credits > .row { margin-top: 6dp; }
-#setting-tech { height: 48dp; }
-#setting-tech > .row { margin-top: 6dp; }
-#setting-ailevel { height: 47dp; }
-#setting-ailevel > .row { margin-top: 6dp; }
-#setting-aiplayers { height: 48dp; }
-#setting-aiplayers > .row { margin-top: 5dp; }
-#setting-speed > .row { margin-top: 5dp; }
-
-#pick
+#notice
 {
-	width: 166dp;
-	margin-top: 5dp;
+	display: block;
+	height: 16dp;
+	margin-top: 6dp;
+	line-height: 16dp;
+	color: #ffcc66;
 }
 
 #buttons
 {
 	display: flex;
-	margin-top: 3dp;
+	margin-top: 4dp;
 }
 
 #ok
 {
-	width: 76dp;
+	width: 120dp;
 	margin-right: 14dp;
 }
 
 #cancel
 {
-	width: 76dp;
+	width: 120dp;
 }

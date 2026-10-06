@@ -382,3 +382,141 @@ body.titlemenu #title
 	text-align: center;
 	color: #d9c8ff;
 }
+
+/* The skirmish lobby fills most of the screen: the player list on the left, the map and the game
+   settings on the right. Its rows keep their order and the columns share the width. */
+body.lobby #backdrop #reveal
+{
+	width: 1040dp;
+	height: 600dp;
+	top: 50%;
+	margin-top: -300dp;
+}
+
+body.lobby #content
+{
+	padding: 24dp 28dp 0 28dp;
+}
+
+body.lobby #left
+{
+	width: 668dp;
+	margin-right: 28dp;
+}
+
+body.lobby #right
+{
+	width: 288dp;
+}
+
+body.lobby #players
+{
+	padding: 10dp 12dp 8dp 12dp;
+	background-color: #0b0812a0;
+	border-radius: 4dp;
+}
+
+body.lobby #headings
+{
+	height: 24dp;
+}
+
+body.lobby #headings > .caption
+{
+	height: 24dp;
+	line-height: 24dp;
+	font-size: 12dp;
+	color: #a99bc9;
+}
+
+body.lobby .slot
+{
+	height: 42dp;
+	border-top: 1dp #2e2640;
+}
+
+body.lobby .col-player { width: 196dp; margin-right: 8dp; }
+body.lobby .col-side { width: 132dp; margin-right: 8dp; }
+body.lobby .col-color { width: 128dp; margin-right: 8dp; }
+body.lobby .col-start { width: 84dp; margin-right: 8dp; }
+body.lobby .col-team { width: 72dp; }
+
+body.lobby .cell
+{
+	height: 32dp;
+}
+
+body.lobby .chip
+{
+	width: 14dp;
+	height: 20dp;
+	margin-right: 6dp;
+	border-radius: 2dp;
+}
+
+body.lobby #switches
+{
+	margin-top: 12dp;
+	padding: 12dp 14dp 6dp 14dp;
+}
+
+body.lobby #map
+{
+	width: 288dp;
+	height: 162dp;
+}
+
+body.lobby #preview
+{
+	width: 286dp;
+	height: 160dp;
+}
+
+body.lobby #preview-caption
+{
+	width: 286dp;
+	top: 68dp;
+}
+
+body.lobby #mapname
+{
+	width: 288dp;
+	height: 22dp;
+	margin-top: 8dp;
+	line-height: 22dp;
+}
+
+body.lobby #pick
+{
+	width: 288dp;
+	margin-top: 6dp;
+}
+
+body.lobby #settings
+{
+	width: 288dp;
+	margin-top: 12dp;
+	padding: 10dp 0 4dp 12dp;
+}
+
+body.lobby .setting
+{
+	height: 52dp;
+}
+
+body.lobby .setting input[type='range']
+{
+	width: 180dp;
+}
+
+body.lobby #notice
+{
+	height: 20dp;
+	margin-top: 8dp;
+	line-height: 20dp;
+}
+
+body.lobby #ok, body.lobby #cancel
+{
+	width: 136dp;
+}

@@ -26,6 +26,24 @@ enum UISkirmishChoice
 };
 
 
+/// <summary>
+/// What a row of the player list holds. The first row is always the person at the keyboard;
+/// the others are empty seats or a computer player at one of three levels.
+/// </summary>
+enum UISkirmishSlotKind
+{
+	UI_SKIRMISH_SLOT_OPEN,
+	UI_SKIRMISH_SLOT_CLOSED,
+	UI_SKIRMISH_SLOT_EASY,
+	UI_SKIRMISH_SLOT_MEDIUM,
+	UI_SKIRMISH_SLOT_HARD,
+	UI_SKIRMISH_SLOT_KINDS,
+};
+
+int const UI_SKIRMISH_MAX_SLOTS = 8;
+int const UI_SKIRMISH_MAX_TEAMS = 4;
+
+
 struct UISkirmishState;
 
 
@@ -46,14 +64,41 @@ struct UISkirmishOption
 };
 
 
+/// <summary>
+/// One row of the player list. The choices are positions in the state's lists of kinds, sides,
+/// colors, start positions and teams.
+/// </summary>
+struct UISkirmishSlot
+{
+	int Kind = UI_SKIRMISH_SLOT_OPEN;
+	int Side = 0;
+	int Color = 0;
+	int Start = 0;
+	int Team = 0;
+
+	/// Does the map hold the row, and does it hold somebody who plays? The presenter keeps these
+	/// and the swatch in step.
+	bool Shown = false;
+	bool Active = false;
+	std::string Swatch;
+};
+
+
 struct UISkirmishState
 {
 	std::string Handle;
 
+	/// The first side is Random, and the first start position is Random.
+	std::vector<UISkirmishOption> Kinds;
 	std::vector<UISkirmishOption> Sides;
-	int Side = 0;
 	std::vector<UISkirmishOption> Colors;
-	int Color = 0;
+	std::vector<UISkirmishOption> Starts;
+	std::vector<UISkirmishOption> Teams;
+
+	/// Always UI_SKIRMISH_MAX_SLOTS entries, of which the first Rows show.
+	std::vector<UISkirmishSlot> Slots;
+	int Rows = 2;
+	std::string Notice;
 
 	std::string MapName;
 	UIMapPreviewImage Preview;
@@ -75,10 +120,10 @@ struct UISkirmishState
 	int CreditsStep = 1;
 	int TechLevel = 1;
 	int TechLevelMax = 1;
-	int AILevel = 0;
-	int AIPlayers = 1;
-	int AIPlayersMax = 7;
 	int GameSpeed = 0;
+
+	int Computer_Count(void) const;
+	bool Is_Active(int row) const;
 };
 
 
@@ -93,6 +138,10 @@ class UISkirmishPresenterClass : public UIPresenterClass
 		UISkirmishChoice Choice = UI_SKIRMISH_CANCEL;
 
 	private:
+		void Settle_Slots(void);
+		void Choose(int row, int field, int index);
+		bool Judge_Setup(void);
+
 		UISkirmishServiceClass & Service;
 };
 
@@ -102,3 +151,6 @@ std::unique_ptr<UIViewClass> UI_Skirmish_View(UISkirmishPresenterClass & present
 void UI_Skirmish_State(UISkirmishState & state);
 
 bool UI_Skirmish_Dialog(void);
+
+std::string UI_Skirmish_Slot_Text(UISkirmishState const & state, int row);
+void UI_Skirmish_Slot_Parse(UISkirmishState & state, int row, std::string const & text);

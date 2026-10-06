@@ -682,6 +682,45 @@ int RandomMapWaypointCount(int index)
 
 
 /// <summary>
+/// Lists the numbered starting positions a scenario offers, as the waypoint numbers it places.
+/// A generated map declares only how many players it holds, so it offers the first that many.
+/// </summary>
+/// <param name="index">Index into the multiplayer scenario list.</param>
+/// <returns>The waypoint numbers in ascending order; empty if the scenario could not be read.</returns>
+std::vector<int> RandomMapStartPositions(int index)
+{
+	std::vector<int> positions;
+	if (index < 0 || index >= Session.Scenarios.Count()) {
+		return(positions);
+	}
+
+	CCFileClass file(Session.Scenarios[index]->Get_Filename());
+
+	INIClass ini;
+	if (!ini.Load(file)) {
+		return(positions);
+	}
+
+	for (int i = 0; i < MAX_PLAYERS; i++) {
+		char wp[32];
+		sprintf(wp, "%d", i);
+		if (ini.Get_Int("Waypoints", wp, -1) != -1) {
+			positions.push_back(i);
+		}
+	}
+
+	if (positions.empty()) {
+		int const count = std::min(RandomMapWaypointCount(index), (int)MAX_PLAYERS);
+		for (int i = 0; i < count; i++) {
+			positions.push_back(i);
+		}
+	}
+
+	return(positions);
+}
+
+
+/// <summary>
 /// Lets the host choose the scenario for the game.
 /// </summary>
 /// <returns>True when the player settled on a map.</returns>

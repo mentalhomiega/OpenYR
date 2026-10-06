@@ -36,6 +36,7 @@ void Send_Preview_To_Guests(void);
 int CountAliveTeams(HouseClass * house);
 
 int RandomMapWaypointCount(int index);
+std::vector<int> RandomMapStartPositions(int index);
 bool Scenario_Dialog(void);
 
 unsigned int Wstring_Hash(Wstring & string);

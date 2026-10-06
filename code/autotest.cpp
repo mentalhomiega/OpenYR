@@ -1048,9 +1048,16 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "houses") {
-		// houses: each house's money, power and spy effects.
+		// houses: each house's money, power and spy effects, then a "seat" line for who plays it.
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
+			int allies = 0;
+			for (int other = 0; other < Houses.Count(); other++) {
+				if (other != index && house->Is_Ally(Houses[other])) {
+					allies |= 1 << other;
+				}
+			}
+			DebugString("AUTOTEST   seat %d %s name %s human %d scheme %d start %d difficulty %d allies %x\n", index, house->Class->Name(), (char const *)house->IniName, (int)house->IsHuman, house->Scheme, house->SpawnWaypoint, (int)house->Difficulty, allies);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
 		}
