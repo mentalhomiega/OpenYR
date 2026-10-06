@@ -34,7 +34,7 @@ static std::string Catalog_Path(void)
 		return(std::string());
 	}
 	std::string result(path);
-	std::string::size_type slash = result.find_last_of("\/");
+	std::string::size_type slash = result.find_last_of("\\/");
 	result.erase(slash == std::string::npos ? 0 : slash + 1);
 	return(result + "inicheck-catalog.tsv");
 }
