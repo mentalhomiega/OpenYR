@@ -229,17 +229,19 @@ The wait counts what the vehicle at that building still has to unload, that vehi
 
 A harvester heading for a bay that is destroyed, sold or captured before it docks goes back to harvesting, whoever owns it. A full harvester looks for another bay at once, and one with room left first fills up. This also applies to a harvester the player ordered into the bay.
 
-A docked harvester turns to face east, and the building west of it plays its pre-production animation. The harvester then hands its house one unit every [`HarvesterDumpRate`](/keys/harvesterdumprate/) minutes of game time, starting with its lowest slot.
+A docked harvester turns to face east, and the building west of it plays its pre-production animation. After [`HarvesterDumpRate`](/keys/harvesterdumprate/) minutes of game time the harvester hands its house its whole load of the type in its lowest slot, and the building plays its special animation until the harvester is empty. Each further type in the load takes another `HarvesterDumpRate` wait. A harvester carrying only ore is paid 15 frames after it docks at the default rate.
+
+If the building west of the harvester is gone before it has handed anything over, the harvester stops unloading and goes back to harvesting.
 
 Once it is empty, the harvester waits for a [`Refinery=yes`](/keys/refinery/) building west of it to finish its production animation. It then resumes harvesting, unless the player has given it another order.
 
-A player order that sends the harvester elsewhere while it unloads ends the unload early. The harvester still waits for the refinery's animation, then leaves with the units it has not handed over.
+A player order that sends the harvester elsewhere while it unloads ends the unload early. The harvester still waits for the refinery's animation, then leaves with the types it has not handed over.
 
 ## Credits and storage
 
 Each unit a harvester unloads adds five points to its house's score and is paid out at once: its type's [`Value`](/keys/value/) in credits, scaled by the [`IncomeMult`](/keys/incomemult/) of the house's country. Storage capacity does not limit the payment, and nothing is stored, whoever owns the harvester.
 
-Ore purifiers raise that payment. For every [`OrePurifier=yes`](/keys/orepurifier/) structure the house has on the map, each unit unloaded pays an extra [`PurifierBonus`](/keys/purifierbonus/) share of its price and score. A computer house outside a campaign also counts its [`AIVirtualPurifiers`](/keys/aivirtualpurifiers/) entry as purifiers. The extra credits and points are each rounded down for every unit.
+Ore purifiers raise that payment. For every [`OrePurifier=yes`](/keys/orepurifier/) structure the house has on the map, each unit unloaded pays an extra [`PurifierBonus`](/keys/purifierbonus/) share of its price and score. A computer house outside a campaign also counts its [`AIVirtualPurifiers`](/keys/aivirtualpurifiers/) entry as purifiers. The extra credits and points are each rounded down for every pass, which pays one type.
 
 Buildings that declare [`Storage`](/keys/storage/) can still hold units put there in other ways. Stored units become credits only when the house spends. Spending uses loose credits first, then stored units one at a time. Each building gives up its units lowest slot first, before the next building is used. Each unit is priced at its type's `Value` when it is spent, not when it is harvested.
 

@@ -3417,6 +3417,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 		if (!IsDumping) {
 			IsDumping = true;
+			DebugString("Harvester: frame %d %s docks carrying %d\n", Frame, Class->Name(), Storage.Get_Total_Amount());
 			Set_Stage(0);
 			Set_Rate(1);
 
@@ -3481,34 +3482,52 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 				case 3:
 					building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+					if (building == NULL) {
+						// The dock was removed while the unload was under way.
+						if (In_Radio_Contact()) {
+							Transmit_Message(RADIO_OVER_OUT);
+						}
+						IsDumping = false;
+						Assign_Mission(MISSION_HARVEST);
+						return(1);
+					}
 					if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
+						if (!building->Anim_Active(BANIM_SPECIAL_ONE)) {
+							building->Begin_Anim(BANIM_SPECIAL_ONE, building->HealthRatio <= Rule->ConditionYellow);
+						}
 						bool dumped = false;
 						int slot = Storage.First_Used_Slot();
 						if (slot != -1) {
-							int amount = Storage.Decrease_Amount(1, slot);
+							// Each pass hands over everything held of one ore type.
+							int amount = Storage.Decrease_Amount(Storage.Get_Amount(slot), slot);
 							if (amount > 0) {
 								dumped = true;
+								int const before = House->Credits;
 								if (Class->IsToVeinHarvest) {
 									House->Harvested_Weed(amount, slot);
 								} else {
 									House->Harvested(amount, (TiberiumType)slot);
 									House->Purified(amount, (TiberiumType)slot);
 								}
+								DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, House->Credits - before);
 								Set_Stage(0);
 							}
 						}
 						if (!dumped) {
-							if (building != NULL && building->Class->IsRefinery) {
+							DebugString("Harvester: frame %d %s is empty\n", Frame, Class->Name());
+							if (building->Class->IsRefinery) {
 								building->Begin_Anim(BANIM_PRODUCTION, false);
 							}
+							building->End_Anim(BANIM_SPECIAL_ONE);
 							Status = 4;
 						}
 					}
-					if (NavCom != NULL) {
+					if (Status == 3 && NavCom != NULL) {
 						if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-							if (building != NULL && building->Class->IsRefinery) {
+							if (building->Class->IsRefinery) {
 								building->Begin_Anim(BANIM_PRODUCTION, false);
 							}
+							building->End_Anim(BANIM_SPECIAL_ONE);
 							Status = 4;
 						}
 					}
@@ -3573,17 +3592,25 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 /// <summary>
 /// The leptons this harvester could drive in the time it would wait at the dock: the load being
-/// unloaded plus every load queued there by harvesters naming it in QueuedDock.
+/// unloaded plus every load queued there by harvesters naming it in QueuedDock. A load takes one
+/// HarvesterDumpRate pass for each ore type it holds and a last pass that finds it empty.
 /// </summary>
 int UnitClass::Queue_Wait_Distance(BuildingClass * dock) const
 {
-	int const perunit = int(Rule->HarvesterDumpRate * TICKS_PER_MINUTE);
+	int const perpass = int(Rule->HarvesterDumpRate * TICKS_PER_MINUTE);
+	auto const unload_frames = [perpass](StorageClass const & load) {
+		int passes = 1;
+		for (int slot = 0; slot < Tiberiums.Count(); slot++) {
+			passes += load.Get_Amount(slot) > 0;
+		}
+		return(passes * perpass);
+	};
 	int frames = 0;
 
 	TechnoClass * holder = dock->Contact_With_Whom();
 	if (holder != NULL && holder->RTTI == RTTI_UNIT) {
 		UnitClass * incumbent = (UnitClass *)holder;
-		frames = incumbent->Storage.Get_Total_Amount() * perunit;
+		frames = unload_frames(incumbent->Storage);
 		if (incumbent->IsDumping) {
 			frames -= incumbent->Fetch_Stage();
 		} else {
@@ -3594,7 +3621,7 @@ int UnitClass::Queue_Wait_Distance(BuildingClass * dock) const
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * waiter = Units[index];
 		if (waiter != this && waiter->QueuedDock == dock && waiter->Mission == MISSION_HARVEST) {
-			frames += waiter->Storage.Get_Total_Amount() * perunit;
+			frames += unload_frames(waiter->Storage);
 		}
 	}
 
