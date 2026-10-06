@@ -127,6 +127,12 @@ void Test_Patterns(void)
 	Check(IniCheck::KeyPattern::Parse("DockingOffset{0-}", pattern) && pattern.Matches("DockingOffset0") && pattern.Matches("DockingOffset250"), "a pattern with an open end takes any larger number");
 	Check(!IniCheck::KeyPattern::Parse("Weapon{1}", pattern) && !IniCheck::KeyPattern::Parse("Weapon{5-2}", pattern) && !IniCheck::KeyPattern::Parse("Weapon", pattern), "a malformed range is refused");
 
+	Check(IniCheck::KeyPattern::Parse("Tile{01-}Anim", pattern) && pattern.Width == 2 && pattern.Low == 1, "a lower bound with a leading zero sets the printed width");
+	Check(pattern.Matches("Tile01Anim") && pattern.Matches("Tile09Anim") && pattern.Matches("Tile12Anim") && pattern.Matches("Tile100Anim"), "a padded pattern matches the numbers as %02d prints them");
+	Check(!pattern.Matches("Tile1Anim") && !pattern.Matches("Tile00Anim") && !pattern.Matches("Tile012Anim") && !pattern.Matches("TileAnim"), "a padded pattern refuses an unpadded number, zero, extra zeros and no number");
+	Check(IniCheck::KeyPattern::Parse("Territory{00-}", pattern) && pattern.Matches("Territory00") && pattern.Matches("Territory07") && !pattern.Matches("Territory0"), "a padded pattern may start at zero");
+	Check(IniCheck::KeyPattern::Parse("Slot{01-12}", pattern) && pattern.Matches("Slot12") && !pattern.Matches("Slot13"), "a padded pattern keeps its upper bound");
+
 	IniCheck::Catalog catalog = Load_Catalog();
 	Check(catalog.Find_All("Weapon3").size() == 1 && catalog.Find_All("Weapon19").empty(), "the catalog finds a key through its pattern");
 	Check(catalog.Find_All("DockingOffset7").size() == 1 && catalog.Find_All("DockingOffset7")[0]->File == "art.ini", "an art pattern keeps its scope");

@@ -454,6 +454,7 @@ bool KeyPattern::Parse(std::string const & text, KeyPattern & pattern)
 	if (end != range.c_str() + dash) {
 		return(false);
 	}
+	pattern.Width = (dash > 1 && range[0] == '0') ? (int)dash : 0;
 	pattern.High = -1;
 	if (dash + 1 < range.size()) {
 		pattern.High = std::strtol(range.c_str() + dash + 1, &end, 10);
@@ -473,7 +474,7 @@ bool KeyPattern::Matches(std::string_view key) const
 		return(false);
 	}
 	std::string_view const digits = key.substr(Prefix.size(), key.size() - Prefix.size() - Suffix.size());
-	if (digits.size() > 9 || (digits.size() > 1 && digits[0] == '0')) {
+	if (digits.size() > 9) {
 		return(false);
 	}
 	long number = 0;
@@ -483,7 +484,11 @@ bool KeyPattern::Matches(std::string_view key) const
 		}
 		number = number * 10 + (letter - '0');
 	}
-	return(number >= Low && (High < 0 || number <= High));
+
+	// Only the spelling the engine prints counts, so "007" does not match a width of 2.
+	char printed[16];
+	std::snprintf(printed, sizeof(printed), "%0*ld", Width, number);
+	return(digits == printed && number >= Low && (High < 0 || number <= High));
 }
 
 
