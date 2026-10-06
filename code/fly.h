@@ -100,6 +100,8 @@ class FlyLocomotionClass : public LocomotionClass
 
 		void Take_Off(void);
 		void Land(void);
+		void Land_If_Allowed(void);
+		bool Is_Airport_Bound(void) const;
 		bool Is_In_Flight(void);
 		void Tumble(void);
 		bool Needs_To_Land(void);
