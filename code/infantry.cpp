@@ -3459,7 +3459,7 @@ void InfantryClass::Read_INI(CCINIClass const & ini)
 		/*
 		**	1st token: house name.
 		*/
-		HouseClass * inhousep = House_From_Name(strtok(buf, ","));
+		HouseClass * inhousep = Placed_Object_House(strtok(buf, ","));
 		if (inhousep != NULL) {
 
 			/*
