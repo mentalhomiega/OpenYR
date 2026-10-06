@@ -595,7 +595,7 @@ void AircraftClass::AI(void)
 		new AnimClass(Class->Trailer, PositionCoord, 1, 1);
 	}
 
-	if (!Map.In_Local_Radar(PositionCell) && Should_Delete_Off_Map()) {
+	if (!Class->IsFlyBy && !Class->IsFlyBack && !Map.In_Local_Radar(PositionCell) && Should_Delete_Off_Map()) {
 		Delete_Me();
 		return;
 	}

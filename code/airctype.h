@@ -69,6 +69,14 @@ class AircraftTypeClass : public TechnoTypeClass
 		bool IsAirportBound;
 
 		/*
+		 * Is this aircraft exempt from being removed when it flies off the map? A fly by
+		 * aircraft crosses the map without stopping, and a fly back aircraft returns to the
+		 * map after leaving it. (Rules keys FlyBy and FlyBack.)
+		 */
+		bool IsFlyBy;
+		bool IsFlyBack;
+
+		/*
 		 * The animation this aircraft leaves behind it, such as a missile's smoke, and the
 		 * number of frames between one puff and the next. (Art keys Trailer and SpawnDelay.)
 		 */
