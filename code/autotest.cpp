@@ -114,6 +114,7 @@
 #include "tactical.h"
 #include "scheme.h"
 #include "rules.h"
+#include "saveload.h"
 #include "scenario.h"
 #include "script.h"
 #include "super.h"
@@ -1222,6 +1223,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "glideclock") {
 		// glideclock: times zoom glides by game frames, for recordings.
 		ViewZoomGameClock = true;
+	} else if (step.Command == "statedump") {
+		// statedump <path>: writes the state a save would hold, and an index of its records, for comparing two runs.
+		DebugString("AUTOTEST statedump %s: %s\n", step.Argument.c_str(), Dump_Game_State(step.Argument.c_str()) ? "written" : "failed");
 	} else if (step.Command == "hashparts") {
 		// hashparts: logs each value the state hash covers, one object per line.
 		Log_State_Parts();
@@ -1275,7 +1279,7 @@ bool AutoTest_Load(char const * filename)
 		// A rules step's path is the rest of the line, so it may hold spaces.
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
 			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
-			|| std::strcmp(command, "searchdir") == 0) {
+			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
