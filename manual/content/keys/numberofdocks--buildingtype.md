@@ -16,6 +16,8 @@ When an aircraft asks to dock at a [`Helipad=yes`](/keys/helipad/) structure tha
 
 When infantry asks to dock at a [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure, infantry that holds a dock is sent to the structure's own cell. Infantry that holds none disturbs the infantry on the first dock only when every dock is taken.
 
+When a structure with several docks is [captured](/systems/capture/), every object on a dock is judged on its own: one standing within a quarter of a cell of its dock's spot changes owner with the structure, and any other is sent away.
+
 A `UnitRepair=yes` structure starts a repair only when the object on its first dock stands within a quarter of a cell of the structure's center, or 150 leptons for a hovercraft. Keep `DockingOffset0=` within that distance on such a structure; otherwise the object on the first dock is never repaired.
 
 An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.
