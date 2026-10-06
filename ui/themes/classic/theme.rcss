@@ -251,3 +251,90 @@ progress fill
 	background-color: #8a6cc4;
 	decorator: horizontal-gradient(#5a3c8c #b48cff);
 }
+
+/* Check boxes, sliders and scroll bars, square and lit in Yuri's colours. */
+input[type='checkbox']
+{
+	border: 2dp #6a4ca8;
+	background-color: #000000;
+	decorator: none;
+}
+
+input[type='checkbox']:checked
+{
+	border-color: #b48cff;
+	decorator: vertical-gradient(#e0c8ff #8a5ce0);
+}
+
+input[type='checkbox']:disabled, input[type='checkbox']:checked:disabled
+{
+	border-color: #3a2c58;
+	background-color: #120c1c;
+	decorator: none;
+}
+
+input[type='range'] slidertrack
+{
+	background-color: transparent;
+	decorator: none;
+}
+
+input[type='range'] sliderbar
+{
+	border: 1dp #e8dcff;
+	background-color: #8a5ce0;
+	decorator: vertical-gradient(#c8a8ff #5a3c8c);
+}
+
+input[type='range']:disabled sliderbar
+{
+	border-color: #3a2c58;
+	background-color: #2a2040;
+	decorator: none;
+}
+
+scrollbarvertical
+{
+	border-left-color: #6a4ca8;
+}
+
+scrollbarvertical slidertrack
+{
+	background-color: #000000c0;
+	decorator: none;
+}
+
+scrollbarvertical sliderbar
+{
+	border: 1dp #b48cff;
+	background-color: #5a3c8c;
+	decorator: horizontal-gradient(#7a54b8 #4a2c78);
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
+{
+	background-color: #2a1c44;
+	border-color: #b48cff80 #00000080 #00000080 #b48cff80;
+}
+
+scrollbarvertical sliderarrowdec:active, scrollbarvertical sliderarrowinc:active
+{
+	background-color: #3a2860;
+	border-color: #00000080 #b48cff80 #b48cff80 #00000080;
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowdec:active
+{
+	decorator: image(arrow-up.png fill);
+}
+
+scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
+{
+	decorator: image(arrow-down.png fill);
+}
+
+select selectarrow, select:disabled selectarrow, select.disabled selectarrow
+{
+	background-color: #2a1c44;
+	decorator: image(arrow-down.png fill);
+}

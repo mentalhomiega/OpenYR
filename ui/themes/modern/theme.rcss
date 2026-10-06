@@ -198,6 +198,11 @@ input[type='range'] sliderbar
 }
 
 /* Scroll bars */
+scrollbarvertical
+{
+	border-left-color: #2e2640;
+}
+
 scrollbarvertical slidertrack
 {
 	background-color: #0b0812;
