@@ -106,6 +106,38 @@ Rml::Element * Find_Button(Rml::Context * context, std::string const & label)
 }
 
 
+// The innermost visible element whose text is the label, such as one row of a list.
+Rml::Element * Find_Text(Rml::Element * element, std::string const & label)
+{
+	if (!element->IsVisible() || element->GetTagName() == "#text") {
+		return(nullptr);
+	}
+	for (int child = 0; child < element->GetNumChildren(); child++) {
+		if (Rml::Element * found = Find_Text(element->GetChild(child), label)) {
+			return(found);
+		}
+	}
+	if (_stricmp(Plain_Text(element).c_str(), label.c_str()) == 0) {
+		return(element);
+	}
+	return(nullptr);
+}
+
+
+Rml::Element * Find_Text(Rml::Context * context, std::string const & label)
+{
+	for (int index = context->GetNumDocuments() - 1; index >= 0; index--) {
+		Rml::ElementDocument * document = context->GetDocument(index);
+		if (document != nullptr && document->IsVisible()) {
+			if (Rml::Element * found = Find_Text(document, label)) {
+				return(found);
+			}
+		}
+	}
+	return(nullptr);
+}
+
+
 void Log_Buttons(Rml::Element * element)
 {
 	if (element->IsVisible() && element->GetTagName() == "button") {
@@ -239,6 +271,16 @@ void UIScript_Tick(Rml::Context * context)
 				DebugString("UISCRIPT   press %s: no such visible button\n", step.Argument.c_str());
 			} else {
 				button->Click();
+				WaitUntil = now + 300;
+				return;
+			}
+		} else if (step.Command == "choose") {
+			Rml::Element * element = Find_Text(context, step.Argument);
+			if (element == nullptr) {
+				DebugString("UISCRIPT   choose %s: no such visible text\n", step.Argument.c_str());
+			} else {
+				element->ScrollIntoView();
+				element->Click();
 				WaitUntil = now + 300;
 				return;
 			}
