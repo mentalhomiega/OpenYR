@@ -143,6 +143,7 @@
 #include "surface.h"
 #include "truecolour.h"
 #include "weapon.h"
+#include "ui/uiscript.h"
 #include "windowevent.hh"
 
 #include <algorithm>
@@ -1272,6 +1273,14 @@ bool AutoTest_Load(char const * filename)
 		int frame = 0;
 		int x = 0;
 		int y = 0;
+		// A menu step has no frame, since the menus run before any game does.
+		if (std::strncmp(line, "ui ", 3) == 0) {
+			std::string rest = line + 3;
+			rest.erase(rest.find_last_not_of(" \t\r\n") + 1);
+			std::string::size_type const space = rest.find(' ');
+			UIScript_Add(rest.substr(0, space), space == std::string::npos ? std::string() : rest.substr(space + 1));
+			continue;
+		}
 		if (line[0] == ';' || std::sscanf(line, "%d %63s %255s %d %d", &frame, command, argument, &x, &y) < 2) {
 			continue;
 		}

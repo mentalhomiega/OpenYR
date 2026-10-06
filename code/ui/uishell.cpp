@@ -17,6 +17,7 @@
 #include "ui/rml/rmltexture.h"
 #include "ui/uihost.h"
 #include "ui/uireveal.h"
+#include "ui/uiscript.h"
 #include "ui/uiview.h"
 #include "windowevent.hh"
 
@@ -775,6 +776,9 @@ void UIShellClass::Tick(void)
 	if (!Ready || InTick || InContext) {
 		return;
 	}
+
+	// A scripted menu step acts before the tick takes its guard, so a screen it opens can tick.
+	UIScript_Tick(Context);
 
 	UIReentryGuardClass ticking(InTick);
 
