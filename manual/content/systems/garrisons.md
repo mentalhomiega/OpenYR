@@ -38,6 +38,7 @@ OccupyPip=PersonBlue
 A structure can take a soldier when all of these hold:
 
 - the soldier's type sets `Occupier=yes`;
+- the soldier is not under [mind control](/systems/mind-control/#going-into-transports-and-structures);
 - fewer than `MaxNumberOccupants` soldiers are inside;
 - the structure is above the [`ConditionRed`](/keys/conditionred/) health ratio;
 - the structure is not being built up or sold;

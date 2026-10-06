@@ -15,4 +15,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A unit with an airstrike second weapon, such as Boris, now uses its first weapon on a deployed Slave Miner and on anything that is not a structure, as in Yuri's Revenge.
+A unit with an airstrike second weapon, such as Boris, now uses its first weapon on anything that is not a structure that allows C4, and on a structure that is both a `ResourceGatherer` and a `ResourceDestination`, such as a deployed Slave Miner, as in Yuri's Revenge.

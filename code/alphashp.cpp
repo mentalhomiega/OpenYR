@@ -372,6 +372,6 @@ void AlphaShapeClass::Calculate_Brightness_Table(void)
 		int low = i % 256;
 		int high = i / 256;
 		int brightness = std::max(0, std::min(255, low * high / 127));
-		BrightnessTable[0][i] = brightness;
+		BrightnessTable[high][low] = brightness;
 	}
 }

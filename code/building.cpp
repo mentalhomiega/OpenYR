@@ -442,7 +442,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				return(RADIO_NEGATIVE);
 			}
 			if ((Class->IsArmory || Class->IsHospital) && from->RTTI == RTTI_INFANTRY) {
-				if (Ammo != 0 && Mission != MISSION_REPAIR) {
+				// A soldier under mind control may not go inside, as in Yuri's Revenge.
+				if (Ammo != 0 && Mission != MISSION_REPAIR && ((TechnoClass *)from)->MindControlledBy == NULL) {
 					return(RADIO_ROGER);
 				}
 				return(RADIO_NEGATIVE);
@@ -498,12 +499,9 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				return(RADIO_NEGATIVE);
 			}
 
-			if (Class->IsCanUnitRepair) {
-				RadioClass * radio = Contact_With_Whom();
-				if (radio != NULL && radio == from) {
-					if (Transmit_Message(RADIO_NEED_REPAIR) == RADIO_NEGATIVE) {
-						return(RADIO_NEGATIVE);
-					}
+			if (Class->IsCanUnitRepair && Contains_Link(from)) {
+				if (Transmit_Message(RADIO_NEED_REPAIR, from) == RADIO_NEGATIVE) {
+					return(RADIO_NEGATIVE);
 				}
 			}
 
@@ -514,7 +512,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			*/
 			if (Class->IsCanUnitReload) {
 				FootClass * radio = (FootClass *)Contact_With_Whom();
-				if (radio != NULL && radio != from) {
+				// A sender that holds a dock, or has one free, bumps no one.
+				if (radio != NULL && radio != from && !Has_Free_Link(from)) {
 					if (Transmit_Message(RADIO_ON_DEPOT) == RADIO_ROGER) {
 						if (Transmit_Message(RADIO_ALL_DONE) == RADIO_ROGER) {
 							radio->Assign_Destination(&Map[radio->Nearby_Location(this)]);
@@ -593,7 +592,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				} else if (Class->IsHelipad) {
 					param = (intptr_t)this;
 					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
-						Transmit_Message(RADIO_TETHER);
+						Transmit_Message(RADIO_TETHER, from);
 					}
 				}
 			}
@@ -3153,7 +3152,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						base->Set_Coord(Exit_Coord());
 						base->Mark(MARK_DOWN);
 						Transmit_Message(RADIO_HELLO, base);
-						Transmit_Message(RADIO_TETHER);
+						Transmit_Message(RADIO_TETHER, base);
 						Assign_Mission(MISSION_UNLOAD);
 						ScenarioInit--;
 						return(2);
@@ -3850,8 +3849,9 @@ void BuildingClass::Place_Free_Unit(void)
 
 		// Only a pad holds the aircraft; another structure keeps its radio for what it docks.
 		if (Class->IsHelipad || Class->IsHoverPad) {
-			air->Transmit_Message(RADIO_HELLO, this);
-			Transmit_Message(RADIO_TETHER);
+			if (air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
+				Transmit_Message(RADIO_TETHER, air);
+			}
 		}
 		return;
 	}
@@ -4014,9 +4014,8 @@ void BuildingClass::Grand_Opening(bool captured)
 		bool const gives_aircraft = Class->FreeUnit != NULL && Class->FreeUnit->Fetch_RTTI() == RTTI_AIRCRAFTTYPE;
 		if (!Rule->IsSeparate && Class->IsHoverPad && !captured && Rule->PadAircraft.Count() > 0 && !gives_aircraft) {
 			AircraftClass * air = Place_Free_Aircraft(Rule->PadAircraft[0]);
-			if (air != NULL) {
-				air->Transmit_Message(RADIO_HELLO, this);
-				Transmit_Message(RADIO_TETHER);
+			if (air != NULL && air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
+				Transmit_Message(RADIO_TETHER, air);
 			}
 		}
 
@@ -8645,10 +8644,11 @@ void BuildingClass::Power_Off(void)
 /// Tells whether the soldier may garrison this structure now, as BuildingClass::CanBeOccupiedBy
 /// (0x457CE0) does: the structure must take occupants, have room, be above red health and be
 /// neither built nor sold, and it must belong to the soldier's house or to a passive house.
+/// A soldier under mind control may not garrison, as in Yuri's Revenge.
 /// </summary>
 bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
 {
-	if (infantry == NULL || !Class->IsCanBeOccupied || !infantry->Class->IsOccupier) {
+	if (infantry == NULL || !Class->IsCanBeOccupied || !infantry->Class->IsOccupier || infantry->MindControlledBy != NULL) {
 		return(false);
 	}
 	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
@@ -8706,11 +8706,11 @@ bool BuildingClass::Takes_Walk_Ins(FootClass const * object) const
 /// <summary>
 /// Tells whether this Bunker=yes structure can take the vehicle in now (TechnoClass::CanBunker,
 /// 0x70FB50): the vehicle must be its owner's, Bunkerable and armed, and the bunker must be
-/// finished and empty.
+/// finished and empty. A vehicle under mind control may not enter, as in Yuri's Revenge.
 /// </summary>
 bool BuildingClass::Can_Bunker(FootClass const * object) const
 {
-	if (!Class->IsBunker || object == NULL || object->RTTI != RTTI_UNIT || object->House != House) {
+	if (!Class->IsBunker || object == NULL || object->RTTI != RTTI_UNIT || object->House != House || object->MindControlledBy != NULL) {
 		return(false);
 	}
 	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION || BunkerLinkedItem != NULL) {
