@@ -12,6 +12,7 @@
 **	lines starting with ';' are ignored. Commands run once the game frame reaches their frame:
 **
 **	command <Name>			runs a registered command, such as CenterBase or ScreenCapture
+**	options					opens the options menu, as Escape does during play
 **	select <TypeID>			selects every object of that type the player owns
 **	produce <TypeID>		starts building that type
 **	place <TypeID>			places a finished structure at the first legal cell near the
@@ -1234,6 +1235,8 @@ void Run(StepType const & step)
 			point = Point2D(step.X, step.Y);
 		}
 		Request_View_Zoom_Step(std::atof(step.Argument.c_str()), point);
+	} else if (step.Command == "options") {
+		SpecialDialog = SDLG_OPTIONS;
 	} else if (step.Command == "windowshot") {
 		// windowshot <name>: saves what the window shows, map layer included, as <name>.tga in the screenshots folder.
 		static std::string path;
