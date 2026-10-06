@@ -17,6 +17,7 @@
 #include "addon.h"
 #include "ccfile.h"
 #include "ccini.h"
+#include "csf.h"
 #include "dbgprint.h"
 #include "globals.h"
 #include "keyboard.h"
@@ -28,20 +29,46 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 
-// The scenario's briefing, or its entry in the mission INI when it has none.
-static void Briefing_Text(ScenarioClass * scen, char * text, int size)
+// A label the string table lacks reads as MISSING:'<label>', as in Yuri's Revenge.
+static std::string Label_Text(char const * label)
 {
-	text[0] = '\0';
+	if (StringTable.Find(label) == nullptr) {
+		DebugString("Restate: no string table label %s\n", label);
+		return(std::string("MISSING:'") + label + "'");
+	}
+	return(StringTable.Find_UTF8(label));
+}
+
+
+/*
+ * The scenario's briefing: the string table text its MISSIONMD.INI entry names, else the text
+ * the scenario holds, else its text in the mission INI. When none of these gives text but
+ * MISSIONMD.INI exists, the briefing is the text of the label Brief:Error.
+ */
+static std::string Briefing_Text(ScenarioClass * scen)
+{
+	CCFileClass database("MISSIONMD.INI");
+	bool const has_database = database.Is_Available();
+	if (has_database) {
+		CCINIClass ini;
+		ini.Load(database, false);
+
+		std::string const label = ini.Get_String(scen->ScenarioName, "Briefing");
+		if (!label.empty()) {
+			DebugString("Restate: Fetching briefing %s from MissionMD.ini\n", label.c_str());
+			return(Label_Text(label.c_str()));
+		}
+	}
 
 	if (strlen(scen->BriefingText)) {
 		DebugString("Restate: Fetching breifing text from %s\n", scen->ScenarioName);
-		strncpy(text, scen->BriefingText, size - 1);
-		text[size - 1] = '\0';
-		return;
+		return(scen->BriefingText);
 	}
 
+	char text[sizeof(scen->BriefingText)] = "";
 	char buffer[32];
 	CCFileClass file;
 	if (scen->RequiredAddOn > ADDON_BASE_GAME) {
@@ -59,10 +86,15 @@ static void Briefing_Text(ScenarioClass * scen, char * text, int size)
 		if (ini.Is_Present(scen->ScenarioName, "Briefing")) {
 			ini.Get_String(scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
 			if (strlen(buffer)) {
-				ini.Get_TextBlock(buffer, text, size);
+				ini.Get_TextBlock(buffer, text, sizeof(text));
 			}
 		}
 	}
+
+	if (text[0] == '\0' && has_database) {
+		return(Label_Text("Brief:Error"));
+	}
+	return(text);
 }
 
 
@@ -90,12 +122,11 @@ void Restate_Mission(ScenarioClass * scen)
 		return;
 	}
 
-	char text[sizeof(scen->BriefingText)];
-	Briefing_Text(scen, text, sizeof(text));
+	std::string const text = Briefing_Text(scen);
 
 	bool save_started = ScenarioActive;
 	ScenarioActive = false;
-	if (UI_Restate_Mission(text, scen->BriefMovie != VQ_NONE)) {
+	if (UI_Restate_Mission(text.c_str(), scen->BriefMovie != VQ_NONE)) {
 		Theme.Pause();
 		Play_Movie(scen->BriefMovie, THEME_NONE, 1, 1);
 		Theme.Resume();
