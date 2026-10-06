@@ -3898,11 +3898,22 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	*/
 	if (Session.Type == GAME_NORMAL) {
 		HousesType house = ini.Get_HousesType(BASIC, "Player", HOUSE_NONE);
-		if (house == HOUSE_NONE) {
-			house = HOUSE_FIRST;
+		PlayerPtr = house == HOUSE_NONE ? NULL : House_From_HousesType(house);
+		if (PlayerPtr == NULL) {
+			for (int index = 0; index < Houses.Count() && PlayerPtr == NULL; index++) {
+				if (Houses[index]->IsPlayerControl) {
+					PlayerPtr = Houses[index];
+				}
+			}
+			if (PlayerPtr == NULL && Houses.Count() > 0) {
+				PlayerPtr = Houses[0];
+			}
+			DebugString("[Basic] Player names no house of this mission; %s plays.\n", PlayerPtr != NULL ? PlayerPtr->Class->Name() : "nobody");
 		}
-		PlayerHouse = house;
-		PlayerPtr = House_From_HousesType(house);
+		if (PlayerPtr == NULL) {
+			return(false);
+		}
+		PlayerHouse = PlayerPtr->Class->House;
 
 	} else {
 		Assign_Houses();

@@ -460,7 +460,7 @@ void Dropship_Screen(void)
 	DynamicVectorClass<TechnoTypeClass *> candidates;
 	int type_count = InfantryTypes.Count() + UnitTypes.Count();
 
-	unsigned int ownable_mask = 1 << HouseTypes.ID(PlayerPtr->Class);
+	unsigned int ownable_mask = PlayerPtr->Acted_Mask();
 
 	if (Scen->AllowableUnits.Count() > 0) {
 		for (i = 0; i < Scen->AllowableUnits.Count(); ++i) {

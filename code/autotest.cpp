@@ -1048,9 +1048,17 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "houses") {
-		// houses: each house's money, power and spy effects, then a "seat" line for who plays it.
+		// houses: each house's money, power and spy effects, then a "seat" line for who plays it. The
+		// "who" line names the country the house acts as and counts the objects it owns.
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
+			int owned = 0;
+			for (int object = 0; object < Technos.Count(); object++) {
+				if (Technos[object]->House == house && !Technos[object]->IsInLimbo) {
+					owned++;
+				}
+			}
+			DebugString("AUTOTEST   who %s country %s player %d objects %d\n", house->Class->Name(), house->ActLike != HOUSE_NONE ? HouseTypes[house->ActLike]->Name() : "<none>", (int)(house == PlayerPtr), owned);
 			int allies = 0;
 			for (int other = 0; other < Houses.Count(); other++) {
 				if (other != index && house->Is_Ally(Houses[other])) {

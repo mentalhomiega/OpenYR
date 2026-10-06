@@ -11,7 +11,7 @@ when_omitted:
   note: No suffix is stored.
 ---
 
-The value is cut to three characters and stored on the country. Nothing in the game reads it.
+The value is stored on the country in full, up to 31 characters, so `Allied` and `Soviet` are kept whole. Nothing in the game reads it.
 
 ```ini title="rules.ini"
 [GDI]

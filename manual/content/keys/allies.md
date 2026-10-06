@@ -12,7 +12,7 @@ The value is a comma-separated list of houses that this house treats as friends.
 
 ## Where the list is read
 
-A campaign mission reads `Allies` from each house record. Each name matches a country by its section name or its `Name=`, ignoring letter case, and allies the house with that country's house. Write the names with no space after the commas: in a house record, a name with a leading space matches nothing.
+A campaign mission reads `Allies` from each house record. Each name matches a house by its name in `[Houses]`, ignoring letter case, and a name that is a country's section name or its `Name=` matches the house that plays that country. When several houses play the country, the first of them in `[Houses]` is the one allied. Write the names with no space after the commas: in a house record, a name with a leading space matches nothing.
 
 ```ini title="scenario map file"
 [Special] ; a house record in the scenario's own house list

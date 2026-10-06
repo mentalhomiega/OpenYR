@@ -2287,7 +2287,7 @@ Allies:
     section:
       kind: identifier
       source: house
-    value_type: list of HouseTypes
+    value_type: string
     status: reviewed
     _provenance:
       default_candidate: null
@@ -8204,6 +8204,24 @@ CostUnitsMult:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
+Country:
+  key: Country
+  scopes:
+  - applies_to:
+    - House (per-scenario)
+    file: map file
+    section:
+      kind: identifier
+      source: house
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseClass
+      member: country
+      source: code/house.cpp
+      guard: null
+    level: HouseClass
 CowTurretIndex:
   key: CowTurretIndex
   scopes:
@@ -24748,6 +24766,23 @@ Paratrooper:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ParentCountry:
+  key: ParentCountry
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: parentname
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 Particle:
   key: Particle
   scopes:

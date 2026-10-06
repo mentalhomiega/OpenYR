@@ -167,3 +167,10 @@ site_exclusions:
     keys: [FrameWidth, FrameHeight, Frames]
     classification: excluded
     reason: Each is a setting of a PNG sprite sheet's own .ini file, documented as that format in docs/TRUECOLOUR.md rather than as game data.
+
+  - path: code/house.cpp
+    function: House_Type_For_Entry
+    keys: [Country]
+    classification: duplicate
+    canonical_key: Country
+    reason: The house record picks its type from the same Country setting that HouseClass::Read_INI reads for the tech tree.

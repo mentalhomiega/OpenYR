@@ -5,7 +5,7 @@ label: Commanded house
 see_also: [SpeechSide, NextScenario]
 when_omitted:
   kind: computed
-  note: The first country registered, the same as an empty value.
+  note: The first house whose record sets `PlayerControl=yes`, or the first house in `[Houses]` when none does, the same as a value that names no house.
 ---
 
 ```ini title="map file"
@@ -13,10 +13,10 @@ when_omitted:
 Player=GDI
 ```
 
-`Player` names the house the player controls in a campaign mission. The name can be the country's ID or its full name, ignoring case. The player commands that house's units and structures, spends its credits, and builds from its build options. The map selection screen after the mission reads its campaign progression from the same house.
+`Player` names the house the player controls in a campaign mission. The name is a house name from `[Houses]`, ignoring case. A country's section name or `Name=` also works when it names a house of the mission, and then picks the first house that plays that country. The player commands that house's units and structures, spends its credits, and builds from its build options. The map selection screen after the mission reads its campaign progression from the same house.
 
 In a multiplayer or skirmish game, the lobby or the launch file assigns houses and this key is ignored.
 
-:::danger[Name a house the mission contains]
-The mission's houses are the first countries registered, one for each entry in the map's `[Houses]` section. They are counted in the order the rules declare countries, not the order `[Houses]` lists them. If `Player` names any other country, or a name that matches no country, the game crashes while loading the mission.
+:::caution[Name a house the mission contains]
+A value that names no house of the mission leaves the player with the first house whose record sets [`PlayerControl=yes`](/keys/playercontrol/), or with the first house in `[Houses]` when none does. The game notes the substitution in its debug log.
 :::

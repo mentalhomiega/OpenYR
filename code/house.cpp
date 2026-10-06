@@ -5683,9 +5683,50 @@ int HouseClass::Factory_Count(RTTIType rtti) const
 
 
 /// <summary>
+/// Finds the house type that a [Houses] entry plays as.
+/// A house section that names a Country= is a Yuri's Revenge house: the house is its own type,
+/// which starts from that country's settings. A section without one is a Tiberian Sun house,
+/// and its name is the country.
+/// </summary>
+/// <param name="ini">The INI database that lists the houses.</param>
+/// <param name="entry">The entry of the [Houses] list to resolve.</param>
+/// <returns>Returns with the house type, or NULL for an entry that names no house, such as a
+/// spawn house.</returns>
+static HouseTypeClass * House_Type_For_Entry(CCINIClass const & ini, char const * entry)
+{
+	std::string name = ini.Get_String("Houses", entry);
+	std::string country = name.empty() ? std::string() : ini.Get_String(name.c_str(), "Country");
+
+	if (country.empty()) {
+		// Reading the entry is what forces a house type that the rules do not list to be created.
+		HousesType type = ini.Get_HousesType("Houses", entry, HOUSE_NONE);
+		return(type >= HOUSE_FIRST && type < HouseTypes.Count() ? HouseTypes[type] : NULL);
+	}
+
+	HouseTypeClass * parent = NULL;
+	HousesType parenthouse = HouseTypeClass::From_Name(country.c_str());
+	if (parenthouse != HOUSE_NONE) {
+		parent = HouseTypes[parenthouse];
+	} else {
+		DebugString("[%s] Country=%s names no country; the house plays as itself.\n", name.c_str(), country.c_str());
+	}
+
+	// A house named like a country of the rules or the map is that country.
+	int known = HouseTypes.Count();
+	HouseTypeClass * type = HouseTypeClass::Find_Or_Make(name.c_str());
+	if (type != NULL && HouseTypes.Count() > known && parent != NULL) {
+		type->Inherit_Country(*parent);
+		type->Inherit_Side(*parent);
+	}
+	return(type);
+}
+
+
+/// <summary>
 /// Creates and initializes every house listed in the INI database.
-/// This routine is called as a scenario starts up. Each house is created, given its scenario
-/// data, and -- in a solo mission -- handicapped according to the chosen difficulty.
+/// This routine is called as a scenario starts up. Each house is created from the type its
+/// entry names, given its scenario data, and -- in a solo mission -- handicapped according to
+/// the chosen difficulty.
 /// </summary>
 /// <param name="ini">The INI database to read the houses from.</param>
 void HouseClass::Read_All(CCINIClass const & ini)
@@ -5695,18 +5736,20 @@ void HouseClass::Read_All(CCINIClass const & ini)
 
 	int count = ini.Entry_Count("Houses");
 
-	for (index = HOUSE_FIRST; index < count; index++) {
-		/// Reading the entry is what forces the house type to be created. The house below is
-		/// built from the type at the same index, which need not be the one just read, and a
-		/// spawn house entry registers no type at all.
-		ini.Get_HousesType("Houses", ini.Get_Entry("Houses", index), HOUSE_NONE);
-		if (index < HouseTypes.Count()) {
-			if (Houses.Count() >= HOUSE_MAX) {
-				DebugString("[Houses] %s skipped: only %d houses fit.\n", HouseTypes[index]->Name(), HOUSE_MAX);
-				continue;
-			}
-			new HouseClass(HouseTypes[index]);
+	for (int entry = 0; entry < count; entry++) {
+		HouseTypeClass * type = House_Type_For_Entry(ini, ini.Get_Entry("Houses", entry));
+		bool listed = false;
+		for (int house = 0; house < Houses.Count() && type != NULL; house++) {
+			listed |= (Houses[house]->Class == type);
 		}
+		if (type == NULL || listed) {
+			continue;
+		}
+		if (Houses.Count() >= HOUSE_MAX) {
+			DebugString("[Houses] %s skipped: only %d houses fit.\n", type->Name(), HOUSE_MAX);
+			continue;
+		}
+		new HouseClass(type);
 	}
 
 	for (index = HOUSE_FIRST; index < Houses.Count(); index++) {
@@ -5773,6 +5816,15 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	RatioTeamInfantry = ini.Get_Int(hname, "RatioTeamInfantry", 75);
 	RatioTeamUnits = ini.Get_Int(hname, "RatioTeamUnits", 75);
 
+	// A house plays the tech tree of the country it names, which for a country based on another is the one it stands on.
+	std::string country = ini.Get_String(hname, "Country");
+	if (!country.empty() && ActLike != HOUSE_NONE) {
+		HousesType countrytype = HouseTypeClass::From_Name(country.c_str());
+		if (countrytype != HOUSE_NONE) {
+			ActLike = HouseTypes[countrytype]->Root_Country();
+		}
+	}
+
 	std::string actslike = ini.Get_String(hname, "ActsLike");
 	if (!actslike.empty()) {
 		ActLike = Acts_Like_From(hname, actslike.c_str(), ActLike);
@@ -5785,7 +5837,15 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	Control.Edge = ini.Get_SourceType(hname, "Edge", SOURCE_NORTH);
 	IsPlayerControl = ini.Get_Bool(hname, "PlayerControl", false);
 
-	int owners = ini.Get_Owners(hname, "Allies", 0);
+	// Allies are named by house, since a map may list more houses than a bit mask has places.
+	HouseSet allied;
+	std::string owners = ini.Get_String(hname, "Allies");
+	for (char const * ally = strtok(owners.data(), ","); ally != NULL; ally = strtok(NULL, ",")) {
+		HouseClass * allyhouse = House_From_Name(ally);
+		if (allyhouse != NULL) {
+			allied.Set(allyhouse);
+		}
+	}
 	Make_Ally(Houses[HeapID]);
 
 	Scheme = ini.Get_Scheme_Index(hname, "Color", Scheme);
@@ -5798,7 +5858,7 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	//Make_Ally(HOUSE_NEUTRAL);
 	for (HousesType h = HOUSE_FIRST; h < Houses.Count(); h++) {
 		HouseClass * hptr = Houses[h];
-		if ((owners & (1 << hptr->Class->House)) != 0) {
+		if (allied[hptr]) {
 			Make_Ally(hptr);
 		}
 	}
@@ -5860,13 +5920,18 @@ void HouseClass::Write_INI(CCINIClass & ini)
 	ini.Put_Int(name, "IQ", Control.IQ);
 	ini.Put_Bool(name, "PlayerControl", IsPlayerControl);
 
-	unsigned allies = 0;
+	std::string allies;
 	for (HousesType index = HOUSE_FIRST; index < Houses.Count(); index++) {
 		if (Control.Allies[Houses[index]]) {
-			allies |= (1 << Houses[index]->Class->House);
+			if (!allies.empty()) {
+				allies += ",";
+			}
+			allies += Houses[index]->Class->Name();
 		}
 	}
-	ini.Put_Owners(name, "Allies", allies);
+	if (!allies.empty()) {
+		ini.Put_String(name, "Allies", allies.c_str());
+	}
 
 	ini.Put_Scheme_Index(name, "Color", Scheme);
 	if (Class->Side != SIDE_NONE) {
@@ -6582,7 +6647,8 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
  *                                                                                             *
  * OUTPUT:  Returns with a pointer to the house object that the house number represents.       *
  *                                                                                             *
- * WARNINGS:   none                                                                            *
+ * WARNINGS:   A map may name a country that no house is called after. The first house that    *
+ *             plays that country then answers for it.                                         *
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   01/23/1995 JLB : Created.                                                                 *
@@ -6597,6 +6663,12 @@ HouseClass * House_From_HousesType(HousesType house)
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass * housep = Houses[index];
 		if (housep->Class->House == house) {
+			return(housep);
+		}
+	}
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * housep = Houses[index];
+		if (house != HOUSE_NONE && housep->Class->ParentCountry == house) {
 			return(housep);
 		}
 	}

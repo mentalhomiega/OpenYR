@@ -94,7 +94,8 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	IsMultiplayPassive(false),
 	IsGivesBounty(true),
 	IsWallOwner(true),
-	IsSmartAI(false)
+	IsSmartAI(false),
+	ParentCountry(HOUSE_NONE)
 {
 	Create_ID();
 	Suffix[0] = '\0';
@@ -137,9 +138,16 @@ HouseTypeClass::~HouseTypeClass(void)
 HousesType HouseTypeClass::From_Name(char const * name)
 {
 	if (name != NULL) {
+		// An INI name wins over a display name, so a house named like another country's label still finds its own type.
 		for (int house = HOUSE_FIRST; house < HouseTypes.Count(); house++) {
 			HouseTypeClass *ptr = HouseTypes[house];
-			if (stricmp(ptr->Full_Name(), name) == 0 || stricmp(ptr->Name(), name) == 0) {
+			if (stricmp(ptr->Name(), name) == 0) {
+				return(ptr->House);
+			}
+		}
+		for (int house = HOUSE_FIRST; house < HouseTypes.Count(); house++) {
+			HouseTypeClass *ptr = HouseTypes[house];
+			if (stricmp(ptr->Full_Name(), name) == 0) {
 				return(ptr->House);
 			}
 		}
@@ -167,6 +175,22 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 {
 	if (BASECLASS::Read_INI(ini)) {
 		char buffer[32];
+
+		// A country based on another starts from the other's settings, which its own section then replaces.
+		HouseTypeClass * parent = NULL;
+		std::string parentname = ini.Get_String(Name(), "ParentCountry");
+		if (!parentname.empty()) {
+			HousesType parenthouse = From_Name(parentname.c_str());
+			if (parenthouse != HOUSE_NONE && parenthouse != House) {
+				parent = HouseTypes[parenthouse];
+			} else {
+				DebugString("[%s] ParentCountry=%s names no other country; ignored.\n", Name(), parentname.c_str());
+			}
+		}
+		if (parent != NULL && parent->House != ParentCountry) {
+			Inherit_Country(*parent);
+		}
+
 		ini.Get_String(Name(), "Suffix", "", buffer, sizeof(Suffix));
 		if (strlen(buffer) != 0) {
 			strcpy(Suffix, buffer);
@@ -214,9 +238,75 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 				}
 			}
 		}
+		if (parent != NULL) {
+			Inherit_Side(*parent);
+		}
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Follows the countries this one is based on back to the one that stands alone.
+/// A house takes its tech tree from this country, because the rules name only the countries
+/// they list in an Owner= list.
+/// </summary>
+/// <returns>Returns with the country this one is based on at the end of the chain, or this
+/// country when it is based on none.</returns>
+HousesType HouseTypeClass::Root_Country(void) const
+{
+	HouseTypeClass const * type = this;
+	for (int depth = 0; depth < HouseTypes.Count() && type->ParentCountry >= HOUSE_FIRST && type->ParentCountry < HouseTypes.Count(); depth++) {
+		type = HouseTypes[type->ParentCountry];
+	}
+	return(type->House);
+}
+
+
+/// <summary>
+/// Takes over the settings of the country this one is based on.
+/// Everything the rules give a country is copied except its side, which Inherit_Side settles
+/// once this country's own section has been read, and whether it is offered in the multiplayer
+/// country list, which a country based on another does not join.
+/// </summary>
+/// <param name="parent">The country to take the settings from.</param>
+void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
+{
+	ParentCountry = parent.House;
+	Scheme = parent.Scheme;
+	FirepowerBias = parent.FirepowerBias;
+	GroundspeedBias = parent.GroundspeedBias;
+	AirspeedBias = parent.AirspeedBias;
+	ArmorBias = parent.ArmorBias;
+	ROFBias = parent.ROFBias;
+	CostBias = parent.CostBias;
+	BuildSpeedBias = parent.BuildSpeedBias;
+	IncomeMult = parent.IncomeMult;
+	CostInfantryMult = parent.CostInfantryMult;
+	CostUnitsMult = parent.CostUnitsMult;
+	CostAircraftMult = parent.CostAircraftMult;
+	CostBuildingsMult = parent.CostBuildingsMult;
+	CostDefensesMult = parent.CostDefensesMult;
+	strcpy(Suffix, parent.Suffix);
+	Prefix = parent.Prefix;
+	IsMultiplayPassive = parent.IsMultiplayPassive;
+	IsGivesBounty = parent.IsGivesBounty;
+	IsWallOwner = parent.IsWallOwner;
+	IsSmartAI = parent.IsSmartAI;
+}
+
+
+/// <summary>
+/// Joins the side of the country this one is based on, unless this country has a side of its own.
+/// </summary>
+/// <param name="parent">The country this one is based on.</param>
+void HouseTypeClass::Inherit_Side(HouseTypeClass const & parent)
+{
+	if (Side == SIDE_NONE && parent.Side != SIDE_NONE) {
+		Side = parent.Side;
+		Sides[Side]->Houses.Add((int)House);
+	}
 }
 
 
