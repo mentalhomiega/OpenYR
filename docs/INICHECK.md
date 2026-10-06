@@ -1,7 +1,8 @@
 # INI checker
 
-`inicheck` reads a rules file and lists the keys the engine does not read there
-and the values it cannot read in the expected form. It only reports. Neither
+`inicheck` reads a rules file, and optionally the art file that goes with it,
+and lists the keys the engine does not read there and the values it cannot read
+in the expected form. It only reports. Neither
 the tool nor its library changes how the game reads a value, and the game does
 not run the checker yet.
 
@@ -12,6 +13,7 @@ Write the key catalog from the manual's generated key list, then check a file:
 ```bash
 python tools/inicheck/export_catalog.py --output inicheck-catalog.tsv
 inicheck --catalog inicheck-catalog.tsv rulesmd.ini
+inicheck --catalog inicheck-catalog.tsv --art artmd.ini rulesmd.ini
 ```
 
 The export script needs PyYAML, which `manual/tools/requirements.txt` already
@@ -22,6 +24,7 @@ directory.
 | --- | --- |
 | `--catalog <file>` | The catalog to check against. Required. |
 | `--file <name>` | Which file's keys to use, as the catalog names it. The default is `rules.ini`; use it for `rulesmd.ini` too. |
+| `--art <file>` | Also checks this art file. Its sections are placed through the rules file, so pass the rules file that goes with it. |
 | `--unchecked` | Also lists each section the checker skipped. |
 
 Each finding is one line naming the file, line, section, key and value. The
@@ -48,8 +51,7 @@ A section is checked when the catalog names it, such as `[General]` or
 `[AI]`, or when a rules list such as `[VehicleTypes]` or `[Warheads]` names it.
 The difficulty sections `[Easy]`, `[Normal]` and `[Difficult]` are checked
 against the difficulty keys, such as `FirePower=` and `BuildTime=`; the
-export script writes them under those three names.
-A listed section is checked against the keys of that type kind, so a vehicle
+export script writes them under those three names. A listed section is checked against the keys of that type kind, so a vehicle
 section accepts vehicle keys and the keys every object type reads.
 
 Weapons and projectiles are found by following the keys that name them:
@@ -64,6 +66,21 @@ A key is followed only from a section of the kind that reads it, so
 `Projectile=` in a vehicle section is reported and its value is not followed.
 A section named both in a list and by a key is checked against the keys of
 both kinds.
+
+## Art sections
+
+With `--art`, an art section is checked against the keys of the types that read
+it. A type listed in the rules reads the art section named by its `Image=` in
+the rules, or else the section of its own name. An animation reads the section
+of its own name, whatever its `Image=`. A projectile reads art only when its
+rules section has an `Image=`. A section that several types read accepts the
+keys of all of them.
+
+An art section no type reads is skipped. That includes the own-name section of
+a type whose `Image=` names another section, and a section that only an
+infantry `Sequence=` names.
+
+## Skipped sections
 
 Every other section is skipped, such as a weapon nothing names and sections
 whose names the catalog does not give, such as the land types.

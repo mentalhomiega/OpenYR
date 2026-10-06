@@ -105,5 +105,6 @@ namespace IniCheck
 	};
 
 	Report Check_Rules(Catalog const & catalog, std::string_view text, std::string const & file = "rules.ini");
+	Report Check_Art(Catalog const & catalog, std::string_view rules_text, std::string_view art_text, std::string const & file = "art.ini");
 	std::string Format(Finding const & finding);
 }
