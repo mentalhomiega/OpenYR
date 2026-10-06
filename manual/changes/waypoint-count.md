@@ -16,3 +16,5 @@ credit:
 A scenario now keeps 702 waypoints, `A` through `ZZ`, as Yuri's Revenge does. It used to keep 101, so a map's waypoints numbered above 100 were not read, and a trigger, team or script naming one could read its cell from unrelated memory. All but one Yuri's Revenge campaign map use such waypoints, and the first Allied mission crashed as play began.
 
 The [Play Sound Effect (Random)...](/mapping/actions/taction-play-sound-random/) action now picks from every placed waypoint and no longer corrupts memory when a scenario places more than 100 of them.
+
+The waypoints are part of a saved game, so a game saved by an earlier build cannot be loaded.
