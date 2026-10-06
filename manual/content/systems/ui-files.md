@@ -69,7 +69,7 @@ These screens are documents:
 
 - the [classic main menu](/systems/developer-mode/#the-main-menu-code-recognizer), the menus under it, and the version screen
 - the campaign and multiplayer choosers
-- the options menu, with its sound, display, game control and keyboard screens
+- the options menu, with its sound, display, game control, keyboard and mods screens
 - the skirmish setup, the map chooser and the random map generator
 - the network lobbies
 - the load, save and delete lists

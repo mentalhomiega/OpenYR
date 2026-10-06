@@ -31,7 +31,7 @@ The game offers Firestorm only when it finds `FIRESTRM.INI`, either as a loose f
 
 ## Keeping the data somewhere else
 
-[`-DATADIR=<path>`](/using/command-line/data-directory/) names the game data directory, which the game reads its data from and never writes to. Without it, the game reads its data from the directory that holds the executable.
+[`-DATADIR=<path>`](/using/command-line/data-directory/) names the game data directory, which the game reads its data from. Without it, the game reads its data from the directory that holds the executable. The game writes to the game data directory only when the [Mods screen](/using/mods/#the-mods-screen) saves its list to [`OPENTS.INI`](/formats/opents-ini/#where-the-file-is-looked-for).
 
 [`-USERDIR=<path>`](/using/command-line/user-directory/) names the user data directory, which receives every file the game writes, including settings, saved games, recordings and downloaded maps. Without it, the game writes these files beside the executable. The exceptions are the debug log, [out-of-sync reports](/using/out-of-sync-reports/) and [crash reports](/using/crash-reports/), which always go into folders beside the executable.
 

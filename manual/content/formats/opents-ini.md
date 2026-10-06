@@ -24,7 +24,7 @@ related:
     id: mods
 ---
 
-`OPENTS.INI` belongs to the deployment and describes how it lays out the game's files. A player's options are kept in a separate settings file, `RA2MD.INI` unless `Settings` below names another. The game reads `OPENTS.INI` once at startup.
+`OPENTS.INI` belongs to the deployment and describes how it lays out the game's files. A player's options are kept in a separate settings file, `RA2MD.INI` unless `Settings` below names another. The game takes its settings from `OPENTS.INI` once, at startup.
 
 ```ini title="OPENTS.INI"
 [Paths]
@@ -44,7 +44,7 @@ Without the file, or without the key, the game searches `INI`, `MIX` and `Maps`,
 Mods=HighTech,MapPack
 ```
 
-`Mods` lists the [mods](/using/mods/) the game starts with, in the order they are read, so a later mod overrides an earlier one. Separate the names with commas; spaces around a name are ignored. A name is a folder in the `Mods` folder of the game data directory, and a path that starts with a drive letter or a backslash is used as written. Without the key no mod is active. [`-MOD=`](/using/command-line/mod/) adds further mods after the ones this list names.
+`Mods` lists the [mods](/using/mods/) the game starts with, in the order they are read, so a later mod overrides an earlier one. Separate the names with commas; spaces around a name are ignored. A name is a folder in the `Mods` folder of the game data directory, and a path that starts with a drive letter or a backslash is used as written. Without the key no mod is active. [`-MOD=`](/using/command-line/mod/) adds further mods after the ones this list names. The [Mods screen](/using/mods/#the-mods-screen) writes this key.
 
 ## The files it reads
 
@@ -127,6 +127,8 @@ Each save keeps what it was written with. Turning the key off makes new saves sm
 `OPENTS.INI` must be a loose file, because the game does not read it from an archive. The game looks for it in the game data directory, then in that directory's `INI` and `MIX` folders, and reads the first copy it finds. The user data directory is not searched for it.
 
 The game data directory is the one [`-DATADIR`](/using/command-line/data-directory/) names, or the game's own directory when that option is not used.
+
+The game writes to the file only when the [Mods screen](/using/mods/#the-mods-screen) saves `Mods=`. It writes the copy it read at startup, or creates `OPENTS.INI` in the game data directory when it found none.
 
 ## The order files are searched for in
 

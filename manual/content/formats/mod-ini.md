@@ -38,8 +38,8 @@ AI=ai.ini
 
 | Key | Meaning |
 | --- | --- |
-| `Name` | The name the debug log gives the mod. Without it, the name of the mod's folder. |
-| `Description` | A description of the mod. The game reads it but does not display it. |
+| `Name` | The name the debug log and the [Mods screen](/using/mods/#the-mods-screen) give the mod. Without it, the name of the mod's folder. |
+| `Description` | A description of the mod, which the Mods screen shows for the selected mod. |
 | `Rules` | The rules overlay |
 | `Art` | The art overlay |
 | `AI` | The AI overlay |

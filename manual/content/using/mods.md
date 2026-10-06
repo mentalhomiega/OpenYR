@@ -4,11 +4,15 @@ summary: A mod is a folder of game files that the game searches ahead of its own
 category: configuration
 source_files:
   - code/mods.cpp
+  - code/modchoice.cpp
   - code/cdfile.cpp
+  - code/deploymentconfig.cpp
   - code/gamedirs.cpp
   - code/init.cpp
   - code/saveload.cpp
   - code/startup.cpp
+  - code/ui/screens/mods/uimods.cpp
+  - code/ui/screens/mods/uimodsdlg.cpp
 related:
   - type: format
     id: mod-ini
@@ -24,7 +28,7 @@ A mod is a folder of files that the game reads ahead of its own. A file in a mod
 
 ## Choosing mods
 
-List mods in `Mods=` in [`OPENTS.INI`](/formats/opents-ini/#the-mods-it-starts-with), or name each one with [`-MOD=`](/using/command-line/mod/) on the command line:
+Choose mods on the [Mods screen](#the-mods-screen), list them in `Mods=` in [`OPENTS.INI`](/formats/opents-ini/#the-mods-it-starts-with), or name each one with [`-MOD=`](/using/command-line/mod/) on the command line:
 
 ```text
 Game.exe -MOD=HighTech -MOD="D:\Mods\Map Pack"
@@ -36,6 +40,20 @@ A name is a folder inside the `Mods` folder of the game data directory, so `High
 
 - A mod whose folder does not exist is skipped, and the debug log names the folder it looked for.
 - A folder named twice is used once, in the position where it was first named.
+
+### The Mods screen
+
+**Options**, then **Mods**, on the main menu opens a list of every folder in the `Mods` folder of the game data directory, together with the mods `Mods=` lists and the mods the command line names. Each row shows the mod's name from its [`mod.ini`](/formats/mod-ini/), or its folder's name, and selecting a row shows the mod's description and folder. A ticked mod is on. The mods the game can read are numbered in the order it reads them, so each mod overrides the ones above it.
+
+- Tick a mod, or select it and choose **Turn On**, to add it to the end of `Mods=`. Untick it, or choose **Turn Off**, to take it out.
+- **Move Up** and **Move Down** move the selected mod within `Mods=`.
+- **OK** writes a changed list and shows a message that the change takes effect after a restart. The mods in force stay the same until the game starts again. **Cancel** discards the changes.
+
+A mod only the command line names is marked *command line*. It stays ticked, cannot be moved, and is never written to `Mods=`, so it is on only while the game is started with its `-MOD=`. A listed mod that the command line also names keeps its listed place; turning it off moves it below the listed mods, where the command line puts it.
+
+A listed mod whose folder does not exist is marked *not found* and has no number. It stays in `Mods=` until it is turned off. A folder whose name holds a comma or a semicolon, or starts or ends with a space, cannot be turned on, because `Mods=` cannot hold that name; rename the folder to use it.
+
+OK writes `Mods=` into the `OPENTS.INI` the game read at startup, or creates `OPENTS.INI` in the game data directory when there was none. The file's other keys and comments are kept, but `Mods=` moves to the end of `[Paths]`, and turning every mod off removes the key along with the comment lines directly above it. Because the file belongs to the game data directory, the list applies to every player who shares that directory. If the file cannot be written, the screen stays open and names the file.
 
 ## What a mod folder holds
 
