@@ -748,6 +748,11 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 {
 	Clear_Scenario();
 	Scen->Load(stream);
+
+	// Houses, vehicles and buildings draw from the generator as they are built for the load, so
+	// the generator the save holds is put back once every object is in.
+	Random2Class const random = Scen->RandomNumber;
+
 	Disable_Addon(ADDON_ANY);
 	Set_Required_Addon(Scen->RequiredAddOn);
 	if (!Addon_Installed(Scen->RequiredAddOn)) {
@@ -985,6 +990,8 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	}
 
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+
+	Scen->RandomNumber = random;
 
 	return(!stream.Was_Error());
 }
