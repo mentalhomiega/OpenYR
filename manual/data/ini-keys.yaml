@@ -31356,6 +31356,23 @@ SpawnCutoff:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+SpawnDelay:
+  key: SpawnDelay
+  scopes:
+  - applies_to: *id034
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '3'
+      declared_in: AircraftTypeClass
+      member: SpawnDelay
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 SpawnDirection:
   key: SpawnDirection
   scopes:
@@ -36465,12 +36482,26 @@ TrackedUphill:
 Trailer:
   key: Trailer
   scopes:
+  - applies_to: *id034
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: AircraftTypeClass
+      member: Trailer
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
   - applies_to: *id001
     file: art.ini
     section:
       kind: image
     value_type: class
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '0'
       declared_in: BulletTypeClass

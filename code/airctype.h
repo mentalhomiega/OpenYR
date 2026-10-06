@@ -68,6 +68,13 @@ class AircraftTypeClass : public TechnoTypeClass
 		 */
 		bool IsAirportBound;
 
+		/*
+		 * The animation this aircraft leaves behind it, such as a missile's smoke, and the
+		 * number of frames between one puff and the next. (Art keys Trailer and SpawnDelay.)
+		 */
+		AnimTypeClass const * Trailer;
+		int SpawnDelay;
+
 		AircraftTypeClass(char const * ininame = NULL);
 		virtual ~AircraftTypeClass(void) override;
 
