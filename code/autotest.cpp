@@ -1122,6 +1122,14 @@ void Run(StepType const & step)
 					anim != NULL ? anim->Class->Name() : "(none)", anim != NULL ? anim->Fetch_Stage() : -1, anim != NULL ? anim->Fetch_Rate() : -1, anim != NULL ? (int)anim->Is_Disabled() : -1);
 			}
 		}
+	} else if (step.Command == "infstate") {
+		// infstate <TypeID>: for each soldier of that type, the sequence it plays with its stage, the shape drawn, its facing and where it is.
+		for (int index = 0; index < Infantry.Count(); index++) {
+			InfantryClass const * soldier = Infantry[index];
+			if (soldier->IsInLimbo || stricmp(soldier->Class->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   infstate %s at %d,%d doing %d stage %d shape %d facing %d prone %d mission %d height %d fear %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
+				(int)soldier->Doing, soldier->Fetch_Stage(), soldier->Shape_Number(), (int)soldier->PrimaryFacing.Current().As_Dir8(), (int)soldier->IsProne, (int)soldier->Mission, (int)soldier->HeightAGL, (int)soldier->Fear);
+		}
 	} else if (step.Command == "playanim") {
 		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
 		AnimTypeClass const * type = AnimTypeClass::Find_Or_Make(step.Argument.c_str());
