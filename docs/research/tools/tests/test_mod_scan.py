@@ -84,6 +84,18 @@ class ModScanTest(unittest.TestCase):
                     "TiberiumEater.Cell4", "AircraftDockingDir1"):
             self.assertEqual(mod_scan.classify(key, origins), "phobos", key)
 
+    def test_shipped_numbered_phobos_keys(self):
+        origins = mod_scan.load_origins()
+        for key in ("Animation.DrawOffset3", "Animation.DrawOffset3.RequiredTypes",
+                    "LaserTrail2.Type", "LaserTrail0.FLH", "AttachEffect.AttachTypes"):
+            self.assertEqual(mod_scan.classify(key, origins), "phobos", key)
+
+    def test_shipped_ares_names(self):
+        origins = mod_scan.load_origins()
+        for key in ("SW.Shots", "SW.AITargeting.Constraints", "Foundation.2", "FoundationOutline.Length",
+                    "ParaDrop.Americans.Plane2.Types", "SpyEffect.StolenMoneyAmount", "UC.PassThrough"):
+            self.assertEqual(mod_scan.classify(key, origins), "ares", key)
+
     def test_missing_files(self):
         self.assertEqual(mod_scan.main([str(self.root)]), 2)
 
