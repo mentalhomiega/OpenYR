@@ -23990,6 +23990,57 @@ OpenTopped:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+OpenTopped.DamageMultiplier:
+  key: OpenTopped.DamageMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: OpenToppedDamageMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OpenTopped.RangeBonus:
+  key: OpenTopped.RangeBonus
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: OpenToppedRangeBonus
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OpenTopped.WarpDistance:
+  key: OpenTopped.WarpDistance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: OpenToppedWarpDistance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 OpenToppedAnim:
   key: OpenToppedAnim
   scopes:
@@ -24058,6 +24109,70 @@ OpenToppedWarpDistance:
       default_candidate: '5'
       declared_in: RulesClass
       member: OpenToppedWarpDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OpenTransport.DamageMultiplier:
+  key: OpenTransport.DamageMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: OpenTransportDamageMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: OpenTransportDamageMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+OpenTransport.RangeBonus:
+  key: OpenTransport.RangeBonus
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: OpenTransportRangeBonus
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: OpenTransportRangeBonus
       source: code/rules.cpp
       guard: null
     level: RulesClass

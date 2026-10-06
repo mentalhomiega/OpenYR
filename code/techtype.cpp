@@ -944,6 +944,21 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
 		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
 		AirRangeBonus = ini.Get_Lepton(Name(), "AirRangeBonus", AirRangeBonus);
+		if (ini.Is_Present(Name(), "OpenTopped.RangeBonus")) {
+			OpenToppedRangeBonus = ini.Get_Int(Name(), "OpenTopped.RangeBonus", 0);
+		}
+		if (ini.Is_Present(Name(), "OpenTopped.DamageMultiplier")) {
+			OpenToppedDamageMultiplier = ini.Get_Float(Name(), "OpenTopped.DamageMultiplier", 1.0);
+		}
+		if (ini.Is_Present(Name(), "OpenTopped.WarpDistance")) {
+			OpenToppedWarpDistance = ini.Get_Int(Name(), "OpenTopped.WarpDistance", 0);
+		}
+		if (ini.Is_Present(Name(), "OpenTransport.RangeBonus")) {
+			OpenTransportRangeBonus = ini.Get_Int(Name(), "OpenTransport.RangeBonus", 0);
+		}
+		if (ini.Is_Present(Name(), "OpenTransport.DamageMultiplier")) {
+			OpenTransportDamageMultiplier = ini.Get_Float(Name(), "OpenTransport.DamageMultiplier", 1.0);
+		}
 		IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
 		OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
 		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
@@ -1576,6 +1591,11 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGunner);
 	stream.Serialize(IFVMode);
 	stream.Serialize(AirRangeBonus);
+	stream.Serialize(OpenToppedRangeBonus);
+	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(OpenToppedWarpDistance);
+	stream.Serialize(OpenTransportRangeBonus);
+	stream.Serialize(OpenTransportDamageMultiplier);
 	stream.Serialize(TurretWeapon);
 	stream.Serialize(IsOpenTopped);
 	stream.Serialize(OpenTransportWeapon);

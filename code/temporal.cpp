@@ -135,15 +135,16 @@ int TemporalClass::Warp_Per_Step(int helpers)
 /// Counts the head of a chain down by one frame (TemporalClass::Update, 0x71A760); the target
 /// calls it each frame. The warp drops by the owner's weapon Damage plus every helper's. When
 /// it runs out, WarpAway plays where the target stood and the target is removed as a kill for
-/// the owner. An owner riding an open-topped transport lets go once the target is more than
-/// OpenToppedWarpDistance cells away.
+/// the owner. An owner riding an open-topped transport lets go once the target is more than the
+/// transport's OpenTopped.WarpDistance, or else [CombatDamage] OpenToppedWarpDistance, cells away.
 /// </summary>
 void TemporalClass::Update(void)
 {
 	if (Owner->IsInOpenToppedTransport && Target != nullptr) {
 		Coord const delta = Owner->Center_Coord() - Target->Center_Coord();
 		double const distance = std::sqrt((double)delta.X * delta.X + (double)delta.Y * delta.Y + (double)delta.Z * delta.Z);
-		if (distance > Rule->OpenToppedWarpDistance * CELL_LEPTON_W) {
+		int const warp = Owner->Transporter != NULL ? Owner->Transporter->TClass->OpenToppedWarpDistance.value_or(Rule->OpenToppedWarpDistance) : Rule->OpenToppedWarpDistance;
+		if (distance > warp * CELL_LEPTON_W) {
 			Let_Go();
 			return;
 		}

@@ -348,6 +348,8 @@ RulesClass::RulesClass(void) :
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
 	OpenToppedRangeBonus(0),
+	OpenTransportRangeBonus(0),
+	OpenTransportDamageMultiplier(1.0),
 	BunkerDamageMultiplier(1.0),
 	BunkerROFMultiplier(1.0),
 	BunkerWeaponRangeBonus(2),
@@ -1314,6 +1316,8 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
 		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
+		OpenTransportRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenTransport.RangeBonus", OpenTransportRangeBonus);
+		OpenTransportDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenTransport.DamageMultiplier", OpenTransportDamageMultiplier);
 		BunkerDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerDamageMultiplier", BunkerDamageMultiplier);
 		BunkerROFMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerROFMultiplier", BunkerROFMultiplier);
 		BunkerWeaponRangeBonus = ini.Get_Int(COMBATDAMAGE, "BunkerWeaponRangeBonus", BunkerWeaponRangeBonus);
@@ -2635,6 +2639,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
 	stream.Serialize(OpenToppedRangeBonus);
+	stream.Serialize(OpenTransportRangeBonus);
+	stream.Serialize(OpenTransportDamageMultiplier);
 	stream.Serialize(BunkerDamageMultiplier);
 	stream.Serialize(BunkerROFMultiplier);
 	stream.Serialize(BunkerWeaponRangeBonus);
