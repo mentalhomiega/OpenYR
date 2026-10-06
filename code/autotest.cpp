@@ -795,6 +795,24 @@ void Run(StepType const & step)
 	} else if (step.Command == "truecolourdir") {
 		// truecolourdir <path>: adds a directory the game searches for files, PNG sprites included.
 		TrueColour_Add_Directory(step.Argument.c_str());
+	} else if (step.Command == "extract") {
+		// extract <FILE> <out path>: copies a game file, wherever the game finds it, to the path given.
+		std::string const & argument = step.Argument;
+		size_t const gap = argument.find_first_of(" \t");
+		size_t const start = gap != std::string::npos ? argument.find_first_not_of(" \t", gap) : std::string::npos;
+		CCFileClass in(argument.substr(0, gap).c_str());
+		if (start == std::string::npos || !in.Is_Available()) {
+			DebugString("AUTOTEST   extract %s: not found\n", argument.c_str());
+		} else {
+			std::vector<unsigned char> bytes((std::size_t)in.Size());
+			in.Read(bytes.data(), (int)bytes.size());
+			FILE * out = std::fopen(argument.substr(start).c_str(), "wb");
+			if (out != NULL) {
+				std::fwrite(bytes.data(), 1, bytes.size(), out);
+				std::fclose(out);
+			}
+			DebugString("AUTOTEST   extract %s: %d bytes\n", argument.substr(0, gap).c_str(), (int)bytes.size());
+		}
 	} else if (step.Command == "exportshape") {
 		// exportshape <NAME.SHP> <out.png>: writes the shape's frames as a PNG sheet, plus a house-colour mask.
 		std::string const & argument = step.Argument;
@@ -1288,7 +1306,7 @@ bool AutoTest_Load(char const * filename)
 		// A rules step's path is the rest of the line, so it may hold spaces.
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
 			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
-			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0) {
+			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
