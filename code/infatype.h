@@ -53,6 +53,8 @@ class InfantryTypeClass : public TechnoTypeClass
 		*/
 		int FireLaunch;
 		int ProneLaunch;
+		int SecondaryLaunch;
+		int SecondaryProneLaunch;
 
 		/*
 		 * These are the incidental voices this soldier mutters -- the first is idle chatter

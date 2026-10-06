@@ -1,7 +1,7 @@
 ---
 key: Sequence
 summary: The art.ini section that lays out the frames of every action an infantry type performs.
-see_also: ["FireUp", "FireProne", "Crawls", "JumpJet", "AlliedCrew"]
+see_also: ["FireUp", "FireProne", "SecondaryFire", "SecondaryProne", "Crawls", "JumpJet", "AlliedCrew"]
 when_omitted:
   kind: value
   value: none
@@ -61,7 +61,9 @@ The table lists every entry a sequence section may have and the action each one 
 | `DeployedFire` | Firing while deployed |
 | `DeployedIdle` | Idling while deployed; never played |
 | `Undeploy` | Packing up from a deployment |
-| `Cheer`, `Paradrop`, `AirDeathStart`, `AirDeathFalling`, `AirDeathFinish`, `Panic`, `Shovel`, `Carry`, `SecondaryFire`, `SecondaryProne` | Never played |
+| `Cheer`, `Paradrop`, `AirDeathStart`, `AirDeathFalling`, `AirDeathFinish`, `Panic`, `Shovel`, `Carry` | Never played |
+| `SecondaryFire` | Firing the second weapon upright, with `FireUp` as the fallback when the entry is absent |
+| `SecondaryProne` | Firing the second weapon while prone, with `FireProne` as the fallback when the entry is absent |
 
 :::danger[An infantry type with no sequence crashes the game]
 A type with no `Sequence` has no animation table. The game crashes the first time an instance of the type animates, and whenever the game is saved, even if no instance exists. A type registered only by being named elsewhere, as [`AlliedCrew`](/keys/alliedcrew/) describes, has no section of its own and crashes the same way.
