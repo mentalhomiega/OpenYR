@@ -8,13 +8,16 @@
  ******************************************************************************/
 
 // Exercises the deployment's configuration without the engine or any game data: what it
-// supplies when there is no file, where the file is looked for and which copy wins, and what
-// a written key changes. Every file this uses is one the harness makes itself.
+// supplies when there is no file, where the file is looked for and which copy wins, what a
+// written key changes, and how the mod list is written back. Every file this uses is one the
+// harness makes itself.
 
 #include <windows.h>
 
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <iterator>
 #include <string>
 
 #include "_deploymentconfig.h"
@@ -149,6 +152,55 @@ void Test_Mods(void)
 	Remove_File(Root + "\\OPENTS.INI");
 	config.Read_File("");
 	Check(config.Mods.empty(), "with the file gone no mod is named");
+}
+
+
+std::string Read_Back(std::string const & path)
+{
+	std::ifstream file(path, std::ios::binary);
+	return(std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()));
+}
+
+
+void Test_Write_Mods(void)
+{
+	DeploymentConfigClass config;
+
+	Check(!config.Read_File("") && config.FileName.empty(), "with no file there is no file name");
+	Check(config.Mods_File_Name("") == "OPENTS.INI", "so the mod list goes to a new file in the directory named");
+	Check(config.Write_Mods("", "First,Second"), "a mod list is written with no file to start from");
+	Check(Read_Back(Root + "\\OPENTS.INI") == "[Paths]\r\nMods=First,Second\r\n", "into a new file holding only the list");
+	Check(config.Mods == "First,Second" && config.FileName == "OPENTS.INI", "and the settings hold the list and the file");
+
+	DeploymentConfigClass fresh;
+	Check(fresh.Read_File("") && fresh.Mods == "First,Second", "a later read finds the list");
+	Remove_File(Root + "\\OPENTS.INI");
+
+	Write_File(Root + "\\INI\\OPENTS.INI",
+		"; Deployment settings\n[Paths]\nSearchPaths=INI,MIX ; where files are\n; The mods\nMods=Old\n\n[Saves]\nCarryScenarioFile=yes\n");
+	config.Read_File("");
+	Check(config.Mods == "Old" && config.FileName == "INI\\OPENTS.INI", "the file read is the file the list goes back to");
+
+	Check(config.Write_Mods("", "New, D:\\Mods\\Other"), "a changed list is written over the old one");
+	Check(Read_Back(Root + "\\INI\\OPENTS.INI") ==
+		"; Deployment settings\r\n[Paths]\r\nSearchPaths=INI,MIX ; where files are\r\n; The mods\r\nMods=New, D:\\Mods\\Other\r\n\r\n[Saves]\r\nCarryScenarioFile=yes\r\n",
+		"the file's other keys and comments are kept");
+	Check(GetFileAttributes((Root + "\\OPENTS.INI").c_str()) == INVALID_FILE_ATTRIBUTES, "and no other copy is made");
+
+	fresh.Read_File("");
+	Check(fresh.Mods == "New, D:\\Mods\\Other" && fresh.SearchPaths == "INI,MIX" && fresh.CarryScenarioFile, "a later read finds the new list and the rest as before");
+
+	Check(config.Write_Mods("", ""), "an empty list is written");
+	Check(Read_Back(Root + "\\INI\\OPENTS.INI").find("Mods") == std::string::npos, "by removing the key");
+	fresh.Read_File("");
+	Check(fresh.Mods.empty() && fresh.SearchPaths == "INI,MIX", "so a later read names no mod");
+	Remove_File(Root + "\\INI\\OPENTS.INI");
+
+	DeploymentConfigClass nowhere;
+	nowhere.Mods = "Kept";
+	std::string const missing = Root + "\\Missing\\";
+	Check(!nowhere.Write_Mods(missing.c_str(), "Lost"), "a list that cannot be written reports it");
+	Check(nowhere.Mods == "Kept" && nowhere.FileName.empty(), "and changes nothing");
 }
 
 
@@ -334,6 +386,7 @@ int main(void)
 	Test_Defaults();
 	Test_Search_Paths();
 	Test_Mods();
+	Test_Write_Mods();
 	Test_Where_The_File_Is_Looked_For();
 	Test_The_Directory_Named();
 	Test_A_Read_Starts_Over();

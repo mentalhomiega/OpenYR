@@ -62,6 +62,9 @@ class DeploymentConfigClass
 		std::string SchemePaletteFile = "UNITSNO.PAL";
 		std::string GamePaletteFile = "TEMPERAT.PAL";
 
+		// The file the settings were read from; empty when none was found.
+		std::string FileName = "";
+
 		void Read_INI(INIClass const & ini);
 
 		/*
@@ -69,4 +72,7 @@ class DeploymentConfigClass
 		 * empty or separator-terminated, or from its INI or MIX folder; false when there is none.
 		 */
 		bool Read_File(char const * directory);
+
+		std::string Mods_File_Name(char const * directory) const;
+		bool Write_Mods(char const * directory, std::string const & list);
 };

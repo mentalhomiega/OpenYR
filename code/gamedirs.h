@@ -14,7 +14,8 @@
 
 /*
  * The directories the game keeps its files in. The data directory holds what a deployment
- * ships and is never written to. The user directory holds what a player's game writes.
+ * ships and is written to only when the Mods screen saves Mods= in OPENTS.INI. The user
+ * directory holds what a player's game writes.
  * Either one unnamed means the game's own directory.
  */
 
