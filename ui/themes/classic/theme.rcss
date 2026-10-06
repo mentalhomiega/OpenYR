@@ -288,11 +288,17 @@ input[type='checkbox']:checked
 	decorator: vertical-gradient(#e0c8ff #8a5ce0);
 }
 
-input[type='checkbox']:disabled, input[type='checkbox']:checked:disabled
+input[type='checkbox']:disabled
 {
 	border-color: #3a2c58;
 	background-color: #120c1c;
 	decorator: none;
+}
+
+input[type='checkbox']:checked:disabled
+{
+	border-color: #3a2c58;
+	decorator: vertical-gradient(#7a6a96 #4a3870);
 }
 
 input[type='range'] slidertrack

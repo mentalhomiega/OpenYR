@@ -188,10 +188,17 @@ input[type='checkbox']:checked
 	decorator: none;
 }
 
-input[type='checkbox']:disabled, input[type='checkbox']:checked:disabled
+input[type='checkbox']:disabled
 {
 	border-color: #2c2638;
 	background-color: #1c1825;
+	decorator: none;
+}
+
+input[type='checkbox']:checked:disabled
+{
+	border-color: #2c2638;
+	background-color: #5f4a80;
 	decorator: none;
 }
 
