@@ -224,7 +224,7 @@ The weeder docks on a fixed cell of the building's [`Foundation=WxH`](/keys/foun
 
 Without `Bib=yes`, a dock cell inside the foundation is blocked like the rest of the building, so no weeder can drive onto it.
 
-A docked weeder faces east and hands its house one unit every [`HarvesterDumpRate`](/keys/harvesterdumprate/) minutes of game time. Unlike a Tiberium refinery, the building plays no pre-production animation, and the weeder does not wait for a production animation to finish. To change the weeder's artwork while it unloads, set [`UnloadingClass`](/keys/unloadingclass/) on its type; the rules-wide [`UnloadingHarvester`](/keys/unloadingharvester/) applies only to Tiberium harvesters. A weeder also never shows the harvesting artwork a Tiberium harvester shows. Once it is empty, the weeder returns to harvesting.
+A docked weeder faces east and, after [`HarvesterDumpRate`](/keys/harvesterdumprate/) minutes of game time, hands its house all the weed it holds. Unlike a Tiberium refinery, the building plays no pre-production animation, and the weeder does not wait for a production animation to finish. To change the weeder's artwork while it unloads, set [`UnloadingClass`](/keys/unloadingclass/) on its type; the rules-wide [`UnloadingHarvester`](/keys/unloadingharvester/) applies only to Tiberium harvesters. A weeder also never shows the harvesting artwork a Tiberium harvester shows. Once it is empty, the weeder returns to harvesting.
 
 ### The weed pool
 
