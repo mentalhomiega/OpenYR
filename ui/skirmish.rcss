@@ -141,6 +141,12 @@
 	text-align: center;
 }
 
+/* The map picture covers the caption, as it did in the original dialog. */
+#preview.filled + #preview-caption
+{
+	display: none;
+}
+
 #settings
 {
 	width: 167dp;

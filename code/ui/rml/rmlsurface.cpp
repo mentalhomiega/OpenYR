@@ -52,6 +52,9 @@ void UIRmlSurfaceElementClass::Set_Image(int width, int height, std::vector<std:
 		Pixels = std::move(pixels);
 	}
 
+	// Sheets key off the class, such as to hide a caption the picture covered in the original dialog.
+	SetClass("filled", Width > 0);
+
 	Picture.Release();
 	DrawnWidth = 0;
 	DrawnHeight = 0;

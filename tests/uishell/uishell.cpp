@@ -3792,6 +3792,8 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(settings != nullptr && settings->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(167.0f, 297.0f), "the setting frame is its rect and the pixel the layer adds");
 
 	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map preview");
+	Rml::Element * caption = document->GetElementById("preview-caption");
+	Check(caption != nullptr && !caption->IsVisible(), "the map picture covers the preview caption");
 
 	presenter.State.Bases = false;
 	presenter.State.ShortGame = false;
