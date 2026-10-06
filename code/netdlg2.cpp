@@ -591,6 +591,11 @@ void Net2ServiceGameList(void)
 /// every player in the game.</remarks>
 void Net2EncodeGameopt(char *out, int size)
 {
+	// A comma in the map's name would split its field and shift every field after it.
+	char description[sizeof(Session.Options.ScenarioDescription)];
+	strcpy(description, Session.Options.ScenarioDescription);
+	std::replace(description, description + strlen(description), ',', ';');
+
 	int length = snprintf(out, size, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
 		"%s,%d,%d,%s,%s:",
 		Session.Options.UnitCount,
@@ -611,7 +616,7 @@ void Net2EncodeGameopt(char *out, int size)
 		Session.Options.ShortGame,
 		Session.Options.CrapEngineers,
 		Session.Options.GameSpeed,
-		Session.Options.ScenarioDescription,
+		description,
 		Session.ScenarioIsOfficial,
 		Session.ScenarioFileLength,
 		Session.ScenarioFileName,

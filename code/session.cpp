@@ -55,6 +55,7 @@
 #include "addon.h"
 #include "ccini.h"
 #include "conquer.h"
+#include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -73,6 +74,7 @@
 #include "spawnhouse.h"
 #include "special.h"
 #include "stats.h"
+#include "utf8.h"
 #include "xstraw.h"
 
 #include <algorithm>
@@ -87,6 +89,8 @@ Min & Max unit count values; index0 = bases OFF, index1 = bases ON
 ---------------------------------------------------------------------------*/
 int SessionClass::CountMin[2] = {1,1};
 int SessionClass::CountMax[2] = {50,10};
+
+static char const MAIN_SCENARIO_PACKET[] = "MISSIONSMD.PKT";
 
 //---------------------------------------------------------------------------
 // This is a list of all the names of the multiplayer scenarios
@@ -896,7 +900,8 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	/*
 	**	Fetch the main multiplayer scenario packet data.
 	*/
-	CCFileClass file("MISSIONS.PKT");
+	// The game's archives also hold MISSIONS.PKT, a Tiberian Sun list naming maps that are not shipped.
+	CCFileClass file(MAIN_SCENARIO_PACKET);
 	if (file.Is_Available()) {
 		ini.Load(file);
 		int count = ini.Entry_Count("MultiMaps");
@@ -939,7 +944,7 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	}
 
 	for (std::string const & name : Search_Files("*.PKT")) {
-		if (stricmp(name.c_str(), "MISSIONS.PKT")) {
+		if (stricmp(name.c_str(), MAIN_SCENARIO_PACKET)) {
 			file.Close();
 			file.Set_Name(name.c_str());
 			ini.Clear();
@@ -1299,7 +1304,12 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 		strcpy(Filename, name);
 		strcat(Filename, ".MAP");
 
-		ini.Get_String(name, "Description", "", ScenarioDescription, sizeof(ScenarioDescription));
+		// The shipped packet names a string table label; a value no label matches is shown as written.
+		char description[128];
+		ini.Get_String(name, "Description", "", description, sizeof(description));
+		std::string const text = StringTable.Find_UTF8(description);
+		UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), text.empty() ? description : text.c_str());
+
 		MinPlayers = ini.Get_Int(name, "MinPlayers", MinPlayers);
 		MaxPlayers = ini.Get_Int(name, "MaxPlayers", MaxPlayers);
 

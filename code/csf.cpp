@@ -11,6 +11,7 @@
 
 #include "dbgprint.h"
 #include "straw.h"
+#include "utf8.h"
 
 #include <algorithm>
 #include <cstring>
@@ -241,6 +242,28 @@ wchar_t const * CSFClass::Find(char const * label, char const ** extra) const
 		*extra = found->Extra.c_str();
 	}
 	return(found->Value.c_str());
+}
+
+
+std::string CSFClass::Find_UTF8(char const * label) const
+{
+	std::string text;
+	wchar_t const * wide = Find(label);
+	if (wide == nullptr) {
+		return(text);
+	}
+
+	for (; *wide != L'\0'; wide++) {
+		char32_t code = (char32_t)*wide;
+		// A table's strings are UTF-16, so where wchar_t is 16 bits a pair of surrogates makes one character.
+		if (sizeof(wchar_t) == 2 && code >= 0xD800 && code < 0xDC00 && wide[1] >= 0xDC00 && wide[1] < 0xE000) {
+			code = 0x10000 + ((code - 0xD800) << 10) + ((char32_t)wide[1] - 0xDC00);
+			wide++;
+		}
+		char sequence[UTF8::MAX_SEQUENCE];
+		text.append(sequence, UTF8::Encode(code, sequence));
+	}
+	return(text);
 }
 
 
