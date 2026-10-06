@@ -3835,6 +3835,23 @@ AircraftClass * BuildingClass::Place_Free_Aircraft(AircraftTypeClass const * typ
 
 
 /// <summary>
+/// Puts a free aircraft in radio contact with this pad and tethers it. At a structure with
+/// several docks the aircraft then stands on the dock it took.
+/// </summary>
+void BuildingClass::Dock_Free_Aircraft(AircraftClass * air)
+{
+	if (air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
+		Transmit_Message(RADIO_TETHER, air);
+		if (Class->NumberOfDocks > 1) {
+			air->Mark(MARK_UP);
+			air->PositionCoord = Docking_Coord_For(air);
+			air->Mark(MARK_DOWN);
+		}
+	}
+}
+
+
+/// <summary>
 /// Gives the house this structure's FreeUnit, refunding it if it cannot be placed. The caller
 /// decides whether the house has earned it.
 /// </summary>
@@ -3851,9 +3868,7 @@ void BuildingClass::Place_Free_Unit(void)
 
 		// Only a pad holds the aircraft; another structure keeps its radio for what it docks.
 		if (Class->IsHelipad || Class->IsHoverPad) {
-			if (air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
-				Transmit_Message(RADIO_TETHER, air);
-			}
+			Dock_Free_Aircraft(air);
 		}
 		return;
 	}
@@ -4016,8 +4031,8 @@ void BuildingClass::Grand_Opening(bool captured)
 		bool const gives_aircraft = Class->FreeUnit != NULL && Class->FreeUnit->Fetch_RTTI() == RTTI_AIRCRAFTTYPE;
 		if (!Rule->IsSeparate && Class->IsHoverPad && !captured && Rule->PadAircraft.Count() > 0 && !gives_aircraft) {
 			AircraftClass * air = Place_Free_Aircraft(Rule->PadAircraft[0]);
-			if (air != NULL && air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
-				Transmit_Message(RADIO_TETHER, air);
+			if (air != NULL) {
+				Dock_Free_Aircraft(air);
 			}
 		}
 

@@ -20,7 +20,7 @@ When a structure with several docks is [captured](/systems/capture/), every obje
 
 A `UnitRepair=yes` structure starts repairing an object only when it stands within a quarter of a cell of the structure's center, or 150 leptons for a hovercraft. Keep every `DockingOffsetN=` within that distance on such a structure; otherwise the object on that dock is never repaired.
 
-An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.
+A free aircraft that a pad hands out with [`FreeUnit=`](/keys/freeunit/) or [`PadAircraft=`](/keys/padaircraft/) appears on its dock when the pad has several docks, and at the center when it has one. An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.
 
 ```ini title="rulesmd.ini"
 [GAAIRC] ; Air Force Command
