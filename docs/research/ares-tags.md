@@ -1,6 +1,6 @@
 # Ares tags
 
-Sources: the public [Ares documentation](https://ares-developers.github.io/Ares-docs/). Ares is closed source, so every row rests on that documentation alone. A tick (✔) marks a tag this engine already reads. Sizes, file lists and dependencies are estimates from file names; effects are unverified until tested with the real game. Rows are grouped by the system they extend, with the same group names as [`phobos-tags.md`](phobos-tags.md) where one fits; the source link names the Ares page a row came from.
+Sources: the public [Ares documentation](https://ares-developers.github.io/Ares-docs/). Ares is closed source, so every row rests on that documentation alone. A tick (✔) marks a tag this engine already reads. Sizes, file lists and dependencies are estimates from file names; effects are unverified until tested with the real game. Rows are grouped by the system they extend, with the same group names as [`phobos-tags.md`](phobos-tags.md) where one fits; the source link names the Ares page a row came from. Every page under `new/`, `restored/`, `ui-features/` and `bugfixes/` has at least one row; the bug fix pages give one plain-text row each (the fix name replaces the tag); those rows are not yet compared with this engine. Effect text for the feature pages was drawn from the first sentences of the Ares documentation. A key that several super weapon types give different defaults appears once; the type pages state the defaults.
 
 ## Weapons
 
