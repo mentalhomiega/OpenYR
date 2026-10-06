@@ -1191,8 +1191,6 @@ bool Load_Game(const char *file_name)
 	Map.Init_IO();
 	Map.Activate(1);
 	Map.Reposition_Sidebar();
-	TiberiumClass::Init_Tiberium_Growth_System();
-	TiberiumClass::Init_Tiberium_Spread_System();
 	Map.Complete_Radar_Refresh();
 	ScenarioActive = true;
 	TacticalActive = true;
