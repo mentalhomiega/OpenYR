@@ -65,6 +65,7 @@ class OptionsClass {
 		**	File I/O routines
 		*/
 		void Load_Settings(void);
+		void Load_Menu_Style(void);
 		void Save_Settings(void);
 
 		void Set(void);

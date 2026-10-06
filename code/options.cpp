@@ -411,9 +411,7 @@ void OptionsClass::Load_Settings(void)
 	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
 	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
 
-	char menustyle[32];
-	ConfigINI.Get_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern", menustyle, sizeof(menustyle));
-	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
+	Load_Menu_Style();
 
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
 	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
@@ -463,6 +461,18 @@ void OptionsClass::Load_Settings(void)
 
 	Map.Toggle_Cameo_Text(SidebarCameoText);
 	TechnoClass::Set_Action_Lines(ActionLines);
+}
+
+
+/// <summary>
+/// Reads the menu style from the settings file. Startup calls it before the menus are made,
+/// since the style decides their scale.
+/// </summary>
+void OptionsClass::Load_Menu_Style(void)
+{
+	char menustyle[32];
+	ConfigINI.Get_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern", menustyle, sizeof(menustyle));
+	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
 }
 
 

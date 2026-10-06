@@ -541,6 +541,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		ConfigINI.Load(*cfile, false);
 		Options.ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", Options.ScreenWidth);
 		Options.ScreenHeight = ConfigINI.Get_Int("Video", "ScreenHeight", Options.ScreenHeight);
+		Options.Load_Menu_Style();
 
 		/*
 		 * These are wanted before the window and the renderer exist, which is well
