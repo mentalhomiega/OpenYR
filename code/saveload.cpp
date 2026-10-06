@@ -147,10 +147,13 @@
 #include "psydom.h"
 #include "radsite.h"
 
+#include <cstdio>
 #include <memory>
 #include <new>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 //#define	SAVE_BLOCK_SIZE	512
 #define	SAVE_BLOCK_SIZE	4096
@@ -160,6 +163,9 @@
 ********************************** Defines **********************************
 */
 unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
+
+// While Dump_Game_State runs, the offset and class of each object record it writes.
+static std::vector<std::pair<unsigned int, std::string>> * DumpRecords = nullptr;
 
 
 /// <summary>
@@ -174,6 +180,10 @@ bool Save_Object(SaveStreamClass & stream, IPersistent * persist)
 	if (persist == nullptr) {
 		stream.Fail();
 		return(false);
+	}
+
+	if (DumpRecords != nullptr) {
+		DumpRecords->emplace_back(stream.Offset(), typeid(*persist).name());
 	}
 
 	ClassID classid = persist->Class_ID();
@@ -1082,6 +1092,47 @@ bool Save_Game(const char *file_name, char const * descr)
 		SaveManager.Autosave.Schedule(Frame);
 	}
 	return(res);
+}
+
+
+/// <summary>
+/// Writes the game state a save would hold, uncompressed, to the file named, and the offset
+/// and class of each object record in it, one per line, to that name with .idx added. Two
+/// dumps of games in the same state are the same bytes, so comparing dumps taken at the same
+/// frame shows which object differs. The game itself is left as it was.
+/// </summary>
+/// <returns>bool; Were both files written?</returns>
+bool Dump_Game_State(char const * path)
+{
+	std::vector<unsigned char> content;
+	std::vector<std::pair<unsigned int, std::string>> records;
+
+	Swizzler.Begin_Save();
+	DumpRecords = &records;
+	SaveStreamClass stream(content, SaveStreamClass::MODE_SAVE);
+	bool const result = Put_All(stream, 0);
+	DumpRecords = nullptr;
+	if (!result) {
+		return(false);
+	}
+
+	FILE * file = std::fopen(path, "wb");
+	if (file == nullptr) {
+		return(false);
+	}
+	bool written = std::fwrite(content.data(), 1, content.size(), file) == content.size();
+	std::fclose(file);
+
+	std::string const indexpath = std::string(path) + ".idx";
+	file = std::fopen(indexpath.c_str(), "w");
+	if (file == nullptr) {
+		return(false);
+	}
+	for (auto const & record : records) {
+		std::fprintf(file, "%u %s\n", record.first, record.second.c_str());
+	}
+	std::fclose(file);
+	return(written);
 }
 
 
