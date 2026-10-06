@@ -49,7 +49,7 @@ When it goes idle on the ground, it guards. When it goes idle in the air, the fi
 
 1. An aircraft carrying passengers flies to a nearby landing zone.
 2. An armed aircraft that is attacking a target with ammunition left, or has an attack order waiting, attacks.
-3. An armed aircraft with [`Dock`](/keys/dock/) buildings looks for a free bay at one of them and enters it. When no bay is free, it flies to a nearby landing zone. This case needs the aircraft to have no move or enter order under way, and to have entered the map or have no team.
+3. An armed aircraft with [`Dock`](/keys/dock/) buildings looks for a free bay at one of them and enters it. When no bay is free, it flies to a nearby landing zone, or crashes if its type sets [`AirportBound=yes`](/keys/airportbound/). This case needs the aircraft to have no enter order under way, and to have entered the map or have no team.
 4. Any other armed aircraft guards.
 5. An unarmed aircraft flies to a nearby landing zone, unless it belongs to a team.
 

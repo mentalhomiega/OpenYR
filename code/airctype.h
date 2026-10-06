@@ -61,6 +61,13 @@ class AircraftTypeClass : public TechnoTypeClass
 		 */
 		bool IsFighter;
 
+		/*
+		 * Can this aircraft only land on its docking structures? An airport bound aircraft
+		 * with no structure to land on crashes, and it never settles on open ground.
+		 * (Rules key AirportBound.)
+		 */
+		bool IsAirportBound;
+
 		AircraftTypeClass(char const * ininame = NULL);
 		virtual ~AircraftTypeClass(void) override;
 

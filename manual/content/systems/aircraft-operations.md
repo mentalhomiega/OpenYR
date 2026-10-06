@@ -70,6 +70,12 @@ An aircraft attacks in one of three styles, chosen by its primary weapon and its
 
 A hover attack and a fighter pass both start from a firing position chosen on a ring around the target, inside the weapon's range, at one of the two positions nearest the aircraft.
 
+## Landing at a structure
+
+An aircraft that has gone idle in the air looks for a structure to dock at before it considers landing in the open. This applies when its type lists [`Dock`](/keys/dock/) buildings, and it has no enter order under way. A team member that has not entered the map yet is left alone. A move order does not stop the search, so an aircraft with `Dock` buildings that finishes a move heads for a free bay instead of landing where the move ended.
+
+With [`AirportBound=yes`](/keys/airportbound/) the aircraft lands only over the structure it is in radio contact with. When it has none to dock at, it crashes.
+
 ## Issuing attack orders without ammunition
 
 A player cannot order a grounded aircraft with an empty [`Ammo`](/keys/ammo/) pool to attack a unit or structure, or to guard an area. This holds whether or not the aircraft is docked at a helipad or other reload building.

@@ -1737,21 +1737,25 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 				} else if (Ammo && TarCom != NULL && Mission == MISSION_ATTACK || MissionQueue == MISSION_ATTACK) {
 					mission = MISSION_ATTACK;
 				} else if (In_Air()) {
-					if (NavCom == NULL || (CurrentMission != MISSION_MOVE && CurrentMission != MISSION_ENTER)) {
+					if (NavCom == NULL || CurrentMission != MISSION_ENTER) {
 						if (Class->Dock.Count() > 0 && (IsLocked || Team == NULL)) {
 
 							/*
 							**	Normal aircraft try to find a good landing spot to rest.
 							*/
-							BuildingClass * building = NULL;
-							for (int i = 0; i < Class->Dock.Count(); i++) {
-								building = Find_Docking_Bay(Class->Dock[i], false, false);
-								if (building) break;
-							}
+							BuildingClass * building = Find_Dock_Building();
 							Assign_Destination(NULL);
 							if (building && Transmit_Message(RADIO_HELLO, building) == RADIO_ROGER) {
 								Assign_Destination(building);
 								mission = MISSION_ENTER;
+							} else if (Class->IsAirportBound) {
+
+								/*
+								**	An aircraft that can only land at a docking structure has
+								**	nowhere to land and crashes.
+								*/
+								Crash(NULL);
+								return(false);
 							} else {
 								move_mission = MISSION_MOVE;
 								assign_move = true;
@@ -1773,12 +1777,49 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		}
 	}
 
+	/*
+	**	An armed aircraft that is out of ammunition and not in contact with anything goes to
+	**	a docking structure to rearm. One that can only land at such a structure crashes
+	**	when there is none.
+	*/
+	if (Ammo == 0 && Is_Weapon_Equipped() && !In_Radio_Contact()) {
+		BuildingClass * building = Find_Dock_Building();
+		if (building == NULL) {
+			if (Class->IsAirportBound) {
+				Crash(NULL);
+				return(false);
+			}
+		} else {
+			Assign_Destination(building);
+			Assign_Target(NULL);
+			mission = MISSION_ENTER;
+		}
+	}
+
 	Assign_Mission(mission);
 	if (Ready_To_Commence()) {
 		Commence();
 	}
 
 	return(result);
+}
+
+
+/// <summary>
+/// Finds a structure this aircraft can dock at.
+/// The types in the aircraft's Dock list are tried in order, and the first type with a
+/// structure that can take the aircraft supplies the result.
+/// </summary>
+/// <returns>Returns with the structure, or NULL if no docking structure can take the aircraft.</returns>
+BuildingClass * AircraftClass::Find_Dock_Building(void) const
+{
+	for (int index = 0; index < Class->Dock.Count(); index++) {
+		BuildingClass * building = Find_Docking_Bay(Class->Dock[index], false, false);
+		if (building != NULL) {
+			return(building);
+		}
+	}
+	return(NULL);
 }
 
 

@@ -767,7 +767,7 @@ void FlyLocomotionClass::Movement_AI(void)
 
 	if (!IsElevating && LinkedTo->Strength > 0 && !IsLanding && !IsTakingOff) {
 		if (DestinationCoord.As_Cell() == LinkedTo->Get_Cell() && TargetSpeed == 0.0 && (!LinkedTo->TarCom || !LinkedTo->Ammo)) {
-			Land();
+			Land_If_Allowed();
 		}
 	}
 
@@ -985,7 +985,15 @@ bool FlyLocomotionClass::Process_Landing(void)
 
 	bool ok = false;
 
-	if (LinkedTo->Can_Enter_Cell(&Map[DestinationCoord]) == MOVE_OK) {
+	bool can_land;
+	if (Is_Airport_Bound()) {
+		BuildingClass * dock = Map[DestinationCoord.As_Cell()].Cell_Building();
+		can_land = dock != NULL && LinkedTo->Contact_With_Whom() == dock;
+	} else {
+		can_land = LinkedTo->Can_Enter_Cell(&Map[DestinationCoord]) == MOVE_OK;
+	}
+
+	if (can_land) {
 		ok = true;
 	} else {
 		Take_Off();
@@ -1282,7 +1290,7 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 					TargetSpeed = 0.0;
 				}
 				if (!IsElevating && CurrentSpeed < 0.05) {
-					Land();
+					Land_If_Allowed();
 				}
 			} else if (dist < CELL_LEPTON * 2) {
 				if (stage_approach) {
@@ -1475,6 +1483,34 @@ void FlyLocomotionClass::Land(void)
 	IsLanding = true;
 	CommencedLanding = false;
 	FlightLevel = 0;
+}
+
+
+/// <summary>
+/// Is the aircraft one that may only land on a docking structure?
+/// </summary>
+/// <returns>bool; Does the aircraft's type set AirportBound=yes?</returns>
+bool FlyLocomotionClass::Is_Airport_Bound(void) const
+{
+	return(LinkedTo->RTTI == RTTI_AIRCRAFT && ((AircraftClass const *)LinkedTo)->Class->IsAirportBound);
+}
+
+
+/// <summary>
+/// Starts landing unless the aircraft has nowhere it may land.
+/// An airport bound aircraft lands only over the structure it is in radio contact with.
+/// Anywhere else it looks for a structure to dock at, or crashes if there is none.
+/// </summary>
+void FlyLocomotionClass::Land_If_Allowed(void)
+{
+	if (Is_Airport_Bound()) {
+		BuildingClass * dock = Map[(Coord const &)LinkedTo->PositionCoord].Cell_Building();
+		if (dock == NULL || LinkedTo->Contact_With_Whom() != dock) {
+			LinkedTo->Enter_Idle_Mode();
+			return;
+		}
+	}
+	Land();
 }
 
 

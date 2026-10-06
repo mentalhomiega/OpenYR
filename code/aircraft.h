@@ -115,6 +115,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		bool Cell_Seems_Ok(Cell const & cell, bool landing=false) const;
 		Dir256 Pose_Dir(void) const;
 		AbstractClass * Good_LZ(void) const;
+		BuildingClass * Find_Dock_Building(void) const;
 		virtual DirType Fire_Direction(void) const override;
 		virtual bool Can_Player_Fire(void) const override;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which) const override;
