@@ -20,5 +20,6 @@
 	<button class="wide" id="keyboard" data-event-click="queue('keyboard')">Keyboard</button>
 	<button class="wide" id="mods" data-event-click="queue('mods')">Mods</button>
 	<button class="wide" id="mainmenu" data-event-click="queue('ok')">Main Menu</button>
+	<p id="title">Options</p>
 </body>
 </rml>

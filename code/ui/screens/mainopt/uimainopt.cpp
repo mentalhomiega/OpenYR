@@ -88,6 +88,10 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 
 		virtual void Loaded(void) override
 		{
+			// The options menu stands where the title screen menus do in each menu style.
+			Document()->SetClass("titlemenu", true);
+			Document()->SetClass("options", true);
+
 			Rml::Element * dialog = Document()->GetElementById("reveal");
 			if (dialog == nullptr || Data.State.Top < 0) {
 				return;

@@ -37,3 +37,8 @@ button
 {
 	margin-top: 48dp;
 }
+
+#title
+{
+	display: none;
+}

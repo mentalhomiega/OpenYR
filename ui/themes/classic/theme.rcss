@@ -97,10 +97,10 @@ body
 	border: 2dp #7d5cb8;
 }
 
-/* The title screen menus stand in the right-hand column at Yuri's Revenge's places: the menu's
-   name across the top, the buttons from about a third of the way down, and the button that
-   leaves at the foot of the column. */
-body.titlemenu #backdrop #reveal, body.multiplayer #backdrop #reveal
+/* The main menu and the menus it opens stand in the right-hand column at Yuri's Revenge's places:
+   the menu's name across the top, the buttons from about a third of the way down, and the
+   button that leaves at the foot of the column. The options menu keeps its own panel. */
+body.main #backdrop #reveal, body.singleplayer #backdrop #reveal, body.movies #backdrop #reveal, body.multiplayer #backdrop #reveal
 {
 	position: absolute;
 	left: 50%;
@@ -111,16 +111,23 @@ body.titlemenu #backdrop #reveal, body.multiplayer #backdrop #reveal
 	margin-top: -300dp;
 }
 
-body.titlemenu #wallpaper, body.multiplayer #wallpaper
+body.main #content, body.singleplayer #content, body.movies #content
+{
+	position: relative;
+	padding: 0;
+}
+
+body.main #wallpaper, body.singleplayer #wallpaper, body.movies #wallpaper, body.multiplayer #wallpaper
 {
 	background-color: transparent;
 	decorator: none;
 	border-width: 0;
 }
 
-body.titlemenu #title, body.multiplayer #title
+body.main #title, body.singleplayer #title, body.movies #title, body.multiplayer #title
 {
 	display: block;
+	position: absolute;
 	left: 0;
 	top: 2dp;
 	width: 168dp;
@@ -129,19 +136,21 @@ body.titlemenu #title, body.multiplayer #title
 	text-align: center;
 }
 
-body.titlemenu #content button, body.multiplayer #content button
+body.main #content button, body.singleplayer #content button, body.movies #content button, body.multiplayer #content button
 {
+	position: absolute;
+	margin: 0;
 	left: 3dp;
 	width: 162dp;
 	height: 37dp;
 	padding-top: 11dp;
 }
 
-body.titlemenu #content button:nth-child(1) { top: 203dp; }
-body.titlemenu #content button:nth-child(2) { top: 247dp; }
-body.titlemenu #content button:nth-child(3) { top: 291dp; }
-body.titlemenu #content button:nth-child(4) { top: 335dp; }
-body.titlemenu #content button:nth-child(5) { top: 379dp; }
+body.main #content button:nth-child(1), body.singleplayer #content button:nth-child(1), body.movies #content button:nth-child(1) { top: 203dp; }
+body.main #content button:nth-child(2), body.singleplayer #content button:nth-child(2), body.movies #content button:nth-child(2) { top: 247dp; }
+body.main #content button:nth-child(3), body.singleplayer #content button:nth-child(3), body.movies #content button:nth-child(3) { top: 291dp; }
+body.main #content button:nth-child(4), body.singleplayer #content button:nth-child(4), body.movies #content button:nth-child(4) { top: 335dp; }
+body.main #content button:nth-child(5), body.singleplayer #content button:nth-child(5), body.movies #content button:nth-child(5) { top: 379dp; }
 body.singleplayer #content button:nth-child(1), body.movies #content button:nth-child(1) { top: 198dp; }
 body.singleplayer #content button:nth-child(2), body.movies #content button:nth-child(2) { top: 242dp; }
 body.singleplayer #content button:nth-child(3), body.movies #content button:nth-child(3) { top: 286dp; }
@@ -153,7 +162,7 @@ body.multiplayer #content button:nth-child(2) { top: 247dp; }
 body.multiplayer #content button:nth-child(3) { top: 291dp; }
 body.multiplayer #content button:nth-child(4) { top: 563dp; }
 
-body.titlemenu #content button:active, body.multiplayer #content button:active
+body.main #content button:active, body.singleplayer #content button:active, body.movies #content button:active, body.multiplayer #content button:active
 {
 	padding-top: 12dp;
 }

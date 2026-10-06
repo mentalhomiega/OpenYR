@@ -357,7 +357,7 @@ body.titlemenu #backdrop #reveal
 
 body.titlemenu #content
 {
-	padding-top: 62dp;
+	padding: 62dp 0 0 0;
 }
 
 body.titlemenu #content > button
