@@ -104,6 +104,8 @@ Anchor.Vertical
 AnchoredToolTips
 Anim.Update
 Animation
+Animation.DrawOffset<n>
+Animation.DrawOffset<n>.RequiredTypes
 Animation.DrawOffsetN
 Animation.DrawOffsetN.RequiredTypes
 Animation.HideIfAttachedWith
@@ -170,6 +172,7 @@ AttachEffect.RequiredMaxCounts
 AttachEffect.RequiredMinCounts
 AttachEffect.RequiredTypes
 AttachEffect.SameSourceOnly
+AttachEffectTypes
 AttachFireAnimsToParent
 AttackCursorOnFriendlies
 AttackFriendlies
@@ -394,6 +397,7 @@ CrushSlowdownMultiplier
 Cumulative
 Cumulative.MaxCount
 CumulativeAnimations
+CumulativeAnimations.CountIncrement
 CumulativeAnimations.RestartOnChange
 CurleyShuffle
 CycleSelectionKeyEnabled
@@ -1449,6 +1453,7 @@ TiltsWhenCrushes.Overlays
 TiltsWhenCrushes.Vehicles
 TimeLabel
 Tint.Color
+Tint.Cumulative
 Tint.Intensity
 Tint.VisibleToHouses
 ToggleDesignatorRangeKeyEnabled
