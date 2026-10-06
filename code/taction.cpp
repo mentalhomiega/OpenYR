@@ -1476,13 +1476,12 @@ bool TActionClass::TAction_PLAY_SOUND(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_PLAY_SOUND_RANDOM(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Cell list[100];
+	Cell list[WAYPT_COUNT];
 	int count = 0;
 
 	for (int index = 0; index < WAYPT_COUNT; index++) {
 		if (Scen->Is_Valid_Waypoint(index)) {
 			list[count++] = Scen->Get_Waypoint_Cell(index);
-			if (count == sizeof(list)) break;
 		}
 	}
 
