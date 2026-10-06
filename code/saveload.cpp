@@ -759,9 +759,11 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	Clear_Scenario();
 	Scen->Load(stream);
 
-	// Houses, vehicles and buildings draw from the generator as they are built for the load, so
-	// the generator the save holds is put back once every object is in.
+	// Building the objects for the load draws from the generator and takes identifiers from
+	// the scenario's counter, so both are put back as the save holds them once every object is
+	// in. Missiles weave and particles advance by their identifiers.
 	Random2Class const random = Scen->RandomNumber;
+	int const uniqueid = Scen->UniqueID;
 
 	Disable_Addon(ADDON_ANY);
 	Set_Required_Addon(Scen->RequiredAddOn);
@@ -1002,6 +1004,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 
 	Scen->RandomNumber = random;
+	Scen->UniqueID = uniqueid;
 
 	return(!stream.Was_Error());
 }
