@@ -115,6 +115,7 @@
 #include "isotype.h"
 #include "language/language.h"
 #include "light.h"
+#include "loadscreen.h"
 #include "logic.h"
 #include "mainopt.h"
 #include "mapgen.h"
@@ -712,10 +713,18 @@ bool Read_Scenario(char const * fname)
 		}
 
 		Point2D prog_bar_pos;
+		// The older screen is picked even when it is not shown, since the pick draws a game random number.
 		char const * background = Pick_Load_Background_Name(prog_bar_pos);
 		char const * source = Apply_Custom_Load_Screen(background, prog_bar_pos);
-		DebugString("Loading screen %s%s%s%s\n", background, source != NULL ? " (" : "", source != NULL ? source : "", source != NULL ? ")" : "");
 		Progress.Initialize(100, players);
+
+		// A picture from a launch file, or one the scenario kept, is shown in place of the Yuri's Revenge screen.
+		bool const yr_screen = source == NULL && LoadScreen.Begin(name);
+		if (yr_screen) {
+			DebugString("Loading screen %s\n", LoadScreen.Picture_Name().c_str());
+		} else {
+			DebugString("Loading screen %s%s%s%s\n", background, source != NULL ? " (" : "", source != NULL ? source : "", source != NULL ? ")" : "");
+		}
 
 		char * prog_msg = NULL;
 		char prog_msg_buffer[129];
@@ -725,7 +734,9 @@ bool Read_Scenario(char const * fname)
 			prog_msg = prog_msg_buffer;
 		}
 
-		Progress.Set_Graphic_Data((players > 1) ? "PROGBARM.SHP" : "PROGBAR.SHP", background, prog_msg, prog_bar_pos);
+		if (!yr_screen) {
+			Progress.Set_Graphic_Data((players > 1) ? "PROGBARM.SHP" : "PROGBAR.SHP", background, prog_msg, prog_bar_pos);
+		}
 		Progress.Display_Progress();
 
 		if (PacketTransport != NULL && Ipx.Transport_Mode() == IPXManagerClass::TRANSPORT_DIRECT && Session.Players.Count() > 1) {
@@ -792,6 +803,7 @@ bool Read_Scenario(char const * fname)
 		}
 
 		DebugString("Error - %s\n", text);
+		LoadScreen.End();
 		WWMessageBox().Process(text, TXT_OK);
 
 		BEnd(BENCH_SCENARIO);
@@ -847,11 +859,13 @@ bool Read_Scenario(char const * fname)
 				progress = Progress.Get_Current_Progress();
 			}
 		}
+		AutoTest_Loading_Screen_Shown();
 	}
 
 	Scen->IsReadingScenario = false;
 
 	Progress.End();
+	LoadScreen.End();
 
 	BEnd(BENCH_SCENARIO);
 

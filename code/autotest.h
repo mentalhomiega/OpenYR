@@ -22,3 +22,5 @@ void AutoTest_Frame(void);
 
 // Ends an unattended run when the game is won or lost, instead of waiting at the score screen.
 void AutoTest_Game_Over(bool won);
+
+void AutoTest_Loading_Screen_Shown(void);

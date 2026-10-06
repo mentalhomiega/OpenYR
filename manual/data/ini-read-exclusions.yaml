@@ -133,6 +133,12 @@ site_exclusions:
     classification: excluded
     reason: Each is a setting of an announcer line in the EVA file, documented as that format rather than as game data.
 
+  - path: code/loadscreen.cpp
+    function: LoadScreenClass::Begin_Campaign
+    keys: [LS800BkgdPal, LSLoadMessage, LSLoadBriefing]
+    classification: excluded
+    reason: Each is a setting of a campaign mission's section in MISSIONMD.INI, documented as that format rather than as game data.
+
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
     keys: [SearchPaths, Mods, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]

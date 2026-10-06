@@ -22,6 +22,7 @@
 #include "init.h"
 #include "language/language.h"
 #include "lightcon.h"
+#include "loadscreen.h"
 #include "mixfile.h"
 #include "scheme.h"
 #include "session.h"
@@ -212,7 +213,8 @@ double ProgressScreenClass::Get_Current_Progress(void) const
 
 void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
 {
-	if (Box.Is_Shown() || PlayerCount != 1 || Shape == NULL || pt != Point2D(-1,-1)) {
+	// The Yuri's Revenge loading screen has no loading messages and plays no sound for them.
+	if (LoadScreen.Is_Active() || Box.Is_Shown() || PlayerCount != 1 || Shape == NULL || pt != Point2D(-1,-1)) {
 		return;
 	}
 
@@ -238,7 +240,8 @@ void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
 
 /// <summary>
 /// Draws a progress bar for every player being tracked, and in a single-player game shows
-/// the next loading message as the work passes each milestone.
+/// the next loading message as the work passes each milestone. While the Yuri's Revenge
+/// loading screen is up, that screen draws the progress instead, at its own position.
 /// </summary>
 /// <param name="xpt">The screen position to draw at, or Point2D(-1,-1) to use the
 /// position established by Set_Graphic_Data.</param>
@@ -247,6 +250,13 @@ void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
 void ProgressScreenClass::Display_Progress(Point2D xpt)
 {
 	if (Box.Is_Shown()) {
+		return;
+	}
+
+	if (LoadScreen.Is_Active()) {
+		if (IsActive) {
+			LoadScreen.Draw_Progress(*this);
+		}
 		return;
 	}
 

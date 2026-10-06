@@ -79,6 +79,9 @@
 **	log <text>				writes the text to the log
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
+**	loadshot <name>			saves what the window shows each time a loading screen is
+**							complete, as <name>-<count>.tga in the screenshots folder; it
+**							applies from the start, whatever the frame
 **	quit					ends the process
 */
 
@@ -130,6 +133,7 @@
 #include "voc.h"
 #include "unit.h"
 #include "viewzoom.h"
+#include "video.h"
 #include "bgfxbackend.h"
 #include "gamedirs.h"
 #include "_rect.h"
@@ -176,6 +180,10 @@ int HashInterval = 0;
 
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
+
+// The name loading screen captures are saved under, or empty when none are taken.
+std::string LoadShotName;
+int LoadShotCount = 0;
 
 
 TechnoTypeClass const * Find_Type(std::string const & name)
@@ -1259,6 +1267,8 @@ void Run(StepType const & step)
 		// The step line itself is the log entry.
 	} else if (step.Command == "searchdir") {
 		// searchdir <path>: added to the search path when the script was read (AutoTest_Load).
+	} else if (step.Command == "loadshot") {
+		// loadshot <name>: kept when the script was read (AutoTest_Load).
 	} else if (step.Command == "quit") {
 		DebugString("AUTOTEST quit\n");
 		std::exit(0);
@@ -1273,6 +1283,26 @@ void Run(StepType const & step)
 bool AutoTest_Active(void)
 {
 	return(Active);
+}
+
+
+/// <summary>
+/// Saves the window as the script's next loading screen capture, when it asked for them.
+/// Call once the loading screen is drawn as it should be seen.
+/// </summary>
+void AutoTest_Loading_Screen_Shown(void)
+{
+	if (!Active || LoadShotName.empty()) {
+		return;
+	}
+
+	// The capture request keeps the path's address until a frame is shown.
+	static std::string path;
+	path = Screenshot_Name((LoadShotName + "-" + std::to_string(++LoadShotCount) + ".tga").c_str());
+	DebugString("AUTOTEST loadshot %s\n", path.c_str());
+	Backend_Request_Window_Capture(path.c_str());
+	Video_Present();
+	Video_Present();
 }
 
 
@@ -1322,6 +1352,10 @@ bool AutoTest_Load(char const * filename)
 				path += '\\';
 			}
 			CDFileClass::Add_Search_Drive(path.c_str());
+		}
+		// The first loading screen comes before any game frame.
+		if (std::strcmp(command, "loadshot") == 0) {
+			LoadShotName = text;
 		}
 		Steps.push_back(StepType{frame, command, text, x, y});
 	}

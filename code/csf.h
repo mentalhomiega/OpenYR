@@ -77,3 +77,9 @@ extern CSFClass StringTable;
  * to the debug log; before a table has loaded every label yields a fixed error text.
  */
 wchar_t const * Fetch_String(char const * label, char const ** extra = nullptr);
+
+// Fetch_String's text as UTF-8.
+std::string Fetch_String_UTF8(char const * label);
+
+// A string table string, one UTF-16 unit per wchar_t, as UTF-8.
+std::string Wide_To_UTF8(wchar_t const * wide);

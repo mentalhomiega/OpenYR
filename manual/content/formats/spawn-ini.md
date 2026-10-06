@@ -230,7 +230,7 @@ These keys change what appears around the match without changing the match itsel
 
 `SkipScoreScreen=yes` ends a skirmish or network match without its [score screen](/systems/multiplayer-score-screen/). An ending movie that `PlayMoviesInMultiplayer` asked for still plays. The map's own [`SkipScore`](/keys/skipscore/) is a campaign setting and is not affected.
 
-`CustomLoadScreen` names the picture shown while the scenario loads, in place of the one the game picks for the player's side and screen size. Write the file name with its extension. The game looks for it as it looks for any game file: beside the game, in the folders a deployment sorts its files into, and inside the archives. A forward slash separates folders as a backslash does. The picture is a PCX in 256 colors or 24-bit color, centered on the screen. If no file has that name, the game's own picture stays and the log says so.
+`CustomLoadScreen` names the picture shown while the scenario loads, in place of the [loading screen](/systems/loading-screens/) the game would show. Write the file name with its extension. The game looks for it as it looks for any game file: beside the game, in the folders a deployment sorts its files into, and inside the archives. A forward slash separates folders as a backslash does. The picture is a PCX in 256 colors or 24-bit color, centered on the screen. If no file has that name, the game's own picture stays and the log says so.
 
 `CustomLoadScreenPos` places the loading bars at `x,y` within the picture rather than on the screen, so one position suits every screen size. Both numbers must be above `0`. Otherwise, or when the value is not two numbers, the bars stay where the game puts them for its own picture, which suits a picture of the same size.
 

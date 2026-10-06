@@ -247,12 +247,23 @@ wchar_t const * CSFClass::Find(char const * label, char const ** extra) const
 
 std::string CSFClass::Find_UTF8(char const * label) const
 {
-	std::string text;
 	wchar_t const * wide = Find(label);
 	if (wide == nullptr) {
-		return(text);
+		return(std::string());
 	}
+	return(Wide_To_UTF8(wide));
+}
 
+
+std::string Fetch_String_UTF8(char const * label)
+{
+	return(Wide_To_UTF8(Fetch_String(label)));
+}
+
+
+std::string Wide_To_UTF8(wchar_t const * wide)
+{
+	std::string text;
 	for (; *wide != L'\0'; wide++) {
 		char32_t code = (char32_t)*wide;
 		// The table keeps one UTF-16 unit per wchar_t on every platform, so two surrogates make one character.
