@@ -63,10 +63,11 @@ class AbstractTypeClass : public AbstractClass
 		virtual bool Read_INI(CCINIClass const & ini);
 		virtual bool Write_INI(CCINIClass & ini) const;
 
-		// The name players see: the string table entry UIName names, or else the Name text.
+		// The name players see: the string table entry UIName names, the text after an Ares
+		// NOSTR: prefix, or else the Name text.
 		const char * Full_Name(void) const;
 
-		// The string table label of the name players see (UIName), or empty.
+		// The string table label of the name players see (UIName), or NOSTR: and the name, or empty.
 		std::string UINameLabel;
 
 	private:
