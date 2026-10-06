@@ -5052,32 +5052,35 @@ int BuildingClass::Do_MISSION_GUARD(void)
 				**	facility and there is a customer waiting at the grease pit.
 				*/
 				isfacility = Class->IsCanUnitRepair || Class->IsCanUnitReload;
-				hascontact = Contact_With_Whom() != 0;
+				for (int slot = 0; slot < Link_Count(); slot++) {
+					TechnoClass * contact = Link(slot);
+					hascontact = contact != 0;
 
-				istechno = false;
-				if (hascontact) {
-					istechno = Contact_With_Whom()->Is_Techno();
-				}
+					istechno = false;
+					if (hascontact) {
+						istechno = contact->Is_Techno();
+					}
 
-				entermission = false;
-				if (istechno) {
-					entermission = ((TechnoClass *)Contact_With_Whom())->Mission == MISSION_ENTER;
-				}
+					entermission = false;
+					if (istechno) {
+						entermission = contact->Mission == MISSION_ENTER;
+					}
 
-				inrange = false;
-				if (entermission) {
-					inrange = Distance_To(Contact_With_Whom()) < CELL_LEPTON / 4;
-				}
+					inrange = false;
+					if (entermission) {
+						inrange = Distance_To(contact) < CELL_LEPTON / 4;
+					}
 
-				tomove = false;
-				if (inrange) {
-					tomove = Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER;
-				}
+					tomove = false;
+					if (inrange) {
+						tomove = Transmit_Message(RADIO_NEED_TO_MOVE, contact) == RADIO_ROGER;
+					}
 
-				if (isfacility && hascontact && istechno && entermission && inrange && tomove) {
+					if (isfacility && hascontact && istechno && entermission && inrange && tomove) {
 
-					Assign_Mission(MISSION_REPAIR);
-					return(1);
+						Assign_Mission(MISSION_REPAIR);
+						return(1);
+					}
 				}
 
 				if (Class->IsWeaponsFactory) {
@@ -5091,9 +5094,7 @@ int BuildingClass::Do_MISSION_GUARD(void)
 		}
 
 		if (Class->IsCanUnitReload) {
-			// A pad that also repairs runs the repair mission, which serves the first dock only.
-			int slots = Class->IsCanUnitRepair ? 1 : Link_Count();
-			for (int slot = 0; slot < slots; slot++) {
+			for (int slot = 0; slot < Link_Count(); slot++) {
 				TechnoClass * docked = Link(slot);
 				if (docked != NULL &&
 					Transmit_Message(RADIO_PREPARED, docked) != RADIO_ROGER &&
