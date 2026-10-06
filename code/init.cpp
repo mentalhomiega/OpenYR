@@ -2950,6 +2950,87 @@ static bool Main_Menu_Keys(void)
 }
 
 
+// Title screen menu choices that lead to another menu or set up a game type before the
+// selection is made.
+static int const MENU_SINGLE_PLAYER = 100;
+static int const MENU_MOVIES = 101;
+static int const MENU_NETWORK = 102;
+static int const MENU_SKIRMISH = 103;
+static int const MENU_BACK = 104;
+
+
+// The text of a string table label, or the fallback when the table lacks it.
+static std::string Menu_Text(char const * label, char const * fallback)
+{
+	std::string const text = StringTable.Find_UTF8(label);
+	return(text.empty() ? std::string(fallback) : text);
+}
+
+
+// The button that leaves a sub-menu: Yuri's Revenge's "Main Menu", or "Back" in the modern style.
+static UIMenuItemType Back_Item(void)
+{
+	if (Options.IsClassicMenus) {
+		return(UIMenuItemType{Menu_Text("GUI:MainMenu", "Main Menu"), MENU_BACK, true});
+	}
+	return(UIMenuItemType{Menu_Text("GUI:Back", "Back"), MENU_BACK, true});
+}
+
+
+static int Single_Player_Menu(void)
+{
+	UIMenuState menu;
+	menu.Kind = UI_MENU_SINGLE_PLAYER;
+	menu.Title = Menu_Text("GUI:SinglePlayerMenu", "Single Player");
+	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:NewCampaign", "New Campaign"), SEL_CAMPAIGN_GAME, true});
+	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
+	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Skirmish", "Skirmish"), MENU_SKIRMISH, true});
+	menu.Items.push_back(Back_Item());
+	UI_Menu_Place(menu);
+	return(UI_Menu_Dialog(menu, MENU_BACK));
+}
+
+
+static int Movies_Menu(void)
+{
+	UIMenuState menu;
+	menu.Kind = UI_MENU_MOVIES;
+	menu.Title = Menu_Text("GUI:MoviesAndCredits", "Movies & Credits");
+	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
+	if (Options.IsClassicMenus) {
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:PlayMovies", "Play Movies"), MENU_BACK, false});
+	}
+	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
+	menu.Items.push_back(Back_Item());
+	UI_Menu_Place(menu);
+	return(UI_Menu_Dialog(menu, MENU_BACK));
+}
+
+
+/// <summary>
+/// Turns a title screen menu choice into the selection Select_Game acts on. Network and
+/// skirmish set the game type first, so Select_Game goes straight to that game's setup.
+/// </summary>
+/// <returns>The selection, or SEL_NONE to show the main menu again.</returns>
+static int Menu_Selection(int choice)
+{
+	switch (choice) {
+		case MENU_BACK:
+			return(SEL_NONE);
+
+		case MENU_NETWORK:
+		case MENU_SKIRMISH:
+			Session.Type = (choice == MENU_NETWORK) ? GAME_IPX : GAME_SKIRMISH;
+			Session.IsWDT = false;
+			Session.Read_Scenario_Descriptions();
+			return(SEL_MULTIPLAYER_GAME);
+
+		default:
+			return(choice);
+	}
+}
+
+
 /***************************************************************************
  * Main_Menu -- Menu processing                                            *
  *                                                                         *
@@ -2971,28 +3052,42 @@ int Main_Menu(unsigned int timeout)
 
 	timeout = 0;
 
-	MainMenuKeyResult = SEL_NONE;
-
-	UIMenuState menu;
-	menu.Kind = UI_MENU_MAIN;
-	menu.Items.push_back(UIMenuItemType{"New Campaign", SEL_CAMPAIGN_GAME, true});
-	menu.Items.push_back(UIMenuItemType{"Load Mission", SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
-	menu.Items.push_back(UIMenuItemType{"Multiplayer Game", SEL_MULTIPLAYER_GAME, true});
-	menu.Items.push_back(UIMenuItemType{"Intro / Sneak Peek", SEL_INTRO, true});
-	menu.Items.push_back(UIMenuItemType{"Options", SEL_OPTIONS, true});
-	menu.Items.push_back(UIMenuItemType{"Exit Game", SEL_EXIT, true});
-	menu.Stamp.push_back(Version_Text());
-	menu.Stamp.push_back(Fetch_String(TXT_COPYRIGHT));
-	UI_Menu_Place(menu);
-
 	char * background = Get_New_Menu()->Background;
 	Load_Title_Screen(background, HiddenSurface, &CCPalette);
 	Draw_Version_Text(HiddenSurface);
 	Update_Visible_Surface();
 
-	retval = UI_Menu_Dialog(menu, SEL_NONE, Main_Menu_Keys);
-	if (retval == SEL_NONE) {
-		retval = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT;
+	while (retval == SEL_NONE) {
+		MainMenuKeyResult = SEL_NONE;
+		bool const classic = Options.IsClassicMenus;
+
+		UIMenuState menu;
+		menu.Kind = UI_MENU_MAIN;
+		menu.Title = Menu_Text("GUI:MainMenu", "Main Menu");
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
+		if (classic) {
+			menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:WWOnline", "Internet"), SEL_NONE, false});
+		}
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Network", "Network"), MENU_NETWORK, true});
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
+		menu.Stamp.push_back(Version_Text());
+		menu.Stamp.push_back(Fetch_String(TXT_COPYRIGHT));
+		UI_Menu_Place(menu);
+
+		int choice = UI_Menu_Dialog(menu, SEL_NONE, Main_Menu_Keys);
+		if (choice == SEL_NONE) {
+			choice = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT;
+		}
+
+		if (choice == MENU_SINGLE_PLAYER) {
+			choice = Single_Player_Menu();
+		} else if (choice == MENU_MOVIES) {
+			choice = Movies_Menu();
+		}
+
+		retval = Menu_Selection(choice);
 	}
 
 	SYSTEMTIME stamp;

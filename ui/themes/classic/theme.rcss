@@ -97,44 +97,66 @@ body
 	border: 2dp #7d5cb8;
 }
 
-/* The main menu's buttons stand in the right-hand column, as in Yuri's Revenge. */
-body.main #backdrop #reveal, body.multiplayer #backdrop #reveal
+/* The title screen menus stand in the right-hand column at Yuri's Revenge's places: the menu's
+   name across the top, the buttons from about a third of the way down, and the button that
+   leaves at the foot of the column. */
+body.titlemenu #backdrop #reveal, body.multiplayer #backdrop #reveal
 {
 	position: absolute;
 	left: 50%;
 	top: 50%;
 	width: 168dp;
-	height: 300dp;
+	height: 600dp;
 	margin-left: 232dp;
-	margin-top: -270dp;
+	margin-top: -300dp;
 }
 
-body.main #wallpaper, body.multiplayer #wallpaper
+body.titlemenu #wallpaper, body.multiplayer #wallpaper
 {
 	background-color: transparent;
 	decorator: none;
 	border-width: 0;
 }
 
-body.main #content button, body.multiplayer #content button
+body.titlemenu #title, body.multiplayer #title
 {
-	left: 21dp;
-	width: 126dp;
-	height: 25dp;
+	display: block;
+	left: 0;
+	top: 2dp;
+	width: 168dp;
+	height: 16dp;
+	line-height: 16dp;
+	text-align: center;
 }
 
-body.main #content button:nth-child(1) { top: 10dp; }
-body.main #content button:nth-child(2) { top: 45dp; }
-body.main #content button:nth-child(3) { top: 80dp; }
-body.main #content button:nth-child(4) { top: 115dp; }
-body.main #content button:nth-child(5) { top: 150dp; }
-body.main #content button:nth-child(6) { top: 185dp; }
+body.titlemenu #content button, body.multiplayer #content button
+{
+	left: 3dp;
+	width: 162dp;
+	height: 37dp;
+	padding-top: 11dp;
+}
 
-body.multiplayer #title { left: 0; top: 10dp; width: 168dp; }
-body.multiplayer #content button:nth-child(1) { top: 40dp; }
-body.multiplayer #content button:nth-child(2) { top: 75dp; }
-body.multiplayer #content button:nth-child(3) { top: 110dp; }
-body.multiplayer #content button:nth-child(4) { top: 145dp; }
+body.titlemenu #content button:nth-child(1) { top: 203dp; }
+body.titlemenu #content button:nth-child(2) { top: 247dp; }
+body.titlemenu #content button:nth-child(3) { top: 291dp; }
+body.titlemenu #content button:nth-child(4) { top: 335dp; }
+body.titlemenu #content button:nth-child(5) { top: 379dp; }
+body.singleplayer #content button:nth-child(1), body.movies #content button:nth-child(1) { top: 198dp; }
+body.singleplayer #content button:nth-child(2), body.movies #content button:nth-child(2) { top: 242dp; }
+body.singleplayer #content button:nth-child(3), body.movies #content button:nth-child(3) { top: 286dp; }
+body.main #content button:nth-child(6) { top: 537dp; }
+body.singleplayer #content button:nth-child(4), body.movies #content button:nth-child(4) { top: 563dp; }
+
+body.multiplayer #content button:nth-child(1) { top: 203dp; }
+body.multiplayer #content button:nth-child(2) { top: 247dp; }
+body.multiplayer #content button:nth-child(3) { top: 291dp; }
+body.multiplayer #content button:nth-child(4) { top: 563dp; }
+
+body.titlemenu #content button:active, body.multiplayer #content button:active
+{
+	padding-top: 12dp;
+}
 
 /* Buttons are Yuri's Revenge's menu button in its three states. */
 button, button.wide, button.tall
@@ -339,13 +361,13 @@ select selectarrow, select:disabled selectarrow, select.disabled selectarrow
 	decorator: image(arrow-down.png fill);
 }
 
-/* The version and copyright in the bottom bar of the main menu screen. */
+/* The version and copyright in the bottom bar of the main menu screen, left of the column. */
 #stamp
 {
 	position: absolute;
 	left: 50%;
 	top: 50%;
-	width: 480dp;
+	width: 316dp;
 	margin-left: -88dp;
 	margin-top: 271dp;
 	text-align: right;

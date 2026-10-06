@@ -60,6 +60,8 @@ char const * Class_For(UIMenuKindType kind)
 		case UI_MENU_MULTIPLAYER:
 		case UI_MENU_MULTIPLAYER_FIRESTORM: return("multiplayer");
 		case UI_MENU_GAME_TYPE: return("gametype");
+		case UI_MENU_SINGLE_PLAYER: return("singleplayer");
+		case UI_MENU_MOVIES: return("movies");
 		default: return("main");
 	}
 }
@@ -97,6 +99,10 @@ class UIMenuViewClass : public UIRmlViewClass
 		virtual void Loaded(void) override
 		{
 			Document()->SetClass(Class_For(Data.State.Kind), true);
+			// The menus of the title screen share one place and one look in each menu style.
+			if (Data.State.Kind == UI_MENU_MAIN || Data.State.Kind == UI_MENU_SINGLE_PLAYER || Data.State.Kind == UI_MENU_MOVIES) {
+				Document()->SetClass("titlemenu", true);
+			}
 			if (Data.State.Kind == UI_MENU_MULTIPLAYER_FIRESTORM) {
 				Document()->SetClass("firestorm", true);
 			}

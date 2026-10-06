@@ -32,7 +32,7 @@ button
 	width: 196dp;
 }
 
-.main #reveal
+.titlemenu #reveal
 {
 	width: 306dp;
 	height: 240dp;
@@ -40,13 +40,14 @@ button
 	margin-top: -119dp;
 }
 
-.main button { left: 55dp; }
-.main button:nth-child(1) { top: 21dp; }
-.main button:nth-child(2) { top: 56dp; }
-.main button:nth-child(3) { top: 90dp; }
-.main button:nth-child(4) { top: 124dp; }
-.main button:nth-child(5) { top: 158dp; }
-.main button:nth-child(6) { top: 193dp; }
+.titlemenu button { left: 55dp; }
+.titlemenu button:nth-child(1) { top: 21dp; }
+.titlemenu button:nth-child(2) { top: 56dp; }
+.titlemenu button:nth-child(3) { top: 90dp; }
+.titlemenu button:nth-child(4) { top: 124dp; }
+.titlemenu button:nth-child(5) { top: 158dp; }
+.titlemenu button:nth-child(6) { top: 193dp; }
+.titlemenu #title { display: none; }
 
 .multiplayer #reveal
 {

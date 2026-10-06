@@ -337,3 +337,41 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	color: #8f84a8;
 	pointer-events: none;
 }
+
+/* The title screen menus stand in one panel on the left, the same size for every menu, with
+   the menu's name at the top and its buttons stacked below. */
+body.titlemenu #backdrop #reveal
+{
+	width: 248dp;
+	height: 330dp;
+	top: 50%;
+	margin: -165dp 0 0 8%;
+}
+
+body.titlemenu #content
+{
+	padding-top: 62dp;
+}
+
+body.titlemenu #content > button
+{
+	position: static;
+	display: block;
+	width: 192dp;
+	height: 34dp;
+	margin: 0 auto 10dp auto;
+}
+
+body.titlemenu #title
+{
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 20dp;
+	width: 100%;
+	height: 24dp;
+	font-size: 18dp;
+	line-height: 24dp;
+	text-align: center;
+	color: #d9c8ff;
+}
