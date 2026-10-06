@@ -986,10 +986,17 @@ test('A lobby side entry carries its country', () => {
 		'HouseTypes[country]->IsMultiplay',
 		'return(country);',
 	], 'a row names the country standing at it');
+	const skirmish = source('code/ui/screens/skirmish/uiskirmishdlg.cpp');
+
 	assert.match(
-		functionBody(source('code/ui/screens/skirmish/uiskirmishdlg.cpp'), 'static void Remember_Preferences(UISkirmishState const & state)'),
-		/Session\.House = state\.Sides\[state\.Side\]\.Value;/,
+		functionBody(skirmish, 'static int Slot_Side(UISkirmishState const & state, UISkirmishSlot const & slot)'),
+		/state\.Sides\[slot\.Side\]\.Value/,
 		'the skirmish list stores a country, not a position',
+	);
+	assert.match(
+		functionBody(skirmish, 'static void Remember_Preferences(UISkirmishState const & state)'),
+		/Session\.House = side;/,
+		'the first row remembers the country its entry carries',
 	);
 });
 

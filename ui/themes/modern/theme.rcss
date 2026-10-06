@@ -388,9 +388,9 @@ body.titlemenu #title
 body.lobby #backdrop #reveal
 {
 	width: 1040dp;
-	height: 600dp;
+	height: 572dp;
 	top: 50%;
-	margin-top: -300dp;
+	margin-top: -286dp;
 }
 
 body.lobby #content

@@ -4131,7 +4131,7 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	Rml::ElementDocument * document = Rml(*view).Document();
 	Rml::Element * dialog = document->GetElementById("reveal");
-	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(780.0f, 504.0f), "the setup is the size its template comes to");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(780.0f, 472.0f), "the setup is the size its template comes to");
 
 	Rml::ElementList everyone;
 	Rml::ElementList slots;
@@ -4257,6 +4257,140 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	view->Release();
 	context.Update();
+}
+
+
+static void Collect_Outside(Rml::Element * element, Rml::Vector2f low, Rml::Vector2f high, std::vector<std::string> & outside)
+{
+	for (int index = 0; index < element->GetNumChildren(); index++) {
+		Rml::Element * child = element->GetChild(index);
+		if (!child->IsVisible()) {
+			continue;
+		}
+
+		Rml::Vector2f offset = child->GetAbsoluteOffset(Rml::BoxArea::Border);
+		Rml::Vector2f size = child->GetBox().GetSize(Rml::BoxArea::Border);
+		if (size.x > 0.0f && size.y > 0.0f
+			&& (offset.x < low.x - 0.5f || offset.y < low.y - 0.5f || offset.x + size.x > high.x + 0.5f || offset.y + size.y > high.y + 0.5f)) {
+			outside.push_back(child->GetTagName() + "#" + child->GetId() + "." + child->GetClassNames());
+		}
+		Collect_Outside(child, low, high, outside);
+	}
+}
+
+
+// Lays the setup out the way a menu style does: the style's own files laid over the shipped ones, in
+// a context the size the style is designed for, with every seat a map could hold in use.
+static void Check_Skirmish_Layout(Rml::Context & context, CountingSystemInterfaceClass & system, char const * style, int width, int height, Rml::Vector2f panel)
+{
+	std::filesystem::path const shipped(OPENTS_UI_DIR);
+	std::filesystem::path const folder = std::filesystem::temp_directory_path() / (std::string("openyr-skirmish-") + style);
+	std::filesystem::remove_all(folder);
+	std::filesystem::create_directories(folder);
+	for (std::filesystem::path const & from : {shipped, shipped / "themes" / style}) {
+		for (std::filesystem::directory_entry const & entry : std::filesystem::directory_iterator(from)) {
+			if (entry.is_regular_file()) {
+				std::filesystem::copy_file(entry.path(), folder / entry.path().filename(), std::filesystem::copy_options::overwrite_existing);
+			}
+		}
+	}
+
+	std::filesystem::path const before = std::filesystem::current_path();
+	std::filesystem::current_path(folder);
+	Rml::Factory::ClearStyleSheetCache();
+	Rml::Factory::ClearTemplateCache();
+	context.SetDimensions(Rml::Vector2i(width, height));
+
+	std::string const name = std::string("the ") + style + " menu style";
+	int problems = system.Problems;
+
+	UISkirmishState state;
+	state.Handle = "Player";
+	Fill_Skirmish_Lists(state);
+	for (int index = 5; index <= 8; index++) {
+		UISkirmishOption start;
+		start.Label = std::to_string(index);
+		start.Value = index;
+		state.Starts.push_back(start);
+	}
+	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
+	for (int row = 1; row < UI_SKIRMISH_MAX_SLOTS; row++) {
+		state.Slots[row].Kind = UI_SKIRMISH_SLOT_HARD;
+		state.Slots[row].Side = 1;
+	}
+	state.MapName = "Grand Canyon (2-8)";
+	state.CreditsMin = 2500;
+	state.CreditsMax = 10000;
+	state.CreditsStep = 250;
+	state.Credits = 5000;
+	state.TechLevelMax = 10;
+	state.Notice = "Put a player on a different team to start.";
+
+	RecordingSkirmishServiceClass service;
+	UISkirmishPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
+
+	Check(Rml(*view).Prepare(context), (name + " prepares the setup").c_str());
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, (name + " draws the setup without an RmlUi warning or error").c_str());
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * reveal = document->GetElementById("reveal");
+	Check(reveal != nullptr && reveal->GetBox().GetSize(Rml::BoxArea::Border) == panel, (name + " sizes the setup's panel").c_str());
+	if (reveal != nullptr) {
+		Rml::Vector2f const low = reveal->GetAbsoluteOffset(Rml::BoxArea::Border);
+		Rml::Vector2f const high = low + reveal->GetBox().GetSize(Rml::BoxArea::Border);
+		Check(low.x >= 0.0f && low.y >= 0.0f && high.x <= (float)width && high.y <= (float)height, (name + " fits the panel in the screen").c_str());
+
+		std::vector<std::string> outside;
+		Collect_Outside(Rml(*view).Document()->GetElementById("content"), low, high, outside);
+		for (std::string const & lost : outside) {
+			std::printf("  outside the panel: %s\n", lost.c_str());
+		}
+		Check(outside.empty(), (name + " keeps everything in the setup inside its panel with eight rows").c_str());
+	}
+
+	Rml::ElementList everyone;
+	document->GetElementsByClassName(everyone, "slot");
+	float bottom = -1.0f;
+	int shown = 0;
+	bool stacked = true;
+	for (Rml::Element * row : everyone) {
+		if (!row->IsVisible()) {
+			continue;
+		}
+
+		shown++;
+		float top = row->GetAbsoluteOffset(Rml::BoxArea::Border).y;
+		stacked = stacked && top >= bottom - 0.5f;
+		bottom = top + row->GetBox().GetSize(Rml::BoxArea::Border).y;
+	}
+	Check(stacked && shown == UI_SKIRMISH_MAX_SLOTS, (name + " stacks the eight rows without overlap").c_str());
+
+	Rml::Element * switches = document->GetElementById("switches");
+	Rml::Element * players = document->GetElementById("players");
+	Check(switches != nullptr && players != nullptr
+		&& switches->GetAbsoluteOffset(Rml::BoxArea::Border).y >= players->GetAbsoluteOffset(Rml::BoxArea::Border).y + players->GetBox().GetSize(Rml::BoxArea::Border).y,
+		(name + " puts the switches under the player list").c_str());
+
+	view->Release();
+	context.Update();
+
+	std::filesystem::current_path(before);
+	Rml::Factory::ClearStyleSheetCache();
+	Rml::Factory::ClearTemplateCache();
+	context.SetDimensions(Rml::Vector2i(1280, 800));
+	std::filesystem::remove_all(folder);
+}
+
+
+void Test_Skirmish_Layouts(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	Check_Skirmish_Layout(context, system, "classic", 800, 600, Rml::Vector2f(780.0f, 472.0f));
+	Check_Skirmish_Layout(context, system, "modern", 1280, 720, Rml::Vector2f(1040.0f, 572.0f));
 }
 
 
@@ -4867,6 +5001,7 @@ void Test_Documents(void)
 		Test_Raster_Font();
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
+		Test_Skirmish_Layouts(*context, system);
 		Test_Scenario_Screen(*context, system);
 		Test_Net_Browser_Screen(*context, system);
 		Test_Net_Setup_Screen(*context, system);
