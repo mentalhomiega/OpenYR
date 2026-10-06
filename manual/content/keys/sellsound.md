@@ -21,6 +21,6 @@ A structure plays it from its position as its build-down begins, so it fades wit
 
 A vehicle or aircraft sale plays the sound at full volume, not from a map position, together with the spoken "unit sold" line.
 
-A vehicle or aircraft can be sold only while it stands on a [`UnitRepair=yes`](/keys/unitrepair/) structure such as a service depot. Selling that structure while a vehicle or aircraft is docked on it sells the docked unit instead of the structure. Infantry cannot be sold.
+A vehicle or aircraft can be sold only while it stands on a [`UnitRepair=yes`](/keys/unitrepair/) structure such as a service depot. Selling that structure while a vehicle or aircraft is docked on it sells the docked unit instead of the structure, and a structure with several docks sells every docked unit. Infantry cannot be sold.
 
 A wall section the player sells plays the sound at full volume. A section removed to make room for a structure placed over it is removed without the sound. [Walls and gates](/systems/walls-and-gates/#crushing-clearing-and-selling) covers which sections can be sold.
