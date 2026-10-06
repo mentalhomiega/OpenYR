@@ -255,8 +255,8 @@ std::string CSFClass::Find_UTF8(char const * label) const
 
 	for (; *wide != L'\0'; wide++) {
 		char32_t code = (char32_t)*wide;
-		// A table's strings are UTF-16, so where wchar_t is 16 bits a pair of surrogates makes one character.
-		if (sizeof(wchar_t) == 2 && code >= 0xD800 && code < 0xDC00 && wide[1] >= 0xDC00 && wide[1] < 0xE000) {
+		// The table keeps one UTF-16 unit per wchar_t on every platform, so two surrogates make one character.
+		if (code >= 0xD800 && code < 0xDC00 && wide[1] >= 0xDC00 && wide[1] < 0xE000) {
 			code = 0x10000 + ((code - 0xD800) << 10) + ((char32_t)wide[1] - 0xDC00);
 			wide++;
 		}
