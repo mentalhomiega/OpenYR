@@ -475,6 +475,15 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	removes the infantryman without one.
 			*/
 			AnimTypeClass const * deathanim = NULL;
+
+			// A soldier killed while parachuting always bursts apart, whatever the warhead.
+			if (Doing == DO_PARADROP) {
+				if (infdeath == 8 && Rule->InfantryVirus != NULL) {
+					new AnimClass(Rule->InfantryVirus, PositionCoord);
+				}
+				infdeath = 3;
+			}
+
 			switch (infdeath) {
 				default:
 				case 0:
@@ -2562,6 +2571,22 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 		LandState = on_land;
 	}
 
+	// A soldier still falling on its parachute keeps its paradrop pose.
+	if (Doing == DO_PARADROP && IsFalling) {
+		return(false);
+	}
+
+	// As InfantryClass::PlayAnim (0x51D800): a soldier standing in the air hovers when its art has a
+	// Hover sequence, a civilian who panics runs with its Panic sequence, and a slave carrying a full
+	// load walks with its Carry sequence.
+	if (todo == DO_STAND_READY && In_Air() && !IsOnBridge && Class->DoControls[DO_HOVER].Frame > 0) {
+		todo = DO_HOVER;
+	} else if (todo == DO_WALK && Class->IsFraidyCat && Fear > FEAR_SCARED && Class->DoControls[DO_PANIC].Count > 0) {
+		todo = DO_PANIC;
+	} else if (todo == DO_WALK && SlaveOwner != NULL && Class->Capacity > 0 && Storage.Get_Total_Amount() >= Class->Capacity && Class->DoControls[DO_CARRY].Count > 0) {
+		todo = DO_CARRY;
+	}
+
 	if (todo == DO_NOTHING || Class->DoControls[todo].Count == 0) {
 		return(false);
 	}
@@ -4079,7 +4104,7 @@ void InfantryClass::Movement_AI(void)
 			}
 		}
 	} else {
-		if (Doing == DO_WALK || Doing == DO_SWIM || Doing == DO_FLY || Doing == DO_HOVER) {
+		if (Doing == DO_WALK || Doing == DO_SWIM || Doing == DO_FLY || Doing == DO_HOVER || Doing == DO_PANIC || Doing == DO_CARRY) {
 			Do_Action(DO_STAND_READY);
 		}
 		if (Doing == DO_CRAWL) {
@@ -4211,6 +4236,7 @@ bool InfantryClass::Paradrop(Coord const & coord)
 		} else {
 			Assign_Mission(MISSION_HUNT);
 		}
+		Do_Action(DO_PARADROP, true);
 		return(true);
 	}
 	return(false);
