@@ -4670,17 +4670,29 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		**	building for another reason (e.g., helicopter on helipad), then it
 		**	gets captured as well.
 		*/
-		tech = Contact_With_Whom();
-		bool was_in_radio_contact = false;
-		bool was_tethered = false;
-		if (tech) {
-			if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && (Class->IsWeaponsFactory || ::Distance(tech->Center_Coord(), Docking_Coord()) < CELL_LEPTON / 4) ) {
-				was_tethered = tech->IsTethered;
-				tech->Captured(newowner);
-				was_in_radio_contact = true;
+		struct CapturedDocker {
+			TechnoClass * object;
+			bool tethered;
+		};
+		std::vector<CapturedDocker> captured_dockers;
+		std::vector<TechnoClass *> dockers;
+		for (int slot = 0; slot < Link_Count(); slot++) {
+			if (Link(slot) != NULL) {
+				dockers.push_back(Link(slot));
+			}
+		}
+		for (TechnoClass * docker : dockers) {
+			// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
+			if (!Contains_Link(docker)) {
+				continue;
+			}
+			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || ::Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
+				bool const tethered = docker->IsTethered;
+				docker->Captured(newowner);
+				captured_dockers.push_back({docker, tethered});
 			} else {
-				Transmit_Message(RADIO_RUN_AWAY);
-				Transmit_Message(RADIO_OVER_OUT);
+				Transmit_Message(RADIO_RUN_AWAY, docker);
+				Transmit_Message(RADIO_OVER_OUT, docker);
 			}
 		}
 
@@ -4795,11 +4807,14 @@ bool BuildingClass::Captured(HouseClass * newowner)
 			newowner->Update_Factories(Class->ToBuild);
 		}
 
-		if (was_in_radio_contact && tech != NULL) {
-			Transmit_Message(RADIO_HELLO, tech);
-			if (was_tethered) {
+		for (CapturedDocker const & docker : captured_dockers) {
+			if (!docker.object->IsActive) {
+				continue;
+			}
+			Transmit_Message(RADIO_HELLO, docker.object);
+			if (docker.tethered) {
 				IsTethered = true;
-				tech->IsTethered = true;
+				docker.object->IsTethered = true;
 			}
 		}
 
