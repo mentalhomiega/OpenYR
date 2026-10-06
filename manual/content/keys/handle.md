@@ -4,8 +4,8 @@ summary: The player name remembered between runs and offered back by the multipl
 see_also: ["Color", "Side"]
 when_omitted:
   kind: value
-  value: "[NONAME]"
-  note: The English placeholder text; a localized build supplies its own.
+  value: "Player"
+  note: The English default name; a localized build supplies its own.
 ---
 
 The game reads the name when the player picks multiplayer play from the main menu and puts it in the name field of the LAN and skirmish dialogs. Leaving either dialog saves the name, including any edit made there, back to `RA2MD.INI`.
