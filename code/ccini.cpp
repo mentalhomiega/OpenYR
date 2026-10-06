@@ -77,6 +77,7 @@
 
 #include "always.h"
 
+#include "armortypes.h"
 #include "ccini.h"
 
 #include "_rtti.h"
@@ -1152,7 +1153,7 @@ ArmorType CCINIClass::Get_ArmorType(char const * section, char const * entry, Ar
 {
 	char buffer[128];
 
-	Get_String(section, entry, ArmorName[defvalue], buffer, sizeof(buffer));
+	Get_String(section, entry, Armor_Type_Name(defvalue), buffer, sizeof(buffer));
 	return(Armor_From_Name(buffer));
 }
 
@@ -1177,7 +1178,7 @@ ArmorType CCINIClass::Get_ArmorType(char const * section, char const * entry, Ar
  *=============================================================================================*/
 bool CCINIClass::Put_ArmorType(char const * section, char const * entry, ArmorType value)
 {
-	return(Put_String(section, entry, ArmorName[value]));
+	return(Put_String(section, entry, Armor_Type_Name(value)));
 }
 
 

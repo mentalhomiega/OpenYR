@@ -184,6 +184,7 @@ class Tactical : public AbstractClass
 		void Draw_Rubber_Band(void);
 		void Draw_Mind_Control_Links(void);
 		void Draw_Psychic_Lines(void);
+		void Draw_Hidden_Markers(void);
 		void Draw_Super_Timers(void);
 
 		/*

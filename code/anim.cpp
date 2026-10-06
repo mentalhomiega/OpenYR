@@ -53,6 +53,7 @@
 #include "always.h"
 
 #include "anim.h"
+#include "custompalette.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -132,7 +133,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	OwnerHouse(HOUSE_NONE),
 	AlternativeDrawer(NULL),
 	AlternativeBrightness(NORMAL_LIGHT),
-	ZAdjust(zadjust),
+	ZAdjust(zadjust != 0 ? zadjust : (type != NULL ? ((AnimTypeClass const *)type)->ZAdjust : 0)),
 	YSortAdjust(0),
 	FlamingGuyCoords(COORD_NONE),
 	FlamingGuyRetries(0),
@@ -579,6 +580,9 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				convert = AnimDrawer;
 				if (Class->IsAltPalette) {
 					convert = ColorSchemes[0]->Converter;
+				}
+				if (ConvertClass * custom = Custom_Palette_Drawer(Class->CustomPalette)) {
+					convert = custom;
 				}
 				if (!Class->IsUseNormalLight) {
 					brightness = Map[Render_Coord().As_Cell()].Brightness;

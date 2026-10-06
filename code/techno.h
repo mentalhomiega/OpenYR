@@ -34,6 +34,7 @@
 
 #include "_voxel.h"
 #include "audio/audiohandle.h"
+#include "attacheffect.h"
 #include "capture.h"
 #include "disklaser.h"
 #include "slaveman.h"
@@ -167,6 +168,9 @@ class TechnoClass :	public RadioClass,
 
 		// The ring a DiskLaser weapon is drawing for this object's current shot.
 		DiskLaserClass DiskLaser;
+
+		// The Ares AttachEffect instances on this object.
+		AttachedEffectsClass AttachedEffects;
 
 		// The vehicle this object holds with a locomotor warhead, the object holding this one, whether
 		// this one is being held, and whether it was let go in the air and is falling to its destruction.
@@ -739,11 +743,13 @@ class TechnoClass :	public RadioClass,
 		void Kill_Cargo(TechnoClass * source);
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
+		void Pay_Bounty(TechnoClass * source) const;
 		virtual void Reduce_Ammunition(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL);
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
+		int Elevation_Range_Bonus(AbstractClass const * target, bool withheight = true) const;
 		virtual void Death_Announcement(TechnoClass const * source=0) const = 0;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which=0) const;
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const;
@@ -762,6 +768,12 @@ class TechnoClass :	public RadioClass,
 		int Get_Sight_Bonus(Coord const & coord);
 		static void Remove_Target(AbstractClass * target);
 		bool Has_Ability(AbilityType ability) const;
+		bool Is_Immune_To_EMP(void) const;
+		bool Is_Immune_To_Radiation(void) const;
+		bool Is_Warpable(void) const;
+		bool Is_Immune_To_Poison(void) const;
+		bool Is_Immune_To_Psionic_Weapons(void) const;
+		bool Is_Immune_To_Psionics(void) const;
 		bool Should_Use_High_Arc(int which) const;
 		double Target_Threat(TechnoClass * target, Coord const & firing_coord = COORD_NONE) const;
 
@@ -817,6 +829,7 @@ class TechnoClass :	public RadioClass,
 		SurfaceRegion Techno_Render_Voxel_Shadow(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int layer_index, ShapeFlags_Type flags, bool cached) const;
 
 		bool Is_Decoration_Visible(void) const;
+		bool Is_Hidden_Behind_Building(void) const;
 		Point2D Pip_Origin(Point2D const & point) const;
 		virtual void Draw_Health_Bar_Old(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;

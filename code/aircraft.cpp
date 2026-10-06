@@ -4275,6 +4275,11 @@ bool AircraftClass::Considered_Vehicle(void) const
 /// <returns>bool; Was the aircraft sent into a crash?</returns>
 bool AircraftClass::Crash(TechnoClass * source)
 {
+	// A type that may not crash is destroyed where it flies, as one on the ground is.
+	if (!Class->IsCrashable) {
+		return(false);
+	}
+
 	if (HeightAGL > 0) {
 		if (Strength > 0) {
 			if (source != NULL && Tag != NULL) {
@@ -4337,7 +4342,7 @@ ClassID AircraftClass::Class_ID(void) const
 /// <returns>Returns with a pointer to the name given to this aircraft's type.</returns>
 char const * AircraftClass::Full_Name(void) const
 {
-	return(Class->GivenName);
+	return(Class->Full_Name());
 }
 
 

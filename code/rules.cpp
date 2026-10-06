@@ -48,6 +48,7 @@
 
 #include "always.h"
 
+#include "armortypes.h"
 #include "rules.h"
 
 #include "_bench.h"
@@ -347,6 +348,8 @@ RulesClass::RulesClass(void) :
 	OccupyDamageMultiplier(1.0),
 	OpenToppedDamageMultiplier(1.0),
 	OpenToppedRangeBonus(0),
+	OpenTransportRangeBonus(0),
+	OpenTransportDamageMultiplier(1.0),
 	BunkerDamageMultiplier(1.0),
 	BunkerROFMultiplier(1.0),
 	BunkerWeaponRangeBonus(2),
@@ -359,6 +362,10 @@ RulesClass::RulesClass(void) :
 	IvanDamage(0),
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
+	IsChronoInfantryCrush(true),
+	IsBountyDisplay(false),
+	IsEnemyInsignia(true),
+	IsKeepAliveSet(false),
 	DeathWeapon(NULL),
 	IvanIconFlickerRate(0),
 	BombTickingSound(VOC_NONE),
@@ -448,6 +455,9 @@ RulesClass::RulesClass(void) :
 	RadDurationMultiple(0),
 	RadApplicationDelay(0),
 	RadLevelMax(0),
+	ElevationIncrement(0),
+	ElevationIncrementBonus(1.0),
+	ElevationBonusCap(0.0),
 	RadLevelDelay(0),
 	RadLightDelay(0),
 	RadLevelFactor(0.0),
@@ -718,6 +728,7 @@ RulesClass::RulesClass(void) :
 	FirestormAirAnim(NULL),
 	FirestormGroundAnim(NULL),
 	MoveFlash(NULL),
+	Behind(NULL),
 	BombParachute(NULL),
 	Parachute(NULL),
 	GuardAreaTargetingDelay(36),
@@ -867,6 +878,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	while (::Warheads.Count()) {
 		delete ::Warheads[0];
 	}
+	Clear_Armor_Types();
 	while (VoxelAnimTypes.Count()) {
 		delete VoxelAnimTypes[0];
 	}
@@ -954,6 +966,9 @@ bool RulesClass::Addition(CCINIClass const & ini)
 {
 	BStart(BENCH_RULES);
 
+	// Declared armor types come first, so warheads and objects can name them.
+	Read_Armor_Types(ini);
+
 	Color_Schemes(ini);
 	Do_HouseTypes(ini);
 	Do_Sides(ini);
@@ -988,6 +1003,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Audio_Visual_Rules(ini);
 	Special_Weapons(ini);
 	Radiation(ini);
+	Elevation_Model(ini);
 
 	BEnd(BENCH_RULES);
 
@@ -1037,6 +1053,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 	static char const * const YR_GENERAL = "General";
 	if (ini.Is_Present(AUDIOVISUAL)) {
 		UnloadingHarvester = TGet_Class(ini, AUDIOVISUAL, "UnloadingHarvester", UnloadingHarvester);
+		IsBountyDisplay = ini.Get_Bool(AUDIOVISUAL, "BountyDisplay", IsBountyDisplay);
 		PoseDir = (Dir256)ini.Get_Int(AUDIOVISUAL, "PoseDir", PoseDir);
 		DropPodPuff = TGet_Class(ini, AUDIOVISUAL, "DropPodPuff", DropPodPuff);
 		WaypointAnimationSpeed = ini.Get_Int(AUDIOVISUAL, "WaypointAnimationSpeed", WaypointAnimationSpeed);
@@ -1274,6 +1291,23 @@ bool RulesClass::Radiation(CCINIClass const & ini)
 }
 
 
+/// <summary>
+/// Fetches the range bonus a firer gets for standing above its target (RulesClass::ElevationModel).
+/// </summary>
+/// <returns>bool; Was the [ElevationModel] section found and processed?</returns>
+bool RulesClass::Elevation_Model(CCINIClass const & ini)
+{
+	static char const * const ELEVATIONMODEL = "ElevationModel";
+	if (ini.Is_Present(ELEVATIONMODEL)) {
+		ElevationIncrement = ini.Get_Int(ELEVATIONMODEL, "ElevationIncrement", ElevationIncrement);
+		ElevationIncrementBonus = ini.Get_Float(ELEVATIONMODEL, "ElevationIncrementBonus", ElevationIncrementBonus);
+		ElevationBonusCap = ini.Get_Float(ELEVATIONMODEL, "ElevationBonusCap", ElevationBonusCap);
+		return(true);
+	}
+	return(false);
+}
+
+
 bool RulesClass::Combat_Damage(CCINIClass const & ini)
 {
 	static char const * const COMBATDAMAGE = "CombatDamage";
@@ -1282,6 +1316,8 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
 		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
 		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
+		OpenTransportRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenTransport.RangeBonus", OpenTransportRangeBonus);
+		OpenTransportDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenTransport.DamageMultiplier", OpenTransportDamageMultiplier);
 		BunkerDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerDamageMultiplier", BunkerDamageMultiplier);
 		BunkerROFMultiplier = ini.Get_Float(COMBATDAMAGE, "BunkerROFMultiplier", BunkerROFMultiplier);
 		BunkerWeaponRangeBonus = ini.Get_Int(COMBATDAMAGE, "BunkerWeaponRangeBonus", BunkerWeaponRangeBonus);
@@ -1409,6 +1445,9 @@ bool RulesClass::General(CCINIClass const & ini)
 	if (ini.Is_Present(GENERAL)) {
 		LargeVisceroid = TGet_Class(ini, GENERAL, "LargeVisceroid", LargeVisceroid);
 		IronCurtainInvokeAnim = TGet_Class(ini, GENERAL, "IronCurtainInvokeAnim", IronCurtainInvokeAnim);
+		IsChronoInfantryCrush = ini.Get_Bool(GENERAL, "ChronoInfantryCrush", IsChronoInfantryCrush);
+		BountyEnablers = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "BountyEnablers", BountyEnablers);
+		IsEnemyInsignia = ini.Get_Bool(GENERAL, "EnemyInsignia", IsEnemyInsignia);
 		NukeTakeOff = TGet_Class(ini, GENERAL, "NukeTakeOff", NukeTakeOff);
 		V3Rocket.Read(ini, GENERAL, "V3Rocket");
 		SlaveMinerShortScan = ini.Get_Lepton(GENERAL, "SlaveMinerShortScan", SlaveMinerShortScan);
@@ -1427,6 +1466,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		Parachute = TGet_Class(ini, GENERAL, "Parachute", Parachute);
 		BombParachute = TGet_Class(ini, GENERAL, "BombParachute", BombParachute);
 		MoveFlash = TGet_Class(ini, GENERAL, "MoveFlash", MoveFlash);
+		Behind = TGet_Class(ini, GENERAL, "Behind", Behind);
 		DefaultMirageDisguises = TGet_TypeList<TerrainTypeClass>(ini, GENERAL, "DefaultMirageDisguises", DefaultMirageDisguises);
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
@@ -1456,6 +1496,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LightningPrintText = ini.Get_Bool(GENERAL, "LightningPrintText", LightningPrintText);
 		WeatherConClouds = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConClouds", WeatherConClouds);
 		WeatherConBolts = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConBolts", WeatherConBolts);
+		DamageFireTypes = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "DamageFireTypes", DamageFireTypes);
 		WeatherConBoltExplosion = TGet_Class(ini, GENERAL, "WeatherConBoltExplosion", WeatherConBoltExplosion);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "MetallicDebris", MetallicDebris);
 		MutateExplosion = ini.Get_Bool(GENERAL, "MutateExplosion", MutateExplosion);
@@ -2598,6 +2639,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyDamageMultiplier);
 	stream.Serialize(OpenToppedDamageMultiplier);
 	stream.Serialize(OpenToppedRangeBonus);
+	stream.Serialize(OpenTransportRangeBonus);
+	stream.Serialize(OpenTransportDamageMultiplier);
 	stream.Serialize(BunkerDamageMultiplier);
 	stream.Serialize(BunkerROFMultiplier);
 	stream.Serialize(BunkerWeaponRangeBonus);
@@ -2610,6 +2653,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IvanDamage);
 	stream.Serialize(IvanTimedDelay);
 	stream.Serialize(IsCanDetonateTimeBomb);
+	stream.Serialize(IsChronoInfantryCrush);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(IvanIconFlickerRate);
 	stream.Serialize(BombTickingSound);
@@ -2649,6 +2693,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightningPrintText);
 	stream.Serialize(WeatherConClouds);
 	stream.Serialize(WeatherConBolts);
+	stream.Serialize(DamageFireTypes);
 	stream.Serialize(WeatherConBoltExplosion);
 	stream.Serialize(LightningSounds);
 	stream.Serialize(StormSound);
@@ -2699,6 +2744,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadDurationMultiple);
 	stream.Serialize(RadApplicationDelay);
 	stream.Serialize(RadLevelMax);
+	stream.Serialize(ElevationIncrement);
+	stream.Serialize(ElevationIncrementBonus);
+	stream.Serialize(ElevationBonusCap);
 	stream.Serialize(RadLevelDelay);
 	stream.Serialize(RadLightDelay);
 	stream.Serialize(RadLevelFactor);
@@ -2726,6 +2774,10 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TunnelSpeed);
 	stream.Serialize(TiberiumHeal);
 	stream.Serialize(HSBuilding);
+	stream.Serialize(BountyEnablers);
+	stream.Serialize(IsBountyDisplay);
+	stream.Serialize(IsEnemyInsignia);
+	stream.Serialize(IsKeepAliveSet);
 	stream.Serialize(IsFreeMCV);
 	stream.Serialize(IsBerzerkAllowed);
 	stream.Serialize(PoseDir);
@@ -2964,6 +3016,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirestormAirAnim);
 	stream.Serialize(FirestormGroundAnim);
 	stream.Serialize(MoveFlash);
+	stream.Serialize(Behind);
 	stream.Serialize(BombParachute);
 	stream.Serialize(Parachute);
 	stream.Serialize(GuardAreaTargetingDelay);
@@ -3363,6 +3416,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == MoveFlash) {
 		MoveFlash = NULL;
+	}
+	if (target == Behind) {
+		Behind = NULL;
 	}
 	if (target == BombParachute) {
 		BombParachute = NULL;

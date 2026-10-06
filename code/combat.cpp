@@ -135,7 +135,7 @@ int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor,
 		damage = (int)((full - edge) * (spread - distance) / spread + edge);
 	}
 	damage = std::max(damage, 0);
-	damage = (int)(damage * warhead->Modifier[armor]);
+	damage = (int)(damage * warhead->Versus(armor));
 
 	damage = std::min(damage, Rule->MaxDamage);
 	return(damage);

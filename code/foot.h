@@ -211,6 +211,12 @@ class FootClass : public TechnoClass
 		// Whether the object was sinking last frame, so the sinking sounds play once as it starts.
 		bool WasSinking;
 
+		// The sound from the type's MoveSound list playing while the object moves, and the frames
+		// it keeps playing after the object stops.
+		AudioHandle MoveSoundHandle;
+		bool IsMoveSoundPlaying;
+		int MoveSoundDelay;
+
 		/*
 		 * This is the locomotor that actually moves the object, created from the class ID
 		 * named by its type. It can be swapped while the game runs -- a falling object is

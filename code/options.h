@@ -122,6 +122,9 @@ class OptionsClass {
 		 */
 		bool ActionLines;
 
+		// If the marker over an object hidden behind a building is to be shown, then this flag will be true.
+		bool ShowHidden;
+
 		/*
 		 * If tooltips are to pop up over the user interface, then this flag will be true.
 		 */

@@ -156,6 +156,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceMove(),
 	VoiceAttack(),
 	VoiceDie(),
+	DieSound(),
+	MoveSound(),
 	VoiceFeedback(),
 	AuxSound1(VOC_NONE),
 	AuxSound2(VOC_NONE),
@@ -189,6 +191,29 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MindClearedSound(VOC_NONE),
 	LeptonMindControlOffset(70),
 	IsTeleporter(false),
+	IsChronoshiftAllowed(true),
+	IsChronoshiftCrushable(true),
+	IsBounty(false),
+	BountyDisplay(-1),
+	BountyValue{0, 0, 0},
+	InsigniaShapes{NULL, NULL, NULL},
+	InsigniaFrame{-1, -1, -1},
+	InsigniaShowEnemy(-1),
+	IsVehicleThiefAllowed(true),
+	BuildTimeMultipleFactory(-1.0),
+	IsCrashable(true),
+	PromoteVeteranSound(VOC_NONE),
+	PromoteEliteSound(VOC_NONE),
+	IsHealthBarHidden(false),
+	EMPModifier(1.0),
+	EMPThreshold(0),
+	IsCanBeReversed(true),
+	KeepAlive(-1),
+	IsAttackFriendlies(false),
+	IsAttackCursorOnFriendlies(false),
+	IsDefaultToGuardArea(false),
+	IsSelectableCombatant(false),
+	BuildTimeMultiplier(1.0),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -264,6 +289,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	RateDown(0),
 	IsGunner(false),
 	IFVMode(0),
+	AirRangeBonus(0),
 	IsOpenTopped(false),
 	OpenTransportWeapon(-1),
 	FlightLevel(-1),
@@ -280,6 +306,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	Capacity(0),
 	TurretNotExportedOnGround(false),
 	IsTypeImmune(false),
+	IsCanBeHidden(true),
 	IsDetectDisguise(false),
 	DetectDisguiseRange(0),
 	IsMoveToShroud(true),
@@ -653,6 +680,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 {
 	if (BASECLASS::Read_INI(ini)) {
 
+		// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).
+		IsCanBeHidden = ArtINI.Get_Bool(Name(), "CanBeHidden", IsCanBeHidden);
 		IsTypeImmune = ini.Get_Bool(Name(), "TypeImmune", IsTypeImmune);
 		IsDetectDisguise = ini.Get_Bool(Name(), "DetectDisguise", IsDetectDisguise);
 		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
@@ -728,6 +757,94 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		MindClearedSound = ini.Get_VocType(Name(), "MindClearedSound", MindClearedSound);
 		LeptonMindControlOffset = ini.Get_Int(Name(), "LeptonMindControlOffset", LeptonMindControlOffset);
 		IsTeleporter = ini.Get_Bool(Name(), "Teleporter", IsTeleporter);
+		IsChronoshiftAllowed = ini.Get_Bool(Name(), "Chronoshift.Allow", IsChronoshiftAllowed);
+		IsChronoshiftCrushable = ini.Get_Bool(Name(), "Chronoshift.Crushable", IsChronoshiftCrushable);
+		IsBounty = ini.Get_Bool(Name(), "Bounty", IsBounty);
+		if (ini.Is_Present(Name(), "Bounty.Display")) {
+			BountyDisplay = ini.Get_Bool(Name(), "Bounty.Display", false) ? 1 : 0;
+		}
+		// Bounty.Value sets every rank's value, and a rank's own key then overrides it.
+		if (ini.Is_Present(Name(), "Bounty.Value")) {
+			int const value = ini.Get_Int(Name(), "Bounty.Value", 0);
+			BountyValue[0] = BountyValue[1] = BountyValue[2] = value;
+		}
+		BountyValue[0] = ini.Get_Int(Name(), "Bounty.RookieValue", BountyValue[0]);
+		BountyValue[1] = ini.Get_Int(Name(), "Bounty.VeteranValue", BountyValue[1]);
+		BountyValue[2] = ini.Get_Int(Name(), "Bounty.EliteValue", BountyValue[2]);
+
+		// The shorthand keys set every rank, and a rank's own key then overrides it.
+		static char const * const RANKS[3] = {"Rookie", "Veteran", "Elite"};
+		char key[48];
+		char value[64];
+		if (ini.Get_String(Name(), "Insignia", "", value, sizeof(value)) > 0) {
+			InsigniaFile[0] = InsigniaFile[1] = InsigniaFile[2] = value;
+		}
+		if (ini.Is_Present(Name(), "InsigniaFrame")) {
+			InsigniaFrame[0] = InsigniaFrame[1] = InsigniaFrame[2] = ini.Get_Int(Name(), "InsigniaFrame", -1);
+		}
+		if (ini.Get_String(Name(), "InsigniaFrames", "", value, sizeof(value)) > 0) {
+			sscanf(value, "%d,%d,%d", &InsigniaFrame[0], &InsigniaFrame[1], &InsigniaFrame[2]);
+		}
+		for (int rank = 0; rank < 3; rank++) {
+			snprintf(key, sizeof(key), "Insignia.%s", RANKS[rank]);
+			if (ini.Get_String(Name(), key, "", value, sizeof(value)) > 0) {
+				InsigniaFile[rank] = value;
+			}
+			snprintf(key, sizeof(key), "InsigniaFrame.%s", RANKS[rank]);
+			InsigniaFrame[rank] = ini.Get_Int(Name(), key, InsigniaFrame[rank]);
+		}
+		if (ini.Is_Present(Name(), "Insignia.ShowEnemy")) {
+			InsigniaShowEnemy = ini.Get_Bool(Name(), "Insignia.ShowEnemy", true) ? 1 : 0;
+		}
+		Load_Insignia_Shapes();
+
+		IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
+		BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
+		IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
+		PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
+		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
+		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
+		EMPModifier = ini.Get_Float(Name(), "EMP.Modifier", EMPModifier);
+		AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
+		AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
+		AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
+		AttachEffect.SpeedMultiplier = ini.Get_Float(Name(), "AttachEffect.SpeedMultiplier", AttachEffect.SpeedMultiplier);
+		AttachEffect.ArmorMultiplier = ini.Get_Float(Name(), "AttachEffect.ArmorMultiplier", AttachEffect.ArmorMultiplier);
+		AttachEffect.FirepowerMultiplier = ini.Get_Float(Name(), "AttachEffect.FirepowerMultiplier", AttachEffect.FirepowerMultiplier);
+		AttachEffect.ROFMultiplier = ini.Get_Float(Name(), "AttachEffect.ROFMultiplier", AttachEffect.ROFMultiplier);
+		AttachEffect.IsCloakable = ini.Get_Bool(Name(), "AttachEffect.Cloakable", AttachEffect.IsCloakable);
+		AttachEffect.IsForceDecloak = ini.Get_Bool(Name(), "AttachEffect.ForceDecloak", AttachEffect.IsForceDecloak);
+		AttachEffect.IsDiscardOnEntry = ini.Get_Bool(Name(), "AttachEffect.DiscardOnEntry", AttachEffect.IsDiscardOnEntry);
+		AttachEffect.IsPenetratesIronCurtain = ini.Get_Bool(Name(), "AttachEffect.PenetratesIronCurtain", AttachEffect.IsPenetratesIronCurtain);
+		AttachEffect.Delay = ini.Get_Int(Name(), "AttachEffect.Delay", AttachEffect.Delay);
+		AttachEffect.InitialDelay = ini.Get_Int(Name(), "AttachEffect.InitialDelay", AttachEffect.InitialDelay);
+		IsCanBeReversed = ini.Get_Bool(Name(), "CanBeReversed", IsCanBeReversed);
+		IsAttackFriendlies = ini.Get_Bool(Name(), "AttackFriendlies", IsAttackFriendlies);
+		IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
+		IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
+		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
+		BuildTimeMultiplier = ini.Get_Float(Name(), "BuildTimeMultiplier", BuildTimeMultiplier);
+		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
+			GroupAs = value;
+		}
+		if (ini.Is_Present(Name(), "KeepAlive")) {
+			KeepAlive = ini.Get_Bool(Name(), "KeepAlive", false) ? 1 : 0;
+			Rule->IsKeepAliveSet = true;
+		}
+		if (ini.Get_String(Name(), "ReversedAs", "", value, sizeof(value)) > 0) {
+			ReversedAs = value;
+		}
+		if (ini.Get_String(Name(), "EMP.Threshold", "", value, sizeof(value)) > 0) {
+			if (stricmp(value, "inair") == 0) {
+				EMPThreshold = -1;
+			} else if (stricmp(value, "yes") == 0 || stricmp(value, "true") == 0) {
+				EMPThreshold = 1;
+			} else if (stricmp(value, "no") == 0 || stricmp(value, "false") == 0) {
+				EMPThreshold = 0;
+			} else {
+				EMPThreshold = atoi(value);
+			}
+		}
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);
 		CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
@@ -826,6 +943,22 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
 		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
+		AirRangeBonus = ini.Get_Lepton(Name(), "AirRangeBonus", AirRangeBonus);
+		if (ini.Is_Present(Name(), "OpenTopped.RangeBonus")) {
+			OpenToppedRangeBonus = ini.Get_Int(Name(), "OpenTopped.RangeBonus", 0);
+		}
+		if (ini.Is_Present(Name(), "OpenTopped.DamageMultiplier")) {
+			OpenToppedDamageMultiplier = ini.Get_Float(Name(), "OpenTopped.DamageMultiplier", 1.0);
+		}
+		if (ini.Is_Present(Name(), "OpenTopped.WarpDistance")) {
+			OpenToppedWarpDistance = ini.Get_Int(Name(), "OpenTopped.WarpDistance", 0);
+		}
+		if (ini.Is_Present(Name(), "OpenTransport.RangeBonus")) {
+			OpenTransportRangeBonus = ini.Get_Int(Name(), "OpenTransport.RangeBonus", 0);
+		}
+		if (ini.Is_Present(Name(), "OpenTransport.DamageMultiplier")) {
+			OpenTransportDamageMultiplier = ini.Get_Float(Name(), "OpenTransport.DamageMultiplier", 1.0);
+		}
 		IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
 		OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
 		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
@@ -845,6 +978,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
 		VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
+		DieSound = ini.Get_VocType_List(ini, IniName, "DieSound", DieSound);
+		MoveSound = ini.Get_VocType_List(ini, IniName, "MoveSound", MoveSound);
 		VoiceFeedback = ini.Get_VocType_List(ini, IniName, "VoiceFeedback", VoiceFeedback);
 		AuxSound1 = ini.Get_VocType(Name(), "AuxSound1", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "AuxSound2", AuxSound2);
@@ -956,6 +1091,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsRegulated = ArtINI.Get_Bool(Graphic_Name(), "Normalized", IsRegulated);
 		IsVisibleLoad = ArtINI.Get_Bool(Graphic_Name(), "VisibleLoad", IsVisibleLoad);
 		ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
+
+		char pcx[64];
+		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
+		CameoPCX = pcx;
 
 		TStringID<24> cameo;
 		if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
@@ -1125,7 +1264,11 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 	}
 
 	if (target != NULL && weapon != NULL) {
-		int range = weapon->Range + bonus - CELL_LEPTON / 3;
+		// A target in the air is reached AirRangeBonus farther (TechnoClass::InRange, 0x6F7274).
+		int range = weapon->Range + bonus;
+		if (target->In_Air()) {
+			range += AirRangeBonus;
+		}
 		Coord tcoord = target->Center_Coord();
 		int minrange = weapon->MinimumRange;
 
@@ -1135,6 +1278,9 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 
 		if (weapon->Bullet->IsArcing) {
 			int dist = (Point2D(coord) - Point2D(tcoord)).Length();
+			if (dist > range) {
+				return(false);
+			}
 			int height = tcoord.Z - coord.Z;
 			double gravity = weapon->Bullet->IsFloater ? Get_Floater_Gravity() : Rule->Gravity;
 			if (!Is_Projectile_Trajectory_Valid(weapon->MaxSpeed, dist, height, gravity) || (Map[tcoord].IsUnderBridge && tcoord.Z - coord.Z >= 3 * LEVEL_LEPTON_H)) {
@@ -1218,6 +1364,33 @@ void TechnoTypeClass::Post_Load(void)
 		}
 		_makepath(fname, NULL, NULL, buffer, ".SHP");
 		CameoData = (const ShapeSet *)MFCD::Retrieve(fname);
+
+		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
+		CameoPCX = buffer;
+
+		Load_Insignia_Shapes();
+}
+
+
+std::string TechnoTypeClass::Select_Group(void) const
+{
+	std::string group = GroupAs.empty() ? std::string(Name()) : GroupAs;
+	for (char & letter : group) {
+		letter = (char)toupper((unsigned char)letter);
+	}
+	return(group);
+}
+
+
+void TechnoTypeClass::Load_Insignia_Shapes(void)
+{
+	for (int rank = 0; rank < 3; rank++) {
+		InsigniaShapes[rank] = NULL;
+		if (!InsigniaFile[rank].empty()) {
+			std::string const filename = InsigniaFile[rank] + ".SHP";
+			InsigniaShapes[rank] = (ShapeSet const *)MFCD::Retrieve(filename.c_str());
+		}
+	}
 }
 
 
@@ -1279,6 +1452,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VoiceMove);
 	stream.Serialize(VoiceAttack);
 	stream.Serialize(VoiceDie);
+	stream.Serialize(DieSound);
+	stream.Serialize(MoveSound);
 	stream.Serialize(VoiceFeedback);
 	stream.Serialize(AuxSound1);
 	stream.Serialize(AuxSound2);
@@ -1314,6 +1489,32 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MindClearedSound);
 	stream.Serialize(LeptonMindControlOffset);
 	stream.Serialize(IsTeleporter);
+	stream.Serialize(IsChronoshiftAllowed);
+	stream.Serialize(IsChronoshiftCrushable);
+	stream.Serialize(IsBounty);
+	stream.Serialize(BountyDisplay);
+	stream.Serialize(BountyValue);
+	stream.Serialize(InsigniaFile);
+	stream.Serialize(InsigniaFrame);
+	stream.Serialize(InsigniaShowEnemy);
+	stream.Serialize(IsVehicleThiefAllowed);
+	stream.Serialize(BuildTimeMultipleFactory);
+	stream.Serialize(IsCrashable);
+	stream.Serialize(PromoteVeteranSound);
+	stream.Serialize(PromoteEliteSound);
+	stream.Serialize(IsHealthBarHidden);
+	stream.Serialize(EMPModifier);
+	stream.Serialize(EMPThreshold);
+	stream.Serialize(AttachEffect);
+	stream.Serialize(IsCanBeReversed);
+	stream.Serialize(ReversedAs);
+	stream.Serialize(GroupAs);
+	stream.Serialize(KeepAlive);
+	stream.Serialize(IsAttackFriendlies);
+	stream.Serialize(IsAttackCursorOnFriendlies);
+	stream.Serialize(IsDefaultToGuardArea);
+	stream.Serialize(IsSelectableCombatant);
+	stream.Serialize(BuildTimeMultiplier);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);
@@ -1389,6 +1590,12 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RateDown);
 	stream.Serialize(IsGunner);
 	stream.Serialize(IFVMode);
+	stream.Serialize(AirRangeBonus);
+	stream.Serialize(OpenToppedRangeBonus);
+	stream.Serialize(OpenToppedDamageMultiplier);
+	stream.Serialize(OpenToppedWarpDistance);
+	stream.Serialize(OpenTransportRangeBonus);
+	stream.Serialize(OpenTransportDamageMultiplier);
 	stream.Serialize(TurretWeapon);
 	stream.Serialize(IsOpenTopped);
 	stream.Serialize(OpenTransportWeapon);
@@ -1428,6 +1635,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Weapons);
 	stream.Serialize(EliteWeapons);
 	stream.Serialize(IsTypeImmune);
+	stream.Serialize(IsCanBeHidden);
 	stream.Serialize(IsDetectDisguise);
 	stream.Serialize(DetectDisguiseRange);
 	stream.Serialize(IsMoveToShroud);
@@ -1501,6 +1709,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(AccelerationFactor);
 	crc(CloakingSpeed);
 	crc(DebrisTypes.Count());
+	AttachEffect.Compute_CRC(crc);
 	crc(Dock.Count());
 	crc(DebrisMaximums.Count());
 	crc((char*)&Locomotor, sizeof(Locomotor));

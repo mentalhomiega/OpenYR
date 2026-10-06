@@ -6,6 +6,7 @@ keys:
   - Selectable
   - UndeploysInto
   - IsMobileWar
+  - IsSelectableCombatant
 ---
 
 ## Starting a band
@@ -32,10 +33,10 @@ The box then selects each object whose drawing position lies inside it and that 
 
 - the player owns it;
 - its type has [`Selectable=yes`](/keys/selectable/);
-- it is not a structure, or it is a structure that [undeploys into a vehicle](/keys/undeploysinto/) and is neither a [construction yard](/keys/constructionyard/) nor an [`IsMobileWar=yes`](/keys/ismobilewar/) structure;
+- it is not a structure; or it is a structure that [undeploys into a vehicle](/keys/undeploysinto/) and is neither a [construction yard](/keys/constructionyard/) nor an [`IsMobileWar=yes`](/keys/ismobilewar/) structure; or its type sets [`IsSelectableCombatant=yes`](/keys/isselectablecombatant/);
 - it is out of [limbo](/glossary/#limbo);
 - it is not a loaner, meaning an object the scenario only lends the player. A loaner the player cannot currently move, such as one stunned by an [EMP pulse](/systems/emp-pulse/), is taken.
 
-A deployed artillery piece or tick tank is therefore selected by a box drawn over it. A construction yard, a deployed mobile war factory and every structure that does not undeploy are not.
+A deployed artillery piece or tick tank is therefore selected by a box drawn over it. A construction yard, a deployed mobile war factory and every other structure that does not undeploy are not, unless its type sets `IsSelectableCombatant=yes`.
 
 Only the first object the box selects plays its selection response. The [Selected by player](/mapping/events/tevent-selected/) trigger event also springs for that first object only.

@@ -32,6 +32,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "_house.h"
 #include "base.h"
 #include "coord.h"
@@ -246,6 +249,9 @@ class HouseClass : public AbstractClass
 		bool IsSide0TechStolen;
 		bool IsSide1TechStolen;
 		bool IsSide2TechStolen;
+
+		// The types this house has reverse engineered, by name; it builds them without their prerequisites.
+		std::vector<std::string> ReversedTypes;
 
 		// Set once a spy of this house has entered another house's barracks or war factory: the
 		// trainable infantry or vehicles this house builds from then on start as veterans.
@@ -813,7 +819,7 @@ class HouseClass : public AbstractClass
 		Cell Pick_Ion_Cannon_Target(void);
 		Cell Pick_Drop_Target(void);
 		SourceType Entry_Edge(void) const;
-		AircraftClass * Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry = NULL, int count = 0, AbstractClass * target_object = NULL);
+		AircraftClass * Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry = NULL, int count = 0, AbstractClass * target_object = NULL, FootClass * cargo = NULL, Cell const & start = CELL_NONE);
 		Cell Pick_Mutator_Target(void);
 		Cell Pick_Dominator_Target(void);
 		bool Flag_Attach(Cell const & cell, bool set_home = false);
@@ -844,6 +850,7 @@ class HouseClass : public AbstractClass
 		bool Sees_Whole_Map(void) const;
 		HouseClass * Player_View(void) const;
 		bool Is_Player_View(void) const;
+		bool Has_Powered_Unit_Source(TechnoTypeClass const * type) const;
 #ifdef _DEBUG
 		void Debug_Dump(MonoClass *mono) const;
 		void Print_Zone_Stats(int x, int y, ZoneType zone, MonoClass * mono) const;
@@ -905,6 +912,9 @@ class HouseClass : public AbstractClass
 		void Set_Factory(RTTIType rtti, FactoryClass * factory);
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
+		bool Is_Reversed(ObjectTypeClass const * type) const;
+		bool Has_Keep_Alive(void) const;
+		bool Add_Reversed(TechnoTypeClass const * type);
 
 		int Can_Build(ObjectTypeClass const * type, bool illegal, bool nofactory) const;
 		FactoryClass * Factory_Producing_This(ObjectTypeClass const * object) const;

@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "objtype.h"
 
 #include "anim.hh"
@@ -254,6 +256,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		int YDrawOffset;
 
+		// The depth correction an animation of this type starts with when its creator gives none (AnimTypeClass::ZAdjust).
+		int ZAdjust;
+
 		/*
 		 * This is the number of frames devoted to each of the eight facings of a burning
 		 * victim's run cycle. The stage to display is worked out from the direction he is
@@ -351,6 +356,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 * instead of the shared animation drawer, then this flag will be true.
 		 */
 		bool IsAltPalette;
+
+		// A palette file the animation is drawn with instead of the animation palette (Ares CustomPalette).
+		std::string CustomPalette;
 
 		/*
 		**	If this animation should run at a constant apparent rate regardless

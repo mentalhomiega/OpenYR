@@ -99,6 +99,9 @@ class HouseTypeClass : public AbstractTypeClass
 		 */
 		bool IsMultiplayPassive;
 
+		// Whether destroying this country's objects pays bounty (Ares GivesBounty).
+		bool IsGivesBounty;
+
 		/*
 		 * If a wall may be credited to this house, then this flag will be true. A wall
 		 * section belongs to whichever wall owning house has a building nearest it, so a

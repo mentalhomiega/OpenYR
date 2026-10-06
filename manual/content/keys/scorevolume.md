@@ -11,4 +11,4 @@ when_omitted:
 
 A value above `1` is read as `1`. A negative value is kept as written, and no track starts until the slider in the sound options dialog is moved above zero.
 
-The sound options dialog sets the volume with a ten-step slider. The change is written to `sun.ini` when the player leaves the options menu or, during a game, closes the game controls dialog with OK. While the volume is zero, the credits screen plays its track at `.4` and restores the stored volume when it closes.
+The sound options dialog sets the volume with a ten-step slider. The change is written to `RA2MD.INI` when the player leaves the options menu or, during a game, closes the game controls dialog with OK. While the volume is zero, the credits screen plays its track at `.4` and restores the stored volume when it closes.

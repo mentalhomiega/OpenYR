@@ -8,7 +8,7 @@ when_omitted:
   value: "0"
 ---
 
-A passenger firing from an [`OpenTopped=yes`](/keys/opentopped/) transport can fire at targets this many whole cells beyond its weapons' `Range`. Weapons with arcing projectiles do not gain the bonus, because their reach depends on the projectile's speed.
+A passenger firing from an [`OpenTopped=yes`](/keys/opentopped/) transport can fire at targets this many whole cells beyond its weapons' `Range`. An arcing weapon gains the bonus too, but still cannot fire farther than its projectile's speed carries it. A transport's own [`OpenTopped.RangeBonus`](/keys/opentopped.rangebonus/) replaces this value for that transport.
 
 ```ini title="rulesmd.ini"
 [CombatDamage]

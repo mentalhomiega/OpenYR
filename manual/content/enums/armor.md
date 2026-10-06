@@ -22,7 +22,7 @@ values:
   - { constant: ARMOR_SPECIAL_2, value: 10, input: "special_2", meaning: "Second special armor class." }
 ---
 
-Armor names are matched without regard to case. A mod cannot add a twelfth class. How much damage a warhead deals to each class is set by that warhead's [`Verses`](/keys/verses/) list, which has one entry per class in the order shown above.
+Armor names are matched without regard to case. A mod can add further classes with [`[ArmorTypes]`](/systems/armor-types/). How much damage a warhead deals to each class is set by that warhead's [`Verses`](/keys/verses/) list, which has one entry per class in the order shown above. A warhead's `Versus.<armor>` entries set the same figure by name, for these classes and for declared ones.
 
 The `wood` class is also tested outside `Verses`. A [`Wood=yes`](/keys/wood/) warhead can reduce a wall overlay whose class is `wood`, and only a terrain object whose class is `wood` can catch fire. [`Armor`](/keys/armor/#scope-aircrafttype) covers both.
 

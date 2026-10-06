@@ -50,6 +50,12 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsFloater;
 
 		/*
+		 * A weapon firing this projectile gains range when its firer stands above the target, as
+		 * the [ElevationModel] rules set out (BulletTypeClass::SubjectToElevation).
+		 */
+		bool IsSubjectToElevation;
+
+		/*
 		**	Does this bullet type fly over walls?
 		*/
 		bool IsHigh;

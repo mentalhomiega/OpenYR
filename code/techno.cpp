@@ -131,6 +131,7 @@
 #include "always.h"
 
 #include "techno.h"
+#include "flyingtext.h"
 
 #include "_bench.h"
 #include "_convert.h"
@@ -609,10 +610,10 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 
 	// A weapon that cannot hurt the target's armor is passed over.
 	ArmorType const armor = techno->Class_Of()->Armor;
-	if (second->WarheadPtr != NULL && second->WarheadPtr->Modifier[armor] == 0.0) {
+	if (second->WarheadPtr != NULL && second->WarheadPtr->Versus(armor) == 0.0) {
 		return(0);
 	}
-	if (first->WarheadPtr != NULL && first->WarheadPtr->Modifier[armor] == 0.0) {
+	if (first->WarheadPtr != NULL && first->WarheadPtr->Versus(armor) == 0.0) {
 		return(1);
 	}
 
@@ -959,6 +960,9 @@ int TechnoClass::Time_To_Build(void) const
 
 	val *= House->BuildSpeedBias;
 
+	// The type's own multiplier follows the house's, each step rounded down (TechnoClass::TimeToBuild).
+	val *= TClass->BuildTimeMultiplier;
+
 	/*
 	**	Adjust the time to build based on the power output of the owning house.
 	*/
@@ -973,9 +977,10 @@ int TechnoClass::Time_To_Build(void) const
 	if (Rule->MultipleFactoryCap > 0) {
 		extra = std::min(extra, Rule->MultipleFactoryCap - 1);
 	}
-	if (Rule->MultipleFactory > 0) {
+	double const multiple = TClass->BuildTimeMultipleFactory >= 0 ? TClass->BuildTimeMultipleFactory : Rule->MultipleFactory;
+	if (multiple > 0) {
 		for (; extra > 0; extra--) {
-			val *= Rule->MultipleFactory;
+			val *= multiple;
 		}
 	}
 	if (RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsWall) {
@@ -1442,7 +1447,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 				Draw_Double_Selection_Bracket(center + Coord(x, -y, 0), center + Coord(x, -y, dim.Z), color);
 			}
 
-			if (Strength > 0 && (House->Is_Ally(PlayerPtr) || Rule->IsHealthBar)) {
+			if (Strength > 0 && (House->Is_Ally(PlayerPtr) || Rule->IsHealthBar) && !TClass->IsHealthBarHidden) {
 				Draw_Health_Bar_Old(point, cliprect);
 			}
 
@@ -1458,7 +1463,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			}
 		}
 
-		Draw_Health_Bar(point, cliprect);
+		if (!TClass->IsHealthBarHidden) {
+			Draw_Health_Bar(point, cliprect);
+		}
 		if (pips_shown) {
 			Draw_Pips(Pip_Origin(point), point, cliprect);
 		}
@@ -1468,7 +1475,9 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		bool hovered = Map.HoverObject == this && Class_Of()->IsSelectable && !IsALoaner;
 
 		if (hovered && Is_Decoration_Visible()) {
-			Draw_Health_Bar(point, cliprect);
+			if (!TClass->IsHealthBarHidden) {
+				Draw_Health_Bar(point, cliprect);
+			}
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
 			}
@@ -1613,6 +1622,23 @@ bool TechnoClass::Is_Decoration_Visible(void) const
 	}
 
 	return(true);
+}
+
+
+/// <summary>
+/// Checks whether this object stands where a building screens it from view, so that a marker
+/// shows where it is (TechnoClass::Update, 0x6F9E50). Aircraft, objects whose type has
+/// CanBeHidden=no, and objects that are cloaked, disguised or out of the map never count.
+/// </summary>
+bool TechnoClass::Is_Hidden_Behind_Building(void) const
+{
+	if (!TClass->IsCanBeHidden || RTTI == RTTI_AIRCRAFT || IsInLimbo) {
+		return(false);
+	}
+	if (Visual_Character() != VISUAL_NORMAL) {
+		return(false);
+	}
+	return(Map[Center_Coord()].Is_Covered());
 }
 
 
@@ -1921,6 +1947,8 @@ bool TechnoClass::Limbo(void)
 	TurretSound.Stop();
 	IsTurretSoundPlaying = false;
 
+	AttachedEffects.Limbo(this);
+
 	if (!IsInLimbo) {
 		House->Tracking_Active_Remove(this, false);
 		int risk = Risk();
@@ -2029,6 +2057,44 @@ int TechnoClass::Get_Sight_Bonus(Coord const & coord)
 }
 
 
+/// <summary>
+/// Works out the extra range a firer on higher ground has against the target, as gamemd's
+/// FUN_006F6F60 does. Every ElevationIncrement levels the firer's cell stands above the
+/// target's cell are worth ElevationIncrementBonus cells, up to ElevationBonusCap cells; the
+/// whole height difference is then added on for a direct-fire weapon, so its bonus is the
+/// length of that range step combined with the drop to the target; an arcing weapon, which is
+/// ranged by flat distance, gets the range step alone (FUN_006F70E0).
+/// </summary>
+/// <param name="target">The target being ranged.</param>
+/// <param name="withheight">Should the height difference be combined with the range step?</param>
+/// <returns>int; The extra range in leptons, or 0 when either side is off the ground.</returns>
+int TechnoClass::Elevation_Range_Bonus(AbstractClass const * target, bool withheight) const
+{
+	if (!On_Ground() || !target->On_Ground() || Rule->ElevationIncrement == 0) {
+		return(0);
+	}
+
+	// A cell's height counts a bridge deck on it as four more levels (CellClass, 0x487D50).
+	CellClass const & mycell = Map[Center_Coord()];
+	CellClass const & theircell = Map[target->Center_Coord()];
+	int levels = (mycell.Height + (mycell.IsBridgeDeck ? 4 : 0)) - (theircell.Height + (theircell.IsBridgeDeck ? 4 : 0));
+	if (levels < 0) {
+		levels = 0;
+	}
+
+	double cells = (levels / Rule->ElevationIncrement) * Rule->ElevationIncrementBonus;
+	if (!(cells < Rule->ElevationBonusCap)) {
+		cells = Rule->ElevationBonusCap;
+	}
+	int across = (int)cells * CELL_LEPTON_W;
+	if (!withheight) {
+		return(across);
+	}
+	int down = levels * LEVEL_LEPTON_H;
+	return((int)std::sqrt((double)(across * across + down * down)));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::In_Range -- Determines if specified target is within weapon range.             *
  *                                                                                             *
@@ -2077,7 +2143,14 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		bonus += Rule->BunkerWeaponRangeBonus * CELL_LEPTON_W;
 	}
 	if (IsInOpenToppedTransport) {
-		bonus += Rule->OpenToppedRangeBonus * CELL_LEPTON_W;
+		// The transport's OpenTopped.RangeBonus and the passenger's OpenTransport.RangeBonus both apply (Phobos).
+		int const transport = Transporter != NULL ? Transporter->TClass->OpenToppedRangeBonus.value_or(Rule->OpenToppedRangeBonus) : Rule->OpenToppedRangeBonus;
+		bonus += (transport + TClass->OpenTransportRangeBonus.value_or(Rule->OpenTransportRangeBonus)) * CELL_LEPTON_W;
+	}
+
+	// A projectile SubjectToElevation reaches farther from higher ground (TechnoClass::InRange, 0x6F7398 and 0x6F7473).
+	if (weapon != NULL && weapon->Bullet->IsSubjectToElevation) {
+		bonus += Elevation_Range_Bonus(target, !weapon->Bullet->IsArcing);
 	}
 	return(TClass->In_Range(coord, target, weapon, bonus));
 }
@@ -2293,7 +2366,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	object is a friend.  Unless we're a medic, of course.  But then,
 	**	only consider it a target if it's injured.
 	*/
-	if (!IsBerzerk && House->Is_Ally(object)) {
+	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
 		if (Combat_Damage() < 0 || engineer) {
 			if (object->HealthRatio == Rule->ConditionGreen) {
 				BEnd(BENCH_EVAL_OBJECT);
@@ -2348,6 +2421,14 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
+		}
+	}
+
+	if (Is_Weapon_Equipped()) {
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
+			BEnd(BENCH_EVAL_OBJECT);
+			return(false);
 		}
 	}
 
@@ -3275,6 +3356,8 @@ void TechnoClass::AI(void)
 
 	DiskLaser.AI();
 
+	AttachedEffects.AI(this);
+
 	// A vehicle let go in the air by its holder is destroyed when it reaches the ground (ReleaseLocomotor, 0x70FEE0).
 	if (IsLetGoByLocomotor && HeightAGL <= 0) {
 		IsLetGoByLocomotor = false;
@@ -3305,10 +3388,10 @@ void TechnoClass::AI(void)
 		}
 	}
 
-	// A PoweredUnit object shuts down while its owner has no working control structure, unless it
-	// stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
+	// A PoweredUnit object shuts down while its owner has no working control structure for its
+	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
 	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = House->PoweredUnitCenters <= 0 && Map[Get_Cell()].Cell_Building() == NULL;
+		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
 		if (off != IsDeactivated) {
 			IsDeactivated = off;
 			FootClass * foot = (FootClass *)this;
@@ -3403,7 +3486,8 @@ void TechnoClass::AI(void)
 	if (rank != CurrentRank) {
 		if (CurrentRank != -1 && rank > 0) {
 			if (House->Is_Player_Control()) {
-				Sound_Effect(rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound, PositionCoord);
+				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
+				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
 				Speak_Eva("EVA_UnitPromoted");
 			}
 			if (rank == 2) {
@@ -4059,6 +4143,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A warhead that does nothing to the target's armor does not fire at it, even when ordered to (TechnoClass::GetFireError, 0x6FC3FE).
+	if (techno != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Force_Fire(techno->Class_Of()->Armor)) {
+		return(FIRE_ILLEGAL);
+	}
+
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
 		goto CANT_FIRE;
 	}
@@ -4310,7 +4399,7 @@ int TechnoClass::Rearm_Delay(int which) const
 		return(delay);
 
 	} else {
-		int delay = weapon->ROF * House->ROFBias + Random_Pick(0, 2);
+		int delay = weapon->ROF * House->ROFBias * AttachedEffects.ROF_Multiplier() + Random_Pick(0, 2);
 
 		if (Has_Ability(ABILITY_ROF)) {
 			delay = (1.0 / (Rule->VeteranROF + 1.0)) * delay;
@@ -4572,7 +4661,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	// A DiskLaser weapon draws its ring and strikes when the ring closes (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsDiskLaser && target->Is_Techno()) {
 		if (!DiskLaser.Is_Active()) {
-			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias));
+			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias * AttachedEffects.Firepower_Multiplier()));
 			LastFireFrame = Frame;
 			Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
 		}
@@ -4641,7 +4730,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		firepower = 0;
 	}
 	if (firepower > 0) {
-		firepower = (int)(House->FirepowerBias * FirepowerBias * weapon->Attack);
+		firepower = (int)(House->FirepowerBias * FirepowerBias * AttachedEffects.Firepower_Multiplier() * weapon->Attack);
 		if (Has_Ability(ABILITY_FIREPOWER)) {
 			firepower = (int)((Rule->VeteranCombat + 1.0) * firepower);
 		}
@@ -4654,7 +4743,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
 	}
 	if (IsInOpenToppedTransport) {
-		firepower = (int)(firepower * Rule->OpenToppedDamageMultiplier);
+		// The transport's OpenTopped.DamageMultiplier and the passenger's OpenTransport.DamageMultiplier both apply (Phobos).
+		double const transport = Transporter != NULL ? Transporter->TClass->OpenToppedDamageMultiplier.value_or(Rule->OpenToppedDamageMultiplier) : Rule->OpenToppedDamageMultiplier;
+		firepower = (int)(firepower * transport * TClass->OpenTransportDamageMultiplier.value_or(Rule->OpenTransportDamageMultiplier));
 	}
 
 	int max_speed = weapon->MaxSpeed;
@@ -5101,7 +5192,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	If firing is possible and legal, then return this action potential.
 		*/
 		TechnoTypeClass const * ttype = TClass;
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object)) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
 
 			if (Is_Weapon_Equipped() ||
 					(RTTI == RTTI_INFANTRY &&
@@ -5761,7 +5852,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * object armor bias, veterancy armor bonus, and type-immunity.
 	 */
 	if (!forced && damage > 0) {
-		damage = (int)(1.0 / (House->ArmorBias * ArmorBias) * (double)damage);
+		damage = (int)(1.0 / (House->ArmorBias * ArmorBias * AttachedEffects.Armor_Multiplier()) * (double)damage);
 
 		if (Has_Ability(ABILITY_STRONGER)) {
 			damage = (int)(1.0 / (Rule->VeteranArmor + 1.0) * (double)damage);
@@ -5784,28 +5875,34 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 	}
 
-	/*
-	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
-	 */
-	if (Is_Iron_Curtained() && !forced && !negative) {
-		damage = 0;
-		return(RESULT_NONE);
-	}
-
 	// A radiation warhead does nothing to a type immune to radiation (TechnoClass::ReceiveDamage, 0x701900).
-	if (warhead != NULL && warhead->IsRadiation && TClass->IsImmuneToRadiation) {
+	if (warhead != NULL && warhead->IsRadiation && Is_Immune_To_Radiation()) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
 
 	// Nor does a PsychicDamage warhead to an ImmuneToPsionicWeapons type, or a Poison warhead to an ImmuneToPoison one.
-	if (warhead != NULL && ((warhead->IsPsychicDamage && TClass->IsImmuneToPsionicWeapons) || (warhead->IsPoison && TClass->IsImmuneToPoison))) {
+	if (warhead != NULL && ((warhead->IsPsychicDamage && Is_Immune_To_Psionic_Weapons()) || (warhead->IsPoison && Is_Immune_To_Poison()))) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
 
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, unless the damage is forced.
 	if (warhead != NULL && !warhead->IsAffectsAllies && !forced && source != NULL && House->Is_Ally(source->House)) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
+	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
+	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
+		AttachedEffects.Attach(this, warhead);
+	}
+
+	/*
+	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
+	 */
+	if (Is_Iron_Curtained() && !forced && !negative) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -5836,7 +5933,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 */
 	if (warhead != NULL && warhead->IsPsychedelic && !forced && !negative) {
 		bool const ally = source != NULL && House->Is_Ally(source->House);
-		if (!ally && !TClass->IsImmuneToPsionics && RTTI != RTTI_BUILDING) {
+		if (!ally && !Is_Immune_To_Psionics() && RTTI != RTTI_BUILDING) {
 			BerzerkDuration = Modify_Damage(damage, warhead, TClass->Armor, distance);
 			if (!IsBerzerk) {
 				IsBerzerk = true;
@@ -5937,6 +6034,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 */
 			if (TClass->VoiceDie.Count() > 0) {
 				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
+				Sound_Effect(voc, Get_Coord());
+			}
+
+			// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
+			if (TClass->DieSound.Count() > 0) {
+				VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Get_Coord());
 			}
 
@@ -6191,6 +6294,40 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
  *   07/08/1995 JLB : Created.                                                                 *
  *   08/23/1995 JLB : Building loss is only counted if it received damage.                     *
  *=============================================================================================*/
+/// <summary>
+/// Pays the destroyer's owner this object's bounty when the destroyer hunts bounty, this object
+/// belonged to an enemy of a country that gives bounty, and the owner has a building from
+/// BountyEnablers or the list is empty. A negative bounty is taken from the owner instead.
+/// </summary>
+void TechnoClass::Pay_Bounty(TechnoClass * source) const
+{
+	if (source == NULL || !source->TClass->IsBounty || source->House == NULL || House == NULL) {
+		return;
+	}
+	if (source->House == House || source->House->Is_Ally(House) || !House->Class->IsGivesBounty) {
+		return;
+	}
+	if (Rule->BountyEnablers.Count() > 0 && source->House->Count_Owned(source->House->BQuantity, Rule->BountyEnablers) == 0) {
+		return;
+	}
+
+	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const value = TClass->BountyValue[rank];
+	if (value > 0) {
+		source->House->Refund_Money(value);
+	} else if (value < 0) {
+		source->House->Spend_Money(-value);
+	}
+
+	bool const display = source->TClass->BountyDisplay < 0 ? Rule->IsBountyDisplay : source->TClass->BountyDisplay != 0;
+	if (display && value != 0) {
+		char text[32];
+		snprintf(text, sizeof(text), "%c$%d", value > 0 ? '+' : '-', value > 0 ? value : -value);
+		Add_Flying_Text(text, Center_Coord(), source->House->Scheme);
+	}
+}
+
+
 void TechnoClass::Record_The_Kill(TechnoClass * source)
 {
 	int total_recorded = 0;
@@ -6219,6 +6356,8 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		}
 
 		House->WhoLastHurtMe = source->Owner();
+
+		Pay_Bounty(source);
 
 		/*
 		**	Add up the score for killing this unit
@@ -7562,6 +7701,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 			}
 		}
 		DiskLaser.Detach(target);
+		AttachedEffects.Detach(target);
 		std::erase(AirstrikePlanes, (AircraftClass *)target);
 		if (LocomotorTarget == target) {
 			LocomotorTarget = NULL;
@@ -8012,7 +8152,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Don't allow a response if it doesn't have a weapon that will affect the
 			**	enemy object.
 			*/
-			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->TClass->Armor] == 0) {
+			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
 				continue;
 			}
 
@@ -8101,7 +8241,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Don't allow a response if it doesn't have a weapon that will affect the
 			**	enemy object.
 			*/
-			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->TClass->Armor] == 0) {
+			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
 				continue;
 			}
 
@@ -8270,7 +8410,7 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	int which = What_Weapon_Should_I_Use((AbstractClass *)source);
 	WeaponDataStruct const * wdata = Get_Class_Weapon_Data(which);
 	if (wdata->Weapon->WarheadPtr != NULL &&
-		wdata->Weapon->WarheadPtr->Modifier[source->TClass->Armor] == 0) {
+		!wdata->Weapon->WarheadPtr->Can_Retaliate(source->TClass->Armor)) {
 			return(false);
 	}
 
@@ -8739,15 +8879,33 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 {
 	ShapeSet const * pips1 = (ShapeSet const *)Class_Of()->PipShapes;
 
-	PipEnum veterancy_shape = PIP_NONE;
+	// Players not allied with the owner see the insignia only when the type or EnemyInsignia allows it; observers see every one.
+	bool const showenemy = TClass->InsigniaShowEnemy < 0 ? Rule->IsEnemyInsignia : TClass->InsigniaShowEnemy != 0;
+	if (!showenemy && PlayerPtr != NULL && !PlayerPtr->IsObserver && !House->Is_Ally(PlayerPtr)) {
+		return;
+	}
+
+	int veterancy_shape = PIP_NONE;
+	int rank = 0;
 	if (Veterancy.Is_Veteran()) {
 		veterancy_shape = PIP_VETERAN;
+		rank = 1;
 	}
 	if (Veterancy.Is_Elite()) {
 		veterancy_shape = PIP_ELITE;
+		rank = 2;
 	}
 	if (Veterancy.Is_Dumbass()) {
 		veterancy_shape = PIP_DUMBASS;
+		rank = -1;
+	}
+	if (rank >= 0) {
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
+		}
+		if (TClass->InsigniaShapes[rank] != NULL) {
+			pips1 = TClass->InsigniaShapes[rank];
+		}
 	}
 	if (veterancy_shape != PIP_NONE) {
 		Point2D drawpoint = center + Point2D(5, 2);
@@ -9470,6 +9628,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ThreatCandidates);
 	stream.Serialize(AttackedTargets);
 	stream.Serialize(DiskLaser);
+	stream.Serialize(AttachedEffects);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);
 	stream.Serialize(IsAttackedByLocomotor);
@@ -9585,6 +9744,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(ActLike);
 	crc(ArmorBias);
 	crc(FirepowerBias);
+	AttachedEffects.Compute_CRC(crc);
 	crc((int)IdleTimer);
 	SpiedBy.Compute_CRC(crc);
 	crc(Cloak);
@@ -9642,7 +9802,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
  *=============================================================================================*/
 bool TechnoClass::Is_Allowed_To_Recloak(void) const
 {
-	if (IsCloakable) {
+	if (IsCloakable || AttachedEffects.Is_Cloakable()) {
 		return(true);
 	}
 	return(false);
@@ -9879,9 +10039,9 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 			WarheadTypeClass const * target_warhead = target_weapon != NULL ? target_weapon->WarheadPtr : NULL;
 			if (target_warhead != NULL) {
 				if (target->TarCom == (AbstractClass *)this) {
-					threat = -target_effectiveness_coefficient * target_warhead->Modifier[ttype->Armor];
+					threat = -target_effectiveness_coefficient * target_warhead->Versus(ttype->Armor);
 				} else {
-					threat = target_effectiveness_coefficient * target_warhead->Modifier[ttype->Armor];
+					threat = target_effectiveness_coefficient * target_warhead->Versus(ttype->Armor);
 				}
 			}
 
@@ -9894,7 +10054,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 	}
 
 	if (my_weapon && my_weapon->WarheadPtr) {
-		threat += my_effectiveness_coefficient * my_weapon->WarheadPtr->Modifier[target->Class_Of()->Armor];
+		threat += my_effectiveness_coefficient * my_weapon->WarheadPtr->Versus(target->Class_Of()->Armor);
 	}
 
 	threat += target->HealthRatio * target_strength_coefficient;
@@ -9933,6 +10093,63 @@ bool TechnoClass::Has_Ability(AbilityType ability) const
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Is this object unaffected by EMP, through its type or a veteran ability (Ares EMPIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_EMP(void) const
+{
+	return(TClass->Is_Immune_To_EMP() || Has_Ability(ABILITY_EMP_IMMUNE));
+}
+
+
+/// <summary>
+/// Is this object unharmed by radiation, through its type or a veteran ability (Ares RADIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Radiation(void) const
+{
+	return(TClass->IsImmuneToRadiation || Has_Ability(ABILITY_RAD_IMMUNE));
+}
+
+
+/// <summary>
+/// Can temporal weapons warp this object? A veteran ability (Ares UNWARPABLE) works as Warpable=no.
+/// </summary>
+bool TechnoClass::Is_Warpable(void) const
+{
+	return(TClass->IsWarpable && !Has_Ability(ABILITY_UNWARPABLE));
+}
+
+
+/// <summary>
+/// Is this object unharmed by Poison=yes warheads, through its type or a veteran ability (Ares
+/// POISONIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Poison(void) const
+{
+	return(TClass->IsImmuneToPoison || Has_Ability(ABILITY_POISON_IMMUNE));
+}
+
+
+/// <summary>
+/// Is this object unharmed by PsychicDamage=yes warheads, through its type or a veteran ability
+/// (Ares PSIONICWEAPONIMMUNE)?
+/// </summary>
+bool TechnoClass::Is_Immune_To_Psionic_Weapons(void) const
+{
+	return(TClass->IsImmuneToPsionicWeapons || Has_Ability(ABILITY_PSIONIC_WEAPON_IMMUNE));
+}
+
+
+/// <summary>
+/// Is this object out of reach of mind control and Psychedelic=yes warheads, through its type or
+/// a veteran ability (Ares PSIONICSIMMUNE)? The Psychic Dominator treats both the same way.
+/// </summary>
+bool TechnoClass::Is_Immune_To_Psionics(void) const
+{
+	return(TClass->IsImmuneToPsionics || Has_Ability(ABILITY_PSIONICS_IMMUNE));
 }
 
 

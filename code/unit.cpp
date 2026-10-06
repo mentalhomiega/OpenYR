@@ -1092,7 +1092,7 @@ void UnitClass::Jellyfish_AI(void)
 									}
 
 									if (!visceroid && !invisible && !House->Is_Ally(techno)) {
-										int damage = weapon->Attack * warhead->Modifier[techno->TClass->Armor];
+										int damage = weapon->Attack * warhead->Versus(techno->TClass->Armor);
 										techno->Take_Damage(damage, 0, warhead, this);
 										attacked = true;
 									}
@@ -1764,7 +1764,7 @@ MissionType UnitClass::Idle_Guard_Mission(void) const
 	if (!Is_Weapon_Equipped()) {
 		return(MISSION_GUARD);
 	}
-	if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) || Team != NULL) {
+	if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) && !Class->IsDefaultToGuardArea || Team != NULL) {
 		return(MISSION_GUARD);
 	}
 	return(MISSION_GUARD_AREA);
@@ -6998,7 +6998,7 @@ RTTIType UnitClass::Fetch_RTTI(void) const
 /// <returns>Returns with a pointer to the name to present to the player.</returns>
 char const * UnitClass::Full_Name(void) const
 {
-	return(Class->GivenName);
+	return(Class->Full_Name());
 }
 
 

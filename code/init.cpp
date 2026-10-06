@@ -2238,6 +2238,35 @@ static bool Load_String_Table(char const * filename)
 }
 
 
+/// <summary>
+/// Adds the extra string tables STRINGTABLE00.CSF to STRINGTABLE99.CSF to StringTable, in that
+/// order, as Ares does: each adds its labels and takes over the ones already loaded. A table is
+/// found wherever the game finds a data file, so it may be loose or in any archive mounted by now.
+/// A table in another language than the main one is skipped unless it is language-neutral.
+/// </summary>
+static void Load_Extra_String_Tables(void)
+{
+	for (int index = 0; index < 100; index++) {
+		char name[32];
+		sprintf(name, "STRINGTABLE%02d.CSF", index);
+
+		CCFileClass file(name);
+		if (!file.Is_Available()) {
+			continue;
+		}
+		FileStraw straw(file);
+		CSFClass table;
+		if (!table.Load(straw)) {
+			DebugString("String table %s: not a string table, skipped\n", name);
+		} else if (!StringTable.Merge(table)) {
+			DebugString("String table %s: language %d is not the main table's %d, skipped\n", name, table.Language(), StringTable.Language());
+		} else {
+			DebugString("String table %s added: %d read, %d labels in all\n", name, table.Count(), StringTable.Count());
+		}
+	}
+}
+
+
 /***********************************************************************************************
  * Init_Bootstrap_Mixfiles -- Registers and caches any mixfiles needed for bootstrapping.      *
  *                                                                                             *
@@ -2306,6 +2335,9 @@ static bool Init_Bootstrap_Mixfiles(void)
 	BaseLocalMix = new MFCD("LOCAL.MIX", &FastKey);
 
 	DebugStringNoPrefix(" LOCAL.MIX");
+
+	// Once every startup archive is mounted, so that a mod's archives can carry them.
+	Load_Extra_String_Tables();
 
 	return(true);
 }
@@ -4728,7 +4760,7 @@ class SelectSameTypeCommandClass : public CommandClass
 				if (!obj->Is_Techno() || !((TechnoClass *)obj)->House->Is_Player_Control()) {
 					continue;
 				}
-				SoughtTypes.insert(obj->TClass);
+				SoughtTypes.insert(obj->TClass->Select_Group());
 			}
 
 			if (SoughtTypes.empty()) {
@@ -4758,12 +4790,12 @@ class SelectSameTypeCommandClass : public CommandClass
 		/// <remarks>SoughtTypes must hold the desired types before calling this routine.</remarks>
 		static void Select_Callback(ObjectClass * obj)
 		{
-			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->TClass) && ((TechnoClass *)obj)->House->Is_Player_Control()) {
+			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->TClass->Select_Group()) && ((TechnoClass *)obj)->House->Is_Player_Control()) {
 				obj->Select();
 			}
 		}
 
-		inline static std::unordered_set<TechnoTypeClass const *> SoughtTypes;
+		inline static std::unordered_set<std::string> SoughtTypes;
 		inline static int LastTick = -1;
 };
 

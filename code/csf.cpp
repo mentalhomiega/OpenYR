@@ -179,6 +179,50 @@ bool CSFClass::Load(Straw & straw)
 }
 
 
+bool CSFClass::Merge(CSFClass const & other)
+{
+	if (!Loaded || !other.Loaded || &other == this) {
+		return(false);
+	}
+	if (other.LanguageID != LANGUAGE_NEUTRAL && other.LanguageID != LanguageID) {
+		return(false);
+	}
+
+	// Both tables are sorted by label, and a label's copies keep their file order, so one pass
+	// over each puts the added labels in place.
+	std::vector<EntryType> merged;
+	merged.reserve(Entries.size() + other.Entries.size());
+	auto mine = Entries.begin();
+	auto theirs = other.Entries.begin();
+	while (theirs != other.Entries.end()) {
+		while (mine != Entries.end() && Label_Less(mine->Label, theirs->Label)) {
+			merged.push_back(std::move(*mine++));
+		}
+		while (mine != Entries.end() && !Label_Less(theirs->Label, mine->Label)) {
+			++mine;
+		}
+		merged.push_back(*theirs);
+
+		std::string const & label = theirs->Label;
+		do {
+			++theirs;
+		} while (theirs != other.Entries.end() && !Label_Less(label, theirs->Label));
+	}
+	while (mine != Entries.end()) {
+		merged.push_back(std::move(*mine++));
+	}
+	Entries = std::move(merged);
+	return(true);
+}
+
+
+bool CSFClass::Merge(Straw & straw)
+{
+	CSFClass other;
+	return(other.Load(straw) && Merge(other));
+}
+
+
 wchar_t const * CSFClass::Find(char const * label, char const ** extra) const
 {
 	if (extra != nullptr) {

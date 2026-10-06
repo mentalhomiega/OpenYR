@@ -131,6 +131,7 @@
 #include "palette.h"
 #include "queue.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "session.h"
 #include "smudtype.h"
@@ -2276,7 +2277,7 @@ void Bandbox_Selection_Callback(ObjectClass *object)
 		if (object->Class_Of()->IsSelectable) {
 			bool selectable = false;
 			if (bptr != NULL) {
-				if (bptr->Class->UndeploysInto != NULL && !bptr->Class->IsConstructionYard && !bptr->Class->IsMobileWar) {
+				if ((bptr->Class->UndeploysInto != NULL && !bptr->Class->IsConstructionYard && !bptr->Class->IsMobileWar) || bptr->Class->IsSelectableCombatant) {
 					selectable = true;
 				}
 			} else {
@@ -3684,6 +3685,7 @@ void DisplayClass::Serialize(SaveStreamClass & stream)
 
 	// Layer -- the display layers are shared, and Load and Save carry them through their own
 	// persistence.
+	Dump_Mark(stream, "Display class");
 	stream.Serialize(ZoneCell);
 	stream.Serialize(ZoneOffset);
 

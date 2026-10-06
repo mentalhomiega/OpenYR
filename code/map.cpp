@@ -93,6 +93,7 @@
 #include "partsys.h"
 #include "psystype.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "smartdeform.h"
 #include "tactical.h"
@@ -267,6 +268,7 @@ void MapClass::Serialize(SaveStreamClass & stream)
 
 	// ZoneAdjacency -- scratch for the zone rebuild, which fills it again from the loaded terrain.
 	// Zones
+	Dump_Mark(stream, "Map class");
 	stream.Serialize(ZoneCount);
 	// ZoneConnections -- likewise part of the zone graph, read outside the archive.
 	// CellZones
@@ -312,8 +314,10 @@ void MapClass::Serialize(SaveStreamClass & stream)
 		return;
 	}
 
+	Dump_Mark(stream, "Map crates");
 	stream.Serialize(Crates);
 	stream.Serialize(Redraws);
+	Dump_Mark(stream, "Map tagged cells");
 	stream.Serialize(TaggedCells);
 }
 
@@ -1200,6 +1204,75 @@ bool MapClass::In_Radar(Coord const & coord) const
 }
 
 
+/// <summary>
+/// Adds to or takes from the cover count of one cell. A count is never taken below zero.
+/// </summary>
+static void Adjust_Cell_Cover(MapClass & map, Cell const & cell, bool add)
+{
+	if (cell.X < 0 || cell.Y < 0 || cell.X >= MAP_CELL_W || cell.Y >= MAP_CELL_H || !map.Is_Valid(cell)) {
+		return;
+	}
+	CellClass & cellptr = map[cell];
+	if (add) {
+		cellptr.OccupyHeightsCoveringMe++;
+	} else if (cellptr.OccupyHeightsCoveringMe != 0) {
+		cellptr.OccupyHeightsCoveringMe--;
+	}
+}
+
+
+/// <summary>
+/// Marks or clears the cells that a building with CanHideThings screens from view
+/// (MapClass::AddContentAt, 0x5683C0, and MapClass::RemoveContentAt, 0x5687F0). Each
+/// foundation cell and the cells diagonally behind it, OccupyHeight - 1 of them (at least one)
+/// counting the foundation cell itself, are covered once each. Placing the building also covers each
+/// AddOccupy cell once more and each RemoveOccupy cell once less; removing it takes back the
+/// AddOccupy cover only, so cover a RemoveOccupy cell lost stays lost.
+/// </summary>
+/// <param name="cell">The building's origin cell.</param>
+/// <param name="building">The building being placed or removed.</param>
+/// <param name="add">Is the building being placed rather than removed?</param>
+static void Adjust_Building_Cover(MapClass & map, Cell const & cell, BuildingClass const * building, bool add)
+{
+	BuildingTypeClass const * type = building->Class;
+	if (!type->IsCanHideThings) {
+		return;
+	}
+
+	int depth = std::max(type->OccupyHeight - 1, 1);
+
+	// A cell reached from two foundation cells is covered once; offsets are folded into a 16 by 16 grid.
+	bool seen[16][16] = {};
+
+	Cell xlist[32];
+	List_Copy(building->Occupy_List(), ARRAY_SIZE(xlist), xlist);
+	for (Cell const * list = xlist; *list != REFRESH_EOL; list++) {
+		for (int step = 0; step < depth; step++) {
+			Cell target(cell.X + list->X - step, cell.Y + list->Y - step);
+			if (target.X < 0 || target.Y < 0) {
+				continue;
+			}
+			bool & mark = seen[(list->Y - step) & 15][(list->X - step) & 15];
+			if (!mark) {
+				mark = true;
+				Adjust_Cell_Cover(map, target, add);
+			}
+		}
+	}
+
+	for (int index = 0; index < ARRAY_SIZE(type->AddOccupy); index++) {
+		Point2D const & extra = type->AddOccupy[index];
+		if (extra.X != 0xFFFF || extra.Y != 0xFFFF) {
+			Adjust_Cell_Cover(map, Cell(cell.X + (short)extra.X, cell.Y + (short)extra.Y), add);
+		}
+		Point2D const & less = type->RemoveOccupy[index];
+		if (add && (less.X != 0xFFFF || less.Y != 0xFFFF)) {
+			Adjust_Cell_Cover(map, Cell(cell.X + (short)less.X, cell.Y + (short)less.Y), false);
+		}
+	}
+}
+
+
 /***********************************************************************************************
  * MapClass::Place_Down -- Places the specified object onto the map.                           *
  *                                                                                             *
@@ -1233,6 +1306,9 @@ void MapClass::Place_Down(Cell const & cell, ObjectClass * object)
 				(*this)[newcell].Occupy_Down(object, object->IsOnBridge);
 				(*this)[newcell].Recalc_Attributes();
 			}
+		}
+		if (object->What_Am_I() == RTTI_BUILDING) {
+			Adjust_Building_Cover(*this, cell, (BuildingClass const *)object, true);
 		}
 	}
 }
@@ -1270,6 +1346,9 @@ void MapClass::Pick_Up(Cell const & cell, ObjectClass * object)
 				(*this)[newcell].Occupy_Up(object, object->IsOnBridge);
 				(*this)[newcell].Recalc_Attributes();
 			}
+		}
+		if (object->What_Am_I() == RTTI_BUILDING) {
+			Adjust_Building_Cover(*this, cell, (BuildingClass const *)object, false);
 		}
 	}
 }

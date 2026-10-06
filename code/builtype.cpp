@@ -297,11 +297,14 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSpySat(false),
 	IsCloning(false),
 	IsGrinding(false),
+	IsReverseEngineersVictims(false),
 	IsInfantryAbsorb(false),
 	IsSpyable(false),
 	IsUnitAbsorb(false),
 	ExtraPowerBonus(0),
 	IsFactoryPlant(false),
+	DamageFireOffset{},
+	DamageFireOffsetCount(0),
 	InfantryCostBonus(1.0),
 	UnitsCostBonus(1.0),
 	AircraftCostBonus(1.0),
@@ -309,6 +312,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	DefensesCostBonus(1.0),
 	IsFlat(false),
 	OccupyHeight(0),
+	IsCanHideThings(true),
+	AddOccupy{},
+	RemoveOccupy{},
 	IsDockUnload(false),
 	IsRecoilless(false),
 	IsHasStupidGuardMode(true),
@@ -387,6 +393,11 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Create_ID();
 	BuildingTypes.Add(this);
 	HeapID = (StructType)BuildingTypes.ID(this);
+
+	for (int i = 0; i < ARRAY_SIZE(AddOccupy); i++) {
+		AddOccupy[i] = Point2D(0xFFFF, 0xFFFF);
+		RemoveOccupy[i] = Point2D(0xFFFF, 0xFFFF);
+	}
 
 	Init_Anim(BSTATE_CONSTRUCTION, 0, 1, 0);
 	Init_Anim(BSTATE_IDLE, 0, 1, 0);
@@ -1305,11 +1316,27 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsSpySat = ini.Get_Bool(Name(), "SpySat", IsSpySat);
 		IsCloning = ini.Get_Bool(Name(), "Cloning", IsCloning);
 		IsGrinding = ini.Get_Bool(Name(), "Grinding", IsGrinding);
+		IsReverseEngineersVictims = ini.Get_Bool(Name(), "ReverseEngineersVictims", IsReverseEngineersVictims);
 		IsInfantryAbsorb = ini.Get_Bool(Name(), "InfantryAbsorb", IsInfantryAbsorb);
 		IsSpyable = ini.Get_Bool(Name(), "Spyable", IsSpyable);
 		IsUnitAbsorb = ini.Get_Bool(Name(), "UnitAbsorb", IsUnitAbsorb);
 		ExtraPowerBonus = ini.Get_Int(Name(), "ExtraPower", ExtraPowerBonus);
 		IsFactoryPlant = ini.Get_Bool(Name(), "FactoryPlant", IsFactoryPlant);
+
+		DamageFireOffsetCount = 0;
+		for (int index = 0; index < 8; index++) {
+			char key[32];
+			char value[32];
+			snprintf(key, sizeof(key), "DamageFireOffset%d", index);
+			if (ArtINI.Get_String(Graphic_Name(), key, "", value, sizeof(value)) <= 0) {
+				break;
+			}
+			int x = 0;
+			int y = 0;
+			sscanf(value, "%d,%d", &x, &y);
+			DamageFireOffset[index] = Point2D(x, y);
+			DamageFireOffsetCount = index + 1;
+		}
 		InfantryCostBonus = ini.Get_Float(Name(), "InfantryCostBonus", InfantryCostBonus);
 		UnitsCostBonus = ini.Get_Float(Name(), "UnitsCostBonus", UnitsCostBonus);
 		AircraftCostBonus = ini.Get_Float(Name(), "AircraftCostBonus", AircraftCostBonus);
@@ -1408,6 +1435,16 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsRecoilless = ArtINI.Get_Bool(Graphic_Name(), "Recoilless", IsRecoilless);
 		IsFlat = ArtINI.Get_Bool(Graphic_Name(), "Flat", IsFlat);
 		OccupyHeight = ArtINI.Get_Int(Graphic_Name(), "OccupyHeight", OccupyHeight);
+
+		// CanHideThings is read from the art section named after the type, not its image (BuildingTypeClass::LoadFromINI, 0x45FE50).
+		IsCanHideThings = ArtINI.Get_Bool(Name(), "CanHideThings", IsCanHideThings);
+		for (int i = 0; i < ARRAY_SIZE(AddOccupy); i++) {
+			char entry[32];
+			std::snprintf(entry, sizeof(entry), "AddOccupy%d", i + 1);
+			AddOccupy[i] = ArtINI.Get_Point(Graphic_Name(), entry, Point2D(0xFFFF, 0xFFFF));
+			std::snprintf(entry, sizeof(entry), "RemoveOccupy%d", i + 1);
+			RemoveOccupy[i] = ArtINI.Get_Point(Graphic_Name(), entry, Point2D(0xFFFF, 0xFFFF));
+		}
 		IsSiloDamage = ArtINI.Get_Bool(Graphic_Name(), "SiloDamage", IsSiloDamage);
 		IsHasChargeAnim = ArtINI.Get_Bool(Graphic_Name(), "ChargeAnim", IsHasChargeAnim);
 		ToOverlay = TGet_Class(ArtINI, Graphic_Name(), "ToOverlay", ToOverlay);
@@ -2311,11 +2348,14 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpySat);
 	stream.Serialize(IsCloning);
 	stream.Serialize(IsGrinding);
+	stream.Serialize(IsReverseEngineersVictims);
 	stream.Serialize(IsInfantryAbsorb);
 	stream.Serialize(IsSpyable);
 	stream.Serialize(IsUnitAbsorb);
 	stream.Serialize(ExtraPowerBonus);
 	stream.Serialize(IsFactoryPlant);
+	stream.Serialize(DamageFireOffset);
+	stream.Serialize(DamageFireOffsetCount);
 	stream.Serialize(InfantryCostBonus);
 	stream.Serialize(UnitsCostBonus);
 	stream.Serialize(AircraftCostBonus);
@@ -2323,6 +2363,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DefensesCostBonus);
 	stream.Serialize(IsFlat);
 	stream.Serialize(OccupyHeight);
+	stream.Serialize(IsCanHideThings);
+	stream.Serialize(AddOccupy);
+	stream.Serialize(RemoveOccupy);
 	stream.Serialize(IsDockUnload);
 	stream.Serialize(IsRecoilless);
 	stream.Serialize(IsHasStupidGuardMode);

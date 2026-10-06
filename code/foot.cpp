@@ -173,6 +173,9 @@ FootClass::FootClass(HouseClass * house) :
 	IsLocomotorProcessing(false),
 	IsPiggybackEndPending(false),
 	WasSinking(false),
+	MoveSoundHandle(),
+	IsMoveSoundPlaying(false),
+	MoveSoundDelay(0),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
 	IsFiring(false),
@@ -3426,6 +3429,23 @@ void FootClass::AI(void)
 
 	Update_Sensors(false);
 
+	// A moving object plays a sound from its MoveSound list and ends its loop three frames after it stops (FootClass::Update).
+	if (IsActive && !IsInLimbo && Locomotion && Locomotion->Is_Moving_Now()) {
+		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
+			MoveSoundHandle.Stop();
+			Sound_Effect((VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber()), Center_Coord(), &MoveSoundHandle);
+			IsMoveSoundPlaying = true;
+		}
+		MoveSoundDelay = 3;
+	} else if (IsMoveSoundPlaying) {
+		if (MoveSoundDelay == 0) {
+			MoveSoundHandle.End_Looping();
+			IsMoveSoundPlaying = false;
+		} else {
+			MoveSoundDelay--;
+		}
+	}
+
 	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
 		ParasiteEatingMe->ParasiteImUsing->Update();
 	}
@@ -3434,7 +3454,7 @@ void FootClass::AI(void)
 	 * As FootClass::Update (0x4DA530): every RadApplicationDelay frames an object on the ground
 	 * takes the radiation of its cell, times RadLevelFactor, as damage through RadSiteWarhead.
 	 */
-	if (IsActive && !IsInLimbo && Rule->RadApplicationDelay > 0 && Frame % Rule->RadApplicationDelay == 0 && !TClass->IsImmuneToRadiation && !In_Air()) {
+	if (IsActive && !IsInLimbo && Rule->RadApplicationDelay > 0 && Frame % Rule->RadApplicationDelay == 0 && !Is_Immune_To_Radiation() && !In_Air()) {
 		int const level = Map[Center_Coord()].Rad_Level();
 		if (level > 0 && Rule->RadSiteWarhead != NULL) {
 			int damage = (int)(level * Rule->RadLevelFactor);
@@ -3602,7 +3622,7 @@ void FootClass::Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_i
 /// <returns>Returns with the current speed of the object.</returns>
 int FootClass::Current_Speed(void)
 {
-	int speed = Get_Max_Speed() * House->GroundspeedBias * SpeedBias;
+	int speed = Get_Max_Speed() * House->GroundspeedBias * SpeedBias * AttachedEffects.Speed_Multiplier();
 	if (Has_Ability(ABILITY_FASTER)) {
 		speed *= (1 + Rule->VeteranSpeed);
 	}
@@ -3643,6 +3663,9 @@ void FootClass::Draw_It(Point2D const &, Rect const &) const
 bool FootClass::Limbo(void)
 {
 	Update_Sensors(true);
+
+	MoveSoundHandle.Stop();
+	IsMoveSoundPlaying = false;
 
 	if (!IsInLimbo) {
 		Cell cell = LastAdjacencyCell;

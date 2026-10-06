@@ -23,6 +23,6 @@ credit:
 - Rampastring
 ---
 
-The sidebar used to list cameos in the order they became available, so the same rules could give a different strip from one game to the next. Each strip is now sorted by kind, then by the order the types are listed in the rules, with walls, gates and base defenses after the other structures. `SidebarSorting=no` under `[Options]` in `sun.ini` restores the old arrangement.
+The sidebar used to list cameos in the order they became available, so the same rules could give a different strip from one game to the next. Each strip is now sorted by kind, then by the order the types are listed in the rules, with walls, gates and base defenses after the other structures. `SidebarSorting=no` under `[Options]` in `RA2MD.INI` restores the old arrangement.
 
 In `rules.ini`, `CameoSortOrder=` in a type's or super weapon's section moves its cameo within its kind, lower values first. It reorders no rules list, and it takes precedence over the grouping of walls, gates and defenses. `SortCameoAsBaseDefense=` in a structure's section decides whether it sorts with the base defenses.

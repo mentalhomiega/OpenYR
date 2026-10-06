@@ -13,4 +13,4 @@ The value is taken when the campaign starts, and every later mission of that cam
 
 The campaign selection screen and the game controls dialog each have a three-step slider that sets this value. The game controls slider changes it only while no game is running.
 
-The game limits the value to `0` through `2` when it reads `sun.ini`. A value outside that range becomes the nearer end, and the corrected value is written back with the other options.
+The game limits the value to `0` through `2` when it reads `RA2MD.INI`. A value outside that range becomes the nearer end, and the corrected value is written back with the other options.

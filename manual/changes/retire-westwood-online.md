@@ -5,7 +5,7 @@ release: 0.2.0
 breaking: true
 migration:
 - Play over a network or in skirmish instead. A Westwood Online game can no longer be started, and the World Domination Tour it hosted can no longer be entered.
-- Delete the `[WOnline]` section from `sun.ini`, along with `PreferredServer`, `Locale`, `StoreNick` and `LastNickSlot` from `[MultiPlayer]`, or leave them to be ignored.
+- Delete the `[WOnline]` section from `RA2MD.INI`, along with `PreferredServer`, `Locale`, `StoreNick` and `LastNickSlot` from `[MultiPlayer]`, or leave them to be ignored.
 - Assign another command to the key that was set to Page User if you want to use it. That key now does nothing, because the command is gone and the `[Hotkey]` entry in `keyboard.ini` that names it is ignored.
 targets:
 - type: command

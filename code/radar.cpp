@@ -98,6 +98,7 @@
 #include "movies.h"
 #include "revent.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
@@ -1876,6 +1877,7 @@ void RadarClass::Serialize(SaveStreamClass & stream)
 	// LastDrawRect -- the region still owed to the visible page by the last render.
 	// RadarSurface -- the radar pictures, thrown away and built again by Post_Load_Radar_Fixup.
 	// BackgroundSurface
+	Dump_Mark(stream, "Radar background stack");
 	stream.Serialize(BackgroundStack);
 
 	// BackgroundColors -- part of the same radar picture, rebuilt by Post_Load_Radar_Fixup.
@@ -1885,6 +1887,7 @@ void RadarClass::Serialize(SaveStreamClass & stream)
 	// CellRedrawRect
 	// RadarTracking -- rebuilt by Post_Load_Radar_Fixup, which also marks every object
 	// untracked so that it registers itself again.
+	Dump_Mark(stream, "Radar pixel stack");
 	stream.Serialize(PixelStack);
 
 	// PixelFlags -- all derived from the radar picture that Compute_Radar_Image builds after the

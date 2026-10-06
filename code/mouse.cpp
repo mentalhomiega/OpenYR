@@ -545,16 +545,19 @@ bool MouseClass::Save(SaveStreamClass & stream)
 			return(false);
 		}
 
+		Dump_Mark(stream, "Map members");
 		Serialize(stream);
 		if (stream.Was_Error()) {
 			return(false);
 		}
 
+		Dump_Mark(stream, "Map cell zones");
 		stream.Serialize_Bytes(CellZones, (int)(sizeof(*CellZones) * CellZoneCount));
 		if (stream.Was_Error()) {
 			return(false);
 		}
 
+		Dump_Mark(stream, "Map zones");
 		for (i = 0; i < MZONE_COUNT; i++) {
 			stream.Serialize_Bytes(Zones[i], (int)(sizeof(*Zones[i]) * ZoneCount));
 			if (stream.Was_Error()) {
@@ -562,11 +565,13 @@ bool MouseClass::Save(SaveStreamClass & stream)
 			}
 		}
 
+		Dump_Mark(stream, "Map zone connections");
 		stream.Serialize(ZoneConnections);
 		if (stream.Was_Error()) {
 			return(false);
 		}
 
+		Dump_Mark(stream, "Map cells");
 		count = 0;
 		Reset_Iterator();
 		CellClass *cptr = Iterate();

@@ -16,6 +16,20 @@ The game reads its text from the string table `RA2MD.CSF`. Rules, the interface 
 
 If the table is missing or is not a string table, the game stops during startup.
 
+## Extra string tables
+
+After the startup archives are mounted, including any `EXPANDMD##.MIX`, the game reads `STRINGTABLE00.CSF` through `STRINGTABLE99.CSF` over `RA2MD.CSF`, in that order. These follow the Ares documentation's [string table enhancements](https://ares-developers.github.io/Ares-docs/new/misc/stringtableenhancements.html). Each file is looked for the way the game looks for any data file, loose or in one of those archives, and a missing number is passed over.
+
+- An extra table adds its labels to the ones already read.
+- A label that is already loaded takes the extra table's string, so a later table wins over an earlier one and over `RA2MD.CSF`.
+- If an extra table repeats a label, the first one in that file is used.
+- An extra table whose language differs from that of `RA2MD.CSF` is skipped, unless its language is -1. A table with language -1, bytes `FF FF FF FF` at offset `0x14`, is language-neutral and is read whatever the language of `RA2MD.CSF`.
+- A file that is not a string table is skipped.
+
+The debug log names each extra table read or skipped.
+
+The game sets no limit on the number of labels or strings, in `RA2MD.CSF` or in all the tables together. Ares raises its limit to 20000.
+
 ## Looking up a label
 
 - Labels are matched without regard to case.

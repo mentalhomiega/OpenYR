@@ -31,6 +31,9 @@
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	cover x y			writes how many buildings screen that cell and whether it counts as covered
+**	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
+**							the Behind animation
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
@@ -62,6 +65,8 @@
 **	houses					writes each house's money, power and spy effects
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
+**	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
+**							reload countdown of every live object of that type
 **	price <TypeID>			writes what the player pays for the type
 **	types <prefix>			writes every structure type whose ID starts with the prefix
 **	schemes					writes the color schemes and the scheme each house draws with
@@ -69,6 +74,8 @@
 **	plan					writes each computer house's base plan
 **	dump					writes the player's credits, objects and missions to the log
 **	log <text>				writes the text to the log
+**	searchdir <path>		adds a directory the game searches for files; it is added as the
+**							script is read, before the game reads any file, whatever the frame
 **	quit					ends the process
 */
 
@@ -92,6 +99,7 @@
 #include "dbgprint.h"
 #include "event.h"
 #include "globals.h"
+#include "goptions.h"
 #include "house.h"
 #include "houstype.h"
 #include "infantry.h"
@@ -102,11 +110,14 @@
 #include "tactical.h"
 #include "scheme.h"
 #include "rules.h"
+#include "saveload.h"
 #include "scenario.h"
 #include "script.h"
 #include "super.h"
 #include "suprtype.h"
+#include "taskforc.h"
 #include "teamtype.h"
+#include "reinf.h"
 #include "team.h"
 #include "overlay.h"
 #include "overtype.h"
@@ -117,6 +128,11 @@
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
+#include "rawfile.h"
+#include "armortypes.h"
+#include "cameopcx.h"
+#include "empulse.h"
+#include "surface.h"
 #include "weapon.h"
 #include "windowevent.hh"
 
@@ -383,6 +399,44 @@ void Hash_Technos(unsigned int & hash, DynamicVectorClass<T *> & list)
 }
 
 
+template<class T>
+void Log_Technos_Parts(char const * kind, DynamicVectorClass<T *> & list)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		DebugString("AUTOTEST   %s %d %s at %d,%d,%d facing %d strength %d mission %s limbo %d house %d\n",
+			kind, index, object->Class->Name(), object->PositionCoord.X, object->PositionCoord.Y, object->PositionCoord.Z,
+			object->PrimaryFacing.Current().As_Int(), object->Strength, MissionClass::Mission_Name(object->Get_Mission()),
+			(int)object->IsInLimbo, Houses.ID(object->House));
+	}
+}
+
+
+/// <summary>
+/// Logs each value the state hash covers, one object per line, so two runs whose hashes differ
+/// can be compared line by line.
+/// </summary>
+void Log_State_Parts(void)
+{
+	DebugString("AUTOTEST hashparts frame %d\n", Frame);
+	Log_Technos_Parts("building", Buildings);
+	Log_Technos_Parts("unit", Units);
+	Log_Technos_Parts("aircraft", Aircraft);
+	Log_Technos_Parts("infantry", Infantry);
+	for (int index = 0; index < Houses.Count(); index++) {
+		DebugString("AUTOTEST   house %d credits %d\n", index, Houses[index]->Credits);
+	}
+	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
+	std::string bytes;
+	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
+		char text[4];
+		std::snprintf(text, sizeof(text), "%02X", random[index]);
+		bytes += text;
+	}
+	DebugString("AUTOTEST   random %s\n", bytes.c_str());
+}
+
+
 /// <summary>
 /// Logs a hash of the game state that decides play: every building, vehicle, aircraft and soldier
 /// (position, facing, strength, mission, limbo, owner), each house's credits and the scenario's
@@ -594,6 +648,24 @@ void Run(StepType const & step)
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
 			}
 		}
+	} else if (step.Command == "cover") {
+		// cover x y: how many buildings screen the cell, and whether an object there counts as hidden.
+		Cell cell(std::atoi(step.Argument.c_str()), step.X);
+		CellClass const & cellptr = Map[cell];
+		DebugString("AUTOTEST   cover %d,%d count %d covered %d\n", cell.X, cell.Y, cellptr.OccupyHeightsCoveringMe, (int)cellptr.Is_Covered());
+		for (ObjectClass const * object = cellptr.Cell_Occupier(); object != NULL; object = object->Next) {
+			if (object->Is_Techno()) {
+				TechnoClass const * techno = static_cast<TechnoClass const *>(object);
+				DebugString("AUTOTEST   cover   %s hidden %d\n", techno->TClass->Name(), (int)techno->Is_Hidden_Behind_Building());
+			}
+		}
+	} else if (step.Command == "hiddenmarker") {
+		// hiddenmarker <mode>: 0 hides the Behind marker, 1 shows it, 2 drops the Behind animation so brackets are drawn.
+		int mode = std::atoi(step.Argument.c_str());
+		Options.ShowHidden = (mode != 0);
+		if (mode == 2) {
+			Rule->Behind = NULL;
+		}
 	} else if (step.Command == "reveal") {
 		// reveal: uncovers the whole map, shroud and fog, for the player.
 		Map.Reveal_The_Map(PlayerPtr, true);
@@ -664,6 +736,44 @@ void Run(StepType const & step)
 		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
 		if (id != SUPER_NONE) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, id, Cell(step.X, step.Y)));
+		}
+	} else if (step.Command == "rules") {
+		// rules <path>: reads that INI file over the rules, as a map's rule overrides are read.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false)) {
+			Rule->Addition(ini);
+		} else {
+			DebugString("AUTOTEST   rules %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "art") {
+		// art <path>: reads that INI file over the art, then has the types it names read themselves again.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		RawFileClass artfile(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false) && ArtINI.Load(artfile, false)) {
+			Rule->Addition(ini);
+		} else {
+			DebugString("AUTOTEST   art %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "pcxcameo") {
+		// pcxcameo <path>: the size of that PCX cameo and two of its pixels, as the sidebar gets them.
+		Surface const * picture = PCX_Cameo(step.Argument);
+		if (picture != NULL) {
+			unsigned short const * pixels = (unsigned short const *)picture->Lock();
+			DebugString("AUTOTEST   pcxcameo %dx%d bpp %d corner %04X far %04X\n", picture->Get_Width(), picture->Get_Height(), picture->Bytes_Per_Pixel(),
+				pixels != NULL ? pixels[0] : 0, pixels != NULL ? pixels[picture->Get_Width() * picture->Get_Height() - 1] : 0);
+			picture->Unlock();
+		}
+	} else if (step.Command == "versus") {
+		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
+		std::string const & argument = step.Argument;
+		size_t const colon = argument.find(':');
+		WarheadTypeClass const * warhead = colon != std::string::npos ? WarheadTypeClass::Find_Or_Make(argument.substr(0, colon).c_str()) : NULL;
+		TechnoTypeClass const * type = colon != std::string::npos ? Find_Type(argument.substr(colon + 1)) : NULL;
+		if (warhead != NULL && type != NULL) {
+			DebugString("AUTOTEST   versus %s armor %s %.4f forcefire %d retaliate %d passive %d\n", argument.c_str(), Armor_Type_Name(type->Armor),
+				warhead->Versus(type->Armor), (int)warhead->Can_Force_Fire(type->Armor), (int)warhead->Can_Retaliate(type->Armor), (int)warhead->Can_Passive_Acquire(type->Armor));
 		}
 	} else if (step.Command == "damage") {
 		// damage <TypeID> <amount>: hits every player object of the type for that much unforced damage.
@@ -786,6 +896,72 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			DebugString("AUTOTEST   price %s %d (listed %d)\n", type->Name(), type->Cost_Of(PlayerPtr), type->Raw_Cost());
 		}
+	} else if (step.Command == "buildtime") {
+		// buildtime <TypeID>: the build time, in game frames, of the player's first object of that type.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   buildtime %s %d\n", techno->TClass->Name(), techno->Time_To_Build());
+				break;
+			}
+		}
+	} else if (step.Command == "highcell") {
+		// highcell: the highest cell on the map.
+		CellClass const * highest = NULL;
+		for (int y = 0; y < 512; y++) {
+			for (int x = 0; x < 512; x++) {
+				if (!Map.In_Radar(Cell(x, y))) continue;
+				CellClass const * cell = &Map[Cell(x, y)];
+				if (highest == NULL || cell->Height > highest->Height) highest = cell;
+			}
+		}
+		if (highest != NULL) DebugString("AUTOTEST   highcell %d,%d height %d\n", highest->Fetch_CellID().X, highest->Fetch_CellID().Y, highest->Height);
+	} else if (step.Command == "teamini") {
+		// teamini <path>: reads the task forces, scripts and team types in that INI file, as a map's are read.
+		CCINIClass ini;
+		RawFileClass file(step.Argument.c_str());
+		if (file.Is_Available() && ini.Load(file, false)) {
+			TaskForceClass::Read_All(ini, SCOPE_LOCAL);
+			ScriptTypeClass::Read_All(ini, SCOPE_LOCAL);
+			TeamTypeClass::Read_All(ini, SCOPE_LOCAL);
+		} else {
+			DebugString("AUTOTEST   teamini %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "reinforce") {
+		// reinforce <TeamType>: brings that team type on as a reinforcement for the player, as the trigger action does.
+		TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
+		if (type != NULL) {
+			type->House = PlayerPtr;
+		}
+		DebugString("AUTOTEST   reinforce %s: %d\n", step.Argument.c_str(), type != NULL ? (int)Do_Reinforcements(type) : -1);
+	} else if (step.Command == "planes") {
+		// planes: each aircraft on the map, its cell, mission and passenger count.
+		for (int index = 0; index < Aircraft.Count(); index++) {
+			AircraftClass const * plane = Aircraft[index];
+			DebugString("AUTOTEST   plane %s cell %d,%d mission %s passengers %d\n", plane->Class->Name(), plane->Get_Cell().X, plane->Get_Cell().Y, MissionClass::Mission_Name(plane->Get_Mission()), plane->Cargo.How_Many());
+		}
+	} else if (step.Command == "inrange") {
+		// inrange <TypeID>: whether each of the player's objects of that type has each other player object in primary weapon range.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			for (int other = 0; other < Technos.Count(); other++) {
+				TechnoClass * target = Technos[other];
+				if (target == techno || target->House != PlayerPtr) continue;
+				DebugString("AUTOTEST   inrange %s -> %s at %d leptons: %d fire error %d turret %d wants %d\n", techno->TClass->Name(), target->TClass->Name(), (int)(Point2D(techno->Center_Coord()) - Point2D(target->Center_Coord())).Length(), (int)techno->In_Range(target, 0), (int)techno->Can_Fire(target, 0), (int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256());
+			}
+		}
+	} else if (step.Command == "elevation") {
+		// elevation <TypeID>: the elevation range bonus each of the player's objects of that type has against each other one.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			for (int other = 0; other < Technos.Count(); other++) {
+				TechnoClass * target = Technos[other];
+				if (target == techno || target->House != PlayerPtr || stricmp(target->TClass->Name(), step.Argument.c_str()) != 0) continue;
+				DebugString("AUTOTEST   elevation %d,%d height %d -> %d,%d height %d bonus %d\n", techno->Get_Cell().X, techno->Get_Cell().Y, Map[techno->Get_Cell()].Height, target->Get_Cell().X, target->Get_Cell().Y, Map[target->Get_Cell()].Height, techno->Elevation_Range_Bonus(target));
+			}
+		}
 	} else if (step.Command == "types") {
 		// types <prefix>: every structure type whose ID starts with the prefix.
 		for (int index = 0; index < BuildingTypes.Count(); index++) {
@@ -823,6 +999,17 @@ void Run(StepType const & step)
 			}
 			if (count > 0) {
 				DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
+			}
+		}
+	} else if (step.Command == "effects") {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				AttachedEffectsClass const & effects = techno->AttachedEffects;
+				int const speed = techno->Is_Foot() ? static_cast<FootClass *>(techno)->Current_Speed() : 0;
+				DebugString("AUTOTEST   effects %s of %s: count %d speed x%.3f armor x%.3f firepower x%.3f rof x%.3f cloakable %d | speed %d strength %d arm %d limbo %d\n",
+					techno->TClass->Name(), techno->House->Class->Name(), effects.Count(), effects.Speed_Multiplier(), effects.Armor_Multiplier(),
+					effects.Firepower_Multiplier(), effects.ROF_Multiplier(), (int)effects.Is_Cloakable(), speed, (int)techno->Strength, (int)techno->Arm, (int)techno->IsInLimbo);
 			}
 		}
 	} else if (step.Command == "schemes") {
@@ -912,6 +1099,36 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   banim slot %d used %d garrisoned %d effect %d e.g. %s\n", slot, count, garrisoned, effect, example);
 		}
+	} else if (step.Command == "playanim") {
+		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
+		AnimTypeClass const * type = AnimTypeClass::Find_Or_Make(step.Argument.c_str());
+		if (type != NULL) {
+			new AnimClass(type, Map[Cell(step.X, step.Y)].Center_Coord());
+		}
+	} else if (step.Command == "emp") {
+		// emp <duration> x y: an EM pulse of radius 2 and that duration on the cell, from no source.
+		new EMPulseClass(Cell(step.X, step.Y), 2, std::atoi(step.Argument.c_str()), NULL);
+	} else if (step.Command == "canbuild") {
+		// canbuild <TypeID>: whether the player may build the type and which factory would.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			BuildingClass const * factory = type->Who_Can_Build_Me(true, false, true, PlayerPtr);
+			DebugString("AUTOTEST   canbuild %s %d factory %s\n", type->Name(), PlayerPtr->Can_Build(type, false, true), factory != NULL ? factory->Class->Name() : "-");
+		}
+	} else if (step.Command == "selected") {
+		// selected: the number of selected objects and their types.
+		std::string types;
+		for (int index = 0; index < CurrentObject.Count(); index++) {
+			types += " ";
+			types += CurrentObject[index]->Class_Of()->Name();
+		}
+		DebugString("AUTOTEST   selected %d:%s\n", CurrentObject.Count(), types.c_str());
+	} else if (step.Command == "fullname") {
+		// fullname <TypeID>: the name players see for the type, and the string label it comes from.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   fullname %s [%s] label [%s]\n", type->Name(), type->Full_Name(), type->UINameLabel.c_str());
+		}
 	} else if (step.Command == "anims") {
 		for (int index = 0; index < 4 && index < AnimTypes.Count(); index++) {
 			DebugString("AUTOTEST   anim %d %s\n", index, AnimTypes[index] != NULL ? AnimTypes[index]->Name() : "(null)");
@@ -941,12 +1158,20 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "statedump") {
+		// statedump <path>: writes the state a save would hold, and an index of its records, for comparing two runs.
+		DebugString("AUTOTEST statedump %s: %s\n", step.Argument.c_str(), Dump_Game_State(step.Argument.c_str()) ? "written" : "failed");
+	} else if (step.Command == "hashparts") {
+		// hashparts: logs each value the state hash covers, one object per line.
+		Log_State_Parts();
 	} else if (step.Command == "hash") {
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
 		Log_State_Hash();
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
+	} else if (step.Command == "searchdir") {
+		// searchdir <path>: added to the search path when the script was read (AutoTest_Load).
 	} else if (step.Command == "quit") {
 		DebugString("AUTOTEST quit\n");
 		std::exit(0);
@@ -985,7 +1210,24 @@ bool AutoTest_Load(char const * filename)
 		if (line[0] == ';' || std::sscanf(line, "%d %63s %255s %d %d", &frame, command, argument, &x, &y) < 2) {
 			continue;
 		}
-		Steps.push_back(StepType{frame, command, argument, x, y});
+		std::string text = argument;
+		// A rules step's path is the rest of the line, so it may hold spaces.
+		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0 || std::strcmp(command, "teamini") == 0
+				|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0) {
+			char const * rest = std::strstr(line, command) + std::strlen(command);
+			text = rest + std::strspn(rest, " \t");
+			text.erase(text.find_last_not_of(" \t\r\n") + 1);
+		}
+		// A search directory has to be in place before startup reads the files it holds, such
+		// as the extra string tables, so it is added now rather than at its frame.
+		if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
+			std::string path = text;
+			if (path.back() != '\\' && path.back() != '/') {
+				path += '\\';
+			}
+			CDFileClass::Add_Search_Drive(path.c_str());
+		}
+		Steps.push_back(StepType{frame, command, text, x, y});
 	}
 	std::fclose(file);
 

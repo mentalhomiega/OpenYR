@@ -8,7 +8,7 @@ when_omitted:
   value: "2"
 ---
 
-The player's graphics detail level, from `0` for low to `2` for high. A value outside that range is read as the nearer end. The Game Controls dialog offers the three levels and saves the choice to `sun.ini` when the player closes the dialog with any button except Cancel.
+The player's graphics detail level, from `0` for low to `2` for high. A value outside that range is read as the nearer end. The Game Controls dialog offers the three levels and saves the choice to `RA2MD.INI` when the player closes the dialog with any button except Cancel.
 
 Each level changes specific drawing work:
 

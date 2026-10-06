@@ -15,7 +15,7 @@ Use `Arcing=yes` only on a projectile with no `ROT`. A projectile whose `ROT` is
 
 When no arc at the launch speed reaches the target, the weapon does not fire. No projectile is created, no ammunition is spent and no reload delay starts, so the firer can try again at once.
 
-**Reach.** An arcing weapon counts a target as in range when an arc at the weapon's launch speed can reach it. The distance is not compared with the weapon's [`Range`](/keys/range/#scope-weapontype). A projectile with no `ROT` is launched at a speed worked out from `Range`, which reaches about 1.2 times `Range` over level ground. A target lower than the firer can therefore be hit from farther away, and a higher one only from closer.
+**Reach.** An arcing weapon counts a target as in range when the horizontal distance to it is within the weapon's [`Range`](/keys/range/#scope-weapontype) and an arc at the weapon's launch speed can reach it. A projectile with no `ROT` is launched at a speed worked out from `Range`, which reaches about 1.2 times `Range` over level ground, so over level ground `Range` is the limit; a target well above the firer may be within `Range` but beyond the arc.
 
 Two limits still apply to an arcing weapon:
 

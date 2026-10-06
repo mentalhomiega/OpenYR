@@ -1,13 +1,13 @@
 ---
 key: UpgradeVeteranSound
 summary: The sound played at one of the player's objects as it becomes a veteran.
-see_also: [UpgradeEliteSound, EliteFlashTimer, "system:veterancy"]
+see_also: [UpgradeEliteSound, Promote.VeteranSound, EliteFlashTimer, "system:veterancy"]
 when_omitted:
   kind: value
   value: none
 ---
 
-Plays at the object's position, and only for the player who owns it. An object created as a veteran plays nothing. [Veterancy](/systems/veterancy/#when-a-promotion-takes-effect) covers what else a promotion announces.
+A type's [`Promote.VeteranSound`](/keys/promote.veteransound/) replaces it for that type. Plays at the object's position, and only for the player who owns it. An object created as a veteran plays nothing. [Veterancy](/systems/veterancy/#when-a-promotion-takes-effect) covers what else a promotion announces.
 
 ```ini title="rulesmd.ini"
 [AudioVisual]

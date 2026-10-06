@@ -305,6 +305,7 @@ CellClass::CellClass(void) :
 	SensorCount(),
 	DisguiseSensorCount(),
 	OccupiedBy(),
+	OccupyHeightsCoveringMe(0),
 	Intensity(0x10000),
 	Ambient(0),
 	Brightness(NORMAL_LIGHT),
@@ -4254,7 +4255,7 @@ bool CellClass::Is_Clear_To_Move(SpeedType loco, bool ignoreinfantry, bool ignor
 	 	overlay = OverlayTypes[Overlay];
 	}
 	if (overlay != NULL && overlay->IsWall) {
-		if (check != MZONE_DESTROYER && check != MZONE_AMPHIBIOUS_DESTROYER && check != MZONE_INFANTRY_DESTROYER && (check != MZONE_CRUSHER && check != MZONE_AMPHIBIOUS_CRUSHER || !overlay->IsCrushable)) {
+		if (check != MZONE_DESTROYER && check != MZONE_AMPHIBIOUS_DESTROYER && check != MZONE_INFANTRY_DESTROYER && (check != MZONE_CRUSHER && check != MZONE_AMPHIBIOUS_CRUSHER && check != MZONE_CRUSHER_ALL || !overlay->IsCrushable)) {
 			return(false);
 		}
 
@@ -4534,6 +4535,7 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SensorCount);
 	stream.Serialize(DisguiseSensorCount);
 	stream.Serialize(OccupiedBy);
+	stream.Serialize(OccupyHeightsCoveringMe);
 	stream.Serialize(OccupierPtr);
 	stream.Serialize(BridgeOccupierPtr);
 	stream.Serialize(Land);
@@ -6159,6 +6161,26 @@ bool CellClass::Can_Burrow_Here(void) const
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Determines if a building stands between this cell and the viewer (0x487E00).
+/// A cell covered only once while a building stands in it is reported clear, because that
+/// cover is normally the building's own.
+/// </summary>
+/// <returns>bool; Is an object standing here hidden from view?</returns>
+bool CellClass::Is_Covered(void) const
+{
+	for (ObjectClass const * object = Cell_Occupier(); object != NULL; object = object->Next) {
+		if (object->What_Am_I() == RTTI_BUILDING) {
+			if (OccupyHeightsCoveringMe == 1) {
+				return(false);
+			}
+			break;
+		}
+	}
+	return(OccupyHeightsCoveringMe != 0);
 }
 
 

@@ -53,7 +53,7 @@ ADJUDICATIONS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 INI_FILES = {
     "ini": None,            # the file passed in -- resolved per class, see TYPE_FILE
     "ArtINI": "art.ini",
-    "ConfigINI": "sun.ini",
+    "ConfigINI": "ra2md.ini",
     "FSRuleINI": "firestrm.ini",
     "RuleINI": "rules.ini",
     "AI_INI": "ai.ini",
@@ -824,7 +824,7 @@ SECTION_CONST_RE = re.compile(
 def extract_globals(path, cls, methods, opts=None):
     """
     Pull keys out of non-hierarchy readers: the global rules sections
-    ([General], [AudioVisual], ...), scenario/map readers, sun.ini readers,
+    ([General], [AudioVisual], ...), scenario/map readers, ra2md.ini readers,
     per-entry sound/theme readers.
 
     Typed Get_* accessor calls are the source of truth for public settings.
@@ -932,7 +932,7 @@ def extract_globals(path, cls, methods, opts=None):
 
 GLOBAL_UNITS = [
     ("rules.cpp", "RulesClass", [
-        "General", "Audio_Visual_Rules", "AI", "Combat_Damage", "Radiation", "IQ",
+        "General", "Audio_Visual_Rules", "AI", "Combat_Damage", "Radiation", "Elevation_Model", "IQ",
         "MPlayer", "Crate_Rules", "Jumpjet_Controls", "Heap_Maximums",
         "Difficulty_Rules", "Land_Characteristics",
     ], None),
@@ -946,7 +946,7 @@ GLOBAL_UNITS = [
      {"file": "map file", "group": "House (per-scenario)",
       "section_vars": {"hname": section_selectors.identifier("house")}}),
     ("session.cpp", "SessionClass", ["Read_MultiPlayer_Settings"],
-     {"file": "sun.ini", "group": "multiplayer settings"}),
+     {"file": "ra2md.ini", "group": "multiplayer settings"}),
     # Only the loose *.MPR directory scan reads settings here. The packet path
     # above it builds each entry through MultiMission's own constructor, which
     # reads a different section from a different file and is enrolled as its
