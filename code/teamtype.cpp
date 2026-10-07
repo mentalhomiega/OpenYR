@@ -382,11 +382,22 @@ SUGGESTED_TEAM_LIST TeamTypeClass::Suggested_New_Team(HouseClass * house, bool)
 
 		if (team_count < Rule->TotalAITeamCap[house->Difficulty]) {
 			DiscreteDistributionClass<AITriggerTypeClass> trigdist;
+			bool exclusive = false;
 			for (i = 0; i < AITriggerTypes.Count(); i++) {
 				if (AITriggerTypes[i] != NULL) {
 					AITriggerTypeClass *trig = AITriggerTypes[i];
 					if (trig->Process(house, enemy, skip_base_defense) == true) {
-						trigdist.Add(trig, trig->Get_Current_Weight());
+						// A trigger at weight 5000 outranks every other: the first one drops what was collected and the rest are ignored.
+						unsigned int weight = (unsigned int)trig->Get_Current_Weight();
+						if (weight == 5000) {
+							if (!exclusive) {
+								exclusive = true;
+								trigdist.Clear();
+							}
+						} else if (exclusive) {
+							continue;
+						}
+						trigdist.Add(trig, weight);
 					}
 				}
 			}

@@ -234,7 +234,7 @@ Outside a campaign, [`CompEasyBonus=yes`](/keys/compeasybonus/) drops a computer
 
 ## Defensive teams and the enemy
 
-A trigger is defensive when its first TeamType is [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype) and its second TeamType is either absent or defensive as well.
+A trigger is defensive when its first or its second TeamType is [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype).
 
 A house considers only defensive triggers while either of these holds:
 
@@ -261,6 +261,8 @@ Every condition except the one that counts this house's objects reads the enemy.
 ## The weighted draw
 
 The house draws one trigger from those that passed every gate. Each trigger's chance is in proportion to its current weight. Weights count only as whole numbers: the three weights in a record are truncated as it is read, and the current weight is truncated again for the draw. A trigger whose current weight is below `1` passes its gates but can never be drawn.
+
+A trigger whose current weight is exactly `5000` takes priority. When one passes its gates, the house drops every trigger collected so far and ignores each later trigger that is not at `5000`, so the draw is among the triggers at `5000` alone.
 
 ## The track record
 
