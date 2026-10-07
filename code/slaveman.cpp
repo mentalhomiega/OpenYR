@@ -220,7 +220,8 @@ void SlaveManagerClass::AI(void)
 					// Ore underfoot starts the shoveling even while a move order is pending, as in SlaveManagerClass::Update.
 					slave->Assign_Destination(NULL);
 					node.Status = NODE_HARVESTING;
-					node.Start_Timer(slave->Class->HarvestRate);
+					// The first shovelful comes at once and each later one HarvestRate frames after (InfantryClass::Mission_Harvest).
+					node.Start_Timer(0);
 					slave->Assign_Mission(MISSION_GUARD);
 				} else if (slave->NavCom == NULL) {
 					node.Status = NODE_SCANNING;
