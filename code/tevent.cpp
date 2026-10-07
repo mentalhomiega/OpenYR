@@ -437,10 +437,12 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 				break;
 
 			/*
-			**	Verify that the structure has been built.
+			**	Verify that the structure has been built. The count that Yuri's Revenge reads here is the one of
+			**	the buildings the house has now, which takes in the insignificant ones, such as the
+			**	civilian power plants a mission has the player capture.
 			*/
 			case TEVENT_BUILDING_EXISTS:
-				if (house->BQuantity.Value(Data.Structure) == 0) return(false);
+				if (house->ABQuantity.Value(Data.Structure) == 0) return(false);
 				tripped = true;
 				break;
 
@@ -448,7 +450,7 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 			**	Verify that the structure does not exist.
 			*/
 			case TEVENT_BUILDING_DOES_NOT_EXIST:
-				if (house->BQuantity.Value(Data.Structure) != 0) return(false);
+				if (house->ABQuantity.Value(Data.Structure) != 0) return(false);
 				tripped = true;
 				break;
 
