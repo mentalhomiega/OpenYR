@@ -388,7 +388,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	Theme.Stop();
 
-	if (briefing) {
+	// An unattended test run has nobody to watch the movies, so it goes straight to the briefing page.
+	if (briefing && !AutoTest_Active()) {
 		Play_Movie(Scen->IntroMovie);
 		Play_Movie(Scen->BriefMovie);
 	}
@@ -427,7 +428,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 		Dropship_Screen();
 	}
 
-	if (briefing) {
+	if (briefing && !AutoTest_Active()) {
 		Play_Movie(Scen->ActionMovie, Scen->TransitTheme);
 	}
 
