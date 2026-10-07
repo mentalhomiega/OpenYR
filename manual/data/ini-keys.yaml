@@ -23095,6 +23095,24 @@ NavalTargeting:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+NetID:
+  key: NetID
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Network
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 NeverUse:
   key: NeverUse
   scopes:

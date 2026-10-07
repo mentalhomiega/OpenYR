@@ -953,7 +953,7 @@ GLOBAL_UNITS = [
     # is enrolled as its own adapter unit.
     ("session.cpp", "SessionClass", ["Read_Scenario_Descriptions"],
      {"file": "map file (.yrm, .mpr)", "group": "multiplayer maps"}),
-    ("options.cpp", "OptionsClass", ["Load_Settings", "Load_Menu_Style", "Load_Interface_Scale"],
+    ("options.cpp", "OptionsClass", ["Load_Settings", "Load_Menu_Style", "Load_Interface_Scale", "Load_Seen_Movies"],
      {"group": "client settings"}),
     # Every sound section and [Defaults] go through the same free functions,
     # with the section as a parameter; [General] is read with a literal.

@@ -2,7 +2,7 @@
 title: Movies and credits
 summary: The Movies & Credits menu plays the Renegade sneak peek, any campaign movie from a list, and the credits roll from CREDITSMD.TXT.
 category: interface-controls
-keys: [StretchMovies]
+keys: [StretchMovies, NetID]
 related:
   - type: format
     id: bink
@@ -21,11 +21,11 @@ Sneak Peeks plays `RENEGADE.BIK`, the movie Yuri's Revenge shows for this choice
 
 ## Play Movies
 
-Play Movies opens a list of Yuri's Revenge's campaign movies: the intro movie, then the seven Soviet campaign movies and the Soviet victory movie, then the Allied ones in the same order. Each row shows the movie's name from the string table, such as "Operation: Time Shift". A movie whose `.BIK` file the game cannot find is left out of the list.
+Play Movies opens a list of the campaign movies the player has seen. The intro movie is always first. Then come the Soviet movies, up to the latest one seen: the seven mission movies and the Soviet victory movie, in the order they are played. The Allied movies follow in the same way. Each row shows the movie's name from the string table, such as "Operation: Time Shift". A movie whose `.BIK` file the game cannot find is left out of the list.
 
 Select a row and choose Play Movie, or double-click the row. The movie plays full screen, and when it ends or is skipped the list opens again, with the same row selected. Back, or Escape, closes the list.
 
-Yuri's Revenge lists a campaign movie only after the player has watched it in a campaign. OpenTS lists all of them.
+A movie counts as seen when the game is about to play it, and playing one opens the earlier movies of its campaign too: after the third Soviet movie, the first three are listed. The movies seen are kept in [`NetID=`](/keys/netid/), which Yuri's Revenge writes in the same form. A game with no movies seen lists only the intro movie.
 
 ## View Credits
 
