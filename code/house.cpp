@@ -6888,7 +6888,7 @@ HouseClass * Placed_Object_House(char const * name)
 
 /// <summary>
 /// Does a house parameter select this house? A spawn house selects the one house at that
-/// position, while a country selects every house playing it.
+/// position, while a country selects every house playing it, a house of a map's own included.
 /// </summary>
 bool House_Matches(HouseClass const * house, HousesType selector)
 {
@@ -6899,7 +6899,11 @@ bool House_Matches(HouseClass const * house, HousesType selector)
 	if (spawn_waypoint != -1) {
 		return(House_At(spawn_waypoint) == house);
 	}
-	return(house->Class->House == selector);
+	/*
+	**	A house a map names by section, such as "Player House", is a type of its own that stands on the
+	**	country it plays, which is what the map's triggers mean by the number or name of that country.
+	*/
+	return(house->Class->House == selector || (selector != HOUSE_NONE && house->Class->ParentCountry == selector));
 }
 
 

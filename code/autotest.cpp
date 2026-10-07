@@ -55,6 +55,9 @@
 **							weapon it would choose and whether that one could fire
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
+**	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
+**							with a player's object as the attacker
+**	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	hit <TypeID>:<Warhead> <amount>	hits every object of that type, whoever owns it, with that
 **							warhead, fired by one of the player's objects of another type
@@ -907,6 +910,44 @@ void Run(StepType const & step)
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 			}
 		}
+	} else if (step.Command == "killhouse") {
+		// killhouse <House> [1|2]: (an underscore stands for a space in the name) destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) that house owns, as a player's attack would.
+		std::string house_name = step.Argument;
+		std::replace(house_name.begin(), house_name.end(), '_', ' ');
+		HouseClass * victim = House_From_Name(house_name.c_str());
+		int const kinds = step.X;
+		TechnoClass * attacker = NULL;
+		for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
+			if (Technos[index]->House == PlayerPtr && !Technos[index]->IsInLimbo && Technos[index]->Strength > 0) attacker = Technos[index];
+		}
+		int killed = 0;
+		for (int index = Technos.Count() - 1; victim != NULL && index >= 0; index--) {
+			TechnoClass * techno = Technos[index];
+			bool const building = techno->What_Am_I() == RTTI_BUILDING;
+			if (techno->House != victim || techno->IsInLimbo || techno->Strength <= 0) continue;
+			if (kinds == 1 && !building) continue;
+			if (kinds == 2 && building) continue;
+			int damage = techno->Strength;
+			techno->Take_Damage(damage, 0, Rule->C4Warhead, attacker, true);
+			killed++;
+		}
+		DebugString("AUTOTEST   killhouse %s %d: %d objects\n", step.Argument.c_str(), kinds, killed);
+	} else if (step.Command == "killtag") {
+		// killtag <Tag>: destroys every object that carries a tag of that type, with a player's object as the attacker.
+		TechnoClass * attacker = NULL;
+		for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
+			if (Technos[index]->House == PlayerPtr && !Technos[index]->IsInLimbo && Technos[index]->Strength > 0) attacker = Technos[index];
+		}
+		int killed = 0;
+		for (int index = Technos.Count() - 1; index >= 0; index--) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Tag == NULL || techno->Tag->Class == NULL || techno->IsInLimbo || techno->Strength <= 0) continue;
+			if (stricmp(techno->Tag->Class->IniName, step.Argument.c_str()) != 0 && stricmp(techno->Tag->Class->GivenName, step.Argument.c_str()) != 0) continue;
+			int damage = techno->Strength;
+			techno->Take_Damage(damage, 0, Rule->C4Warhead, attacker, true);
+			killed++;
+		}
+		DebugString("AUTOTEST   killtag %s: %d objects\n", step.Argument.c_str(), killed);
 	} else if (step.Command == "price") {
 		// price <TypeID>: what the player pays for one object of the type.
 		TechnoTypeClass const * type = Find_Type(step.Argument);

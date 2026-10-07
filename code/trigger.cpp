@@ -46,7 +46,9 @@
 
 #include "trigger.h"
 
+#include "autotest.h"
 #include "ccrand.h"
+#include "dbgprint.h"
 #include "crc.h"
 #include "globals.h"
 #include "house.h"
@@ -335,6 +337,10 @@ bool TriggerClass::Spring(ObjectClass * object, Cell cell)
 
 	if (Class->House == NULL && Session.Type != GAME_NORMAL) {
 		return(false);
+	}
+
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST   sprung %s '%s' frame %d\n", (char const *)Class->IniName, (char const *)Class->GivenName, Frame);
 	}
 
 	bool done = false;

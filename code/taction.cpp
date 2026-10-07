@@ -88,6 +88,7 @@
 #include "techtype.h"
 #include "csf.h"
 #include "dbgprint.h"
+#include "autotest.h"
 #include "theme.h"
 #include "tracker.h"
 #include "trigger.h"
@@ -1840,6 +1841,9 @@ bool TActionClass::TAction_DZ(HouseClass * , ObjectClass * , TriggerClass * , Ce
 /// </summary>
 bool TActionClass::TAction_WIN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST   win for house %d, the player is %s (%d)\n", (int)Data.House, PlayerPtr->Class->Name(), (int)PlayerPtr->Class->House);
+	}
 	if (House_Matches(PlayerPtr, Data.House)) {
 		PlayerPtr->Flag_To_Win();
 	} else {
