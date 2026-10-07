@@ -54,6 +54,7 @@
 #include "anim.h"
 #include "animtype.h"
 #include "audio/audioengine.h"
+#include "autotest.h"
 #include "blight.h"
 #include "brain.h"
 #include "bsurface.h"
@@ -584,6 +585,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Exception_Run_Post_Window_Test();
 
 		AudioEngine.Init();
+
+		// A scripted test plays silently whatever volumes its steps set, since it runs unattended.
+		if (AutoTest_Active()) {
+			AudioEngine.Set_Master_Gain(0.0f);
+		}
 
 		int drawablewidth = 0;
 		int drawableheight = 0;
