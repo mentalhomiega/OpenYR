@@ -539,7 +539,9 @@ bool HouseClass::Can_Make_Money(void)
 	int refcost = refinery->Cost_Of(this);
 	int harvcost = harvester->Cost_Of(this);
 
-	bool hasref = Owns_Any(ABQuantity, Rule->BuildRefinery);
+	// A slave miner on the road is a refinery that has packed up, so it still counts.
+	bool hasref = Owns_Any(ABQuantity, Rule->BuildRefinery) ||
+		(harvester->DeploysInto != NULL && Rule->BuildRefinery.Is_In_List(harvester->DeploysInto) && AUQuantity.Value(harvester->HeapID) > 0);
 	bool hasharv = Owns_Any(AUQuantity, Rule->HarvesterUnit) || Count_Resource_Gatherers() > 0;
 
 	/*
