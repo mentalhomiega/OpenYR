@@ -14,13 +14,18 @@
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/Elements/ElementFormControlSelect.h>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <utility>
 
 
 namespace
 {
+
+/// <summary>The drop-downs of a player row: kind, side, color, start and team.</summary>
+int const FIELDS = 5;
 
 enum SlotField
 {
@@ -360,6 +365,11 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Data(presenter),
 			Shown(-1)
 		{
+			for (auto & row : Chosen) {
+				for (int & chosen : row) {
+					chosen = -2;
+				}
+			}
 		}
 
 		virtual void Sync(void) override
@@ -383,6 +393,35 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Model.DirtyVariable("speed");
 
 			Show_Preview();
+		}
+
+		/// <summary>
+		/// Keeps each drop-down's shown text with its chosen option. A row the presenter gives
+		/// another color or start moves the option's selected attribute behind the drop-down's
+		/// back, which leaves the old text showing, so a drop-down whose option moved is told.
+		/// </summary>
+		virtual void Placed(void) override
+		{
+			UIRmlViewClass::Placed();
+
+			static char const * const fields[FIELDS] = {"kind", "side", "color", "start", "team"};
+			Rml::ElementDocument * document = Document();
+			for (int row = 0; document != nullptr && row < UI_SKIRMISH_MAX_SLOTS; row++) {
+				for (int field = 0; field < FIELDS; field++) {
+					Rml::ElementFormControlSelect * select = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById(fields[field] + std::to_string(row)));
+					if (select == nullptr) {
+						continue;
+					}
+
+					int const chosen = select->GetSelection();
+					if (chosen != Chosen[row][field]) {
+						Chosen[row][field] = chosen;
+						if (chosen >= 0) {
+							select->SetSelection(chosen);
+						}
+					}
+				}
+			}
 		}
 
 	protected:
@@ -457,6 +496,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 
 		UISkirmishPresenterClass & Data;
 		int Shown;
+		int Chosen[UI_SKIRMISH_MAX_SLOTS][FIELDS];
 };
 
 }
