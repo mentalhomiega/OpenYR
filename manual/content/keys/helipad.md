@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-An allied aircraft may dock with a `Helipad=yes` structure. The pad refuses any other kind of object. Like every docking structure, it refuses while it is being built or sold, switched off, or already serving as many objects as it has [docks](/keys/numberofdocks--buildingtype/). On a structure that also sets [`UnitRepair=yes`](/keys/unitrepair/), the repair bay's docking rules decide instead.
+An allied aircraft may dock with a `Helipad=yes` structure. The pad refuses any other kind of object. Like every docking structure, it refuses while it is being built or sold, switched off, or already serving as many objects as it has [docks](/keys/numberofdocks/). On a structure that also sets [`UnitRepair=yes`](/keys/unitrepair/), the repair bay's docking rules decide instead.
 
 A plain pad neither repairs a docked aircraft nor restores its ammunition. A [`UnitReload=yes`](/keys/unitreload/) pad does both: it rearms a docked aircraft, then repairs it once its ammunition is full. The stock pads set `UnitReload=yes`.
 

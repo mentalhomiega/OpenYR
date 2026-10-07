@@ -8,7 +8,7 @@ when_omitted:
   value: "0"
 ---
 
-`[ElevationModel]` `ElevationIncrement` sets how many map levels a firer must stand above its target to earn one step of [elevation range bonus](/keys/subjecttoelevation--bullettype/). Only weapons whose projectile sets `SubjectToElevation=yes` are affected. With `0`, no weapon gets an elevation bonus at all.
+`[ElevationModel]` `ElevationIncrement` sets how many map levels a firer must stand above its target to earn one step of [elevation range bonus](/keys/subjecttoelevation/). Only weapons whose projectile sets `SubjectToElevation=yes` are affected. With `0`, no weapon gets an elevation bonus at all.
 
 ```ini title="rulesmd.ini"
 [ElevationModel]

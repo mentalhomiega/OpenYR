@@ -8,7 +8,7 @@ when_omitted:
   value: "1.0"
 ---
 
-`[ElevationModel]` `ElevationIncrementBonus` sets how many cells of range each [`ElevationIncrement`](/keys/elevationincrement--global-rules/) step of height difference is worth. The total is limited by [`ElevationBonusCap`](/keys/elevationbonuscap--global-rules/) and rounded down to whole cells; [SubjectToElevation](/keys/subjecttoelevation--bullettype/) explains how it combines with the height difference.
+`[ElevationModel]` `ElevationIncrementBonus` sets how many cells of range each [`ElevationIncrement`](/keys/elevationincrement/) step of height difference is worth. The total is limited by [`ElevationBonusCap`](/keys/elevationbonuscap/) and rounded down to whole cells; [SubjectToElevation](/keys/subjecttoelevation/) explains how it combines with the height difference.
 
 ```ini title="rulesmd.ini"
 [ElevationModel]

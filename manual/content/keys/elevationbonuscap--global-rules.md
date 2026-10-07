@@ -8,7 +8,7 @@ when_omitted:
   value: "0.0"
 ---
 
-`[ElevationModel]` `ElevationBonusCap` limits the cells of range a firer earns from [`ElevationIncrementBonus`](/keys/elevationincrementbonus--global-rules/) steps. The height difference itself still adds range above the cap, as [SubjectToElevation](/keys/subjecttoelevation--bullettype/) describes. When the key is omitted the cap is `0`, so only the height difference adds range.
+`[ElevationModel]` `ElevationBonusCap` limits the cells of range a firer earns from [`ElevationIncrementBonus`](/keys/elevationincrementbonus/) steps. The height difference itself still adds range above the cap, as [SubjectToElevation](/keys/subjecttoelevation/) describes. When the key is omitted the cap is `0`, so only the height difference adds range.
 
 ```ini title="rulesmd.ini"
 [ElevationModel]

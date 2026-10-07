@@ -365,7 +365,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
 
-The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/scripting/missions/56/) and [Chrono prep for AQ](/scripting/missions/57/) script lines, which are not done yet.
+The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/mapping/missions/tmission-chrono-prep-abwp/) and [Chrono prep for AQ](/mapping/missions/tmission-chrono-prep-aq/) script lines, which are not done yet.
 
 The ion cannon's rating is the only one of the four with settings.
 
@@ -487,7 +487,7 @@ RechargeTime=5
 IronCurtainDuration=750 ; 50 seconds at normal game speed
 ```
 
-Computer houses do not fire the Iron Curtain on their own. A computer team asks for it with the [Iron Curtain me](/scripting/missions/55/) script line.
+Computer houses do not fire the Iron Curtain on their own. A computer team asks for it with the [Iron Curtain me](/mapping/missions/tmission-iron-curtain-me/) script line.
 
 ### Lightning storm
 
