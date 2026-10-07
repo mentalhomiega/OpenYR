@@ -463,6 +463,63 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 }
 
 
+static int Difficulty_Entry(TypeList<int> const & list, int difficulty);
+
+
+/// <summary>
+/// Picks the unit this house builds to bring ore home.
+/// The first harvester the house's country may own wins. A country that may own none, such as
+/// Yuri's, builds the slave miner that its refinery packs up into instead.
+/// </summary>
+/// <returns>Returns with the unit type, or the first listed harvester when the house can field
+/// no miner at all.</returns>
+UnitTypeClass const * HouseClass::Preferred_Harvester(void) const
+{
+	UnitTypeClass const * harvester = Get_First_Acted(Rule->HarvesterUnit);
+	if (harvester == NULL) {
+		BuildingTypeClass const * refinery = Get_First_Acted(Rule->BuildRefinery);
+		if (refinery != NULL && refinery->UndeploysInto != NULL) {
+			return(refinery->UndeploysInto);
+		}
+		harvester = Get_Preferred(Rule->HarvesterUnit);
+	}
+	return(harvester);
+}
+
+
+/// <summary>
+/// Is the unit type one this house builds to bring ore home?
+/// </summary>
+/// <param name="type">The unit type to test.</param>
+/// <returns>Is it a listed harvester, or the slave miner this house builds in place of one?</returns>
+bool HouseClass::Is_Harvester_Unit(UnitTypeClass const * type) const
+{
+	return(Rule->HarvesterUnit.Is_In_List(type) || type == Preferred_Harvester());
+}
+
+
+/// <summary>
+/// Counts the objects this house owns that gather ore: harvesters, slave miners, and the
+/// refinery a slave miner has deployed into.
+/// </summary>
+/// <returns>Returns with the number of ResourceGatherer objects on the map.</returns>
+int HouseClass::Count_Resource_Gatherers(void) const
+{
+	int count = 0;
+	for (int index = 0; index < UnitTypes.Count(); index++) {
+		if (UnitTypes[index]->IsResourceGatherer) {
+			count += AUQuantity.Value(index);
+		}
+	}
+	for (int index = 0; index < BuildingTypes.Count(); index++) {
+		if (BuildingTypes[index]->IsResourceGatherer) {
+			count += ABQuantity.Value(index);
+		}
+	}
+	return(count);
+}
+
+
 /// <summary>
 /// Can this house still bring in money?
 /// This routine is used by the base building logic to decide whether the house owns, or can
@@ -473,7 +530,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 bool HouseClass::Can_Make_Money(void)
 {
 	BuildingTypeClass const * refinery = Get_Preferred(Rule->BuildRefinery);
-	UnitTypeClass const * harvester = Get_Preferred(Rule->HarvesterUnit);
+	UnitTypeClass const * harvester = Preferred_Harvester();
 	if (refinery == NULL || harvester == NULL) {
 		return(true);
 	}
@@ -483,7 +540,7 @@ bool HouseClass::Can_Make_Money(void)
 	int harvcost = harvester->Cost_Of(this);
 
 	bool hasref = Owns_Any(ABQuantity, Rule->BuildRefinery);
-	bool hasharv = Owns_Any(AUQuantity, Rule->HarvesterUnit);
+	bool hasharv = Owns_Any(AUQuantity, Rule->HarvesterUnit) || Count_Resource_Gatherers() > 0;
 
 	/*
 	 * If we don't have any refineries, building one is a priority.
@@ -1708,7 +1765,7 @@ void HouseClass::AI(void)
 			}
 		} else if (ProductionMode == UNITS) {
 			AI_Unit();
-			if (BuildUnit == UNIT_NONE || !Rule->HarvesterUnit.Is_In_List(UnitTypes[BuildUnit])) {
+			if (BuildUnit == UNIT_NONE || !Is_Harvester_Unit(UnitTypes[BuildUnit])) {
 				AI_Infantry();
 				AI_Aircraft();
 			}
@@ -4465,8 +4522,8 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 			 * There is a refinery, so a harvester is what this house is short of. If one is
 			 * not on order, or is on order but cannot be paid for, then cash must be raised.
 			 */
-			if (BuildUnit == UNIT_NONE || !Rule->HarvesterUnit.Is_In_List(UnitTypes[BuildUnit])) {
-				if (Available_Money() < Get_Preferred(Rule->HarvesterUnit)->Cost_Of(this)) {
+			if (BuildUnit == UNIT_NONE || !Is_Harvester_Unit(UnitTypes[BuildUnit])) {
+				if (Available_Money() < Preferred_Harvester()->Cost_Of(this)) {
 					urgency++;
 				}
 			} else {
@@ -4474,7 +4531,7 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 					FactoryClass * fptr = Factories[j];
 					if (fptr->House == this && Factories[j]->Get_Object() != NULL) {
 						UnitClass * unit = (UnitClass *)Factories[j]->Get_Object();
-						if (unit->RTTI == RTTI_UNIT && Rule->HarvesterUnit.Is_In_List(unit->Class)) {
+						if (unit->RTTI == RTTI_UNIT && Is_Harvester_Unit(unit->Class)) {
 							fptr = Factories[j];
 							if (fptr != NULL) {
 								int owed = fptr->Balance;
@@ -4565,7 +4622,7 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 	int needed = 0;
 
 	BuildingTypeClass const * refinery = Get_Preferred(Rule->BuildRefinery);
-	UnitTypeClass const * harvester = Get_Preferred(Rule->HarvesterUnit);
+	UnitTypeClass const * harvester = Preferred_Harvester();
 	if (refinery == NULL || harvester == NULL) {
 		return(false);
 	}
@@ -4849,10 +4906,23 @@ int HouseClass::AI_Unit(void)
 	**	A computer controlled house will try to build a replacement
 	**	harvester if possible.
 	*/
-	if (IQ >= Rule->IQHarvester && !IsTiberiumShort && !Is_Human_Player() && ref * mult > harv) {
-		UnitTypeClass const * harvester = Get_Preferred(Rule->HarvesterUnit);
-		if (harvester != NULL && (unsigned int)harvester->Level <= (unsigned int)Control.TechLevel) {
-			BuildUnit = harvester->HeapID;
+	UnitTypeClass const * harvester = Get_First_Acted(Rule->HarvesterUnit);
+	if (harvester != NULL) {
+		if (IQ >= Rule->IQHarvester && !IsTiberiumShort && !Is_Human_Player() && ref * mult > harv) {
+			if ((unsigned int)harvester->Level <= (unsigned int)Control.TechLevel) {
+				BuildUnit = harvester->HeapID;
+				return(TICKS_PER_SECOND);
+			}
+		}
+	} else if (Is_Human_Player() == false) {
+
+		/*
+		**	A country that may own no harvester, Yuri's, mines with the slave miner that its
+		**	refinery packs up into, and keeps AISlaveMinerNumber of them at work.
+		*/
+		BuildingTypeClass const * refinery = Get_First_Acted(Rule->BuildRefinery);
+		if (refinery != NULL && refinery->UndeploysInto != NULL && Count_Resource_Gatherers() < Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty)) {
+			BuildUnit = refinery->UndeploysInto->HeapID;
 			return(TICKS_PER_SECOND);
 		}
 	}
