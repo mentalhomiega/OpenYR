@@ -534,18 +534,33 @@ body.lobby #ok, body.lobby #cancel
 	display: flex;
 	position: absolute;
 	left: 50%;
-	top: 150dp;
+	top: 50%;
 	width: 560dp;
 	height: 34dp;
 	margin-left: -280dp;
+	margin-top: -229dp;
 	z-index: 2;
 }
 
+/* Every page has the panel of the tallest one (the mods list, 424dp), and the tab bar and panel
+   together stand in the middle of the screen, so the block stays put from tab to tab. */
 .settings #backdrop #reveal
 {
 	width: 560dp;
-	top: 184dp;
-	margin-top: 0;
+	height: 424dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+/* The page's own content stands in the middle of the panel. */
+.settings #content
+{
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	height: 100%;
+	padding-top: 0;
+	padding-bottom: 0;
 }
 
 #tabs button.tab

@@ -2432,6 +2432,29 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	{
 		RecordingGameControlsServiceClass service;
 		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = false;
+		state.LeaveLabel = "Back";
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the game controls view with a leave label prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * leave = document->GetElementById("ok-leave");
+		Rml::Element * main = document->GetElementById("ok-main");
+		Check(leave != nullptr && leave->IsVisible(true) && leave->GetInnerRML() == "Back", "a leave label replaces the accept button's text");
+		Check(main != nullptr && !main->IsVisible(true), "the usual Main Menu text is hidden while a leave label is set");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
 		state.InGame = true;
 		state.HasSpeed = false;
 		state.HasDifficulty = false;

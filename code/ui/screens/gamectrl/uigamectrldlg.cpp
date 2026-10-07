@@ -159,6 +159,9 @@ void UI_Game_Controls_Dialog(void)
 
 	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
 	UI_Settings_Join(presenter, UI_TAB_GAME);
+	if (presenter.Settings_Tab() != UI_TAB_NONE) {
+		presenter.State.LeaveLabel = UI_Settings_Back_Label();
+	}
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 
 	UI_Run_Modal(*view);

@@ -60,6 +60,9 @@ struct UIGameControlsState
 	std::string ScrollName;
 	std::string DetailName;
 	std::string DifficultyName;
+
+	// The accept button's text when it leaves the Settings tabs; empty keeps its usual one.
+	std::string LeaveLabel;
 };
 
 

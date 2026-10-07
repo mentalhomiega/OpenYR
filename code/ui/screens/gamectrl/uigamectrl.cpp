@@ -173,7 +173,8 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("speedname", &state.SpeedName)
 				&& model.Bind("scrollname", &state.ScrollName)
 				&& model.Bind("detailname", &state.DetailName)
-				&& model.Bind("difficultyname", &state.DifficultyName));
+				&& model.Bind("difficultyname", &state.DifficultyName)
+				&& model.Bind("leavelabel", &state.LeaveLabel));
 		}
 
 	private:

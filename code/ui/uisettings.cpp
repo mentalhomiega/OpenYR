@@ -12,6 +12,7 @@
 #include "ui/uisettings.h"
 
 #include "audio/audioengine.h"
+#include "csf.h"
 #include "gamedlg.h"
 #include "globals.h"
 #include "goptions.h"
@@ -27,6 +28,13 @@ namespace
 unsigned Offered = 0;
 UISettingsTab Requested = UI_TAB_NONE;
 
+}
+
+
+std::string UI_Settings_Back_Label(void)
+{
+	std::string const text = StringTable.Find_UTF8("GUI:Back");
+	return(text.empty() ? std::string("Back") : text);
 }
 
 
