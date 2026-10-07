@@ -1056,16 +1056,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				Vector3 vec2 = Vector3(matrix.Get_X_Translation(), matrix.Get_Y_Translation(), matrix.Get_Z_Translation());
 				barrel_matrix.Translate(-vec2);
 
-				Vector3 flh;
-				if (Class->TurretNotExportedOnGround) {
-					flh = Vector3(Get_Class_Weapon_Data(0)->FireFLH.X / -8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / -8);
-					barrel_matrix.Translate(-flh);
-				} else {
-					flh = Vector3(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
-				}
-
 				barrel_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32()));
-				barrel_matrix.Translate(flh);
 				barrel_matrix.Translate(vec2);
 
 				Point2D drawpoint = xy + Class->AnimData[BANIM_TURRET].Location;
@@ -1098,16 +1089,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 				matrix.Rotate_Z(PrimaryFacing.Current().As_Radian32());
 
-				Vector3 flh;
-				if (Class->TurretNotExportedOnGround) {
-					flh = Vector3(Get_Class_Weapon_Data(0)->FireFLH.X / -8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / -8);
-					matrix.Translate(-flh);
-				} else {
-					flh = Vector3(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
-				}
-
 				matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32()));
-				matrix.Translate(flh);
 				matrix.Translate(vec2);
 
 				Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, xy + Class->AnimData[BANIM_TURRET].Location, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
