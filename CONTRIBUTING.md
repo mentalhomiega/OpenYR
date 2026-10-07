@@ -21,7 +21,8 @@ SDKs, credentials, personal data, IDE state, or build output.
 
 ## Current priorities
 
-Work toward the first [development milestone](README.md#state-and-plans) has
+Work toward a full Yuri's Revenge replacement, starting from
+[what works today](README.md#what-works), has
 review priority. Portability planning and preparatory work may proceed in
 parallel. Other pull requests are deprioritized and may wait for review;
 simple bug fixes are reviewed as time permits.
