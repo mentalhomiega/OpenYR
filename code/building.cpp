@@ -5969,7 +5969,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					if (hover) {
 						distance = 0x96;
 					}
-					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && ::Distance(Center_Coord(), Contact_With_Whom()->Center_Coord()) < distance) {
+					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && ::Distance(Docking_Coord_For(tech), Contact_With_Whom()->Center_Coord()) < distance) {
 						Status = IDLE;
 						return(TICKS_PER_SECOND/4);
 					}
