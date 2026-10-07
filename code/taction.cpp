@@ -318,7 +318,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_RESTORE_STARTING_UNITS:
 		case TACTION_CHRONO_SCREEN_EFFECT:
 		case TACTION_TELEPORT_ALL_TO:
-		case TACTION_RESTORE_STARTING_BUILDINGS:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 		case TACTION_RETINT_RED:
@@ -832,6 +831,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CENTER_BASE_CELL_CLEAR);
 		INVOKE(TIMER_TEXT);
 		INVOKE(RESHROUD_AT);
+		INVOKE(RESTORE_STARTING_BUILDINGS);
 		INVOKE(CENTER_BASE_CELL_SET);
 		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
 		INVOKE(SET_PREFERRED_TARGET_CELL);
@@ -3437,6 +3437,22 @@ bool TActionClass::TAction_RESHROUD_AT(HouseClass * , ObjectClass * , TriggerCla
 			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
 		}
 	}
+	return(true);
+}
+
+
+/// <summary>
+/// Puts back the buildings the scenario placed for the house the action names: one that is gone
+/// is built again where it stood, and one that still stands is mended.
+/// </summary>
+/// <returns>bool; Is the named house in play?</returns>
+bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * hptr = House_From_HousesType(Data.House);
+	if (hptr == NULL) {
+		return(false);
+	}
+	hptr->Restore_Starting_Buildings();
 	return(true);
 }
 

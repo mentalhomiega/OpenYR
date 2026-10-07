@@ -671,6 +671,23 @@ class HouseClass : public AbstractClass
 		*/
 		Cell CenterOverride;
 
+		/*
+		**	The buildings the scenario placed for this house when it was read, with the cell each stands
+		**	on. A trigger action can have them put back.
+		*/
+		struct StartingBuildingType {
+			StructType Type;
+			Cell Position;
+
+			template<typename S>
+			void Serialize(S & stream)
+			{
+				stream.Serialize(Type);
+				stream.Serialize(Position);
+			}
+		};
+		std::vector<StartingBuildingType> StartingBuildings;
+
 	//private:
 
 		/*
@@ -798,6 +815,7 @@ class HouseClass : public AbstractClass
 		int Power_Drain(void);
 		bool Fire_Sale(void);
 		void Cheer(void);
+		void Restore_Starting_Buildings(void);
 		void All_To_Hunt(void);
 
 		virtual RTTIType Fetch_RTTI(void) const override;
