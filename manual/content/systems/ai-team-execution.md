@@ -244,8 +244,8 @@ When step 8 runs the Script and the advance flag is raised:
 
 On every later turn, the mission on that line runs again, until it raises the advance flag.
 
-:::caution[A line the engine cannot run stalls the team]
-A Script line whose mission number is outside `0` to `52` does nothing, because those 53 numbers are the only team missions. The team never advances past the line. Only a [regroup](#every-regroup-rewinds-the-script), which rewinds the Script, gets it moving again, and only a `Reinforce=yes` team can regroup. A mission that never raises the advance flag, and never starts a move that raises it, has the same result.
+:::caution[A line the engine does not know is skipped; one that never finishes stalls the team]
+The team missions are numbered `0` to `64`, and a Script line with any other number is passed over: the team raises the advance flag on that turn and the log records the number once. A mission that never raises the advance flag, and never starts a move that raises it, stalls the team. Only a [regroup](#every-regroup-rewinds-the-script), which rewinds the Script, gets it moving again, and only a `Reinforce=yes` team can regroup.
 
 [Change script...](/mapping/missions/tmission-script/) idles the team in the same way. It replaces the Script and leaves the team before the new Script's first line, where nothing runs.
 :::

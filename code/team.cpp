@@ -123,6 +123,7 @@
 #include "tube.hh"
 
 #include <map>
+#include <set>
 
 
 BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *house, FootClass *unit, TargetPropertyType prop, bool only_enemy);
@@ -763,10 +764,16 @@ void TeamClass::AI(void)
 			INVOKE(ENTER_BIO_REACTOR);
 			INVOKE(ENTER_BATTLE_BUNKER);
 
-			// A step this engine cannot carry out yet is passed over, as gamemd does for any unknown step.
-			default:
+			// A line with a number the engine does not know is passed over, as gamemd passes over one.
+			// A script that has just been replaced sits before its first line, which also lands here.
+			default: {
+				static std::set<int> reported;
+				if (mission.Mission != TMISSION_NONE && reported.insert((int)mission.Mission).second) {
+					DebugString("Team %s: script line %d is not a known action; skipping it\n", Class->Name(), (int)mission.Mission);
+				}
 				IsNextMission = true;
 				break;
+			}
 		}
 
 	} else {
