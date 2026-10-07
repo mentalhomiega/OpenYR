@@ -429,6 +429,17 @@ static bool Spawner_Setup_Campaign(void)
 	CustomSeed = SpawnConfig.Seed;
 	Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;
 
+	// A launch that names no campaign takes the one whose mission it plays, so the briefing is
+	// printed in that campaign's colors.
+	if (Scen->Campaign == CAMPAIGN_NONE) {
+		for (int index = 0; index < Campaigns.Count(); index++) {
+			if (stricmp(Campaigns[index]->ScenarioName, SpawnConfig.ScenarioName.c_str()) == 0) {
+				Scen->Campaign = (CampaignType)index;
+				break;
+			}
+		}
+	}
+
 	// A fresh launch carries nothing over, so the file's flags replace an earlier mission's.
 	new (&Environment) EnvironmentClass;
 	for (int index = 0; index < SpawnerConfigClass::GLOBAL_FLAG_COUNT; index++) {

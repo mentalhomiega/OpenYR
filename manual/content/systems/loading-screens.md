@@ -33,7 +33,7 @@ On a screen 640 pixels wide the layout is 640 by 480 instead. Its title bar is `
 
 The title bar shows the text `LSLoadMessage=` names, 10 pixels in from the bar's left and top edges. The text `LSLoadBriefing=` names is printed over the picture, with its top-left corner `LS800BriefLocX=` pixels right of and `LS800BriefLocY=` pixels below the picture's top-left corner; the 640 by 480 layout uses `LS640BriefLocX=` and `LS640BriefLocY=`. The briefing breaks onto a new line at each line break in the string, and at the space that keeps a line within 400 pixels. The picture behind the briefing is darkened to about two-fifths of its brightness, in a box reaching 4 pixels beyond the text on every side.
 
-Both texts are printed in the `AlliedLoad` color of the rules `[Colors]` section for a campaign whose [`CD=`](/keys/cd/) is `0`, and in `SovietLoad` for any other value. The stock campaigns all have `CD=2`, so their text is red. A mission started outside a campaign uses `AlliedLoad`.
+Both texts are printed in the `AlliedLoad` color of the rules `[Colors]` section for a campaign whose [`CD=`](/keys/cd/) is `0`, and in `SovietLoad` for any other value. The stock campaigns all have `CD=2`, so their text is red. A mission launched without a campaign takes the campaign that lists that mission as its `Scenario=`, and uses `AlliedLoad` when no campaign lists it.
 
 The progress bar is the first frame of `SPLDBR.SHP`, drawn with `SPLDBR.PAL` in the progress strip, starting 172 pixels from its left edge in the 800 by 600 layout and 92 pixels in the 640 by 480 one. It shows as much of its width as the share of the scenario already loaded.
 
