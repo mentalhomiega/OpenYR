@@ -318,6 +318,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsCanPassiveAquire;
 		bool IsCanRetaliate;
 
+		// Does a grounded jumpjet of this type take off when it has something to attack? (Rules key HoverAttack.)
+		bool IsHoverAttack;
+
 		// Does a moving or harvesting object of this type shoot at targets that come into range?
 		bool IsOpportunityFire;
 

@@ -881,6 +881,18 @@ int FootClass::Do_MISSION_CAPTURE(void)
 }
 
 
+/// <summary>
+/// Sends a grounded unit whose type sets HoverAttack to a cell beside it, which takes a jumpjet
+/// into the air so it fights from there.
+/// </summary>
+void FootClass::Hover_Attack_Lift_Off(void)
+{
+	if (TClass->IsHoverAttack && Height == 0) {
+		Assign_Destination(&Map[Nearby_Location(this)]);
+	}
+}
+
+
 /***********************************************************************************************
  * FootClass::Mission_Attack -- AI for heading towards and firing upon target.                 *
  *                                                                                             *
@@ -899,6 +911,8 @@ int FootClass::Do_MISSION_CAPTURE(void)
  *=============================================================================================*/
 int FootClass::Do_MISSION_ATTACK(void)
 {
+	Hover_Attack_Lift_Off();
+
 	if (TarCom != NULL) {
 		Approach_Target();
 	} else {
@@ -940,6 +954,10 @@ int FootClass::Do_MISSION_GUARD(void)
 				}
 			}
 		}
+	}
+
+	if (TarCom != NULL) {
+		Hover_Attack_Lift_Off();
 	}
 
 	// A CanPassiveAquire=no type never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
