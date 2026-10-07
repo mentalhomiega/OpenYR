@@ -156,3 +156,22 @@ site_exclusions:
     classification: duplicate
     canonical_key: Country
     reason: The house record picks its type from the same Country setting that HouseClass::Read_INI reads for the tech tree.
+
+  - path: code/scenario.cpp
+    function: Side_For_Map_House
+    keys: [Country]
+    classification: duplicate
+    canonical_key: Country
+    reason: Reads the Country setting of the player house before the houses exist, to choose the side whose archives load.
+  - path: code/scenario.cpp
+    function: Side_For_Map_House
+    keys: [Side]
+    classification: duplicate
+    canonical_key: Side
+    reason: Reads the Side setting of the player's country before the countries exist, to choose the side whose archives load.
+  - path: code/scenario.cpp
+    function: Side_For_Map_House
+    keys: [ParentCountry]
+    classification: duplicate
+    canonical_key: ParentCountry
+    reason: Follows the ParentCountry setting of the player's country before the countries exist, to choose the side whose archives load.
