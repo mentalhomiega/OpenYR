@@ -176,6 +176,8 @@ bool Key_From_Name(std::string const & name, Rml::Input::KeyIdentifier & key)
 		{"down", Rml::Input::KI_DOWN},
 		{"left", Rml::Input::KI_LEFT},
 		{"right", Rml::Input::KI_RIGHT},
+		{"pageup", Rml::Input::KI_PRIOR},
+		{"pagedown", Rml::Input::KI_NEXT},
 	};
 	for (auto const & entry : keys) {
 		if (name == entry.Name) {
@@ -200,7 +202,7 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
 /// id), press (a button's label, ignoring case), choose (the text of a list row or drop-down
-/// entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space or an arrow),
+/// entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie) and quit.
 /// </summary>
@@ -306,12 +308,28 @@ void UIScript_Tick(Rml::Context * context)
 				return;
 			}
 		} else if (step.Command == "key") {
+			// A "ctrl+" or "shift+" in front of the name holds that key down.
+			std::string name = step.Argument;
+			int modifiers = 0;
+			for (bool more = true; more; ) {
+				more = false;
+				if (name.rfind("ctrl+", 0) == 0) {
+					modifiers |= Rml::Input::KM_CTRL;
+					name.erase(0, 5);
+					more = true;
+				} else if (name.rfind("shift+", 0) == 0) {
+					modifiers |= Rml::Input::KM_SHIFT;
+					name.erase(0, 6);
+					more = true;
+				}
+			}
+
 			Rml::Input::KeyIdentifier key;
-			if (!Key_From_Name(step.Argument, key)) {
+			if (!Key_From_Name(name, key)) {
 				DebugString("UISCRIPT   key %s: unknown key\n", step.Argument.c_str());
 			} else {
-				context->ProcessKeyDown(key, 0);
-				context->ProcessKeyUp(key, 0);
+				context->ProcessKeyDown(key, modifiers);
+				context->ProcessKeyUp(key, modifiers);
 				WaitUntil = now + 300;
 				return;
 			}

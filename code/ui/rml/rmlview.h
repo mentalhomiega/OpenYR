@@ -78,6 +78,8 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool Step_Range(Rml::Element * element, int key);
 		bool Type_Ahead(Rml::Element * list, Rml::String const & text);
 		void Mark_Keyboard(void);
+		void Apply_Tabs(void);
+		bool Step_Tab(Rml::Event & event, int key);
 		void Place_Wallpaper(void);
 		void Size_Grips(void);
 		static void Show_Row(Rml::Element * list, Rml::Element * row);
@@ -101,6 +103,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool TipUp = false;
 		float Wallpaper = 1.0e9f;
 		bool Anchored = false;
+		bool FocusTab = false;
 		Rml::String DocumentName;
 		Rml::String ModelName;
 };

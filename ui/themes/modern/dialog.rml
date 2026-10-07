@@ -8,7 +8,8 @@
 	See LICENSE.md for applicable additional terms and warranty disclaimers.
 
 	The modern menu style's frame: the shared dialog frame with Yuri's Revenge's title art
-	filling the window behind it, and the style's own sheet read after the shared kit.
+	filling the window behind it, and the style's own sheet read after the shared kit. The tab
+	bar is for the pages of the Settings screen and stays hidden on every other screen.
 -->
 <template name="dialog" content="content">
 <head>
@@ -18,6 +19,13 @@
 <body>
 	<div id="screen-bg"><div id="screen-art"></div><div id="screen-shade"></div></div>
 	<div id="backdrop">
+		<div id="tabs">
+			<button class="tab" id="tab-game" data-event-click="queue('tab', 0)">Game</button>
+			<button class="tab" id="tab-display" data-event-click="queue('tab', 1)">Display</button>
+			<button class="tab" id="tab-audio" data-event-click="queue('tab', 2)">Audio</button>
+			<button class="tab" id="tab-keyboard" data-event-click="queue('tab', 3)">Keyboard</button>
+			<button class="tab" id="tab-mods" data-event-click="queue('tab', 4)">Mods</button>
+		</div>
 		<div id="reveal">
 			<div id="chrome">
 				<div id="wallpaper"><div id="wallpaper-art"></div></div>

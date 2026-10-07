@@ -3245,6 +3245,123 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 }
 
 
+/*
+ * A page of the tabbed Settings applies as OK does when the player picks another tab, then
+ * ends and names the tab. A screen that was not opened as a page ignores the tabs.
+ */
+void Test_Settings_Tabs_Presenter(void)
+{
+	unsigned const all = (1u << UI_TAB_COUNT) - 1;
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "edge", 1);
+		Drive(presenter, "tab", UI_TAB_KEYBOARD);
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE && service.Calls.empty(), "a screen that is not a Settings page ignores a tab request");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		UIGameControlsPresenterClass presenter(service, state);
+		presenter.Set_Settings_Tab(UI_TAB_GAME, all);
+		Drive(presenter, "edge", 1);
+		Drive(presenter, "tab", UI_TAB_GAME);
+		Check(!presenter.Result.has_value(), "choosing the tab already on show does nothing");
+		Drive(presenter, "tab", UI_TAB_COUNT);
+		Drive(presenter, "tab", -1);
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab that does not exist is ignored");
+		Drive(presenter, "tab", UI_TAB_AUDIO);
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Tab_Request == UI_TAB_AUDIO, "another tab ends the page and names itself");
+		Check(service.Joined().find("edge on") != std::string::npos && service.Joined().find("save") != std::string::npos, "leaving by a tab applies the page's edits as OK does");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		UIGameControlsPresenterClass presenter(service, state);
+		presenter.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_KEYBOARD));
+		Drive(presenter, "tab", UI_TAB_MODS);
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab the bar does not offer is ignored");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		service.Writable = false;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
+		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
+		Drive(presenter, "tab", UI_TAB_GAME);
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a page that cannot save stays open rather than lose its edits");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Tab_Request == UI_TAB_NONE, "Back leaves the Settings and asks for no tab");
+	}
+}
+
+
+/*
+ * A page joined to the Settings marks its document, opens without the slide, and moves between
+ * the tabs from the keyboard: Ctrl+Tab and Ctrl+Page Up/Down, skipping tabs the bar does not offer.
+ */
+void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int const problems = system.Problems;
+
+	RecordingGameControlsServiceClass service;
+	UIGameControlsPresenterClass presenter(service, Game_Controls_Fixture());
+	presenter.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD));
+	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "a Settings page prepares");
+	view->Show(true);
+	context.Update();
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Check(document->IsClassSet("settings") && document->IsClassSet("tab-game"), "a Settings page marks its document with the page's tab");
+	Check(view->Reveal_Width() == 0.0f, "a Settings page does not slide open");
+
+	Press(context, Rml::Input::KI_TAB, Rml::Input::KM_CTRL);
+	presenter.Drain();
+	Check(presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "Ctrl+Tab moves to the next tab the bar offers");
+	view->Release();
+	context.Update();
+
+	UIGameControlsPresenterClass back(service, Game_Controls_Fixture());
+	back.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD));
+	std::unique_ptr<UIViewClass> second = UI_Game_Controls_View(back);
+	Check(Rml(*second).Prepare(context), "a second Settings page prepares");
+	second->Show(true);
+	context.Update();
+
+	Press(context, Rml::Input::KI_PRIOR, Rml::Input::KM_CTRL);
+	back.Drain();
+	Check(back.Result.has_value() && back.Tab_Request == UI_TAB_KEYBOARD, "Ctrl+Page Up wraps round to the last tab");
+	second->Release();
+	context.Update();
+
+	UIGameControlsPresenterClass plain(service, Game_Controls_Fixture());
+	std::unique_ptr<UIViewClass> loose = UI_Game_Controls_View(plain);
+	Check(Rml(*loose).Prepare(context), "a screen opened on its own prepares");
+	loose->Show(true);
+	context.Update();
+	Press(context, Rml::Input::KI_TAB, Rml::Input::KM_CTRL);
+	plain.Drain();
+	Check(!Rml(*loose).Document()->IsClassSet("settings") && !plain.Result.has_value(), "a screen opened on its own has no tabs and ignores Ctrl+Tab");
+	loose->Release();
+	context.Update();
+
+	Check(system.Problems == problems, "the Settings pages raise no RmlUi warning or error");
+}
+
+
 Rml::Element * Mod_Row_Part(Rml::Element * row, char const * part)
 {
 	Rml::ElementList found;
@@ -5075,6 +5192,7 @@ void Test_Documents(void)
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
 		Test_Game_Controls_Screen(*context, system);
+		Test_Settings_Tabs_Screen(*context, system);
 		Test_Display_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
 		Test_Keyboard_Navigation(*context, system, render);
@@ -6299,6 +6417,7 @@ int main(void)
 	Test_Keys();
 	Test_Keyboard_Presenter();
 	Test_Mods_Presenter();
+	Test_Settings_Tabs_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();
 	Test_Reconnect_Presenter();

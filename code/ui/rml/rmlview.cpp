@@ -99,7 +99,92 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	Doc->AddEventListener(Rml::EventId::Mousedown, this);
 	Doc->AddEventListener(Rml::EventId::Mousemove, this, true);
 	Loaded();
+	Apply_Tabs();
 	return(true);
+}
+
+
+static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "audio", "keyboard", "mods"};
+
+// A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
+static bool UI_Tab_Keyboard = false;
+
+
+/// <summary>
+/// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
+/// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
+/// </summary>
+void UIRmlViewClass::Apply_Tabs(void)
+{
+	UISettingsTab const tab = Owner.Settings_Tab();
+	if (Doc == nullptr || tab == UI_TAB_NONE) {
+		return;
+	}
+
+	Doc->SetClass("settings", true);
+	Doc->SetClass(Rml::String("tab-") + UI_TAB_NAMES[tab], true);
+
+	// Pages replace each other in place, so the slide-open of a first screen would only flicker.
+	Doc->SetAttribute("reveal", Rml::String("none"));
+
+	for (int index = 0; index < UI_TAB_COUNT; index++) {
+		Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[index]);
+		if (button != nullptr) {
+			button->SetClass("active", index == tab);
+			button->SetClass("gone", (Owner.Settings_Tabs_Offered() & (1u << index)) == 0);
+		}
+	}
+
+	FocusTab = UI_Tab_Keyboard;
+	UI_Tab_Keyboard = false;
+}
+
+
+/// <summary>
+/// Moves between the Settings tabs from the keyboard: Ctrl+Tab and Ctrl+Page Up/Down anywhere
+/// on the page, and the arrow keys while a tab has the focus.
+/// </summary>
+/// <returns>bool; Was the key a tab change?</returns>
+bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
+{
+	if (Owner.Settings_Tab() == UI_TAB_NONE) {
+		return(false);
+	}
+
+	Rml::Element * target = event.GetTargetElement();
+
+	// A hot key box takes every combination for itself.
+	bool const ctrl = event.GetParameter<bool>("ctrl_key", false) && !(target != nullptr && target->IsClassSet("hotkey"));
+	bool const onbar = target != nullptr && target->IsClassSet("tab");
+	int step = 0;
+
+	if (ctrl && key == Rml::Input::KI_TAB) {
+		step = event.GetParameter<bool>("shift_key", false) ? -1 : 1;
+	} else if (ctrl && key == Rml::Input::KI_PRIOR) {
+		step = -1;
+	} else if (ctrl && key == Rml::Input::KI_NEXT) {
+		step = 1;
+	} else if (onbar && key == Rml::Input::KI_LEFT) {
+		step = -1;
+	} else if (onbar && key == Rml::Input::KI_RIGHT) {
+		step = 1;
+	}
+
+	if (step == 0) {
+		return(false);
+	}
+
+	int tab = Owner.Settings_Tab();
+	for (int tries = 0; tries < UI_TAB_COUNT; tries++) {
+		tab = (tab + step + UI_TAB_COUNT) % UI_TAB_COUNT;
+		if ((Owner.Settings_Tabs_Offered() & (1u << tab)) != 0) {
+			UI_Tab_Keyboard = true;
+			Mark_Keyboard();
+			Queue("tab", tab);
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -148,6 +233,15 @@ void UIRmlViewClass::Show(bool modal)
 {
 	if (Doc != nullptr) {
 		Doc->Show(modal ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, Rml::FocusFlag::Document);
+
+		if (FocusTab) {
+			FocusTab = false;
+			Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[Owner.Settings_Tab()]);
+			if (button != nullptr) {
+				button->Focus();
+				Mark_Keyboard();
+			}
+		}
 	}
 }
 
@@ -776,6 +870,11 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 	}
 
 	int key = event.GetParameter<int>("key_identifier", 0);
+
+	if (Step_Tab(event, key)) {
+		event.StopPropagation();
+		return;
+	}
 
 	if (key == Rml::Input::KI_TAB) {
 		Mark_Keyboard();

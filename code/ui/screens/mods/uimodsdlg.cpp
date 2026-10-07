@@ -20,6 +20,7 @@
 #include "msgbox.h"
 #include "ui/screens/mods/uimods.h"
 #include "ui/uienginehost.h"
+#include "ui/uisettings.h"
 #include "ui/uiview.h"
 
 
@@ -74,9 +75,12 @@ UIModsServiceClass & UI_Mods_Service(void)
 void UI_Mods_Dialog(void)
 {
 	UIModsPresenterClass presenter(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory()));
+	UI_Settings_Join(presenter, UI_TAB_MODS);
 	std::unique_ptr<UIViewClass> view = UI_Mods_View(presenter);
 
-	if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED || !presenter.Saved) {
+	UIResult const result = UI_Run_Modal(*view);
+	UI_Settings_Leave(presenter);
+	if (result != UI_RESULT_ACCEPTED || !presenter.Saved) {
 		return;
 	}
 

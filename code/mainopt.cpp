@@ -36,6 +36,7 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mods/uimods.h"
+#include "ui/uisettings.h"
 #include "video.h"
 #include "viewzoom.h"
 #include "vidscale.h"
@@ -47,7 +48,6 @@
 
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
-static void Display_Options_Dialog(void);
 
 
 /// <summary>
@@ -61,6 +61,13 @@ void Main_Options_Dialog(void)
 {
 	bool old_game_active = GameActive;
 	GameActive = false;
+
+	// The modern menu style opens the options as the tabs of one Settings screen.
+	if (UI_Settings_Tabbed()) {
+		UI_Settings_Run(UI_TAB_GAME);
+		GameActive = old_game_active;
+		return;
+	}
 
 	while (true) {
 		switch (UI_Main_Options_Dialog()) {
@@ -243,7 +250,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 /// A picked mode is applied as a trial; if the player does not confirm it, the screen opens
 /// again.
 /// </summary>
-static void Display_Options_Dialog(void)
+void Display_Options_Dialog(void)
 {
 	while (true) {
 		float const scale = Options.InterfaceScale;
@@ -272,6 +279,11 @@ static void Display_Options_Dialog(void)
 			Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
 			LogicalSurface = HiddenSurface;
 			Draw_Menu_Background();
+		}
+
+		// The player was leaving for another tab, so the screen does not open again.
+		if (UI_Settings_Moving()) {
+			break;
 		}
 	}
 }

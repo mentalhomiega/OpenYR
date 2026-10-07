@@ -16,6 +16,7 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uisettings.h"
 #include "ui/uiview.h"
 #include "video.h"
 #include "wwmouse.h"
@@ -140,11 +141,13 @@ std::optional<UIDisplayMode> UI_Display_Dialog(void)
 	UI_Display_State(state);
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
+	UI_Settings_Join(presenter, UI_TAB_DISPLAY);
 	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
 		return(std::nullopt);
 	}
+	UI_Settings_Leave(presenter);
 
 	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
 		UIDisplayMode current;

@@ -520,3 +520,114 @@ body.lobby #ok, body.lobby #cancel
 {
 	width: 136dp;
 }
+
+/* The Settings screen: one panel with a tab for the game, display, audio, keyboard and mods
+   pages. Each page is its own screen; the tab bar and the panel stand in the same place for
+   all of them, and the page's content is centered in the panel. */
+#tabs
+{
+	display: none;
+}
+
+.settings #tabs
+{
+	display: flex;
+	position: absolute;
+	left: 50%;
+	top: 150dp;
+	width: 560dp;
+	height: 34dp;
+	margin-left: -280dp;
+	z-index: 2;
+}
+
+.settings #backdrop #reveal
+{
+	width: 560dp;
+	top: 184dp;
+	margin-top: 0;
+}
+
+#tabs button.tab
+{
+	flex: 1 1 0;
+	height: 34dp;
+	margin: 0 3dp 0 0;
+	padding: 8dp 4dp 0 4dp;
+	border: 1dp #4d3d6b;
+	border-bottom-width: 0;
+	border-radius: 5dp 5dp 0 0;
+	text-align: center;
+	color: #b9aad6;
+	background-color: transparent;
+	decorator: vertical-gradient(#2a2238 #18131f);
+}
+
+#tabs button.tab:last-child
+{
+	margin-right: 0;
+}
+
+#tabs button.tab.gone
+{
+	display: none;
+}
+
+#tabs button.tab:hover
+{
+	border-color: #b46bff;
+	color: #ffffff;
+	decorator: vertical-gradient(#3d2f57 #1f1829);
+}
+
+#tabs button.tab:active
+{
+	padding: 8dp 4dp 0 4dp;
+	decorator: vertical-gradient(#1a1424 #2a203a);
+}
+
+/* The tab of the page on show joins the panel below it. */
+#tabs button.tab.active, #tabs button.tab.active:hover, #tabs button.tab.active:active
+{
+	height: 35dp;
+	border-color: #6b43a8;
+	color: #ffffff;
+	background-color: #120d1c;
+	decorator: none;
+}
+
+.keys #tabs button.tab:focus
+{
+	color: #ffffff;
+	border-color: #d29bff;
+}
+
+.settings.tab-game #content
+{
+	padding-left: 91dp;
+	padding-right: 91dp;
+}
+
+.settings.tab-display #content
+{
+	padding-left: 141dp;
+	padding-right: 141dp;
+}
+
+.settings.tab-audio #content
+{
+	padding-left: 92dp;
+	padding-right: 92dp;
+}
+
+.settings.tab-keyboard #content
+{
+	padding-left: 60dp;
+	padding-right: 60dp;
+}
+
+/* The tabs take the place of the buttons that led from the game controls to the other pages. */
+.settings #buttons > #sound, .settings #buttons > #keyboard
+{
+	display: none;
+}

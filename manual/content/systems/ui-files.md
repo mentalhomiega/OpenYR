@@ -39,6 +39,8 @@ A screen opens the way the original dialogs did: it slides out from the middle b
 
 [`MenuStyle`](/keys/menustyle/) picks one of two folders under `ui/themes`: `modern` or `classic`. Each holds its own `dialog.rml`, the frame with the style's background art, and a `theme.rcss` that the frame reads after `kit.rcss`, restyling the controls in Yuri's Revenge's colors. A file in the folder of the style in force replaces the shipped `ui` file of the same name, or a copy in a mix file. A copy of that name in a folder the game searches before `ui`, such as a mod's folder, is used ahead of both.
 
+In the modern style the options open as the tabs of one Settings screen, Game, Display, Audio, Keyboard and Mods, where the classic style leads from an Options menu to a separate screen for each. Each tab is still the document it was (`gamectrl.rml`, `display.rml`, `sound.rml`, `keyboard.rml` and `mods.rml`), so the tab bar lives in the style's `dialog.rml` as the `tabs` element, hidden except on a page of the Settings. The game puts the classes `settings` and `tab-game`, `tab-display`, `tab-audio`, `tab-keyboard` or `tab-mods` on a page's `<body>`, turns its `reveal` off so pages replace each other without a slide, marks the tab of the page on show `active` and the tabs it does not offer `gone`. `theme.rcss` sizes the panel and centers each page's content in it from those classes.
+
 The two styles lay a screen out for different sizes: `modern` for 1280 by 720 and `classic` for 800 by 600. One `dp` is the window's size divided by that size, taking whichever of width and height gives the smaller result.
 
 ## How a file is found

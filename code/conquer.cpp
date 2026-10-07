@@ -121,6 +121,7 @@
 #include "surface.h"
 #include "tactical.h"
 #include "theme.h"
+#include "ui/uisettings.h"
 #include "unittype.h"
 #include "voc.h"
 #include "vox.h"
@@ -256,6 +257,12 @@ void Ingame_Menu_Dialog(void)
 					break;
 
 				case SDLG_SETTINGS:
+					// The modern menu style shows the settings as tabs, which also hold the sound and keyboard screens.
+					if (UI_Settings_Tabbed()) {
+						UI_Settings_Run(UI_TAB_GAME);
+						SpecialDialog = SDLG_OPTIONS;
+						break;
+					}
 					GameControlsClass().Dialog();
 					if (SpecialDialog != SDLG_SETTINGS) {
 						break;
