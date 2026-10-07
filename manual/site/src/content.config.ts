@@ -19,7 +19,13 @@ export const collections = {
 	docs: defineCollection({ loader: docsLoader(), schema: docsSchema() }),
 
 	keyprose: defineCollection({
-		loader: glob({ pattern: '*.md', base: '../content/keys' }),
+		// Key pages are named after their route ids, which keep the dots of keys such as
+		// Bounty.Display. The default id would slugify the dots away.
+		loader: glob({
+			pattern: '*.md',
+			base: '../content/keys',
+			generateId: ({ entry }) => entry.replace(/\.md$/, ''),
+		}),
 		schema: keyProseSchema,
 	}),
 
