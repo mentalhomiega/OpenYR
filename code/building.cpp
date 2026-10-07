@@ -7465,6 +7465,9 @@ void BuildingClass::Read_INI(CCINIClass const & ini)
 
 				if (b->Unlimbo(cell, facing)) {
 
+					// A trigger action can have the scenario's own buildings put back later.
+					bhptr->StartingBuildings.push_back({(StructType)classid, Cell(cell)});
+
 					if (b->BuildingLight) {
 						b->BuildingLight->Set_Behavior_Type((LightBehaviorType)spotlight);
 					}

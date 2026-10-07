@@ -6041,6 +6041,36 @@ void HouseClass::Cheer(void)
 }
 
 
+/// <summary>
+/// Puts back the buildings the scenario placed for this house, as HouseClass::RespawnStartingBuildings
+/// (0x50D320) does: one that is missing is built again where it stood, and one that still stands
+/// there is mended to full strength.
+/// </summary>
+void HouseClass::Restore_Starting_Buildings(void)
+{
+	for (int index = (int)StartingBuildings.size() - 1; index >= 0; index--) {
+		StartingBuildingType const & start = StartingBuildings[index];
+		if (start.Type < 0 || start.Type >= BuildingTypes.Count()) {
+			continue;
+		}
+
+		BuildingClass * standing = Map[start.Position].Cell_Building();
+		if (standing != NULL && standing->Class == BuildingTypes[start.Type] && standing->House == this) {
+			int damage = -standing->Class->MaxStrength;
+			standing->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+			continue;
+		}
+
+		ScenarioInit++;
+		BuildingClass * building = new BuildingClass(BuildingTypes[start.Type], this);
+		if (building != NULL && !building->Unlimbo(Coord(start.Position))) {
+			delete building;
+		}
+		ScenarioInit--;
+	}
+}
+
+
 /***********************************************************************************************
  * HouseClass::Fire_Sale -- Cause all buildings to be sold.                                    *
  *                                                                                             *
@@ -6984,6 +7014,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PreferredTarget);
 	stream.Serialize(PreferredTargetCell);
 	stream.Serialize(CenterOverride);
+	stream.Serialize(StartingBuildings);
 	stream.Serialize(BQuantity);
 	stream.Serialize(UQuantity);
 	stream.Serialize(IQuantity);

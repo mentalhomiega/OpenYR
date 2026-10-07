@@ -319,6 +319,7 @@ class TActionClass : public AbstractClass
 		bool TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_TIMER_TEXT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_RESHROUD_AT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_RESTORE_STARTING_BUILDINGS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool Not_Implemented(void) const;
 };
 
