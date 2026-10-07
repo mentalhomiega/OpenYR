@@ -149,6 +149,36 @@ static ThreatType Quarry_Threat(int quarry)
 	}
 }
 
+
+/// <summary>
+/// Finds the house's super weapon of the given type, or NULL when it has none.
+/// </summary>
+static SuperClass * Find_Super(HouseClass const * house, SuperWeaponType type)
+{
+	SuperClass * found = NULL;
+	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
+		if (house->SuperWeapon[index]->Class->Type == type) {
+			found = house->SuperWeapon[index];
+		}
+	}
+	return(found);
+}
+
+
+/// <summary>
+/// Tells whether a team waiting for a super weapon that is not ready yet should keep waiting:
+/// the weapon must exist and be within AIMinorSuperReadyPercent of charged.
+/// </summary>
+static bool Worth_Waiting_For(SuperClass const * super)
+{
+	if (!super->Is_Present()) {
+		return(false);
+	}
+	int const recharge = std::max(1, super->Get_Recharge_Time());
+	return(1.0 - Rule->AIMinorSuperReadyPercent >= (double)super->Control.Value() / (double)recharge);
+}
+
+
 /***********************************************************************************************
  * _Is_It_Breathing -- Checks to see if unit is an active team member.                         *
  *                                                                                             *
@@ -724,6 +754,8 @@ void TeamClass::AI(void)
 			INVOKE(GATHER_AT_BASE);
 			INVOKE(IRON_CURTAIN_ME);
 			INVOKE(MOVE_TO_OWN_BUILDING);
+			INVOKE(CHRONO_PREP_ABWP);
+			INVOKE(CHRONO_PREP_AQ);
 			INVOKE(ENTER_TANK_BUNKER);
 			INVOKE(ENTER_BIO_REACTOR);
 			INVOKE(ENTER_BATTLE_BUNKER);
@@ -2513,28 +2545,14 @@ void TeamClass::TMission_GATHER_AT_BASE(TeamMissionClass *, bool first_time)
 /// </summary>
 void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 {
-	FootClass * chosen = Member;
-	int best = -1;
-	for (FootClass * member = Member; member != NULL; member = member->Member) {
-		if (member->IsActive && member->Strength > 0 && (ScenarioInit || !member->IsInLimbo)
-			&& (member->IsInitiated || member->RTTI == RTTI_AIRCRAFT) && member->TClass->LeadershipRating > best) {
-			chosen = member;
-			best = member->TClass->LeadershipRating;
-		}
-	}
+	FootClass * chosen = Fetch_A_Leader();
 	if (chosen == NULL) {
 		IsNextMission = true;
 		return;
 	}
 
 	HouseClass * house = chosen->House;
-	SuperClass * super = NULL;
-	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
-		if (house->SuperWeapon[index]->Class->Type == SUPER_IRON_CURTAIN) {
-			super = house->SuperWeapon[index];
-			break;
-		}
-	}
+	SuperClass * super = Find_Super(house, SUPER_IRON_CURTAIN);
 	if (super == NULL) {
 		IsNextMission = true;
 		return;
@@ -2547,8 +2565,7 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 		return;
 	}
 
-	int recharge = std::max(1, super->Get_Recharge_Time());
-	if (!super->Is_Present() || 1.0 - Rule->AIMinorSuperReadyPercent < (double)super->Control.Value() / (double)recharge) {
+	if (!Worth_Waiting_For(super)) {
 		IsNextMission = true;
 	}
 }
@@ -2562,6 +2579,75 @@ LEPTON TeamClass::Stray_Distance(void)
 {
 	TeamMissionType const mission = Script != NULL ? Script->Get_Current_Mission().Mission : TMISSION_NONE;
 	return(mission == TMISSION_GATHER_AT_ENEMY || mission == TMISSION_GATHER_AT_BASE ? Rule->RelaxedStrayDistance : Rule->StrayDistance);
+}
+
+
+/// <summary>
+/// Chronoshifts the team toward a target (script lines 56 and 57, 0x6EFE60 and 0x6F0130). When
+/// the house's Chronosphere is charged and its power is full, the Chronosphere is fired at the
+/// team and the Chrono Warp at the target, the step ends and the target becomes the team's
+/// mission target. The target is the enemy's building of the line's type and property, or the
+/// leader's greatest threat of the line's quarry. The step also ends when the house lacks
+/// either weapon or the Chronosphere is too far from charged to wait for.
+/// </summary>
+void TeamClass::Chrono_Prep(TeamMissionClass * mission, bool by_building)
+{
+	FootClass * leader = Fetch_A_Leader();
+	if (leader == NULL) {
+		IsNextMission = true;
+		return;
+	}
+
+	HouseClass * house = leader->House;
+	SuperClass * sphere = Find_Super(house, SUPER_CHRONOSPHERE);
+	SuperClass * warp = Find_Super(house, SUPER_CHRONO_WARP);
+	if (sphere == NULL || warp == NULL) {
+		IsNextMission = true;
+		return;
+	}
+
+	if (!sphere->Is_Ready() || house->Power_Fraction() < 1.0) {
+		if (!Worth_Waiting_For(sphere)) {
+			IsNextMission = true;
+		}
+		return;
+	}
+
+	AbstractClass * target = NULL;
+	if (by_building) {
+		HouseClass * enemy = house->Enemy != HOUSE_NONE ? Houses[house->Enemy] : NULL;
+		target = Pick_Building_With_Property(BuildingTypes[mission->Data.Type], enemy, leader, TargetPropertyType((unsigned short)mission->Data.Prop), Class->OnlyTargetHouseEnemy);
+	} else {
+		target = leader->Greatest_Threat(Quarry_Threat(mission->Data.Value), leader->PositionCoord, Class->OnlyTargetHouseEnemy);
+	}
+
+	if (target != NULL) {
+		Cell const from = Zone != NULL ? Zone->Center_Coord().As_Cell() : leader->Get_Cell();
+		Cell const to = target->Center_Coord().As_Cell();
+		DebugString("Team %s chronoshifts from %d,%d to %d,%d\n", Class->Name(), from.X, from.Y, to.X, to.Y);
+		house->Place_Special_Blast(sphere->Class->HeapID, from);
+		house->Place_Special_Blast(warp->Class->HeapID, to);
+		Assign_Mission_Target(target);
+	}
+	IsNextMission = true;
+}
+
+
+/// <summary>
+/// Chronoshifts the team toward the enemy building the line names (script line 56).
+/// </summary>
+void TeamClass::TMission_CHRONO_PREP_ABWP(TeamMissionClass * mission, bool)
+{
+	Chrono_Prep(mission, true);
+}
+
+
+/// <summary>
+/// Chronoshifts the team toward the leader's greatest threat of the line's quarry (script line 57).
+/// </summary>
+void TeamClass::TMission_CHRONO_PREP_AQ(TeamMissionClass * mission, bool)
+{
+	Chrono_Prep(mission, false);
 }
 
 
