@@ -54,11 +54,13 @@
 #include "globals.h"
 #include "goptions.h"
 #include "gscreen.h"
+#include "csf.h"
 #include "language/language.h"
 #include "misc.h"
 #include "ownrdraw.h"
 #include "scheme.h"
 #include "theme.h"
+#include "ui/uiscript.h"
 #include "utf8.h"
 #include "vector.h"
 
@@ -67,6 +69,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <string>
 
 /*
 **	List of Ego Class instances
@@ -114,7 +117,7 @@ Surface *BackgroundSurface;
  * HISTORY:                                                                                    *
  *    9/9/96 11:53PM ST : Created                                                              *
  *=============================================================================================*/
-EgoClass::EgoClass (int x, int y, char *text, TextPrintType flags)
+EgoClass::EgoClass (int x, int y, char const *text, TextPrintType flags)
 {
 	XPos = x;
 	YPos = y;
@@ -243,6 +246,61 @@ void EgoClass::Wipe (Surface *background)
 }
 
 
+/// <summary>
+/// Converts Latin-1 text to UTF-8, for credits files written before the game used Unicode.
+/// </summary>
+static std::string Latin1_To_UTF8(std::string const & text)
+{
+	std::string result;
+	result.reserve(text.size() + 16);
+	for (unsigned char ch : text) {
+		if (ch < 0x80) {
+			result += (char)ch;
+		} else {
+			result += (char)(0xC0 | (ch >> 6));
+			result += (char)(0x80 | (ch & 0x3F));
+		}
+	}
+	return(result);
+}
+
+
+/// <summary>
+/// Replaces each {LABEL} in a line of the credits file with the string table text of that label.
+/// A label the table lacks shows as its own name, and an empty or over-long one as a marker.
+/// </summary>
+static std::string Expand_Credit_Labels(char const * line)
+{
+	std::string result;
+	while (*line != '\0') {
+		if (*line != '{') {
+			result += *line++;
+			continue;
+		}
+
+		std::string label;
+		char const * at = line + 1;
+		while (*at != '\0' && *at != '}') {
+			if (*at != ' ' && *at != '\t') {
+				label += *at;
+			}
+			at++;
+		}
+		line = (*at == '}') ? at + 1 : at;
+
+		if (label.empty()) {
+			result += "Missing Label";
+		} else if (label.size() >= 32) {
+			result += "Bad Label";
+		} else {
+			std::string const text = StringTable.Find_UTF8(label.c_str());
+			result += text.empty() ? label : text;
+		}
+	}
+	return(result);
+}
+
+
 /***********************************************************************************************
  * Show_Who_Was_Responsible -- Main function to print the credits.                             *
  *                                                                                             *
@@ -268,7 +326,9 @@ void Show_Who_Was_Responsible (void)
 	*/
 	static int speed = 2;
 
-	if (Addon_Enabled(ADDON_FIRESTORM) == true) return;
+	// Yuri's Revenge keeps its credits in CREDITSMD.TXT, with string table labels in braces.
+	bool const yuri = CCFileClass("CREDITSMD.TXT").Is_Available();
+	if (!yuri && Addon_Enabled(ADDON_FIRESTORM) == true) return;
 
 	LogicalSurface = AlternateSurface;
 
@@ -281,10 +341,15 @@ void Show_Who_Was_Responsible (void)
 	**	If the text starts before column 40 and ends after it then it will be centered.
 	**	If the text starts after column 40 it will be right justified.
 	*/
-	CCFileClass creditsfile ("TSCREDIT.txt");
+	CCFileClass creditsfile (yuri ? "CREDITSMD.TXT" : "TSCREDIT.txt");
 	if ( !creditsfile.Is_Available()) return;
-	char *credits = new char [creditsfile.Size()+1];
-	creditsfile.Read (credits, creditsfile.Size());
+	std::string credits_text(creditsfile.Size(), '\0');
+	creditsfile.Read (credits_text.data(), (int)credits_text.size());
+	if (!UTF8::Is_Valid(credits_text)) {
+		credits_text = Latin1_To_UTF8(credits_text);
+	}
+	char *credits = new char [credits_text.size()+1];
+	memcpy(credits, credits_text.c_str(), credits_text.size()+1);
 
 	/*
 	**	Initialise the text printing system.
@@ -297,7 +362,7 @@ void Show_Who_Was_Responsible (void)
 	/*
 	**	Miscellaneous stuff for parsing the credits text file.
 	*/
-	int 				length = creditsfile.Size();
+	int 				length = (int)credits_text.size();
 	int 				line   = 0;
 	int 				column = 0;
 	char				*cptr = credits;
@@ -446,7 +511,7 @@ void Show_Who_Was_Responsible (void)
 				/*
 				**	Create the new class and add it to our list.
 				*/
-				ego = new EgoClass (x, y, strstart, flags);
+				ego = new EgoClass (x, y, Expand_Credit_Labels(strstart).c_str(), flags);
 
 				EgoList.Add (ego);
 
@@ -509,7 +574,11 @@ void Show_Who_Was_Responsible (void)
 	if ((double)oldvolume == 0) {
 		Options.Set_Score_Volume(0.4f, false);
 	}
-	Theme.Queue_Song(Theme.From_Name("MADRAP"));
+	ThemeType song = yuri ? Theme.From_Name("CREDITS") : THEME_NONE;
+	if (song == THEME_NONE) {
+		song = Theme.From_Name("MADRAP");
+	}
+	Theme.Queue_Song(song);
 
 	/*
 	**	Init misc timing variables.
@@ -626,6 +695,10 @@ void Show_Who_Was_Responsible (void)
 		**	If user hits escape then break.
 		*/
 		key = KN_NONE;
+		if (UIScript_Fullscreen_Tick()) {
+			key = KN_ESC;
+			break;
+		}
 		if (Keyboard->Check()){
 			key = Keyboard->Get();
 			if (key == KN_ESC){

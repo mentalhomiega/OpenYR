@@ -46,7 +46,7 @@ class EgoClass {
 
 	public:
 
-		EgoClass (int x, int y, char *text, TextPrintType flags);
+		EgoClass (int x, int y, char const *text, TextPrintType flags);
 		~EgoClass (void);
 
 		bool Scroll (int distance);
