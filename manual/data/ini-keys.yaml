@@ -28343,12 +28343,12 @@ RepairBay:
     section:
       kind: literal
       name: General
-    value_type: class
+    value_type: string
     status: generated
     _provenance:
-      default_candidate: none
+      default_candidate: ''
       declared_in: RulesClass
-      member: RepairBay
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass

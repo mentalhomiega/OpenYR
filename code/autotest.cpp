@@ -59,6 +59,7 @@
 **							weapon it would choose and whether that one could fire
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
+**	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
@@ -80,6 +81,7 @@
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
+**	quantity <StructureID>	writes how many of that structure each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
 **							reload countdown of every live object of that type
@@ -1011,6 +1013,16 @@ void Run(StepType const & step)
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 			}
 		}
+	} else if (step.Command == "setlocal" || step.Command == "setglobal") {
+		// setlocal <index> <0|1>, setglobal <index> <0|1>: sets or, with 0, clears that scenario variable, as a trigger action would.
+		int const index = std::atoi(step.Argument.c_str());
+		bool const value = step.X != 0;
+		if (step.Command == "setlocal") {
+			Scen->Set_Local_To(index, value);
+		} else {
+			Scen->Set_Global_To(index, value);
+		}
+		DebugString("AUTOTEST   %s %d: %d\n", step.Command.c_str(), index, (int)value);
 	} else if (step.Command == "killhouse") {
 		// killhouse <House> [1|2]: (an underscore stands for a space in the name) destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) that house owns, as a player's attack would.
 		std::string house_name = step.Argument;
@@ -1326,6 +1338,14 @@ void Run(StepType const & step)
 			if (count > 0) {
 				DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
 			}
+		}
+	} else if (step.Command == "quantity") {
+		// quantity <StructureID>: how many of that structure each house is counted as having, owned and active.
+		StructType const type = BuildingTypeClass::From_Name(step.Argument.c_str());
+		for (int house = 0; type != STRUCT_NONE && house < Houses.Count(); house++) {
+			int const owned = Houses[house]->BQuantity.Value(type);
+			int const active = Houses[house]->ABQuantity.Value(type);
+			if (owned != 0 || active != 0) DebugString("AUTOTEST   quantity %s (%d) house %s owned %d active %d\n", step.Argument.c_str(), (int)type, Houses[house]->Class->Name(), owned, active);
 		}
 	} else if (step.Command == "effects") {
 		for (int index = 0; index < Technos.Count(); index++) {

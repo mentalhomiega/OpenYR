@@ -1,0 +1,18 @@
+; Campaign win check for Soviet 2: destroys Einstein's lab and the Chronosphere.
+; Forces what the map's triggers wait for and expects "AUTOTEST game over frame N: won" in the log.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-sov02.txt -Campaign -Map SOV02SMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (sprung|win|game over)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+200 killtag 0439B62C
+210 kill GACSPH
+600 quit

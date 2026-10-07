@@ -1,0 +1,18 @@
+; Campaign win check for Allied 5: destroys both Yuri bases (the map names its own player house).
+; Forces what the map's triggers wait for and expects "AUTOTEST game over frame N: won" in the log.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-all05.txt -Campaign -Map ALL05UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (sprung|win|game over)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+300 killhouse BadGuy1_House 0
+400 killhouse BadGuy2_House 0
+1500 quit
