@@ -61,14 +61,15 @@ A row with an empty value, or whose owner matches no house in the game, is dropp
 
 ## The event row
 
-The entry name is the trigger's ID. The value starts with the number of events, followed by three fields for each event:
+The entry name is the trigger's ID. The value starts with the number of events, followed by three fields for each event, or four for an event that names an object type:
 
 | Position | Content |
 | --- | --- |
 | 1 | The number of events in the row. |
 | 2, 5, 8, ... | The event's number, which its [event page](/mapping/events/) lists as Numeric ID. |
-| 3, 6, 9, ... | What the next field holds: `0` a number, `1` a [team type](/mapping/team-types/). |
+| 3, 6, 9, ... | What the next field holds: `0` a number, `1` a [team type](/mapping/team-types/), `2` a number followed by an object type. |
 | 4, 7, 10, ... | The number, or the team type's ID or display name. |
+| 5, 8, 11, ... | Only under `2`: the ID of the object type. The next event's number follows it. |
 
 ```ini title="map file"
 [Events]
@@ -90,10 +91,10 @@ The entry name is the trigger's ID. The value starts with the number of actions,
 | --- | --- |
 | 1 | The number of actions in the row. |
 | 2, 10, 18, ... | The action's number, which its [action page](/mapping/actions/) lists as Numeric ID. |
-| 3, 11, 19, ... | What the next field holds: `0` a number, `1` a team, `2` a trigger, `3` a tag, or `4` a team with a time in the action's last field. |
-| 4, 12, 20, ... | Under `0`, the number. Under `1` to `4`, the ID of the team, trigger or tag, or `-1` for none. |
+| 3, 11, 19, ... | What the next field holds: `0` a number, `1` a team, `2` a trigger, `3` a tag, `4` a string table label, `5` a team with a number of frames in the action's last field, `6` an EVA line, `7` a sound, `8` a music theme, `9` an object type with a number in the last field, `10` a building type, or `11` a super weapon number with a number in the last field. |
+| 4, 12, 20, ... | Under `0` and `11`, the number. Under `1` to `3` and `5`, the ID of the team, trigger or tag, or `-1` for none. Under `4` and `6` to `10`, the label or the ID or name the game's lists use. |
 | 5 to 8, 13 to 16, ... | Four rectangle fields: X, Y, width and height. Most actions write all four as `0`. The exceptions keep part of their parameter here, and their pages name the field, as [Give Credits](/mapping/actions/taction-give-credits/) does. |
-| 9, 17, 25, ... | The waypoint the action works at, or the time under `4`. |
+| 9, 17, 25, ... | The waypoint the action works at, or the number under `5`, `9` and `11`. |
 
 A team, trigger or tag named in an action must be named by its ID; display names are not matched. An ID that matches nothing creates an empty team, trigger or tag under that name. A value of one or two characters other than `-1` is read as a position in the game's list of teams, triggers or tags, counting from `0`. Give anything an action names an ID of at least three characters.
 

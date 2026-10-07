@@ -6945,6 +6945,24 @@ CheckHeap:
       source: code/session.cpp
       guard: null
     level: SessionClass
+CheerSound:
+  key: CheerSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: CheerSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoBeamColor:
   key: ChronoBeamColor
   scopes:
@@ -14360,6 +14378,40 @@ Floater:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+FlyBack:
+  key: FlyBack
+  scopes:
+  - applies_to: *id034
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AircraftTypeClass
+      member: IsFlyBack
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+FlyBy:
+  key: FlyBy
+  scopes:
+  - applies_to: *id034
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AircraftTypeClass
+      member: IsFlyBy
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 FogOfWar:
   key: FogOfWar
   scopes:
@@ -16077,6 +16129,23 @@ HoverAcceleration:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+HoverAttack:
+  key: HoverAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsHoverAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 HoverBob:
   key: HoverBob
   scopes:
@@ -29423,6 +29492,23 @@ Secondary:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SecondaryFire:
+  key: SecondaryFire
+  scopes:
+  - applies_to: *id031
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: InfantryTypeClass
+      member: SecondaryLaunch
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 SecondaryFireFLH:
   key: SecondaryFireFLH
   scopes:
@@ -29457,6 +29543,23 @@ SecondaryFirePixelOffset:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SecondaryProne:
+  key: SecondaryProne
+  scopes:
+  - applies_to: *id031
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: InfantryTypeClass
+      member: SecondaryProneLaunch
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 Seed:
   key: Seed
   scopes:
