@@ -27,6 +27,13 @@ struct UIDisplayMode
 };
 
 
+struct UIDisplayScale
+{
+	float Value = 0.0f;			// Zero is automatic.
+	std::string Label;
+};
+
+
 class UIDisplayServiceClass
 {
 	public:
@@ -34,6 +41,7 @@ class UIDisplayServiceClass
 		virtual void Set_Stretch_Movies(bool on) = 0;
 		virtual void Set_System_Cursor(bool on) = 0;
 		virtual void Set_Classic_Menus(bool on) = 0;
+		virtual void Set_Interface_Scale(float scale) = 0;
 };
 
 
@@ -44,6 +52,8 @@ struct UIDisplayState
 	bool StretchMovies = false;
 	bool SystemCursor = false;
 	bool ClassicMenus = false;
+	std::vector<UIDisplayScale> Scales;
+	int Scale = 0;
 };
 
 
@@ -56,10 +66,12 @@ class UIDisplayPresenterClass : public UIPresenterClass
 
 		UIDisplayState State;
 		std::optional<UIDisplayMode> Picked;
+		bool ScaleChanged = false;
 
 	private:
 		UIDisplayServiceClass & Service;
 		int Initial;
+		int InitialScale;
 };
 
 
@@ -90,6 +102,8 @@ std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & 
 UIDisplayServiceClass & UI_Display_Service(void);
 void UI_Display_State(UIDisplayState & state);
 
+// Returns the mode to switch to when the player changed the resolution or the interface scale
+// (the current resolution, in the latter case), or nothing when the display need not be reset.
 std::optional<UIDisplayMode> UI_Display_Dialog(void);
 
 bool UI_Confirm_Mode_Dialog(void);

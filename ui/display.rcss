@@ -11,9 +11,9 @@
 #reveal
 {
 	width: 344dp;
-	height: 364dp;
+	height: 398dp;
 	top: 50%;
-	margin-top: -182dp;
+	margin-top: -199dp;
 }
 
 #content
@@ -45,9 +45,27 @@
 	height: 179dp;
 }
 
+#scale-row
+{
+	display: flex;
+	margin-top: 8dp;
+	height: 24dp;
+}
+
+#scale-label
+{
+	width: 150dp;
+	line-height: 24dp;
+}
+
+#scale
+{
+	width: 95dp;
+}
+
 #switch-stretch
 {
-	margin-top: 10dp;
+	margin-top: 8dp;
 }
 
 #switch-system-cursor, #switch-classic-menus
@@ -69,4 +87,9 @@ button
 #cancel
 {
 	margin-left: 90dp;
+}
+
+#scale selectbox
+{
+	background-color: #0a0615;
 }

@@ -246,18 +246,32 @@ bool Test_Display_Mode_Dialog(int width, int height)
 static void Display_Options_Dialog(void)
 {
 	while (true) {
+		float const scale = Options.InterfaceScale;
 		std::optional<UIDisplayMode> picked = UI_Display_Dialog();
 		if (!picked.has_value()) {
 			break;
 		}
 
+		bool const rescaled = (Options.InterfaceScale != scale);
 		if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) != 0) {
+			Options.InterfaceScale = scale;
+			if (rescaled) {
+				Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+			}
 			break;
 		}
 		if (Test_Display_Mode_Dialog(picked->Width, picked->Height)) {
 			Options.ScreenWidth = picked->Width;
 			Options.ScreenHeight = picked->Height;
 			break;
+		}
+
+		// A trial that was not kept takes the scale back with it.
+		Options.InterfaceScale = scale;
+		if (rescaled) {
+			Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+			LogicalSurface = HiddenSurface;
+			Draw_Menu_Background();
 		}
 	}
 }

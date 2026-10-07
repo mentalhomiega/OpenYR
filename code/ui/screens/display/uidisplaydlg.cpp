@@ -12,6 +12,7 @@
 #include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
+#include "options.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
@@ -54,6 +55,12 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 				UIShell.On_Menu_Style_Change();
 			}
 		}
+
+		virtual void Set_Interface_Scale(float scale) override
+		{
+			// The caller resets the display, which settles the frame size from this.
+			Options.InterfaceScale = scale;
+		}
 };
 
 UIDisplayEngineServiceClass _Service;
@@ -73,6 +80,35 @@ void UI_Display_State(UIDisplayState & state)
 	state.StretchMovies = Options.StretchMovies;
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
+
+	// Automatic, the usual steps, and whatever else the settings file has asked for.
+	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
+	float const current = (Options.InterfaceScale > 0.0f) ? Options.InterfaceScale : 0.0f;
+	state.Scale = -1;
+	for (float step : steps) {
+		if (step == current) {
+			state.Scale = (int)state.Scales.size();
+		}
+		UIDisplayScale scale;
+		scale.Value = step;
+		if (step > 0.0f) {
+			char buffer[32];
+			std::snprintf(buffer, sizeof(buffer), "%g", step);
+			scale.Label = buffer;
+		} else {
+			scale.Label = "Auto";
+		}
+		state.Scales.push_back(scale);
+	}
+	if (state.Scale < 0) {
+		UIDisplayScale scale;
+		scale.Value = current;
+		char buffer[32];
+		std::snprintf(buffer, sizeof(buffer), "%g", current);
+		scale.Label = buffer;
+		state.Scale = (int)state.Scales.size();
+		state.Scales.push_back(scale);
+	}
 
 	int * modes = EnumDisplayModes(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 	if (modes == NULL) {
@@ -108,6 +144,13 @@ std::optional<UIDisplayMode> UI_Display_Dialog(void)
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
 		return(std::nullopt);
+	}
+
+	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
+		UIDisplayMode current;
+		current.Width = Options.ScreenWidth;
+		current.Height = Options.ScreenHeight;
+		return(current);
 	}
 
 	return(presenter.Picked);

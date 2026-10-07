@@ -17,7 +17,8 @@
 UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service, UIDisplayState state) :
 	State(std::move(state)),
 	Service(service),
-	Initial(State.Selected)
+	Initial(State.Selected),
+	InitialScale(State.Scale)
 {
 }
 
@@ -36,10 +37,17 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "classicmenus") {
 		State.ClassicMenus = (intent.Value != 0);
 
+	} else if (intent.Name == "scale") {
+		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
+
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
 		Service.Set_Classic_Menus(State.ClassicMenus);
+		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
+			Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
+			ScaleChanged = true;
+		}
 		if (State.Selected >= 0 && State.Selected != Initial) {
 			Picked = State.Modes[State.Selected];
 		}
@@ -109,6 +117,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
 			Model.DirtyVariable("classicmenus");
+			Model.DirtyVariable("scale");
 		}
 
 	protected:
@@ -122,8 +131,17 @@ class UIDisplayViewClass : public UIRmlViewClass
 			mode.RegisterMember("width", &UIDisplayMode::Width);
 			mode.RegisterMember("height", &UIDisplayMode::Height);
 
+			Rml::StructHandle<UIDisplayScale> scale = model.RegisterStruct<UIDisplayScale>();
+			if (!scale) {
+				return(false);
+			}
+			scale.RegisterMember("label", &UIDisplayScale::Label);
+
 			UIDisplayState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIDisplayMode>>()
+				&& model.RegisterArray<std::vector<UIDisplayScale>>()
+				&& model.Bind("scales", &state.Scales)
+				&& model.Bind("scale", &state.Scale)
 				&& model.Bind("modes", &state.Modes)
 				&& model.Bind("selected", &state.Selected)
 				&& model.Bind("stretch", &state.StretchMovies)

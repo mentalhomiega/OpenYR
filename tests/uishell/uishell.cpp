@@ -915,6 +915,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Stretch_Movies(bool on) override { Calls.push_back(on ? "stretch on" : "stretch off"); }
 		virtual void Set_System_Cursor(bool on) override { Calls.push_back(on ? "system cursor on" : "system cursor off"); }
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
+		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 };
 
 
@@ -932,6 +933,8 @@ UIDisplayState Display_Fixture(void)
 	UIDisplayState state;
 	state.Modes = { { 640, 400, "640 x 400" }, { 1280, 800, "1280 x 800" }, { 1920, 1080, "1920 x 1080" } };
 	state.Selected = 1;
+	state.Scales = { { 0.0f, "Auto" }, { 1.0f, "1" }, { 1.5f, "1.5" }, { 2.0f, "2" }, { 2.5f, "2.5" }, { 3.0f, "3" } };
+	state.Scale = 0;
 	return(state);
 }
 
@@ -972,11 +975,30 @@ void Test_Display_Presenter(void)
 	{
 		RecordingDisplayServiceClass service;
 		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "scale", 3);
+		Check(presenter.State.Scale == 3 && service.Calls.empty(), "the interface scale is held until the player accepts");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "scale 20" } && presenter.ScaleChanged && !presenter.Picked.has_value(), "accepting applies the interface scale and flags it for a reset");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "scale", 3);
+		Drive(presenter, "scale", 0);
+		Drive(presenter, "ok");
+		Check(!presenter.ScaleChanged && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off" }, "putting the scale back to its start applies nothing");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
 		Drive(presenter, "select", 0);
+		Drive(presenter, "scale", 2);
 		Drive(presenter, "stretch", 1);
 		Drive(presenter, "systemcursor", 1);
 		Drive(presenter, "cancel");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value(), "cancelling the display options applies nothing");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value() && !presenter.ScaleChanged, "cancelling the display options applies nothing");
 	}
 
 	{
@@ -2474,6 +2496,23 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			Check(presenter.State.Selected == 2 && rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected"), "a click on a row selects it");
 		}
 
+		Rml::ElementFormControlSelect * scale = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("scale"));
+		std::vector<Rml::Element *> choices;
+		for (int index = 0; scale != nullptr && index < scale->GetNumOptions(); index++) {
+			if (!scale->GetOption(index)->HasAttribute("data-for")) {
+				choices.push_back(scale->GetOption(index));
+			}
+		}
+		Check(choices.size() == 6, "the display screen has an interface scale drop-down with six choices");
+		if (choices.size() == 6) {
+			Check(scale->GetSelection() == 0 && choices[0]->GetInnerRML() == "Auto" && choices[2]->GetInnerRML() == "1.5", "the scale starts on Auto");
+			scale->SetSelection(3);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Scale == 3 && service.Calls.empty(), "choosing a scale does not apply it");
+		}
+
 		Rml::Element * stretch = document->GetElementById("stretch");
 		if (stretch != nullptr) {
 			Click(context, stretch);
@@ -2507,7 +2546,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
-			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off" }, "OK applies the switches");
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "scale 20" }, "OK applies the switches and the chosen scale");
 			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
 		}
 
@@ -2768,6 +2807,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * modes = document->GetElementById("modes");
+		Rml::Element * scale = document->GetElementById("scale");
 		Rml::Element * stretch = document->GetElementById("stretch");
 		Rml::Element * cursor = document->GetElementById("system-cursor");
 		Rml::Element * classic = document->GetElementById("classic-menus");
@@ -2783,7 +2823,9 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(render.Unsupported == unsupported, "the focus mark stays within the implemented render methods");
 
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == stretch, "the next tab stop is the movie switch");
+		Check(context.GetFocusElement() == scale || (context.GetFocusElement() != nullptr && context.GetFocusElement()->GetParentNode() == scale), "the next tab stop is the interface scale");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == stretch, "the movie switch follows the interface scale");
 
 		Press(context, Rml::Input::KI_SPACE);
 		presenter.Drain();

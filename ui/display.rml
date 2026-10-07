@@ -19,6 +19,9 @@
 	<div id="modes" class="list"><div class="rows">
 		<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
 	</div></div>
+	<div id="scale-row"><span id="scale-label">Interface scale:</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
+		<option data-for="entry : scales" data-attr-value="it_index">{{entry.label}}</option>
+	</select></div>
 	<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch movies to fit resolution</label>
 	<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the system mouse pointer</label>
 	<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>Classic Yuri's Revenge menus</label>
