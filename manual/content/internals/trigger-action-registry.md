@@ -23,20 +23,20 @@ An `[Actions]` line holds `count` followed by one group of eight fields per acti
 | Field | Member | Meaning |
 | --- | --- | --- |
 | 1 | `Action` | The `TActionType` number |
-| 2 | parameter code | How field 3 is read: `0` a number into `Data`, `1` a TeamType, `2` a TriggerType, `3` a TagType, `4` a TeamType with field 8 as a time |
-| 3 | `Data`, `Team`, `Trigger` or `Tag` | The first parameter |
+| 2 | parameter code | How field 3 is read: `0` a number into `Data`, `1` a TeamType, `2` a TriggerType, `3` a TagType, `4` a CSF label, `5` a TeamType with field 8 as a number of frames, `6` the name of an EVA line, `7` the name of a sound, `8` the name of a theme, `9` an object type ID with field 8 as a number, `10` a building type ID, `11` a super weapon number with field 8 as a number |
+| 3 | `Data`, `Team`, `Trigger`, `Tag` or `Text` | The first parameter. A sound and a theme are looked up by name as the map is read and stored in `Data`; the other names stay in `Text` |
 | 4 to 7 | `TriggerRect` | Resize Player View uses the rectangle. Give Credits uses `X` for the amount, and Create Building At uses `X` for the building type and `Y` for the force flag |
-| 8 | `EffectLocation` | The waypoint, or the time under parameter code `4` |
+| 8 | `EffectLocation` | The waypoint, or the number under parameter codes `5`, `9` and `11` (`Data` under `5`, `Extra` under `9` and `11`) |
 
-Under parameter codes `1` to `4`, field 3 names a type. `-1` names nothing, text of one or two characters is an index into that type list, and longer text is an ID. An ID that no type has yet creates a new type of that name.
+Under parameter codes `1` to `3` and `5`, field 3 names a type. `-1` names nothing, text of one or two characters is an index into that type list, and longer text is an ID. An ID that no type has yet creates a new type of that name.
 
 Most actions that take a waypoint read it from field 8. These actions read their waypoint number from field 3 instead: Apply 100 damage at, the three Light flash actions, Reveal around waypoint, Reveal zone of waypoint, and Reduce Tiberium At.
 
-`Read_INI` parses every action's group the same way, with no per-action code, so a new action decides only which fields its handler reads. Nothing in the game writes an `[Actions]` line back out.
+`Read_INI` parses every action's group by its parameter code, with no per-action code, so a new action decides only which fields its handler reads. Nothing in the game writes an `[Actions]` line back out.
 
 The line is split on commas and empty fields are skipped, so nothing marks where one group ends and the next begins:
 
-- Field 8 may be left out only in the last group. There the waypoint stays `A`, or the time stays `0` under parameter code `4`.
+- Field 8 may be left out only in the last group. There the waypoint stays `A`, or the number stays `0` under the parameter codes that take one.
 - A group other than the last that is missing any field takes its field 8 from the start of the next group, and every later group is read out of step.
 - The game crashes while the scenario loads when the last group has fewer than seven fields, or when `count` is larger than the number of groups on the line.
 
@@ -44,9 +44,9 @@ The line is split on commas and empty fields are skipped, so nothing marks where
 
 ## Numbers are serialized identities
 
-Maps and saves store action numbers. Append new enumerators before `TACTION_COUNT`, and never reorder or reuse existing values. Numbers `0` through `105` are the stock Tiberian Sun and Firestorm set, ending at `TACTION_TALK_BUBBLE`. OpenTS adds actions `106` through `118`. `tests/actionids` pins the last stock action and each added action.
+Maps and saves store action numbers, and a Yuri's Revenge map stores that game's numbers. Numbers `0` through `100` are the Tiberian Sun set, `101` through `145` are Yuri's Revenge's own, ending at `TACTION_JUMP_CAMERA_HOME`, and OpenTS adds actions from `146`. Append new OpenTS enumerators before `TACTION_COUNT`, and never reorder or reuse existing values. `tests/actionids` pins the numbers of both ranges.
 
-An action number with no handler does nothing when the trigger springs.
+Yuri's Revenge actions that no handler carries out yet are listed in `Is_Skipped_Action`. Such an action does nothing when the trigger springs, and the log notes the first time a map uses it and the first time it runs. A number outside the enumeration is logged and does nothing.
 
 ## Registration
 
@@ -57,7 +57,7 @@ Adding an action touches these places, all in `code/taction.hh`, `code/taction.h
 3. A case in `Action_Needs` naming the `NeedType` of the payload. The game does not read it; the action's parameter list and example line in the manual come from it. A payload no existing `NeedType` describes gets a new enumerator in `code/need.hh`. Catalog generation then fails until `manual/tools/scripting_engine.py` describes the new type's parameters and example line layout.
 4. A case in `Attaches_To` when the action works on the objects the trigger is attached to. The game does not read an action's attach flag; the flag shows on the action's manual page. Only events decide which tag lists a trigger joins.
 5. A private `TAction_<NAME>(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell)` handler returning `bool`, and an `INVOKE(<NAME>)` line in `operator()`.
-6. A pin for the new number in `tests/actionids`, beside the pins for the last stock action and the other added ones.
+6. A pin for the new number in `tests/actionids`, beside the pins for the other added ones.
 7. In `manual/`: the permanent numeric alias in `data/scripting-route-aliases.yaml`, a change record, and an action page.
 
 ## What a handler may assume
