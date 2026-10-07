@@ -1039,6 +1039,35 @@ int FootClass::Do_MISSION_HUNT(void)
 }
 
 
+/// <summary>
+/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
+/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
+/// way through. The place is not checked: the caller sees to what stands there.
+/// </summary>
+/// <param name="dest">Where the object goes.</param>
+void FootClass::Teleport_To(Coord dest)
+{
+	CellClass * cellptr = &Map[dest.As_Cell()];
+	dest.Z = Map.Get_Height_GL(dest) + (cellptr->IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
+	Stop_Driver();
+	Locomotion->Mark_All_Occupation_Bits(0);
+	Locomotion->Stop_Movement_Animation();
+	Mark(MARK_UP);
+	PositionCoord = dest;
+	IsOnBridge = cellptr->IsUnderBridge;
+	Mark(MARK_DOWN);
+	Locomotion = Create_Locomotor(TClass->Locomotor);
+	Locomotion->Link_To_Object(this);
+	Locomotion->Unlimbo();
+	if (IonStormClass::Is_Ion_Storm_Active() && Locomotion->Is_Ion_Sensitive()) {
+		Locomotion->Power_Off();
+	} else {
+		Locomotion->Power_On();
+	}
+	Assign_Destination(NULL);
+}
+
+
 /***********************************************************************************************
  * FootClass::Stop_Driver -- This routine clears the driving state of the object.              *
  *                                                                                             *

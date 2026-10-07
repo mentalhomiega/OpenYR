@@ -317,7 +317,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
 		case TACTION_RESTORE_STARTING_UNITS:
 		case TACTION_CHRONO_SCREEN_EFFECT:
-		case TACTION_TELEPORT_ALL_TO:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 		case TACTION_RETINT_RED:
@@ -831,6 +830,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CENTER_BASE_CELL_CLEAR);
 		INVOKE(TIMER_TEXT);
 		INVOKE(RESHROUD_AT);
+		INVOKE(TELEPORT_ALL_TO);
 		INVOKE(RESTORE_STARTING_BUILDINGS);
 		INVOKE(CENTER_BASE_CELL_SET);
 		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
@@ -3453,6 +3453,62 @@ bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass
 		return(false);
 	}
 	hptr->Restore_Starting_Buildings();
+	return(true);
+}
+
+
+/// <summary>
+/// Moves every vehicle and soldier of the trigger's house to the action's waypoint at once, with
+/// no effect. They fill the cells around the waypoint nearest first, one cell for each, skipping
+/// any that the unit cannot enter. Passengers, aircraft and anything not on the map stay where
+/// they are.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
+bool TActionClass::TAction_TELEPORT_ALL_TO(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+
+	Cell const waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
+	int const spread = Cell_Spread_Count(CELL_SPREAD_MAX);
+	int next = 0;
+
+	for (int index = Technos.Count() - 1; index >= 0; index--) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House != house || !techno->IsActive || techno->IsInLimbo || techno->IsInTransport || techno->Transporter != NULL) {
+			continue;
+		}
+		if (techno->RTTI != RTTI_UNIT && techno->RTTI != RTTI_INFANTRY) {
+			continue;
+		}
+		FootClass * foot = (FootClass *)techno;
+
+		// The next cell this unit can enter, nearest the waypoint first. A unit that finds none, such as
+		// a ship with only land around, is left where it is and the cells stay for the others.
+		Cell cell = CELL_NONE;
+		int probe = next;
+		for (; probe < spread; probe++) {
+			Cell const trycell = waypoint + Cell_Spread_Offset(probe);
+			if (Map.In_Radar(trycell) && foot->Can_Enter_Cell(&Map[trycell]) == MOVE_OK) {
+				cell = trycell;
+				break;
+			}
+		}
+		if (cell == CELL_NONE) {
+			continue;
+		}
+		next = probe + 1;
+
+		Coord dest = Coord(cell);
+		if (foot->RTTI == RTTI_INFANTRY) {
+			dest = Map[cell].Closest_Free_Spot(dest);
+		}
+		foot->Teleport_To(dest);
+		foot->Per_Cell_Process(PCP_END);
+	}
+
+	Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
 	return(true);
 }
 

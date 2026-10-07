@@ -1063,23 +1063,7 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 	 * keeps its team and its selection. A fresh locomotor drops any move it was part way
 	 * through.
 	 */
-	dest.Z = Map.Get_Height_GL(dest) + (cellptr->IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
-	foot->Stop_Driver();
-	foot->Locomotion->Mark_All_Occupation_Bits(0);
-	foot->Locomotion->Stop_Movement_Animation();
-	foot->Mark(MARK_UP);
-	foot->PositionCoord = dest;
-	foot->IsOnBridge = cellptr->IsUnderBridge;
-	foot->Mark(MARK_DOWN);
-	foot->Locomotion = Create_Locomotor(type->Locomotor);
-	foot->Locomotion->Link_To_Object(foot);
-	foot->Locomotion->Unlimbo();
-	if (IonStormClass::Is_Ion_Storm_Active() && foot->Locomotion->Is_Ion_Sensitive()) {
-		foot->Locomotion->Power_Off();
-	} else {
-		foot->Locomotion->Power_On();
-	}
-	foot->Assign_Destination(NULL);
+	foot->Teleport_To(dest);
 
 	if (Rule->WarpOut != NULL) {
 		new AnimClass(Rule->WarpOut, foot->Center_Coord());

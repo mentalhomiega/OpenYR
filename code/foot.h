@@ -445,6 +445,10 @@ class FootClass : public TechnoClass
 		*/
 		virtual bool Start_Driver(Coord & headto);
 		virtual bool Stop_Driver(void);
+
+		// Puts the object at a place on the map at once, dropping the move it was making.
+		void Teleport_To(Coord dest);
+
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool = true) override;
 		virtual bool Is_Allowed_To_Leave_Map(void) const override;
