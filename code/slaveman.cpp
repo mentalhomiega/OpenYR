@@ -216,14 +216,14 @@ void SlaveManagerClass::AI(void)
 			case NODE_MOVING:
 				if (!working) {
 					Send_Home(node);
+				} else if (Map[slave->Get_Cell()].Land_Type() == LAND_TIBERIUM) {
+					// Ore underfoot starts the shoveling even while a move order is pending, as in SlaveManagerClass::Update.
+					slave->Assign_Destination(NULL);
+					node.Status = NODE_HARVESTING;
+					node.Start_Timer(slave->Class->HarvestRate);
+					slave->Assign_Mission(MISSION_GUARD);
 				} else if (slave->NavCom == NULL) {
-					if (Map[slave->Get_Cell()].Land_Type() == LAND_TIBERIUM) {
-						node.Status = NODE_HARVESTING;
-						node.Start_Timer(slave->Class->HarvestRate);
-						slave->Assign_Mission(MISSION_GUARD);
-					} else {
-						node.Status = NODE_SCANNING;
-					}
+					node.Status = NODE_SCANNING;
 				}
 				break;
 
