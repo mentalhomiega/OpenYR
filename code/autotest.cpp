@@ -65,6 +65,7 @@
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
 **	houses					writes each house's money, power and spy effects
+**	supers					writes each present super weapon: owner, charge left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
@@ -1001,6 +1002,16 @@ void Run(StepType const & step)
 			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Mission() != MISSION_CAPTURE && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Assign_Mission(MISSION_CAPTURE);
 				techno->Assign_Destination(building);
+			}
+		}
+	} else if (step.Command == "supers") {
+		// supers: each super weapon a house has, how much of its charge is left and the time it charges in.
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * house = Houses[index];
+			for (int s = 0; s < house->SuperWeapon.Count(); s++) {
+				SuperClass * super = house->SuperWeapon[s];
+				if (super == NULL || !super->Is_Present()) continue;
+				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime);
 			}
 		}
 	} else if (step.Command == "houses") {

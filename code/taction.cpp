@@ -320,11 +320,7 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_RESTORE_STARTING_UNITS:
 		case TACTION_CHRONO_SCREEN_EFFECT:
 		case TACTION_TELEPORT_ALL_TO:
-		case TACTION_SET_SUPER_CHARGE:
 		case TACTION_RESTORE_STARTING_BUILDINGS:
-		case TACTION_SUPER_SET_RECHARGE_TIME:
-		case TACTION_SUPER_RESET_RECHARGE_TIME:
-		case TACTION_SUPER_RESET:
 		case TACTION_SET_PREFERRED_TARGET_CELL:
 		case TACTION_CLEAR_PREFERRED_TARGET_CELL:
 		case TACTION_CENTER_BASE_CELL_SET:
@@ -835,6 +831,10 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CLEAR_SMUDGES);
 		INVOKE(FLASH_BUILDINGS);
 		INVOKE(BLACKOUT_RADAR);
+		INVOKE(SET_SUPER_CHARGE);
+		INVOKE(SUPER_SET_RECHARGE_TIME);
+		INVOKE(SUPER_RESET_RECHARGE_TIME);
+		INVOKE(SUPER_RESET);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3236,6 +3236,84 @@ bool TActionClass::TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * , Tr
 	house->RadarBlackout = Data.Value;
 	house->IsRadarBlackout = true;
 	house->RecalcRadar = true;
+	return(true);
+}
+
+
+/// <summary>
+/// Finds the super weapon of the house that the action's number names. The number is a place in
+/// the list of super weapon types.
+/// </summary>
+/// <param name="house">The house whose super weapon is wanted.</param>
+/// <returns>SuperClass *; The super weapon, or NULL if the house or the number is not in play.</returns>
+SuperClass * TActionClass::Super_Of_House(HouseClass * house) const
+{
+	if (house == NULL || Data.Value < 0 || Data.Value >= house->SuperWeapon.Count()) {
+		return(NULL);
+	}
+	return(house->SuperWeapon[Data.Value]);
+}
+
+
+/// <summary>
+/// Sets how charged one of the trigger's house's super weapons is, in percent. The weapon has to
+/// be one the house has.
+/// </summary>
+/// <returns>bool; Was the charge set?</returns>
+bool TActionClass::TAction_SET_SUPER_CHARGE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	SuperClass * super = Super_Of_House(house);
+	if (super == NULL || !super->Is_Present() || Extra < 0 || Extra > 100) {
+		return(false);
+	}
+	super->Set_Charge(Extra);
+	Map.Flag_Strips_To_Redraw();
+	return(true);
+}
+
+
+/// <summary>
+/// Gives one of the trigger's house's super weapons a charge time of its own, in frames.
+/// </summary>
+/// <returns>bool; Does the house have that super weapon?</returns>
+bool TActionClass::TAction_SUPER_SET_RECHARGE_TIME(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	SuperClass * super = Super_Of_House(house);
+	if (super == NULL) {
+		return(false);
+	}
+	super->Set_Recharge_Time(Extra);
+	return(true);
+}
+
+
+/// <summary>
+/// Puts one of the trigger's house's super weapons back to the charge time its type gives.
+/// </summary>
+/// <returns>bool; Does the house have that super weapon?</returns>
+bool TActionClass::TAction_SUPER_RESET_RECHARGE_TIME(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	SuperClass * super = Super_Of_House(house);
+	if (super == NULL) {
+		return(false);
+	}
+	super->Reset_Recharge_Time();
+	return(true);
+}
+
+
+/// <summary>
+/// Starts one of the trigger's house's super weapons charging over from nothing.
+/// </summary>
+/// <returns>bool; Does the house have that super weapon?</returns>
+bool TActionClass::TAction_SUPER_RESET(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	SuperClass * super = Super_Of_House(house);
+	if (super == NULL) {
+		return(false);
+	}
+	super->Reset();
+	Map.Flag_Strips_To_Redraw();
 	return(true);
 }
 

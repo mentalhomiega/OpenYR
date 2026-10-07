@@ -60,6 +60,7 @@
 
 template<class T> class DynamicVectorClass;
 class ObjectClass;
+class SuperClass;
 class TagTypeClass;
 class TeamTypeClass;
 class TriggerTypeClass;
@@ -307,6 +308,11 @@ class TActionClass : public AbstractClass
 		bool TAction_CLEAR_SMUDGES(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_SET_SUPER_CHARGE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_SUPER_SET_RECHARGE_TIME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_SUPER_RESET_RECHARGE_TIME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_SUPER_RESET(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		SuperClass * Super_Of_House(HouseClass * house) const;
 		bool Not_Implemented(void) const;
 };
 

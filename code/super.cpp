@@ -188,7 +188,7 @@ bool SuperClass::Suspend(bool on)
 				House->Deactivate_Firestorm();
 			} else {
 				ChargeDrainState = CHARGING;
-				Control = Class->RechargeTime;
+				Control = Get_Recharge_Time();
 			}
 		}
 		return(true);
@@ -226,7 +226,7 @@ bool SuperClass::Enable(bool onetime, bool player, bool quiet)
 		bool retval = false;
 		if (Class->IsManualControl) {
 			OldStage = -1;
-			Control = Class->RechargeTime;
+			Control = Get_Recharge_Time();
 			Control.Stop();
 		} else {
 			retval = Recharge(player && !quiet);
@@ -272,6 +272,57 @@ bool SuperClass::Remove(void)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// The frames this weapon takes to charge: the time a trigger action gave it, or else the time its
+/// type gives.
+/// </summary>
+int SuperClass::Get_Recharge_Time(void) const
+{
+	return(CustomRechargeTime != -1 ? CustomRechargeTime : Class->RechargeTime);
+}
+
+
+/// <summary>
+/// Gives this weapon a charge time of its own, which applies from the next time it charges.
+/// </summary>
+/// <param name="frames">The charge time in frames.</param>
+void SuperClass::Set_Recharge_Time(int frames)
+{
+	CustomRechargeTime = frames;
+}
+
+
+/// <summary>
+/// Puts the charge time back to the one the weapon's type gives.
+/// </summary>
+void SuperClass::Reset_Recharge_Time(void)
+{
+	CustomRechargeTime = -1;
+}
+
+
+/// <summary>
+/// Sets how charged a present weapon is, as SuperClass::SetCharge (0x6CC1E0) does. At 100 percent
+/// the weapon is ready at once.
+/// </summary>
+/// <param name="percent">How charged the weapon is, from 0 to 100.</param>
+void SuperClass::Set_Charge(int percent)
+{
+	if (!IsPresent || percent < 0 || percent > 100) {
+		return;
+	}
+
+	int const total = Get_Recharge_Time();
+	int const left = total - total * percent / 100;
+	if (left == 0) {
+		IsReady = true;
+	}
+	OldStage = -1;
+	Control.Start();
+	Control = left;
 }
 
 
@@ -337,7 +388,7 @@ bool SuperClass::Recharge(bool player)
 	if (IsPresent && !IsReady && !IsSuspended) {
 		OldStage = -1;
 		Control.Start();
-		Control = Class->RechargeTime;
+		Control = Get_Recharge_Time();
 
 		if (Class->UseChargeDrain) {
 			ChargeDrainState = CHARGING;
@@ -381,13 +432,13 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 		if (House->Is_Human_Player()) {
 			if (ChargeDrainState == FIRESTORM_ON) {
 				ChargeDrainState = READY;
-				Control = Class->RechargeTime - Control.Value() / Rule->ChargeToDrainRatio;
+				Control = Get_Recharge_Time() - Control.Value() / Rule->ChargeToDrainRatio;
 				Deactivate_Firestorm(0, player);
 				return(false);
 			}
 			if (ChargeDrainState == READY) {
 				ChargeDrainState = FIRESTORM_ON;
-				Control = (Class->RechargeTime - Control.Value()) * Rule->ChargeToDrainRatio;
+				Control = (Get_Recharge_Time() - Control.Value()) * Rule->ChargeToDrainRatio;
 				Place(cell, player);
 				return(false);
 			}
@@ -419,7 +470,7 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 			return(first->Remove());
 		}
 		first->OldStage = -1;
-		first->Control = first->Class->RechargeTime;
+		first->Control = first->Get_Recharge_Time();
 		if (first->IsSuspended || first->Class->IsManualControl) {
 			first->Control.Stop();
 		}
@@ -446,7 +497,7 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 			return(Remove());
 		} else {
 			if (Class->IsManualControl) {
-				Control = Class->RechargeTime;
+				Control = Get_Recharge_Time();
 				OldStage = -1;
 				Control.Stop();
 			} else {
@@ -500,7 +551,7 @@ bool SuperClass::AI(bool player)
 					if (ChargeDrainState == FIRESTORM_ON) {
 						ChargeDrainState = CHARGING;
 						Deactivate_Firestorm(0, player);
-						Control = Class->RechargeTime;
+						Control = Get_Recharge_Time();
 					} else {
 						ChargeDrainState = READY;
 						IsReady = true;
@@ -548,15 +599,15 @@ int SuperClass::Anim_Stage(void) const
 		int stage;
 		if (Class->UseChargeDrain) {
 			if (ChargeDrainState == FIRESTORM_ON) {
-				stage = ANIMATION_STAGES * (1-double(Class->RechargeTime*Rule->ChargeToDrainRatio-Control.Value()) / (Class->RechargeTime*Rule->ChargeToDrainRatio));
+				stage = ANIMATION_STAGES * (1-double(Get_Recharge_Time()*Rule->ChargeToDrainRatio-Control.Value()) / (Get_Recharge_Time()*Rule->ChargeToDrainRatio));
 			} else {
-				stage = ANIMATION_STAGES * (double(Class->RechargeTime-Control.Value()) / Class->RechargeTime);
+				stage = ANIMATION_STAGES * (double(Get_Recharge_Time()-Control.Value()) / Get_Recharge_Time());
 			}
 		} else {
 			if (IsReady) {
 				return(ANIMATION_STAGES);
 			}
-			stage = ANIMATION_STAGES * (double(Class->RechargeTime-Control.Value()) / Class->RechargeTime);
+			stage = ANIMATION_STAGES * (double(Get_Recharge_Time()-Control.Value()) / Get_Recharge_Time());
 		}
 		stage = std::min(stage, ANIMATION_STAGES-1);
 		return(stage);
@@ -1472,6 +1523,7 @@ void SuperClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoSource);
 	stream.Serialize(PreClickAnim);
 	stream.Serialize(ChargeDrainState);
+	stream.Serialize(CustomRechargeTime);
 }
 
 
@@ -1509,6 +1561,7 @@ void SuperClass::Compute_CRC(CRCEngine &crc) const
 	crc(OldStage);
 	crc(ChargeDrainState);
 	crc(NeedsBuilding);
+	crc(CustomRechargeTime);
 }
 
 
