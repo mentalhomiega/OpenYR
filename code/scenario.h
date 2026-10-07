@@ -195,6 +195,12 @@ class ScenarioClass {
 		CDTimerClass<FrameTimerClass> MissionTimer;
 
 		/*
+		**	A trigger action can name the string table label the mission timer is shown under. It is
+		**	empty until one does, and then the timer shows by itself.
+		*/
+		char MissionTimerText[64];
+
+		/*
 		**	The shroud regrowth (if enabled) is regulated by this timer. When the
 		**	timer expires, the shroud will regrow one step.
 		*/

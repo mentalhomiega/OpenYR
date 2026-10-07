@@ -317,6 +317,7 @@ class TActionClass : public AbstractClass
 		bool TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_TIMER_TEXT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool Not_Implemented(void) const;
 };
 
