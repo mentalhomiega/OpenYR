@@ -1109,6 +1109,46 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
 		}
+	} else if (step.Command == "census") {
+		// census: per house, how many structures, vehicles, infantry and aircraft it owns, how many of the
+		// mobile ones are moving or have a target, and the size of the object lists, for watching long games.
+		DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());
+		for (int house = 0; house < Houses.Count(); house++) {
+			int buildings = 0, units = 0, infantry = 0, aircraft = 0, busy = 0, harvesters = 0;
+			std::string types;
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass * techno = Technos[index];
+				if (techno->House != Houses[house] || techno->IsInLimbo || techno->Strength <= 0) {
+					continue;
+				}
+				if (techno->What_Am_I() == RTTI_BUILDING) {
+					buildings++;
+					types += std::string(" ") + techno->TClass->Name();
+					continue;
+				}
+				if (techno->What_Am_I() == RTTI_INFANTRY) infantry++;
+				else if (techno->What_Am_I() == RTTI_AIRCRAFT) aircraft++;
+				else units++;
+				if (step.Argument == "units" && techno->What_Am_I() != RTTI_INFANTRY) {
+					FootClass const * foot = static_cast<FootClass const *>(techno);
+					Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+					DebugString("AUTOTEST     %s %s cell %d,%d mission %s nav %d,%d strength %d\n", Houses[house]->Class->Name(), techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)techno->Strength);
+				}
+				if (techno->Is_Foot()) {
+					FootClass * foot = static_cast<FootClass *>(techno);
+					if (foot->NavCom != NULL || foot->TarCom != NULL) {
+						busy++;
+					}
+					if (techno->What_Am_I() == RTTI_UNIT && static_cast<UnitClass *>(techno)->Class->IsToHarvest) {
+						harvesters++;
+					}
+				}
+			}
+			if (buildings + units + infantry + aircraft > 0 && Houses[house]->Class->IsMultiplayPassive == false) {
+				DebugString("AUTOTEST   census %s money %d power %d/%d defeated %d: buildings %d units %d (harvesters %d) infantry %d aircraft %d busy %d |%s\n", Houses[house]->Class->Name(), Houses[house]->Available_Money(),
+					Houses[house]->Power, Houses[house]->Drain, (int)Houses[house]->IsDefeated, buildings, units, harvesters, infantry, aircraft, busy, types.c_str());
+			}
+		}
 	} else if (step.Command == "count") {
 		// count <TypeID>: the number of live objects of the type on the map, per owner.
 		for (int house = 0; house < Houses.Count(); house++) {
