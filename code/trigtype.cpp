@@ -59,12 +59,14 @@
 #include "houstype.h"
 #include "incdec.h"
 #include "savestream.h"
+#include "session.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "taction.h"
 #include "teamtype.h"
 #include "tevent.h"
 #include "tracker.h"
+#include "dbgprint.h"
 
 #include "persist.hh"
 
@@ -503,7 +505,17 @@ bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 	if (!line.empty()) {
 		char * token = strtok(line.data(), ",");
 		House = stricmp(token, "<none>") == 0 ? House_From_HousesType(HOUSE_FIRST) : House_From_Name(token);
-		if (House == NULL) return(false);
+		if (House == NULL) {
+			/*
+			**	A campaign map names owners that nobody plays, such as the Americans in a mission that
+			**	is played as the Soviets. As in Yuri's Revenge such a trigger still runs, with no house
+			**	to look at, so it is kept.
+			*/
+			if (Session.Type != GAME_NORMAL) {
+				DebugString("Trigger %s is dropped: no house in this game is called %s\n", (char const *)IniName, token);
+				return(false);
+			}
+		}
 		token = strtok(NULL, ",");
 		LinkedTo = NULL;
 		if (stricmp(token, "<none>") != 0) {

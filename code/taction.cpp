@@ -663,6 +663,55 @@ void TActionClass::Read_INI(void)
  *   02/22/1996 JLB : Created.                                                                 *
  *   04/10/1996 JLB : Added the ID parameter.                                                  *
  *=============================================================================================*/
+/// <summary>
+/// Does this action act on the house that owns the trigger?
+/// A campaign map has triggers whose owner nobody plays, which run with no house, so these are the
+/// actions that have nothing to act on then.
+/// </summary>
+/// <param name="action">The action to look at.</param>
+/// <returns>bool; Does the action need the trigger's house?</returns>
+static bool Action_Needs_Trigger_House(TActionType action)
+{
+	switch (action) {
+		case TACTION_ACTIVATE_FIRESTORM:
+		case TACTION_DEACTIVATE_FIRESTORM:
+		case TACTION_WAKEUP_ALL_SLEEP:
+		case TACTION_WAKEUP_ALL_HARMLESS:
+		case TACTION_ALL_CHANGE_HOUSE:
+		case TACTION_MAKE_ALLY:
+		case TACTION_MAKE_ENEMY:
+		case TACTION_PREFERRED_TARGET:
+		case TACTION_BASE_BUILDING:
+		case TACTION_1_SPECIAL:
+		case TACTION_FULL_SPECIAL:
+		case TACTION_SET_AI_TRIGGER_TEAM_RATIO:
+		case TACTION_SET_TEAM_AIRCRAFT_RATIO:
+		case TACTION_SET_TEAM_INFANTRY_RATIO:
+		case TACTION_SET_TEAM_UNIT_RATIO:
+		case TACTION_ALL_ASSIGN_MISSION:
+		case TACTION_MAKE_ALLY_ONE_WAY:
+		case TACTION_MAKE_ENEMY_ONE_WAY:
+		case TACTION_CREATE_BUILDING:
+		case TACTION_FLASH_BUILDINGS:
+		case TACTION_BLACKOUT_RADAR:
+		case TACTION_SET_SUPER_CHARGE:
+		case TACTION_SUPER_SET_RECHARGE_TIME:
+		case TACTION_SUPER_RESET_RECHARGE_TIME:
+		case TACTION_SUPER_RESET:
+		case TACTION_SET_PREFERRED_TARGET_CELL:
+		case TACTION_CLEAR_PREFERRED_TARGET_CELL:
+		case TACTION_CENTER_BASE_CELL_SET:
+		case TACTION_CENTER_BASE_CELL_CLEAR:
+		case TACTION_TELEPORT_ALL_TO:
+			return(true);
+
+		default:
+			break;
+	}
+	return(false);
+}
+
+
 bool TActionClass::operator() (HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell)
 {
 	Cell waypoint;
@@ -677,6 +726,10 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 	*/
 	if (object != NULL && !object->IsActive) {
 		object = NULL;
+	}
+
+	if (house == NULL && Action_Needs_Trigger_House(Action)) {
+		return(false);
 	}
 
 	/* 
