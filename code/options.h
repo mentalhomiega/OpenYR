@@ -66,6 +66,7 @@ class OptionsClass {
 		*/
 		void Load_Settings(void);
 		void Load_Menu_Style(void);
+		void Load_Interface_Scale(void);
 		void Save_Settings(void);
 
 		void Set(void);
@@ -220,6 +221,15 @@ class OptionsClass {
 		 * pointer at the size the artwork was drawn at.
 		 */
 		int CursorScale;
+
+		/*
+		 * How many times larger than at the original size the in-game interface is drawn: the
+		 * sidebar, command bar, tooltips and messages. The screen size is divided by it to give
+		 * the size of the frame the interface is drawn in, and the map is still drawn at the
+		 * screen's own resolution. Zero picks a whole number from the screen height, and a value
+		 * below one acts as one.
+		 */
+		float InterfaceScale;
 
 		/*
 		 * Shows the system's arrow in place of cursor.png.

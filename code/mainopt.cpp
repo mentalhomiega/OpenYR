@@ -37,6 +37,8 @@
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mods/uimods.h"
 #include "video.h"
+#include "viewzoom.h"
+#include "vidscale.h"
 
 #include "color.hh"
 
@@ -105,14 +107,21 @@ bool Change_Display_Mode(int width, int height)
 
 	Hide_Mouse();
 
-	if (!Video_Set_Mode(width, height)) {
+	// The mode is the screen's size; the interface is drawn in a frame smaller by the interface scale.
+	int framewidth = 0;
+	int frameheight = 0;
+	Resolve_Interface_Scale(width, height, framewidth, frameheight);
+
+	if (!Video_Set_Mode(framewidth, frameheight)) {
 		DebugString("Video_Set_Mode failed.\n");
+		Resolve_Interface_Scale(Options.ScreenWidth, Options.ScreenHeight, framewidth, frameheight);
 		Show_Mouse();
 		return(false);
 		}
 
-	VisibleRect = Rect(0, 0, width, height);
-	DebugString("VisibleRect: %dx%d\n", width, height);
+	Reset_View_Zoom();
+	VisibleRect = Rect(0, 0, framewidth, frameheight);
+	DebugString("VisibleRect: %dx%d\n", framewidth, frameheight);
 
 	if (VisibleSurface != NULL) {
 		delete VisibleSurface;

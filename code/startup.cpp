@@ -154,6 +154,8 @@
 #include "vanimtype.h"
 #include "vector.h"
 #include "video.h"
+#include "viewzoom.h"
+#include "vidscale.h"
 #include "walk.h"
 #include "warhead.h"
 #include "wave.h"
@@ -545,6 +547,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Options.ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", Options.ScreenWidth);
 		Options.ScreenHeight = ConfigINI.Get_Int("Video", "ScreenHeight", Options.ScreenHeight);
 		Options.Load_Menu_Style();
+		Options.Load_Interface_Scale();
 
 		/*
 		 * These are wanted before the window and the renderer exist, which is well
@@ -580,9 +583,18 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 			Options.ScreenHeight = 480;
 		}
 
-		VisibleRect = Rect(0, 0, Options.ScreenWidth, Options.ScreenHeight);
-		VideoModeWidth = Options.ScreenWidth;
-		VideoModeHeight = Options.ScreenHeight;
+		/*
+		 * The screen's size is the window's, and the interface is drawn in a frame smaller than it
+		 * by the interface scale, which the presenter enlarges to fill the window.
+		 */
+		int framewidth = 0;
+		int frameheight = 0;
+		Resolve_Interface_Scale(Options.ScreenWidth, Options.ScreenHeight, framewidth, frameheight);
+		Reset_View_Zoom();
+
+		VisibleRect = Rect(0, 0, framewidth, frameheight);
+		VideoModeWidth = framewidth;
+		VideoModeHeight = frameheight;
 
 		if (!Game_Window_Open(Options.ScreenWidth, Options.ScreenHeight)) {
 			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));

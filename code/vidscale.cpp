@@ -11,9 +11,50 @@
 
 #include "vidscale.h"
 
+#include "dbgprint.h"
+#include "globals.h"
+#include "goptions.h"
+#include "options.h"
 #include "video.h"
 
+#include <algorithm>
 #include <cmath>
+
+
+double InterfaceScale = 1.0;
+
+
+/// <summary>
+/// Settles the scale of the in-game interface for a screen size. The setting gives it, or when
+/// it is automatic the screen height does: a whole number of times 1080 lines, so the interface
+/// is about as large as on a 1080 line screen. It is kept inside what leaves a frame of at least
+/// 640 by 480, and stored in InterfaceScale.
+/// </summary>
+/// <param name="screenwidth">The width of the screen in pixels.</param>
+/// <param name="screenheight">The height of the screen in pixels.</param>
+/// <param name="framewidth">Returns the width of the frame the interface is drawn in.</param>
+/// <param name="frameheight">Returns the height of the frame the interface is drawn in.</param>
+/// <returns>double; The interface scale, at least 1.</returns>
+double Resolve_Interface_Scale(int screenwidth, int screenheight, int & framewidth, int & frameheight)
+{
+	double scale = Options.InterfaceScale;
+	if (scale <= 0.0) {
+		scale = floor(screenheight / 1080.0 + 0.5);
+	}
+
+	if (screenwidth > 0 && screenheight > 0) {
+		scale = std::min(scale, std::min(screenwidth / 640.0, screenheight / 480.0));
+	}
+	if (scale < 1.0) {
+		scale = 1.0;
+	}
+
+	framewidth = (scale == 1.0) ? screenwidth : (int)floor(screenwidth / scale + 0.5);
+	frameheight = (scale == 1.0) ? screenheight : (int)floor(screenheight / scale + 0.5);
+	InterfaceScale = scale;
+	DebugString("Interface scale %.2f: a %dx%d screen is drawn as a %dx%d frame\n", scale, screenwidth, screenheight, framewidth, frameheight);
+	return(scale);
+}
 
 
 /// <summary>

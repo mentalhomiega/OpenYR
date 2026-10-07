@@ -24,6 +24,7 @@
 #include "session.h"
 #include "tactical.h"
 #include "video.h"
+#include "vidscale.h"
 
 #include <algorithm>
 #include <cmath>
@@ -196,19 +197,45 @@ static void Shown_Middle(double & middlex, double & middley)
 }
 
 
+double View_Zoom_Native(void)
+{
+	return(1.0 / InterfaceScale);
+}
+
+
 double View_Zoom_Min(void)
 {
-	return((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER);
+	return(((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER) * View_Zoom_Native());
+}
+
+
+double View_Zoom_Max(void)
+{
+	return(VIEW_ZOOM_MAX * View_Zoom_Native());
+}
+
+
+void Reset_View_Zoom(void)
+{
+	double const native = View_Zoom_Native();
+	ViewZoom = native;
+	DisplayZoom = native;
+	_TargetZoom = native;
+	_GlideFrom = native;
+	_PendingZoomStep = 0.0;
+	_Gliding = false;
+	_GlideProgress = 1.0;
 }
 
 
 /// <summary>
-/// Sets the map view zoom at once, clamped to View_Zoom_Min()..VIEW_ZOOM_MAX, and ends any glide.
-/// The point at the middle of the view stays put. Returns false when the zoom did not change.
+/// Sets the map view zoom at once, clamped to the zoom limits, and ends any glide. The zoom is
+/// measured as the mouse wheel does, from 1 at the screen's own pixels. The point at the middle of
+/// the view stays put. Returns false when the zoom did not change.
 /// </summary>
 bool Set_View_Zoom(double zoom)
 {
-	zoom = std::clamp(zoom, View_Zoom_Min(), VIEW_ZOOM_MAX);
+	zoom = std::clamp(zoom * View_Zoom_Native(), View_Zoom_Min(), View_Zoom_Max());
 	if (TacticalMap == NULL || (!_Gliding && std::abs(zoom - ViewZoom) < 0.001)) {
 		return(false);
 	}
@@ -224,7 +251,7 @@ bool Set_View_Zoom(double zoom)
 
 void Request_View_Zoom_Step(double step, Point2D const & screen_point)
 {
-	_PendingZoomStep += step;
+	_PendingZoomStep += step * View_Zoom_Native();
 	_PendingAnchor = screen_point - ScreenTacticalRect.Top_Left();
 }
 
@@ -253,11 +280,11 @@ void Apply_Pending_View_Zoom(void)
 
 	// A zoom kept from an earlier skirmish is brought in to the multiplayer limit.
 	if (!_Gliding && _TargetZoom < View_Zoom_Min() - 0.001) {
-		Set_View_Zoom(View_Zoom_Min());
+		Set_View_Zoom(View_Zoom_Min() / View_Zoom_Native());
 	}
 
 	if (_PendingZoomStep != 0.0) {
-		double const target = std::clamp(_TargetZoom + _PendingZoomStep, View_Zoom_Min(), VIEW_ZOOM_MAX);
+		double const target = std::clamp(_TargetZoom + _PendingZoomStep, View_Zoom_Min(), View_Zoom_Max());
 		_PendingZoomStep = 0.0;
 		if (std::abs(target - _TargetZoom) >= 0.001) {
 			Update_Display_Zoom();

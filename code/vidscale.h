@@ -18,6 +18,14 @@
 
 bool Video_Scaling_Active(void);
 
+// How many times larger than its original size the in-game interface is drawn: the screen's size
+// divided by the frame's. It is 1 unless the interface scale setting or a tall screen says more.
+extern double InterfaceScale;
+
+// Works out the interface scale for a screen of the given size and the frame the game draws its
+// interface in, which is the screen divided by that scale and never smaller than 640 by 480.
+double Resolve_Interface_Scale(int screenwidth, int screenheight, int & framewidth, int & frameheight);
+
 void Window_Point_To_Game(Point2D & point);
 void Game_Point_To_Window(Point2D & point);
 

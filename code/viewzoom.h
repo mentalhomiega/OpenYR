@@ -21,6 +21,11 @@ class DSurface;
  * into ScreenTacticalRect, the map's area on screen. A zoom below 1 shows more of the map and
  * one above 1 magnifies it; at 1 the two rectangles are the same and, outside a glide, no
  * separate surfaces exist.
+ *
+ * ViewZoom and DisplayZoom are measured against the frame. When the interface is drawn larger
+ * than its original size (see InterfaceScale) the frame is smaller than the screen, and the map
+ * shows at the screen's own pixels at a zoom of 1 / InterfaceScale, which the game starts at.
+ * The mouse wheel, Set_View_Zoom and Request_View_Zoom_Step all work from that size, as a zoom of 1.
  */
 extern double ViewZoom;
 // The zoom shown on screen. It differs from ViewZoom, the zoom the map is drawn at, only during a glide.
@@ -31,7 +36,8 @@ extern Rect ScreenTacticalRect;
 // capture every frame show the glide at its real pace.
 extern bool ViewZoomGameClock;
 
-// The smallest and largest zoom the mouse wheel reaches.
+// The smallest and largest zoom the mouse wheel reaches, from the zoom that shows the map at the
+// screen's own pixels.
 double const VIEW_ZOOM_MIN = 0.5;
 double const VIEW_ZOOM_MAX = 2.0;
 
@@ -39,8 +45,17 @@ double const VIEW_ZOOM_MAX = 2.0;
 // the map is an advantage.
 double const VIEW_ZOOM_MIN_MULTIPLAYER = 0.75;
 
-// The furthest out the current game zooms: VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game.
+// The ViewZoom at which one map pixel is one screen pixel: 1 divided by the interface scale.
+double View_Zoom_Native(void);
+
+// The furthest out and in the current game zooms, as ViewZoom values. The furthest out is
+// VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game.
 double View_Zoom_Min(void);
+double View_Zoom_Max(void);
+
+// Puts the zoom back to View_Zoom_Native() and ends any glide, for a new frame size. The map's
+// surfaces are rebuilt by the next Set_View_Dimensions.
+void Reset_View_Zoom(void);
 
 // Converts a screen offset from ScreenTacticalRect's corner into an offset from TacticalRect's corner.
 Point2D Screen_To_View_Offset(Point2D const & screen_offset);
@@ -61,10 +76,11 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame);
 // Builds or frees the map's own surfaces to match TacticalRect and ViewZoom.
 void Allocate_Map_Surfaces(void);
 
-// Changes the zoom at once, keeping the map centered where it was. Returns whether it changed.
+// Changes the zoom at once to the given multiple of the screen's own pixels, keeping the map
+// centered where it was. Returns whether it changed.
 bool Set_View_Zoom(double zoom);
 
-// Asks for a zoom change by the given step around a screen point, which stays over the same part
+// Asks for a zoom change by the given step, in the same units, around a screen point, which stays over the same part
 // of the map; the next Apply_Pending_View_Zoom starts a glide to it.
 void Request_View_Zoom_Step(double step, Point2D const & screen_point);
 

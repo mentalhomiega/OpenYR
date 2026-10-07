@@ -584,8 +584,7 @@ bool Main_Window_Cursor_Position(int & x, int & y)
 
 	// An unattended test run ignores the real mouse; its cursor rests away from the screen edges.
 	if (AutoTest_Active()) {
-		x = 200;
-		y = 200;
+		AutoTest_Cursor_Position(x, y);
 		return(true);
 	}
 

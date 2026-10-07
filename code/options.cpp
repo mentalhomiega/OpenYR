@@ -146,6 +146,7 @@ OptionsClass::OptionsClass(void) :
 	VSync(false),
 	Renderer(0),
 	CursorScale(0),
+	InterfaceScale(0.0f),
 	SystemCursor(false),
 	SoundLatency(9),
 	KeyForceMove1(KN_LALT),
@@ -476,6 +477,22 @@ void OptionsClass::Load_Menu_Style(void)
 }
 
 
+/// <summary>
+/// Reads the interface scale from the settings file. Startup calls it before the window is made,
+/// since it decides the size of the frame the interface is drawn in. "Auto", or nothing, leaves
+/// the choice to the screen height.
+/// </summary>
+void OptionsClass::Load_Interface_Scale(void)
+{
+	char text[32];
+	ConfigINI.Get_String("Video", "InterfaceScale", "Auto", text, sizeof(text));
+
+	float value = (float)atof(text);
+	InterfaceScale = (value > 0.0f) ? std::min(value, 8.0f) : 0.0f;
+	DebugString("InterfaceScale is %s\n", InterfaceScale > 0.0f ? text : "automatic");
+}
+
+
 /***********************************************************************************************
  * OptionsClass::Save_Settings -- writes options settings to the INI file                      *
  *                                                                                             *
@@ -530,6 +547,13 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
+	if (InterfaceScale > 0.0f) {
+		char scaletext[32];
+		snprintf(scaletext, sizeof(scaletext), "%g", InterfaceScale);
+		ConfigINI.Put_String("Video", "InterfaceScale", scaletext);
+	} else {
+		ConfigINI.Put_String("Video", "InterfaceScale", "Auto");
+	}
 	ConfigINI.Put_Bool("Video", "SystemCursor", SystemCursor);
 	ConfigINI.Put_Float("Audio", "SoundVolume", SoundVolume);
 	ConfigINI.Put_Float("Audio", "VoiceVolume", VoiceVolume);

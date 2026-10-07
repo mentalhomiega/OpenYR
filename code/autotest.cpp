@@ -25,6 +25,9 @@
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
 **	click x y				queues a left click at that screen position
+**	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
+**	windowclick x y			moves the pointer to that window pixel and clicks there through the window's event path,
+**							which converts it to the frame
 **	follow <TypeID>			keeps the view centred on one of the player's objects of that type
 **	record <frames>			saves a screenshot every that many frames; 0 stops
 **	spawn <TypeID> x y		puts an object owned by the first computer house with a
@@ -119,6 +122,7 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
+#include "gamewindow.h"
 #include "keyboard.h"
 #include "loco.h"
 #include "tactical.h"
@@ -142,6 +146,7 @@
 #include "voc.h"
 #include "unit.h"
 #include "viewzoom.h"
+#include "vidscale.h"
 #include "video.h"
 #include "bgfxbackend.h"
 #include "gamedirs.h"
@@ -166,6 +171,10 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+// Where the pointer rests, in window pixels.
+static int _CursorX = 200;
+static int _CursorY = 200;
 
 
 namespace {
@@ -567,6 +576,31 @@ void Run(StepType const & step)
 		Keyboard->Handle_Window_Event(event);
 		event.Type = WINDOW_EVENT_MOUSE_UP;
 		Keyboard->Handle_Window_Event(event);
+	} else if (step.Command == "windowmove") {
+		// windowmove x y: moves the pointer to that window pixel, for the hover and placement code that reads it.
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_MOVE;
+		event.X = std::atoi(step.Argument.c_str());
+		event.Y = step.X;
+		_CursorX = event.X;
+		_CursorY = event.Y;
+		Game_Window_Handle_Event(event);
+	} else if (step.Command == "windowclick") {
+		// windowclick x y: a left click at that window pixel, taken from the window the way the mouse gives it,
+		// so it is converted to the frame as a player's click is.
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_MOVE;
+		event.X = std::atoi(step.Argument.c_str());
+		event.Y = step.X;
+		_CursorX = event.X;
+		_CursorY = event.Y;
+		Game_Window_Handle_Event(event);
+		event.Type = WINDOW_EVENT_MOUSE_DOWN;
+		event.Button = WINDOW_BUTTON_LEFT;
+		event.Clicks = 1;
+		Game_Window_Handle_Event(event);
+		event.Type = WINDOW_EVENT_MOUSE_UP;
+		Game_Window_Handle_Event(event);
 	} else if (step.Command == "mapclick") {
 		// mapclick x y: a left click at that screen point, given straight to the map the way the window gives it.
 		WindowEvent event;
@@ -1375,11 +1409,11 @@ void Run(StepType const & step)
 		Session.Type = GAME_IPX;
 	} else if (step.Command == "zoomlevel") {
 		// zoomlevel: the current map view zoom.
-		DebugString("AUTOTEST zoomlevel %.2f\n", ViewZoom);
+		DebugString("AUTOTEST zoomlevel %.2f\n", ViewZoom * InterfaceScale);
 	} else if (step.Command == "zoom") {
-		// zoom <factor>: sets the map view zoom at once (0.5 shows twice as much).
+		// zoom <factor>: sets the map view zoom at once (0.5 shows twice as much), measured from the screen's own pixels.
 		Set_View_Zoom(std::atof(step.Argument.c_str()));
-		DebugString("AUTOTEST zoom %.2f view %dx%d on screen %dx%d\n", ViewZoom, TacticalRect.Width, TacticalRect.Height, ScreenTacticalRect.Width, ScreenTacticalRect.Height);
+		DebugString("AUTOTEST zoom %.2f view %dx%d on screen %dx%d\n", ViewZoom * InterfaceScale, TacticalRect.Width, TacticalRect.Height, ScreenTacticalRect.Width, ScreenTacticalRect.Height);
 	} else if (step.Command == "wheel") {
 		// wheel <step> [x y]: glides the zoom by that step around a screen point, as the mouse wheel
 		// does; without a point the zoom centers on the middle of the map view.
@@ -1422,6 +1456,13 @@ void Run(StepType const & step)
 	}
 }
 
+}
+
+
+void AutoTest_Cursor_Position(int & x, int & y)
+{
+	x = _CursorX;
+	y = _CursorY;
 }
 
 

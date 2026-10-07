@@ -17,6 +17,10 @@
 */
 
 bool AutoTest_Active(void);
+
+// Where an unattended run's pointer rests, in window pixels. A script moves it with the windowmove
+// and windowclick steps; it starts away from the screen's edges.
+void AutoTest_Cursor_Position(int & x, int & y);
 bool AutoTest_Load(char const * filename);
 void AutoTest_Frame(void);
 
