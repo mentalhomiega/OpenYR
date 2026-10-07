@@ -2307,7 +2307,15 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 				case FIRE_OK:
 					IsToSpendAmmo = true;
 					if (In_Range(TarCom)) {
-						Fire_At(TarCom, 0);
+
+						/*
+						**	The whole burst is fired at once on a pass; a pass costs one round
+						**	however many shots the burst holds.
+						*/
+						int const burst = PrimaryWeapon != NULL ? std::max(1, PrimaryWeapon->Burst) : 1;
+						for (int shot = 0; shot < burst && TarCom != NULL; shot++) {
+							Fire_At(TarCom, 0);
+						}
 					}
 					if (TarCom != NULL) {
 						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
