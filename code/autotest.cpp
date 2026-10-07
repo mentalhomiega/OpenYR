@@ -555,6 +555,20 @@ void Run(StepType const & step)
 				break;
 			}
 		}
+	} else if (step.Command == "threatscan") {
+		// threatscan <TypeID> <ThreatType flags>: the target the first object of the type owned by a house that is no ally of the player picks anywhere on the map for those flags.
+		unsigned const flags = (unsigned)step.X;
+		std::string const type_name = step.Argument;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (!techno->House->Is_Ally(PlayerPtr) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), type_name.c_str()) == 0) {
+				AbstractClass * target = techno->Greatest_Threat(ThreatType(flags), techno->Center_Coord(), false);
+				ObjectClass const * object = dynamic_cast<ObjectClass const *>(target);
+				DebugString("AUTOTEST   threatscan %s of %s picks %s at %d,%d\n", type_name.c_str(), techno->House->Class->Name(), object != NULL ? object->Class_Of()->Name() : "-",
+					object != NULL ? object->Get_Cell().X : -1, object != NULL ? object->Get_Cell().Y : -1);
+				break;
+			}
+		}
 	} else if (step.Command == "bunkers") {
 		// bunkers: each Bunker=yes structure and the vehicle inside it.
 		for (int index = 0; index < Buildings.Count(); index++) {
