@@ -64,6 +64,7 @@
 #include "ovrlight.h"
 #include "rules.h"
 #include "savestream.h"
+#include "csf.h"
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
@@ -3851,6 +3852,28 @@ void Tactical::Draw_Radial_Indicators(void)
 void Tactical::Draw_Super_Timers(void)
 {
 	int line = 0;
+
+	/*
+	**	The mission timer leads the list, under the label a trigger action gave it, and turns red
+	**	once it runs down to the warning time.
+	*/
+	if (Scen->MissionTimer.Is_Active() && PlayerPtr != NULL) {
+		int const seconds = (int)Scen->MissionTimer / TICKS_PER_SECOND;
+		std::string const label = Scen->MissionTimerText[0] != '\0' ? StringTable.Find_UTF8(Scen->MissionTimerText) : std::string();
+		char buffer[160];
+		if (seconds >= 3600) {
+			std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", label.c_str(), seconds / 3600, (seconds / 60) % 60, seconds % 60);
+		} else {
+			std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", label.c_str(), seconds / 60, seconds % 60);
+		}
+		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
+		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
+		if (scheme == NULL) scheme = ColorSchemes[PlayerPtr->Scheme];
+		Point2D const at(TacticalRect.Width - 3, TacticalRect.Height - 16 * (line + 1));
+		Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, at, scheme, 0, (TextPrintType)(TPF_RIGHT | TPF_EFNT | TPF_FULLSHADOW), 1);
+		line++;
+	}
+
 	for (int h = 0; h < Houses.Count(); h++) {
 		HouseClass * house = Houses[h];
 		if (house == NULL || house->Class->IsMultiplayPassive) continue;

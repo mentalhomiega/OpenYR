@@ -311,7 +311,6 @@ static bool Is_Skipped_Action(TActionType action)
 	switch (action) {
 		case TACTION_RESHROUD_AT:
 		case TACTION_LIGHTNING_STORM_STRIKE:
-		case TACTION_TIMER_TEXT:
 		case TACTION_IRON_CURTAIN_AT:
 		case TACTION_PAUSE_GAME:
 		case TACTION_STOP_SOUNDS_AT:
@@ -832,6 +831,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(SUPER_RESET_RECHARGE_TIME);
 		INVOKE(SUPER_RESET);
 		INVOKE(CENTER_BASE_CELL_CLEAR);
+		INVOKE(TIMER_TEXT);
 		INVOKE(CENTER_BASE_CELL_SET);
 		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
 		INVOKE(SET_PREFERRED_TARGET_CELL);
@@ -3373,6 +3373,18 @@ bool TActionClass::TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClas
 	}
 	house->CenterOverride = CELL_NONE;
 	house->Recalc_Center();
+	return(true);
+}
+
+
+/// <summary>
+/// Sets the string table label the mission timer is shown under. A map that names no label takes
+/// the label away.
+/// </summary>
+bool TActionClass::TAction_TIMER_TEXT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	snprintf(Scen->MissionTimerText, sizeof(Scen->MissionTimerText), "%s", Text);
+	Map.Redraw_Tab();
 	return(true);
 }
 

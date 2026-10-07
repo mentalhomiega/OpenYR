@@ -265,6 +265,7 @@ void ScenarioClass::Reset(void)
 	ElapsedTimer.Stop();
 	MissionTimer = 0;
 	MissionTimer.Stop();
+	MissionTimerText[0] = '\0';
 	ShroudTimer = 0;
 	FogTimer = 0;
 	IceGrowthTimer = 0;
@@ -3410,6 +3411,7 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ElapsedTimer);
 	stream.Serialize(Waypoint);
 	stream.Serialize(MissionTimer);
+	stream.Serialize(MissionTimerText);
 	stream.Serialize(ShroudTimer);
 	stream.Serialize(FogTimer);
 	stream.Serialize(IceGrowthTimer);
