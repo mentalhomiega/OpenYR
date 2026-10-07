@@ -66,6 +66,7 @@
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
 **	houses					writes each house's money, power and spy effects
+**	statics					writes how many sounds that Play Sound Effect At started are still going
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
@@ -1072,6 +1073,9 @@ void Run(StepType const & step)
 				techno->Assign_Destination(building);
 			}
 		}
+	} else if (step.Command == "statics") {
+		// statics: how many positioned sounds a trigger started are still going.
+		DebugString("AUTOTEST   statics %d\n", Static_Sounds_Active(STATIC_SOUND_TRIGGER));
 	} else if (step.Command == "supers") {
 		// supers: each super weapon a house has, how much of its charge is left and the time it charges in.
 		for (int index = 0; index < Houses.Count(); index++) {
