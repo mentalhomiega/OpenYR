@@ -9,6 +9,7 @@ keys:
   - PrismSupportDelay
   - PrismSupportDuration
   - DelayedFireDelay
+  - IsAnimDelayedFire
 related:
   - type: system
     id: target-selection
@@ -31,4 +32,8 @@ While fewer than [`PrismSupportMax`](/keys/prismsupportmax/) towers support it, 
 
 ## The shot
 
-When no more towers can be recruited, the firing tower charges for its own `DelayedFireDelay` frames and then fires its `Primary` weapon at its target, if it still can. Its shot deals [`PrismSupportModifier`](/keys/prismsupportmodifier/) percent of the weapon's damage more for each tower that supported it. With `PrismSupportModifier=150%`, two supporting towers make the shot deal four times its normal damage.
+When no more towers can be recruited, the firing tower charges for its own `DelayedFireDelay` frames and then fires its `Primary` weapon at its target, if it still can. While a tower charges, whether to fire or to support, its `ActiveAnim` gives way to its `SpecialAnim`, and the `ActiveAnim` returns when the `SpecialAnim` has played through. Its shot deals [`PrismSupportModifier`](/keys/prismsupportmodifier/) percent of the weapon's damage more for each tower that supported it. With `PrismSupportModifier=150%`, two supporting towers make the shot deal four times its normal damage.
+
+## Other structures that charge
+
+A structure that is not of the `PrismType` type but sets [`IsAnimDelayedFire=yes`](/keys/isanimdelayedfire/), such as the Tesla coil, charges the same way before each shot, with its `ActiveAnim` and `SpecialAnim` swapping as above. It recruits no support, and it fires whichever of its weapons it chose when the charge began.
