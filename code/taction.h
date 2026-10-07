@@ -115,6 +115,19 @@ class TActionClass : public AbstractClass
 
 		TriggerTypeClass * Trigger;	// Trigger type pointer for this action (if needed).
 
+		/*
+		 * A Yuri's Revenge map names some things in the action rather than numbering them: a
+		 * CSF label, a sound, a theme, an EVA line, an object type. This is that name, as the map
+		 * wrote it, or empty when the action takes a number.
+		 */
+		char Text[64];
+
+		/*
+		 * A second number for the actions that take one after the name, such as how many frames
+		 * to flash a cameo for. The map writes it where the other actions write a waypoint.
+		 */
+		int Extra;
+
 		union {
 			ThemeType					Theme;		// Musical theme.
 			VocType						Sound;		// Sound effect.
@@ -278,6 +291,17 @@ class TActionClass : public AbstractClass
 		bool TAction_ALL_ASSIGN_MISSION(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_MAKE_ALLY_ONE_WAY(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CHEER(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DESTROY_ALL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DESTROY_ALL_BUILDINGS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DESTROY_ALL_LAND_UNITS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_JUMP_CAMERA(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_SET_TECH_LEVEL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CREATE_CRATE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_REINFORCEMENTS_CHRONO(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool Not_Implemented(void) const;
 };
 
 AttachType Attaches_To(TActionType event);

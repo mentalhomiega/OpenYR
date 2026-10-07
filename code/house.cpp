@@ -3649,6 +3649,19 @@ void HouseClass::MPlayer_Defeated(void)
  *=========================================================================*/
 void HouseClass::Blowup_All(void)
 {
+	Blowup(true, true, true);
+}
+
+
+/// <summary>
+/// Blows up the chosen kinds of object the house owns, each with as much damage as it takes.
+/// The land kind covers infantry, aircraft and every vehicle that is not naval.
+/// </summary>
+/// <param name="buildings">Blow up the buildings.</param>
+/// <param name="land">Blow up the infantry, aircraft and land vehicles.</param>
+/// <param name="naval">Blow up the naval vehicles.</param>
+void HouseClass::Blowup(bool buildings, bool land, bool naval)
+{
 	int i;
 	int damage;
 	UnitClass * uptr;
@@ -3663,7 +3676,7 @@ void HouseClass::Blowup_All(void)
 	**	object; it will also damage anything around it.
 	*/
 	for (i = 0; i < ::Units.Count(); i++) {
-		if (::Units[i]->House == this && !::Units[i]->IsInLimbo) {
+		if (::Units[i]->House == this && !::Units[i]->IsInLimbo && (::Units[i]->Class->IsNaval ? naval : land)) {
 			uptr = ::Units[i];
 
 			/*
@@ -3690,7 +3703,7 @@ void HouseClass::Blowup_All(void)
 	**	Destroy all aircraft owned by this house.
 	*/
 	for (i = 0; i < ::Aircraft.Count(); i++) {
-		if (::Aircraft[i]->House == this && !::Aircraft[i]->IsInLimbo) {
+		if (land && ::Aircraft[i]->House == this && !::Aircraft[i]->IsInLimbo) {
 			AircraftClass * aptr = ::Aircraft[i];
 
 			damage = aptr->Strength;
@@ -3706,7 +3719,7 @@ void HouseClass::Blowup_All(void)
 	**	and begin a countdown, so don't decrement 'i' when it's destroyed.
 	*/
 	for (i = 0; i < Buildings.Count(); i++) {
-		if (Buildings[i]->House == this && !Buildings[i]->IsInLimbo) {
+		if (buildings && Buildings[i]->House == this && !Buildings[i]->IsInLimbo) {
 			bptr = Buildings[i];
 
 			count = 0;
@@ -3727,7 +3740,7 @@ void HouseClass::Blowup_All(void)
 	**	animation sequence, so there's no need to decrement 'i' when they die.
 	*/
 	for (i = 0; i < Infantry.Count(); i++) {
-		if (Infantry[i]->House == this && !Infantry[i]->IsInLimbo) {
+		if (land && Infantry[i]->House == this && !Infantry[i]->IsInLimbo) {
 			iptr = Infantry[i];
 
 			count = 0;

@@ -14,6 +14,10 @@
 #pragma once
 
 /// TS names and comments derived from FS/FA2.
+///
+/// The numbers are the ones Yuri's Revenge maps use: actions 0 to 100 are the Tiberian Sun ones and
+/// 101 to 145 are Yuri's Revenge's own. OpenTS's extra actions come after 145, so a map written for
+/// Yuri's Revenge never reaches one by accident.
 
 enum TActionType {
 	TACTION_NONE,
@@ -122,15 +126,63 @@ enum TActionType {
 	TACTION_PLAY_SOUND_RANDOM,				/// Play sound effect at random waypoint.
 	TACTION_PLAY_SOUND_AT,					/// Play sound effect at waypoint.
 	TACTION_PLAY_INGAME_MOVIE,				/// Play movie ingame without pausing.
+	/// 101 onward are Yuri's Revenge's own actions, in its order, up to TACTION_JUMP_CAMERA_HOME.
+	TACTION_RESHROUD_AT,					/// Reshroud the map around a waypoint.
+	TACTION_LIGHTNING_STORM_STRIKE,			/// Start a lightning storm at a waypoint.
+	TACTION_TIMER_TEXT,						/// Set the label the mission timer shows.
 	TACTION_FLASH_TEAM,						/// Flash team for specified number of frames.
+	TACTION_TALK_BUBBLE,					/// Display talk bubble over unit.
+
+	TACTION_SET_TECH_LEVEL,					/// Change the tech level of an object type.
+	TACTION_REINFORCEMENTS_CHRONO,			/// Create reinforcement team at a waypoint by chronoshift.
+	TACTION_CREATE_CRATE,					/// Place a crate at a waypoint.
+	TACTION_IRON_CURTAIN_AT,				/// Apply the Iron Curtain at a waypoint.
+	TACTION_PAUSE_GAME,						/// Pause the game for a number of seconds.
+	TACTION_EVICT_OCCUPIERS,				/// Force the infantry out of the attached building.
+	TACTION_JUMP_CAMERA,					/// Move tactical view to waypoint at once.
+	TACTION_CHEER,							/// Make the infantry of a house cheer.
+	TACTION_SET_TAB,						/// Switch the sidebar tab.
+	TACTION_FLASH_CAMEO,					/// Flash the cameo of an object type.
+	TACTION_STOP_SOUNDS_AT,					/// Stop the sounds started at a waypoint.
+	TACTION_PLAY_INGAME_MOVIE_PAUSED,		/// Play movie ingame; the stock game runs it like PLAY_INGAME_MOVIE.
+	TACTION_CLEAR_SMUDGES,					/// Remove every smudge from the map.
+	TACTION_DESTROY_ALL,					/// Destroy everything a house owns.
+	TACTION_DESTROY_ALL_BUILDINGS,			/// Destroy every building a house owns.
+	TACTION_DESTROY_ALL_LAND_UNITS,			/// Destroy every land unit a house owns.
+	TACTION_DESTROY_ALL_NAVAL_UNITS,		/// Destroy every naval unit a house owns.
+	TACTION_MIND_CONTROL_BASE,				/// A house mind controls the base of another.
+	TACTION_RESTORE_MIND_CONTROLLED_BASE,	/// Return a mind controlled base to its owner.
+	TACTION_CREATE_BUILDING,				/// Place a building of the trigger's house at a waypoint.
+	TACTION_RESTORE_STARTING_UNITS,			/// Respawn the units the house started with.
+	TACTION_CHRONO_SCREEN_EFFECT,			/// Show the chronoshift screen effect.
+	TACTION_TELEPORT_ALL_TO,				/// Teleport every unit of the house to a waypoint.
+	TACTION_SET_SUPER_CHARGE,				/// Set how charged a super weapon is.
+	TACTION_RESTORE_STARTING_BUILDINGS,		/// Respawn the buildings the house started with.
+	TACTION_FLASH_BUILDINGS,				/// Flash every building of a type.
+	TACTION_SUPER_SET_RECHARGE_TIME,		/// Set a super weapon's recharge time.
+	TACTION_SUPER_RESET_RECHARGE_TIME,		/// Put a super weapon's recharge time back to normal.
+	TACTION_SUPER_RESET,					/// Reset a super weapon.
+	TACTION_SET_PREFERRED_TARGET_CELL,		/// Aim every super weapon at a waypoint.
+	TACTION_CLEAR_PREFERRED_TARGET_CELL,	/// Go back to normal super weapon targeting.
+	TACTION_CENTER_BASE_CELL_SET,			/// Make a waypoint the center of the AI's base.
+	TACTION_CENTER_BASE_CELL_CLEAR,			/// Let the AI work out its base center again.
+	TACTION_BLACKOUT_RADAR,					/// Black out the radar for a number of frames.
+	TACTION_SET_DEFENSIVE_TARGET_CELL,		/// Aim force shields at a waypoint.
+	TACTION_CLEAR_DEFENSIVE_TARGET_CELL,	/// Go back to normal force shield targeting.
+	TACTION_RETINT_RED,						/// Change the red screen tint.
+	TACTION_RETINT_GREEN,					/// Change the green screen tint.
+	TACTION_RETINT_BLUE,					/// Change the blue screen tint.
+	TACTION_JUMP_CAMERA_HOME,				/// Move the view to the player's construction yard at once.
+
+	/// OpenTS additions that Yuri's Revenge has no action for. They follow its range so that its numbers
+	/// stay put.
 	TACTION_DISABLE_SPEECH,					/// Disable EVA speech.
 	TACTION_ENABLE_SPEECH,					/// Enable EVA speech.
 	TACTION_SET_GROUP_ID,					/// Set group ID of attached object.
-	TACTION_TALK_BUBBLE,					/// Display talk bubble over unit.
 	TACTION_GIVE_CREDITS,					// Give or take credits from a house.
 	TACTION_ENABLE_SHORT_GAME,				// Turn the short game rule on.
 	TACTION_DISABLE_SHORT_GAME,				// Turn the short game rule off.
-	TACTION_CREATE_BUILDING_AT,				// Place a building at a waypoint.
+	TACTION_CREATE_BUILDING_AT,				// Place a building for a house at a waypoint.
 	TACTION_HOUSE_DESTROY_ALL,				// Destroy everything a house owns and defeat it.
 	TACTION_MAKE_ELITE,						// Promote attached objects to elite.
 	TACTION_ENABLE_ALLY_REVEAL,				// Let allies see what each other reveals.
