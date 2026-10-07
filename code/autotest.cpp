@@ -1056,7 +1056,7 @@ void Run(StepType const & step)
 				if (techno->What_Am_I() == RTTI_INFANTRY) infantry++;
 				else if (techno->What_Am_I() == RTTI_AIRCRAFT) aircraft++;
 				else units++;
-				if (step.Argument == "units" && techno->What_Am_I() != RTTI_INFANTRY) {
+				if (step.Argument == "units" && (techno->What_Am_I() != RTTI_INFANTRY || stricmp(techno->TClass->Name(), "SLAV") == 0)) {
 					FootClass const * foot = static_cast<FootClass const *>(techno);
 					Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 					DebugString("AUTOTEST     %s %s cell %d,%d mission %s nav %d,%d strength %d\n", Houses[house]->Class->Name(), techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)techno->Strength);
@@ -1182,6 +1182,15 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   team %s house %s members %d mission %d data %d moving %d hasbeen %d full %d under %d\n",
 				team->Class->Name(), team->House->Class->Name(), members, (int)mission.Mission, mission.Data.Value,
 				(int)team->IsMoving, (int)team->IsHasBeen, (int)team->IsFullStrength, (int)team->IsUnderStrength);
+			if (team->IsUnderStrength || !team->IsFullStrength) {
+				TEAM_MEMBER_LIST missing;
+				team->Team_Members(missing);
+				std::string names;
+				for (int m = 0; m < missing.Count(); m++) {
+					names += std::string(" ") + missing[m]->Name() + (team->House->Can_Build(missing[m], false, false) == 0 ? "(cannot)" : "");
+				}
+				DebugString("AUTOTEST     team %s missing%s\n", team->Class->Name(), names.c_str());
+			}
 		}
 	} else if (step.Command == "banims") {
 		for (int slot = 0; slot < BANIM_COUNT; slot++) {
