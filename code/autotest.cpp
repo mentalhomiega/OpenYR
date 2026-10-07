@@ -754,6 +754,19 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   grant %s: no such super weapon\n", step.Argument.c_str());
 		}
+	} else if (step.Command == "grantai") {
+		// grantai <SuperWeaponTypeID>: gives the first computer house with a construction yard that super weapon, fully charged.
+		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
+		for (int index = 0; index < Houses.Count() && id != SUPER_NONE; index++) {
+			HouseClass * house = Houses[index];
+			if (house != PlayerPtr && house->ConYards.Count() > 0 && id < house->SuperWeapon.Count()) {
+				SuperClass * super = house->SuperWeapon[id];
+				super->Enable(false, true, true);
+				super->Forced_Charge(true);
+				DebugString("AUTOTEST   grantai %s to %s ready %d\n", step.Argument.c_str(), house->Class->Name(), (int)super->Is_Ready());
+				break;
+			}
+		}
 	} else if (step.Command == "fire") {
 		// fire <SuperWeaponTypeID> x y: the player fires that super weapon at the cell.
 		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
@@ -1383,6 +1396,18 @@ void Run(StepType const & step)
 			if (soldier->IsInLimbo || stricmp(soldier->Class->Name(), step.Argument.c_str()) != 0) continue;
 			DebugString("AUTOTEST   infstate %s at %d,%d doing %d stage %d shape %d facing %d prone %d mission %d height %d fear %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
 				(int)soldier->Doing, soldier->Fetch_Stage(), soldier->Shape_Number(), (int)soldier->PrimaryFacing.Current().As_Dir8(), (int)soldier->IsProne, (int)soldier->Mission, (int)soldier->HeightAGL, (int)soldier->Fear);
+		}
+	} else if (step.Command == "unitstate") {
+		// unitstate <TypeID>: for each vehicle of that type, its house, cell, mission, team and whether its DeploysInto structure fits where it stands.
+		for (int index = 0; index < Units.Count(); index++) {
+			UnitClass const * unit = Units[index];
+			if (unit->IsInLimbo || stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;
+			int fits = -1;
+			if (unit->Class->DeploysInto != NULL) {
+				fits = unit->Class->DeploysInto->Legal_Placement(unit->PositionCell, NULL) ? 1 : 0;
+			}
+			DebugString("AUTOTEST   unitstate %s house %s at %d,%d mission %d queued %d team %s navcom %d strength %d deployfits %d\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
+				(int)unit->Mission, (int)unit->MissionQueue, unit->Team != NULL ? unit->Team->Class->Name() : "-", unit->NavCom != NULL ? 1 : 0, (int)unit->Strength, fits);
 		}
 	} else if (step.Command == "playanim") {
 		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
