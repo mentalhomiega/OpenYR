@@ -187,7 +187,7 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip_base_defense)
 {
 	bool basedefense;
-	if ((TeamTypeOne != NULL && TeamTypeOne->IsBaseDefense) && (TeamTypeTwo == NULL || TeamTypeTwo->IsBaseDefense)) {
+	if ((TeamTypeOne != NULL && TeamTypeOne->IsBaseDefense) || (TeamTypeTwo != NULL && TeamTypeTwo->IsBaseDefense)) {
 		basedefense = true;
 	} else {
 		basedefense = false;

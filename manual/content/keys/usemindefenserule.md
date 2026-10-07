@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-With the rule on, a computer house that holds fewer defensive teams than [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/) sets for its difficulty may spring only defensive AI triggers. A defensive team is one whose TeamType sets [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype). A trigger is defensive when every TeamType it names is defensive.
+With the rule on, a computer house that holds fewer defensive teams than [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/) sets for its difficulty may spring only defensive AI triggers. A defensive team is one whose TeamType sets [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype). A trigger is defensive when either TeamType it names is defensive.
 
 With the rule off, `MinimumAIDefensiveTeams` has no effect, and a house with an enemy may spring any trigger even when it holds no defensive teams.
 
