@@ -1808,7 +1808,7 @@ bool TeamClass::Coordinate_Regroup(void)
 
 		if (_Is_It_Playing(unit)) {
 
-			if (unit->Distance(Zone) > Rule->StrayDistance && (unit->Mission != MISSION_GUARD_AREA || unit->TarCom == NULL)) {
+			if (unit->Distance(Zone) > Stray_Distance() && (unit->Mission != MISSION_GUARD_AREA || unit->TarCom == NULL)) {
 				if (unit->NavCom == NULL) {
 // TCTCTC
 //				if (unit->NavCom == NULL || ::Distance(unit->NavCom, Zone) > Rule->StrayDistance) {
@@ -1904,7 +1904,7 @@ void TeamClass::Coordinate_Move(void)
 				}
 
 				if (_Is_It_Playing(unit) && unit->Mission != MISSION_UNLOAD && unit->MissionQueue != MISSION_UNLOAD) {
-					int stray = Rule->StrayDistance;
+					int stray = Stray_Distance();
 					if (unit->RTTI == RTTI_AIRCRAFT) {
 						stray *= 3;
 					}
@@ -2022,7 +2022,7 @@ bool TeamClass::Lagging_Units(void)
 	while (unit != NULL) {
 
 		if (_Is_It_Playing(unit)) {
-			int stray = Rule->StrayDistance;
+			int stray = Stray_Distance();
 			if (unit->RTTI ==  RTTI_AIRCRAFT) {
 				stray *= 3;
 			}
@@ -2083,7 +2083,7 @@ bool TeamClass::Lagging_Units(void)
 bool TeamClass::Coordinate_Conscript(FootClass * unit)
 {
 	if (_Is_It_Breathing(unit) && !unit->IsInitiated) {
-		if (unit->Distance(Zone) > Rule->StrayDistance) {
+		if (unit->Distance(Zone) > Stray_Distance()) {
 			if (unit->NavCom == NULL) {
 				unit->Assign_Mission(MISSION_MOVE);
 				unit->Assign_Target(NULL);
@@ -2555,6 +2555,17 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 
 
 /// <summary>
+/// Fetches how far a member may stray from the team's center before it is called back: the
+/// RelaxedStray distance while the team runs a gather line, Stray otherwise.
+/// </summary>
+LEPTON TeamClass::Stray_Distance(void)
+{
+	TeamMissionType const mission = Script != NULL ? Script->Get_Current_Mission().Mission : TMISSION_NONE;
+	return(mission == TMISSION_GATHER_AT_ENEMY || mission == TMISSION_GATHER_AT_BASE ? Rule->RelaxedStrayDistance : Rule->StrayDistance);
+}
+
+
+/// <summary>
 /// Handles the move to waypoint team mission.
 /// This routine sends the team to the scripted waypoint, settling for a nearby cell when the
 /// leader cannot reach the waypoint itself.
@@ -3017,7 +3028,7 @@ void TeamClass::TMission_DO(TeamMissionClass * mission, bool)
 
 		if (_Is_It_Playing(unit)) {
 
-			if (unit->TarCom == NULL && unit->NavCom == NULL && unit->Distance(Zone) > Rule->StrayDistance * 2 && do_mission != MISSION_GUARD_AREA) {
+			if (unit->TarCom == NULL && unit->NavCom == NULL && unit->Distance(Zone) > Stray_Distance() * 2 && do_mission != MISSION_GUARD_AREA) {
 
 				/*
 				**	Only if the unit isn't already heading to regroup with the team, will it
