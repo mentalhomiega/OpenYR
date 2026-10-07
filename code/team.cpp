@@ -3091,7 +3091,11 @@ void TeamClass::TMission_DEPLOY(TeamMissionClass * mission, bool)
 						}
 
 					}
+				} else if (unit->Class->IsSimpleDeployer && unit->Mission != MISSION_UNLOAD) {
+					unit->Assign_Mission(MISSION_UNLOAD);
 				}
+			} else if (obj->RTTI == RTTI_INFANTRY && ((InfantryClass *)obj)->Class->IsDeployer && obj->Mission != MISSION_UNLOAD) {
+				obj->Assign_Mission(MISSION_UNLOAD);
 			}
 		}
 
