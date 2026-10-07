@@ -21119,7 +21119,7 @@ Max:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: '-1'
       declared_in: TeamTypeClass
       member: MaxAllowed
       source: code/teamtype.cpp
@@ -23041,6 +23041,23 @@ NavalTargeting:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+NeedsEngineer:
+  key: NeedsEngineer
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsNeedsEngineer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 NeverUse:
   key: NeverUse
   scopes:
@@ -28191,6 +28208,24 @@ Reinforce:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+RelaxedStray:
+  key: RelaxedStray
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: '512'
+      declared_in: RulesClass
+      member: RelaxedStrayDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ReloadRate:
   key: ReloadRate
   scopes:

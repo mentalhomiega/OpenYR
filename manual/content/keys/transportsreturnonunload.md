@@ -11,12 +11,10 @@ With this set, once an [Unload](/mapping/missions/tmission-unload/) mission has 
 
 The Unload mission's argument, the number on its script line, still decides what happens to the members that are not transports. It has no effect on the transports, which are released whatever it names.
 
-Despite the key's name, a released transport normally has no destination and does not travel back. With no destination, the Move mission sends it straight to its idle behavior.
+The transport drives back to a return point the team keeps for it:
 
-The destination comes from a return point the team keeps for each transport:
-
-1. Each time the team moves toward a target, every transport that has no return point yet records the cell it stands in.
-2. When the team advances to the next line of its script, it erases every member's return point. This includes the advance onto the Unload line, and the Unload mission records nothing.
+1. A [Load onto Transport](/scripting/missions/14/) line that finishes records the cell its transport stands in. Each time the team moves toward a target, every transport that has no return point yet records the cell it stands in.
+2. When the team advances to the next line of its script, it erases the return point of every member except a transport.
 3. On release, the transport is sent to its return point, and the point is cleared.
 
-The points recorded on the approach are therefore already gone at release. A transport goes somewhere only if some other order stored a destination for it between the advance onto the Unload line and the release.
+A transport that never loaded or moved with the team has no return point. With no destination, the Move mission sends it straight to its idle behavior.
