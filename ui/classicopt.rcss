@@ -1,0 +1,205 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* Every control stands where Yuri's Revenge's Options dialog puts it, on the classic stage's
+   800x600: the dialog's own units times 1.5 across and 1.626 down. The panel covers the stage
+   art; the right-hand column keeps its art and holds the buttons. */
+
+#reveal
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 800dp;
+	height: 600dp;
+	margin-left: -400dp;
+	margin-top: -300dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+	height: 600dp;
+}
+
+#wallpaper
+{
+	right: 168dp;
+	bottom: 32dp;
+}
+
+.heading, .caption, .value, label.check, input[type='range'], #modes, #more, button, #title
+{
+	position: absolute;
+	margin: 0;
+}
+
+.heading
+{
+	left: 30dp;
+	width: 300dp;
+	height: 20dp;
+	line-height: 18dp;
+	border-bottom: 1dp #7d5cb8;
+	color: #ffffff;
+}
+
+.caption, .value
+{
+	height: 18dp;
+	line-height: 18dp;
+}
+
+.value
+{
+	width: 90dp;
+	text-align: right;
+}
+
+.centred
+{
+	width: 128dp;
+	text-align: center;
+}
+
+input[type='range']
+{
+	width: 178dp;
+	height: 19dp;
+}
+
+label.check
+{
+	width: 200dp;
+	height: 19dp;
+}
+
+#heading-display { top: 29dp; }
+#heading-game { top: 151dp; }
+#heading-interface { top: 273dp; }
+#heading-audio { top: 413dp; }
+
+#detail-label { left: 134dp; top: 62dp; }
+#detail-name { left: 224dp; top: 62dp; }
+#detail { left: 134dp; top: 86dp; }
+
+#resolution-label { left: 351dp; top: 62dp; }
+#modes { left: 351dp; top: 86dp; width: 180dp; height: 120dp; }
+
+#difficulty-label { left: 138dp; top: 184dp; }
+#difficulty-name { left: 228dp; top: 184dp; }
+#difficulty { left: 138dp; top: 208dp; }
+
+#switch-tooltips { left: 140dp; top: 306dp; }
+#switch-lines { left: 140dp; top: 330dp; }
+#switch-hidden { left: 140dp; top: 354dp; }
+
+#scroll-label { left: 357dp; top: 306dp; }
+#scroll-name { left: 447dp; top: 306dp; }
+#scroll { left: 357dp; top: 330dp; }
+
+#music-label { left: 123dp; top: 445dp; }
+#music { left: 123dp; top: 470dp; width: 126dp; }
+#sfx-label { left: 269dp; top: 445dp; }
+#sfx { left: 269dp; top: 470dp; width: 126dp; }
+#voice-label { left: 416dp; top: 445dp; }
+#voice { left: 416dp; top: 470dp; width: 126dp; }
+
+/* The right-hand column: the menu's name, then the buttons at the main menu's places. */
+#title
+{
+	display: block;
+	left: 632dp;
+	top: 2dp;
+	width: 168dp;
+	height: 16dp;
+	line-height: 16dp;
+	text-align: center;
+}
+
+button
+{
+	left: 635dp;
+	width: 162dp;
+	height: 37dp;
+	padding-top: 11dp;
+}
+
+button:active
+{
+	padding-top: 12dp;
+}
+
+#keyboard { top: 198dp; }
+#mods { top: 242dp; }
+#cancel { top: 519dp; }
+#ok { top: 563dp; }
+
+#more
+{
+	left: 636dp;
+	top: 290dp;
+	width: 160dp;
+	height: 220dp;
+	font-size: 14dp;
+	background-color: #0a0612e0;
+	border: 1dp #7d5cb8;
+}
+
+#more > *
+{
+	position: absolute;
+	margin: 0;
+}
+
+#more-heading
+{
+	left: 0;
+	top: 4dp;
+	width: 158dp;
+	text-align: center;
+	color: #ffffff;
+}
+
+#more label.check
+{
+	left: 8dp;
+	width: 148dp;
+	height: 19dp;
+	line-height: 17dp;
+}
+
+#switch-cameo { top: 28dp; }
+#switch-edge { top: 52dp; }
+#switch-coasting { top: 76dp; }
+#switch-stretch { top: 100dp; }
+#switch-system-cursor { top: 124dp; }
+#switch-classic-menus { top: 148dp; }
+
+#scale-label
+{
+	left: 8dp;
+	top: 176dp;
+	width: 96dp;
+	height: 24dp;
+	line-height: 24dp;
+}
+
+#scale
+{
+	left: 104dp;
+	top: 176dp;
+	width: 48dp;
+}
+
+#scale selectbox
+{
+	background-color: #0a0615;
+}

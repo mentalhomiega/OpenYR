@@ -17,6 +17,7 @@
 #include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmlview.h"
+#include "ui/screens/classicopt/uiclassicopt.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/screens/gameopt/uigameopt.h"
@@ -3385,6 +3386,142 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 }
 
 
+class RecordingClassicOptionsPartsClass
+{
+	public:
+		RecordingGameControlsServiceClass Game;
+		RecordingSoundServiceClass Sound;
+		RecordingDisplayServiceClass Display;
+};
+
+
+UIClassicOptionsPresenterClass Classic_Options_Presenter(RecordingClassicOptionsPartsClass & parts)
+{
+	UISoundState sound;
+	sound.Score = 4;
+	sound.Sound = 5;
+	sound.Voice = 6;
+	sound.Enabled = true;
+	return(UIClassicOptionsPresenterClass(parts.Game, Game_Controls_Fixture(), parts.Sound, sound, parts.Display, Display_Fixture()));
+}
+
+
+void Drive(UIClassicOptionsPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Test_Classic_Options_Presenter(void)
+{
+	{
+		RecordingClassicOptionsPartsClass parts;
+		UIClassicOptionsPresenterClass presenter = Classic_Options_Presenter(parts);
+
+		Drive(presenter, "detail", 0);
+		Drive(presenter, "scroll", 3);
+		Drive(presenter, "tooltips", 0);
+		Drive(presenter, "select", 2);
+		Drive(presenter, "scale", 3);
+		Check(presenter.Game.State.Detail == 0 && presenter.Game.State.Scroll == 3 && !presenter.Game.State.ToolTips, "the game controls take their intents");
+		Check(presenter.Display.State.Selected == 2 && presenter.Display.State.Scale == 3, "the display presenter takes the resolution and the scale");
+		Check(parts.Game.Calls.empty() && parts.Display.Calls.empty() && !presenter.Result.has_value(), "nothing is applied until OK");
+
+		Drive(presenter, "music", 7);
+		Check(parts.Sound.Joined() == "score 0.7 feedback", "a volume is heard as it moves");
+		parts.Sound.Calls.clear();
+
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Next == UIClassicOptionsPresenterClass::NEXT_NONE, "OK accepts and goes nowhere else");
+		Check(parts.Game.Joined().find("detail 0") != std::string::npos && parts.Game.Joined().find("tooltips off") != std::string::npos && parts.Game.Joined().find("scroll 3") != std::string::npos && parts.Game.Calls.back() == "save", "OK applies and saves the game settings");
+		Check(parts.Sound.Joined() == "score 0.7; sound 0.5; voice 0.6", "OK sets the volumes without feedback");
+		Check(parts.Display.Calls.back() == "scale 20" && presenter.Display.Picked.has_value() && presenter.Display.Picked->Width == 1920, "OK applies the scale and picks the mode");
+	}
+
+	{
+		RecordingClassicOptionsPartsClass parts;
+		UIClassicOptionsPresenterClass presenter = Classic_Options_Presenter(parts);
+
+		Drive(presenter, "detail", 0);
+		Drive(presenter, "hidden", 1);
+		Drive(presenter, "stretch", 1);
+		Drive(presenter, "select", 0);
+		Drive(presenter, "music", 9);
+		Drive(presenter, "sfx", 1);
+		parts.Sound.Calls.clear();
+
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Cancel closes the page");
+		Check(parts.Game.Calls.empty() && parts.Display.Calls.empty() && !presenter.Display.Picked.has_value(), "Cancel applies no game or display setting");
+		Check(parts.Sound.Joined() == "score 0.4; sound 0.5", "Cancel puts the moved volumes back without feedback");
+	}
+
+	{
+		RecordingClassicOptionsPartsClass parts;
+		UIClassicOptionsPresenterClass presenter = Classic_Options_Presenter(parts);
+		Drive(presenter, "cameo", 0);
+		Drive(presenter, "keyboard");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Next == UIClassicOptionsPresenterClass::NEXT_KEYBOARD, "the Keyboard button applies the page and names the keyboard screen next");
+		Check(parts.Game.Joined().find("cameo off") != std::string::npos, "the Keyboard button keeps what was set");
+	}
+
+	{
+		RecordingClassicOptionsPartsClass parts;
+		UIClassicOptionsPresenterClass presenter = Classic_Options_Presenter(parts);
+		Drive(presenter, "mods");
+		Check(presenter.Result.has_value() && presenter.Next == UIClassicOptionsPresenterClass::NEXT_MODS, "the Mods button names the mods screen next");
+	}
+}
+
+
+void Test_Classic_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingClassicOptionsPartsClass parts;
+	UIClassicOptionsPresenterClass presenter = Classic_Options_Presenter(parts);
+	presenter.Labels.Display = "Display Options";
+	std::unique_ptr<UIViewClass> view = UI_Classic_Options_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the classic options view prepares against the test context");
+	view->Show(true);
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the classic options page raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	char const * const ids[] = { "detail", "difficulty", "scroll", "music", "sfx", "voice", "tooltips", "lines", "hidden", "modes", "keyboard", "mods", "ok", "cancel", "scale" };
+	for (char const * id : ids) {
+		Check(document != nullptr && document->GetElementById(id) != nullptr, (std::string("the classic options page has ") + id).c_str());
+	}
+
+	std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
+	Check(rows.size() == 3 && rows[1]->IsClassSet("selected"), "the page lists the resolutions with the current one selected");
+
+	Rml::Element * lines = document != nullptr ? document->GetElementById("lines") : nullptr;
+	if (lines != nullptr) {
+		Click(context, lines);
+		presenter.Drain();
+		Check(presenter.Game.State.ActionLines && parts.Game.Calls.empty(), "a check box changes the page's state and applies nothing");
+	}
+
+	Rml::Element * ok = document != nullptr ? document->GetElementById("ok") : nullptr;
+	if (ok != nullptr) {
+		Click(context, ok);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "the OK button accepts the page");
+	}
+
+	view->Release();
+	context.Update();
+	Check(system.Problems == problems, "closing the classic options page raises no RmlUi warning or error");
+}
+
+
 Rml::Element * Mod_Row_Part(Rml::Element * row, char const * part)
 {
 	Rml::ElementList found;
@@ -5217,6 +5354,7 @@ void Test_Documents(void)
 		Test_Game_Controls_Screen(*context, system);
 		Test_Settings_Tabs_Screen(*context, system);
 		Test_Display_Screen(*context, system);
+		Test_Classic_Options_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
 		Test_Keyboard_Navigation(*context, system, render);
 		Test_List_Scrolling(*context, system);
@@ -6441,6 +6579,7 @@ int main(void)
 	Test_Keyboard_Presenter();
 	Test_Mods_Presenter();
 	Test_Settings_Tabs_Presenter();
+	Test_Classic_Options_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();
 	Test_Reconnect_Presenter();

@@ -33,6 +33,7 @@
 #include "sounddlg.h"
 #include "stimer.h"
 #include "surface.h"
+#include "ui/screens/classicopt/uiclassicopt.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mods/uimods.h"
@@ -48,6 +49,46 @@
 
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
+static bool Try_Display_Mode(UIDisplayMode const & picked, float scale);
+static bool Classic_Options_Page(void);
+
+
+/// <summary>
+/// Shows the classic menu style's combined options page until the player leaves it, trying out
+/// a new resolution or interface scale they pick and passing on to the keyboard and mods screens.
+/// </summary>
+/// <returns>bool; Did the page open? If not, the caller shows the separate screens instead.</returns>
+static bool Classic_Options_Page(void)
+{
+	while (true) {
+		float const scale = Options.InterfaceScale;
+		UIClassicOptionsOutcome const outcome = UI_Classic_Options_Dialog();
+		if (!outcome.Opened) {
+			return(false);
+		}
+		if (!outcome.Accepted) {
+			return(true);
+		}
+
+		bool reopen = false;
+		if (outcome.Picked.has_value() && !Try_Display_Mode(*outcome.Picked, scale)) {
+			reopen = true;
+		}
+
+		if (outcome.Next == UIClassicOptionsPresenterClass::NEXT_KEYBOARD) {
+			Options.Hotkey_Dialog();
+			reopen = true;
+		} else if (outcome.Next == UIClassicOptionsPresenterClass::NEXT_MODS) {
+			UI_Mods_Dialog();
+			reopen = true;
+		}
+
+		// Switching to the modern menu style ends the classic page.
+		if (!reopen || !Options.IsClassicMenus) {
+			return(true);
+		}
+	}
+}
 
 
 /// <summary>
@@ -65,6 +106,13 @@ void Main_Options_Dialog(void)
 	// The modern menu style opens the options as the tabs of one Settings screen.
 	if (UI_Settings_Tabbed()) {
 		UI_Settings_Run(UI_TAB_GAME);
+		GameActive = old_game_active;
+		return;
+	}
+
+	// The classic menu style shows the options as the one page Yuri's Revenge has.
+	if (Classic_Options_Page()) {
+		Options.Save_Settings();
 		GameActive = old_game_active;
 		return;
 	}
@@ -259,26 +307,8 @@ void Display_Options_Dialog(void)
 			break;
 		}
 
-		bool const rescaled = (Options.InterfaceScale != scale);
-		if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) != 0) {
-			Options.InterfaceScale = scale;
-			if (rescaled) {
-				Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
-			}
+		if (Try_Display_Mode(*picked, scale)) {
 			break;
-		}
-		if (Test_Display_Mode_Dialog(picked->Width, picked->Height)) {
-			Options.ScreenWidth = picked->Width;
-			Options.ScreenHeight = picked->Height;
-			break;
-		}
-
-		// A trial that was not kept takes the scale back with it.
-		Options.InterfaceScale = scale;
-		if (rescaled) {
-			Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
-			LogicalSurface = HiddenSurface;
-			Draw_Menu_Background();
 		}
 
 		// The player was leaving for another tab, so the screen does not open again.
@@ -286,4 +316,38 @@ void Display_Options_Dialog(void)
 			break;
 		}
 	}
+}
+
+
+/// <summary>
+/// Offers the player a resolution or interface scale they picked on the display options and
+/// keeps it if they confirm it.
+/// </summary>
+/// <param name="picked">The mode to try; the current mode when only the scale changed.</param>
+/// <param name="scale">The interface scale from before the options opened, put back unless the player keeps the change.</param>
+/// <returns>bool; False if the player tried the mode and did not keep it, so the options open again.</returns>
+static bool Try_Display_Mode(UIDisplayMode const & picked, float scale)
+{
+	bool const rescaled = (Options.InterfaceScale != scale);
+	if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) != 0) {
+		Options.InterfaceScale = scale;
+		if (rescaled) {
+			Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+		}
+		return(true);
+	}
+	if (Test_Display_Mode_Dialog(picked.Width, picked.Height)) {
+		Options.ScreenWidth = picked.Width;
+		Options.ScreenHeight = picked.Height;
+		return(true);
+	}
+
+	// A trial that was not kept takes the scale back with it.
+	Options.InterfaceScale = scale;
+	if (rescaled) {
+		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+		LogicalSurface = HiddenSurface;
+		Draw_Menu_Background();
+	}
+	return(false);
 }

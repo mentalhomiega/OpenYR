@@ -1,0 +1,71 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+
+	The classic menu style's options: one page laid out like Yuri's Revenge's Options dialog,
+	with the display, game, interface and audio settings together. Positions are in the
+	classic stage's 800x600 dp.
+-->
+<rml>
+<head>
+	<title>Options</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="classicopt.rcss"/>
+</head>
+<body template="dialog" data-model="classicopt">
+	<p class="heading" id="heading-display">{{labels.display}}</p>
+	<p class="caption" id="detail-label">{{labels.detail}}</p>
+	<p class="value" id="detail-name">{{detailname}}</p>
+	<input type="range" id="detail" min="0" max="2" step="1" data-attr-value="detail" data-event-change="queue('detail', ev.value)"/>
+	<p class="caption" id="resolution-label">{{labels.resolution}}</p>
+	<div id="modes" class="list"><div class="rows">
+		<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
+	</div></div>
+
+	<p class="heading" id="heading-game">{{labels.game}}</p>
+	<div data-if="hasdifficulty">
+		<p class="caption" id="difficulty-label">{{labels.difficulty}}</p>
+		<p class="value" id="difficulty-name">{{difficultyname}}</p>
+		<input type="range" id="difficulty" min="0" max="2" step="1" data-attr-value="difficulty" data-event-change="queue('difficulty', ev.value)"/>
+	</div>
+
+	<p class="heading" id="heading-interface">{{labels.interface}}</p>
+	<label class="check" id="switch-tooltips"><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/>{{labels.tooltips}}</label>
+	<label class="check" id="switch-lines"><input type="checkbox" id="lines" data-attrif-checked="lines" data-event-click="queue('lines', lines ? 0 : 1)"/>{{labels.targetlines}}</label>
+	<label class="check" id="switch-hidden"><input type="checkbox" id="hidden" data-attrif-checked="hidden" data-event-click="queue('hidden', hidden ? 0 : 1)"/>{{labels.showhidden}}</label>
+	<p class="caption" id="scroll-label">{{labels.scroll}}</p>
+	<p class="value" id="scroll-name">{{scrollname}}</p>
+	<input type="range" id="scroll" min="0" max="6" step="1" data-attr-value="6 - scroll" data-event-change="queue('scroll', 6 - ev.value)"/>
+
+	<p class="heading" id="heading-audio">{{labels.audio}}</p>
+	<p class="caption centred" id="music-label">{{labels.music}}</p>
+	<input type="range" id="music" min="0" max="10" step="1" data-attr-value="music" data-attrif-disabled="!audible" data-event-change="queue('music', ev.value)"/>
+	<p class="caption centred" id="sfx-label">{{labels.sound}}</p>
+	<input type="range" id="sfx" min="0" max="10" step="1" data-attr-value="sfx" data-attrif-disabled="!audible" data-event-change="queue('sfx', ev.value)"/>
+	<p class="caption centred" id="voice-label">{{labels.voice}}</p>
+	<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!audible" data-event-change="queue('voice', ev.value)"/>
+
+	<p id="title">{{labels.options}}</p>
+	<button id="keyboard" data-event-click="queue('keyboard')">{{labels.keyboard}}</button>
+	<button id="mods" data-event-click="queue('mods')">{{labels.mods}}</button>
+	<div id="more">
+		<p class="caption" id="more-heading">{{labels.more}}</p>
+		<label class="check" id="switch-cameo"><input type="checkbox" id="cameo" data-attrif-checked="cameo" data-event-click="queue('cameo', cameo ? 0 : 1)"/>{{labels.cameotext}}</label>
+		<label class="check" id="switch-edge"><input type="checkbox" id="edge" data-attrif-checked="edge" data-event-click="queue('edge', edge ? 0 : 1)"/>{{labels.edgescroll}}</label>
+		<label class="check" id="switch-coasting"><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/>{{labels.coasting}}</label>
+		<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>{{labels.stretch}}</label>
+		<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>{{labels.systemcursor}}</label>
+		<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>{{labels.classicmenus}}</label>
+		<span id="scale-label">{{labels.scale}}</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
+			<option data-for="entry : scales" data-attr-value="it_index">{{entry.label}}</option>
+		</select>
+	</div>
+	<button id="cancel" data-event-click="queue('cancel')">{{labels.cancel}}</button>
+	<button id="ok" data-event-click="queue('ok')">{{labels.ok}}</button>
+</body>
+</rml>
