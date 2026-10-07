@@ -407,6 +407,10 @@ TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unkn
  *=============================================================================================*/
 TeamClass::~TeamClass(void)
 {
+	if (TraceScripts && Class != NULL) {
+		DebugString("TEAMTRACE frame %d team %s %p gone\n", Frame, Class->Name(), (void *)this);
+	}
+
 	for (int i = 0; i < AITriggerTypes.Count(); i++) {
 		AITriggerTypeClass *ptr = AITriggerTypes[i];
 		if (ptr->Get_First_TeamType() == Class) {
