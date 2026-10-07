@@ -1787,6 +1787,14 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		}
 	}
 
+	/*
+	**	An aircraft that is in radio contact with a structure, such as the pad it is resting
+	**	on, goes through the enter mission so that the structure's say over it is kept.
+	*/
+	if (In_Radio_Contact()) {
+		mission = MISSION_ENTER;
+	}
+
 	Assign_Mission(mission);
 	if (Ready_To_Commence()) {
 		Commence();
