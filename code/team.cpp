@@ -648,7 +648,10 @@ void TeamClass::AI(void)
 			Script->Next_Mission();
 			FootClass * techno = Member;
 			while (techno) {
-				techno->ArchiveTarget = NULL;
+				// A transport keeps the cell it set off from so that it can drive back after unloading.
+				if (!Class->TransportsReturnOnUnload || techno->TClass->Max_Passengers() < 1) {
+					techno->ArchiveTarget = NULL;
+				}
 				techno = techno->Member;
 			}
 
@@ -3045,6 +3048,10 @@ void TeamClass::TMission_LOAD(TeamMissionClass * mission, bool)
 	}
 
 	if (finished) {
+		// A transport that drives back after unloading remembers where it was loaded.
+		if (Class->TransportsReturnOnUnload) {
+			trans->ArchiveTarget = &Map[trans->Get_Coord()];
+		}
 		IsNextMission = true;
 	}
 }
