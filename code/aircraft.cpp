@@ -214,6 +214,7 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	field_35B(false),
 	IsLockedStraight(false),
 	ParadropPasses(5),
+	DockNowHeadingTo(NULL),
 	SightTimer(0),
 	AttacksRemaining(1),
 	IsReadyToCommence(true)
@@ -691,13 +692,7 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 				Status = UNLOAD_PASSENGERS;
 			} else {
 				if (NavCom == NULL && Class->IsDropship && HeightAGL > 0) {
-					BuildingClass * building = NULL;
-					for (int index = 0; index < Class->Dock.Count(); index++) {
-						building = Find_Docking_Bay(Class->Dock[index], false);
-						if (building != NULL) {
-							break;
-						}
-					}
+					BuildingClass * building = Find_Dock_Building();
 
 					if (building != NULL) {
 						Assign_Destination(building);
@@ -1514,8 +1509,6 @@ int AircraftClass::Do_MISSION_PATROL(void)
 		LAND,
 	};
 
-	int i;
-
 	IsOnPatrol = true;
 
 	switch (Status) {
@@ -1554,13 +1547,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 		*/
 		case FLY_TO_LZ:
 			if (Ammo == 0) {
-				BuildingClass * building = NULL;
-				for (i = 0; i < Class->Dock.Count(); i++) {
-					building = Find_Docking_Bay(Class->Dock[i], false);
-					if (building != NULL) {
-						break;
-					}
-				}
+				BuildingClass * building = Find_Dock_Building();
 
 				if (building != NULL) {
 					Override_Mission(MISSION_ENTER, NULL, building);
@@ -1811,19 +1798,30 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 
 /// <summary>
 /// Finds a structure this aircraft can dock at.
-/// The types in the aircraft's Dock list are tried in order, and the first type with a
-/// structure that can take the aircraft supplies the result.
+/// An airport-bound aircraft keeps heading for the structure it chose earlier for as long
+/// as that structure can still take it. Otherwise the types in the aircraft's Dock list are
+/// tried in order, and the first type with a structure that can take the aircraft supplies
+/// the result, which is remembered as the new choice.
 /// </summary>
 /// <returns>Returns with the structure, or NULL if no docking structure can take the aircraft.</returns>
-BuildingClass * AircraftClass::Find_Dock_Building(void) const
+BuildingClass * AircraftClass::Find_Dock_Building(void)
 {
+	if (Class->IsAirportBound && DockNowHeadingTo != NULL) {
+		if (Transmit_Message(RADIO_CAN_LOAD, DockNowHeadingTo) == RADIO_ROGER) {
+			return(DockNowHeadingTo);
+		}
+		DockNowHeadingTo = NULL;
+	}
+
+	BuildingClass * building = NULL;
 	for (int index = 0; index < Class->Dock.Count(); index++) {
-		BuildingClass * building = Find_Docking_Bay(Class->Dock[index], false, false);
+		building = Find_Docking_Bay(Class->Dock[index], false, false);
 		if (building != NULL) {
-			return(building);
+			break;
 		}
 	}
-	return(NULL);
+	DockNowHeadingTo = building;
+	return(building);
 }
 
 
@@ -3017,6 +3015,29 @@ int AircraftClass::Do_MISSION_ENTER(void)
 	};
 
 	/*
+	**	An airport-bound aircraft sitting on the ground that is sent to a structure other
+	**	than the one it is sitting on lets go of its present pad and takes off to fly there.
+	**	The structure becomes its preferred dock so that it is still the one chosen when the
+	**	aircraft has arrived.
+	*/
+	if (HeightAGL == 0 && Class->IsAirportBound && NavCom != NULL && NavCom != Get_Cell_Ptr()->Cell_Building()) {
+		DockNowHeadingTo = NavCom->RTTI == RTTI_BUILDING ? (BuildingClass *)NavCom : NULL;
+		Transmit_Message(RADIO_OVER_OUT);
+		Assign_Mission(MISSION_MOVE);
+		if (Ready_To_Commence()) {
+			Commence();
+		}
+		return(1);
+	}
+
+	/*
+	**	While airborne the aircraft follows the structure it has been ordered to enter.
+	*/
+	if (HeightAGL > 0 && NavCom != NULL && DockNowHeadingTo != NavCom && NavCom->RTTI == RTTI_BUILDING) {
+		DockNowHeadingTo = (BuildingClass *)NavCom;
+	}
+
+	/*
 	**	Verify that it has a valid NavCom. If it doesn't then request one from the
 	**	building this building is trying to land upon. If that fails, then enter
 	**	idle mode.
@@ -3062,7 +3083,7 @@ int AircraftClass::Do_MISSION_ENTER(void)
 				IsReadyToCommence = true;
 				break;
 			} else {
-				if (Locomotion->Get_Status() == 1) {
+				if (Locomotion->Get_Status() == 1 || (Class->IsAirportBound && HeightAGL == 0)) {
 					Status = LANDING;
 					IsReadyToCommence = false;
 				}
@@ -3378,13 +3399,7 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	*/
 	if (Ammo != -1 && Ammo < Class->MaxAmmo && Is_Weapon_Equipped()) {
 		if (!In_Radio_Contact()) {
-			BuildingClass * building = NULL;
-			for (int index = 0; index < Class->Dock.Count(); index++) {
-				building = Find_Docking_Bay(Class->Dock[index], false);
-				if (building != NULL) {
-					break;
-				}
-			}
+			BuildingClass * building = Find_Dock_Building();
 
 			if (building != NULL) {
 				Assign_Mission(MISSION_ENTER);
@@ -3946,6 +3961,7 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(field_35B);
 	stream.Serialize(IsLockedStraight);
 	stream.Serialize(ParadropPasses);
+	stream.Serialize(DockNowHeadingTo);
 	stream.Serialize(SightTimer);
 	stream.Serialize(AttacksRemaining);
 	stream.Serialize(IsReadyToCommence);
@@ -4010,6 +4026,9 @@ void AircraftClass::Detach(AbstractClass const * target, bool all)
 	BASECLASS::Detach(target, all);
 	if (Class == target) {
 		Class = NULL;
+	}
+	if (DockNowHeadingTo == target) {
+		DockNowHeadingTo = NULL;
 	}
 }
 

@@ -115,7 +115,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		bool Cell_Seems_Ok(Cell const & cell, bool landing=false) const;
 		Dir256 Pose_Dir(void) const;
 		AbstractClass * Good_LZ(void) const;
-		BuildingClass * Find_Dock_Building(void) const;
+		BuildingClass * Find_Dock_Building(void);
 		virtual DirType Fire_Direction(void) const override;
 		virtual bool Can_Player_Fire(void) const override;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which) const override;
@@ -212,6 +212,13 @@ class AircraftClass : public FootClass, public IFlyControl
 
 		// How many more times a paradrop plane may come back over its target without dropping anyone.
 		int ParadropPasses;
+
+		/*
+		 * The docking structure that an airport-bound aircraft is heading for. The aircraft
+		 * keeps to its choice while the structure can still take it, so that it does not
+		 * keep changing its mind between pads as others fall vacant.
+		 */
+		BuildingClass * DockNowHeadingTo;
 
 	private:
 		/*
