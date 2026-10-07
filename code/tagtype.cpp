@@ -20,6 +20,7 @@
 #include "swizzle.h"
 #include "tag.h"
 #include "tracker.h"
+#include "dbgprint.h"
 #include "trigtype.h"
 #include "vector.h"
 
@@ -223,6 +224,9 @@ bool TagTypeClass::Read_INI(CCINIClass const & ini)
 
 		token = strtok(NULL, ",");
 		FirstTrigger = TriggerTypeClass::From_Name(token);
+		if (FirstTrigger == NULL) {
+			DebugString("Tag %s holds no trigger: there is no trigger called %s\n", (char const *)IniName, token != NULL ? token : "");
+		}
 
 		return(true);
 	}

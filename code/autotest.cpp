@@ -36,6 +36,9 @@
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
 **	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened;
 **							actions that look at attached objects see the map's trigger of that type
+**	triggers [all]			writes the trigger types with their owner, events and whether a live trigger of each is enabled (only
+**							the enabled ones, unless "all"), then every tag with the objects and cells it rides on, and the
+**							local and global variables that are set
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
@@ -138,6 +141,10 @@
 #include "taction.h"
 #include "trigger.h"
 #include "trigtype.h"
+#include "tag.h"
+#include "tagtype.h"
+#include "tevent.h"
+#include "need.hh"
 #include "reinf.h"
 #include "team.h"
 #include "overlay.h"
@@ -1062,6 +1069,61 @@ void Run(StepType const & step)
 			}
 		}
 		DebugString("AUTOTEST   runtrigger %s: %d actions\n", step.Argument.c_str(), ran);
+	} else if (step.Command == "triggers") {
+		// triggers [all]: what the map's trigger system holds right now.
+		bool const everything = step.Argument == "all";
+		for (int index = 0; index < TriggerTypes.Count(); index++) {
+			TriggerTypeClass const * type = TriggerTypes[index];
+			int live = 0;
+			int enabled = 0;
+			for (int t = 0; t < Triggers.Count(); t++) {
+				if (Triggers[t]->Class == type) {
+					live++;
+					if (Triggers[t]->Is_Enabled()) enabled++;
+				}
+			}
+			if (!everything && enabled == 0) continue;
+			std::string events;
+			for (TEventClass const * event = type->FirstEvent; event != NULL; event = event->Next) {
+				char text[160];
+				std::snprintf(text, sizeof(text), " %d(%d", (int)event->Event, event->Data.Value);
+				events += text;
+				if (Event_Needs(event->Event) == NEED_HOUSE) {
+					HouseClass const * owner = House_From_HousesType(event->Data.House);
+					events += std::string("=") + (owner != NULL ? owner->Class->Name() : "NOHOUSE");
+				}
+				if (event->TechnoName[0] != '\0') events += std::string(" ") + event->TechnoName;
+				events += ")";
+			}
+			DebugString("AUTOTEST   trigger %s '%s' owner %s live %d enabled %d events:%s\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", live, enabled, events.c_str());
+		}
+		for (int index = 0; index < Tags.Count(); index++) {
+			TagClass const * tag = Tags[index];
+			std::string chain;
+			for (TriggerClass const * trigger = tag->Trigger; trigger != NULL; trigger = trigger->LinkedTo) {
+				chain += std::string(" ") + (trigger->Class != NULL ? (char const *)trigger->Class->GivenName : "?") + (trigger->Is_Enabled() ? "+" : "-");
+			}
+			DebugString("AUTOTEST   tag %s '%s' attached %d cell %d,%d chain:%s\n", tag->Class != NULL ? (char const *)tag->Class->IniName : "?", tag->Class != NULL ? (char const *)tag->Class->GivenName : "?", tag->AttachCount, tag->CellID.X, tag->CellID.Y, chain.c_str());
+		}
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->Tag != NULL) {
+				DebugString("AUTOTEST   tagged %s of %s at %d,%d tag %s\n", techno->TClass->Name(), techno->House != NULL ? techno->House->Class->Name() : "?", techno->Get_Cell().X, techno->Get_Cell().Y, techno->Tag->Class != NULL ? (char const *)techno->Tag->Class->IniName : "?");
+			}
+		}
+		for (int y = 0; y < 512; y++) {
+			for (int x = 0; x < 512; x++) {
+				if (!Map.In_Radar(Cell(x, y))) continue;
+				TagClass const * tag = Map[Cell(x, y)].Tag;
+				if (tag != NULL) DebugString("AUTOTEST   tagged cell %d,%d tag %s\n", x, y, tag->Class != NULL ? (char const *)tag->Class->IniName : "none");
+			}
+		}
+		for (int index = 0; index < SCEN_LOCAL_COUNT; index++) {
+			if (Scen->LocalFlags[index].VariableName[0] != '\0' && Scen->LocalFlags[index].Value) DebugString("AUTOTEST   local %d %s is set\n", index, Scen->LocalFlags[index].VariableName);
+		}
+		for (int index = 0; index < SCEN_GLOBAL_COUNT; index++) {
+			if (Scen->GlobalFlags[index].VariableName[0] != '\0' && Scen->GlobalFlags[index].Value) DebugString("AUTOTEST   global %d %s is set\n", index, Scen->GlobalFlags[index].VariableName);
+		}
 	} else if (step.Command == "planes") {
 		// planes: each aircraft on the map, its cell, mission and passenger count.
 		for (int index = 0; index < Aircraft.Count(); index++) {
