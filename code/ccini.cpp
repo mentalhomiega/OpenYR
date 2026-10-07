@@ -2261,6 +2261,10 @@ TypeList<int> CCINIClass::Get_BuildingType_List(CCINIClass const & ini, char con
 				list.Add(STRUCT_G_NODFACTORY);
 				isgroup = true;
 			}
+			if (!strcmpi(token, "PROC")) {
+				list.Add(STRUCT_G_PROC);
+				isgroup = true;
+			}
 			if (!isgroup) {
 				int building = BuildingTypeClass::From_Name(token);
 				if (building != STRUCT_NONE) {

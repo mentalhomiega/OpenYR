@@ -538,6 +538,8 @@ RulesClass::RulesClass(void) :
 	PrerequisiteBarracks(),
 	PrerequisiteRadar(),
 	PrerequisiteTech(),
+	PrerequisiteProc(),
+	PrerequisiteProcAlternate(),
 	GateUpSound(VOC_NONE),
 	SpySatActivationSound(VOC_NONE),
 	SpySatDeactivationSound(VOC_NONE),
@@ -1530,6 +1532,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		PrerequisiteBarracks = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteBarracks", PrerequisiteBarracks);
 		PrerequisiteRadar = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteRadar", PrerequisiteRadar);
 		PrerequisiteTech = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteTech", PrerequisiteTech);
+		PrerequisiteProc = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteProc", PrerequisiteProc);
+		PrerequisiteProcAlternate = TGet_TypeList<UnitTypeClass>(ini, GENERAL, "PrerequisiteProcAlternate", PrerequisiteProcAlternate);
 		PrerequisiteGDIFactory = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteGDIFactory", PrerequisiteGDIFactory);
 		PrerequisiteNodFactory = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteNodFactory", PrerequisiteNodFactory);
 		ZoomInFactor = ini.Get_Float(GENERAL, "ZoomInFactor", ZoomInFactor);
@@ -2833,6 +2837,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrerequisiteBarracks);
 	stream.Serialize(PrerequisiteRadar);
 	stream.Serialize(PrerequisiteTech);
+	stream.Serialize(PrerequisiteProc);
+	stream.Serialize(PrerequisiteProcAlternate);
 	stream.Serialize(GateUpSound);
 	stream.Serialize(SpySatActivationSound);
 	stream.Serialize(SpySatDeactivationSound);
@@ -3648,6 +3654,7 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	Craters.Delete((SmudgeTypeClass const *)target);
 
 	HarvesterUnit.Delete((UnitTypeClass const *)target);
+	PrerequisiteProcAlternate.Delete((UnitTypeClass const *)target);
 	BaseUnit.Delete((UnitTypeClass const *)target);
 
 	BuildConst.Delete((BuildingTypeClass const *)target);

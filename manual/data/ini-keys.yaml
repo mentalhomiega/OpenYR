@@ -26184,6 +26184,42 @@ PrerequisitePower:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+PrerequisiteProc:
+  key: PrerequisiteProc
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: PrerequisiteProc
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+PrerequisiteProcAlternate:
+  key: PrerequisiteProcAlternate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: PrerequisiteProcAlternate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 PrerequisiteRadar:
   key: PrerequisiteRadar
   scopes:
