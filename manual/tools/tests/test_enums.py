@@ -21,7 +21,8 @@ class EnumContractTests(unittest.TestCase):
         foundation = enum_drift.signature(enum_drift.ADAPTERS["BSizeType"], self.reader)
 
         self.assertIn(("ACTION_DROP_POD", 50, "DropPod"), action)
-        self.assertEqual(mission[14], ("MISSION_HUNT", 14, "14"))
+        self.assertEqual(mission[14], ("MISSION_AMBUSH", 14, "14"))
+        self.assertEqual(mission[15], ("MISSION_HUNT", 15, "15"))
         self.assertEqual(foundation[9], ("BSIZE_33_REF", 9, "3x3Refinery"))
 
     def test_source_token_numeric_and_order_changes_alter_signatures(self):
