@@ -1,0 +1,20 @@
+; Campaign win check for Allied 6: ends the set pieces, then destroys the Yuri factories and army.
+; Forces what the map's triggers wait for and expects "AUTOTEST game over frame N: won" in the log.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-all06.txt -Campaign -Map ALL06UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (sprung|win|game over)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+100 runtrigger 06C2AAFC
+150 killhouse YuriCountry 1
+400 killhouse YuriCountry 2
+600 killhouse YuriCountry 2
+1500 quit

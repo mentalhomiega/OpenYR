@@ -29,6 +29,12 @@ A command runs once the game frame reaches its frame, in file order.
 | `enemies` | Writes the other houses' structures and their unit and infantry counts to the debug log |
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `anims` | Writes the first entries of the animation list to the debug log |
+| `triggers [all]` | Writes the trigger types with their owner, the events they wait for and whether a live trigger of each is enabled (only the enabled ones, unless `all`), then every tag with the objects and cells it rides on, and the local and global variables that are set |
+| `typecounts` | Writes how many structure, vehicle, soldier and aircraft types there are, and any whose ID is not a plain name, which is how a list read as one name shows up |
+| `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
+| `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. An underscore in the name stands for a space |
+| `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
+| `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |
@@ -47,6 +53,15 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 2000 command ScreenCapture
 2100 quit
 ```
+
+## Campaign missions
+
+A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`. The
+script starts with `ui` lines, which are played in file order before any game frame: five `ui click more` with a `ui wait 300` after each, then `ui click resume`, click through the briefing page.
+The briefing movies are skipped in an unattended run.
+
+`tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
+`setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
 
 ## Comparing builds
 

@@ -1235,6 +1235,9 @@ bool TActionClass::TAction_SELL_ATTACHED(HouseClass * , ObjectClass * , TriggerC
 				building->Tag->Is_Trigger_Attached(trig)) {
 
 			building->Sell_Back(1);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST   sell attached %s of %s buildup %d mission %s\n", building->Class->Name(), building->House->Class->Name(), (int)building->HasBuildupData, MissionClass::Mission_Name(building->Get_Mission()));
+			}
 			success = true;
 		}
 	}

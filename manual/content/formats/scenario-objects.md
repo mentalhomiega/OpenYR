@@ -49,7 +49,7 @@ In a skirmish or multiplayer game, an object row's country owner names a house o
 
 A row is skipped when its owner names no house or its ObjectType ID names no type of that section's kind. Nothing is created and the rest of the row is not read. An object that is created but cannot be placed at its location is deleted.
 
-`[Triggers]` definitions follow the same owner rule, except that in a skirmish or multiplayer game a country owner still names the first house playing that country. They also accept the owner `<none>`, which names the house playing the first country the rules register. A definition whose owner names no house is deleted.
+`[Triggers]` definitions follow the same owner rule, except that in a skirmish or multiplayer game a country owner still names the first house playing that country. They also accept the owner `<none>`, which names the house playing the first country the rules register. A definition whose owner names no house is deleted in a skirmish or multiplayer game, but a campaign keeps it.
 
 A trigger can link to a definition that appears later in `[Triggers]`. A link to a definition that is missing or was deleted stays empty. A `[Tags]` row that names such a definition has no trigger and never fires.
 

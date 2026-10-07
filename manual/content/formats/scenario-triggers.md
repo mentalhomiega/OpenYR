@@ -57,7 +57,7 @@ Only the field for the difficulty being played is used, and [difficulty](/system
 
 Fields 5 to 8 may be left off the end of the row. A missing difficulty field enables the trigger at that difficulty, and a missing field 8 counts as `0`. A row that also leaves off field 4 starts the trigger disabled.
 
-A row with an empty value, or whose owner matches no house in the game, is dropped. With `<none>`, that happens when no house plays the first country. A tag that names a dropped trigger fires nothing.
+A row with an empty value is dropped. So is a row whose owner matches no house in a skirmish or multiplayer game; with `<none>`, that happens when no house plays the first country. A tag that names a dropped trigger fires nothing. A campaign keeps a trigger whose owner nobody plays, such as the Americans in a Soviet mission, and runs it with no house: its events and actions that look at the owner's house do nothing, and a tag whose first trigger has such an owner is not offered the house events.
 
 ## The event row
 
