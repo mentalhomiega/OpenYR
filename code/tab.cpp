@@ -63,7 +63,6 @@
 #include "surface.h"
 #include "techno.h"
 #include "uicontrol.h"
-#include "viewzoom.h"
 
 #include <cstdio>
 #include <cstring>
