@@ -898,6 +898,9 @@ class HouseClass : public AbstractClass
 		bool Is_Acted_Tower(BuildingTypeClass const * type) const;
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
 		int Planning_Side(void) const;
+		UnitTypeClass const * Preferred_Harvester(void) const;
+		int Count_Resource_Gatherers(void) const;
+		bool Is_Harvester_Unit(UnitTypeClass const * type) const;
 		template<typename T> T const * Get_Preferred(DynamicVectorClass<T const *> const & list) const;
 		template<typename T> bool Owns_Any(CounterClass const & tally, TypeList<T const *> const & list) const;
 		template<typename T> int Count_Owned(CounterClass const & tally, TypeList<T const *> const & list) const;
