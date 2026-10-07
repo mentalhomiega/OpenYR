@@ -11,7 +11,7 @@ The value names an animation registered in `[Animations]`. The structure runs it
 
 ## What starts a special animation
 
-The active slots are filled when the structure comes online. A special slot is filled only by an event, and only three flags on the structure's type raise those events: [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) and [`FirestormWall=yes`](/keys/firestormwall/). A structure with none of the three runs no special animation, whatever its special-slot settings say, except through the power route at the end of this section.
+The active slots are filled when the structure comes online. A special slot is filled only by an event, and only these flags on the structure's type raise those events: [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) and [`FirestormWall=yes`](/keys/firestormwall/), and [`IsAnimDelayedFire=yes`](/keys/isanimdelayedfire/) in its art section. A structure with none of them runs no special animation, whatever its special-slot settings say, except through the power route at the end of this section.
 
 The three slots are not interchangeable. Which of them a structure uses depends on which flag it has.
 
@@ -41,6 +41,10 @@ SpecialAnimThreeZAdjust=-100
 The second slot waits for the first animation to play out, and the repair cycle never stops the first. A looping `SpecialAnim` therefore holds the first slot until the structure begins to be sold or is taken off the map. The second slot never appears, and the first keeps running between visits as well as during them.
 :::
 
+### A structure that charges its shot
+
+On an [`IsAnimDelayedFire=yes`](/keys/isanimdelayedfire/) structure, such as a Tesla coil or a prism tower, `SpecialAnim=` plays in place of the active animation while a shot charges. It plays through once, and when it ends the active animation comes back. Power returning does not start it.
+
 ### A storage structure
 
 On a `SiloDamage=yes` structure, the first slot is the fill indicator. The structure sets its frame from the amount of Tiberium stored, so it does not play on its own. [`SiloDamage`](/keys/silodamage/) gives the frame for each fill level. The indicator never uses the second or third slot.
@@ -53,4 +57,4 @@ A `FirestormWall=yes` section fills the first two slots with animations named in
 
 ### A powered light on a powered structure
 
-Each time a structure comes into service, it creates every missing `…PoweredLight=yes` animation on its [`Powered=yes`](/keys/powered/) structures that drain power, special slots included. A special slot with [`SpecialAnimPowered=no`](/keys/specialanimpowered/) and [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/) therefore runs on such a structure, whatever its other flags. This is the only way a structure with none of the three flags runs a special animation. [Power](/systems/building-animations/#power) covers what the power flags do and which of them is used.
+Each time a structure comes into service, it creates every missing `…PoweredLight=yes` animation on its [`Powered=yes`](/keys/powered/) structures that drain power, special slots included. A special slot with [`SpecialAnimPowered=no`](/keys/specialanimpowered/) and [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/) therefore runs on such a structure, whatever its other flags. This is the only way a structure with none of the flags above runs a special animation. A structure with `IsAnimDelayedFire=yes` is left out, because its special animation belongs to its shot. [Power](/systems/building-animations/#power) covers what the power flags do and which of them is used.
