@@ -2388,6 +2388,12 @@ class RulesClass
 		LEPTON StrayDistance;
 
 		/*
+		**	The stray distance a team uses while it gathers (script lines 53 and 54),
+		**	which lets bigger teams gather without regrouping.
+		*/
+		LEPTON RelaxedStrayDistance;
+
+		/*
 		**	If a vehicle is closer than this range to a target that it can crush
 		**	by driving over it, then it will try to drive over it instead of firing
 		**	upon it. The larger the value, the greater the 'bigfoot crush syndrome' is
