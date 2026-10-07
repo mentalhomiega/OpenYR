@@ -81,6 +81,7 @@
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
+**	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target
 **	quantity <StructureID>	writes how many of that structure each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
@@ -1235,6 +1236,15 @@ void Run(StepType const & step)
 				techno->Assign_Mission(MISSION_CAPTURE);
 				techno->Assign_Destination(building);
 			}
+		}
+	} else if (step.Command == "where") {
+		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo);
 		}
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
