@@ -785,6 +785,7 @@ class HouseClass : public AbstractClass
 		int Power_Output(void);
 		int Power_Drain(void);
 		bool Fire_Sale(void);
+		void Cheer(void);
 		void All_To_Hunt(void);
 
 		virtual RTTIType Fetch_RTTI(void) const override;

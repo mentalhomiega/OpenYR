@@ -1086,6 +1086,8 @@ BEGIN
     TXT_PLAYER_NUMBER       "Player %d"
     TXT_SAVE_INCOMPATIBLE   "This save was made by a build that stores games differently, so it cannot be loaded."
     TXT_SAVE_INCOMPATIBLE_TAG "(Incompatible) %s"
+    TXT_ALL_TO_CHEER        "All to Cheer"
+    TXT_ALL_TO_CHEER_DESC   "Makes all of your idle infantry cheer."
 END
 
 #endif    // English (U.S.) resources

@@ -1168,6 +1168,11 @@ void EventClass::Execute(void)
 			}
 			break;
 
+		// Every soldier of the sending house cheers (EventClass::Execute, 0x4C6CB0).
+		case ALL_CHEER:
+			house->Cheer();
+			break;
+
 		case DEPLOY:
 			techno = Data.Target.Whom.As_Techno();
 			if (techno != NULL && techno->IsActive && !techno->IsInLimbo && !techno->IsTethered && techno->StunDuration == 0) {
