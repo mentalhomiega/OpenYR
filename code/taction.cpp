@@ -314,11 +314,7 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_TIMER_TEXT:
 		case TACTION_IRON_CURTAIN_AT:
 		case TACTION_PAUSE_GAME:
-		case TACTION_EVICT_OCCUPIERS:
-		case TACTION_SET_TAB:
-		case TACTION_FLASH_CAMEO:
 		case TACTION_STOP_SOUNDS_AT:
-		case TACTION_CLEAR_SMUDGES:
 		case TACTION_MIND_CONTROL_BASE:
 		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
 		case TACTION_RESTORE_STARTING_UNITS:
@@ -326,7 +322,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_TELEPORT_ALL_TO:
 		case TACTION_SET_SUPER_CHARGE:
 		case TACTION_RESTORE_STARTING_BUILDINGS:
-		case TACTION_FLASH_BUILDINGS:
 		case TACTION_SUPER_SET_RECHARGE_TIME:
 		case TACTION_SUPER_RESET_RECHARGE_TIME:
 		case TACTION_SUPER_RESET:
@@ -334,7 +329,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_CLEAR_PREFERRED_TARGET_CELL:
 		case TACTION_CENTER_BASE_CELL_SET:
 		case TACTION_CENTER_BASE_CELL_CLEAR:
-		case TACTION_BLACKOUT_RADAR:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 		case TACTION_RETINT_RED:
@@ -835,6 +829,12 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(SET_TECH_LEVEL);
 		INVOKE(CREATE_CRATE);
 		INVOKE(REINFORCEMENTS_CHRONO);
+		INVOKE(EVICT_OCCUPIERS);
+		INVOKE(SET_TAB);
+		INVOKE(FLASH_CAMEO);
+		INVOKE(CLEAR_SMUDGES);
+		INVOKE(FLASH_BUILDINGS);
+		INVOKE(BLACKOUT_RADAR);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3127,6 +3127,116 @@ bool TActionClass::TAction_REINFORCEMENTS_CHRONO(HouseClass * , ObjectClass * , 
 		return(Do_Reinforcements(Team, EffectLocation));
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Forces the infantry out of the first building this trigger is attached to, as Yuri's Revenge's
+/// action 111 does. Only the first attached building is emptied.
+/// </summary>
+/// <returns>bool; Was there a building attached to the trigger?</returns>
+bool TActionClass::TAction_EVICT_OCCUPIERS(HouseClass * , ObjectClass * , TriggerClass * trig, Cell const & )
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		if (building->IsActive &&
+				building->IsDown &&
+				!building->IsInLimbo &&
+				building->Tag != NULL &&
+				building->Tag->Is_Trigger_Attached(trig)) {
+
+			building->Eject_Occupants();
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Switches the sidebar to the tab the action names, if that tab has anything in it.
+/// </summary>
+/// <returns>bool; Was the tab shown?</returns>
+bool TActionClass::TAction_SET_TAB(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	int tab = Data.Value;
+	if (tab < 0 || tab >= SidebarClass::COLUMNS || Map.Column[tab].BuildableCount <= 0) {
+		return(false);
+	}
+	Map.Set_Tab(tab);
+	return(true);
+}
+
+
+/// <summary>
+/// Flashes the sidebar cameo of the object type the action names for the number of frames the
+/// action gives. A type that is not on the sidebar at the time is left alone.
+/// </summary>
+/// <returns>bool; Is there an object type of that name?</returns>
+bool TActionClass::TAction_FLASH_CAMEO(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	for (int index = 0; index < TechnoTypes.Count(); index++) {
+		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
+			Map.Flash_Cameo(TechnoTypes[index], Extra);
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Removes every smudge from the map: craters, scorch marks and the pads under buildings.
+/// </summary>
+bool TActionClass::TAction_CLEAR_SMUDGES(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	Map.Reset_Iterator();
+	CellClass * cellptr = Map.Iterate();
+	while (cellptr) {
+		if (cellptr->Smudge != SMUDGE_NONE) {
+			cellptr->Smudge = SMUDGE_NONE;
+			cellptr->SmudgeData = 0;
+		}
+		cellptr = Map.Iterate();
+	}
+	Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+	return(true);
+}
+
+
+/// <summary>
+/// Flashes every building of the trigger's house that is of the type the action names, for the
+/// number of frames the action gives.
+/// </summary>
+/// <returns>bool; Does the trigger have a house?</returns>
+bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL) {
+		return(false);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		if (building->House == house && stricmp(building->Class->Name(), Text) == 0) {
+			building->FlashCount = Extra;
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Blacks out the trigger's house's radar for the number of frames the action gives.
+/// </summary>
+/// <returns>bool; Does the trigger have a house?</returns>
+bool TActionClass::TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL) {
+		return(false);
+	}
+	house->RadarBlackout = Data.Value;
+	house->IsRadarBlackout = true;
+	house->RecalcRadar = true;
+	return(true);
 }
 
 #ifdef _DEBUG

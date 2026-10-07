@@ -1826,6 +1826,17 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	}
 
 	/*
+	**	A cameo a trigger action set flashing blinks every few frames until its time is up.
+	*/
+	if (!CameoFlashes.empty()) {
+		CameoFlashes.erase(std::remove_if(CameoFlashes.begin(), CameoFlashes.end(),
+			[](CameoFlashType const & flash) {return(Frame >= flash.EndFrame);}), CameoFlashes.end());
+		if (Frame % CAMEO_FLASH_RATE == 0 || CameoFlashes.empty()) {
+			redraw = true;
+		}
+	}
+
+	/*
 	**	Handle any flashing logic. Flashing occurs when the player selects an object
 	**	and provides the visual feedback of a recognized and legal selection.
 	*/
@@ -2096,6 +2107,16 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					Draw_PCX_Cameo(*SidebarSurface, *pcx, Point2D(x, y), cliprect);
 				} else if (shapefile != NULL) {
 					Draw_Shape(*SidebarSurface, *CameoDrawer, shapefile, 0, Point2D(x, y), cliprect, ShapeFlags_Type(SHAPE_WIN_REL));
+				}
+
+				/*
+				**	A cameo that a trigger action set flashing is brightened on every other beat.
+				*/
+				if (obj != NULL && Is_Cameo_Flashing(obj) && (Frame / CAMEO_FLASH_RATE) % 2 == 0) {
+					Rect flashrect = Intersect(Rect(cliprect.X + x, cliprect.Y + y, OBJECT_WIDTH - 2, OBJECT_HEIGHT - 2), Intersect(cliprect, SidebarSurface->Get_Rect()));
+					if (flashrect.Is_Valid()) {
+						SidebarSurface->Fill_Rect_Trans(flashrect, RGBClass(255, 255, 255), 50);
+					}
 				}
 
 				/*
@@ -2981,6 +3002,58 @@ void SidebarClass::Set_Tab(int tab)
 	IsToRedraw = true;
 	Column[ActiveTab].Flag_To_Redraw();
 	Flag_To_Redraw();
+}
+
+
+/// <summary>
+/// Makes the cameo of an object type flash for a number of frames, wherever on the sidebar it is.
+/// </summary>
+/// <param name="type">The object type whose cameo flashes.</param>
+/// <param name="frames">How many frames the flashing lasts.</param>
+void SidebarClass::Flash_Cameo(TechnoTypeClass const * type, int frames)
+{
+	for (int index = 0; index < COLUMNS; index++) {
+		Column[index].Flash_Cameo(type, frames);
+	}
+}
+
+
+/// <summary>
+/// Makes the cameo of an object type flash if this strip holds it.
+/// </summary>
+/// <param name="type">The object type whose cameo flashes.</param>
+/// <param name="frames">How many frames the flashing lasts.</param>
+void SidebarClass::StripClass::Flash_Cameo(TechnoTypeClass const * type, int frames)
+{
+	for (int index = 0; index < BuildableCount; index++) {
+		if (Buildables[index].BuildableType != RTTI_SPECIAL && Fetch_Techno_Type(Buildables[index].BuildableType, Buildables[index].BuildableID) == type) {
+			for (CameoFlashType & flash : CameoFlashes) {
+				if (flash.Type == type) {
+					flash.EndFrame = Frame + frames;
+					Flag_To_Redraw();
+					return;
+				}
+			}
+			CameoFlashes.push_back({type, Frame + frames});
+			Flag_To_Redraw();
+			return;
+		}
+	}
+}
+
+
+/// <summary>
+/// Is the cameo of an object type flashing on this strip?
+/// </summary>
+/// <param name="type">The object type to look up.</param>
+bool SidebarClass::StripClass::Is_Cameo_Flashing(TechnoTypeClass const * type) const
+{
+	for (CameoFlashType const & flash : CameoFlashes) {
+		if (flash.Type == type && Frame < flash.EndFrame) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
