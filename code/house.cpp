@@ -1127,6 +1127,23 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 				}
 				break;
 
+				case STRUCT_G_PROC: {
+					bool found = false;
+					for (int j = 0; j < Rule->PrerequisiteProc.Count(); j++) {
+						if (ABQuantity.Value(Rule->PrerequisiteProc[j]) > 0) {
+							found = true;
+							break;
+						}
+					}
+					for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
+						if (AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
+							found = true;
+						}
+					}
+					if (!found) return(0);
+				}
+				break;
+
 				case STRUCT_G_GDIFACTORY: {
 					bool found = false;
 					for (int j = 0; j < Rule->PrerequisiteGDIFactory.Count(); j++) {
@@ -7482,6 +7499,10 @@ bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVecto
 
 				case STRUCT_G_TECH:
 					own_building = Get_First_Acted(Rule->BuildTech);
+					break;
+
+				case STRUCT_G_PROC:
+					own_building = Get_First_Acted(Rule->BuildRefinery);
 					break;
 
 				// Any type of the group already queued satisfies it, as one owned does for a house playing.

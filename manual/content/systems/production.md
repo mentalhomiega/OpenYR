@@ -33,6 +33,8 @@ keys:
   - PrerequisiteGDIFactory
   - PrerequisiteNodFactory
   - PrerequisitePower
+  - PrerequisiteProc
+  - PrerequisiteProcAlternate
   - PrerequisiteRadar
   - PrerequisiteTech
   - ReverseEngineersVictims
@@ -137,7 +139,7 @@ A type with [`RequiresStolenAlliedTech=yes`](/keys/requiresstolenalliedtech/), [
 
 Every entry in the type's [`Prerequisite=`](/keys/prerequisite/) list must be satisfied. An entry naming a BuildingType requires the house to own at least one live structure of exactly that type. A structure counts from the moment it is placed, so the prerequisite unlocks during its buildup animation. It still counts while switched off.
 
-Seven group names are satisfied by owning any structure on the matching rules list:
+Eight group names are satisfied by owning any structure on the matching rules list:
 
 | `Prerequisite=` entry | List read |
 | --- | --- |
@@ -148,6 +150,7 @@ Seven group names are satisfied by owning any structure on the matching rules li
 | `TECH` | [`PrerequisiteTech`](/keys/prerequisitetech/) |
 | `GDIFACTORY` | [`PrerequisiteGDIFactory`](/keys/prerequisitegdifactory/) |
 | `NODFACTORY` | [`PrerequisiteNodFactory`](/keys/prerequisitenodfactory/) |
+| `PROC` | [`PrerequisiteProc`](/keys/prerequisiteproc/), or a unit on [`PrerequisiteProcAlternate`](/keys/prerequisiteprocalternate/) |
 
 :::caution[An upgrade prerequisite checks only the newest structure]
 When a prerequisite names an upgrade (a type with [`PowersUpBuilding=`](/keys/powersupbuilding/)), one structure decides the test: the house's newest structure that is on the map, switched on and not being sold, whatever its type. The prerequisite is met only if that structure has the upgrade installed. The same upgrade installed on any other structure does not count.

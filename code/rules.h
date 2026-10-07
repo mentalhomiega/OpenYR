@@ -679,6 +679,10 @@ class RulesClass
 		TypeList<int> PrerequisiteBarracks;
 		TypeList<int> PrerequisiteRadar;
 		TypeList<int> PrerequisiteTech;
+		TypeList<int> PrerequisiteProc;
+
+		// The vehicles that stand in for a refinery in a PROC prerequisite, such as the slave miner.
+		TypeList<UnitTypeClass const *> PrerequisiteProcAlternate;
 
 		/*
 		 * These are the sound effects of a gate rising to bar the way and lowering again to
