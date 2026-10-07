@@ -439,6 +439,11 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsCaptureable;
 
 		/*
+		**	Only an engineer can capture this building, as for the neutral tech structures.
+		*/
+		bool IsNeedsEngineer;
+
+		/*
 		 * Garrisoning, as in Yuri's Revenge. Up to MaxNumberOccupants infantry with Occupier=yes
 		 * can enter the structure, which fires their weapons from its MuzzleFlash points when
 		 * CanOccupyFire=yes.

@@ -2614,6 +2614,25 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	/*
+	**	A scan for structures soldiers can garrison counts only those, the more the better, and
+	**	a scan for tech structures counts only those that need an engineer to capture.
+	*/
+	if (method & THREAT_OCCUPIABLE) {
+		if (otype != RTTI_BUILDING || ((BuildingTypeClass const *)tclass)->MaxNumberOccupants < 1) {
+			BEnd(BENCH_EVAL_OBJECT);
+			return(false);
+		}
+		value += ((BuildingTypeClass const *)tclass)->MaxNumberOccupants * 1000;
+	}
+	if (method & THREAT_TECH) {
+		if (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsNeedsEngineer) {
+			BEnd(BENCH_EVAL_OBJECT);
+			return(false);
+		}
+		value += 1000;
+	}
+
+	/*
 	**	If factories are to be considered a greater threat, then don't
 	**	consider any non-factory building.
 	*/
@@ -2942,7 +2961,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 	int mask = 0;
 	if (method & THREAT_CIVILIANS) mask |= ((1 << RTTI_BUILDING)|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT));
 	if (method & THREAT_AIR) mask |= (1 << RTTI_AIRCRAFT);
-	if (method & (THREAT_BUILDINGS|THREAT_FACTORIES|THREAT_POWER|THREAT_BASE_DEFENSE|THREAT_TIBERIUM|THREAT_CAPTURE)) mask |= (1 << RTTI_BUILDING);
+	if (method & (THREAT_BUILDINGS|THREAT_FACTORIES|THREAT_POWER|THREAT_BASE_DEFENSE|THREAT_TIBERIUM|THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH)) mask |= (1 << RTTI_BUILDING);
 	if (method & THREAT_INFANTRY) mask |= (1 << RTTI_INFANTRY);
 	if (method & (THREAT_VEHICLES|THREAT_TIBERIUM)) mask |= (1 << RTTI_UNIT);
 
