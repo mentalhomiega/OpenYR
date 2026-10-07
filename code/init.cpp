@@ -192,6 +192,7 @@
 #include "tutorial.h"
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/menu/uimenu.h"
+#include "ui/screens/movies/uimovies.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
@@ -1136,6 +1137,9 @@ restart:
 					Theme.Stop();
 					if (Debug_Flag) {
 						Play_Intro(Debug_Flag);
+					} else if (CCFileClass("RENEGADE.BIK").Is_Available()) {
+						// Yuri's Revenge shows one sneak peek, the Renegade trailer.
+						Play_Movie("RENEGADE.BIK");
 					} else {
 						Choose_Side();
 						Clear_Option(OPTION_PLAY_FROM_MIXFILE);
@@ -2957,6 +2961,7 @@ static int const MENU_MOVIES = 101;
 static int const MENU_NETWORK = 102;
 static int const MENU_SKIRMISH = 103;
 static int const MENU_BACK = 104;
+static int const MENU_PLAY_MOVIES = 105;
 
 
 // The text of a string table label, or the fallback when the table lacks it.
@@ -2993,17 +2998,22 @@ static int Single_Player_Menu(void)
 
 static int Movies_Menu(void)
 {
-	UIMenuState menu;
-	menu.Kind = UI_MENU_MOVIES;
-	menu.Title = Menu_Text("GUI:MoviesAndCredits", "Movies & Credits");
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
-	if (Options.IsClassicMenus) {
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:PlayMovies", "Play Movies"), MENU_BACK, false});
+	while (true) {
+		UIMenuState menu;
+		menu.Kind = UI_MENU_MOVIES;
+		menu.Title = Menu_Text("GUI:MoviesAndCredits", "Movies & Credits");
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:PlayMovies", "Play Movies"), MENU_PLAY_MOVIES, true});
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
+		menu.Items.push_back(Back_Item());
+		UI_Menu_Place(menu);
+
+		int const choice = UI_Menu_Dialog(menu, MENU_BACK);
+		if (choice != MENU_PLAY_MOVIES) {
+			return(choice);
+		}
+		UI_Movies_Dialog();
 	}
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
-	menu.Items.push_back(Back_Item());
-	UI_Menu_Place(menu);
-	return(UI_Menu_Dialog(menu, MENU_BACK));
 }
 
 

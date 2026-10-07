@@ -26,6 +26,7 @@
 #include "ui/screens/mapgen/uimapgen.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/mods/uimods.h"
+#include "ui/screens/movies/uimovies.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/netlobby/uinetlobby.h"
 #include "ui/screens/reconnect/uireconnect.h"
@@ -3532,6 +3533,56 @@ Rml::Element * Mod_Row_Part(Rml::Element * row, char const * part)
 }
 
 
+void Test_Movies_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UIMoviesState state;
+	state.Title = "Select Movie";
+	state.PlayCaption = "Play Movie";
+	state.BackCaption = "Back";
+	state.Rows.push_back(UIMovieRow{"Intro Movie", "A00_F00E.BIK"});
+	state.Rows.push_back(UIMovieRow{"Operation: Time Shift", "S01_F00e.BIK"});
+	state.Rows.push_back(UIMovieRow{"Soviet Victory", "S08_F00e.BIK"});
+
+	UIMoviesPresenterClass presenter(state);
+	std::unique_ptr<UIViewClass> view = UI_Movies_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the movies view prepares against the test context");
+	view->Show(true);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the movies screen raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	std::vector<Rml::Element *> rows = Visible_Rows(document, "movies");
+	Check(rows.size() == 3 && rows[0]->IsClassSet("selected") && rows[0]->GetInnerRML() == "Intro Movie", "the screen lists each movie by name with the first selected");
+
+	if (rows.size() == 3) {
+		Click(context, rows[1]);
+		presenter.Drain();
+		Check(!presenter.Result.has_value() && presenter.State.Selected == 1, "clicking a row selects it without playing it");
+
+		Rml::Element * play = document->GetElementById("play");
+		Click(context, play);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.State.Selected == 1, "Play accepts the screen with the row that was picked");
+	}
+
+	UIMoviesPresenterClass back(state);
+	Drive(back, "cancel");
+	Check(back.Result.has_value() && *back.Result == UI_RESULT_CANCELLED, "Back leaves the list without a movie");
+
+	UIMoviesPresenterClass empty(UIMoviesState{});
+	Drive(empty, "play");
+	Check(!empty.Result.has_value(), "an empty list cannot be played");
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Mods_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -5361,6 +5412,7 @@ void Test_Documents(void)
 		Test_Menu_Screen(*context, system);
 		Test_Main_Options_Screen(*context, system, render);
 		Test_Mods_Screen(*context, system);
+		Test_Movies_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
 		Test_Restate_Screen(*context, system, render);
 	}

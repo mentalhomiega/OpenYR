@@ -38,6 +38,7 @@ opents_add_test(UIShell
         ui/screens/mapgen/uimapgen.cpp
         ui/screens/menu/uimenu.cpp
         ui/screens/mods/uimods.cpp
+        ui/screens/movies/uimovies.cpp
         ui/screens/reconnect/uireconnect.cpp
         ui/screens/restate/uirestate.cpp
         ui/screens/msgbox/uimsgbox.cpp
