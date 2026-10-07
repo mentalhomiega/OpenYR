@@ -112,7 +112,8 @@ Rml::Element * Find_Text(Rml::Element * element, std::string const & label)
 	if (!element->IsVisible() || element->GetTagName() == "#text") {
 		return(nullptr);
 	}
-	for (int child = 0; child < element->GetNumChildren(); child++) {
+	// A drop-down's open list is not an ordinary child, so those are counted too.
+	for (int child = 0; child < element->GetNumChildren(true); child++) {
 		if (Rml::Element * found = Find_Text(element->GetChild(child), label)) {
 			return(found);
 		}
@@ -198,7 +199,8 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// Carries out the menu steps that are due. A step that opens a screen running its own loop
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
-/// id), press (a button's label, ignoring case), key (escape, return, tab, space or an arrow),
+/// id), press (a button's label, ignoring case), choose (the text of a list row or drop-down
+/// entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space or an arrow),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie) and quit.
 /// </summary>
@@ -286,7 +288,15 @@ void UIScript_Tick(Rml::Context * context)
 				return;
 			}
 		} else if (step.Command == "choose") {
-			Rml::Element * element = Find_Text(context, step.Argument);
+			// "id|label" looks only inside the element with that id, such as one drop-down.
+			std::string label = step.Argument;
+			Rml::Element * within = nullptr;
+			std::size_t const bar = label.find('|');
+			if (bar != std::string::npos) {
+				within = Find_Element(context, label.substr(0, bar));
+				label.erase(0, bar + 1);
+			}
+			Rml::Element * element = bar != std::string::npos ? (within != nullptr ? Find_Text(within, label) : nullptr) : Find_Text(context, label);
 			if (element == nullptr) {
 				DebugString("UISCRIPT   choose %s: no such visible text\n", step.Argument.c_str());
 			} else {
