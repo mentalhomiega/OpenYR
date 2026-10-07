@@ -173,6 +173,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsImmuneToPoison(false),
 	IsCanPassiveAquire(true),
 	IsCanRetaliate(true),
+	IsHoverAttack(false),
 	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
@@ -739,6 +740,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsImmuneToPoison = ini.Get_Bool(Name(), "ImmuneToPoison", IsImmuneToPoison);
 		IsCanPassiveAquire = ini.Get_Bool(Name(), "CanPassiveAquire", IsCanPassiveAquire);
 		IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
+		IsHoverAttack = ini.Get_Bool(Name(), "HoverAttack", IsHoverAttack);
 		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
@@ -1471,6 +1473,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsImmuneToPoison);
 	stream.Serialize(IsCanPassiveAquire);
 	stream.Serialize(IsCanRetaliate);
+	stream.Serialize(IsHoverAttack);
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
