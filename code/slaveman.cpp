@@ -348,7 +348,7 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 		return(CELL_NONE);
 	}
 	Cell const from = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
-	Cell const corner = Map.Nearby_Location(ore, SPEED_TRACK, Map.Get_Cell_Zone(from, MZONE_NORMAL), MZONE_NORMAL, false, Point2D(type->Width(), type->Height()));
+	Cell const corner = Map.Nearby_Location(ore, SPEED_TRACK, Map.Get_Cell_Zone(from, MZONE_NORMAL), MZONE_NORMAL, false, Point2D(type->Width(), type->Height()), true);
 	if (corner == CELL_NONE || type->Is_Mobile_Deployer()) {
 		return(corner);
 	}
