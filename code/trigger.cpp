@@ -53,6 +53,7 @@
 #include "houstype.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "session.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "taction.h"
@@ -287,7 +288,7 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 		return(false);
 	}
 
-	if (Class->House == NULL) {
+	if (Class->House == NULL && Session.Type != GAME_NORMAL) {
 		return(false);
 	}
 
@@ -332,7 +333,7 @@ bool TriggerClass::Spring(ObjectClass * object, Cell cell)
 		return(false);
 	}
 
-	if (Class->House == NULL) {
+	if (Class->House == NULL && Session.Type != GAME_NORMAL) {
 		return(false);
 	}
 
