@@ -2141,7 +2141,7 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 	}
 
 	// A projectile SubjectToElevation reaches farther from higher ground (TechnoClass::InRange, 0x6F7398 and 0x6F7473).
-	if (weapon != NULL && weapon->Bullet->IsSubjectToElevation) {
+	if (weapon != NULL && weapon->Bullet != NULL && weapon->Bullet->IsSubjectToElevation) {
 		bonus += Elevation_Range_Bonus(target, !weapon->Bullet->IsArcing);
 	}
 	return(TClass->In_Range(coord, target, weapon, bonus));
