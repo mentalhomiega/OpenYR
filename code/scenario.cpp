@@ -1626,6 +1626,29 @@ SideType Side_For_Player(void)
 
 
 /// <summary>
+/// Finds the side of a map's player house before the map's houses exist. The side comes from the
+/// Side= or ParentCountry= of the country the house section names.
+/// </summary>
+/// <returns>Returns with the side, or SIDE_NONE when the map names none.</returns>
+static SideType Side_For_Map_House(CCINIClass const & ini, char const * house)
+{
+	std::string country = ini.Get_String(house, "Country");
+	for (int depth = 0; depth < 8 && !country.empty(); depth++) {
+		SideType side = ini.Get_Side(country.c_str(), "Side", SIDE_NONE);
+		if (side != SIDE_NONE) {
+			return(side);
+		}
+		HousesType type = HouseTypeClass::From_Name(country.c_str());
+		if (type != HOUSE_NONE && HouseTypes[type]->Side != SIDE_NONE) {
+			return(HouseTypes[type]->Side);
+		}
+		country = ini.Get_String(country.c_str(), "ParentCountry");
+	}
+	return(SIDE_NONE);
+}
+
+
+/// <summary>
 /// Fetches the artwork to display while a scenario loads.
 /// The picture is chosen to suit the player's side and the current screen resolution, and
 /// one of the pair available is taken at random so that the loading screen is not always
@@ -1895,6 +1918,12 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	}
 
 	SideType playerside = Side_For_Player();
+	if (Session.Type == GAME_NORMAL && HouseTypeClass::From_Name(buffer) == HOUSE_NONE) {
+		SideType const mapside = Side_For_Map_House(ini, buffer);
+		if (mapside != SIDE_NONE) {
+			playerside = mapside;
+		}
+	}
 	DebugString("Calling Prep_For_Side()\n");
 	if (Prep_For_Side_Or_First(playerside) == SIDE_NONE) {
 		return(ScenarioState::NotRead);
