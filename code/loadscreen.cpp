@@ -365,33 +365,85 @@ void Blit_Stretched(Surface & dest, Rect const & to, Surface const & source)
 }
 
 
-// Copies part of a 16-bit surface onto another, each pixel made a square of factor pixels.
-void Blit_Enlarged(Surface & dest, Point2D const & origin, Surface const & source, Rect const & area, int factor)
+// Bits a hicolor pixel keeps for one colour, and where they sit in the pixel.
+struct ChannelType {
+	int Shift;
+	int Max;
+};
+
+
+ChannelType Hicolor_Channel(int right, int left)
 {
-	Rect const from = Intersect(area, source.Get_Rect());
-	if (!from.Is_Valid() || source.Bytes_Per_Pixel() != 2 || dest.Bytes_Per_Pixel() != 2) {
+	ChannelType result = {right, (1 << (8 - left)) - 1};
+	return(result);
+}
+
+
+// Copies part of a 16-bit surface onto a surface of any size, the whole of source filling dest_size
+// pixels at origin, with each pixel blended from the four around it. Only the pixels of dest that
+// cover the area given are written.
+void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_size, Surface const & source, Rect const & area)
+{
+	if (source.Bytes_Per_Pixel() != 2 || dest.Bytes_Per_Pixel() != 2 || dest_size.X <= 0 || dest_size.Y <= 0) {
 		return;
+	}
+
+	int const sw = source.Get_Width();
+	int const sh = source.Get_Height();
+	double const xscale = (double)dest_size.X / sw;
+	double const yscale = (double)dest_size.Y / sh;
+
+	// The destination pixels the area reaches, with one more around it for the blending.
+	Rect const reach = Intersect(Rect(origin.X + (int)(area.X * xscale) - 1, origin.Y + (int)(area.Y * yscale) - 1, (int)((area.Width + 1) * xscale) + 3, (int)((area.Height + 1) * yscale) + 3),
+		Intersect(Rect(origin.X, origin.Y, dest_size.X, dest_size.Y), dest.Get_Rect()));
+	if (!reach.Is_Valid()) {
+		return;
+	}
+
+	ChannelType const channel[3] = {
+		Hicolor_Channel(DSurface::RedRight, DSurface::RedLeft),
+		Hicolor_Channel(DSurface::GreenRight, DSurface::GreenLeft),
+		Hicolor_Channel(DSurface::BlueRight, DSurface::BlueLeft)};
+
+	// The source column each destination column blends from, and by how much (in 256ths).
+	std::vector<int> column(reach.Width);
+	std::vector<int> column_weight(reach.Width);
+	for (int x = 0; x < reach.Width; x++) {
+		double const at = std::max(0.0, ((reach.X + x - origin.X) + 0.5) / xscale - 0.5);
+		column[x] = std::min((int)at, sw - 1);
+		column_weight[x] = (int)((at - column[x]) * 256);
 	}
 
 	char const * spixels = (char const *)source.Lock();
 	char * dpixels = (char *)dest.Lock();
 	if (spixels != NULL && dpixels != NULL) {
-		for (int y = from.Y; y < from.Y + from.Height; y++) {
-			unsigned short const * srow = (unsigned short const *)(spixels + y * source.Stride());
-			for (int repeat = 0; repeat < factor; repeat++) {
-				int const dy = origin.Y + y * factor + repeat;
-				if (dy < 0 || dy >= dest.Get_Height()) {
-					continue;
+		for (int y = 0; y < reach.Height; y++) {
+			double const at = std::max(0.0, ((reach.Y + y - origin.Y) + 0.5) / yscale - 0.5);
+			int const top = std::min((int)at, sh - 1);
+			int const bottom = std::min(top + 1, sh - 1);
+			int const wy = (int)((at - top) * 256);
+			unsigned short const * row0 = (unsigned short const *)(spixels + top * source.Stride());
+			unsigned short const * row1 = (unsigned short const *)(spixels + bottom * source.Stride());
+			unsigned short * drow = (unsigned short *)(dpixels + (reach.Y + y) * dest.Stride()) + reach.X;
+
+			for (int x = 0; x < reach.Width; x++) {
+				int const left = column[x];
+				int const right = std::min(left + 1, sw - 1);
+				int const wx = column_weight[x];
+				int pixel = 0;
+				for (int index = 0; index < 3; index++) {
+					int const shift = channel[index].Shift;
+					int const mask = channel[index].Max;
+					int const a = (row0[left] >> shift) & mask;
+					int const b = (row0[right] >> shift) & mask;
+					int const c = (row1[left] >> shift) & mask;
+					int const d = (row1[right] >> shift) & mask;
+					int const upper = a * (256 - wx) + b * wx;
+					int const lower = c * (256 - wx) + d * wx;
+					int const value = (upper * (256 - wy) + lower * wy + 32768) >> 16;
+					pixel |= std::min(value, mask) << shift;
 				}
-				unsigned short * drow = (unsigned short *)(dpixels + dy * dest.Stride());
-				for (int x = from.X; x < from.X + from.Width; x++) {
-					int const dx = origin.X + x * factor;
-					for (int step = 0; step < factor; step++) {
-						if (dx + step >= 0 && dx + step < dest.Get_Width()) {
-							drow[dx + step] = srow[x];
-						}
-					}
-				}
+				drow[x] = (unsigned short)pixel;
 			}
 		}
 	}
@@ -492,8 +544,11 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 
 	Width = (HiddenSurface->Get_Width() == 640) ? 640 : 800;
 	Height = (Width == 640) ? 480 : 600;
-	Scale = std::max(1, std::min(HiddenSurface->Get_Width() / Width, HiddenSurface->Get_Height() / Height));
-	Origin = Point2D((HiddenSurface->Get_Width() - Width * Scale) / 2, (HiddenSurface->Get_Height() - Height * Scale) / 2);
+
+	// The layout fills the screen's height, or its width if that is less, at its own proportions.
+	double const scale = std::min((double)HiddenSurface->Get_Width() / Width, (double)HiddenSurface->Get_Height() / Height);
+	Shown = Point2D(std::max(1, (int)(Width * scale + 0.5)), std::max(1, (int)(Height * scale + 0.5)));
+	Origin = Point2D((HiddenSurface->Get_Width() - Shown.X) / 2, (HiddenSurface->Get_Height() - Shown.Y) / 2);
 
 	LoadMix = Mount("LOADMD.MIX");
 	BaseLoadMix = Mount("LOAD.MIX");
@@ -509,6 +564,7 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 	}
 
 	Screen->Blit_From(*Backdrop);
+	HiddenSurface->Fill(0);
 	Active = true;
 	Present(Screen->Get_Rect());
 	return(true);
@@ -878,6 +934,6 @@ void LoadScreenClass::End(void)
 
 void LoadScreenClass::Present(Rect const & area)
 {
-	Blit_Enlarged(*HiddenSurface, Origin, *Screen, area, Scale);
+	Blit_Smooth(*HiddenSurface, Origin, Shown, *Screen, area);
 	Update_Visible_Surface();
 }

@@ -92,4 +92,4 @@ A multiplayer match has a row for each player, and a skirmish one for the local 
 
 ## Size on large screens
 
-The layout is drawn in the middle of the screen, every pixel enlarged to a square of the largest whole number of pixels that lets the layout fit. A 1920 by 1080 screen therefore shows it at its own size, and a 3840 by 2160 screen at three times its size, 2400 by 1800 pixels. Black fills the rest of the screen.
+The layout is drawn in the middle of the screen, enlarged smoothly, every pixel blended with its neighbors, to the largest size that fits at its own proportions: the screen's full height on a screen at least as wide as the layout's 4 to 3. A 1920 by 1080 screen therefore shows an 800 by 600 layout at 1.8 times its size, 1440 by 1080 pixels, a 2560 by 1440 screen at 2.4 times, and a 3840 by 2160 screen at 3.6 times. Black fills the rest of the screen. The text is part of the picture and is enlarged with it.

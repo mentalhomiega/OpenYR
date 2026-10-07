@@ -30,7 +30,7 @@ class Surface;
 **	multiplayer match shows the local player's country with its name, special unit and
 **	description, the map's preview, and a row for each player with a progress bar, a flag and a
 **	name. The screen is laid out at 800x600, or at 640x480 on a screen 640 pixels wide, and is
-**	drawn centred on the screen, enlarged by the largest whole factor that fits.
+**	drawn centred on the screen, smoothly enlarged to fill its height at any resolution.
 */
 class LoadScreenClass
 {
@@ -61,10 +61,10 @@ class LoadScreenClass
 		bool Match = false;
 		std::string PictureName;
 
-		// The layout's size, and where and how much it is enlarged on the hidden surface.
+		// The layout's size, and where and how large it is drawn on the hidden surface.
 		int Width = 0;
 		int Height = 0;
-		int Scale = 1;
+		Point2D Shown;
 		Point2D Origin;
 
 		// The finished screen without any progress, and the screen as it is shown.
