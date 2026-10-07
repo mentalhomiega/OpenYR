@@ -75,7 +75,7 @@ Eight more TeamType settings affect the decisions on this page. The table links 
 
 | Setting | Where it acts |
 | --- | --- |
-| [`Max=`](/keys/max/) | How many teams of the type one house may hold. A TeamType that never sets it is [rejected before the draw](#which-triggers-are-eligible), so no AI trigger can raise it. |
+| [`Max=`](/keys/max/) | How many teams of the type one house may hold. A TeamType that never sets it has no limit. `Max=0` is [rejected before the draw](#which-triggers-are-eligible), so no AI trigger can raise the TeamType. |
 | [`IsBaseDefense=`](/keys/isbasedefense/#scope-teamtype) | Marks the type as defensive. [The team budget](#the-team-budget) counts, caps and deletes defensive teams. |
 | [`Reinforce=`](/keys/reinforce/) | Keeps [recruitment](#recruitment) open after the team has started. |
 | [`Recruiter=`](/keys/recruiter/) | Lets [recruitment](#recruitment) take objects from outside the team's group. |
@@ -124,7 +124,7 @@ MyRaidTrigger=Raid a blacked-out base,MyRaidTeam,<all>,0,3,GAPOWR,00000000000000
 
 The [AI triggers](/mapping/ai-triggers/) page covers the fields of the trigger record. In this example:
 
-- `Max=4` is required. Without `Max`, no AI trigger can raise the TeamType.
+- `Max=4` lets the house hold four teams of the type at once. Without `Max`, the TeamType has no limit, and `Max=0` stops every AI trigger from raising it.
 - `Priority=8` lets a raid team take a member from a team left at the default priority of `7`.
 - Condition type `3` holds while the enemy's power output is below its drain. This condition ignores the comparison block and the condition object, so `GAPOWR` is never counted.
 - The last three fields leave the trigger off at Easy and on at Medium and Hard.

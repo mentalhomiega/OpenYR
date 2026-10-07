@@ -148,7 +148,7 @@ TeamTypeClass::TeamTypeClass(char const * name) :
 	IsDropship(false),
 	OnTransOnly(false),
 	RecruitPriority(7),
-	MaxAllowed(0),
+	MaxAllowed(-1),
 	Fear(0),
 	House(NULL),
 	TechLevel(0),
