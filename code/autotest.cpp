@@ -32,6 +32,7 @@
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
 **	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened;
 **							actions that look at attached objects see the map's trigger of that type
+**	typecounts				writes how many types of each kind there are, and any whose ID is not a plain name
 **	triggers [all]			writes the trigger types with their owner, events and whether a live trigger of each is enabled (only
 **							the enabled ones, unless "all"), then every tag with the objects and cells it rides on, and the
 **							local and global variables that are set
@@ -992,6 +993,11 @@ void Run(StepType const & step)
 					events += std::string("=") + (owner != NULL ? owner->Class->Name() : "NOHOUSE");
 				}
 				if (event->TechnoName[0] != '\0') events += std::string(" ") + event->TechnoName;
+				NeedType const need = Event_Needs(event->Event);
+				if (need == NEED_STRUCTURE) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < BuildingTypes.Count() ? BuildingTypes[event->Data.Value]->Name() : "NOSTRUCT");
+				if (need == NEED_UNIT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < UnitTypes.Count() ? UnitTypes[event->Data.Value]->Name() : "NOUNIT");
+				if (need == NEED_INFANTRY) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < InfantryTypes.Count() ? InfantryTypes[event->Data.Value]->Name() : "NOINFANTRY");
+				if (need == NEED_AIRCRAFT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < AircraftTypes.Count() ? AircraftTypes[event->Data.Value]->Name() : "NOAIRCRAFT");
 				events += ")";
 			}
 			DebugString("AUTOTEST   trigger %s '%s' owner %s live %d enabled %d events:%s\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", live, enabled, events.c_str());
@@ -1055,9 +1061,16 @@ void Run(StepType const & step)
 		// types <prefix>: every structure type whose ID starts with the prefix.
 		for (int index = 0; index < BuildingTypes.Count(); index++) {
 			if (strnicmp(BuildingTypes[index]->Name(), step.Argument.c_str(), step.Argument.size()) == 0) {
-				DebugString("AUTOTEST   type %s\n", BuildingTypes[index]->Name());
+				DebugString("AUTOTEST   type %d %s\n", index, BuildingTypes[index]->Name());
 			}
 		}
+	} else if (step.Command == "typecounts") {
+		// typecounts: how many types of each kind there are, and any whose ID is not a plain name (a list read as one name).
+		DebugString("AUTOTEST   typecounts structures %d units %d infantry %d aircraft %d\n", BuildingTypes.Count(), UnitTypes.Count(), InfantryTypes.Count(), AircraftTypes.Count());
+		for (int index = 0; index < BuildingTypes.Count(); index++) if (std::strpbrk(BuildingTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray structure %d %s\n", index, BuildingTypes[index]->Name());
+		for (int index = 0; index < UnitTypes.Count(); index++) if (std::strpbrk(UnitTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray unit %d %s\n", index, UnitTypes[index]->Name());
+		for (int index = 0; index < InfantryTypes.Count(); index++) if (std::strpbrk(InfantryTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray infantry %d %s\n", index, InfantryTypes[index]->Name());
+		for (int index = 0; index < AircraftTypes.Count(); index++) if (std::strpbrk(AircraftTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray aircraft %d %s\n", index, AircraftTypes[index]->Name());
 	} else if (step.Command == "capture") {
 		// capture <TypeID> x y: sends the player's objects of that type that are not already capturing into the structure on that cell.
 		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();

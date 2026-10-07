@@ -1588,7 +1588,20 @@ bool RulesClass::General(CCINIClass const & ini)
 		WindDirection = (FacingType)ini.Get_Int(GENERAL, "WindDirection", WindDirection);
 		CameraRange = ini.Get_Lepton(GENERAL, "CameraRange", CameraRange);
 		FlightLevel = ini.Get_Int(GENERAL, "FlightLevel", FlightLevel);
-		RepairBay = TGet_Class(ini, GENERAL, "RepairBay", RepairBay);
+		/*
+		**	Yuri's Revenge gives RepairBay as a list of buildings. This engine uses one, so it takes the
+		**	first of them that exists and never makes a building type out of the whole list.
+		*/
+		char repair_bays[128];
+		if (ini.Get_String(GENERAL, "RepairBay", "", repair_bays, sizeof(repair_bays)) != 0) {
+			for (char * name = strtok(repair_bays, ", \t"); name != NULL; name = strtok(NULL, ", \t")) {
+				StructType const bay = BuildingTypeClass::From_Name(name);
+				if (bay != STRUCT_NONE) {
+					RepairBay = BuildingTypes[bay];
+					break;
+				}
+			}
+		}
 		GDIGateOne = TGet_Class(ini, GENERAL, "GDIGateOne", GDIGateOne);
 		GDIGateTwo = TGet_Class(ini, GENERAL, "GDIGateTwo", GDIGateTwo);
 		NodGateOne = TGet_Class(ini, GENERAL, "NodGateOne", NodGateOne);
