@@ -9,7 +9,7 @@ when_omitted:
 
 An `Armory=yes` building promotes infantry that the player sends into it. It takes one infantry at a time, holds it for the servicing delay that [`IRepairRate`](/keys/irepairrate/) sets, then promotes and releases it.
 
-The player gets the enter cursor for their own infantry that is not yet elite, when the building is theirs or an ally's. The building must meet **all of** these conditions:
+The player gets the enter cursor for their own infantry that is not yet elite and not under [mind control](/systems/mind-control/#going-into-transports-and-structures), when the building is theirs or an ally's. The building must meet **all of** these conditions:
 
 - it is not being built or sold;
 - it is not already servicing another infantry;

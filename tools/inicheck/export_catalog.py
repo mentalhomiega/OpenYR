@@ -6,7 +6,8 @@
 Each output line holds one scope as tab separated fields: key, file, section,
 applies-to list and value type. The section is the literal section name, "*"
 for an object section, or "@" and the section source for a section the checker
-cannot place.
+cannot place. A key holding a range such as "Weapon{1-18}" stands for every key
+the engine builds from a number in that range.
 """
 
 import argparse
@@ -16,6 +17,20 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# Keys the engine builds from a number that the manual's extractor does not list. Each range
+# starts where the reading loop starts; the loops end at NumberOfDocks and Upgrades, which have
+# no fixed limit.
+PATTERN_SCOPES = [
+    # BuildingTypeClass::Read_INI.
+    ("DockingOffset{0-}", "art.ini", "@image", ["BuildingType"], "point (x,y,z)"),
+    ("PowerUp{1-}Anim", "art.ini", "@image", ["BuildingType"], "string"),
+    ("PowerUp{1-}DamagedAnim", "art.ini", "@image", ["BuildingType"], "string"),
+    ("PowerUp{1-}LocXX", "art.ini", "@image", ["BuildingType"], "integer"),
+    ("PowerUp{1-}LocYY", "art.ini", "@image", ["BuildingType"], "integer"),
+    ("PowerUp{1-}LocZZ", "art.ini", "@image", ["BuildingType"], "integer"),
+    ("PowerUp{1-}YSort", "art.ini", "@image", ["BuildingType"], "integer"),
+]
 
 
 def section_field(section):
@@ -49,6 +64,8 @@ def main():
             if any("\t" in field or "\n" in field for field in fields):
                 sys.exit(f"{name}: a field holds a tab or line break")
             lines.append("\t".join(fields))
+    for key, file, section, applies_to, value_type in PATTERN_SCOPES:
+        lines.append("\t".join([key, file, section, ",".join(applies_to), value_type]))
 
     text = "\n".join(lines) + "\n"
     if args.output:

@@ -42,6 +42,7 @@
 #include "_rtti.h"
 #include "house.h"
 #include "mono.h"
+#include "radioslots.h"
 #include "savestream.h"
 #include "swizzle.h"
 #include "techno.h"
@@ -174,7 +175,7 @@ RadioMessageType RadioClass::Receive_Message(RadioClass * from, RadioMessageType
 	**	only applies if the sender holds a slot in this radio.
 	*/
 	if (message == RADIO_OVER_OUT) {
-		int const slot = Find_Link_Index(from);
+		int const slot = RadioSlots::Find(Links, from);
 		if (slot != -1) {
 			BASECLASS::Receive_Message(from, message, param);
 			Links[slot] = NULL;
@@ -189,10 +190,7 @@ RadioMessageType RadioClass::Receive_Message(RadioClass * from, RadioMessageType
 	*/
 	if (message == RADIO_HELLO && Strength) {
 		if (from != NULL && ((TechnoClass *)from)->House->Is_Ally(this) && Is_Techno() && ((TechnoClass *)this)->House->Is_Ally(from)) {
-			int slot = Find_Link_Index(from);
-			if (slot == -1) {
-				slot = Find_Free_Slot();
-			}
+			int const slot = RadioSlots::Hello_Slot(Links, from);
 			if (slot != -1) {
 				Links[slot] = from;
 				return(RADIO_ROGER);
@@ -241,11 +239,7 @@ RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, intptr_t
 	**	are transmitted.
 	*/
 	if (message == RADIO_OVER_OUT) {
-		for (RadioClass * & link : Links) {
-			if (link == to) {
-				link = NULL;
-			}
-		}
+		RadioSlots::Release(Links, to);
 	}
 
 	/*
@@ -258,7 +252,7 @@ RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, intptr_t
 		if (Contains_Link(to)) {
 			return(RADIO_ROGER);
 		}
-		int slot = Find_Free_Slot();
+		int slot = RadioSlots::Find_Free(Links);
 		if (slot == -1) {
 			Transmit_Message(RADIO_OVER_OUT, Links[0]);
 			slot = 0;
@@ -364,9 +358,7 @@ bool RadioClass::In_Radio_Contact(void) const
 /// </summary>
 void RadioClass::Set_Link_Count(int count)
 {
-	if (count > (int)Links.size()) {
-		Links.resize(count, NULL);
-	}
+	RadioSlots::Grow(Links, count);
 }
 
 
@@ -375,36 +367,13 @@ void RadioClass::Set_Link_Count(int count)
 /// </summary>
 int RadioClass::Find_Link_Index(RadioClass const * object) const
 {
-	if (object != NULL) {
-		for (size_t index = 0; index < Links.size(); index++) {
-			if (Links[index] == object) {
-				return((int)index);
-			}
-		}
-	}
-	return(-1);
-}
-
-
-int RadioClass::Find_Free_Slot(void) const
-{
-	for (size_t index = 0; index < Links.size(); index++) {
-		if (Links[index] == NULL) {
-			return((int)index);
-		}
-	}
-	return(-1);
+	return(RadioSlots::Find(Links, object));
 }
 
 
 bool RadioClass::Has_Free_Link(RadioClass const * object) const
 {
-	for (RadioClass const * link : Links) {
-		if (link == NULL || (object != NULL && link == object)) {
-			return(true);
-		}
-	}
-	return(false);
+	return(RadioSlots::Has_Free(Links, object));
 }
 
 

@@ -183,6 +183,7 @@
 #include "lightcon.h"
 #include "logic.h"
 #include "mono.h"
+#include "navalweapon.h"
 #include "overtype.h"
 #include "partsys.h"
 #include "psystype.h"
@@ -639,22 +640,13 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 int TechnoClass::Naval_Weapon(TechnoClass const * target) const
 {
 	TechnoTypeClass const * type = target->TClass;
-	switch (TClass->NavalTargeting) {
-		case 0:
-			return((type->IsUnderwater && target->Cloak != UNCLOAKED) ? -1 : 0);
-		case 1:
-			return(type->IsUnderwater ? 1 : 0);
-		case 2:
-			return(type->IsUnderwater ? 0 : -1);
-		case 3:
-			return((type->IsOrganic || type->IsUnnatural) ? 1 : 0);
-		case 4:
-			return((type->Speed == SPEED_HOVER || type->IsOrganic) ? 0 : 1);
-		case 6:
-			return(-1);
-		default:
-			return(0);
-	}
+	NavalTargetFacts facts;
+	facts.IsUnderwater = type->IsUnderwater;
+	facts.IsCloakedOrCloaking = target->Cloak != UNCLOAKED;
+	facts.IsOrganic = type->IsOrganic;
+	facts.IsUnnatural = type->IsUnnatural;
+	facts.IsHover = type->Speed == SPEED_HOVER;
+	return(Naval_Weapon_Choice(TClass->NavalTargeting, facts));
 }
 
 
@@ -4105,12 +4097,12 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		}
 	}
 
-	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).
 	// A DrainWeapon needs a Drainable target that nothing is draining yet (TechnoClass::GetFireError, 0x6FC0B0).
 	if (weapon->IsDrainWeapon && (techno == NULL || !techno->TClass->IsDrainable || techno->DrainingMe != NULL)) {
 		return(FIRE_ILLEGAL);
 	}
 
+	// A Natural object never fires at an Unnatural one (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && TClass->IsNatural && techno->TClass->IsUnnatural) {
 		return(FIRE_ILLEGAL);
 	}
@@ -7842,13 +7834,15 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 
 
 /// <summary>
-/// Whether this transport accepts the passenger: its kind against IsVehicleTransport, and
-/// its Size against both the room left in the hold and this transport's SizeLimit.
+/// Whether this transport accepts the passenger: not one under mind control, as in Yuri's
+/// Revenge; its kind against IsVehicleTransport; and its Size against both the room left in
+/// the hold and this transport's SizeLimit.
 /// Every route into a hold consults this, from a player's order to the check on arrival.
 /// </summary>
 bool TechnoClass::Can_Fit_Passenger(ObjectClass const * passenger) const
 {
 	if (passenger == NULL) return(false);
+	if (passenger->Is_Techno() && ((TechnoClass const *)passenger)->MindControlledBy != NULL) return(false);
 
 	TechnoTypeClass const * ptype = passenger->TClass;
 	if (ptype == NULL) return(false);
