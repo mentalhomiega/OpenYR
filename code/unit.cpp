@@ -6267,6 +6267,11 @@ bool UnitClass::Limbo(void)
  *=============================================================================================*/
 int UnitClass::Do_MISSION_GUARD_AREA(void)
 {
+	// A slave miner that guards an area looks for ore after SlaveMinerKickFrameDelay frames, as in guard mode.
+	if (SlaveManager && SlaveManager->Should_Wake_Up()) {
+		SlaveManager->Wake_Up();
+		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+	}
 	return(BASECLASS::Do_MISSION_GUARD_AREA());
 }
 
