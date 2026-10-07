@@ -132,11 +132,27 @@ Cell SlaveManagerClass::Dock_Cell(void) const
 }
 
 
+/// <summary>
+/// The cell a returning slave walks to: the dock cell of a mobile miner, or the free cell nearest
+/// to the dock of a deployed one, as the dock lies inside the miner's footprint.
+/// </summary>
+Cell SlaveManagerClass::Home_Cell(void) const
+{
+	Cell const dock = Dock_Cell();
+	if (Owner->RTTI != RTTI_BUILDING) {
+		return(dock);
+	}
+	Cell const nearby = Map.Nearby_Location(dock, SPEED_FOOT, Map.Get_Cell_Zone(dock, MZONE_NORMAL), MZONE_NORMAL, false, Point2D(1, 1));
+	return(nearby != CELL_NONE ? nearby : dock);
+}
+
+
 void SlaveManagerClass::Send_Home(NodeType & node) const
 {
 	node.Status = NODE_RETURNING;
+	node.Start_Timer(0);
 	node.Slave->Assign_Target(NULL);
-	node.Slave->Assign_Destination(&Map[Dock_Cell()]);
+	node.Slave->Assign_Destination(&Map[Home_Cell()]);
 	node.Slave->Assign_Mission(MISSION_MOVE);
 }
 
@@ -261,7 +277,8 @@ void SlaveManagerClass::AI(void)
 				Cell const dock = Dock_Cell();
 				Cell const here = slave->Get_Cell();
 				int const distance = std::max(std::abs(here.X - dock.X), std::abs(here.Y - dock.Y));
-				if (distance <= 1) {
+				// A slave that stops within two cells of a dock crowded by its mates has come as close as it can.
+				if (distance <= 1 || (slave->NavCom == NULL && distance <= 2 && Frame - node.TimerStart >= 30)) {
 					Unload(node);
 					// Limbo detaches the slave from this manager as if it had died, so keep it.
 					slave->Limbo();
@@ -269,7 +286,7 @@ void SlaveManagerClass::AI(void)
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
 				} else if (slave->NavCom == NULL) {
-					slave->Assign_Destination(&Map[dock]);
+					slave->Assign_Destination(&Map[Home_Cell()]);
 					slave->Assign_Mission(MISSION_MOVE);
 				}
 				break;

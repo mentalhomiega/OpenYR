@@ -42,7 +42,7 @@ Deploying hands the vehicle's slaves to the structure, and packing up hands them
 
 The slaves are checked every 10 frames. Each slave inside a deployed miner comes out at the free cell nearest the middle of the structure's right edge and looks for ore closer than [`SlaveMinerSlaveScan`](/keys/slaveminerslavescan/#scope-global-rules) cells. It walks to the ore it finds and shovels for [`HarvestRate`](/keys/harvestrate/#scope-infantrytype) frames per bail. When its cell runs out, it looks for more.
 
-A slave goes back once it carries its `Storage`, or when it finds no ore in range. Within one cell of the middle of the right edge it goes inside and its ore is paid to the owner as a harvester's would be, including the [`PurifierBonus`](/keys/purifierbonus/) bonus. It rests inside for [`SlaveReloadRate`](/keys/slavereloadrate/#scope-aircrafttype) frames and comes out again with full strength.
+A slave goes back once it carries its `Storage`, or when it finds no ore in range. It walks to the free cell nearest that spot, and within one cell of it (or within two cells once it has stopped moving) it goes inside and its ore is paid to the owner as a harvester's would be, including the [`PurifierBonus`](/keys/purifierbonus/) bonus. It rests inside for [`SlaveReloadRate`](/keys/slavereloadrate/#scope-aircrafttype) frames and comes out again with full strength.
 
 While the miner is a vehicle, its slaves walk back to it, unload their ore and stay inside.
 

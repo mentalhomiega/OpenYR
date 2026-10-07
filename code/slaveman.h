@@ -79,6 +79,7 @@ class SlaveManagerClass
 
 		InfantryClass * Create_Slave(void) const;
 		Cell Dock_Cell(void) const;
+		Cell Home_Cell(void) const;
 		void Send_Home(NodeType & node) const;
 		void Unload(NodeType & node);
 
