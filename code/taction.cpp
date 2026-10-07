@@ -309,7 +309,6 @@ enum ParamCodeType {
 static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
-		case TACTION_RESHROUD_AT:
 		case TACTION_LIGHTNING_STORM_STRIKE:
 		case TACTION_IRON_CURTAIN_AT:
 		case TACTION_PAUSE_GAME:
@@ -832,6 +831,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(SUPER_RESET);
 		INVOKE(CENTER_BASE_CELL_CLEAR);
 		INVOKE(TIMER_TEXT);
+		INVOKE(RESHROUD_AT);
 		INVOKE(CENTER_BASE_CELL_SET);
 		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
 		INVOKE(SET_PREFERRED_TARGET_CELL);
@@ -3385,6 +3385,58 @@ bool TActionClass::TAction_TIMER_TEXT(HouseClass * , ObjectClass * , TriggerClas
 {
 	snprintf(Scen->MissionTimerText, sizeof(Scen->MissionTimerText), "%s", Text);
 	Map.Redraw_Tab();
+	return(true);
+}
+
+
+/// <summary>
+/// Shrouds the map again in a circle around a waypoint, for every player who does not see the
+/// whole map. The circle is as wide as the radius the rules give for revealing around a waypoint,
+/// and what the players' units see there at the time is not looked at again until they move.
+/// The waypoint is the number the action holds, as in Yuri's Revenge.
+/// </summary>
+bool TActionClass::TAction_RESHROUD_AT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (!Scen->Is_Valid_Waypoint(Data.Value)) {
+		return(true);
+	}
+
+	Cell const waypoint = Scen->Get_Waypoint_Cell(Data.Value);
+	int height = Map[waypoint].Height + ((Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge) ? BRIDGE_CELL_HEIGHT : 0);
+	Cell const center = waypoint - Cell(height / 2, height / 2);
+	int const radius = Rule->RevealTriggerRadius;
+
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (!house->Is_Player_View() || house->Sees_Whole_Map()) {
+			continue;
+		}
+
+		for (int y = -radius - 2; y < radius + 2; y++) {
+			for (int x = -radius - 2; x < radius + 2; x++) {
+				if (x * x + y * y >= (radius + 1) * (radius + 1)) {
+					continue;
+				}
+				Cell const cell = center + Cell(x, y);
+				if (!Map.Is_Valid(cell)) {
+					continue;
+				}
+				CellClass & cellptr = Map[cell];
+				cellptr.IsMapped.Clear(house);
+				cellptr.IsVisible.Clear(house);
+				cellptr.IsFogMapped.Clear(house);
+				cellptr.IsFogVisible.Clear(house);
+				if (house == PlayerPtr) {
+					TacticalMap->Flag_Cell(cellptr);
+				}
+			}
+		}
+
+		if (house == PlayerPtr) {
+			Map.Complete_Radar_Refresh();
+			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		}
+	}
 	return(true);
 }
 
