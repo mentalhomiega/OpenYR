@@ -352,3 +352,38 @@ void UIScript_Tick(Rml::Context * context)
 		}
 	}
 }
+
+
+bool UIScript_Fullscreen_Tick(void)
+{
+	while (Next < Steps.size()) {
+		long long const now = Now_Milliseconds();
+		if (now < WaitUntil) {
+			return(false);
+		}
+
+		UIStepType const step = Steps[Next];
+		if (step.Command == "wait") {
+			Next++;
+			WaitUntil = now + std::atoi(step.Argument.c_str());
+			return(false);
+		} else if (step.Command == "shot") {
+			Next++;
+			DebugString("UISCRIPT %s %s\n", step.Command.c_str(), step.Argument.c_str());
+			ShotPath = Screenshot_Name((step.Argument + ".tga").c_str());
+			Backend_Request_Window_Capture(ShotPath.c_str());
+			Video_Mark_Overlay_Dirty();
+			WaitUntil = now + 500;
+			return(false);
+		} else if (step.Command == "key" && step.Argument == "escape") {
+			Next++;
+			DebugString("UISCRIPT %s %s\n", step.Command.c_str(), step.Argument.c_str());
+			return(true);
+		} else if (step.Command == "quit") {
+			DebugString("UISCRIPT quit\n");
+			std::exit(0);
+		}
+		return(false);
+	}
+	return(false);
+}

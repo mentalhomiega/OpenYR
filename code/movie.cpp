@@ -19,6 +19,7 @@
 #include "_map.h"
 #include "_rect.h"
 #include "_surface.h"
+#include "binkmovie.h"
 #include "ccfile.h"
 #include "dbgprint.h"
 #include "dsurface.h"
@@ -32,6 +33,8 @@
 #include "vqa.h"
 
 #include "vq.hh"
+
+#include <string>
 
 
 /// <summary>
@@ -84,6 +87,30 @@ void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool str
 
 	// Opened ahead of the file test so the other machines count this movie even if it is missing here.
 	MovieSkip::Playback playback(name);
+
+	// Yuri's Revenge ships its movies as Bink files. A .VQA name with no such file plays the .BIK of the same name.
+	std::string bink_name(name);
+	std::size_t const dot = bink_name.rfind('.');
+	bool const is_bink = dot != std::string::npos && _stricmp(bink_name.c_str() + dot, ".BIK") == 0;
+	if (!is_bink && !CCFileClass(name).Is_Available() && dot != std::string::npos) {
+		bink_name.replace(dot, std::string::npos, ".BIK");
+		if (!CCFileClass(bink_name.c_str()).Is_Available()) {
+			return;
+		}
+	} else if (!is_bink) {
+		bink_name.clear();
+	}
+	if (is_bink || !bink_name.empty()) {
+		Keyboard->Clear();
+		Bink_Play(is_bink ? name : bink_name.c_str());
+		if (clrscrn_after) {
+			HiddenSurface->Fill(0);
+			Update_Visible_Surface(HiddenSurface);
+		}
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		Keyboard->Clear();
+		return;
+	}
 
 	if (!CCFileClass(name).Is_Available()) {
 		return;

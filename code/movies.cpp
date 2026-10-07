@@ -13,6 +13,7 @@
 
 #include "_map.h"
 #include "_surface.h"
+#include "binkmovie.h"
 #include "audio/audioengine.h"
 #include "dsurface.h"
 #include "movieskip.h"
@@ -297,7 +298,7 @@ bool Movie_Advance_Frame(VQHandle * handle, bool &finished)
 /// <returns>bool; Is a movie playing at the moment?</returns>
 bool Movie_Is_Playing(void)
 {
-	return(CurrentVQ != NULL);
+	return(CurrentVQ != NULL || Bink_Is_Playing());
 }
 
 
