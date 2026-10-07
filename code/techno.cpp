@@ -8145,7 +8145,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 				continue;
 			}
 
-			if (!infantry->IsTeamRecruitable || !infantry->Is_Weapon_Equipped() || !infantry->IsAutocreateRecruitable ||
+			if (infantry->SlaveOwner != NULL || !infantry->IsTeamRecruitable || !infantry->Is_Weapon_Equipped() || !infantry->IsAutocreateRecruitable ||
 					(!infantry->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) continue;
 
 			/*
@@ -8234,7 +8234,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 				continue;
 			}
 
-			if (!unit->IsTeamRecruitable || !unit->Is_Weapon_Equipped() || !unit->IsAutocreateRecruitable ||
+			if (unit->SlaveOwner != NULL || !unit->IsTeamRecruitable || !unit->Is_Weapon_Equipped() || !unit->IsAutocreateRecruitable ||
 					(!unit->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) continue;
 
 			/*
@@ -8375,6 +8375,9 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 
 	// A CanRetaliate=no type never fires back (TechnoClass::CanRetaliateToAttacker, 0x7087C0).
 	if (!TClass->IsCanRetaliate) return(false);
+
+	// Neither a slave nor a miner that keeps slaves fires back (TechnoClass::CanRetaliateToAttacker).
+	if (SlaveOwner != NULL || SlaveManager) return(false);
 
 	bool has_navqueue = Is_Foot() && ((FootClass const *)this)->NavCom != NULL;
 	if (warhead != NULL && warhead->IsVeinhole && (!has_navqueue || !House->Is_Human_Player())) {
@@ -8769,7 +8772,8 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 	**	If there is no target, then try to find one and assign it as
 	**	the target for this unit.
 	*/
-	if (TarCom == NULL) {
+	// A slave never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
+	if (TarCom == NULL && SlaveOwner == NULL) {
 		AbstractClass * best = Greatest_Threat(threat, coord, false);
 		Assign_Target(TClass->IsDistributedFire ? Distributed_Target() : best);
 	}
