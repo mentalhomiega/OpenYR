@@ -1149,6 +1149,7 @@ void Run(StepType const & step)
 				}
 			}
 			DebugString("AUTOTEST   who %s country %s player %d objects %d\n", house->Class->Name(), house->ActLike != HOUSE_NONE ? HouseTypes[house->ActLike]->Name() : "<none>", (int)(house == PlayerPtr), owned);
+			DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
 		}
