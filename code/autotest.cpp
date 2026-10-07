@@ -30,7 +30,8 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
-**	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened
+**	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened;
+**							actions that look at attached objects see the map's trigger of that type
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
@@ -119,6 +120,7 @@
 #include "taskforc.h"
 #include "teamtype.h"
 #include "taction.h"
+#include "trigger.h"
 #include "trigtype.h"
 #include "reinf.h"
 #include "team.h"
@@ -943,8 +945,14 @@ void Run(StepType const & step)
 		int ran = -1;
 		if (type != NULL) {
 			ran = 0;
+
+			// The trigger the map made from the type, if any, is what actions that look at the objects it is attached to see.
+			TriggerClass * trigger = NULL;
+			for (int index = 0; index < Triggers.Count() && trigger == NULL; index++) {
+				if (Triggers[index]->Class == type) trigger = Triggers[index];
+			}
 			for (TActionClass * action = type->FirstAction; action != NULL; action = action->Next) {
-				(*action)(type->House, NULL, NULL, CELL_NONE);
+				(*action)(type->House, NULL, trigger, CELL_NONE);
 				ran++;
 			}
 		}

@@ -38,12 +38,15 @@
 #include "shapebtn.h"
 #include "stage.h"
 
+#include <vector>
+
 #include "rtti.hh"
 #include "super.hh"
 
 
 class InitClass {};
 class FactoryClass;
+class TechnoTypeClass;
 
 class SidebarClass : public PowerClass
 {
@@ -134,6 +137,9 @@ class SidebarClass : public PowerClass
 		// Flags every strip to redraw, for changes that can show on any tab.
 		void Flag_Strips_To_Redraw(void);
 
+		// Makes the cameo of the object type given flash for a number of frames.
+		void Flash_Cameo(TechnoTypeClass const * type, int frames);
+
 		// The tab currently shown.
 		int ActiveTab;
 
@@ -195,6 +201,8 @@ class SidebarClass : public PowerClass
 				void Deactivate(void);
 				void Flag_To_Redraw(void);
 				bool Factory_Link(FactoryClass * factory, RTTIType type, int id);
+				void Flash_Cameo(TechnoTypeClass const * type, int frames);
+				bool Is_Cameo_Flashing(TechnoTypeClass const * type) const;
 				ShapeSet const * Get_Special_Cameo(SuperWeaponType type);
 				static int Column_Step(void);
 
@@ -205,7 +213,8 @@ class SidebarClass : public PowerClass
 					BUTTON_UP=200,
 					BUTTON_DOWN=210,
 					BUTTON_SELECT=220,
-					MAX_BUILDABLES=225,				// Maximum number of object types in sidebar.
+					MAX_BUILDABLES=225,
+					CAMEO_FLASH_RATE=6,				/// Frames between one beat of a flashing cameo and the next.				// Maximum number of object types in sidebar.
 					OBJECT_HEIGHT=50,				// Pixel height of each row of cameos.
 					SLOT_COLUMNS=2,					// Cameos side by side in each row.
 					OBJECT_WIDTH=64,				// Pixel width of each buildable object.
@@ -360,6 +369,16 @@ class SidebarClass : public PowerClass
 					FactoryClass * Factory;								// Production manager.
 				};
 				BuildType Buildables[MAX_BUILDABLES];
+
+				/*
+				 * The cameos a trigger action has set flashing, and the frame each stops at. A flash
+				 * is a visual cue only, so it is not saved.
+				 */
+				struct CameoFlashType {
+					TechnoTypeClass const * Type;
+					int EndFrame;
+				};
+				std::vector<CameoFlashType> CameoFlashes;
 
 				/*
 				**	Pointer to the shape data for small versions of the logos. These are used as
