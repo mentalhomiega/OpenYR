@@ -54,7 +54,7 @@
 
 #include <cstdlib>
 
-#define SCEN_LOCAL_COUNT 50
+#define SCEN_LOCAL_COUNT 100
 #define SCEN_GLOBAL_COUNT 50
 
 class CRCEngine;
