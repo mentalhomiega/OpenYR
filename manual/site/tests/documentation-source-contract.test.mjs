@@ -850,7 +850,7 @@ test('The economy counts every listed refinery and harvester and prices a prefer
 	assert.doesNotMatch(house, /HarvesterUnit\[0\]|BuildRefinery\[0\]/, 'no refinery or harvester is read by position');
 	assertOrdered(functionBody(house, 'bool HouseClass::Can_Make_Money(void)'), [
 		'Get_Preferred(Rule->BuildRefinery)',
-		'Get_Preferred(Rule->HarvesterUnit)',
+		'Preferred_Harvester()',
 		'Owns_Any(ABQuantity, Rule->BuildRefinery)',
 		'Owns_Any(AUQuantity, Rule->HarvesterUnit)',
 	], 'the money check prices a preferred entry and counts the whole list');
@@ -883,7 +883,7 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 4, 'the buildable scan and the three defense scans ask the seam');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 7, 'the availability test, the buildable scan, the harvester scan and the three defense scans ask the seam');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 
@@ -1122,7 +1122,7 @@ test('New theater artwork is renamed by image letter, not by a prefix list', () 
 	);
 
 	assert.match(rename, /TheaterClass::As_Reference\(theater\)\.ImageLetter/, 'the letter comes from the theater');
-	assert.match(rename, /Theaters\[index\]->ImageLetter/, 'a name qualifies by carrying some theater letter');
+	assert.match(rename, /name\[1\] = letter;/, 'the letter replaces the second character');
 	assert.doesNotMatch(objtype, /"ga"|"na"|"gt"|"nt"|"ca"|"ct"/, 'no fixed prefix list remains');
 	assert.match(
 		functionBody(objtype, 'void ObjectTypeClass::Fetch_Normal_Image(void)'),
@@ -1435,10 +1435,10 @@ test('An EM pulse can be refused by type', () => {
 	assertOrdered(
 		pulse,
 		[
-			'if (!aircraft->Class->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {',
-			'if (!foot->TClass->Is_Immune_To_EMP()) {',
-			'if (!building->Class->Is_Immune_To_EMP()) {',
-			'bool immune = techno->TClass->Is_Immune_To_EMP();',
+			'if (!aircraft->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {',
+			'if (!foot->Is_Immune_To_EMP()) {',
+			'if (!building->Is_Immune_To_EMP()) {',
+			'bool immune = techno->Is_Immune_To_EMP();',
 		],
 		'every effect a pulse has asks the same question',
 	);
