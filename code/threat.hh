@@ -34,6 +34,8 @@ enum ThreatType {
 	THREAT_FACTORIES=0x1000,    // Consider factories a greater target?
 	THREAT_BASE_DEFENSE=0x2000, // Consider base defense buildings a greater target?
 	THREAT_ALLIES=0x4000,       /// Scan for allies?
+	THREAT_OCCUPIABLE=0x8000,   /// Consider structures soldiers can garrison a greater target?
+	THREAT_TECH=0x10000,        /// Consider structures that need an engineer to capture a greater target?
 };
 
 #define THREAT_GROUND	(THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_INFANTRY)

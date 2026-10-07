@@ -34,6 +34,8 @@ char const * const QuarryName[QUARRY_COUNT] = {
 	"Base Defenses",
 	"Base Threats",
 	"Power Facilities",
+	"Garrisonable Structures",
+	"Tech Structures",
 };
 
 

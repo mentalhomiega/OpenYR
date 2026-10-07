@@ -129,6 +129,26 @@ BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *
 
 bool TeamClass::TraceScripts = false;
 
+/// <summary>
+/// Converts the quarry of an Attack script line into the threat scan that looks for it, as
+/// gamemd does. A quarry it does not list scans for anything.
+/// </summary>
+static ThreatType Quarry_Threat(int quarry)
+{
+	switch (quarry) {
+		case QUARRY_BUILDINGS: return(THREAT_BUILDINGS);
+		case QUARRY_HARVESTERS: return(THREAT_TIBERIUM);
+		case QUARRY_INFANTRY: return(THREAT_INFANTRY);
+		case QUARRY_VEHICLES: return(THREAT_VEHICLES);
+		case QUARRY_FACTORIES: return(THREAT_FACTORIES);
+		case QUARRY_DEFENSE: return(THREAT_BASE_DEFENSE);
+		case QUARRY_POWER: return(THREAT_POWER);
+		case QUARRY_OCCUPIABLE: return(THREAT_OCCUPIABLE);
+		case QUARRY_TECH: return(THREAT_TECH);
+		default: return(THREAT_NORMAL);
+	}
+}
+
 /***********************************************************************************************
  * _Is_It_Breathing -- Checks to see if unit is an active team member.                         *
  *                                                                                             *
@@ -2798,46 +2818,7 @@ void TeamClass::TMission_ATTACK(TeamMissionClass * mission, bool)
 		/*
 		**	Have the team leader pick what the next team target will be.
 		*/
-		switch (mission->Data.Quarry) {
-			case QUARRY_ANYTHING:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_NORMAL, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_BUILDINGS:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_BUILDINGS, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_HARVESTERS:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_TIBERIUM, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_INFANTRY:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_INFANTRY, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_VEHICLES:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_VEHICLES, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_FACTORIES:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_FACTORIES, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_DEFENSE:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_BASE_DEFENSE, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_THREAT:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_NORMAL, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			case QUARRY_POWER:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_POWER, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
-				break;
-
-			default:
-				break;
-		}
+		Assign_Mission_Target(candidate->Greatest_Threat(Quarry_Threat(mission->Data.Value), candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
 		if (MissionTarget == NULL || !Ammo_Check()) IsNextMission = true;
 	}
 	if (MissionTarget == NULL || !Ammo_Check()) IsNextMission = true;

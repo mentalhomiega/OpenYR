@@ -281,6 +281,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsBibbed(false),
 	IsWall(false),
 	IsCaptureable(false),
+	IsNeedsEngineer(false),
 	IsCanBeOccupied(false),
 	IsCanOccupyFire(false),
 	IsShowOccupantPips(true),
@@ -1272,6 +1273,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		Speed = ini.Get_Bool(Name(), "WaterBound", Speed == SPEED_FLOAT) ? SPEED_FLOAT : SPEED_NONE;
 		Adjacent = ini.Get_Int(Name(), "Adjacent", Adjacent);
 		IsCaptureable = ini.Get_Bool(Name(), "Capturable", IsCaptureable);
+		IsNeedsEngineer = ini.Get_Bool(Name(), "NeedsEngineer", IsNeedsEngineer);
 		IsCanBeOccupied = ini.Get_Bool(Name(), "CanBeOccupied", IsCanBeOccupied);
 		IsCanOccupyFire = ini.Get_Bool(Name(), "CanOccupyFire", IsCanOccupyFire);
 		IsShowOccupantPips = ini.Get_Bool(Name(), "ShowOccupantPips", IsShowOccupantPips);
@@ -2195,6 +2197,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsBibbed);
 	crc(IsWall);
 	crc(IsCaptureable);
+	crc(IsNeedsEngineer);
 	crc(IsPowered);
 	crc(IsPoweredSpecial);
 	crc(IsUnsellable);
@@ -2341,6 +2344,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBibbed);
 	stream.Serialize(IsWall);
 	stream.Serialize(IsCaptureable);
+	stream.Serialize(IsNeedsEngineer);
 	stream.Serialize(IsCanBeOccupied);
 	stream.Serialize(IsCanOccupyFire);
 	stream.Serialize(IsShowOccupantPips);

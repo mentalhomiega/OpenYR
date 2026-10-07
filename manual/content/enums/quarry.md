@@ -9,7 +9,7 @@ bindings:
   scripting_parameter_types: [quarry]
 source_files: [code/quarry.hh, code/quarry.cpp, code/team.cpp]
 values:
-  - { constant: QUARRY_NONE, value: 0, input: "0", meaning: "No category, and no target is assigned." }
+  - { constant: QUARRY_NONE, value: 0, input: "0", meaning: "No category. A team attack line treats it as category 1." }
   - { constant: QUARRY_ANYTHING, value: 1, input: "1", meaning: "Any suitable enemy." }
   - { constant: QUARRY_BUILDINGS, value: 2, input: "2", meaning: "Structures of any kind." }
   - { constant: QUARRY_HARVESTERS, value: 3, input: "3", meaning: "Vehicles and structures whose type sets a nonzero Storage, such as harvesters and refineries." }
@@ -19,12 +19,14 @@ values:
   - { constant: QUARRY_DEFENSE, value: 7, input: "7", meaning: "Armed structures." }
   - { constant: QUARRY_THREAT, value: 8, input: "8", meaning: "The same search as 1. Despite the name, targets near the house's base get no preference." }
   - { constant: QUARRY_POWER, value: 9, input: "9", meaning: "Structures that generate power. A structure with a larger power output is preferred." }
+  - { constant: QUARRY_OCCUPIABLE, value: 10, input: "10", meaning: "Structures soldiers can garrison, such as civilian buildings. A structure with a larger MaxNumberOccupants is preferred." }
+  - { constant: QUARRY_TECH, value: 11, input: "11", meaning: "Structures with NeedsEngineer=yes, such as the neutral tech buildings." }
 ---
 
 A quarry is the kind of target a team attacks. The team's [Attack...](/mapping/missions/tmission-attack/) mission names a category, and the team leader searches the whole map for the best enemy of that kind. [Target selection](/systems/target-selection/) explains how the candidates are ranked.
 
-Category 2 accepts every structure, including the factories, armed structures and power plants that categories 6, 7 and 9 pick out. Each of those three limits the search to its own kind of structure.
+Category 2 accepts every structure, including the factories, armed structures, power plants, garrisonable structures and tech structures that categories 6, 7, 9, 10 and 11 pick out. Each of those limits the search to its own kind of structure.
 
-A value outside the list works like category 0. The team gets no target and moves on to the next line of its script.
+A team attack line treats a value outside the list as category 1.
 
 [Preferred target...](/mapping/actions/taction-preferred-target/) also takes a quarry category, but it stores the category on a house instead of giving it to a team. That page describes what the stored category does.

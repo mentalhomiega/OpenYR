@@ -31,6 +31,8 @@ enum QuarryType {
 	QUARRY_DEFENSE,     // Attack base defense buildings.
 	QUARRY_THREAT,      // Attack enemies near friendly base.
 	QUARRY_POWER,       // Attack power facilities.
+	QUARRY_OCCUPIABLE,  // Attack structures soldiers can garrison.
+	QUARRY_TECH,        // Attack tech structures that need an engineer to capture.
 
 	QUARRY_COUNT,
 	QUARRY_FIRST=0

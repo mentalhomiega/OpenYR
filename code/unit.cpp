@@ -5829,7 +5829,7 @@ AbstractClass * UnitClass::Greatest_Threat(ThreatType threat, Coord const & coor
 	if (House->Is_Human_Player() && Class->IsDeployToFire) {
 		return(NULL);
 	}
-	if (!(threat & (THREAT_INFANTRY|THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_TIBERIUM|THREAT_CIVILIANS|THREAT_POWER|THREAT_FACTORIES|THREAT_BASE_DEFENSE))) {
+	if (!(threat & (THREAT_INFANTRY|THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_TIBERIUM|THREAT_CIVILIANS|THREAT_POWER|THREAT_FACTORIES|THREAT_BASE_DEFENSE|THREAT_OCCUPIABLE|THREAT_TECH))) {
 		if (PrimaryWeapon != NULL) {
 			threat = ThreatType(threat | PrimaryWeapon->Allowed_Threats());
 		}
