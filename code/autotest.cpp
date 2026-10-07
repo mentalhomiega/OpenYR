@@ -1150,10 +1150,10 @@ void Run(StepType const & step)
 					Houses[house]->Power, Houses[house]->Drain, (int)Houses[house]->IsDefeated, buildings, units, harvesters, infantry, aircraft, busy, types.c_str());
 				HouseClass const * owner = Houses[house];
 				if (!owner->Is_Human_Player()) {
-					DebugString("AUTOTEST     builds struct %s unit %s infantry %s aircraft %s state %d mode %d tiberiumshort %d\n",
+					DebugString("AUTOTEST     builds struct %s unit %s infantry %s aircraft %s state %d mode %d tiberiumshort %d tech %d\n",
 						owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-", owner->BuildUnit != UNIT_NONE ? UnitTypes[owner->BuildUnit]->Name() : "-",
 						owner->BuildInfantry != INFANTRY_NONE ? InfantryTypes[owner->BuildInfantry]->Name() : "-", owner->BuildAircraft != AIRCRAFT_NONE ? AircraftTypes[owner->BuildAircraft]->Name() : "-",
-						(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort);
+						(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort, owner->Control.TechLevel);
 				}
 				for (int f = 0; f < Factories.Count(); f++) {
 					FactoryClass * factory = Factories[f];
@@ -1261,7 +1261,7 @@ void Run(StepType const & step)
 				team->Team_Members(missing);
 				std::string names;
 				for (int m = 0; m < missing.Count(); m++) {
-					names += std::string(" ") + missing[m]->Name() + (team->House->Can_Build(missing[m], false, false) == 0 ? "(cannot)" : "");
+					names += std::string(" ") + missing[m]->Name() + (team->House->Can_Build(missing[m], false, false) == 0 ? ("(cannot lvl" + std::to_string(missing[m]->Level) + " req" + std::to_string(missing[m]->RequiredHouses) + " forb" + std::to_string(missing[m]->ForbiddenHouses) + " unb" + std::to_string((int)missing[m]->IsUnbuildable) + " own" + std::to_string(missing[m]->Ownable) + " mask" + std::to_string(team->House->Acted_Mask()) + ")") : std::string(""));
 				}
 				DebugString("AUTOTEST     team %s missing%s\n", team->Class->Name(), names.c_str());
 			}
