@@ -321,10 +321,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_CHRONO_SCREEN_EFFECT:
 		case TACTION_TELEPORT_ALL_TO:
 		case TACTION_RESTORE_STARTING_BUILDINGS:
-		case TACTION_SET_PREFERRED_TARGET_CELL:
-		case TACTION_CLEAR_PREFERRED_TARGET_CELL:
-		case TACTION_CENTER_BASE_CELL_SET:
-		case TACTION_CENTER_BASE_CELL_CLEAR:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 		case TACTION_RETINT_RED:
@@ -835,6 +831,10 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(SUPER_SET_RECHARGE_TIME);
 		INVOKE(SUPER_RESET_RECHARGE_TIME);
 		INVOKE(SUPER_RESET);
+		INVOKE(CENTER_BASE_CELL_CLEAR);
+		INVOKE(CENTER_BASE_CELL_SET);
+		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
+		INVOKE(SET_PREFERRED_TARGET_CELL);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3314,6 +3314,65 @@ bool TActionClass::TAction_SUPER_RESET(HouseClass * house, ObjectClass * , Trigg
 	}
 	super->Reset();
 	Map.Flag_Strips_To_Redraw();
+	return(true);
+}
+
+
+/// <summary>
+/// Aims the super weapons the computer fires for the trigger's house at the action's waypoint.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
+bool TActionClass::TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+	house->PreferredTargetCell = Scen->Get_Waypoint_Cell(EffectLocation);
+	return(true);
+}
+
+
+/// <summary>
+/// Lets the computer choose targets for the trigger's house's super weapons again.
+/// </summary>
+/// <returns>bool; Does the trigger have a house?</returns>
+bool TActionClass::TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL) {
+		return(false);
+	}
+	house->PreferredTargetCell = CELL_NONE;
+	return(true);
+}
+
+
+/// <summary>
+/// Makes the action's waypoint the center of the trigger's house's base, whatever buildings the
+/// house has.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
+bool TActionClass::TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+	house->CenterOverride = Scen->Get_Waypoint_Cell(EffectLocation);
+	house->Recalc_Center();
+	return(true);
+}
+
+
+/// <summary>
+/// Lets the center of the trigger's house's base follow its buildings again.
+/// </summary>
+/// <returns>bool; Does the trigger have a house?</returns>
+bool TActionClass::TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL) {
+		return(false);
+	}
+	house->CenterOverride = CELL_NONE;
+	house->Recalc_Center();
 	return(true);
 }
 

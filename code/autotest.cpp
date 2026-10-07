@@ -65,7 +65,8 @@
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
 **	houses					writes each house's money, power and spy effects
-**	supers					writes each present super weapon: owner, charge left, charge time and whether it is ready
+**	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
+**							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
@@ -1008,6 +1009,7 @@ void Run(StepType const & step)
 		// supers: each super weapon a house has, how much of its charge is left and the time it charges in.
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
+			DebugString("AUTOTEST   aim house %s target %d,%d base center %d,%d\n", house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->Center.As_Cell().X, (int)house->Center.As_Cell().Y);
 			for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 				SuperClass * super = house->SuperWeapon[s];
 				if (super == NULL || !super->Is_Present()) continue;

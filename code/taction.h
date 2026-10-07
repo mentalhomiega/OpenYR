@@ -313,6 +313,10 @@ class TActionClass : public AbstractClass
 		bool TAction_SUPER_RESET_RECHARGE_TIME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_SUPER_RESET(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		SuperClass * Super_Of_House(HouseClass * house) const;
+		bool TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool Not_Implemented(void) const;
 };
 
