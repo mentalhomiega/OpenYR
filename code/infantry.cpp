@@ -2498,6 +2498,35 @@ bool InfantryClass::Is_Amphibian_On_Land(void) const
 }
 
 
+/// <summary>
+/// Tells whether this soldier is idle enough to cheer, as InfantryClass::CanCheer (0x522BC0) does:
+/// it must be on guard or area guard and standing ready, idling or already cheering.
+/// </summary>
+bool InfantryClass::Can_Cheer(void) const
+{
+	MissionType const mission = Get_Mission();
+	if (mission != MISSION_GUARD && mission != MISSION_GUARD_AREA) {
+		return(false);
+	}
+	return(Doing == DO_STAND_READY || Doing == DO_IDLE1 || Doing == DO_IDLE2 || Doing == DO_CHEER);
+}
+
+
+/// <summary>
+/// Plays the Cheer sequence once, as InfantryClass::Cheer (0x522C00) does. The soldier then goes back
+/// to standing ready by the usual end of a sequence. A soldier that is busy cheers only when forced.
+/// A type with no Cheer sequence does nothing.
+/// </summary>
+/// <param name="force">Cheer even when the soldier is busy.</param>
+void InfantryClass::Cheer(bool force)
+{
+	if (!force && !Can_Cheer()) {
+		return;
+	}
+	Do_Action(DO_CHEER, true);
+}
+
+
 bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 {
 	// A dug-in soldier stands, fires and idles with its deployed sequences, and never lies down.
