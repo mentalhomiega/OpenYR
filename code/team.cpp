@@ -756,6 +756,7 @@ void TeamClass::AI(void)
 			INVOKE(MOVE_TO_OWN_BUILDING);
 			INVOKE(CHRONO_PREP_ABWP);
 			INVOKE(CHRONO_PREP_AQ);
+			INVOKE(ATTACK_WAYPOINT_OBJECT);
 			INVOKE(ENTER_TANK_BUNKER);
 			INVOKE(ENTER_BIO_REACTOR);
 			INVOKE(ENTER_BATTLE_BUNKER);
@@ -2697,6 +2698,34 @@ void TeamClass::TMission_ATT_WAYPT(TeamMissionClass * mission, bool first_time)
 			}
 		}
 		Assign_Mission_Target(trgt);
+	}
+
+	if (MissionTarget && Ammo_Check()) {
+		Coordinate_Attack();
+	} else {
+		Assign_Mission_Target(NULL);
+		IsNextMission = true;
+	}
+}
+
+
+/// <summary>
+/// Handles script line 59, which attacks the building standing on the scripted waypoint
+/// (0x6ECA70). The line is passed over when no building stands there or the team has run dry
+/// of ammunition.
+/// </summary>
+void TeamClass::TMission_ATTACK_WAYPOINT_OBJECT(TeamMissionClass * mission, bool first_time)
+{
+	if (first_time) {
+		CellClass * cell = (CellClass *)Scen->Get_Waypoint_Target(mission->Data.Value);
+		AbstractClass * building = NULL;
+		if (Is_Target_Cell(cell)) {
+			ObjectClass * object = cell->Cell_Object(Point2D(0,0), cell->IsUnderBridge);
+			if (object != NULL && object->RTTI == RTTI_BUILDING) {
+				building = object;
+			}
+		}
+		Assign_Mission_Target(building);
 	}
 
 	if (MissionTarget && Ammo_Check()) {
