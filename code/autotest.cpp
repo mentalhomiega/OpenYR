@@ -105,6 +105,7 @@
 #include "airctype.h"
 #include "animtype.h"
 #include "building.h"
+#include "factory.h"
 #include "ccfile.h"
 #include "builtype.h"
 #include "cell.h"
@@ -1147,6 +1148,18 @@ void Run(StepType const & step)
 			if (buildings + units + infantry + aircraft > 0 && Houses[house]->Class->IsMultiplayPassive == false) {
 				DebugString("AUTOTEST   census %s money %d power %d/%d defeated %d: buildings %d units %d (harvesters %d) infantry %d aircraft %d busy %d |%s\n", Houses[house]->Class->Name(), Houses[house]->Available_Money(),
 					Houses[house]->Power, Houses[house]->Drain, (int)Houses[house]->IsDefeated, buildings, units, harvesters, infantry, aircraft, busy, types.c_str());
+				HouseClass const * owner = Houses[house];
+				if (!owner->Is_Human_Player()) {
+					DebugString("AUTOTEST     builds struct %s unit %s infantry %s aircraft %s state %d mode %d tiberiumshort %d\n",
+						owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-", owner->BuildUnit != UNIT_NONE ? UnitTypes[owner->BuildUnit]->Name() : "-",
+						owner->BuildInfantry != INFANTRY_NONE ? InfantryTypes[owner->BuildInfantry]->Name() : "-", owner->BuildAircraft != AIRCRAFT_NONE ? AircraftTypes[owner->BuildAircraft]->Name() : "-",
+						(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort);
+				}
+				for (int f = 0; f < Factories.Count(); f++) {
+					FactoryClass * factory = Factories[f];
+					if (factory->Get_Object() == NULL || factory->Get_Object()->House != owner) continue;
+					DebugString("AUTOTEST     factory %s complete %d building %d suspended %d\n", factory->Get_Object()->TClass->Name(), factory->Completion(), (int)factory->Is_Building(), (int)factory->Is_Suspended());
+				}
 			}
 		}
 	} else if (step.Command == "count") {
