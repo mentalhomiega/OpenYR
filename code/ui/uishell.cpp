@@ -802,46 +802,49 @@ void UIShellClass::Tick(void)
 		return;
 	}
 
-	// A scripted menu step acts before the tick takes its guard, so a screen it opens can tick.
+	{
+		// A style tells the menus over a game apart from the ones at the title by this class.
+		bool const ingame = Host.Game_Running();
+		for (int index = 0; index < Context->GetNumDocuments(); index++) {
+			Context->GetDocument(index)->SetClass("ingame", ingame);
+		}
+
+		UIReentryGuardClass ticking(InTick);
+
+		Drain_Deferred();
+		Reconcile_Held_Input();
+
+		{
+			UIReentryGuardClass updating(InContext);
+			Context->Update();
+			UIDev_Tick();
+		}
+
+		for (UIViewClass * view : Modals) {
+			view->Placed();
+		}
+		for (UIViewClass * view : Modeless) {
+			view->Placed();
+		}
+
+		// Positions a view sets while placed are laid out before this pass is drawn.
+		{
+			UIReentryGuardClass updating(InContext);
+			Context->Update();
+		}
+
+		Apply_Cursor_Request();
+
+		bool devactive = UIDev_Active();
+		if (Documents_Visible() || devactive || DevWasActive) {
+			Host.Mark_Overlay_Dirty();
+		}
+		DevWasActive = devactive;
+	}
+
+	// A scripted menu step acts once the pass is done and its guard is released, so a screen it
+	// opens can tick, and its click arrives where a real one would, between two passes.
 	UIScript_Tick(Context);
-
-	// A style tells the menus over a game apart from the ones at the title by this class.
-	bool const ingame = Host.Game_Running();
-	for (int index = 0; index < Context->GetNumDocuments(); index++) {
-		Context->GetDocument(index)->SetClass("ingame", ingame);
-	}
-
-	UIReentryGuardClass ticking(InTick);
-
-	Drain_Deferred();
-	Reconcile_Held_Input();
-
-	{
-		UIReentryGuardClass updating(InContext);
-		Context->Update();
-		UIDev_Tick();
-	}
-
-	for (UIViewClass * view : Modals) {
-		view->Placed();
-	}
-	for (UIViewClass * view : Modeless) {
-		view->Placed();
-	}
-
-	// Positions a view sets while placed are laid out before this pass is drawn.
-	{
-		UIReentryGuardClass updating(InContext);
-		Context->Update();
-	}
-
-	Apply_Cursor_Request();
-
-	bool devactive = UIDev_Active();
-	if (Documents_Visible() || devactive || DevWasActive) {
-		Host.Mark_Overlay_Dirty();
-	}
-	DevWasActive = devactive;
 }
 
 
