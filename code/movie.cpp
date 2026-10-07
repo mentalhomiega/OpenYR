@@ -20,6 +20,7 @@
 #include "_rect.h"
 #include "_surface.h"
 #include "binkmovie.h"
+#include "campmovies.h"
 #include "ccfile.h"
 #include "dbgprint.h"
 #include "dsurface.h"
@@ -80,6 +81,8 @@ unsigned			PaletteCounter;
  *=============================================================================================*/
 void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool stretch, bool clrscrn_before)
 {
+	Note_Campaign_Movie(name);
+
 	// Outside a campaign, movies play only when the launch file asked for them.
 	if (Session.Type != GAME_NORMAL && !Session.PlayMovies) {
 		return;

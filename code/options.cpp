@@ -90,9 +90,80 @@
 #include "diff.hh"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
 
 
 char const * const OptionsClass::HotkeyName = "WinHotkeys";
+
+
+/// <summary>
+/// Reads the movies the player has seen from the NetID entry of the settings file's Network
+/// section, where Yuri's Revenge keeps them. The entry holds the text "soviet allied", such as
+/// "1 2" for the first Soviet movie and the first two Allied ones, as one hex number per
+/// character with every bit flipped: "ffce,ffdf,ffcd,". A missing or unreadable entry means none,
+/// and so does a count outside 0 to 8.
+/// </summary>
+void OptionsClass::Load_Seen_Movies(void)
+{
+	int & soviet = LastSovietMovie;
+	int & allied = LastAlliedMovie;
+	soviet = -1;
+	allied = -1;
+
+	char list[256];
+	ConfigINI.Get_String("Network", "NetID", "", list, sizeof(list));
+	std::string text;
+	for (char const * at = list; *at != '\0'; ) {
+		unsigned value = 0;
+		int used = 0;
+		if (sscanf(at, "%x%n", &value, &used) != 1 || value == 0) {
+			break;
+		}
+		unsigned short const character = (unsigned short)~value;
+		text.push_back(character < 0x80 ? (char)character : '?');
+		at += used;
+		while (*at == ',') {
+			at++;
+		}
+	}
+
+	int * const slots[2] = {&soviet, &allied};
+	char const * at = text.c_str();
+	for (int * slot : slots) {
+		at += std::strspn(at, " ");
+		if (*at == '\0') {
+			break;
+		}
+		char * end = nullptr;
+		*slot = (int)std::strtol(at, &end, 10) - 1;
+		at = end;
+		at += std::strcspn(at, " ");
+	}
+
+	soviet = (soviet < -1 || soviet >= 8) ? -1 : soviet;
+	allied = (allied < -1 || allied >= 8) ? -1 : allied;
+}
+
+
+/// <summary>
+/// Writes the movies the player has seen in the form Load_Seen_Movies reads.
+/// </summary>
+void OptionsClass::Save_Seen_Movies(void) const
+{
+	char text[32];
+	snprintf(text, sizeof(text), "%d %d", LastSovietMovie + 1, LastAlliedMovie + 1);
+
+	std::string list;
+	for (char const * at = text; *at != '\0'; at++) {
+		char entry[16];
+		snprintf(entry, sizeof(entry), "%x,", (unsigned)(unsigned short)~(unsigned short)*at);
+		list += entry;
+	}
+	ConfigINI.Put_String("Network", "NetID", list.c_str());
+}
 
 
 /***********************************************************************************************
@@ -156,7 +227,9 @@ OptionsClass::OptionsClass(void) :
 	KeySelect1(KN_LSHIFT),
 	KeySelect2(KN_LSHIFT),
 	KeyQueueMove1(KN_Q),
-	KeyQueueMove2(KN_Q)
+	KeyQueueMove2(KN_Q),
+	LastSovietMovie(-1),
+	LastAlliedMovie(-1)
 {
 }
 
@@ -458,6 +531,8 @@ void OptionsClass::Load_Settings(void)
 	SoundLatency = ConfigINI.Get_Int("Audio", "SoundLatency", SoundLatency);
 	DebugString("Emulated sound card latency default = %d\n", SoundLatency);
 
+	Load_Seen_Movies();
+
 	DebugString("--------- Complete -------------------------------\n");
 
 	Map.Toggle_Cameo_Text(SidebarCameoText);
@@ -561,6 +636,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Audio", "IsScoreRepeat", IsScoreRepeat);
 	ConfigINI.Put_Bool("Audio", "IsScoreShuffle", IsScoreShuffle);
 	ConfigINI.Put_Int("Audio", "SoundLatency", SoundLatency);
+	Save_Seen_Movies();
 
 	/*
 	**	Write the INI data out to a file.

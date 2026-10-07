@@ -67,6 +67,8 @@ class OptionsClass {
 		void Load_Settings(void);
 		void Load_Menu_Style(void);
 		void Load_Interface_Scale(void);
+		void Load_Seen_Movies(void);
+		void Save_Seen_Movies(void) const;
 		void Save_Settings(void);
 
 		void Set(void);
@@ -262,6 +264,13 @@ class OptionsClass {
 		KeyNumType KeyQueueMove2;
 
 		bool BitmapSystemFont;
+
+		/*
+		 * The latest Soviet and Allied campaign movie the player has seen, as its place in that
+		 * campaign's list from zero, or -1 for none. The Play Movies list shows the movies up to it.
+		 */
+		int LastSovietMovie;
+		int LastAlliedMovie;
 
 	private:
 

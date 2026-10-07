@@ -14,6 +14,7 @@
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
+#include "movie.h"
 #include "video.h"
 
 #include <RmlUi/Core.h>
@@ -204,7 +205,8 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// id), set (a slider's id and the value to give it, separated by a space), press (a button's
 /// label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
-/// visible screen), box (logs where an element and each element around it lie) and quit.
+/// visible screen), box (logs where an element and each element around it lie), movie (plays the
+/// movie of that file name, as a campaign does) and quit.
 /// </summary>
 void UIScript_Tick(Rml::Context * context)
 {
@@ -344,6 +346,10 @@ void UIScript_Tick(Rml::Context * context)
 				WaitUntil = now + 300;
 				return;
 			}
+		} else if (step.Command == "movie") {
+			Play_Movie(step.Argument.c_str());
+			WaitUntil = Now_Milliseconds() + 300;
+			return;
 		} else if (step.Command == "quit") {
 			DebugString("UISCRIPT quit\n");
 			std::exit(0);

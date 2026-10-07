@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "_ui.h"
+#include "campmovies.h"
 #include "ccfile.h"
 #include "csf.h"
 #include "init.h"
@@ -24,34 +25,6 @@
 namespace
 {
 
-struct CampaignMovieType
-{
-	char const * File;
-	char const * Label;
-};
-
-// The movies of Yuri's Revenge's Play Movies list, in its order.
-CampaignMovieType const CampaignMovies[] = {
-	{"A00_F00E.BIK", "Name:IntroMovie"},
-	{"S01_F00e.BIK", "Name:Sov01MD"},
-	{"S02_F00e.BIK", "Name:Sov02MD"},
-	{"S03_F00e.BIK", "Name:Sov03MD"},
-	{"S04_F00e.BIK", "Name:Sov04MD"},
-	{"S05_F00e.BIK", "Name:Sov05MD"},
-	{"S06_F00e.BIK", "Name:Sov06MD"},
-	{"S07_F00e.BIK", "Name:Sov07MD"},
-	{"S08_F00e.BIK", "Name:SovFinalMovie"},
-	{"A01_F00e.BIK", "Name:All01MD"},
-	{"A02_F00e.BIK", "Name:All02MD"},
-	{"A03_F00e.BIK", "Name:All03MD"},
-	{"A04_F00e.BIK", "Name:All04MD"},
-	{"A05_F00e.BIK", "Name:All05MD"},
-	{"A06_F00e.BIK", "Name:All06MD"},
-	{"A07_F00e.BIK", "Name:All07MD"},
-	{"A08_F00e.BIK", "Name:AllFinalMovie"},
-};
-
-
 std::string Text(char const * label, char const * fallback)
 {
 	std::string const text = StringTable.Find_UTF8(label);
@@ -62,9 +35,8 @@ std::string Text(char const * label, char const * fallback)
 
 
 /// <summary>
-/// Shows the list of campaign movies the game can find, and plays the one the player picks. The
-/// list returns after each movie and closes with Back or Escape. Yuri's Revenge lists only the
-/// movies the player has already seen; this list shows all of them.
+/// Shows the list of campaign movies the player has seen and the game can find, and plays the one
+/// the player picks. The list returns after each movie and closes with Back or Escape.
 /// </summary>
 void UI_Movies_Dialog(void)
 {
@@ -72,9 +44,10 @@ void UI_Movies_Dialog(void)
 	state.Title = Text("GUI:SelectMovie", "Select Movie");
 	state.PlayCaption = Text("GUI:PlayMovie", "Play Movie");
 	state.BackCaption = Text("GUI:Back", "Back");
-	for (CampaignMovieType const & movie : CampaignMovies) {
-		if (CCFileClass(movie.File).Is_Available()) {
-			state.Rows.push_back(UIMovieRow{Text(movie.Label, movie.File), movie.File});
+	for (CampaignMovieType const & movie : Seen_Campaign_Movies()) {
+		std::string const file = std::string(movie.Name) + ".BIK";
+		if (CCFileClass(file.c_str()).Is_Available()) {
+			state.Rows.push_back(UIMovieRow{Text(movie.Label, file.c_str()), file});
 		}
 	}
 
