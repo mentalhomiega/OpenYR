@@ -757,6 +757,8 @@ void TeamClass::AI(void)
 			INVOKE(CHRONO_PREP_ABWP);
 			INVOKE(CHRONO_PREP_AQ);
 			INVOKE(ATTACK_WAYPOINT_OBJECT);
+			INVOKE(ENTER_GRINDER);
+			INVOKE(GARRISON_STRUCTURE);
 			INVOKE(ENTER_TANK_BUNKER);
 			INVOKE(ENTER_BIO_REACTOR);
 			INVOKE(ENTER_BATTLE_BUNKER);
@@ -4190,11 +4192,12 @@ RTTIType TeamClass::Fetch_RTTI(void) const
 
 
 /// <summary>
-/// Sends each member that one of its owner's structures accepts into the nearest such structure
-/// and drops it from the team; members no structure accepts stay. The step then ends. A structure
-/// is offered only the room left after the members this step has already sent to it.
+/// Sends each member that a structure accepts into the nearest such structure and drops it from
+/// the team; members no structure accepts stay. The step then ends. A structure is offered only
+/// the room left after the members this step has already sent to it. Only the member's own house's
+/// structures are considered unless own_only is false.
 /// </summary>
-void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent))
+void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only)
 {
 	std::map<BuildingClass const *, int> sent;
 
@@ -4206,7 +4209,7 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 		if (member->IsActive && !member->IsInLimbo && member->Strength > 0) {
 			for (int index = 0; index < Buildings.Count(); index++) {
 				BuildingClass * building = Buildings[index];
-				if (building->House != member->House || building->IsInLimbo || !accepts(building, member, sent.contains(building) ? sent[building] : 0)) {
+				if ((own_only && building->House != member->House) || building->IsInLimbo || !accepts(building, member, sent.contains(building) ? sent[building] : 0)) {
 					continue;
 				}
 				int const distance = member->Distance(building);
@@ -4249,6 +4252,30 @@ void TeamClass::TMission_ENTER_BIO_REACTOR(TeamMissionClass *, bool)
 	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
 		return(building->Can_Absorb(member) && building->Cargo.How_Many() + sent < building->Class->Max_Passengers());
 	});
+}
+
+
+/// <summary>
+/// Sends each vehicle and soldier into its owner's nearest grinder (FootClass::EnterGrinder,
+/// 0x4DFA70).
+/// </summary>
+void TeamClass::TMission_ENTER_GRINDER(TeamMissionClass *, bool)
+{
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int) {
+		return(building->Class->IsGrinding && building->CurrentMission != MISSION_CONSTRUCTION && building->CurrentMission != MISSION_DECONSTRUCTION && building->Takes_Walk_Ins(member));
+	});
+}
+
+
+/// <summary>
+/// Sends each occupier soldier into the nearest structure it can garrison, whether its own
+/// house's or a neutral one (FootClass::GarrisonStructure, 0x4DFE00).
+/// </summary>
+void TeamClass::TMission_GARRISON_STRUCTURE(TeamMissionClass *, bool)
+{
+	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
+		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
+	}, false);
 }
 
 
