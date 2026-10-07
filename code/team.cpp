@@ -2518,7 +2518,7 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 		return;
 	}
 
-	int recharge = std::max(1, super->Class->RechargeTime);
+	int recharge = std::max(1, super->Get_Recharge_Time());
 	if (!super->Is_Present() || 1.0 - Rule->AIMinorSuperReadyPercent < (double)super->Control.Value() / (double)recharge) {
 		IsNextMission = true;
 	}

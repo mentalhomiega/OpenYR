@@ -3858,7 +3858,7 @@ void Tactical::Draw_Super_Timers(void)
 			SuperClass const * super = house->SuperWeapon[s];
 			if (super == NULL || !super->Is_Present() || super->Class == NULL || !super->Class->IsShowTimer) continue;
 			int const left = super->Control;
-			if (super->Is_Suspended() && Session.Type == GAME_NORMAL && left == super->Class->RechargeTime) continue;
+			if (super->Is_Suspended() && Session.Type == GAME_NORMAL && left == super->Get_Recharge_Time()) continue;
 
 			int const seconds = left / 15;
 			char buffer[96];

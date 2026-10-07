@@ -102,6 +102,15 @@ class SuperClass : public AbstractClass
 		void Reset(void);
 
 		/*
+		 * A trigger action can give this weapon a charge time of its own. Until one does, the
+		 * weapon takes the time its type gives.
+		 */
+		int Get_Recharge_Time(void) const;
+		void Set_Recharge_Time(int frames);
+		void Reset_Recharge_Time(void);
+		void Set_Charge(int percent);
+
+		/*
 		 * This is the house that owns this super weapon and that is credited as the
 		 * attacker for whatever the weapon unleashes.
 		 */
@@ -116,6 +125,9 @@ class SuperClass : public AbstractClass
 		 * over permanently.
 		 */
 		bool NeedsBuilding;
+
+		// The charge time a trigger action gave this weapon, in frames, or -1 for the type's own.
+		int CustomRechargeTime = -1;
 	private:
 		bool IsPresent;
 		bool IsOneTime;
