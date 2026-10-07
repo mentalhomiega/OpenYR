@@ -85,6 +85,9 @@
 #include "tagtype.h"
 #include "team.h"
 #include "teamtype.h"
+#include "techtype.h"
+#include "csf.h"
+#include "dbgprint.h"
 #include "theme.h"
 #include "tracker.h"
 #include "trigger.h"
@@ -214,16 +217,59 @@ static const struct {
 	{"Play Sound Effect (Random)...", "Plays sound effect at random waypoint."},
 	{"Play Sound Effect At...", "Plays sound effect specified at waypoint specified. "},
 	{"Play Ingame Movie...", "Displays the specified movie ingame. Player still has control of interface and units."},
+	{"Reshroud Map At...", "Reshrouds the map around the specified waypoint."},
+	{"Lightning Storm strike...", "Starts a lightning storm at the specified waypoint."},
+	{"Timer Text...", "Sets the label the mission timer is shown with."},
 	{"Flash Team...", "Flashes the specified team for the specified number of frames"},
+	{"Talk Bubble...", "Displays talk bubble over unit"},
+	{"Set Object's Tech Level...", "Changes the tech level an object type is available at."},
+	{"Reinforcement by Chrono...", "Create reinforcement team at the specified waypoint, chronoshifted in."},
+	{"Create Crate...", "Places a crate of the specified kind at the specified waypoint."},
+	{"Iron Curtain At...", "Applies the Iron Curtain at the specified waypoint."},
+	{"Pause Game...", "Pauses the game for the specified number of seconds."},
+	{"Evict Occupiers", "Forces the infantry out of the attached building."},
+	{"Center (Jump) Camera at Waypoint...", "Moves the tactical view to the specified waypoint at once."},
+	{"Make house cheer...", "All infantry of the specified house cheer if they can."},
+	{"Set Tab to...", "Switches the sidebar to the specified tab."},
+	{"Flash Cameo...", "Flashes the cameo of the specified object type for a number of frames."},
+	{"Stop Sounds At...", "Stops the sounds started at the specified waypoint."},
+	{"Play Ingame Movie (pause game)...", "Displays the specified movie ingame. The stock game runs this like Play Ingame Movie."},
+	{"Clear all smudges", "Removes every smudge from the map."},
+	{"Destroy all of...", "Kills everything the specified house owns."},
+	{"Destroy all Buildings of...", "Kills every building the specified house owns."},
+	{"Destroy all Land Units of...", "Kills every land unit, infantry and aircraft the specified house owns."},
+	{"Destroy all Naval Units of...", "Kills every naval unit the specified house owns."},
+	{"Mind Control Base of...", "The trigger's house mind controls the base of the specified house."},
+	{"Restore Mind Controlled Base to...", "Returns a mind controlled base to the specified house."},
+	{"Create Building At...", "Places a building of the specified type for the trigger's house at the specified waypoint."},
+	{"Restore Starting Units of...", "Respawns the units the specified house started with."},
+	{"Chrono Screen Effect for...", "Shows the chronoshift screen effect for the specified number of frames."},
+	{"Teleport All to...", "Teleports every unit of the trigger's house to the specified waypoint."},
+	{"Set Superweapon Charge...", "Sets how charged the specified super weapon is, in percent."},
+	{"Restore Starting Buildings of...", "Respawns the buildings the specified house started with."},
+	{"Flash Buildings of Type...", "Flashes every building of the specified type for a number of frames."},
+	{"Superweapon Set Recharge Time...", "Sets the recharge time of the specified super weapon."},
+	{"Superweapon Reset Recharge Time...", "Puts the recharge time of the specified super weapon back to normal."},
+	{"Superweapon Reset...", "Resets the specified super weapon."},
+	{"Set Preferred Target Cell...", "Aims every super weapon of the trigger's house at the specified waypoint."},
+	{"Clear Preferred Target Cell", "Goes back to the normal super weapon targeting."},
+	{"Center Base Cell Set...", "Makes the specified waypoint the center of the AI's base."},
+	{"Center Base Cell Clear", "Lets the AI work out the center of its base again."},
+	{"Blackout Radar...", "Blacks out the radar for the specified number of frames."},
+	{"Set Defensive Target Cell...", "Aims force shields at the specified waypoint."},
+	{"Clear Defensive Target Cell", "Goes back to the normal force shield targeting."},
+	{"Retint Red...", "Changes the red screen tint to the specified percent."},
+	{"Retint Green...", "Changes the green screen tint to the specified percent."},
+	{"Retint Blue...", "Changes the blue screen tint to the specified percent."},
+	{"Jump camera home", "Moves the tactical view to the player's construction yard at once."},
 	{"Disable Speech", "Disables EVA speech."},
 	{"Enable Speech", "Enables EVA speech."},
 	{"Set Group ID...", "Sets the group ID of the attached object."},
-	{"Talk Bubble...", "Displays talk bubble over unit"},
 	{"Give Credits...", "Gives or removes credits from the specified house. A positive amount gives money, a negative amount subtracts it."},
 	{"Enable Short Game", "Turns the short game rule on: a house is defeated once it has no structures and no base unit left."},
 	{"Disable Short Game", "Turns the short game rule off: a house is defeated only once it has nothing left."},
-	{"Create Building At...", "Places a building of the specified type for the specified house at the waypoint. Forced placement ignores the placement rules."},
-	{"Destroy all of...", "Kills everything of the specified house and marks it as defeated."},
+	{"Create Building For...", "Places a building of the specified type for the specified house at the waypoint. Forced placement ignores the placement rules."},
+	{"Destroy all of (and defeat)...", "Kills everything of the specified house and marks it as defeated."},
 	{"Make Elite", "All objects attached to this trigger are promoted to elite status."},
 	{"Enable Ally Reveal", "Turns ally reveal on, so allied players see the terrain each other reveals."},
 	{"Disable Ally Reveal", "Turns ally reveal off, so allied players no longer see the terrain each other reveals."},
@@ -235,13 +281,73 @@ static const struct {
 };
 #endif
 
+/// <summary>
+/// The first field of an action in a map says what kind of thing the second field holds. The
+/// numbers are the ones Yuri's Revenge maps use.
+/// </summary>
 enum ParamCodeType {
-	PARAM_CODE_OTHER,
-	PARAM_CODE_TEAM,
-	PARAM_CODE_TRIGGER,
-	PARAM_CODE_TAG,
-	PARAM_CODE_TEAM_AND_TIME,
+	PARAM_CODE_OTHER,			// A plain number.
+	PARAM_CODE_TEAM,			// A team type.
+	PARAM_CODE_TRIGGER,			// A trigger type.
+	PARAM_CODE_TAG,				// A tag type.
+	PARAM_CODE_TEXT,			// A CSF label.
+	PARAM_CODE_TEAM_AND_TIME,	// A team type, with a number of frames in the last field.
+	PARAM_CODE_EVA,				// The name of an EVA line.
+	PARAM_CODE_SOUND,			// The name of a sound.
+	PARAM_CODE_THEME,			// The name of a music theme.
+	PARAM_CODE_TECHNO,			// The ID of an object type, with a number in the last field.
+	PARAM_CODE_BUILDING,		// The ID of a building type.
+	PARAM_CODE_SUPER,			// A super weapon number, with a number in the last field.
 };
+
+
+/// <summary>
+/// Is this one of Yuri's Revenge's actions that this engine does not carry out yet?
+/// </summary>
+/// <param name="action">The action to look up.</param>
+/// <returns>bool; Is the action skipped when it runs?</returns>
+static bool Is_Skipped_Action(TActionType action)
+{
+	switch (action) {
+		case TACTION_RESHROUD_AT:
+		case TACTION_LIGHTNING_STORM_STRIKE:
+		case TACTION_TIMER_TEXT:
+		case TACTION_IRON_CURTAIN_AT:
+		case TACTION_PAUSE_GAME:
+		case TACTION_EVICT_OCCUPIERS:
+		case TACTION_SET_TAB:
+		case TACTION_FLASH_CAMEO:
+		case TACTION_STOP_SOUNDS_AT:
+		case TACTION_CLEAR_SMUDGES:
+		case TACTION_MIND_CONTROL_BASE:
+		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
+		case TACTION_RESTORE_STARTING_UNITS:
+		case TACTION_CHRONO_SCREEN_EFFECT:
+		case TACTION_TELEPORT_ALL_TO:
+		case TACTION_SET_SUPER_CHARGE:
+		case TACTION_RESTORE_STARTING_BUILDINGS:
+		case TACTION_FLASH_BUILDINGS:
+		case TACTION_SUPER_SET_RECHARGE_TIME:
+		case TACTION_SUPER_RESET_RECHARGE_TIME:
+		case TACTION_SUPER_RESET:
+		case TACTION_SET_PREFERRED_TARGET_CELL:
+		case TACTION_CLEAR_PREFERRED_TARGET_CELL:
+		case TACTION_CENTER_BASE_CELL_SET:
+		case TACTION_CENTER_BASE_CELL_CLEAR:
+		case TACTION_BLACKOUT_RADAR:
+		case TACTION_SET_DEFENSIVE_TARGET_CELL:
+		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
+		case TACTION_RETINT_RED:
+		case TACTION_RETINT_GREEN:
+		case TACTION_RETINT_BLUE:
+		case TACTION_JUMP_CAMERA_HOME:
+			return(true);
+
+		default:
+			break;
+	}
+	return(false);
+}
 
 
 /// <summary>
@@ -256,9 +362,11 @@ TActionClass::TActionClass(void) :
 	Team(NULL),
 	Trigger(NULL),
 	Tag(NULL),
+	Extra(0),
 	TriggerRect(0,0,0,0),
 	EffectLocation(0)
 {
+	Text[0] = '\0';
 	Actions.Add(this);
 	HeapID = Actions.ID(this);
 
@@ -438,9 +546,25 @@ void TActionClass::Build_INI_Entry(char * ptr) const
 void TActionClass::Read_INI(void)
 {
 	Data.Value = 0;
-	Action = TActionType(atoi(strtok(NULL, ",")));
+	Extra = 0;
+	Text[0] = '\0';
+	int action = atoi(strtok(NULL, ","));
+	Action = TActionType(action);
+	if (action < TACTION_NONE || action >= TACTION_COUNT) {
+		DebugString("TAction: map uses action %d, which this engine does not know; it does nothing\n", action);
+		Action = TACTION_NONE;
+	} else if (Is_Skipped_Action(Action)) {
+		static bool noted[TACTION_COUNT] = {};
+		if (!noted[Action]) {
+			noted[Action] = true;
+			DebugString("TAction: map uses action %d, which is not implemented and is skipped\n", action);
+		}
+	}
 	ParamCodeType code = (ParamCodeType)atoi(strtok(NULL, ","));
 	char * text = strtok(NULL, ",");
+	if (text == NULL) {
+		text = const_cast<char *>("0");
+	}
 	int val = atoi(text);
 	switch (code)
 	{
@@ -483,6 +607,35 @@ void TActionClass::Read_INI(void)
 				}
 			}
 			break;
+
+		case PARAM_CODE_SUPER:
+			Data.Value = val;
+			break;
+
+		/*
+		**	A Yuri's Revenge map names these things instead of numbering them, so the name is
+		**	kept and looked up when the action runs, once every list it names from is loaded.
+		*/
+		case PARAM_CODE_TEXT:
+		case PARAM_CODE_EVA:
+		case PARAM_CODE_TECHNO:
+		case PARAM_CODE_BUILDING:
+			snprintf(Text, sizeof(Text), "%s", text);
+			break;
+
+		/*
+		**	A sound and a theme are found by name as the map is read, as the rules that name
+		**	them are loaded by then.
+		*/
+		case PARAM_CODE_SOUND:
+			snprintf(Text, sizeof(Text), "%s", text);
+			Data.Sound = VocClass::From_Name(text);
+			break;
+
+		case PARAM_CODE_THEME:
+			snprintf(Text, sizeof(Text), "%s", text);
+			Data.Theme = Theme.From_Name(text);
+			break;
 	}
 
 	TriggerRect.X = atoi(strtok(NULL, ","));
@@ -493,6 +646,9 @@ void TActionClass::Read_INI(void)
 	if (temp != NULL) {
 		if (code == PARAM_CODE_TEAM_AND_TIME) {
 			Data.Value = atoi(temp);
+		}
+		else if (code == PARAM_CODE_TECHNO || code == PARAM_CODE_SUPER) {
+			Extra = atoi(temp);
 		}
 		else {
 			EffectLocation = Waypoint_From_Name(temp);
@@ -669,6 +825,23 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(ALL_ASSIGN_MISSION);
 		INVOKE(MAKE_ALLY_ONE_WAY);
 		INVOKE(MAKE_ENEMY_ONE_WAY);
+		INVOKE(CHEER);
+		INVOKE(DESTROY_ALL);
+		INVOKE(DESTROY_ALL_BUILDINGS);
+		INVOKE(DESTROY_ALL_LAND_UNITS);
+		INVOKE(DESTROY_ALL_NAVAL_UNITS);
+		INVOKE(CREATE_BUILDING);
+		INVOKE(JUMP_CAMERA);
+		INVOKE(SET_TECH_LEVEL);
+		INVOKE(CREATE_CRATE);
+		INVOKE(REINFORCEMENTS_CHRONO);
+
+		/*
+		**	Yuri's Revenge runs this one just like the other in-game movie.
+		*/
+		case TACTION_PLAY_INGAME_MOVIE_PAUSED:
+			success = TAction_PLAY_INGAME_MOVIE(house, object, trig, cell);
+			break;
 
 		/*
 		**	Do no action at all.
@@ -676,7 +849,14 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		case TACTION_NONE:
 			break;
 
+		/*
+		**	Yuri's Revenge actions this engine does not carry out yet are skipped, with a note in
+		**	the log the first time one runs, rather than being taken for some other action.
+		*/
 		default:
+			if (Is_Skipped_Action(Action)) {
+				success = Not_Implemented();
+			}
 			break;
 	}
 	return(success);
@@ -1163,7 +1343,16 @@ bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerCl
 	/*
 	**	Display a text message overlayed onto the tactical map.
 	*/
-	Session.Messages.Add_Message(NULL, 0, TutorialText.Fetch(Data.Value), 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	std::string label_text;
+	char const * message = NULL;
+	if (Text[0] != '\0') {
+		// Yuri's Revenge names a string table label rather than numbering a line of text.
+		label_text = StringTable.Find_UTF8(Text);
+		message = label_text.c_str();
+	} else {
+		message = TutorialText.Fetch(Data.Value);
+	}
+	Session.Messages.Add_Message(NULL, 0, message, 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 	return(true);
 }
 
@@ -1519,6 +1708,12 @@ bool TActionClass::TAction_PLAY_MUSIC(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_PLAY_SPEECH(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	// Yuri's Revenge names the line instead of numbering it.
+	if (Text[0] != '\0') {
+		Speak_Eva(Text);
+		return(true);
+	}
+
 	// With an announcer file the number is a position in its list, as in Yuri's Revenge.
 	if (Is_Eva_Loaded()) {
 		Speak_Eva_Index((int)Data.Speech);
@@ -2746,6 +2941,194 @@ bool TActionClass::TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * 
 	return(true);
 }
 
+/// <summary>
+/// Notes in the log that an action this engine does not carry out was skipped.
+/// Each kind of action is noted only the first time it runs, so a trigger that fires every few
+/// frames does not fill the log.
+/// </summary>
+/// <returns>bool; Always true, as the stock game also reports success for an action it skips.</returns>
+bool TActionClass::Not_Implemented(void) const
+{
+	static bool noted[TACTION_COUNT] = {};
+	if (Action >= TACTION_NONE && Action < TACTION_COUNT && !noted[Action]) {
+		noted[Action] = true;
+		DebugString("TAction: action %d is not implemented and was skipped\n", (int)Action);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Makes the infantry of the named house cheer, as Yuri's Revenge's action 113 does.
+/// </summary>
+/// <returns>bool; Is the named house in play?</returns>
+bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * hptr = House_From_HousesType(Data.House);
+	if (hptr == NULL) {
+		return(false);
+	}
+
+	hptr->Cheer();
+	return(true);
+}
+
+
+/// <summary>
+/// Destroys everything the named house owns, without marking the house as defeated.
+/// </summary>
+/// <returns>bool; Is the named house in play?</returns>
+bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * hptr = House_From_HousesType(Data.House);
+	if (hptr == NULL) {
+		return(false);
+	}
+
+	hptr->Blowup(true, true, true);
+	return(true);
+}
+
+
+/// <summary>
+/// Destroys every building the named house owns.
+/// </summary>
+/// <returns>bool; Is the named house in play?</returns>
+bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * hptr = House_From_HousesType(Data.House);
+	if (hptr == NULL) {
+		return(false);
+	}
+
+	hptr->Blowup(true, false, false);
+	return(true);
+}
+
+
+/// <summary>
+/// Destroys every infantry, aircraft and vehicle the named house owns, apart from the naval ones.
+/// </summary>
+/// <returns>bool; Is the named house in play?</returns>
+bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * hptr = House_From_HousesType(Data.House);
+	if (hptr == NULL) {
+		return(false);
+	}
+
+	hptr->Blowup(false, true, false);
+	return(true);
+}
+
+
+/// <summary>
+/// Destroys every naval vehicle the named house owns.
+/// </summary>
+/// <returns>bool; Is the named house in play?</returns>
+bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * hptr = House_From_HousesType(Data.House);
+	if (hptr == NULL) {
+		return(false);
+	}
+
+	hptr->Blowup(false, false, true);
+	return(true);
+}
+
+
+/// <summary>
+/// Places the building the action names for the trigger's house at the action's waypoint, as
+/// Yuri's Revenge's action 125 does. The building goes straight up without a build-up.
+/// </summary>
+/// <returns>bool; Was the building placed?</returns>
+bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+
+	StructType type = BuildingTypeClass::From_Name(Text);
+	if (type == STRUCT_NONE) {
+		return(false);
+	}
+
+	ScenarioInit++;
+	BuildingClass * building = new BuildingClass(BuildingTypes[type], house);
+	bool placed = building != nullptr && building->Unlimbo(Coord(Scen->Get_Waypoint_Cell(EffectLocation)));
+	if (!placed) delete building;
+	ScenarioInit--;
+	return(placed);
+}
+
+
+/// <summary>
+/// Moves the tactical view to the action's waypoint at once, rather than scrolling there.
+/// </summary>
+bool TActionClass::TAction_JUMP_CAMERA(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
+	Coord coord = Coord (waypoint);
+	coord.Z = Map.Get_Height_GL(coord);
+
+	if (Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge) {
+		coord.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+
+	TacticalMap->Set_Tactical_Position(coord);
+	return(true);
+}
+
+
+/// <summary>
+/// Changes the tech level the named object type becomes available at, and has every house work
+/// out again what it may build.
+/// </summary>
+/// <returns>bool; Is there an object type of that name?</returns>
+bool TActionClass::TAction_SET_TECH_LEVEL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	for (int index = 0; index < TechnoTypes.Count(); index++) {
+		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
+			TechnoTypes[index]->Level = Extra;
+			for (int house = 0; house < Houses.Count(); house++) {
+				Houses[house]->Production_Status_Changed();
+			}
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Places a crate at the action's waypoint. A crate type from the number the action gives is
+/// fixed; any other number leaves what the crate holds to chance.
+/// </summary>
+/// <returns>bool; Was the crate placed?</returns>
+bool TActionClass::TAction_CREATE_CRATE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+	return(Map.Place_Crate(Scen->Get_Waypoint_Cell(EffectLocation), Data.Value));
+}
+
+
+/// <summary>
+/// Delivers the trigger's team as reinforcements at the action's waypoint. Yuri's Revenge brings
+/// the team in by chronoshift; this engine delivers it the way the team type says and leaves out
+/// the chronoshift effect.
+/// </summary>
+/// <returns>bool; Were the reinforcements delivered?</returns>
+bool TActionClass::TAction_REINFORCEMENTS_CHRONO(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (Team != NULL && EffectLocation != -1) {
+		return(Do_Reinforcements(Team, EffectLocation));
+	}
+	return(false);
+}
+
 #ifdef _DEBUG
 /***********************************************************************************************
  * Action_From_Name -- retrieves ActionType for given name                                     *
@@ -2966,6 +3349,44 @@ NeedType Action_Needs(TActionType action)
 		case TACTION_ALL_ASSIGN_MISSION:
 			return(NEED_MISSION);
 
+		case TACTION_CHEER:
+		case TACTION_DESTROY_ALL:
+		case TACTION_DESTROY_ALL_BUILDINGS:
+		case TACTION_DESTROY_ALL_LAND_UNITS:
+		case TACTION_DESTROY_ALL_NAVAL_UNITS:
+		case TACTION_MIND_CONTROL_BASE:
+		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
+		case TACTION_RESTORE_STARTING_UNITS:
+		case TACTION_RESTORE_STARTING_BUILDINGS:
+			return(NEED_HOUSE);
+
+		case TACTION_REINFORCEMENTS_CHRONO:
+			return(NEED_TEAM_AND_LOCATION);
+
+		case TACTION_RESHROUD_AT:
+		case TACTION_LIGHTNING_STORM_STRIKE:
+		case TACTION_IRON_CURTAIN_AT:
+		case TACTION_JUMP_CAMERA:
+		case TACTION_STOP_SOUNDS_AT:
+		case TACTION_TELEPORT_ALL_TO:
+		case TACTION_SET_PREFERRED_TARGET_CELL:
+		case TACTION_CENTER_BASE_CELL_SET:
+		case TACTION_SET_DEFENSIVE_TARGET_CELL:
+			return(NEED_WAYPOINT);
+
+		case TACTION_PLAY_INGAME_MOVIE_PAUSED:
+			return(NEED_MOVIE);
+
+		case TACTION_PAUSE_GAME:
+		case TACTION_SET_TAB:
+		case TACTION_CHRONO_SCREEN_EFFECT:
+		case TACTION_BLACKOUT_RADAR:
+		case TACTION_RETINT_RED:
+		case TACTION_RETINT_GREEN:
+		case TACTION_RETINT_BLUE:
+		case TACTION_CREATE_CRATE:
+			return(NEED_NUMBER);
+
 		default:
 			break;
 	}
@@ -2995,6 +3416,8 @@ void TActionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EffectLocation);
 	stream.Serialize(Tag);
 	stream.Serialize(Trigger);
+	stream.Serialize_Bytes(Text, sizeof(Text));
+	stream.Serialize(Extra);
 
 	/*
 	 * Which alternative of the data is live depends on the action, but every one of them
@@ -3045,6 +3468,7 @@ AttachType Attaches_To(TActionType event)
 		case TACTION_SET_GROUP_ID:
 		case TACTION_MAKE_ELITE:
 		case TACTION_DELETE_OBJECT:
+		case TACTION_EVICT_OCCUPIERS:
 			attach = AttachType(attach | ATTACH_OBJECT);
 			break;
 

@@ -1050,6 +1050,7 @@ class HouseClass : public AbstractClass
 		**	This routine blows up everything in this house.  Fun!
 		*/
 		void Blowup_All(void);
+		void Blowup(bool buildings, bool land, bool naval);
 
 		/*
 		**	This routine gets called in multiplayer games when every unit, building,
