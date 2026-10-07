@@ -74,6 +74,7 @@ void Stop_All_Sound_Effects(void);
 enum { STATIC_SOUND_TRIGGER = 1 };
 void Static_Sound(VocType voc, Coord const & coord, int type);
 void Static_Sounds_Stop(Coord const & coord, int mask);
+int Static_Sounds_Active(int mask);
 void Static_Sounds_Serialize(SaveStreamClass & stream);
 
 VocClass * VocClass_From_Name(char const * name);

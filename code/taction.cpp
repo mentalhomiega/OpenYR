@@ -312,7 +312,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_LIGHTNING_STORM_STRIKE:
 		case TACTION_IRON_CURTAIN_AT:
 		case TACTION_PAUSE_GAME:
-		case TACTION_STOP_SOUNDS_AT:
 		case TACTION_MIND_CONTROL_BASE:
 		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
 		case TACTION_RESTORE_STARTING_UNITS:
@@ -830,6 +829,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CENTER_BASE_CELL_CLEAR);
 		INVOKE(TIMER_TEXT);
 		INVOKE(RESHROUD_AT);
+		INVOKE(STOP_SOUNDS_AT);
 		INVOKE(TELEPORT_ALL_TO);
 		INVOKE(RESTORE_STARTING_BUILDINGS);
 		INVOKE(CENTER_BASE_CELL_SET);
@@ -3509,6 +3509,19 @@ bool TActionClass::TAction_TELEPORT_ALL_TO(HouseClass * house, ObjectClass * , T
 	}
 
 	Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+	return(true);
+}
+
+
+/// <summary>
+/// Stops the sounds Play Sound Effect At started at the action's waypoint, which is how a map ends
+/// the looping ambient sounds it sets out.
+/// </summary>
+bool TActionClass::TAction_STOP_SOUNDS_AT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (Scen->Is_Valid_Waypoint(EffectLocation)) {
+		Static_Sounds_Stop(Scen->Get_Waypoint_Coord(EffectLocation), STATIC_SOUND_TRIGGER);
+	}
 	return(true);
 }
 

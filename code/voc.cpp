@@ -397,6 +397,21 @@ void Static_Sounds_Stop(Coord const & coord, int mask)
 }
 
 
+/// <summary>
+/// Counts the static sounds of the kinds the mask names that are still playing or waiting to.
+/// </summary>
+int Static_Sounds_Active(int mask)
+{
+	int count = 0;
+	for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+		if (_statics[i].Voc != VOC_NONE && (_statics[i].Type & mask) != 0) {
+			count++;
+		}
+	}
+	return(count);
+}
+
+
 // Only looping items travel: a one-shot is over by the time a save matters.
 void Static_Sounds_Serialize(SaveStreamClass & stream)
 {
