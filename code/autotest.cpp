@@ -1426,6 +1426,9 @@ void Run(StepType const & step)
 			}
 		}
 		DebugString("AUTOTEST team %s: %s, %d members\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added);
+	} else if (step.Command == "teamtrace") {
+		// teamtrace <0|1>: logs each team script line a team starts, as TEAMTRACE lines.
+		TeamClass::TraceScripts = std::atoi(step.Argument.c_str()) != 0;
 	} else if (step.Command == "teams") {
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
@@ -1434,9 +1437,11 @@ void Run(StepType const & step)
 				members++;
 			}
 			TeamMissionClass mission = team->Script != NULL ? team->Script->Get_Current_Mission() : TeamMissionClass(TMISSION_NONE, 0);
-			DebugString("AUTOTEST   team %s house %s members %d mission %d data %d moving %d hasbeen %d full %d under %d\n",
+			ScriptTypeClass const * script = team->Script != NULL ? team->Script->Get_Type() : NULL;
+			DebugString("AUTOTEST   team %s house %s members %d mission %d data %d moving %d hasbeen %d full %d under %d script %s line %d/%d\n",
 				team->Class->Name(), team->House->Class->Name(), members, (int)mission.Mission, mission.Data.Value,
-				(int)team->IsMoving, (int)team->IsHasBeen, (int)team->IsFullStrength, (int)team->IsUnderStrength);
+				(int)team->IsMoving, (int)team->IsHasBeen, (int)team->IsFullStrength, (int)team->IsUnderStrength,
+				script != NULL ? script->Name() : "-", team->Script != NULL ? team->Script->Get_Line() : -1, script != NULL ? script->MissionCount : 0);
 			if (team->IsUnderStrength || !team->IsFullStrength) {
 				TEAM_MEMBER_LIST missing;
 				team->Team_Members(missing);

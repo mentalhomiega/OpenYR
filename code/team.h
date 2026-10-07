@@ -304,6 +304,9 @@ class TeamClass : public AbstractClass
 		bool Has_Air_Transport(void) const;
 
 		static void Suspend_Teams(int priority, HouseClass const * house);
+
+		// Logs every team script line a team starts, for the autotest runner.
+		static bool TraceScripts;
 #ifdef _DEBUG
 		void Debug_Dump(MonoClass * mono) const;
 #endif

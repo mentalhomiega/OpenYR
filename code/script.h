@@ -46,6 +46,12 @@ class ScriptClass : public AbstractClass
 		bool Next_Mission(void);
 		bool Has_Missions_Remaining(void);
 
+		/// The line the script is on, or -1 before it has started.
+		int Get_Line(void) const {return(CurrentLineNumber);}
+
+		/// The script type this script runs.
+		ScriptTypeClass const * Get_Type(void) const {return(Class);}
+
 	private:
 		/*
 		 * Pointer to the script type that supplies the mission list this script is working

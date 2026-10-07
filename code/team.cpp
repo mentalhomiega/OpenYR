@@ -127,6 +127,7 @@
 
 BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *house, FootClass *unit, TargetPropertyType prop, bool only_enemy);
 
+bool TeamClass::TraceScripts = false;
 
 /***********************************************************************************************
  * _Is_It_Breathing -- Checks to see if unit is an active team member.                         *
@@ -602,7 +603,15 @@ void TeamClass::AI(void)
 			if (Script->Has_Missions_Remaining()) {
 				Assign_Mission_Target(NULL);
 				Target = NULL;
+				if (TraceScripts) {
+					TeamMissionClass const line = Script->Get_Current_Mission();
+					DebugString("TEAMTRACE frame %d team %s %p house %s script %s line %d/%d action %d arg %d\n", Frame, Class->Name(), (void *)this, House->Class->Name(),
+						Script->Get_Type()->Name(), Script->Get_Line(), Script->Get_Type()->MissionCount, (int)line.Mission, line.Data.Value);
+				}
 			} else {
+				if (TraceScripts) {
+					DebugString("TEAMTRACE frame %d team %s %p house %s script %s ended\n", Frame, Class->Name(), (void *)this, House->Class->Name(), Script->Get_Type()->Name());
+				}
 				delete this;
 				return;
 			}
