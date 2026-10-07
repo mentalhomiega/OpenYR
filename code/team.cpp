@@ -88,6 +88,7 @@
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
@@ -3688,13 +3689,14 @@ void TeamClass::TMission_LOAD_TRUCK(TeamMissionClass * mission, bool)
 
 
 /// <summary>
-/// Handles the attack building with property team mission.
-/// This routine picks the enemy building that best matches the scripted property and then
-/// turns the team loose on it.
+/// Handles the attack building with property team mission (0x6EE310).
+/// This routine picks the enemy building that best matches the scripted property when the
+/// line starts and then turns the team loose on it. The line ends once that building is
+/// gone, when no building was found, or when no member has ammunition left.
 /// </summary>
-void TeamClass::TMission_ATTACK_BUILDING_WITH_PROPERTY(TeamMissionClass * mission, bool)
+void TeamClass::TMission_ATTACK_BUILDING_WITH_PROPERTY(TeamMissionClass * mission, bool first_time)
 {
-	if (MissionTarget == NULL) {
+	if (first_time && MissionTarget == NULL) {
 		FootClass *unit = Member;
 		if (unit != NULL) {
 			HouseClass * eptr = NULL;
@@ -3710,12 +3712,15 @@ void TeamClass::TMission_ATTACK_BUILDING_WITH_PROPERTY(TeamMissionClass * missio
 			if (bptr != NULL) {
 				Assign_Mission_Target(bptr);
 			}
-			if (MissionTarget == NULL) {
-				IsNextMission = true;
-			}
 		}
 	}
-	Coordinate_Attack();
+
+	if (MissionTarget != NULL && Ammo_Check()) {
+		Coordinate_Attack();
+	} else {
+		Assign_Mission_Target(NULL);
+		IsNextMission = true;
+	}
 }
 
 
@@ -3760,13 +3765,13 @@ void TeamClass::TMission_MOVETO_BUILDING_WITH_PROPERTY(TeamMissionClass * missio
 
 /// <summary>
 /// Sends the team to a cell alongside the team's own building that best matches the scripted
-/// type and property (TeamClass script line 58, 0x6EE5C0). The step ends at once when the house
-/// has no such building.
+/// type and property (TeamClass script line 58, 0x6EE5C0). The building is picked once, for the
+/// team's leader, when the line starts. The step ends at once when the house has no such building.
 /// </summary>
-void TeamClass::TMission_MOVE_TO_OWN_BUILDING(TeamMissionClass * mission, bool)
+void TeamClass::TMission_MOVE_TO_OWN_BUILDING(TeamMissionClass * mission, bool first_time)
 {
-	if (MissionTarget == NULL) {
-		FootClass * unit = Member;
+	if (first_time && MissionTarget == NULL) {
+		FootClass * unit = Fetch_A_Leader();
 		if (unit != NULL) {
 			TargetPropertyType prop = TargetPropertyType((unsigned short)mission->Data.Prop);
 			BuildingTypeClass * btype = BuildingTypes[mission->Data.Type];
@@ -3777,10 +3782,11 @@ void TeamClass::TMission_MOVE_TO_OWN_BUILDING(TeamMissionClass * mission, bool)
 				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(cell, mzone, unit->IsOnBridge), mzone, false, Point2D(3,3));
 				Assign_Mission_Target(newcell != CELL_NONE ? &Map[newcell] : NULL);
 			}
-			if (MissionTarget == NULL) {
-				IsNextMission = true;
-			}
 		}
+	}
+	if (MissionTarget == NULL) {
+		IsNextMission = true;
+		return;
 	}
 	Coordinate_Move();
 }
@@ -3873,8 +3879,9 @@ void TeamClass::TMission_SCOUT(TeamMissionClass * mission, bool)
 /// <summary>
 /// Finds the building of a type that best satisfies a targeting property.
 /// This routine is used by the building-with-property team missions to decide what the team
-/// should head for. A building belonging to the preferred house always wins over any other
-/// legal candidate.
+/// should head for. Buildings of the preferred house qualify, and so do those of houses that are
+/// not the unit's allies or are passive, unless only_enemy limits the search to the preferred
+/// house.
 /// </summary>
 /// <param name="type">The building type to search for.</param>
 /// <param name="house">The house whose buildings are preferred.</param>
@@ -3898,7 +3905,7 @@ BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *
 
 		bool same_house = hptr == house;
 
-		if (ptr->Class == type && (same_house || !unit->House->Is_Ally(ptr->House))) {
+		if (ptr->Class == type && (same_house || !unit->House->Is_Ally(ptr->House) || ptr->House->Class->IsMultiplayPassive)) {
 
 			int dist = -1;
 
@@ -3932,15 +3939,11 @@ BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *
 		}
 	}
 
-	if (best_same_ptr) {
-		return(best_same_ptr);
-	}
-
 	if (!only_enemy) {
 		return(best_ptr);
 	}
 
-	return(NULL);
+	return(best_same_ptr);
 }
 
 
