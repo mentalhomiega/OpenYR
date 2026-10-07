@@ -31,6 +31,7 @@
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
+**	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
@@ -125,6 +126,8 @@
 #include "suprtype.h"
 #include "taskforc.h"
 #include "teamtype.h"
+#include "taction.h"
+#include "trigtype.h"
 #include "reinf.h"
 #include "team.h"
 #include "overlay.h"
@@ -1001,6 +1004,18 @@ void Run(StepType const & step)
 			type->House = PlayerPtr;
 		}
 		DebugString("AUTOTEST   reinforce %s: %d\n", step.Argument.c_str(), type != NULL ? (int)Do_Reinforcements(type) : -1);
+	} else if (step.Command == "runtrigger") {
+		// runtrigger <TriggerType>: carries out the actions of that trigger type for its house, as if its events had all happened.
+		TriggerTypeClass * type = TriggerTypeClass::From_Name(step.Argument.c_str());
+		int ran = -1;
+		if (type != NULL) {
+			ran = 0;
+			for (TActionClass * action = type->FirstAction; action != NULL; action = action->Next) {
+				(*action)(type->House, NULL, NULL, CELL_NONE);
+				ran++;
+			}
+		}
+		DebugString("AUTOTEST   runtrigger %s: %d actions\n", step.Argument.c_str(), ran);
 	} else if (step.Command == "planes") {
 		// planes: each aircraft on the map, its cell, mission and passenger count.
 		for (int index = 0; index < Aircraft.Count(); index++) {
