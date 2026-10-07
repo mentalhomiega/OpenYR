@@ -75,7 +75,7 @@ A movie inside an archive the game caches at startup does not play. Among the pa
 A full-screen movie plays only when all of these hold, tested in this order:
 
 1. The game is a campaign, or the launch file asked for movies. The menus count as a campaign, so the startup and main-menu movies pass. [Multiplayer movies](/systems/multiplayer-movies/) covers the launch file's key and how a movie ends in a game against other machines.
-2. The file is found, loose or in an archive.
+2. The file is found, loose or in an archive. A full-screen movie whose `.VQA` file is not found plays the [Bink](/formats/bink/) file of the same name instead, when that exists.
 3. The movie opens. It must be an archive member, except `SIZZLE1.VQA`. Its chunks and header must be accepted as described below, and when the game has an audio device, its sound track must meet the limits in [Sound and picture](#sound-and-picture).
 4. Its frame is at least 320 pixels wide or at least 200 pixels tall. A movie smaller than 320 by 200 in both directions is opened and then discarded.
 
