@@ -8,7 +8,7 @@ when_omitted:
   note: "512 leptons."
 ---
 
-`RelaxedStray` replaces [`Stray`](/keys/stray/) in every test that [`Stray`](/keys/stray/) governs while the team's current Script line is [Gather at enemy base](/scripting/missions/53/) or [Regroup at friendly base](/scripting/missions/54/). A larger value lets a big team spread out around its gathering spot without members being called back. The value is in cells, and fractions are accepted.
+`RelaxedStray` replaces [`Stray`](/keys/stray/) in every test that [`Stray`](/keys/stray/) governs while the team's current Script line is [Gather at enemy base](/mapping/missions/tmission-gather-at-enemy/) or [Regroup at friendly base](/mapping/missions/tmission-gather-at-base/). A larger value lets a big team spread out around its gathering spot without members being called back. The value is in cells, and fractions are accepted.
 
 On every other line the team uses `Stray`.
 
