@@ -336,6 +336,8 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	RadarSpied(),
 	PointTotal(0),
 	PreferredTarget(QUARRY_ANYTHING),
+	PreferredTargetCell(CELL_NONE),
+	CenterOverride(CELL_NONE),
 	Attack(),
 	Enemy(HOUSE_NONE),
 	AngerNodes(),
@@ -4210,6 +4212,14 @@ void HouseClass::Recalc_Center(void)
 			Radius = 2 * CELL_LEPTON;
 		}
 	}
+
+	/*
+	**	A trigger action can fix the center of the base on a cell of its own.
+	*/
+	if (CenterOverride != CELL_NONE) {
+		Center = Coord(CenterOverride);
+		Radius = std::max(Radius, 2 * CELL_LEPTON);
+	}
 }
 
 
@@ -6972,6 +6982,8 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadarSpied);
 	stream.Serialize(PointTotal);
 	stream.Serialize(PreferredTarget);
+	stream.Serialize(PreferredTargetCell);
+	stream.Serialize(CenterOverride);
 	stream.Serialize(BQuantity);
 	stream.Serialize(UQuantity);
 	stream.Serialize(IQuantity);
@@ -8975,6 +8987,37 @@ void HouseClass::AI_Super_Weapons(void)
 			SuperClass * super = SuperWeapon[i];
 
 			if (super != NULL && super->Is_Ready()) {
+
+				/*
+				**	A trigger action can aim the missile, the storm and the support powers at a cell of
+				**	its own, with no need for the computer to find a target or an enemy.
+				*/
+				if (PreferredTargetCell != CELL_NONE) {
+					bool aimed = false;
+					switch (super->Class->Type) {
+						case SUPER_MULTI_MISSILE:
+						case SUPER_PARA_DROP:
+						case SUPER_AMER_PARA_DROP:
+						case SUPER_SPY_PLANE:
+						case SUPER_PSYCHIC_REVEAL:
+							aimed = true;
+							break;
+
+						case SUPER_LIGHTNING_STORM:
+							// One storm at a time (HouseClass::Fire_LightningStorm).
+							aimed = !LightningStormClass::Is_Active_Or_Pending();
+							if (!aimed) continue;
+							break;
+
+						default:
+							break;
+					}
+					if (aimed) {
+						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), PreferredTargetCell);
+						continue;
+					}
+				}
+
 				switch (super->Class->Type) {
 
 					case SUPER_MULTI_MISSILE:

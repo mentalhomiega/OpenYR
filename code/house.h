@@ -659,6 +659,18 @@ class HouseClass : public AbstractClass
 		*/
 		QuarryType PreferredTarget;
 
+		/*
+		**	A trigger action can name the cell this house's super weapons are aimed at, in place of
+		**	the targets the computer would pick for itself. It is CELL_NONE until one does.
+		*/
+		Cell PreferredTargetCell;
+
+		/*
+		**	A trigger action can also fix the center of this house's base on a cell of its own, in
+		**	place of the average of its buildings. It is CELL_NONE until one does.
+		*/
+		Cell CenterOverride;
+
 	//private:
 
 		/*
