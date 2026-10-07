@@ -16,4 +16,4 @@ LowPowerX=10
 LowPowerY=-20
 ```
 
-No event fills the low power slot yet; Yuri's Revenge fills it while a `PoweredSpecial=yes` structure's house is blacked out. The house's full-power pass can still start it through `LowPowerPowered=no` with `LowPowerPoweredLight=yes`.
+A [`PoweredSpecial=yes`](/keys/poweredspecial/) structure fills the low power slot while it is out of service in a spy's blackout or a power drain, and empties it when it works again. A structure coming into service can still start it through `LowPowerPowered=no` with `LowPowerPoweredLight=yes`.

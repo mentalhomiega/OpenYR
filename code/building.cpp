@@ -1648,6 +1648,7 @@ void BuildingClass::AI(void)
 			if (sound != VOC_NONE) {
 				Sound_Effect(sound, Center_Coord());
 			}
+			Update_Power_Anims(online);
 			WasOnline = online;
 		}
 	}
@@ -3922,6 +3923,11 @@ void BuildingClass::Grand_Opening(bool captured)
 		if (!HasOpened) {
 			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow, Class->IsSensorArray ? 30 : 0);
 
+			// A structure that needs power starts without its power animations; the first update that finds it in service gives them back.
+			if (Class->IsPowered && Class->Drain > 0) {
+				Power_Anims_Off();
+			}
+
 			if (Is_Turret_Equipped() || Class->IsHasChargeAnim) {
 				if (!Class->IsTurretAnimAVoxel) {
 					if (TurretIndex != -1 && !Class->IsHasChargeAnim) {
@@ -5695,8 +5701,8 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case FIRE_OK:
-			if (Class == Rule->PrismType && Rule->PrismType != NULL) {
-				Prism_Charge();
+			if (Class->IsAnimDelayedFire || (Class == Rule->PrismType && Rule->PrismType != NULL)) {
+				Prism_Charge(Class == Rule->PrismType ? 0 : primary);
 				return(1);
 			}
 			if (UpgradeLevel != 0 && Upgrades[0] != NULL) {
@@ -8421,6 +8427,11 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 
 		Anims[anim] = animptr;
 
+		// A Powered animation begun while the structure is out of service starts still, as BuildingClass::PlayAnim (0x451890) does.
+		if (Class->IsPowered && Class->AnimData[anim].Powered && (!IsPoweredOn || !Is_Powered_On())) {
+			animptr->Disable();
+		}
+
 		if (animptr->Class->IsShouldUseCellDrawer) {
 			animptr->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
 			animptr->AlternativeBrightness = Apparent_Brightness();
@@ -8515,6 +8526,9 @@ void BuildingClass::Detach_Anim(AnimClass * anim)
 					Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
 				}
 				if (!IsInLimbo && i == BANIM_SPECIAL_ONE && Class->IsGrinding) {
+					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+				}
+				if (!IsInLimbo && i == BANIM_SPECIAL_ONE && Class->IsAnimDelayedFire && !Class->IsCanUnitRepair) {
 					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 				}
 				break;
@@ -9089,6 +9103,45 @@ void BuildingClass::Set_Garrison_House(HouseClass * newowner)
 
 
 /// <summary>
+/// Changes this building's animations as it comes into or drops out of service, as gamemd's
+/// FUN_004549B0 does. A building that needs power shows its Powered, PoweredLight and
+/// PoweredEffect animations to suit. A power plant with PoweredSpecial animations shows them
+/// while it works, and its LowPower animation instead while a blackout or a drain has it out of
+/// service.
+/// </summary>
+/// <param name="online">Is the building now in service?</param>
+void BuildingClass::Update_Power_Anims(bool online)
+{
+	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	if (online) {
+		if (Class->IsPowered && Class->Drain > 0) {
+			Power_Anims_On();
+		}
+		if (Class->IsPoweredSpecial) {
+			End_Anim(BANIM_LOW_POWER);
+			for (int index = 0; index < BANIM_COUNT; index++) {
+				if (Class->AnimData[index].PoweredSpecial) {
+					Begin_Anim(BAnimType(index), damaged);
+				}
+			}
+		}
+	} else {
+		if (Class->IsPowered && Class->Drain > 0) {
+			Power_Anims_Off();
+		}
+		if (Class->IsPoweredSpecial && (House->Is_Power_Blackout() || House->Is_Being_Drained())) {
+			Begin_Anim(BANIM_LOW_POWER, damaged);
+			for (int index = 0; index < BANIM_COUNT; index++) {
+				if (Class->AnimData[index].PoweredSpecial) {
+					End_Anim(BAnimType(index));
+				}
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Brings this building's animations back when its house's power recovers. A Powered
 /// animation resumes, a PoweredLight one that is missing starts again, and a PoweredEffect
 /// one that losing power stopped starts again. The SuperLowPower animation ends.
@@ -9105,7 +9158,8 @@ void BuildingClass::Power_Anims_On(void)
 				Anims[index]->Enable();
 			}
 		} else if (data.PoweredLight) {
-			if (Anims[index] == NULL) {
+			// A charge animation is played by a shot, not by power coming back.
+			if (Anims[index] == NULL && HasOpened && !(Class->IsAnimDelayedFire && index == BANIM_SPECIAL_ONE)) {
 				Begin_Anim(BAnimType(index), damaged);
 			}
 		} else if (data.PoweredEffect && AnimStates[index]) {
@@ -9134,6 +9188,10 @@ void BuildingClass::Power_Anims_Off(void)
 		} else if (data.PoweredLight) {
 			if (Anims[index] != NULL) {
 				End_Anim(BAnimType(index));
+				// A charge in progress is dropped, and the structure shows its ActiveAnim again if that one keeps running without power.
+				if (index == BANIM_SPECIAL_ONE && Class->IsAnimDelayedFire && Class->AnimData[BANIM_ACTIVE_ONE].Powered) {
+					Begin_Anim(BANIM_ACTIVE_ONE, damaged);
+				}
 			}
 		} else if (data.PoweredEffect && Anims[index] != NULL) {
 			AnimStates[index] = true;
@@ -10116,18 +10174,11 @@ void Adjust_House_Power(HouseClass * house)
 				}
 			}
 
-			if (fraction >= 1.0) {
-				if (bptr->Class->IsPowered && bptr->Class->Drain > 0) {
-					bptr->Power_Anims_On();
-				}
-			} else {
+			if (fraction < 1.0) {
 				if (bptr->Class->IsCloakGenerator && bptr->CloakGeneratorState >= 0 && !bptr->Is_Powered_On()) {
 					if (bptr->CurrentCloakRadius != 0) {
 						bptr->Disable_Cloak_Generator();
 					}
-				}
-				if (bptr->Class->IsPowered && bptr->Class->Drain > 0) {
-					bptr->Power_Anims_Off();
 				}
 			}
 		}
@@ -10461,6 +10512,10 @@ bool BuildingClass::Is_Powered_On(void) const
 				return(false);
 			}
 		}
+	}
+	// A power plant goes out of service in a blackout and while it is drained (BuildingClass::IsPowerOnline, 0x4555D0).
+	if (Class->IsPoweredSpecial && (House->Is_Power_Blackout() || House->Is_Being_Drained())) {
+		return(false);
 	}
 	return(true);
 }
@@ -11648,20 +11703,37 @@ void BuildingClass::Iron_Curtain(int duration, HouseClass * source, bool force_s
 
 
 /// <summary>
-/// Readies a prism tower's shot (BuildingClass::Mission_Attack, 0x44ACF0). While fewer than
-/// PrismSupportMax towers support it, the nearest of its owner's idle, rested prism towers
-/// within its secondary weapon's range is recruited to beam it after its DelayedFireDelay; one
-/// tower is recruited per call. Once none is left, this tower charges for its own
-/// DelayedFireDelay and then fires.
+/// Starts this structure charging for a shot or a support beam (FUN_004504F0): it waits
+/// DelayedFireDelay frames, its ActiveAnim gives way to its SpecialAnim for the charge, and
+/// when the SpecialAnim has run its course the ActiveAnim comes back.
 /// </summary>
+/// <param name="stage">What the structure does when the delay is over.</param>
+void BuildingClass::Start_Delayed_Fire(PrismStageType stage)
+{
+	PrismStage = stage;
+	PrismDelay = Class->DelayedFireDelay;
+	End_Anim(BANIM_ACTIVE_ONE);
+	Begin_Anim(BANIM_SPECIAL_ONE, HealthRatio <= Rule->ConditionYellow);
+}
+
+
+/// <summary>
+/// Readies a shot of a structure whose weapon waits for its charge animation
+/// (BuildingClass::Mission_Attack, 0x44ACF0), a Tesla coil or a prism tower. While fewer than
+/// PrismSupportMax towers support a prism tower, the nearest of its owner's idle, rested prism
+/// towers within its secondary weapon's range is recruited to beam it after its
+/// DelayedFireDelay; one tower is recruited per call. Once none is left, this structure charges
+/// for its own DelayedFireDelay and then fires.
+/// </summary>
+/// <param name="weapon">The weapon to fire when the charge is over.</param>
 /// <returns>bool; Was a supporting tower recruited?</returns>
-bool BuildingClass::Prism_Charge(void)
+bool BuildingClass::Prism_Charge(int weapon)
 {
 	if (PrismStage != PRISM_IDLE) {
 		return(false);
 	}
 
-	if (SupportingPrisms < Rule->PrismSupportMax) {
+	if (Class == Rule->PrismType && SupportingPrisms < Rule->PrismSupportMax) {
 		BuildingClass * best = NULL;
 		int bestdist = INT_MAX;
 		int const range = Weapon_Range(1);
@@ -11677,16 +11749,16 @@ bool BuildingClass::Prism_Charge(void)
 		}
 		if (best != NULL) {
 			SupportingPrisms++;
-			best->PrismStage = PRISM_SLAVE;
-			best->PrismDelay = best->Class->DelayedFireDelay;
 			best->PrismTargetCoord = Fire_Coord(0);
+			best->Start_Delayed_Fire(PRISM_SLAVE);
 			DebugString("Prism: tower at %d,%d supports the one at %d,%d (%d supporting)\n", best->Get_Cell().X, best->Get_Cell().Y, Get_Cell().X, Get_Cell().Y, SupportingPrisms);
 			return(true);
 		}
 	}
 
-	PrismStage = PRISM_MASTER;
-	PrismDelay = Class->DelayedFireDelay;
+	// The weapon to fire is kept in the target coordinate, which only a supporting tower uses.
+	PrismTargetCoord = Coord(weapon, 0, 0);
+	Start_Delayed_Fire(PRISM_MASTER);
 	return(false);
 }
 
@@ -11707,8 +11779,9 @@ void BuildingClass::Prism_AI(void)
 	PrismStage = PRISM_IDLE;
 
 	if (stage == PRISM_MASTER) {
-		if (TarCom != NULL && Can_Fire(TarCom, 0) == FIRE_OK) {
-			BulletClass * bullet = Fire_At(TarCom, 0);
+		int const weapon = PrismTargetCoord.X;
+		if (TarCom != NULL && Can_Fire(TarCom, weapon) == FIRE_OK) {
+			BulletClass * bullet = Fire_At(TarCom, weapon);
 			DebugString("Prism: tower at %d,%d fires with %d supporting\n", Get_Cell().X, Get_Cell().Y, SupportingPrisms);
 			if (bullet != NULL && SupportingPrisms > 0) {
 				bullet->Strength = bullet->Strength * (100 + Rule->PrismSupportModifier * SupportingPrisms) / 100;

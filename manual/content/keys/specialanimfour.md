@@ -16,4 +16,4 @@ SpecialAnimFourX=10
 SpecialAnimFourY=-20
 ```
 
-No event fills special slot four. The slot runs only when the house's full-power pass starts it, which needs `SpecialAnimFourPowered=no` with `SpecialAnimFourPoweredLight=yes` on a [`Powered=yes`](/keys/powered/) structure that drains power.
+No event fills special slot four. The slot runs only when a structure coming into service starts it, which needs `SpecialAnimFourPowered=no` with `SpecialAnimFourPoweredLight=yes` on a [`Powered=yes`](/keys/powered/) structure that drains power.

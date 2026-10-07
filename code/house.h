@@ -938,6 +938,8 @@ class HouseClass : public AbstractClass
 		void Update_Spied_Power_Plants(void);
 		void Update_Factories(RTTIType rtti);
 		double Power_Fraction(void) const;
+		bool Is_Being_Drained(void) const;
+		bool Is_Power_Blackout(void) const {return IsPowerBlackout && PowerBlackout > 0;}
 		double Tiberium_Fraction(void) const;
 		double Weed_Fraction(void) const;
 		void Begin_Production(void) {IsStarted = true;};

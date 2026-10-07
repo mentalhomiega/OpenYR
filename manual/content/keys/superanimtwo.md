@@ -16,4 +16,4 @@ SuperAnimTwoX=10
 SuperAnimTwoY=-20
 ```
 
-A structure with a superweapon fills the super slots as its weapon charges, becomes ready and is fired; [`ChargedAnimTime`](/keys/chargedanimtime/) gives the order. The house's full-power pass can also start the slot, which needs `SuperAnimTwoPowered=no` with `SuperAnimTwoPoweredLight=yes` on a [`Powered=yes`](/keys/powered/) structure that drains power.
+A structure with a superweapon fills the super slots as its weapon charges, becomes ready and is fired; [`ChargedAnimTime`](/keys/chargedanimtime/) gives the order. A structure coming into service can also start the slot, which needs `SuperAnimTwoPowered=no` with `SuperAnimTwoPoweredLight=yes` on a [`Powered=yes`](/keys/powered/) structure that drains power.

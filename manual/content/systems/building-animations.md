@@ -99,6 +99,8 @@ keys:
   - SensorArray
   - UnitRepair
   - SiloDamage
+  - IsAnimDelayedFire
+  - PoweredSpecial
   - FirestormWall
   - Surface
   - YSortAdjust
@@ -134,10 +136,10 @@ The table lists each slot, the key that names its animation, and when the slot i
 | Pre-production | [`PreProductionAnim=`](/keys/preproductionanim/) | A construction yard begins a structure, or a harvester begins unloading into the structure |
 | Production | [`ProductionAnim=`](/keys/productionanim/) | A construction yard finishes a structure, a factory releases what it built, a refinery finishes unloading a harvester, or a service depot begins a repair |
 | Turret | [`TurretAnim=`](/keys/turretanim/) | A turret-equipped or [`ChargeAnim=yes`](/keys/chargeanim/) structure comes online, or the structure begins charging its weapon. With [`TurretAnimIsExclusive=yes`](/keys/turretanimisexclusive/), only charging fills it. A [`TurretAnimIsVoxel=yes`](/keys/turretanimisvoxel/) structure skips the fill when it comes online |
-| Special one to four | [`SpecialAnim=`](/keys/specialanim/), [`SpecialAnimTwo=`](/keys/specialanimtwo/), [`SpecialAnimThree=`](/keys/specialanimthree/), [`SpecialAnimFour=`](/keys/specialanimfour/) | An event on a [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) or [`FirestormWall=yes`](/keys/firestormwall/) structure. No event fills special slot four |
+| Special one to four | [`SpecialAnim=`](/keys/specialanim/), [`SpecialAnimTwo=`](/keys/specialanimtwo/), [`SpecialAnimThree=`](/keys/specialanimthree/), [`SpecialAnimFour=`](/keys/specialanimfour/) | An event on a [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) or [`FirestormWall=yes`](/keys/firestormwall/) structure, or a shot charging on an [`IsAnimDelayedFire=yes`](/keys/isanimdelayedfire/) structure, which fills special slot one. No event fills special slot four |
 | Super one to four | [`SuperAnim=`](/keys/superanim/), [`SuperAnimTwo=`](/keys/superanimtwo/), [`SuperAnimThree=`](/keys/superanimthree/), [`SuperAnimFour=`](/keys/superanimfour/) | The charge state of the structure's superweapon, as [`ChargedAnimTime`](/keys/chargedanimtime/) describes |
 | Idle | [`IdleAnim=`](/keys/idleanim/) | The structure comes online, unless it is a refinery, or the scenario places it |
-| Low power | [`LowPower=`](/keys/lowpower/) | No event fills it yet |
+| Low power | [`LowPower=`](/keys/lowpower/) | A [`PoweredSpecial=yes`](/keys/poweredspecial/) structure goes out of service in a spy's blackout or a power drain. Working again empties it |
 | Super low power | [`SuperLowPower=`](/keys/superlowpower/) | A power shortfall removes a [`SuperAnimThreePoweredEffect=yes`](/keys/superanimthreepoweredeffect/) animation. Full power empties it again |
 
 Three active-slot rules apply only to particular structures:
@@ -222,19 +224,21 @@ Four flags decide what a slot's animation does when its house is short of power.
 - `…Powered=yes` freezes the animation on its current frame. It stays on screen and resumes at full power.
 - `…PoweredLight=yes` removes the animation, and creates it again at full power whether or not the shortfall removed it.
 - `…PoweredEffect=yes` removes the animation, and creates it again at full power only if the shortfall removed it. When the slot is super slot three, the shortfall also starts the super low power slot.
-- `…PoweredSpecial=` is read but has no effect yet.
+- `…PoweredSpecial=yes` is for a power plant with [`PoweredSpecial=yes`](/keys/poweredspecial/). While a spy's blackout or a drain has the plant out of service, the animation is removed and the low power slot's animation plays; both are reversed when the plant works again.
 
 Only one of the first three flags is used. The structure tests `…Powered` first, then `…PoweredLight`, then `…PoweredEffect`. Because `…Powered` defaults to `yes`, a slot that should use either of the other two must also set `…Powered=no`.
 
 The upgrade and turret slots have no power flags and always behave as `…Powered=yes`. A frozen turret animation still follows the turret's facing, because the structure sets its frame directly.
 
-The house applies these flags each time it rechecks its power, but only to its structures whose type is [`Powered=yes`](/keys/powered/) and drains power. Other structures keep their animations running through a shortfall. At full power the house resumes frozen animations, creates any missing `…PoweredLight=yes` animation, recreates each `…PoweredEffect=yes` animation the shortfall removed, and empties the super low power slot.
+A structure applies these flags when it drops out of service and when it comes back into service, but only if its type is [`Powered=yes`](/keys/powered/) and drains power. Other structures keep their animations running through a shortfall. When it comes back, it resumes frozen animations, creates any missing `…PoweredLight=yes` animation, recreates each `…PoweredEffect=yes` animation the shortfall removed, and empties the super low power slot. A structure also comes into service when it opens on the map, so a structure that needs power starts with these animations removed or frozen and gets them back at once if its house has full power.
 
-The full-power pass is the only way a structure that is not `UnitRepair=yes`, `SiloDamage=yes` or `FirestormWall=yes` runs a special animation, and the only way any structure runs a super animation.
+Coming into service is the only way a structure that is not `UnitRepair=yes`, `SiloDamage=yes` or `FirestormWall=yes` runs a special animation, apart from a structure with [`IsAnimDelayedFire=yes`](/keys/isanimdelayedfire/), which plays its special animation while it charges a shot, and no special animation is started for it by power returning. Coming into service is also the only way any structure but a superweapon building runs a super animation.
 
-Switching one structure off with the power cursor or the [Turn off building](/mapping/actions/taction-turn-off-attached/) trigger action freezes its `…Powered=yes` animations. Switching off also makes the house recheck its power. If the house has full power after the switch, that recheck resumes the animations at once. If the house is short of power, they stay frozen until the house next rechecks its power at full power.
+An animation begun while a `Powered=yes` structure is out of service, for example by a damage change, starts frozen.
 
-An [EMP pulse](/systems/emp-pulse/) freezes the same animations. They resume when the structure recovers from the pulse, or earlier if the house rechecks its power at full power in the meantime.
+Switching one structure off with the power cursor or the [Turn off building](/mapping/actions/taction-turn-off-attached/) trigger action freezes its `…Powered=yes` animations. Switching it back on, if the house has full power, resumes them at once. If the house is short of power, they stay frozen until it has full power.
+
+An [EMP pulse](/systems/emp-pulse/) freezes the same animations. They resume when the structure recovers from the pulse.
 
 Neither switching off nor an EMP pulse removes a `…PoweredLight=yes` animation unless the house is also short of power.
 
