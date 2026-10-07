@@ -119,7 +119,7 @@ await expectRoute('radio contact protocol', `${base}/internals/radio/`);
 await expectRoute('Locomotion and piggybacking', `${base}/internals/locomotion/`);
 await expectRoute('MISSION_HUNT', `${base}/reference/enums/mission/`);
 await expectRoute('RTTI_VEINHOLEMONSTER', `${base}/reference/enums/rtti-type/`);
-await expectRoute('developer builds', `${base}/using/project-status/`);
+await expectRoute('nightly developer builds', `${base}/using/project-status/`);
 await expectRoute('Toggle follow state', `${base}/commands/follow/`);
 await expectRoute('Command-line help', `${base}/using/command-line/help/`);
 await expectRoute('CRC-indexed archive members', `${base}/formats/mix/`);
@@ -141,7 +141,7 @@ await expectRoute('MISSION_HUNT', `${base}/reference/enums/mission/`, scoped(SEA
 await expectRoute('Change House', `${base}/mapping/actions/taction-change-house/`, scoped(SEARCH_VIEWS.mapping, SEARCH_AREAS.actions));
 await expectRoute('GDI Drop Pods superweapon', `${base}/systems/drop-pods/`, scoped(SEARCH_VIEWS.systems, 'Superweapons & special systems'));
 await expectRoute('Base placement', `${base}/systems/base-adjacency/`, scoped(SEARCH_VIEWS.systems, 'Buildings & economy'));
-await expectRoute('developer builds', `${base}/using/project-status/`, scoped(SEARCH_VIEWS.using, 'Getting started'));
+await expectRoute('nightly developer builds', `${base}/using/project-status/`, scoped(SEARCH_VIEWS.using, 'Getting started'));
 await expectRoute('Toggle follow state', `${base}/commands/follow/`, scoped(SEARCH_VIEWS.commands, COMMAND_KIND_AREAS.registered));
 await expectRoute('Map zoom', `${base}/commands/fixed-map-zoom/`, scoped(SEARCH_VIEWS.commands, COMMAND_KIND_AREAS.fixed));
 await expectRoute('Command-line help', `${base}/using/command-line/help/`, scoped(SEARCH_VIEWS.using, COMMAND_KIND_AREAS.launch));
