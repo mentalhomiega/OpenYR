@@ -3649,6 +3649,9 @@ bool ScenarioClass::Read_Global_INI(CCINIClass const & ini)
 	for (int i = 0; i < length; i++) {
 		char const * entry = ini.Get_Entry(SECTION, i);
 		int index = atoi(entry);
+		if (index < 0 || index >= ARRAY_SIZE(GlobalFlags)) {
+			continue;
+		}
 
 		ini.Get_String(SECTION, entry, NULL, GlobalFlags[index].VariableName, sizeof(GlobalFlags[index].VariableName));
 	}
@@ -3765,6 +3768,9 @@ bool ScenarioClass::Read_Local_INI(CCINIClass const & ini)
 	for (index = 0; index < length; index++) {
 		char const * entry = ini.Get_Entry(SECTION, index);
 		int index = atoi(entry);
+		if (index < 0 || index >= ARRAY_SIZE(LocalFlags)) {
+			continue;
+		}
 
 		ini.Get_String(SECTION, entry, NULL, buffer, sizeof(buffer));
 		char * token = strtok(buffer, ",");
