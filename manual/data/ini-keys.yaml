@@ -18517,6 +18517,23 @@ IsAlternateColor:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+IsAnimDelayedFire:
+  key: IsAnimDelayedFire
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsAnimDelayedFire
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 IsAnimated:
   key: IsAnimated
   scopes:
@@ -25735,6 +25752,23 @@ Powered:
       default_candidate: 'no'
       declared_in: BuildingTypeClass
       member: IsPowered
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+PoweredSpecial:
+  key: PoweredSpecial
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsPoweredSpecial
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass

@@ -289,7 +289,8 @@ class BuildingClass : public TechnoClass
 
 		int Overpowerer_Count(void) const;
 
-		bool Prism_Charge(void);
+		void Start_Delayed_Fire(PrismStageType stage);
+		bool Prism_Charge(int weapon);
 		void Prism_AI(void);
 		bool IsCharged;
 
@@ -588,6 +589,7 @@ class BuildingClass : public TechnoClass
 		void Turn_Off(void);
 		void Power_On(void);
 		void Power_Off(void);
+		void Update_Power_Anims(bool online);
 		void Power_Anims_On(void);
 		bool Can_Be_Occupied_By(InfantryClass const * infantry) const;
 		bool Can_Occupy_Fire(void) const;

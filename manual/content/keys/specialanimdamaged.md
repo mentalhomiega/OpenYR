@@ -9,7 +9,7 @@ when_omitted:
 
 `SpecialAnimDamaged=` names the animation that the first special slot runs in place of [`SpecialAnim`](/keys/specialanim/) while the structure's health is at or below [`ConditionYellow`](/keys/conditionyellow/).
 
-A service depot and a storage structure always [start this slot](/keys/specialanim/#what-starts-a-special-animation) with the `SpecialAnim` name, whatever their health. The exception is a [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/) slot that is created when the house rechecks its power at full power. It starts with the name that matches the structure's health.
+A service depot and a storage structure always [start this slot](/keys/specialanim/#what-starts-a-special-animation) with the `SpecialAnim` name, whatever their health. The exception is a [`SpecialAnimPoweredLight=yes`](/keys/specialanimpoweredlight/) slot that is created when the structure comes into service. It starts with the name that matches the structure's health.
 
 Otherwise the damaged name replaces the healthy one only when the structure's running animations switch form, such as after a damage or repair step. [The damaged form](/systems/building-animations/#the-damaged-form) lists the switches.
 

@@ -11,7 +11,7 @@ With `yes`, the [`SpecialAnimThree`](/keys/specialanimthree/) animation is remov
 
 A shortfall removes the animation only on some structures; [Fields, fences and lights](/systems/power/#fields-fences-and-lights) says which.
 
-Each time the house [rechecks its power](/systems/power/#when-the-tally-is-rebuilt) at full power, it creates the animation if the slot is empty, on a [`Powered=yes`](/keys/powered/) structure that drains power. This starts the slot on such a structure even when it is not a service depot; [A powered light on a powered structure](/keys/specialanim/#a-powered-light-on-a-powered-structure) covers that route. A non-looping animation plays again at each recheck.
+Each time the structure comes into service, it creates the animation if the slot is empty, on a [`Powered=yes`](/keys/powered/) structure that drains power. This starts the slot on such a structure even when it is not a service depot; [A powered light on a powered structure](/keys/specialanim/#a-powered-light-on-a-powered-structure) covers that route. A non-looping animation plays again each time the structure comes back into service.
 
 The value is read only when the slot has an animation name from `SpecialAnimThree`, [`SpecialAnimThreeDamaged`](/keys/specialanimthreedamaged/) or [`SpecialAnimThreeGarrisoned`](/keys/specialanimthreegarrisoned/). Write it in the same art entry as the animation names. [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) has the full table.
 

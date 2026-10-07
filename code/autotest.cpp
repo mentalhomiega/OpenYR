@@ -1225,6 +1225,11 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			new AnimClass(type, Map[Cell(step.X, step.Y)].Center_Coord());
 		}
+	} else if (step.Command == "blackout") {
+		// blackout <frames>: a spy's power blackout of that many frames on the player's house.
+		PlayerPtr->PowerBlackout = std::atoi(step.Argument.c_str());
+		PlayerPtr->IsPowerBlackout = true;
+		PlayerPtr->RecalcPower = true;
 	} else if (step.Command == "emp") {
 		// emp <duration> x y: an EM pulse of radius 2 and that duration on the cell, from no source.
 		new EMPulseClass(Cell(step.X, step.Y), 2, std::atoi(step.Argument.c_str()), NULL);

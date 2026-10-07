@@ -8550,6 +8550,22 @@ void HouseClass::AI_Build_Wall(void)
 
 
 /// <summary>
+/// Tells whether an enemy is draining one of this house's power plants, as HouseClass::UpdatePower
+/// (0x508C30) finds: a structure of the house that makes power has something draining it.
+/// </summary>
+bool HouseClass::Is_Being_Drained(void) const
+{
+	for (int i = 0; i < Buildings.Count(); i++) {
+		BuildingClass * b = Buildings[i];
+		if (b != NULL && b->House == this && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Recalculates the power output and drain of this house.
 /// This routine tallies every structure the house has running and then refreshes whatever
 /// depends on the result -- factory speed and super weapon availability among them. An
@@ -8574,12 +8590,7 @@ void HouseClass::Recalc_Power_Drain(void)
 
 	// A spy's blackout, or a power-producing structure being drained, leaves the house's structures
 	// making nothing, as HouseClass::UpdatePower (0x508C30) and BuildingClass::IsPowerOnline do.
-	bool drained = false;
-	for (int i = 0; i < Buildings.Count() && !drained; i++) {
-		BuildingClass * b = Buildings[i];
-		drained = b != NULL && b->House == this && !b->IsInLimbo && b->DrainingMe != NULL && b->Power_Output() > 0;
-	}
-	if (IsPowerBlackout || drained) {
+	if (IsPowerBlackout || Is_Being_Drained()) {
 		Power = 0;
 	}
 

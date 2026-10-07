@@ -11,4 +11,4 @@ The structure runs this animation in place of [`SpecialAnimTwo`](/keys/specialan
 
 A service depot always starts this slot with the healthy `SpecialAnimTwo` name, whatever its health. Apart from the powered-light case below, this animation appears only when the running set switches to the damaged form while the slot is running. That happens when the structure takes damage or receives a repair step while at or below [`ConditionYellow`](/keys/conditionyellow/), or when another slot is filled in its damaged form. The swap keeps the frame the animation had reached.
 
-The one fill that starts this animation directly is the full-power fill of a slot with [`SpecialAnimTwoPowered=no`](/keys/specialanimtwopowered/) and [`SpecialAnimTwoPoweredLight=yes`](/keys/specialanimtwopoweredlight/), made while the structure is at or below `ConditionYellow`.
+The one fill that starts this animation directly is the fill of a slot, made when the structure comes into service, with [`SpecialAnimTwoPowered=no`](/keys/specialanimtwopowered/) and [`SpecialAnimTwoPoweredLight=yes`](/keys/specialanimtwopoweredlight/), made while the structure is at or below `ConditionYellow`.

@@ -458,6 +458,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		*/
 		bool IsPowered;
 
+		// Does a spy's power blackout or a drain of the house's power put this structure out of service, as for a power plant?
+		bool IsPoweredSpecial;
+
 		/*
 		**	If this flag is true, then the building cannot be sold even if it could have been built. This
 		**	is especially useful for mines which can be built but cannot be sold.
@@ -695,6 +698,9 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		// The frames a prism tower charges before it fires or sends its support beam.
 		int DelayedFireDelay;
+
+		// Does the SpecialAnim play as a charge and hold the weapon back for DelayedFireDelay frames, as a Tesla coil's or prism tower's does?
+		bool IsAnimDelayedFire;
 
 		// Can soldiers with an ElectricAssault weapon charge this structure?
 		bool IsOverpowerable;

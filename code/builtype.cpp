@@ -287,6 +287,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	MaxNumberOccupants(0),
 	MuzzleFlash(),
 	IsPowered(false),
+	IsPoweredSpecial(false),
 	IsUnsellable(false),
 	IsRadar(false),
 	IsHasChargeAnim(false),
@@ -344,6 +345,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsEligibleForDelayKill(false),
 	BuildupSound(VOC_NONE),
 	DelayedFireDelay(0),
+	IsAnimDelayedFire(false),
 	IsOverpowerable(false),
 	IsClickRepairable(true),
 	IsCrateBeneath(false),
@@ -1275,6 +1277,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsShowOccupantPips = ini.Get_Bool(Name(), "ShowOccupantPips", IsShowOccupantPips);
 		MaxNumberOccupants = ini.Get_Int(Name(), "MaxNumberOccupants", MaxNumberOccupants);
 		IsPowered = ini.Get_Bool(Name(), "Powered", IsPowered);
+		IsPoweredSpecial = ini.Get_Bool(Name(), "PoweredSpecial", IsPoweredSpecial);
 		IsBibbed = ini.Get_Bool(Name(), "Bib", IsBibbed);
 		IsUnsellable = ini.Get_Bool(Name(), "Unsellable", IsUnsellable);
 
@@ -1436,6 +1439,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			DockingOffsets[dock] = ArtINI.Get_Point(Graphic_Name(), entry, DockingOffsets[dock]);
 		}
 		DelayedFireDelay = ArtINI.Get_Int(Graphic_Name(), "DelayedFireDelay", DelayedFireDelay);
+		IsAnimDelayedFire = ArtINI.Get_Bool(Graphic_Name(), "IsAnimDelayedFire", IsAnimDelayedFire);
 		IsRecoilless = ArtINI.Get_Bool(Graphic_Name(), "Recoilless", IsRecoilless);
 		IsFlat = ArtINI.Get_Bool(Graphic_Name(), "Flat", IsFlat);
 		OccupyHeight = ArtINI.Get_Int(Graphic_Name(), "OccupyHeight", OccupyHeight);
@@ -2192,9 +2196,11 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsWall);
 	crc(IsCaptureable);
 	crc(IsPowered);
+	crc(IsPoweredSpecial);
 	crc(IsUnsellable);
 	crc(IsRadar);
 	crc(IsHasChargeAnim);
+	crc(IsAnimDelayedFire);
 	crc(IsSiloDamage);
 	crc(IsCanUnitRepair);
 	crc(IsCanUnitReload);
@@ -2341,6 +2347,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxNumberOccupants);
 	stream.Serialize(MuzzleFlash);
 	stream.Serialize(IsPowered);
+	stream.Serialize(IsPoweredSpecial);
 	stream.Serialize(IsUnsellable);
 	stream.Serialize(IsRadar);
 	stream.Serialize(IsHasChargeAnim);
@@ -2398,6 +2405,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEligibleForDelayKill);
 	stream.Serialize(BuildupSound);
 	stream.Serialize(DelayedFireDelay);
+	stream.Serialize(IsAnimDelayedFire);
 	stream.Serialize(IsOverpowerable);
 	stream.Serialize(IsClickRepairable);
 	stream.Serialize(IsCrateBeneath);
