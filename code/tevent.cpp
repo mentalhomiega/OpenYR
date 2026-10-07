@@ -55,9 +55,50 @@
 #include "team.h"
 #include "techno.h"
 #include "tracker.h"
+#include "techtype.h"
+#include "unit.h"
+#include "unittype.h"
+#include "dbgprint.h"
 #include "vector.h"
 
 DynamicVectorClass<TEventClass *> Events;
+
+/// <summary>
+/// Counts the live objects of every house whose type has the given ID.
+/// </summary>
+/// <param name="name">The ID of the object type, as the rules name it.</param>
+/// <returns>int; How many objects of that type exist.</returns>
+static int Count_Of_Techno_Type(char const * name)
+{
+	if (name == NULL || name[0] == '\0') return(0);
+
+	int count = 0;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno != NULL && techno->IsActive && stricmp(techno->Techno_Type_Class()->Name(), name) == 0) {
+			count++;
+		}
+	}
+	return(count);
+}
+
+/// <summary>
+/// Counts the vehicles a house owns that are, or are not, naval.
+/// </summary>
+/// <param name="house">The house whose vehicles are counted.</param>
+/// <param name="naval">Whether to count the naval vehicles or the others.</param>
+/// <returns>int; How many vehicles of that kind the house owns.</returns>
+static int Count_Units_Of_House(HouseClass const * house, bool naval)
+{
+	int count = 0;
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass const * unit = Units[index];
+		if (unit != NULL && unit->IsActive && unit->House == house && unit->Class->IsNaval == naval) {
+			count++;
+		}
+	}
+	return(count);
+}
 
 #ifdef _DEBUG
 /*
@@ -121,6 +162,15 @@ static const struct {
 	{"Pickup Crate (any)", "When crate is picked up by any unit."},
 	{"Random delay...", "Delays a random time between 50 and 150 percent of time specified."},
 	{"Credits below...","Triggers when the house (for this trigger) credit total is below this specified amount."},
+	{"Spy entering as House...", "Triggers when a spy disguised as the specified house enters the attached building."},
+	{"Spy entering as Infantry...", "Triggers when a spy disguised as the specified infantry type enters the attached building."},
+	{"Destroyed, Units, Naval...", "Triggers when all naval units of the specified house have been destroyed."},
+	{"Destroyed, Units, Land...", "Triggers when all land units and infantry of the specified house have been destroyed."},
+	{"Building does not exist...", "Triggers when the building (owned by the house of this trigger) specified does not exist on the map."},
+	{"Power Full...", "Triggers when the specified house's power is at or above 100% level."},
+	{"Entered or Overflown by...", "Triggers when a unit of the specified house enters the attached cell or flies over it. <THEM = House of entering unit>"},
+	{"TechType exists...", "Triggers when at least the number given of objects of the type named exist, whoever owns them."},
+	{"TechType does not exist...", "Triggers when no object of the type named exists, whoever owns it."},
 	{"Paralyzed", "Triggers when a object is paralyzed under EMP effect or web."},
 	{"Enemy In Spotlight... (repeating)", "Triggers when an enemy unit enters the spotlight cast by the attached building. Unlike the other spotlight event, this one is re-tested every time the trigger is polled instead of staying satisfied once it has fired."},
 	{"Limped", "Triggers when a object has been limped by a limpet drone."}
@@ -140,6 +190,7 @@ TEventClass::TEventClass(void) :
 	Event(TEVENT_NONE),
 	Team(NULL)
 {
+	TechnoName[0] = '\0';
 	Events.Add(this);
 	HeapID = Events.ID(this);
 
@@ -249,6 +300,24 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 			if (timer != 0) return(false);
 			return(true);
 
+		/*
+		**	These two look at the objects of every house, so they do not depend on the
+		**	trigger's own house or on who the event names.
+		*/
+		case TEVENT_TECHTYPE_EXISTS:
+			return(Count_Of_Techno_Type(TechnoName) >= Data.Value);
+
+		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
+			return(Count_Of_Techno_Type(TechnoName) == 0);
+
+		/*
+		**	A spy event has nothing to look at: the engine does not tell triggers what a spy
+		**	was disguised as.
+		*/
+		case TEVENT_SPY_ENTERING_AS_HOUSE:
+		case TEVENT_SPY_ENTERING_AS_INFANTRY:
+			return(false);
+
 	}
 
 	/*
@@ -267,6 +336,7 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 	*/
 	if (Event != TEVENT_ATTACKED_BY &&
 		Event != TEVENT_PLAYER_ENTERED &&
+		Event != TEVENT_ENTERED_OR_OVERFLOWN &&
 		Event != TEVENT_CROSS_HORIZONTAL &&
 		Event != TEVENT_CROSS_VERTICAL &&
 		Event != TEVENT_NEAR_WAYPOINT &&
@@ -286,7 +356,7 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 	**	matching ownership has entered the cell in question. All other
 	**	conditions will not trigger the event.
 	*/
-	if (Event == TEVENT_PLAYER_ENTERED || Event == TEVENT_CROSS_HORIZONTAL || Event == TEVENT_CROSS_VERTICAL || Event == TEVENT_ENTERS_ZONE) {
+	if (Event == TEVENT_PLAYER_ENTERED || Event == TEVENT_ENTERED_OR_OVERFLOWN || Event == TEVENT_CROSS_HORIZONTAL || Event == TEVENT_CROSS_VERTICAL || Event == TEVENT_ENTERS_ZONE) {
 		if (event != Event) return(false);
 		if (!object) return(false);
 		if (Data.House != HOUSE_NONE) {
@@ -371,6 +441,14 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 			*/
 			case TEVENT_BUILDING_EXISTS:
 				if (house->BQuantity.Value(Data.Structure) == 0) return(false);
+				tripped = true;
+				break;
+
+			/*
+			**	Verify that the structure does not exist.
+			*/
+			case TEVENT_BUILDING_DOES_NOT_EXIST:
+				if (house->BQuantity.Value(Data.Structure) != 0) return(false);
 				tripped = true;
 				break;
 
@@ -465,6 +543,27 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 				if (house->CurBuildings > 0 || house->CurUnits > 0 || house->CurInfantry > 0) return(false);
 				break;
 
+			/*
+			**	Verify that no naval unit is left.
+			*/
+			case TEVENT_NAVAL_UNITS_DESTROYED:
+				if (Count_Units_Of_House(house, true) > 0) return(false);
+				break;
+
+			/*
+			**	Verify that no land unit or infantry is left.
+			*/
+			case TEVENT_LAND_UNITS_DESTROYED:
+				if (house->CurInfantry > 0 || Count_Units_Of_House(house, false) > 0) return(false);
+				break;
+
+			/*
+			**	Verify that the house has all the power it needs.
+			*/
+			case TEVENT_POWER_FULL:
+				if (house->Power_Fraction() < 1) return(false);
+				break;
+
 			default:
 				break;
 		}
@@ -529,10 +628,16 @@ void TEventClass::Read_INI(void)
 {
 
 	Data.Value = 0;
-	Event = TEventType(atoi(strtok(NULL, ",")));
+	TechnoName[0] = '\0';
+	int event = atoi(strtok(NULL, ","));
+	Event = TEventType(event);
+	if (event < TEVENT_NONE || event >= TEVENT_COUNT) {
+		DebugString("TEvent: map uses event %d, which this engine does not know; it never fires\n", event);
+		Event = TEVENT_NONE;
+	}
 	int code = atoi(strtok(NULL, ","));
 	char * text = strtok(NULL, ",");
-	int val = atoi(text);
+	int val = text != NULL ? atoi(text) : 0;
 
 	switch (code) {
 		case 0:
@@ -542,6 +647,24 @@ void TEventClass::Read_INI(void)
 		case 1:
 			Team = TeamTypeClass::From_Name(text);
 			break;
+
+		/*
+		**	Yuri's Revenge's events that name an object type carry a third field after the
+		**	number: its ID. Leaving it unread would hand it to the next event as that event's
+		**	number, so it is always taken here.
+		*/
+		case 2: {
+			Data.Value = val;
+			char const * name = strtok(NULL, ",");
+			if (name != NULL) {
+				snprintf(TechnoName, sizeof(TechnoName), "%s", name);
+			}
+			break;
+		}
+	}
+
+	if (Event == TEVENT_SPY_ENTERING_AS_HOUSE || Event == TEVENT_SPY_ENTERING_AS_INFANTRY) {
+		DebugString("TEvent: event %d (%s) is not implemented and never fires\n", (int)Event, Event == TEVENT_SPY_ENTERING_AS_HOUSE ? "spy entering as house" : "spy entering as infantry");
 	}
 }
 
@@ -576,8 +699,15 @@ NeedType Event_Needs(TEventType event)
 		case TEVENT_ALL_DESTROYED:
 		case TEVENT_LOW_POWER:
 		case TEVENT_ATTACKED_BY:
+		case TEVENT_SPY_ENTERING_AS_HOUSE:
+		case TEVENT_NAVAL_UNITS_DESTROYED:
+		case TEVENT_LAND_UNITS_DESTROYED:
+		case TEVENT_POWER_FULL:
+		case TEVENT_ENTERED_OR_OVERFLOWN:
 			return(NEED_HOUSE);
 
+		case TEVENT_TECHTYPE_EXISTS:
+		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
 		case TEVENT_NUNITS_DESTROYED:
 		case TEVENT_NBUILDINGS_DESTROYED:
 		case TEVENT_CREDITS:
@@ -598,6 +728,7 @@ NeedType Event_Needs(TEventType event)
 			return(NEED_LOCAL);
 
 		case TEVENT_BUILDING_EXISTS:
+		case TEVENT_BUILDING_DOES_NOT_EXIST:
 		case TEVENT_BUILD:
 			return(NEED_STRUCTURE);
 
@@ -702,6 +833,7 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_CROSS_VERTICAL:
 		case TEVENT_ENTERS_ZONE:
 		case TEVENT_PLAYER_ENTERED:
+		case TEVENT_ENTERED_OR_OVERFLOWN:
 		case TEVENT_ANY:
 		case TEVENT_DISCOVERED:
 		case TEVENT_NONE:
@@ -721,7 +853,10 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_ENTER_YELLOW:
 		case TEVENT_ENTER_RED:
 		case TEVENT_SPIED:
+		case TEVENT_SPY_ENTERING_AS_HOUSE:
+		case TEVENT_SPY_ENTERING_AS_INFANTRY:
 		case TEVENT_PLAYER_ENTERED:
+		case TEVENT_ENTERED_OR_OVERFLOWN:
 		case TEVENT_DISCOVERED:
 		case TEVENT_DESTROYED:
 		case TEVENT_DESTROYED_ANY:
@@ -758,6 +893,10 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_LOW_POWER:
 		case TEVENT_EVAC_CIVILIAN:
 		case TEVENT_BUILDING_EXISTS:
+		case TEVENT_BUILDING_DOES_NOT_EXIST:
+		case TEVENT_NAVAL_UNITS_DESTROYED:
+		case TEVENT_LAND_UNITS_DESTROYED:
+		case TEVENT_POWER_FULL:
 		case TEVENT_BUILD:
 		case TEVENT_BUILD_UNIT:
 		case TEVENT_BUILD_INFANTRY:
@@ -794,6 +933,8 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_AMBIENT_GREATER_THAN:
 		case TEVENT_LEAVES_MAP:
 		case TEVENT_PICKUP_CRATE_ANY:
+		case TEVENT_TECHTYPE_EXISTS:
+		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
 			attach = AttachType(attach | ATTACH_GENERAL);
 			break;
 
@@ -867,6 +1008,7 @@ void TEventClass::Serialize(SaveStreamClass & stream)
 	 * a plain scalar and none holds a pointer, so the union travels as its raw image.
 	 */
 	stream.Serialize_Bytes(&Data, sizeof(Data));
+	stream.Serialize_Bytes(TechnoName, sizeof(TechnoName));
 }
 
 
@@ -883,6 +1025,9 @@ bool TEventClass::Is_Time_Based(void) const
 		case TEVENT_PICKUP_CRATE:
 		case TEVENT_PICKUP_CRATE_ANY:
 		case TEVENT_PLAYER_ENTERED:
+		case TEVENT_ENTERED_OR_OVERFLOWN:
+		case TEVENT_SPY_ENTERING_AS_HOUSE:
+		case TEVENT_SPY_ENTERING_AS_INFANTRY:
 		case TEVENT_SPIED:
 		case TEVENT_THIEVED:
 		case TEVENT_DISCOVERED:
@@ -933,6 +1078,7 @@ bool TEventClass::Is_To_Flag_As_Tripped(void) const
 		case TEVENT_ATTACKED:
 		case TEVENT_ATTACKED_BY:
 		case TEVENT_PLAYER_ENTERED:
+		case TEVENT_ENTERED_OR_OVERFLOWN:
 		case TEVENT_PARALYZED:
 		case TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING:
 			return(false);
