@@ -384,7 +384,9 @@ class TeamClass : public AbstractClass
 		void TMission_CHRONO_PREP_ABWP(TeamMissionClass * mission, bool);
 		void TMission_CHRONO_PREP_AQ(TeamMissionClass * mission, bool);
 		void TMission_ATTACK_WAYPOINT_OBJECT(TeamMissionClass * mission, bool);
-		void Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent));
+		void TMission_ENTER_GRINDER(TeamMissionClass * mission, bool);
+		void TMission_GARRISON_STRUCTURE(TeamMissionClass * mission, bool);
+		void Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only = true);
 		LEPTON Stray_Distance(void);
 		void Chrono_Prep(TeamMissionClass * mission, bool by_building);
 		void Gather_Near(FootClass * leader, Coord const & base, Coord const & toward);
