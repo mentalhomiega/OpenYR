@@ -15,6 +15,9 @@
 
 
 /// TS names derived from FA2/FS
+///
+/// The numbers are the ones Yuri's Revenge maps use: events 0 to 52 are the Tiberian Sun ones and 53 to
+/// 61 are Yuri's Revenge's own. OpenTS's extra events come after 61.
 
 /*
 **	These are the trigger events that are checked for and if qualified, they will signal
@@ -75,6 +78,18 @@ enum TEventType {
 	TEVENT_PICKUP_CRATE_ANY,				/// When any unit picks up any crate.
 	TEVENT_RANDOM_TIME,						/// Delays a random time.
 	TEVENT_CREDITS_BELOW,					/// house drops below this many credits.
+	TEVENT_SPY_ENTERING_AS_HOUSE,			/// When a spy disguised as the given house enters the attached building.
+	TEVENT_SPY_ENTERING_AS_INFANTRY,		/// When a spy disguised as the given infantry enters the attached building.
+	TEVENT_NAVAL_UNITS_DESTROYED,			/// All of a house's naval units destroyed.
+	TEVENT_LAND_UNITS_DESTROYED,			/// All of a house's land units, infantry included, destroyed.
+	TEVENT_BUILDING_DOES_NOT_EXIST,			/// Check for building not existing.
+	TEVENT_POWER_FULL,						/// When a house's power reaches 100%.
+	TEVENT_ENTERED_OR_OVERFLOWN,			/// When a house's unit enters or flies over the attached cell.
+	TEVENT_TECHTYPE_EXISTS,					/// When at least a number of objects of a type exist.
+	TEVENT_TECHTYPE_DOES_NOT_EXIST,			/// When no object of a type exists.
+
+	/// OpenTS additions that Yuri's Revenge has no event for. They follow its range so that its numbers
+	/// stay put.
 	TEVENT_PARALYZED,						/// When paralyzed by EMP or web.
 	TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING,	/// As enemy-in-spotlight, but re-tested each poll, not latched.
 	TEVENT_LIMPED,							/// When limped by a limpet drone.

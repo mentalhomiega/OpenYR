@@ -2100,6 +2100,14 @@ void FootClass::Per_Cell_Process(PCPType why)
 			int y = cell.Y;
 			if (((!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) || IsOnBridge) && tag != NULL) {
 				tag->Spring(TEVENT_PLAYER_ENTERED, this, PositionCell);
+
+				/*
+				**	Yuri's Revenge has a second entry event that aircraft overflying the cell also
+				**	spring. The tag may have gone with the first event, so it is fetched again.
+				*/
+				if (cellptr->Tag != NULL) {
+					cellptr->Tag->Spring(TEVENT_ENTERED_OR_OVERFLOWN, this, PositionCell);
+				}
 			}
 
 			/*

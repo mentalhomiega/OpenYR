@@ -94,6 +94,12 @@ class TEventClass : public AbstractClass
 		*/
 		TeamTypeClass const * Team;
 
+		/*
+		 * The ID of the object type a TechType event looks for, as the rules name it. A map gives
+		 * it as the third field of the event, so the ID is kept as text.
+		 */
+		char TechnoName[32];
+
 		union {
 			StructType				Structure;	// Used for structure type checking.
 			UnitType				Unit;		// Used for unit type checking.
