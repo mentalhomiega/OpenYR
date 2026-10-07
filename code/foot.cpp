@@ -2011,7 +2011,8 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 			return(true);
 		}
 
-		if (RTTI == RTTI_INFANTRY) {
+		// A slave does not return to a remembered cell, as it takes orders only from its miner (FootClass::EnterIdleMode, 0x4D82B0).
+		if (RTTI == RTTI_INFANTRY && SlaveOwner == NULL) {
 			AbstractClass *target = ArchiveTarget;
 			if (target != NULL) {
 				if (CurrentMission != MISSION_GUARD_AREA) {

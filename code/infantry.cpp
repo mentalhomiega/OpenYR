@@ -2187,6 +2187,9 @@ bool InfantryClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 			} else {
 				if (House->IQ < Rule->IQGuardArea && CurrentMission != MISSION_GUARD_AREA) {
 					order = MISSION_GUARD;
+				} else if (SlaveOwner != NULL) {
+					// A slave of a computer player stays put and waits for its miner's orders (InfantryClass::EnterIdleMode).
+					order = MISSION_GUARD;
 				} else {
 					if (Is_Weapon_Equipped()) {
 						order = MISSION_GUARD_AREA;
