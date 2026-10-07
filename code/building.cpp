@@ -8349,7 +8349,8 @@ void BuildingClass::Update_Super_Anims(void)
 
 	bool const damaged = HealthRatio <= Rule->ConditionYellow;
 	if (super->Is_Ready()) {
-		if (Anims[BANIM_SUPER_THREE] == NULL) {
+		// A ready animation that a power shortfall removed stays away until the power comes back.
+		if (Anims[BANIM_SUPER_THREE] == NULL && !AnimStates[BANIM_SUPER_THREE]) {
 			End_Anim(BANIM_SUPER_ONE);
 			End_Anim(BANIM_SUPER_TWO);
 			End_Anim(BANIM_SUPER_FOUR);
