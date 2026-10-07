@@ -17906,6 +17906,24 @@ IntentionalDriftVelocity:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+InterfaceScale:
+  key: InterfaceScale
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Auto
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 Intro:
   key: Intro
   scopes:
