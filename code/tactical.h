@@ -186,6 +186,7 @@ class Tactical : public AbstractClass
 		void Draw_Psychic_Lines(void);
 		void Draw_Hidden_Markers(void);
 		void Draw_Super_Timers(void);
+		void Draw_Chrono_Screen_Effect(void);
 
 		/*
 		 * Terrain rendering passes.
@@ -424,6 +425,9 @@ class Tactical : public AbstractClass
 		static DynamicVectorClass<ShadowControlClass *> ShadowControls;
 };
 
+
+// Starts the chronoshift screen effect, with each fade lasting the frames given.
+void Start_Chrono_Screen_Effect(int frames);
 
 #ifdef _DEBUG
 extern bool DrawOccupierLinks;

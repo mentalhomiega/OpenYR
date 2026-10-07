@@ -315,7 +315,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_MIND_CONTROL_BASE:
 		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
 		case TACTION_RESTORE_STARTING_UNITS:
-		case TACTION_CHRONO_SCREEN_EFFECT:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 		case TACTION_RETINT_RED:
@@ -829,6 +828,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CENTER_BASE_CELL_CLEAR);
 		INVOKE(TIMER_TEXT);
 		INVOKE(RESHROUD_AT);
+		INVOKE(CHRONO_SCREEN_EFFECT);
 		INVOKE(STOP_SOUNDS_AT);
 		INVOKE(TELEPORT_ALL_TO);
 		INVOKE(RESTORE_STARTING_BUILDINGS);
@@ -3522,6 +3522,22 @@ bool TActionClass::TAction_STOP_SOUNDS_AT(HouseClass * , ObjectClass * , Trigger
 	if (Scen->Is_Valid_Waypoint(EffectLocation)) {
 		Static_Sounds_Stop(Scen->Get_Waypoint_Coord(EffectLocation), STATIC_SOUND_TRIGGER);
 	}
+	return(true);
+}
+
+
+/// <summary>
+/// Whites out the battlefield and fades it back in, as the chronoshift screen effect does. Each
+/// fade lasts the number of frames the action gives. This engine only fades the picture, where
+/// Yuri's Revenge twirls it, and does not lock the player's input meanwhile.
+/// </summary>
+/// <returns>bool; Was there a number of frames to run for?</returns>
+bool TActionClass::TAction_CHRONO_SCREEN_EFFECT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (Data.Value <= 0) {
+		return(false);
+	}
+	Start_Chrono_Screen_Effect(Data.Value);
 	return(true);
 }
 
