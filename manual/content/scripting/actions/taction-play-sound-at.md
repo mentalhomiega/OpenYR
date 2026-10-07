@@ -11,6 +11,8 @@ related:
     id: TACTION_PLAY_SOUND
   - type: action
     id: TACTION_PLAY_SOUND_RANDOM
+  - type: action
+    id: TACTION_STOP_SOUNDS_AT
 ---
 
 ## An endless loop stays put
@@ -19,6 +21,6 @@ An endless loop stays at the waypoint after the action runs. A sound is an endle
 
 While the waypoint is out of range, the loop is silent. Each time the waypoint comes back into range, the loop starts again without its attack sample. The sound's [`Range`](/keys/range/#scope-sounds) in `SOUND.INI` sets how far it carries.
 
-Nothing stops such a loop before the scenario ends. It is kept in a [save game](/formats/save-games/) and resumes after a load.
+Only [Stop Sounds At](/mapping/actions/taction-stop-sounds-at/) ends such a loop before the scenario does. It is kept in a [save game](/formats/save-games/) and resumes after a load.
 
 The action holds up to 200 sounds at once: every endless loop it has placed, and every other sound while it is still playing. While all 200 are held, the action plays nothing.
