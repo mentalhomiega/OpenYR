@@ -255,13 +255,11 @@ bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip
 		}
 	}
 
-	if (Session.Type == GAME_NORMAL) {
-		if (TrigHouse == AITRIG_HOUSE_NONE) {
-			return(false);
-		}
-		if (TrigHouse != AITRIG_HOUSE_ALL && TrigHouse == AITRIG_HOUSE_INDEX && house->Class->House != House) {
-			return(false);
-		}
+	if (TrigHouse == AITRIG_HOUSE_NONE) {
+		return(false);
+	}
+	if (TrigHouse == AITRIG_HOUSE_INDEX && house->Class->House != House) {
+		return(false);
 	}
 
 	if (MultiSide > 0) {

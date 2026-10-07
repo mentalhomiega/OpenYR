@@ -86,7 +86,7 @@ Eight more TeamType settings affect the decisions on this page. The table links 
 
 **Autocreated** is a mark on a TeamType. It does not make the engine create teams by itself. `Autocreate=yes` sets the mark when the TeamType is read, and an AI trigger drawing the TeamType sets it permanently. The mark only decides which of an object's two recruitable states a team of that type checks; [recruitment](#recruitment) covers the pair.
 
-An **AI trigger** is one line in [`[AITriggerTypes]`](/mapping/ai-triggers/). It is unrelated to the tags, events and actions a map uses: nothing springs it, and it does nothing except name teams. Each line names a first TeamType and optionally a second, one condition, three weights, and a set of gate fields: difficulty flags, a side, a campaign owner and a skirmish flag. A house never picks a team directly. It draws a trigger and creates the TeamTypes that trigger names.
+An **AI trigger** is one line in [`[AITriggerTypes]`](/mapping/ai-triggers/). It is unrelated to the tags, events and actions a map uses: nothing springs it, and it does nothing except name teams. Each line names a first TeamType and optionally a second, one condition, three weights, and a set of gate fields: difficulty flags, a side, an owner country and a skirmish flag. A house never picks a team directly. It draws a trigger and creates the TeamTypes that trigger names.
 
 The example below shows one trigger and the three sections behind it.
 
@@ -189,7 +189,7 @@ The house tests each trigger against these gates in order. The first gate that f
 5. It is enabled.
 6. Outside a campaign game, it is marked as available in skirmish.
 7. Its flag for the current [difficulty](#difficulty) is set.
-8. In a campaign game, its owner is not `<none>`, and is either `<all>` or this house's country.
+8. Its owner is not `<none>`, and is either `<all>` or this house's country.
 9. Its side field is `0` or less, or it gives the position in `[Sides]`, counting from `1`, of the side of the country the house [acts as](/keys/actslike/). A value that names no side rejects the trigger.
 10. The house's tech level is at least the trigger's tech level requirement.
 11. Its [condition](#conditions) holds.
@@ -200,10 +200,6 @@ The tech level requirement is not a field of the record. It is the highest `Tech
 
 :::danger[Give every TeamType a TaskForce]
 Set [`TaskForce=`](/keys/taskforce/) on every TeamType that an AI trigger names. If one has no `TaskForce=`, the game crashes while it reads that trigger during scenario loading.
-:::
-
-:::caution[Outside a campaign the owner is not read]
-The owner test runs only in a campaign game. In skirmish and multiplayer games, every house with its switch on considers every enabled trigger, whatever owner the record names. The side field, the condition and gate 12 are then the only gates that keep a trigger to one kind of house. Gate 12 does so because a house cannot build a member type its country cannot own.
 :::
 
 :::caution[Outside a campaign every team member must be buildable]
