@@ -1327,6 +1327,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
 		Draw_Super_Timers();
+		Draw_Chrono_Screen_Effect();
 		Draw_Flying_Texts();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
@@ -3896,6 +3897,57 @@ void Tactical::Draw_Super_Timers(void)
 			line++;
 		}
 	}
+}
+
+
+/*
+**	The chronoshift screen effect a trigger action can start: the view fades to white over the
+**	frames the action gives, stays white for 45 frames, and fades back in over the same time.
+**	Yuri's Revenge also twirls the picture and locks the player's input while it runs; this
+**	engine only fades. The effect is not saved, as it is over within a few seconds.
+*/
+static int ChronoEffectStart = -1;
+static int ChronoEffectFrames = 0;
+static int const CHRONO_EFFECT_HOLD = 45;
+
+/// <summary>
+/// Starts the chronoshift screen effect, with the fades lasting the number of frames given.
+/// </summary>
+/// <param name="frames">How many frames each fade lasts; none or less does nothing.</param>
+void Start_Chrono_Screen_Effect(int frames)
+{
+	if (frames > 0) {
+		ChronoEffectStart = Frame;
+		ChronoEffectFrames = frames;
+	}
+}
+
+
+/// <summary>
+/// Whitens the battlefield for the chronoshift screen effect while it runs.
+/// </summary>
+void Tactical::Draw_Chrono_Screen_Effect(void)
+{
+	// A scenario restarts the frame count, which leaves a leftover start in the future.
+	if (ChronoEffectStart < 0 || Frame < ChronoEffectStart) {
+		ChronoEffectStart = -1;
+		return;
+	}
+
+	int const t = Frame - ChronoEffectStart;
+	int const total = ChronoEffectFrames * 2 + CHRONO_EFFECT_HOLD;
+	if (t >= total) {
+		ChronoEffectStart = -1;
+		return;
+	}
+
+	int opacity = 100;
+	if (t < ChronoEffectFrames) {
+		opacity = t * 100 / ChronoEffectFrames;
+	} else if (t >= ChronoEffectFrames + CHRONO_EFFECT_HOLD) {
+		opacity = (total - t) * 100 / ChronoEffectFrames;
+	}
+	LogicalSurface->Fill_Rect_Trans(TacticalRect, RGBClass(255, 255, 255), std::clamp(opacity, 0, 100));
 }
 
 

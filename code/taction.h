@@ -322,6 +322,7 @@ class TActionClass : public AbstractClass
 		bool TAction_RESTORE_STARTING_BUILDINGS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_TELEPORT_ALL_TO(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_STOP_SOUNDS_AT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CHRONO_SCREEN_EFFECT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool Not_Implemented(void) const;
 };
 
