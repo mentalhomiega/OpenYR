@@ -634,6 +634,7 @@ RulesClass::RulesClass(void) :
 	BuildingAbandonedSound(VOC_NONE),
 	ScatterSound(VOC_NONE),
 	DeploySound(VOC_NONE),
+	CheerSound(VOC_NONE),
 	LightningSound(VOC_NONE),
 	SinkingSound(VOC_NONE),
 	RepairBridgeSound(VOC_NONE),
@@ -1135,6 +1136,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BuildingAbandonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingAbandonedSound", BuildingAbandonedSound);
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
+		CheerSound = ini.Get_VocType(AUDIOVISUAL, "CheerSound", CheerSound);
 		LightningSound = ini.Get_VocType(AUDIOVISUAL, "LightningSound", LightningSound);
 		SinkingSound = ini.Get_VocType(AUDIOVISUAL, "SinkingSound", SinkingSound);
 		RepairBridgeSound = ini.Get_VocType(AUDIOVISUAL, "RepairBridgeSound", RepairBridgeSound);
@@ -2927,6 +2929,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildingAbandonedSound);
 	stream.Serialize(ScatterSound);
 	stream.Serialize(DeploySound);
+	stream.Serialize(CheerSound);
 	stream.Serialize(LightningSound);
 	stream.Serialize(SinkingSound);
 	stream.Serialize(RepairBridgeSound);

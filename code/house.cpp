@@ -6002,6 +6002,22 @@ static BuildingClass const * Fire_Sale_Holdout(HouseClass const * house)
 }
 
 
+/// <summary>
+/// Makes every idle soldier of this house cheer, as HouseClass::Cheer (0x50C8C0) does, and plays
+/// the CheerSound. A soldier that is busy goes on with what it was doing.
+/// </summary>
+void HouseClass::Cheer(void)
+{
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass * soldier = Infantry[index];
+		if (soldier != NULL && soldier->IsActive && !soldier->IsInLimbo && soldier->House == this) {
+			soldier->Cheer(false);
+		}
+	}
+	Sound_Effect(Rule->CheerSound);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Fire_Sale -- Cause all buildings to be sold.                                    *
  *                                                                                             *

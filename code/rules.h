@@ -1177,6 +1177,9 @@ class RulesClass
 		 */
 		VocType DeploySound;
 
+		/// <summary>The sound played when a house's soldiers all cheer.</summary>
+		VocType CheerSound;
+
 		/*
 		 * This is the sound effect played when an ion storm throws down a lightning bolt.
 		 */

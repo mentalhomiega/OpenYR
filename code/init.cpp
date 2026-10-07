@@ -3407,6 +3407,29 @@ class DeployCommandClass : public CommandClass
 };
 
 
+class AllToCheerCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("AllToCheer");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_ALL_TO_CHEER));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_CONTROL)));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_ALL_TO_CHEER_DESC));
+		}
+
+		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together.</summary>
+		virtual void Execute(void) const {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALL_CHEER));
+		}
+};
+
+
 class GuardCommandClass : public CommandClass
 {
 	public:
@@ -5514,6 +5537,8 @@ static void Init_Commands(void)
 	AllCommands.Add(new GuardCommandClass);
 	AllCommands.Add(new StopCommandClass);
 	AllCommands.Add(new DeployCommandClass);
+	CommandClass * cheercmd = new AllToCheerCommandClass;
+	AllCommands.Add(cheercmd);
 
 	AllCommands.Add(new PrevObjectCommandClass);
 	AllCommands.Add(new NextObjectCommandClass);
@@ -5621,6 +5646,7 @@ static void Init_Commands(void)
 
 	Claim_Free_Key(KN_RETURN, chatallcmd);
 	Claim_Free_Key(KN_BACKSPACE, chatteamcmd);
+	Claim_Free_Key((KeyNumType)(KN_C | KN_CTRL_BIT), cheercmd);
 }
 
 

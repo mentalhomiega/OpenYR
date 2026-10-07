@@ -561,7 +561,7 @@ void TabClass::Command_Bar_AI(KeyNumType & input)
 /// <summary>
 /// Runs a command bar button's command through the matching keyboard command. A team button
 /// makes the selection into its team while the team is empty and selects the team otherwise.
-/// Attack move, beacon and cheer have no command in this engine yet and do nothing.
+/// Attack move and beacon have no command in this engine yet and do nothing.
 /// </summary>
 void TabClass::Do_Command(CommandButtonType command)
 {
@@ -603,6 +603,10 @@ void TabClass::Do_Command(CommandButtonType command)
 
 		case COMMAND_PLANNING_MODE:
 			Execute_Command("WaypointMode");
+			break;
+
+		case COMMAND_CHEER:
+			Execute_Command("AllToCheer");
 			break;
 
 		default:

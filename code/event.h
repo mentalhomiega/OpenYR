@@ -112,6 +112,7 @@ class EventClass
 			NETWORK_REPORT,
 			ABANDON_COUNT,
 			DETONATE,       // Set off the Ivan bomb on the specified object.
+			ALL_CHEER,      // Every soldier of the sending house cheers.
 
 			LAST_EVENT,			// one past the last event
 		};
