@@ -201,8 +201,8 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// Carries out the menu steps that are due. A step that opens a screen running its own loop
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
-/// id), press (a button's label, ignoring case), choose (the text of a list row or drop-down
-/// entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
+/// id), set (a slider's id and the value to give it, separated by a space), press (a button's
+/// label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie) and quit.
 /// </summary>
@@ -277,6 +277,17 @@ void UIScript_Tick(Rml::Context * context)
 				DebugString("UISCRIPT   click %s: no such visible element\n", step.Argument.c_str());
 			} else {
 				element->Click();
+				WaitUntil = now + 300;
+				return;
+			}
+		} else if (step.Command == "set") {
+			// "id value" sets the value of a slider, as dragging it would.
+			std::size_t const space = step.Argument.find(' ');
+			Rml::Element * element = Find_Element(context, step.Argument.substr(0, space));
+			if (element == nullptr || space == std::string::npos) {
+				DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
+			} else {
+				element->SetAttribute("value", step.Argument.substr(space + 1));
 				WaitUntil = now + 300;
 				return;
 			}
