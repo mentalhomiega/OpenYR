@@ -8778,17 +8778,22 @@ void BuildingClass::Power_Off(void)
 
 
 /// <summary>
-/// Tells whether the soldier may garrison this structure now, as BuildingClass::CanBeOccupiedBy
-/// (0x457CE0) does: the structure must take occupants, have room, be above red health and be
-/// neither built nor sold, and it must belong to the soldier's house or to a passive house.
+/// Tells whether the soldier may move into this structure now, as BuildingClass::CanBeOccupiedBy
+/// (0x457CE0) does. An Occupier needs room in a structure above red health that belongs to its
+/// house or to a passive house. A soldier that is not an Occupier but is an Assaulter may enter a
+/// structure with occupants that are not allied with it, to kill them. Neither may enter a
+/// structure that is being built or sold.
 /// </summary>
 bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
 {
-	if (infantry == NULL || !Class->IsCanBeOccupied || !infantry->Class->IsOccupier) {
+	if (infantry == NULL || !Class->IsCanBeOccupied) {
 		return(false);
 	}
 	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
 		return(false);
+	}
+	if (!infantry->Class->IsOccupier) {
+		return(infantry->Class->IsAssaulter && Occupants.Count() > 0 && !House->Is_Ally(infantry->House));
 	}
 	if (House != infantry->House && !House->Class->IsMultiplayPassive) {
 		return(false);
@@ -9045,6 +9050,38 @@ void BuildingClass::Eject_Occupants(bool const keep_unplaced)
 		} else {
 			delete occupant;
 		}
+	}
+	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Kills every occupant when an assaulter moves in, as gamemd's BuildingClass::KillOccupants
+/// (0x4585C0) does. Each death plays the assaulter's primary weapon's AssaultAnim at the matching
+/// muzzle point and counts as a kill for the assaulter. The structure is left with no occupants.
+/// </summary>
+void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
+{
+	FiringOccupantIndex = 0;
+	WeaponTypeClass const * weapon = assaulter->Get_Primary_Weapon();
+
+	// Deleting an occupant detaches it from the list, so work from a copy.
+	std::vector<InfantryClass *> occupants;
+	for (int index = 0; index < Occupants.Count(); index++) {
+		occupants.push_back(Occupants[index]);
+	}
+	Occupants.Clear();
+
+	for (int index = (int)occupants.size() - 1; index >= 0; index--) {
+		InfantryClass * occupant = occupants[index];
+		if (weapon != NULL && weapon->AssaultAnim != NULL) {
+			int const muzzle = std::min<int>(index, BuildingTypeClass::MUZZLE_FLASH_COUNT - 1);
+			Coord coord = Render_Coord() + Coord(TacticalMap->Pixel_To_Lepton(Class->MuzzleFlash[muzzle]), 0);
+			AnimClass * anim = new AnimClass(weapon->AssaultAnim, coord);
+			anim->ZAdjust = -200;
+		}
+		occupant->Record_The_Kill(assaulter);
+		occupant->Delete_Me();
 	}
 	Mark(MARK_CHANGE);
 }

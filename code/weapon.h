@@ -305,6 +305,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// Played at the muzzle of a garrisoned structure each time an occupant fires this weapon.
 		AnimTypeClass const * OccupantAnim;
 
+		// Played on each occupant killed by an Assaulter soldier that fires this weapon as its primary.
+		AnimTypeClass const * AssaultAnim;
+
 		/*
 		**	If this weapon requires charging before it can fire, then this
 		**	flag is true. In actuality, this only applies to the Tesla coil

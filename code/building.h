@@ -595,6 +595,7 @@ class BuildingClass : public TechnoClass
 		bool Can_Occupy_Fire(void) const;
 		void Occupy(InfantryClass * infantry);
 		void Eject_Occupants(bool const keep_unplaced = false);
+		void Kill_Occupants(TechnoClass * assaulter);
 		void Grind(FootClass * object);
 		bool Can_Absorb(FootClass const * object) const;
 		void Absorb(FootClass * object);

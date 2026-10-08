@@ -154,6 +154,10 @@ class InfantryTypeClass : public TechnoTypeClass
 		// An Occupier=yes soldier can garrison a CanBeOccupied structure and fires OccupyWeapon,
 		// or EliteOccupyWeapon at elite rank, from inside it.
 		bool IsOccupier;
+
+		// An Assaulter=yes soldier that is not an Occupier kills the occupants of a garrison of another house
+		// when it moves in, and plays its primary weapon's AssaultAnim at each one.
+		bool IsAssaulter;
 		WeaponDataStruct OccupyWeapon;
 		WeaponDataStruct EliteOccupyWeapon;
 
