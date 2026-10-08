@@ -365,10 +365,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
 
-<<<<<<< HEAD
-=======
 The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/mapping/missions/tmission-chrono-prep-abwp/) and [Chrono prep for AQ](/mapping/missions/tmission-chrono-prep-aq/) script lines.
->>>>>>> a91862c (Run the Chrono prep script lines)
 
 The ion cannon's rating is the only one of the four with settings.
 
