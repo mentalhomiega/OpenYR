@@ -29995,6 +29995,125 @@ SecondaryProne:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+SecretBuilding:
+  key: SecretBuilding
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SecretBuilding
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SecretBuildings:
+  key: SecretBuildings
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: SecretBuildings
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SecretInfantry:
+  key: SecretInfantry
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SecretInfantry
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: needs_review
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: SecretInfantry
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SecretLab:
+  key: SecretLab
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSecretLab
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SecretUnit:
+  key: SecretUnit
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SecretUnit
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SecretUnits:
+  key: SecretUnits
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: SecretUnits
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Seed:
   key: Seed
   scopes:

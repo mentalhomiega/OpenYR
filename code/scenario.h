@@ -615,6 +615,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
 SideType Side_For_Player(void);
 int Scan_Place_Object(ObjectClass * obj, Cell const & cell, int min_dist = 1, int max_dist = 31);
 void Assign_Houses(void);
+void Pick_Secret_Lab_Items(void);
 
 void Post_Load_Game(void);
 bool End_Game(void);

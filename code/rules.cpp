@@ -730,6 +730,9 @@ RulesClass::RulesClass(void) :
 	BaseUnit(),
 	HarvesterUnit(),
 	PadAircraft(),
+	SecretInfantry(),
+	SecretUnits(),
+	SecretBuildings(),
 	OnFire(),
 	TreeFire(),
 	Smoke1(NULL),
@@ -1634,6 +1637,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		HarvesterUnit = TGet_TypeList<UnitTypeClass>(ini, GENERAL, "HarvesterUnit", HarvesterUnit);
 		PadAircraft = TGet_TypeList<AircraftTypeClass>(ini, GENERAL, "PadAircraft", PadAircraft);
 		Paratrooper = TGet_Class(ini, GENERAL, "Paratrooper", Paratrooper);
+		SecretInfantry = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "SecretInfantry", SecretInfantry);
+		SecretUnits = TGet_TypeList<UnitTypeClass>(ini, GENERAL, "SecretUnits", SecretUnits);
+		SecretBuildings = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "SecretBuildings", SecretBuildings);
 		Disguise = TGet_Class(ini, GENERAL, "Disguise", Disguise);
 		AlliedDisguise = TGet_Class(ini, GENERAL, "AlliedDisguise", AlliedDisguise);
 		SovietDisguise = TGet_Class(ini, GENERAL, "SovietDisguise", SovietDisguise);
@@ -3066,6 +3072,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BaseUnit);
 	stream.Serialize(HarvesterUnit);
 	stream.Serialize(PadAircraft);
+	stream.Serialize(SecretInfantry);
+	stream.Serialize(SecretUnits);
+	stream.Serialize(SecretBuildings);
 	stream.Serialize(OnFire);
 	stream.Serialize(TreeFire);
 	stream.Serialize(Smoke1);
@@ -3733,6 +3742,10 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	EWGates.Delete((BuildingTypeClass const *)target);
 
 	PadAircraft.Delete((AircraftTypeClass const *)target);
+
+	SecretInfantry.Delete((InfantryTypeClass const *)target);
+	SecretUnits.Delete((UnitTypeClass const *)target);
+	SecretBuildings.Delete((BuildingTypeClass const *)target);
 
 	DeadBodies.Delete((AnimTypeClass const *)target);
 

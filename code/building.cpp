@@ -284,7 +284,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	GateFrame(-1),
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
-	IsProduceCashStartupPaid(false)
+	IsProduceCashStartupPaid(false),
+	SecretProduct(NULL)
 {
 	Create_ID();
 
@@ -2180,6 +2181,10 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 
 		if (Rule->BuildConst.Is_In_List(Class)) {
 			House->ConYards.Add(this);
+		}
+
+		if (Class->IsSecretLab) {
+			House->SecretLabs.Add(this);
 		}
 
 		if (Class->ToBuild != RTTI_NONE) {
@@ -4702,6 +4707,9 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		if (Rule->BuildConst.Is_In_List(Class)) {
 			oldowner->ConYards.Delete(this);
 		}
+		if (Class->IsSecretLab) {
+			oldowner->SecretLabs.Delete(this);
+		}
 
 		if (Class->IsCloakGenerator) {
 			Disable_Cloak_Generator();
@@ -4780,6 +4788,9 @@ bool BuildingClass::Captured(HouseClass * newowner)
 
 		if (Rule->BuildConst.Is_In_List(Class)) {
 			newowner->ConYards.Add(this);
+		}
+		if (Class->IsSecretLab) {
+			newowner->SecretLabs.Add(this);
 		}
 
 		if (Class->ToBuild != RTTI_NONE) {
@@ -8058,6 +8069,21 @@ void BuildingClass::Produce_Cash_Startup(void)
 }
 
 
+/// <summary>
+/// The one item this tech secret lab offers its owner.
+/// The type's SecretInfantry, SecretUnit and SecretBuilding keys come first, in that order, and
+/// the item drawn when the game started comes after them.
+/// </summary>
+/// <returns>The item, or null when the lab offers none.</returns>
+TechnoTypeClass const * BuildingClass::Secret_Item(void) const
+{
+	if (Class->SecretInfantry != NULL) return(Class->SecretInfantry);
+	if (Class->SecretUnit != NULL) return(Class->SecretUnit);
+	if (Class->SecretBuilding != NULL) return(Class->SecretBuilding);
+	return(SecretProduct);
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Animation_AI -- Handles normal building animation processing.                *
  *                                                                                             *
@@ -10165,6 +10191,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashTimer);
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
+	stream.Serialize(SecretProduct);
 }
 
 
@@ -10243,6 +10270,10 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)ProduceCashTimer);
 	crc(ProduceCashRemaining);
 	crc(IsProduceCashStartupPaid);
+	if (SecretProduct != NULL) {
+		crc(SecretProduct->Fetch_RTTI());
+		crc(SecretProduct->Fetch_ID());
+	}
 }
 
 
