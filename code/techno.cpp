@@ -4644,7 +4644,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	// A Suicide weapon destroys the firer, whose death weapon then explodes (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsSuicide) {
 		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
-		int damage = Strength;
+		int damage = TClass->MaxStrength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
 		return(NULL);
 	}
