@@ -45,7 +45,7 @@ A parasite whose warhead has [`Paralyzes`](/keys/paralyzes/) set paralyzes its v
 
 ## Coming out
 
-When the victim dies, leaves the map or comes under the Iron Curtain, the parasite comes back out on the victim's cell, or the nearest cell it can stand on. It guards there, and a [`ReselectIfLimboed=yes`](/keys/reselectiflimboed/) parasite the player had selected when it leapt is selected again. A parasite with no room to come out is lost.
+When the victim dies or leaves the map, the parasite comes back out on the victim's cell, or the nearest cell it can stand on. It guards there, and a [`ReselectIfLimboed=yes`](/keys/reselectiflimboed/) parasite the player had selected when it leapt is selected again. A parasite with no room to come out is lost. The Iron Curtain on a vehicle or aircraft it holds kills the parasite at once instead, and ends the victim's paralysis. A soldier under the curtain dies, and its parasite comes out as it does for any dead victim.
 
 A parasite that comes out is paralyzed for one `ROF` of its primary weapon. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time.
 
