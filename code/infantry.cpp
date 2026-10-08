@@ -813,7 +813,8 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 
 		// A soldier that reaches the structure it was sent to garrison goes inside, as gamemd's
 		// InfantryClass cell arrival (0x519630) does; one that may no longer enter is turned away.
-		if (Mission == MISSION_ENTER && Class->IsOccupier && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING && ((BuildingClass *)NavCom)->Class->IsCanBeOccupied) {
+		// An Assaulter that is not an Occupier kills the occupants instead of joining them, then steps away.
+		if (Mission == MISSION_ENTER && (Class->IsOccupier || Class->IsAssaulter) && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING && ((BuildingClass *)NavCom)->Class->IsCanBeOccupied) {
 			BuildingClass * building = (BuildingClass *)NavCom;
 			if (building == cellptr->Cell_Building()) {
 				if (building->Can_Be_Occupied_By(this)) {
@@ -822,7 +823,12 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					}
 					Assign_Destination(NULL);
 					ArchiveTarget = NULL;
-					building->Occupy(this);
+					if (Class->IsOccupier) {
+						building->Occupy(this);
+					} else {
+						building->Kill_Occupants(this);
+						Scatter(COORD_NONE, true);
+					}
 				} else {
 					Assign_Destination(NULL);
 					Scatter(COORD_NONE, true);
@@ -1265,7 +1271,7 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 			// A soldier heading into a structure to garrison it walks straight in without a radio
 			// handshake, so several soldiers can head for the same structure at once.
-			if (techno != NULL && techno->RTTI == RTTI_BUILDING && Class->IsOccupier && ((BuildingClass *)techno)->Class->IsCanBeOccupied) {
+			if (techno != NULL && techno->RTTI == RTTI_BUILDING && (Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass *)techno)->Class->IsCanBeOccupied) {
 				ArchiveTarget = target;
 				techno = NULL;
 			}

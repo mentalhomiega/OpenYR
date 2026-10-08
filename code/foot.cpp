@@ -2466,7 +2466,7 @@ int FootClass::Do_MISSION_ENTER(void)
 	 * if its path gives out; it goes inside on arrival. It gives up once the structure cannot
 	 * take it.
 	 */
-	if (RTTI == RTTI_INFANTRY && static_cast<InfantryClass *>(this)->Class->IsOccupier) {
+	if (RTTI == RTTI_INFANTRY && (static_cast<InfantryClass *>(this)->Class->IsOccupier || static_cast<InfantryClass *>(this)->Class->IsAssaulter)) {
 		BuildingClass * building = NULL;
 		if (NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
 			building = (BuildingClass *)NavCom;

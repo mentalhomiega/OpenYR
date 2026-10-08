@@ -91,6 +91,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsFireOnce(false),
 	OpenToppedAnim(NULL),
 	OccupantAnim(NULL),
+	AssaultAnim(NULL),
 	IsElectric(false),
 	IsLaser(false),
 	IsElectricBolt(false),
@@ -228,6 +229,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsFireOnce = ini.Get_Bool(IniName, "FireOnce", IsFireOnce);
 		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		OccupantAnim = TGet_Class(ini, IniName, "OccupantAnim", OccupantAnim);
+		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
 		IsSpawner = ini.Get_Bool(IniName, "Spawner", IsSpawner);
@@ -470,6 +472,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFireOnce);
 	stream.Serialize(OpenToppedAnim);
 	stream.Serialize(OccupantAnim);
+	stream.Serialize(AssaultAnim);
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);
 	stream.Serialize(IsElectricBolt);

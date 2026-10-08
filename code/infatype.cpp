@@ -98,6 +98,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsThief(false),
 	IsVehicleThief(false),
 	IsOccupier(false),
+	IsAssaulter(false),
 	OccupyWeapon(),
 	EliteOccupyWeapon(),
 	OccupyPip(PIP_PERSON_GREEN),
@@ -410,6 +411,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsThief = ini.Get_Bool(Name(), "Thief", IsThief);
 		IsVehicleThief = ini.Get_Bool(Name(), "VehicleThief", IsVehicleThief);
 		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
+		IsAssaulter = ini.Get_Bool(Name(), "Assaulter", IsAssaulter);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
 		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
@@ -569,6 +571,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsThief);
 	stream.Serialize(IsVehicleThief);
 	stream.Serialize(IsOccupier);
+	stream.Serialize(IsAssaulter);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployFire);
 	stream.Serialize(DeployFireWeapon);
