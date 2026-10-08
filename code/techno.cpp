@@ -6397,8 +6397,18 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 	}
 
 	if (source != NULL) {
-		if (source->TClass->IsTrainable && !House->Is_Ally(source)) {
-			source->Veterancy.Made_A_Kill(source->TClass->Cost_Of(House), points);
+		// The victim's value is doubled when it was a veteran and tripled when elite; an ally is worth nothing.
+		int value = points;
+		if (source->House->Is_Ally(House)) {
+			value = 0;
+		} else if (Veterancy.Is_Veteran()) {
+			value *= 2;
+		} else if (Veterancy.Is_Elite()) {
+			value *= 3;
+		}
+
+		if (source->TClass->IsTrainable) {
+			source->Veterancy.Made_A_Kill(source->TClass->Cost_Of(House), value);
 		}
 
 		House->WhoLastHurtMe = source->Owner();
@@ -6408,7 +6418,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		/*
 		**	Add up the score for killing this unit
 		*/
-		source->House->PointTotal += points;
+		source->House->PointTotal += value;
 	}
 
 	switch ((RTTIType)RTTI) {
