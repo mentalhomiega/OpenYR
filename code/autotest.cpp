@@ -64,6 +64,7 @@
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
 **	kill <TypeID>			destroys the objects of that type other houses own
+**	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
 **							warhead, fired by one of the player's objects of another type, or of the named type
 **	infiltrate barracks|warfactory	marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans
@@ -127,6 +128,7 @@
 #include "builtype.h"
 #include "cell.h"
 #include "conquer.h"
+#include "crate.hh"
 #include "dbgprint.h"
 #include "event.h"
 #include "globals.h"
@@ -536,6 +538,32 @@ void Run(StepType const & step)
 			PlayerPtr->IsWarFactoryInfiltrated = true;
 		}
 		DebugString("AUTOTEST   infiltrate %s\n", step.Argument.c_str());
+		return;
+	}
+	if (step.Command == "crate") {
+		// crate <Powerup> x y: puts a crate that holds that powerup on the nearest free cell to the cell.
+		static struct {
+			char const * Name;
+			CrateType Powerup;
+		} const powerups[] = {
+			{"money", CRATE_MONEY}, {"unit", CRATE_UNIT}, {"heal", CRATE_HEAL_BASE}, {"cloak", CRATE_CLOAK},
+			{"explosion", CRATE_EXPLOSION}, {"napalm", CRATE_NAPALM}, {"squad", CRATE_SQUAD}, {"darkness", CRATE_DARKNESS},
+			{"reveal", CRATE_REVEAL}, {"armor", CRATE_ARMOR}, {"speed", CRATE_SPEED}, {"firepower", CRATE_FIREPOWER},
+			{"icbm", CRATE_ICBM}, {"invuln", CRATE_INVULN}, {"veteran", CRATE_VETERAN}, {"ion", CRATE_ION_STORM},
+			{"gas", CRATE_GAS}, {"tiberium", CRATE_TIBERIUM}, {"pod", CRATE_POD},
+		};
+		int powerup = -1;
+		for (auto const & entry : powerups) {
+			if (stricmp(entry.Name, step.Argument.c_str()) == 0) {
+				powerup = entry.Powerup;
+			}
+		}
+		if (powerup >= 0) {
+			bool const placed = Map.Place_Crate(Cell(step.X, step.Y), powerup);
+			DebugString("AUTOTEST crate %s near %d,%d: %s\n", step.Argument.c_str(), step.X, step.Y, placed ? "placed" : "failed");
+		} else {
+			DebugString("AUTOTEST crate %s: no such powerup\n", step.Argument.c_str());
+		}
 		return;
 	}
 	if (step.Command == "occupy") {
@@ -1481,9 +1509,9 @@ void Run(StepType const & step)
 			if (techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				AttachedEffectsClass const & effects = techno->AttachedEffects;
 				int const speed = techno->Is_Foot() ? static_cast<FootClass *>(techno)->Current_Speed() : 0;
-				DebugString("AUTOTEST   effects %s of %s: count %d speed x%.3f armor x%.3f firepower x%.3f rof x%.3f cloakable %d | speed %d strength %d arm %d limbo %d\n",
+				DebugString("AUTOTEST   effects %s of %s: count %d speed x%.3f armor x%.3f firepower x%.3f rof x%.3f cloakable %d | bias armor %.3f speed %.3f firepower %.3f | speed %d strength %d arm %d limbo %d\n",
 					techno->TClass->Name(), techno->House->Class->Name(), effects.Count(), effects.Speed_Multiplier(), effects.Armor_Multiplier(),
-					effects.Firepower_Multiplier(), effects.ROF_Multiplier(), (int)effects.Is_Cloakable(), speed, (int)techno->Strength, (int)techno->Arm, (int)techno->IsInLimbo);
+					effects.Firepower_Multiplier(), effects.ROF_Multiplier(), (int)effects.Is_Cloakable(), techno->ArmorBias, techno->Is_Foot() ? static_cast<FootClass *>(techno)->SpeedBias : 1.0, techno->FirepowerBias, speed, (int)techno->Strength, (int)techno->Arm, (int)techno->IsInLimbo);
 			}
 		}
 	} else if (step.Command == "schemes") {
