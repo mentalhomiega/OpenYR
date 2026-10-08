@@ -151,12 +151,12 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 
 | Token | Effect on a qualifying object |
 | --- | --- |
-| `FASTER` | Movement speed is multiplied by [`VeteranSpeed`](/keys/veteranspeed/) plus one. Buildings have no speed to raise. |
-| `STRONGER` | Incoming damage is divided by [`VeteranArmor`](/keys/veteranarmor/) plus one. |
-| `FIREPOWER` | Weapon damage is multiplied by [`VeteranCombat`](/keys/veterancombat/) plus one. |
+| `FASTER` | Movement speed is multiplied by [`VeteranSpeed`](/keys/veteranspeed/). Buildings have no speed to raise. |
+| `STRONGER` | Incoming damage is divided by [`VeteranArmor`](/keys/veteranarmor/). |
+| `FIREPOWER` | Weapon damage is multiplied by [`VeteranCombat`](/keys/veterancombat/). |
 | `SCATTER` | The object scatters from incoming fire even when the owner's units would otherwise hold position. |
-| `ROF` | Reload delay is divided by [`VeteranROF`](/keys/veteranrof/) plus one. |
-| `SIGHT` | Sight range is multiplied by [`VeteranSight`](/keys/veteransight/) plus one. |
+| `ROF` | Reload delay is multiplied by [`VeteranROF`](/keys/veteranrof/). |
+| `SIGHT` | Sight range is multiplied by [`VeteranSight`](/keys/veteransight/). |
 | `CLOAK` | The object cloaks and recloaks without [`Cloakable=yes`](/keys/cloakable/), and stays cloaked while immobilized. |
 | `TIBERIUM_PROOF` | Infantry take no damage from standing in Tiberium, as with [`TiberiumProof=yes`](/keys/tiberiumproof/). |
 | `VEIN_PROOF` | Veins do not damage the object, as with [`ImmuneToVeins=yes`](/keys/immunetoveins/). |
@@ -194,13 +194,13 @@ Set the five bonuses below in `rules.ini` under `[General]`. Each applies only w
 
 | Setting | Applied as |
 | --- | --- |
-| [`VeteranCombat`](/keys/veterancombat/) | Damage is multiplied by the value plus one, after the house and object firepower biases. |
-| [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value plus one, after the house ground-speed bias. |
-| [`VeteranSight`](/keys/veteransight/) | Sight range is multiplied by the value plus one. |
-| [`VeteranArmor`](/keys/veteranarmor/) | Incoming damage is divided by the value plus one. |
-| [`VeteranROF`](/keys/veteranrof/) | Reload delay is divided by the value plus one. |
+| [`VeteranCombat`](/keys/veterancombat/) | Damage is multiplied by the value, after the house and object firepower biases. |
+| [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value, after the house ground-speed bias. |
+| [`VeteranSight`](/keys/veteransight/) | Sight range is multiplied by the value. A value of `0` switches the bonus off. |
+| [`VeteranArmor`](/keys/veteranarmor/) | Incoming damage is divided by the value. |
+| [`VeteranROF`](/keys/veteranrof/) | Reload delay is multiplied by the value. |
 
-`VeteranArmor=1` halves incoming damage, and `VeteranROF=1` halves reload delay. For the other three settings, `1` doubles the affected statistic. A value of `0` gives no bonus. All five default to `1`.
+All five default to `1`, which changes nothing. Keep `VeteranArmor` above `0`, because incoming damage is divided by it.
 
 Sonic weapons and weapons using fire particles receive no firepower bonus. Sonic weapons also receive no reload bonus, as do weapons with an attached spark, fire, or railgun particle system. The reload bonus shortens the delay after a burst, not the gaps between its shots.
 

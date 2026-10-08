@@ -76,7 +76,7 @@ AttackingAircraftSightRange=8   ; cells a human player's aircraft reveals when i
 LeptonsPerSightIncrease=25      ; leptons of height per 10 percent of extra sight
 RevealByHeight=yes
 RevealTriggerRadius=7           ; cells the Reveal around waypoint action uncovers
-VeteranSight=.5                 ; a SIGHT veteran's sight range is multiplied by one more than this
+VeteranSight=.5                 ; a SIGHT veteran's sight range is multiplied by this
 FlashFrameTime=4                ; frames between flashes of a damaged object's radar blip
 RadarCombatFlashTime=30         ; frames a damaged object's radar blip keeps flashing
 
@@ -129,7 +129,7 @@ Fogging a cell walks the same cells and records the structures standing on them.
 For vehicles, infantry and structures, two bonuses raise the range, in this order:
 
 1. **Height.** Sight grows by 10 percent for each whole [`LeptonsPerSightIncrease`](/keys/leptonspersightincrease/) leptons of height. Height is measured from the map's lowest level, so standing on a hill counts. One height level is 104 leptons. With the engine default of 50, each level adds two steps: an object one level up sees 20 percent further, and one four levels up sees 80 percent further.
-2. **Veterancy.** An object with the `SIGHT` [veteran ability](/systems/veterancy/#abilities) then multiplies that range by [`VeteranSight`](/keys/veteransight/) plus one.
+2. **Veterancy.** An object with the `SIGHT` [veteran ability](/systems/veterancy/#abilities) then multiplies that range by [`VeteranSight`](/keys/veteransight/).
 
 Each step rounds the range down to a whole number of cells. Aircraft get neither bonus.
 

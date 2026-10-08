@@ -4445,7 +4445,7 @@ int TechnoClass::Rearm_Delay(int which) const
 		int delay = weapon->ROF * House->ROFBias * AttachedEffects.ROF_Multiplier() + Random_Pick(0, 2);
 
 		if (Has_Ability(ABILITY_ROF)) {
-			delay = (1.0 / (Rule->VeteranROF + 1.0)) * delay;
+			delay = (int)(Rule->VeteranROF * delay);
 		}
 
 		if (Is_Bunkered() && Rule->BunkerROFMultiplier != 0) {
@@ -4776,7 +4776,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	if (firepower > 0) {
 		firepower = (int)(House->FirepowerBias * FirepowerBias * AttachedEffects.Firepower_Multiplier() * weapon->Attack);
 		if (Has_Ability(ABILITY_FIREPOWER)) {
-			firepower = (int)((Rule->VeteranCombat + 1.0) * firepower);
+			firepower = (int)(Rule->VeteranCombat * firepower);
 		}
 		if (Is_Bunkered()) {
 			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
@@ -5901,7 +5901,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		damage = (int)(1.0 / (House->ArmorBias * ArmorBias * AttachedEffects.Armor_Multiplier()) * (double)damage);
 
 		if (Has_Ability(ABILITY_STRONGER)) {
-			damage = (int)(1.0 / (Rule->VeteranArmor + 1.0) * (double)damage);
+			damage = (int)((double)damage / Rule->VeteranArmor);
 		}
 
 		if (damage < 1) {
@@ -9427,7 +9427,7 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 
 		int sight_range = TClass->SightRange * (SightIncrease * 0.01 + 1.0);
 		if (Has_Ability(ABILITY_SIGHT) && Rule->VeteranSight != 0.0) {
-			sight_range *= Rule->VeteranSight + 1;
+			sight_range *= Rule->VeteranSight;
 		}
 
 		if (sight_range) {
