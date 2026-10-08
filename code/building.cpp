@@ -5212,6 +5212,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				}
 			}
 
+			// Occupants leave a garrison being sold, and none is removed for want of a free cell.
+			if (Occupants.Count() > 0) {
+				Eject_Occupants(true);
+			}
+
 			/*
 			**	Special check for the repair bay which has the ability to sell
 			**	whatever is on it. If there is something on the repair bay, then
@@ -9005,10 +9010,10 @@ void BuildingClass::Grind(FootClass * object)
 
 /// <summary>
 /// Puts every occupant back on the map next to the structure, as gamemd's FUN_00457DE0 does
-/// when a garrison is emptied, sold or destroyed. An occupant with no room to stand is
-/// removed from the game.
+/// when a garrison is emptied, sold or destroyed. An occupant with no room to stand is removed
+/// from the game, unless keep_unplaced is set; then it is placed on the structure's centre.
 /// </summary>
-void BuildingClass::Eject_Occupants(void)
+void BuildingClass::Eject_Occupants(bool const keep_unplaced)
 {
 	FiringOccupantIndex = 0;
 	if (Occupants.Count() == 0) {
@@ -9028,6 +9033,9 @@ void BuildingClass::Eject_Occupants(void)
 		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
 		ScenarioInit++;
 		bool placed = coord != COORD_NONE && occupant->Unlimbo(coord, DIR_S);
+		if (!placed && keep_unplaced) {
+			placed = occupant->Unlimbo(Center_Coord(), DIR_S);
+		}
 		ScenarioInit--;
 		if (placed) {
 			occupant->Enter_Idle_Mode();

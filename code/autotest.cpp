@@ -517,6 +517,17 @@ void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
+	// sell <x> <y>: starts selling the player's structure on that cell, as the sell cursor's click does.
+	// Kept out of the chain below, which MSVC cannot nest any deeper.
+	if (step.Command == "sell") {
+		BuildingClass * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
+		DebugString("AUTOTEST sell %s at %d,%d\n", building != NULL ? building->Class->Name() : "(none)", std::atoi(step.Argument.c_str()), step.X);
+		if (building != NULL && building->House == PlayerPtr) {
+			building->Sell_Back(-1);
+		}
+		return;
+	}
+
 	if (step.Command == "command") {
 		Execute_Command(step.Argument.c_str());
 	} else if (step.Command == "select") {
