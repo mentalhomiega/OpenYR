@@ -4873,6 +4873,9 @@ bool BuildingClass::Can_Demolish(void) const
 {
 	if (Class->IsUnsellable) return(false);
 
+	// A structure under a drain weapon cannot be sold (BuildingClass::CanBeSold, 0x4494C0).
+	if (DrainingMe != NULL) return(false);
+
 	if (HasBuildupData && BState != BSTATE_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION && Mission != MISSION_CONSTRUCTION) {
 		//if (*this == STRUCT_REFINERY && Is_Something_Attached()) return(false);
 		return(true);
