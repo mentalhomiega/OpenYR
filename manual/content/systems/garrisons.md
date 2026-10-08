@@ -80,3 +80,5 @@ The owner empties a garrison with the Deploy command while the structure is sele
 Occupants also leave when the structure is destroyed. In a `TechLevel=-1` structure they also leave when it falls to the `ConditionRed` health ratio or below.
 
 Each occupant leaving is placed on the nearest cell next to the structure that it could walk into, and stands guard there. An occupant with no such cell is removed from the game.
+
+Selling a structure lets its occupants out the same way. An occupant with no such cell is placed on the structure's centre instead, and is removed only if it cannot be placed there either.

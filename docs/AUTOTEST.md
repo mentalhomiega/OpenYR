@@ -37,6 +37,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
 | `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
+| `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |
 
