@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-Yuri's Revenge prints a warning while a lightning storm waits to break and a message when it breaks. The game reads this key, but prints no storm text yet.
+While a lightning storm waits to break, we play the EVA warning and print a message each time the frames left before the break are a multiple of 225. When the storm breaks, we print a message and play [`StormSound`](/keys/stormsound/). A shot refused because a storm is already active prints its message whatever this key says.
 
 ```ini title="rulesmd.ini"
 [General]
