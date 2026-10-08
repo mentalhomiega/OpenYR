@@ -18,6 +18,7 @@
 #include "objtype.h"
 
 #include "anim.hh"
+#include "particle.hh"
 
 class WarheadTypeClass;
 class OverlayTypeClass;
@@ -104,6 +105,13 @@ class AnimTypeClass : public ObjectTypeClass
 		**	the secondary animation will be defined here.
 		*/
 		AnimTypeClass const * ChainTo;
+
+		/*
+		 * The particle type this animation puts NumParticles of at its position on its middle
+		 * frame, such as the cloud a virus victim leaves. PARTICLE_NONE puts out none.
+		 */
+		ParticleType SpawnsParticle;
+		int NumParticles;
 
 		/*
 		 * This is the lowest detail setting (0 - 2) at which this animation is drawn at all.
