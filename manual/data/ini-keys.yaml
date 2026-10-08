@@ -18738,6 +18738,23 @@ IsBigLaser:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+IsChargeTurret:
+  key: IsChargeTurret
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsChargeTurret
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IsCoreDefender:
   key: IsCoreDefender
   scopes:
@@ -24218,6 +24235,40 @@ Official:
       source: code/session.cpp
       guard: null
     level: SessionClass
+OmniCrushResistant:
+  key: OmniCrushResistant
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsOmniCrushResistant
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+OmniCrusher:
+  key: OmniCrusher
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsOmniCrusher
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 OmniFire:
   key: OmniFire
   scopes:

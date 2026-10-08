@@ -199,6 +199,9 @@ class TechnoClass :	public RadioClass,
 		 */
 		int CurrentWeaponNumber;
 		int CurrentTurretNumber;
+
+		// The rate of fire the current charge turret rearm started with, in frames.
+		int ChargeTurretDelay;
 		int CurrentGattlingStage;
 		int GattlingValue;
 		int TurretAnimFrame;

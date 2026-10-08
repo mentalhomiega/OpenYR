@@ -283,6 +283,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	TurretCount(0),
 	WeaponCount(0),
 	IsGattling(false),
+	IsChargeTurret(false),
 	WeaponStages(0),
 	WeaponStage{},
 	EliteStage{},
@@ -966,6 +967,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsOpenTopped = ini.Get_Bool(Name(), "OpenTopped", IsOpenTopped);
 		OpenTransportWeapon = ini.Get_Int(Name(), "OpenTransportWeapon", OpenTransportWeapon);
 		IsGattling = ini.Get_Bool(Name(), "IsGattling", IsGattling);
+		IsChargeTurret = ini.Get_Bool(Name(), "IsChargeTurret", IsChargeTurret);
 		WeaponStages = ini.Get_Int(Name(), "WeaponStages", WeaponStages);
 		RateUp = ini.Get_Int(Name(), "RateUp", RateUp);
 		RateDown = ini.Get_Int(Name(), "RateDown", RateDown);
@@ -1590,6 +1592,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsGattling);
+	stream.Serialize(IsChargeTurret);
 	stream.Serialize(WeaponStages);
 	stream.Serialize(WeaponStage);
 	stream.Serialize(EliteStage);
