@@ -3096,6 +3096,32 @@ bool UnitClass::Is_Omni_Crushable(TechnoClass const * object) const
 
 
 /// <summary>
+/// Can this vehicle crush the object, as ObjectClass::IsCrushable (0x5F6CD0) decides. Allies are
+/// not excluded here, so callers apply their own ally rule.
+/// </summary>
+/// <param name="object">The occupant or path blocker to test.</param>
+/// <returns>bool; Is the object a valid target for crushing by this vehicle?</returns>
+bool UnitClass::Can_Crush(ObjectClass const * object) const
+{
+	if (object == NULL) return(false);
+	if (!object->Is_Techno()) return(object->Class_Of()->IsCrushable);
+
+	TechnoClass const * techno = static_cast<TechnoClass const *>(object);
+	if (Is_Omni_Crushable(techno)) return(true);
+	if (!techno->Class_Of()->IsCrushable || techno->Is_Iron_Curtained()) return(false);
+
+	/*
+	**	A soldier dug in with DeployedCrushable=no, such as a deployed Guardian GI, is not crushed.
+	*/
+	if (techno->RTTI == RTTI_INFANTRY) {
+		InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
+		if (soldier->Is_Deployed() && !soldier->Class->IsDeployedCrushable) return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Does a disguised Mirage vehicle look like terrain to the house. Allies of its owner always
 /// see it as it is, and so does a house with a detector in the vehicle's cell.
 /// </summary>
@@ -4314,8 +4340,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 					**	doesn't contain a legitimate weapon.
 					*/
 					bool crusher = Class->IsCrusher || Has_Ability(ABILITY_CRUSHER);
-					bool const omni = obj->Is_Techno() && Is_Omni_Crushable(static_cast<TechnoClass *>(obj));
-					if (!crusher || (!obj->Class_Of()->IsCrushable && !omni)) {
+					if (!crusher || !Can_Crush(obj)) {
 
 						/*
 						 * Any non-allied blockage is considered impassable if the unit
@@ -5443,7 +5468,7 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 			ObjectClass * object = cellptr->Cell_Occupier(isbridge);
 			int crushed = false;
 			while (object != NULL) {
-				if ((object->Class_Of()->IsCrushable || (object->Is_Techno() && Is_Omni_Crushable(static_cast<TechnoClass *>(object)))) && (!House->Is_Ally(object) || Class->IsTrain) && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
+				if (Can_Crush(object) && (!House->Is_Ally(object) || Class->IsTrain) && !object->IsFalling && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
 
 					/*
 					**	If we're running over infantry, let's see if the infantry we're
@@ -6144,7 +6169,7 @@ bool UnitClass::Should_Crush_It(TechnoClass const * it) const
 	**	If this unit cannot crush anything or the candidate object cannot be crushed,
 	**	then it obviously should not try to crush it -- return negative answer.
 	*/
-	if (!(Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) || it == NULL || (!it->TClass->IsCrushable && !Is_Omni_Crushable(it))) return(false);
+	if (!(Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) || !Can_Crush(it)) return(false);
 
 	/*
 	**	Objects that are far away should really be fired upon rather than crushed.

@@ -105,6 +105,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsDeployer(false),
 	IsDeployFire(false),
 	DeployFireWeapon(1),
+	IsDeployedCrushable(true),
 	IsSlaved(false),
 	HarvestRate(0),
 	DeploySound(VOC_NONE),
@@ -415,6 +416,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
 		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
+		IsDeployedCrushable = ini.Get_Bool(Name(), "DeployedCrushable", IsDeployedCrushable);
 		IsSlaved = ini.Get_Bool(Name(), "Slaved", IsSlaved);
 		HarvestRate = ini.Get_Int(Name(), "HarvestRate", HarvestRate);
 		DeploySound = ini.Get_VocType(Name(), "DeploySound", DeploySound);
@@ -575,6 +577,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployFire);
 	stream.Serialize(DeployFireWeapon);
+	stream.Serialize(IsDeployedCrushable);
 	stream.Serialize(IsSlaved);
 	stream.Serialize(HarvestRate);
 	stream.Serialize(DeploySound);

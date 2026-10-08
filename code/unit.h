@@ -193,6 +193,7 @@ class UnitClass : public FootClass
 		virtual bool Is_Ready_To_Move(void) const override;
 		bool Should_Crush_It(TechnoClass const * it) const;
 		bool Is_Omni_Crushable(TechnoClass const * object) const;
+		bool Can_Crush(ObjectClass const * object) const;
 		int Credit_Load(void) const;
 		virtual DirType Turret_Facing(void) const override;
 		virtual int Pip_Count(void) const override;
