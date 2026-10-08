@@ -926,16 +926,20 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						tech->Renovate();
 					} else {
 						bool iscapturable = false;
+						bool passive = false;
 						if (tech->RTTI == RTTI_BUILDING) {
 							iscapturable = ((BuildingClass *)tech)->Class->IsCaptureable;
+
+							// gamemd (InfantryClass arrival) leaves an occupiable structure of a multiplayer-passive house alone.
+							passive = tech->House->Class->IsMultiplayPassive && ((BuildingClass *)tech)->Class->IsCanBeOccupied;
 						}
 
-						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
+						if (!passive && Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
 							&& tech->House->Class->HeapID != HouseTypeClass::From_Name("Neutral")) {
 							int maxdamage = tech->Strength - int(tech->TClass->MaxStrength * Rule->ConditionRed / 2);
 							int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
 							tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);
-						} else if (iscapturable) {
+						} else if (!passive && iscapturable) {
 							if (tech->Tag) {
 								tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 							}

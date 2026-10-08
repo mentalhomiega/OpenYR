@@ -167,7 +167,7 @@ The engineer's position decides the kind of repair. A rail bridge tile anywhere 
 
 ### Capturing a non-allied structure
 
-An engineer that reaches a non-allied `Capturable=yes` structure takes it. The structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
+An engineer that reaches a non-allied `Capturable=yes` structure takes it, unless the structure can be occupied and its owner's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), as the stock `Neutral` country does. The engineer leaves such a structure alone and is consumed, and the [damage](#damaging-it-instead) branch does not apply to it either. Otherwise the structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
 
 The robbed mark is what the [Thieved by...](/mapping/events/tevent-thieved/) trigger event tests. Only this capture sets it; a stolen vehicle does not. Nothing clears it, so once a house loses one structure to an engineer, the mark stays for the rest of the match. A trigger that uses this event still [never fires](/systems/trigger-springing/#three-events-that-cannot-be-reached), and no other part of the game reads the mark.
 
@@ -178,7 +178,8 @@ An engineer damages a non-allied structure instead of taking it when **all of** 
 - the game is not a campaign game;
 - the multiplayer engineer option is on (`MultiEngineer` in a [spawn file](/formats/spawn-ini/));
 - the structure's strength fraction is above [`ConditionRed`](/keys/conditionred/);
-- the structure does not belong to the `Neutral` house.
+- the structure does not belong to the `Neutral` house;
+- the structure is not an occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country.
 
 A single engineer therefore takes a `Capturable=yes` `Neutral` structure at any strength, as it does with the option off.
 
@@ -237,7 +238,7 @@ With EVAMD.INI, the announcer names the effect to the player whose house owns th
 
 ### The soldier is consumed
 
-Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
+Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, an engineer at an occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
 
 ## What changes hands
 
