@@ -1112,6 +1112,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsCrusher;
 
+		// An OmniCrusher flattens any non-building object it is not allied with, whatever that object's Crushable flag, unless the object is OmniCrushResistant.
+		bool IsOmniCrusher;
+		bool IsOmniCrushResistant;
+
 		/*
 		 * If this vehicle pitches forward as it rolls over whatever it is crushing, then this
 		 * flag will be true. The tilt is purely cosmetic, but it lends a heavy vehicle some

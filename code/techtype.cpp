@@ -338,6 +338,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsLightningRod(false),
 	IsHunterSeeker(false),
 	IsCrusher(false),
+	IsOmniCrusher(false),
+	IsOmniCrushResistant(false),
 	IsTiltsWhenCrushes(true),
 	IsSubterranean(false),
 	IsAutoCrush(false),
@@ -1061,6 +1063,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
 		IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
 		IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
+		IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
+		IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
 		IsAutoCrush = ini.Get_Bool(Name(), "AutoCrush", IsAutoCrush);
 		IsTiltsWhenCrushes = ini.Get_Bool(Name(), "TiltsWhenCrushes", IsTiltsWhenCrushes);
 		IsAccelerates = ini.Get_Bool(Name(), "Accelerates", IsAccelerates);
@@ -1687,6 +1691,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLightningRod);
 	stream.Serialize(IsHunterSeeker);
 	stream.Serialize(IsCrusher);
+	stream.Serialize(IsOmniCrusher);
+	stream.Serialize(IsOmniCrushResistant);
 	stream.Serialize(IsTiltsWhenCrushes);
 	stream.Serialize(IsSubterranean);
 	stream.Serialize(IsAutoCrush);

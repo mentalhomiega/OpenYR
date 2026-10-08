@@ -3086,6 +3086,16 @@ bool UnitClass::Is_Blinking_Disguise(void) const
 
 
 /// <summary>
+/// Can this vehicle flatten the object because of its OmniCrusher flag, whatever the object's Crushable
+/// flag says (ObjectClass::IsCrushable, 0x5F6CD0). Buildings, allies and Iron Curtained objects are never crushed this way.
+/// </summary>
+bool UnitClass::Is_Omni_Crushable(TechnoClass const * object) const
+{
+	return(Class->IsOmniCrusher && object != NULL && object->RTTI != RTTI_BUILDING && !object->TClass->IsOmniCrushResistant && !House->Is_Ally(object) && !object->Is_Iron_Curtained());
+}
+
+
+/// <summary>
 /// Does a disguised Mirage vehicle look like terrain to the house. Allies of its owner always
 /// see it as it is, and so does a house with a detector in the vehicle's cell.
 /// </summary>
@@ -4304,7 +4314,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 					**	doesn't contain a legitimate weapon.
 					*/
 					bool crusher = Class->IsCrusher || Has_Ability(ABILITY_CRUSHER);
-					if (!crusher || !obj->Class_Of()->IsCrushable) {
+					bool const omni = obj->Is_Techno() && Is_Omni_Crushable(static_cast<TechnoClass *>(obj));
+					if (!crusher || (!obj->Class_Of()->IsCrushable && !omni)) {
 
 						/*
 						 * Any non-allied blockage is considered impassable if the unit
@@ -4421,7 +4432,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 		**	the cell at the same time. In the case of a crushable vehicle in the
 		**	cell, then allow entry.
 		*/
-		if (!cellptr->Cell_Unit() || !cellptr->Cell_Unit()->Class->IsCrushable) {
+		if (!cellptr->Cell_Unit() || (!cellptr->Cell_Unit()->Class->IsCrushable && !Is_Omni_Crushable(cellptr->Cell_Unit()))) {
 			return(MOVE_MOVING_BLOCK);
 		}
 	}
@@ -4459,7 +4470,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 	**	the object as a movable location.
 	*/
 	if (action == ACTION_ATTACK && !Can_Player_Fire()) {
-		if ((Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) && object->Class_Of()->IsCrushable) {
+		if ((Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) && (object->Class_Of()->IsCrushable || (object->Is_Techno() && Is_Omni_Crushable(static_cast<TechnoClass const *>(object))))) {
 			action = ACTION_MOVE;
 		} else {
 			action = ACTION_SELECT;
@@ -5347,6 +5358,14 @@ void UnitClass::Approach_Target(void)
 	}
 
 	/*
+	**	An OmniCrusher drives at its target to flatten it, for a human house too (UnitClass::ApproachTarget, 0x7414E0).
+	*/
+	if (Class->IsOmniCrusher && TarCom != NULL && NavCom == NULL && Is_Omni_Crushable(Dynamic_Cast<TechnoClass *>(TarCom))) {
+		Assign_Destination(TarCom);
+		return;
+	}
+
+	/*
 	**	In the other cases, uses the more complex "get to just within weapon range"
 	**	algorithm.
 	*/
@@ -5412,7 +5431,7 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 			ObjectClass * object = cellptr->Cell_Occupier(isbridge);
 			int crushed = false;
 			while (object != NULL) {
-				if (object->Class_Of()->IsCrushable && (!House->Is_Ally(object) || Class->IsTrain) && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
+				if ((object->Class_Of()->IsCrushable || (object->Is_Techno() && Is_Omni_Crushable(static_cast<TechnoClass *>(object)))) && (!House->Is_Ally(object) || Class->IsTrain) && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
 
 					/*
 					**	If we're running over infantry, let's see if the infantry we're
@@ -6113,7 +6132,7 @@ bool UnitClass::Should_Crush_It(TechnoClass const * it) const
 	**	If this unit cannot crush anything or the candidate object cannot be crushed,
 	**	then it obviously should not try to crush it -- return negative answer.
 	*/
-	if (!(Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) || it == NULL || !it->TClass->IsCrushable) return(false);
+	if (!(Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) || it == NULL || (!it->TClass->IsCrushable && !Is_Omni_Crushable(it))) return(false);
 
 	/*
 	**	Objects that are far away should really be fired upon rather than crushed.

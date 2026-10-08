@@ -1,7 +1,7 @@
 ---
 key: Crusher
 summary: Lets a vehicle drive over crushable objects and walls instead of being blocked by them.
-see_also: ["AutoCrush", "TiltsWhenCrushes", "Crushable", "SpeedType"]
+see_also: ["AutoCrush", "TiltsWhenCrushes", "Crushable", "SpeedType", "OmniCrusher"]
 when_omitted:
   kind: value
   value: "no"
