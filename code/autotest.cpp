@@ -64,8 +64,11 @@
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
 **	kill <TypeID>			destroys the objects of that type other houses own
-**	hit <TypeID>:<Warhead> <amount>	hits every object of that type, whoever owns it, with that
-**							warhead, fired by one of the player's objects of another type
+**	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
+**							warhead, fired by one of the player's objects of another type, or of the named type
+**	occupy <TypeID> x y	puts the player's infantry of that type inside the structure on that cell, without walking there
+**	rank <TypeID> <0|1|2>	makes every object of that type, whoever owns it, rookie, veteran or elite
+**	veterancy <TypeID>	writes the experience, rank and cost of every object of that type, with the veterancy rules and the player's score
 **	action <TypeID> x y		writes what the player's object of that type would do when clicked
 **							on the object standing on that cell
 **	rule <Key> <0|1>		overrides a rules setting the tests need; only CanDetonateTimeBomb so far
@@ -524,6 +527,51 @@ void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
+	if (step.Command == "occupy") {
+		// occupy <TypeID> x y: puts the first object of that type (an infantry unit) inside the structure on that cell, without walking there.
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		InfantryClass * soldier = NULL;
+		for (int index = 0; soldier == NULL && index < Infantry.Count(); index++) {
+			if (Infantry[index]->House == PlayerPtr && !Infantry[index]->IsInLimbo && stricmp(Infantry[index]->TClass->Name(), step.Argument.c_str()) == 0) {
+				soldier = Infantry[index];
+			}
+		}
+		bool const occupied = building != NULL && soldier != NULL && building->Class->IsCanBeOccupied;
+		if (occupied) {
+			building->Occupy(soldier);
+		}
+		DebugString("AUTOTEST   occupy %s at %d,%d: %s\n", step.Argument.c_str(), step.X, step.Y, occupied ? "occupied" : "not occupied");
+		return;
+	}
+	if (step.Command == "rank") {
+		// rank <TypeID> <0|1|2>: makes every object of that type, whoever owns it, rookie, veteran or elite.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				if (step.X >= 2) {
+					techno->Veterancy.Set_Elite(true);
+				} else if (step.X == 1) {
+					techno->Veterancy.Set_Veteran(true);
+				} else {
+					techno->Veterancy.Set_Rookie(true);
+				}
+			}
+		}
+		DebugString("AUTOTEST   rank %s %d\n", step.Argument.c_str(), step.X);
+		return;
+	}
+	if (step.Command == "veterancy") {
+		// veterancy <TypeID>: writes the experience, rank and cost of every object of that type, whoever owns it, with the rules that scale them and the player's score.
+		DebugString("AUTOTEST   veterancy rules ratio %.3f cap %.3f points %d\n", Rule->VeteranRatio, Rule->VeteranCap, PlayerPtr != NULL ? PlayerPtr->PointTotal : 0);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				int const rank = techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0);
+				DebugString("AUTOTEST   veterancy %s house %s at %d,%d rank %d experience %.6f cost %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, rank, techno->Veterancy.Experience, techno->TClass->Cost_Of(techno->House));
+			}
+		}
+		return;
+	}
 	// sell <x> <y>: starts selling the player's structure on that cell, as the sell cursor's click does.
 	// Kept out of the chain below, which MSVC cannot nest any deeper.
 	if (step.Command == "sell") {
@@ -976,14 +1024,26 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "hit") {
+		// hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>: the firer is the player's first object of the named type, else of another type; a named type the player lacks may belong to any house.
 		std::string const argument = step.Argument;
-		std::size_t const colon = argument.find(':');
-		std::string const typename_ = argument.substr(0, colon);
-		WarheadTypeClass const * warhead = colon != std::string::npos ? WarheadTypeClass::From_Name(argument.substr(colon + 1).c_str()) : NULL;
+		std::size_t const at = argument.find('@');
+		std::string const head = argument.substr(0, at);
+		std::string const firer_name = at != std::string::npos ? argument.substr(at + 1) : std::string();
+		std::size_t const colon = head.find(':');
+		std::string const typename_ = head.substr(0, colon);
+		WarheadTypeClass const * warhead = colon != std::string::npos ? WarheadTypeClass::From_Name(head.substr(colon + 1).c_str()) : NULL;
 		TechnoClass * firer = NULL;
 		for (int index = 0; index < Technos.Count() && firer == NULL; index++) {
-			if (Technos[index]->House == PlayerPtr && !Technos[index]->IsInLimbo && stricmp(Technos[index]->TClass->Name(), typename_.c_str()) != 0) {
-				firer = Technos[index];
+			TechnoClass * candidate = Technos[index];
+			bool const match = firer_name.empty() ? stricmp(candidate->TClass->Name(), typename_.c_str()) != 0 : stricmp(candidate->TClass->Name(), firer_name.c_str()) == 0;
+			if (candidate->House == PlayerPtr && !candidate->IsInLimbo && match) {
+				firer = candidate;
+			}
+		}
+		for (int index = 0; !firer_name.empty() && firer == NULL && index < Technos.Count(); index++) {
+			TechnoClass * candidate = Technos[index];
+			if (!candidate->IsInLimbo && stricmp(candidate->TClass->Name(), firer_name.c_str()) == 0) {
+				firer = candidate;
 			}
 		}
 		for (int index = Technos.Count() - 1; warhead != NULL && index >= 0; index--) {
@@ -991,7 +1051,7 @@ void Run(StepType const & step)
 			if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
-				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration);
+				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none");
 			}
 		}
 	} else if (step.Command == "clickcell") {

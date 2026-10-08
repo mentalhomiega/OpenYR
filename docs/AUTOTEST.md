@@ -42,6 +42,9 @@ A command runs once the game frame reaches its frame, in file order.
 | `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
+| `occupy <TypeID> x y` | Puts the player's first infantry of that type inside the structure on that cell, without walking there |
+| `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
+| `veterancy <TypeID>` | Writes the rules' `VeteranRatio` and `VeteranCap`, the player's score, then each object of that type with its rank, experience and cost |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |
 
