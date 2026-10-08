@@ -27,7 +27,7 @@ Only full-screen movies play as Bink. The radar pane and the graphical menus pla
 
 ## Playback
 
-The game reads the whole movie file into memory, then draws it a frame at a time at the movie's own size, centered on the screen. [`StretchMovies`](/keys/stretchmovies/) scales it to fit, as it does for a VQA movie.
+The game reads the whole movie file into memory, then draws it a frame at a time at the movie's own size, centered on the screen. A movie larger than the screen is cropped to its middle: an 800 by 600 movie on a 640 by 480 screen loses 80 pixels at each side and 60 at the top and bottom. [`StretchMovies`](/keys/stretchmovies/) scales the whole movie to fit instead, as it does for a VQA movie.
 
 - Escape ends the movie. In a game against other machines, the votes described in [Multiplayer movies](/systems/multiplayer-movies/) decide.
 - The movie pauses while the game window is in the background and continues when it returns.

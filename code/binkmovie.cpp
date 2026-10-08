@@ -31,6 +31,7 @@
 #include "win.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -134,7 +135,8 @@ bool Bink_Is_Playing(void)
 /// <summary>
 /// Plays a Bink (.BIK) movie from the game's files, returning when it ends or the player skips it.
 /// The movie is shown the way the VQA movies are: centered, or stretched to the screen when movie
-/// stretching is on. It plays silently while the engine's master volume is zero, as in a scripted test.
+/// stretching is on. A movie larger than the screen is cropped to its middle unless it is stretched.
+/// It plays silently while the engine's master volume is zero, as in a scripted test.
 /// </summary>
 bool Bink_Play(char const * name)
 {
@@ -176,18 +178,38 @@ bool Bink_Play(char const * name)
 	DebugString("BINK %s: %dx%d, %u frames at %u/%u\n", name, width, height, info->Frames, info->FrameRate, info->FrameRateDiv);
 	Api.SetVolume(bink, sound ? (int)(32768.0f * AudioEngine.Master_Gain()) : 0);
 
-	Surface * draw = HiddenSurface;
-	draw->Fill(0);
+	HiddenSurface->Fill(0);
 	Update_Visible_Surface(HiddenSurface);
 
-	Rect const source(0, 0, std::min(width, draw->Get_Width()), std::min(height, draw->Get_Height()));
-	Rect area((VisibleRect.Width - width) / 2, (VisibleRect.Height - height) / 2, width, height);
+	if (width <= 0 || height <= 0) {
+		DebugString("BINK %s: the movie has no picture\n", name);
+		Api.Close(bink);
+		return(false);
+	}
+
+	// Bink writes the whole frame into the buffer it is given and does not clip it. A movie that fits
+	// the hidden surface is decoded into it. A larger one, such as an 800x600 movie at 640x480, is
+	// decoded into a surface of its own size.
+	Surface * draw = HiddenSurface;
+	std::optional<DSurface> frame;
+	if (width > draw->Get_Width() || height > draw->Get_Height()) {
+		frame.emplace(width, height);
+		draw = &*frame;
+	}
+
+	// Without stretching, a movie that fits the screen is centred and a larger one is cropped to its middle.
+	// The source and the area then have the same size, and both lie inside their surfaces.
+	int const shown_width = std::min(width, VisibleRect.Width);
+	int const shown_height = std::min(height, VisibleRect.Height);
+	Rect source((width - shown_width) / 2, (height - shown_height) / 2, shown_width, shown_height);
+	Rect area((VisibleRect.Width - shown_width) / 2, (VisibleRect.Height - shown_height) / 2, shown_width, shown_height);
 	if (DSurface::AllowStretchBlits && Options.StretchMovies) {
 		double const scale = std::min((double)VisibleRect.Width / width, (double)VisibleRect.Height / height);
 		area.Width = (int)(width * scale);
 		area.Height = (int)(height * scale);
 		area.X = (VisibleRect.Width - area.Width) / 2;
 		area.Y = (VisibleRect.Height - area.Height) / 2;
+		source = Rect(0, 0, width, height);
 		DebugString("Stretching movie %dx%d -> %dx%d\n", width, height, area.Width, area.Height);
 	}
 
