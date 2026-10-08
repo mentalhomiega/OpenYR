@@ -10890,11 +10890,12 @@ void TechnoClass::Play_Transport_Sound(bool entering) const
 /// <summary>
 /// Starts draining the structure this object hovers over (0x70FD70): its owner loses power,
 /// or pays money for a refinery, until the draining stops. The structure lets go of the units
-/// it holds, and a drainer on foot leaves its team without entering idle mode.
+/// it holds, and a drainer on foot leaves its team without entering idle mode. A structure
+/// already drained by another object is taken over by this one.
 /// </summary>
 void TechnoClass::Start_Drain(TechnoClass * target)
 {
-	if (target == NULL || target->DrainingMe != NULL) {
+	if (target == NULL) {
 		return;
 	}
 	target->DrainingMe = this;
