@@ -6146,7 +6146,7 @@ void HouseClass::Restore_Starting_Buildings(void)
 		BuildingClass * standing = Map[start.Position].Cell_Building();
 		if (standing != NULL && standing->Class == BuildingTypes[start.Type] && standing->House == this) {
 			int damage = -standing->Class->MaxStrength;
-			standing->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+			standing->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
 			continue;
 		}
 
