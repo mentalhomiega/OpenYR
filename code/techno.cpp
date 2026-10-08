@@ -4645,7 +4645,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	if (weapon->IsSuicide) {
 		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
 		int damage = Strength;
-		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
 		return(NULL);
 	}
 
