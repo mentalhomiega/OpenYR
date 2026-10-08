@@ -42,6 +42,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `occupy <TypeID> x y` | Puts the player's first infantry of that type inside the structure on that cell, without walking there |
 | `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
 | `veterancy <TypeID>` | Writes the rules' `VeteranRatio` and `VeteranCap`, the player's score, then each object of that type with its rank, experience and cost |
+| `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |
 
