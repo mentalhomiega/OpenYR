@@ -3680,6 +3680,14 @@ bool CellClass::Goodie_Check(FootClass * object)
 //					if (object->House->BScan == 0) powerup = CRATE_UNIT;
 					break;
 
+				case CRATE_VETERAN:
+					{
+						// A collector that cannot train, or is already elite, takes the money instead.
+						TechnoClass * collector = Dynamic_Cast<TechnoClass *>(object);
+						if (collector != NULL && (!collector->TClass->IsTrainable || collector->Veterancy.Is_Elite())) powerup = CRATE_MONEY;
+					}
+					break;
+
 				case CRATE_MONEY:
 					break;
 			}
