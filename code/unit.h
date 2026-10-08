@@ -117,6 +117,9 @@ class UnitClass : public FootClass
 		TerrainTypeClass const * MirageType;
 		int MirageBlockedUntil;
 
+		// The frame until which a DisguiseWhenStill vehicle that has just fired is open to computer targeting.
+		int MirageBlinkUntil;
+
 		void Mirage_AI(void);
 
 		/*
@@ -204,6 +207,7 @@ class UnitClass : public FootClass
 
 		// Does a DisguiseWhenStill vehicle look like terrain to this house (UnitClass::IsDisguisedAs, 0x746750)?
 		bool Is_Disguised_As(HouseClass const * house) const;
+		bool Is_Blinking_Disguise(void) const;
 
 		/*
 		**	Object entry and exit from the game system.
