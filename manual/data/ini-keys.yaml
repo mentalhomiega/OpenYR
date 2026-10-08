@@ -10945,6 +10945,24 @@ Disableable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DisabledDisguiseDetectionPercent:
+  key: DisabledDisguiseDetectionPercent
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: DisabledDisguiseDetectionPercent
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Disguise:
   key: Disguise
   scopes:
@@ -10963,6 +10981,23 @@ Disguise:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DisguiseFakeBlinkTime:
+  key: DisguiseFakeBlinkTime
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WeaponTypeClass
+      member: DisguiseFakeBlinkTime
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 DisguiseWhenStill:
   key: DisguiseWhenStill
   scopes:

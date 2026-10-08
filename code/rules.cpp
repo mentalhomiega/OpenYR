@@ -747,6 +747,7 @@ RulesClass::RulesClass(void) :
 	SplashList(),
 	DefaultMirageDisguises(),
 	InfantryBlinkDisguiseTime(0),
+	DisabledDisguiseDetectionPercent(),
 	SmallFire(NULL),
 	LargeFire(NULL),
 	Paratrooper(NULL),
@@ -1477,6 +1478,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		Behind = TGet_Class(ini, GENERAL, "Behind", Behind);
 		DefaultMirageDisguises = TGet_TypeList<TerrainTypeClass>(ini, GENERAL, "DefaultMirageDisguises", DefaultMirageDisguises);
 		InfantryBlinkDisguiseTime = ini.Get_Int(GENERAL, "InfantryBlinkDisguiseTime", InfantryBlinkDisguiseTime);
+		DisabledDisguiseDetectionPercent = ini.Get_IntList(GENERAL, "DisabledDisguiseDetectionPercent", DisabledDisguiseDetectionPercent);
 		GuardAreaTargetingDelay = ini.Get_Int(GENERAL, "GuardAreaTargetingDelay", GuardAreaTargetingDelay);
 		NormalTargetingDelay = ini.Get_Int(GENERAL, "NormalTargetingDelay", NormalTargetingDelay);
 		PrismType = TGet_Class(ini, GENERAL, "PrismType", PrismType);
@@ -3057,6 +3059,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SplashList);
 	stream.Serialize(DefaultMirageDisguises);
 	stream.Serialize(InfantryBlinkDisguiseTime);
+	stream.Serialize(DisabledDisguiseDetectionPercent);
 	stream.Serialize(SmallFire);
 	stream.Serialize(LargeFire);
 	stream.Serialize(Paratrooper);

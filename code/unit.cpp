@@ -216,6 +216,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	GunnerPassengers(0),
 	MirageType(NULL),
 	MirageBlockedUntil(0),
+	MirageBlinkUntil(0),
 	Reload(0),
 	FiringSyncDelay(-1),
 	VisceroidFacing(FACING_NONE),
@@ -3076,6 +3077,15 @@ void UnitClass::Mirage_AI(void)
 
 
 /// <summary>
+/// Is a disguised Mirage vehicle inside the blink that follows its last shot, when a computer house may pick it.
+/// </summary>
+bool UnitClass::Is_Blinking_Disguise(void) const
+{
+	return(Frame < MirageBlinkUntil);
+}
+
+
+/// <summary>
 /// Does a disguised Mirage vehicle look like terrain to the house. Allies of its owner always
 /// see it as it is, and so does a house with a detector in the vehicle's cell.
 /// </summary>
@@ -5243,6 +5253,11 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 			if (!sync && Class->FiringFrames > 0) {
 				FiringSyncDelay = 2 * Class->FiringFrames - 1;
 			}
+
+			// Firing opens a DisguiseWhenStill vehicle to computer targeting for the weapon's blink time.
+			if (Class->IsDisguiseWhenStill) {
+				MirageBlinkUntil = Frame + weap->DisguiseFakeBlinkTime;
+			}
 		}
 	}
 
@@ -6419,6 +6434,7 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GunnerPassengers);
 	stream.Serialize(MirageType);
 	stream.Serialize(MirageBlockedUntil);
+	stream.Serialize(MirageBlinkUntil);
 	stream.Serialize(IsCompositingToEightBitSurface);
 	stream.Serialize(VisceroidFacing);
 	stream.Serialize(Charge);

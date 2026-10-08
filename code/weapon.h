@@ -262,6 +262,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// With RevealOnFire=no, firing this weapon does not reveal the firer to the target's owner.
 		bool IsRevealOnFire;
 
+		// How many frames a DisguiseWhenStill vehicle stays open to computer targeting after it fires this weapon.
+		int DisguiseFakeBlinkTime;
+
 		// Is this weapon's laser drawn in its firer's house color rather than its own laser colors?
 		bool IsHouseColor;
 

@@ -1558,6 +1558,9 @@ class RulesClass
 		TypeList<TerrainTypeClass const *> DefaultMirageDisguises;
 		int InfantryBlinkDisguiseTime;
 
+		// Per side (Allied, Soviet, Third), the percent of a DisguiseWhenStill vehicle's blink that a computer house can see through.
+		TypeList<int> DisabledDisguiseDetectionPercent;
+
 		/*
 		 * These are the fires left burning where something has been destroyed. The
 		 * larger one is used for the fiercer blazes.

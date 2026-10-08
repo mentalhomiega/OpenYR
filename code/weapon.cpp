@@ -130,6 +130,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsCellRangefinding(false),
 	IsOmniFire(false),
 	IsRevealOnFire(true),
+	DisguiseFakeBlinkTime(0),
 	IsHouseColor(false),
 	IsTurboBoosted(false),
 	Sound(),
@@ -197,6 +198,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsCellRangefinding = ini.Get_Bool(IniName, "CellRangefinding", IsCellRangefinding);
 		IsOmniFire = ini.Get_Bool(IniName, "OmniFire", IsOmniFire);
 		IsRevealOnFire = ini.Get_Bool(IniName, "RevealOnFire", IsRevealOnFire);
+		DisguiseFakeBlinkTime = ini.Get_Int(IniName, "DisguiseFakeBlinkTime", DisguiseFakeBlinkTime);
 		IsHouseColor = ini.Get_Bool(IniName, "IsHouseColor", IsHouseColor);
 		IsSupressed = ini.Get_Bool(IniName, "Supress", IsSupressed);
 		Burst = ini.Get_Int(IniName, "Burst", Burst);
@@ -381,6 +383,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsCellRangefinding);
 	crc(IsOmniFire);
 	crc(IsRevealOnFire);
+	crc(DisguiseFakeBlinkTime);
 	crc(IsHouseColor);
 	crc(IsTurboBoosted);
 	crc(IsSupressed);
@@ -460,6 +463,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCellRangefinding);
 	stream.Serialize(IsOmniFire);
 	stream.Serialize(IsRevealOnFire);
+	stream.Serialize(DisguiseFakeBlinkTime);
 	stream.Serialize(IsHouseColor);
 	stream.Serialize(IsTurboBoosted);
 	stream.Serialize(IsSupressed);
