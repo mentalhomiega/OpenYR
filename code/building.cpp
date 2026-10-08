@@ -8793,6 +8793,9 @@ bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
 	if (House != infantry->House && !House->Class->IsMultiplayPassive) {
 		return(false);
 	}
+	if (infantry->MindControlledBy != NULL) {
+		return(false);
+	}
 	return(Occupants.Count() < Class->MaxNumberOccupants && HealthRatio > Rule->ConditionRed);
 }
 
