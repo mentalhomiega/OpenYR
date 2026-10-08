@@ -11328,7 +11328,12 @@ void BuildingClass::Spied_By(HouseClass * house)
 	 */
 	if (Class->IsRadar) {
 		if (!House->IsSpySatActive) {
-			Map.Shroud_The_Map(House);
+			// Only the local player's map is shrouded again. For another house only the visionary flag is cleared, as in gamemd's HouseClass::ReshroudMap.
+			if (House == PlayerPtr) {
+				Map.Shroud_The_Map(House);
+			} else {
+				House->IsVisionary = false;
+			}
 			if (victim) Speak_Eva("EVA_RadarSabotaged");
 			if (spy) Speak_Eva("EVA_BuildingInfRadarSabotaged");
 		}

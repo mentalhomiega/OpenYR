@@ -214,7 +214,7 @@ One effect then follows, decided by the first row that fits the structure's type
 
 | Structure | What the spy does |
 | --- | --- |
-| [`Radar=yes`](/keys/radar/) | The whole map goes back under the shroud and the fog for the owner, and the owner's objects look again. An owner with a working [spy satellite](/systems/map-visibility/#the-spy-satellite) keeps its map. |
+| [`Radar=yes`](/keys/radar/) | If the owner is the local player, the whole map goes back under the shroud and the fog, and the owner's objects look again. For any other owner the map is not shrouded again. An owner with a working [spy satellite](/systems/map-visibility/#the-spy-satellite) keeps its map. |
 | Positive [`Power`](/keys/power/#scope-buildingtype) | For [`SpyPowerBlackout`](/keys/spypowerblackout/) frames, the owner's structures make no power. At `0` nothing happens. |
 | Listed in [`BuildTech`](/keys/buildtech/) | The spy's house steals a side's technology: the first side's when the structure's [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `0`, the second's when it is `1`, and the third's for any other value. Types that need that stolen technology become buildable for the spy's house. |
 | A [`SuperWeapon`](/keys/superweapon/) | The owner's superweapon of that type starts charging again from the beginning, unless it is suspended. |
