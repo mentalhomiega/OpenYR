@@ -4856,7 +4856,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			int planar = Point2D(displacement).Length();
 			valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
 		} else if (bullet->Class->IsVoxel) {
-			pitch = 0;
+			// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
+			pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
 		} else {
 			int abs_z = abs(displacement.Z);
 			if (abs_z > 200) {

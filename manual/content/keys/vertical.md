@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A `Vertical=yes` projectile keeps the direction it was launched in. Each frame it speeds up by its [`Acceleration`](/keys/acceleration/#scope-bullettype) until it reaches its weapon's speed. It explodes when it meets the ground, crosses a bridge deck, leaves the map, or climbs above [`DetonationAltitude`](/keys/detonationaltitude/).
+A `Vertical=yes` projectile keeps the direction it was launched in. A voxel projectile with `Vertical=yes` launches straight down, so it falls onto the target below its firer. Each frame it speeds up by its [`Acceleration`](/keys/acceleration/#scope-bullettype) until it reaches its weapon's speed. It explodes when it meets the ground, crosses a bridge deck, leaves the map, or climbs above [`DetonationAltitude`](/keys/detonationaltitude/).
 
 ```ini title="rulesmd.ini"
 [MyNukeUp] ; example projectile
