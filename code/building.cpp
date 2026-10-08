@@ -309,6 +309,11 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	AnimPtrTracker.Add(this);
 	TargetTracker.Add_Index(Fetch_ID(), this);
 
+	// A house that has spied on a war factory also gets its trainable deployable structures as veterans, except naval ones.
+	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval && Class->UndeploysInto != NULL) {
+		Veterancy.Set_Veteran(true);
+	}
+
 	if (Class != NULL) {
 		if (Class->IsCanUnitRepair) {
 			UnitRepairFacilities.Add(this);

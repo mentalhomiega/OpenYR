@@ -219,7 +219,7 @@ One effect then follows, decided by the first row that fits the structure's type
 | Listed in [`BuildTech`](/keys/buildtech/) | The spy's house steals a side's technology: the first side's when the structure's [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `0`, the second's when it is `1`, and the third's for any other value. Types that need that stolen technology become buildable for the spy's house. |
 | A [`SuperWeapon`](/keys/superweapon/) | The owner's superweapon of that type starts charging again from the beginning, unless it is suspended. |
 | Positive [`Storage`](/keys/storage/) | The spy's house takes [`SpyMoneyStealPercent`](/keys/spymoneystealpercent/) of the owner's money, rounded down. |
-| [`Factory=UnitType`](/keys/factory/) | From then on, every [`Trainable=yes`](/keys/trainable/) vehicle the spy's house gets, other than a naval one, starts as a veteran, whether it is built, cloned or delivered. |
+| [`Factory=UnitType`](/keys/factory/) | From then on, every [`Trainable=yes`](/keys/trainable/) vehicle the spy's house gets, other than a naval one, starts as a veteran, whether it is built, cloned or delivered. A `Trainable=yes` structure with an `UndeploysInto` type that is not naval also starts as a veteran when it is created; the Yuri refinery is one. |
 | [`Factory=InfantryType`](/keys/factory/) | From then on, every `Trainable=yes` infantryman the spy's house gets starts as a veteran. |
 
 A structure that fits no row gives up nothing beyond the spy record.
