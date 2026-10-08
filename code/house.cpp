@@ -9156,7 +9156,7 @@ void HouseClass::AI_Super_Weapons(void)
 
 					case SUPER_MULTI_MISSILE: {
 						// The nuke aims as the lightning storm does (the Nuke case of HouseClass::AI_TryFireSW).
-						Cell const cell = Pick_Ion_Cannon_Target();
+						Cell const cell = Pick_Strike_Target();
 						if (cell != CELL_NONE) {
 							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 						}
@@ -9213,7 +9213,7 @@ void HouseClass::AI_Super_Weapons(void)
 					case SUPER_LIGHTNING_STORM:
 						// One storm at a time (HouseClass::Fire_LightningStorm).
 						if (!LightningStormClass::Is_Active_Or_Pending()) {
-							Cell const cell = Pick_Ion_Cannon_Target();
+							Cell const cell = Pick_Strike_Target();
 							if (cell != CELL_NONE) {
 								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 							}
@@ -9313,13 +9313,20 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 
 
 /// <summary>
-/// Picks where a computer house drops paratroopers or reveals the map (HouseClass::Fire_ParaDrop):
-/// near the center of its enemy's base, or of its own base when it has no enemy, on clear ground
-/// for a five by five group, two cells further south-east.
+/// Picks where a computer house drops paratroopers or reveals the map (HouseClass::Fire_ParaDrop).
+/// When the house's preferred target is Anything, the drop lands near the center of its enemy's
+/// base, or of its own base when it has no enemy, on clear ground for a five by five group, two
+/// cells further south-east. Any other preferred quarry is aimed at by Pick_Target_By_Type, and
+/// that cell is used as it is.
 /// </summary>
-/// <returns>Returns with the cell to aim at, or CELL_NONE when that house has no base.</returns>
+/// <returns>Returns with the cell to aim at, or CELL_NONE when that house has no base, or no
+/// target of its quarry.</returns>
 Cell HouseClass::Pick_Drop_Target(void)
 {
+	if (PreferredTarget != QUARRY_ANYTHING) {
+		return(Pick_Target_By_Type(PreferredTarget));
+	}
+
 	HouseClass * target = Enemy != HOUSE_NONE ? Houses[Enemy] : this;
 	if (target->Center == Coord(0, 0, 0)) {
 		return(CELL_NONE);
@@ -9412,6 +9419,46 @@ Cell HouseClass::Pick_Dominator_Target(void)
 		return(CELL_NONE);
 	}
 	return(best_cell);
+}
+
+
+/// <summary>
+/// Picks the cell a computer house aims its preferred-quarry superweapons at
+/// (HouseClass::PickTargetByType). The first attack team the house owns names a leader, and the
+/// leader's greatest threat of the quarry, counting only enemies, is the target. The threat is the
+/// one Quarry_Threat gives the quarry, as an attack team's Attack line uses it.
+/// </summary>
+/// <returns>Returns with the cell to strike, or CELL_NONE when the house owns no team, the team
+/// has no leader, or the leader finds no threat of that quarry.</returns>
+Cell HouseClass::Pick_Target_By_Type(QuarryType quarry)
+{
+	for (int index = 0; index < Teams.Count(); index++) {
+		TeamClass * team = Teams[index];
+		if (team->House == this) {
+			FootClass * leader = team->Fetch_A_Leader();
+			if (leader == NULL) return(CELL_NONE);
+
+			AbstractClass * target = leader->Greatest_Threat(Quarry_Threat(quarry), leader->PositionCoord, true);
+			if (target == NULL) return(CELL_NONE);
+			return(target->Center_Coord().As_Cell());
+		}
+	}
+	return(CELL_NONE);
+}
+
+
+/// <summary>
+/// Picks the cell a computer house strikes with its nuke or lightning storm when no trigger aims
+/// it (the Nuke and LightningStorm cases of HouseClass::AI_TryFireSW). A house with no enemy
+/// strikes nothing. The ion cannon rating picks the cell when the preferred target is Anything;
+/// any other quarry is found by Pick_Target_By_Type.
+/// </summary>
+/// <returns>Returns with the cell to strike, or CELL_NONE when there is none.</returns>
+Cell HouseClass::Pick_Strike_Target(void)
+{
+	if (Enemy == HOUSE_NONE) return(CELL_NONE);
+	if (PreferredTarget == QUARRY_ANYTHING) return(Pick_Ion_Cannon_Target());
+	return(Pick_Target_By_Type(PreferredTarget));
 }
 
 

@@ -61,6 +61,27 @@ QuarryType Quarry_From_Name(char const * name)
 
 
 /// <summary>
+/// Converts a quarry into the threat scan that looks for it, as gamemd does. A quarry it does
+/// not list scans for anything.
+/// </summary>
+ThreatType Quarry_Threat(QuarryType quarry)
+{
+	switch (quarry) {
+		case QUARRY_BUILDINGS: return(THREAT_BUILDINGS);
+		case QUARRY_HARVESTERS: return(THREAT_TIBERIUM);
+		case QUARRY_INFANTRY: return(THREAT_INFANTRY);
+		case QUARRY_VEHICLES: return(THREAT_VEHICLES);
+		case QUARRY_FACTORIES: return(THREAT_FACTORIES);
+		case QUARRY_DEFENSE: return(THREAT_BASE_DEFENSE);
+		case QUARRY_POWER: return(THREAT_POWER);
+		case QUARRY_OCCUPIABLE: return(THREAT_OCCUPIABLE);
+		case QUARRY_TECH: return(THREAT_TECH);
+		default: return(THREAT_NORMAL);
+	}
+}
+
+
+/// <summary>
 /// Fetches the name of the quarry type specified.
 /// This routine is the counterpart to Quarry_From_Name and is used when writing team
 /// type data back out to the scenario file.
