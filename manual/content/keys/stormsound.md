@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-Plays once, at full volume, when a lightning storm breaks. [Lightning storm](/systems/superweapons/#lightning-storm) covers the storm.
+Plays once, at full volume, when a lightning storm breaks, provided [`LightningPrintText`](/keys/lightningprinttext/) is `yes`. [Lightning storm](/systems/superweapons/#lightning-storm) covers the storm.
 
 ```ini title="rulesmd.ini"
 [AudioVisual]

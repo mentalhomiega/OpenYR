@@ -487,6 +487,9 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 
 		// One storm and one dominator blast at a time; a refused shot keeps its charge (SuperClass::ClickFire).
 		if (Class->Type == SUPER_LIGHTNING_STORM && LightningStormClass::Is_Active_Or_Pending()) {
+			if (player) {
+				LightningStormClass::Print_Refusal();
+			}
 			return(false);
 		}
 		if (Class->Type == SUPER_PSYCHIC_DOMINATOR && PsychicDominatorClass::Is_Active()) {

@@ -18,15 +18,20 @@
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
+#include "csf.h"
+#include "dialog.hh"
 #include "globals.h"
 #include "house.h"
 #include "ion.h"
 #include "rules.h"
 #include "savestream.h"
+#include "session.h"
 #include "shapeset.h"
+#include "stimer.h"
 #include "tactical.h"
 #include "techno.h"
 #include "voc.h"
+#include "vox.h"
 
 
 bool LightningStormClass::IsActive = false;
@@ -39,6 +44,17 @@ HouseClass * LightningStormClass::Owner = NULL;
 DynamicVectorClass<AnimClass *> LightningStormClass::Clouds;
 DynamicVectorClass<AnimClass *> LightningStormClass::ManifestingClouds;
 DynamicVectorClass<AnimClass *> LightningStormClass::Bolts;
+
+
+static int const WARNING_INTERVAL = 225;
+
+
+static void Storm_Message(char const * label, TextPrintType style)
+{
+	int const scheme = PlayerPtr != NULL ? PlayerPtr->Scheme : 3;
+	std::string const text = Fetch_String_UTF8(label);
+	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, style, TICKS_PER_SECOND * 10);
+}
 
 
 static bool Has_Passed_Half(AnimClass const * anim, bool last)
@@ -122,8 +138,22 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 	if (PlayerPtr != NULL) {
 		PlayerPtr->RecalcRadar = true;
 	}
-	Sound_Effect(Rule->StormSound);
 	IonStormClass::Set_Storm_Lighting(true);
+
+	if (Rule->LightningPrintText) {
+		Sound_Effect(Rule->StormSound);
+		Storm_Message("TXT_LIGHTNING_STORM", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
+	}
+}
+
+
+/// <summary>
+/// Tells the local player that a storm is already raging or pending when a second one is called
+/// in (FUN_0053AE00). The caller decides whether the call came from the player.
+/// </summary>
+void LightningStormClass::Print_Refusal(void)
+{
+	Storm_Message("Msg:LightningStormActive", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 }
 
 
@@ -168,6 +198,9 @@ void LightningStormClass::AI(void)
 			Deferment--;
 			if (Deferment == 0) {
 				Start(Duration, 0, Center, Owner);
+			} else if (Deferment % WARNING_INTERVAL == 0 && Rule->LightningPrintText) {
+				Speak_Eva("EVA_LightningStormCreated");
+				Storm_Message("TXT_LIGHTNING_STORM_APPROACHING", TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW));
 			}
 		}
 		return;

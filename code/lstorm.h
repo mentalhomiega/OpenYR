@@ -30,6 +30,7 @@ class LightningStormClass
 		static void AI(void);
 		static bool Is_Active(void) {return(IsActive);}
 		static bool Is_Active_Or_Pending(void) {return(IsActive || Deferment > 0);}
+		static void Print_Refusal(void);
 		static void Detach(AbstractClass const * target);
 		static void Serialize(SaveStreamClass & stream);
 		static void Post_Load_Game(void);

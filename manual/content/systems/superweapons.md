@@ -502,11 +502,11 @@ Computer houses do not fire the Iron Curtain on their own. A computer team asks 
 
 ### Lightning storm
 
-A `Type=LightningStorm` weapon calls a storm over the target cell. Only one storm exists at a time: a shot while a storm rages or waits to break does nothing, and the weapon stays charged. Yuri's Revenge also tells the player that a storm is already active, which is not shown yet.
+A `Type=LightningStorm` weapon calls a storm over the target cell. Only one storm exists at a time: a shot while a storm rages or waits to break does nothing, and the weapon stays charged. A shot the player fires then also prints that a storm is already active; a shot from a computer house prints nothing.
 
-The storm breaks [`LightningDeferment`](/keys/lightningdeferment/) frames after the shot. It then rages for [`LightningStormDuration`](/keys/lightningstormduration/) frames:
+The storm breaks [`LightningDeferment`](/keys/lightningdeferment/) frames after the shot. While it waits, and while [`LightningPrintText`](/keys/lightningprinttext/) is `yes`, the EVA warning plays and a message appears each time the frames left are a multiple of 225. It then rages for [`LightningStormDuration`](/keys/lightningstormduration/) frames:
 
-- The map darkens to the scenario's ion storm lighting, and [`StormSound`](/keys/stormsound/) plays.
+- The map darkens to the scenario's ion storm lighting. When the storm breaks, [`StormSound`](/keys/stormsound/) plays and a message appears, if `LightningPrintText` is `yes`.
 - Every house that is not an ally of the firing house loses its radar for the storm's duration.
 - Every [`LightningHitDelay`](/keys/lightninghitdelay/) frames, a cloud gathers over the center.
 - Every [`LightningScatterDelay`](/keys/lightningscatterdelay/) frames, a cloud gathers over a random cell up to half of [`LightningCellSpread`](/keys/lightningcellspread/) cells from the center along each axis. A cell closer than [`LightningSeparation`](/keys/lightningseparation/) cells to an existing cloud is passed over; after three such cells the chance is lost.
