@@ -229,6 +229,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	Class((HouseTypeClass *)type),
 	HouseTags(),
 	ConYards(),
+	SecretLabs(),
 	Difficulty(Scen->CDifficulty),
 	FirepowerBias(1.0),
 	GroundspeedBias(1.0),
@@ -991,6 +992,22 @@ bool HouseClass::Has_Keep_Alive(void) const
 }
 
 
+/// <summary>
+/// Whether one of this house's tech secret labs offers the type.
+/// The house may then build it without its prerequisites, tech level or house limits.
+/// </summary>
+bool HouseClass::Is_Secret_Item(ObjectTypeClass const * type) const
+{
+	for (int index = 0; index < SecretLabs.Count(); index++) {
+		BuildingClass const * lab = SecretLabs[index];
+		if (lab->House == this && !lab->IsInLimbo && lab->Secret_Item() == type) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 bool HouseClass::Is_Reversed(ObjectTypeClass const * type) const
 {
 	for (std::string const & name : ReversedTypes) {
@@ -1021,6 +1038,11 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 	assert(type != NULL);
 
 	if (!forced && type->RTTI != RTTI_BUILDINGTYPE && !ReversedTypes.empty() && Is_Reversed(type)) {
+		if (((TechnoTypeClass const *)type)->IsUnbuildable) return(0);
+		forced = true;
+	}
+
+	if (!forced && SecretLabs.Count() > 0 && Is_Secret_Item(type)) {
 		if (((TechnoTypeClass const *)type)->IsUnbuildable) return(0);
 		forced = true;
 	}
@@ -3234,6 +3256,7 @@ void HouseClass::Detach(AbstractClass const * target, bool all)
 	if (target->RTTI == RTTI_BUILDING) {
 		if (all) {
 			ConYards.Delete(((BuildingClass *)target));
+			SecretLabs.Delete(((BuildingClass *)target));
 		}
 	}
 
@@ -7032,6 +7055,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Class);
 	stream.Serialize(HouseTags);
 	stream.Serialize(ConYards);
+	stream.Serialize(SecretLabs);
 	stream.Serialize(Difficulty);
 	stream.Serialize(FirepowerBias);
 	stream.Serialize(GroundspeedBias);

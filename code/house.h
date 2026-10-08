@@ -177,6 +177,9 @@ class HouseClass : public AbstractClass
 		 */
 		DynamicVectorClass<BuildingClass *> ConYards;
 
+		// The tech secret labs this house owns; each offers one item to build whatever its prerequisites.
+		DynamicVectorClass<BuildingClass *> SecretLabs;
+
 		/*
 		**	This is the handicap (difficulty level) assigned to this house.
 		*/
@@ -949,6 +952,7 @@ class HouseClass : public AbstractClass
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
 		bool Is_Reversed(ObjectTypeClass const * type) const;
+		bool Is_Secret_Item(ObjectTypeClass const * type) const;
 		bool Has_Keep_Alive(void) const;
 		bool Add_Reversed(TechnoTypeClass const * type);
 

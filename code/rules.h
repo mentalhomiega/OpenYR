@@ -1505,6 +1505,11 @@ class RulesClass
 		 */
 		TypeList<AircraftTypeClass const *> PadAircraft;
 
+		// The items a tech secret lab can draw when a skirmish or network game starts, read as one list in this order.
+		TypeList<InfantryTypeClass const *> SecretInfantry;
+		TypeList<UnitTypeClass const *> SecretUnits;
+		TypeList<BuildingTypeClass const *> SecretBuildings;
+
 		/*
 		 * These are the animations of a burning building, ordered from the smallest
 		 * flame to the largest. The smaller ones are chosen far more often, and the

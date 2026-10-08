@@ -1475,6 +1475,7 @@ void Run(StepType const & step)
 	} else if (step.Command == "houses") {
 		// houses: each house's money, power and spy effects, then a "seat" line for who plays it. The
 		// "who" line names the country the house acts as and counts the objects it owns.
+		// Each tech secret lab follows, with its owner, the item it offers and whether the owner lists it.
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
 			int owned = 0;
@@ -1494,6 +1495,12 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
+		}
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * lab = Buildings[index];
+			if (!lab->Class->IsSecretLab) continue;
+			TechnoTypeClass const * item = lab->Secret_Item();
+			DebugString("AUTOTEST   lab %s of %s cell %d,%d limbo %d offers %s listed %d\n", lab->Class->Name(), lab->House->Class->Name(), lab->Get_Cell().X, lab->Get_Cell().Y, (int)lab->IsInLimbo, item != NULL ? item->Name() : "-", (int)(lab->House->SecretLabs.ID(lab) != -1));
 		}
 	} else if (step.Command == "census") {
 		// census: per house, how many structures, vehicles, infantry and aircraft it owns, how many of the

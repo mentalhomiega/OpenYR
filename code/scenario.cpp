@@ -1754,6 +1754,47 @@ char const * Pick_Load_Background_Name(Point2D & pos)
 
 
 /// <summary>
+/// Draws the item each tech secret lab on the map offers.
+/// Two labs can draw the same item, and no lab draws when the map has more labs than listed items.
+/// </summary>
+void Pick_Secret_Lab_Items(void)
+{
+	int const infantry = Rule->SecretInfantry.Count();
+	int const units = Rule->SecretUnits.Count();
+	int const total = infantry + units + Rule->SecretBuildings.Count();
+
+	int labs = 0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		if (Buildings[index]->Class->IsSecretLab) {
+			labs++;
+		}
+	}
+	if (labs == 0 || labs > total) {
+		return;
+	}
+
+	int remaining = total;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * lab = Buildings[index];
+		if (!lab->Class->IsSecretLab) continue;
+
+		int choice = Random_Pick(0, remaining - 1);
+		remaining--;
+
+		TechnoTypeClass const * item = NULL;
+		if (choice < infantry) {
+			item = Rule->SecretInfantry[choice];
+		} else if (choice - infantry < units) {
+			item = Rule->SecretUnits[choice - infantry];
+		} else {
+			item = Rule->SecretBuildings[choice - infantry - units];
+		}
+		lab->SecretProduct = item;
+	}
+}
+
+
+/// <summary>
 /// Performs the multiplayer adjustments that must wait for the map.
 /// Each side's starting units and any random crates are placed, and everyone is allied
 /// with the special house. None of this can be done until every object in the scenario
@@ -1821,6 +1862,8 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 			special_hptr->Make_Ally(Houses[i]);
 		}
 	}
+
+	Pick_Secret_Lab_Items();
 }
 
 

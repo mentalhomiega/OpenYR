@@ -75,6 +75,7 @@
 #include "globals.h"
 #include "house.h"
 #include "incdec.h"
+#include "infatype.h"
 #include "isotype.h"
 #include "mixfile.h"
 #include "overtype.h"
@@ -395,7 +396,11 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ProduceCashAmount(0),
 	ProduceCashDelay(0),
 	ProduceCashBudget(0),
-	IsProduceCashResetOnCapture(false)
+	IsProduceCashResetOnCapture(false),
+	IsSecretLab(false),
+	SecretInfantry(NULL),
+	SecretUnit(NULL),
+	SecretBuilding(NULL)
 {
 	Create_ID();
 	BuildingTypes.Add(this);
@@ -1422,6 +1427,10 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		ProduceCashDelay = ini.Get_Int(Name(), "ProduceCashDelay", ProduceCashDelay);
 		ProduceCashBudget = ini.Get_Int(Name(), "ProduceCashBudget", ProduceCashBudget);
 		IsProduceCashResetOnCapture = ini.Get_Bool(Name(), "ProduceCashResetOnCapture", IsProduceCashResetOnCapture);
+		IsSecretLab = ini.Get_Bool(Name(), "SecretLab", IsSecretLab);
+		SecretInfantry = TGet_Class(ini, Name(), "SecretInfantry", SecretInfantry);
+		SecretUnit = TGet_Class(ini, Name(), "SecretUnit", SecretUnit);
+		SecretBuilding = TGet_Class(ini, Name(), "SecretBuilding", SecretBuilding);
 
 		Rotation = IsTurretEquipped ? 32 : 1;
 
@@ -2210,6 +2219,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsSiloDamage);
 	crc(IsCanUnitRepair);
 	crc(IsCanUnitReload);
+	crc(IsSecretLab);
 	crc(IsFlat);
 	crc(IsDockUnload);
 	crc(IsRecoilless);
@@ -2469,6 +2479,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashDelay);
 	stream.Serialize(ProduceCashBudget);
 	stream.Serialize(IsProduceCashResetOnCapture);
+	stream.Serialize(IsSecretLab);
+	stream.Serialize(SecretInfantry);
+	stream.Serialize(SecretUnit);
+	stream.Serialize(SecretBuilding);
 	stream.Serialize(TheaterImageFile);
 }
 

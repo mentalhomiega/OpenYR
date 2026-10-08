@@ -1016,6 +1016,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		int ProduceCashBudget;
 		bool IsProduceCashResetOnCapture;
 
+		// A SecretLab=yes structure offers one item, named by the first type below that is set or else drawn at game start.
+		bool IsSecretLab;
+		InfantryTypeClass const * SecretInfantry;
+		UnitTypeClass const * SecretUnit;
+		BuildingTypeClass const * SecretBuilding;
+
 		/*
 		 * This is the theater qualified name of the building's shape file, recorded as the
 		 * art is resolved. A type that defers loading its image uses this to find the file

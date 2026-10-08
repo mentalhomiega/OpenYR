@@ -42,6 +42,12 @@ keys:
   - ReverseEngineersVictims
   - ReversedAs
   - ScoldSound
+  - SecretBuilding
+  - SecretBuildings
+  - SecretInfantry
+  - SecretLab
+  - SecretUnit
+  - SecretUnits
   - SeparateAircraft
   - TechLevel
   - Wall
@@ -123,7 +129,7 @@ A newly placed factory is flagged primary when its house owns more than one stru
 
 ## What a house may build
 
-Five gates decide whether a house may build an object type, and a type must pass all five unless the house has [reverse engineered](#reverse-engineering) it.
+Five gates decide whether a house may build an object type, and a type must pass all five unless the house has [reverse engineered](#reverse-engineering) it or owns a [tech secret lab](#tech-secret-labs) that offers it.
 
 With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all five gates again and cancels production of any type that fails.
 
@@ -195,6 +201,37 @@ CanBeReversed=no            ; grinding an engineer teaches nothing
 ### Computer houses
 
 A computer house faces only the tech-level gate and the country and stolen-technology gate. Every type that passes them counts as buildable, and [base planning](/systems/ai-base-building/) decides what the house actually produces.
+
+## Tech secret labs
+
+A BuildingType with [`SecretLab=yes`](/keys/secretlab/) is a tech secret lab. While a lab is on the map under a house's control, the house may build the lab's item without meeting the item's tech level, country, stolen-technology or prerequisite gates. [`TechLevel=-1`](/keys/techlevel/#scope-aircrafttype) does not block the item. The [build limit](#build-limits) and [the factory search](#what-counts-as-a-factory) still apply, so the house also needs a factory that passes the search for the item.
+
+A lab offers its item whether or not it has power, and the offer ends when the lab is taken off the map. Capturing a lab moves the item to the new owner, and the previous owner loses it. Losing a lab is handled as the sidebar handles a lost prerequisite: the item's cameo stays unless [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) removes it at the next check, as [what removes a cameo](/systems/sidebar/#what-removes-a-cameo) describes.
+
+### What a lab offers
+
+A lab offers the first of these that is set:
+
+1. the infantry type named by [`SecretInfantry=`](/keys/secretinfantry/#scope-buildingtype) on the lab's type;
+2. the vehicle type named by [`SecretUnit=`](/keys/secretunit/) on the lab's type;
+3. the structure type named by [`SecretBuilding=`](/keys/secretbuilding/) on the lab's type;
+4. the item the lab drew when the game started.
+
+A type that sets more than one of the three keys offers only the first. The keys apply in campaign missions too. A lab with none of the three keys that drew nothing offers nothing.
+
+```ini title="rulesmd.ini"
+[CASLAB]               ; example BuildingType
+SecretLab=yes
+SecretUnit=DTRUCK      ; this lab always offers the demolition truck
+```
+
+### The draw
+
+When a skirmish or network game starts, each lab on the map draws its item at random from the entries of [`SecretInfantry`](/keys/secretinfantry/#scope-global-rules), [`SecretUnits`](/keys/secretunits/) and [`SecretBuildings`](/keys/secretbuildings/) in `[General]`, taken as one list in that order. The labs draw in the order they were created.
+
+A drawn entry stays in the list, so two labs can draw the same item. Each lab draws from the list with one more entry cut from its end than the lab before it: the first lab can draw any entry, the second cannot draw the last one, and so on. A map with more labs than the list has entries draws for none of them.
+
+A campaign mission draws nothing, and neither does a lab that appears after the game has started. Such a lab offers an item only through the three keys. A lab keeps its drawn item when it changes hands, and a saved game keeps it.
 
 ## Build limits
 

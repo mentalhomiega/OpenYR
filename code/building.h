@@ -422,6 +422,9 @@ class BuildingClass : public TechnoClass
 		int ProduceCashRemaining;			// Budget left to move; zero is spent and negative is unlimited.
 		bool IsProduceCashStartupPaid;
 
+		// The item a tech secret lab drew when the game started; null for a lab placed later.
+		TechnoTypeClass const * SecretProduct;
+
 		/*---------------------------------------------------------------------
 		**	Constructors, Destructors, and overloaded operators.
 		*/
@@ -573,6 +576,7 @@ class BuildingClass : public TechnoClass
 		void Factory_AI(void);
 		void Repair_AI(void);
 		void Produce_Cash_AI(void);
+		TechnoTypeClass const * Secret_Item(void) const;
 		void Animation_AI(void);
 		virtual bool Revealed(HouseClass * house) override;
 		virtual void Repair(int control) override;
