@@ -3610,11 +3610,9 @@ bool CellClass::Goodie_Check(FootClass * object)
 				powerup = Rule->WoodCrate;
 			}
 
-#if NEVER
 			if (OverlayTypes[Overlay] == Rule->WaterCrateImg) {
 				powerup = Rule->WaterCrate;
 			}
-#endif
 
 		} else if (Session.Type == GAME_NORMAL) {
 			powerup = fixed ? CrateType(OverlayData) : random_powerup();

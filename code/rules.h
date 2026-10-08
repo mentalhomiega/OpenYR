@@ -607,6 +607,7 @@ class RulesClass
 		 */
 		OverlayTypeClass const * WoodCrateImg;
 		OverlayTypeClass const * CrateImg;
+		OverlayTypeClass const * WaterCrateImg;
 
 		/*
 		 * These are the landing animations for a drop pod, one per compass corner the pod
@@ -2115,6 +2116,7 @@ class RulesClass
 		*/
 		CrateType SilverCrate;
 		CrateType WoodCrate;
+		CrateType WaterCrate;
 
 		/*
 		**	This specifies the minimum number of crates to place on the map in spite

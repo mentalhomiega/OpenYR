@@ -198,6 +198,7 @@ RulesClass::RulesClass(void) :
 	AIBaseSpacing(1),
 	SilverCrate(CRATE_HEAL_BASE),
 	WoodCrate(CRATE_MONEY),
+	WaterCrate(CRATE_MONEY),
 	CrateMinimum(1),
 	CrateMaximum(255),
 	LZScanRadius(16*CELL_LEPTON_W),
@@ -521,6 +522,7 @@ RulesClass::RulesClass(void) :
 	AircraftFogReveal(6),
 	WoodCrateImg(NULL),
 	CrateImg(NULL),
+	WaterCrateImg(NULL),
 	DropPod(),
 	DeadBodies(),
 	MetallicDebris(),
@@ -1250,6 +1252,7 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 		IsFreeMCV = ini.Get_Bool(CRATERULES, "FreeMCV", IsFreeMCV);
 		WoodCrateImg = TGet_Class(ini, CRATERULES, "WoodCrateImg", WoodCrateImg);
 		CrateImg = TGet_Class(ini, CRATERULES, "CrateImg", CrateImg);
+		WaterCrateImg = TGet_Class(ini, CRATERULES, "WaterCrateImg", WaterCrateImg);
 		HealCrateSound = ini.Get_VocType(CRATERULES, "HealCrateSound", HealCrateSound);
 		CrateMinimum = ini.Get_Int(CRATERULES, "CrateMinimum", CrateMinimum);
 		CrateMaximum = ini.Get_Int(CRATERULES, "CrateMaximum", CrateMaximum);
@@ -1262,7 +1265,7 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 		IsFirepowerCrateStacking = ini.Get_Bool(CRATERULES, "FirepowerCrateStacks", IsFirepowerCrateStacking);
 		SilverCrate = ini.Get_CrateType(CRATERULES, "SilverCrate", SilverCrate);
 		WoodCrate = ini.Get_CrateType(CRATERULES, "WoodCrate", WoodCrate);
-		//WaterCrate = ini.Get_CrateType(CRATERULES, "WaterCrate", WaterCrate);
+		WaterCrate = ini.Get_CrateType(CRATERULES, "WaterCrate", WaterCrate);
 		return(true);
 	}
 	return(false);
@@ -2851,6 +2854,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AircraftFogReveal);
 	stream.Serialize(WoodCrateImg);
 	stream.Serialize(CrateImg);
+	stream.Serialize(WaterCrateImg);
 	stream.Serialize(DropPod);
 	stream.Serialize(DeadBodies);
 	stream.Serialize(MetallicDebris);
