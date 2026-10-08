@@ -361,7 +361,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Hunter seeker** is released with no target; the drone chooses one itself.
 - **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
-- **Lightning storm** aims as the ion cannon does, and only while no storm is raging or waiting to break.
+- **Lightning storm** aims as the ion cannon does, and only while no storm is raging or waiting to break and the house has an enemy.
 - **Paradrops, the spy plane and the psychic reveal** aim near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis.
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
