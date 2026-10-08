@@ -356,19 +356,19 @@ Each ready weapon goes to the handler for its `Type=`. There is no handler for `
 
 Every handler waits until the house has a [declared enemy](/systems/base-attacked/#picking-a-first-enemy). In a campaign the computer does not pick an enemy on its own, so a campaign house has none until damage or a trigger makes it angry at someone. Until then its superweapons stay charged and unused.
 
-- **Multi missile**, the nuke: we aim it at the cell the ion cannon rating picks, as the lightning storm does, and only while the house has an enemy.
+- **Multi missile**, the nuke: we aim it at the cell the ion cannon rating picks, as the lightning storm does, unless the house's [preferred target](#the-preferred-target) is another quarry. It fires only while the house has an enemy.
 - **Chem missile** targets the enemy structure whose cell rates highest on the firing house's [threat map](/systems/base-attacked/#the-threat-map). A structure at full translucency, the last step of a cloak's fade, is rated at random from 0 to 100 instead. Every structure the enemy owns is considered, including one in [limbo](/glossary/#limbo).
 - **Hunter seeker** is released with no target; the drone chooses one itself.
 - **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
-- **Lightning storm**: we aim it as the ion cannon does, and only while no storm is raging or waiting to break and the house has an enemy.
-- **Paradrops, the spy plane and the psychic reveal** aim near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis.
+- **Lightning storm**: we aim it as the ion cannon does, or by the [preferred target](#the-preferred-target) when that is another quarry, and only while no storm is raging or waiting to break and the house has an enemy.
+- **Paradrops, the spy plane and the psychic reveal** aim near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis. When the [preferred target](#the-preferred-target) is another quarry, they aim by it instead.
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it. We do not fire it while a trigger has aimed the house's weapons.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running. We hold it while a trigger has aimed the house's weapons.
 
 The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/scripting/missions/56/) and [Chrono prep for AQ](/scripting/missions/57/) script lines.
 
-The ion cannon's rating is the only one with settings. We use it for the nuke as well.
+The ion cannon's rating is the only one with settings. We use it for the nuke as well, and for the lightning storm, while the preferred target is Anything.
 
 Only enemy objects that are on the ground layer, active and out of [limbo](/glossary/#limbo) are candidates. In difficulty slot 0, an object still being built also counts, if its factory is producing and not on hold.
 
@@ -401,6 +401,15 @@ No row covers aircraft, so an aircraft on the ground is a candidate rated 1 howe
 Yuri's Revenge also gives a tech center its own per-difficulty figure, `AIIonCannonTechCenterValue`. We do not read that key yet, so a tech center takes the fixed `4` here.
 
 A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the chem missile handler uses.
+
+### The preferred target
+
+Each house stores one quarry, its preferred target, which starts as Anything. The [Preferred target](/mapping/actions/taction-preferred-target/) action sets it, and a save game keeps it. A computer house's nuke, lightning storm and paradrops aim by it, unless a [preferred target cell](/mapping/actions/taction-set-preferred-target-cell/) already aims the weapon at a cell.
+
+- **Anything** leaves the aim to the rules above: the ion cannon rating for the nuke and the lightning storm, and the enemy's base for the paradrops.
+- **Any other quarry** makes the house look through its team list for the first attack team it owns. The team's leader, as an attack team picks it (see [`LeadershipRating`](/keys/leadershiprating/)), is the point the search starts from. The search takes the greatest threat of the quarry's kind that is an enemy, anywhere on the map, and the cell of that threat is the target. The kind each quarry scans for is the one a team's Attack line uses, as [the quarry enum](/reference/enums/quarry/) lists it. Anything and Base Threats scan for any enemy.
+
+A house with no attack team, or whose search finds no enemy, strikes nothing. The nuke and the lightning storm then stay charged and the next AI pass tries again. A house with no enemy does not fire the nuke or the storm, whatever its quarry.
 
 ## Announcements
 
@@ -635,7 +644,7 @@ Two trigger actions grant a weapon, and [becoming available](#becoming-available
 
 Three strike actions do not use superweapons at all: [Ion-cannon strike](/mapping/actions/taction-ion-cannon/), [Nuke strike](/mapping/actions/taction-multi-missile/) and [Chem-missile strike](/mapping/actions/taction-chem-missile/). They create the effect directly at the waypoint, so they need no weapon, no charge, no silo and no house that owns one.
 
-The [Preferred target](/mapping/actions/taction-preferred-target/) action does not affect superweapons. A computer house aims each behavior as [the computer's use](#the-computers-use) describes.
+The [Preferred target](/mapping/actions/taction-preferred-target/) action changes where a computer house's nuke, lightning storm and paradrops aim, as [the preferred target](#the-preferred-target) describes. It does not change how the computer aims any other behavior, and a human house's weapons are never aimed by it.
 
 ## Parsed settings without effect
 

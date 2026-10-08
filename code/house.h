@@ -848,6 +848,8 @@ class HouseClass : public AbstractClass
 		void Special_Weapon_AI(SuperWeaponType id);
 		bool Place_Special_Blast(SuperWeaponType id, Cell const & cell);
 		Cell Pick_Ion_Cannon_Target(void);
+		Cell Pick_Target_By_Type(QuarryType quarry);
+		Cell Pick_Strike_Target(void);
 		Cell Pick_Drop_Target(void);
 		SourceType Entry_Edge(void) const;
 		AircraftClass * Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry = NULL, int count = 0, AbstractClass * target_object = NULL, FootClass * cargo = NULL, Cell const & start = CELL_NONE);

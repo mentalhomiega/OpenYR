@@ -97,6 +97,7 @@
 #include "mission.h"
 #include "mono.h"
 #include "movie.h"
+#include "quarry.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -130,27 +131,6 @@
 BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *house, FootClass *unit, TargetPropertyType prop, bool only_enemy);
 
 bool TeamClass::TraceScripts = false;
-
-/// <summary>
-/// Converts the quarry of an Attack script line into the threat scan that looks for it, as
-/// gamemd does. A quarry it does not list scans for anything.
-/// </summary>
-static ThreatType Quarry_Threat(int quarry)
-{
-	switch (quarry) {
-		case QUARRY_BUILDINGS: return(THREAT_BUILDINGS);
-		case QUARRY_HARVESTERS: return(THREAT_TIBERIUM);
-		case QUARRY_INFANTRY: return(THREAT_INFANTRY);
-		case QUARRY_VEHICLES: return(THREAT_VEHICLES);
-		case QUARRY_FACTORIES: return(THREAT_FACTORIES);
-		case QUARRY_DEFENSE: return(THREAT_BASE_DEFENSE);
-		case QUARRY_POWER: return(THREAT_POWER);
-		case QUARRY_OCCUPIABLE: return(THREAT_OCCUPIABLE);
-		case QUARRY_TECH: return(THREAT_TECH);
-		default: return(THREAT_NORMAL);
-	}
-}
-
 
 /// <summary>
 /// Finds the house's super weapon of the given type, or NULL when it has none.
@@ -2636,7 +2616,7 @@ void TeamClass::Chrono_Prep(TeamMissionClass * mission, bool by_building)
 		HouseClass * enemy = house->Enemy != HOUSE_NONE ? Houses[house->Enemy] : NULL;
 		target = Pick_Building_With_Property(BuildingTypes[mission->Data.Type], enemy, leader, TargetPropertyType((unsigned short)mission->Data.Prop), Class->OnlyTargetHouseEnemy);
 	} else {
-		target = leader->Greatest_Threat(Quarry_Threat(mission->Data.Value), leader->PositionCoord, Class->OnlyTargetHouseEnemy);
+		target = leader->Greatest_Threat(Quarry_Threat(QuarryType(mission->Data.Value)), leader->PositionCoord, Class->OnlyTargetHouseEnemy);
 	}
 
 	if (target != NULL) {
@@ -2961,7 +2941,7 @@ void TeamClass::TMission_ATTACK(TeamMissionClass * mission, bool)
 		/*
 		**	Have the team leader pick what the next team target will be.
 		*/
-		Assign_Mission_Target(candidate->Greatest_Threat(Quarry_Threat(mission->Data.Value), candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+		Assign_Mission_Target(candidate->Greatest_Threat(Quarry_Threat(QuarryType(mission->Data.Value)), candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
 		if (MissionTarget == NULL || !Ammo_Check()) IsNextMission = true;
 	}
 	if (MissionTarget == NULL || !Ammo_Check()) IsNextMission = true;

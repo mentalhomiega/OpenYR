@@ -10,6 +10,8 @@
 #pragma once
 
 #include "quarry.hh"
+#include "threat.hh"
 
 QuarryType Quarry_From_Name(char const * name);
 char const * Name_From_Quarry(QuarryType quarry);
+ThreatType Quarry_Threat(QuarryType quarry);

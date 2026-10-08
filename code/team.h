@@ -402,9 +402,9 @@ class TeamClass : public AbstractClass
 		bool Coordinate_Conscript(FootClass * unit);
 		void Calc_Center(AbstractClass *& center, AbstractClass *& obj_center) const;
 		bool Lagging_Units(void);
-		FootClass * Fetch_A_Leader(void) const;
 		bool Ammo_Check(void) const;
 
 	public:
+		FootClass * Fetch_A_Leader(void) const;
 		int Quantity[MAX_TEAM_CLASSCOUNT];
 };
