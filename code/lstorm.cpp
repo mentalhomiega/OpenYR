@@ -57,14 +57,32 @@ static void Storm_Message(char const * label, TextPrintType style)
 }
 
 
-static bool Has_Passed_Half(AnimClass const * anim, bool last)
+static ShapeSet const * Storm_Shape(AnimClass const * anim)
 {
-	ShapeSet const * shape = (ShapeSet const *)anim->Class->Get_Image_Data();
-	if (shape == NULL) {
-		return(true);
-	}
-	int frames = shape->Get_Count() / 2;
-	return(last ? anim->Fetch_Stage() >= frames - 1 : anim->Fetch_Stage() >= frames / 2);
+	return((ShapeSet const *)anim->Class->Get_Image_Data());
+}
+
+
+static bool Bolt_Finished(AnimClass const * anim)
+{
+	ShapeSet const * shape = Storm_Shape(anim);
+	return(shape == NULL || anim->Fetch_Stage() >= shape->Get_Count() / 2);
+}
+
+
+// Strictly past half: a cloud at exactly half its frames has not dropped its bolt yet.
+static bool Cloud_Past_Half(AnimClass const * anim)
+{
+	ShapeSet const * shape = Storm_Shape(anim);
+	return(shape == NULL || anim->Fetch_Stage() > shape->Get_Count() / 2);
+}
+
+
+// Counted against the full frame count, so a cloud outlives half its animation.
+static bool Cloud_Finished(AnimClass const * anim)
+{
+	ShapeSet const * shape = Storm_Shape(anim);
+	return(shape == NULL || anim->Fetch_Stage() >= shape->Get_Count() - 1);
 }
 
 
@@ -165,21 +183,21 @@ void LightningStormClass::Print_Refusal(void)
 void LightningStormClass::AI(void)
 {
 	for (int index = Bolts.Count() - 1; index >= 0; index--) {
-		if (Has_Passed_Half(Bolts[index], false)) {
+		if (Bolt_Finished(Bolts[index])) {
 			Bolts.Delete_Index(index);
 		}
 	}
 
 	for (int index = ManifestingClouds.Count() - 1; index >= 0; index--) {
 		AnimClass * cloud = ManifestingClouds[index];
-		if (Has_Passed_Half(cloud, false)) {
+		if (Cloud_Past_Half(cloud)) {
 			ManifestingClouds.Delete_Index(index);
 			Bolt(cloud->Center_Coord());
 		}
 	}
 
 	for (int index = Clouds.Count() - 1; index >= 0; index--) {
-		if (Has_Passed_Half(Clouds[index], true)) {
+		if (Cloud_Finished(Clouds[index])) {
 			Clouds.Delete_Index(index);
 		}
 	}
