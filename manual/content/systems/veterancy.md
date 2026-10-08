@@ -80,7 +80,7 @@ Buildings must explicitly set `Trainable=yes` to earn experience from kills. `Tr
 
 A building with a [`FreeUnit`](/keys/freeunit/) usually awards experience based on the building's full price, even after the free unit has left. If that unit costs more than the building, its price is used instead. See [structure costs](/keys/cost/#what-a-structure-gives-away) for the calculation.
 
-Keep `VeteranRatio` and the killer's cost above `0`: the formula divides by both. With a positive victim cost, a zero divisor sets experience to `VeteranCap`.
+Keep `VeteranRatio` and the killer's cost above `0`: the formula divides by both. When either is `0`, every kill the object is credited with sets its experience to `VeteranCap`, whatever the victim costs.
 
 A kill gives no experience and no score points if the defeated owner considers the killer an ally. Loss counts, the last-attacker record, and destruction triggers still update.
 
@@ -94,14 +94,14 @@ Experience does not decrease over time, and changing owners does not reset it.
 
 ### The experience ceiling
 
-After each kill that earns experience, the total is limited to [`VeteranCap`](/keys/veterancap/). Promotions from other sources ignore this limit.
+After each kill the object is credited with, the total is limited to [`VeteranCap`](/keys/veterancap/), even when the kill is worth nothing. Promotions from other sources ignore this limit.
 
 :::caution[Allowing elite rank through combat]
 Set `VeteranCap` to at least `2` to allow elite rank through combat. The default limit is `1`, so kills alone can only produce veterans.
 :::
 
 :::caution[A low limit can demote an elite]
-An object above the limit drops back to it on its next kill that earns experience. For example, with `VeteranCap=1`, a trainable elite drops to veteran and loses its elite weapon and [`EliteAbilities`](/keys/eliteabilities/).
+An object above the limit drops back to it on its next kill that it is credited with, even an allied one. For example, with `VeteranCap=1`, a trainable elite drops to veteran and loses its elite weapon and [`EliteAbilities`](/keys/eliteabilities/).
 :::
 
 ## Promotion without kills
