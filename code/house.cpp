@@ -9118,7 +9118,8 @@ void HouseClass::AI_Super_Weapons(void)
 
 				/*
 				**	A trigger action can aim the missile, the storm and the support powers at a cell of
-				**	its own, with no need for the computer to find a target or an enemy.
+				**	its own, with no need for the computer to find a target. The missile and the storm
+				**	still need an enemy.
 				*/
 				if (PreferredTargetCell != CELL_NONE) {
 					bool aimed = false;
