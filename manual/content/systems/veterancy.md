@@ -53,7 +53,14 @@ Objects start at rookie with `0` experience unless another setting gives them a 
 
 ## Earning experience
 
-The object that deals the fatal damage earns experience if its type has [`Trainable=yes`](/keys/trainable/). Each kill adds `victim value / (killer cost * VeteranRatio)` to its experience. The victim value is its cost, doubled when the victim was a veteran and tripled when it was elite at the moment it died. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
+The kill goes to the object that deals the fatal damage, or to another object standing in for it. The first of these that applies receives the experience, in this order:
+
+- A unit inside an open-topped transport gives the kill to the transport, if the transport has [`Trainable=yes`](/keys/trainable/).
+- Otherwise the killing object itself earns it, if its type has `Trainable=yes`.
+- Otherwise an object with `MissileSpawn=yes`, such as a missile, gives the kill to the object that launched it, if that object has `Trainable=yes`.
+- Otherwise a structure with [`CanOccupyFire=yes`](/keys/canoccupyfire/) and infantry inside gives the kill to the occupant that fired.
+
+If none applies, no object earns experience from the kill. Score still updates. Each kill adds `victim value / (killer cost * VeteranRatio)` to its experience. The victim value is its cost, doubled when the victim was a veteran and tripled when it was elite at the moment it died. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
 
 Starting from rookie, an object must destroy enemy value worth [`VeteranRatio`](/keys/veteranratio/) times its own cost to reach veteran, and twice that to reach elite. A lower `VeteranRatio` means faster promotion. Cheaper types need fewer kills against the same enemies, and kills of veteran or elite enemies promote faster.
 
