@@ -19,7 +19,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture` |
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does |
-| `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard |
+| `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
 | `move <TypeID> <x> <y>` | Orders the player-controlled objects of that type (see `select`) to the cell |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
 | `view <x> <y>` | Centres the view on the cell |
