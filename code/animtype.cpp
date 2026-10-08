@@ -53,6 +53,7 @@
 #include "incdec.h"
 #include "mixfile.h"
 #include "overtype.h"
+#include "ptype.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -103,6 +104,8 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	Loops(0),
 	Sound(VOC_NONE),
 	ChainTo(NULL),
+	SpawnsParticle(PARTICLE_NONE),
+	NumParticles(0),
 	DetailLevel(0),
 	TranslucencyDetailLevel(0),
 	RandomLoopDelayMin(0),
@@ -452,6 +455,12 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		Loops = ini.Get_Int(Name(), "LoopCount", Loops);
 		ChainTo = TGet_Class(ini, Name(), "Next", ChainTo);
 
+		char particle[64] = "";
+		if (ini.Get_String(Name(), "SpawnsParticle", "", particle, sizeof(particle)) > 0) {
+			SpawnsParticle = ParticleTypeClass::From_Name(particle);
+		}
+		NumParticles = ini.Get_Int(Name(), "NumParticles", NumParticles);
+
 		DetailLevel = ini.Get_Int(Name(), "DetailLevel", DetailLevel);
 		TranslucencyDetailLevel = ini.Get_Int(Name(), "TranslucencyDetailLevel", TranslucencyDetailLevel);
 
@@ -621,6 +630,8 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsReverse);
 	stream.Serialize(IsShadow);
 	stream.Serialize(IsShouldFogRemove);
+	stream.Serialize(SpawnsParticle);
+	stream.Serialize(NumParticles);
 }
 
 
@@ -665,6 +676,8 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(RandomLoopDelayMax);
 	crc(Translucency);
 	crc(IsTiled);
+	crc(SpawnsParticle);
+	crc(NumParticles);
 }
 
 

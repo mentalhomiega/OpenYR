@@ -23998,6 +23998,23 @@ NumLoopFrames:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+NumParticles:
+  key: NumParticles
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: AnimTypeClass
+      member: NumParticles
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 NumPlayers:
   key: NumPlayers
   scopes:
@@ -32036,6 +32053,23 @@ SpawnsNumber:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SpawnsParticle:
+  key: SpawnsParticle
+  scopes:
+  - applies_to: *id006
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AnimTypeClass
+      member: particle
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 SpawnsTiberium:
   key: SpawnsTiberium
   scopes:

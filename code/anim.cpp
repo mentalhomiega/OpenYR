@@ -79,6 +79,7 @@
 #include "lightcon.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "particle.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -1197,6 +1198,12 @@ void AnimClass::Middle(void)
 	if (shapefile != NULL) {
 		width = shapefile->Get_Rect(Class->Biggest).Width;
 		height = shapefile->Get_Rect(Class->Biggest).Height;
+	}
+
+	if (Class->SpawnsParticle != PARTICLE_NONE) {
+		for (int index = 0; index < Class->NumParticles; index++) {
+			new ParticleClass(ParticleTypes[Class->SpawnsParticle], Center_Coord());
+		}
 	}
 
 	if (HeightAGL < 30) {

@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-When a warhead with [`InfDeath=8`](/keys/infdeath/) kills an infantryman, this animation plays at his position and the soldier is removed at once, leaving no corpse.
+When a warhead with [`InfDeath=8`](/keys/infdeath/) kills an infantryman, this animation plays at his position and the soldier is removed at once, leaving no corpse. The shipped `VIRUSD` animation also spawns a poison cloud through [`SpawnsParticle`](/keys/spawnsparticle/#scope-animtype).
 
 ```ini title="rulesmd.ini"
 [General]
