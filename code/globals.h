@@ -259,6 +259,7 @@ extern intptr_t LParam;
 extern char const *							LandName[LAND_COUNT];
 extern char const *							SpeedName[SPEED_COUNT];
 extern double								CrateData[CRATE_COUNT];
+extern bool								CrateNaval[CRATE_COUNT];
 extern char const * const					CrateNames[CRATE_COUNT];
 extern int									CrateShares[CRATE_COUNT];
 extern AnimType								CrateAnims[CRATE_COUNT];

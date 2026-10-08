@@ -2410,7 +2410,20 @@ bool RulesClass::Powerups(CCINIClass const & ini)
 				}
 
 				/*
-				**	Optional data number.
+				**	Whether the powerup may be given on water. Only "yes" and "no" change it.
+				*/
+				token = strtok(NULL, ",");
+				if (token != NULL) {
+					strtrim(token);
+					if (stricmp(token, "yes") == 0) {
+						CrateNaval[crate] = true;
+					} else if (stricmp(token, "no") == 0) {
+						CrateNaval[crate] = false;
+					}
+				}
+
+				/*
+				**	The argument: a multiplier, damage, money or count, depending on the powerup.
 				*/
 				token = strtok(NULL, ",");
 				if (token != NULL) {

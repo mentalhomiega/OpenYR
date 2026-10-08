@@ -152,7 +152,7 @@ Crates without `CrateTrigger=yes` fire neither event.
 
 `[Powerups]` gives each crate result a share of the random draw, an animation, and one number that the result's effect uses. The entry names are the result tokens on the [crate result](/reference/enums/crate/) page, and [Crate powerups](/formats/powerups/) owns the syntax. If you already write `[Powerups]` entries, skip to [choosing the result](#choosing-the-result).
 
-Each value is a comma list of `Share,Anim,Data`. The animation can be `<none>` or `none`; an AnimType name the rules do not register also gives no animation. The third field is optional. Written with a percent sign, it is divided by 100: `Armor=33,ARMOR,50%` stores `0.5`.
+Each value is a comma list of `Share,Anim,Naval,Data`. The animation can be `<none>` or `none`; an AnimType name the rules do not register also gives no animation. The fourth field is optional. Written with a percent sign, it is divided by 100: `Armor=33,ARMOR,yes,50%` stores `0.5`. The third field is `yes` or `no`: `no` gives money instead when the crate is collected on water in a skirmish or multiplayer game.
 
 ```ini title="rules.ini"
 [Powerups]
@@ -163,7 +163,7 @@ Veteran=15,VETERAN,1    ; share 15, plays VETERAN, one promotion step per object
 ```
 
 :::caution[List every result you want to keep]
-A `[Powerups]` section in any rules file or map sets every result it omits to a share of `0` with no animation. Only the omitted result's third field keeps its value. The four rows above are an example, not the shipped section: on their own they would disable the other fifteen results.
+A `[Powerups]` section in any rules file or map sets every result it omits to a share of `0` with no animation. Only the omitted result's naval flag and fourth field keep their values. The four rows above are an example, not the shipped section: on their own they would disable the other fifteen results.
 :::
 
 :::danger[Keep the total share above zero]
@@ -214,9 +214,9 @@ Six results are then converted to money. The conversions run after the MCV overr
 
 ## What each result does
 
-The third field of a result's `[Powerups]` row is the only per-result number the engine reads, and most results ignore it.
+The fourth field of a result's `[Powerups]` row is the only per-result number the engine reads, and most results ignore it.
 
-| Result | What the third field sets |
+| Result | What the fourth field sets |
 | --- | --- |
 | `Money` | The minimum credits paid outside a campaign; a random bonus of up to [`CrateMoneyBonus`](/keys/cratemoneybonus/) is added |
 | `Unit` | The minimum credits paid outside a campaign when the vehicle cannot be placed |
@@ -231,7 +231,7 @@ The third field of a result's `[Powerups]` row is the only per-result number the
 
 ### Money and free units
 
-Outside a campaign, a money crate pays a random amount between the `Money` row's third field and that figure plus [`CrateMoneyBonus`](/keys/cratemoneybonus/) credits, inclusive. In a campaign it pays [`SoloCrateMoney`](/keys/solocratemoney/) instead. If `SoloCrateMoney` is `0`, a campaign crate uses the random range.
+Outside a campaign, a money crate pays a random amount between the `Money` row's fourth field and that figure plus [`CrateMoneyBonus`](/keys/cratemoneybonus/) credits, inclusive. In a campaign it pays [`SoloCrateMoney`](/keys/solocratemoney/) instead. If `SoloCrateMoney` is `0`, a campaign crate uses the random range.
 
 In a campaign, money from a crate collected by any house the local player controls goes to the player's house, not to the collecting house.
 
@@ -254,24 +254,24 @@ Leave `UnitCrateType` unset to keep both rescues. A type named in `UnitCrateType
 
 The vehicle appears on the crate's cell or on a nearby cell it can occupy. Either way, the collector stops short of the crate's cell.
 
-If the vehicle cannot be placed in either location, the crate pays money instead. Outside a campaign, the amount is drawn from the `Unit` row's third field up to `CrateMoneyBonus` credits more, not from the `Money` row.
+If the vehicle cannot be placed in either location, the crate pays money instead. Outside a campaign, the amount is drawn from the `Unit` row's fourth field up to `CrateMoneyBonus` credits more, not from the `Money` row.
 
 ### Results that sweep a radius
 
 `Cloak`, `Veteran`, `Armor`, `Speed` and `Firepower` affect objects on the ground within [`CrateRadius`](/keys/crateradius/) of the center of the crate's cell. None of them checks ownership, so enemy and neutral objects inside the radius are affected along with the collector's side.
 
 - `Cloak` makes each object able to cloak, which [cloaking and detection](/systems/cloaking/) then acts on.
-- `Veteran` promotes each object whose type sets `Trainable=yes`, as many steps as its third field says. [Promotion without kills](/systems/veterancy/#promotion-without-kills) describes the steps.
+- `Veteran` promotes each object whose type sets `Trainable=yes`, as many steps as its fourth field says. [Promotion without kills](/systems/veterancy/#promotion-without-kills) describes the steps.
 - `Armor`, `Speed` and `Firepower` each set a multiplier on the affected objects.
 
 The three multiplier results change only objects whose multiplier for that result is still exactly `1`. A second crate of the same kind therefore leaves an already-boosted object unchanged. `Speed` also skips buildings and aircraft.
 
 `ArmorCrateStacks=yes` and `FirepowerCrateStacks=yes` in `[CrateRules]` drop that check for their result, so each crate multiplies the multiplier again. `Speed` has no such setting.
 
-Each multiplier result stores its third field as written. Speed and firepower are multiplied by it, while incoming damage is divided by the armor value. An `Armor` value of `2` halves ordinary incoming damage, and `0.5` doubles it.
+Each multiplier result stores its fourth field as written. Speed and firepower are multiplied by it, while incoming damage is divided by the armor value. An `Armor` value of `2` halves ordinary incoming damage, and `0.5` doubles it.
 
 :::caution[Keep the Armor value above zero]
-The `Armor` row's third field is not clamped. A value of `0` makes damage to every affected object divide by zero.
+The `Armor` row's fourth field is not clamped. A value of `0` makes damage to every affected object divide by zero.
 :::
 
 ### Results that reach the whole map
@@ -302,7 +302,7 @@ The type is drawn from the registered Tiberium types, except that a draw of the 
 
 Three result tokens have no effect: `Invulnerability`, `IonStorm` and `Pod`. Drawing one uses up the crate and plays that row's animation; nothing else happens. `Pod` shares its name with the [Drop Pods](/systems/drop-pods/) superweapon but has no connection to it.
 
-`Squad` always becomes money before its effect runs, so its share acts as extra weight on money. The payout uses the `Money` row's third field.
+`Squad` always becomes money before its effect runs, so its share acts as extra weight on money. The payout uses the `Money` row's fourth field.
 
 [`FreeMCV`](/keys/freemcv/) is read from `[CrateRules]` but has no effect. The [free MCV override](#outside-a-campaign) applies whenever its conditions hold, whatever `FreeMCV` says.
 

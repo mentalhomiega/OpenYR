@@ -3721,6 +3721,13 @@ bool CellClass::Goodie_Check(FootClass * object)
 		}
 
 		/*
+		**	In multiplayer a crate on water gives money unless its powerup is marked naval.
+		*/
+		if (Session.Type != GAME_NORMAL && Land_Type() == LAND_WATER && !CrateNaval[powerup]) {
+			powerup = CRATE_MONEY;
+		}
+
+		/*
 		**	Keep track of the number of each type of crate found
 		*/
 		if (Session.Type == GAME_INTERNET) {
