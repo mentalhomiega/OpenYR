@@ -17,7 +17,7 @@ A vehicle takes the roll only when **all of** these hold:
 
 A transport therefore never produces a crew, even when it is crewed and empty. Structures do not use this setting; their survivor count comes from [`SurvivorRate`](/keys/survivorrate/) and [`SurvivorDivisor`](/keys/survivordivisor/).
 
-Several kinds of destruction leave no crew, whatever this setting says. They include an energizing laser fence, a firestorm wall, an aircraft crashing onto the vehicle, and a bridge collapse, for a vehicle on the deck, beneath it, or driving onto it.
+Several kinds of destruction leave no crew, whatever this setting says. They include an energizing laser fence, a firestorm wall, an aircraft crashing onto the vehicle, and a bridge collapse, for a vehicle on the deck, beneath it, or driving onto it. A vehicle that a house blow-up destroys leaves no crew either.
 
 A vehicle taken by a hijacker skips the roll. [The hijacker steps back out](/systems/capture/#stealing-a-vehicle) in the crew's place, whatever this setting, `Crewed=` or the cause of destruction.
 
