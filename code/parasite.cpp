@@ -39,15 +39,15 @@ ParasiteClass::ParasiteClass(TechnoClass * owner) :
 
 /// <summary>
 /// Can the parasite get into the target (ParasiteClass::CanInfect, 0x62A8E0)? Only a vehicle,
-/// soldier or aircraft on the map, alive, of a Parasiteable type, with no parasite already
-/// inside it. A naval parasite also needs the target in water.
+/// soldier or aircraft on the map, alive, of a Parasiteable type, not in a bunker, with no
+/// parasite already inside it. A naval parasite also needs the target in water.
 /// </summary>
 bool ParasiteClass::Can_Infect(TechnoClass const * target) const
 {
 	if (target == nullptr || !target->Is_Foot() || target->IsInLimbo || !target->IsActive || target->Strength <= 0) {
 		return(false);
 	}
-	if (target->ParasiteEatingMe != nullptr || !target->TClass->IsParasiteable) {
+	if (target->ParasiteEatingMe != nullptr || !target->TClass->IsParasiteable || target->BunkerLinkedItem != nullptr) {
 		return(false);
 	}
 	if (Owner != nullptr && Owner->TClass->IsNaval && Map[target->Center_Coord()].Land_Type() != LAND_WATER) {
@@ -86,7 +86,9 @@ void ParasiteClass::Try_Infect(TechnoClass * target)
 /// <summary>
 /// Hurts the victim, which calls this each frame (ParasiteClass::Update, 0x629FD0). Every ROF
 /// frames of the owner's primary weapon, the victim takes that weapon's Damage through its
-/// warhead; a victim that is not infantry also throws sparks and plays the weapon's Anim.
+/// warhead. An infantry victim instead takes its whole remaining strength, ignoring its
+/// defenses, so a soldier dies at the first bite. A victim that is not infantry also throws
+/// sparks and plays the weapon's Anim.
 /// </summary>
 void ParasiteClass::Update(void)
 {
@@ -101,7 +103,8 @@ void ParasiteClass::Update(void)
 
 	TechnoClass * victim = Victim;
 	Coord const where = victim->PositionCoord;
-	if (victim->RTTI != RTTI_INFANTRY) {
+	bool const infantry = victim->RTTI == RTTI_INFANTRY;
+	if (!infantry) {
 		if (Rule->DefaultSparkSystem != nullptr) {
 			new ParticleSystemClass(Rule->DefaultSparkSystem, where);
 		}
@@ -112,12 +115,12 @@ void ParasiteClass::Update(void)
 			}
 		}
 	}
-	// Each bite of a Paralyzes warhead restarts the victim's paralysis (ParasiteClass::Update, 0x629FD0).
-	if (weapon->WarheadPtr != nullptr && weapon->WarheadPtr->Paralyzes > 0 && victim->Is_Foot()) {
-		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr->Paralyzes;
+	// Each bite sets the victim's paralysis to the warhead's Paralyzes, zero included (ParasiteClass::Update, 0x629FD0).
+	if (victim->Is_Foot()) {
+		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0;
 	}
-	int damage = weapon->Attack;
-	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner, false, true);
+	int damage = infantry ? victim->Strength : weapon->Attack;
+	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner, infantry, true);
 }
 
 
