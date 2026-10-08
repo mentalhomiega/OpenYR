@@ -176,7 +176,7 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 
 	bool hasunload = false;
 	ScriptTypeClass * script = teamtype->Script;
-	int count = script->MissionCount;
+	int count = script != NULL ? script->MissionCount : 0;
 	for (int tm = 0; tm < count; tm++) {
 		TeamMissionClass mission = script->MissionList[tm];
 		if (mission.Mission == TMISSION_UNLOAD) {
@@ -392,6 +392,24 @@ static TechnoClass * _Who_Can_Pop_Out_Of(Cell origin)
 }
 
 
+// Gives the team type a script with at least one mission, as gamemd does before a reinforcement
+// (0x65D8E0). The added mission is a zero-length Guard, which ends at once; the script stays on
+// the team type.
+static void _Ensure_Team_Script(TeamTypeClass const * teamtype)
+{
+	if (teamtype->Script == NULL) {
+		ScriptTypeClass * script = new ScriptTypeClass();
+		const_cast<TeamTypeClass *>(teamtype)->Script = script;
+	}
+
+	ScriptTypeClass * script = teamtype->Script;
+	if (script->MissionCount == 0) {
+		script->MissionList[0] = TeamMissionClass(TMISSION_GUARD, 0);
+		script->MissionCount = 1;
+	}
+}
+
+
 /***********************************************************************************************
  * Do_Reinforcements -- Create and place a reinforcement team.                                 *
  *                                                                                             *
@@ -423,6 +441,9 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 	*/
 	if (!teamtype || !teamtype->TaskForce->ClassCount || teamtype->House == NULL) return(false);
 
+	// The dropship copy below must already carry the script.
+	_Ensure_Team_Script(teamtype);
+
 	AircraftTypeClass const * dshp = AircraftTypes[AircraftTypeClass::From_Name("DSHP")];
 	if (teamtype->TaskForce->ClassCount == 1 && teamtype->TaskForce->Members[0].Class == dshp && teamtype->House->CurrentDropship < 3) {
 
@@ -452,21 +473,6 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 		teamtype->House->CurrentDropship++;
 		teamtype = dropship_teamtype;
 		delete_when_done = true;
-	}
-
-	/*
-	**	HACK ALERT!
-	**	Give this team an attack waypoint mission that will attack the waypoint location of this
-	**	team if there are no team missions previously assigned.
-	*/
-	ScriptTypeClass * script = teamtype->Script;
-	int count = script->MissionCount;
-	if (script->MissionCount == 0) {
-		TeamMissionClass tmission(TMISSION_ATT_WAYPT, 0);
-		if (count < MAX_TEAM_MISSIONS) {
-			script->MissionList[count] = tmission;
-			script->MissionCount++;
-		}
 	}
 
 	FootClass * object = _Create_Group(teamtype);

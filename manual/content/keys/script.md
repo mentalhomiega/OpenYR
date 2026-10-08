@@ -17,15 +17,12 @@ TaskForce=MyRaidForce ; defined under [TaskForces]
 Script=MyRaidScript   ; defined under [ScriptTypes]
 ```
 
-The value is matched against the IDs registered under `[ScriptTypes]`. A name that is not registered there is not an error. The game creates a new, empty Script under that name, so a misspelled name gives the team no missions. A team with an empty Script is disbanded when it tries to run its first line.
+The value is matched against the IDs registered under `[ScriptTypes]`. A name that is not registered there is not an error. The game creates a new, empty Script under that name, so a misspelled name gives the team no missions. Apart from the reinforcement actions above, a team with an empty Script is disbanded when it tries to run its first line.
 
-The [Reinforcement (team)](/mapping/actions/taction-reinforcements/) and [Reinforcement (team) at waypoint](/mapping/actions/taction-reinforcements-special/) actions handle an empty Script differently. Each adds an attack-waypoint mission to the Script itself, so every later team that uses that Script also gets the mission.
+The [Reinforcement (team)](/mapping/actions/taction-reinforcements/) and [Reinforcement (team) at waypoint](/mapping/actions/taction-reinforcements-special/) actions give a TeamType with no Script a new, empty Script, and add a Guard area mission with a timer of zero to a Script with no missions. That mission ends at once. The mission stays in the Script, so every later team that uses the Script also gets it.
 
 :::danger[Give every TeamType a Script]
-`<none>`, `none` or a missing `Script=` leaves the TeamType with no Script at all, and teams of that type crash the game:
-
-- Either reinforcement action crashes before it creates any object.
-- A team created any other way crashes when it starts. It can crash earlier, while it gathers, if one of its members is underground or is an aircraft in the air.
+`<none>`, `none` or a missing `Script=` leaves the TeamType with no Script at all. The reinforcement actions still deliver its team, but a team created any other way crashes when it starts. It can crash earlier, while it gathers, if one of its members is underground or is an aircraft in the air.
 
 Name a Script on every TeamType, even one with no missions.
 :::
