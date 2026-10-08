@@ -1123,6 +1123,9 @@ bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
  *                      type class. This parameter can be omitted. It only serves to make      *
  *                      the removal process faster.                                            *
  *                                                                                             *
+ *          enter_idle-- Should the object enter idle mode as it leaves? Pass false for a      *
+ *                      drain release, which keeps the object's mission.                       *
+ *                                                                                             *
  * OUTPUT:  bool; Was the object removed from this team?                                       *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -1131,7 +1134,7 @@ bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
  *   12/29/1994 JLB : Created.                                                                 *
  *   01/02/1995 JLB : Initiation tracking and team captain selection.                          *
  *=============================================================================================*/
-bool TeamClass::Remove(FootClass * obj, int typeindex)
+bool TeamClass::Remove(FootClass * obj, int typeindex, bool enter_idle)
 {
 	obj->IsDroppedFromTeam = true;
 
@@ -1231,7 +1234,7 @@ bool TeamClass::Remove(FootClass * obj, int typeindex)
 	/*
 	**	A unit that breaks off of a team will enter idle mode.
 	*/
-	if (GameActive && obj->IsActive && !obj->IsInLimbo) {
+	if (enter_idle && GameActive && obj->IsActive && !obj->IsInLimbo) {
 		obj->Enter_Idle_Mode();
 	}
 

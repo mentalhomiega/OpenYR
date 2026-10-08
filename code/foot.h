@@ -521,7 +521,7 @@ class FootClass : public TechnoClass
 		virtual bool Is_Allowed_To_Recloak(void) const override;
 		virtual bool Is_In_Team(void) const override {return(Team!=NULL);};
 		virtual void Advance_Waypoint_Path(void) override;
-		void Remove_From_Team(void) {if (Team != NULL) Team->Remove(this);}
+		void Remove_From_Team(bool enter_idle=true) {if (Team != NULL) Team->Remove(this, -1, enter_idle);}
 		double Threat_Avoidance_Value(void) const;
 
 		/*

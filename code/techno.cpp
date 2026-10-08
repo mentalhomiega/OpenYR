@@ -10861,7 +10861,8 @@ void TechnoClass::Play_Transport_Sound(bool entering) const
 
 /// <summary>
 /// Starts draining the structure this object hovers over (0x70FD70): its owner loses power,
-/// or pays money for a refinery, until the draining stops.
+/// or pays money for a refinery, until the draining stops. The structure lets go of the units
+/// it holds, and a drainer on foot leaves its team without entering idle mode.
 /// </summary>
 void TechnoClass::Start_Drain(TechnoClass * target)
 {
@@ -10871,11 +10872,17 @@ void TechnoClass::Start_Drain(TechnoClass * target)
 	target->DrainingMe = this;
 	DrainTarget = target;
 	target->House->RecalcPower = true;
+	if (target->CaptureManager) {
+		target->CaptureManager->Free_All();
+	}
 	if (Rule->DrainAnimationType != NULL) {
 		DrainAnim = new AnimClass(Rule->DrainAnimationType, Center_Coord());
 		if (DrainAnim != NULL) {
 			DrainAnim->Attach_To(this);
 		}
+	}
+	if (Is_Foot()) {
+		((FootClass *)this)->Remove_From_Team(false);
 	}
 	DebugString("Drain: %s drains %s\n", TClass->Name(), target->TClass->Name());
 }

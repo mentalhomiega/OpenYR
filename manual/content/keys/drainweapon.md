@@ -17,6 +17,8 @@ While a structure is drained:
 - it cannot be sold;
 - the firer shows [`DrainAnimationType`](/keys/drainanimationtype/).
 
+When a drain starts, the structure lets go of the units it holds through mind control, and a firer on foot leaves its team.
+
 An object drains one thing at a time, and an object being drained cannot be drained by a second one. A unit whose second weapon is a drain weapon uses it against an enemy `Drainable` object while it is draining nothing, and its first weapon otherwise. The weapon's `Damage` and `Warhead` are not used.
 
 ```ini title="rulesmd.ini"

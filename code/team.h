@@ -276,7 +276,7 @@ class TeamClass : public AbstractClass
 		 * Membership.
 		 */
 		bool Add(FootClass *);
-		bool Remove(FootClass *, int typeindex=-1);
+		bool Remove(FootClass *, int typeindex=-1, bool enter_idle=true);
 		bool Can_Add(FootClass * obj, int & typeindex) const;
 		bool Is_Empty(void) const {return(Member == NULL);}
 		FootClass * Get_Member(void) {return(Member);}
