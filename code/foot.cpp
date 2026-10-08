@@ -3522,7 +3522,7 @@ void FootClass::AI(void)
 		int const level = Map[Center_Coord()].Rad_Level();
 		if (level > 0 && Rule->RadSiteWarhead != NULL) {
 			int damage = (int)(level * Rule->RadLevelFactor);
-			Take_Damage(damage, 0, Rule->RadSiteWarhead, NULL);
+			Take_Damage(damage, 0, Rule->RadSiteWarhead, NULL, false, true);
 		}
 	}
 
