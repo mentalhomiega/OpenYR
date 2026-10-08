@@ -2478,11 +2478,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
-	if (otype == RTTI_INFANTRY && ((InfantryTypeClass const *)tclass)->IsDisguised) {
+	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
+	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
 		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
+			BEnd(BENCH_EVAL_OBJECT);
+			return(false);
+		}
 	}
 
 	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
@@ -8472,6 +8473,9 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	// A disguised spy that looks like a soldier of this house is not fired back at (TechnoClass::CanRetaliateToAttacker, 0x7087C0).
 	if (source->RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(source)->Is_Disguised_As(House)) return(false);
 
+	// A spy that looks like a friend to this house is not fired back at either.
+	if (source->Is_Techno() && static_cast<TechnoClass const *>(source)->Looks_Friendly_To(House)) return(false);
+
 	/*
 	**	Only objects that have a damaging weapon are allowed to retaliate.
 	*/
@@ -10804,6 +10808,21 @@ bool TechnoClass::Is_Disguised_To_Player(void) const
 		return(false);
 	}
 	return(Map[Get_Cell()].DisguiseSensorCount[PlayerPtr] == 0);
+}
+
+
+/// <summary>
+/// Does this disguised soldier look like a friend to the house, so that the house's units pass it
+/// over (InfantryClass::IsDisguisedAs, 0x5227F0)? The answer is no while the house is an ally of
+/// the soldier's owner, or while a disguise detector of that house covers the soldier's cell. The
+/// answer is yes when the soldier wears the house's own soldier, or the look of an ally of that house.
+/// </summary>
+bool TechnoClass::Looks_Friendly_To(HouseClass const * viewer) const
+{
+	if (DisguiseType == NULL || viewer == NULL || House->Is_Ally(viewer) || Map[Get_Cell()].DisguiseSensorCount[viewer] > 0) {
+		return(false);
+	}
+	return(DisguiseHouse == NULL || DisguiseHouse == viewer || viewer->Is_Ally(DisguiseHouse));
 }
 
 

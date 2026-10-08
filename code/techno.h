@@ -663,6 +663,7 @@ class TechnoClass :	public RadioClass,
 		bool Temporal_AI(void);
 		void Plant_Bomb(TechnoClass * planter);
 		bool Is_Disguised_To_Player(void) const;
+		bool Looks_Friendly_To(HouseClass const * viewer) const;
 		bool Is_Bomb_Visible(void) const;
 		void Fire_Death_Weapon(void);
 		void Play_Transport_Sound(bool entering) const;
