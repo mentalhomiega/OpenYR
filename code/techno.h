@@ -763,6 +763,7 @@ class TechnoClass :	public RadioClass,
 		virtual BulletClass * Fire_At(AbstractClass * target, int which=0);
 		virtual int Weapon_Range(int which) const override;
 		virtual bool Captured(HouseClass * newowner);
+		void Set_Owning_House(HouseClass * newowner);
 		void Set_Owner(HouseClass * newowner);
 		virtual void Laser_Zap(AbstractClass * target, int which, WeaponTypeClass const * weapon, Coord const & source_coord);
 		void Electric_Zap(AbstractClass * target, int which, WeaponTypeClass const * weapon);
