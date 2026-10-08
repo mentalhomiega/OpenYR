@@ -259,6 +259,11 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 
 	TargetTracker.Add_Index(Fetch_ID(), this);
 
+	// A country that lists this type in VeteranUnits= makes its new vehicles veterans.
+	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranUnits.Is_In_List(Class)) {
+		Veterancy.Set_Veteran(true);
+	}
+
 	// A house that has spied on a war factory gets its trainable land vehicles as veterans.
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval) {
 		Veterancy.Set_Veteran(true);

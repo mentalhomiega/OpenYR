@@ -17,6 +17,11 @@
 
 #include "house.hh"
 #include "side.hh"
+#include "typelist.h"
+
+class AircraftTypeClass;
+class InfantryTypeClass;
+class UnitTypeClass;
 
 /**********************************************************************
 **	Each house has certain unalienable characteristics. This structure
@@ -117,6 +122,12 @@ class HouseTypeClass : public AbstractTypeClass
 		// Country=, or HOUSE_NONE for a country that stands alone. It is not saved: a house
 		// records the country it acts as in ActLike.
 		HousesType ParentCountry;
+
+		// A house of this country makes each new object of a listed type a veteran. The lists
+		// come from VeteranInfantry=, VeteranUnits= and VeteranAircraft=.
+		TypeList<InfantryTypeClass const *> VeteranInfantry;
+		TypeList<UnitTypeClass const *> VeteranUnits;
+		TypeList<AircraftTypeClass const *> VeteranAircraft;
 
 		//------------------------------------------------------------------------
 		HouseTypeClass(char const * ininame = NULL);

@@ -43,16 +43,19 @@
 
 #include "houstype.h"
 
+#include "airctype.h"
 #include "ccini.h"
 #include "crc.h"
 #include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
+#include "infatype.h"
 #include "savestream.h"
 #include "side.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "tracker.h"
+#include "unittype.h"
 #include "vector.h"
 
 /***********************************************************************************************
@@ -241,6 +244,11 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		if (parent != NULL) {
 			Inherit_Side(*parent);
 		}
+
+		// The game reads these values through a 128-byte buffer.
+		VeteranInfantry = TGet_TypeList<InfantryTypeClass>(ini, Name(), "VeteranInfantry", VeteranInfantry, 128);
+		VeteranUnits = TGet_TypeList<UnitTypeClass>(ini, Name(), "VeteranUnits", VeteranUnits, 128);
+		VeteranAircraft = TGet_TypeList<AircraftTypeClass>(ini, Name(), "VeteranAircraft", VeteranAircraft, 128);
 		return(true);
 	}
 	return(false);
@@ -337,6 +345,9 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
+	crc(VeteranInfantry.Count());
+	crc(VeteranUnits.Count());
+	crc(VeteranAircraft.Count());
 }
 
 
@@ -372,6 +383,9 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGivesBounty);
 	stream.Serialize(IsWallOwner);
 	stream.Serialize(IsSmartAI);
+	stream.Serialize(VeteranInfantry);
+	stream.Serialize(VeteranUnits);
+	stream.Serialize(VeteranAircraft);
 }
 
 
