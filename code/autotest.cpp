@@ -1284,6 +1284,7 @@ void Run(StepType const & step)
 			Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo);
+			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 		}
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
@@ -1542,6 +1543,7 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   unitstate %s house %s at %d,%d mission %d queued %d team %s navcom %d strength %d deployfits %d\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
 				(int)unit->Mission, (int)unit->MissionQueue, unit->Team != NULL ? unit->Team->Class->Name() : "-", unit->NavCom != NULL ? 1 : 0, (int)unit->Strength, fits);
+				DebugString("AUTOTEST   rank %s %d\n", unit->Class->Name(), unit->Veterancy.Is_Elite() ? 2 : (unit->Veterancy.Is_Veteran() ? 1 : 0));
 		}
 	} else if (step.Command == "playanim") {
 		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
@@ -1562,7 +1564,7 @@ void Run(StepType const & step)
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
 			BuildingClass const * factory = type->Who_Can_Build_Me(true, false, true, PlayerPtr);
-			DebugString("AUTOTEST   canbuild %s %d factory %s\n", type->Name(), PlayerPtr->Can_Build(type, false, true), factory != NULL ? factory->Class->Name() : "-");
+			DebugString("AUTOTEST   canbuild %s %d factory %s cameo %d\n", type->Name(), PlayerPtr->Can_Build(type, false, true), factory != NULL ? factory->Class->Name() : "-", (int)(type->Get_Cameo_Data() != type->CameoData));
 		}
 	} else if (step.Command == "selected") {
 		// selected: the number of selected objects and their types.
