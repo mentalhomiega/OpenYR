@@ -170,6 +170,9 @@ class InfantryTypeClass : public TechnoTypeClass
 		bool IsDeployFire;
 		int DeployFireWeapon;
 
+		// A deployed soldier with DeployedCrushable=no cannot be crushed by a vehicle while dug in.
+		bool IsDeployedCrushable;
+
 		// A slave shovels one bail of ore every HarvestRate frames.
 		bool IsSlaved;
 		int HarvestRate;

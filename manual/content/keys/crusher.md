@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A vehicle with the flag drives over a non-allied [`Crushable=yes`](/keys/crushable/#scope-aircrafttype) object and treats its cell as passable. Without the flag, the vehicle must shoot the object or go around it. A vehicle whose rank grants the crusher ability from [`VeteranAbilities`](/keys/veteranabilities/) crushes the same way.
+A vehicle with the flag drives over a non-allied [`Crushable=yes`](/keys/crushable/#scope-aircrafttype) object and treats its cell as passable. It does not crush an Iron Curtained object, a soldier still falling from a paradrop, or a deployed soldier whose type sets [`DeployedCrushable=no`](/keys/deployedcrushable/#scope-infantrytype). Without the flag, the vehicle must shoot the object or go around it. A vehicle whose rank grants the crusher ability from [`VeteranAbilities`](/keys/veteranabilities/) crushes the same way.
 
 The flag also lets a vehicle that cannot fire act on a crushable enemy. Clicking the enemy gives a move order, and the vehicle drives over it. Without the flag the click only selects the enemy.
 
