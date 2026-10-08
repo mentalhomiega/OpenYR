@@ -164,7 +164,7 @@ A pinpoint blast, one with `CellSpread` of `0.5` or less, that lands within 85 l
 
 Every candidate receives the same raw figure and then reduces it separately, so two objects in the same explosion can lose very different amounts. The steps run in this order:
 
-1. **Prone infantry.** An infantryman lying down keeps only the warhead's [`ProneDamage`](/keys/pronedamage/) fraction of the figure, rounded down but never below one point.
+1. **Prone infantry.** An infantryman lying down keeps only the warhead's [`ProneDamage`](/keys/pronedamage/) fraction of the figure, rounded to the nearest point but never below one point.
 2. **Web.** A [`Webby=yes`](/keys/webby/) warhead entangles any infantryman whose type is not [`IsWebImmune=yes`](/keys/iswebimmune/). The figure becomes zero, so the hit does nothing else.
 3. **Armor multipliers.** The figure is divided by the owning house's armor multiplier and by the object's crate armor multiplier, then rounded down. The crate multiplier stays `1` until an armor crate raises it. In a campaign, the house multiplier is the difficulty's [`Armor=`](/keys/armor/#scope-difficulty-settings). In any other game, it is that figure multiplied by the country's [`Armor=`](/keys/armor/#scope-housetype). [Difficulty settings](/systems/difficulty/#how-the-figures-are-combined) shows how the two combine.
 4. **Veteran armor.** An object with the `STRONGER` [ability](/systems/veterancy/#abilities) divides the figure again by one plus [`VeteranArmor`](/keys/veteranarmor/), rounded down.

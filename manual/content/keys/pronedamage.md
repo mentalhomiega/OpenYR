@@ -20,6 +20,6 @@ The multiplier applies only when **all of** these hold:
 - the damage is above zero, so healing is not scaled;
 - the damage is not [forced](/keys/c4warhead/), so forced damage arrives in full however low the value.
 
-The scaled damage is rounded down and then raised to at least one point. Even `ProneDamage=0` therefore passes one point on to the later steps. [`Verses`](/keys/verses/) and the other reductions apply after this step; [What the target loses](/systems/warheads/#what-the-target-loses) gives the full order.
+The scaled damage is rounded to the nearest point and then raised to at least one point. Even `ProneDamage=0` therefore passes one point on to the later steps. [`Verses`](/keys/verses/) and the other reductions apply after this step; [What the target loses](/systems/warheads/#what-the-target-loses) gives the full order.
 
 A [`Webby=yes`](/keys/webby/) warhead sets the damage to zero for every infantryman it entangles, after this scaling, so `ProneDamage` changes nothing for them. An infantryman with [`IsWebImmune=yes`](/keys/iswebimmune/) is not entangled and takes the scaled damage.
