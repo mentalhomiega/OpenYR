@@ -9447,7 +9447,7 @@ Cell HouseClass::Pick_Ion_Cannon_Target(void)
 
 			switch (techno->Fetch_RTTI()) {
 				case RTTI_INFANTRY:
-					if (techno->Strength <= Rule->IonCannonDamage) {
+					{
 						InfantryTypeClass const * inftype = ((InfantryClass *)techno)->Class;
 						if (inftype->IsEngineer) {
 							value = Rule->AIIonCannonEngineerValue[Difficulty];
@@ -9460,9 +9460,9 @@ Cell HouseClass::Pick_Ion_Cannon_Target(void)
 					break;
 
 				case RTTI_BUILDING:
-					value = 3;
-					if (techno->Strength <= Rule->IonCannonDamage) {
+					{
 						BuildingTypeClass const * builtype = ((BuildingClass *)techno)->Class;
+						value = 4;
 						if (builtype->ToBuild == RTTI_BUILDINGTYPE) {
 							value = Rule->AIIonCannonConYardValue[Difficulty];
 						} else if (builtype->ToBuild == RTTI_UNITTYPE) {
@@ -9477,14 +9477,12 @@ Cell HouseClass::Pick_Ion_Cannon_Target(void)
 							value = Rule->AIIonCannonTempleValue[Difficulty];
 						} else if (builtype->IsHoverPad) {
 							value = Rule->AIIonCannonHelipadValue[Difficulty];
-						} else {
-							value = 4;
 						}
 					}
 					break;
 
 				case RTTI_UNIT:
-					if (techno->Strength <= Rule->IonCannonDamage) {
+					{
 						UnitTypeClass const * unittype = ((UnitClass *)techno)->Class;
 						if (unittype->IsToHarvest) {
 							value = Rule->AIIonCannonHarvesterValue[Difficulty];
@@ -9500,6 +9498,10 @@ Cell HouseClass::Pick_Ion_Cannon_Target(void)
 			}
 		}
 
+		// An object outside the playable area is rated 0, and a cloaked one is rated at random regardless.
+		if (!Map.In_Local_Radar(techno->Center_Coord().As_Cell())) {
+			value = 0;
+		}
 		if (techno->Cloak == CLOAKED || techno->RTTI == RTTI_BUILDING && ((BuildingClass*)techno)->TranslucencyLevel == 15) {
 			value = Random_Pick(0, best + 10);
 		}

@@ -372,9 +372,9 @@ The ion cannon's rating is the only one with settings, and the nuke uses it as w
 
 Only enemy objects that are on the ground layer, active and out of [limbo](/glossary/#limbo) are candidates. In difficulty slot 0, an object still being built also counts, if its factory is producing and not on hold.
 
-Each candidate starts at a rating of 1, or 3 for a structure. A candidate whose current strength is at or below [`IonCannonDamage`](/keys/ioncannondamage/) takes its rating from the table below. A candidate above that figure keeps its starting rating. The test compares strength with the damage figure only; it does not predict whether the blast will destroy the object.
+Each enemy object starts at a rating of 1. The table below replaces that figure for the kinds it covers, whatever the object's strength, so a damaged object and a healthy one of the same kind are rated alike. An object outside the playable area is rated 0. A cloaked object is rated at random even there.
 
-Only the highest rating matters. The computer collects every candidate that ties for the highest rating and strikes one of them at random. Apart from cloaked objects, described below, a table value of `4` and one of `40` therefore select the same target when nothing else rates 4 or higher. A table value replaces the starting rating; it is not added to it. A value below another candidate's rating ranks the object below that candidate. For example, an [`AIIonCannonConYardValue`](/keys/aiioncannonconyardvalue/) of `2` ranks a nearly destroyed construction yard below any structure still above `IonCannonDamage`, which keeps its starting 3.
+Only the highest rating matters. The computer collects every candidate that ties for the highest rating and strikes one of them at random. Apart from cloaked objects, described below, a table value of `4` and one of `40` therefore select the same target when nothing else rates 4 or higher. A table value replaces the starting rating; it is not added to it. A value below another candidate's rating ranks the object below that candidate. For example, an [`AIIonCannonConYardValue`](/keys/aiioncannonconyardvalue/) of `2` ranks every construction yard below an ordinary structure, which takes the fixed `4`.
 
 The rows are tested from the top for each kind of object, and the first match wins. A base defense that also produces vehicles is therefore rated as a war factory. Rows marked as fixed cannot be changed by any rules file. Each per-difficulty list is read at the position of the *firing* house's [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot), not the target's. None of these lists has a built-in value, so each needs one entry for every difficulty.
 
@@ -397,6 +397,8 @@ The rows are tested from the top for each kind of object, and the first match wi
 | Any other vehicle | `2` | Fixed in the engine |
 
 No row covers aircraft, so an aircraft on the ground is a candidate rated 1 however badly damaged it is.
+
+The engine also gives a tech center its own per-difficulty figure, `AIIonCannonTechCenterValue`. This port does not read that key, so a tech center takes the fixed `4` here.
 
 A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the chem missile handler uses.
 
