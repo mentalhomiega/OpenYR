@@ -6407,8 +6407,24 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			value *= 3;
 		}
 
-		if (source->TClass->IsTrainable) {
-			source->Veterancy.Made_A_Kill(source->TClass->Cost_Of(House), value);
+		// The experience goes to the object that fired, or to the carrier it fired from, as RegisterDestruction does.
+		TechnoClass * credit = NULL;
+		if (source->IsInOpenToppedTransport && source->Transporter != NULL && source->Transporter->TClass->IsTrainable) {
+			credit = source->Transporter;
+		} else if (source->TClass->IsTrainable) {
+			credit = source;
+		} else if (source->TClass->IsMissileSpawn) {
+			if (source->SpawnOwner != NULL && source->SpawnOwner->TClass->IsTrainable) {
+				credit = source->SpawnOwner;
+			}
+		} else if (source->RTTI == RTTI_BUILDING) {
+			BuildingClass * building = static_cast<BuildingClass *>(source);
+			if (building->Can_Occupy_Fire() && building->FiringOccupantIndex >= 0 && building->FiringOccupantIndex < building->Occupants.Count()) {
+				credit = building->Occupants[building->FiringOccupantIndex];
+			}
+		}
+		if (credit != NULL) {
+			credit->Veterancy.Made_A_Kill(credit->TClass->Cost_Of(House), value);
 		}
 
 		House->WhoLastHurtMe = source->Owner();
