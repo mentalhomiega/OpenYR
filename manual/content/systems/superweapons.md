@@ -363,8 +363,8 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
 - **Lightning storm** aims as the ion cannon does, and only while no storm is raging or waiting to break and the house has an enemy.
 - **Paradrops, the spy plane and the psychic reveal** aim near the center of the enemy's base, or of the computer's own base when it has no enemy: at the nearest cell with clear ground for a five by five group of infantry, moved two cells along each map axis.
-- **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it.
-- **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running.
+- **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it. It does not fire while a trigger has aimed the house's weapons.
+- **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running, and does not fire while a trigger has aimed the house's weapons.
 
 The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/scripting/missions/56/) and [Chrono prep for AQ](/scripting/missions/57/) script lines.
 

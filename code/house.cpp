@@ -9190,8 +9190,8 @@ void HouseClass::AI_Super_Weapons(void)
 					}
 
 					case SUPER_PSYCHIC_DOMINATOR: {
-						// One blast at a time, and only against an enemy (HouseClass::Fire_PsyDom).
-						if (!PsychicDominatorClass::Is_Active() && Enemy != HOUSE_NONE) {
+						// One blast at a time, only against an enemy, and not while a trigger aims the house (HouseClass::Fire_PsyDom).
+						if (!PsychicDominatorClass::Is_Active() && Enemy != HOUSE_NONE && PreferredTargetCell == CELL_NONE) {
 							Cell const cell = Pick_Dominator_Target();
 							if (cell != CELL_NONE) {
 								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
@@ -9201,7 +9201,8 @@ void HouseClass::AI_Super_Weapons(void)
 					}
 
 					case SUPER_GENETIC_CONVERTER: {
-						Cell const cell = Pick_Mutator_Target();
+						// Not while a trigger aims the house (HouseClass::Fire_GenMutator).
+						Cell const cell = PreferredTargetCell == CELL_NONE ? Pick_Mutator_Target() : CELL_NONE;
 						if (cell != CELL_NONE) {
 							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 						}

@@ -9,7 +9,7 @@ caveats:
   - "The computer fires the paradrop, the spy plane and the psychic reveal at the waypoint as soon as the weapon is ready. It does not look for a target or require an enemy first."
   - "The nuclear missile and the lightning storm also fire at the waypoint as soon as they are ready, but only while the house has an enemy."
   - "A lightning storm waits while another storm is running or about to start."
-  - "The other super weapons choose their own targets. A house a player controls aims its own weapons."
+  - "The genetic mutator and the psychic dominator do not fire while the cell is set. The other super weapons choose their own targets. A house a player controls aims its own weapons."
   - "The cell stays until Clear Preferred Target Cell. It is kept in a [save game](/formats/save-games/)."
   - "The action fails when the trigger has no house or the waypoint does not exist."
 related:
