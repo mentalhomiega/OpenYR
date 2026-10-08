@@ -5358,6 +5358,18 @@ void UnitClass::Approach_Target(void)
 	}
 
 	/*
+	**	A BalloonHover unit with a vertical weapon flies at its target and never searches for a firing
+	**	spot, as UnitClass::ApproachTarget does (0x7414E0).
+	*/
+	if (Class->IsBalloonHover && TarCom != NULL) {
+		WeaponDataStruct const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(TarCom));
+		if (weapon->Weapon != NULL && weapon->Weapon->Bullet != NULL && weapon->Weapon->Bullet->IsVertical) {
+			Assign_Destination(TarCom);
+			return;
+		}
+	}
+
+	/*
 	**	An OmniCrusher drives at its target to flatten it, for a human house too (UnitClass::ApproachTarget, 0x7414E0).
 	*/
 	if (Class->IsOmniCrusher && TarCom != NULL && NavCom == NULL && Is_Omni_Crushable(Dynamic_Cast<TechnoClass *>(TarCom))) {
