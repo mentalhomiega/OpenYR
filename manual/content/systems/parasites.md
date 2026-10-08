@@ -33,15 +33,17 @@ Parasite=yes
 
 ## Getting in
 
-A weapon with [`LimboLaunch=yes`](/keys/limbolaunch/) takes its firer off the map as it fires, to ride the shot. When the shot lands, the parasite gets into its target if the target is a vehicle, soldier or aircraft on the map and alive, of a [`Parasiteable=yes`](/keys/parasiteable/) type, with no parasite already inside it. A naval parasite also needs the target in water. A parasite that cannot get in comes back onto the map where it leapt from, or is lost if there is no room.
+A weapon with [`LimboLaunch=yes`](/keys/limbolaunch/) takes its firer off the map as it fires, to ride the shot. When the shot lands, the parasite gets into its target if the target is a vehicle, soldier or aircraft on the map and alive, of a [`Parasiteable=yes`](/keys/parasiteable/) type, not in a bunker, with no parasite already inside it. A naval parasite also needs the target in water. A parasite that cannot get in comes back onto the map where it leapt from, or is lost if there is no room.
+
+A parasite weapon does not fire at a target it could not get into. It never fires at a structure, at a vehicle in a bunker, or at a victim that already holds a parasite.
 
 ## Eating the victim
 
-The victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time.
+A vehicle or aircraft victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A soldier instead loses all of its remaining strength at its first bite. That bite ignores the soldier's armor and defenses, so an attack dog kills a soldier at once. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time.
 
 ## Holding the victim
 
-A parasite whose warhead has [`Paralyzes`](/keys/paralyzes/) set paralyzes its victim for that many frames with each bite, so a bite at least every `Paralyzes` frames holds the victim for as long as the parasite stays inside. A paralyzed vehicle or ship that drives or sails does not start a move and ignores move orders, and a paralyzed object does not launch spawned aircraft or missiles. The paralysis ends as soon as the parasite comes out.
+A parasite whose warhead has [`Paralyzes`](/keys/paralyzes/) set paralyzes its victim for that many frames with each bite, so a bite at least every `Paralyzes` frames holds the victim for as long as the parasite stays inside. A bite whose warhead has `Paralyzes=0` ends the victim's paralysis instead. A paralyzed vehicle or ship that drives or sails does not start a move and ignores move orders, and a paralyzed object does not launch spawned aircraft or missiles. The paralysis ends as soon as the parasite comes out.
 
 ## Coming out
 

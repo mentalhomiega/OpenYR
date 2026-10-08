@@ -4187,6 +4187,14 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A parasite weapon fires only at a foot object its parasite can get into; a structure or a cell is never one (TechnoClass::GetFireError, 0x6FC0B0).
+	if (Is_Foot() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsParasite) {
+		TechnoClass const * victim = (techno != NULL && techno->Is_Foot()) ? techno : NULL;
+		if (!ParasiteImUsing || !ParasiteImUsing->Can_Infect(victim)) {
+			return(FIRE_ILLEGAL);
+		}
+	}
+
 	// A warhead that does nothing to the target's armor does not fire at it, even when ordered to (TechnoClass::GetFireError, 0x6FC3FE).
 	if (techno != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Force_Fire(techno->Class_Of()->Armor)) {
 		return(FIRE_ILLEGAL);
