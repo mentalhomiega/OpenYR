@@ -241,7 +241,8 @@ void For_Player_Objects(DynamicVectorClass<T *> & list, std::string const & name
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
-		if (object != NULL && object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+		// A house the map marks PlayerControl=yes takes orders as the player's own do, so its objects count too.
+		if (object != NULL && (object->House == PlayerPtr || object->House->Is_Player_Control()) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
 			action(object);
 		}
 	}
