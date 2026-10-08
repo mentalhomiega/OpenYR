@@ -12,4 +12,4 @@ A computer house tests a [`Prerequisite=TECH`](/keys/prerequisite/) against this
 
 Outside these three decisions a computer house [ignores prerequisites](/systems/production/#computer-houses), including when it follows [a map plan](/systems/ai-base-building/#where-the-plan-comes-from). The sidebar resolves `TECH` through [`PrerequisiteTech`](/keys/prerequisitetech/) instead.
 
-Nothing else reads the list. A tech building enters the plan through the ordinary candidate test, so naming one here neither adds it to the plan nor keeps it out.
+Outside those three decisions, only the computer's ion cannon reads the list, to rate a structure on it with [`AIIonCannonTechCenterValue`](/keys/aiioncannontechcentervalue/), as [the computer's use](/systems/superweapons/#the-computers-use) describes. A tech building enters the plan through the ordinary candidate test, so naming one here neither adds it to the plan nor keeps it out.

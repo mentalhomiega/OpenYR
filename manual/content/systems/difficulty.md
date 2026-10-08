@@ -146,7 +146,7 @@ A house is assigned its slot and its figures again at these points:
 These lists are read in every mode:
 
 - [`TeamDelays`](/keys/teamdelays/), [`TotalAITeamCap`](/keys/totalaiteamcap/), [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/), [`MaximumAIDefensiveTeams`](/keys/maximumaidefensiveteams/) and [`FillEarliestTeamProbability`](/keys/fillearliestteamprobability/).
-- The twelve lists whose names begin `AIIonCannon`, one for each kind of target the computer's Ion Cannon rates, such as [`AIIonCannonEngineerValue`](/keys/aiioncannonengineervalue/).
+- The thirteen lists whose names begin `AIIonCannon`, one for each kind of target the computer's Ion Cannon rates, such as [`AIIonCannonEngineerValue`](/keys/aiioncannonengineervalue/).
 
 [`AIHateDelays`](/keys/aihatedelays/) and [`MultiplayerAICM`](/keys/multiplayeraicm/) are applied once to each computer house, as a scenario outside a campaign finishes loading. A campaign game never uses them.
 

@@ -390,6 +390,7 @@ The rows are tested from the top for each kind of object, and the first match wi
 | [`IsPlug=yes`](/keys/isplug/) structure | [`AIIonCannonPlugValue`](/keys/aiioncannonplugvalue/) | Per-difficulty list |
 | [`IsTemple=yes`](/keys/istemple/) structure | [`AIIonCannonTempleValue`](/keys/aiioncannontemplevalue/) | Per-difficulty list |
 | [`HoverPad=yes`](/keys/hoverpad/) structure | [`AIIonCannonHelipadValue`](/keys/aiioncannonhelipadvalue/) | Per-difficulty list |
+| Structure listed in [`BuildTech`](/keys/buildtech/) | [`AIIonCannonTechCenterValue`](/keys/aiioncannontechcentervalue/) | Per-difficulty list |
 | Any other structure | `4` | Fixed in the engine |
 | [`Harvester=yes`](/keys/harvester/) vehicle | [`AIIonCannonHarvesterValue`](/keys/aiioncannonharvestervalue/) | Per-difficulty list |
 | Vehicle whose [`DeploysInto`](/keys/deploysinto/) is a [`BuildConst`](/keys/buildconst/) type | [`AIIonCannonMCVValue`](/keys/aiioncannonmcvvalue/) | Per-difficulty list |
@@ -397,8 +398,6 @@ The rows are tested from the top for each kind of object, and the first match wi
 | Any other vehicle | `2` | Fixed in the engine |
 
 No row covers aircraft, so an aircraft on the ground is a candidate rated 1 however badly damaged it is.
-
-Yuri's Revenge also gives a tech center its own per-difficulty figure, `AIIonCannonTechCenterValue`. We do not read that key yet, so a tech center takes the fixed `4` here.
 
 A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the chem missile handler uses.
 

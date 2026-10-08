@@ -313,6 +313,7 @@ RulesClass::RulesClass(void) :
 	AIIonCannonPlugValue(),
 	AIIonCannonHelipadValue(),
 	AIIonCannonTempleValue(),
+	AIIonCannonTechCenterValue(),
 	AIAlternateProductionCreditCutoff(1000),
 	MultiplayerAICreditMultipliers(),
 	MinimumAIDefensiveTeams(),
@@ -1685,6 +1686,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		AIIonCannonPlugValue = ini.Get_IntList(GENERAL, "AIIonCannonPlugValue", AIIonCannonPlugValue);
 		AIIonCannonHelipadValue = ini.Get_IntList(GENERAL, "AIIonCannonHelipadValue", AIIonCannonHelipadValue);
 		AIIonCannonTempleValue = ini.Get_IntList(GENERAL, "AIIonCannonTempleValue", AIIonCannonTempleValue);
+		AIIonCannonTechCenterValue = ini.Get_IntList(GENERAL, "AIIonCannonTechCenterValue", AIIonCannonTechCenterValue);
 		CloakDelay = ini.Get_Float(GENERAL, "CloakDelay", CloakDelay);
 		GameSpeedBias = ini.Get_Float(GENERAL, "GameSpeedBias", GameSpeedBias);
 		NervousBias = ini.Get_Float(GENERAL, "BaseBias", NervousBias);
@@ -3170,6 +3172,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AIIonCannonPlugValue);
 	stream.Serialize(AIIonCannonHelipadValue);
 	stream.Serialize(AIIonCannonTempleValue);
+	stream.Serialize(AIIonCannonTechCenterValue);
 	stream.Serialize(AIAlternateProductionCreditCutoff);
 	stream.Serialize(MultiplayerAICreditMultipliers);
 	stream.Serialize(MinimumAIDefensiveTeams);

@@ -1965,6 +1965,7 @@ class RulesClass
 		TypeList<int> AIIonCannonPlugValue;
 		TypeList<int> AIIonCannonHelipadValue;
 		TypeList<int> AIIonCannonTempleValue;
+		TypeList<int> AIIonCannonTechCenterValue;
 
 		/*
 		 * If the computer's spare cash falls below this amount, it switches to its
