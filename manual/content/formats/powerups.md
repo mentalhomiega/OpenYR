@@ -12,11 +12,12 @@ files:
   - MPLAYERFS.INI
   - map file
 section: Powerups
-syntax: "<crate result>=<shares>,<AnimType ID>,<data>"
+syntax: "<crate result>=<shares>,<AnimType ID>,<naval>,<data>"
 fields:
   - { position: 1, label: Shares, value: Integer weight in the crate draw, required: true }
   - { position: 2, label: Animation, value: AnimType ID played where the crate was collected, required: false, note: "`<none>` for no animation" }
-  - { position: 3, label: Data, value: Number the result's effect uses, required: false }
+  - { position: 3, label: Naval, value: "`yes` or `no`: whether the result may be given on water in a skirmish or multiplayer game", required: false }
+  - { position: 4, label: Data, value: Number the result's effect uses, required: false }
 source_files:
   - code/rules.cpp
   - code/const.cpp
@@ -27,8 +28,8 @@ The keys of `[Powerups]` are the result names on the [crate result](/reference/e
 
 ```ini title="rules.ini"
 [Powerups]
-Money=55,MONEY,2000      ; MONEY is an AnimType registered in rules.ini
-Napalm=25,<none>,600
+Money=55,MONEY,yes,2000      ; MONEY is an AnimType registered in rules.ini
+Napalm=25,<none>,no,600
 Reveal=8,REVEAL
 ```
 
@@ -37,7 +38,8 @@ Each rules file that has a `[Powerups]` section applies it in the [order the rul
 Crate settings are not reset between games. At each scenario load the rules files' `[Powerups]` sections are applied again, and any value they leave unwritten keeps what the previous game used, including a value an earlier map set. A rules file with a `[Powerups]` section writes every share, so with one present a map's shares apply only to games on that map. Two values a map sets can still carry into later games until you quit:
 
 - a result's animation, when each rules file with a `[Powerups]` section lists that result with only a share
-- a result's number, unless a rules file's entry for that result has all three fields
+- a result's naval flag, unless a rules file's entry for that result writes `yes` or `no` in the naval field
+- a result's number, unless a rules file's entry for that result has all four fields
 
 When no rules file has a `[Powerups]` section, every value a map sets carries into later games.
 
@@ -47,15 +49,17 @@ Each field an entry writes replaces that result's current value. Fields the entr
 
 The animation field takes an AnimType ID. `<none>`, `none`, and an ID that matches no registered AnimType all give no animation. The AnimType must be registered by the same rules file or an earlier one; an ID that only a later file registers gives no animation.
 
+The naval field is `yes` or `no`. Any other value leaves the flag as it was. A result whose flag is `no` is replaced by `Money` when a crate is collected on water in a skirmish or multiplayer game; a flag of `yes` keeps the result.
+
 The data field is a decimal number. Written with a percent sign, it is divided by 100, so `50%` gives `0.5`.
 
 :::caution[Leave no field empty]
-Two commas in a row count as one, so an empty field moves every later field one place to the left. In `Money=40,,500`, `500` is read as the animation ID. It matches no AnimType, so `Money` gets no animation, and its number stays unchanged.
+Two commas in a row count as one, so an empty field moves every later field one place to the left. In `Money=40,,yes,500`, `yes` is read as the animation ID and `500` as the naval field. `yes` matches no AnimType, so `Money` gets no animation, and `500` is neither `yes` nor `no`, so the naval flag stays unchanged. The number also stays unchanged, because no fourth field is read.
 :::
 
 ## Crates the section leaves out
 
-A `[Powerups]` section with at least one entry resets every crate result it does not list to a share of `0` with no animation. Only the number of an omitted result keeps its current value.
+A `[Powerups]` section with at least one entry resets every crate result it does not list to a share of `0` with no animation. Only the naval flag and the number of an omitted result keep their current values.
 
 List every result you want to keep in each `[Powerups]` section you write. For example, a map section with two entries takes the other seventeen results out of the draw in that map's games.
 

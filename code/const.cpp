@@ -168,6 +168,9 @@ double CrateData[CRATE_COUNT] = {
 	0       /// CRATE_POD
 };
 
+// Whether a crate's powerup may be given on water (the [Powerups] naval field).
+bool CrateNaval[CRATE_COUNT] = {};
+
 char const * const CrateNames[CRATE_COUNT] = {
 	"Money",
 	"Unit",
