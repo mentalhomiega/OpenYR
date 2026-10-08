@@ -143,6 +143,7 @@
 #include "bench.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <intrin.h>
 
 
@@ -394,10 +395,11 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 	ResultType res = RESULT_NONE;
 
 	/*
-	**	Prone infantry take only half damage, but never below one damage point.
+	**	A prone soldier takes the warhead's ProneDamage share of the damage, rounded to the nearest
+	**	point, but never less than one point.
 	*/
 	if (warhead != NULL && IsProne && damage > 0 && !forced) {
-		damage = (int)(damage * warhead->ProneDamage);
+		damage = (int)std::nearbyint(damage * warhead->ProneDamage);
 
 		if (damage < 1) {
 			damage = 1;
