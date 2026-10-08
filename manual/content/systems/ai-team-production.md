@@ -193,8 +193,9 @@ The house tests each trigger against these gates in order. The first gate that f
 9. Its side field is `0` or less, or it gives the position in `[Sides]`, counting from `1`, of the side of the country the house [acts as](/keys/actslike/). A value that names no side rejects the trigger.
 10. The house's tech level is at least the trigger's tech level requirement.
 11. Its [condition](#conditions) holds.
-12. The house can build every member of both TeamTypes' TaskForces.
-13. Neither TeamType has reached its [`Max`](/keys/max/) among the teams this house owns.
+12. Each of its TeamTypes can [reach the enemy](#reaching-the-enemy).
+13. The house can build every member of both TeamTypes' TaskForces.
+14. Neither TeamType has reached its [`Max`](/keys/max/) among the teams this house owns.
 
 The tech level requirement is not a field of the record. It is the highest `TechLevel` among the members of the trigger's TaskForces, so a trigger requires what its teams require. A member with `TechLevel=-1` raises the requirement to `11`, which rejects the trigger for every house below tech level 11.
 
@@ -257,6 +258,17 @@ The [trigger record](/mapping/ai-triggers/) page lists the condition types. At r
 - **The money condition** compares the enemy's available credits against the record's number with the record's comparator.
 
 Every condition except the one that counts this house's objects reads the enemy. A house without an enemy can therefore pass only a defensive trigger that has no condition or counts the house's objects.
+
+## Reaching the enemy
+
+Each TeamType that a trigger names must be able to reach the enemy. We skip the check for a trigger with no enemy, for a TeamType marked [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype), and for a TeamType whose TaskForce holds a naval member with [`Passengers`](/keys/passengers/) of `0`. The other TeamTypes are tested as follows.
+
+1. The team's zone starts as `Fly`. Each TaskForce member's [`MovementZone`](/keys/movementzone/) is merged into it in TaskForce order. The merge picks the movement zone that suits both the member and the zone so far best. A team whose members have no zone in common cannot reach the enemy.
+2. Each house has a base cell. It is the cell that a [Center Base Cell Set](/mapping/actions/taction-center-base-cell-set/) action gave the house, or otherwise the cell nearest the middle of its buildings that a foot unit can stand on. A house with no buildings and no set cell uses cell `0,0`.
+3. A team with no naval transport reaches the enemy when both base cells lie in the same zone of the team's zone.
+4. A team with a naval transport reaches the enemy when both base cells lie in different zones of the team's zone and in the same `Amphibious` zone. A naval transport is a member with [`Naval=yes`](/keys/naval/) and `Passengers` above `0`. A transport team is not raised when both base cells lie in one zone of the team's zone.
+
+A naval transport mixed with a land member whose `MovementZone` is neither `Amphibious`, `AmphibiousCrusher` nor `AmphibiousDestroyer` leaves the team with no zone in common, so the team never reaches the enemy. The original game reads outside its zone table for such a team. We reject it instead of copying that undefined result.
 
 ## The weighted draw
 

@@ -11,6 +11,7 @@
 
 #include "aitrig.h"
 
+#include "_map.h"
 #include "_rules.h"
 #include "airctype.h"
 #include "builtype.h"
@@ -170,6 +171,133 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsForBaseDefense);
 }
 
+/*
+ * How gamemd.exe (YR 1.001) combines the movement zones of a team's members, read from the
+ * table at 0x0082A594. A row is a movement zone and a column is one ground class: 1 marks
+ * ground that zone can use, 2 ground it cannot, and 3 is the last column, which no zone uses.
+ */
+static const int Team_Zone_Ground[MZONE_COUNT][8] = {
+	{ 1, 2, 2, 2, 2, 2, 2, 3 },	// NORMAL
+	{ 1, 1, 2, 2, 2, 2, 2, 3 },	// CRUSHER
+	{ 1, 1, 1, 2, 2, 2, 2, 3 },	// DESTROYER
+	{ 1, 1, 1, 1, 1, 1, 2, 3 },	// AMPHIBIOUS_DESTROYER
+	{ 1, 1, 2, 1, 1, 2, 2, 3 },	// AMPHIBIOUS_CRUSHER
+	{ 1, 2, 2, 1, 1, 2, 2, 3 },	// AMPHIBIOUS
+	{ 1, 1, 1, 2, 2, 2, 1, 3 },	// SUBTERRANEAN
+	{ 1, 2, 2, 2, 2, 1, 2, 3 },	// INFANTRY
+	{ 1, 1, 1, 2, 2, 1, 2, 3 },	// INFANTRY_DESTROYER
+	{ 1, 1, 1, 1, 1, 1, 1, 3 },	// FLYER
+	{ 2, 2, 2, 2, 1, 2, 2, 3 },	// WATER
+	{ 2, 2, 2, 1, 1, 2, 2, 3 },	// WATER_BEACH
+	{ 1, 1, 1, 2, 2, 2, 2, 3 },	// CRUSHER_ALL
+};
+
+
+/// <summary>
+/// Combines a team member's movement zone with the zone the team has so far.
+/// The result is the zone that conflicts with neither input and shares the most ground
+/// with both, the lower-numbered zone winning a tie. A -1 input stays -1.
+/// </summary>
+/// <returns>int; The combined movement zone, or -1 when no zone fits both inputs.</returns>
+static int Merge_Team_Zone(int member, int team)
+{
+	int best_zone = -1;
+	int best_shared = 0;
+
+	if (member < 0 || team < 0) {
+		return(-1);
+	}
+
+	for (int zone = 0; zone < MZONE_COUNT; zone++) {
+		bool fits = true;
+		int shared = 0;
+
+		for (int ground = 0; ground < 8; ground++) {
+			if (Team_Zone_Ground[zone][ground] == 1) {
+				if (Team_Zone_Ground[member][ground] == 2 || Team_Zone_Ground[team][ground] == 2) {
+					fits = false;
+				}
+				if (Team_Zone_Ground[member][ground] == 1 && Team_Zone_Ground[team][ground] == 1) {
+					shared++;
+				}
+			}
+		}
+
+		if (fits && shared > best_shared) {
+			best_shared = shared;
+			best_zone = zone;
+		}
+	}
+	return(best_zone);
+}
+
+
+/// <summary>
+/// Finds the cell that stands for a house's base when a team is checked for reach.
+/// A trigger action can fix the center of the base; otherwise the cell nearest the middle
+/// of the house's buildings is used.
+/// </summary>
+/// <returns>Cell; CELL_NONE when the house has no buildings.</returns>
+static Cell Base_Cell_For_Reach(HouseClass const *house)
+{
+	if (house->CenterOverride != CELL_NONE) {
+		return(house->CenterOverride);
+	}
+	if (house->Center == COORD_NONE) {
+		return(CELL_NONE);
+	}
+	return(Map.Nearby_Location(house->Center.As_Cell(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(1, 1)));
+}
+
+
+/// <summary>
+/// Checks that a team can reach the enemy house from the calling house's base.
+/// A team marked IsBaseDefense, or one with a naval member whose Passengers is 0, is not checked.
+/// A team with a naval transport needs the two bases in different zones of its own zone and in
+/// the same amphibious zone. Any other team needs both bases in the same zone of its own.
+/// A team whose members share no zone is not reachable.
+/// </summary>
+/// <param name="team">The team type to check, or NULL for none.</param>
+/// <param name="house">The house that would spring the trigger.</param>
+/// <param name="enemy">The target house, or NULL; a NULL target always passes.</param>
+/// <returns>bool; Can the team reach the enemy?</returns>
+static bool Team_Can_Reach(TeamTypeClass const *team, HouseClass const *house, HouseClass const *enemy)
+{
+	if (team == NULL || team->IsBaseDefense || enemy == NULL) {
+		return(true);
+	}
+
+	bool naval_transport = false;
+	int zone = MZONE_FLYER;
+	if (team->TaskForce != NULL) {
+		for (int index = 0; index < team->TaskForce->ClassCount; index++) {
+			TechnoTypeClass const *type = team->TaskForce->Members[index].Class;
+			if (type->IsNaval) {
+				if (type->MaxPassengers == 0) {
+					return(true);
+				}
+				naval_transport = true;
+			}
+			zone = Merge_Team_Zone(type->MZone, zone);
+		}
+	}
+	if (zone < 0) {
+		return(false);
+	}
+
+	Cell from = Base_Cell_For_Reach(house);
+	Cell to = Base_Cell_For_Reach(enemy);
+	bool same_zone = Map.Get_Cell_Zone(from, (MZoneType)zone) == Map.Get_Cell_Zone(to, (MZoneType)zone);
+	if (!naval_transport) {
+		return(same_zone);
+	}
+	if (same_zone) {
+		return(false);
+	}
+	return(Map.Get_Cell_Zone(from, MZONE_AMPHIBIOUS) == Map.Get_Cell_Zone(to, MZONE_AMPHIBIOUS));
+}
+
+
 /// Spring?
 
 /// <summary>
@@ -177,8 +305,8 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 /// This routine is called by the house AI as it looks for a trigger to run. Every gate
 /// the trigger carries is examined -- its scope, the difficulty setting, the side and
 /// house it is restricted to, the tech level it demands and the skirmish rules -- before
-/// its own condition is tested. Finally the teams it would produce must still be
-/// buildable and must not already be at their allowed count.
+/// its own condition is tested. The teams it would produce must then be able to reach the
+/// enemy, still be buildable, and must not already be at their allowed count.
 /// </summary>
 /// <param name="house">The house that would spring this trigger.</param>
 /// <param name="enemy">The house being weighed up as the target, or NULL if there is none.</param>
@@ -307,6 +435,10 @@ bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip
 	}
 
 	if (!res) {
+		return(false);
+	}
+
+	if (!Team_Can_Reach(TeamTypeOne, house, enemy) || !Team_Can_Reach(TeamTypeTwo, house, enemy)) {
 		return(false);
 	}
 
