@@ -3766,7 +3766,7 @@ void HouseClass::Blowup(bool buildings, bool land, bool naval)
 			count = 0;
 			while (::Units[i]==uptr && uptr->Strength) {
 				damage = uptr->Strength;
-				uptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+				uptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 				count++;
 				if (count > 5 && uptr->IsActive) {
 					delete uptr;
@@ -3785,7 +3785,7 @@ void HouseClass::Blowup(bool buildings, bool land, bool naval)
 			AircraftClass * aptr = ::Aircraft[i];
 
 			damage = aptr->Strength;
-			aptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+			aptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 			if (!aptr->IsActive) {
 				i--;
 			}
@@ -3803,7 +3803,7 @@ void HouseClass::Blowup(bool buildings, bool land, bool naval)
 			count = 0;
 			while (Buildings[i]==bptr && bptr->Strength) {
 				damage = bptr->Strength;
-				bptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+				bptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 				count++;
 				if (count > 5) {
 					delete bptr;
@@ -3824,7 +3824,7 @@ void HouseClass::Blowup(bool buildings, bool land, bool naval)
 			count = 0;
 			while (Infantry[i]==iptr && iptr->Strength) {
 				damage = iptr->Strength;
-				iptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+				iptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 
 				count++;
 				if (count > 5) {
