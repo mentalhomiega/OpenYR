@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-The rating applies whatever the structure's strength. The computer strikes one of the candidates that share the highest rating, so this value matters only against the other ratings; [the computer's use](/systems/superweapons/#the-computers-use) lists them.
+We apply this rating whatever the structure's strength. The computer strikes one of the candidates that share the highest rating, so this value matters only against the other ratings; [the computer's use](/systems/superweapons/#the-computers-use) lists them.
 
 The rating covers a [`Factory=UnitType`](/keys/factory/) structure. The structure tests run in a fixed order, and the first match decides the rating. Only the test for a `Factory=BuildingType` structure comes earlier, so a war factory that also generates power or is a base defense is still rated here.
 

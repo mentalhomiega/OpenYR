@@ -13,4 +13,4 @@ credit:
 - MentalHomiega
 ---
 
-A computer house with a Set Preferred Target Cell aim no longer fires its genetic mutator or psychic dominator on its own. Before, it picked a target for both, ignoring the aim. The aim still fires the paradrop, the spy plane and the psychic reveal, and the nuclear missile and the lightning storm while the house has an enemy.
+We no longer fire the genetic mutator or the psychic dominator on a computer house's own choice while a Set Preferred Target Cell action has aimed its weapons. Before, we picked a target for both, ignoring the aim. The aim still fires the paradrop, the spy plane and the psychic reveal, and the nuclear missile and the lightning storm while the house has an enemy.

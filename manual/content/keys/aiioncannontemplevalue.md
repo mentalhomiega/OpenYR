@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-The rating applies whatever the structure's strength. The computer strikes one of the candidates that share the highest rating, so this value matters only against the other ratings; [the computer's use](/systems/superweapons/#the-computers-use) lists them.
+We apply this rating whatever the structure's strength. The computer strikes one of the candidates that share the highest rating, so this value matters only against the other ratings; [the computer's use](/systems/superweapons/#the-computers-use) lists them.
 
 The structure tests run in a fixed order, and the first match decides the rating. An [`IsTemple=yes`](/keys/istemple/) structure is rated here only if it matches none of the earlier tests:
 
