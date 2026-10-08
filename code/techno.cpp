@@ -6392,10 +6392,13 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY_X, this);
 	}
 
-	if (source != NULL) {
+	// A victim of a DontScore=yes type gives its killer nothing, so none of the credit below applies.
+	TechnoClass * const killer = TClass->IsDontScore ? NULL : source;
+
+	if (killer != NULL) {
 		// The victim's value is doubled when it was a veteran and tripled when elite; an ally is worth nothing.
 		int value = points;
-		if (source->House->Is_Ally(House)) {
+		if (killer->House->Is_Ally(House)) {
 			value = 0;
 		} else if (Veterancy.Is_Veteran()) {
 			value *= 2;
@@ -6405,16 +6408,16 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 
 		// The experience goes to the object that fired, or to the transport, launcher or occupant it fired through.
 		TechnoClass * credit = NULL;
-		if (source->IsInOpenToppedTransport && source->Transporter != NULL && source->Transporter->TClass->IsTrainable) {
-			credit = source->Transporter;
-		} else if (source->TClass->IsTrainable) {
-			credit = source;
-		} else if (source->TClass->IsMissileSpawn) {
-			if (source->SpawnOwner != NULL && source->SpawnOwner->TClass->IsTrainable) {
-				credit = source->SpawnOwner;
+		if (killer->IsInOpenToppedTransport && killer->Transporter != NULL && killer->Transporter->TClass->IsTrainable) {
+			credit = killer->Transporter;
+		} else if (killer->TClass->IsTrainable) {
+			credit = killer;
+		} else if (killer->TClass->IsMissileSpawn) {
+			if (killer->SpawnOwner != NULL && killer->SpawnOwner->TClass->IsTrainable) {
+				credit = killer->SpawnOwner;
 			}
-		} else if (source->RTTI == RTTI_BUILDING) {
-			BuildingClass * building = static_cast<BuildingClass *>(source);
+		} else if (killer->RTTI == RTTI_BUILDING) {
+			BuildingClass * building = static_cast<BuildingClass *>(killer);
 			if (building->Can_Occupy_Fire() && building->FiringOccupantIndex >= 0 && building->FiringOccupantIndex < building->Occupants.Count()) {
 				credit = building->Occupants[building->FiringOccupantIndex];
 			}
@@ -6423,14 +6426,14 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			credit->Veterancy.Made_A_Kill(credit->TClass->Cost_Of(House), value);
 		}
 
-		House->WhoLastHurtMe = source->Owner();
+		House->WhoLastHurtMe = killer->Owner();
 
-		Pay_Bounty(source);
+		Pay_Bounty(killer);
 
 		/*
 		**	Add up the score for killing this unit
 		*/
-		source->House->PointTotal += value;
+		killer->House->PointTotal += value;
 	}
 
 	switch ((RTTIType)RTTI) {
@@ -6441,11 +6444,11 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 						House->BuildingsLost++;
 					}
 
-					if (source != NULL) {
+					if (killer != NULL) {
 						if (Session.Type == GAME_INTERNET) {
-							source->House->DestroyedBuildings->Increment_Unit_Total(((BuildingClass*)this)->Class->HeapID);
+							killer->House->DestroyedBuildings->Increment_Unit_Total(((BuildingClass*)this)->Class->HeapID);
 						}
-						source->House->BuildingsKilled[Owner()]++;
+						killer->House->BuildingsKilled[Owner()]++;
 					}
 
 					/*
@@ -6460,26 +6463,26 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			break;
 
 		case RTTI_AIRCRAFT:
-			if (source != NULL && Session.Type == GAME_INTERNET) {
-				source->House->DestroyedAircraft->Increment_Unit_Total(((AircraftClass*)this)->Class->HeapID);
+			if (killer != NULL && Session.Type == GAME_INTERNET) {
+				killer->House->DestroyedAircraft->Increment_Unit_Total(((AircraftClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 			//Fall through.....
 		case RTTI_INFANTRY:
-			if (source != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
-				source->House->DestroyedInfantry->Increment_Unit_Total(((InfantryClass*)this)->Class->HeapID);
+			if (killer != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
+				killer->House->DestroyedInfantry->Increment_Unit_Total(((InfantryClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 			//Fall through.....
 		case RTTI_UNIT:
-			if (source != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
-				source->House->DestroyedUnits->Increment_Unit_Total(((UnitClass*)this)->Class->HeapID);
+			if (killer != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
+				killer->House->DestroyedUnits->Increment_Unit_Total(((UnitClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 
 
 			House->UnitsLost++;
-			if (source != NULL) source->House->UnitsKilled[Owner()]++;
+			if (killer != NULL) killer->House->UnitsKilled[Owner()]++;
 
 			/*
 			**	If the map is displaying the multiplayer player names & their

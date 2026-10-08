@@ -60,7 +60,7 @@ The kill goes to the object that deals the fatal damage, or to another object st
 - Otherwise an object with `MissileSpawn=yes`, such as a missile, gives the kill to the object that launched it, if that object has `Trainable=yes`.
 - Otherwise a structure with [`CanOccupyFire=yes`](/keys/canoccupyfire/) and infantry inside gives the kill to the occupant that fired.
 
-If none applies, no object earns experience from the kill. Score still updates. Each kill adds `victim value / (killer cost * VeteranRatio)` to its experience. The victim value is its cost, doubled when the victim was a veteran and tripled when it was elite at the moment it died. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
+If none applies, no object earns experience from the kill. Score still updates, unless the victim's type has [`DontScore=yes`](/keys/dontscore/). Each kill adds `victim value / (killer cost * VeteranRatio)` to its experience. The victim value is its cost, doubled when the victim was a veteran and tripled when it was elite at the moment it died. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
 
 Starting from rookie, an object must destroy enemy value worth [`VeteranRatio`](/keys/veteranratio/) times its own cost to reach veteran, and twice that to reach elite. A lower `VeteranRatio` means faster promotion. Cheaper types need fewer kills against the same enemies, and kills of veteran or elite enemies promote faster.
 

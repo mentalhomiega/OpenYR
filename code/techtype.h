@@ -868,6 +868,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsTrainable;
 
+		// A victim of this type gives its killer no experience, bounty, score, last-attacker mark or kill count.
+		bool IsDontScore;
+
 		/*
 		 * Marks a naval type. A computer house drops naval structures from its base plan once one
 		 * of them fails to place.

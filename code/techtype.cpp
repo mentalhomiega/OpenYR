@@ -314,6 +314,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	DetectDisguiseRange(0),
 	IsMoveToShroud(true),
 	IsTrainable(true),
+	IsDontScore(false),
 	IsNaval(false),
 	RequiredHouses(-1),
 	ForbiddenHouses(-1),
@@ -1039,6 +1040,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Risk = ini.Get_Int(Name(), "ThreatPosed", Risk);
 		Ownable = ini.Get_Owners(Name(), "Owner", Ownable);
 		IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
+		IsDontScore = ini.Get_Bool(Name(), "DontScore", IsDontScore);
 		IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
 		RequiredHouses = ini.Get_Owners(Name(), "RequiredHouses", RequiredHouses);
 		ForbiddenHouses = ini.Get_Owners(Name(), "ForbiddenHouses", ForbiddenHouses);
@@ -1666,6 +1668,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DetectDisguiseRange);
 	stream.Serialize(IsMoveToShroud);
 	stream.Serialize(IsTrainable);
+	stream.Serialize(IsDontScore);
 	stream.Serialize(IsNaval);
 	stream.Serialize(RequiredHouses);
 	stream.Serialize(ForbiddenHouses);
@@ -1731,6 +1734,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(IsDontScore);
 	crc(ThreatAvoidanceCoefficient);
 	crc(SlowdownDistance);
 	crc(DeaccelerationFactor);
