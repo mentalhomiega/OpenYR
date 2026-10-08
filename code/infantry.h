@@ -144,6 +144,8 @@ class InfantryClass : public FootClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual bool Is_Ready_To_Random_Animate(void) const override;
 		bool Is_Deployed(void) const;
+		// Does a disguised soldier, such as a spy, look like a soldier of that house to this house (InfantryClass::IsDisguisedAs, 0x5227F0)?
+		bool Is_Disguised_As(HouseClass const * house) const;
 		bool Can_Cheer(void) const;
 		void Cheer(bool force=false);
 		bool Is_Area_Fire_Deployer(void) const;
