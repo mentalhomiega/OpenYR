@@ -4689,11 +4689,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			if (Map[Get_Cell()].Cell_Building() == target) {
 				Start_Drain((TechnoClass *)target);
 				Assign_Target(NULL);
-				// The drainer stays over the structure; leaving it ends the drain.
-				if (Is_Foot()) {
-					Assign_Destination(NULL);
-					Assign_Mission(MISSION_GUARD);
-				}
 			} else if (Is_Foot() && ((FootClass *)this)->NavCom == NULL) {
 				Assign_Destination(&Map[((TechnoClass *)target)->Center_Coord().As_Cell()]);
 			}
