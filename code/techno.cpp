@@ -6407,7 +6407,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			value *= 3;
 		}
 
-		// The experience goes to the object that fired, or to the carrier it fired from, as RegisterDestruction does.
+		// The experience goes to the object that fired, or to the transport, launcher or occupant it fired through.
 		TechnoClass * credit = NULL;
 		if (source->IsInOpenToppedTransport && source->Transporter != NULL && source->Transporter->TClass->IsTrainable) {
 			credit = source->Transporter;
