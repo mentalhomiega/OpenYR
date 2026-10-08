@@ -45,6 +45,8 @@ A `CanDisguise=yes` type with [`PermaDisguise=yes`](/keys/permadisguise/) is dis
 
 An infantry type with [`Disguised=yes`](/keys/disguised/) is a separate, older disguise: it always looks like the rules' `Disguise` type to other houses.
 
+A disguised soldier looks like a friend to a house when it wears that house's soldier, or an ally's soldier, and no [`DetectDisguise`](/keys/detectdisguise/) structure of that house covers its cell. The house's units then pass it over when they scan for targets, and do not fire back at it. A [`DetectDisguise=yes`](/keys/detectdisguise/) scanner sees through the disguise, and so does a computer house when [`AIDetectDisguise`](/keys/aidetectdisguise/) is set. A `PermaDisguise` soldier wears its owner's soldier, so the houses that are not its owner's allies attack it.
+
 ## Vehicles that hide as terrain
 
 A [`DisguiseWhenStill=yes`](/keys/disguisewhenstill/) vehicle looks like a tree while it stands still: it picks one of the [`DefaultMirageDisguises`](/keys/defaultmiragedisguises/) terrain types at random and is drawn as that terrain to players whose house is not an ally of its owner. It drops the disguise as soon as it moves. On seven frames in eight, a soldier of a house that is not an ally standing in a neighboring cell also drops the disguise, and the vehicle cannot take a new one for [`InfantryBlinkDisguiseTime`](/keys/infantryblinkdisguisetime/) frames. The vehicle's shadow is still drawn while it is disguised. A unit that the vehicle hits does not fire back while the vehicle looks like terrain to that unit's house. A computer house's units pick the vehicle as an automatic target only while it blinks after a shot, and then only on a roll: [`DisguiseFakeBlinkTime`](/keys/disguisefakeblinktime/) frames follow each shot, and the roll is set by [`DisabledDisguiseDetectionPercent`](/keys/disableddisguisedetectionpercent/) for the side. A human house's units never pick it automatically, and units of a type with [`DetectDisguise=yes`](/keys/detectdisguise/) see through the disguise.
@@ -59,4 +61,4 @@ DetectDisguise=yes
 DetectDisguiseRange=8
 ```
 
-Detection affects only the look. [`DetectDisguise`](/keys/detectdisguise/) on any object also lets it pick a disguised soldier as a target, as its key page describes.
+A soldier in a cell that such a structure covers does not look like a friend to its owner, so the owner's units can pick it as a target. The same cells show the soldier as it is on screen. [`DetectDisguise`](/keys/detectdisguise/) on any object also lets it pick a disguised soldier as a target, as its key page describes.
