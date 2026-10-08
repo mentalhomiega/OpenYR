@@ -9123,7 +9123,6 @@ void HouseClass::AI_Super_Weapons(void)
 				if (PreferredTargetCell != CELL_NONE) {
 					bool aimed = false;
 					switch (super->Class->Type) {
-						case SUPER_MULTI_MISSILE:
 						case SUPER_PARA_DROP:
 						case SUPER_AMER_PARA_DROP:
 						case SUPER_SPY_PLANE:
@@ -9131,9 +9130,15 @@ void HouseClass::AI_Super_Weapons(void)
 							aimed = true;
 							break;
 
+						case SUPER_MULTI_MISSILE:
+							// A nuke needs an enemy even when aimed (HouseClass::AI_TryFireSW).
+							aimed = Enemy != HOUSE_NONE;
+							if (!aimed) continue;
+							break;
+
 						case SUPER_LIGHTNING_STORM:
-							// One storm at a time (HouseClass::Fire_LightningStorm).
-							aimed = !LightningStormClass::Is_Active_Or_Pending();
+							// One storm at a time, and an enemy (HouseClass::Fire_LightningStorm).
+							aimed = !LightningStormClass::Is_Active_Or_Pending() && Enemy != HOUSE_NONE;
 							if (!aimed) continue;
 							break;
 
@@ -9148,9 +9153,14 @@ void HouseClass::AI_Super_Weapons(void)
 
 				switch (super->Class->Type) {
 
-					case SUPER_MULTI_MISSILE:
-						AI_Multi_Missile(super);
+					case SUPER_MULTI_MISSILE: {
+						// The nuke aims as the lightning storm does (the Nuke case of HouseClass::AI_TryFireSW).
+						Cell const cell = Pick_Ion_Cannon_Target();
+						if (cell != CELL_NONE) {
+							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+						}
 						break;
+					}
 
 					case SUPER_ION_CANNON:
 						AI_Ion_Cannon(super);
@@ -9524,51 +9534,6 @@ void HouseClass::AI_Hunter_Seeker(SuperClass * super)
 {
 	if (Enemy != HOUSE_NONE) {
 		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), CELL_NONE);
-	}
-}
-
-
-/// <summary>
-/// Handles the computer's use of the multi-missile super weapon.
-/// The enemy structure standing in the most threatening spot is chosen as the target. A
-/// building hidden by a cloaking field is rated at random instead, so that the computer
-/// does not appear to see through it.
-/// </summary>
-void HouseClass::AI_Multi_Missile(SuperClass * super)
-{
-	if (Enemy != HOUSE_NONE) {
-
-		/*
-		**	Loop through all of the building objects on the map
-		**	and see which ones are available.
-		*/
-		BuildingClass * bestptr = NULL;
-		int best = -1;
-		HouseClass * enemy = Houses[Enemy];
-
-		for (int index = Buildings.Count() - 1; index >= 0; index--) {
-			BuildingClass * b = Buildings[index];
-
-			/*
-			**	If the building is valid, not in limbo, not in the process of
-			**	being destroyed and not our ally, then we can consider it.
-			*/
-			if (b->House == enemy) {
-				int value = Map.Cell_Threat(b->Center_Coord().As_Cell(), *this);
-				if (b->TranslucencyLevel == 15) {
-					value = Random_Pick(0, 100);
-				}
-				if (value > best) {
-					best = value;
-					bestptr = b;
-				}
-			}
-		}
-
-		if (bestptr) {
-			Cell cell = bestptr->Center_Coord().As_Cell();
-			Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-		}
 	}
 }
 

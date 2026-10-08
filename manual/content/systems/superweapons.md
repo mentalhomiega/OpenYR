@@ -356,7 +356,8 @@ Each ready weapon goes to the handler for its `Type=`. There is no handler for `
 
 Every handler waits until the house has a [declared enemy](/systems/base-attacked/#picking-a-first-enemy). In a campaign the computer does not pick an enemy on its own, so a campaign house has none until damage or a trigger makes it angry at someone. Until then its superweapons stay charged and unused.
 
-- **Multi missile and chem missile** target the enemy structure whose cell rates highest on the firing house's [threat map](/systems/base-attacked/#the-threat-map). A structure at full translucency, the last step of a cloak's fade, is rated at random from 0 to 100 instead. Every structure the enemy owns is considered, including one in [limbo](/glossary/#limbo).
+- **Multi missile**, the nuke, aims at the cell the ion cannon rating picks, as the lightning storm does, and only while the house has an enemy.
+- **Chem missile** targets the enemy structure whose cell rates highest on the firing house's [threat map](/systems/base-attacked/#the-threat-map). A structure at full translucency, the last step of a cloak's fade, is rated at random from 0 to 100 instead. Every structure the enemy owns is considered, including one in [limbo](/glossary/#limbo).
 - **Hunter seeker** is released with no target; the drone chooses one itself.
 - **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
 - **Ion cannon** rates every enemy object and strikes one of the highest rated.
@@ -367,7 +368,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 
 The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/scripting/missions/56/) and [Chrono prep for AQ](/scripting/missions/57/) script lines.
 
-The ion cannon's rating is the only one of the four with settings.
+The ion cannon's rating is the only one with settings, and the nuke uses it as well.
 
 Only enemy objects that are on the ground layer, active and out of [limbo](/glossary/#limbo) are candidates. In difficulty slot 0, an object still being built also counts, if its factory is producing and not on hold.
 
@@ -397,7 +398,7 @@ The rows are tested from the top for each kind of object, and the first match wi
 
 No row covers aircraft, so an aircraft on the ground is a candidate rated 1 however badly damaged it is.
 
-A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the missile handlers use.
+A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the chem missile handler uses.
 
 ## Announcements
 
