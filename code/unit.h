@@ -202,6 +202,9 @@ class UnitClass : public FootClass
 		bool Is_Route_Broken(Cell const & from, Cell const & to) const;
 		AbstractClass * Plan_Route(AbstractClass const & object) const;
 
+		// Does a DisguiseWhenStill vehicle look like terrain to this house (UnitClass::IsDisguisedAs, 0x746750)?
+		bool Is_Disguised_As(HouseClass const * house) const;
+
 		/*
 		**	Object entry and exit from the game system.
 		*/

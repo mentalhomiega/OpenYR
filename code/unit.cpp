@@ -3075,6 +3075,19 @@ void UnitClass::Mirage_AI(void)
 }
 
 
+/// <summary>
+/// Does a disguised Mirage vehicle look like terrain to the house. Allies of its owner always
+/// see it as it is, and so does a house with a detector in the vehicle's cell.
+/// </summary>
+bool UnitClass::Is_Disguised_As(HouseClass const * house) const
+{
+	if (MirageType == NULL || house == NULL || House->Is_Ally(house) || Map[Get_Cell()].DisguiseSensorCount[house] > 0) {
+		return(false);
+	}
+	return(true);
+}
+
+
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	// A disguised Mirage looks like its terrain to houses that are not its owner's allies.

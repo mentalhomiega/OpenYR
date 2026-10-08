@@ -8419,6 +8419,9 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	*/
 	if (House->Is_Ally(source)) return(false);
 
+	// A Mirage that looks like terrain to this house is not fired back at (TechnoClass::CanRetaliateToAttacker, 0x7087C0).
+	if (source->RTTI == RTTI_UNIT && static_cast<UnitClass const *>(source)->Is_Disguised_As(House)) return(false);
+
 	/*
 	**	Only objects that have a damaging weapon are allowed to retaliate.
 	*/
