@@ -163,10 +163,11 @@ void CaptureManagerClass::Free_All(void)
 
 
 /// <summary>
-/// Hurts an InfiniteMindControl firer that holds more units than its weapon's Damage
-/// (CaptureManagerClass::HandleOverload, 0x471A50). Each time OverloadFrames runs out it
-/// takes OverloadDamage, from the first entry of OverloadCount at or above the number held
-/// (or the last entry), with sparks and, once per overload, MasterMindOverloadDeathSound.
+/// Hurts an InfiniteMindControl firer each time OverloadFrames runs out, by OverloadDamage from the
+/// first OverloadCount entry at or above the number held (or the last entry). The hit is an
+/// ordinary one, so armor and the Iron Curtain can reduce it or stop it. Each hit throws sparks
+/// and, once per overload, plays MasterMindOverloadDeathSound (CaptureManagerClass::HandleOverload,
+/// 0x471A50).
 /// </summary>
 void CaptureManagerClass::Handle_Overload(void)
 {
@@ -197,6 +198,7 @@ void CaptureManagerClass::Handle_Overload(void)
 	}
 
 	OverloadPipState = 10;
+	Owner->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false, false);
 	Coord const coord = Owner->Center_Coord();
 	if (!IsOverloadDeathSoundPlayed) {
 		Sound_Effect(Rule->MasterMindOverloadDeathSound, coord);
@@ -208,7 +210,6 @@ void CaptureManagerClass::Handle_Overload(void)
 			new ParticleSystemClass(Rule->DefaultSparkSystem, at);
 		}
 	}
-	Owner->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 }
 
 

@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-Each entry is the damage an [`InfiniteMindControl=yes`](/keys/infinitemindcontrol/) firer takes when [`OverloadCount`](/keys/overloadcount/) picks its position. The damage ignores armor and the Iron Curtain. A zero entry, or a position past the end of the list, deals nothing. [Overload](/systems/mind-control/#overload) covers the cycle.
+Each entry is the damage an [`InfiniteMindControl=yes`](/keys/infinitemindcontrol/) firer takes when [`OverloadCount`](/keys/overloadcount/) picks its position. The hit is a [`C4Warhead`](/keys/c4warhead/) hit, so the firer's armor applies to it and an active Iron Curtain stops it. A zero entry, or a position past the end of the list, deals nothing. [Overload](/systems/mind-control/#overload) covers the cycle.
 
 ```ini title="rulesmd.ini"
 [CombatDamage]
