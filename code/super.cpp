@@ -328,13 +328,19 @@ void SuperClass::Set_Charge(int percent)
 
 /// <summary>
 /// Starts a present weapon's charge over from the beginning, as SuperClass::Reset (0x6CE0B0)
-/// does. A suspended weapon only loses its charge.
+/// does. A suspended weapon instead holds a full charge and stays suspended.
 /// </summary>
 void SuperClass::Reset(void)
 {
 	if (IsPresent) {
 		IsReady = false;
-		Recharge(false);
+		if (IsSuspended) {
+			// A suspended weapon keeps the full charge, stopped until it resumes.
+			Control = Get_Recharge_Time();
+			Control.Stop();
+		} else {
+			Recharge(false);
+		}
 	}
 }
 
