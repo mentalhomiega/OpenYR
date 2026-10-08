@@ -2461,11 +2461,11 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 					/*
 					 * A unit that is in radio contact with this building (e.g., docked
-					 * on it) is destroyed along with it if it is close enough.
-					 * Otherwise it is told to get out of the way.
+					 * on it) is destroyed along with it if it is close enough, or at any
+					 * distance when this is a helipad. Otherwise it is told to get out of the way.
 					 */
 					if (tech != NULL) {
-						if (::Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON) {
+						if (Class->IsHelipad || ::Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON) {
 							int strength = tech->Strength;
 							tech->Take_Damage(strength, 0, Rule->C4Warhead, NULL, true, true);
 						} else {
