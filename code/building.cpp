@@ -11338,11 +11338,13 @@ void BuildingClass::Spied_By(HouseClass * house)
 			if (spy) Speak_Eva("EVA_BuildingInfRadarSabotaged");
 		}
 	} else if (Class->Power > 0) {
-		if (Rule->SpyPowerBlackout > 0) {
-			House->PowerBlackout = Rule->SpyPowerBlackout;
-			House->IsPowerBlackout = true;
-			House->RecalcPower = true;
-		}
+		/*
+		 * gamemd's HouseClass::CreatePowerOutage restarts the owner's blackout for the duration even
+		 * when that is 0, which ends a blackout already running.
+		 */
+		House->PowerBlackout = Rule->SpyPowerBlackout;
+		House->IsPowerBlackout = true;
+		House->RecalcPower = true;
 		if (victim) {
 			Speak_Eva("EVA_PowerSabotaged");
 		} else if (spy) {
