@@ -78,7 +78,7 @@ OverloadDamage=0,50,100,500  ; holding up to 3: no damage; 4 to 6: 50; 7 to 10: 
 OverloadFrames=30,60,60,60
 ```
 
-The overload hit is a [`C4Warhead`](/keys/c4warhead/) hit, so the firer's armor applies to it and an active Iron Curtain stops it. Each hit throws five bursts of [`DefaultSparkSystem`](/keys/defaultsparksystem/) around the firer. The first hit plays [`MasterMindOverloadDeathSound`](/keys/mastermindoverloaddeathsound/), and it plays again only after a look that finds no damage to deal. A firer destroyed by its overload lets go of what it holds like any other.
+The overload hit is a [`C4Warhead`](/keys/c4warhead/) hit, so the firer's armor applies to it and an active Iron Curtain stops it. Each hit throws five bursts of [`DefaultSparkSystem`](/keys/defaultsparksystem/) around the firer: each burst lands up to 200 leptons from the firer on each axis and 100 leptons above it. The first hit plays [`MasterMindOverloadDeathSound`](/keys/mastermindoverloaddeathsound/), and it plays again only after a look that finds no damage to deal. A firer destroyed by its overload lets go of what it holds like any other.
 
 
 ## What a computer does with a unit

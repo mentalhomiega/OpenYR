@@ -206,7 +206,10 @@ void CaptureManagerClass::Handle_Overload(void)
 	}
 	if (Rule->DefaultSparkSystem != NULL) {
 		for (int spark = 0; spark < 5; spark++) {
-			Coord const at(coord.X + Random_Pick(-200, 200), coord.Y + Random_Pick(-200, 200), coord.Z);
+			// Y is drawn before X, as gamemd draws them; replays depend on the random sequence.
+			int const dy = Random_Pick(-200, 200);
+			int const dx = Random_Pick(-200, 200);
+			Coord const at(coord.X + dx, coord.Y + dy, coord.Z + 100);
 			new ParticleSystemClass(Rule->DefaultSparkSystem, at);
 		}
 	}
