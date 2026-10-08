@@ -62,6 +62,7 @@
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
 **							warhead, fired by one of the player's objects of another type, or of the named type
+**	infiltrate barracks|warfactory	marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans
 **	occupy <TypeID> x y	puts the player's infantry of that type inside the structure on that cell, without walking there
 **	rank <TypeID> <0|1|2>	makes every object of that type, whoever owns it, rookie, veteran or elite
 **	veterancy <TypeID>	writes the experience, rank and cost of every object of that type, with the veterancy rules and the player's score
@@ -499,6 +500,16 @@ void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
+	if (step.Command == "infiltrate") {
+		// infiltrate barracks|warfactory: marks the player's house as having spied on that building, as a spy's infiltration does.
+		if (step.Argument == "barracks") {
+			PlayerPtr->IsBarracksInfiltrated = true;
+		} else if (step.Argument == "warfactory") {
+			PlayerPtr->IsWarFactoryInfiltrated = true;
+		}
+		DebugString("AUTOTEST   infiltrate %s\n", step.Argument.c_str());
+		return;
+	}
 	if (step.Command == "occupy") {
 		// occupy <TypeID> x y: puts the first object of that type (an infantry unit) inside the structure on that cell, without walking there.
 		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
