@@ -117,7 +117,7 @@ void ParasiteClass::Update(void)
 		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr->Paralyzes;
 	}
 	int damage = weapon->Attack;
-	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner);
+	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner, false, true);
 }
 
 
