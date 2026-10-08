@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-The rating applies whatever the thief's strength. The computer strikes one of the candidates that share the highest rating, so this value matters only against the other ratings; [the computer's use](/systems/superweapons/#the-computers-use) lists them.
+We apply this rating whatever the thief's strength. The computer strikes one of the candidates that share the highest rating, so this value matters only against the other ratings; [the computer's use](/systems/superweapons/#the-computers-use) lists them.
 
 A vehicle thief is an InfantryType with [`VehicleThief=yes`](/keys/vehiclethief/). A type that is also an engineer takes [`AIIonCannonEngineerValue`](/keys/aiioncannonengineervalue/) instead, because the engineer test runs first. Other infantry is rated 2.
 

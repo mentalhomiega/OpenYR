@@ -13,4 +13,4 @@ credit:
 - MentalHomiega
 ---
 
-A lightning storm that a Set Preferred Target Cell action aims now waits until its house has an enemy, as the nuke does. Before, it fired at the waypoint whether or not the house had an enemy.
+We now wait for an enemy before a lightning storm that a Set Preferred Target Cell action aims fires, as we already do for the nuke. Before, the storm fired at the waypoint whether or not the house had an enemy.

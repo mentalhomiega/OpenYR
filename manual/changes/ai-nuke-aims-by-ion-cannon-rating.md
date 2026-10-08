@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-The computer's nuke now aims at the cell the ion cannon rating picks, as the lightning storm does. Before, it aimed at the enemy structure rated highest on the threat map, which included structures in limbo. A structure in limbo at cell 1,0 drew the nuke onto the map corner. A nuke that a trigger aims also waits for an enemy now.
+We now aim the computer's nuke at the cell the ion cannon rating picks, as the lightning storm does. Before, we aimed it at the enemy structure rated highest on the threat map, which included structures in limbo. A structure in limbo at cell 1,0 drew the nuke onto the map corner. We also wait for an enemy before a trigger-aimed nuke fires.

@@ -9,6 +9,6 @@ when_omitted:
 
 Applies to a structure whose [`Power=`](/keys/power/#scope-buildingtype) is positive, that is, one that supplies power. The test reads the type's `Power=`, not the house's power balance. A structure that builds structures or vehicles is tested first and takes [`AIIonCannonConYardValue`](/keys/aiioncannonconyardvalue/) or [`AIIonCannonWarFactoryValue`](/keys/aiioncannonwarfactoryvalue/) instead.
 
-The computer uses this rating whatever the structure's strength. A cloaked structure is rated at random. The computer strikes one of the [highest-rated targets](/systems/superweapons/#the-computers-use), so a higher value puts power plants ahead of more kinds of target.
+We use this rating whatever the structure's strength. A cloaked structure is rated at random. The computer strikes one of the [highest-rated targets](/systems/superweapons/#the-computers-use), so a higher value puts power plants ahead of more kinds of target.
 
 Each entry belongs to one [difficulty slot](/systems/difficulty/#the-per-difficulty-lists) of the firing house, so give the list three entries. For a computer house the first entry is used at the Hard setting and the last at Easy. The key has no built-in list. If no rules file sets it, the game crashes the first time the computer rates a power plant. A list with fewer than three entries gives an unpredictable rating in the slots it does not cover.
