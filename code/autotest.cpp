@@ -234,6 +234,13 @@ void Select_Type(std::string const & name)
 void Place(std::string const & name)
 {
 	TechnoTypeClass const * type = Find_Type(name);
+	if (type != NULL && type->Fetch_RTTI() != RTTI_BUILDINGTYPE) {
+		// A finished vehicle, aircraft or infantry leaves its factory on the sidebar's no-cell placement.
+		RTTIType const kind = type->Fetch_RTTI() == RTTI_UNITTYPE ? RTTI_UNIT : type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE ? RTTI_AIRCRAFT : RTTI_INFANTRY;
+		DebugString("AUTOTEST place %s: leaves its factory\n", name.c_str());
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, kind, CELL_NONE));
+		return;
+	}
 	if (type == NULL || type->Fetch_RTTI() != RTTI_BUILDINGTYPE || PlayerPtr->ConYards.Count() == 0) {
 		DebugString("AUTOTEST place %s: no structure type or no construction yard\n", name.c_str());
 		return;
