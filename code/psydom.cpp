@@ -161,7 +161,7 @@ void PsychicDominatorClass::Fire(void)
 		if (techno->MindControlledBy != NULL && techno->MindControlledBy->CaptureManager) {
 			techno->MindControlledBy->CaptureManager->Free_Unit(techno);
 		}
-		techno->Captured(Owner);
+		techno->Set_Owning_House(Owner);
 		techno->IsPermaControlled = true;
 		if (Rule->PermaControlledAnimationType != NULL) {
 			Coord ring = techno->Center_Coord();

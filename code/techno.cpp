@@ -5848,6 +5848,81 @@ bool TechnoClass::Captured(HouseClass * newowner)
 
 
 /// <summary>
+/// Gives this object to another house as TechnoClass::SetOwningHouse (0x7014A0) does for a
+/// psychic dominator capture. It drops its orders and joins the new house's lists, but unlike
+/// Captured it springs no trigger and records no kill.
+/// </summary>
+/// <param name="newowner">The house that takes the object.</param>
+void TechnoClass::Set_Owning_House(HouseClass * newowner)
+{
+	if (newowner == NULL || newowner == House) {
+		return;
+	}
+
+	if (IsSelected && House == PlayerPtr) {
+		Unselect();
+	}
+	Assign_Target(NULL);
+	Assign_Destination(NULL);
+
+	bool const unloading = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && CurrentMission == MISSION_UNLOAD;
+	if (!unloading) {
+		Assign_Mission(MISSION_GUARD);
+	}
+
+	HouseClass * const oldowner = House;
+	if (!IsInLimbo) {
+		Mark(MARK_UP);
+	}
+	Detach_All(false);
+	if (!IsInLimbo) {
+		Mark(MARK_DOWN_FORCED);
+	}
+
+	oldowner->Tracking_Active_Remove(this, false);
+	newowner->PointTotal += TClass->Cost_Of(oldowner);
+	oldowner->Tracking_Remove(this);
+	newowner->Tracking_Add(this);
+
+	switch ((RTTIType)RTTI) {
+		case RTTI_BUILDING:
+			newowner->BuildingsKilled[Owner()]++;
+			break;
+
+		case RTTI_AIRCRAFT:
+		case RTTI_INFANTRY:
+		case RTTI_UNIT:
+			newowner->UnitsKilled[Owner()]++;
+			break;
+
+		default:
+			break;
+	}
+	oldowner->WhoLastHurtMe = newowner->Class->House;
+
+	if (!IsInLimbo) {
+		CellClass * cptr = !Is_Foot() ? &Map[Get_Coord()] : &Map[((FootClass *)this)->LastAdjacencyCell];
+		cptr->Adjust_Threat(oldowner->HeapID, -Risk());
+		cptr->Adjust_Threat(newowner->HeapID, Risk());
+	}
+
+	House = newowner;
+	IsOwnedByPlayer = (House == PlayerPtr);
+	newowner->Tracking_Active_Add(this, true);
+
+	if (Is_Foot() && newowner->Is_Human_Player()) {
+		((FootClass *)this)->Remove_From_Team(false);
+	}
+
+	if (!IsInLimbo) {
+		Enter_Idle_Mode(false, true);
+		Radar_Untrack();
+		Radar_Track();
+	}
+}
+
+
+/// <summary>
 /// Reassigns this object to a new owning house.
 /// Updates the player-ownership flag based on whether the new owner is the local player.
 /// </summary>

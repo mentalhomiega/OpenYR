@@ -554,7 +554,7 @@ Once the first animation has played [`DominatorFireAtPercentage`](/keys/dominato
 
 - a shockwave ripples out from the target, and `DominatorSecondAnim` plays there;
 - [`DominatorDamage`](/keys/dominatordamage/) goes off through [`DominatorWarhead`](/keys/dominatorwarhead/), credited to the firing house;
-- every vehicle, infantryman and aircraft within [`DominatorCaptureRange`](/keys/dominatorcapturerange/) cells joins the firing house for good, with [`PermaControlledAnimationType`](/keys/permacontrolledanimationtype/) shown [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above it. A computer house sends its new units hunting. A unit under [mind control](/systems/mind-control/#letting-go) is let go first, and nothing can take a dominated unit over afterwards.
+- every vehicle, infantryman and aircraft within [`DominatorCaptureRange`](/keys/dominatorcapturerange/) cells joins the firing house for good, with [`PermaControlledAnimationType`](/keys/permacontrolledanimationtype/) shown [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above it. A computer house sends its new units hunting. A unit under [mind control](/systems/mind-control/#letting-go) is let go first, and nothing can take a dominated unit over afterwards. Taking a unit over springs no trigger.
 
 Structures, objects in the air or under the Iron Curtain, and types with [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) or [`BalloonHover=yes`](/keys/balloonhover/) are not taken over. Only one blast runs at a time: a shot while one runs does nothing, and the weapon stays charged. Yuri's Revenge also tells the player that the dominator is already active, which is not shown yet, and dims the map's lighting during the blast, which is not done yet.
 
