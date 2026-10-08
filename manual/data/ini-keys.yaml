@@ -39971,6 +39971,42 @@ WaterCliffs:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+WaterCrate:
+  key: WaterCrate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CrateRules
+    value_type: cratetype
+    status: generated
+    _provenance:
+      default_candidate: Money
+      declared_in: RulesClass
+      member: WaterCrate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+WaterCrateImg:
+  key: WaterCrateImg
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CrateRules
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: WaterCrateImg
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 WaterSet:
   key: WaterSet
   scopes:
