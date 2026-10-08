@@ -112,6 +112,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MaxAmmo(-1),
 	Ownable(0),
 	CameoData(NULL),
+	AltCameoData(NULL),
 	CameoSortOrder(0),
 	Rotation(0),
 	ROT(0),
@@ -493,6 +494,15 @@ int TechnoTypeClass::Cost_Of(HouseClass * house) const
  *=============================================================================================*/
 void const * TechnoTypeClass::Get_Cameo_Data(void) const
 {
+	// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
+	if (AltCameoData != NULL && PlayerPtr != NULL && IsTrainable) {
+		RTTIType const rtti = Fetch_RTTI();
+		bool const barracks = PlayerPtr->IsBarracksInfiltrated && rtti == RTTI_INFANTRYTYPE;
+		bool const factory = PlayerPtr->IsWarFactoryInfiltrated && (rtti == RTTI_UNITTYPE || (rtti == RTTI_BUILDINGTYPE && UndeploysInto != NULL));
+		if (barracks || factory) {
+			return(AltCameoData);
+		}
+	}
 	return(CameoData);
 }
 
@@ -1112,6 +1122,12 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		if (CameoData == NULL) {
 			CameoData = (ShapeSet const *)MFCD::Retrieve("XXICON.SHP");
+		}
+
+		TStringID<24> altcameo;
+		if (ArtINI.Get_String(Graphic_Name(), "AltCameo", "", altcameo) > 0) {
+			_makepath(filename, NULL, NULL, altcameo, ".SHP");
+			AltCameoData = (ShapeSet const *)MFCD::Retrieve(filename);
 		}
 
 		// An elite weapon fires from where its normal counterpart does unless the art says otherwise.

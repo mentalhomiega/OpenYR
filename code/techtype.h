@@ -743,6 +743,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		std::string CameoPCX;
 		const void * CameoData;
 
+		// The cameo drawn for a trainable type once the local player has spied on the barracks or war factory (AltCameo in the art).
+		const void * AltCameoData;
+
 		/*
 		 * Where this type's cameo sorts among the others of its kind on the sidebar, lowest
 		 * first.

@@ -2538,6 +2538,23 @@ AlphaImage:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+AltCameo:
+  key: AltCameo
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: altcameo
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AltHomeCell:
   key: AltHomeCell
   scopes:
