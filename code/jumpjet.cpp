@@ -23,6 +23,8 @@
 #include "ion.h"
 #include "mouse.h"
 #include "rules.h"
+#include "unit.h"
+#include "unittype.h"
 #include "saveload.h"
 #include "savestream.h"
 
@@ -311,6 +313,32 @@ bool JumpjetLocomotionClass::Stays_Aloft(void) const
 }
 
 
+/// <summary>
+/// Does the unit hold its altitude where it stops? A unit that deploys to land, such as the
+/// Siege Chopper, does, unless its unload mission is landing it first.
+/// </summary>
+/// <returns>bool; Should the unit hover at its destination rather than descend?</returns>
+bool JumpjetLocomotionClass::Hovers_At_Stop(void) const
+{
+	if (LinkedTo->RTTI != RTTI_UNIT || LinkedTo->IsAttackedByLocomotor) {
+		return(false);
+	}
+	UnitClass const * unit = static_cast<UnitClass const *>(LinkedTo);
+	return(unit->Class->IsSimpleDeployer && unit->Class->IsDeployToLand && !unit->IsSimpleDeployed && unit->Mission != MISSION_UNLOAD);
+}
+
+
+/// <summary>
+/// Gives the speed for a slowed turn: the speed divided by the divisor, but never below one
+/// lepton per game frame.
+/// </summary>
+static double Slowed_Speed(int speed, int divisor)
+{
+	int slowed = speed / divisor;
+	return(slowed < 1 ? 1.0 : slowed);
+}
+
+
 bool JumpjetLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
 	if (carried == nullptr || Piggybacker != nullptr) {
@@ -423,7 +451,12 @@ void JumpjetLocomotionClass::Process_Hover(void)
 			if (Stays_Aloft()) {
 				Arrive_Aloft();
 			} else if (LinkedTo->TarCom == NULL) {
-				CurrentState = DESCENDING;
+				if (Hovers_At_Stop()) {
+					FlightLevel = LinkedTo->TClass->JumpjetHeight;
+					Arrive_Aloft();
+				} else {
+					CurrentState = DESCENDING;
+				}
 			}
 		} else {
 			Facing.Set_Desired(DirType().Direction(LinkedTo->PositionCoord, HeadToCoord));
@@ -447,9 +480,10 @@ void JumpjetLocomotionClass::Arrive_Aloft(void)
 
 /// <summary>
 /// Handles the cruise flight state.
-/// The unit steers toward its destination and throttles back as it closes on it. Once there
-/// it drops into a descent, or holds a hover instead while it still has something to shoot
-/// at.
+/// The unit steers toward its destination and throttles back in steps as it closes on it. A
+/// unit turned well away from its heading slows to a crawl, so that it swings round onto the
+/// destination instead of circling past it. Once there it drops into a descent, or holds a
+/// hover instead while it still has something to shoot at or can deploy to land.
 /// </summary>
 void JumpjetLocomotionClass::Process_Cruise(void)
 {
@@ -467,21 +501,51 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 		LinkedTo->Set_Coord(position);
 		LinkedTo->IsDown = down;
 		// A BalloonHover unit stays in the air at its destination (JumpjetLocomotionClass, 0x54BD30).
-		if (LinkedTo->TarCom == NULL && !Stays_Aloft()) {
+		if (LinkedTo->TarCom == NULL && !Stays_Aloft() && !Hovers_At_Stop()) {
 			FlightLevel = 0;
 			CurrentState = DESCENDING;
 		} else {
 			CurrentState = HOVERING;
 		}
-	} else if (distance < CELL_LEPTON) {
-		TargetSpeed = LinkedTo->TClass->JumpjetSpeed * 0.3;
-		if (LinkedTo->TarCom == NULL && !Stays_Aloft()) {
-			FlightLevel = LinkedTo->TClass->JumpjetHeight * 0.75;
-		}
-	} else if (distance < CELL_LEPTON * 2) {
-		TargetSpeed = LinkedTo->TClass->JumpjetSpeed * 0.5;
 	} else {
-		TargetSpeed = LinkedTo->TClass->JumpjetSpeed;
+		int const speed = LinkedTo->TClass->JumpjetSpeed;
+		int const turn_rate = LinkedTo->TClass->JumpjetTurnRate;
+		bool const lowers_flight_level = LinkedTo->TarCom == NULL && !Stays_Aloft();
+		// The heading still to be turned through, in 256ths of a circle.
+		int const turn = static_cast<int>(Facing.Difference().As_Dir256());
+
+		if (distance < speed) {
+			TargetSpeed = speed / 8;
+			if (lowers_flight_level) {
+				FlightLevel = LinkedTo->TClass->JumpjetHeight / 2;
+			}
+		} else if (distance < speed * 2) {
+			TargetSpeed = speed / 4;
+			if (lowers_flight_level) {
+				FlightLevel = LinkedTo->TClass->JumpjetHeight / 2;
+			}
+			if (turn_rate < turn) {
+				TargetSpeed = Slowed_Speed(speed, 10);
+			}
+		} else if (turn_rate > 0 && distance < speed * 50 / turn_rate) {
+			TargetSpeed = speed / 2;
+			if (lowers_flight_level) {
+				FlightLevel = distance;
+			}
+			if (turn_rate * 5 < turn) {
+				TargetSpeed = Slowed_Speed(speed, 5);
+			}
+		} else {
+			TargetSpeed = speed;
+			FlightLevel = LinkedTo->TClass->JumpjetHeight;
+		}
+	}
+
+	// A balloon, a unit that deploys to land, and a destination on water or beach keep the cruising height.
+	bool const keeps_height = LinkedTo->TClass->IsBalloonHover ||
+		(LinkedTo->RTTI == RTTI_UNIT && static_cast<UnitClass const *>(LinkedTo)->Class->IsDeployToLand) ||
+		Map[HeadToCoord].Land_Type() == LAND_WATER || Map[HeadToCoord].Land_Type() == LAND_BEACH;
+	if (keeps_height) {
 		FlightLevel = LinkedTo->TClass->JumpjetHeight;
 	}
 }

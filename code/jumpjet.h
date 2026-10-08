@@ -48,6 +48,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Is_Ok_To_End(void) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
 		bool Stays_Aloft(void) const;
+		bool Hovers_At_Stop(void) const;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
