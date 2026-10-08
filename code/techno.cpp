@@ -10422,11 +10422,6 @@ void TechnoClass::Iron_Tint_AI(void)
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
-	// The Iron Curtain drives a parasite out (FootClass::IronCurtain, 0x4DEAE0).
-	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
-		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
-	}
-
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;

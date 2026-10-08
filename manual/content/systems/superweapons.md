@@ -482,7 +482,7 @@ A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininv
 
 - Infantry die.
 - A vehicle or aircraft with [`Organic=yes`](/keys/organic/) takes damage equal to its full strength, which its armor can reduce.
-- Anything else is protected for [`IronCurtainDuration`](/keys/ironcurtainduration/) frames. A structure's demolition charge is also defused.
+- Anything else is protected for [`IronCurtainDuration`](/keys/ironcurtainduration/) frames. A structure's demolition charge is also defused. A vehicle or aircraft also loses its paralysis, and a parasite inside it dies.
 
 A protected object takes no damage, except from damage that ignores armor, such as a demolition charge going off. Healing still reaches it. Infantry cannot plant a demolition charge on a protected structure or walk into one, so an engineer cannot capture it.
 

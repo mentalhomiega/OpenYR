@@ -5062,6 +5062,17 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
 		return;
 	}
+
+	/*
+	 * A parasite eating this foot is doomed for 50 frames and then driven out, so it dies
+	 * rather than coming back out. The curtain also ends the foot's paralysis, as
+	 * FootClass::IronCurtain (0x4DEAE0) does.
+	 */
+	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 50;
+		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+	}
+	ParalysisTimer = 0;
 	TechnoClass::Iron_Curtain(duration, source, force_shield);
 }
 
