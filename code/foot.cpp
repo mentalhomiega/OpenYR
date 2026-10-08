@@ -3688,7 +3688,7 @@ int FootClass::Current_Speed(void)
 {
 	int speed = Get_Max_Speed() * House->GroundspeedBias * SpeedBias * AttachedEffects.Speed_Multiplier();
 	if (Has_Ability(ABILITY_FASTER)) {
-		speed *= (1 + Rule->VeteranSpeed);
+		speed *= Rule->VeteranSpeed;
 	}
 	speed *= Speed;
 	if (RTTI == RTTI_UNIT && ((UnitClass *)this)->Flagged != HOUSE_NONE) {

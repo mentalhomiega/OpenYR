@@ -1,13 +1,13 @@
 ---
 key: VeteranROF
-summary: Reload delay of an object holding the rate of fire ability is divided by this value plus one.
+summary: Reload delay of an object holding the rate of fire ability is multiplied by this value.
 see_also: ["system:veterancy"]
 when_omitted:
   kind: value
   value: "1"
 ---
 
-Raising the value shortens the wait between shots: the default halves the reload delay, and `0` leaves it unchanged. Only an object whose rank grants the `ROF` ability through [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) is affected.
+Lowering the value shortens the wait between shots: `0.6` leaves 60 percent of the delay, and the default `1` leaves it unchanged. Only an object whose rank grants the `ROF` ability through [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) is affected.
 
 The reduction applies after the house's rate-of-fire multiplier, and only to the delay that follows the last shot of a [`Burst`](/keys/burst/). The ability never shortens these delays:
 
