@@ -222,7 +222,7 @@ One effect then follows, decided by the first row that fits the structure's type
 | [`Factory=UnitType`](/keys/factory/) | From then on, every [`Trainable=yes`](/keys/trainable/) vehicle the spy's house gets, other than a naval one, starts as a veteran, whether it is built, cloned or delivered. A `Trainable=yes` structure with an `UndeploysInto` type that is not naval also starts as a veteran when it is created; the Yuri refinery is one. |
 | [`Factory=InfantryType`](/keys/factory/) | From then on, every `Trainable=yes` infantryman the spy's house gets starts as a veteran. |
 
-A structure that fits no row gives up nothing beyond the spy record.
+A structure that fits no row gives up nothing beyond the spy record. After a barracks or war factory, the local player's sidebar also draws the [`AltCameo`](/keys/altcameo/) of each trainable type that the effect covers; the key page lists those types.
 
 With EVAMD.INI, the announcer names the effect to the player whose house owns the structure or sent the spy:
 
