@@ -2500,6 +2500,20 @@ int InfantryClass::Do_MISSION_MOVE(void)
 }
 
 
+/// <summary>
+/// Does a disguised soldier, such as a spy, look like a soldier of the given house (InfantryClass::IsDisguisedAs,
+/// 0x5227F0)? The soldier's owner and its allies see it as it is, and so does a house with a detector in its cell.
+/// Other houses are fooled only when the copied house is that house or an ally of the owner.
+/// </summary>
+bool InfantryClass::Is_Disguised_As(HouseClass const * house) const
+{
+	if (DisguiseType == NULL || house == NULL || House->Is_Ally(house) || Map[Get_Cell()].DisguiseSensorCount[house] > 0) {
+		return(false);
+	}
+	return(DisguiseHouse == NULL || DisguiseHouse == house || House->Is_Ally(DisguiseHouse));
+}
+
+
 bool InfantryClass::Is_Amphibian_On_Land(void) const
 {
 	LandType const land = Map[Get_Cell()].Land_Type();

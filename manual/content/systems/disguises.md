@@ -39,7 +39,7 @@ Warhead=MySnapshot
 MakesDisguise=yes
 ```
 
-The disguise shows only to players whose house is not an ally of the disguised object's owner; its owner and allies see it as it is. It lasts until the object copies another soldier, until a hit hurts it, or until the house it imitates leaves the game. The warhead does no damage, whether or not it disguises anything.
+The disguise shows only to players whose house is not an ally of the disguised object's owner; its owner and allies see it as it is. It lasts until the object copies another soldier, until a hit hurts it, or until the house it imitates leaves the game. We stop a unit that a spy hits from firing back while the spy looks like a soldier to that unit's house. The spy looks like a soldier to a house that is not an ally of the spy's house, when no detector covers the spy's cell and the house the spy copied is that house or an ally of the spy's house. The warhead does no damage, whether or not it disguises anything.
 
 A `CanDisguise=yes` type with [`PermaDisguise=yes`](/keys/permadisguise/) is disguised from the start and never loses its disguise to damage. Whenever it has no other disguise, it looks like its owner's side's default soldier: [`AlliedDisguise`](/keys/allieddisguise/), [`SovietDisguise`](/keys/sovietdisguise/) or [`ThirdDisguise`](/keys/thirddisguise/), in its owner's colors.
 
