@@ -19,7 +19,7 @@ The multiplied price also applies where the game values an object the house owns
 
 - Selling refunds the multiplied price, reduced by [`RefundPercent=`](/keys/refundpercent/) when a human plays the house. A captured object is valued at its new owner's multiplier.
 - A house that destroys or captures one of its objects adds the multiplied price to its score.
-- A structure's [survivor count](/keys/survivordivisor/) is worked out from the multiplied price, so a higher value gives more survivors, still no more than 5.
+- A structure's [survivor count](/systems/capture/#survivors) is worked out from its refund, which the multiplied price sets unless its type has a [`Soylent=`](/keys/soylent/). A higher multiplier therefore gives more survivors, still no more than 5.
 
 Repairs do not use the multiplier.
 

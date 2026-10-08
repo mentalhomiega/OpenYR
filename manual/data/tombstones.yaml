@@ -259,3 +259,15 @@
     - "-MESSAGES"
     - Disable network protection
   summary: Let in-game chat from outside the match through. Removed when a line began to be accepted only from a seat of the match.
+- type: key
+  id: SurvivorRate
+  route: /keys/survivorrate/
+  search_aliases:
+    - SurvivorRate
+  summary: Set the fraction of a structure's cost that its survivor count came from. The count now comes from the sale refund and the side divisor, so the key is no longer read.
+- type: key
+  id: SurvivorDivisor
+  route: /keys/survivordivisor/
+  search_aliases:
+    - SurvivorDivisor
+  summary: Set the credits per survivor for every side, applied to a structure's cost after SurvivorRate. Each side now has its own divisor, AlliedSurvivorDivisor, SovietSurvivorDivisor or ThirdSurvivorDivisor, applied to the sale refund.

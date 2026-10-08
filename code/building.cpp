@@ -8189,10 +8189,23 @@ int BuildingClass::How_Many_Survivors(void) const
 {
 	if (IsSurvivorless || !Class->IsCrew) return(0);
 
-	int divisor = Rule->SurvivorDivisor;
+	int divisor;
+	switch (House->Class->Side) {
+		case SIDE_GDI:
+			divisor = Rule->AlliedSurvivorDivisor;
+			break;
+		case SIDE_NOD:
+			divisor = Rule->SovietSurvivorDivisor;
+			break;
+		case SIDE_THIRD:
+			divisor = Rule->ThirdSurvivorDivisor;
+			break;
+		default:
+			return(0);
+	}
 	if (divisor == 0) return(0);
 	if (IsCaptured) divisor *= 2;
-	int count = (Class->Cost_Of(House) * Rule->SurvivorFraction) / divisor;
+	int count = Refund_Amount() / divisor;
 	return(std::clamp(count, 1, 5));
 }
 

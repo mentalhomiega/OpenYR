@@ -2296,6 +2296,24 @@ AlliedDisguise:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AlliedSurvivorDivisor:
+  key: AlliedSurvivorDivisor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '200'
+      declared_in: RulesClass
+      member: AlliedSurvivorDivisor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AlliedWallTransparency:
   key: AlliedWallTransparency
   scopes:
@@ -31704,6 +31722,24 @@ SovietDisguise:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SovietSurvivorDivisor:
+  key: SovietSurvivorDivisor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '100'
+      declared_in: RulesClass
+      member: SovietSurvivorDivisor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Soylent:
   key: Soylent
   scopes:
@@ -35099,42 +35135,6 @@ Surface:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-SurvivorDivisor:
-  key: SurvivorDivisor
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '100'
-      declared_in: RulesClass
-      member: SurvivorDivisor
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
-SurvivorRate:
-  key: SurvivorRate
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: floating point
-    status: generated
-    _provenance:
-      default_candidate: '.5'
-      declared_in: RulesClass
-      member: SurvivorFraction
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 SuspendDelay:
   key: SuspendDelay
   scopes:
@@ -36133,6 +36133,24 @@ ThirdDisguise:
       default_candidate: none
       declared_in: RulesClass
       member: ThirdDisguise
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ThirdSurvivorDivisor:
+  key: ThirdSurvivorDivisor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '300'
+      declared_in: RulesClass
+      member: ThirdSurvivorDivisor
       source: code/rules.cpp
       guard: null
     level: RulesClass

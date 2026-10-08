@@ -2187,18 +2187,10 @@ class RulesClass
 		int SuspendPriority;
 		double SuspendDelay;
 
-		/*
-		**	This serves as the fraction of a building's original cost that is converted
-		**	into survivors (of some fashion). There are rounding and other marginal
-		**	fudge effects, but this value is the greatest control over the survivor rate.
-		*/
-		double SurvivorFraction;
-
-		/*
-		 * This divides a destroyed building's cost when working out how many survivors
-		 * emerge from it. The divisor is doubled for a building that was captured.
-		 */
-		int SurvivorDivisor;
+		// A crewed building's refund is divided by its owner's side divisor to get its survivor count.
+		int AlliedSurvivorDivisor;
+		int SovietSurvivorDivisor;
+		int ThirdSurvivorDivisor;
 
 		/*
 		**	This is the aircraft reload rate expressed in minutes per ammo load.

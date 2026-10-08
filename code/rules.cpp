@@ -221,8 +221,9 @@ RulesClass::RulesClass(void) :
 	BaseDefenseDelay(.25),
 	SuspendPriority(20),
 	SuspendDelay(2),
-	SurvivorFraction(.5),
-	SurvivorDivisor(100),
+	AlliedSurvivorDivisor(200),
+	SovietSurvivorDivisor(100),
+	ThirdSurvivorDivisor(300),
 	ReloadRate(.05),
 	AutocreateTime(5),
 	BuildupTime(.05),
@@ -1699,8 +1700,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		BaseDefenseDelay = ini.Get_Float(GENERAL, "BaseDefenseDelay", BaseDefenseDelay);
 		SuspendPriority = ini.Get_Int(GENERAL, "SuspendPriority", SuspendPriority);
 		SuspendDelay = ini.Get_Float(GENERAL, "SuspendDelay", SuspendDelay);
-		SurvivorFraction = ini.Get_Float(GENERAL, "SurvivorRate", SurvivorFraction);
-		SurvivorDivisor = ini.Get_Int(GENERAL, "SurvivorDivisor", SurvivorDivisor);
+		AlliedSurvivorDivisor = ini.Get_Int(GENERAL, "AlliedSurvivorDivisor", AlliedSurvivorDivisor);
+		SovietSurvivorDivisor = ini.Get_Int(GENERAL, "SovietSurvivorDivisor", SovietSurvivorDivisor);
+		ThirdSurvivorDivisor = ini.Get_Int(GENERAL, "ThirdSurvivorDivisor", ThirdSurvivorDivisor);
 		ReloadRate = ini.Get_Float(GENERAL, "ReloadRate", ReloadRate);
 		BuildupTime = ini.Get_Float(GENERAL, "BuildupTime", BuildupTime);
 		HarvesterDumpRate = ini.Get_Float(GENERAL, "HarvesterDumpRate", HarvesterDumpRate);
@@ -3235,8 +3237,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BaseDefenseDelay);
 	stream.Serialize(SuspendPriority);
 	stream.Serialize(SuspendDelay);
-	stream.Serialize(SurvivorFraction);
-	stream.Serialize(SurvivorDivisor);
+	stream.Serialize(AlliedSurvivorDivisor);
+	stream.Serialize(SovietSurvivorDivisor);
+	stream.Serialize(ThirdSurvivorDivisor);
 	stream.Serialize(ReloadRate);
 	stream.Serialize(AutocreateTime);
 	stream.Serialize(BuildupTime);

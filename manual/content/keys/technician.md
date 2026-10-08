@@ -1,6 +1,6 @@
 ---
 key: Technician
-summary: The InfantryType a crewed object leaves as its survivor when its house has no side, and sometimes when it is armed.
+summary: The InfantryType a crewed vehicle leaves when its house has no side, and sometimes when a crewed object is armed.
 see_also: ["system:capture", AlliedCrew, Crewed]
 when_omitted:
   kind: value
@@ -9,7 +9,7 @@ when_omitted:
 
 A [`Crewed=yes`](/keys/crewed/) structure or vehicle produces this type as a survivor in two cases:
 
-- its owning house names no [`Side=`](/keys/side/#scope-housetype), in which case every survivor is of this type;
+- its owning house names no [`Side=`](/keys/side/#scope-housetype), in which case every survivor is of this type. A structure whose house names no side releases no survivors, so this case applies only to a vehicle;
 - its owning house names a side and the object has a primary weapon, in which case each survivor is of this type on a 15% roll.
 
 Before either test, a structure that builds structures and has never been captured takes a one-in-four roll for the `[General]` [`Engineer`](/keys/engineer/#scope-global-rules) type. Other survivors take their side's crew type, such as [`AlliedCrew`](/keys/alliedcrew/). The `AlliedCrew` page gives the full order.
@@ -27,5 +27,5 @@ A survivor whose type is [`Nominal=yes`](/keys/nominal/) can be marked as a tech
 A marked survivor is named with the game's "Technician" text, cannot be picked up as a civilian evacuee, and is not counted among its house's infantry.
 
 :::danger[Name a type here, or selling a crewed structure can crash]
-With no type named, selling a structure crashes the game whenever one of its survivors would be of this type. That happens on 15% of the survivors of an armed `Crewed=yes` structure, and on every survivor of one whose house names no side. A destroyed structure skips that survivor instead. The stock rules name `CTECH`.
+With no type named, selling a structure crashes the game whenever one of its survivors would be of this type. That happens on 15% of the survivors of an armed `Crewed=yes` structure whose house is on one of the first three sides. A destroyed structure skips that survivor instead. The stock rules name `CTECH`.
 :::
