@@ -12,10 +12,12 @@ when_omitted:
 CruiseHeight=500
 ```
 
-The value is the flight level, in leptons with 256 to a cell, that a jumpjet climbs to after takeoff and holds while it travels or hovers. It drops below this in two cases:
+The value is the flight level, in leptons with 256 to a cell, that a jumpjet climbs to after takeoff and holds while it travels or hovers. While a jumpjet with no target travels, the level drops as it closes on its destination:
 
-- a jumpjet with no target that comes within one cell of its destination descends to three quarters of the value;
-- a jumpjet with no target that reaches its destination lands.
+- within two top speeds of the destination, it drops to half the value;
+- farther out, while it is still within 50 times the top speed divided by [`JumpjetTurnRate`](/keys/jumpjetturnrate/), it drops to its distance from the destination.
+
+A jumpjet with no target that reaches its destination lands. A [`BalloonHover`](/keys/balloonhover/) type hovers there instead, and so does an [`IsSimpleDeployer=yes`](/keys/issimpledeployer/#scope-unittype) unit with [`DeployToLand=yes`](/keys/deploytoland/#scope-unittype) that is not deployed. A balloon, a unit with `DeployToLand=yes` and a jumpjet bound for a water or beach cell keep the value through the cruise.
 
 While it travels, a jumpjet measures this height from what lies beneath it: the ground, the roof of a structure, or the deck of a bridge above that cell. Any other unit beneath it counts as a third of a cell above the ground, whatever its size. A jumpjet crossing a bridge therefore flies this far above the deck.
 
