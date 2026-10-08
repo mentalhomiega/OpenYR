@@ -506,11 +506,11 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 		}
 	}
 
-	// A DeployFire=yes simple deployer fires DeployFireWeapon while deployed and its first weapon otherwise.
+	// A DeployFire=yes simple deployer fires DeployFireWeapon only while deployed; otherwise it picks as any unit does (UnitClass::SelectWeapon, 0x746CD0).
 	if (RTTI == RTTI_UNIT) {
 		UnitClass const * unit = static_cast<UnitClass const *>(this);
-		if (unit->Class->IsSimpleDeployer && unit->Class->IsDeployFire) {
-			return(unit->IsSimpleDeployed ? unit->Class->DeployFireWeapon : 0);
+		if (unit->Class->IsSimpleDeployer && unit->Class->IsDeployFire && unit->IsSimpleDeployed) {
+			return(unit->Class->DeployFireWeapon);
 		}
 	}
 
