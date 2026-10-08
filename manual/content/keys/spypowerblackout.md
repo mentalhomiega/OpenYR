@@ -14,4 +14,4 @@ When a spy walks into another house's structure with positive [`Power`](/keys/po
 SpyPowerBlackout=1000
 ```
 
-At `0` or below, spying on a power plant does nothing. A second spy restarts the blackout at its full length.
+At `0` or below, spying on a power plant starts no blackout, but ends one already running. A second spy restarts the blackout at its full length.
