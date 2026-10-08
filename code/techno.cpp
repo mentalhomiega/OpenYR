@@ -294,6 +294,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsPermaControlled(false),
 	CurrentWeaponNumber(0),
 	CurrentTurretNumber(-1),
+	ChargeTurretDelay(0),
 	CurrentGattlingStage(0),
 	GattlingValue(0),
 	TurretAnimFrame(0),
@@ -3421,6 +3422,15 @@ void TechnoClass::AI(void)
 		}
 	}
 
+	// A charge turret shows the turret that matches how much of its rearm is left (TechnoClass::AI, 0x6F9E50).
+	if (TClass->IsChargeTurret && TClass->TurretCount > 0 && !TClass->IsGattling) {
+		int turret = 0;
+		if (ChargeTurretDelay > 0) {
+			turret = std::min(std::max(TClass->TurretCount * (int)Arm / ChargeTurretDelay, 0), TClass->TurretCount - 1);
+		}
+		CurrentTurretNumber = turret;
+	}
+
 	// A PoweredUnit object shuts down while its owner has no working control structure for its
 	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
 	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
@@ -4697,6 +4707,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias * AttachedEffects.Firepower_Multiplier()));
 			LastFireFrame = Frame;
 			Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+			ChargeTurretDelay = (int)Arm;
 		}
 		return(NULL);
 	}
@@ -4911,6 +4922,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				LastFireFrame = Frame;
 				BurstIndex++;
 				Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+				ChargeTurretDelay = (int)Arm;
 				BurstIndex %= weapon->Burst;
 
 				/*
@@ -9680,6 +9692,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DrainAnim);
 	stream.Serialize(CurrentWeaponNumber);
 	stream.Serialize(CurrentTurretNumber);
+	stream.Serialize(ChargeTurretDelay);
 	stream.Serialize(CurrentGattlingStage);
 	stream.Serialize(GattlingValue);
 	stream.Serialize(TurretAnimFrame);

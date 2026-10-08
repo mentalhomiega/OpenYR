@@ -599,6 +599,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * reaching that stage's threshold and down a stage on falling below the one before.
 		 */
 		bool IsGattling;
+
+		// A charge turret (such as the Prism Tank) shows the turret matching how much of its rearm is left.
+		bool IsChargeTurret;
 		int WeaponStages;
 		int WeaponStage[WEAPON_STAGE_COUNT];
 		int EliteStage[WEAPON_STAGE_COUNT];
