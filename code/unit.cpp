@@ -7154,6 +7154,12 @@ int UnitClass::Simple_Deploy_AI(void)
 			DebugString("Deploy: %s %s\n", Class->Name(), IsSimpleDeployed ? "deploys" : "packs up");
 			Mark(MARK_CHANGE);
 			Assign_Mission(MISSION_GUARD);
+			// As UnitClass::Undeploy (0x739CD0): a DeployToLand unit that packs up moves to a nearby cell, which takes it off the ground.
+			if (!IsSimpleDeployed && Class->IsDeployToLand) {
+				Assign_Destination(&Map[Nearby_Location(this)]);
+				// The move keeps the unload mission from committing to guard, so this state waits instead of packing again.
+				Status = 2;
+			}
 			return(1);
 	}
 	return(1);
