@@ -570,6 +570,24 @@ AIIonCannonPowerValue:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIIonCannonTechCenterValue:
+  key: AIIonCannonTechCenterValue
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AIIonCannonTechCenterValue
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIIonCannonTempleValue:
   key: AIIonCannonTempleValue
   scopes:

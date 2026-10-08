@@ -9526,6 +9526,8 @@ Cell HouseClass::Pick_Ion_Cannon_Target(void)
 							value = Rule->AIIonCannonTempleValue[Difficulty];
 						} else if (builtype->IsHoverPad) {
 							value = Rule->AIIonCannonHelipadValue[Difficulty];
+						} else if (Rule->BuildTech.Is_In_List(builtype)) {
+							value = Rule->AIIonCannonTechCenterValue[Difficulty];
 						}
 					}
 					break;
