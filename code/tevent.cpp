@@ -48,6 +48,7 @@
 #include "globals.h"
 #include "house.h"
 #include "incdec.h"
+#include "infatype.h"
 #include "savestream.h"
 #include "scenario.h"
 #include "sun.h"
@@ -162,8 +163,8 @@ static const struct {
 	{"Pickup Crate (any)", "When crate is picked up by any unit."},
 	{"Random delay...", "Delays a random time between 50 and 150 percent of time specified."},
 	{"Credits below...","Triggers when the house (for this trigger) credit total is below this specified amount."},
-	{"Spy entering as House...", "Triggers when a spy disguised as the specified house enters the attached building."},
-	{"Spy entering as Infantry...", "Triggers when a spy disguised as the specified infantry type enters the attached building."},
+	{"Spy entering as House...", "Triggers when a soldier disguised as the specified house enters the attached cell."},
+	{"Spy entering as Infantry...", "Triggers when a soldier disguised as the specified infantry type enters the attached cell."},
 	{"Destroyed, Units, Naval...", "Triggers when all naval units of the specified house have been destroyed."},
 	{"Destroyed, Units, Land...", "Triggers when all land units and infantry of the specified house have been destroyed."},
 	{"Building does not exist...", "Triggers when the building (owned by the house of this trigger) specified does not exist on the map."},
@@ -310,14 +311,6 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 		case TEVENT_TECHTYPE_DOES_NOT_EXIST:
 			return(Count_Of_Techno_Type(TechnoName) == 0);
 
-		/*
-		**	A spy event has nothing to look at: the engine does not tell triggers what a spy
-		**	was disguised as.
-		*/
-		case TEVENT_SPY_ENTERING_AS_HOUSE:
-		case TEVENT_SPY_ENTERING_AS_INFANTRY:
-			return(false);
-
 	}
 
 	/*
@@ -379,6 +372,20 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 		if (source == NULL || House_From_HousesType(Data.House) != source->House) {
 			return(false);
 		}
+	}
+	else if (Event == TEVENT_SPY_ENTERING_AS_HOUSE || Event == TEVENT_SPY_ENTERING_AS_INFANTRY) {
+		// The soldier that entered must still be disguised as the house or infantry type the event names.
+		TechnoClass const * spy = dynamic_cast<TechnoClass const *>(object);
+		if (event != Event || spy == NULL || spy->RTTI != RTTI_INFANTRY || spy->DisguiseType == NULL || spy->DisguiseHouse == NULL) {
+			return(false);
+		}
+		if (Event == TEVENT_SPY_ENTERING_AS_HOUSE) {
+			if (spy->DisguiseHouse != House_From_HousesType(Data.House)) return(false);
+		} else {
+			if (spy->DisguiseType->Fetch_Heap_ID() != Data.Infantry) return(false);
+		}
+		tripped = true;
+		return(true);
 	}
 
 	/*
@@ -664,10 +671,6 @@ void TEventClass::Read_INI(void)
 			break;
 		}
 	}
-
-	if (Event == TEVENT_SPY_ENTERING_AS_HOUSE || Event == TEVENT_SPY_ENTERING_AS_INFANTRY) {
-		DebugString("TEvent: event %d (%s) is not implemented and never fires\n", (int)Event, Event == TEVENT_SPY_ENTERING_AS_HOUSE ? "spy entering as house" : "spy entering as infantry");
-	}
 }
 
 
@@ -738,6 +741,7 @@ NeedType Event_Needs(TEventType event)
 			return(NEED_UNIT);
 
 		case TEVENT_BUILD_INFANTRY:
+		case TEVENT_SPY_ENTERING_AS_INFANTRY:
 			return(NEED_INFANTRY);
 
 		case TEVENT_BUILD_AIRCRAFT:
@@ -836,6 +840,8 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_ENTERS_ZONE:
 		case TEVENT_PLAYER_ENTERED:
 		case TEVENT_ENTERED_OR_OVERFLOWN:
+		case TEVENT_SPY_ENTERING_AS_HOUSE:
+		case TEVENT_SPY_ENTERING_AS_INFANTRY:
 		case TEVENT_ANY:
 		case TEVENT_DISCOVERED:
 		case TEVENT_NONE:
@@ -855,8 +861,6 @@ AttachType Attaches_To(TEventType event)
 		case TEVENT_ENTER_YELLOW:
 		case TEVENT_ENTER_RED:
 		case TEVENT_SPIED:
-		case TEVENT_SPY_ENTERING_AS_HOUSE:
-		case TEVENT_SPY_ENTERING_AS_INFANTRY:
 		case TEVENT_PLAYER_ENTERED:
 		case TEVENT_ENTERED_OR_OVERFLOWN:
 		case TEVENT_DISCOVERED:

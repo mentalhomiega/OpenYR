@@ -33,4 +33,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Maps gain Yuri's Revenge's trigger events 53 to 61. Destroyed Units Naval and Land, Building does not exist, Power Full, Entered or Overflown By, TechType Exists and TechType does not Exist are checked; the two spy events never fire. An event that names an object type no longer takes the following event's place when a map is read.
+Maps gain Yuri's Revenge's trigger events 53 to 61. Destroyed Units Naval and Land, Building does not exist, Power Full, Entered or Overflown By, TechType Exists and TechType does not Exist are checked; the two spy events are checked when a disguised soldier enters the tagged cell. An event that names an object type no longer takes the following event's place when a map is read.

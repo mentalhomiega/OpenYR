@@ -2959,7 +2959,7 @@ trigger_events:
   kind: trigger-event
   index: 53
   editor_name: Spy entering as House...
-  editor_description: Triggers when a spy disguised as the specified house enters the attached building.
+  editor_description: Triggers when a soldier disguised as the specified house enters the attached cell.
   need: NEED_HOUSE
   parameters:
   - name: House
@@ -2967,20 +2967,22 @@ trigger_events:
   ini_example:
     section: '[Events]'
     line: <TriggerID>=1,53,0,<House>
-  attaches_to: ATTACH_OBJECT
+  attaches_to: ATTACH_CELL
   status: generated
 - id: TEVENT_SPY_ENTERING_AS_INFANTRY
   kind: trigger-event
   index: 54
   editor_name: Spy entering as Infantry...
-  editor_description: Triggers when a spy disguised as the specified infantry type enters the attached
-    building.
-  need: NEED_NONE
-  parameters: []
+  editor_description: Triggers when a soldier disguised as the specified infantry type enters the attached
+    cell.
+  need: NEED_INFANTRY
+  parameters:
+  - name: Infantry type
+    type: infantry-type
   ini_example:
     section: '[Events]'
-    line: <TriggerID>=1,54,0,0
-  attaches_to: ATTACH_OBJECT
+    line: <TriggerID>=1,54,0,<Infantry type>
+  attaches_to: ATTACH_CELL
   status: generated
 - id: TEVENT_NAVAL_UNITS_DESTROYED
   kind: trigger-event
