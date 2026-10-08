@@ -117,7 +117,7 @@ The following sources can give an object a rank without kills. They ignore `Vete
 | [`InitialVeteran=yes`](/keys/initialveteran/) | The units and infantry drawn from the random starting selection of a skirmish or multiplayer match are created elite. |
 | [Make Elite trigger action](/mapping/actions/taction-make-elite/) | Every object the trigger is attached to is promoted to elite. |
 
-A crate promotes each affected object one step at a time: below rookie to rookie, rookie to veteran, then veteran to elite. Elite objects stay elite. The crate's `Data` value in `[Powerups]` sets the number of steps. Fractions round up, so `2.5` gives three steps and `2` gives two. A value of `0` or less gives no promotion.
+A crate promotes each affected object one step at a time: below rookie to rookie, rookie to veteran, then veteran to elite. Elite objects stay elite. A unit that collects a veterancy crate receives money instead when it is not `Trainable=yes` or is already elite, and then promotes nothing. The crate's `Data` value in `[Powerups]` sets the number of steps. Fractions round up, so `2.5` gives three steps and `2` gives two. A value of `0` or less gives no promotion.
 
 The other sources set the rank directly. The armory's result depends on the infantry's current rank.
 
