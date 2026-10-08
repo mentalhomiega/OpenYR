@@ -13,6 +13,7 @@ While a structure is drained:
 
 - if it produces power, its owner's structures produce none at all, so the whole base runs on low power;
 - if it is a refinery, its owner pays the firer's owner [`DrainMoneyAmount`](/keys/drainmoneyamount/) credits every [`DrainMoneyFrameDelay`](/keys/drainmoneyframedelay/) frames, never more than the owner has;
+- if it has a weapon, it cannot fire;
 - the firer shows [`DrainAnimationType`](/keys/drainanimationtype/).
 
 An object drains one thing at a time, and an object being drained cannot be drained by a second one. A unit whose second weapon is a drain weapon uses it against an enemy `Drainable` object while it is draining nothing, and its first weapon otherwise. The weapon's `Damage` and `Warhead` are not used.

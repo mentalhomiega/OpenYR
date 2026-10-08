@@ -4486,6 +4486,11 @@ FireErrorType BuildingClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_CANT);
 	}
 
+	// A structure under a drain weapon is disabled until the drain ends (BuildingClass::GetFireError, 0x447F10).
+	if (DrainingMe != NULL) {
+		return(FIRE_CANT);
+	}
+
 	if (!Is_Powered_On()) {
 		return(FIRE_CANT);
 	}
