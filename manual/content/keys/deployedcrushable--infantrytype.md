@@ -8,7 +8,7 @@ when_omitted:
   value: "yes"
 ---
 
-A `DeployedCrushable=no` soldier cannot be crushed while it is deployed. A vehicle cannot crush it in that state, so the cell counts as held by an object the vehicle cannot pass. When the soldier packs up, it can be crushed again. The default `yes` leaves a deployed soldier crushable like any other.
+A `DeployedCrushable=no` soldier cannot be crushed while it is deployed. A vehicle does not crush it in that state, and treats its cell as it would any other occupant that it cannot crush. When the soldier packs up, it can be crushed again. The default `yes` leaves a deployed soldier crushable like any other.
 
 ```ini title="rulesmd.ini"
 [GGI] ; Guardian GI
