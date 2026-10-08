@@ -82,6 +82,8 @@ A [cell](/glossary/#cell) is one square of the map grid. Ranges, footprints, sca
 
 A cell has several places to stand, each occupied separately. Three of them are open to infantry, which is how three infantry share one cell. A vehicle or a structure takes the whole cell. A cell under a bridge has a second, separate set of places for the deck, so the ground under the deck and the deck itself are occupied independently.
 
+An infantryman that enters a building, or is otherwise lifted off the map, releases the place it was walking to and drops that step. When it comes back out, it plans its next step from the place it stands on, so no place stays claimed for a step it never reached.
+
 ## The terrain table
 
 The terrain table is twelve `rules.ini` sections, one per [land type](/reference/enums/land-type/): `[Clear]`, `[Road]`, `[Water]`, `[Rock]`, `[Wall]`, `[Tiberium]`, `[Beach]`, `[Rough]`, `[Ice]`, `[Railroad]`, `[Tunnel]` and `[Weeds]`. Each section holds one figure per [speed type](/reference/enums/speed-type/), `Foot=`, `Track=`, `Wheel=`, `Hover=`, `Winged=`, `Float=`, `Amphibious=` and `Creep=`, plus [`Buildable=`](/keys/buildable/). The engine has no built-in values for any of the 96 figures.

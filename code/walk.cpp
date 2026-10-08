@@ -700,13 +700,15 @@ bool WalkLocomotionClass::Is_Ok_To_End(void)
 /// <summary>
 /// Releases the sub-cell spot that this infantry has reserved.
 /// This routine is called when the infantry is being lifted off the map so that the
-/// spot it had claimed becomes available to others again.
+/// spot it had claimed becomes available to others again. The step that reserved it is
+/// dropped too, so the infantry never resumes toward a spot it no longer holds.
 /// </summary>
 /// <param name="mark">The occupancy marking operation being performed.</param>
 void WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
 		LinkedTo->Clear_Occupy_Bit(Head_To_Coord());
+		Force_Immediate_Destination(COORD_NONE);
 	}
 }
 
