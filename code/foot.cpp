@@ -2138,6 +2138,14 @@ void FootClass::Per_Cell_Process(PCPType why)
 				if (cellptr->Tag != NULL) {
 					cellptr->Tag->Spring(TEVENT_ENTERED_OR_OVERFLOWN, this, PositionCell);
 				}
+
+				// gamemd offers the spy events to the cell's tag only when a disguised infantryman enters.
+				if (RTTI == RTTI_INFANTRY && DisguiseType != NULL && DisguiseHouse != NULL && cellptr->Tag != NULL) {
+					cellptr->Tag->Spring(TEVENT_SPY_ENTERING_AS_HOUSE, this, PositionCell);
+					if (cellptr->Tag != NULL) {
+						cellptr->Tag->Spring(TEVENT_SPY_ENTERING_AS_INFANTRY, this, PositionCell);
+					}
+				}
 			}
 
 			/*
