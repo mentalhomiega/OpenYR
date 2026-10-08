@@ -17,11 +17,11 @@ A command runs once the game frame reaches its frame, in file order.
 | Command | Effect |
 | --- | --- |
 | `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture` |
-| `select <TypeID>` | Selects every object of that type the player owns |
+| `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard |
-| `move <TypeID> <x> <y>` | Orders the player's objects of that type to the cell |
-| `attack <TypeID>` | Orders the player's objects of that type to attack the nearest structure of another house that has a construction yard |
+| `move <TypeID> <x> <y>` | Orders the player-controlled objects of that type (see `select`) to the cell |
+| `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
 | `view <x> <y>` | Centres the view on the cell |
 | `follow <TypeID>` | Keeps the view centred on one of the player's objects of that type, until the next `view` |
 | `record <frames>` | Saves a screenshot every that many frames; `record 0` stops |
