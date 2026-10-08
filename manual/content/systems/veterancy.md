@@ -53,9 +53,9 @@ Objects start at rookie with `0` experience unless another setting gives them a 
 
 ## Earning experience
 
-The object that deals the fatal damage earns experience if its type has [`Trainable=yes`](/keys/trainable/). Each kill adds `victim cost / (killer cost * VeteranRatio)` to its experience. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
+The object that deals the fatal damage earns experience if its type has [`Trainable=yes`](/keys/trainable/). Each kill adds `victim value / (killer cost * VeteranRatio)` to its experience. The victim value is its cost, doubled when the victim was a veteran and tripled when it was elite at the moment it died. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
 
-Starting from rookie, an object must destroy enemies worth [`VeteranRatio`](/keys/veteranratio/) times its own cost to reach veteran, and twice that to reach elite. A lower `VeteranRatio` means faster promotion. Cheaper types need fewer kills against the same enemies.
+Starting from rookie, an object must destroy enemy value worth [`VeteranRatio`](/keys/veteranratio/) times its own cost to reach veteran, and twice that to reach elite. A lower `VeteranRatio` means faster promotion. Cheaper types need fewer kills against the same enemies, and kills of veteran or elite enemies promote faster.
 
 ```ini title="rules.ini"
 [General]
@@ -75,7 +75,7 @@ A building with a [`FreeUnit`](/keys/freeunit/) usually awards experience based 
 
 Keep `VeteranRatio` and the killer's cost above `0`: the formula divides by both. With a positive victim cost, a zero divisor sets experience to `VeteranCap`.
 
-A kill gives no experience if the defeated owner considers the killer an ally. Score, loss counts, and destruction triggers still update.
+A kill gives no experience and no score points if the defeated owner considers the killer an ally. Loss counts, the last-attacker record, and destruction triggers still update.
 
 Destroying a transport also awards experience for each passenger killed inside it. Crushing an object counts as a kill for the vehicle that crushed it.
 
