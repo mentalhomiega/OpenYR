@@ -3,6 +3,7 @@ title: Destruction and debris
 summary: "What happens when a vehicle, structure, infantry soldier or aircraft is destroyed, and what it leaves on the ground."
 category: weapons-projectiles
 keys:
+  - AlliedSurvivorDivisor
   - C4Warhead
   - CollateralDamageCoefficient
   - Crater
@@ -31,9 +32,10 @@ keys:
   - Scorch
   - SpawnsTiberium
   - SmallFire
+  - SovietSurvivorDivisor
   - SplashList
   - Storage
-  - SurvivorDivisor
+  - ThirdSurvivorDivisor
   - TiberiumExplosive
   - TiberiumHeal
   - Wake
@@ -160,7 +162,7 @@ The footprint walk releases survivors and marks the ground in one pass over the 
 
 - the structure is not [`Crewed=yes`](/keys/crewed/);
 - it was destroyed by forced damage;
-- the game uses a [`SurvivorDivisor`](/keys/survivordivisor/) of `0`.
+- its owner is on no side, or on a side after the third, or the [divisor for its side](/systems/capture/#survivors) is `0`.
 
 When the count is above zero, each footprint cell in turn may release one survivor, at the odds [capture](/systems/capture/#survivors) sets out, until the count runs out. A multiplayer house whose player has resigned gets no survivors, and neither does one whose player left a game without AI takeover.
 

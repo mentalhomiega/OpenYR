@@ -14,6 +14,8 @@ Only a [`Crewed=yes`](/keys/crewed/) structure or vehicle produces survivors. [S
 3. An armed object whose house has a side produces the `Technician` type on a 15% roll.
 4. Any other survivor is of the crew type for the side of the object's own country: `AlliedCrew` for the first side in `[Sides]`, `SovietCrew` for the second and `ThirdCrew` for the third. A house of a later side leaves the `Technician` type.
 
+A structure whose house is on no side, or on a side after the third, releases no survivors. Step 2 and the later-side case of step 4 therefore apply only to vehicles.
+
 ```ini title="rulesmd.ini"
 [General]
 SovietCrew=E2

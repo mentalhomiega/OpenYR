@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A structure releases survivors when it is destroyed or sold only if its type is `Crewed=yes`. Without it, the structure releases none, whatever [`SurvivorRate`](/keys/survivorrate/) and [`SurvivorDivisor`](/keys/survivordivisor/) work out to. [Survivors](/systems/capture/#survivors) covers the count and the odds for each cell.
+A structure releases survivors when it is destroyed or sold only if its type is `Crewed=yes`. Without it, the structure releases none, whatever its refund and side divisor work out to. [Survivors](/systems/capture/#survivors) covers the count and the odds for each cell.
 
 A destroyed vehicle can release one crew member only if its type is `Crewed=yes` and declares no [`Passengers`](/keys/passengers/) capacity. [`CrewEscape`](/keys/crewescape/) sets the chance and lists the deaths that leave no crew.
 

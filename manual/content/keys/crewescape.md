@@ -15,7 +15,7 @@ A vehicle takes the roll only when **all of** these hold:
 - its type has [`Crewed=yes`](/keys/crewed/);
 - its type declares no [`Passengers`](/keys/passengers/) capacity.
 
-A transport therefore never produces a crew, even when it is crewed and empty. Structures do not use this setting; their survivor count comes from [`SurvivorRate`](/keys/survivorrate/) and [`SurvivorDivisor`](/keys/survivordivisor/).
+A transport therefore never produces a crew, even when it is crewed and empty. Structures do not use this setting; their survivor count comes from [their sale refund and side divisor](/systems/capture/#survivors).
 
 Several kinds of destruction leave no crew, whatever this setting says. They include an energizing laser fence, a firestorm wall, an aircraft crashing onto the vehicle, and a bridge collapse, for a vehicle on the deck, beneath it, or driving onto it. A radiation death, a parasite's kill, and a vehicle that a house blow-up destroys leave no crew either.
 

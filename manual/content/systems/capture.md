@@ -4,6 +4,7 @@ summary: "Hands a structure or a vehicle to another house, restores it, spies on
 category: combat-targeting
 keys:
   - Agent
+  - AlliedSurvivorDivisor
   - BridgeRepairHut
   - C4
   - C4Delay
@@ -20,10 +21,10 @@ keys:
   - Insignificant
   - IsMobileWar
   - Repairable
+  - SovietSurvivorDivisor
   - Strength
-  - SurvivorDivisor
-  - SurvivorRate
   - Thief
+  - ThirdSurvivorDivisor
   - VehicleThief
 related:
   - type: system
@@ -296,7 +297,9 @@ An armed charge blocks every sale except a player's sell order. A sale by a comp
 
 ### Survivors
 
-A destroyed structure produces up to `Cost × SurvivorRate / SurvivorDivisor` survivors, limited to between 1 and 5. The divisor is doubled for a captured structure. A type that is not [`Crewed=yes`](/keys/crewed/) produces none, and so does any structure when `SurvivorDivisor` is `0`.
+A destroyed or sold structure produces up to its refund divided by a divisor survivors, limited to between 1 and 5. The refund is the type's price with its owner's [price multipliers](/keys/cost/#what-a-house-pays) applied, then multiplied by [`RefundPercent`](/keys/refundpercent/) for a human house. A type with a [`Soylent`](/keys/soylent/) value refunds that value instead. A refund smaller than the divisor still gives a count of one.
+
+The divisor depends on the side of the structure's owner: [`AlliedSurvivorDivisor`](/keys/alliedsurvivordivisor/) for the first side in `[Sides]`, [`SovietSurvivorDivisor`](/keys/sovietsurvivordivisor/) for the second and [`ThirdSurvivorDivisor`](/keys/thirdsurvivordivisor/) for the third. A house on no side, or on a side after the third, gets no survivors from a structure. The divisor is doubled for a captured structure. A type that is not [`Crewed=yes`](/keys/crewed/) produces none, and so does any structure whose side divisor is `0`.
 
 Each footprint cell then rolls once for one survivor until that count is reached. Two facts set the odds: whether the structure was ever captured, and whether a live saboteur is on record against it. Arming a charge puts the saboteur on record, and the saboteur's death removes it.
 
