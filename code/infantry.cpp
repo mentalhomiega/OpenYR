@@ -280,6 +280,11 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	PrimaryFacing.Set_ROT(127);
 	TargetTracker.Add_Index(Fetch_ID(), this);
 
+	// A country that lists this type in VeteranInfantry= makes its new infantry veterans.
+	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranInfantry.Is_In_List(Class)) {
+		Veterancy.Set_Veteran(true);
+	}
+
 	// A house that has spied on a barracks gets its trainable infantry as veterans.
 	if (House != NULL && House->IsBarracksInfiltrated && Class != NULL && Class->IsTrainable) {
 		Veterancy.Set_Veteran(true);

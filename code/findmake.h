@@ -38,10 +38,18 @@ T * TFind_Or_Make(char const * name, DynamicVectorClass<T *> const & vector)
 }
 
 
+// A size above zero reads only the first size - 1 characters of the value, as a fixed-size buffer does.
 template<class T>
-TypeList<T const *> TGet_TypeList(CCINIClass const & ini, char const * section, char const * entry, TypeList<T const *> const & defvalue)
+TypeList<T const *> TGet_TypeList(CCINIClass const & ini, char const * section, char const * entry, TypeList<T const *> const & defvalue, int size = 0)
 {
-	std::string value = ini.Get_String(section, entry);
+	std::string value;
+	if (size > 0) {
+		std::string buffer((std::size_t)size, '\0');
+		ini.Get_String(section, entry, "", buffer.data(), size);
+		value = buffer.c_str();
+	} else {
+		value = ini.Get_String(section, entry);
+	}
 
 	if (!value.empty()) {
 		TypeList<T const *> list;

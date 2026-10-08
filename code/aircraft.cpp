@@ -228,6 +228,11 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 
 	Init();
 
+	// A country that lists this type in VeteranAircraft= makes its new aircraft veterans.
+	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranAircraft.Is_In_List(Class)) {
+		Veterancy.Set_Veteran(true);
+	}
+
 	Aircraft.Add(this);
 
 	TargetTracker.Add_Index(Fetch_ID(), this);

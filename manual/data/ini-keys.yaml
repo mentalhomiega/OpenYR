@@ -38772,6 +38772,23 @@ VeteranAbilities:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VeteranAircraft:
+  key: VeteranAircraft
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of AircraftTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: VeteranAircraft
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 VeteranArmor:
   key: VeteranArmor
   scopes:
@@ -38826,6 +38843,23 @@ VeteranCombat:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+VeteranInfantry:
+  key: VeteranInfantry
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of InfantryTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: VeteranInfantry
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 VeteranLevel:
   key: VeteranLevel
   scopes:
@@ -38915,6 +38949,23 @@ VeteranSpeed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+VeteranUnits:
+  key: VeteranUnits
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of UnitTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: VeteranUnits
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 VirusTurretIndex:
   key: VirusTurretIndex
   scopes:
