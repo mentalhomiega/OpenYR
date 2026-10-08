@@ -26,7 +26,7 @@ The setting also changes how the soldier moves and picks targets:
 - On the hunt mission, it walks to each target it finds on a capture order instead of attacking it.
 - When unarmed, owned by a computer house and not in a team, it goes on area guard when idle once the house's [`IQ`](/keys/iq/) reaches [`GuardArea`](/keys/guardarea/).
 - When the vehicle it is targeting deploys into an [`IsMobileWar=yes`](/keys/ismobilewar/) structure or a [`ConstructionYard=yes`](/keys/constructionyard/) structure, it drops that target.
-- A computer house choosing an ion cannon target rates the soldier by [`AIIonCannonThiefValue`](/keys/aiioncannonthiefvalue/) while its strength is at most [`IonCannonDamage`](/keys/ioncannondamage/). A type that is also [`Engineer=yes`](/keys/engineer/#scope-infantrytype) is rated as an engineer instead.
+- A computer house choosing an ion cannon target rates the soldier by [`AIIonCannonThiefValue`](/keys/aiioncannonthiefvalue/). A type that is also [`Engineer=yes`](/keys/engineer/#scope-infantrytype) is rated as an engineer instead.
 
 A vehicle this type has stolen counts against the type's positive [`BuildLimit`](/keys/buildlimit/) while the thief's house owns it. With `BuildLimit=1`, a house that owns a vehicle this type stole cannot build the type again. A stolen aircraft does not count, and neither does a vehicle taken when it drives over its thief. A stolen vehicle that deploys into a structure stops counting, and it does not count again after it undeploys.
 
