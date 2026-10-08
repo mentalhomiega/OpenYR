@@ -273,6 +273,8 @@ void SpawnManagerClass::AI(void)
 				Coord const here = unit->Get_Coord();
 				if (std::hypot(double(home.X - here.X), double(home.Y - here.Y)) < CELL_LEPTON * 3 / 2) {
 					unit->Limbo();
+					// Limbo detaches the aircraft from its owner and unlinks this node, so link it again.
+					node.Unit = unit;
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
 				} else {
