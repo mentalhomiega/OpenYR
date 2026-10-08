@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-Firing a weapon with `Suicide=yes` destroys the firer instead of launching a projectile. The firer's [`DeathWeapon`](/keys/deathweapon/#scope-aircrafttype) and explosion then do the damage, so a suicide weapon needs a `DeathWeapon` to hurt anything. The weapon's own `Damage`, `Warhead` and `Projectile` are not used when it fires.
+Firing a weapon with `Suicide=yes` destroys the firer instead of launching a projectile. The firer's [`DeathWeapon`](/keys/deathweapon/#scope-aircrafttype) and explosion then do the damage, so a suicide weapon needs a `DeathWeapon` to hurt anything. A firer that is a vehicle may leave a crew, as any other destroyed vehicle does under [`CrewEscape`](/keys/crewescape/). The weapon's own `Damage`, `Warhead` and `Projectile` are not used when it fires.
 
 ```ini title="rulesmd.ini"
 [MyBombTruck] ; example VehicleType
