@@ -200,7 +200,7 @@ The house tests each trigger against these gates in order. The first gate that f
 The tech level requirement is not a field of the record. It is the highest `TechLevel` among the members of the trigger's TaskForces, so a trigger requires what its teams require. A member with `TechLevel=-1` raises the requirement to `11`, which rejects the trigger for every house below tech level 11.
 
 :::danger[Give every TeamType a TaskForce]
-Set [`TaskForce=`](/keys/taskforce/) on every TeamType that an AI trigger names. If one has no `TaskForce=`, the game crashes while it reads that trigger during scenario loading.
+Set [`TaskForce=`](/keys/taskforce/) on every TeamType that an AI trigger names. A TeamType with no `TaskForce=` takes the first one an earlier TeamType names. When no earlier TeamType names one, the game crashes while it reads that trigger during scenario loading.
 :::
 
 :::caution[Outside a campaign every team member must be buildable]
