@@ -560,9 +560,8 @@ class FootClass : public TechnoClass
 		Cell Safety_Point(Cell const & src, Cell const & dst, int start, int max);
 		int Rescue_Mission(AbstractClass * tarcom);
 		bool Tiberium_Check(Cell & center);
-		bool Goto_Tiberium(int rad, bool allow_weighted = false);
-		Cell Search_For_Tiberium(int rad, bool allow_weighted = false);
-		Cell Search_For_Tiberium_Weighted(int rad);
+		bool Goto_Tiberium(int rad);
+		Cell Search_For_Tiberium(int rad);
 
 		bool Weed_Check(Cell & center, int x, int y);
 		bool Goto_Weed(int rad);

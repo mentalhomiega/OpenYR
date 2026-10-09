@@ -3779,7 +3779,7 @@ void InfantryClass::Fear_AI(void)
 					if (Map[(Coord const &)PositionCoord].Land_Type() == LAND_TIBERIUM) {
 						Do_Action(DO_LIE_DOWN);
 					} else {
-						Goto_Tiberium(16, false);
+						Goto_Tiberium(16);
 						if (NavCom != NULL) {
 							Assign_Target(NULL);
 							Assign_Mission(MISSION_MOVE);

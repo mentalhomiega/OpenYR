@@ -192,10 +192,6 @@ A cell is skipped when any of the following holds, tested in this order:
 3. it is in a different [movement zone](/glossary/#movement-zone) from the cell the harvester is heading to, or from the cell it stands in when it is not moving;
 4. the harvester cannot enter it, or it is not Tiberium ground.
 
-A computer-controlled harvester in a skirmish or multiplayer game searches differently when it sets out with no recorded patch. It checks every ring out to the limit instead of stopping at the first ring that has Tiberium. Along each side of a ring, it considers only the first cell of each unbroken run of Tiberium, which spreads the candidates across the field. It then picks one candidate at random, weighted by value and distance.
-
-A candidate's weight is its value divided by a distance factor, and never less than 1. The factor is twice the ring's distance divided by the number of harvesters the house owns, rounded down and at least 1. Richer and nearer cells are therefore favored, and distance matters less the more harvesters the house owns. The count includes every type in [`HarvesterUnit`](/keys/harvesterunit/), whatever the searching vehicle's type.
-
 If the search finds nothing and the harvester has nowhere to drive, it waits 7 seconds and then takes a guard mission. A harvester parked on a refinery first moves off it.
 
 A `Harvester=yes` vehicle that gives up this way marks its house short of Tiberium for the rest of the scenario. A computer-controlled house marked this way stops [building replacement harvesters](/keys/harvester/#scope-global-rules). Its harvesters that go to guard also stay there instead of resuming harvesting.
