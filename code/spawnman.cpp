@@ -150,7 +150,20 @@ void SpawnManagerClass::Detach(AbstractClass const * target)
 	if (NewTarget == target) {
 		NewTarget = NULL;
 	}
-	Unlink((AircraftClass const *)target);
+
+	// A living aircraft that is only limboed, as one docking is, keeps its node. gamemd's
+	// SpawnManagerClass::UnlinkPointer (0x6B7C60) does the same; a dead, kamikaze or missile spawn is released.
+	for (NodeType & node : Nodes) {
+		if (node.Unit == NULL || node.Unit != target) {
+			continue;
+		}
+		if (node.Unit->Strength > 0 && !node.Unit->IsKamikaze && !node.IsMissile) {
+			continue;
+		}
+		node.Unit = NULL;
+		node.Status = NODE_DEAD;
+		node.Start_Timer(RegenRate);
+	}
 }
 
 
@@ -273,8 +286,6 @@ void SpawnManagerClass::AI(void)
 				Coord const here = unit->Get_Coord();
 				if (std::hypot(double(home.X - here.X), double(home.Y - here.Y)) < CELL_LEPTON * 3 / 2) {
 					unit->Limbo();
-					// Limbo detaches the aircraft from its owner and unlinks this node, so link it again.
-					node.Unit = unit;
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
 				} else {
