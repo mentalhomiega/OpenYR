@@ -180,8 +180,28 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <string>
 #include <vector>
+
+
+// What each house has finished producing: units, infantry, aircraft and structures.
+struct ProducedTallyStruct {
+	int Count[4];
+};
+static std::map<HouseClass const *, ProducedTallyStruct> _ProducedBy;
+
+void AutoTest_Note_Built(HouseClass const * house, int rtti)
+{
+	int slot = -1;
+	if (rtti == RTTI_UNIT) slot = 0;
+	else if (rtti == RTTI_INFANTRY) slot = 1;
+	else if (rtti == RTTI_AIRCRAFT) slot = 2;
+	else if (rtti == RTTI_BUILDING) slot = 3;
+	if (slot >= 0) {
+		_ProducedBy[house].Count[slot]++;
+	}
+}
 
 
 namespace {
@@ -1624,12 +1644,14 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());
 		for (int house = 0; house < Houses.Count(); house++) {
 			int buildings = 0, units = 0, infantry = 0, aircraft = 0, busy = 0, harvesters = 0;
+			int destinations = 0;
 			std::string types;
 			for (int index = 0; index < Technos.Count(); index++) {
 				TechnoClass * techno = Technos[index];
 				if (techno->House != Houses[house] || techno->IsInLimbo || techno->Strength <= 0) {
 					continue;
 				}
+				if (techno->TClass->IsResourceDestination) destinations++;
 				if (techno->What_Am_I() == RTTI_BUILDING) {
 					buildings++;
 					types += std::string(" ") + techno->TClass->Name();
@@ -1662,6 +1684,10 @@ void Run(StepType const & step)
 						owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-", owner->BuildUnit != UNIT_NONE ? UnitTypes[owner->BuildUnit]->Name() : "-",
 						owner->BuildInfantry != INFANTRY_NONE ? InfantryTypes[owner->BuildInfantry]->Name() : "-", owner->BuildAircraft != AIRCRAFT_NONE ? AircraftTypes[owner->BuildAircraft]->Name() : "-",
 						(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort, owner->Control.TechLevel);
+					ProducedTallyStruct const produced = _ProducedBy[owner];
+					DebugString("AUTOTEST     economy difficulty %d gatherers %d destinations %d produced units %d infantry %d aircraft %d structures %d factories units %d infantry %d aircraft %d\n",
+						(int)owner->Difficulty, owner->Count_Resource_Gatherers(), destinations, produced.Count[0], produced.Count[1], produced.Count[2], produced.Count[3],
+						owner->Factory_Count(RTTI_UNIT), owner->Factory_Count(RTTI_INFANTRY), owner->Factory_Count(RTTI_AIRCRAFT));
 				}
 				for (int f = 0; f < Factories.Count(); f++) {
 					FactoryClass * factory = Factories[f];

@@ -131,6 +131,7 @@
 
 #include <cmath>
 
+#include "autotest.h"
 #include "house.h"
 
 #include "_logic.h"
@@ -3280,6 +3281,7 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 void HouseClass::Just_Built(TechnoClass * product)
 {
 	IsBuiltSomething = true;
+	AutoTest_Note_Built(this, product->Fetch_RTTI());
 
 	TechnoTypeClass const * ttype = product->TClass;
 
