@@ -5435,7 +5435,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						while (typ != NULL && typ->IsEngineer && engineer) {
 							typ = Crew_Type();
 						}
-						if (typ == NULL) break;
+						if (typ == NULL) {
+							// A survivor with no type is left out, and the rest still come out, as the destroyed-structure path does.
+							count--;
+							continue;
+						}
 						if (typ->IsEngineer) engineer = true;
 
 						InfantryClass * infantry = NULL;
