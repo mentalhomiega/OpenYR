@@ -4339,6 +4339,9 @@ bool CellClass::Can_Tiberium_Grow(void) const
 
 	if (tiberium == TIBERIUM_NONE) return(false);
 
+	// Tiberium never grows on a slope, as gamemd 0x483620 does.
+	if (Ramp != RAMP_NONE) return(false);
+
 	TiberiumClass *tptr = Tiberiums[tiberium];
 
 	if (OverlayData >= tptr->FrameCount - 1) return(false);
@@ -4375,6 +4378,8 @@ bool CellClass::Can_Tiberium_Spread(void) const
 	if (tiberium == TIBERIUM_NONE) return(false);
 
 	if (OverlayData <= tiberium / 2) return(false);
+
+	if (Ramp != RAMP_NONE) return(false);
 
 	if (Tiberiums[tiberium]->SpreadPercentage < 0.00001) return(false);
 
@@ -4445,7 +4450,7 @@ bool CellClass::Spread_Tiberium(bool forced)
 		CellClass * newcell = &Adjacent_Cell(FacingType(Facing_Add(index, offset))); //was (index+offset);
 
 		if (newcell != NULL && newcell->Can_Tiberium_Germinate(tiberium)) {
-			return(newcell->Place_Tiberium(tibtype, 5));
+			return(newcell->Place_Tiberium(tibtype, 3));
 		}
 	}
 	return(false);
@@ -4487,7 +4492,7 @@ bool CellClass::Can_Tiberium_Germinate(TiberiumClass const * tiberium) const
 
 	if (Overlay != OVERLAY_NONE) return(false);
 
-	if (Ramp > RAMP_SOUTH || (Ramp != RAMP_NONE && tiberium != NULL && tiberium->RampVariety == 0)) return(false);
+	if (Ramp != RAMP_NONE) return(false);
 
 	if (ITType >= ISOTILE_FIRST && ITType < IsometricTileTypes.Count() && !IsometricTileTypes[ITType]->IsAllowTiberium) return(false);
 
