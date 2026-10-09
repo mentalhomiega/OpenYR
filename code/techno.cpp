@@ -5856,15 +5856,16 @@ bool TechnoClass::Captured(HouseClass * newowner)
 
 
 /// <summary>
-/// Gives this object to another house as TechnoClass::SetOwningHouse (0x7014A0) does for a
-/// psychic dominator capture. It drops its orders and joins the new house's lists, but unlike
-/// Captured it springs no trigger and records no kill.
+/// Gives this object to another house as TechnoClass::SetOwningHouse (0x7014A0) does for a mind
+/// control or psychic dominator capture. It drops its orders and joins the new house's lists, but
+/// unlike Captured it springs no trigger.
 /// </summary>
 /// <param name="newowner">The house that takes the object.</param>
-void TechnoClass::Set_Owning_House(HouseClass * newowner)
+/// <returns>bool; Was the object given over? False when the house already owns it.</returns>
+bool TechnoClass::Set_Owning_House(HouseClass * newowner)
 {
 	if (newowner == NULL || newowner == House) {
-		return;
+		return(false);
 	}
 
 	if (IsSelected && House == PlayerPtr) {
@@ -5874,8 +5875,11 @@ void TechnoClass::Set_Owning_House(HouseClass * newowner)
 	Assign_Destination(NULL);
 
 	bool const unloading = RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && CurrentMission == MISSION_UNLOAD;
-	if (!unloading) {
+	if (!unloading && CurrentMission != MISSION_DECONSTRUCTION) {
 		Assign_Mission(MISSION_GUARD);
+	}
+	if (SpawnManager) {
+		SpawnManager->Kill_Nodes();
 	}
 
 	HouseClass * const oldowner = House;
@@ -5927,6 +5931,7 @@ void TechnoClass::Set_Owning_House(HouseClass * newowner)
 		Radar_Untrack();
 		Radar_Track();
 	}
+	return(true);
 }
 
 

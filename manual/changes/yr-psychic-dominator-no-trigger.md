@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A unit the psychic dominator takes over now changes hands as Yuri's Revenge does, and it springs no trigger. Before, the capture sprang the unit's "player enters" trigger and the destroyed-any triggers, so a map could react to a dominator blast as if the unit had been destroyed.
+A unit the psychic dominator takes over now changes owner without springing a trigger. Before, the capture sprang the unit's "player enters" trigger. Yuri's Revenge also raises the destroyed-any trigger events of an infantryman or aircraft that changes owner this way. We do not do that yet.

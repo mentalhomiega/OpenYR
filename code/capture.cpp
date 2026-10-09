@@ -68,8 +68,9 @@ bool CaptureManagerClass::Can_Capture(TechnoClass const * target) const
 
 /// <summary>
 /// Takes the target over for the firer's house (CaptureManagerClass::CaptureUnit, 0x471D40).
-/// The unit drops its orders and guards, unless it is a harvester unloading, and shows
-/// ControlledAnimationType above it; the link to it shows for MindControlAttackLineFrames.
+/// The owner changes through Set_Owning_House, so no "player entered" trigger is sprung. The unit
+/// drops its orders and guards, unless it is a harvester unloading, and shows ControlledAnimationType
+/// above it; the link to it shows for MindControlAttackLineFrames.
 /// </summary>
 /// <returns>bool; Was the target taken over?</returns>
 bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
@@ -82,7 +83,7 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 	}
 
 	HouseClass * const original = target->House;
-	if (!target->Captured(Owner->House)) {
+	if (!target->Set_Owning_House(Owner->House)) {
 		return(false);
 	}
 
@@ -141,11 +142,11 @@ bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
 		VocType const sound = unit->TClass->MindClearedSound != VOC_NONE ? unit->TClass->MindClearedSound : Rule->MindClearedSound;
 		Sound_Effect(sound, unit->Center_Coord());
 
-		unit->MindControlledBy = NULL;
 		if (original != NULL) {
-			unit->Captured(original);
+			unit->Set_Owning_House(original);
 		}
 		Decide_Unit_Fate(unit);
+		unit->MindControlledBy = NULL;
 	}
 	return(true);
 }
