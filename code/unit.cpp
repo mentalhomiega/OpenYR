@@ -5472,6 +5472,7 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 		} else {
 			ObjectClass * object = cellptr->Cell_Occupier(isbridge);
 			int crushed = false;
+			bool crushed_vehicle = false;
 			while (object != NULL) {
 				if (Can_Crush(object) && (!House->Is_Ally(object) || Class->IsTrain) && !object->IsFalling && Relative_Distance(object->Center_Coord()) < CELL_LEPTON*64) {
 
@@ -5490,6 +5491,9 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 
 						ObjectClass * next = object->Next;
 						crushed = true;
+						if (object->RTTI == RTTI_UNIT) {
+							crushed_vehicle = true;
+						}
 
 						/*
 						**	Record credit for the kill(s)
@@ -5506,7 +5510,14 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 					object = object->Next;
 				}
 			}
-			if (crushed) Do_Uncloak();
+			if (crushed) {
+				Do_Uncloak();
+
+				// Crushing a vehicle rocks the crusher back once, as TryCrushCell does.
+				if (crushed_vehicle && RockingForwardsPerFrame == 0.0f) {
+					RockingForwardsPerFrame = -0.05f;
+				}
+			}
 		}
 	}
 }
