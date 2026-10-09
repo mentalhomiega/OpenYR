@@ -11,4 +11,6 @@ A finished object appears at a fixed point inside the structure's footprint, not
 
 A weapons factory lets out one object at a time. While it is unloading, it hands the next object to another structure of the same type and house that is idle and producing nothing, and that structure lets the object out. If no such structure is free, the attempt is temporarily blocked. [Leaving the factory](/systems/production/#leaving-the-factory) covers what a blocked attempt does to the order.
 
+A vehicle still in radio contact with a weapons factory starts only a queued move or enter order. Any other queued order waits until that contact ends.
+
 A carryall cannot be ordered to pick up an object standing on such a structure.

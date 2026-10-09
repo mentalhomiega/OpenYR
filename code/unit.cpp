@@ -6455,7 +6455,8 @@ bool UnitClass::Ready_To_Commence(void)
 
 	RadioClass * radio = Contact_With_Whom();
 	if (radio != NULL) {
-		if (radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory && MissionQueue != MISSION_MOVE) {
+		// A queued Move or Enter starts even in contact with a war factory, as UnitClass::ReadyToNextMission (0x744270) allows.
+		if (radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory && MissionQueue != MISSION_MOVE && MissionQueue != MISSION_ENTER) {
 			return(false);
 		}
 	} else {
