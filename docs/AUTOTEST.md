@@ -27,6 +27,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `record <frames>` | Saves a screenshot every that many frames; `record 0` stops |
 | `dump` | Writes the player's credits, structures and units, with their missions and movement, to the debug log |
 | `enemies` | Writes the other houses' structures and their unit and infantry counts to the debug log |
+| `iq` | Writes each house's base IQ (the map's `IQ=`, 0 for a skirmish computer), its effective IQ, and whether each [IQ] gate is open for it |
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `anims` | Writes the first entries of the animation list to the debug log |
 | `truecolour <NAME.SHP>` | Writes whether a PNG replaces that shape (see [TRUECOLOUR.md](TRUECOLOUR.md)), whether the shape is an SHP (`shp`) or was made from a sheet that has none (`png-only`), with the shape's frame count and size, the sheet's size, the frames it covers, whether it has a house-colour mask, whether the shadows come from the PNG or the SHP, and the centre pixel of its first frame |

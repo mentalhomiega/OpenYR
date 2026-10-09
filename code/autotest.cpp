@@ -390,6 +390,24 @@ void Enemies(void)
 }
 
 
+// Writes each house's base IQ (Control.IQ, the map's IQ= value) and effective IQ, and whether each [IQ] gate is open.
+void Iq(void)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass const * house = Houses[index];
+		DebugString("AUTOTEST iq house %d %s human %d control %d effective %d paranoid %d basebuild %d difficulty %d"
+			" sw %d repairsell %d sellback %d production %d harvester %d guardarea %d crush %d scatter %d contentscan %d\n",
+			index, house->Class->Name(), (int)house->Is_Human_Player(), house->Control.IQ, house->IQ, (int)house->IsParanoid,
+			(int)house->IsBaseBuilding, (int)house->Difficulty,
+			(int)(Session.Type != GAME_NORMAL || house->IQ >= Rule->IQSuperWeapons),
+			(int)(house->IQ >= Rule->IQRepairSell), (int)(house->Control.IQ >= Rule->IQSellBack),
+			(int)(house->IQ >= Rule->IQProduction), (int)(house->IQ >= Rule->IQHarvester),
+			(int)(house->IQ >= Rule->IQGuardArea), (int)(house->IQ >= Rule->IQCrush),
+			(int)(house->IQ >= Rule->IQScatter), (int)(house->IQ >= Rule->IQContentScan));
+	}
+}
+
+
 void Dump(void)
 {
 	DebugString("AUTOTEST dump frame %d credits %d power %d drain %d\n", Frame, PlayerPtr->Available_Money(), PlayerPtr->Power, PlayerPtr->Drain);
@@ -566,6 +584,11 @@ void Run(StepType const & step)
 			PlayerPtr->IsWarFactoryInfiltrated = true;
 		}
 		DebugString("AUTOTEST   infiltrate %s\n", step.Argument.c_str());
+		return;
+	}
+	if (step.Command == "iq") {
+		// iq: writes each house's base and effective IQ and which [IQ] gates it opens.
+		Iq();
 		return;
 	}
 	if (step.Command == "crate") {
