@@ -12,6 +12,6 @@ A computer house whose [`IQ`](/keys/iq/) is at least this level sends its idle i
 A member of a team always takes Guard. A type that sets [`DefaultToGuardArea=yes`](/keys/defaulttoguardarea/) takes Area Guard outside a team whatever the level. Outside a team, the level applies differently to infantry and vehicles:
 
 - **Infantry.** Only a computer house's infantry is tested. At or above the level, an armed soldier, an engineer or a vehicle thief takes Area Guard, and any other unarmed soldier takes Guard. A human house's infantry takes Area Guard only through the `GUARD_AREA` [veterancy ability](/systems/veterancy/#abilities), whatever the house's `IQ`.
-- **Vehicles.** An armed vehicle takes Area Guard when its house reaches the level or when it holds the `GUARD_AREA` ability. An unarmed vehicle is never sent to Area Guard.
+- **Vehicles.** An armed vehicle takes Area Guard when its house reaches the level or when it holds the `GUARD_AREA` ability. A vehicle that manages slaves, such as Yuri's slave miner, takes Guard instead. An unarmed vehicle is never sent to Area Guard.
 
 The vehicle test does not check who owns the vehicle. A human house whose map sets its `IQ` to this level or higher sends its idle armed vehicles to Area Guard as well.

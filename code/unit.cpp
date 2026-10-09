@@ -1770,7 +1770,13 @@ MissionType UnitClass::Idle_Guard_Mission(void) const
 	if (!Is_Weapon_Equipped()) {
 		return(MISSION_GUARD);
 	}
-	if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) && !Class->IsDefaultToGuardArea || Team != NULL) {
+	/*
+	**	gamemd's UnitClass::EnterIdleMode guards an area only when the house IQ reaches
+	**	GuardArea, or the unit has the ability or defaults to it, and the unit is neither
+	**	on a team, a slave, nor a slave manager.
+	*/
+	bool const area = House->IQ >= Rule->IQGuardArea || Has_Ability(ABILITY_GUARD_AREA) || Class->IsDefaultToGuardArea;
+	if (!area || Team != NULL || SlaveOwner != NULL || SlaveManager) {
 		return(MISSION_GUARD);
 	}
 	return(MISSION_GUARD_AREA);
