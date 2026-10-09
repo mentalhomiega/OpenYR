@@ -15,13 +15,18 @@
 
 #include "teleport.h"
 
+#include "anim.h"
 #include "autotest.h"
+#include "cell.h"
 #include "dbgprint.h"
 #include "foot.h"
+#include "_map.h"
 #include "_rules.h"
 #include "globals.h"
 #include "rules.h"
 #include "savestream.h"
+#include "unit.h"
+#include "unittype.h"
 
 
 /// <summary>
@@ -100,6 +105,10 @@ int TeleportLocomotionClass::Warp_Distance(Coord const & to) const
 /// <returns>int; The number of frames to wait.</returns>
 int TeleportLocomotionClass::Warp_Delay(Coord const & to) const
 {
+	// A harvester warps out with no wait, whatever the distance (the zero-delay branch of 0x719576).
+	if (LinkedTo->RTTI == RTTI_UNIT && static_cast<UnitClass const *>(LinkedTo)->Class->IsToHarvest) {
+		return(0);
+	}
 	int const distance = Warp_Distance(to);
 
 	int delay = 0;
@@ -139,6 +148,9 @@ Coord TeleportLocomotionClass::Destination(void)
 void TeleportLocomotionClass::Move_To(Coord to)
 {
 	DestinationCoord = to;
+	if (Rule->WarpOut != NULL) {
+		new AnimClass(Rule->WarpOut, LinkedTo->PositionCoord);
+	}
 	if (WarpPhase != TELEPORT_HOLD) {
 		WarpPhase = TELEPORT_WARP_OUT;
 		WarpEnd = Frame + Warp_Delay(to);
@@ -197,8 +209,9 @@ bool TeleportLocomotionClass::Process(void)
 	}
 
 	if (WarpPhase == TELEPORT_WARP_OUT && Frame >= WarpEnd && DestinationCoord != COORD_NONE) {
+		Coord const landing = DestinationCoord;
 		LinkedTo->Mark(MARK_UP);
-		LinkedTo->PositionCoord = DestinationCoord;
+		LinkedTo->PositionCoord = landing;
 		LinkedTo->Mark(MARK_DOWN);
 		DestinationCoord = COORD_NONE;
 		WarpPhase = TELEPORT_HOLD;
@@ -206,6 +219,9 @@ bool TeleportLocomotionClass::Process(void)
 		// A landing ends the move, as a walking locomotor's arrival does; otherwise the owner's
 		// mission orders the same destination again once the hold ends.
 		LinkedTo->Assign_Destination(NULL);
+		if (Rule->WarpIn != NULL) {
+			new AnimClass(Rule->WarpIn, landing);
+		}
 		if (AutoTest_Active()) {
 			DebugString("AUTOTEST   warp landed %s cell %d,%d frame %d hold until %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd);
 		}

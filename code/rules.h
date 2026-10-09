@@ -229,6 +229,7 @@ class RulesClass
 		AnimTypeClass const * ChronoPlacement;
 		AnimTypeClass const * ChronoBlast;
 		AnimTypeClass const * ChronoBlastDest;
+		AnimTypeClass const * WarpIn;
 		AnimTypeClass const * WarpOut;
 
 		// Played where a temporal weapon erases its target, and every 24 frames over an object being warped.

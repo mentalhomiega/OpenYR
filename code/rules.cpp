@@ -388,6 +388,7 @@ RulesClass::RulesClass(void) :
 	ChronoPlacement(NULL),
 	ChronoBlast(NULL),
 	ChronoBlastDest(NULL),
+	WarpIn(NULL),
 	WarpOut(NULL),
 	WarpAway(NULL),
 	ChronoSparkle1(NULL),
@@ -1488,6 +1489,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		ChronoPlacement = TGet_Class(ini, GENERAL, "ChronoPlacement", ChronoPlacement);
 		ChronoBlast = TGet_Class(ini, GENERAL, "ChronoBlast", ChronoBlast);
 		ChronoBlastDest = TGet_Class(ini, GENERAL, "ChronoBlastDest", ChronoBlastDest);
+		WarpIn = TGet_Class(ini, GENERAL, "WarpIn", WarpIn);
 		WarpOut = TGet_Class(ini, GENERAL, "WarpOut", WarpOut);
 		WarpAway = TGet_Class(ini, GENERAL, "WarpAway", WarpAway);
 		ChronoSparkle1 = TGet_Class(ini, GENERAL, "ChronoSparkle1", ChronoSparkle1);
@@ -2743,6 +2745,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoPlacement);
 	stream.Serialize(ChronoBlast);
 	stream.Serialize(ChronoBlastDest);
+	stream.Serialize(WarpIn);
 	stream.Serialize(WarpOut);
 	stream.Serialize(WarpAway);
 	stream.Serialize(ChronoSparkle1);
@@ -3655,6 +3658,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == ChronoBlastDest) {
 		ChronoBlastDest = NULL;
+	}
+	if (target == WarpIn) {
+		WarpIn = NULL;
 	}
 	if (target == WarpOut) {
 		WarpOut = NULL;
