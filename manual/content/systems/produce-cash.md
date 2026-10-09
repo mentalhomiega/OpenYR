@@ -5,6 +5,7 @@ category: buildings-economy
 keys:
   - Capturable
   - MultiplayPassive
+  - NeedsEngineer
   - Powered
   - ProduceCashAmount
   - ProduceCashBudget
@@ -57,12 +58,15 @@ In a campaign mission, a structure the player owns that starts under shroud prod
 
 When the structure opens, it waits `ProduceCashDelay` frames and makes its first payment. It then waits the same delay before each later payment. Each structure keeps its own count, so two identical structures built a few seconds apart pay a few seconds apart.
 
+The wait runs on whether or not the structure can pay. A payment that falls due while the structure makes no payment is skipped, and the next one comes a full delay later.
+
 The structure makes no recurring payment while any of the following holds:
 
 - `ProduceCashDelay` is zero or negative;
 - `ProduceCashAmount` is zero;
 - the structure is being sold, counted from the moment the sale is ordered;
 - its owner is a neutral house, so a neutral structure earns nothing until someone captures it;
+- its type is [`NeedsEngineer=yes`](/keys/needsengineer/) and its owner has not changed since the structure was placed;
 - it has spent its [budget](#the-budget);
 - its type is `Powered=yes` and it lacks [power](#power).
 
@@ -92,7 +96,7 @@ A structure receives its budget when it first opens. [`ProduceCashResetOnCapture
 
 The power test applies only to a type that sets [`Powered=yes`](/keys/powered/). Such a structure produces nothing while it is switched off, stunned by an [EM pulse](/systems/emp-pulse/), or its house is short of [power](/systems/power/). A `Powered=no` structure keeps producing in all three cases.
 
-While a `Powered=yes` structure is stopped this way, its interval pauses. When it can produce again, the interval resumes with the frames it had left.
+The interval keeps running while a `Powered=yes` structure is stopped this way. A payment that falls due during the stop is skipped, and the next payment comes one full delay later.
 
 :::note[A shortage stops cash structures that draw no power]
 A power shortage stops cash production on a `Powered=yes` structure even when that structure draws no power itself. [Power](/systems/power/) explains which other powered functions a shortage stops, and on which structures.

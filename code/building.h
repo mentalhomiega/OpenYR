@@ -429,6 +429,9 @@ class BuildingClass : public TechnoClass
 		int ProduceCashRemaining;			// Budget left to move; zero is spent and negative is unlimited.
 		bool IsProduceCashStartupPaid;
 
+		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
+		bool HasEngineer;
+
 		// The item a tech secret lab drew when the game started; null for a lab placed later.
 		TechnoTypeClass const * SecretProduct;
 
