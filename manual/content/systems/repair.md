@@ -202,6 +202,8 @@ A depot accepts a [docking request](/internals/radio/) only from an allied vehic
 
 When the object arrives, the depot starts its service mission and the object goes to sleep. Once the object is within 150 leptons of the depot's center, the depot switches off the object's locomotor and clears its destination. This holds the object still on the pad.
 
+The docking point is the depot's center plus the `DockingOffset0=` of its art section. A depot without an offset docks at its center. A naval yard's offset places its dock beside its footprint, so a ship docks there. That point lies more than 150 leptons from the center, so the depot does not switch off the ship's locomotor.
+
 A vehicle that is stopped or given another order while it drives onto the pad is released by the depot. When it reaches the pad cell it was heading for, it moves to the nearest free cell. It stays on the pad if no cell is free or if it is still turning.
 
 ### One step at a time

@@ -2218,7 +2218,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		if ((Mission == MISSION_ENTER || Mission == MISSION_PATROL) && whom != NULL) {
 			Cell center = Center_Coord();
 			Cell whom_center = whom->Center_Coord();
-			if (Center_Coord().As_Cell() == whom->Center_Coord().As_Cell() && whom->RTTI == RTTI_BUILDING) {
+			// A repair building is reached at its dock, which can lie off its center cell: a naval yard's dock is beside its footprint.
+			Cell const arrival = whom->RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(whom)->Destination_Coord_For(this).As_Cell() : whom->Center_Coord().As_Cell();
+			if (Center_Coord().As_Cell() == arrival && whom->RTTI == RTTI_BUILDING) {
 				ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
 				if (clsid == ClassID_HoverLocomotion && static_cast<BuildingClass *>(whom)->Class->IsCanUnitRepair && NavCom == nullptr) {
 					NavCom = whom;
