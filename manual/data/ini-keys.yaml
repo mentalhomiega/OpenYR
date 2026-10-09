@@ -14527,6 +14527,23 @@ FixedAlliance:
       source: code/special.cpp
       guard: null
     level: SpecialClass
+FlakScatter:
+  key: FlakScatter
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: FlakScatter
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 FlakTurretIndex:
   key: FlakTurretIndex
   scopes:

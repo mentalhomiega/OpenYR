@@ -28,4 +28,4 @@ Two limits still apply to an arcing weapon:
 
 A [`High=yes`](/keys/high/#scope-overlaytype) overlay sets off any projectile that crosses its cell less than 100 leptons above the ground, unless the projectile is itself [`High=yes`](/keys/high/#scope-bullettype).
 
-**Scatter.** Pairing the setting with [`Inaccurate=yes`](/keys/inaccurate/) makes the shot scatter: the aim point is moved by up to [`BallisticScatter`](/keys/ballisticscatter/) before the arc is worked out. Neither setting scatters a shot on its own.
+**Scatter.** Pairing the setting with [`Inaccurate=yes`](/keys/inaccurate/) makes the shot scatter: the aim point is moved by up to [`BallisticScatter`](/keys/ballisticscatter/) before the arc is worked out. Neither setting scatters a shot on its own. A flak shell with [`FlakScatter=yes`](/keys/flakscatter/) scatters by its own rule.

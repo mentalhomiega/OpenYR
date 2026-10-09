@@ -49,6 +49,7 @@
 
 #include "always.h"
 
+#include "autotest.h"
 #include "bullet.h"
 
 #include "_convert.h"
@@ -1108,6 +1109,25 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 		Coord tcoord = TarCom->As_Coord();
 
 		/*
+		**	A flak shell that is invisible moves its aim point (BulletClass::MoveTo, 0x468670). The
+		**	spread takes a share of twice BallisticScatter that grows with the distance from the
+		**	launch point to the target, over the range of the bullet's weapon.
+		*/
+		if (Class->FlakScatter && Class->IsInvisible) {
+			double const squared = (double)(coord.X - tcoord.X) * (coord.X - tcoord.X) + (double)(coord.Y - tcoord.Y) * (coord.Y - tcoord.Y) + (double)(coord.Z - tcoord.Z) * (coord.Z - tcoord.Z);
+			int const distance = (int)(float)std::sqrt(squared);
+			int const range = Weapon != NULL ? Weapon->Range : 0;
+			int const share = Scen->RandomNumber(0, Rule->BallisticScatter << 1);
+			int const spread = range > 0 ? (share * distance) / range : 0;
+			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
+			Coord const aim = tcoord;
+			tcoord = Ballistic_Offset(tcoord, spread, angle);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST scatter moveto %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", Class->Name(), range, distance, spread, angle, aim.X, aim.Y, tcoord.X, tcoord.Y);
+			}
+		}
+
+		/*
 		**	Possibly adjust the target if this projectile is inaccurate. This occurs whenever
 		**	certain weapons are trained upon targets they were never designed to attack. Example: when
 		**	turrets or anti-tank missiles are fired at infantry. Indirect
@@ -1339,6 +1359,10 @@ void BulletClass::Bullet_Explodes(bool forced)
 /// <param name="coord">The location that the projectile detonates at.</param>
 void BulletClass::Detonate(Coord const & coord)
 {
+	if (AutoTest_Active() && Class->FlakScatter) {
+		DebugString("AUTOTEST flak impact %s at %d,%d\n", Class->Name(), coord.X, coord.Y);
+	}
+
 	WarheadTypeClass * warhead = Warhead;
 	bool nullified = false;
 

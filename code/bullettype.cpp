@@ -91,6 +91,7 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsFueled(false),
 	IsFaceless(true),
 	IsInaccurate(false),
+	FlakScatter(false),
 	IsAntiAircraft(false),
 	IsAntiGround(true),
 	IsDegenerate(false),
@@ -183,6 +184,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsProximityArmed = ini.Get_Bool(Name(), "Proximity", IsProximityArmed);
 		IsFueled = ini.Get_Bool(Name(), "Ranged", IsFueled);
 		IsInaccurate = ini.Get_Bool(Name(), "Inaccurate", IsInaccurate);
+		FlakScatter = ini.Get_Bool(Name(), "FlakScatter", FlakScatter);
 		IsAntiAircraft = ini.Get_Bool(Name(), "AA", IsAntiAircraft);
 		IsAntiGround = ini.Get_Bool(Name(), "AG", IsAntiGround);
 		IsDegenerate = ini.Get_Bool(Name(), "Degenerates", IsDegenerate);
@@ -301,6 +303,7 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsFueled);
 	crc(IsFaceless);
 	crc(IsInaccurate);
+	crc(FlakScatter);
 	crc(IsAntiAircraft);
 	crc(IsAntiGround);
 	crc(IsDegenerate);
@@ -351,6 +354,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFueled);
 	stream.Serialize(IsFaceless);
 	stream.Serialize(IsInaccurate);
+	stream.Serialize(FlakScatter);
 	stream.Serialize(IsAntiAircraft);
 	stream.Serialize(IsAntiGround);
 	stream.Serialize(IsDegenerate);

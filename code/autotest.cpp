@@ -952,10 +952,12 @@ void Run(StepType const & step)
 					building->House->Class->Name(), building->Occupants.Count(), building->Class->MaxNumberOccupants, building->Strength, (int)building->Can_Occupy_Fire(), (int)(building->TarCom != NULL), (int)building->Arm, (int)building->Mission, (int)building->MissionQueue, (int)building->IsReadyToCommence);
 			}
 		}
-	} else if (step.Command == "spawn") {
+	} else if (step.Command == "spawn" || step.Command == "grantunit") {
 		// spawn <TypeID> x y: puts an object of the type, owned by the first computer house, on that cell.
-		HouseClass * enemy = NULL;
-		for (int index = 0; index < Houses.Count(); index++) {
+		// grantunit <TypeID> x y: the same, owned by the player.
+		bool const player_owned = step.Command == "grantunit";
+		HouseClass * enemy = player_owned ? PlayerPtr : NULL;
+		for (int index = 0; !player_owned && index < Houses.Count(); index++) {
 			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
 				enemy = Houses[index];
 				break;
@@ -971,9 +973,9 @@ void Run(StepType const & step)
 			if (placed) {
 				object->Assign_Mission(MISSION_GUARD);
 			}
-			DebugString("AUTOTEST spawn %s at %d,%d: %s\n", type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
-			DebugString("AUTOTEST spawn %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
+			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
 		}
 	} else if (step.Command == "own" || step.Command == "neutral") {
 		// own <TypeID> x y: puts an object of the type, owned by the player, on that cell. neutral does the
@@ -1198,6 +1200,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "rule") {
 		if (stricmp(step.Argument.c_str(), "CanDetonateTimeBomb") == 0) {
 			Rule->IsCanDetonateTimeBomb = step.X != 0;
+		}
+		if (stricmp(step.Argument.c_str(), "BallisticScatter") == 0) {
+			Rule->BallisticScatter = step.X;
 		}
 		DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
 	} else if (step.Command == "action" || step.Command == "clickon") {

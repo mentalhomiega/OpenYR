@@ -152,6 +152,7 @@
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
+#include "autotest.h"
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
@@ -4810,10 +4811,33 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		Coord turret_coord = Turret_Coord(which);
 		Coord displacement = Predict_Target_Coord() - turret_coord;
 
+		/*
+		**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
+		**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
+		**	flak shell that stays visible takes a share of BallisticScatter that grows with its
+		**	distance to the target over its weapon's range.
+		*/
 		if (bullet->Class->IsInaccurate && bullet->Class->IsArcing) {
-			int spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
-			DirType dir(Random_Double(0.0, M_PI * 2));
-			displacement = Move_Coord(displacement, dir, spread);
+			char const * path = "A";
+			int spread = 0;
+			int distance = 0;
+			int range = 0;
+			if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
+				spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
+			} else {
+				path = "B";
+				double const squared = (double)displacement.X * displacement.X + (double)displacement.Y * displacement.Y + (double)displacement.Z * displacement.Z;
+				distance = (int)(float)std::sqrt(squared);
+				range = Weapon_Range(which);
+				int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
+				spread = range > 0 ? (share * distance) / range : 0;
+			}
+			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
+			Coord const aim = displacement;
+			displacement = Ballistic_Offset(displacement, spread, angle);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
+			}
 		}
 
 		/*
