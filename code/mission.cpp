@@ -459,14 +459,14 @@ bool MissionClass::Is_Recruitable_Mission(MissionType mission)
 /// </summary>
 MissionControlClass::MissionControlClass(void) :
 	Mission(MISSION_NONE),
-	IsNoThreat(false),
-	IsZombie(false),
-	IsRecruitable(true),
-	IsParalyzed(false),
-	IsRetaliate(true),
-	IsScatter(true),
-	Rate(.016),
-	AARate(.016)
+	IsNoThreat(MissionRules::DefaultNoThreat),
+	IsZombie(MissionRules::DefaultZombie),
+	IsRecruitable(MissionRules::DefaultRecruitable),
+	IsParalyzed(MissionRules::DefaultParalyzed),
+	IsRetaliate(MissionRules::DefaultRetaliate),
+	IsScatter(MissionRules::DefaultScatter),
+	Rate(MissionRules::DefaultRate),
+	AARate(MissionRules::DefaultRate)
 {
 }
 
@@ -502,10 +502,7 @@ bool MissionControlClass::Read_INI(CCINIClass const & ini)
 		IsRetaliate = ini.Get_Bool(Name(), "Retaliate", IsRetaliate);
 		IsScatter = ini.Get_Bool(Name(), "Scatter", IsScatter);
 		Rate = ini.Get_Float(Name(), "Rate", Rate);
-		AARate = ini.Get_Float(Name(), "AARate", 0);
-		if (AARate == 0) {
-			AARate = Rate;
-		}
+		AARate = MissionRules::Effective_AA_Rate(ini.Get_Float(Name(), "AARate", 0), Rate);
 		return(true);
 	}
 	return(false);
@@ -532,16 +529,7 @@ bool MissionControlClass::Read_INI(CCINIClass const & ini)
  *=============================================================================================*/
 MissionType MissionClass::Mission_From_Name(char const * name)
 {
-	MissionType	order;
-
-	if (name) {
-		for (order = MISSION_FIRST; order < MISSION_COUNT; order++) {
-			if (stricmp(Missions[order], name) == 0) {
-				return(order);
-			}
-		}
-	}
-	return(MISSION_NONE);
+	return(MissionRules::From_Name(Missions, name));
 }
 
 
@@ -562,7 +550,7 @@ MissionType MissionClass::Mission_From_Name(char const * name)
  *=============================================================================================*/
 char const * MissionClass::Mission_Name(MissionType mission)
 {
-	return(mission != MISSION_NONE ? Missions[mission] : "<none>");
+	return(MissionRules::To_Name(Missions, mission));
 }
 
 

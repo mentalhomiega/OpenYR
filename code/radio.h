@@ -67,8 +67,6 @@ class RadioClass : public MissionClass
 		*/
 		std::vector<RadioClass *> Links;
 
-		int Find_Free_Slot(void) const;
-
 #ifdef _DEBUG
 		/*
 		**	This is a text representation of all the possible radio messages. This

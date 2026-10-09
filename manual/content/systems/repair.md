@@ -261,6 +261,7 @@ The building admits the infantry under **all of**, in this order:
 - it is not in contact with anything other than this infantry;
 - it is switched on;
 - the caller is infantry, not a vehicle or an aircraft;
+- the caller is not under [mind control](/systems/mind-control/#going-into-transports-and-structures);
 - its [`Ammo`](/keys/ammo/) count is not zero;
 - it is not already serving someone.
 

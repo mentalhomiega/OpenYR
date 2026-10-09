@@ -15,6 +15,6 @@ A plain pad neither repairs a docked aircraft nor restores its ammunition. A [`U
 
 A player's aircraft ordered onto a pad docks there only while the pad has a free dock and carries no cargo. An aircraft heading for a pad that is already taken looks for another free structure of a type its [`Dock=`](/keys/dock/) lists. If it finds none, it lands at a clear landing spot instead. An empty carryall ordered into a pad lands at ground level.
 
-A [`FreeUnit=`](/keys/freeunit/) aircraft handed out by a pad stays docked on it.
+A [`FreeUnit=`](/keys/freeunit/) aircraft handed out by a pad stays docked on it. It stands at the pad's center, not on its dock's [`DockingOffsetN=`](/keys/numberofdocks/) spot.
 
 While [the base plan is assembled](/systems/ai-base-building/#building-the-plan), a computer house adds a type with this flag one to three extra times, so its plan holds two to four of that pad. A house whose side has a [base defense count list](/systems/ai-base-building/#the-counted-plan) adds no extra copies.

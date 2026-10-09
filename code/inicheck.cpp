@@ -49,6 +49,39 @@ RegistryType const RULES_REGISTRIES[] = {
 };
 
 
+// Keys whose value names another object section: the type kinds whose sections the engine reads
+// the key from, and the kind it reads the named section as.
+struct Reference {
+	char const * Key;
+	char const * From;
+	char const * Kind;
+};
+
+char const TECHNO_KINDS[] = "AircraftType,BuildingType,InfantryType,UnitType";
+
+Reference const RULES_REFERENCES[] = {
+	{"Primary", TECHNO_KINDS, "WeaponType"},
+	{"Secondary", TECHNO_KINDS, "WeaponType"},
+	{"ElitePrimary", TECHNO_KINDS, "WeaponType"},
+	{"EliteSecondary", TECHNO_KINDS, "WeaponType"},
+	{"Weapon{1-18}", TECHNO_KINDS, "WeaponType"},
+	{"EliteWeapon{1-18}", TECHNO_KINDS, "WeaponType"},
+	{"Projectile", "WeaponType", "BulletType"},
+	{"Warhead", "WeaponType", "WarheadType"},
+};
+
+
+// Does a key name or pattern such as "Weapon{1-18}" name this key?
+bool Names_Key(char const * name, std::string_view key)
+{
+	KeyPattern pattern;
+	if (KeyPattern::Parse(name, pattern)) {
+		return(pattern.Matches(key));
+	}
+	return(key == name);
+}
+
+
 bool Is_Blank(char letter)
 {
 	return((unsigned char)letter <= 32);
@@ -347,10 +380,18 @@ bool Catalog::Load(std::istream & in, std::string & error)
 }
 
 
+/// <summary>
+/// Adds one scope for a key. A key holding a range such as "Weapon{1-18}" is kept as a pattern.
+/// </summary>
 void Catalog::Add(std::string const & key, KeyScope scope)
 {
 	if (!scope.Section.empty() && scope.Section[0] != '@') {
 		Sections.insert(scope.File + "\n" + scope.Section);
+	}
+	KeyPattern pattern;
+	if (key.find('{') != std::string::npos && KeyPattern::Parse(key, pattern)) {
+		Patterns.emplace_back(std::move(pattern), std::move(scope));
+		return;
 	}
 	Keys[key].push_back(std::move(scope));
 }
@@ -369,6 +410,80 @@ std::vector<KeyScope> const * Catalog::Find(std::string const & key) const
 {
 	auto const found = Keys.find(key);
 	return(found != Keys.end() ? &found->second : nullptr);
+}
+
+
+/// <summary>
+/// Every scope for this key: its exact entries, then the patterns it matches.
+/// </summary>
+std::vector<KeyScope const *> Catalog::Find_All(std::string const & key) const
+{
+	std::vector<KeyScope const *> scopes;
+	if (auto const * exact = Find(key)) {
+		for (KeyScope const & scope : *exact) {
+			scopes.push_back(&scope);
+		}
+	}
+	for (auto const & [pattern, scope] : Patterns) {
+		if (pattern.Matches(key)) {
+			scopes.push_back(&scope);
+		}
+	}
+	return(scopes);
+}
+
+
+/// <summary>
+/// Reads a pattern such as "Weapon{1-18}FLH" or "DockingOffset{0-}".
+/// </summary>
+/// <returns>bool; Does text hold exactly one well formed range?</returns>
+bool KeyPattern::Parse(std::string const & text, KeyPattern & pattern)
+{
+	std::size_t const open = text.find('{');
+	std::size_t const close = text.find('}', open);
+	if (open == std::string::npos || close == std::string::npos || text.find('{', close) != std::string::npos) {
+		return(false);
+	}
+	std::string const range = text.substr(open + 1, close - open - 1);
+	std::size_t const dash = range.find('-');
+	if (dash == std::string::npos || dash == 0) {
+		return(false);
+	}
+	char * end = nullptr;
+	pattern.Low = std::strtol(range.c_str(), &end, 10);
+	if (end != range.c_str() + dash) {
+		return(false);
+	}
+	pattern.High = -1;
+	if (dash + 1 < range.size()) {
+		pattern.High = std::strtol(range.c_str() + dash + 1, &end, 10);
+		if (*end != '\0' || pattern.High < pattern.Low) {
+			return(false);
+		}
+	}
+	pattern.Prefix = text.substr(0, open);
+	pattern.Suffix = text.substr(close + 1);
+	return(true);
+}
+
+
+bool KeyPattern::Matches(std::string_view key) const
+{
+	if (key.size() <= Prefix.size() + Suffix.size() || !key.starts_with(Prefix) || !key.ends_with(Suffix)) {
+		return(false);
+	}
+	std::string_view const digits = key.substr(Prefix.size(), key.size() - Prefix.size() - Suffix.size());
+	if (digits.size() > 9 || (digits.size() > 1 && digits[0] == '0')) {
+		return(false);
+	}
+	long number = 0;
+	for (char const letter : digits) {
+		if (!std::isdigit((unsigned char)letter)) {
+			return(false);
+		}
+		number = number * 10 + (letter - '0');
+	}
+	return(number >= Low && (High < 0 || number <= High));
 }
 
 
@@ -413,6 +528,31 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 		}
 	}
 
+	// A section a checked object section names, such as a weapon in Primary=, is checked as that
+	// kind too; repeat until no section gains a kind, so weapons lead on to their warheads.
+	bool added = true;
+	while (added) {
+		added = false;
+		for (Section const & section : sections) {
+			auto const kind = kinds.find(section.Name);
+			if (kind == kinds.end()) {
+				continue;
+			}
+			for (Entry const & entry : section.Entries) {
+				for (Reference const & reference : RULES_REFERENCES) {
+					bool from = false;
+					for (std::string const & type : Split(reference.From, ',')) {
+						from = from || kind->second.contains(type);
+					}
+					if (from && Names_Key(reference.Key, entry.Key) && !kinds[entry.Value].contains(reference.Kind)) {
+						kinds[entry.Value].insert(reference.Kind);
+						added = true;
+					}
+				}
+			}
+		}
+	}
+
 	Report report;
 	for (Section const & section : sections) {
 		if (lists.contains(section.Name)) {
@@ -428,22 +568,20 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 
 		for (Entry const & entry : section.Entries) {
 			std::vector<KeyScope const *> matches;
-			if (auto const * scopes = catalog.Find(entry.Key)) {
-				for (KeyScope const & scope : *scopes) {
-					if (scope.File != file) {
-						continue;
-					}
-					bool applies = is_literal && scope.Section == section.Name;
-					if (!applies && is_object && scope.Section.empty()) {
-						for (std::string const & type : scope.AppliesTo) {
-							if (kind->second.contains(type)) {
-								applies = true;
-							}
+			for (KeyScope const * scope : catalog.Find_All(entry.Key)) {
+				if (scope->File != file) {
+					continue;
+				}
+				bool applies = is_literal && scope->Section == section.Name;
+				if (!applies && is_object && scope->Section.empty()) {
+					for (std::string const & type : scope->AppliesTo) {
+						if (kind->second.contains(type)) {
+							applies = true;
 						}
 					}
-					if (applies) {
-						matches.push_back(&scope);
-					}
+				}
+				if (applies) {
+					matches.push_back(scope);
 				}
 			}
 
