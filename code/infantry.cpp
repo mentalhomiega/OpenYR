@@ -1076,6 +1076,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				}
 				if (building->Mission != MISSION_DECONSTRUCTION && !building->Is_Iron_Curtained()) {
 					building->IsGoingToBlow = true;
+					building->IsC4Applied = true;
 					building->Clicked_As_Target((Rule->C4Delay * TICKS_PER_MINUTE) / 2);
 					building->CountDown = Rule->C4Delay * TICKS_PER_MINUTE;
 					building->WhomToRepay = this;

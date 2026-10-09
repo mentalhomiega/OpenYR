@@ -361,6 +361,6 @@ The random number is drawn again on every frame while the other terms hold, so i
 
 The sellable mark belongs to the structure, not to its type's rules. A structure starts marked unless its type has no buildup animation. A structure placed by the map takes the mark from the field after the trigger name in its map record instead, whatever its type's artwork. A record that leaves the field out gives `0`, not sellable. Outside campaign games the mark is never checked.
 
-The sale itself also requires a buildup animation, in every game mode. A type without one is never sold this way, whatever its mark.
+The sale itself also requires a buildup animation, in every game mode. A type without one is never sold this way, whatever its mark. A structure with a C4 charge applied is not sold either. A sale starts the structure's selling mission.
 
 A computer house repairs and sells its buildings only through this routine. [Rebuilding a destroyed structure](/systems/ai-base-building/) is a separate decision.

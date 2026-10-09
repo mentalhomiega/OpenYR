@@ -233,6 +233,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsRepairing(false),
 	IsWrenchVisible(false),
 	IsGoingToBlow(false),
+	IsC4Applied(false),
 	IsSurvivorless(false),
 	IsCharging(false),
 	PrismStage(PRISM_IDLE),
@@ -4171,6 +4172,34 @@ void BuildingClass::Sell_Back(int control)
 }
 
 
+/// <summary>
+/// Starts the computer's sale of this structure, as BuildingClass::AssignPlanningPath (0x447110)
+/// does with its sell argument. A structure with no build-up animation is not sold, except that a
+/// Firestorm wall is removed. A structure already selling, or with a C4 charge applied, is left alone.
+/// </summary>
+void BuildingClass::Assign_Planning_Path(void)
+{
+	if (!HasBuildupData) {
+		if (Class->IsFirestormWall) {
+			Class->Cost_Of(House);
+			Limbo();
+			Delete_Me();
+		}
+		return;
+	}
+
+	if (Mission == MISSION_DECONSTRUCTION || IsC4Applied) {
+		return;
+	}
+
+	Assign_Mission(MISSION_DECONSTRUCTION);
+	Commence();
+	if (House->Is_Player_Control()) {
+		Sound_Effect(Rule->GenericClick);
+	}
+}
+
+
 /***********************************************************************************************
  * BuildingClass::What_Action -- Determines action to perform if click on specified object.    *
  *                                                                                             *
@@ -7925,7 +7954,7 @@ void BuildingClass::Repair_AI(void)
 					Class->ToBuild != RTTI_BUILDINGTYPE &&
 					HealthRatio < Rule->ConditionRed)
 				{
-					Sell_Back(1);
+					Assign_Planning_Path();
 				}
 			}
 		}
@@ -10158,6 +10187,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsReadyToCommence);
 	stream.Serialize(IsWrenchVisible);
 	stream.Serialize(IsGoingToBlow);
+	stream.Serialize(IsC4Applied);
 	stream.Serialize(IsSurvivorless);
 	stream.Serialize(IsCharging);
 	stream.Serialize(PrismStage);
@@ -10259,6 +10289,7 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsRepairing);
 	crc(IsWrenchVisible);
 	crc(IsGoingToBlow);
+	crc(IsC4Applied);
 	crc(IsSurvivorless);
 	crc(IsCharging);
 	crc(IsCharged);
@@ -11872,6 +11903,7 @@ void BuildingClass::Iron_Curtain(int duration, HouseClass * source, bool force_s
 {
 	if (IsGoingToBlow) {
 		IsGoingToBlow = false;
+		IsC4Applied = false;
 		WhomToRepay = NULL;
 		CountDown = 0;
 	}
