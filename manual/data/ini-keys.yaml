@@ -46,9 +46,9 @@ AARate:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '.016'
+      default_candidate: '0'
       declared_in: MissionControlClass
-      member: AARate
+      member: null
       source: code/mission.cpp
       guard: null
     level: MissionControlClass
@@ -23632,7 +23632,7 @@ NoThreat:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: MissionRules::DefaultNoThreat
       declared_in: MissionControlClass
       member: IsNoThreat
       source: code/mission.cpp
@@ -25123,7 +25123,7 @@ Paralyzed:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: MissionRules::DefaultParalyzed
       declared_in: MissionControlClass
       member: IsParalyzed
       source: code/mission.cpp
@@ -28250,7 +28250,7 @@ Rate:
     value_type: floating point
     status: reviewed
     _provenance:
-      default_candidate: '.016'
+      default_candidate: MissionRules::DefaultRate
       declared_in: MissionControlClass
       member: Rate
       source: code/mission.cpp
@@ -28444,7 +28444,7 @@ Recruitable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: MissionRules::DefaultRecruitable
       declared_in: MissionControlClass
       member: IsRecruitable
       source: code/mission.cpp
@@ -29108,7 +29108,7 @@ Retaliate:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: MissionRules::DefaultRetaliate
       declared_in: MissionControlClass
       member: IsRetaliate
       source: code/mission.cpp
@@ -29574,7 +29574,7 @@ Scatter:
     value_type: boolean
     status: needs_review
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: MissionRules::DefaultScatter
       declared_in: MissionControlClass
       member: IsScatter
       source: code/mission.cpp
@@ -41986,7 +41986,7 @@ Zombie:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: MissionRules::DefaultZombie
       declared_in: MissionControlClass
       member: IsZombie
       source: code/mission.cpp
