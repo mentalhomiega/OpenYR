@@ -338,12 +338,11 @@ void RocketLocomotionClass::Explode(void)
 	MissionState = STATE_NONE;
 	DebugString("Rocket: %s explodes at %d,%d\n", LinkedTo->TClass->Name(), coord.As_Cell().X, coord.As_Cell().Y);
 
-	// The missile leaves the map first so that its own blast cannot destroy it a second time.
-	TechnoClass * source = LinkedTo->SpawnOwner;
+	// The missile deals the blast and keeps its house after its launcher is gone, so the kill is
+	// credited to the house that fired it (RocketLocomotionClass::Explode, 0x6632C7). The blast skips the
+	// missile as a victim, and the missile leaves the map once the blast is dealt.
+	TechnoClass * source = LinkedTo;
 	HouseClass * house = LinkedTo->House;
-	if (LinkedTo->IsActive) {
-		LinkedTo->Delete_Me();
-	}
 
 	if (warhead != NULL) {
 		AnimTypeClass const * anim = Combat_Anim(damage, warhead, Map[coord].Land_Type(), coord);
@@ -351,5 +350,9 @@ void RocketLocomotionClass::Explode(void)
 			new AnimClass(anim, coord);
 		}
 		Explosion_Damage(coord, damage, source, warhead, true, house);
+	}
+
+	if (LinkedTo->IsActive) {
+		LinkedTo->Delete_Me();
 	}
 }
