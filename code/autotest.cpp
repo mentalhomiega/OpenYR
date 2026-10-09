@@ -1050,9 +1050,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "screen") {
 		DebugString("AUTOTEST   screen shake %d,%d frame %d\n", Map.ScreenX, Map.ScreenY, Frame);
 	} else if (step.Command == "kill") {
+		// kill <TypeID> [1]: destroys the computer's objects of the type with no attacker, or the player's with a 1.
 		for (int index = Technos.Count() - 1; index >= 0; index--) {
 			TechnoClass * techno = Technos[index];
-			if (techno->House != PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			bool const player = techno->House == PlayerPtr;
+			if (player == (step.X == 1) && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				int damage = techno->Strength;
 				DebugString("AUTOTEST   kill %s at %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y);
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
@@ -1463,7 +1465,7 @@ void Run(StepType const & step)
 				}
 			}
 		}
-		DebugString("AUTOTEST team %s: %s, %d members\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added);
+		DebugString("AUTOTEST team %s: %s, %d members, heap %d\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added, type != NULL ? type->Fetch_Heap_ID() : -1);
 	} else if (step.Command == "teamtrace") {
 		// teamtrace <0|1>: logs each team script line a team starts, as TEAMTRACE lines.
 		TeamClass::TraceScripts = std::atoi(step.Argument.c_str()) != 0;
