@@ -1,0 +1,64 @@
+; Chrono Miner harvest cycle on the default skirmish map (XMP29U2): a refinery at 62,26 by the ore at 61-66,31.
+; Run: run_autotest.ps1 -Build agent7 -Script tests/teleport/cmin-harvest.txt -Seconds 200
+; Expected: each load warps from the ore to the dock cell 64,27 with no warp-out delay (delay 0), holds 60
+; frames, unloads, and adds 500 credits (10000 at frame 600, 11500 at frame 3000).
+60 command CenterBase
+70 select AMCV
+80 command DeployObject
+300 own GAREFN 62 26
+310 own CMIN 63 31
+320 where CMIN
+360 where CMIN
+420 where CMIN
+480 where CMIN
+540 where CMIN
+600 where CMIN
+600 dump
+660 where CMIN
+720 where CMIN
+780 where CMIN
+840 where CMIN
+900 where CMIN
+960 where CMIN
+1020 where CMIN
+1080 where CMIN
+1140 where CMIN
+1200 where CMIN
+1200 dump
+1260 where CMIN
+1320 where CMIN
+1380 where CMIN
+1440 where CMIN
+1500 where CMIN
+1560 where CMIN
+1620 where CMIN
+1680 where CMIN
+1740 where CMIN
+1800 where CMIN
+1800 dump
+1860 where CMIN
+1920 where CMIN
+1980 where CMIN
+2040 where CMIN
+2100 where CMIN
+2160 where CMIN
+2220 where CMIN
+2280 where CMIN
+2340 where CMIN
+2400 where CMIN
+2400 dump
+2460 where CMIN
+2520 where CMIN
+2580 where CMIN
+2640 where CMIN
+2700 where CMIN
+2760 where CMIN
+2820 where CMIN
+2880 where CMIN
+2940 where CMIN
+3000 where CMIN
+3000 dump
+3060 where CMIN
+3120 where CMIN
+3180 where CMIN
+3200 quit

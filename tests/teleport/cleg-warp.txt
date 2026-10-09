@@ -1,0 +1,73 @@
+; Chrono Legionnaire warp check on the default skirmish map (XMP29U2, base at 64,19).
+; Run: run_autotest.ps1 -Build agent7 -Script tests/teleport/cleg-warp.txt -Seconds 150
+; Expected: 60,24 -> 60,20 (1024 leptons) delay 21 (1024 / ChronoDistanceFactor 48), landing at 351,
+; hold until 411; a long order to 40,24 is set down on the nearest clear cell in the local area
+; (43,28), delay 108, hold 60. No second warp follows a landing (the move ends there).
+60 command CenterBase
+70 select AMCV
+80 command DeployObject
+300 own CLEG 60 24
+320 where CLEG
+330 move CLEG 60 20
+340 where CLEG
+355 where CLEG
+370 where CLEG
+385 where CLEG
+400 where CLEG
+415 where CLEG
+430 where CLEG
+445 where CLEG
+460 where CLEG
+475 where CLEG
+490 where CLEG
+500 move CLEG 40 24
+505 where CLEG
+520 where CLEG
+535 where CLEG
+550 where CLEG
+565 where CLEG
+580 where CLEG
+595 where CLEG
+610 where CLEG
+625 where CLEG
+640 where CLEG
+655 where CLEG
+670 where CLEG
+685 where CLEG
+700 where CLEG
+715 where CLEG
+730 where CLEG
+745 where CLEG
+760 where CLEG
+775 where CLEG
+790 where CLEG
+805 where CLEG
+820 where CLEG
+835 where CLEG
+850 where CLEG
+865 where CLEG
+880 where CLEG
+895 where CLEG
+900 move CLEG 60 40
+910 where CLEG
+925 where CLEG
+940 where CLEG
+955 where CLEG
+970 where CLEG
+985 where CLEG
+1000 where CLEG
+1015 where CLEG
+1030 where CLEG
+1045 where CLEG
+1060 where CLEG
+1075 where CLEG
+1090 where CLEG
+1105 where CLEG
+1120 where CLEG
+1135 where CLEG
+1150 where CLEG
+1165 where CLEG
+1180 where CLEG
+1195 where CLEG
+1200 dump
+1250 quit
