@@ -14,6 +14,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 
@@ -50,18 +51,33 @@ namespace IniCheck
 		ValueKind Kind = ValueKind::OTHER;
 	};
 
+	// A key name the engine builds from a number, written as "Weapon{1-18}" or "DockingOffset{0-}"
+	// with an open upper end. It matches the number as the engine prints it with %d, so
+	// "Weapon01" does not match.
+	struct KeyPattern {
+		std::string Prefix;
+		std::string Suffix;
+		long Low = 0;
+		long High = -1;
+
+		static bool Parse(std::string const & text, KeyPattern & pattern);
+		bool Matches(std::string_view key) const;
+	};
+
 	class Catalog
 	{
 		public:
 			bool Load(std::istream & in, std::string & error);
 			void Add(std::string const & key, KeyScope scope);
 			std::vector<KeyScope> const * Find(std::string const & key) const;
+			std::vector<KeyScope const *> Find_All(std::string const & key) const;
 			std::string Find_Other_Case(std::string const & key) const;
 			bool Has_Section(std::string const & file, std::string const & section) const;
-			std::size_t Count(void) const { return(Keys.size()); }
+			std::size_t Count(void) const { return(Keys.size() + Patterns.size()); }
 
 		private:
 			std::map<std::string, std::vector<KeyScope>> Keys;
+			std::vector<std::pair<KeyPattern, KeyScope>> Patterns;
 			std::set<std::string> Sections;
 	};
 

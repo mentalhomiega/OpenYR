@@ -68,16 +68,29 @@ A section is checked when the catalog names it, such as `[General]` or
 A listed section is checked against the keys of that type kind, so a vehicle
 section accepts vehicle keys and the keys every object type reads.
 
-Every other section is skipped. That includes weapons and projectiles, which
-no list names, and sections such as difficulty settings whose names the
-catalog does not give.
+Weapons and projectiles are found by following the keys that name them:
+
+| Key | Read in | Named section is checked as |
+| --- | --- | --- |
+| `Primary=`, `Secondary=`, `ElitePrimary=`, `EliteSecondary=`, `Weapon1=` to `Weapon18=`, `EliteWeapon1=` to `EliteWeapon18=` | an infantry, vehicle, aircraft or structure section | a weapon |
+| `Projectile=` | a weapon section | a projectile |
+| `Warhead=` | a weapon section | a warhead |
+
+A key is followed only from a section of the kind that reads it, so
+`Projectile=` in a vehicle section is reported and its value is not followed.
+A section named both in a list and by a key is checked against the keys of
+both kinds.
+
+Every other section is skipped, such as a weapon nothing names and sections
+such as difficulty settings whose names the catalog does not give.
 
 ## Limits
 
-The catalog holds the keys the manual's extractor finds in the source. A key
-the engine builds from a pattern, such as `DockingOffset0=`, may be missing
-from it and is then reported although the engine reads it. Treat a finding as
-something to look at, not as proof of an error.
+The catalog holds the keys the manual's extractor finds in the source, plus the
+numbered `art.ini` structure keys `DockingOffset0=` and up and `PowerUp1Anim=`
+and up, which the export script adds. Another key the engine builds from a
+number may be missing and is then reported although the engine reads it. Treat
+a finding as something to look at, not as proof of an error.
 
 ## The catalog format
 
@@ -85,7 +98,9 @@ something to look at, not as proof of an error.
 tab-separated fields: the key, the file, the section, the type kinds and the
 value type. The section is the literal section name, `*` for an object
 section, or `@` followed by the section source for a section the checker does
-not place. Lines starting with `#` are skipped. Do not edit a written catalog;
+not place. A key holding a range, such as `Weapon{1-18}` or
+`DockingOffset{0-}` with an open end, stands for each key with a number in that
+range written without leading zeros. Lines starting with `#` are skipped. Do not edit a written catalog;
 export it again after `manual/data/ini-keys.yaml` changes.
 
 ## Tests

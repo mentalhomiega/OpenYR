@@ -44,6 +44,14 @@ char const CATALOG[] =
 	"Easy\trules.ini\t@difficulty\tdifficulty settings\tfloating point\n"
 	"Image\tart.ini\t*\tAnimType\tstring\n"
 	"TechLevel\tmap file\t@house\tHouse (per-scenario)\tinteger\n"
+	"Damage\trules.ini\t*\tWeaponType\tinteger\n"
+	"Projectile\trules.ini\t*\tWeaponType\tclass\n"
+	"Warhead\trules.ini\t*\tWeaponType\tclass\n"
+	"Arcing\trules.ini\t*\tBulletType\tboolean\n"
+	"Verses\trules.ini\t*\tWarheadType\tstring\n"
+	"Weapon{1-18}\trules.ini\t*\tAircraftType,BuildingType,InfantryType,UnitType\tclass\n"
+	"BurstDelay{0-3}\trules.ini\t*\tWeaponType\tinteger\n"
+	"DockingOffset{0-}\tart.ini\t@image\tBuildingType\tpoint (x,y,z)\n"
 	"Voxel\tart.ini\t@image\tAircraftType,BuildingType,InfantryType,UnitType\tboolean\n";
 
 
@@ -106,6 +114,66 @@ void Test_Catalog(void)
 	Check(good.Find("Speed") != nullptr && good.Find("Speed")->size() == 2, "a key keeps every scope");
 	Check(good.Find("speed") == nullptr && good.Find_Other_Case("speed") == "Speed", "lookups are case sensitive, with a case-blind hint");
 	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "Easy"), "only literal sections count as known sections");
+	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 17, "a key holding a range is kept as a pattern");
+}
+
+
+void Test_Patterns(void)
+{
+	IniCheck::KeyPattern pattern;
+	Check(IniCheck::KeyPattern::Parse("Weapon{1-18}FLH", pattern) && pattern.Prefix == "Weapon" && pattern.Suffix == "FLH", "a pattern splits around its range");
+	Check(pattern.Matches("Weapon1FLH") && pattern.Matches("Weapon18FLH"), "a pattern matches both ends of its range");
+	Check(!pattern.Matches("Weapon0FLH") && !pattern.Matches("Weapon19FLH"), "a pattern refuses numbers outside its range");
+	Check(!pattern.Matches("Weapon01FLH") && !pattern.Matches("WeaponFLH") && !pattern.Matches("Weapon1xFLH"), "a pattern refuses a leading zero, no number and other text");
+
+	Check(IniCheck::KeyPattern::Parse("DockingOffset{0-}", pattern) && pattern.Matches("DockingOffset0") && pattern.Matches("DockingOffset250"), "a pattern with an open end takes any larger number");
+	Check(!IniCheck::KeyPattern::Parse("Weapon{1}", pattern) && !IniCheck::KeyPattern::Parse("Weapon{5-2}", pattern) && !IniCheck::KeyPattern::Parse("Weapon", pattern), "a malformed range is refused");
+
+	IniCheck::Catalog catalog = Load_Catalog();
+	Check(catalog.Find_All("Weapon3").size() == 1 && catalog.Find_All("Weapon19").empty(), "the catalog finds a key through its pattern");
+	Check(catalog.Find_All("DockingOffset7").size() == 1 && catalog.Find_All("DockingOffset7")[0]->File == "art.ini", "an art pattern keeps its scope");
+}
+
+
+void Test_References(void)
+{
+	IniCheck::Catalog catalog = Load_Catalog();
+	char const text[] =
+		"[VehicleTypes]\n"                   // 1
+		"0=MYTANK\n"                         // 2
+		"[MYTANK]\n"                         // 3
+		"Primary=MYGUN\n"                    // 4
+		"Weapon2=OTHERGUN\n"                 // 5
+		"Weapon01=ZEROGUN\n"                 // 6
+		"Projectile=NOTREAD\n"               // 7
+		"[MYGUN]\n"                          // 8
+		"Damage=ten\n"                       // 9
+		"Projectile=MYSHELL\n"               // 10
+		"Warhead=MYWARHEAD\n"                // 11
+		"BurstDelay3=5\n"                    // 12
+		"BurstDelay4=5\n"                    // 13
+		"[OTHERGUN]\n"                       // 14
+		"Speeed=1\n"                         // 15
+		"[MYSHELL]\n"                        // 16
+		"Arcing=maybe\n"                     // 17
+		"[MYWARHEAD]\n"                      // 18
+		"Verses=100%\n"                      // 19
+		"Damage=5\n"                         // 20
+		"[ZEROGUN]\n"                        // 21
+		"Damage=1\n"                         // 22
+		"[NOTREAD]\n"                        // 23
+		"Arcing=yes\n";                      // 24
+
+	IniCheck::Report const report = IniCheck::Check_Rules(catalog, text);
+
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Damage", 9), "a weapon named by Primary= is checked as a weapon");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Speeed", 15), "a weapon named by a numbered Weapon key is checked");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Arcing", 17), "a projectile named by the weapon's Projectile= is checked");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Damage", 20), "a warhead named by the weapon's Warhead= is checked as a warhead");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "BurstDelay3", 12) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "BurstDelay4", 13), "a numbered key is read only inside its range");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Weapon01", 6) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Projectile", 7), "keys the type does not read are reported");
+	Check(report.Findings.size() == 7, "nothing else is reported");
+	Check(report.UncheckedSections.size() == 2 && report.UncheckedSections[0] == "ZEROGUN" && report.UncheckedSections[1] == "NOTREAD", "a reference from a key the type does not read is not followed");
 }
 
 
@@ -135,7 +203,9 @@ void Test_Rules(void)
 		"Power=100\r\n"                     // 20
 		"Crusher=yes\r\n"                   // 21
 		"[MYGUN]\r\n"                       // 22
-		"Damage=10\r\n";                    // 23
+		"Damage=10\r\n"                     // 23
+		"[ORPHAN]\r\n"                      // 24
+		"Damage=10\r\n";                    // 25
 
 	IniCheck::Report const report = IniCheck::Check_Rules(catalog, text);
 
@@ -147,7 +217,7 @@ void Test_Rules(void)
 	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Power", 15), "a key of another type kind is reported");
 	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Crusher", 21), "a vehicle key in a structure section is reported");
 	Check(report.Findings.size() == 7, "nothing else is reported, including lines the engine skips");
-	Check(report.UncheckedSections.size() == 1 && report.UncheckedSections[0] == "MYGUN", "a section no list names is left unchecked");
+	Check(report.UncheckedSections.size() == 1 && report.UncheckedSections[0] == "ORPHAN", "a section no list or reference names is left unchecked");
 
 	bool ordered = true;
 	for (std::size_t index = 1; index < report.Findings.size(); index++) {
@@ -232,10 +302,12 @@ int main(void)
 {
 	Test_Values();
 	Test_Catalog();
+	Test_Patterns();
 	Test_Rules();
 	Test_Art();
 	Test_Map_Listing();
 	Test_Rules_Overlay();
+	Test_References();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);
