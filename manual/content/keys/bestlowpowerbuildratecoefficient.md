@@ -8,4 +8,4 @@ when_omitted:
   value: ".75"
 ---
 
-The mildest production slowdown a power shortfall can cause is fixed in the engine at a multiplier of `0.75`, the same as this key's default. [The production table](/systems/power/#production) lists the multipliers that apply.
+A power shortfall does not read this value. [`MaxLowPowerProductionSpeed`](/keys/maxlowpowerproductionspeed/) caps the speed a shortfall can set, and [the power page](/systems/power/#production) gives the rest of the calculation.

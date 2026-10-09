@@ -19,8 +19,10 @@ keys:
   - Gate
   - GateStages
   - Hospital
+  - LowPowerPenaltyModifier
   - MaximumQueuedObjects
-  - MinProductionSpeed
+  - MaxLowPowerProductionSpeed
+  - MinLowPowerProductionSpeed
   - MultipleFactory
   - MultipleFactoryCap
   - Owner
@@ -228,7 +230,7 @@ Build time is counted in game frames. It is computed in this order and truncated
 
 1. Start from the object's [`Cost=`](/keys/cost/#scope-aircrafttype), multiplied by [`BuildSpeed`](/keys/buildspeed/) and by 0.9 frames per credit. A structure uses its `Cost=` as written, which includes the price of any [`FreeUnit`](/keys/freeunit/) or pad aircraft that comes with it. (Repair costs use the price without them.)
 2. Multiply by the house's build-time multiplier. That multiplier is fixed when the house is given its difficulty, as the country's [`BuildTime=`](/keys/buildtime/#scope-housetype) times the difficulty's [`BuildTime=`](/keys/buildtime/#scope-difficulty-settings) times [`GameSpeedBias`](/keys/gamespeedbias/). Campaign games leave out the country's `BuildTime=`.
-3. Divide by the house's [power multiplier](#power).
+3. Divide by the house's [production speed](#power).
 4. Multiply by the [multiple-factory adjustment](#more-than-one-factory).
 5. For a [`Wall=yes`](/keys/wall/#scope-buildingtype) BuildingType, multiply by [`WallBuildSpeedCoefficient`](/keys/wallbuildspeedcoefficient/).
 
@@ -255,9 +257,9 @@ A value of `1` changes nothing, and a value above `1` makes each extra factory l
 
 ### Power
 
-A house short of power builds more slowly. Its build time is divided by a power multiplier taken from a fixed ladder and never below [`MinProductionSpeed`](/keys/minproductionspeed/). [The production ladder](/systems/power/#production) lists the bands.
+A house short of power builds more slowly. Its build time is divided by its production speed, which [the power page](/systems/power/#production) sets from the house's power fraction and three rule keys: [`LowPowerPenaltyModifier`](/keys/lowpowerpenaltymodifier/), [`MinLowPowerProductionSpeed`](/keys/minlowpowerproductionspeed/) and [`MaxLowPowerProductionSpeed`](/keys/maxlowpowerproductionspeed/).
 
-The multiplier is refreshed whenever the house's power is recalculated: when a structure is placed, lost, damaged, or switched on or off, even if the power balance does not change. A running build picks up the new step interval at that recalculation. A build also takes a fresh interval when it resumes from hold or suspension. Either way it keeps the step it had reached, so low power slows it in place without restarting it.
+The speed is refreshed whenever the house's power is recalculated: when a structure is placed, lost, damaged, or switched on or off, even if the power balance does not change. A running build picks up the new step interval at that recalculation. A build also takes a fresh interval when it resumes from hold or suspension. Either way it keeps the step it had reached, so low power slows it in place without restarting it.
 
 ### Difficulty and campaign games
 

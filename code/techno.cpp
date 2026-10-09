@@ -965,14 +965,16 @@ int TechnoClass::Time_To_Build(void) const
 	val *= TClass->BuildTimeMultiplier;
 
 	/*
-	**	Adjust the time to build based on the power output of the owning house.
+	**	Adjust the time to build based on the power output of the owning house. The shortfall,
+	**	scaled by LowPowerPenaltyModifier, sets the speed. The speed is held between the
+	**	minimum and, while the house is short, the maximum (TechnoClass::TimeToBuild, 0x6F47A0).
 	*/
-	double power = House->Power_Fraction();
-	if (power > 1.0) power = 1.0;
-	if (power < 1.0 && power > 0.75) power = 0.75;
-	if (power < 0.5) power = 0.5;
-	power = std::max(power, Rule->MinLowPowerProductionSpeed);
-	val /= power;
+	double const power = House->Power_Fraction();
+	double speed = 1.0 - (1.0 - power) * Rule->LowPowerPenaltyModifier;
+	speed = std::max(speed, Rule->MinLowPowerProductionSpeed);
+	if (power < 1.0) speed = std::min(speed, Rule->MaxLowPowerProductionSpeed);
+	if (speed == 0.0) speed = 0.01;
+	val /= speed;
 
 	int extra = House->Factory_Count(RTTI) - 1;
 	if (Rule->MultipleFactoryCap > 0) {

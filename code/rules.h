@@ -802,10 +802,19 @@ class RulesClass
 		int TiberiumStrength;
 
 		/*
-		 * This is the floor on the power fraction that build times are divided by, so
-		 * that a house with almost no power still produces at some usable rate.
+		 * The lowest production speed a power shortfall can leave a house with; build times are divided by the speed.
 		 */
 		double MinLowPowerProductionSpeed;
+
+		/*
+		 * The highest production speed a power shortfall can leave a house with, short of full power.
+		 */
+		double MaxLowPowerProductionSpeed;
+
+		/*
+		 * Scales the shortfall before it sets the production speed: 1 takes the shortfall as is.
+		 */
+		double LowPowerPenaltyModifier;
 
 		/*
 		 * Each factory of the appropriate kind past the first multiplies the build time by

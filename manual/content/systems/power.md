@@ -16,8 +16,10 @@ keys:
   - Immune
   - IsPowered
   - LaserFencePost
+  - LowPowerPenaltyModifier
+  - MaxLowPowerProductionSpeed
   - MessageDelay
-  - MinProductionSpeed
+  - MinLowPowerProductionSpeed
   - MultipleFactory
   - Power
   - Powered
@@ -53,7 +55,7 @@ In a campaign game, a structure owned by a player-controlled house counts only a
 
 ### Writing the assignments
 
-This example defines a power plant, a structure that consumes power, a plug for the plant, and the two `[General]` settings that govern a shortfall. The values are examples; the linked key pages give the defaults.
+This example defines a power plant, a structure that consumes power, a plug for the plant, and the `[General]` settings that govern a shortfall. The values are examples; the linked key pages give the defaults.
 
 ```ini title="rules.ini"
 [MYPOWER]        ; example power plant
@@ -68,8 +70,10 @@ PowersUpBuilding=MYPOWER
 Power=50         ; added to the host's output before damage scaling
 
 [General]
-DamageDelay=2            ; game minutes between damage ticks while short of power
-MinProductionSpeed=0.75  ; lowest production multiplier a shortfall can impose
+DamageDelay=2                   ; game minutes between damage ticks while short of power
+MinLowPowerProductionSpeed=0.5  ; lowest production speed a house can have
+MaxLowPowerProductionSpeed=0.8  ; highest production speed a house short of power can have
+LowPowerPenaltyModifier=1       ; scales the shortfall before it sets the speed
 ```
 
 ### What each structure contributes
@@ -181,19 +185,20 @@ The tick is not forced damage, so the warhead's [`Verses`](/keys/verses/) table 
 
 ### Production
 
-A house short of power builds more slowly. Its build time is divided by a production multiplier that depends on its power fraction:
+A house short of power builds more slowly. Its build time is divided by its **production speed**, which the engine sets from the house's power fraction in three steps:
 
-| Power fraction | Production multiplier |
-| --- | --- |
-| 1 | 1 |
-| 0.75 up to but not including 1 | 0.75 |
-| 0.5 up to but not including 0.75 | the fraction itself |
-| below 0.5 | 0.5 |
+1. Take the shortfall, which is 1 minus the power fraction. Multiply it by [`LowPowerPenaltyModifier`](/keys/lowpowerpenaltymodifier/) and subtract the result from 1. With the default modifier, the speed equals the power fraction.
+2. Raise the speed to [`MinLowPowerProductionSpeed`](/keys/minlowpowerproductionspeed/) if it is lower.
+3. While the house is short of power, lower the speed to [`MaxLowPowerProductionSpeed`](/keys/maxlowpowerproductionspeed/) if it is higher.
 
-If the multiplier is below [`MinProductionSpeed`](/keys/minproductionspeed/), it is raised to that value. A multiplier of 0.75 makes a build take a third longer, and 0.5 doubles it. The bottom row means a house with no output at all still builds at half speed or better.
+A house at full power keeps a speed of 1 unless its minimum is above 1.
 
-:::caution[Only the middle band tracks the shortfall]
-Between 0.5 and 0.75 the multiplier equals the fraction, so a house at 0.6 builds more slowly than one at 0.74. Above and below that band the penalty is flat. At the default `MinProductionSpeed` the floor equals the bottom step and changes nothing. Raising it lifts every step below the new value to that value.
+For example, take a house with an output of 200 and a drain of 250. Its power fraction is 0.8, so its speed is 1 minus 0.2, or 0.8. With the stock rules, that is above the minimum of 0.5 and not above the maximum of 0.8, so the speed stays at 0.8. A build that takes 1,000 frames at full power, with every other multiplier at 1, takes 1,250 frames.
+
+A speed of exactly 0 is replaced by 0.01, which makes the build 100 times as long. Keep the minimum and maximum above 0.
+
+:::caution[The stock maximum flattens small shortfalls]
+Under the stock rules, the maximum of 0.8 applies to every house short of power. Any shortfall up to 20 percent therefore makes builds a quarter longer, and a house at 99 percent power builds as slowly as one at 80 percent.
 :::
 
 The power division is one step in the build-time calculation. [How long it takes](/systems/production/#how-long-it-takes) gives the full order, including [`BuildSpeed`](/keys/buildspeed/), the country and difficulty [`BuildTime`](/keys/buildtime/) multipliers, [`MultipleFactory`](/keys/multiplefactory/), and [`WallBuildSpeedCoefficient`](/keys/wallbuildspeedcoefficient/).
@@ -299,4 +304,4 @@ The [Turn off building](/mapping/actions/taction-turn-off-attached/) and [Turn o
 
 ## Parsed settings without effect
 
-The production ladder above is fixed in the engine. [`WorstLowPowerBuildRateCoefficient`](/keys/worstlowpowerbuildratecoefficient/) and [`BestLowPowerBuildRateCoefficient`](/keys/bestlowpowerbuildratecoefficient/) in `[General]` are read but never used. Changing either setting has no effect. The ladder's fixed 0.75 step happens to equal the default of `BestLowPowerBuildRateCoefficient`.
+[`WorstLowPowerBuildRateCoefficient`](/keys/worstlowpowerbuildratecoefficient/) and [`BestLowPowerBuildRateCoefficient`](/keys/bestlowpowerbuildratecoefficient/) in `[General]` are read but never used. The production speed above does not depend on either.
