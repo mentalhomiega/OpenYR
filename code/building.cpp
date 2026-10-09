@@ -6241,30 +6241,26 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 		switch (Status) {
 
 			/*
-			**	The initial case is responsible for starting the door
-			**	opening on the building.
+			**	The initial case starts the door opening. The missile does not wait for the
+			**	door: the cases run on into the launch in the same frame, as in gamemd's
+			**	BuildingClass::Mission_Missile (0x44C980). The door only holds open if it was
+			**	already ready when this case ran.
 			*/
 			case INITIAL:
 				IsReadyToCommence = false;
 				Begin_Mode(BSTATE_ACTIVE);	// open the door
 				Status = DOOR_OPENING;
-				return(1);
+				[[fallthrough]];
 
-			/*
-			**	This polls for the case when the door is actually open and
-			**	then kicks off the missile smoke.
-			*/
 			case DOOR_OPENING:
 				if (IsReadyToCommence) {
 					Begin_Mode(BSTATE_AUX1);	// hold the door open
-					Status = LAUNCH_UP;
-					return(14);
 				}
-				return(1);
+				Status = LAUNCH_UP;
+				[[fallthrough]];
 
 			/*
-			**	Once the smoke has been going for a little while this
-			**	actually handles launching the missile into the air.
+			**	This launches the missile into the air.
 			*/
 			case LAUNCH_UP:
 				{
@@ -6286,17 +6282,16 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						 */
 						if (!bullet->Unlimbo(launch, TVelocity3D<double>(DirType(DIR_N), DirType(DIR_N), 100))) {
 							delete bullet;
-							bullet = NULL;
 						} else {
 							if (Rule->NukeTakeOff != NULL) {
-								new AnimClass(Rule->NukeTakeOff, launch);
+								new AnimClass(Rule->NukeTakeOff, launch, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -100);
 							}
 							// The announcer file announces every launch when it is fired instead.
 							if (!House->Is_Player_Control() && !Is_Eva_Loaded()) {
 								Speak(VOX_MISSILE_LAUNCH_DETECTED);
 							}
-							Status = LAUNCH_DOWN;
 						}
+						Status = LAUNCH_DOWN;
 					}
 				}
 				return(1);
