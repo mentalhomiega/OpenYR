@@ -26,6 +26,8 @@
 #include "scenario.h"
 #include "session.h"
 #include "sun.h"
+#include "super.h"
+#include "suprtype.h"
 #include "swizzle.h"
 #include "taskforc.h"
 #include "techtype.h"
@@ -155,6 +157,7 @@ void AITriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 		case AIT_ENEMY_OWNS_X_COND_N:
 		case AIT_HOUSE_OWNS_X_COND_N:
 		case AIT_ENEMY_MONEY_COND_N:
+		case AIT_CIVILIAN_OWNS_X_COND_N:
 			crc(Params.Number);
 			crc(Params.Condition);
 			break;
@@ -425,6 +428,15 @@ bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip
 			case AIT_ENEMY_MONEY_COND_N:
 				res = Check_Enemy_Money(house, enemy);
 				break;
+			case AIT_IRON_CURTAIN_CHARGED:
+				res = Check_Super_Charged(house, SUPER_IRON_CURTAIN);
+				break;
+			case AIT_CHRONOSPHERE_CHARGED:
+				res = Check_Super_Charged(house, SUPER_CHRONOSPHERE);
+				break;
+			case AIT_CIVILIAN_OWNS_X_COND_N:
+				res = Check_Civilian_Owns(house, enemy);
+				break;
 		}
 	} else {
 		if (Type == AIT_HOUSE_OWNS_X_COND_N) {
@@ -681,6 +693,55 @@ bool AITriggerTypeClass::Check_Enemy_Money(HouseClass *house, HouseClass *enemy)
 		}
 	}
 	return(res);
+}
+
+
+/// <summary>
+/// Checks whether the house's iron curtain or chronosphere is charged enough to count on.
+/// This routine serves the iron curtain and chronosphere trigger conditions. A super weapon
+/// that is not present never counts, and a ready one always does. A charging one counts once
+/// the share of its charge still to run is no more than 1 minus AIMinorSuperReadyPercent.
+/// </summary>
+/// <returns>bool; Is the house's super weapon of that type charged enough?</returns>
+bool AITriggerTypeClass::Check_Super_Charged(HouseClass *house, SuperWeaponType type)
+{
+	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
+		SuperClass *weapon = house->SuperWeapon[index];
+		if (weapon != NULL && weapon->Class->Type == type) {
+			if (!weapon->Is_Present()) {
+				return(false);
+			}
+			if (weapon->Is_Ready()) {
+				return(true);
+			}
+			int total = weapon->Get_Recharge_Time();
+			int left = int(weapon->Control);
+			if (total <= 0) {
+				return(left == 0);
+			}
+			return((double)left / (double)total <= 1.0 - Rule->AIMinorSuperReadyPercent);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Checks how many of the condition object the civilian house has.
+/// This routine serves the civilian owns trigger condition. The civilian house is the first
+/// house in the house list whose country is on the civilian side, and its tally is measured
+/// the same way as the house owns condition.
+/// </summary>
+/// <returns>bool; Does the civilian house's count satisfy the condition?</returns>
+bool AITriggerTypeClass::Check_Civilian_Owns(HouseClass *house, HouseClass *enemy)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass *civilian = Houses[index];
+		if (civilian != NULL && civilian->Class->Side == SIDE_CIVILIAN) {
+			return(Check_House_Owns(civilian, enemy));
+		}
+	}
+	return(false);
 }
 
 

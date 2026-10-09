@@ -256,8 +256,10 @@ The [trigger record](/mapping/ai-triggers/) page lists the condition types. At r
 - **The yellow power condition** ignores the record's number and comparator. It holds while the enemy's power output minus its drain is below `100`.
 - **The red power condition** holds while the enemy's power output minus its drain is below `0`.
 - **The money condition** compares the enemy's available credits against the record's number with the record's comparator.
+- **The iron curtain and chronosphere conditions** hold when this house has that weapon and it is ready, or has charged at least [`AIMinorSuperReadyPercent`](/keys/aiminorsuperreadypercent/) of its recharge. A house without the weapon never passes.
+- **The civilian owns condition** counts the objects of the condition object's type that the first house on the civilian side owns, with the record's comparator.
 
-Every condition except the one that counts this house's objects reads the enemy. A house without an enemy can therefore pass only a defensive trigger that has no condition or counts the house's objects.
+The owning-house condition and the iron curtain and chronosphere conditions read this house. The civilian owns condition reads the civilian house. The others read the enemy. A house without an enemy can therefore pass only a defensive trigger that has no condition or counts the house's objects.
 
 ## Reaching the enemy
 
