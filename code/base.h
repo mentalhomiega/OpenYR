@@ -67,12 +67,19 @@ class BaseNodeClass
 		 */
 		Cell CellID;
 
+		/*
+		 * Set once a structure has stood on this node. A lost structure of such a node is held back
+		 * by HouseClass::Can_Replace_Node.
+		 */
+		bool Placed = false;
+
 		// Carries this base node to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{
 			stream.Serialize(Type);
 			stream.Serialize(CellID);
+			stream.Serialize(Placed);
 		}
 };
 

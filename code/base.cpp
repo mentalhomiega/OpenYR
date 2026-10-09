@@ -573,5 +573,6 @@ void BaseClass::Compute_CRC(CRCEngine & crc) const
 		crc(Nodes[i].Type);
 		crc(Nodes[i].CellID.X);
 		crc(Nodes[i].CellID.Y);
+		crc(Nodes[i].Placed);
 	}
 }

@@ -9,7 +9,7 @@ when_omitted:
   value: "0"
 ---
 
-A whole number of game frames, at 15 frames to the second. Each time one of the house's structures takes damage from an attacker, a window opens that lasts this many frames from that hit. While it is open, a computer house in a skirmish or multiplayer game does not rebuild a structure it lost from its plan, except a wall, a [base defense](/systems/ai-base-building/#base-defenses) or a power plant. A plan node that has never held a structure is filled at once.
+A whole number of game frames, at 15 frames to the second. Each time one of the house's structures takes damage from an attacker, a window opens that lasts this many frames from that hit. While it is open, a computer house in a skirmish or multiplayer game does not rebuild a structure it lost from its plan, unless the structure is armed or a power plant. A wall is rebuilt only beside one of the house's structures. A plan node that has never held a structure is filled at once. [Rebuilding](/systems/ai-base-building/#rebuilding) lists the order.
 
 ```ini title="rulesmd.ini"
 [General]
