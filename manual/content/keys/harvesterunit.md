@@ -23,7 +23,7 @@ Every listed type counts as a harvester in these places:
 
 When the engine must price, queue or hand out one harvester, it takes the first entry that the country the house [acts as](/keys/actslike/) may own. When that country may own none of them, it takes the first entry.
 
-The [harvester truce](/keys/harvesterimmune/) protects exactly the listed types, and also leaves them out of the multiplayer defeat test. Its page lists what the truce protects them from.
+The [harvester truce](/keys/harvesterimmune/) protects exactly the listed types. Its page lists what the truce protects them from.
 
 A listed vehicle recovering from an EMP stun goes back to harvesting unless it was unloading. This happens with or without the truce.
 
