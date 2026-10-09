@@ -1271,8 +1271,15 @@ test('The docking bay search rates candidates in a width that cannot overflow', 
 
 	assertOrdered(
 		search,
-		['long long bestval = -1;', 'long long dist = (dx * dx) + (dy * dy);', 'if (bestval == -1 || dist < bestval'],
+		['long long bestval = -1;', 'long long dist = Dock_Distance(building);', 'if (bestval == -1 || dist < bestval'],
 		'the running best and each candidate are both held wide enough for any map',
+	);
+
+	const distance = functionBody(source('code/techno.cpp'), 'long long TechnoClass::Dock_Distance(BuildingClass const * building) const');
+	assertOrdered(
+		distance,
+		['long long const dx = PositionCoord.X - building->PositionCoord.X;', 'long long const dy = PositionCoord.Y - building->PositionCoord.Y;', 'return((dx * dx) + (dy * dy));'],
+		'the squared distance is computed in long long from the Location coordinates',
 	);
 });
 
