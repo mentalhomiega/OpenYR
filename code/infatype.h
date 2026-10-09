@@ -170,6 +170,10 @@ class InfantryTypeClass : public TechnoTypeClass
 		bool IsDeployFire;
 		int DeployFireWeapon;
 
+		// Frames a dug-in soldier stays dug in before it packs up on its own. A negative value leaves
+		// it to the orders it is given, as the rules' default does (UndeployDelay=-1).
+		int UndeployDelay;
+
 		// A deployed soldier with DeployedCrushable=no cannot be crushed by a vehicle while dug in.
 		bool IsDeployedCrushable;
 
