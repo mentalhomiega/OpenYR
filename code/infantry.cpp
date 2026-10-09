@@ -264,6 +264,7 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	IsProne(false),
 	IsZoneCheat(false),
 	WasSelected(false),
+	ShouldDeploy(false),
 	LandState(2),
 	Fear(FEAR_NONE)
 {
@@ -4461,6 +4462,7 @@ void InfantryClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsProne);
 	stream.Serialize(IsZoneCheat);
 	stream.Serialize(WasSelected);
+	stream.Serialize(ShouldDeploy);
 	stream.Serialize(LandState);
 	stream.Serialize(ProneStruggleTimer);
 	stream.Serialize(LookTimer);
@@ -4577,6 +4579,7 @@ void InfantryClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsProne);
 	crc(IsZoneCheat);
 	crc(WasSelected);
+	crc(ShouldDeploy);
 }
 
 
@@ -4789,10 +4792,10 @@ bool InfantryClass::Is_Renovator(void) const
 /// <returns>The delay in game frames before this mission should be processed again.</returns>
 int InfantryClass::Do_MISSION_GUARD(void)
 {
-	// A soldier with an UndeployDelay packs up when its guard mission runs after the delay (InfantryClass::Mission_Guard, 0x51F620, and 0x521320).
-	if (Is_Deployed() && Class->UndeployDelay >= 0) {
-		Do_Action(DO_UNDEPLOY, true);
-		return(Class->DoControls[DO_UNDEPLOY].Count);
+	// The guard helper runs before the normal guard mission, as InfantryClass::Mission_Guard (0x51F620) does.
+	int const deploy_delay = Do_Guard_Deploy();
+	if (deploy_delay >= 0) {
+		return(deploy_delay);
 	}
 
 	if (!IsProne && TarCom == NULL && NavCom == NULL && !PrimaryFacing.Is_Rotating() && Class->IsDoggie && Get_Cell_Ptr()->Land_Type() == LAND_TIBERIUM) {
@@ -4843,6 +4846,89 @@ void InfantryClass::Iron_Curtain(int, HouseClass *, bool)
 {
 	int damage = Class->MaxStrength;
 	Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+}
+
+
+/// <summary>
+/// Digs a Deployer soldier in or packs it up on the guard mission, as the guard helper of
+/// InfantryClass::Mission_Guard does (FUN_00521320, 0x521320). A dug-in soldier with an
+/// UndeployDelay of zero or more packs up when the delay ends. One with a negative UndeployDelay
+/// keeps a target in range while dug in, and a computer's soldier digs in on its own.
+/// </summary>
+/// <returns>The delay in game frames before the guard mission runs again, or -1 when the normal guard mission should run.</returns>
+int InfantryClass::Do_Guard_Deploy(void)
+{
+	if (!Class->IsDeployer) {
+		return(-1);
+	}
+
+	if (Is_Deployed()) {
+		if (Class->UndeployDelay >= 0) {
+			Do_Action(DO_UNDEPLOY, true);
+			return(Class->DoControls[DO_UNDEPLOY].Count);
+		}
+
+		// A radiation-immune deployer, such as the Desolator, keeps the normal guard mission.
+		if (!Class->IsDeployFire || Class->IsImmuneToRadiation) {
+			return(-1);
+		}
+		Refresh_Deployed_Target();
+		return(Deploy_Delay());
+	}
+
+	// A human's soldier never digs in on its own. A computer's soldier digs in once the AI's frame delay
+	// has passed since its mission started, and only when it has no destination and stays in its archive cell.
+	if (House->Is_Human_Player() || Class->UndeployDelay >= 0 || !Class->IsDeployFire || Class->IsImmuneToRadiation || NavCom != NULL) {
+		return(-1);
+	}
+	if (Rule->AIAutoDeployFrameDelay.Pick((int)House->Difficulty) + MissionStartFrame >= Frame) {
+		return(-1);
+	}
+	if (ArchiveTarget != NULL && ArchiveTarget->Center_Coord().As_Cell() != Center_Coord().As_Cell()) {
+		return(-1);
+	}
+
+	if (!Locomotion->Is_Moving()) {
+		Do_Action(DO_DEPLOY, true);
+		return(Class->DoControls[DO_DEPLOY].Count);
+	}
+
+	// The soldier stops first. ShouldDeploy marks it to dig in once it has stopped (InfantryClass::vt_entry_54C, 0x521B40).
+	Locomotion->Stop_Moving();
+	ShouldDeploy = true;
+	return(Deploy_Delay());
+}
+
+
+/// <summary>
+/// Keeps a dug-in soldier's target while it is in range of its deploy weapon. Otherwise the soldier takes
+/// the greatest threat within that range, or no target if there is none (InfantryClass::vt_entry_428, 0x51F330).
+/// </summary>
+void InfantryClass::Refresh_Deployed_Target(void)
+{
+	int const which = What_Weapon_Should_I_Use(NULL);
+	if (TarCom != NULL && In_Range(TarCom, which)) {
+		return;
+	}
+
+	AbstractClass * target = Greatest_Threat(THREAT_RANGE, Center_Coord(), false);
+	if (TarCom != NULL || target != NULL) {
+		Assign_Target(target);
+		if (target != NULL) {
+			return;
+		}
+	}
+}
+
+
+/// <summary>
+/// The frames until the guard mission checks a digging-in or dug-in soldier again: the current mission's
+/// rate in ticks, rounded, plus up to two frames at random (InfantryClass::Mission_Guard, 0x51F620).
+/// </summary>
+int InfantryClass::Deploy_Delay(void) const
+{
+	int const ticks = int(Current_Mission_Control().Rate * TICKS_PER_MINUTE + 0.5);
+	return(ticks + Random_Pick(0, 2));
 }
 
 

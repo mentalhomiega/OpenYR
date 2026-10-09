@@ -25,6 +25,8 @@ While a human player's soldier is deployed:
 
 A computer player's soldier that is told to move packs up first and then walks off, unless its [`UndeployDelay`](/keys/undeploydelay/#scope-infantrytype) is set. A soldier that starts walking any other way while deployed leaves its deployment without playing `Undeploy`.
 
-A computer player's dug-in soldier packs up when its target is out of reach of its `DeployFireWeapon`. A dug-in soldier of either side does not walk toward its target.
+A computer player's dug-in soldier on an attack mission packs up when its target is out of reach of its `DeployFireWeapon`. A dug-in soldier on guard takes only targets within that reach and drops one that leaves it. A dug-in soldier of either side does not walk toward its target.
+
+A computer player's soldier on guard digs in on its own after its [`AIAutoDeployFrameDelay`](/keys/aiautodeployframedelay/) has passed.
 
 The soldier plays [`DeploySound`](/keys/deploysound/#scope-infantrytype) as it deploys and [`UndeploySound`](/keys/undeploysound/#scope-infantrytype) as it packs up. A sequence missing from the artwork has no frames, so a type without `Deploy` frames cannot deploy at all.
