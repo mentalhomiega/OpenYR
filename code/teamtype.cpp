@@ -714,6 +714,11 @@ bool TeamTypeClass::Read_INI(CCINIClass const & ini)
 			return(false);
 		}
 
+		// The first registered task force, as in gamemd; a missing or <none> TaskForce= takes it.
+		if (TaskForce == NULL) {
+			TaskForce = TaskForces[0];
+		}
+
 		// The first registered script type, as in gamemd; the script stays unset when there is none.
 		if (Script == NULL && ScriptTypes.Count() > 0) {
 			Script = ScriptTypes[0];
