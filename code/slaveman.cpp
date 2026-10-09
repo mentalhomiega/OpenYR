@@ -27,6 +27,7 @@
 #include "ramp.hh"
 #include "rules.h"
 #include "savestream.h"
+#include "side.h"
 #include "techno.h"
 #include "unit.h"
 #include "unittype.h"
@@ -36,10 +37,13 @@
 
 namespace {
 
+// The house that takes freed slaves when nothing killed their miner: the first house whose side is
+// Civilian, as gamemd's SlaveManagerClass::Killed picks it (0x6B0AE0).
 HouseClass * Neutral_House(void)
 {
+	SideType civilian = SideClass::From_Name("Civilian");
 	for (int index = 0; index < Houses.Count(); index++) {
-		if (stricmp(Houses[index]->Class->Name(), "Neutral") == 0) {
+		if (Houses[index]->Class->Side == civilian) {
 			return(Houses[index]);
 		}
 	}
@@ -580,9 +584,10 @@ void SlaveManagerClass::Miner_AI(void)
 
 
 /// <summary>
-/// Frees the slaves when their miner is destroyed (SlaveManagerClass::Killed, 0x6B0AE0): the
-/// slaves out in the field join the killer's house, or the neutral house without a killer, and
-/// docked slaves are lost with the miner.
+/// Frees the slaves when their miner is destroyed (SlaveManagerClass::Killed, 0x6B0AE0). A slave
+/// docked in the miner dies, credited to the killer. With no killer and no Civilian-side house,
+/// each slave in the field takes C4 damage; otherwise it joins the killer's house, or the
+/// Civilian-side house without a killer.
 /// </summary>
 void SlaveManagerClass::Free_All(TechnoClass * killer)
 {
@@ -597,7 +602,13 @@ void SlaveManagerClass::Free_All(TechnoClass * killer)
 		}
 		slave->SlaveOwner = NULL;
 		if (slave->IsInLimbo) {
+			slave->Record_The_Kill(killer);
 			slave->Delete_Me();
+			continue;
+		}
+		if (house == NULL) {
+			int damage = slave->Strength;
+			slave->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
 			continue;
 		}
 		slave->Storage = StorageClass();
