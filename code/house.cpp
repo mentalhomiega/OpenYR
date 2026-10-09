@@ -4955,14 +4955,15 @@ int HouseClass::AI_Unit(void)
 {
 	if (BuildUnit != UNIT_NONE) return(TICKS_PER_SECOND);
 
-	int harv = Count_Owned(AUQuantity, Rule->HarvesterUnit);
 	int ref = Count_Owned(ABQuantity, Rule->BuildRefinery);
-	int mult;
-	if (Session.Type == GAME_NORMAL || Difficulty == DIFF_HARD) {
-		mult = 1;
-	} else {
-		mult = 2;
+
+	// A computer house keeps HarvestersPerRefinery gatherers for each refinery it owns, or
+	// AISlaveMinerNumber when no refinery type is buildable (HouseClass::AI_VehicleConstructionUpdate, 0x4FEA60).
+	int target = Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty) * ref;
+	if (Get_First_Acted(Rule->BuildRefinery) == NULL) {
+		target = Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty);
 	}
+	int const gatherers = Count_Resource_Gatherers();
 
 	/*
 	**	A computer controlled house will try to build a replacement
@@ -4970,7 +4971,7 @@ int HouseClass::AI_Unit(void)
 	*/
 	UnitTypeClass const * harvester = Get_First_Acted(Rule->HarvesterUnit);
 	if (harvester != NULL) {
-		if (IQ >= Rule->IQHarvester && !IsTiberiumShort && !Is_Human_Player() && ref * mult > harv) {
+		if (IQ >= Rule->IQHarvester && !IsTiberiumShort && !Is_Human_Player() && gatherers < target) {
 			if ((unsigned int)harvester->Level <= (unsigned int)Control.TechLevel) {
 				BuildUnit = harvester->HeapID;
 				return(TICKS_PER_SECOND);

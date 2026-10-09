@@ -15931,6 +15931,24 @@ HarvesterUnit:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+HarvestersPerRefinery:
+  key: HarvestersPerRefinery
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: HarvestersPerRefinery
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 HasRadialIndicator:
   key: HasRadialIndicator
   scopes:

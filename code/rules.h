@@ -1400,6 +1400,9 @@ class RulesClass
 		// is a wall, base defense or power plant.
 		int AIRestrictReplaceTime;
 
+		// The ore gatherers a computer house keeps for each refinery it owns, per difficulty slot.
+		TypeList<int> HarvestersPerRefinery;
+
 		// How many cells from a base center a team gathers before an attack or after one.
 		int AISafeDistance;
 

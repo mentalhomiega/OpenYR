@@ -237,6 +237,10 @@ Once it is empty, the harvester waits for a [`Refinery=yes`](/keys/refinery/) bu
 
 A player order that sends the harvester elsewhere while it unloads ends the unload early. The harvester still waits for the refinery's animation, then leaves with the types it has not handed over.
 
+### Computer harvester counts
+
+A computer house that may own a harvester keeps `HarvestersPerRefinery` ore gatherers for each refinery it owns, and orders a replacement while it has fewer. The entry is read at the house's difficulty slot, as the other per-difficulty lists are. Gatherers are every type with [`ResourceGatherer=yes`](/keys/resourcegatherer/), slave miners included. When no refinery type is buildable, the house keeps `AISlaveMinerNumber` gatherers instead. The shipped rules keep the same counts as before outside a campaign. In a campaign they keep more, because a campaign house used to keep one harvester per refinery.
+
 ## Credits and storage
 
 Each unit a harvester unloads adds five points to its house's score and is paid out at once: its type's [`Value`](/keys/value/) in credits, scaled by the [`IncomeMult`](/keys/incomemult/) of the house's country. Storage capacity does not limit the payment, and nothing is stored, whoever owns the harvester.
