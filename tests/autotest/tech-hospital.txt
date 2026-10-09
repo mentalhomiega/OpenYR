@@ -1,0 +1,19 @@
+; Two wounded infantry enter a tech hospital one after the other (run with -Mods tests/autotest/hospital-rules).
+; The hospital has no ammo limit (Ammo=-1). Before the fix it spent its one charge on the first
+; patient, so the second was refused: its cell stays at 56,32 and the hospital never repairs.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 own CAHOSP 62 26
+110 own E1 56 30
+115 own E2 56 32
+120 hurt E1 5
+150 clickon E1 62 26
+350 where E1
+400 where CAHOSP
+440 hurt E2 5
+450 clickon E2 62 26
+600 where CAHOSP
+650 where E2
+700 where E2
+720 quit

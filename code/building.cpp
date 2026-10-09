@@ -449,8 +449,11 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				return(RADIO_NEGATIVE);
 			}
 			if ((Class->IsArmory || Class->IsHospital) && from->RTTI == RTTI_INFANTRY) {
-				// A soldier under mind control may not go inside, as in Yuri's Revenge.
-				if (Ammo != 0 && Mission != MISSION_REPAIR && ((TechnoClass *)from)->MindControlledBy == NULL) {
+				// gamemd refuses an infantry that holds a mind-controlled unit or is mind controlled (QueryCanEnter, 0x43C2D0).
+				TechnoClass const * infantry = (TechnoClass const *)from;
+				bool const controlling = infantry->CaptureManager && infantry->CaptureManager->Controlled_Count() > 0;
+				bool const controlled = infantry->MindControlledBy != NULL || infantry->IsPermaControlled;
+				if (!controlling && !controlled && Ammo != 0 && Mission != MISSION_REPAIR) {
 					return(RADIO_ROGER);
 				}
 				return(RADIO_NEGATIVE);
@@ -6008,8 +6011,12 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				IsReadyToCommence = false;
 				BuildingStage.Set_Stage(0);
 				BuildingStage.Set_Rate(1);
-				Ammo--;
-				Ammo = std::max(Ammo, 0);
+
+				// An unlimited hospital (Ammo=-1, the default) keeps its ammo, as gamemd does (Mission_Repair, 0x44BA44).
+				if (Class->MaxAmmo != -1) {
+					Ammo--;
+					Ammo = std::max(Ammo, 0);
+				}
 				break;
 
 			case DURING:

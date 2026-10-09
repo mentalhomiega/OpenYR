@@ -12,14 +12,15 @@ A hospital heals damaged infantry free of charge, one at a time. With the player
 - the hospital has finished construction and is not being sold;
 - it is switched on;
 - it is not already treating another infantry;
-- its [`Ammo`](/keys/ammo/) count is not zero.
+- its [`Ammo`](/keys/ammo/) count is not zero;
+- the infantry neither holds a mind-controlled unit nor is mind controlled itself.
 
 Otherwise the cursor shows that the infantry cannot enter.
 
-Each admission uses one point of `Ammo`. Most structures refill an empty `Ammo` count at once. A hospital never does, and neither does an [`Armory=yes`](/keys/armory/) structure, so every point is one patient.
+Each admission uses one point of `Ammo`, unless the type's `Ammo` is `-1`. Most structures refill an empty `Ammo` count at once. A hospital never does, and neither does an [`Armory=yes`](/keys/armory/) structure, so each point of a limited count is one patient.
 
 The patient gains [`IRepairStep`](/keys/irepairstep/) strength each time the [`IRepairRate`](/keys/irepairrate/) interval passes, and leaves once it reaches full strength. A patient that is already at full strength when the first interval passes leaves at once, and its admission point is still spent.
 
-:::caution[Set `Ammo` to the number of patients]
-A type that sets no `Ammo` starts with a count of `-1`. That count passes the admission test once, and the first admission drops it to `0`, so the hospital treats one patient and then refuses everyone. Give the type an explicit `Ammo` count.
+:::note[An unlimited hospital takes every patient]
+A type that sets no `Ammo` starts with a count of `-1`. The hospital never spends that count, so it admits any number of patients. Give the type an explicit `Ammo` count to limit the admissions.
 :::
