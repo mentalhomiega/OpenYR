@@ -971,13 +971,9 @@ int AircraftClass::Paradrop_Cargo(void)
 			*/
 			Sound_Effect(Rule->ChuteSound, PositionCoord);
 
+			// A soldier's guard or hunt mission is queued by InfantryClass::Paradrop and starts on landing; the aircraft keeps its own mission.
 			if (Team != NULL) {
 				Team->Remove(passenger);
-				if (passenger->House->Is_Human_Player()) {
-					Assign_Mission(MISSION_GUARD);
-				} else {
-					Assign_Mission(MISSION_HUNT);
-				}
 			}
 //			Arm = Rearm_Delay(IsSecondShot);
 			Arm = 0;
