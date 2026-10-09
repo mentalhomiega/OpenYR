@@ -89,7 +89,13 @@ void DiskLaserClass::AI(void)
 		return;
 	}
 
-	int distance = ::Distance(Owner->Center_Coord(), Target->Center_Coord());
+	// The range runs between the two positions, flat while the firer is airborne (DiskLaserClass::Update, 0x4A7340).
+	Coord from = Owner->PositionCoord;
+	Coord const to = Target->PositionCoord;
+	if (Owner->In_Air()) {
+		from.Z = to.Z;
+	}
+	int distance = ::Distance(from, to);
 	if (Target->RTTI == RTTI_BUILDING) {
 		BuildingTypeClass const * type = ((BuildingClass *)Target)->Class;
 		distance = std::max(0, distance - (type->Width() + type->Height()) * 64);
