@@ -17,12 +17,16 @@
 #include "animtype.h"
 #include "cell.h"
 #include "combat.h"
+#include "csf.h"
+#include "dialog.hh"
 #include "globals.h"
 #include "house.h"
 #include "ionblast.h"
 #include "rules.h"
 #include "savestream.h"
+#include "session.h"
 #include "shapeset.h"
+#include "stimer.h"
 #include "techno.h"
 #include "techtype.h"
 #include "vector.h"
@@ -124,6 +128,18 @@ bool PsychicDominatorClass::Can_Be_Dominated(TechnoClass const * techno)
 {
 	return(techno != NULL && techno->RTTI != RTTI_BUILDING && !techno->Is_Immune_To_Psionics()
 		&& !techno->Is_Iron_Curtained() && !techno->TClass->IsBalloonHover && !techno->In_Air());
+}
+
+
+/// <summary>
+/// Tells the local player that a dominator blast is already under way when another is called in
+/// (FUN_0053B410). The caller decides whether the call came from the player.
+/// </summary>
+void PsychicDominatorClass::Print_Refusal(void)
+{
+	int const scheme = PlayerPtr != NULL ? PlayerPtr->Scheme : 3;
+	std::string const text = Fetch_String_UTF8("Msg:DominatorActive");
+	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
 }
 
 
