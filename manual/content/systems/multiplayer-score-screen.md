@@ -37,7 +37,7 @@ Each row's name band and bars use the house's color, so two houses with the same
 
 A destroyed structure with [`Insignificant=yes`](/keys/insignificant/) counts in neither Losses nor Kills.
 
-Destroying or capturing an object earns points equal to its cost. Harvesting also earns points.
+Destroying or capturing an object earns points equal to its cost. Harvesting also earns points. A kill that a super weapon credits to the house alone, such as a lightning strike, earns them too.
 
 An undefeated house receives a bonus of half the average points of all the other listed houses, allies included. The bonus is at least 100.
 
