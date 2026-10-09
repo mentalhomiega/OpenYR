@@ -46,6 +46,7 @@ class SaveVersionInfo
 		 * resized; a build refuses a save of any other revision before reading its state.
 		 */
 		static constexpr int REVISION = 28;
+		static constexpr int REVISION = 26;
 
 		SaveVersionInfo(void);
 
