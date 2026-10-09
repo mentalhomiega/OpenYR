@@ -465,6 +465,7 @@ struct GameOptionsType {
 	bool		AutoDeployMCV;		// Every house's starting base unit deploys as the match begins.
 	bool		AttackNeutralUnits;	// A target scan considers a neutral house's objects.
 	bool		ScrapMetal;			// A wreck leaves the animations its type names in ScrapExplosion.
+	bool		SWAllowed;			// Off, the superweapon buildings the shell can disable cannot be built or granted.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
 	bool Save(SaveStreamClass & stream);

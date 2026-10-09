@@ -474,6 +474,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	Crates = ini.Get_Bool(SETTINGS, "Crates", Crates);
 	ShortGame = ini.Get_Bool(SETTINGS, "ShortGame", ShortGame);
 	BuildOffAlly = ini.Get_Bool(SETTINGS, "BuildOffAlly", BuildOffAlly);
+	SuperWeapons = ini.Get_Bool(SETTINGS, "SuperWeapons", SuperWeapons);
 	GameSpeed = ini.Get_Int(SETTINGS, "GameSpeed", GameSpeed);
 	MultiEngineer = ini.Get_Bool(SETTINGS, "MultiEngineer", MultiEngineer);
 	UnitCount = ini.Get_Int(SETTINGS, "UnitCount", UnitCount);

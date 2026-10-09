@@ -147,6 +147,9 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsManualControl;
 
+		// The match's superweapons option withholds this weapon's building when this is set.
+		bool IsDisableableFromShell;
+
 		/*
 		 * A PreClick weapon's shot only picks the cells for the PostClick weapon whose
 		 * PreDependent names its Type, and stays ready until that weapon fires. A PostClick
