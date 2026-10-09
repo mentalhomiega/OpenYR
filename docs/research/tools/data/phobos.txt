@@ -6,6 +6,8 @@
 <Sequence>Normalized
 <Sequence>Rate
 <x>FLH.Burst<n>
+Abductor.ChangeOwner.IgnoreDriverKilled
+Abductor.ChangeOwner.ResetDriverKilled
 AbsorbOverDamage
 AbsorbPercent
 Adjacent.Allowed
@@ -14,6 +16,10 @@ Adjacent.Disallowed.Prohibit
 Adjacent.Disallowed.ProhibitDistance
 AdjacentWallDamage
 AdjustTargetCoordsOnRotation
+AE_Attach
+AE_Detach
+AE_DetachByGroups
+AE_TransferEffects
 AffectsAbovePercent
 AffectsAir
 AffectsBelowPercent
@@ -30,6 +36,8 @@ AIAllToHunt
 AIAttackMoveTargetingDelay
 AIAutoDeployMCV
 AIBiasSpawnCell
+AIChronoSphereSW
+AIChronoWarpSW
 AICleanWallNode
 AIFireSale
 AIFireSaleDelay
@@ -61,8 +69,10 @@ AircraftWeapon.KickOutPassengers
 AirShadowBaseScale
 AirstrikeLineColor
 AirstrikeTargets
+AIScriptsList
 AISetBaseCenter
 AISuperWeaponDelay
+AITargetTypes
 Align
 AllowAirstrike
 AllowBeaconHotKeyInSinglePlayer
@@ -102,8 +112,11 @@ Anchor.Building
 Anchor.Horizontal
 Anchor.Vertical
 AnchoredToolTips
+Anim.ShouldUseCellDrawer
 Anim.Update
 Animation
+Animation.DrawOffset<x>
+Animation.DrawOffset<x>.RequiredTypes
 Animation.DrawOffsetN
 Animation.DrawOffsetN.RequiredTypes
 Animation.HideIfAttachedWith
@@ -112,6 +125,8 @@ Animation.ResetOnReapply
 Animation.TemporalAction
 Animation.UseInvokerAsOwner
 AnimationLength
+AnimationProbability
+AnimationRate
 AnimCraterDestroyTiberium
 AnimDamage.ApplyFirepowerMult
 AnimDamage.DealtByInvoker
@@ -170,6 +185,8 @@ AttachEffect.RequiredMaxCounts
 AttachEffect.RequiredMinCounts
 AttachEffect.RequiredTypes
 AttachEffect.SameSourceOnly
+AttachEffects.AttachOnOwnerChange
+AttachEffectTypes
 AttachFireAnimsToParent
 AttackCursorOnFriendlies
 AttackFriendlies
@@ -189,6 +206,8 @@ AutoDeath.OnOwnerChange
 AutoDeath.OnOwnerChange.ComputerToHuman
 AutoDeath.OnOwnerChange.HumanToComputer
 AutoDeath.OnOwnerChange.IgnoreRevertOnExit
+AutoDeath.PlayerMoney.Max
+AutoDeath.PlayerMoney.Min
 AutoDeath.PlayerMoneyLessThan
 AutoDeath.PlayerMoneyMoreThan
 AutoDeath.PlayerPowerState
@@ -210,6 +229,7 @@ AutoTargetOwnPosition
 AutoTargetOwnPosition.Self
 BallisticScatter.Max
 BallisticScatter.Min
+BannerTypes
 BarracksExitCell
 BarrelCompressFrames
 BarrelHoldFrames
@@ -225,9 +245,11 @@ Bolt.Arcs
 Bolt.Color1
 Bolt.Color2
 Bolt.Color3
+Bolt.Color<x>
 Bolt.Disable1
 Bolt.Disable2
 Bolt.Disable3
+Bolt.Disable<x>
 Bolt.Duration
 Bolt.FollowFLH
 Bolt.ZAdjust
@@ -235,6 +257,7 @@ BombParachute
 BracketDelta
 BreakAnim
 BreakWeapon
+BriefingTheme
 BuildingGuardRetryDelay
 BuildingProductionQueue
 BuildingRadioLink.SyncOwner
@@ -257,6 +280,7 @@ BuildLimitGroup.Factor
 BuildLimitGroup.NotBuildableIfQueueMatch
 BuildLimitGroup.Nums
 BuildLimitGroup.Types
+Bullet_SetFirerOwner
 BunkerableAnyway
 BunkerDamageMultiplier
 BunkerROFMultMultiplier
@@ -268,9 +292,11 @@ Burst.FireWithinSequence
 Burst.NoDelay
 BurstPerTurret
 CameoPriority
+CampaignDefaultGameSpeed
 CanBeBuiltOn
 CanKill
 CanTarget
+CanTarget.DriverKilled
 CanTarget.IronCurtained
 CanTarget.MaxHealth
 CanTarget.MinHealth
@@ -294,6 +320,7 @@ ChronoSparkleDisplayDelay
 ChronoSphereDelay
 ChronoSpherePreDelay
 ChronoTrigger
+ClampToScreen
 CLIsBlack
 Cloak.KickOutParasite
 Cloakable
@@ -341,6 +368,7 @@ Convert.Undeploy
 ConvertN.AffectsHouse
 ConvertN.From
 ConvertN.To
+ConvertToType_Phobos
 CostLabel
 Crash
 CrashSpin.Multiplier
@@ -391,11 +419,20 @@ CrumblingSound
 CrushForwardTiltPerFrame
 CrushOverlayExtraForwardTilt
 CrushSlowdownMultiplier
+CSF
+CSF.Background
+CSF.Color
+CSF.VariableFormat
 Cumulative
 Cumulative.MaxCount
 CumulativeAnimations
+CumulativeAnimations.CountIncrement
 CumulativeAnimations.RestartOnChange
 CurleyShuffle
+CustomGS
+CustomGS<x>.ChangeDelay
+CustomGS<x>.ChangeInterval
+CustomGS<x>.DefaultDelay
 CycleSelectionKeyEnabled
 CycleTypeSelectionKeyEnabled
 CycleTypeSelectionPrintSummary
@@ -420,6 +457,7 @@ DebrisAnims
 DebrisMaximums
 DebrisMinimums
 DebrisTypes.Limit
+DebugKeysEnabled
 DecloakAnims
 DecloakDamagedTargets
 DefaultDisguise
@@ -427,11 +465,19 @@ DefaultInfantrySelectBox
 DefaultLandingAnim
 DefaultLandingAnim.Carryall
 DefaultLandingAnim.Dropship
+DefaultLS640BkgdName
+DefaultLS640BriefLocX
+DefaultLS640BriefLocY
+DefaultLS800BkgdName
+DefaultLS800BkgdPal
+DefaultLS800BriefLocX
+DefaultLS800BriefLocY
 DefaultMirageDisguises
 DefaultToGuardArea
 DefaultToGuardArea.AIModes
 DefaultToGuardArea.Modes
 DefaultUnitSelectBox
+Delay
 DelayedFire.Animation
 DelayedFire.AnimIsAttached
 DelayedFire.AnimOffset
@@ -542,6 +588,7 @@ DropPod.Trailer.Attached
 DropPod.Trailer.SpawnDelay
 DropPod.Weapon
 DropPod.Weapon.HitLandOnly
+DropPodOnly
 Duration
 Duration.ApplyArmorMultOnTarget
 Duration.ApplyFirepowerMult
@@ -562,6 +609,7 @@ EVA.Activated.Enemies
 EVA.Activated.Owner
 EVA.LinkedSWAcquired
 EVA.Sold
+EventExt_AddEvent
 ExcludeFromMultipleFactoryBonus
 ExitThroughRoof
 ExpireWeapon
@@ -659,8 +707,11 @@ FreeMCV.CreditsThreshold
 GainSelfHealAllowMultiplayPassive
 GainSelfHealFromAllies
 GainSelfHealFromPlayerControl
+gamemd.edb
+gamemd.pdb
 Gas.MaxDriftSpeed
 GatherWhenMCVDeploy
+GetInteropAPIVersion
 Gravity
 Grinding.AllowAllies
 Grinding.AllowOwner
@@ -715,6 +766,7 @@ HitFlash.Blue
 HitFlash.FixedSize
 HitFlash.Green
 HitFlash.Red
+Horizontal
 HoverDrownable
 HoverLocomotorMakesWake
 IdleActionFrequency
@@ -782,6 +834,10 @@ InsigniaFrames.Passengers<n>
 InsigniaFrames.PassengersN
 InsigniaFrames.Weapon<n>
 InsigniaFrames.WeaponN
+InsigniaType
+InsigniaType.Passengers<x>
+InsigniaType.Weapon<x>
+InsigniaTypes
 Interceptable
 Interceptable.DeleteOnIntercept
 Interceptable.WeaponOverride
@@ -810,6 +866,7 @@ IronCurtain.KillOrganicsWarhead
 IronCurtain.KillWarhead
 IsALoaner
 IsAlternateColor
+IsAnimated
 IsAnimDelayedBurst
 IsDestroyableObstacle
 IsHideable
@@ -880,9 +937,13 @@ LaserPositionUpdate.StopOnFirerConvert
 LaserTargetColor
 LaserTrail.Type
 LaserTrail.Types
+LaserTrail<x>.FLH
+LaserTrail<x>.IsOnTurret
+LaserTrail<x>.Type
 LaserTrailN.FLH
 LaserTrailN.IsOnTurret
 LaserTrailN.Type
+LaserTrailTypes
 LaserZAdjust
 LaunchSW
 LaunchSW.DisplayMoney
@@ -907,6 +968,7 @@ MakesWake
 MaxGuardRange
 MaxVeinholeGrowth
 MaxWidth
+MCVRedeploys
 MergeBuildingDamage
 Message.Activated.Allies
 Message.Activated.Enemies
@@ -937,6 +999,8 @@ MultiWeapon.IsSecondary
 MultiWeapon.SelectCount
 NextIdleHarvesterKeyEnabled
 NoAlphaImageOnBuildup
+NoAmmoWeapons
+NoAmmoWeapons.IgnoreNeverUse
 NoBuildAreaOnBuildup
 NoManualMove
 Nonprovocative
@@ -991,6 +1055,7 @@ Palette
 Parachuted
 Parachuted.FallRate
 Parachuted.MaxFallRate
+ParaDropAircraft
 ParadropDelay
 ParadropEndDelay
 ParadropMission
@@ -1019,6 +1084,7 @@ PassengerDeletion.UseCostAsRate
 Passengers.SyncOwner
 Passengers.SyncOwner.RevertOnExit
 PassPercent
+PCX
 PenetratesForceShield
 PenetratesIronCurtain
 PenetratesTransport.CleanSound
@@ -1117,6 +1183,7 @@ RadDurationMultiple
 RadHasInvoker
 RadHasOwner
 RadialIndicatorVisibility
+RadiationTypes
 RadLevelDelay
 RadLevelFactor
 RadLevelMax
@@ -1127,6 +1194,13 @@ RadSiteWarhead.Detonate
 RadSiteWarhead.Detonate.Full
 RadTintFactor
 RadType
+Ranking.OverParMessage
+Ranking.OverParTitle
+Ranking.ParTimeEasy
+Ranking.ParTimeHard
+Ranking.ParTimeMedium
+Ranking.UnderParMessage
+Ranking.UnderParTitle
 RateDown.Cover.AmmoBelow
 RateDown.Cover.Value
 RateDown.Delay
@@ -1146,12 +1220,14 @@ ReflectDamage.Override
 ReflectDamage.UseInvokerAsOwner
 ReflectDamage.Warhead
 ReflectDamage.Warhead.Detonate
+RegisterCalculateExtraThreatCallback
 RemoveDisguise
 RemoveMindControl
 RemoveMindControl.Silent
 RemoveParasite
 RemoveParasite.Allow
 RemoveParasite.Disallow
+RepairBaseNodes
 Respawn
 Respawn.Anim
 Respawn.Rate
@@ -1197,6 +1273,7 @@ RoofProductionAnimYSort
 RoofProductionAnimZAdjust
 RotateOnCrash
 SaveGameOnScenarioStart
+SaveVariablesOnScenarioEnd
 SecondaryFireSequenceLandOnly
 SegmentLength
 SelectBox
@@ -1212,6 +1289,9 @@ SellBuildupLength
 SellSound
 Sequence.<Sequence>.DefaultNormalized
 Sequence.<Sequence>.DefaultRate
+Sequence.<x>.DefaultNormalized
+Sequence.<x>.DefaultRate
+SetRecruitableOnLiberate
 SetTabBySelecting
 SetTabBySelectingFactory
 ShadowIndex.Frame
@@ -1266,6 +1346,9 @@ Shield.SkipHitAnim
 ShieldApplyArmorMult
 ShieldType
 ShipLocomotorMakesWake
+ShowBriefing
+ShowBriefingResumeButtonLabel
+ShowBriefingResumeButtonStatusLabel
 ShowDesignatorRange
 ShowFlashOnSelecting
 ShowGameTime
@@ -1279,6 +1362,9 @@ ShowTimer.Percentage
 ShowTimer.Priority
 ShowType
 ShowWeedsCounter
+SHP
+SHP.Palette
+SHP.RefreshAfterDelay
 Shrapnel.AffectsBuildings
 Shrapnel.AffectsGround
 Shrapnel.IgnoreHitBuildings
@@ -1304,6 +1390,8 @@ Sinkable
 Sinkable.SquidGrab
 SinkSpeed
 SkipCrushSlowdown
+SkipMapSelect
+SkirmishUnlimitedColors
 Slaved.OwnerWhenMasterKilled
 SlavesFreeSound
 SmallFireAnims
@@ -1415,6 +1503,8 @@ SWShotsFormat
 TabIndex
 TargetZoneScanType
 Taunt
+TeamDelays.Count<x>
+TeamDelays.DynamicType
 TeamMember.ConsideredAs
 Temporal.ApplyMultiplier
 Temporal.ApplyVersus
@@ -1449,6 +1539,7 @@ TiltsWhenCrushes.Overlays
 TiltsWhenCrushes.Vehicles
 TimeLabel
 Tint.Color
+Tint.Cumulative
 Tint.Intensity
 Tint.VisibleToHouses
 ToggleDesignatorRangeKeyEnabled
@@ -1577,6 +1668,11 @@ UseWeeds.ReadinessAnimationPercentage
 UseWeeds.StorageTimer
 ValueAsTimer
 ValueScaleDivisor
+VariableNames
+Variables_GetGlobal_Phobos
+Variables_GetLocal_Phobos
+Variables_SetGlobal_Phobos
+Variables_SetLocal_Phobos
 Vehicles.DefaultDigitalDisplayTypes
 VeinAttack
 VeinDamage
@@ -1585,6 +1681,7 @@ VeinholeGrowthRate
 VeinholeShrinkRate
 VeinholeTypeClass
 VeinholeWarhead
+Vertical
 VerticalInitialFacing
 VeteranBuildings
 VeteranCritChance
@@ -1602,10 +1699,12 @@ VisualScatter.Max
 VisualScatter.Min
 VoiceCreated
 VoiceEliteWeapon<n>Attack
+VoiceEliteWeapon<x>Attack
 VoiceEliteWeaponNAttack
 VoiceEnterGrinder
 VoicePickup
 VoiceWeapon<n>Attack
+VoiceWeapon<x>Attack
 VoiceWeaponNAttack
 VoxelLightSource
 Wake
@@ -1633,6 +1732,8 @@ WeaponRange.AllowWeapons
 WeaponRange.DisallowWeapons
 WeaponRange.ExtraRange
 WeaponRange.Multiplier
+WeedCapacity
+Weeder
 WeedsCounter.Show
 XDrawOffset
 XDrawOffset.ApplyBracketHeight
