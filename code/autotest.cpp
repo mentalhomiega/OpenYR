@@ -142,6 +142,7 @@
 #include "keyboard.h"
 #include "loco.h"
 #include "tactical.h"
+#include "tiberium.h"
 #include "scheme.h"
 #include "rules.h"
 #include "saveload.h"
@@ -523,6 +524,32 @@ void Log_State_Hash(void)
 		hash = (hash ^ random[index]) * 16777619u;
 	}
 	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
+}
+
+
+/// <summary>
+/// Writes, for each tiberium type, its cells with their total density and credit value, how many
+/// of them can still grow or spread, and the lengths of its growth and spread queues, for watching
+/// ore fields regrow and spread over a long game.
+/// </summary>
+void Log_Ore(void)
+{
+	DebugString("AUTOTEST   ore frame %d\n", Frame);
+	for (int type = 0; type < Tiberiums.Count(); type++) {
+		int cells = 0, density = 0, value = 0, growable = 0, spreadable = 0;
+		Map.Reset_Iterator();
+		for (CellClass * cellptr = Map.Iterate(); cellptr != NULL; cellptr = Map.Iterate()) {
+			if (cellptr->Tiberium_Type_Here() == Tiberiums[type]->HeapID) {
+				cells++;
+				density += cellptr->OverlayData + 1;
+				value += cellptr->Tiberium_Value();
+				growable += cellptr->Can_Tiberium_Grow() ? 1 : 0;
+				spreadable += cellptr->Can_Tiberium_Spread() ? 1 : 0;
+			}
+		}
+		DebugString("AUTOTEST   ore %s cells %d density %d value %d growable %d spreadable %d queued growth %d spread %d\n",
+			Tiberiums[type]->Name(), cells, density, value, growable, spreadable, Tiberiums[type]->GrowthQueue.Count(), Tiberiums[type]->SpreadQueue.Count());
+	}
 }
 
 
@@ -1454,6 +1481,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "census") {
 		// census: per house, how many structures, vehicles, infantry and aircraft it owns, how many of the
 		// mobile ones are moving or have a target, and the size of the object lists, for watching long games.
+		// census ore writes the tiberium report of Log_Ore instead.
+		if (step.Argument == "ore") {
+			Log_Ore();
+			return;
+		}
 		DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());
 		for (int house = 0; house < Houses.Count(); house++) {
 			int buildings = 0, units = 0, infantry = 0, aircraft = 0, busy = 0, harvesters = 0;
