@@ -107,6 +107,8 @@ class UnitClass : public FootClass
 
 		// A simple deployer that has deployed, and the frame its deploying animation ends.
 		bool IsSimpleDeployed;
+		// A flying simple deployer that is landing to deploy. It descends at its stop until it touches down.
+		bool IsLandingToDeploy;
 		int SimpleDeployFrame;
 		int Simple_Deploy_AI(void);
 
