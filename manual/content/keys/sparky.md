@@ -1,13 +1,13 @@
 ---
 key: Sparky
-summary: Buildings knocked down a damage level burn with the fire set, and terrain objects struck catch fire.
+summary: Buildings knocked down a damage level burn with the fire set.
 see_also: [OnFire, SmallFire, Wood, Fire]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-`Sparky=yes` has two effects. A structure this warhead damages shows flames from the [`OnFire`](/keys/onfire/) set when it drops a damage level, and a terrain object it damages catches fire.
+`Sparky=yes` makes a structure this warhead damages show flames from the [`OnFire`](/keys/onfire/) set when it drops a damage level. It has no effect on terrain objects, which never catch fire.
 
 ```ini title="rules.ini"
 [MyShellWH] ; example WarheadType

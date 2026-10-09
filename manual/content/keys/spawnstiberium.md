@@ -16,5 +16,5 @@ Placing the object removes any overlay already in its top-left cell, and new Tib
 The flag also changes how the object is drawn and destroyed:
 
 - Its artwork is drawn 16 pixels higher than that of an ordinary terrain object.
-- It never catches fire, as [`TreeFlammability`](/keys/treeflammability/) describes.
+- It never catches fire, as no terrain object does.
 - When destroyed, it explodes, as [What the ground keeps](/systems/destruction-and-debris/#what-the-ground-keeps) describes.

@@ -1,0 +1,15 @@
+; Trees under fire. TREE11 at 64,60 is a wood tree (strength 200); TIBTRE01 at 44,82 is an immune Tiberium tree.
+; SA has Wood=no, so it leaves a wood tree alone. AP has Wood=yes, so repeated AP hits destroy the tree.
+; Each treehit line writes the strength before and after, and whether the cell still holds the terrain object.
+; Expected: SA leaves the strength at 200, each AP hit takes some strength until the tree is removed,
+; and both warheads leave the immune tree at 200.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script tests/trees/trees-hit.txt -Map XMP29U2.MAP -Seconds 60
+30 treehit SA 64 60
+40 treehit AP 64 60
+50 treehit AP 64 60
+60 treehit AP 64 60
+70 treehit AP 64 60
+80 treehit AP 64 60
+90 treehit AP 44 82
+100 treehit SA 44 82
+110 quit

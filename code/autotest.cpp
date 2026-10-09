@@ -144,6 +144,7 @@
 #include "suprtype.h"
 #include "taskforc.h"
 #include "teamtype.h"
+#include "terrain.h"
 #include "taction.h"
 #include "trigger.h"
 #include "trigtype.h"
@@ -584,6 +585,29 @@ void Log_Ore_Cells(int limit)
 	DebugString("AUTOTEST   orecells from %d,%d: %d listed\n", origin.X, origin.Y, count);
 	for (int index = 0; index < count; index++) {
 		DebugString("AUTOTEST   orecell %d,%d distance %d\n", found[index].X, found[index].Y, distances[index]);
+/*
+**	treehit <Warhead> x y: hits the terrain object on that cell with 100 points of damage from the
+**	warhead, with no firer. trees: writes every terrain object on the map with its cell, strength,
+**	armor and whether it is immune.
+*/
+static void Terrain_Step(StepType const & step)
+{
+	if (step.Command == "treehit") {
+		WarheadTypeClass const * warhead = WarheadTypeClass::From_Name(step.Argument.c_str());
+		TerrainClass * terrain = Map[Cell(step.X, step.Y)].Cell_Terrain();
+		if (terrain == NULL || warhead == NULL) {
+			DebugString("AUTOTEST treehit %s %d,%d: %s\n", step.Argument.c_str(), step.X, step.Y, terrain == NULL ? "no terrain object" : "no such warhead");
+			return;
+		}
+		int const before = terrain->Strength;
+		int damage = 100;
+		ResultType const result = terrain->Take_Damage(damage, 0, warhead, NULL, false);
+		DebugString("AUTOTEST treehit %s at %d,%d: strength %d -> %d damage %d result %d removed %d\n", terrain->Class->Name(), step.X, step.Y, before, (int)terrain->Strength, damage, (int)result, (int)(Map[Cell(step.X, step.Y)].Cell_Terrain() == NULL));
+	} else {
+		for (int index = 0; index < Terrains.Count(); index++) {
+			TerrainClass * terrain = Terrains[index];
+			DebugString("AUTOTEST tree %s at %d,%d strength %d armor %d immune %d\n", terrain->Class->Name(), terrain->Get_Cell().X, terrain->Get_Cell().Y, terrain->Strength, (int)terrain->Class->Armor, (int)terrain->Class->IsImmune);
+		}
 	}
 }
 
@@ -591,6 +615,11 @@ void Log_Ore_Cells(int limit)
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
+
+	if (step.Command == "treehit" || step.Command == "trees") {
+		Terrain_Step(step);
+		return;
+	}
 
 	if (step.Command == "infiltrate") {
 		// infiltrate barracks|warfactory: marks the player's house as having spied on that building, as a spy's infiltration does.

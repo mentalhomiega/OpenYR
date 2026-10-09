@@ -4321,7 +4321,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 
 								WeaponTypeClass const * weapon = Class->Get_Weapon(What_Weapon_Should_I_Use(obj))->Weapon;
 								if (weapon != NULL && weapon->WarheadPtr != NULL &&
-									weapon->WarheadPtr->IsWoodDestroyer && !obj->Class_Of()->IsImmune) {
+									weapon->WarheadPtr->IsWoodDestroyer) {
 
 									if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
 								} else {
