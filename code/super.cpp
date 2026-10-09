@@ -493,6 +493,9 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 			return(false);
 		}
 		if (Class->Type == SUPER_PSYCHIC_DOMINATOR && PsychicDominatorClass::Is_Active()) {
+			if (player) {
+				PsychicDominatorClass::Print_Refusal();
+			}
 			return(false);
 		}
 

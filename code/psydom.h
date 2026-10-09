@@ -29,6 +29,7 @@ class PsychicDominatorClass
 		static void Start(Cell const & cell, HouseClass * owner);
 		static void AI(void);
 		static bool Is_Active(void) {return(Status != INACTIVE);}
+		static void Print_Refusal(void);
 		static void Detach(AbstractClass const * target);
 		static void Serialize(SaveStreamClass & stream);
 		static bool Can_Be_Dominated(TechnoClass const * techno);
