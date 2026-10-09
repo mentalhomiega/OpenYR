@@ -225,6 +225,7 @@ static void Spawner_Bind_Options(void)
 	Session.Options.MCVRedeploy = SpawnConfig.MCVRedeploy;
 	Session.Options.CoachMode = SpawnConfig.CoachMode;
 	Session.Options.BuildOffAlly = SpawnConfig.BuildOffAlly;
+	Session.Options.SWAllowed = SpawnConfig.SuperWeapons;
 	Session.Options.AutoDeployMCV = SpawnConfig.AutoDeployMCV;
 	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
 	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;

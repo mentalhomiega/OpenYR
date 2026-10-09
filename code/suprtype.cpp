@@ -90,6 +90,7 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	UseChargeDrain(false),
 	IsPowered(true),
 	IsManualControl(false),
+	IsDisableableFromShell(false),
 	IsPreClick(false),
 	IsPostClick(false),
 	IsShowTimer(false),
@@ -164,6 +165,7 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UseChargeDrain);
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsManualControl);
+	stream.Serialize(IsDisableableFromShell);
 	stream.Serialize(IsPreClick);
 	stream.Serialize(IsPostClick);
 	stream.Serialize(IsShowTimer);
@@ -200,6 +202,7 @@ void SuperWeaponTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Type);
 	crc(UseChargeDrain);
 	crc(IsManualControl);
+	crc(IsDisableableFromShell);
 	crc(IsPreClick);
 	crc(IsPostClick);
 	crc(PreDependent);
@@ -249,6 +252,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AuxBuilding = TGet_Class(ini, IniName, "AuxBuilding", AuxBuilding);
 		UseChargeDrain = ini.Get_Bool(IniName, "UseChargeDrain", UseChargeDrain);
 		IsManualControl = ini.Get_Bool(IniName, "ManualControl", IsManualControl);
+		IsDisableableFromShell = ini.Get_Bool(IniName, "DisableableFromShell", IsDisableableFromShell);
 		IsPreClick = ini.Get_Bool(IniName, "PreClick", IsPreClick);
 		IsPostClick = ini.Get_Bool(IniName, "PostClick", IsPostClick);
 		IsShowTimer = ini.Get_Bool(IniName, "ShowTimer", IsShowTimer);

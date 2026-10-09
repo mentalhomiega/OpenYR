@@ -941,6 +941,19 @@ HouseStaticClass::HouseStaticClass(void) :
 }
 
 
+/// <summary>
+/// Reports whether the superweapons option withholds a building, which is a structure whose
+/// superweapon the shell can disable. Withheld, it cannot be built, and its superweapon is not
+/// granted, while the option is off. A building the rules list in BuildTech is never withheld.
+/// </summary>
+static bool Is_Withheld_Superweapon_Building(BuildingTypeClass const * type)
+{
+	if (Session.Options.SWAllowed || type->SuperWeapon == SUPER_NONE) return(false);
+	if (Rule->BuildTech.Is_In_List(type)) return(false);
+	return(SuperWeaponTypes[type->SuperWeapon]->IsDisableableFromShell);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Can_Build -- General purpose build legality checker.                            *
  *                                                                                             *
@@ -1082,6 +1095,8 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		/*
 		**	The computer can always build everything.
 		*/
+		if (type->RTTI == RTTI_BUILDINGTYPE && Is_Withheld_Superweapon_Building((BuildingTypeClass const *)type)) return(0);
+
 		if (!Is_Human_Player()) return(1);
 
 		/*
@@ -7718,7 +7733,8 @@ void HouseClass::Make_Base_Nodes(void)
 			builtype->CanAIBuildThis &&
 			builtype->Level <= Control.TechLevel &&
 			(!builtype->IsWeeder || VeinholeMonsterClass::VeinholeMonsters.Count() > 0) &&
-			builtype != plug) {
+			builtype != plug &&
+			!Is_Withheld_Superweapon_Building(builtype)) {
 
 			buildables.Add(builtype);
 			isadded.Add(false);
@@ -10046,7 +10062,8 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 {
 	if (!IsDefeated) {
 		for (int s = 0; s < SuperWeapon.Count(); s++) {
-			if (!SuperWeapon[s]->Is_Present() || SuperWeapon[s]->Is_One_Time()) {
+			bool const withheld = !Session.Options.SWAllowed && SuperWeaponTypes[s]->IsDisableableFromShell;
+			if (!withheld && (!SuperWeapon[s]->Is_Present() || SuperWeapon[s]->Is_One_Time())) {
 				bool from_upgrade = false;
 				int j = Buildings.Count() - 1;
 				if (j >= 0) {

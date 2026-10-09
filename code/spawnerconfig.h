@@ -27,7 +27,7 @@ class SpawnerConfigClass
 	public:
 
 		// Bump when the game's reading of a launch file changes; it feeds the session identity.
-		static constexpr int SCHEMA_VERSION = 1;
+		static constexpr int SCHEMA_VERSION = 2;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
@@ -95,6 +95,7 @@ class SpawnerConfigClass
 		bool Crates = false;
 		bool ShortGame = false;
 		bool BuildOffAlly = false;
+		bool SuperWeapons = true;
 		int GameSpeed = 0;
 		bool MultiEngineer = false;
 		int UnitCount = 0;

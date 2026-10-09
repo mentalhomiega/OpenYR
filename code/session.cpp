@@ -187,6 +187,7 @@ SessionClass::SessionClass(void)
 	Options.AttackNeutralUnits = false;
 	Options.ScrapMetal = false;
 	Options.AIDifficulty = DIFF_NORMAL;
+	Options.SWAllowed = true;
 
 	UniqueID = 0;
 
@@ -1723,6 +1724,7 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AutoDeployMCV);
 	stream.Serialize(AttackNeutralUnits);
 	stream.Serialize(ScrapMetal);
+	stream.Serialize(SWAllowed);
 	stream.Serialize(ScenarioDescription);
 }
 

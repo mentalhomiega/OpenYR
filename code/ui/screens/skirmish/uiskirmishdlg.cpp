@@ -224,6 +224,7 @@ static void Commit(UISkirmishState const & state)
 	Session.Options.ShortGame = state.ShortGame;
 	Session.Options.HarvTruce = false;
 	Session.Options.CrapEngineers = state.MultiEngineer;
+	Session.Options.SWAllowed = state.SuperWeapons;
 
 	delete MultiplayerMapPreview;
 	MultiplayerMapPreview = NULL;
@@ -364,6 +365,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.Redeploy = Session.Options.MCVRedeploy;
 	state.ShortGame = Session.Options.ShortGame;
 	state.MultiEngineer = Session.Options.CrapEngineers;
+	state.SuperWeapons = Session.Options.SWAllowed;
 
 	Session.Options.ScenarioIndex = First_Available_Scenario();
 	Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);

@@ -110,6 +110,7 @@ struct UISkirmishState
 	bool Redeploy = true;
 	bool ShortGame = false;
 	bool MultiEngineer = false;
+	bool SuperWeapons = true;
 
 	int UnitCount = 0;
 	int UnitCountMin = 0;

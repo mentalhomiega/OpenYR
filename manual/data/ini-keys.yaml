@@ -11015,6 +11015,23 @@ Disableable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DisableableFromShell:
+  key: DisableableFromShell
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: SuperWeaponTypeClass
+      member: IsDisableableFromShell
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 DisabledDisguiseDetectionPercent:
   key: DisabledDisguiseDetectionPercent
   scopes:
