@@ -55,7 +55,9 @@ The weapon fires only at an object it could take. It refuses:
 - a structure being built or sold;
 - any object while the firer already holds its weapon's `Damage` in objects. A weapon with `Damage=1` is the exception: its firer lets go of the object it holds and takes the new one.
 
-When the warhead hits, the target [changes hands](/systems/capture/#what-changes-hands) as a captured object does and takes no damage. It leaves its team and drops its orders to guard, unless it is a harvester unloading. A unit that now belongs to a computer house then does what [the computer decides](#what-a-computer-does-with-a-unit).
+When the warhead hits, the target changes owner and takes no damage. It springs no trigger. Its target and destination are cleared, it keeps its rank, and the firer's house gains score points equal to its cost. It leaves its team and drops its orders to guard, unless it is a harvester unloading. A unit that now belongs to a computer house then does what [the computer decides](#what-a-computer-does-with-a-unit).
+
+Yuri's Revenge also raises the destroyed-any trigger events of an infantryman, aircraft or structure that changes owner this way. We do not do that yet.
 
 [`ControlledAnimationType`](/keys/controlledanimationtype/) plays over the object while it is held, [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above its center. Over a structure it plays the art `Height` in cell levels above the center instead. [`YuriMindControlSound`](/keys/yurimindcontrolsound/) plays at the object when the firer's house or the object's former house is the player's.
 
