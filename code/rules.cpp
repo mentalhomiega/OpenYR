@@ -568,6 +568,8 @@ RulesClass::RulesClass(void) :
 	TiberiumExplosionDamage(100),
 	TiberiumStrength(10),
 	MinLowPowerProductionSpeed(.5),
+	MaxLowPowerProductionSpeed(.9),
+	LowPowerPenaltyModifier(1.0),
 	MultipleFactory(1),
 	MultipleFactoryCap(0),
 	CraterLevel(4),
@@ -1549,7 +1551,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsRevealByHeight = ini.Get_Bool(GENERAL, "RevealByHeight", IsRevealByHeight);
 		IsShroudedSubteranneanMovesAllowed = ini.Get_Bool(GENERAL, "AllowShroudedSubteranneanMoves", IsShroudedSubteranneanMovesAllowed);
 		AircraftFogReveal = ini.Get_Int(GENERAL, "AircraftFogReveal", AircraftFogReveal);
-		MinLowPowerProductionSpeed = ini.Get_Float(GENERAL, "MinProductionSpeed", MinLowPowerProductionSpeed);
+		MinLowPowerProductionSpeed = ini.Get_Float(GENERAL, "MinLowPowerProductionSpeed", MinLowPowerProductionSpeed);
+		MaxLowPowerProductionSpeed = ini.Get_Float(GENERAL, "MaxLowPowerProductionSpeed", MaxLowPowerProductionSpeed);
+		LowPowerPenaltyModifier = ini.Get_Float(GENERAL, "LowPowerPenaltyModifier", LowPowerPenaltyModifier);
 		MultipleFactory = ini.Get_Float(GENERAL, "MultipleFactory", MultipleFactory);
 		MultipleFactoryCap = ini.Get_Int(GENERAL, "MultipleFactoryCap", MultipleFactoryCap);
 		CraterLevel = ini.Get_Int(GENERAL, "CraterLevel", CraterLevel);
@@ -2902,6 +2906,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumExplosionDamage);
 	stream.Serialize(TiberiumStrength);
 	stream.Serialize(MinLowPowerProductionSpeed);
+	stream.Serialize(MaxLowPowerProductionSpeed);
+	stream.Serialize(LowPowerPenaltyModifier);
 	stream.Serialize(MultipleFactory);
 	stream.Serialize(MultipleFactoryCap);
 	stream.Serialize(CraterLevel);

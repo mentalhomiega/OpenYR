@@ -8,4 +8,4 @@ when_omitted:
   value: ".3"
 ---
 
-The slowest production a power shortfall can cause is fixed in the engine at a multiplier of `0.5`, or at [`MinProductionSpeed`](/keys/minproductionspeed/) when that is higher. [The production table](/systems/power/#production) lists the multipliers that apply.
+A power shortfall does not read this value. [`MinLowPowerProductionSpeed`](/keys/minlowpowerproductionspeed/) sets the floor on a house's speed, and [the power page](/systems/power/#production) gives the rest of the calculation.

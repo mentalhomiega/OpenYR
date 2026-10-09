@@ -271,3 +271,12 @@
   search_aliases:
     - SurvivorDivisor
   summary: Set the credits per survivor for every side, applied to a structure's cost after SurvivorRate. Each side now has its own divisor, AlliedSurvivorDivisor, SovietSurvivorDivisor or ThirdSurvivorDivisor, applied to the sale refund.
+- type: key
+  id: MinProductionSpeed
+  route: /keys/minproductionspeed/
+  search_aliases:
+    - MinProductionSpeed
+  summary: Set the floor on the low-power production multiplier in [General]. The engine no longer reads the key, so it has no effect; MinLowPowerProductionSpeed takes its place.
+  replacement:
+    type: key
+    id: MinLowPowerProductionSpeed

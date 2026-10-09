@@ -20972,6 +20972,24 @@ LowPowerGarrisoned:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+LowPowerPenaltyModifier:
+  key: LowPowerPenaltyModifier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: LowPowerPenaltyModifier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LowPowerPowered:
   key: LowPowerPowered
   scopes:
@@ -21489,6 +21507,24 @@ MaxIQLevels:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MaxLowPowerProductionSpeed:
+  key: MaxLowPowerProductionSpeed
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '.9'
+      declared_in: RulesClass
+      member: MaxLowPowerProductionSpeed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MaxMoney:
   key: MaxMoney
   scopes:
@@ -21948,6 +21984,24 @@ MinDebris:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+MinLowPowerProductionSpeed:
+  key: MinLowPowerProductionSpeed
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '.5'
+      declared_in: RulesClass
+      member: MinLowPowerProductionSpeed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MinPlayers:
   key: MinPlayers
   scopes:
@@ -21981,24 +22035,6 @@ MinPlayers:
       source: code/session.cpp
       guard: null
     level: MultiMission
-MinProductionSpeed:
-  key: MinProductionSpeed
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: General
-    value_type: floating point
-    status: generated
-    _provenance:
-      default_candidate: '.5'
-      declared_in: RulesClass
-      member: MinLowPowerProductionSpeed
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 MinVolume:
   key: MinVolume
   scopes:
