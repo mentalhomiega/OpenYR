@@ -447,8 +447,10 @@ class HouseClass : public AbstractClass
 		bool IsToLook;
 
 		/*
-		**	This value indicates the degree of smartness to assign to this house.
-		**	A value of zero indicates that the player controls everything.
+		**	The effective IQ that the [IQ] gates compare against (gamemd's IQLevel2). It starts
+		**	at Control.IQ and becomes MaxIQ for a computer house that a skirmish or multiplayer
+		**	match sets up and for a house taken over by the computer. Control.IQ (gamemd's IQLevel)
+		**	keeps the map's value, or 0 for such a computer house, and the sell gate reads it.
 		*/
 		int IQ;
 
