@@ -722,12 +722,10 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		height_diff = std::max(height_diff, 0);
 	}
 
+	// A unit too low for its wanted height stops dead until it has climbed, except on its destination cell.
 	if (LinkedTo->Get_Cell() != HeadToCoord.As_Cell()) {
-		if (height_diff < desired_height / 2) {
-			CurrentSpeed *= 0.9;
-		}
-		if (height_diff < desired_height / 4) {
-			CurrentSpeed *= 0.9;
+		if (height_diff < desired_height / 2 || height_diff < desired_height / 4) {
+			CurrentSpeed = 0;
 		}
 	}
 

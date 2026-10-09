@@ -18,6 +18,6 @@ Use a whole number. A jumpjet's height is kept in whole leptons, so a climb drop
 
 A descent stops at ground level. When less than one step is left before a jumpjet reaches the height it wants, it moves the rest of the way in that frame, so it settles on that height without overshooting it.
 
-`Climb` also sets how quickly a jumpjet lifts over terrain and structures. While moving, a jumpjet raises the height it wants to clear the cell ahead. It also slows down while it is well below that height. A small value therefore makes a jumpjet slow down and climb late at each obstacle.
+`Climb` also sets how quickly a jumpjet lifts over terrain and structures. While moving, a jumpjet raises the height it wants to clear the cell ahead. It stops while it is less than half its flight level above the ground or structures under it, until it has climbed, unless it is on the cell it is flying to. A small value therefore makes a jumpjet stop and climb slowly at each obstacle.
 
 This is the default for every type; a type's [`JumpjetClimb`](/keys/jumpjetclimb/) replaces it for that type.
