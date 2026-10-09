@@ -44,6 +44,9 @@ static int const UI_SKIRMISH_MIN_MONEY = 2500;
 
 static char const * const SKIRMISH_SECTION = "Skirmish";
 
+// Set once a match is started from this screen; until then its match options show the rules' values.
+static bool Options_Started = false;
+
 static int const UI_SKIRMISH_COLORS[] = {
 	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
 };
@@ -206,6 +209,7 @@ static void Seat_Players(UISkirmishState const & state)
 
 static void Commit(UISkirmishState const & state)
 {
+	Options_Started = true;
 	Remember_Preferences(state);
 
 	Session.Options.UnitCount = state.UnitCount;
@@ -357,17 +361,19 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.CreditsStep = 250;
 	state.Credits = Session.Options.Credits;
 
-	state.GameSpeed = 6 - Session.Options.GameSpeed;
+	// Until a match starts from this screen, these options take the values of [MultiplayerDialogSettings].
+	bool const rules_defaults = !Options_Started;
+	state.GameSpeed = 6 - (rules_defaults ? Rule->MPGameSpeed : Session.Options.GameSpeed);
 
 	state.Bases = Session.Options.Bases;
 	state.Crates = Session.Options.Goodies;
-	state.Fog = Session.Options.FogOfWar;
+	state.Fog = rules_defaults ? Rule->IsMPFogOfWar : Session.Options.FogOfWar;
 	state.Bridges = Session.Options.BridgeDestruction;
-	state.Redeploy = Session.Options.MCVRedeploy;
-	state.ShortGame = Session.Options.ShortGame;
-	state.MultiEngineer = Session.Options.CrapEngineers;
-	state.SuperWeapons = Session.Options.SWAllowed;
-	state.BuildOffAlly = Session.Options.BuildOffAlly;
+	state.Redeploy = rules_defaults ? Rule->IsMPMCVRedeploys : Session.Options.MCVRedeploy;
+	state.ShortGame = rules_defaults ? Rule->IsMPShortGame : Session.Options.ShortGame;
+	state.MultiEngineer = rules_defaults ? Rule->IsMPMultiEngineer : Session.Options.CrapEngineers;
+	state.SuperWeapons = rules_defaults ? Rule->IsMPSuperWeapons : Session.Options.SWAllowed;
+	state.BuildOffAlly = rules_defaults ? Rule->IsMPBuildOffAlly : Session.Options.BuildOffAlly;
 
 	Session.Options.ScenarioIndex = First_Available_Scenario();
 	Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);

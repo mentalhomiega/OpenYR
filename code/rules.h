@@ -2697,6 +2697,13 @@ class RulesClass
 		bool IsMPAIPlayers;
 		bool IsMPCaptureTheFlag;
 		bool IsMPBridgeDestruction;
+		bool IsMPShortGame;
+		bool IsMPBuildOffAlly;
+		bool IsMPFogOfWar;
+		bool IsMPMCVRedeploys;
+		bool IsMPMultiEngineer;
+		bool IsMPSuperWeapons;
+		int MPGameSpeed;
 
 
 		/*

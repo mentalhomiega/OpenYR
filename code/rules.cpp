@@ -214,6 +214,13 @@ RulesClass::RulesClass(void) :
 	IsMPAIPlayers(false),
 	IsMPCaptureTheFlag(false),
 	IsMPBridgeDestruction(true),
+	IsMPShortGame(false),
+	IsMPBuildOffAlly(true),
+	IsMPFogOfWar(false),
+	IsMPMCVRedeploys(true),
+	IsMPMultiEngineer(false),
+	IsMPSuperWeapons(true),
+	MPGameSpeed(6),
 	DropZoneRadius(4*CELL_LEPTON_W),
 	MessageDelay(.6),
 	SavourDelay(.03),
@@ -1883,6 +1890,20 @@ bool RulesClass::MPlayer(CCINIClass const & ini)
 		IsMPCrates = ini.Get_Bool(MPDIALOG, "Crates", IsMPCrates);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPLAYER, "CaptureTheFlag", IsMPCaptureTheFlag);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPDIALOG, "CaptureTheFlag", IsMPCaptureTheFlag);
+		IsMPShortGame = ini.Get_Bool(MPLAYER, "ShortGame", IsMPShortGame);
+		IsMPShortGame = ini.Get_Bool(MPDIALOG, "ShortGame", IsMPShortGame);
+		IsMPBuildOffAlly = ini.Get_Bool(MPLAYER, "BuildOffAlly", IsMPBuildOffAlly);
+		IsMPBuildOffAlly = ini.Get_Bool(MPDIALOG, "BuildOffAlly", IsMPBuildOffAlly);
+		IsMPFogOfWar = ini.Get_Bool(MPLAYER, "FogOfWar", IsMPFogOfWar);
+		IsMPFogOfWar = ini.Get_Bool(MPDIALOG, "FogOfWar", IsMPFogOfWar);
+		IsMPMCVRedeploys = ini.Get_Bool(MPLAYER, "MCVRedeploys", IsMPMCVRedeploys);
+		IsMPMCVRedeploys = ini.Get_Bool(MPDIALOG, "MCVRedeploys", IsMPMCVRedeploys);
+		IsMPMultiEngineer = ini.Get_Bool(MPLAYER, "MultiEngineer", IsMPMultiEngineer);
+		IsMPMultiEngineer = ini.Get_Bool(MPDIALOG, "MultiEngineer", IsMPMultiEngineer);
+		IsMPSuperWeapons = ini.Get_Bool(MPLAYER, "SuperWeaponsAllowed", IsMPSuperWeapons);
+		IsMPSuperWeapons = ini.Get_Bool(MPDIALOG, "SuperWeaponsAllowed", IsMPSuperWeapons);
+		MPGameSpeed = ini.Get_Int(MPLAYER, "GameSpeed", MPGameSpeed);
+		MPGameSpeed = ini.Get_Int(MPDIALOG, "GameSpeed", MPGameSpeed);
 		return(true);
 	}
 	return(false);
