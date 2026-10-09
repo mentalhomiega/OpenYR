@@ -291,3 +291,25 @@ wchar_t const * Fetch_String(char const * label, char const ** extra)
 	}
 	return(it->second.c_str());
 }
+
+std::string Fetch_String_UTF8(char const * label)
+{
+	return(Wide_To_UTF8(Fetch_String(label)));
+}
+
+
+std::string Wide_To_UTF8(wchar_t const * wide)
+{
+	std::string text;
+	for (; *wide != L'\0'; wide++) {
+		char32_t code = (char32_t)*wide;
+		// The table keeps one UTF-16 unit per wchar_t on every platform, so two surrogates make one character.
+		if (code >= 0xD800 && code < 0xDC00 && wide[1] >= 0xDC00 && wide[1] < 0xE000) {
+			code = 0x10000 + ((code - 0xD800) << 10) + ((char32_t)wide[1] - 0xDC00);
+			wide++;
+		}
+		char sequence[UTF8::MAX_SEQUENCE];
+		text.append(sequence, UTF8::Encode(code, sequence));
+	}
+	return(text);
+}
