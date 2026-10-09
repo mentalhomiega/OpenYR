@@ -52,7 +52,12 @@ char const CATALOG[] =
 	"Weapon{1-18}\trules.ini\t*\tAircraftType,BuildingType,InfantryType,UnitType\tclass\n"
 	"BurstDelay{0-3}\trules.ini\t*\tWeaponType\tinteger\n"
 	"DockingOffset{0-}\tart.ini\t@image\tBuildingType\tpoint (x,y,z)\n"
-	"Voxel\tart.ini\t@image\tAircraftType,BuildingType,InfantryType,UnitType\tboolean\n";
+	"FirePower\trules.ini\tEasy\tdifficulty settings\tfloating point\n"
+	"FirePower\trules.ini\tDifficult\tdifficulty settings\tfloating point\n"
+	"BuildSlowdown\trules.ini\tEasy\tdifficulty settings\tboolean\n"
+	"BuildSlowdown\trules.ini\tDifficult\tdifficulty settings\tboolean\n"
+	"Voxel\tart.ini\t@image\tAircraftType,BuildingType,InfantryType,UnitType\tboolean\n"
+	"Trailer\tart.ini\t@image\tBulletType\tclass\n";
 
 
 IniCheck::Catalog Load_Catalog(void)
@@ -113,8 +118,8 @@ void Test_Catalog(void)
 	IniCheck::Catalog good = Load_Catalog();
 	Check(good.Find("Speed") != nullptr && good.Find("Speed")->size() == 2, "a key keeps every scope");
 	Check(good.Find("speed") == nullptr && good.Find_Other_Case("speed") == "Speed", "lookups are case sensitive, with a case-blind hint");
-	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "Easy"), "only literal sections count as known sections");
-	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 17, "a key holding a range is kept as a pattern");
+	Check(good.Has_Section("rules.ini", "General") && !good.Has_Section("rules.ini", "@difficulty"), "only literal sections count as known sections");
+	Check(good.Find("Weapon{1-18}") == nullptr && good.Count() == 22, "a key holding a range is kept as a pattern");
 }
 
 
@@ -128,6 +133,12 @@ void Test_Patterns(void)
 
 	Check(IniCheck::KeyPattern::Parse("DockingOffset{0-}", pattern) && pattern.Matches("DockingOffset0") && pattern.Matches("DockingOffset250"), "a pattern with an open end takes any larger number");
 	Check(!IniCheck::KeyPattern::Parse("Weapon{1}", pattern) && !IniCheck::KeyPattern::Parse("Weapon{5-2}", pattern) && !IniCheck::KeyPattern::Parse("Weapon", pattern), "a malformed range is refused");
+
+	Check(IniCheck::KeyPattern::Parse("Tile{01-}Anim", pattern) && pattern.Width == 2 && pattern.Low == 1, "a lower bound with a leading zero sets the printed width");
+	Check(pattern.Matches("Tile01Anim") && pattern.Matches("Tile09Anim") && pattern.Matches("Tile12Anim") && pattern.Matches("Tile100Anim"), "a padded pattern matches the numbers as %02d prints them");
+	Check(!pattern.Matches("Tile1Anim") && !pattern.Matches("Tile00Anim") && !pattern.Matches("Tile012Anim") && !pattern.Matches("TileAnim"), "a padded pattern refuses an unpadded number, zero, extra zeros and no number");
+	Check(IniCheck::KeyPattern::Parse("Territory{00-}", pattern) && pattern.Matches("Territory00") && pattern.Matches("Territory07") && !pattern.Matches("Territory0"), "a padded pattern may start at zero");
+	Check(IniCheck::KeyPattern::Parse("Slot{01-12}", pattern) && pattern.Matches("Slot12") && !pattern.Matches("Slot13"), "a padded pattern keeps its upper bound");
 
 	IniCheck::Catalog catalog = Load_Catalog();
 	Check(catalog.Find_All("Weapon3").size() == 1 && catalog.Find_All("Weapon19").empty(), "the catalog finds a key through its pattern");
@@ -174,6 +185,96 @@ void Test_References(void)
 	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Weapon01", 6) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Projectile", 7), "keys the type does not read are reported");
 	Check(report.Findings.size() == 7, "nothing else is reported");
 	Check(report.UncheckedSections.size() == 2 && report.UncheckedSections[0] == "ZEROGUN" && report.UncheckedSections[1] == "NOTREAD", "a reference from a key the type does not read is not followed");
+}
+
+
+void Test_Difficulty(void)
+{
+	IniCheck::Catalog catalog = Load_Catalog();
+	char const text[] =
+		"[Easy]\n"                          // 1
+		"FirePower=1.1\n"                   // 2
+		"BuildSlowdown=maybe\n"             // 3
+		"Cost=1\n"                          // 4
+		"[Difficult]\n"                     // 5
+		"FirePower=big\n"                   // 6
+		"BuildSlowdown=no\n"                // 7
+		"[VehicleTypes]\n"                  // 8
+		"0=MYTANK\n"                        // 9
+		"[MYTANK]\n"                        // 10
+		"FirePower=1\n"                     // 11
+		"[Hard]\n"                          // 12
+		"FirePower=1\n";                    // 13
+
+	IniCheck::Report const report = IniCheck::Check_Rules(catalog, text);
+
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "BuildSlowdown", 3) && Has(report, IniCheck::FindingType::BAD_VALUE, "FirePower", 6), "a difficulty section's values are checked by its keys' forms");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Cost", 4), "a key the catalog does not give a difficulty section is reported");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "FirePower", 11), "a difficulty key in a vehicle section is reported");
+	Check(report.Findings.size() == 4, "nothing else is reported");
+	Check(report.UncheckedSections.size() == 1 && report.UncheckedSections[0] == "Hard", "a section the engine does not read as a difficulty is left unchecked");
+}
+
+
+void Test_Art_Placement(void)
+{
+	IniCheck::Catalog catalog = Load_Catalog();
+	char const rules[] =
+		"[VehicleTypes]\n"                  // 1
+		"0=MYTANK\n"                        // 2
+		"1=MYTRUCK\n"                       // 3
+		"[BuildingTypes]\n"                 // 4
+		"0=MYPLANT\n"                       // 5
+		"[Animations]\n"                    // 6
+		"0=MYFLASH\n"                       // 7
+		"[MYTANK]\n"                        // 8
+		"Primary=MYGUN\n"                   // 9
+		"[MYTRUCK]\n"                       // 10
+		"Image=MYTANK\n"                    // 11
+		"[MYPLANT]\n"                       // 12
+		"Image=MYSKIN\n"                    // 13
+		"[MYGUN]\n"                         // 14
+		"Projectile=MYSHELL\n"              // 15
+		"[MYSHELL]\n"                       // 16
+		"Image=MYSHELLART\n"                // 17
+		"Arcing=yes\n"                      // 18
+		"[MYWARHEAD]\n"                     // 19
+		"Verses=100%\n";                    // 20
+
+	char const art[] =
+		"[MYTANK]\n"                        // 1
+		"Voxel=yes\n"                       // 2
+		"Voxel=maybe\n"                     // 3
+		"DockingOffset0=1,2,3\n"            // 4
+		"[MYTRUCK]\n"                       // 5
+		"Voxel=yes\n"                       // 6
+		"[MYPLANT]\n"                       // 7
+		"Voxel=yes\n"                       // 8
+		"[MYSKIN]\n"                        // 9
+		"DockingOffset1=1,2\n"              // 10
+		"Voxel=yes\n"                       // 11
+		"[MYFLASH]\n"                       // 12
+		"Image=FLASHART\n"                  // 13
+		"Voxel=yes\n"                       // 14
+		"[MYSHELLART]\n"                    // 15
+		"Trailer=MYTRAIL\n"                 // 16
+		"Voxel=yes\n"                       // 17
+		"[MYSHELL]\n"                       // 18
+		"Trailer=MYTRAIL\n"                 // 19
+		"[MYGUN]\n"                         // 20
+		"Voxel=yes\n";                      // 21
+
+	IniCheck::Report const report = IniCheck::Check_Art(catalog, art, rules);
+
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Voxel", 3), "an object's art section takes the art key forms");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "DockingOffset0", 4), "a structure art key in a vehicle's art section is reported");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 2) && !Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 11), "a section is checked as the kinds that read it");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "DockingOffset1", 10), "the section an Image= names is checked as that structure's art");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 14) && !Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Image", 13), "an animation reads the section of its own name");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Trailer", 16) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Voxel", 17), "a projectile with an Image= reads that section as a projectile");
+	Check(report.UncheckedSections.size() == 4 && report.UncheckedSections[0] == "MYTRUCK" && report.UncheckedSections[1] == "MYPLANT" && report.UncheckedSections[2] == "MYSHELL" && report.UncheckedSections[3] == "MYGUN",
+		"a type's own name is unchecked when its Image= names another section, and a weapon has no art section");
+	Check(report.Findings.size() == 5, "nothing else is reported");
 }
 
 
@@ -308,6 +409,8 @@ int main(void)
 	Test_Map_Listing();
 	Test_Rules_Overlay();
 	Test_References();
+	Test_Difficulty();
+	Test_Art_Placement();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);

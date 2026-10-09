@@ -454,6 +454,7 @@ bool KeyPattern::Parse(std::string const & text, KeyPattern & pattern)
 	if (end != range.c_str() + dash) {
 		return(false);
 	}
+	pattern.Width = (dash > 1 && range[0] == '0') ? (int)dash : 0;
 	pattern.High = -1;
 	if (dash + 1 < range.size()) {
 		pattern.High = std::strtol(range.c_str() + dash + 1, &end, 10);
@@ -473,7 +474,7 @@ bool KeyPattern::Matches(std::string_view key) const
 		return(false);
 	}
 	std::string_view const digits = key.substr(Prefix.size(), key.size() - Prefix.size() - Suffix.size());
-	if (digits.size() > 9 || (digits.size() > 1 && digits[0] == '0')) {
+	if (digits.size() > 9) {
 		return(false);
 	}
 	long number = 0;
@@ -483,7 +484,11 @@ bool KeyPattern::Matches(std::string_view key) const
 		}
 		number = number * 10 + (letter - '0');
 	}
-	return(number >= Low && (High < 0 || number <= High));
+
+	// Only the spelling the engine prints counts, so "007" does not match a width of 2.
+	char printed[16];
+	std::snprintf(printed, sizeof(printed), "%0*ld", Width, number);
+	return(digits == printed && number >= Low && (High < 0 || number <= High));
 }
 
 
@@ -530,26 +535,11 @@ static void Add_Listed_Kinds(std::vector<Section> const & sections, RegistryType
 }
 
 
-/// <summary>
-/// Checks INI sections against the catalog scopes for the files given. Sections named in a rules list such as
-/// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
-/// [General] against their own keys. A kind starting with @, such as a map's houses, matches
-/// scopes with that section. Every other section is listed as unchecked. Findings come
-/// in line order.
-/// </summary>
-static Report Check_Sections(Catalog const & catalog, std::vector<Section> const & sections, KindMap kinds, std::set<std::string> const & files)
+// A section a checked object section names, such as a weapon in Primary=, is checked as that
+// kind too; repeat until no section gains a kind, so weapons lead on to their warheads.
+static void Follow_References(std::vector<Section> const & sections, KindMap & kinds)
 {
-	std::set<std::string> lists;
-	for (RegistryType const & registry : RULES_REGISTRIES) {
-		lists.insert(registry.List);
-	}
-	for (RegistryType const & registry : MAP_REGISTRIES) {
-		lists.insert(registry.List);
-	}
-
-	// A section a checked object section names, such as a weapon in Primary=, is checked as that
-	// kind too; repeat until no section gains a kind, so weapons lead on to their warheads.
-	bool added = files.contains("rules.ini");
+	bool added = true;
 	while (added) {
 		added = false;
 		for (Section const & section : sections) {
@@ -570,6 +560,30 @@ static Report Check_Sections(Catalog const & catalog, std::vector<Section> const
 				}
 			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Checks INI sections against the catalog scopes for the files given. Sections named in a rules list such as
+/// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
+/// [General] against their own keys. A kind starting with @, such as a map's houses, matches
+/// scopes with that section. Every other section is listed as unchecked. Findings come
+/// in line order.
+/// </summary>
+static Report Check_Sections(Catalog const & catalog, std::vector<Section> const & sections, KindMap kinds, std::set<std::string> const & files)
+{
+	std::set<std::string> lists;
+	for (RegistryType const & registry : RULES_REGISTRIES) {
+		lists.insert(registry.List);
+	}
+	for (RegistryType const & registry : MAP_REGISTRIES) {
+		lists.insert(registry.List);
+	}
+
+	// Only the rules files hold the weapons, projectiles and warheads a type's keys name.
+	if (files.contains("rules.ini")) {
+		Follow_References(sections, kinds);
 	}
 
 	Report report;
@@ -685,15 +699,42 @@ Report Check_Map(Catalog const & catalog, std::string_view text, std::string_vie
 }
 
 
+// The object kinds that read an art section, and whether they read one only when the rules
+// section holds an Image=. Animation types read the section of their own name and have no
+// Image= redirect.
+struct ArtKind {
+	char const * Kind;
+	bool Needs_Image;
+};
+
+ArtKind const ART_KINDS[] = {
+	{"InfantryType", false},
+	{"UnitType", false},
+	{"AircraftType", false},
+	{"BuildingType", false},
+	{"TerrainType", false},
+	{"OverlayType", false},
+	{"SmudgeType", false},
+	{"VoxelAnimType", false},
+	{"ParticleType", false},
+	{"ParticleSystemType", false},
+	{"AnimType", false},
+	{"BulletType", true},
+};
+
+
 /// <summary>
-/// Checks art.ini against the catalog. A type's art section is the one its Image= key in the
-/// rules names, or the type's own name without one.
+/// Checks art.ini against the catalog, placing each section through the rules. An object type
+/// reads the art section named by its Image= in the rules, or else the section of its own name;
+/// an animation always reads its own name, and a projectile reads art only when it has an Image=.
+/// A section no type reads is listed as unchecked.
 /// </summary>
 Report Check_Art(Catalog const & catalog, std::string_view text, std::string_view rules)
 {
 	std::vector<Section> const rules_sections = Parse(rules);
 	KindMap types;
 	Add_Listed_Kinds(rules_sections, RULES_REGISTRIES, types);
+	Follow_References(rules_sections, types);
 
 	std::map<std::string, std::string> images;
 	for (Section const & section : rules_sections) {
@@ -707,7 +748,13 @@ Report Check_Art(Catalog const & catalog, std::string_view text, std::string_vie
 	KindMap kinds;
 	for (auto const & [name, type_kinds] : types) {
 		auto const image = images.find(name);
-		kinds[image != images.end() ? image->second : name].insert(type_kinds.begin(), type_kinds.end());
+		for (ArtKind const & art : ART_KINDS) {
+			if (!type_kinds.contains(art.Kind) || (art.Needs_Image && image == images.end())) {
+				continue;
+			}
+			bool const own_section = image == images.end() || std::string_view(art.Kind) == "AnimType";
+			kinds[own_section ? name : image->second].insert(art.Kind);
+		}
 	}
 	return(Check_Sections(catalog, Parse(text), kinds, {"art.ini"}));
 }

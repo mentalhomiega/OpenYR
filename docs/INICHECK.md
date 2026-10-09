@@ -1,7 +1,8 @@
 # INI checker
 
-`inicheck` reads a rules file and lists the keys the engine does not read there
-and the values it cannot read in the expected form. It only reports. Neither
+`inicheck` reads a rules file, and optionally the art file that goes with it,
+and lists the keys the engine does not read there and the values it cannot read
+in the expected form. It only reports. Neither
 the tool nor its library changes how the game reads a value.
 
 ## In the game
@@ -14,8 +15,8 @@ their findings under the overlay's path. The findings go to the debug log as `IN
 executable; the build writes it there when Python 3 with PyYAML is installed. Without the
 catalog the log says the file was not checked, and the game runs as usual.
 
-An art section is checked when a type in the rules names it with `Image=`, or has its name and
-no `Image=`; the mods' rules overlays count as part of the rules. A section in a mod's rules
+An art section is checked as the types that read it; [Art sections](#art-sections) says which.
+The mods' rules overlays count as part of the rules. A section in a mod's rules
 overlay is placed through the lists in the rules file, in earlier mods' overlays and in the
 overlay itself. A map's type sections are placed through the rules lists in the map or the rules
 file, and its house, team and task force sections through the map's `[Houses]`, `[TeamTypes]`
@@ -31,6 +32,7 @@ Write the key catalog from the manual's generated key list, then check a file:
 ```bash
 python tools/inicheck/export_catalog.py --output inicheck-catalog.tsv
 inicheck --catalog inicheck-catalog.tsv rulesmd.ini
+inicheck --catalog inicheck-catalog.tsv --art artmd.ini rulesmd.ini
 ```
 
 The export script needs PyYAML, which `manual/tools/requirements.txt` already
@@ -41,6 +43,7 @@ directory.
 | --- | --- |
 | `--catalog <file>` | The catalog to check against. Required. |
 | `--file <name>` | Which file's keys to use, as the catalog names it. The default is `rules.ini`; use it for `rulesmd.ini` too. |
+| `--art <file>` | Also checks this art file. Its sections are placed through the rules file, so pass the rules file that goes with it. |
 | `--unchecked` | Also lists each section the checker skipped. |
 
 Each finding is one line naming the file, line, section, key and value. The
@@ -65,7 +68,9 @@ catalog or the file cannot be read.
 
 A section is checked when the catalog names it, such as `[General]` or
 `[AI]`, or when a rules list such as `[VehicleTypes]` or `[Warheads]` names it.
-A listed section is checked against the keys of that type kind, so a vehicle
+The difficulty sections `[Easy]`, `[Normal]` and `[Difficult]` are checked
+against the difficulty keys, such as `FirePower=` and `BuildTime=`; the
+export script writes them under those three names. A listed section is checked against the keys of that type kind, so a vehicle
 section accepts vehicle keys and the keys every object type reads.
 
 Weapons and projectiles are found by following the keys that name them:
@@ -81,16 +86,33 @@ A key is followed only from a section of the kind that reads it, so
 A section named both in a list and by a key is checked against the keys of
 both kinds.
 
+## Art sections
+
+In the game and with `--art`, an art section is checked against the keys of the
+types that read it. A type listed in the rules reads the art section named by its `Image=` in
+the rules, or else the section of its own name. An animation reads the section
+of its own name, whatever its `Image=`. A projectile reads art only when its
+rules section has an `Image=`. A section that several types read accepts the
+keys of all of them.
+
+An art section no type reads is skipped. That includes the own-name section of
+a type whose `Image=` names another section, and a section that only an
+infantry `Sequence=` names.
+
+## Skipped sections
+
 Every other section is skipped, such as a weapon nothing names and sections
-such as difficulty settings whose names the catalog does not give.
+whose names the catalog does not give, such as the land types.
 
 ## Limits
 
 The catalog holds the keys the manual's extractor finds in the source, plus the
 numbered `art.ini` structure keys `DockingOffset0=` and up and `PowerUp1Anim=`
-and up, which the export script adds. Another key the engine builds from a
-number may be missing and is then reported although the engine reads it. Treat
-a finding as something to look at, not as proof of an error.
+and up, and the numbered `Tile01Anim=` keys of a theater tile set, which the
+export script adds. The checker does not read theater control files yet, so
+the tile set keys have no effect until it does. Another key the engine builds
+from a number may be missing and is then reported although the engine reads
+it. Treat a finding as something to look at, not as proof of an error.
 
 ## The catalog format
 
@@ -100,8 +122,11 @@ value type. The section is the literal section name, `*` for an object
 section, or `@` followed by the section source for a section the checker does
 not place. A key holding a range, such as `Weapon{1-18}` or
 `DockingOffset{0-}` with an open end, stands for each key with a number in that
-range written without leading zeros. Lines starting with `#` are skipped. Do not edit a written catalog;
-export it again after `manual/data/ini-keys.yaml` changes.
+range written without leading zeros. A lower bound with a leading zero, as in
+`Tile{01-}Anim`, stands for numbers printed with at least that many digits:
+`Tile01Anim` and `Tile12Anim` match, `Tile1Anim` does not. Lines starting with
+`#` are skipped. Do not edit a written catalog; export it again after
+`manual/data/ini-keys.yaml` changes.
 
 ## Tests
 
