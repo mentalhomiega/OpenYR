@@ -1406,6 +1406,10 @@ class RulesClass
 		// is a wall, base defense or power plant.
 		int AIRestrictReplaceTime;
 
+		// Failed placements a computer structure may make before its base node is dropped. A node is
+		// dropped on the failure after this count, outside campaign games.
+		int MaximumBuildingPlacementFailures;
+
 		// The ore gatherers a computer house keeps for each refinery it owns, per difficulty slot.
 		TypeList<int> HarvestersPerRefinery;
 

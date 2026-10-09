@@ -21866,6 +21866,24 @@ MaximumBaseDefenseValue:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MaximumBuildingPlacementFailures:
+  key: MaximumBuildingPlacementFailures
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: RulesClass
+      member: MaximumBuildingPlacementFailures
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MaximumQueuedObjects:
   key: MaximumQueuedObjects
   scopes:

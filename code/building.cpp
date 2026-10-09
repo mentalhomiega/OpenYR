@@ -3429,6 +3429,16 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 							return(0);
 
 						case 1:
+							/*
+							**	A temporary blockage counts against the node. Outside campaign games, a node that
+							**	fails too often is dropped, as BuildingClass::KickOutUnit (0x443C60) does.
+							*/
+							if (node != NULL) {
+								node->Attempts++;
+								if (Session.Type != GAME_NORMAL && node->Attempts > Rule->MaximumBuildingPlacementFailures) {
+									House->Base.Nodes.Delete_Index(House->Base.Nodes.ID(node));
+								}
+							}
 							return(1);
 
 						case 0:
