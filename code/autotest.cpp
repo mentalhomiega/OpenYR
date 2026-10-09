@@ -594,6 +594,18 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// rally <TypeID> x y: sets the rally point of the player's structures of that type to the cell, skipping the nearby-cell search an Alt-click makes.
+	if (step.Command == "rally") {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+				building->Assign_Archive_Target(&Map[Cell(step.X, step.Y)]);
+				DebugString("AUTOTEST rally %s to %d,%d\n", building->Class->Name(), step.X, step.Y);
+			}
+		}
+		return;
+	}
+
 	if (step.Command == "command") {
 		Execute_Command(step.Argument.c_str());
 	} else if (step.Command == "select") {
@@ -734,9 +746,17 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "unload") {
-		BuildingClass * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
+		// unload <x> <y>: the structure on that cell unloads; otherwise the vehicle on it unloads its passengers.
+		Cell const cell(std::atoi(step.Argument.c_str()), step.X);
+		BuildingClass * building = Map[cell].Cell_Building();
 		if (building != NULL) {
 			building->Assign_Mission(MISSION_UNLOAD);
+		} else {
+			TechnoClass * techno = Map[cell].Cell_Techno();
+			if (techno != NULL && techno->RTTI == RTTI_UNIT) {
+				DebugString("AUTOTEST unload %s at %d,%d\n", techno->TClass->Name(), cell.X, cell.Y);
+				techno->Assign_Mission(MISSION_UNLOAD);
+			}
 		}
 	} else if (step.Command == "garrisons") {
 		for (int index = 0; index < Buildings.Count(); index++) {
