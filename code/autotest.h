@@ -28,3 +28,9 @@ void AutoTest_Frame(void);
 void AutoTest_Game_Over(bool won);
 
 void AutoTest_Loading_Screen_Shown(void);
+
+class HouseClass;
+
+// Counts a unit, infantry, aircraft or structure that a house has just finished producing, so the
+// census can report production per house. The RTTI is the object's RTTIType.
+void AutoTest_Note_Built(HouseClass const * house, int rtti);
