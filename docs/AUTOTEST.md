@@ -27,6 +27,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `record <frames>` | Saves a screenshot every that many frames; `record 0` stops |
 | `dump` | Writes the player's credits, structures and units, with their missions and movement, to the debug log |
 | `enemies` | Writes the other houses' structures and their unit and infantry counts to the debug log |
+| `iq` | Writes each house's base IQ (the map's `IQ=`, 0 for a skirmish computer), its effective IQ, and whether each [IQ] gate is open for it |
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `anims` | Writes the first entries of the animation list to the debug log |
 | `triggers [all]` | Writes the trigger types with their owner, the events they wait for and whether a live trigger of each is enabled (only the enabled ones, unless `all`), then every tag with the objects and cells it rides on, and the local and global variables that are set |
