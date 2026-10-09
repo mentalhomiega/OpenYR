@@ -133,7 +133,7 @@ A satisfied event is marked when **all of:**
 
 An offer is a remembering offer when the tag is persistent. An offer to a tag of any persistence also becomes remembering partway through when certain events are satisfied during it. They are cell entry, either line crossing, zone entry, the team-left-map event, the building-exists event and the four build events. Remembering then stays on for the rest of that trigger's examination. Events are examined in the reverse of their order in `[Events]`, so such an event can mark only the events written before it on that line, and itself when it can be remembered.
 
-Five events can never be remembered and are tested again on every offer: the two attacked events, cell entry, the paralyzed event and the repeating spotlight event. The plain spotlight event can be remembered, which is the only difference between the two spotlight events.
+Seven events can never be remembered and are tested again on every offer: the two attacked events, the two cell-entry events, the bridge-destroyed event, the paralyzed event and the repeating spotlight event. The plain spotlight event can be remembered, which is the only difference between the two spotlight events.
 
 Without marking, every event must be satisfied during a single offer. Two temporal events, such as an object destroyed and a crate collected, can then never be satisfied together, because each offer names only one event. Give such a trigger a persistent tag. Each temporal event is then marked when it happens and stays marked, and the trigger fires on the offer that satisfies the last event outstanding.
 
