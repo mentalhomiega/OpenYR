@@ -13,4 +13,6 @@ A weapons factory lets out one object at a time. While it is unloading, it hands
 
 A vehicle still in radio contact with a weapons factory starts only a queued move or enter order. Any other queued order waits until that contact ends.
 
+A structure with [`Naval=yes`](/keys/naval/) does not use the door sequence for the ships it builds. It releases each ship onto a water cell.
+
 A carryall cannot be ordered to pick up an object standing on such a structure.

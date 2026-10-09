@@ -687,6 +687,7 @@ class BuildingClass : public TechnoClass
 		AircraftClass * Place_Free_Aircraft(AircraftTypeClass const * type);
 		void Place_Free_Unit(void);
 		void Produce_Cash_Startup(void);
+		int Exit_Naval_Object(TechnoClass * base);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.
