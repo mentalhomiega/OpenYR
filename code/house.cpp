@@ -6901,6 +6901,9 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 			}
 			bptr = dynamic_cast<BuildingClass *>(techno);
 			if (bptr != NULL) {
+				// BuildingClass::Place (0x445F80) rechecks power and radar for the house a structure is given to.
+				RecalcPower = true;
+				RecalcRadar = true;
 				Adjust_Drain(bptr->Power_Drain());
 				Capacity += bptr->Class->Capacity;
 				Tiberium += techno->Storage;
