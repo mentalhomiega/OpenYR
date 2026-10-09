@@ -2119,13 +2119,14 @@ class RulesClass
 		int IQScatter;
 
 		/*
-		**	Tech level at which the computer will scan the contents of a transport
+		**	IQ level at which the computer will scan the contents of a transport
 		**	in order to pick the best target to fire upon.
 		*/
 		int IQContentScan;
 
 		/*
-		**	Aircraft replacement production occurs at this IQ level or higher.
+		**	Read and saved, but no gate uses it: gamemd.exe compares no IQ level with
+		**	this value (RulesClass::Read_IQ stores it only).
 		*/
 		int IQAircraft;
 
@@ -2135,7 +2136,8 @@ class RulesClass
 		int IQHarvester;
 
 		/*
-		**	Is allowed to sell a structure being damaged.
+		**	The base IQ (the house's IQ= value from the map, or 0 for a computer house that a
+		**	skirmish or multiplayer match sets up) at which a damaged structure may be sold.
 		*/
 		int IQSellBack;
 
