@@ -253,6 +253,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	PowerBlackout(0),
 	IsPowerBlackout(false),
 	PoweredUnitCenters(0),
+	CountResourceGatherers(0),
 	RadarBlackout(0),
 	IsRadarBlackout(false),
 	IsAlerted(false),
@@ -506,18 +507,7 @@ bool HouseClass::Is_Harvester_Unit(UnitTypeClass const * type) const
 /// <returns>Returns with the number of ResourceGatherer objects on the map.</returns>
 int HouseClass::Count_Resource_Gatherers(void) const
 {
-	int count = 0;
-	for (int index = 0; index < UnitTypes.Count(); index++) {
-		if (UnitTypes[index]->IsResourceGatherer) {
-			count += AUQuantity.Value(index);
-		}
-	}
-	for (int index = 0; index < BuildingTypes.Count(); index++) {
-		if (BuildingTypes[index]->IsResourceGatherer) {
-			count += ABQuantity.Value(index);
-		}
-	}
-	return(count);
+	return(CountResourceGatherers);
 }
 
 
@@ -6832,6 +6822,9 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 	if (techno->IsInLimbo) return;
 
 	TechnoTypeClass const * ttype = techno->TClass;
+	if (ttype->IsResourceGatherer) {
+		CountResourceGatherers--;
+	}
 
 	switch (techno->Fetch_RTTI()) {
 		case RTTI_BUILDING:
@@ -6892,6 +6885,9 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 	if (techno->IsInLimbo) return;
 
 	TechnoTypeClass const * ttype = techno->TClass;
+	if (ttype->IsResourceGatherer) {
+		CountResourceGatherers++;
+	}
 	BuildingClass * bptr;
 
 	switch (techno->Fetch_RTTI()) {
@@ -7153,6 +7149,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PowerBlackout);
 	stream.Serialize(IsPowerBlackout);
 	stream.Serialize(PoweredUnitCenters);
+	stream.Serialize(CountResourceGatherers);
 	stream.Serialize(RadarBlackout);
 	stream.Serialize(IsRadarBlackout);
 	stream.Serialize(IsAlerted);
