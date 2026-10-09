@@ -15,6 +15,8 @@
 
 #include "teleport.h"
 
+#include "autotest.h"
+#include "dbgprint.h"
 #include "foot.h"
 #include "_rules.h"
 #include "globals.h"
@@ -75,6 +77,21 @@ bool TeleportLocomotionClass::Is_Warping(void) const
 
 
 /// <summary>
+/// Measures the straight-line distance from the object to a coordinate, in leptons, with height.
+/// </summary>
+/// <param name="to">The coordinate to measure to.</param>
+/// <returns>int; The distance, truncated to whole leptons.</returns>
+int TeleportLocomotionClass::Warp_Distance(Coord const & to) const
+{
+	Coord const from = LinkedTo->PositionCoord;
+	double const dx = double(from.X - to.X);
+	double const dy = double(from.Y - to.Y);
+	double const dz = double(from.Z - to.Z);
+	return(int(std::sqrt(dx * dx + dy * dy + dz * dz)));
+}
+
+
+/// <summary>
 /// Works out how long the object waits before it jumps to the destination.
 /// The wait is the distance divided by ChronoDistanceFactor when ChronoTrigger is set, never less
 /// than ChronoMinimumDelay, and it is ChronoMinimumDelay when the distance is under ChronoRangeMinimum.
@@ -83,11 +100,7 @@ bool TeleportLocomotionClass::Is_Warping(void) const
 /// <returns>int; The number of frames to wait.</returns>
 int TeleportLocomotionClass::Warp_Delay(Coord const & to) const
 {
-	Coord const from = LinkedTo->PositionCoord;
-	double const dx = double(from.X - to.X);
-	double const dy = double(from.Y - to.Y);
-	double const dz = double(from.Z - to.Z);
-	int const distance = int(std::sqrt(dx * dx + dy * dy + dz * dz));
+	int const distance = Warp_Distance(to);
 
 	int delay = 0;
 	if (Rule->ChronoTrigger && Rule->ChronoDistanceFactor > 0) {
@@ -130,6 +143,12 @@ void TeleportLocomotionClass::Move_To(Coord to)
 		WarpPhase = TELEPORT_WARP_OUT;
 		WarpEnd = Frame + Warp_Delay(to);
 	}
+	if (AutoTest_Active()) {
+		Cell const to_cell = to.As_Cell();
+		DebugString("AUTOTEST   warp order %s cell %d,%d to %d,%d distance %d delay %d phase %d frame %d end %d\n",
+			LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, to_cell.X, to_cell.Y,
+			Warp_Distance(to), WarpEnd - Frame, (int)WarpPhase, Frame, WarpEnd);
+	}
 }
 
 
@@ -167,6 +186,9 @@ void TeleportLocomotionClass::Stop_Moving(void)
 bool TeleportLocomotionClass::Process(void)
 {
 	if (WarpPhase == TELEPORT_HOLD && Frame >= WarpEnd) {
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST   warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
+		}
 		WarpPhase = TELEPORT_IDLE;
 		if (DestinationCoord != COORD_NONE) {
 			WarpPhase = TELEPORT_WARP_OUT;
@@ -182,6 +204,9 @@ bool TeleportLocomotionClass::Process(void)
 		DestinationCoord = COORD_NONE;
 		WarpPhase = TELEPORT_HOLD;
 		WarpEnd = Frame + Rule->ChronoDelay;
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST   warp landed %s cell %d,%d frame %d hold until %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd);
+		}
 		LinkedTo->Per_Cell_Process(PCP_END);
 		LinkedTo->Look();
 	}

@@ -142,6 +142,7 @@
 #include "gamewindow.h"
 #include "keyboard.h"
 #include "loco.h"
+#include "teleport.h"
 #include "tactical.h"
 #include "tiberium.h"
 #include "scheme.h"
@@ -569,6 +570,47 @@ void Log_Ore(void)
 		}
 		DebugString("AUTOTEST   ore %s cells %d density %d value %d growable %d spreadable %d queued growth %d spread %d\n",
 			Tiberiums[type]->Name(), cells, density, value, growable, spreadable, Tiberiums[type]->GrowthQueue.Count(), Tiberiums[type]->SpreadQueue.Count());
+	}
+}
+
+
+/// <summary>
+/// Writes the tiberium cells nearest the player's first building, nearest first.
+/// </summary>
+void Log_Ore_Cells(int limit)
+{
+	if (limit > 32) limit = 32;
+	Cell origin(-1, -1);
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->House == PlayerPtr && !building->IsInLimbo) {
+			origin = building->Get_Cell();
+			break;
+		}
+	}
+	Cell found[32];
+	int distances[32];
+	int count = 0;
+	Map.Reset_Iterator();
+	for (CellClass * cellptr = Map.Iterate(); cellptr != NULL; cellptr = Map.Iterate()) {
+		if (cellptr->Tiberium_Value() <= 0) continue;
+		Cell const cell = cellptr->As_Coord().As_Cell();
+		int const dx = cell.X - origin.X;
+		int const dy = cell.Y - origin.Y;
+		int const distance = dx * dx + dy * dy;
+		if (count == limit && distance >= distances[count - 1]) continue;
+		int slot = count < limit ? count++ : count - 1;
+		while (slot > 0 && distances[slot - 1] > distance) {
+			found[slot] = found[slot - 1];
+			distances[slot] = distances[slot - 1];
+			slot--;
+		}
+		found[slot] = cell;
+		distances[slot] = distance;
+	}
+	DebugString("AUTOTEST   orecells from %d,%d: %d listed\n", origin.X, origin.Y, count);
+	for (int index = 0; index < count; index++) {
+		DebugString("AUTOTEST   orecell %d,%d distance %d\n", found[index].X, found[index].Y, distances[index]);
 	}
 }
 
@@ -1508,6 +1550,13 @@ void Run(StepType const & step)
 				InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
 				DebugString("AUTOTEST   soldier %s do %d deployed %d\n", soldier->Class->Name(), (int)soldier->Doing, (int)soldier->Is_Deployed());
 			}
+			if (techno->Is_Foot()) {
+				FootClass const * foot = static_cast<FootClass const *>(techno);
+				TeleportLocomotionClass const * teleport = dynamic_cast<TeleportLocomotionClass const *>(foot->Locomotion.get());
+				if (teleport != NULL) {
+					DebugString("AUTOTEST   warp %s phase %d end %d warping %d chrono %d selected %d\n", techno->TClass->Name(), (int)teleport->Warp_Phase(), teleport->Warp_End(), (int)techno->IsBeingWarpedOut, (int)foot->Is_Chrono_Warping(), (int)techno->IsSelected);
+				}
+			}
 		}
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
@@ -1560,6 +1609,10 @@ void Run(StepType const & step)
 		// census ore writes the tiberium report of Log_Ore instead.
 		if (step.Argument == "ore") {
 			Log_Ore();
+			return;
+		}
+		if (step.Argument == "cells") {
+			Log_Ore_Cells(8);
 			return;
 		}
 		DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());

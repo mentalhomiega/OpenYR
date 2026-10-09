@@ -50,6 +50,10 @@ class TeleportLocomotionClass : public LocomotionClass
 		 */
 		bool Is_Warping(void) const;
 
+		// The autotest log reads the phase and the frame its current wait ends.
+		TeleportWarpPhase Warp_Phase(void) const {return(static_cast<TeleportWarpPhase>(WarpPhase));}
+		int Warp_End(void) const {return(WarpEnd);}
+
 	private:
 		/*
 		 * This is the coordinate that the object will be set down at the next time this
@@ -64,5 +68,6 @@ class TeleportLocomotionClass : public LocomotionClass
 		int WarpPhase;
 		int WarpEnd;
 
+		int Warp_Distance(Coord const & to) const;
 		int Warp_Delay(Coord const & to) const;
 };
