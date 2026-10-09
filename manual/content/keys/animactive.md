@@ -13,4 +13,4 @@ Three kinds of structure play the sequence:
 
 - A [`ConstructionYard=yes`](/keys/constructionyard/) structure plays it while a structure it placed is being built.
 - A [`UnitReload=yes`](/keys/unitreload/) structure plays it while it reloads the object docked with it.
-- A [`NukeSilo=yes`](/keys/nukesilo/) structure plays it to open its door for a launch. The silo stays on the sequence until it reaches the last frame, then switches to [`AnimAux1`](/keys/animaux1/). With a delay of `0`, it switches to `AnimAux1` at once.
+- A [`NukeSilo=yes`](/keys/nukesilo/) structure plays it to open its door for a launch. The missile leaves as the sequence starts, and the silo switches to [`AnimAux2`](/keys/animaux2/) on the next game frame, which interrupts this sequence.
