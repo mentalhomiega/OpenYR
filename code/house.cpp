@@ -5398,7 +5398,8 @@ void HouseClass::Production_Begun(TechnoClass const * product)
  *=============================================================================================*/
 void HouseClass::Tracking_Remove(TechnoClass const * techno)
 {
-	if (techno->TClass->IsInsignificant) return;
+	// Insignificant and DontScore types are not counted as owned (HouseClass::RemoveTracking, 0x4FF550).
+	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -5454,7 +5455,8 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 	InfantryType infantry;
 	UnitType unit;
 
-	if (techno->TClass->IsInsignificant) return;
+	// Insignificant and DontScore types are not counted as owned (HouseClass::AddTracking, 0x4FF700).
+	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
