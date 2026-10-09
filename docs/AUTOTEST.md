@@ -39,6 +39,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
+| `kill <TypeID> [1]` | Destroys every computer object of the type with no attacker, the C4 warhead forced; with a `1`, every player object of the type instead |
 | `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
