@@ -212,6 +212,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	IsDumping(false),
 	IsHarvesting(false),
 	IsSimpleDeployed(false),
+	IsLandingToDeploy(false),
 	SimpleDeployFrame(-1),
 	GunnerPassengers(0),
 	MirageType(NULL),
@@ -6505,6 +6506,7 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDumping);
 	stream.Serialize(IsHarvesting);
 	stream.Serialize(IsSimpleDeployed);
+	stream.Serialize(IsLandingToDeploy);
 	stream.Serialize(SimpleDeployFrame);
 	stream.Serialize(GunnerPassengers);
 	stream.Serialize(MirageType);
@@ -7180,6 +7182,7 @@ int UnitClass::Simple_Deploy_AI(void)
 				return(5);
 			}
 			if (!IsSimpleDeployed && Class->IsDeployToLand && HeightAGL > 0) {
+				IsLandingToDeploy = true;
 				Assign_Target(NULL);
 				if (NavCom == NULL) {
 					Assign_Destination(&Map[Get_Cell()]);

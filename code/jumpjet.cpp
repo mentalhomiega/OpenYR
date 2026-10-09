@@ -315,7 +315,7 @@ bool JumpjetLocomotionClass::Stays_Aloft(void) const
 
 /// <summary>
 /// Does the unit hold its altitude where it stops? A unit that deploys to land, such as the
-/// Siege Chopper, does, unless its unload mission is landing it first.
+/// Siege Chopper, does, unless it is landing to deploy.
 /// </summary>
 /// <returns>bool; Should the unit hover at its destination rather than descend?</returns>
 bool JumpjetLocomotionClass::Hovers_At_Stop(void) const
@@ -324,7 +324,7 @@ bool JumpjetLocomotionClass::Hovers_At_Stop(void) const
 		return(false);
 	}
 	UnitClass const * unit = static_cast<UnitClass const *>(LinkedTo);
-	return(unit->Class->IsSimpleDeployer && unit->Class->IsDeployToLand && !unit->IsSimpleDeployed && unit->Mission != MISSION_UNLOAD);
+	return(unit->Class->IsSimpleDeployer && unit->Class->IsDeployToLand && !unit->IsLandingToDeploy);
 }
 
 
@@ -602,6 +602,9 @@ void JumpjetLocomotionClass::Process_Descent(void)
 				LinkedTo->Look();
 				CurrentState = GROUNDED;
 				IsLanding = false;
+				if (LinkedTo->RTTI == RTTI_UNIT) {
+					static_cast<UnitClass *>(LinkedTo)->IsLandingToDeploy = false;
+				}
 			}
 		}
 		stop = false;
