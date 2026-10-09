@@ -100,12 +100,12 @@ The average lifetime is 1.25 times `CrateRegen`. Raising `CrateRegen` lengthens 
 
 Outside a campaign, while crates are enabled for the match, a crate that reaches the end of its lifetime is removed and a new random crate is placed.
 
-Collecting a crate also places a new random crate, outside a campaign, when crates are enabled for the match and [`Crates`](/keys/crates/) in `[MultiplayerDefaults]` is `yes`. This applies to every collected crate, including one drawn into the map or dropped by a vehicle.
+Collecting a crate also places a new random crate, outside a campaign, when crates are enabled for the match. The rules' [`Crates`](/keys/crates/) key does not affect this. This applies to every collected crate, including one drawn into the map or dropped by a vehicle.
 
-:::caution[Crates=no in the rules still stops pickup replacements]
-In `rules.ini`, `Crates` in `[MultiplayerDefaults]` only sets the starting state of the match's crate option, which the match setup then overwrites. With `Crates=no` in the rules and crates switched on for the match, collected crates are not replaced, but expired crates still are. Switching crates off for the match stops both kinds of replacement, whatever the rules say.
+:::caution[Crates=no in the rules does not stop replacements]
+In `rules.ini`, `Crates` in `[MultiplayerDefaults]` only sets the starting state of the match's crate option, which the match setup then overwrites. Switching crates off for the match stops both kinds of replacement, whatever the rules say.
 
-A map's `[MultiplayerDefaults]` section does not change the match option. `Crates=no` there also stops pickup replacements.
+A map's `[MultiplayerDefaults]` section does not change the match option, and `Crates=no` there does not stop replacements either.
 :::
 
 ### Crates dropped by destroyed vehicles
