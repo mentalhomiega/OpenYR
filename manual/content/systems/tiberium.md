@@ -102,7 +102,7 @@ When a scenario loads, the engine replaces the stage of every Tiberium cell. The
 
 A cell shows the frame for its stage from one of its type's overlays. The cell's map position picks that overlay, not the overlay the cell actually holds. Flat cells use the set's flat overlays and sloped cells use its slope overlays. The frame is drawn in the theater's palette, without the lighting of its cell.
 
-Slope overlays exist only for the four simple slopes, and the large-Tiberium set has none. A type on that set never spreads onto a slope, and shows nothing on one where a map or an animation's [`TiberiumSpawnType`](/keys/tiberiumspawntype/) places it. A cell is also not drawn when the chosen overlay has no frame for its stage.
+Slope overlays exist only for the four simple slopes, and the large-Tiberium set has none. Tiberium never grows or spreads onto a slope, so slope overlays show only Tiberium that a map or an animation places there. A type on the large-Tiberium set shows nothing on a slope where a map or an animation's [`TiberiumSpawnType`](/keys/tiberiumspawntype/) places it. A cell is also not drawn when the chosen overlay has no frame for its stage.
 
 ## Growth
 
@@ -116,7 +116,7 @@ A growth pass runs every [`Growth`](/keys/growth/) frames. The delay restarts af
 
 Each type keeps a queue of its cells that are still below stage 11. A pass takes a random number of cells from the front of that queue, at least 1. The upper limit is the queue length multiplied by [`GrowthPercentage`](/keys/growthpercentage/), raised to 5 if lower and cut to 50 if higher. A type with `GrowthPercentage` below `0.00001` never grows.
 
-Each cell taken gains one stage if it still holds this type's Tiberium. A cell that has since lost its Tiberium or changed type still uses up one of the pass's cells, and leaves the queue.
+Each cell taken gains one stage if it still holds this type's Tiberium and lies on level ground. A cell on a slope uses up its place in the pass without gaining a stage, and goes back into the queue. A cell that has since lost its Tiberium or changed type still uses up one of the pass's cells, and leaves the queue.
 
 After it grows, a cell below stage 11 goes back into the queue, near the back, and is queued to [spread](#spread) if it can. A cell that reaches stage 11 leaves the growth queue.
 
@@ -137,14 +137,15 @@ A cell can spread only when all of the following hold, tested in this order:
 1. [`TiberiumSpreads=yes`](/keys/tiberiumspreads/) is in force;
 2. the cell still holds Tiberium;
 3. its stage is above the ripeness threshold of the type it holds;
-4. that type's `SpreadPercentage` is at least `0.00001`;
-5. nothing is standing in the cell.
+4. the cell lies on level ground;
+5. that type's `SpreadPercentage` is at least `0.00001`;
+6. nothing is standing in the cell.
 
 :::caution[The ripeness threshold comes from the slot]
 A cell must be above half its type's slot number, rounded down. Types in slots 0 and 1 spread from stage 1, and types in slots 2 and 3 only from stage 2. Reordering `[Tiberiums]` therefore changes how ripe a field must be before it spreads.
 :::
 
-A spreading cell starts at a random neighbor and checks all eight in turn. It seeds the first neighbor that accepts growth, and the new cell starts at stage 5.
+A spreading cell starts at a random neighbor and checks all eight in turn. It seeds the first neighbor that accepts growth, and the new cell starts at stage 3.
 
 A neighbor accepts growth when all of the following hold, tested in this order:
 
@@ -154,16 +155,14 @@ A neighbor accepts growth when all of the following hold, tested in this order:
 4. it holds no [`SpawnsTiberium=yes`](/keys/spawnstiberium/) terrain object, so a blossom tree's cell stays bare;
 5. its land type is [`Buildable=yes`](/keys/buildable/);
 6. it has no overlay, so veins, walls, crates and existing Tiberium all block it;
-7. it is flat or on one of the four simple slopes, and it is flat if the type's overlay set has no slope overlays;
+7. it lies on level ground;
 8. its tile set is [`AllowTiberium=yes`](/keys/allowtiberium/).
 
-The four simple slopes each raise two adjacent corners of the cell. Corner, steep and double slopes never accept Tiberium, and any Tiberium a map places on one is removed as the map loads.
+The four simple slopes each raise two adjacent corners of the cell. No sloped cell accepts Tiberium, whatever its shape. Corner, steep and double slopes also lose any Tiberium a map places on them as the map loads.
 
 Only a cell that has a neighbor accepting growth spends budget. A cell with none, or one that fails the spread tests, leaves the queue without spending any.
 
 A cell that had more than one free neighbor goes straight back to the front of the queue, so it usually seeds again in the same pass. A cell that seeds its last free neighbor is not queued to spread again until the queue is rebuilt, even if a neighbor is later cleared. The spread queue is rebuilt at the same times as the growth queue.
-
-A type whose set has no slope overlays can waste its passes. When the engine counts a cell's free neighbors, it counts a sloped neighbor as free for every type, but seeding then refuses the slope for this type. A cell whose only free neighbors are sloped spends budget and seeds nothing. With two or more such neighbors it returns to the front of the queue each time, so it can use up the whole pass.
 
 ## Harvesting
 
