@@ -20,6 +20,7 @@
 #include "infantry.h"
 #include "rules.h"
 #include "savestream.h"
+#include "slaveman.h"
 #include "techno.h"
 #include "techtype.h"
 #include "weapon.h"
@@ -175,6 +176,11 @@ void TemporalClass::Update(void)
 			occupant->Record_The_Kill(nullptr);
 			occupant->Delete_Me();
 		}
+	}
+	// The target's slaves go to the warp's owner before the kill, as gamemd's TemporalClass::Update does.
+	if (target->SlaveManager) {
+		target->SlaveManager->Free_All(Owner);
+		target->SlaveManager.reset();
 	}
 	target->Record_The_Kill(Owner);
 	target->Delete_Me();
