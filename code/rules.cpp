@@ -698,6 +698,7 @@ RulesClass::RulesClass(void) :
 	ThirdBaseDefenseCounts(),
 	AIExtraRefineries(),
 	AISlaveMinerNumber(),
+	AIRestrictReplaceTime(0),
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
 	AISafeDistance(8),
@@ -1645,6 +1646,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		ThirdBaseDefenseCounts = ini.Get_IntList(GENERAL, "ThirdBaseDefenseCounts", ThirdBaseDefenseCounts);
 		AIExtraRefineries = ini.Get_IntList(GENERAL, "AIExtraRefineries", AIExtraRefineries);
 		AISlaveMinerNumber = ini.Get_IntList(GENERAL, "AISlaveMinerNumber", AISlaveMinerNumber);
+		AIRestrictReplaceTime = ini.Get_Int(GENERAL, "AIRestrictReplaceTime", AIRestrictReplaceTime);
 		AIHateDelays = ini.Get_IntList(GENERAL, "AIHateDelays", AIHateDelays);
 		AIAlternateProductionCreditCutoff = ini.Get_Int(GENERAL, "AIAlternateProductionCreditCutoff", AIAlternateProductionCreditCutoff);
 		AIUseTurbineUpgradeChance = ini.Get_Float(GENERAL, "AIUseTurbineUpgradeProbability", AIUseTurbineUpgradeChance);
@@ -3176,6 +3178,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ThirdBaseDefenseCounts);
 	stream.Serialize(AIExtraRefineries);
 	stream.Serialize(AISlaveMinerNumber);
+	stream.Serialize(AIRestrictReplaceTime);
 	stream.Serialize(AIHateDelays);
 	stream.Serialize(DissolveUnfilledTeamDelay);
 	stream.Serialize(AIIonCannonConYardValue);

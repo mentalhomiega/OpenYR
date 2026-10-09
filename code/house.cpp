@@ -4734,6 +4734,41 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 }
 
 
+/// Tells whether the computer may place the structure of a base node that is not standing.
+/// A structure lost after it was placed waits until AIRestrictReplaceTime frames after the house
+/// last took damage, unless it is a wall, a base defense or a power plant. The campaign never waits.
+bool HouseClass::Can_Replace_Node(int index) const
+{
+	if (Session.Type == GAME_NORMAL) {
+		return(true);
+	}
+
+	BaseNodeClass const & node = Base.Nodes[index];
+	if (node.Type < STRUCT_FIRST || node.CellID == Cell(0, 0) || node.CellID == CELL_NONE) {
+		return(true);
+	}
+
+	BuildingTypeClass const * btype = BuildingTypes[node.Type];
+	if (btype->IsWall || btype->IsBaseDefense || btype->Power > 0) {
+		return(true);
+	}
+
+	return(LATime + Rule->AIRestrictReplaceTime <= Frame);
+}
+
+
+/// Returns the first base node whose structure is not standing and may be placed now, or NULL.
+BaseNodeClass * HouseClass::Next_Buildable_Node(void)
+{
+	for (int i = 0; i < Base.Nodes.Count(); i++) {
+		if (!Base.Is_Built(i) && Can_Replace_Node(i)) {
+			return(&Base.Nodes[i]);
+		}
+	}
+	return(NULL);
+}
+
+
 /***********************************************************************************************
  * HouseClass::AI_Building -- Determines what building to build.                               *
  *                                                                                             *
@@ -4761,13 +4796,13 @@ int HouseClass::AI_Building(void)
 
 	if (ConYards.Count() == 0) return(TICKS_PER_SECOND);
 
-	BaseNodeClass * node = Base.Next_Buildable();
+	BaseNodeClass * node = Next_Buildable_Node();
 
 	if (node == NULL) return(TICKS_PER_SECOND);
 
 	if (!IsNavalPlaceable && node->Type >= STRUCT_FIRST && BuildingTypes[node->Type]->IsNaval) {
 		Base.Nodes.Delete_Index(Base.Nodes.ID(node));
-		node = Base.Next_Buildable();
+		node = Next_Buildable_Node();
 		if (node == NULL) return(TICKS_PER_SECOND);
 	}
 
@@ -4809,7 +4844,7 @@ int HouseClass::AI_Building(void)
 			return(1);
 		}
 
-		node = Base.Next_Buildable();
+		node = Next_Buildable_Node();
 	}
 
 	if (node == NULL || node->Type == STOP) return(TICKS_PER_SECOND);

@@ -660,6 +660,24 @@ AIMinorSuperReadyPercent:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIRestrictReplaceTime:
+  key: AIRestrictReplaceTime
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: AIRestrictReplaceTime
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AISafeDistance:
   key: AISafeDistance
   scopes:

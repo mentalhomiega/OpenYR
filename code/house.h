@@ -1104,6 +1104,8 @@ class HouseClass : public AbstractClass
 	private:
 		void Silo_Redraw_Check(int oldtib, int oldcap);
 		int AI_Building(void);
+		BaseNodeClass * Next_Buildable_Node(void);
+		bool Can_Replace_Node(int index) const;
 		int AI_Unit(void);
 		int AI_Infantry(void);
 		int AI_Aircraft(void);

@@ -200,7 +200,7 @@ A computer house picks its next structure when all of these hold:
 - it has no structure already pending;
 - it owns a structure that [`BuildConst`](/keys/buildconst/) lists.
 
-It takes the first node that does not count as built. A node counts as built when any of these holds:
+It takes the first node that does not count as built and may be placed now, as [Rebuilding](#rebuilding) describes. A node counts as built when any of these holds:
 
 - a structure of the node's type, owned by this house, has its foundation corner on the node's cell;
 - the house's structure on that cell already carries the node's type as an upgrade. Each node that names the same upgrade at that cell needs its own copy;
@@ -215,7 +215,7 @@ What happens to the node depends on its type:
 - A `-1` placeholder, or a node of one of the acted side's [`AIWallTowers`](/keys/aiwalltowers/) types that has no cell, goes to the [defense planner](#base-defenses). If the planner cannot fill it, the node is deleted. A tower node also takes the node after it. When the planner fills a node, a `-1` or `-3` placeholder that comes next waits for the next call.
 - Any other node becomes the house's pending structure. A construction yard starts producing it once the house is [started](/keys/production/) and has more than 10 credits.
 
-Because the house always takes the first unbuilt node, a node that no owned factory can produce holds up every node after it.
+Because the house takes the first node it may place, a node that no owned factory can produce holds up every node after it.
 
 ## Choosing a spot
 
@@ -379,7 +379,9 @@ The house sends every vehicle, infantry and aircraft it owns to hunt in any of t
 
 ## Rebuilding
 
-Rebuilding needs no separate mechanism. A structure taken off the map, destroyed or sold, no longer matches its node, so the node becomes a gap the house fills again in list order.
+A structure taken off the map, destroyed or sold, no longer matches its node, so the node becomes a gap the house fills again in list order, subject to the hold-back below.
+
+In a skirmish or multiplayer game, a lost structure is held back while [`AIRestrictReplaceTime`](/keys/airestrictreplacetime/) is open. The window runs that many frames from the latest time one of the house's structures took damage from an attacker. Walls, base defenses and power plants are never held back, and a node that has not yet held a structure is filled at once.
 
 When a structure that matches a node is taken off the map, every other node on its cell loses its cell. What happens to a base defense's node depends on the house:
 
