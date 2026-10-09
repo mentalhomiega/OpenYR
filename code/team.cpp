@@ -364,8 +364,6 @@ TeamClass::TeamClass(TeamTypeClass const * type, HouseClass * owner, void * unkn
 			Tag = new TagClass(Class->Tag);
 		}
 
-		// Every route that makes a team comes through here, so a team type with no script gets one first.
-		Class->Ensure_Script();
 		Script = new ScriptClass(Class->Script);
 	}
 }

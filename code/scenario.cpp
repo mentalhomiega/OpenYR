@@ -2034,6 +2034,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		ScriptTypeClass::Read_All(FSAIINI, SCOPE_GLOBAL);
 	}
 	ScriptTypeClass::Read_All(ini, SCOPE_LOCAL);
+	TeamTypeClass::Ensure_Scripts_If_No_Script_Types();
 
 	/*
 	**

@@ -290,6 +290,22 @@ void TeamTypeClass::Ensure_Script(void)
 }
 
 
+/// <summary>
+/// Gives every team type that has no script the Guard-only script, but only when no script type
+/// is registered at all. Call it once the script types of the scenario have been read.
+/// </summary>
+void TeamTypeClass::Ensure_Scripts_If_No_Script_Types(void)
+{
+	if (ScriptTypes.Count() > 0) {
+		return;
+	}
+
+	for (int index = 0; index < TeamTypes.Count(); index++) {
+		TeamTypes[index]->Ensure_Script();
+	}
+}
+
+
 /***********************************************************************************************
  * TeamTypeClass::Destroy_All_Of -- Destroy all teams of this type.                            *
  *                                                                                             *
@@ -692,6 +708,16 @@ bool TeamTypeClass::Read_INI(CCINIClass const & ini)
 
 		Script = TGet_Class(ini, IniName, "Script", Script);
 		TaskForce = TGet_Class(ini, IniName, "TaskForce", TaskForce);
+
+		// As in gamemd, a team type with no task force returns here while no task force is registered.
+		if (TaskForce == NULL && TaskForces.Count() == 0) {
+			return(false);
+		}
+
+		// The first registered script type, as in gamemd; the script stays unset when there is none.
+		if (Script == NULL && ScriptTypes.Count() > 0) {
+			Script = ScriptTypes[0];
+		}
 
 		return(true);
 	}
