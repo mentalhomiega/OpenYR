@@ -69,5 +69,6 @@ class TeleportLocomotionClass : public LocomotionClass
 		int WarpEnd;
 
 		int Warp_Distance(Coord const & to) const;
+		Coord Landing_Spot(Coord const & dest);
 		int Warp_Delay(Coord const & to) const;
 };

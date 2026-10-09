@@ -16,6 +16,7 @@
 #include "teleport.h"
 
 #include "anim.h"
+#include "building.h"
 #include "autotest.h"
 #include "cell.h"
 #include "dbgprint.h"
@@ -189,6 +190,49 @@ void TeleportLocomotionClass::Stop_Moving(void)
 
 
 /// <summary>
+/// Chooses the coordinate the object is set down at. A cell it cannot stand on is replaced by the
+/// nearest cell it can, keeping its offset inside the cell. An infantryman standing exactly on
+/// the spot is removed first, as MakeRoom (0x718260) does for an infantry destination.
+/// </summary>
+/// <param name="dest">The coordinate the teleport was ordered to.</param>
+/// <returns>Coord; The coordinate to set the object down at.</returns>
+Coord TeleportLocomotionClass::Landing_Spot(Coord const & dest)
+{
+	Cell const cell = dest.As_Cell();
+	ObjectClass * occupier = Map[cell].Cell_Occupier();
+	if (LinkedTo->RTTI == RTTI_INFANTRY && occupier != NULL && occupier != LinkedTo && occupier->RTTI == RTTI_INFANTRY && occupier->PositionCoord == dest) {
+		occupier->Delete_Me();
+	}
+
+	Coord spot = dest;
+	bool const soldier = LinkedTo->RTTI == RTTI_INFANTRY;
+	// A structure a harvester docks with may cover its dock cell, as a refinery's bib does, and walking
+	// harvesters stand on it when they dock; the landing keeps that cell.
+	bool docking = false;
+	if (LinkedTo->RTTI == RTTI_UNIT) {
+		BuildingClass const * target = Map[cell].Cell_Building();
+		UnitTypeClass const * type = static_cast<UnitClass const *>(LinkedTo)->Class;
+		for (int index = 0; target != NULL && index < type->Dock.Count(); index++) {
+			if (type->Dock[index] == target->Class) {
+				docking = true;
+			}
+		}
+	}
+	if (!Map.In_Local_Radar(cell) || (!docking && !Map[cell].Is_Clear_To_Move(LinkedTo->TClass->Speed, soldier, false, -1, LinkedTo->TClass->MZone))) {
+		Cell const nearby = Map.Nearby_Location(cell, LinkedTo->TClass->Speed, Map.Get_Cell_Zone(cell, LinkedTo->TClass->MZone, false), LinkedTo->TClass->MZone, false, Point2D(1, 1), false, true, false, true, cell);
+		if (nearby != CELL_NONE) {
+			Coord const inside = dest - Map[cell].As_Coord();
+			spot = Map[nearby].As_Coord() + inside;
+		}
+	}
+
+	// The object stands on the ground at the spot, as MakeRoom (0x718260) sets its height.
+	spot.Z = Map.Get_Height_GL(spot);
+	return(spot);
+}
+
+
+/// <summary>
 /// Advances the teleport: ends an arrival hold, and jumps once the warp-out delay has run.
 /// This routine is called by the owning object's movement processing. The jump lifts the object
 /// off the map, sets it down at its destination, and makes it look around from there. The object
@@ -209,7 +253,7 @@ bool TeleportLocomotionClass::Process(void)
 	}
 
 	if (WarpPhase == TELEPORT_WARP_OUT && Frame >= WarpEnd && DestinationCoord != COORD_NONE) {
-		Coord const landing = DestinationCoord;
+		Coord const landing = Landing_Spot(DestinationCoord);
 		LinkedTo->Mark(MARK_UP);
 		LinkedTo->PositionCoord = landing;
 		LinkedTo->RenderPrevCoord = COORD_NONE;

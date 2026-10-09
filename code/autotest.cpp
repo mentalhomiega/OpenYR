@@ -881,6 +881,7 @@ void Run(StepType const & step)
 		Map.Handle_Window_Event(event);
 	} else if (step.Command == "cell") {
 		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
+		DebugString("AUTOTEST   cell building %s occupier %s\n", cell.Cell_Building() != NULL ? cell.Cell_Building()->Class->Name() : "-", cell.Cell_Occupier() != NULL ? cell.Cell_Occupier()->Class_Of()->Name() : "-");
 		ObjectClass const * occupier = cell.Cell_Occupier();
 		TechnoClass const * techno = dynamic_cast<TechnoClass const *>(occupier);
 		DebugString("AUTOTEST   cell %d,%d mapped %d visible %d fogmapped %d tile %d height %d level %d overlay %d occupier %s rad %d ambient %d brightness %d lights %d gap %d land %d sensed %d cloak %d\n",
