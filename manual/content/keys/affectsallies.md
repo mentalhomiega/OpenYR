@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-An `AffectsAllies=no` warhead [does no damage](/systems/warheads/#what-the-target-loses) to a vehicle, infantryman, aircraft or structure whose owner is an ally of the credited attacker's house, including the attacker's own house. Forced damage, and damage with no credited attacker, are not affected.
+An `AffectsAllies=no` warhead [does no damage](/systems/warheads/#what-the-target-loses) to a vehicle, infantryman, aircraft or structure whose owner is an ally of the credited attacker's house, including the attacker's own house. Forced damage is affected too. Damage with no credited attacker is not.
 
 ```ini title="rulesmd.ini"
 [MyPsiWave] ; example Warhead

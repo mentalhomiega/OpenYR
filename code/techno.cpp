@@ -6046,8 +6046,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
-	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, unless the damage is forced.
-	if (warhead != NULL && !warhead->IsAffectsAllies && !forced && source != NULL && House->Is_Ally(source->House)) {
+	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not (TechnoClass::ReceiveDamage, 0x701900).
+	if (warhead != NULL && !warhead->IsAffectsAllies && source != NULL && House->Is_Ally(source->House)) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
