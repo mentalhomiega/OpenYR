@@ -673,7 +673,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		int Cost;
 
-		// Credits a sale refunds in place of the usual share of the price; a negative value keeps the usual refund.
+		// Credits a sale refunds in place of the usual share of the price; 0 keeps the usual refund.
 		int Soylent;
 
 		/*
@@ -1189,6 +1189,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		virtual int Flight_Level(void) const;
 		virtual void const * Get_Cameo_Data(void) const override;
 		virtual int Cost_Of(HouseClass * house = NULL) const override;
+		int Refund(HouseClass const * house, bool unscaled) const;
 		virtual int Time_To_Build(void) const override;
 		virtual int Get_Ownable(void) const override;
 		virtual int Max_Pips(void) const override;

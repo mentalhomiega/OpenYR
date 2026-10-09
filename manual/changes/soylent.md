@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero, CCHyper, tomsons26]
 ---
 
-[`Soylent=`](/keys/soylent/) on an object type sets the credits a sale of that type refunds, in place of the share of its price that [`RefundPercent`](/keys/refundpercent/) gives. The key and its `-1` default match Vinifera.
+[`Soylent=`](/keys/soylent/) on an object type sets the credits a sale of that type refunds, in place of the share of its price that [`RefundPercent`](/keys/refundpercent/) gives. The amount is scaled by the owner's country multiplier for the type's category, and the default `0` keeps the usual refund.

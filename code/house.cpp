@@ -2027,28 +2027,51 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 
 
 /// <summary>
-/// Fetches the factor this house's prices for the type are scaled by: its country's multiplier
-/// for the type's category times the bonus of every factory plant it has on the map, as
-/// TechnoTypeClass::GetActualCost (0x711F00) and HouseClass::CalculateCostMultipliers (0x50BF60)
-/// work them out.
+/// The price category of a type: 0 infantry, 1 vehicle, 2 aircraft, 3 structure and 4 defense, the
+/// index a country's and a factory plant's multipliers are read by. A type that has no price
+/// category is scaled by nothing.
 /// </summary>
-double HouseClass::Cost_Multiplier(TechnoTypeClass const * type) const
+static int Price_Category(TechnoTypeClass const * type)
 {
-	int category;
 	switch (type->Fetch_RTTI()) {
-		case RTTI_INFANTRYTYPE: category = 0; break;
-		case RTTI_UNITTYPE: category = 1; break;
-		case RTTI_AIRCRAFTTYPE: category = 2; break;
+		case RTTI_INFANTRYTYPE: return(0);
+		case RTTI_UNITTYPE: return(1);
+		case RTTI_AIRCRAFTTYPE: return(2);
 		case RTTI_BUILDINGTYPE:
-			category = static_cast<BuildingTypeClass const *>(type)->BuildCat == BUILDCAT_COMBAT ? 4 : 3;
-			break;
+			return(static_cast<BuildingTypeClass const *>(type)->BuildCat == BUILDCAT_COMBAT ? 4 : 3);
 		default:
-			return(1.0);
+			return(-1);
 	}
+}
 
+
+/// <summary>
+/// Fetches the multiplier this house's country applies to the type's category, as
+/// HouseClass::Country_Cost_Multiplier (0x50BDF0) reads it. The country's own Cost= and the
+/// difficulty's are not part of it.
+/// </summary>
+double HouseClass::Country_Cost_Multiplier(TechnoTypeClass const * type) const
+{
+	int const category = Price_Category(type);
+	if (category < 0) {
+		return(1.0);
+	}
 	double const country[5] = {Class->CostInfantryMult, Class->CostUnitsMult, Class->CostAircraftMult, Class->CostBuildingsMult, Class->CostDefensesMult};
-	double multiplier = country[category];
+	return(country[category]);
+}
 
+
+/// <summary>
+/// Fetches the bonus of every factory plant this house has on the map for the type's category,
+/// as HouseClass::Plant_Cost_Multiplier (0x50BEB0) reads it.
+/// </summary>
+double HouseClass::Plant_Cost_Multiplier(TechnoTypeClass const * type) const
+{
+	int const category = Price_Category(type);
+	if (category < 0) {
+		return(1.0);
+	}
+	double multiplier = 1.0;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
 		if (building->House == this && building->Class->IsFactoryPlant && !building->IsInLimbo && building->Strength > 0) {
@@ -2058,6 +2081,18 @@ double HouseClass::Cost_Multiplier(TechnoTypeClass const * type) const
 		}
 	}
 	return(multiplier);
+}
+
+
+/// <summary>
+/// Fetches the factor this house's prices for the type are scaled by: its country's multiplier
+/// for the type's category times the bonus of every factory plant it has on the map, as
+/// TechnoTypeClass::GetActualCost (0x711F00) and HouseClass::CalculateCostMultipliers (0x50BF60)
+/// work them out. The difficulty's Cost= is applied on top of it by Cost_Of.
+/// </summary>
+double HouseClass::Cost_Multiplier(TechnoTypeClass const * type) const
+{
+	return(Country_Cost_Multiplier(type) * Plant_Cost_Multiplier(type));
 }
 
 

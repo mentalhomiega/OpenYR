@@ -102,7 +102,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsVehicleTransport(false),
 	SightRange(0),
 	Cost(0),
-	Soylent(-1),
+	Soylent(0),
 	Level(255),
 	Prerequisite(),
 	Risk(0),
@@ -475,6 +475,44 @@ int TechnoTypeClass::Cost_Of(HouseClass * house) const
 		return((int)(Raw_Cost() * house->CostBias * house->Cost_Multiplier(this)));
 	}
 	return(Raw_Cost());
+}
+
+
+/**********************************************************************************************
+ * TechnoTypeClass::Refund -- Fetches the credits a sale of this type refunds to a house.     *
+ *                                                                                            *
+ *    This follows TechnoTypeClass::GetRefund (0x711F60). A Soylent value replaces the price, *
+ *    scaled only by the country's multiplier for the type's category. Otherwise the price is *
+ *    the raw cost (the reduced cost of a structure with a free unit) times that multiplier   *
+ *    and the factory plant bonus, without the difficulty's or the country's Cost=. A human   *
+ *    player's house then keeps RefundPercent of the price, truncated again. An unscaled      *
+ *    refund ignores RefundPercent, as the compensation for a free unit that cannot be placed *
+ *    does.                                                                                   *
+ *                                                                                            *
+ * INPUT:   house     -- The house receiving the refund; NULL refunds the raw cost.           *
+ *          unscaled  -- Ignore RefundPercent.                                                *
+ *                                                                                            *
+ * OUTPUT:  Returns with the credits to refund.                                               *
+ *                                                                                            *
+ * WARNINGS:   none                                                                           *
+*=============================================================================================*/
+int TechnoTypeClass::Refund(HouseClass const * house, bool unscaled) const
+{
+	double const percent = unscaled ? 1.0 : static_cast<float>(Rule->RefundPercent);
+	if (house == NULL) {
+		return(static_cast<int>(Raw_Cost() * percent));
+	}
+
+	double const country = static_cast<float>(house->Country_Cost_Multiplier(this));
+	if (Soylent != 0) {
+		return(static_cast<int>(Soylent * country));
+	}
+
+	double const price = Raw_Cost() * static_cast<float>(house->Plant_Cost_Multiplier(this)) * country;
+	if (house->Is_Human_Player()) {
+		return(static_cast<int>(static_cast<int>(price) * percent));
+	}
+	return(static_cast<int>(price));
 }
 
 
