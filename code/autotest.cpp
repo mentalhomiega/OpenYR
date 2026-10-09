@@ -585,6 +585,10 @@ void Log_Ore_Cells(int limit)
 	DebugString("AUTOTEST   orecells from %d,%d: %d listed\n", origin.X, origin.Y, count);
 	for (int index = 0; index < count; index++) {
 		DebugString("AUTOTEST   orecell %d,%d distance %d\n", found[index].X, found[index].Y, distances[index]);
+	}
+}
+
+
 /*
 **	treehit <Warhead> x y: hits the terrain object on that cell with 100 points of damage from the
 **	warhead, with no firer. trees: writes every terrain object on the map with its cell, strength,
