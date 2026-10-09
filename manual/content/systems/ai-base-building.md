@@ -352,7 +352,8 @@ A house that is not following a map plan checks power before it starts a structu
 
 - the node's drain added to the house's current drain exceeds its current power output;
 - the node is not a [`BuildConst`](/keys/buildconst/) construction yard;
-- the node's type drains power.
+- the node's type drains power;
+- the house is not in a power blackout, and none of its power plants is being drained by an enemy.
 
 The plant comes from the acted side. The house takes the first of these that applies:
 

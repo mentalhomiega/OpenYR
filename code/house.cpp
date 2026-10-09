@@ -4922,9 +4922,10 @@ int HouseClass::AI_Building(void)
 	BuildingTypeClass * b = BuildingTypes[node->Type];
 
 	/*
-	**	Try to build a power plant if there is insufficient power.
+	**	Try to build a power plant if there is insufficient power. A house in a power blackout, or
+	**	one with a power plant being drained, inserts no plant.
 	*/
-	if (!Scen->Is_Campaign_Base_AI() && b->Drain + Drain > Power - PowerSurplus && !Rule->BuildConst.Is_In_List(b) && b->Drain > 0) {
+	if (!Scen->Is_Campaign_Base_AI() && b->Drain + Drain > Power - PowerSurplus && !Rule->BuildConst.Is_In_List(b) && b->Drain > 0 && !Is_Power_Blackout() && !Is_Being_Drained()) {
 
 		SideClass const * side = Acted_Side();
 		BuildingTypeClass const * regular = side != NULL ? side->RegularPowerPlant : NULL;
