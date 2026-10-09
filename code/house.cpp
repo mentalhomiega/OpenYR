@@ -1694,17 +1694,8 @@ void HouseClass::AI(void)
 				defeated = true;
 			}
 		} else {
-			if (!CurBuildings && !CurAircraft && !CurInfantry) {
-				int units = CurUnits;
-				if (units == 0) {
-					defeated = true;
-				}
-				if (units && Scen->Special.IsHarvesterImmune) {
-					units -= Count_Owned(UQuantity, Rule->HarvesterUnit);
-				}
-				if (units <= 0) {
-					defeated = true;
-				}
+			if (!CurBuildings && !CurAircraft && !CurInfantry && CurUnits == 0) {
+				defeated = true;
 			}
 		}
 

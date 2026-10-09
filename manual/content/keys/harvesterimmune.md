@@ -24,7 +24,7 @@ Two further protections cover every destroyed vehicle that carries Tiberium, lis
 
 While the truce is on, the hunter-seeker drone skips any vehicle whose type is [`Harvester=yes`](/keys/harvester/#scope-unittype), whether or not it is listed in `HarvesterUnit`.
 
-Outside single-player missions the truce has two more effects. When a player is defeated, all of that player's vehicles are taken off the map. Outside a short game, vehicles listed in `HarvesterUnit` do not count toward keeping a player in the game.
+Outside single-player missions the truce has one more effect. When a player is defeated, all of that player's vehicles are taken off the map. Harvesters count toward keeping a player in the game like any other vehicle.
 
 :::caution[The entry is read in campaigns only]
 Only a single-player mission reads `[SpecialFlags]` from the map. In a game against other machines, the game's harvester truce option sets the truce: the launch file's `HarvesterTruce`, or the truce checkbox in the network lobby. A skirmish leaves it off, unless a network match earlier in the same session turned it on.
