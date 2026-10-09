@@ -661,6 +661,11 @@ class TechnoClass :	public RadioClass,
 		int Naval_Weapon(TechnoClass const * target) const;
 		void Set_Turret_Weapon(int position);
 		bool Temporal_AI(void);
+
+		/*
+		 * Is a chrono teleport holding this object? Its AI waits while the teleport runs.
+		 */
+		virtual bool Is_Chrono_Warping(void) const {return(false);}
 		void Plant_Bomb(TechnoClass * planter);
 		bool Is_Disguised_To_Player(void) const;
 		bool Looks_Friendly_To(HouseClass const * viewer) const;

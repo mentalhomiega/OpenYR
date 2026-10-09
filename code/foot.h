@@ -448,6 +448,7 @@ class FootClass : public TechnoClass
 
 		// Puts the object at a place on the map at once, dropping the move it was making.
 		void Teleport_To(Coord dest);
+		virtual bool Is_Chrono_Warping(void) const override;
 
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool = true) override;

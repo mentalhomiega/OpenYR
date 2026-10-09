@@ -111,6 +111,7 @@
 #include "ion.h"
 #include "ipiggy.h"
 #include "loco.h"
+#include "teleport.h"
 #include "mono.h"
 #include "partsys.h"
 #include "revent.h"
@@ -1036,6 +1037,18 @@ int FootClass::Do_MISSION_HUNT(void)
 		}
 	}
 	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+/// <summary>
+/// Is a chrono teleport holding this object? It is while the object's own locomotor is a teleport
+/// that has not finished its warp.
+/// </summary>
+/// <returns>bool; True while the teleport is waiting to jump or holding the object after it.</returns>
+bool FootClass::Is_Chrono_Warping(void) const
+{
+	TeleportLocomotionClass const * teleport = dynamic_cast<TeleportLocomotionClass const *>(Locomotion.get());
+	return(teleport != NULL && teleport->Is_Warping());
 }
 
 

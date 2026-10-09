@@ -300,6 +300,11 @@ RulesClass::RulesClass(void) :
 	TiberiumLongScan(32 * CELL_LEPTON),
 	HarvesterTooFarDistance(5),
 	ChronoHarvTooFarDistance(50),
+	ChronoDelay(60),
+	ChronoTrigger(true),
+	ChronoDistanceFactor(32),
+	ChronoMinimumDelay(0),
+	ChronoRangeMinimum(0),
 	TreeStrength(25),
 	TeamDelays(),
 	AIHateDelays(),
@@ -1817,6 +1822,11 @@ bool RulesClass::General(CCINIClass const & ini)
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
 		HarvesterTooFarDistance = ini.Get_Int(GENERAL, "HarvesterTooFarDistance", HarvesterTooFarDistance);
 		ChronoHarvTooFarDistance = ini.Get_Int(GENERAL, "ChronoHarvTooFarDistance", ChronoHarvTooFarDistance);
+		ChronoDelay = ini.Get_Int(GENERAL, "ChronoDelay", ChronoDelay);
+		ChronoTrigger = ini.Get_Bool(GENERAL, "ChronoTrigger", ChronoTrigger);
+		ChronoDistanceFactor = ini.Get_Int(GENERAL, "ChronoDistanceFactor", ChronoDistanceFactor);
+		ChronoMinimumDelay = ini.Get_Int(GENERAL, "ChronoMinimumDelay", ChronoMinimumDelay);
+		ChronoRangeMinimum = ini.Get_Int(GENERAL, "ChronoRangeMinimum", ChronoRangeMinimum);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
@@ -3335,6 +3345,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumLongScan);
 	stream.Serialize(HarvesterTooFarDistance);
 	stream.Serialize(ChronoHarvTooFarDistance);
+	stream.Serialize(ChronoDelay);
+	stream.Serialize(ChronoTrigger);
+	stream.Serialize(ChronoDistanceFactor);
+	stream.Serialize(ChronoMinimumDelay);
+	stream.Serialize(ChronoRangeMinimum);
 	stream.Serialize(LightningFrequency);
 	stream.Serialize(LightningRandomness);
 	stream.Serialize(LightningDamage);
