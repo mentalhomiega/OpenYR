@@ -95,6 +95,9 @@ The condition type selects what the trigger measures and which of the next two f
 | `2` | Whether the enemy's power output minus its drain is below `100` | Neither |
 | `3` | Whether the enemy's power output minus its drain is below `0` | Neither |
 | `4` | The enemy's money, counting stored Tiberium | Comparison block |
+| `5` | Whether this house's iron curtain is ready, or has charged at least [`AIMinorSuperReadyPercent`](/keys/aiminorsuperreadypercent/) of its recharge | Neither |
+| `6` | Whether this house's chronosphere is ready, or has charged at least [`AIMinorSuperReadyPercent`](/keys/aiminorsuperreadypercent/) of its recharge | Neither |
+| `7` | How many objects of the condition object's type the civilian house owns | Condition object and comparison block |
 
 A condition type outside this table never holds. [AI triggers and team production](/systems/ai-team-production/#defensive-teams-and-the-enemy) covers which house is the enemy and what happens when a house has none.
 

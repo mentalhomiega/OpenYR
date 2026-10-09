@@ -11,6 +11,7 @@
 
 #include "abstype.h"
 #include "ccini.h"
+#include "super.hh"
 
 /*
  * AI trigger type enumeration
@@ -21,6 +22,9 @@ enum AITriggerEnum {
 	AIT_POWER_YELLOW,
 	AIT_POWER_RED,
 	AIT_ENEMY_MONEY_COND_N,
+	AIT_IRON_CURTAIN_CHARGED,
+	AIT_CHRONOSPHERE_CHARGED,
+	AIT_CIVILIAN_OWNS_X_COND_N,
 
 	AIT_COUNT,
 	AIT_NONE = -1,
@@ -95,6 +99,8 @@ class AITriggerTypeClass : public AbstractTypeClass
 		bool Check_Enemy_Yellow_Power(HouseClass *house, HouseClass *enemy);
 		bool Check_Enemy_Red_Power(HouseClass *house, HouseClass *enemy);
 		bool Check_Enemy_Money(HouseClass *house, HouseClass *enemy);
+		bool Check_Civilian_Owns(HouseClass *house, HouseClass *enemy);
+		bool Check_Super_Charged(HouseClass *house, SuperWeaponType type);
 
 	private:
 		/*
