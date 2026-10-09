@@ -7768,6 +7768,11 @@ bool TechnoClass::Temporal_AI(void)
 		}
 	}
 	if (Is_Chrono_Warping()) {
+		// The AI that returns here is also what runs the locomotor, so the warp steps it.
+		FootClass * foot = static_cast<FootClass *>(this);
+		foot->IsLocomotorProcessing = true;
+		foot->Locomotion->Process();
+		foot->IsLocomotorProcessing = false;
 		return(true);
 	}
 
