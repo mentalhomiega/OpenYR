@@ -259,7 +259,7 @@ For every other house, the test requires a cell this house has reserved near the
 
 ### Clearing the site
 
-Allied vehicles, infantry and aircraft standing on the foundation are told to move off it. The construction yard then waits [`PlacementDelay`](/keys/placementdelay/) minutes before trying again.
+Allied vehicles, infantry and aircraft standing on the foundation are told to move off it. The construction yard then waits [`PlacementDelay`](/keys/placementdelay/) minutes before trying again. Each such blocked try adds one to the node's count. In a skirmish or multiplayer game, once the count passes [`MaximumBuildingPlacementFailures`](/keys/maximumbuildingplacementfailures/), the node is removed from the plan and the structure is placed at a cell the placement search finds. A campaign game keeps the node however often it is blocked.
 
 The structure is abandoned when the search finds no cell, when placement fails, or when the site holds a permanent obstruction. A permanent obstruction is any of these:
 

@@ -52,8 +52,8 @@ class SaveStreamClass;
 class BaseNodeClass
 {
 	public:
-		BaseNodeClass(void) {};
-		BaseNodeClass(StructType building, Cell cell) : Type(building), CellID(cell) {};
+		BaseNodeClass(void) : Attempts(0) {};
+		BaseNodeClass(StructType building, Cell cell) : Type(building), CellID(cell), Attempts(0) {};
 		bool operator == (BaseNodeClass const & node);
 		bool operator != (BaseNodeClass const & node);
 		bool operator > (BaseNodeClass const & node);
@@ -73,6 +73,12 @@ class BaseNodeClass
 		 */
 		bool Placed = false;
 
+		/*
+		 * The number of times the structure for this node could not be placed because a unit was
+		 * still on its foundation. Past MaximumBuildingPlacementFailures, a computer house drops the node.
+		 */
+		int Attempts;
+
 		// Carries this base node to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
@@ -80,6 +86,7 @@ class BaseNodeClass
 			stream.Serialize(Type);
 			stream.Serialize(CellID);
 			stream.Serialize(Placed);
+			stream.Serialize(Attempts);
 		}
 };
 

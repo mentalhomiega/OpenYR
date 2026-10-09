@@ -701,6 +701,7 @@ RulesClass::RulesClass(void) :
 	AIExtraRefineries(),
 	AISlaveMinerNumber(),
 	AIRestrictReplaceTime(0),
+	MaximumBuildingPlacementFailures(5),
 	HarvestersPerRefinery(),
 	SovietBaseDefenses(),
 	ThirdBaseDefenses(),
@@ -1661,6 +1662,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		AIExtraRefineries = ini.Get_IntList(GENERAL, "AIExtraRefineries", AIExtraRefineries);
 		AISlaveMinerNumber = ini.Get_IntList(GENERAL, "AISlaveMinerNumber", AISlaveMinerNumber);
 		AIRestrictReplaceTime = ini.Get_Int(GENERAL, "AIRestrictReplaceTime", AIRestrictReplaceTime);
+		MaximumBuildingPlacementFailures = ini.Get_Int(GENERAL, "MaximumBuildingPlacementFailures", MaximumBuildingPlacementFailures);
 		HarvestersPerRefinery = ini.Get_IntList(GENERAL, "HarvestersPerRefinery", HarvestersPerRefinery);
 		AIHateDelays = ini.Get_IntList(GENERAL, "AIHateDelays", AIHateDelays);
 		AIAlternateProductionCreditCutoff = ini.Get_Int(GENERAL, "AIAlternateProductionCreditCutoff", AIAlternateProductionCreditCutoff);
@@ -3200,6 +3202,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AIExtraRefineries);
 	stream.Serialize(AISlaveMinerNumber);
 	stream.Serialize(AIRestrictReplaceTime);
+	stream.Serialize(MaximumBuildingPlacementFailures);
 	stream.Serialize(HarvestersPerRefinery);
 	stream.Serialize(AIHateDelays);
 	stream.Serialize(DissolveUnfilledTeamDelay);
