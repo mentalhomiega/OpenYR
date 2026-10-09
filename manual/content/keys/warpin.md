@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-A unit that teleports with a teleport locomotor, such as a Chrono Legionnaire or a Chrono Miner, plays this animation at its center on the cell where it lands. It plays nothing when the landing cell is the one it was ordered to, and nothing when the key is omitted.
+A unit that teleports with a teleport locomotor, such as a Chrono Legionnaire or a Chrono Miner, plays this animation at its center where it lands. A landing moved to a nearby cell plays it on that cell.
 
 ```ini title="rulesmd.ini"
 [General]
