@@ -11,6 +11,6 @@ Outside a campaign, `CompEasyBonus=yes` makes each computer house play one diffi
 
 Despite its name, the bonus never makes the computer easier. [Difficulty settings](/systems/difficulty/#the-computers-bonus-with-more-than-one-human) explains why moving a computer house down one difficulty slot makes it stronger.
 
-A computer seat whose [launch file](/formats/spawn-ini/) sets its `[HouseHandicaps]` entry plays at that entry's slot instead, with no bonus.
+A computer seat whose [launch file](/formats/spawn-ini/) sets its `[HouseHandicaps]` entry starts from that entry's slot instead of the table's. The bonus then moves that slot down one, as it does any other slot.
 
 The new slot applies everywhere the house reads its slot: the combat and production figures from its difficulty section, each per-difficulty list in `[General]`, and the [difficulty flag its AI triggers are tested against](/systems/ai-team-production/#difficulty).

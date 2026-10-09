@@ -221,7 +221,7 @@ In a campaign game, the house tests the flag that matches the scenario's difficu
 
 A human house outside a campaign always holds slot 1, so it always tests the Medium flag.
 
-A computer seat's `[HouseHandicaps]` value in a [launch file](/formats/spawn-ini/#who-is-playing) sets its slot directly. It replaces both the inversion and the bonus described below. The flag the house tests then follows the slot column of the table, so a value of `0` tests the Hard flag.
+A computer seat's `[HouseHandicaps]` value in a [launch file](/formats/spawn-ini/#who-is-playing) sets its slot directly. It replaces the inversion described below, and the bonus still moves that slot down when it applies. The flag the house tests follows the slot column of the table, so a final slot of `0` tests the Hard flag.
 
 The per-difficulty lists in `[General]` are not inverted a second time. Each list is indexed by the house's slot, so for a computer house entry 0 applies at the hardest setting and entry 2 at the easiest. The lists are [`TeamDelays`](/keys/teamdelays/), [`TotalAITeamCap`](/keys/totalaiteamcap/), [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/), [`MaximumAIDefensiveTeams`](/keys/maximumaidefensiveteams/), [`FillEarliestTeamProbability`](/keys/fillearliestteamprobability/) and [`AIHateDelays`](/keys/aihatedelays/).
 
