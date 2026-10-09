@@ -9,8 +9,8 @@ when_omitted:
 
 The value is read when the game starts and becomes the starting state of the match's crate option. The match setup, or the spawn settings for a spawned match, then sets the option for each match. Placing crates at scenario start and replacing expired crates both follow the match option alone.
 
-:::caution[Crates=no still stops pickup replacements]
-A collected crate is replaced only when both this key and the match option are on. With `Crates=no` and crates switched on for the match, expired crates are still replaced but collected ones are not. With crates switched off for the match, neither kind is replaced, whatever this key says.
+:::caution[Crates=no does not stop pickup replacements]
+Replacement follows the match option alone. With crates switched on for the match, a collected crate is replaced whatever this key says, and so is an expired one. With crates switched off, neither kind is replaced.
 
-A map's own `[MultiplayerDefaults]` section can set this key for its scenario. That value does not change the match option, but `Crates=no` there also stops pickup replacements. [How long a crate lasts](/systems/crates/#how-long-a-crate-lasts) covers both kinds of replacement.
+A map's own `[MultiplayerDefaults]` section can set this key for its scenario. That value does not change the match option, and it does not stop pickup replacements. [How long a crate lasts](/systems/crates/#how-long-a-crate-lasts) covers both kinds of replacement.
 :::

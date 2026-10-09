@@ -3738,7 +3738,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 		Map.Remove_Crate(Fetch_CellID());
 //		Map[CellID].Overlay = OVERLAY_NONE;
 
-		if (Session.Type != GAME_NORMAL && Rule->IsMPCrates && Session.Options.Goodies) {
+		if (Session.Type != GAME_NORMAL && Session.Options.Goodies) {
 			Map.Place_Random_Crate();
 		}
 
