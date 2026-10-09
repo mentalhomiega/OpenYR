@@ -9460,16 +9460,7 @@ Cell TechnoClass::Find_Exit_Cell(TechnoClass const *) const
  *=============================================================================================*/
 int TechnoClass::Refund_Amount(void) const
 {
-	if (TClass->Soylent >= 0) {
-		return(TClass->Soylent);
-	}
-
-	int cost = TClass->Cost_Of(House);
-
-	if (House->Is_Human_Player()) {
-		cost = cost * Rule->RefundPercent;
-	}
-	return(cost);
+	return(TClass->Refund(House, false));
 }
 
 

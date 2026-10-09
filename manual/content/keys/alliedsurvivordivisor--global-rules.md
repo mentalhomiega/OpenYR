@@ -16,7 +16,7 @@ when_omitted:
 AlliedSurvivorDivisor=500  ; a refund of 2,000 credits gives four survivors
 ```
 
-The refund is the structure's price, with its owner's [price multipliers](/keys/cost/#what-a-house-pays) applied. For a human house, the price is then multiplied by [`RefundPercent`](/keys/refundpercent/). A type with a [`Soylent=`](/keys/soylent/) value refunds that value instead. A refund smaller than the divisor still gives a count of one, including a `Soylent=0` refund of nothing.
+The refund is the amount a sale of the structure returns, as [`RefundPercent`](/keys/refundpercent/) works it out, with the structure's [`Soylent=`](/keys/soylent/) value in its place when its type sets one. A refund smaller than the divisor still gives a count of one.
 
 A captured structure uses twice this value, which roughly halves its survivors. `AlliedSurvivorDivisor=0` gives no survivors to a structure whose owner is on the first side.
 

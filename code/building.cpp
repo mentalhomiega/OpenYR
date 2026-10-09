@@ -3879,7 +3879,7 @@ void BuildingClass::Place_Free_Unit(void)
 	if (type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE) {
 		AircraftClass * air = Place_Free_Aircraft(static_cast<AircraftTypeClass const *>(type));
 		if (air == NULL) {
-			House->Refund_Money(type->Raw_Cost());
+			House->Refund_Money(type->Refund(House, true));
 			return;
 		}
 
@@ -3920,7 +3920,7 @@ void BuildingClass::Place_Free_Unit(void)
 				**	to the owner and then bail.
 				*/
 				if (newcell == CELL_NONE || !object->Unlimbo(newcell, DIR_SW)) {
-					House->Refund_Money(type->Raw_Cost());
+					House->Refund_Money(type->Refund(House, true));
 					delete object;
 				} else {
 					placed = true;
@@ -3946,7 +3946,7 @@ void BuildingClass::Place_Free_Unit(void)
 		**	If the object could not be created in the first place, then give
 		**	the full refund price to the owning player.
 		*/
-		House->Refund_Money(type->Cost_Of(House));
+		House->Refund_Money(type->Refund(House, true));
 	}
 }
 

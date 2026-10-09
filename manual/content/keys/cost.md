@@ -16,7 +16,7 @@ One pad aircraft goes to each [`HoverPad=yes`](/keys/hoverpad/) structure, as `P
 
 A structure with a `FreeUnit=` never has a reduced price below `0`. A pad dock with no `FreeUnit=` goes below `0` when its `Cost=` is below its deduction.
 
-The full price adds the deductions back. A factory charges it, selling refunds it, and a kill scores and awards experience from it, so these all work from the written `Cost=`. A refinery with `Cost=2000` that gives a 1400-credit harvester still costs 2000 to buy and is still worth 2000 when destroyed.
+The full price adds the deductions back. A factory charges it, and a kill scores and awards experience from it, so these work from the written `Cost=`. A refinery with `Cost=2000` that gives a 1400-credit harvester still costs 2000 to buy and is still worth 2000 when destroyed. Selling it refunds the reduced price instead, 600 credits before the owner's multipliers and [`RefundPercent`](/keys/refundpercent/), unless its [`Soylent=`](/keys/soylent/) sets the refund.
 
 The exception is a structure with a `FreeUnit=` whose deductions exceed its `Cost=`. Its reduced price stops at `0`, so its full price is the total of the deductions, which is more than its `Cost=`.
 

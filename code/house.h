@@ -971,6 +971,8 @@ class HouseClass : public AbstractClass
 		void Purified(int tiberium, TiberiumType slot);
 		int Self_Heal_Points(bool infantry) const;
 		double Cost_Multiplier(TechnoTypeClass const * type) const;
+		double Country_Cost_Multiplier(TechnoTypeClass const * type) const;
+		double Plant_Cost_Multiplier(TechnoTypeClass const * type) const;
 		void Harvested_Weed(int weed, int slot);
 		void Spend_Money(int money);
 		void Refund_Money(int money);
