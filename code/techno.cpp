@@ -9353,7 +9353,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 	**	for one.
 	*/
 	if (House->BQuantity.Value(b->HeapID) != 0) {
-		long long bestval = -1;
+		int bestval = -1;
 
 		/*
 		**	Loop through all the buildings and find the one that matches the specification
@@ -9370,7 +9370,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 				!building->IsInLimbo &&
 				building->Class == b &&
 				(!unoccupied || building->Has_Free_Link(this)) &&
-				(RTTI == RTTI_AIRCRAFT || Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), building->Center_Coord().As_Cell(), TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) &&
+				(RTTI == RTTI_AIRCRAFT || Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), building->PositionCoord.As_Cell(), TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) &&
 				((TechnoClass *)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER) {
 
 				/*
@@ -9378,12 +9378,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 				**	last qualifying building (as rated by distance), then record
 				**	this building and keep scanning.
 				*/
-				// Squared lepton distance overflows an int past about 181 cells.
-				Coord here = Center_Coord();
-				Coord there = building->Center_Coord();
-				long long dx = here.X - there.X;
-				long long dy = here.Y - there.Y;
-				long long dist = (dx * dx) + (dy * dy);
+				int dist = Dock_Distance(building);
 				if (bestval == -1 || dist < bestval || building->IsLeader) {
 					best = building;
 					bestval = dist;
@@ -9392,6 +9387,20 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 		}
 	}
 	return(best);
+}
+
+
+/// <summary>
+/// Measures the squared distance from this object to a building, as FootClass::FindCloserDockBuilding
+/// (0x4DEE80) does: between the two Location coordinates, in int arithmetic that wraps past about 181 cells.
+/// </summary>
+/// <param name="building">The building the distance is measured to.</param>
+/// <returns>int; The squared distance in leptons, possibly wrapped.</returns>
+int TechnoClass::Dock_Distance(BuildingClass const * building) const
+{
+	int const dx = PositionCoord.X - building->PositionCoord.X;
+	int const dy = PositionCoord.Y - building->PositionCoord.Y;
+	return(int((unsigned int)dx * (unsigned int)dx + (unsigned int)dy * (unsigned int)dy));
 }
 
 
@@ -9411,8 +9420,8 @@ BuildingClass * TechnoClass::Find_Docking_Bay(TypeList<BuildingTypeClass const *
 	for (int index = 0; index < list.Count(); index++) {
 		BuildingClass * building = Find_Docking_Bay(list[index], friendly, unoccupied);
 		if (building != NULL) {
-			int dist = Distance(building);
-			if (bestval == -1 || dist < bestval) {
+			int dist = Dock_Distance(building);
+			if (best == NULL || bestval == -1 || dist < bestval || building->IsLeader) {
 				best = building;
 				bestval = dist;
 			}
