@@ -272,6 +272,7 @@ class ObjectClass : public AbstractClass
 		virtual void Detach(AbstractClass const * target, bool all = true) override;
 		virtual void Detach_All(bool all=true);
 		virtual void Record_The_Kill(TechnoClass * );
+		virtual void Record_The_Kill_By_House(HouseClass * );
 		virtual bool Paradrop(Coord const & coord);
 		bool Attach_Tag(TagClass * tag);
 		virtual bool Is_Inactive(void) const override;

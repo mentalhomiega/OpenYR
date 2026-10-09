@@ -572,6 +572,16 @@ void ObjectClass::Record_The_Kill(TechnoClass * )
 }
 
 
+/// <summary>
+/// Records this object as killed by a house rather than by an attacker (ObjectClass::RegisterKill,
+/// 0x5F4300). An object that is not a techno object keeps no record of its kills.
+/// </summary>
+void ObjectClass::Record_The_Kill_By_House(HouseClass * )
+{
+	assert(this != NULL);
+}
+
+
 /***********************************************************************************************
  * ObjectClass::Do_Shimmer -- Shimmers this object if it is cloaked.                           *
  *                                                                                             *
@@ -1766,7 +1776,16 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			*/
 			if (IsActive) {
 				if (Strength == 0) {
-					Record_The_Kill(source);
+					/*
+					**	A blast or a power names the house that gets the credit. With no house, or with a
+					**	house that is the attacker's own, the attacker is credited for the destruction.
+					**	Any other house is credited with the kill alone (ObjectClass::ReceiveDamage, 0x5F577C).
+					*/
+					if (sourcehouse == NULL || (source != NULL && sourcehouse == source->House)) {
+						Record_The_Kill(source);
+					} else {
+						Record_The_Kill_By_House(sourcehouse);
+					}
 					result = RESULT_DESTROYED;
 					Detach_All(true);
 				}

@@ -4844,12 +4844,13 @@ bool InfantryClass::Active_Click_With(ActionType action, Cell const & cell, bool
 
 
 /// <summary>
-/// The Iron Curtain kills infantry outright (InfantryClass::IronCurtain, 0x522600).
+/// The Iron Curtain kills infantry outright (InfantryClass::IronCurtain, 0x522600), and the house
+/// that raised the curtain gets the credit.
 /// </summary>
-void InfantryClass::Iron_Curtain(int, HouseClass *, bool)
+void InfantryClass::Iron_Curtain(int, HouseClass * house, bool)
 {
 	int damage = Class->MaxStrength;
-	Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+	Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false, house);
 }
 
 
