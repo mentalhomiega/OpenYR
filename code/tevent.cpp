@@ -1085,6 +1085,7 @@ bool TEventClass::Is_To_Flag_As_Tripped(void) const
 		case TEVENT_ATTACKED_BY:
 		case TEVENT_PLAYER_ENTERED:
 		case TEVENT_ENTERED_OR_OVERFLOWN:
+		case TEVENT_BRIDGE_DESTROYED:
 		case TEVENT_PARALYZED:
 		case TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING:
 			return(false);
