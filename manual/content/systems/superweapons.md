@@ -175,7 +175,7 @@ A house updates which superweapons it holds after one of its structures is built
 
 A defeated house loses every weapon in the first pass, including one-time and trigger-granted weapons, and skips the second pass. When the house's power crosses the full-power line, only the first pass runs.
 
-While the match's superweapons option is off, the second pass does not grant a weapon whose [`DisableableFromShell`](/keys/disableablefromshell--superweapontype/) is `yes`. The option is set by the [launch file](/formats/spawn-ini/) or the skirmish lobby.
+While the match's superweapons option is off, the second pass does not grant a weapon whose [`DisableableFromShell`](/keys/disableablefromshell/) is `yes`. The option is set by the [launch file](/formats/spawn-ini/) or the skirmish lobby.
 
 ### From a structure or a plug
 

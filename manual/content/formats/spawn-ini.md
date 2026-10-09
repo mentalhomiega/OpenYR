@@ -133,7 +133,7 @@ A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty sett
 
 `AutoDeployMCV=yes` deploys every house's starting base unit as the match opens; [starting forces](/systems/starting-forces/#the-base-unit) owns what that leaves on the map.
 
-`SuperWeapons=no` withholds the superweapons whose [`DisableableFromShell`](/keys/disableablefromshell--superweapontype/) is `yes`: their buildings cannot be built and their superweapons are not granted. The other superweapons stay available. The skirmish lobby's Superweapons checkbox sets the same option.
+`SuperWeapons=no` withholds the superweapons whose [`DisableableFromShell`](/keys/disableablefromshell/) is `yes`: their buildings cannot be built and their superweapons are not granted. The other superweapons stay available. The skirmish lobby's Superweapons checkbox sets the same option.
 
 `BuildOffAlly=yes` lets a player place buildings next to an ally's buildings whose type allows it, as well as their own; [base placement and adjacency](/systems/base-adjacency/#building-off-an-ally) owns what counts as an anchor. The game tests it only on the machine that places the building, so a file that disagrees with the others only changes where its own player can build.
 
