@@ -2505,6 +2505,14 @@ class RulesClass
 		LEPTON TiberiumLongScan;
 
 		/*
+		**	How many cells away a harvester may be from a free refinery and still reserve it. Farther
+		**	than this it drives to the nearest refinery of any kind and waits there. A Chrono Miner
+		**	uses ChronoHarvTooFarDistance.
+		*/
+		int HarvesterTooFarDistance;
+		int ChronoHarvTooFarDistance;
+
+		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
 		 * in 1000 per game frame.
 		 */

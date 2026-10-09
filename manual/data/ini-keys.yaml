@@ -7140,6 +7140,24 @@ ChronoBlastDest:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoHarvTooFarDistance:
+  key: ChronoHarvTooFarDistance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '50'
+      declared_in: RulesClass
+      member: ChronoHarvTooFarDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoInSound:
   key: ChronoInSound
   scopes:
@@ -15963,6 +15981,24 @@ HarvesterLoadRate:
       default_candidate: '2'
       declared_in: RulesClass
       member: HarvesterLoadRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+HarvesterTooFarDistance:
+  key: HarvesterTooFarDistance
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: RulesClass
+      member: HarvesterTooFarDistance
       source: code/rules.cpp
       guard: null
     level: RulesClass

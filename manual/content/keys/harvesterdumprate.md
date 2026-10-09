@@ -13,5 +13,3 @@ A docked harvester waits this many minutes of game time, then hands its house ev
 [General]
 HarvesterDumpRate=.03   ; a pass every 27 frames
 ```
-
-The same rate sets how long a returning harvester expects to wait at a busy refinery. It compares that wait, a pass for each type the loads there hold plus the final pass, with the extra drive to a free one when it [chooses where to unload](/systems/tiberium/#unloading).
