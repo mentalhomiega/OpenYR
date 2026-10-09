@@ -27,3 +27,8 @@ Rules for these files:
 | `electric-bolt-colours.md` | `Bolt.Color1-3`, `Beam.Color`, `Beam.Amplitude` |
 | `targeting-flags.md` | `AttackFriendlies`, `AttackCursorOnFriendlies`, `DefaultToGuardArea` |
 | `ui-and-spy-small-flags.md` | `HealthBar.Hide`, `SpyEffect.Custom` and its superweapon keys |
+| `phobos-per-type-rules.md` | Phobos per-type copies of global rules (`CurleyShuffle`, harvester rates, bunker and occupant multipliers, repair rates, wakes, `OpenTopped.*` and others) |
+| `phobos-weapon-selection.md` | Phobos `ForceWeapon.*`, `NoSecondaryWeaponFallback`, `MultiWeapon.*`, `NoAmmoWeapons`, berzerk targeting and the target-scan switches |
+| `phobos-attached-effects.md` | Phobos `[AttachEffectTypes]` and the `AttachEffect.*` keys on technos and warheads |
+| `phobos-shields.md` | Phobos `[ShieldTypes]`, `Shield` and the `Shield.*` keys on technos and warheads |
+| `phobos-autodeath-convert-animunit.md` | Phobos `AutoDeath.*`, `Convert.*` (ammo, health, owner change, deploy, superweapon) and `CreateUnit.*` on animations |
