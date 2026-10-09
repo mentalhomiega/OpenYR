@@ -104,6 +104,14 @@ Set `VeteranCap` to at least `2` to allow elite rank through combat. The default
 An object above the limit drops back to it on its next kill that it is credited with, even an allied one. For example, with `VeteranCap=1`, a trainable elite drops to veteran and loses its elite weapon and [`EliteAbilities`](/keys/eliteabilities/).
 :::
 
+### Kills credited to a house alone
+
+Some blasts and super weapons name a house for a kill and no object. They are the lightning storm, the Iron Curtain's kill of infantry, the chronosphere's kill of organic units, the genetic mutator and the psychic dominator's blast. When the house named is the attacker's own house, or no house is named, the kill is the ordinary kind described above.
+
+The named house earns the victim's cost in score, doubled for a veteran and tripled for an elite, and nothing for an ally's object. The kill is added to the house's totals on the [score screen](/systems/multiplayer-score-screen/), unless the victim's type is [`DontScore=yes`](/keys/dontscore/), which withholds the totals but not the score. The victim's house remembers the named house as the last one to hurt it. No object earns experience, and no [bounty](/systems/bounty/) is paid.
+
+The dead object's tag springs [Attacked by any house](/mapping/events/tevent-attacked/) and [Discovered by player](/mapping/events/tevent-discovered/). Unless the object is a vehicle, it also springs [Destroyed by any house](/mapping/events/tevent-destroyed/) and both [Destroyed by anything](/mapping/events/tevent-destroyed-any/) events. A vehicle springs none of those three.
+
 ## Promotion without kills
 
 The following sources can give an object a rank without kills. They ignore `VeteranCap`; only the veterancy crate requires `Trainable=yes`. A map's placed-object records can also set experience directly.

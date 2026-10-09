@@ -1,0 +1,35 @@
+; A player's lightning storm kills computer infantry that no attacker is responsible for, and the storm's house
+; is credited with the kills (gamemd: LightningStorm::Strike2, 0x53A300, names the storm's owner as the blast's
+; house; ObjectClass::ReceiveDamage, 0x5F577C, hands a kill with a house and no attacker to RegisterKill, 0x703230).
+; veterancy E1 reports the player's points; E1 costs 200 and E2 costs 100.
+; A control comes first: a computer E1 killed with no attacker and no house (kill E1) leaves the points at 0.
+; First storm: three computer E1 on the target. 600 points with the change, 0 without it.
+; Second storm: a veteran E1 (worth double, 400), an elite E2 (worth triple, 300) and an E1 of the player's own
+; (worth nothing, as an ally's is). 1300 points in all with the change.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script <this file> -Map XMP29U2.MAP -Seconds 200
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 spawn E1 72 36
+305 veterancy E1
+310 kill E1
+315 veterancy E1
+320 grant LightningStormSpecial
+322 spawn E1 66 40
+323 spawn E1 67 40
+324 spawn E1 66 41
+325 reveal
+330 view 66 40
+335 veterancy E1
+340 fire LightningStormSpecial 66 40
+1000 veterancy E1
+1010 spawn E1 66 40
+1011 spawn E2 67 40
+1012 grantunit E1 66 41
+1013 rank E1 1
+1014 rank E2 2
+1015 grant LightningStormSpecial
+1020 fire LightningStormSpecial 66 40
+1800 veterancy E1
+1810 houses
+1900 quit

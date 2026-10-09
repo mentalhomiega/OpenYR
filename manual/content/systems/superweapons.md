@@ -483,7 +483,7 @@ The drone type is the [`HunterSeeker`](/keys/hunterseeker/#scope-side) of the si
 
 A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininvokeanim/) over the target cell, then covers every object on that cell and the eight cells around it. On a cell with a bridge, only the objects on the bridge are covered. What happens to each covered object depends on its kind:
 
-- Infantry die.
+- Infantry die, and the firing house is credited with the kill.
 - A vehicle or aircraft with [`Organic=yes`](/keys/organic/) takes damage equal to its full strength, which its armor can reduce.
 - Anything else is protected for [`IronCurtainDuration`](/keys/ironcurtainduration/) frames. A structure's demolition charge is also defused. A vehicle or aircraft also loses its paralysis, and a parasite inside it dies.
 
@@ -514,7 +514,7 @@ The storm breaks [`LightningDeferment`](/keys/lightningdeferment/) frames after 
 - Every [`LightningHitDelay`](/keys/lightninghitdelay/) frames, a cloud gathers over the center.
 - Every [`LightningScatterDelay`](/keys/lightningscatterdelay/) frames, a cloud gathers over a random cell up to half of [`LightningCellSpread`](/keys/lightningcellspread/) cells from the center along each axis. A cell closer than [`LightningSeparation`](/keys/lightningseparation/) cells to an existing cloud is passed over; after three such cells the chance is lost.
 
-A cloud is one of [`WeatherConClouds`](/keys/weatherconclouds/), hung high enough for a bolt to reach the ground. Once the cloud's animation is past halfway, a bolt from [`WeatherConBolts`](/keys/weatherconbolts/) strikes the cell below, and the cloud stays until its last frame. The strike plays one of [`LightningSounds`](/keys/lightningsounds/) and [`WeatherConBoltExplosion`](/keys/weatherconboltexplosion/), and deals [`LightningDamage`](/keys/lightningdamage/) through [`LightningWarhead`](/keys/lightningwarhead/) with no attacker. A strike that hits empty road, rock, wall or weeds, or changes what stands in the cell, throws up two to four [`MetallicDebris`](/keys/metallicdebris/) animations, unless an infantryman stood there.
+A cloud is one of [`WeatherConClouds`](/keys/weatherconclouds/), hung high enough for a bolt to reach the ground. Once the cloud's animation is past halfway, a bolt from [`WeatherConBolts`](/keys/weatherconbolts/) strikes the cell below, and the cloud stays until its last frame. The strike plays one of [`LightningSounds`](/keys/lightningsounds/) and [`WeatherConBoltExplosion`](/keys/weatherconboltexplosion/), and deals [`LightningDamage`](/keys/lightningdamage/) through [`LightningWarhead`](/keys/lightningwarhead/) with no attacker. The house that called the storm is credited with what the strike destroys, as [kills credited to a house alone](/systems/veterancy/#kills-credited-to-a-house-alone) describes. A strike that hits empty road, rock, wall or weeds, or changes what stands in the cell, throws up two to four [`MetallicDebris`](/keys/metallicdebris/) animations, unless an infantryman stood there.
 
 The lighting returns to normal once the duration is over and the last cloud has gone.
 
@@ -541,7 +541,7 @@ A `Type=GeneticConverter` weapon plays [`IonBlast`](/keys/ionblast/) over the ta
 - With `MutateExplosion=yes`, a blast of 10000 damage goes off through [`MutateExplosionWarhead`](/keys/mutateexplosionwarhead/), so that warhead's [`CellSpread`](/keys/cellspread/) and `Verses` decide who is caught.
 - Otherwise, every infantryman on the target cell and the eight cells around it takes its full strength as damage through [`MutateWarhead`](/keys/mutatewarhead/), ignoring armor.
 
-A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes.
+A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes. The firing house is credited with every infantryman killed.
 
 ### Force shield
 
@@ -617,7 +617,7 @@ A `Type=ChronoSphere` weapon picks the units to move, and a `Type=ChronoWarp` we
 
 When the warp fires, [`ChronoBlast`](/keys/chronoblast/) plays over the picked cell and [`ChronoBlastDest`](/keys/chronoblastdest/) over the target. Then each vehicle, infantryman and landed aircraft on the picked cell and the eight cells around it is handled in turn. On a cell with a bridge, only those on the bridge count.
 
-- An [`Organic=yes`](/keys/organic/) unit, which every infantryman is by default, is destroyed unless its type is [`Teleporter=yes`](/keys/teleporter/).
+- An [`Organic=yes`](/keys/organic/) unit, which every infantryman is by default, is destroyed unless its type is [`Teleporter=yes`](/keys/teleporter/). The firing house is credited with the kill.
 - A unit under the Iron Curtain, and a vehicle standing on a war factory, stays where it is. So does a unit whose type sets [`Chronoshift.Allow=no`](/keys/chronoshift.allow/), even when it is organic.
 - Every other unit moves to the cell in the same position relative to the target, keeping its place within the cell. [`WarpOut`](/keys/warpout/) plays where it leaves and where it lands, with [`ChronoOutSound`](/keys/chronooutsound/) and [`ChronoInSound`](/keys/chronoinsound/).
 
@@ -629,6 +629,8 @@ What stands where a unit lands decides what happens to it:
 - A structure or a terrain object, such as a tree, sends the arriving unit to the nearest cell it could stand on. With no such cell, the unit is destroyed.
 
 A unit landing on a cell with a bridge lands on the bridge. A unit whose landing spot is off the map is destroyed. A vehicle set down on water it cannot cross sinks, and any other unit set down where it cannot move, such as on a cliff, is destroyed.
+
+A unit destroyed at its landing spot credits no house.
 
 A moved unit stays in its team and stays selected, but it stops where it lands and forgets its move order.
 

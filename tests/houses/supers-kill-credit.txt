@@ -1,0 +1,38 @@
+; Four of the player's super weapons each destroy a computer object that no attacker is responsible for, and the
+; player's house is credited with every kill. gamemd hands each of them a house along with no attacker:
+; the psychic dominator's blast (0x53B16B), the Iron Curtain on infantry (InfantryClass::IronCurtain, 0x522632),
+; the chronosphere's kill of an organic unit (SuperClass::Launch, 0x6CC8C6) and the genetic mutator
+; (SuperClass::Launch, 0x6CD90C). The dominator's warhead hurts only structures, so it destroys a power plant;
+; the others each kill an E1, worth its cost of 200. veterancy E1 reports the player's points after each:
+; the plant's cost, then 200 more for each of the other three, and 0 throughout without the change.
+; The steps are close together so that the player's mutated soldier and tank, which fight on their own, do not
+; add kills of their own.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script <this file> -Map XMP29U2.MAP -Seconds 200
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 veterancy E1
+310 spawn NAPOWR 68 32
+311 grant PsychicDominatorSpecial
+312 reveal
+315 fire PsychicDominatorSpecial 68 32
+450 veterancy E1
+550 veterancy E1
+650 veterancy E1
+750 veterancy E1
+760 spawn E1 70 36
+761 grant IronCurtainSpecial
+765 fire IronCurtainSpecial 70 36
+800 veterancy E1
+810 own MTNK 60 32
+811 spawn E1 61 32
+812 grant ChronoSphereSpecial
+815 fire ChronoSphereSpecial 60 32
+820 fire ChronoWarpSpecial 64 38
+850 veterancy E1
+860 spawn E1 72 36
+861 grant GeneticConverterSpecial
+865 fire GeneticConverterSpecial 72 36
+900 veterancy E1
+910 houses
+1000 quit

@@ -82,7 +82,7 @@ related:
     id: ArmorType
 ---
 
-Damage reaches an object in two stages. First, a **blast** goes off at one point on the map and collects the objects near it. A blast carries a raw damage figure, a warhead, and the object credited with anything it kills. A landing shell raises a blast. So do a chain-reacting Tiberium field, an exploding barrel, a lightning bolt from an ion storm, and the [C4](/keys/c4/) charge an infantryman sets on a bridge. Second, each object the blast collected converts the raw figure into the strength it loses. This conversion also runs for damage that comes from no blast, such as [the damage a base takes while it is short of power](/systems/power/#the-structure-damage-tick).
+Damage reaches an object in two stages. First, a **blast** goes off at one point on the map and collects the objects near it. A blast carries a raw damage figure, a warhead, and the object, or failing that the house, credited with anything it kills. A landing shell raises a blast. So do a chain-reacting Tiberium field, an exploding barrel, a lightning bolt from an ion storm, and the [C4](/keys/c4/) charge an infantryman sets on a bridge. Second, each object the blast collected converts the raw figure into the strength it loses. This conversion also runs for damage that comes from no blast, such as [the damage a base takes while it is short of power](/systems/power/#the-structure-damage-tick).
 
 This page covers both stages. [Firing geometry and beam weapons](/systems/firing-geometry/) sets the raw figure a shot carries. [Projectile flight and impact](/systems/projectile-flight/) sets where the blast goes off and how many blasts one shot raises. [Destruction and debris](/systems/destruction-and-debris/) covers what a destroyed object leaves behind.
 
