@@ -418,6 +418,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsBase;
 
 		/*
+		**	Can another house's placement anchor on this building, when the match allows building
+		**	off an ally? This is EligibileForAllyBuilding in rules.ini.
+		*/
+		bool IsEligibileForAllyBuilding;
+
+		/*
 		**	This flag controls whether the building is equiped with a dirt
 		**	bib or not. A building with a bib has a dirt patch automatically
 		**	attached to the structure when it is placed.

@@ -132,7 +132,7 @@ A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty sett
 
 `AutoDeployMCV=yes` deploys every house's starting base unit as the match opens; [starting forces](/systems/starting-forces/#the-base-unit) owns what that leaves on the map.
 
-`BuildOffAlly=yes` lets a player place buildings against a mutually allied house's base as well as their own; [base placement and adjacency](/systems/base-adjacency/#building-off-an-ally) owns what counts as an anchor. The game tests it only on the machine that places the building, so a file that disagrees with the others only changes where its own player can build.
+`BuildOffAlly=yes` lets a player place buildings next to an ally's buildings whose type allows it, as well as their own; [base placement and adjacency](/systems/base-adjacency/#building-off-an-ally) owns what counts as an anchor. The game tests it only on the machine that places the building, so a file that disagrees with the others only changes where its own player can build.
 
 `PlayMoviesInMultiplayer=yes` plays the scenario's movies, which a skirmish or a game against other machines otherwise leaves out. Every machine must have the same value and hold the movies; [multiplayer movies](/systems/multiplayer-movies/) owns what plays and how the machines skip a movie together.
 
