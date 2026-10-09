@@ -203,6 +203,9 @@ bool TeleportLocomotionClass::Process(void)
 		DestinationCoord = COORD_NONE;
 		WarpPhase = TELEPORT_HOLD;
 		WarpEnd = Frame + Rule->ChronoDelay;
+		// A landing ends the move, as a walking locomotor's arrival does; otherwise the owner's
+		// mission orders the same destination again once the hold ends.
+		LinkedTo->Assign_Destination(NULL);
 		if (AutoTest_Active()) {
 			DebugString("AUTOTEST   warp landed %s cell %d,%d frame %d hold until %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd);
 		}
