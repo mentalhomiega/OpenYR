@@ -26,6 +26,6 @@ A survivor whose type is [`Nominal=yes`](/keys/nominal/) can be marked as a tech
 
 A marked survivor is named with the game's "Technician" text, cannot be picked up as a civilian evacuee, and is not counted among its house's infantry.
 
-:::danger[Name a type here, or selling a crewed structure can crash]
-With no type named, selling a structure crashes the game whenever one of its survivors would be of this type. That happens on 15% of the survivors of an armed `Crewed=yes` structure whose house is on one of the first three sides. A destroyed structure skips that survivor instead. The stock rules name `CTECH`.
+:::caution[With no type named, a survivor of that type is left out]
+With no type named, a survivor that would be of this type is left out of a sold or destroyed structure, and the rest still come out. That happens on 15% of the survivors of an armed `Crewed=yes` structure whose house is on one of the first three sides. A structure whose every survivor has no type releases none. The stock rules name `CTECH`.
 :::
