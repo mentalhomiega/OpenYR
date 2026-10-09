@@ -15,4 +15,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Soldiers with an `ElectricAssault` weapon now charge `Overpowerable=yes` structures, which then fire their overcharged weapon and keep working through low power, as Tesla troopers and Tesla coils do in Yuri's Revenge.
+Soldiers with an `ElectricAssault` weapon now charge `Overpowerable=yes` structures. Two chargers keep such a structure working through low power, and bring back one the player has switched off, as Tesla troopers and Tesla coils do in Yuri's Revenge. An overpowered structure fires its overcharged weapon.
