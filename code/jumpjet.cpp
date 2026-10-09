@@ -682,8 +682,9 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		ground_height += BRIDGE_LEPTON_HEIGHT;
 	}
 
+	// A balloon keeps measuring its height against the ground and structures below it at its destination.
 	int height_diff = 0;
-	if (CurrentState != DESCENDING && CurrentState != GROUNDED && !at_destination) {
+	if (CurrentState != DESCENDING && CurrentState != GROUNDED && (!at_destination || LinkedTo->TClass->IsBalloonHover)) {
 		height_diff = height - Desired_Flight_Level();
 	} else {
 		height_diff = height - ground_height;

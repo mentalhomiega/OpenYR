@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A jumpjet object whose type sets `BalloonHover=yes` stays in the air. It takes off on its own when it is on the ground, flies to the exact cell it is sent to, over a structure if need be, and hovers there instead of landing. Stopping it leaves it hovering where it is. An ion storm still destroys it, as it does any airborne jumpjet. The Rocketeer, the Floating Disc and the Cosmonaut set it.
+A jumpjet object whose type sets `BalloonHover=yes` stays in the air. It takes off on its own when it is on the ground, flies to the exact cell it is sent to, over a structure if need be, and hovers there instead of landing. Stopping it leaves it hovering where it is, at the height it keeps above the terrain and structures under it, as it does in flight. An ion storm still destroys it, as it does any airborne jumpjet. The Rocketeer, the Floating Disc and the Cosmonaut set it.
 
 A BalloonHover type whose selected weapon fires a vertical projectile, such as the Kirov's bombs, flies onto its target and keeps it. It bombs the target until the target is destroyed, and it does not search for a firing spot as other units do.
 
