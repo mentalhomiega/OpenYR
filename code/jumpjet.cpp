@@ -700,11 +700,21 @@ void JumpjetLocomotionClass::Movement_AI(void)
 			LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
 			LinkedTo->IsOnBridge = false;
 		}
-		height += LinkedTo->TClass->JumpjetClimb;
+		// A climb moves one JumpjetClimb step, or the rest of the way when less than a step is left.
+		if (desired_height < height_diff + LinkedTo->TClass->JumpjetClimb) {
+			height += desired_height - height_diff;
+		} else {
+			height = static_cast<int>(height + LinkedTo->TClass->JumpjetClimb);
+		}
 		moved = true;
 	}
 	if (height_diff > desired_height) {
-		height -= LinkedTo->TClass->JumpjetClimb;
+		// A descent moves one JumpjetClimb step, or the rest of the way when less than a step is left.
+		if (desired_height <= height_diff - LinkedTo->TClass->JumpjetClimb) {
+			height = static_cast<int>(height - LinkedTo->TClass->JumpjetClimb);
+		} else {
+			height += desired_height - height_diff;
+		}
 		if (height <= ground_height) {
 			height = ground_height;
 		}
