@@ -16,7 +16,7 @@ Climb=10 ; reaches a 400-lepton cruise height in 40 frames
 
 Use a whole number. A jumpjet's height is kept in whole leptons, so a climb drops the fraction and a descent rounds it up. `Climb=5.5` climbs 5 leptons a frame and descends 6. A value below `1` never climbs at all.
 
-A descent stops at ground level. A climb has no such limit, so the jumpjet can rise up to one step past its flight level and sink back on the next frame. That overshoot adds to the bobbing of a hovering jumpjet.
+A descent stops at ground level. When less than one step is left before a jumpjet reaches the height it wants, it moves the rest of the way in that frame, so it settles on that height without overshooting it.
 
 `Climb` also sets how quickly a jumpjet lifts over terrain and structures. While moving, a jumpjet raises the height it wants to clear the cell ahead. It also slows down while it is well below that height. A small value therefore makes a jumpjet slow down and climb late at each obstacle.
 
