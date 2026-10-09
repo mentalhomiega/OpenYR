@@ -36,8 +36,6 @@ static int const CELL_SPREAD_MAX = 11;
 int Cell_Spread_Count(int radius);
 Cell Cell_Spread_Offset(int index);
 
-// The house credited with damage that has no attacker, while that damage is being dealt.
-extern HouseClass * DamageSourceHouse;
 AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, LandType land, Coord const & coord);
 void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced=false);
 void Wide_Area_Damage(Coord const & coord, LEPTON radius, int rawdamage, TechnoClass * source, WarheadTypeClass const * warhead);

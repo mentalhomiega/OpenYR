@@ -6007,7 +6007,7 @@ void TechnoClass::Set_Owner(HouseClass * newowner)
  * HISTORY:                                                                                    *
  *   06/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew)
+ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
 	bool negative = damage < 0;
 
@@ -6139,7 +6139,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		SecondaryFacing.Set_ROT(TClass->ROT);
 	}
 
-	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew);
+	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	/*
 	 * Inform the owning house of the anger level this damage produced.

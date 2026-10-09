@@ -2415,7 +2415,7 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
  *   11/22/1994 JLB : Shares base damage handler for techno objects.                           *
  *   07/15/1995 JLB : Power ratio gets adjusted.                                               *
  *=============================================================================================*/
-ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew)
+ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
 	ResultType res = RESULT_NONE;
 	int i;
@@ -2460,7 +2460,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			/*
 			**	Perform the low level damage assessment.
 			*/
-			res = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew);
+			res = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 			if (!IsActive) {
 				return(res);
 			}

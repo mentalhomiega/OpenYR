@@ -1608,6 +1608,10 @@ RadioMessageType ObjectClass::Receive_Message(RadioClass *, RadioMessageType mes
  *          forced   -- Is the damage forced upon the object regardless of whether it          *
  *                      is normally immune?                                                    *
  *                                                                                             *
+ *          sourcehouse -- The house that gets the credit if the damage destroys the object    *
+ *                      and no attacker does (house argument of ObjectClass::ReceiveDamage,    *
+ *                      0x5F5390). NULL gives the credit to the attacker.                      *
+ *                                                                                             *
  * OUTPUT:  Returns the ResultType that indicates what the affect of the damage was.           *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
@@ -1617,7 +1621,7 @@ RadioMessageType ObjectClass::Receive_Message(RadioClass *, RadioMessageType mes
  *   12/27/1994 JLB : Trigger event processing for attacked or destroyed.                      *
  *   01/01/1995 JLB : Reduces damage greatly depending on range.                               *
  *=============================================================================================*/
-ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool)
+ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool, HouseClass * sourcehouse)
 {
 	assert(this != NULL);
 

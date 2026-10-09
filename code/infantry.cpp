@@ -396,7 +396,7 @@ InfantryClass::~InfantryClass(void)
  *   11/22/1994 JLB : Shares base damage handler for techno objects.                           *
  *   03/31/1995 JLB : Revenge factor.                                                          *
  *=============================================================================================*/
-ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew)
+ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
 	ResultType res = RESULT_NONE;
 
@@ -428,7 +428,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		}
 	}
 
-	res = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew);
+	res = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	if (res == RESULT_ALREADY_DESTROYED) return(res);
 
@@ -521,7 +521,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					// MakeInfantry entry turns into a new infantryman for that house.
 					if (Rule->InfantryMutate != NULL) {
 						AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
-						HouseClass const * owner = source != NULL ? source->House : DamageSourceHouse;
+						HouseClass const * owner = source != NULL ? source->House : sourcehouse;
 						if (mutate != NULL && owner != NULL) {
 							mutate->OwnerHouse = (HousesType)owner->HeapID;
 						}

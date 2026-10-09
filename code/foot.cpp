@@ -1630,9 +1630,9 @@ bool FootClass::Unlimbo(Coord const & coord, Dir256 dir)
  * HISTORY:                                                                                    *
  *   12/30/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-ResultType FootClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew)
+ResultType FootClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
-	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew);
+	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	if (result == RESULT_ALREADY_DESTROYED) {
 		return(result);
