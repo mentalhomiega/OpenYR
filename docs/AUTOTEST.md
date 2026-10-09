@@ -38,6 +38,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `typecounts` | Writes how many structure, vehicle, soldier and aircraft types there are, and any whose ID is not a plain name, which is how a list read as one name shows up |
 | `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in |
 | `quantity <TypeID>` | Writes how many of that type each house is counted as having, owned and active, which are the two counts the map events read. A structure uses the building counts, a unit, infantry or aircraft type its own |
+| `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in; a teleporting object gets its warp phase (0 idle, 1 warping out, 2 holding), the frame the phase ends, whether it is warping, whether a chrono warp holds it, and whether it is selected |
+| `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
@@ -53,8 +55,10 @@ A command runs once the game frame reaches its frame, in file order.
 | `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
 | `unload <x> <y>` | Starts the unload mission of the player's structure on that cell. A vehicle on a cell with no structure unloads its passengers instead |
 | `rally <TypeID> x y` | Sets the rally point of the player's structures of that type to the cell, without the nearby-cell search an Alt-click makes |
+| `census cells` | Writes the eight tiberium cells nearest the player's first building, nearest first, with their squared distance in cells |
 | `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
+| `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the line to the debug log |
 | `quit` | Ends the process |
 
