@@ -1,0 +1,13 @@
+; A V3 launcher fires a rocket at a computer infantryman, then is destroyed in flight (kill, with no attacker).
+; The rocket leaves the launcher at about frame 60 and explodes at about frame 260, so frame 180 is in flight.
+; The blast is credited to the player's house, which owned the rocket: veterancy E1 reports the player's points,
+; 200 with the launcher alive or killed in flight, and 0 when the blast was not credited to the house.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script tests/rocket/v3-kill.txt -Map XMP29U2.MAP -Seconds 150
+30 dump
+35 reveal
+40 grantunit V3 56 40
+42 spawn E1 66 40
+45 strike V3 66 40
+180 kill V3 1
+400 veterancy E1
+700 quit
