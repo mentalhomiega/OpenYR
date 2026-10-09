@@ -241,7 +241,7 @@ A player order that sends the harvester elsewhere while it unloads ends the unlo
 
 Each unit a harvester unloads adds five points to its house's score and is paid out at once: its type's [`Value`](/keys/value/) in credits, scaled by the [`IncomeMult`](/keys/incomemult/) of the house's country. Storage capacity does not limit the payment, and nothing is stored, whoever owns the harvester.
 
-Ore purifiers raise that payment. For every [`OrePurifier=yes`](/keys/orepurifier/) structure the house has on the map, each unit unloaded pays an extra [`PurifierBonus`](/keys/purifierbonus/) share of its price and score. A computer house outside a campaign also counts its [`AIVirtualPurifiers`](/keys/aivirtualpurifiers/) entry as purifiers. The extra credits and points are each rounded down for every pass, which pays one type.
+Ore purifiers raise that payment. For every [`OrePurifier=yes`](/keys/orepurifier/) structure the house has on the map, each pass pays an extra [`PurifierBonus`](/keys/purifierbonus/) share of the load it hands over. A computer house outside a campaign also counts its [`AIVirtualPurifiers`](/keys/aivirtualpurifiers/) entry as purifiers. That share is the purifier count times `PurifierBonus` times the load, rounded down to whole units. The whole units are paid at the type's price and score, so a fraction of a unit is lost.
 
 Buildings that declare [`Storage`](/keys/storage/) can still hold units put there in other ways. Stored units become credits only when the house spends. Spending uses loose credits first, then stored units one at a time. Each building gives up its units lowest slot first, before the next building is used. Each unit is priced at its type's `Value` when it is spent, not when it is harvested.
 
