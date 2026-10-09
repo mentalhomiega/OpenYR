@@ -14,5 +14,5 @@ when_omitted:
 The switch does not decide whether Tiberium grows at all. With it off, growth runs at the full `Growth` delay. Among the map's switches, only [`TiberiumGrowthEnabled=no`](/keys/tiberiumgrowthenabled/) stops growth. A Tiberium type with [`GrowthPercentage=0`](/keys/growthpercentage/) never grows.
 
 :::caution[The entry is read in campaigns only]
-Only a single-player mission reads `[SpecialFlags]` from the map. A game against other machines always uses fast growth. A skirmish uses the full delay, unless a network match earlier in the same session turned fast growth on.
+Only a campaign mission reads this entry from the map. A game against other machines always uses fast growth. A skirmish uses the full delay, unless a network match earlier in the same session turned fast growth on.
 :::

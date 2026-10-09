@@ -3881,7 +3881,12 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 
 	int i;
 
+	// Only a campaign mission takes the fast-growth switch from its map. A skirmish keeps the value the session has.
+	bool const fast_growth = Special.IsTGrowth;
 	Special.Read_INI(ini);
+	if (Campaign == CAMPAIGN_NONE) {
+		Special.IsTGrowth = fast_growth;
+	}
 	ini.Get_String(BASIC, "Name", "<none>", Description, sizeof(Description));
 	ini.Get_TextBlock("Briefing", BriefingText, sizeof(BriefingText));
 	ini.Get_String(BASIC, "NextScenario", NextScenarioName, NextScenarioName, sizeof(NextScenarioName));
