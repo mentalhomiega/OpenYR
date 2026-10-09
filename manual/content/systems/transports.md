@@ -36,15 +36,16 @@ When a player points infantry or a vehicle at an allied transport, the result is
 
 1. The transport is moving, or it is on a team whose type does not set [`Loadable=yes`](/keys/loadable/). The passenger gets the cannot-enter cursor.
 2. The passenger is a vehicle and the transport does not set [`IsVehicleTransport=yes`](/keys/isvehicletransport/). No enter order is offered, and the cursor shows what it would over any other allied object.
-3. The passenger does not fit. Its [`Size`](/keys/size/) must be no larger than the transport's [`SizeLimit`](/keys/sizelimit/), and no larger than the space left in the hold. The space left is `Passengers` minus the `Size` of everyone already aboard. A passenger that fails either test gets the cannot-enter cursor.
-4. The transport is a vehicle standing on a water or shore cell. The passenger gets the cannot-enter cursor. An aircraft transport skips this test.
-5. Otherwise, the passenger can board.
+3. The passenger is under [mind control](/systems/mind-control/#going-into-transports-and-structures). The passenger gets the cannot-enter cursor.
+4. The passenger does not fit. Its [`Size`](/keys/size/) must be no larger than the transport's [`SizeLimit`](/keys/sizelimit/), and no larger than the space left in the hold. The space left is `Passengers` minus the `Size` of everyone already aboard. A passenger that fails either test gets the cannot-enter cursor.
+5. The transport is a vehicle standing on a water or shore cell. The passenger gets the cannot-enter cursor. An aircraft transport skips this test.
+6. Otherwise, the passenger can board.
 
 A soldier with [`Mechanic=yes`](/keys/mechanic/) or [`OmniHealer=yes`](/keys/omnihealer/), pointed at a damaged transport, offers to repair it. Hold force-move to board the transport instead.
 
 A vehicle with a repair weapon offers to repair a damaged vehicle transport even while force-move is held, so it cannot be ordered aboard one.
 
-A computer team loading onto its transport repeats the `IsVehicleTransport` and size tests.
+A computer team loading onto its transport repeats the `IsVehicleTransport` and size tests, and does not send a member under mind control toward the transport.
 
 Two ways into a hold skip every test above:
 
@@ -53,7 +54,7 @@ Two ways into a hold skip every test above:
 
 ## Boarding
 
-An ordered passenger moves onto the cell the transport stands on and is tested again when it arrives. A vehicle repeats the `IsVehicleTransport` and size tests. An infantry passenger repeats the ally and size tests, and at a vehicle transport also the water-or-shore test.
+An ordered passenger moves onto the cell the transport stands on and is tested again when it arrives. A vehicle repeats the mind-control, `IsVehicleTransport` and size tests. An infantry passenger repeats the ally, mind-control and size tests, and at a vehicle transport also the water-or-shore test.
 
 Several passengers can be sent to a transport that has room for only one of them. Only those that still fit when they arrive get in.
 
