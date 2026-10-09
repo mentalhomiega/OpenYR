@@ -2,6 +2,9 @@
 title: Count survivors from the sale refund
 category: fix
 release: 0.2.0
+breaking: true
+migration:
+- Replace `SurvivorRate=` and `SurvivorDivisor=` under `[General]` with `AlliedSurvivorDivisor=`, `SovietSurvivorDivisor=` and `ThirdSurvivorDivisor=`, which set each side's divisor; the old keys have no effect.
 targets:
 - type: key
   id: AlliedSurvivorDivisor

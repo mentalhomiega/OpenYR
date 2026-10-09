@@ -2,6 +2,9 @@
 title: Slow production in proportion to the power shortfall
 category: fix
 release: 0.2.0
+breaking: true
+migration:
+- Replace `MinProductionSpeed=` under `[General]` with `MinLowPowerProductionSpeed=`, which takes its place; the old key has no effect.
 targets:
 - type: key
   id: MinProductionSpeed
