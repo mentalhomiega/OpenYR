@@ -132,7 +132,8 @@ int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor,
 	float const edge = full * warhead->PercentAtMax;
 	int const spread = (int)(warhead->CellSpread * 256.0f);
 	if (edge != full && spread != 0) {
-		damage = (int)((full - edge) * (spread - distance) / spread + edge);
+		// Double precision matches gamemd's x87 steps; in float a distance-0 hit can lose a point.
+		damage = (int)(((double)full - (double)edge) * (spread - distance) / spread + (double)edge);
 	}
 	damage = std::max(damage, 0);
 	damage = (int)(damage * warhead->Versus(armor));
