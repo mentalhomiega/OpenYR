@@ -1,0 +1,12 @@
+; A structure that powers a unit type (GAROBO powers ROBO) changes owner. The computer's powered unit centre
+; count drops when the structure leaves it, and the player's rises once the structure works for the player.
+; Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn NAPOWR 50 90
+70 spawn GAROBO 56 88
+90 houses
+120 transfer GAROBO
+130 houses
+150 transfer NAPOWR
+170 houses
+200 quit
