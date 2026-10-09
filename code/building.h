@@ -255,6 +255,13 @@ class BuildingClass : public TechnoClass
 		bool IsGoingToBlow;
 
 		/*
+		**	This flag is set when an infantry C4 is applied to the building. It is separate from
+		**	IsGoingToBlow, which a delay-kill warhead also sets, because the computer's sale is
+		**	refused only for a C4 (BuildingClass::AssignPlanningPath, 0x447110).
+		*/
+		bool IsC4Applied;
+
+		/*
 		**	If this building was destroyed by some method that would prevent
 		**	survivors, then this flag will be true.
 		*/
@@ -581,6 +588,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Revealed(HouseClass * house) override;
 		virtual void Repair(int control) override;
 		virtual void Sell_Back(int control) override;
+		void Assign_Planning_Path(void);
 		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void AI(void) override;
 		virtual void Cloaking_AI(bool fast) override;
