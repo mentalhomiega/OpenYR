@@ -5859,8 +5859,9 @@ bool TechnoClass::Captured(HouseClass * newowner)
 
 /// <summary>
 /// Gives this object to another house as TechnoClass::SetOwningHouse (0x7014A0) does for a mind
-/// control or psychic dominator capture. It drops its orders and joins the new house's lists, but
-/// unlike Captured it springs no trigger.
+/// control or psychic dominator capture. It drops its orders and joins the new house's lists. It
+/// springs no "player enters" trigger, unlike Captured, but a structure, aircraft or infantryman
+/// springs its destroyed-any events and counts as a loss for its old house.
 /// </summary>
 /// <param name="newowner">The house that takes the object.</param>
 /// <returns>bool; Was the object given over? False when the house already owns it.</returns>
@@ -5884,6 +5885,28 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner)
 		SpawnManager->Kill_Nodes();
 	}
 
+	// The destroyed-any events and loss counts see the old owner, so they run before House changes.
+	if (IsActive && RTTI != RTTI_UNIT) {
+		if (Tag != NULL) Tag->Spring(TEVENT_DESTROYED_ANY, this);
+		if (IsActive && Tag != NULL) Tag->Spring(TEVENT_DESTROYED_ANY_X, this);
+	}
+	if (!TClass->IsDontScore) {
+		switch ((RTTIType)RTTI) {
+			case RTTI_BUILDING:
+				if (!TClass->IsInsignificant) House->BuildingsLost++;
+				break;
+
+			case RTTI_AIRCRAFT:
+			case RTTI_INFANTRY:
+			case RTTI_UNIT:
+				House->UnitsLost++;
+				break;
+
+			default:
+				break;
+		}
+	}
+
 	HouseClass * const oldowner = House;
 	if (!IsInLimbo) {
 		Mark(MARK_UP);
@@ -5898,19 +5921,21 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner)
 	oldowner->Tracking_Remove(this);
 	newowner->Tracking_Add(this);
 
-	switch ((RTTIType)RTTI) {
-		case RTTI_BUILDING:
-			newowner->BuildingsKilled[Owner()]++;
-			break;
+	if (!TClass->IsDontScore) {
+		switch ((RTTIType)RTTI) {
+			case RTTI_BUILDING:
+				newowner->BuildingsKilled[Owner()]++;
+				break;
 
-		case RTTI_AIRCRAFT:
-		case RTTI_INFANTRY:
-		case RTTI_UNIT:
-			newowner->UnitsKilled[Owner()]++;
-			break;
+			case RTTI_AIRCRAFT:
+			case RTTI_INFANTRY:
+			case RTTI_UNIT:
+				newowner->UnitsKilled[Owner()]++;
+				break;
 
-		default:
-			break;
+			default:
+				break;
+		}
 	}
 	oldowner->WhoLastHurtMe = newowner->Class->House;
 

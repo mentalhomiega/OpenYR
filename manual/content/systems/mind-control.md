@@ -55,9 +55,9 @@ The weapon fires only at an object it could take. It refuses:
 - a structure being built or sold;
 - any object while the firer already holds its weapon's `Damage` in objects. A weapon with `Damage=1` is the exception: its firer lets go of the object it holds and takes the new one.
 
-When the warhead hits, the target changes owner and takes no damage. It springs no trigger. Its target and destination are cleared, it keeps its rank, and the firer's house gains score points equal to its cost. It leaves its team and drops its orders to guard, unless it is a harvester unloading. A unit that now belongs to a computer house then does what [the computer decides](#what-a-computer-does-with-a-unit).
+When the warhead hits, the target changes owner and takes no damage. It springs no [`Entered by...`](/mapping/events/tevent-player-entered/) trigger. Its target and destination are cleared, it keeps its rank, and the firer's house gains score points equal to its cost. It leaves its team and drops its orders to guard, unless it is a harvester unloading. A unit that now belongs to a computer house then does what [the computer decides](#what-a-computer-does-with-a-unit).
 
-Yuri's Revenge also raises the destroyed-any trigger events of an infantryman, aircraft or structure that changes owner this way. We do not do that yet.
+A structure, aircraft or infantryman that changes owner this way also springs [`Destroyed by anything`](/mapping/events/tevent-destroyed-any/) and then [its no-infiltrate form](/mapping/events/tevent-destroyed-any-x/). Every object that changes owner this way counts as a kill for its new house, and as lost for its old house, unless its type is [`DontScore=yes`](/keys/dontscore/). A structure marked [`Insignificant=yes`](/keys/insignificant/) counts as a kill but not as lost. A `DontScore` type still springs those events.
 
 [`ControlledAnimationType`](/keys/controlledanimationtype/) plays over the object while it is held, [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above its center. Over a structure it plays the art `Height` in cell levels above the center instead. [`YuriMindControlSound`](/keys/yurimindcontrolsound/) plays at the object when the firer's house or the object's former house is the player's.
 
