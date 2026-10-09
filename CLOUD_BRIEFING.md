@@ -1,89 +1,67 @@
 # Briefing for cloud sessions on mentalhomiega/OpenYR
 
-Read this before starting work. It explains what this repository is, what you can and cannot do from a cloud session, and which tasks are wanted.
+Read this before starting work. It explains what this repository is, what you can and cannot do from a cloud session, and how your work reaches the game.
 
 ## What the project is
 
-`mentalhomiega/OpenYR` is a fork of OpenTS (https://github.com/OpenTS-Developers/OpenTS), an open rebuild of the Tiberian Sun engine. The `yr` branch extends it to run Red Alert 2: Yuri's Revenge (gamemd.exe 1.001) from its own game data. Each change ports a piece of Yuri's Revenge behaviour, such as a rules key, a weapon rule or a computer-player script action, and documents it in the manual.
+`mentalhomiega/OpenYR` is a fork of OpenTS (https://github.com/OpenTS-Developers/OpenTS), an open rebuild of the Tiberian Sun engine. It extends OpenTS to run Red Alert 2: Yuri's Revenge (gamemd.exe 1.001) from its own game data. Each change ports a piece of Yuri's Revenge behaviour, such as a rules key, a weapon rule or a computer-player script action, and documents it in the manual.
 
-Work on the `yr` branch. Run `git log upstream/main..yr` (add the upstream remote first if needed) to see what this fork adds; there are about 195 commits.
+Two branches matter:
+
+- **`modern`** is the build our play-testers get, with gameplay fixes plus modern extras (menus, movies, resolution options). **Work on `modern`** and begin every branch from `origin/modern`.
+- **`yr`** holds the same gameplay fixes without the modern extras and is used for strict comparison with gamemd. We carry fixes from `modern` to `yr` ourselves.
+
+Many recent `modern` commits port gamemd behaviour that differs from what OpenTS or Vinifera chose. That is deliberate: where they disagree, gamemd wins. Do not "fix" code back towards OpenTS or Vinifera behaviour.
 
 ## Read first
 
 - `AGENTS.md`, `code/AGENTS.md` and `manual/AGENTS.md`: the project's rules for code, comments, prose and the manual. Follow them.
 - `CONTRIBUTING.md`, `docs/STYLE.md` and `docs/BUILDING.md`.
+- `CLOUD_JOBS.md`: the job list. Each session does the one job it was given.
 
 ## What a cloud session cannot do
 
 - **Run the game.** The game files and `gamemd.exe` are proprietary and are not in the repository. You cannot launch Yuri's Revenge, run the in-game autotests, record footage or play-test anything.
-- **Read the original code.** The disassembly and decompiled output of `gamemd.exe` stay on the owner's machine. Comments citing addresses such as `(TechnoClass::GetFireError, 0x6FC339)` point at that evidence; you cannot check them.
-- **Rely on a build.** The supported build is Visual Studio 2022 on Windows. Whether the code builds on Linux is untested. Try it if you like, but say clearly in your report whether a build ran and how.
+- **Read the original code.** The disassembly and decompiled output of `gamemd.exe` stay on our machine. Comments citing addresses such as `(TechnoClass::GetFireError, 0x6FC339)` point at that evidence; you cannot check them, so review the logic, not the citation.
+- **Rely on a build.** The supported build is Visual Studio on Windows. Whether the code builds on Linux is untested. Try it if you like, but say clearly in your report whether a build ran and how.
 
-Anything that changes how the game behaves has to be verified later on the owner's Windows machine with the real game. Treat your behaviour findings as proposals.
+Anything that changes how the game behaves is verified later on our Windows machine with the real game. Treat your behaviour findings as proposals.
 
 ## Hard rules
 
 - Never add game assets, original binaries, decompiled code or build output to the repository.
-- Never disassemble, decompile or otherwise reverse engineer `Ares.dll`; reimplement Ares behaviour from its documentation. Phobos source may be read; do not copy Phobos code until the owner decides on it (see `docs/research/RESEARCH_BRIEFING.md`).
-- Do not open pull requests, issues or comments on the upstream OpenTS project. The project forbids AI-written communication there; the owner submits anything upstream personally.
+- Never disassemble, decompile or otherwise reverse engineer `Ares.dll`; reimplement Ares behaviour from its documentation. Phobos source may be read; do not copy Phobos code until MentalHomiega decides on it (see `docs/research/RESEARCH_BRIEFING.md`).
+- Do not open pull requests, issues or comments on the upstream OpenTS project, or anywhere else. The project forbids AI-written communication upstream; MentalHomiega submits anything upstream personally.
 - Commit messages: an imperative subject of at most 72 characters, no body, and no `Co-authored-by` or other AI-attribution lines (see `AGENTS.md`).
-- Never write the owner's real name anywhere: not in files, credits, commit authors or messages. The owner is `MentalHomiega`, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>`.
-- Do not rewrite history on `yr` or force-push. Push your work to a new branch, for example `cloud/review-1`, so the owner can merge it after checking.
+- Never write the owner's real name anywhere: not in files, credits, commit authors or messages. Use `MentalHomiega`, and commit as `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>`.
+- Never push to `modern`, `yr` or `main`, never force-push and never delete branches. Push your work to the new `cloud/*` branch your job names.
+- A change that adds a saved field must add it to the class's save and load code and bump `REVISION` in `code/savever.h` by one.
 - Every behaviour change needs its manual update: the key or system page, plus a record in `manual/changes/` (release `0.2.0`, `credit: [MentalHomiega]`). Run `python manual/tools/manage.py update` and `python manual/tools/manage.py check` from the repository root. A "site dependencies are missing" message from `check` is expected and can be ignored. Afterwards, discard the regenerated churn with `git checkout -- manual/data/commands.yaml manual/data/scripting.yaml`.
 
-## Wanted tasks, in order of value
+## Answers from the owner
 
-The first cloud review (branch `cloud/review-1`, 2026-10-03) already covered the `yr` commits up to `8dbd8a3`. Its findings are still open; these four come first:
+MentalHomiega knows Yuri's Revenge well. These answers settle questions from earlier logs:
 
-- `code/slaveman.cpp:265` and `:565-574`: `Limbo()` makes `SlaveManager->Detach` treat a slave docking to unload as dead, so a replacement spawns and the docked slave leaks.
-- `code/techno.cpp:3311` and `code/building.cpp:11522`: `PoweredUnit` is not matched by unit type, so one working `PowersUnit` structure powers every `PoweredUnit` type of its owner.
-- `code/cell.cpp:4257`: `MZONE_CRUSHER_ALL` is left out of `Is_Clear_To_Move`.
-- `code/team.cpp:4078`: `Send_Members_Into` reserves no capacity, so every team member picks the same nearest bunker or reactor.
+- **Mind-controlled units cannot enter transports or structures, except Bio Reactors.** A controlled unit entering a Bio Reactor is used up, so releasing its control node there is correct.
+- **A `UnitReload=yes` pad both rearms and repairs docked aircraft**, as the code does now.
 
-Commits after `8dbd8a3` are unreviewed. The largest is `280307c`, which turns the radio contact into a list of slots (`code/radio.*`) for `NumberOfDocks`; review it with extra care, because every docking flow passes through it.
+## How your branch reaches the game
 
-The owner's priority is a playable "modern" build for play-testers. That work is on a local branch, `modern`, which is not on GitHub, so a cloud session cannot see it. Fixes on `yr` reach it when the owner merges.
+Our local session fetches every new `cloud/*` branch, builds it on Windows, runs the unit tests, the 14 campaign mission wins and a replay comparison in the real game, and merges what passes into `modern` and `yr`. So:
 
-1. **Fixes for the open review findings.** Write each fix on its own branch, such as `cloud/fix-slaveman`, with a test where one is possible without game files, and its manual update. Say in the report which fixes could only be read and not run.
-2. **Code review of the commits after `8dbd8a3`.** Look for logic bugs, missed edge cases, null pointers, and new fields missing from `Serialize` (save games) or `crc` calls. Check that comments and manual pages still match the code. Report findings with file, line, the failing case and a suggested fix. List new findings instead of fixing them in the same session.
-3. **A GitHub build check.** The OpenTS workflows in `.github/workflows/` (`engine.yml`, which calls `engine-build.yml`, and `manual-pages.yml`) already build, test and check the manual, but only for pushes to `main` and for pull requests. Add `yr` and `cloud/**` to their `push: branches` lists, changing nothing else, and push that on its own `cloud/ci` branch. If the push is refused because the token may not change workflow files, put the edited files under `docs/ci/` instead and say so in the report; the owner will move them. Actions may also be switched off on the fork; say in the report that the owner must enable them under the fork's Settings, Actions.
-4. **INI validation.** Write a checker that warns about INI keys the engine does not read, and about values of the wrong type, using the key list in `manual/data/ini-keys.yaml` (generated; do not edit it). It must only report: it never changes how a value is read or what the game does. Start as a library with unit tests and a small command-line tool that checks a given INI file against the list; wiring it into the game's loading comes later. Document it in `docs/`.
-5. **Static analysis.** Run `cppcheck` (and `clang-tidy` if it can be set up) over `code/`. Fix only what the code itself proves wrong, such as an uninitialized member or a pointer used before its null check, each in its own commit. List the rest with file and line.
-6. **Manual audit.** For manual pages changed on `yr` (`manual/content/keys/`, `manual/content/systems/`, `manual/changes/`), check each claim against the source and flag or narrow any claim the code does not support. Follow `manual/AGENTS.md` and the prose rules in `AGENTS.md`.
-7. **Unit tests that need no game files.** Add tests for self-contained logic, for example weapon choice (`TechnoClass::What_Weapon_Should_I_Use` and `Naval_Weapon`), mission numbering (`code/mission.hh`, `code/_mission.cpp`) and rules defaults. Use the existing test setup; no test may load game data.
-8. **Mechanical cleanup.** Remove unused constants, stale comments and dead code. Keep each cleanup in its own commit, separate from behaviour changes.
+- keep one job per branch, in small commits, each fix in its own commit with its manual update;
+- say in your log which changes you could only read and not run;
+- do not merge other `cloud/*` branches into yours unless your job says to.
 
-### Answers from the owner
+## Session log
 
-The owner knows Yuri's Revenge well. These answers settle questions from earlier night logs:
-
-- **Mind-controlled units cannot enter transports or structures, except Bio Reactors.** So the `code/capture.cpp:341` finding is about the wrong path: check that the port refuses a mind-controlled unit's attempt to enter a transport, garrison, bunker or other structure (cursor, order and AI), and fix it where it does not. A controlled unit entering a Bio Reactor is used up, so releasing its control node there is correct.
-- **A `UnitReload=yes` pad both rearms and repairs docked aircraft**, as the code does now (`code/building.cpp`, the rearm loop sends `RADIO_RELOAD`, then `RADIO_REPAIR`). The manual pages were corrected on 2026-10-04; that finding is closed.
-
-Research on Ares and Phobos is done in separate sessions that follow `docs/research/RESEARCH_BRIEFING.md`; nightly sessions leave it alone. `CLOUD_JOBS.md` holds the prompts the owner uses to start one-off sessions.
-
-## The combined nightly branch
-
-The owner's PC tests only the newest `cloud/nightly-YYYY-MM-DD` branch in the real game, and treats any other branch whose commits it contains as tested. So the nightly session also gathers the day's work:
-
-1. Find every `origin/cloud/*` branch that changes `code/`, `tests/` or `CMakeLists.txt`, is not merged into `yr`, and is not yet contained in an earlier nightly branch (`git cherry origin/cloud/nightly-<earlier date> <branch>` shows only `-` lines when it is). Include branches from one-off sessions started with `CLOUD_JOBS.md`, such as `cloud/docks-*` or `cloud/mind-control-enter-*`.
-2. Review each one first, as in task 2. Merge the ones that pass into tonight's nightly branch with `git merge --no-ff`, together with tonight's own fixes.
-3. Leave out a branch that conflicts with another or that the review rejects, and say why in the night log. The owner's PC then tests it on its own.
-
-## Night log
-
-Each nightly session keeps a log so the next one can carry on from it.
-
-- Before starting, read every earlier log: for each branch from `git branch -r --list 'origin/cloud/*'`, run `git show <branch>:cloud-log/` to list its files and `git show <branch>:cloud-log/<file>` to read them. Carry forward any finding, idea or unfinished task they mention that no later log or `yr` commit has closed.
-- Before finishing, add `cloud-log/YYYY-MM-DD.md` (today's UTC date) to your branch, in its own commit, holding the report below plus: what you started and did not finish, ideas for the next night, and questions for the owner. Copy forward the open items from earlier logs, so the newest log is a complete list on its own.
-- Never put the log on `yr` itself; it lives on the `cloud/*` branches until the owner merges them.
+- Before starting, read the logs of earlier sessions on the same job: `git branch -r --list 'origin/cloud/*'`, then `git show <branch>:cloud-log/` to list a branch's logs and `git show <branch>:cloud-log/<file>` to read one. Carry forward anything they left open for your job.
+- Before finishing, add `cloud-log/YYYY-MM-DD-<job>.md` (today's UTC date) to your branch in its own commit: the report below, what you started and did not finish, ideas for the next session, and questions for MentalHomiega.
 
 ## What to report back
 
 End each session with a short report covering:
 
-- the branch you pushed, if any, and what each commit does;
-- review findings that still need a fix, each with file and line;
+- the branch you pushed and what each commit does;
+- findings that still need a fix, each with file, line, the failing case and a suggested fix;
 - what you ran (build, tests, `manage.py check`) and the results, and what you did not run.
-
-The owner will bring the report back to the local session to fix and verify the findings against the real game.
