@@ -19,7 +19,6 @@ Every listed type counts as a harvester in these places:
 - A computer house whose IQ reaches the [`Harvester`](/keys/harvester/#scope-global-rules) level queues a replacement harvester when it owns too few listed harvesters for its refineries. That page lists the other conditions.
 - A computer house judges whether it can still earn money partly from whether it owns a listed harvester.
 - While a computer house has a listed type on order, some production modes hold back its infantry and aircraft, as described under [`AIAlternateProductionCreditCutoff`](/keys/aialternateproductioncreditcutoff/).
-- In skirmish and multiplayer games, the number of listed harvesters a house owns weights a computer house's [search for a Tiberium patch](/systems/tiberium/#finding-a-patch).
 - A unit crate gives a free harvester to a house that owns a refinery and no listed harvester.
 
 When the engine must price, queue or hand out one harvester, it takes the first entry that the country the house [acts as](/keys/actslike/) may own. When that country may own none of them, it takes the first entry.

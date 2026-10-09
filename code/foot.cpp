@@ -4369,10 +4369,10 @@ bool FootClass::Tiberium_Check(Cell & center)
  * HISTORY:                                                                                    *
  *   09/22/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool FootClass::Goto_Tiberium(int rad, bool allow_weighted)
+bool FootClass::Goto_Tiberium(int rad)
 {
 	if (NavCom == NULL) {
-		Cell newcell = Search_For_Tiberium(rad, allow_weighted);
+		Cell newcell = Search_For_Tiberium(rad);
 		if (newcell != CELL_NONE) {
 			if (newcell == Center_Coord().As_Cell()) {
 				return(true);
@@ -4386,21 +4386,15 @@ bool FootClass::Goto_Tiberium(int rad, bool allow_weighted)
 
 /// <summary>
 /// Finds the most valuable Tiberium patch within reach.
-/// This routine is used by the harvest mission to pick somewhere to go. A computer
-/// controlled harvester in a skirmish or multiplayer game defers to the weighted search
-/// instead, so that the house's harvesters do not all pile onto one patch.
+/// This routine is used by the harvest mission to pick somewhere to go. Every harvester, whatever
+/// its house, takes the richest cell of the nearest ring that has any, as gamemd (0x4dd0a0) does.
 /// </summary>
 /// <param name="rad">The limit of the search, expressed in cells from this object.</param>
-/// <param name="allow_weighted">Is the weighted search allowed to be used?</param>
 /// <returns>Returns with the cell of the Tiberium found. Otherwise, CELL_NONE is
 /// returned.</returns>
-Cell FootClass::Search_For_Tiberium(int rad, bool allow_weighted)
+Cell FootClass::Search_For_Tiberium(int rad)
 {
 	Cell bestcell = CELL_NONE;
-
-	if (!House->Is_Human_Player() && RTTI == RTTI_UNIT && ((UnitClass *)this)->Class->IsToHarvest && allow_weighted && Session.Type != GAME_NORMAL) {
-		return(Search_For_Tiberium_Weighted(rad));
-	}
 
 	Cell center = Center_Coord().As_Cell();
 	if (Map[center].Land_Type() == LAND_TIBERIUM) {
@@ -4454,119 +4448,6 @@ Cell FootClass::Search_For_Tiberium(int rad, bool allow_weighted)
 		}
 	}
 	return(bestcell);
-}
-
-
-/// <summary>
-/// Finds a Tiberium patch, weighted by richness and by distance.
-/// This routine picks at random from the reachable patches, favoring the rich ones close to
-/// home. It is used in place of the plain search so that a house's harvesters spread out
-/// across the field instead of all converging on the same patch.
-/// </summary>
-/// <param name="rad">The limit of the search, expressed in cells from this object.</param>
-/// <returns>Returns with the cell of the Tiberium chosen. Otherwise, CELL_NONE is
-/// returned.</returns>
-Cell FootClass::Search_For_Tiberium_Weighted(int rad)
-{
-	DiscreteDistributionClass<CellClass> celldist;
-
-	Cell center = Center_Coord().As_Cell();
-	if (Map[center].Land_Type() == LAND_TIBERIUM) {
-		return(center);
-	}
-
-	int numharv = House->Count_Owned(House->AUQuantity, Rule->HarvesterUnit);
-	if (numharv < 1) {
-		numharv = 1;
-	}
-
-	double weight;
-	/*
-	**	Perform a ring search outward from the center.
-	*/
-	for (int radius = 1; radius < rad; radius++) {
-		int ringspan = radius * 2;
-		int share = ringspan / numharv;
-		bool northrun = false;
-		bool southrun = false;
-		bool westrun = false;
-		bool eastrun = false;
-		int divisor = 1;
-		if (share >= 1) {
-			divisor = share;
-		}
-		double scale = 1.0 / (double)divisor;
-		for (int x = -radius; x <= radius; x++) {
-			Cell cell;
-			cell = Cell(x, -radius) + center;
-			if (Tiberium_Check(cell)) {
-				if (!northrun) {
-					CellClass *cptr = &Map[cell];
-					if (cptr->Tiberium_Value() * scale < 1.0) {
-						weight = 1.0;
-					} else {
-						weight = cptr->Tiberium_Value() * scale;
-					}
-					int intweight = (int)weight;
-					northrun = true;
-					celldist.Add(cptr, intweight);
-				}
-			} else {
-				northrun = false;
-			}
-
-			cell = Cell(x, +radius) + center;
-			if (Tiberium_Check(cell)) {
-				if (!southrun) {
-					CellClass *cptr = &Map[cell];
-					if (cptr->Tiberium_Value() * scale < 1.0) {
-						weight = 1.0;
-					} else {
-						weight = cptr->Tiberium_Value() * scale;
-					}
-					int intweight = (int)weight;
-					southrun = true;
-					celldist.Add(cptr, intweight);
-				}
-			} else {
-				southrun = false;
-			}
-
-			cell = Cell(-radius, x) + center;
-			if (Tiberium_Check(cell)) {
-				if (!westrun) {
-					CellClass *cptr = &Map[cell];
-					if (cptr->Tiberium_Value() * scale < 1.0) {
-						weight = 1.0;
-					} else {
-						weight = cptr->Tiberium_Value() * scale;
-					}
-					int intweight = (int)weight;
-					westrun = true;
-					celldist.Add(cptr, intweight);
-				}
-			} else {
-				westrun = false;
-			}
-
-			cell = Cell(+radius, x) + center;
-			if (Tiberium_Check(cell)) {
-				if (!eastrun) {
-					CellClass *cptr = &Map[cell];
-					celldist.Add(cptr, cptr->Tiberium_Value() * scale < 1.0 ? 1.0 : cptr->Tiberium_Value() * scale);
-					eastrun = true;
-				}
-			} else {
-				eastrun = false;
-			}
-		}
-	}
-
-	CellClass *cellptr = celldist.Sample();
-	if (cellptr != NULL) {
-		return(cellptr->Fetch_CellID());
-	}
-	return(CELL_NONE);
 }
 
 

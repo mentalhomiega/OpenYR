@@ -1025,7 +1025,7 @@ void UnitClass::Visceroid_AI(void)
 		bool is_healing = false;
 		if (HealthRatio < Rule->ConditionYellow) {
 			if (Map[Center_Coord()].Land_Type() != LAND_TIBERIUM) {
-				Goto_Tiberium(16, false);
+				Goto_Tiberium(16);
 				if (NavCom != NULL) {
 					return;
 				}
@@ -3788,18 +3788,16 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				/*
 				**	Look for ore where we last found some - mine the same patch
 				*/
-				bool hastarget = true;
 				if (ArchiveTarget != NULL) {
 					Assign_Destination(ArchiveTarget);
 					ArchiveTarget = 0;
-					hastarget = false;
 				}
 				IsHarvesting = false;
 				bool ok = false;
 				if (Class->IsToVeinHarvest) {
 					ok = Goto_Weed(Rule->TiberiumLongScan / CELL_LEPTON_W);
 				} else {
-					ok = Goto_Tiberium(Rule->TiberiumLongScan / CELL_LEPTON_W, hastarget);
+					ok = Goto_Tiberium(Rule->TiberiumLongScan / CELL_LEPTON_W);
 				}
 				if (ok) {
 					IsHarvesting = true;
