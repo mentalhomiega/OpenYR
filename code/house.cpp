@@ -4814,6 +4814,11 @@ int HouseClass::AI_Building(void)
 
 	if (node == NULL || node->Type == STOP) return(TICKS_PER_SECOND);
 
+	/*
+	**	A wall or base defense placeholder that follows a settled defense is handled on the next call.
+	*/
+	if (node->Type < STRUCT_FIRST) return(1);
+
 	BuildingTypeClass * b = BuildingTypes[node->Type];
 
 	/*
