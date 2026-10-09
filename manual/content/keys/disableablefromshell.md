@@ -1,7 +1,6 @@
 ---
 key: DisableableFromShell
-scope: superweapontype
-label: Superweapon withheld when the superweapons option is off
+summary: Whether the superweapons option can withhold this superweapon.
 see_also: ["BuildTech", "system:superweapons"]
 when_omitted:
   kind: value
