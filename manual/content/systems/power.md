@@ -243,18 +243,18 @@ When a suspended [`UseChargeDrain=yes`](/keys/usechargedrain/) weapon resumes, i
 
 ### Defenses
 
-Three separate tests decide whether low power stops a defense, and they treat `TogglePower` differently.
+Three separate tests decide whether low power stops a defense. `TogglePower` does not take part in any of them; it only decides whether the player can switch the structure off with the power cursor.
 
 1. **Out of service.** A structure is **operational** unless any of these holds:
 
-   - it is switched off;
+   - it is switched off, and fewer than two soldiers charge it;
    - it is stunned;
    - its strength has reached zero;
-   - **All of:** its type is `Powered=yes`, its type has drain, its type is `TogglePower=yes`, and its house is short of power.
+   - **All of:** its type is `Powered=yes`, its type has drain, its house is short of power, and fewer than two soldiers charge it.
 
    A structure that is not operational cannot fire. Spotlights, [laser fences](/systems/laser-fences/), sensor-array refreshes, cloak generators, and the choice of which EM pulse cannon fires use the same test.
 
-2. **Weapons.** An operational structure still cannot fire while its house is short of power if its type is `Powered=yes` and has drain. This test ignores `TogglePower`, so a `Powered=yes`, `TogglePower=no` defense stops firing even though it remains operational.
+2. **Weapons.** An operational structure still cannot fire while its house is short of power if its type is `Powered=yes` and has drain, unless it is [overpowered](#overpowered-defenses).
 
 3. **SAM tracking.** A [`SAM=yes`](/keys/sam/) launcher that is `Powered=yes` with drain stays in its ready state while its house is short of power, so it never turns toward its target.
 
@@ -264,7 +264,7 @@ The second test also stops a [`Charges=yes`](/keys/charges/) defense from starti
 
 Soldiers whose second weapon has an [`ElectricAssault=yes`](/keys/electricassault/) warhead can charge an [`Overpowerable=yes`](/keys/overpowerable/) structure of their own house or an allied one. Their shots at it do it no damage. An idle soldier of this kind standing next to such a structure of its own house starts charging it by itself; a player can also order a soldier to attack the structure.
 
-The structure is **overpowered** while three or more soldiers charge it, or while at least one does, it is switched on and its house has full power. An overpowered structure counts as operational and passes the weapons test even while its house is short of power, so three chargers keep it working through a blackout. It also fires its `Secondary` weapon instead of its `Primary`.
+Two soldiers charging a structure keep it operational through a shortfall, and a structure that is switched off comes back into service while two charge it. A single charger does neither, whatever the house's power. The structure is **overpowered** while three or more soldiers charge it, or while at least one does, it is switched on and its house has full power. An overpowered structure passes the weapons test even while its house is short of power, and it fires its `Secondary` weapon instead of its `Primary`. A [`PoweredSpecial=yes`](/keys/poweredspecial/) structure still goes out of service in a blackout, however many soldiers charge it.
 
 ### Fields, fences and lights
 
@@ -277,8 +277,8 @@ The structure is **overpowered** while three or more soldiers charge it, or whil
 A power change does not remove sensor coverage. A [`SensorArray=yes`](/keys/sensorarray/) structure keeps its cells until it is taken off the map or captured. Low power matters only to an array that has not marked its cells yet: an array that finishes building while it is not operational marks nothing until any house's cloak field finishes growing while it is operational.
 :::
 
-:::caution[A TogglePower=no defense is silenced by a shortfall]
-The out-of-service test spares a `TogglePower=no` structure, but the weapon test does not. Such a defense holds fire through a shortfall even though it still counts as in service.
+:::caution[A TogglePower=no defense goes down in a shortfall like any other]
+`TogglePower=no` only keeps the structure off the power cursor. Its power test is the same as any other `Powered=yes` structure's, so it goes out of service in a shortfall and holds fire with it, unless two soldiers charge it.
 :::
 
 ### Player feedback

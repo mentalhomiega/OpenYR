@@ -10786,7 +10786,13 @@ void BuildingClass::Cloaking_AI(bool fast)
 /// <returns>bool; Is the building powered on and able to perform its function?</returns>
 bool BuildingClass::Is_Powered_On(void) const
 {
-	if (!IsOn) {
+	/*
+	**	A structure that is switched off, or that its house cannot keep running because it is
+	**	short of power, stays down unless two infantry overpower it (BuildingClass::IsPowerOnline,
+	**	0x4555D0). The rule applies to every structure with a drain, whatever its TogglePower.
+	*/
+	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0;
+	if ((!IsOn || short_of_power) && Overpowerer_Count() < 2) {
 		return(false);
 	}
 	if (StunDuration > 0) {
@@ -10794,13 +10800,6 @@ bool BuildingClass::Is_Powered_On(void) const
 	}
 	if (Strength == 0) {
 		return(false);
-	}
-	if (Class->IsPowered && Class->Drain > 0) {
-		if (Class->IsCanTogglePower && !IsOverpowered) {
-			if (House->Power_Fraction() < 1.0) {
-				return(false);
-			}
-		}
 	}
 	// A power plant goes out of service in a blackout and while it is drained (BuildingClass::IsPowerOnline, 0x4555D0).
 	if (Class->IsPoweredSpecial && (House->Is_Power_Blackout() || House->Is_Being_Drained())) {
@@ -12094,15 +12093,16 @@ void BuildingClass::Prism_AI(void)
 
 
 /// <summary>
-/// Counts the objects charging this structure: those targeting it with an ElectricAssault
-/// second weapon whose house is this structure's or an ally of it.
+/// Counts the infantry charging this structure (the list BuildingClass::Overpowerers holds in
+/// gamemd): those targeting it with an ElectricAssault second weapon whose house is this
+/// structure's or an ally of it.
 /// </summary>
 int BuildingClass::Overpowerer_Count(void) const
 {
 	int count = 0;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass const * techno = Technos[index];
-		if (techno->TarCom != this || techno->IsInLimbo || techno->Strength <= 0) continue;
+		if (techno->RTTI != RTTI_INFANTRY || techno->TarCom != this || techno->IsInLimbo || techno->Strength <= 0) continue;
 		WeaponTypeClass const * weapon = techno->Get_Class_Weapon_Data(1)->Weapon;
 		if (weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsElectricAssault && (techno->House == House || techno->House->Is_Ally(House))) {
 			count++;
