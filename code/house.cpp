@@ -699,7 +699,6 @@ DiffType HouseClass::Assign_Handicap(DiffType handicap)
 		FirepowerBias = hptr->FirepowerBias * Rule->Diff[handicap].FirepowerBias;
 		GroundspeedBias = hptr->GroundspeedBias * Rule->Diff[handicap].GroundspeedBias * Rule->GameSpeedBias;
 		AirspeedBias = hptr->AirspeedBias * Rule->Diff[handicap].AirspeedBias * Rule->GameSpeedBias;
-		ArmorBias = hptr->ArmorBias * Rule->Diff[handicap].ArmorBias;
 		ROFBias = hptr->ROFBias * Rule->Diff[handicap].ROFBias;
 		CostBias = hptr->CostBias * Rule->Diff[handicap].CostBias;
 		RepairDelay = Rule->Diff[handicap].RepairDelay;
@@ -709,13 +708,16 @@ DiffType HouseClass::Assign_Handicap(DiffType handicap)
 		FirepowerBias = Rule->Diff[handicap].FirepowerBias;
 		GroundspeedBias = Rule->Diff[handicap].GroundspeedBias * Rule->GameSpeedBias;
 		AirspeedBias = Rule->Diff[handicap].AirspeedBias * Rule->GameSpeedBias;
-		ArmorBias = Rule->Diff[handicap].ArmorBias;
 		ROFBias = Rule->Diff[handicap].ROFBias;
 		CostBias = Rule->Diff[handicap].CostBias;
 		RepairDelay = Rule->Diff[handicap].RepairDelay;
 		BuildDelay = Rule->Diff[handicap].BuildDelay;
 		BuildSpeedBias = Rule->Diff[handicap].BuildSpeedBias * Rule->GameSpeedBias;
 	}
+
+	// Only the country's Armor= reaches damage: the difficulty's Armor= is stored in
+	// HouseClass::ArmorMultiplier, which gamemd's damage path never reads.
+	ArmorBias = Class->ArmorBias;
 
 	TeamTime = 175 * HeapID + Rule->TeamDelays[handicap];
 

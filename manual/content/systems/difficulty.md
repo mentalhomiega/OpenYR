@@ -1,6 +1,6 @@
 ---
 title: Difficulty settings and handicaps
-summary: "Turns the chosen difficulty into one slot per house and scales that house's damage, speed, armor, rate of fire, prices and build times by the figures the slot holds."
+summary: "Turns the chosen difficulty into one slot per house and scales that house's damage, speed, rate of fire, prices and build times by the figures the slot holds."
 category: ai-teams
 keys:
   - AIHateDelays
@@ -70,13 +70,13 @@ The map's `[Basic] Player=` entry does not put its house in the player's column.
 
 ## What one difficulty section sets
 
-A difficulty section has eight settings that take effect. The six multipliers do not all point the same way. A value above 1 makes the house deal more damage, move faster and take less damage. It also makes the house fire more slowly, pay more and build more slowly. Each house uses the values in its section as written; only the choice of section is inverted.
+A difficulty section has seven settings that take effect. The five multipliers do not all point the same way. A value above 1 makes the house deal more damage and move faster. It also makes the house fire more slowly, pay more and build more slowly. Each house uses the values in its section as written; only the choice of section is inverted.
 
 | Setting | Effect on a house in that slot |
 | --- | --- |
 | [`FirePower=`](/keys/firepower-difficulty-settings/) | Multiplies the damage of most weapons its objects fire; above 1 deals more. The key page lists the projectiles it does not scale. |
 | [`Groundspeed=`](/keys/groundspeed/#scope-difficulty-settings) | Multiplies the speed of its ground movement; above 1 travels faster. |
-| [`Armor=`](/keys/armor/#scope-difficulty-settings) | Divides the damage its objects take; above 1 takes less. |
+| [`Armor=`](/keys/armor/#scope-difficulty-settings) | Read, but it does not change damage. The house's armor divisor comes from its country's [`Armor=`](/keys/armor/#scope-housetype). |
 | [`ROF=`](/keys/rof/#scope-difficulty-settings) | Multiplies the delay between its shots; above 1 fires more slowly. |
 | [`Cost=`](/keys/cost/#scope-difficulty-settings) | Multiplies the prices it pays; above 1 pays more. |
 | [`BuildTime=`](/keys/buildtime/#scope-difficulty-settings) | Multiplies the build time of everything it produces; above 1 builds more slowly. |
@@ -87,7 +87,6 @@ A difficulty section has eight settings that take effect. The six multipliers do
 [Difficult] ; example values that weaken the house reading this section
 FirePower=0.8
 Groundspeed=0.9
-Armor=0.8
 ROF=1.2
 Cost=1.2
 BuildTime=1.2
@@ -97,10 +96,10 @@ DestroyWalls=no
 
 The linked key pages give the defaults.
 
-The first seven settings are copied into the house when it gets its slot, as [the next section](#how-the-figures-are-combined) describes. `DestroyWalls` is read from the section whenever a computer object considers a wall. The section's current value therefore always applies, and no country setting changes it.
+Every setting except `DestroyWalls` is read when the house gets its slot, as [the next section](#how-the-figures-are-combined) describes. `DestroyWalls` is read from the section whenever a computer object considers a wall. The section's current value therefore always applies, and no country setting changes it.
 
 :::caution[Keep all three sections in the rules files]
-Until some file supplies a difficulty section, every value in it is zero and each flag is `no`. A house in that slot deals no damage, has zero ground speed and pays nothing. Each hit it takes does only 1 point of damage, the least a hit can do. A computer house in that slot also ignores walls as targets, since `DestroyWalls` is `no`.
+Until some file supplies a difficulty section, every value in it is zero and each flag is `no`. A house in that slot deals no damage, has zero ground speed and pays nothing. A computer house in that slot also ignores walls as targets, since `DestroyWalls` is `no`.
 
 When no rules file supplies a section, the version a map or a campaign's companion file supplied stays in force for later scenarios in the same session, until another file supplies that section again. A rules file that supplies the section replaces the map's version at the next scenario load.
 :::
@@ -113,19 +112,20 @@ Files that contain a difficulty section are read in this order: [each rules file
 
 ## How the figures are combined
 
-A house's seven copied figures are computed once, when the house gets its slot. They are not recomputed per shot, order or frame, so a later change to a difficulty section or a country reaches the house only when it is re-handicapped.
+A house's copied figures are computed once, when the house gets its slot. They are not recomputed per shot, order or frame, so a later change to a difficulty section or a country reaches the house only when it is re-handicapped.
 
-Outside a campaign game, six of the figures are also multiplied by the matching setting in the house's country section. A campaign game leaves the country out and keeps everything else:
+Outside a campaign game, five of the figures are also multiplied by the matching setting in the house's country section. A campaign game leaves the country out and keeps everything else:
 
 | Difficulty setting | Campaign game | Outside a campaign |
 | --- | --- | --- |
 | `FirePower=` | On its own | Times the country's [`Firepower=`](/keys/firepower-housetype/) |
 | `Groundspeed=` | Times [`GameSpeedBias`](/keys/gamespeedbias/) | Times the country's [`Groundspeed=`](/keys/groundspeed/#scope-housetype) and `GameSpeedBias` |
-| `Armor=` | On its own | Times the country's [`Armor=`](/keys/armor/#scope-housetype) |
 | `ROF=` | On its own | Times the country's [`ROF=`](/keys/rof/#scope-housetype) |
 | `Cost=` | On its own | Times the country's [`Cost=`](/keys/cost/#scope-housetype) |
 | `BuildTime=` | Times `GameSpeedBias` | Times the country's [`BuildTime=`](/keys/buildtime/#scope-housetype) and `GameSpeedBias` |
 | `RepairDelay=` | Taken as written | Taken as written |
+
+`Armor=` is not in the table. A house's armor divisor is its country's `Armor=` in every game, and the difficulty figure does not change damage.
 
 The country multipliers each default to 1, so a rules tree that never sets them gives the same figures in both columns.
 

@@ -15,10 +15,10 @@ Damage to the objects of a house of this country is divided by this value. A val
 Armor=1.25 ; example: NOD's objects take 20% less damage from each hit
 ```
 
-Outside a campaign game, the house multiplies this value by [the difficulty section's `Armor=`](/keys/armor/#scope-difficulty-settings) once, [when it is given its difficulty slot](/systems/difficulty/#how-the-figures-are-combined). A campaign game leaves the country's value out, so it affects skirmish and multiplayer games only.
+The value applies in campaign and skirmish games alike. A difficulty section's [`Armor=`](/keys/armor/#scope-difficulty-settings) does not multiply it, as [Difficulty settings](/systems/difficulty/#how-the-figures-are-combined) explains.
 
 The division applies to every hit except damage that bypasses armor, such as a planted C4 charge. Healing is never reduced. The division comes before the veteran armor bonus, and the two together cannot bring a hit below 1 point. The warhead's [`Verses`](/keys/verses/) percentage and the falloff with distance are applied after that.
 
 :::caution[Keep the value above 0]
-The country value and the difficulty value are multiplied before anything is divided by them, so a `0` in either section has the same effect. Every hit on that house's objects is then reduced to 1 point before `Verses` and the distance falloff are applied, however strong the weapon.
+A `0` here reduces every hit on that house's objects to 1 point before `Verses` and the distance falloff are applied, however strong the weapon.
 :::
