@@ -13,4 +13,6 @@ A helipad rearms the aircraft that land on it only if it also sets this flag.
 
 A building with both `UnitReload=yes` and [`UnitRepair=yes`](/keys/unitrepair/) repairs and never gives the one-point rearming, because the building runs only [the first service its flags match](/systems/repair/#unitreload-is-a-different-service). Such a depot still [refills a `ManualReload=yes` object for free](/systems/repair/#what-a-depot-does-for-free).
 
+An idle pad starts rearming when any docked object needs it, not only the object on the first dock.
+
 When another aircraft asks to dock and no dock is free for it, the aircraft on the first dock moves to a nearby cell to make room if its ammunition is full. Otherwise that aircraft keeps its place and the building refuses the newcomer. An aircraft that already holds a dock, or finds one free, moves no one.

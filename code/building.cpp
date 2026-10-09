@@ -537,14 +537,15 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			}
 
 			if (Class->IsHospital || Class->IsArmory) {
-				if (Contact_With_Whom() != from) {
+				if (Contains_Link(from)) {
+					param = (intptr_t)&Map[Get_Coord()];
+					Transmit_Message(RADIO_MOVE_HERE, param, from);
+				} else if (!Has_Free_Link(from)) {
+					// With every dock taken, the object on the first dock makes room, as RADIO_HELLO does.
 					if (Transmit_Message(RADIO_NEED_REPAIR) != RADIO_NEGATIVE) {
 						return(RADIO_ROGER);
 					}
 					Transmit_Message(RADIO_RUN_AWAY);
-				} else {
-					param = (intptr_t)&Map[Get_Coord()];
-					Transmit_Message(RADIO_MOVE_HERE, param);
 				}
 				return(RADIO_ROGER);
 			}
@@ -569,9 +570,11 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				}
 			}
 
-			if (Contact_With_Whom() != NULL) {
+			// The sender's own dock is measured when it holds one, so a second dock's object is not judged by the first's.
+			TechnoClass * measured = Contains_Link(from) ? (TechnoClass *)from : Contact_With_Whom();
+			if (measured != NULL) {
 				if (Class->IsCanUnitRepair) {
-					if (Distance_To(Contact_With_Whom()) > CELL_LEPTON / 2) {
+					if (Distance_To(measured) > CELL_LEPTON / 2) {
 						needs_to_move = true;
 					}
 				}
@@ -3849,6 +3852,23 @@ AircraftClass * BuildingClass::Place_Free_Aircraft(AircraftTypeClass const * typ
 
 
 /// <summary>
+/// Puts a free aircraft in radio contact with this pad and tethers it. At a structure with
+/// several docks the aircraft then stands on the dock it took.
+/// </summary>
+void BuildingClass::Dock_Free_Aircraft(AircraftClass * air)
+{
+	if (air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
+		Transmit_Message(RADIO_TETHER, air);
+		if (Class->NumberOfDocks > 1) {
+			air->Mark(MARK_UP);
+			air->PositionCoord = Docking_Coord_For(air);
+			air->Mark(MARK_DOWN);
+		}
+	}
+}
+
+
+/// <summary>
 /// Gives the house this structure's FreeUnit, refunding it if it cannot be placed. The caller
 /// decides whether the house has earned it.
 /// </summary>
@@ -3865,9 +3885,7 @@ void BuildingClass::Place_Free_Unit(void)
 
 		// Only a pad holds the aircraft; another structure keeps its radio for what it docks.
 		if (Class->IsHelipad || Class->IsHoverPad) {
-			if (air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
-				Transmit_Message(RADIO_TETHER, air);
-			}
+			Dock_Free_Aircraft(air);
 		}
 		return;
 	}
@@ -4029,8 +4047,8 @@ void BuildingClass::Grand_Opening(bool captured)
 		bool const gives_aircraft = Class->FreeUnit != NULL && Class->FreeUnit->Fetch_RTTI() == RTTI_AIRCRAFTTYPE;
 		if (!Rule->IsSeparate && Class->IsHoverPad && !captured && Rule->PadAircraft.Count() > 0 && !gives_aircraft) {
 			AircraftClass * air = Place_Free_Aircraft(Rule->PadAircraft[0]);
-			if (air != NULL && air->Transmit_Message(RADIO_HELLO, this) == RADIO_ROGER) {
-				Transmit_Message(RADIO_TETHER, air);
+			if (air != NULL) {
+				Dock_Free_Aircraft(air);
 			}
 		}
 
@@ -4706,17 +4724,29 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		**	building for another reason (e.g., helicopter on helipad), then it
 		**	gets captured as well.
 		*/
-		tech = Contact_With_Whom();
-		bool was_in_radio_contact = false;
-		bool was_tethered = false;
-		if (tech) {
-			if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && (Class->IsWeaponsFactory || ::Distance(tech->Center_Coord(), Docking_Coord()) < CELL_LEPTON / 4) ) {
-				was_tethered = tech->IsTethered;
-				tech->Captured(newowner);
-				was_in_radio_contact = true;
+		struct CapturedDocker {
+			TechnoClass * object;
+			bool tethered;
+		};
+		std::vector<CapturedDocker> captured_dockers;
+		std::vector<TechnoClass *> dockers;
+		for (int slot = 0; slot < Link_Count(); slot++) {
+			if (Link(slot) != NULL) {
+				dockers.push_back(Link(slot));
+			}
+		}
+		for (TechnoClass * docker : dockers) {
+			// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
+			if (!Contains_Link(docker)) {
+				continue;
+			}
+			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || ::Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
+				bool const tethered = docker->IsTethered;
+				docker->Captured(newowner);
+				captured_dockers.push_back({docker, tethered});
 			} else {
-				Transmit_Message(RADIO_RUN_AWAY);
-				Transmit_Message(RADIO_OVER_OUT);
+				Transmit_Message(RADIO_RUN_AWAY, docker);
+				Transmit_Message(RADIO_OVER_OUT, docker);
 			}
 		}
 
@@ -4837,11 +4867,14 @@ bool BuildingClass::Captured(HouseClass * newowner)
 			newowner->Update_Factories(Class->ToBuild);
 		}
 
-		if (was_in_radio_contact && tech != NULL) {
-			Transmit_Message(RADIO_HELLO, tech);
-			if (was_tethered) {
+		for (CapturedDocker const & docker : captured_dockers) {
+			if (!docker.object->IsActive) {
+				continue;
+			}
+			Transmit_Message(RADIO_HELLO, docker.object);
+			if (docker.tethered) {
 				IsTethered = true;
-				tech->IsTethered = true;
+				docker.object->IsTethered = true;
 			}
 		}
 
@@ -5082,32 +5115,35 @@ int BuildingClass::Do_MISSION_GUARD(void)
 				**	facility and there is a customer waiting at the grease pit.
 				*/
 				isfacility = Class->IsCanUnitRepair || Class->IsCanUnitReload;
-				hascontact = Contact_With_Whom() != 0;
+				for (int slot = 0; slot < Link_Count(); slot++) {
+					TechnoClass * contact = Link(slot);
+					hascontact = contact != 0;
 
-				istechno = false;
-				if (hascontact) {
-					istechno = Contact_With_Whom()->Is_Techno();
-				}
+					istechno = false;
+					if (hascontact) {
+						istechno = contact->Is_Techno();
+					}
 
-				entermission = false;
-				if (istechno) {
-					entermission = ((TechnoClass *)Contact_With_Whom())->Mission == MISSION_ENTER;
-				}
+					entermission = false;
+					if (istechno) {
+						entermission = contact->Mission == MISSION_ENTER;
+					}
 
-				inrange = false;
-				if (entermission) {
-					inrange = Distance_To(Contact_With_Whom()) < CELL_LEPTON / 4;
-				}
+					inrange = false;
+					if (entermission) {
+						inrange = Distance_To(contact) < CELL_LEPTON / 4;
+					}
 
-				tomove = false;
-				if (inrange) {
-					tomove = Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER;
-				}
+					tomove = false;
+					if (inrange) {
+						tomove = Transmit_Message(RADIO_NEED_TO_MOVE, contact) == RADIO_ROGER;
+					}
 
-				if (isfacility && hascontact && istechno && entermission && inrange && tomove) {
+					if (isfacility && hascontact && istechno && entermission && inrange && tomove) {
 
-					Assign_Mission(MISSION_REPAIR);
-					return(1);
+						Assign_Mission(MISSION_REPAIR);
+						return(1);
+					}
 				}
 
 				if (Class->IsWeaponsFactory) {
@@ -5120,10 +5156,15 @@ int BuildingClass::Do_MISSION_GUARD(void)
 				break;
 		}
 
-		if (Class->IsCanUnitReload && In_Radio_Contact()) {
-			if (Transmit_Message(RADIO_PREPARED) != RADIO_ROGER &&
-				Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
-				Assign_Mission(MISSION_REPAIR);
+		if (Class->IsCanUnitReload) {
+			for (int slot = 0; slot < Link_Count(); slot++) {
+				TechnoClass * docked = Link(slot);
+				if (docked != NULL &&
+					Transmit_Message(RADIO_PREPARED, docked) != RADIO_ROGER &&
+					Transmit_Message(RADIO_NEED_TO_MOVE, docked) == RADIO_ROGER) {
+					Assign_Mission(MISSION_REPAIR);
+					break;
+				}
 			}
 		}
 
@@ -5296,13 +5337,21 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			**	it will be sold. If there is nothing on the repair bay, then
 			**	the repair bay itself will be sold.
 			*/
-			if (Class->IsCanUnitRepair && Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && ::Distance(Center_Coord(), Contact_With_Whom()->Center_Coord()) < CELL_LEPTON / 2) {
-				TechnoClass * tech = Contact_With_Whom();
-				Transmit_Message(RADIO_OVER_OUT);
-				if (IsOwnedByPlayer) Speak(VOX_UNIT_SOLD);
-				tech->Sell_Back(1);
-				Assign_Mission(MISSION_GUARD);
-				return(1);
+			if (Class->IsCanUnitRepair) {
+				bool sold = false;
+				for (int slot = 0; slot < Link_Count(); slot++) {
+					TechnoClass * tech = Link(slot);
+					if (tech != NULL && Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && ::Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON / 2) {
+						Transmit_Message(RADIO_OVER_OUT, tech);
+						if (IsOwnedByPlayer) Speak(VOX_UNIT_SOLD);
+						tech->Sell_Back(1);
+						sold = true;
+					}
+				}
+				if (sold) {
+					Assign_Mission(MISSION_GUARD);
+					return(1);
+				}
 			}
 
 			if (UpgradeLevel) {
@@ -5332,7 +5381,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			End_Anim(BANIM_ALL);
 
 			IsReadyToCommence = false;
-			Transmit_Message(RADIO_RUN_AWAY);
+			for (int slot = 0; slot < Link_Count(); slot++) {
+				if (Link(slot) != NULL) {
+					Transmit_Message(RADIO_RUN_AWAY, Link(slot));
+				}
+			}
 
 			if (Class->IsLaserFencePost) {
 				Toggle_Laser_Fence_Post(false);
@@ -6033,34 +6086,121 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						return(1);
 					}
 					IsReadyToCommence = false;
-					int distance = CELL_LEPTON / 4;
-					FootClass *tech = (FootClass *)Contact_With_Whom();
+					bool ready = false;
+					for (int slot = 0; slot < Link_Count(); slot++) {
+						FootClass * tech = (FootClass *)Link(slot);
+						if (tech == NULL) {
+							continue;
+						}
+						int distance = CELL_LEPTON / 4;
 
-					/*
-					**	BG: If the unit to repair is an aircraft, and the aircraft is
-					**	fixed-wing, and it's landed, be much more liberal with the
-					**	distance check.  Fixed-wing aircraft are very inaccurate with
-					**	their landings.
-					*/
-					ClassID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
-					bool hover = (clsid == ClassID_HoverLocomotion) != 0;
-					if (hover) {
-						distance = 0x96;
+						/*
+						**	BG: If the unit to repair is an aircraft, and the aircraft is
+						**	fixed-wing, and it's landed, be much more liberal with the
+						**	distance check.  Fixed-wing aircraft are very inaccurate with
+						**	their landings.
+						*/
+						ClassID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
+						bool hover = (clsid == ClassID_HoverLocomotion) != 0;
+						if (hover) {
+							distance = 0x96;
+						}
+						// A dock is not always at the structure's center; the Soviet depot's is half a cell off.
+						if (Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && ::Distance(Docking_Coord_For(tech), tech->Center_Coord()) < distance) {
+							ready = true;
+							continue;
+						}
+						if (!IonStormClass::Is_Ion_Storm_Active()) {
+							tech->Locomotion->Power_On();
+						}
 					}
-					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER && ::Distance(Docking_Coord_For(tech), Contact_With_Whom()->Center_Coord()) < distance) {
+					if (ready) {
 						Status = IDLE;
 						return(TICKS_PER_SECOND/4);
-					}
-					if (!IonStormClass::Is_Ion_Storm_Active()) {
-						tech->Locomotion->Power_On();
 					}
 					break;
 				}
 
 			case IDLE:
 				{
-					FootClass * radio = (FootClass *)Contact_With_Whom();
-					if (radio == NULL) {
+					bool any_docked = false;
+					bool quick = false;
+					for (int slot = 0; slot < Link_Count(); slot++) {
+						FootClass * radio = (FootClass *)Link(slot);
+						if (radio == NULL) {
+							continue;
+						}
+						any_docked = true;
+
+						if (Distance(radio->Center_Coord()) < 150) {
+							if (radio->Locomotion->Is_Powered()) {
+								if (!radio->Locomotion->Is_Moving()) {
+									radio->Locomotion->Power_Off();
+								}
+								quick = true;
+								continue;
+							}
+							if (radio->NavCom != NULL) {
+								radio->NavCom = NULL;
+							}
+						}
+
+						if (Transmit_Message(RADIO_NEED_TO_MOVE, radio) == RADIO_ROGER) {
+							TechnoClass * client = radio;
+							bool damaged = client->HealthRatio < Rule->ConditionGreen;
+							bool manual_reload = client->TClass->IsManualReload;
+							RadioMessageType msg = Transmit_Message(RADIO_REPAIR, client);
+							bool roger = msg == RADIO_ROGER;
+							bool all_done = msg == RADIO_ALL_DONE;
+							if (!damaged && !manual_reload || !roger && !all_done) {
+								if (((FootClass *)client)->HealthRatio == Rule->ConditionGreen) {
+									if (!((FootClass *)client)->Locomotion->Is_Powered()) {
+										FootClass * mover = radio;
+										mover->Locomotion->Power_On();
+										if (mover->ArchiveTarget != NULL && !mover->House->Is_Human_Player()) {
+											mover->Assign_Mission(MISSION_MOVE);
+											mover->Assign_Destination(mover->ArchiveTarget);
+											mover->ArchiveTarget = NULL;
+											mover->NearbyObject = NULL;
+											Transmit_Message(RADIO_OVER_OUT, mover);
+										} else {
+											Cell exit = Find_Exit_Cell(mover);
+											if (exit != CELL_NONE) {
+												mover->Assign_Mission(MISSION_MOVE);
+												mover->Assign_Destination(&Map[exit]);
+												mover->ArchiveTarget = NULL;
+												Transmit_Message(RADIO_OVER_OUT, mover);
+												mover->NearbyObject = NULL;
+											}
+										}
+									}
+								}
+							} else {
+
+								/*
+								**	If the object over the repair bay is marked as useless, then
+								**	sell it back to get some money.
+								*/
+								if (client->IsUseless && !client->House->Is_Human_Player()) {
+									client->Sell_Back(1);
+									Status = INITIAL;
+									IsReadyToCommence = true;
+								} else {
+									if (IsOwnedByPlayer) Speak(VOX_REPAIRING);
+									Status = DURING;
+									Begin_Anim(BANIM_PRODUCTION, false);
+									Begin_Anim(BANIM_SPECIAL_ONE, false);
+									End_Anim(BANIM_ACTIVE_ONE);
+									IsReadyToCommence = false;
+									BuildingStage.Set_Stage(0);
+									BuildingStage.Set_Rate(1);
+								}
+							}
+						} else if (!IonStormClass::Is_Ion_Storm_Active() && !radio->Locomotion->Is_Powered()) {
+							radio->Locomotion->Power_On();
+						}
+					}
+					if (!any_docked) {
 						if (Anims[BANIM_PRODUCTION] || Anims[BANIM_SPECIAL_TWO]) {
 							Begin_Anim(BANIM_SPECIAL_THREE, false);
 							Begin_Anim(BANIM_ACTIVE_ONE, false);
@@ -6070,77 +6210,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
-
-					if (Distance(radio->Center_Coord()) < 150) {
-						if (radio->Locomotion->Is_Powered()) {
-							if (radio->Locomotion->Is_Moving()) {
-								return(1);
-							} else {
-								radio->Locomotion->Power_Off();
-								return(1);
-							}
-						}
-						if (!radio->Locomotion->Is_Powered()) {
-							FootClass * contact = (FootClass *)Contact_With_Whom();
-							if (contact->NavCom != NULL) {
-								contact->NavCom = NULL;
-							}
-						}
-					}
-
-					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
-						TechnoClass * client = Contact_With_Whom();
-						bool damaged = client->HealthRatio < Rule->ConditionGreen;
-						bool manual_reload = client->TClass->IsManualReload;
-						RadioMessageType msg = Transmit_Message(RADIO_REPAIR);
-						bool roger = msg == RADIO_ROGER;
-						bool all_done = msg == RADIO_ALL_DONE;
-						if (!damaged && !manual_reload || !roger && !all_done) {
-							if (((FootClass *)client)->HealthRatio == Rule->ConditionGreen) {
-								if (!((FootClass *)client)->Locomotion->Is_Powered()) {
-									FootClass * mover = dynamic_cast<FootClass *>(Contact_With_Whom());
-									mover->Locomotion->Power_On();
-									if (mover->ArchiveTarget != NULL && !mover->House->Is_Human_Player()) {
-										mover->Assign_Mission(MISSION_MOVE);
-										mover->Assign_Destination(mover->ArchiveTarget);
-										mover->ArchiveTarget = NULL;
-										mover->NearbyObject = NULL;
-										Transmit_Message(RADIO_OVER_OUT);
-									} else {
-										Cell exit = Find_Exit_Cell(Contact_With_Whom());
-										if (exit != CELL_NONE) {
-											mover->Assign_Mission(MISSION_MOVE);
-											mover->Assign_Destination(&Map[exit]);
-											mover->ArchiveTarget = NULL;
-											Transmit_Message(RADIO_OVER_OUT);
-											mover->NearbyObject = NULL;
-										}
-									}
-								}
-							}
-						} else {
-
-							/*
-							**	If the object over the repair bay is marked as useless, then
-							**	sell it back to get some money.
-							*/
-							if (client->IsUseless && !client->House->Is_Human_Player()) {
-								client->Sell_Back(1);
-								Status = INITIAL;
-								IsReadyToCommence = true;
-							} else {
-								if (IsOwnedByPlayer) Speak(VOX_REPAIRING);
-								Status = DURING;
-								Begin_Anim(BANIM_PRODUCTION, false);
-								Begin_Anim(BANIM_SPECIAL_ONE, false);
-								End_Anim(BANIM_ACTIVE_ONE);
-								IsReadyToCommence = false;
-								BuildingStage.Set_Stage(0);
-								BuildingStage.Set_Rate(1);
-							}
-						}
-					} else if (!IonStormClass::Is_Ion_Storm_Active() && !((FootClass *)Contact_With_Whom())->Locomotion->Is_Powered()) {
-						((FootClass *)Contact_With_Whom())->Locomotion->Power_On();
+					if (quick) {
+						return(1);
 					}
 				}
 				break;
@@ -6162,70 +6233,78 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				**	unit is not doing something else. If these conditions are favorable,
 				**	the repair can proceed another step.
 				*/
-				if (BuildingStage.Fetch_Stage() >= (Rule->URepairRate * TICKS_PER_MINUTE) && Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
-					IsReadyToCommence = false;
-					BuildingStage.Set_Stage(0);
-
-					/*
-					**	Tell the attached unit to repair one step. It will respond with how
-					**	it fared.
-					*/
-					switch (Transmit_Message(RADIO_REPAIR)) {
-
-						/*
-						**	The repair step proceeded smoothly. Proceed normally with the
-						**	repair process.
-						*/
-						case RADIO_ROGER:
-							break;
+				if (BuildingStage.Fetch_Stage() >= (Rule->URepairRate * TICKS_PER_MINUTE)) {
+					bool stepped = false;
+					for (int slot = 0; slot < Link_Count(); slot++) {
+						TechnoClass * docked = Link(slot);
+						if (docked == NULL || Transmit_Message(RADIO_NEED_TO_MOVE, docked) != RADIO_ROGER) {
+							continue;
+						}
+						if (!stepped) {
+							stepped = true;
+							IsReadyToCommence = false;
+							BuildingStage.Set_Stage(0);
+						}
 
 						/*
-						**	The repair operation was aborted because of some reason. Presume
-						**	that the reason is because of low cash.
+						**	Tell the attached unit to repair one step. It will respond with how
+						**	it fared.
 						*/
-						case RADIO_CANT:
-							if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
-							End_Anim(BANIM_PRODUCTION);
-							End_Anim(BANIM_SPECIAL_TWO);
-							Begin_Anim(BANIM_SPECIAL_THREE, false);
-							Begin_Anim(BANIM_ACTIVE_ONE, false);
-							Status = IDLE;
-							break;
+						switch (Transmit_Message(RADIO_REPAIR, docked)) {
 
-						/*
-						**	The repair step resulted in a completely repaired unit.
-						*/
-						case RADIO_ALL_DONE:
-						default:
-							{
-								if (IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
+							/*
+							**	The repair step proceeded smoothly. Proceed normally with the
+							**	repair process.
+							*/
+							case RADIO_ROGER:
+								break;
+
+							/*
+							**	The repair operation was aborted because of some reason. Presume
+							**	that the reason is because of low cash.
+							*/
+							case RADIO_CANT:
+								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
 								End_Anim(BANIM_PRODUCTION);
 								End_Anim(BANIM_SPECIAL_TWO);
 								Begin_Anim(BANIM_SPECIAL_THREE, false);
 								Begin_Anim(BANIM_ACTIVE_ONE, false);
 								Status = IDLE;
+								break;
 
-								FootClass * foot = dynamic_cast<FootClass *>(Contact_With_Whom());
-								if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
-									foot->Assign_Mission(MISSION_MOVE);
-									foot->Assign_Destination(foot->ArchiveTarget);
-									foot->ArchiveTarget = NULL;
-									Transmit_Message(RADIO_OVER_OUT);
-									foot->NearbyObject = NULL;
-								} else {
-									Cell exit = Find_Exit_Cell(Contact_With_Whom());
-									if (exit != CELL_NONE) {
+							/*
+							**	The repair step resulted in a completely repaired unit.
+							*/
+							case RADIO_ALL_DONE:
+							default:
+								{
+									if (IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
+									End_Anim(BANIM_PRODUCTION);
+									End_Anim(BANIM_SPECIAL_TWO);
+									Begin_Anim(BANIM_SPECIAL_THREE, false);
+									Begin_Anim(BANIM_ACTIVE_ONE, false);
+									Status = IDLE;
+
+									FootClass * foot = dynamic_cast<FootClass *>(docked);
+									if (foot->ArchiveTarget != NULL && !foot->House->Is_Human_Player()) {
 										foot->Assign_Mission(MISSION_MOVE);
-										foot->Assign_Destination(&Map[exit]);
-										Transmit_Message(RADIO_OVER_OUT);
+										foot->Assign_Destination(foot->ArchiveTarget);
+										foot->ArchiveTarget = NULL;
+										Transmit_Message(RADIO_OVER_OUT, foot);
 										foot->NearbyObject = NULL;
-										return(1);
+									} else {
+										Cell exit = Find_Exit_Cell(foot);
+										if (exit != CELL_NONE) {
+											foot->Assign_Mission(MISSION_MOVE);
+											foot->Assign_Destination(&Map[exit]);
+											Transmit_Message(RADIO_OVER_OUT, foot);
+											foot->NearbyObject = NULL;
+										}
 									}
 								}
-								return(1);
-							}
-							break;
+								break;
 
+						}
 					}
 				}
 				return(1);
