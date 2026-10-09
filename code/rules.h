@@ -1387,6 +1387,9 @@ class RulesClass
 		// harvester; one fewer than AISlaveMinerNumber when it cannot.
 		TypeList<int> AIExtraRefineries;
 		TypeList<int> AISlaveMinerNumber;
+		// Frames after the house last took damage during which a lost structure is rebuilt only if it
+		// is a wall, base defense or power plant.
+		int AIRestrictReplaceTime;
 
 		// How many cells from a base center a team gathers before an attack or after one.
 		int AISafeDistance;
