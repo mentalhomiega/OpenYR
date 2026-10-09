@@ -48,7 +48,7 @@ class VeinholeMonsterClass : public ObjectClass
 		static void Draw_All(void);
 		static void Init(TheaterType theater);
 		void Draw_It(void);
-		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced=false, bool=false) override;
+		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		static bool Can_Monster_Go_Here(Cell const & cell);
 		static void Reset(void);
 		void Grow(void);

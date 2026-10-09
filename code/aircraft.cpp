@@ -1101,14 +1101,14 @@ BulletClass * AircraftClass::Fire_At(AbstractClass * target, int which)
  * HISTORY:                                                                                    *
  *   05/26/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-ResultType AircraftClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew)
+ResultType AircraftClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
 	ResultType res = RESULT_NONE;
 
 	/*
 	**	Apply the damage to the aircraft.
 	*/
-	res = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew);
+	res = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	/*
 	**	Special action is performed if the aircraft is killed -- the cargo is destroyed

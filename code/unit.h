@@ -237,7 +237,7 @@ class UnitClass : public FootClass
 		/*
 		**	Combat related.
 		*/
-		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false) override;
+		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		virtual BulletClass * Fire_At(AbstractClass * target, int which=0) override;
 		virtual bool Captured(HouseClass * newowner) override;
 		virtual bool Deploy_To_Fire(void) const override;

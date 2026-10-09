@@ -300,6 +300,10 @@ Cell Cell_Spread_Offset(int index)
  *                                                                                             *
  *          warhead  -- The kind of explosion to process.                                      *
  *                                                                                             *
+ *          sourcehouse -- The house that gets the credit for what the blast destroys when     *
+ *                      no attacker does. It goes to every victim as the house argument of     *
+ *                      Take_Damage (Explosion_Damage, 0x489280).                              *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   This routine can consume some time and will affect the AI                       *
@@ -316,9 +320,6 @@ Cell Cell_Spread_Offset(int index)
  *   06/20/1994 JLB : Source is a pointer.                                                     *
  *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
  *=============================================================================================*/
-HouseClass * DamageSourceHouse = NULL;
-
-
 bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse)
 {
 	Cell								cell;		// Cell number under explosion.
@@ -449,10 +450,6 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	/*
 	 * Deal the damage. An aircraft in the air counts as half as far away.
 	 */
-	HouseClass * const previous_source = DamageSourceHouse;
-	if (sourcehouse != NULL) {
-		DamageSourceHouse = sourcehouse;
-	}
 	for (HitStruct const & hit : hits) {
 		object = hit.Object;
 		object->IsToDamage = false;
@@ -467,11 +464,10 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		if (object->Strength > 0 && object->IsDown && !object->IsInLimbo && distance <= range) {
 			int damage = strength;
 			if (warhead != Rule->IonStormWarhead || !object->Is_Foot() || ((FootClass *)object)->Team == NULL || !((FootClass *)object)->Team->Class->IsIonImmune) {
-				object->Take_Damage(damage, distance, warhead, source);
+				object->Take_Damage(damage, distance, warhead, source, false, false, sourcehouse);
 			}
 		}
 	}
-	DamageSourceHouse = previous_source;
 
 	double rocking_force = std::min(strength * 0.01, 4.0);
 	if (warhead->IsRocker && rocking_force > 0.3) {

@@ -432,9 +432,9 @@ void VeinholeMonsterClass::Draw_It(void)
 /// <param name="damage">The damage to inflict; adjusted to the amount actually taken.</param>
 /// <param name="forced">Should the damage be applied regardless of the usual immunities?</param>
 /// <returns>Returns with the result of the damage, such as RESULT_DESTROYED.</returns>
-ResultType VeinholeMonsterClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew)
+ResultType VeinholeMonsterClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
-	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew);
+	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	switch (result) {
 		case RESULT_NONE:

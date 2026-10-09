@@ -836,16 +836,13 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 			}
 		}
 	}
-	HouseClass * const previous = DamageSourceHouse;
-	DamageSourceHouse = House;
 	for (int index = 0; index < victims.Count(); index++) {
 		InfantryClass * infantry = victims[index];
 		if (infantry->IsActive && !infantry->IsInLimbo) {
 			int damage = infantry->Class->MaxStrength;
-			infantry->Take_Damage(damage, 0, Rule->MutateWarhead, NULL, true);
+			infantry->Take_Damage(damage, 0, Rule->MutateWarhead, NULL, true, false, House);
 		}
 	}
-	DamageSourceHouse = previous;
 }
 
 

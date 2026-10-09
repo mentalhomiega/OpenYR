@@ -101,7 +101,7 @@ class TerrainClass : public ObjectClass, public StageClass
 		*/
 		virtual void Fire_Out(void) override;
 		virtual bool Catch_Fire(void) override;
-		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false) override;
+		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		virtual void Set_Occupy_Bit(Coord const & coord) override;
 		virtual void Clear_Occupy_Bit(Coord const & coord) override;
 
