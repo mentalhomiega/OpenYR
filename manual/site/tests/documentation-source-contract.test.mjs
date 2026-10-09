@@ -856,8 +856,8 @@ test('The economy counts every listed refinery and harvester and prices a prefer
 	], 'the money check prices a preferred entry and counts the whole list');
 });
 
-test('The harvester truce shields, discounts and refuses theft over the same list', () => {
-	assert.match(source('code/house.cpp'), /units -= Count_Owned\(UQuantity, Rule->HarvesterUnit\);/, 'the defeat test discounts every listed type');
+test('The harvester truce shields and refuses theft over the same list', () => {
+	assert.doesNotMatch(source('code/house.cpp'), /units -= Count_Owned\(UQuantity, Rule->HarvesterUnit\);/, 'the defeat test counts harvesters like other vehicles');
 	assert.match(source('code/infantry.cpp'), /Rule->HarvesterUnit\.Is_In_List\(\(\(UnitClass \*\)object\)->Class\)/, 'the thief test compares the vehicle type');
 	assert.match(source('code/combat.cpp'), /HarvesterUnit\.Is_In_List/, 'blast damage exempts every listed type');
 });
