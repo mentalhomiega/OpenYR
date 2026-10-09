@@ -7140,6 +7140,42 @@ ChronoBlastDest:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoDelay:
+  key: ChronoDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '60'
+      declared_in: RulesClass
+      member: ChronoDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoDistanceFactor:
+  key: ChronoDistanceFactor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '32'
+      declared_in: RulesClass
+      member: ChronoDistanceFactor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoHarvTooFarDistance:
   key: ChronoHarvTooFarDistance
   scopes:
@@ -7208,6 +7244,24 @@ ChronoInfantryCrush:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoMinimumDelay:
+  key: ChronoMinimumDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: ChronoMinimumDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoOutSound:
   key: ChronoOutSound
   scopes:
@@ -7258,6 +7312,24 @@ ChronoPlacement:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoRangeMinimum:
+  key: ChronoRangeMinimum
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: ChronoRangeMinimum
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoSparkle1:
   key: ChronoSparkle1
   scopes:
@@ -7273,6 +7345,24 @@ ChronoSparkle1:
       default_candidate: none
       declared_in: RulesClass
       member: ChronoSparkle1
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ChronoTrigger:
+  key: ChronoTrigger
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: ChronoTrigger
       source: code/rules.cpp
       guard: null
     level: RulesClass

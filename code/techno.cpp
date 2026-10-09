@@ -7774,6 +7774,10 @@ bool TechnoClass::Temporal_AI(void)
 			return(true);
 		}
 	}
+	if (Is_Chrono_Warping()) {
+		return(true);
+	}
+
 	if (!IsBeingWarpedOut) {
 		return(false);
 	}

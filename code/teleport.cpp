@@ -16,7 +16,9 @@
 #include "teleport.h"
 
 #include "foot.h"
+#include "_rules.h"
 #include "globals.h"
+#include "rules.h"
 #include "savestream.h"
 
 
@@ -26,7 +28,9 @@
 /// </summary>
 TeleportLocomotionClass::TeleportLocomotionClass(void) :
 	BASECLASS(),
-	DestinationCoord(COORD_NONE)
+	DestinationCoord(COORD_NONE),
+	WarpPhase(TELEPORT_IDLE),
+	WarpEnd(0)
 {
 }
 
@@ -60,6 +64,46 @@ bool TeleportLocomotionClass::Is_Stationary(void)
 
 
 /// <summary>
+/// Is the object warping?
+/// The object is warping from the order until it has jumped and the arrival delay has run out.
+/// </summary>
+/// <returns>bool; True while the teleport waits to jump or holds the object after its jump.</returns>
+bool TeleportLocomotionClass::Is_Warping(void) const
+{
+	return(WarpPhase != TELEPORT_IDLE);
+}
+
+
+/// <summary>
+/// Works out how long the object waits before it jumps to the destination.
+/// The wait is the distance divided by ChronoDistanceFactor when ChronoTrigger is set, never less
+/// than ChronoMinimumDelay, and it is ChronoMinimumDelay when the distance is under ChronoRangeMinimum.
+/// </summary>
+/// <param name="to">The coordinate the object is teleporting to.</param>
+/// <returns>int; The number of frames to wait.</returns>
+int TeleportLocomotionClass::Warp_Delay(Coord const & to) const
+{
+	Coord const from = LinkedTo->PositionCoord;
+	double const dx = double(from.X - to.X);
+	double const dy = double(from.Y - to.Y);
+	double const dz = double(from.Z - to.Z);
+	int const distance = int(std::sqrt(dx * dx + dy * dy + dz * dz));
+
+	int delay = 0;
+	if (Rule->ChronoTrigger && Rule->ChronoDistanceFactor > 0) {
+		delay = distance / Rule->ChronoDistanceFactor;
+	}
+	if (delay <= Rule->ChronoMinimumDelay) {
+		delay = Rule->ChronoMinimumDelay;
+	}
+	if (distance < Rule->ChronoRangeMinimum) {
+		delay = Rule->ChronoMinimumDelay;
+	}
+	return(delay);
+}
+
+
+/// <summary>
 /// Fetches the location this locomotor is bound for.
 /// </summary>
 /// <returns>Returns with the pending teleport destination, or with the object's current
@@ -75,12 +119,17 @@ Coord TeleportLocomotionClass::Destination(void)
 
 /// <summary>
 /// Orders the object to teleport to the location specified.
-/// The jump is not made here. It happens the next time this locomotor is processed.
+/// The jump is not made here. It happens once the warp-out delay has run, when this locomotor is processed.
+/// An order given while the object holds after an earlier jump waits for that hold to end.
 /// </summary>
 /// <param name="to">The coordinate to teleport the object to.</param>
 void TeleportLocomotionClass::Move_To(Coord to)
 {
 	DestinationCoord = to;
+	if (WarpPhase != TELEPORT_HOLD) {
+		WarpPhase = TELEPORT_WARP_OUT;
+		WarpEnd = Frame + Warp_Delay(to);
+	}
 }
 
 
@@ -102,23 +151,36 @@ void TeleportLocomotionClass::Do_Turn(DirType dir)
 void TeleportLocomotionClass::Stop_Moving(void)
 {
 	DestinationCoord = COORD_NONE;
+	if (WarpPhase == TELEPORT_WARP_OUT) {
+		WarpPhase = TELEPORT_IDLE;
+	}
 }
 
 
 /// <summary>
-/// Performs any pending teleport.
-/// This routine is called by the owning object's movement processing. The object is
-/// lifted off the map, set down at its destination, and made to look around from where
-/// it now stands. The whole journey is over by the time this routine returns.
+/// Advances the teleport: ends an arrival hold, and jumps once the warp-out delay has run.
+/// This routine is called by the owning object's movement processing. The jump lifts the object
+/// off the map, sets it down at its destination, and makes it look around from there. The object
+/// then holds for ChronoDelay frames, and an order given meanwhile starts its next warp-out.
 /// </summary>
 /// <returns>bool; Is there more movement still to process? A teleport never leaves any.</returns>
 bool TeleportLocomotionClass::Process(void)
 {
-	if (Is_Moving()) {
+	if (WarpPhase == TELEPORT_HOLD && Frame >= WarpEnd) {
+		WarpPhase = TELEPORT_IDLE;
+		if (DestinationCoord != COORD_NONE) {
+			WarpPhase = TELEPORT_WARP_OUT;
+			WarpEnd = Frame + Warp_Delay(DestinationCoord);
+		}
+	}
+
+	if (WarpPhase == TELEPORT_WARP_OUT && Frame >= WarpEnd && DestinationCoord != COORD_NONE) {
 		LinkedTo->Mark(MARK_UP);
 		LinkedTo->PositionCoord = DestinationCoord;
 		LinkedTo->Mark(MARK_DOWN);
-		Stop_Moving();
+		DestinationCoord = COORD_NONE;
+		WarpPhase = TELEPORT_HOLD;
+		WarpEnd = Frame + Rule->ChronoDelay;
 		LinkedTo->Per_Cell_Process(PCP_END);
 		LinkedTo->Look();
 	}
@@ -141,6 +203,8 @@ void TeleportLocomotionClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(DestinationCoord);
+	stream.Serialize(WarpPhase);
+	stream.Serialize(WarpEnd);
 }
 
 

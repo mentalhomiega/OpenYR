@@ -19,3 +19,5 @@ Harvester=yes
 ```
 
 With the Teleport locomotor, as Yuri's Revenge's Chrono Miner uses it, the harvester drives to the ore field and teleports home to unload.
+
+A teleport waits before it jumps: the warp-out wait is set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/). The object then lands and holds still for [`ChronoDelay`](/keys/chronodelay/) frames, and its AI waits during both waits. An order given while it holds starts the next warp once the hold ends.

@@ -2513,6 +2513,18 @@ class RulesClass
 		int ChronoHarvTooFarDistance;
 
 		/*
+		 * The chrono warp of a teleporting object. Unless ChronoTrigger is off, the object waits
+		 * its distance in leptons divided by ChronoDistanceFactor before it jumps, never less than
+		 * ChronoMinimumDelay, and less than ChronoRangeMinimum leptons away it waits ChronoMinimumDelay.
+		 * After the jump it holds ChronoDelay frames where it landed.
+		 */
+		int ChronoDelay;
+		bool ChronoTrigger;
+		int ChronoDistanceFactor;
+		int ChronoMinimumDelay;
+		int ChronoRangeMinimum;
+
+		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
 		 * in 1000 per game frame.
 		 */
