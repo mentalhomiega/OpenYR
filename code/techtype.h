@@ -568,6 +568,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		int JumpjetTurnRate;
 		int JumpjetSpeed;
 		double JumpjetClimb;
+		// How far below a bridge deck, in leptons, a jumpjet of this type may be and still stand on it.
+		double JumpjetCrash;
 		int JumpjetHeight;
 		double JumpjetAccel;
 		double JumpjetWobbles;

@@ -19683,6 +19683,23 @@ JumpjetClimb:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+JumpjetCrash:
+  key: JumpjetCrash
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: JumpjetCrash
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 JumpjetDeviation:
   key: JumpjetDeviation
   scopes:
