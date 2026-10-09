@@ -1,0 +1,9 @@
+; An engineer captures a computer radar: the owned and in-service counts of the radar type move to the player.
+; Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn NARADR 50 90
+90 quantity NARADR
+120 own ENGINEER 48 88
+150 capture ENGINEER 50 90
+260 quantity NARADR
+300 quit

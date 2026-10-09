@@ -1,0 +1,10 @@
+; A mind control capture (Set_Owning_House) of a computer power plant: the plant's output moves to the player
+; on the next house check. Before the change the player's power stayed at 0 after the capture.
+; Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn NAPOWR 50 90
+90 houses
+120 transfer NAPOWR
+130 houses
+200 houses
+260 quit
