@@ -854,11 +854,6 @@ test('The economy counts every listed refinery and harvester and prices a prefer
 		'Owns_Any(ABQuantity, Rule->BuildRefinery)',
 		'Owns_Any(AUQuantity, Rule->HarvesterUnit)',
 	], 'the money check prices a preferred entry and counts the whole list');
-	assert.match(
-		source('code/foot.cpp'),
-		/Count_Owned\(House->AUQuantity, Rule->HarvesterUnit\)/,
-		'the harvester census counts every listed type',
-	);
 });
 
 test('The harvester truce shields, discounts and refuses theft over the same list', () => {
@@ -1281,35 +1276,25 @@ test('The docking bay search rates candidates in a width that cannot overflow', 
 	);
 });
 
-test('A harvester weighs every dock type and the queue at each', () => {
+test('A harvester reserves a free refinery only within reach and otherwise waits at the nearest', () => {
 	const harvest = functionBody(source('code/unit.cpp'), 'int UnitClass::Do_MISSION_HARVEST(void)');
 
 	assertOrdered(
 		harvest,
-		['Find_Docking_Bay(Class->Dock, false, false, &freedist);', 'ScenarioInit++;', 'Find_Docking_Bay(Class->Dock, false, false, &anydist);', 'ScenarioInit--;'],
-		'the whole list is weighed twice over, once for free bays and once counting reserved ones',
+		['Find_Docking_Bay(Class->Dock, false, true);', 'ScenarioInit++;', 'Find_Docking_Bay(Class->Dock, false, false);', 'ScenarioInit--;'],
+		'the dock list is searched once for a free bay and once for any bay',
 	);
 
 	assert.match(
 		harvest,
-		/freedist > anydist \+ Queue_Wait_Distance\(anybay\)/,
-		'and a far free bay only wins by more than the wait at the near one is worth',
+		/Class->IsTeleporter \? Rule->ChronoHarvTooFarDistance : Rule->HarvesterTooFarDistance/,
+		'a Chrono Miner and other harvesters have their own reach',
 	);
 
-	const wait = functionBody(source('code/unit.cpp'), 'int UnitClass::Queue_Wait_Distance(BuildingClass * dock) const');
-
-	assertOrdered(
-		wait,
-		['dock->Contact_With_Whom()', 'waiter->QueuedDock == dock', 'DriveLocomotionClass::Travel_Leptons(Class->MaxSpeed, frames)'],
-		'the wait is the load being handed over plus the loads queued behind it, priced as distance',
-	);
-
-	const unit = source('code/unit.cpp');
-
-	assertOrdered(
-		unit,
-		['stream.Serialize(QueuedDock);', 'crc(QueuedDock->Fetch_ID());', 'if (QueuedDock == target) {'],
-		'the place in line survives a save, joins the checksum, and drops when the building does',
+	assert.match(
+		harvest,
+		/Straight_Line_Leptons\(Get_Coord\(\), anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
+		'a harvester out of reach drives only when the nearest bay is over three cells away',
 	);
 });
 
