@@ -1,5 +1,5 @@
 ---
-title: Stop a TeamType with no Script from crashing every team route
+title: Give a TeamType with no Script the first Script an earlier TeamType names
 category: fix
 release: 0.2.0
 targets:
@@ -15,4 +15,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A team made from a TeamType with no `Script=` no longer crashes the game when a create-team action, an AI autocreate or a change-team mission makes it. We give such a TeamType the Script that the reinforcement actions already gave it: one zero-length Guard mission. The team ends at once and is disbanded. Before, the first update of the team crashed. gamemd's create-team path adds no Script, so the Guard here is our addition.
+A TeamType with no `Script=` now takes the first Script that an earlier TeamType names, as gamemd's TeamType loader does (`TeamTypeClass::LoadFromINI`, 0x006F1090). Before, it got a Guard-only Script the first time a team of it was made. A TeamType with no `TaskForce=` keeps no Script while no earlier TeamType has named a TaskForce, because gamemd's loader returns before it reaches the Script. A TeamType that still has no Script crashes the game on its team's first mission, as gamemd does. The one exception is a scenario in which no Script is registered at all: there each such TeamType gets a Guard-only Script at load, so its teams are disbanded at once.

@@ -91,6 +91,7 @@ class TeamTypeClass : public AbstractTypeClass
 		TeamClass * Create_One_Of(HouseClass *house=NULL) const;
 		void Destroy_All_Of(void) const;
 		void Ensure_Script(void);
+		static void Ensure_Scripts_If_No_Script_Types(void);
 		void Detach(AbstractClass const * target, bool all=true);
 
 		/*
