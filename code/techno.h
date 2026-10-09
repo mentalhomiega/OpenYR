@@ -753,6 +753,9 @@ class TechnoClass :	public RadioClass,
 		void Kill_Cargo(TechnoClass * source);
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
+		virtual void Record_The_Kill_By_House(HouseClass * house) override;
+		void Spring_Kill_Events(bool credited);
+		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
 		virtual void Reduce_Ammunition(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL);

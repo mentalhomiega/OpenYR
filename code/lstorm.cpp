@@ -292,7 +292,7 @@ void LightningStormClass::Strike(Cell const & cell)
 /// Drops a bolt from a cloud onto the cell below it, as LightningStorm::Strike2 (0x53A300)
 /// does: the bolt and its explosion animations, a strike sound, a flash, LightningDamage
 /// through LightningWarhead, and metal debris where the strike hit bare ground or changed
-/// what stood there.
+/// what stood there. The house that called the storm gets the credit for what the bolt destroys.
 /// </summary>
 void LightningStormClass::Bolt(Coord const & from)
 {
@@ -342,7 +342,7 @@ void LightningStormClass::Bolt(Coord const & from)
 	}
 
 	Combat_Lighting(coord, Rule->LightningStormDamage, Rule->LightningWarhead);
-	Explosion_Damage(coord, Rule->LightningStormDamage, NULL, Rule->LightningWarhead, true);
+	Explosion_Damage(coord, Rule->LightningStormDamage, NULL, Rule->LightningWarhead, true, Owner);
 
 	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
 		debris = true;

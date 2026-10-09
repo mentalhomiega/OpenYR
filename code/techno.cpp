@@ -6506,25 +6506,12 @@ void TechnoClass::Pay_Bounty(TechnoClass * source) const
 
 void TechnoClass::Record_The_Kill(TechnoClass * source)
 {
-	int total_recorded = 0;
-
 	int points = TClass->Cost_Of(House);
 
 	/*
 	**	Handle any trigger event associated with this object.
 	*/
-	if (IsActive && Tag && source) Tag->Spring(TEVENT_ATTACKED, this);
-
-	if (IsActive && Tag && source) Tag->Spring(TEVENT_DISCOVERED, this);
-
-	if (IsActive && RTTI != RTTI_UNIT) {
-
-		if (IsActive && Tag && source) Tag->Spring(TEVENT_DESTROYED, this);
-
-		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY, this);
-
-		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY_X, this);
-	}
+	Spring_Kill_Events(source != NULL);
 
 	// A victim of a DontScore=yes type gives its killer nothing, so none of the credit below applies.
 	TechnoClass * const killer = TClass->IsDontScore ? NULL : source;
@@ -6570,6 +6557,50 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		killer->House->PointTotal += value;
 	}
 
+	Count_The_Kill(killer != NULL ? killer->House : NULL);
+
+	/*
+	**	Since we lost an object, we lose the associated points as well.
+	*/
+	//House->PointTotal -= points;
+}
+
+
+/// <summary>
+/// Springs the trigger events that a death raises on this object (TechnoClass::RegisterDestruction,
+/// 0x702D40, and TechnoClass::RegisterKill, 0x703230, begin the same way). The attacked and
+/// discovered events and the destroyed event need someone to be credited with the death; the
+/// destroyed-by-anything events do not. A vehicle raises its destroyed events from its own
+/// Record_The_Kill, so this leaves them out for a vehicle.
+/// </summary>
+/// <param name="credited">Does an attacker or a house get the credit for the death?</param>
+void TechnoClass::Spring_Kill_Events(bool credited)
+{
+	if (IsActive && Tag && credited) Tag->Spring(TEVENT_ATTACKED, this);
+
+	if (IsActive && Tag && credited) Tag->Spring(TEVENT_DISCOVERED, this);
+
+	if (IsActive && RTTI != RTTI_UNIT) {
+
+		if (IsActive && Tag && credited) Tag->Spring(TEVENT_DESTROYED, this);
+
+		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY, this);
+
+		if (IsActive && Tag) Tag->Spring(TEVENT_DESTROYED_ANY_X, this);
+	}
+}
+
+
+/// <summary>
+/// Adds the death of this object to the casualty counts of its own house and to the kill counts of
+/// the house that destroyed it (the second half of TechnoClass::RegisterDestruction and
+/// TechnoClass::RegisterKill). A structure that is Insignificant is not counted at all.
+/// </summary>
+/// <param name="killer_house">The house credited with the kill, or NULL for none.</param>
+void TechnoClass::Count_The_Kill(HouseClass * killer_house)
+{
+	int total_recorded = 0;
+
 	switch ((RTTIType)RTTI) {
 		case RTTI_BUILDING:
 			{
@@ -6578,11 +6609,11 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 						House->BuildingsLost++;
 					}
 
-					if (killer != NULL) {
+					if (killer_house != NULL) {
 						if (Session.Type == GAME_INTERNET) {
-							killer->House->DestroyedBuildings->Increment_Unit_Total(((BuildingClass*)this)->Class->HeapID);
+							killer_house->DestroyedBuildings->Increment_Unit_Total(((BuildingClass*)this)->Class->HeapID);
 						}
-						killer->House->BuildingsKilled[Owner()]++;
+						killer_house->BuildingsKilled[Owner()]++;
 					}
 
 					/*
@@ -6597,26 +6628,26 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			break;
 
 		case RTTI_AIRCRAFT:
-			if (killer != NULL && Session.Type == GAME_INTERNET) {
-				killer->House->DestroyedAircraft->Increment_Unit_Total(((AircraftClass*)this)->Class->HeapID);
+			if (killer_house != NULL && Session.Type == GAME_INTERNET) {
+				killer_house->DestroyedAircraft->Increment_Unit_Total(((AircraftClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 			//Fall through.....
 		case RTTI_INFANTRY:
-			if (killer != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
-				killer->House->DestroyedInfantry->Increment_Unit_Total(((InfantryClass*)this)->Class->HeapID);
+			if (killer_house != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
+				killer_house->DestroyedInfantry->Increment_Unit_Total(((InfantryClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 			//Fall through.....
 		case RTTI_UNIT:
-			if (killer != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
-				killer->House->DestroyedUnits->Increment_Unit_Total(((UnitClass*)this)->Class->HeapID);
+			if (killer_house != NULL && !total_recorded && Session.Type == GAME_INTERNET) {
+				killer_house->DestroyedUnits->Increment_Unit_Total(((UnitClass*)this)->Class->HeapID);
 				total_recorded++;
 			}
 
 
 			House->UnitsLost++;
-			if (killer != NULL) killer->House->UnitsKilled[Owner()]++;
+			if (killer_house != NULL) killer_house->UnitsKilled[Owner()]++;
 
 			/*
 			**	If the map is displaying the multiplayer player names & their
@@ -6630,11 +6661,40 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 		default:
 			break;
 	}
+}
 
-	/*
-	**	Since we lost an object, we lose the associated points as well.
-	*/
-	//House->PointTotal -= points;
+
+/// <summary>
+/// Records the death of this object as a kill by a house, with no attacker to credit (the
+/// TechnoClass::RegisterKill override at 0x703230). The house gets the points for the object, none
+/// if the object belonged to an ally of that house, and double or triple for a veteran or an elite.
+/// It is remembered as the last house to hurt the object's house, and the kill is counted for it.
+/// No object gains experience, and no bounty is paid. A vehicle does not raise its destroyed
+/// events here, because those come from the vehicle's own Record_The_Kill.
+/// </summary>
+/// <param name="house">The house credited with the kill, or NULL for none.</param>
+void TechnoClass::Record_The_Kill_By_House(HouseClass * house)
+{
+	int const points = TClass->Cost_Of(House);
+
+	Spring_Kill_Events(house != NULL);
+
+	if (house != NULL) {
+		int value = points;
+		if (house->Is_Ally(House)) {
+			value = 0;
+		} else if (Veterancy.Is_Veteran()) {
+			value *= 2;
+		} else if (Veterancy.Is_Elite()) {
+			value *= 3;
+		}
+
+		House->WhoLastHurtMe = house->HeapID;
+		house->PointTotal += value;
+	}
+
+	// Unlike an attacker's kill, the points above do not depend on DontScore; only the counts do.
+	Count_The_Kill(TClass->IsDontScore ? NULL : house);
 }
 
 
@@ -7750,7 +7810,6 @@ void TechnoClass::Detonate_Bomb(void)
 		return;
 	}
 	TechnoClass * planter = BombOwner;
-	HouseClass * house = BombHouse;
 	bool const harmless = IsInLimbo;
 	Disarm_Bomb();
 	if (harmless || Rule->IvanWarhead == NULL) {
@@ -7762,7 +7821,7 @@ void TechnoClass::Detonate_Bomb(void)
 	if (anim != NULL) {
 		new AnimClass(anim, coord);
 	}
-	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true, house);
+	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true);
 }
 
 

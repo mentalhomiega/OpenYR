@@ -122,7 +122,7 @@ void DiskLaserClass::AI(void)
 		Coord const at = Target->Target_Coord();
 		new LaserDrawClass(Ring_Point(center, clockwise), at, 0, true, inner, outer, spread, Weapon->LaserDuration, false, false, 1.0, 0.0);
 		DebugString("Disk laser: %s strikes %s for %d\n", Owner->TClass->Name(), Target->TClass->Name(), Damage);
-		Explosion_Damage(at, Damage, Owner, Weapon->WarheadPtr, true, Owner->House);
+		Explosion_Damage(at, Damage, Owner, Weapon->WarheadPtr, true);
 		if (Weapon->Sound.Count() > 0) {
 			Sound_Effect((VocType)Weapon->Sound.Pick(Owner->SoundRandomSeed), at);
 		}

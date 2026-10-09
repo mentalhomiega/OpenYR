@@ -339,17 +339,17 @@ void RocketLocomotionClass::Explode(void)
 	DebugString("Rocket: %s explodes at %d,%d\n", LinkedTo->TClass->Name(), coord.As_Cell().X, coord.As_Cell().Y);
 
 	// The missile deals the blast and keeps its house after its launcher is gone, so the kill is
-	// credited to the house that fired it (RocketLocomotionClass::Explode, 0x6632C7). The blast skips the
-	// missile as a victim, and the missile leaves the map once the blast is dealt.
+	// credited to the house that fired it (RocketLocomotionClass::Explode, 0x6632C7). The blast names
+	// the missile as its source and no house, as gamemd does. The blast skips the missile as a
+	// victim, and the missile leaves the map once the blast is dealt.
 	TechnoClass * source = LinkedTo;
-	HouseClass * house = LinkedTo->House;
 
 	if (warhead != NULL) {
 		AnimTypeClass const * anim = Combat_Anim(damage, warhead, Map[coord].Land_Type(), coord);
 		if (anim != NULL) {
 			new AnimClass(anim, coord);
 		}
-		Explosion_Damage(coord, damage, source, warhead, true, house);
+		Explosion_Damage(coord, damage, source, warhead, true);
 	}
 
 	if (LinkedTo->IsActive) {

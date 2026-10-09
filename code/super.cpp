@@ -989,11 +989,11 @@ void SuperClass::Stop_Pre_Click_Anim(void)
 }
 
 
-static void Chrono_Kill(TechnoClass * techno)
+static void Chrono_Kill(TechnoClass * techno, HouseClass * house = NULL)
 {
 	if (techno->IsActive && !techno->IsInLimbo) {
 		int damage = techno->TClass->MaxStrength;
-		techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+		techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false, house);
 	}
 }
 
@@ -1144,8 +1144,9 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 		}
 	}
 
+	// The chronosphere's house gets the credit for the organic units it kills (SuperClass::Launch, 0x6CC8C6).
 	for (int index = 0; index < killed.Count(); index++) {
-		Chrono_Kill(killed[index]);
+		Chrono_Kill(killed[index], House);
 	}
 	for (int index = 0; index < moving.Count(); index++) {
 		FootClass * foot = moving[index];
