@@ -23,6 +23,6 @@ While a human player's soldier is deployed:
 - it never lies down and plays no idle animations;
 - it fires only if its type sets [`DeployFire=yes`](/keys/deployfire/#scope-infantrytype), and then only at targets within the reach of its [`DeployFireWeapon`](/keys/deployfireweapon/#scope-infantrytype). Without `DeployFire`, it takes no targets at all.
 
-A computer player's soldier that is told to move packs up first and then walks off. A soldier that starts walking any other way while deployed leaves its deployment without playing `Undeploy`.
+A computer player's soldier that is told to move packs up first and then walks off, unless its [`UndeployDelay`](/keys/undeploydelay/#scope-infantrytype) is set. A soldier that starts walking any other way while deployed leaves its deployment without playing `Undeploy`.
 
 The soldier plays [`DeploySound`](/keys/deploysound/#scope-infantrytype) as it deploys and [`UndeploySound`](/keys/undeploysound/#scope-infantrytype) as it packs up. A sequence missing from the artwork has no frames, so a type without `Deploy` frames cannot deploy at all.

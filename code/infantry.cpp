@@ -2475,8 +2475,12 @@ int InfantryClass::Do_MISSION_UNLOAD(void)
 		return(1);
 	}
 
-	if (Is_Deployed()) {
-		Do_Action(DO_UNDEPLOY, true);
+	// A soldier with an UndeployDelay stays dug in on the order and packs up when the delay ends (Do_MISSION_GUARD).
+	bool const deploying = !Is_Deployed();
+	if (!deploying) {
+		if (Class->UndeployDelay < 0) {
+			Do_Action(DO_UNDEPLOY, true);
+		}
 	} else {
 		Do_Action(DO_DEPLOY, true);
 	}
@@ -2485,7 +2489,9 @@ int InfantryClass::Do_MISSION_UNLOAD(void)
 	// The guard mission takes over at once, so the order is carried out only once.
 	Assign_Mission(MISSION_GUARD);
 	Commence();
-	return(1);
+
+	// A new deployment waits its UndeployDelay before the guard mission runs (InfantryClass::Mission_Unload, 0x51F6E0).
+	return(deploying && Class->UndeployDelay >= 0 ? Class->UndeployDelay : 1);
 }
 
 
@@ -2499,7 +2505,7 @@ int InfantryClass::Do_MISSION_MOVE(void)
 		if (House->Is_Human_Player()) {
 			return(1);
 		}
-		if (Do_Action(DO_UNDEPLOY)) {
+		if (Class->UndeployDelay < 0 && Do_Action(DO_UNDEPLOY)) {
 			return(Class->DoControls[DO_UNDEPLOY].Count);
 		}
 	}
@@ -3193,6 +3199,11 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	*/
 	if (action == ACTION_SELF && !Class->IsDeployer) {
 		action = ACTION_NONE;
+	}
+
+	// A soldier whose UndeployDelay is set packs up and digs in by its own timer, so clicking it does not deploy it (InfantryClass::MouseOverObject, 0x51E3B0).
+	if (action == ACTION_SELF && House->Is_Player_Control() && Class->IsDeployer && Class->UndeployDelay >= 0 && (Is_Deployed() || Doing == DO_UNDEPLOY)) {
+		return(ACTION_NO_DEPLOY);
 	}
 
 	if (House->Is_Player_Control() && Is_Deployed()) {
@@ -4770,6 +4781,12 @@ bool InfantryClass::Is_Renovator(void) const
 /// <returns>The delay in game frames before this mission should be processed again.</returns>
 int InfantryClass::Do_MISSION_GUARD(void)
 {
+	// A soldier with an UndeployDelay packs up when its guard mission runs after the delay (InfantryClass::Mission_Guard, 0x51F620, and 0x521320).
+	if (Is_Deployed() && Class->UndeployDelay >= 0) {
+		Do_Action(DO_UNDEPLOY, true);
+		return(Class->DoControls[DO_UNDEPLOY].Count);
+	}
+
 	if (!IsProne && TarCom == NULL && NavCom == NULL && !PrimaryFacing.Is_Rotating() && Class->IsDoggie && Get_Cell_Ptr()->Land_Type() == LAND_TIBERIUM) {
 		if (PrimaryFacing.Current().As_Dir8() != FACING_E) {
 			DirType dir(DIR_E);

@@ -105,6 +105,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsDeployer(false),
 	IsDeployFire(false),
 	DeployFireWeapon(1),
+	UndeployDelay(-1),
 	IsDeployedCrushable(true),
 	IsSlaved(false),
 	HarvestRate(0),
@@ -416,6 +417,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
 		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
+		UndeployDelay = ini.Get_Int(Name(), "UndeployDelay", UndeployDelay);
 		IsDeployedCrushable = ini.Get_Bool(Name(), "DeployedCrushable", IsDeployedCrushable);
 		IsSlaved = ini.Get_Bool(Name(), "Slaved", IsSlaved);
 		HarvestRate = ini.Get_Int(Name(), "HarvestRate", HarvestRate);
@@ -577,6 +579,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployFire);
 	stream.Serialize(DeployFireWeapon);
+	stream.Serialize(UndeployDelay);
 	stream.Serialize(IsDeployedCrushable);
 	stream.Serialize(IsSlaved);
 	stream.Serialize(HarvestRate);

@@ -37733,6 +37733,23 @@ URepairRate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+UndeployDelay:
+  key: UndeployDelay
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: InfantryTypeClass
+      member: UndeployDelay
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 UndeploySound:
   key: UndeploySound
   scopes:
