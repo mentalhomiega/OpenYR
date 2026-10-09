@@ -2460,30 +2460,29 @@ bool InfantryClass::Is_Deployed(void) const
 /// Digs in a Deployer=yes soldier, or packs up one that is dug in, as
 /// InfantryClass::Mission_Unload (0x51F6E0) does. The soldier then guards where it stands.
 /// </summary>
+/// <returns>The delay in game frames before the guard mission runs again.</returns>
 int InfantryClass::Do_MISSION_UNLOAD(void)
 {
 	if (!Class->IsDeployer) {
 		return(BASECLASS::Do_MISSION_UNLOAD());
 	}
 
-	// A soldier whose deploy weapon is AreaFire fires it on the spot instead of deploying; the
-	// Desolator alone deploys as usual (InfantryClass::What_Action, 0x51ECDB, and 0x51F76D).
-	if (Is_Area_Fire_Deployer() && stricmp(Class->Name(), "DESO") != 0 && !Is_Deployed()) {
-		Assign_Destination(NULL);
-		Assign_Target(&Map[Get_Cell()]);
-		Assign_Mission(MISSION_ATTACK);
-		Commence();
-		return(1);
-	}
-
-	// A soldier with an UndeployDelay stays dug in on the order and packs up when the delay ends (Do_MISSION_GUARD).
-	bool const deploying = !Is_Deployed();
-	if (!deploying) {
+	int delay = -1;
+	if (Is_Deployed()) {
 		if (Class->UndeployDelay < 0) {
 			Do_Action(DO_UNDEPLOY, true);
 		}
 	} else {
 		Do_Action(DO_DEPLOY, true);
+
+		// An AreaFire deploy weapon aims at the soldier's own cell. The Desolator's does not (InfantryClass::Mission_Unload, 0x51F76D).
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon;
+		if (weapon != NULL && weapon->IsAreaFire && stricmp(Class->Name(), "DESO") != 0) {
+			Assign_Target(&Map[Get_Cell()]);
+		}
+		if (Class->UndeployDelay >= 0) {
+			delay = Class->UndeployDelay;
+		}
 	}
 	Assign_Destination(NULL);
 
@@ -2491,8 +2490,8 @@ int InfantryClass::Do_MISSION_UNLOAD(void)
 	Assign_Mission(MISSION_GUARD);
 	Commence();
 
-	// A new deployment waits its UndeployDelay before the guard mission runs (InfantryClass::Mission_Unload, 0x51F6E0).
-	return(deploying && Class->UndeployDelay >= 0 ? Class->UndeployDelay : 1);
+	// A soldier without an UndeployDelay of its own guards again after one frame.
+	return(delay >= 0 ? delay : 1);
 }
 
 

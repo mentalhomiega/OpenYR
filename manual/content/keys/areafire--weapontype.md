@@ -18,5 +18,5 @@ FireOnce=yes
 
 The key also changes how a [`Deployer=yes`](/keys/deployer/#scope-infantrytype), [`DeployFire=yes`](/keys/deployfire/#scope-infantrytype) soldier deploys when the weapon is in its [`DeployFireWeapon`](/keys/deployfireweapon/#scope-infantrytype) slot:
 
-- The Deploy command makes the soldier fire the weapon at its own cell instead of deploying.
-- The Desolator, whose type is named `DESO`, deploys as usual instead. While deployed with nothing to attack, it keeps firing the weapon at its own cell.
+- The Deploy command digs the soldier in as for any `Deployer=yes` soldier, and then the weapon fires at the soldier's own cell while it is dug in.
+- The Desolator, whose type is named `DESO`, digs in without aiming its weapon at its own cell on the Deploy command. Once it is dug in with nothing to attack, it fires at its own cell.
