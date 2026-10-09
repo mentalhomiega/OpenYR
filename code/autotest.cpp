@@ -661,6 +661,18 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// rallyclick <TypeID> x y: gives the player's structures of that type the rally click an Alt-click on the ground makes, with the nearby-cell search.
+	if (step.Command == "rallyclick") {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+				building->Active_Click_With(ACTION_RALLY_TO_POINT, Cell(step.X, step.Y), false);
+				DebugString("AUTOTEST rallyclick %s at %d,%d\n", building->Class->Name(), step.X, step.Y);
+			}
+		}
+		return;
+	}
+
 	if (step.Command == "command") {
 		Execute_Command(step.Argument.c_str());
 	} else if (step.Command == "select") {
@@ -1438,7 +1450,8 @@ void Run(StepType const & step)
 			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
 			Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
-			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo);
+			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
+			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1);
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 			if (techno->RTTI == RTTI_INFANTRY) {
 				InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
