@@ -1,7 +1,6 @@
-; A DontScore infantryman (SLAV) that a mind control capture gives to the player. The owned count of
-; SLAV is 1 for the computer before the capture and 0 for it after; the player's owned count stays 0.
-; Run with -Map XMP29U2.MAP. The log has "quantity SLAV ... house Africans owned 0" after the capture only when the
-; DontScore check holds.
+; A DontScore infantryman (SLAV) that a mind control capture gives to the player. Neither house counts it
+; as owned or in service, so "quantity SLAV" writes no line before or after the capture.
+; Run with -Map XMP29U2.MAP.
 30 command CenterBase
 60 spawn SLAV 48 90
 90 quantity SLAV
