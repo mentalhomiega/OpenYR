@@ -393,16 +393,14 @@ static TechnoClass * _Who_Can_Pop_Out_Of(Cell origin)
 
 
 // Gives the team type a script with at least one mission, as gamemd does before a reinforcement
-// (0x65D8E0). The added mission is a zero-length Guard, which ends at once; the script stays on
-// the team type.
+// (0x65D8E0). A missing script becomes a zero-length Guard (TeamTypeClass::Ensure_Script), and a
+// script with no missions gets the same Guard. The script stays on the team type.
 static void _Ensure_Team_Script(TeamTypeClass const * teamtype)
 {
-	if (teamtype->Script == NULL) {
-		ScriptTypeClass * script = new ScriptTypeClass();
-		const_cast<TeamTypeClass *>(teamtype)->Script = script;
-	}
+	TeamTypeClass * type = const_cast<TeamTypeClass *>(teamtype);
+	type->Ensure_Script();
 
-	ScriptTypeClass * script = teamtype->Script;
+	ScriptTypeClass * script = type->Script;
 	if (script->MissionCount == 0) {
 		script->MissionList[0] = TeamMissionClass(TMISSION_GUARD, 0);
 		script->MissionCount = 1;
