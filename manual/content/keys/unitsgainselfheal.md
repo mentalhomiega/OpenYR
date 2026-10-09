@@ -7,7 +7,7 @@ when_omitted:
   value: "0"
 ---
 
-While this structure stands, every damaged vehicle its owner has gains [`SelfHealUnitAmount`](/keys/selfhealunitamount/) strength times this value every [`SelfHealUnitFrames`](/keys/selfhealunitframes/) frames. Several such structures add their values together. Aircraft gain nothing. [Healing from support structures](/systems/repair/#healing-from-support-structures) gives the details.
+While this structure stands, every damaged vehicle its owner has gains [`SelfHealUnitAmount`](/keys/selfhealunitamount/) strength times this value every [`SelfHealUnitFrames`](/keys/selfhealunitframes/) frames. A vehicle with [`Organic=yes`](/keys/organic/) gains from [`InfantryGainSelfHeal`](/keys/infantrygainselfheal/) instead, and this value does not reach it. Several such structures add their values together. Aircraft gain nothing. [Healing from support structures](/systems/repair/#healing-from-support-structures) gives the details.
 
 ```ini title="rulesmd.ini"
 [MYMACHINESHOP] ; example BuildingType
