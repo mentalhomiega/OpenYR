@@ -19,9 +19,15 @@ targets:
   id: ChronoRangeMinimum
   effect: added
 - type: key
+  id: WarpIn
+  effect: added
+- type: key
+  id: WarpOut
+  effect: changed
+- type: key
   id: Teleporter
   effect: changed
 credit: [MentalHomiega]
 ---
 
-We made a teleport wait before it jumps. The wait is set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/). The object then lands and holds still for [`ChronoDelay`](/keys/chronodelay/) frames. Its AI waits through both, as in Yuri's Revenge. Before, the jump was instant and nothing held the unit after it landed.
+A teleport locomotor no longer jumps at once. It waits a warp-out delay set by `ChronoTrigger`, `ChronoDistanceFactor`, `ChronoMinimumDelay` and `ChronoRangeMinimum`, then lands and holds for `ChronoDelay` frames. A Chrono Miner has no warp-out delay, and it still holds after landing. The warp plays `WarpOut` where the object stands when ordered, and `WarpIn` where it lands. A landing outside the local map area, or on a cell the object cannot stand on, moves to the nearest cell it can. Before, the jump was instant and nothing held the unit after it landed.

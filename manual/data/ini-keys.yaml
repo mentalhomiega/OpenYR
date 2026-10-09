@@ -40600,6 +40600,24 @@ WarpAway:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+WarpIn:
+  key: WarpIn
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: WarpIn
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 WarpOut:
   key: WarpOut
   scopes:
