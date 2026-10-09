@@ -2479,9 +2479,10 @@ void HouseClass::Make_Ally(HouseClass * house)
 
 			/*
 			**	An alliance with another human player will cause the computer
-			**	players (if present) to become paranoid.
+			**	players (if present) to become paranoid. A campaign never does (HouseClass::MakeAlly
+			**	checks SessionClass::GameMode != 0).
 			*/
-			if (Is_Human_Player() && Rule->IsComputerParanoid && !house->Class->IsMultiplayPassive) {
+			if (Is_Human_Player() && Rule->IsComputerParanoid && !house->Class->IsMultiplayPassive && Session.Type != GAME_NORMAL) {
 				Computer_Paranoid();
 			}
 
@@ -3614,9 +3615,10 @@ void HouseClass::MPlayer_Defeated(void)
 
 	/*
 	**	If this is a computer controlled house, then all computer controlled
-	**	houses become paranoid.
+	**	houses become paranoid. Campaign missions never do this (HouseClass::AcceptDefeat
+	**	checks SessionClass::GameMode != 0, which is every mode except the campaign).
 	*/
-	if (IQ == Rule->MaxIQ && !Is_Human_Player() && Rule->IsComputerParanoid) {
+	if (IQ == Rule->MaxIQ && !Is_Human_Player() && Rule->IsComputerParanoid && Session.Type != GAME_NORMAL) {
 		Computer_Paranoid();
 	}
 
