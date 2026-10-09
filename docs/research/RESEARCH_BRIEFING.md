@@ -32,6 +32,8 @@ All files go under `docs/research/`.
 
 Build these up across sessions; one session will not finish the tables.
 
+4. `specs/<feature>.md`: one file per feature group, in the format `specs/README.md` sets: the keys, their sections, value types and defaults, the exact behaviour, what stock Yuri's Revenge does without it, where it would hook into `code/` on `modern`, the saved state it needs, open questions, and a test plan we can run in the real game. Add each new file to the table in `specs/README.md`. Write specs in the order of `priorities.md`, skipping groups that already have one.
+
 ## Findings from the owner's scan (2026-10-04)
 
 The owner ran the scanner over Mental Omega on their PC. Its rules sit inside the mod's `expandmo*.mix` archives (as `rulesmo.ini`, `artmo.ini` and `aimo.ini`), not as loose files. Of about 4,460 distinct keys, the engine reads 32%; 12% are stock Yuri's Revenge keys the engine does not read yet; 11% matched the Ares list and 1% the Phobos list; 44% were unknown.
@@ -46,9 +48,9 @@ Two changes to `mod_scan.py`, with tests:
 ## Working across sessions
 
 - Before starting, read the logs on earlier research branches: `git branch -r --list 'origin/cloud/research-*'`, then `git show <branch>:docs/research/log/` and the files in it. Start from the newest branch's documents so work is not repeated.
-- Work on a new branch `cloud/research-YYYY-MM-DD` (today's UTC date). Begin it from the newest earlier research branch, merged with `yr`, so the documents grow from session to session.
+- Work on a new branch `cloud/research-YYYY-MM-DD` (today's UTC date). Begin it from the newest earlier research branch, merged with `origin/modern`, so the documents grow from session to session.
 - Before finishing, add `docs/research/log/YYYY-MM-DD.md`: what you added, what is next, and questions for the owner.
-- Never push to `yr` or `main`, never force-push, and never open issues, pull requests or comments anywhere.
+- Never push to `modern`, `yr` or `main`, never force-push, and never open issues, pull requests or comments anywhere.
 
 ## Report
 
