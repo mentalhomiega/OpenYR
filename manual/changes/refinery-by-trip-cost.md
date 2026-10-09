@@ -1,8 +1,14 @@
 ---
-title: Choose a refinery by what the trip really costs
-category: feature
+title: Reserve a refinery only when it is within reach
+category: fix
 release: 0.2.0
 targets:
+- type: key
+  id: HarvesterTooFarDistance
+  effect: added
+- type: key
+  id: ChronoHarvTooFarDistance
+  effect: added
 - type: key
   id: Dock
   effect: changed
@@ -12,4 +18,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-A loaded harvester now heads for the nearest free refinery of any type in its [`Dock`](/keys/dock/) list; it used to take the first listed type that had a free one. It waits at a busy refinery instead when driving there and waiting takes less time than driving to a free one. The wait is estimated from the loads the harvesters there still have to unload and the drive the docking harvester has left, so it follows a mod's [`Storage`](/keys/storage/), [`Speed`](/keys/speed/) and [`HarvesterDumpRate`](/keys/harvesterdumprate/).
+A loaded harvester reserves the nearest free refinery of any type in its [`Dock`](/keys/dock/) list only when that refinery is within [`HarvesterTooFarDistance`](/keys/harvestertoofardistance/) cells, measured in a straight line. A Chrono Miner uses [`ChronoHarvTooFarDistance`](/keys/chronoharvtoofardistance/) instead. Otherwise it drives to the nearest refinery of any kind and waits there. The wait is no longer estimated from the loads already waiting in line, so the rule no longer depends on `HarvesterDumpRate` or the harvesters' speed.

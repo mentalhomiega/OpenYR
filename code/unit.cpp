@@ -224,7 +224,6 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	DeathCounter(-1),
 	IsSinkingWreck(false),
 	FollowingMe(NULL),
-	QueuedDock(NULL),
 	IsFollowing(false),
 	IsCompositingToEightBitSurface(false),
 	Charge(0)
@@ -3658,44 +3657,15 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 
 /// <summary>
-/// The leptons this harvester could drive in the time it would wait at the dock: the load being
-/// unloaded plus every load queued there by harvesters naming it in QueuedDock. A load takes one
-/// HarvesterDumpRate pass for each ore type it holds and a last pass that finds it empty.
+/// The straight-line distance between two points in leptons, rounded down. Harvesters compare
+/// it with the limits in HarvesterTooFarDistance and ChronoHarvTooFarDistance.
 /// </summary>
-int UnitClass::Queue_Wait_Distance(BuildingClass * dock) const
+static int Straight_Line_Leptons(Coord const & from, Coord const & to)
 {
-	int const perpass = int(Rule->HarvesterDumpRate * TICKS_PER_MINUTE);
-	auto const unload_frames = [perpass](StorageClass const & load) {
-		int passes = 1;
-		for (int slot = 0; slot < Tiberiums.Count(); slot++) {
-			passes += load.Get_Amount(slot) > 0;
-		}
-		return(passes * perpass);
-	};
-	int frames = 0;
-
-	TechnoClass * holder = dock->Contact_With_Whom();
-	if (holder != NULL && holder->RTTI == RTTI_UNIT) {
-		UnitClass * incumbent = (UnitClass *)holder;
-		frames = unload_frames(incumbent->Storage);
-		if (incumbent->IsDumping) {
-			frames -= incumbent->Fetch_Stage();
-		} else {
-			frames += DriveLocomotionClass::Travel_Frames(incumbent->Class->MaxSpeed, incumbent->Distance(dock));
-		}
-	}
-
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass * waiter = Units[index];
-		if (waiter != this && waiter->QueuedDock == dock && waiter->Mission == MISSION_HARVEST) {
-			frames += unload_frames(waiter->Storage);
-		}
-	}
-
-	if (frames <= 0) {
-		return(0);
-	}
-	return(DriveLocomotionClass::Travel_Leptons(Class->MaxSpeed, frames));
+	double const dx = double(from.X - to.X);
+	double const dy = double(from.Y - to.Y);
+	double const dz = double(from.Z - to.Z);
+	return(int(std::sqrt(dx * dx + dy * dy + dz * dz)));
 }
 
 
@@ -3740,11 +3710,6 @@ int UnitClass::Do_MISSION_HARVEST(void)
 			SlaveManager->Wake_Up();
 		}
 		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
-	}
-
-	// A harvester holds a place in line only while it is still looking for one.
-	if (Status != FINDHOME) {
-		QueuedDock = NULL;
 	}
 
 	if (Class->Dock.Count() == 0 && !House->Is_Human_Player()) {
@@ -3886,50 +3851,35 @@ int UnitClass::Do_MISSION_HARVEST(void)
 		**	Find and head to refinery.
 		*/
 		case FINDHOME:
+			if (Class->IsTeleporter && NavCom != NULL && Find_Docking_Bay(Class->Dock, false, true) != NULL) {
+				Assign_Destination(NULL);
+			}
 			if (NavCom == NULL) {
-
-				/*
-				**	Find nearby refinery and head to it?
-				*/
-				int freedist = 0;
-				int anydist = 0;
-				BuildingClass * freebay = Find_Docking_Bay(Class->Dock, false, false, &freedist);
+				BuildingClass * freebay = Find_Docking_Bay(Class->Dock, false, true);
 
 				// Under ScenarioInit a busy refinery does not refuse, so this sweep sees every bay.
 				ScenarioInit++;
-				BuildingClass * anybay = Find_Docking_Bay(Class->Dock, false, false, &anydist);
+				BuildingClass * anybay = Find_Docking_Bay(Class->Dock, false, false);
 				ScenarioInit--;
 
-				BuildingClass * nearest = freebay;
-				if (freebay != NULL && anybay != NULL && freebay != anybay &&
-					freedist > anydist + Queue_Wait_Distance(anybay)) {
-
-					nearest = NULL;
-				}
-
-				QueuedDock = NULL;
-
+				/*
+				**	A free refinery is reserved only when it is within reach. Otherwise the harvester drives
+				**	to the nearest refinery of any kind and waits there. A Chrono Miner always drives there.
+				*/
+				int const reach = (Class->IsTeleporter ? Rule->ChronoHarvTooFarDistance : Rule->HarvesterTooFarDistance) * CELL_LEPTON;
 				/*
 				**	Since the refinery said it was ok to load, establish radio
 				**	contact with the refinery and then await docking orders.
 				*/
-				if (nearest != NULL && Transmit_Message(RADIO_HELLO, nearest) == RADIO_ROGER) {
+				if (freebay != NULL && Straight_Line_Leptons(Get_Coord(), freebay->Get_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
 					Status = HEADINGHOME;
-///					if (nearest->House == PlayerPtr && (PlayerPtr->Capacity - PlayerPtr->Tiberium) < 300 && PlayerPtr->Capacity > 500 && (PlayerPtr->ActiveBScan & (STRUCTF_REFINERY | STRUCTF_CONST))) {
-///						Speak(VOX_NEED_MO_CAPACITY);
-///					}
-				} else if (anybay != NULL) {
-
-					// Nothing is reserved, so the choice is made again on arrival.
-					QueuedDock = anybay;
-					if (Distance_To(anybay) > 3 * CELL_LEPTON) {
-						Cell cell = Cell(anybay->Get_Coord());
-						Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, Map.Get_Cell_Zone(cell, Class->MZone), Class->MZone, false, Point2D(1, 1), false, true, false, false);
-						if (nearby != CELL_NONE) {
-							Assign_Destination(&Map[nearby]);
-						} else {
-							Assign_Destination(NULL);
-						}
+				} else if (anybay != NULL && (Class->IsTeleporter || Straight_Line_Leptons(Get_Coord(), anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
+					Cell cell = Cell(anybay->Get_Coord());
+					Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, Map.Get_Cell_Zone(cell, Class->MZone), Class->MZone, false, Point2D(1, 1), false, true, false, false);
+					if (nearby != CELL_NONE) {
+						Assign_Destination(&Map[nearby]);
+					} else {
+						Assign_Destination(NULL);
 					}
 				}
 			}
@@ -6498,7 +6448,6 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Reload);
 	stream.Serialize(Class);
 	stream.Serialize(FollowingMe);
-	stream.Serialize(QueuedDock);
 	stream.Serialize(Flagged);
 	stream.Serialize(IsFollowing);
 	stream.Serialize(IsDumping);
@@ -6546,9 +6495,6 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 	if (FollowingMe != NULL) {
 		crc(FollowingMe->Fetch_ID());
 	}
-	if (QueuedDock != NULL) {
-		crc(QueuedDock->Fetch_ID());
-	}
 	crc(Flagged);
 	crc(IsFollowing);
 	crc(IsDumping);
@@ -6569,9 +6515,6 @@ void UnitClass::Detach(AbstractClass const * target, bool all)
 	BASECLASS::Detach(target, all);
 	if (FollowingMe == target) {
 		FollowingMe = NULL;
-	}
-	if (QueuedDock == target) {
-		QueuedDock = NULL;
 	}
 	if (Class == target) {
 		Class = NULL;

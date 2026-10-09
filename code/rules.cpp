@@ -298,6 +298,8 @@ RulesClass::RulesClass(void) :
 	MovieTime(.25),
 	TiberiumShortScan(6 * CELL_LEPTON),
 	TiberiumLongScan(32 * CELL_LEPTON),
+	HarvesterTooFarDistance(5),
+	ChronoHarvTooFarDistance(50),
 	TreeStrength(25),
 	TeamDelays(),
 	AIHateDelays(),
@@ -1813,6 +1815,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		TalkBubbleTime = int(TIMER_SECOND * ini.Get_Float(GENERAL, "TalkBubbleTime", TalkBubbleTime * (1.0f/TIMER_SECOND)));
 		TiberiumShortScan = ini.Get_Lepton(GENERAL, "TiberiumShortScan", TiberiumShortScan);
 		TiberiumLongScan = ini.Get_Lepton(GENERAL, "TiberiumLongScan", TiberiumLongScan);
+		HarvesterTooFarDistance = ini.Get_Int(GENERAL, "HarvesterTooFarDistance", HarvesterTooFarDistance);
+		ChronoHarvTooFarDistance = ini.Get_Int(GENERAL, "ChronoHarvTooFarDistance", ChronoHarvTooFarDistance);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
@@ -3329,6 +3333,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MovieTime);
 	stream.Serialize(TiberiumShortScan);
 	stream.Serialize(TiberiumLongScan);
+	stream.Serialize(HarvesterTooFarDistance);
+	stream.Serialize(ChronoHarvTooFarDistance);
 	stream.Serialize(LightningFrequency);
 	stream.Serialize(LightningRandomness);
 	stream.Serialize(LightningDamage);
