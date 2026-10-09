@@ -189,7 +189,7 @@ Unforced damage with no warhead, or any unforced damage in a scenario with [`Ine
 
 ### How distance thins the damage
 
-Damage falls in a straight line from the full figure at the point of impact to the warhead's [`PercentAtMax`](/keys/percentatmax/) share of it at the edge of the reach. The result is rounded down and never drops below zero.
+Damage falls in a straight line from the full figure at the point of impact to the warhead's [`PercentAtMax`](/keys/percentatmax/) share of it at the edge of the reach. The result is rounded down and never drops below zero. A direct hit (distance 0) keeps the full figure, whatever `PercentAtMax` is.
 
 With `R` the reach in leptons and `F` the figure, a target `d` leptons away takes `(F − F × PercentAtMax) × (R − d) ÷ R + F × PercentAtMax`. For a 100-point figure with `CellSpread=2` (a reach of 512 leptons) and `PercentAtMax=.5`:
 
