@@ -5580,24 +5580,6 @@ BuildLimit:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-BuildOffAllyAnyStructure:
-  key: BuildOffAllyAnyStructure
-  scopes:
-  - applies_to:
-    - global rules
-    file: rules.ini
-    section:
-      kind: literal
-      name: MultiplayerDefaults
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'yes'
-      declared_in: RulesClass
-      member: IsMPBuildOffAllyAnyStructure
-      source: code/rules.cpp
-      guard: null
-    level: RulesClass
 BuildPDefense:
   key: BuildPDefense
   scopes:
@@ -12158,6 +12140,23 @@ ElevationIncrementBonus:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EligibileForAllyBuilding:
+  key: EligibileForAllyBuilding
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsEligibileForAllyBuilding
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 EligibleForDelayKill:
   key: EligibleForDelayKill
   scopes:

@@ -214,7 +214,6 @@ RulesClass::RulesClass(void) :
 	IsMPAIPlayers(false),
 	IsMPCaptureTheFlag(false),
 	IsMPBridgeDestruction(true),
-	IsMPBuildOffAllyAnyStructure(true),
 	DropZoneRadius(4*CELL_LEPTON_W),
 	MessageDelay(.6),
 	SavourDelay(.03),
@@ -1855,7 +1854,6 @@ bool RulesClass::MPlayer(CCINIClass const & ini)
 		IsMPCrates = ini.Get_Bool(MPDIALOG, "Crates", IsMPCrates);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPLAYER, "CaptureTheFlag", IsMPCaptureTheFlag);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPDIALOG, "CaptureTheFlag", IsMPCaptureTheFlag);
-		IsMPBuildOffAllyAnyStructure = ini.Get_Bool(MPLAYER, "BuildOffAllyAnyStructure", IsMPBuildOffAllyAnyStructure);
 		return(true);
 	}
 	return(false);
@@ -3345,7 +3343,6 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMPAIPlayers);
 	stream.Serialize(IsMPCaptureTheFlag);
 	stream.Serialize(IsMPBridgeDestruction);
-	stream.Serialize(IsMPBuildOffAllyAnyStructure);
 	stream.Serialize(NodAIBuildsWalls);
 	stream.Serialize(AIBuildsWalls);
 	stream.Serialize(UseMinDefenseRule);

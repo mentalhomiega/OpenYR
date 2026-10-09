@@ -1,7 +1,7 @@
 ---
 key: Adjacent
 summary: How far this building searches for an eligible anchor while it is being placed.
-see_also: [BaseNormal, "system:base-adjacency"]
+see_also: [BaseNormal, EligibileForAllyBuilding, "system:base-adjacency"]
 when_omitted:
   kind: value
   value: "3"
@@ -12,7 +12,7 @@ when_omitted:
 Adjacent=5
 ```
 
-`Adjacent` sets how far from an [anchor](/systems/base-adjacency/) a player may place a building of this type. An anchor is a building already on the map that has [`BaseNormal=yes`](/keys/basenormal/) and belongs to the placing player, or to a mutual ally when the match allows [building off an ally](/systems/base-adjacency/#building-off-an-ally). A larger value lets the building stand farther from its anchor.
+`Adjacent` sets how far from an [anchor](/systems/base-adjacency/) a player may place a building of this type. An anchor is a building already on the map that has [`BaseNormal=yes`](/keys/basenormal/) and belongs to the placing player, or, when the match allows [building off an ally](/systems/base-adjacency/#building-off-an-ally), an ally's building whose type has [`EligibileForAllyBuilding=yes`](/keys/eligibileforallybuilding/). A larger value lets the building stand farther from its anchor.
 
 The search covers every cell up to `Adjacent` + 1 cells beyond each edge of the pending foundation, corners included. With `Adjacent=5`, it reaches six cells out. `Adjacent=0` still finds an anchor that touches the foundation, including diagonally. A negative value leaves no cells to search, so no anchor is ever found.
 

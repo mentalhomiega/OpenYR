@@ -481,27 +481,18 @@ void DisplayClass::Set_Cursor_Shape(Cell const * list)
 
 /// <summary>
 /// Reports whether a building already on the map can anchor a placement for the given house.
+/// A house's own building anchors when its type is BaseNormal. An ally's building anchors only
+/// when the match allows building off an ally and its type is EligibileForAllyBuilding.
 /// </summary>
 static bool Is_Adjacency_Anchor(BuildingClass const * base, HouseClass const * house)
 {
-	if (!base->Class->IsBase) {
-		return(false);
-	}
-
 	if (base->House == house) {
-		return(true);
+		return(base->Class->IsBase);
 	}
-
 	if (!Session.Options.BuildOffAlly) {
 		return(false);
 	}
-
-	// The alliance must run both ways, so a one-sided declaration cannot open a base.
-	if (!house->Is_Ally(base->House) || !base->House->Is_Ally(house)) {
-		return(false);
-	}
-
-	return(Rule->IsMPBuildOffAllyAnyStructure || base->Class->IsConstructionYard);
+	return(base->House->Is_Ally(house) && base->Class->IsEligibileForAllyBuilding);
 }
 
 

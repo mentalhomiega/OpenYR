@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-`ConstructionYard=yes` controls a structure's production animations, when a player can order it to undeploy, whether a computer house starts its base around it, and whether its owner's allies can build off it.
+`ConstructionYard=yes` controls a structure's production animations, when a player can order it to undeploy, and whether a computer house starts its base around it.
 
 The flag does not make a type count toward its house's construction yards. Only the BuildingTypes named by [`BuildConst`](/keys/buildconst/) count, and the effects below apply to any type with the flag, listed there or not.
 
@@ -34,6 +34,6 @@ When a computer house's MCV deploys into a `ConstructionYard=yes` type outside a
 
 When any vehicle deploys into a `ConstructionYard=yes` type, vehicle thieves that were targeting the vehicle drop the target instead of switching to the new structure.
 
-When a match allows [building off an ally](/systems/base-adjacency/#building-off-an-ally) and [`BuildOffAllyAnyStructure=no`](/keys/buildoffallyanystructure/), an ally's structure anchors your placements only if its type sets this flag.
+This flag does not let an ally place next to the structure. That takes [`EligibileForAllyBuilding=yes`](/keys/eligibileforallybuilding/) on the structure's type.
 
 When a player-controlled house loses a construction yard to capture and no longer owns any `BuildConst` type, a structure it was about to place is dropped from the cursor.

@@ -2654,8 +2654,6 @@ class RulesClass
 		bool IsMPCaptureTheFlag;
 		bool IsMPBridgeDestruction;
 
-		// With build-off-ally on, false narrows the ally anchors to construction yards.
-		bool IsMPBuildOffAllyAnyStructure;
 
 		/*
 		 * If the computer is allowed to wall in its base, then these flags will be
