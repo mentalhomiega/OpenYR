@@ -677,7 +677,8 @@ void JumpjetLocomotionClass::Movement_AI(void)
 	int height = LinkedTo->Height;
 	int ground_height = Map.Get_Height_GL(LinkedTo->PositionCoord);
 
-	if (Map[LinkedTo->Get_Coord()].IsUnderBridge && LinkedTo->PositionCoord.Z >= ground_height + BRIDGE_CELL_HEIGHT * LEVEL_LEPTON_H) {
+	// A bridge deck becomes the ground once the unit is within its JumpjetCrash clearance of the deck.
+	if (Map[LinkedTo->Get_Coord()].IsUnderBridge && static_cast<double>(ground_height + BRIDGE_LEPTON_HEIGHT) - LinkedTo->TClass->JumpjetCrash <= LinkedTo->PositionCoord.Z) {
 		ground_height += BRIDGE_LEPTON_HEIGHT;
 	}
 

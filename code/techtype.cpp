@@ -269,6 +269,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	JumpjetTurnRate(4),
 	JumpjetSpeed(14),
 	JumpjetClimb(5),
+	JumpjetCrash(5),
 	JumpjetHeight(500),
 	JumpjetAccel(2),
 	JumpjetWobbles(0.15),
@@ -925,6 +926,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		JumpjetTurnRate = ini.Get_Int(Name(), "JumpjetTurnRate", JumpjetTurnRate);
 		JumpjetSpeed = ini.Get_Int(Name(), "JumpjetSpeed", JumpjetSpeed);
 		JumpjetClimb = ini.Get_Float(Name(), "JumpjetClimb", JumpjetClimb);
+		JumpjetCrash = ini.Get_Float(Name(), "JumpjetCrash", JumpjetCrash);
 		JumpjetHeight = ini.Get_Int(Name(), "JumpjetHeight", JumpjetHeight);
 		JumpjetAccel = ini.Get_Float(Name(), "JumpjetAccel", JumpjetAccel);
 		JumpjetWobbles = ini.Get_Float(Name(), "JumpjetWobbles", JumpjetWobbles);
@@ -1595,6 +1597,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(JumpjetTurnRate);
 	stream.Serialize(JumpjetSpeed);
 	stream.Serialize(JumpjetClimb);
+	stream.Serialize(JumpjetCrash);
 	stream.Serialize(JumpjetHeight);
 	stream.Serialize(JumpjetAccel);
 	stream.Serialize(JumpjetWobbles);
