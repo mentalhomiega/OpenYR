@@ -1451,7 +1451,8 @@ void HouseClass::AI(void)
 	}
 
 	/*
-	**	Check to see if the house wins.
+	**	Check to see if the house wins. Only the player's own result ends the game, so a
+	**	computer house's win or loss is dropped here.
 	*/
 	if (IsToWin && BorrowedTime == 0 && (Session.Type != GAME_NORMAL || Blockage <= 0)) {
 		CDTimerClass<SystemTimerClass> _timer = TIMER_SECOND * 2;
@@ -1461,8 +1462,6 @@ void HouseClass::AI(void)
 		IsToWin = false;
 		if (Is_Player_Control()) {
 			PlayerWins = true;
-		} else {
-			PlayerLoses = true;
 		}
 	}
 
@@ -1477,8 +1476,6 @@ void HouseClass::AI(void)
 		IsToLose = false;
 		if (Is_Player_Control()) {
 			PlayerLoses = true;
-		} else {
-			PlayerWins = true;
 		}
 	}
 
@@ -3769,10 +3766,10 @@ void HouseClass::MPlayer_Defeated(void)
 
 		if (PlayerPtr->IsDefeated) {
 			DebugString("MPlayer_Defeated() - Flag_To_Lose\n");
-			Flag_To_Lose(false);
+			PlayerPtr->Flag_To_Lose(false);
 		} else {
 			DebugString("MPlayer_Defeated() - Flag_To_Win\n");
-			Flag_To_Win(false);
+			PlayerPtr->Flag_To_Win(false);
 		}
 	}
 }

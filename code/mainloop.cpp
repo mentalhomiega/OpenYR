@@ -193,7 +193,8 @@ static void Finish_Decided_Game(void)
 		Send_Statistics_Packet();
 	}
 
-	bool const won = PlayerWins;
+	// A loss set in the same frame as a win decides the game.
+	bool const won = PlayerWins && !PlayerLoses;
 	PlayerWins = false;
 	PlayerLoses = false;
 	PlayerRestarts = false;
