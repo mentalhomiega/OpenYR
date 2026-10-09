@@ -9,7 +9,7 @@ when_omitted:
 
 An inaccurate [`Arcing=yes`](/keys/arcing/) projectile is aimed at a point scattered away from its target. Without `Arcing`, the setting does not move the aim point; its smaller effects are described below.
 
-The scatter distance is drawn between half of [`[CombatDamage] BallisticScatter`](/keys/ballisticscatter/) and all of it, in a random direction. At the engine default that is half a cell to a whole cell. The distance does not grow with range: a shot at maximum range is scattered no more than a point-blank one. The firer solves its arc for the scattered point, so the shell comes down short, long or wide of the target. If the arc cannot reach the scattered point, that shot is not fired.
+The scatter distance is drawn between half of [`[CombatDamage] BallisticScatter`](/keys/ballisticscatter/) and all of it, in a random direction. At the engine default that is half a cell to a whole cell. The distance does not grow with range: a shot at maximum range is scattered no more than a point-blank one. The exception is a flak shell with [`FlakScatter=yes`](/keys/flakscatter/), which scatters by its distance to the target. The firer solves its arc for the scattered point, so the shell comes down short, long or wide of the target. If the arc cannot reach the scattered point, that shot is not fired.
 
 A shell that is not [`Bouncy=yes`](/keys/bouncy/) still bursts on its target when it comes down within a cell and a half of it, or farther for a fast shell, unless it is [`Airburst=yes`](/keys/airburst/). At the engine default the scatter stays inside that reach, so for such a shell the scatter shows in its flight but not in where it bursts. [Where the blast lands](/systems/projectile-flight/#where-the-blast-lands) gives the exact reach.
 

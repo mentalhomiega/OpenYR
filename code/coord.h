@@ -20,6 +20,7 @@ class Coord;
 class Cell;
 
 Coord Coord_Scatter(Coord const & coord, int distance, bool lock=false);
+Coord Ballistic_Offset(Coord const & point, int spread, int draw);
 Coord Adjacent_Coord_With_Height(Coord const & coord, FacingType dir);
 
 

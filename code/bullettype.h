@@ -126,6 +126,13 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsInaccurate;
 
 		/*
+		**	If this bullet scatters its shots, as flak does, then this flag will be true. The aim point
+		**	of an invisible bullet, and the aim of an arcing bullet, moves by a random amount that
+		**	grows with the distance to the target (gamemd BulletClass::MoveTo and TechnoClass::Fire).
+		*/
+		bool FlakScatter;
+
+		/*
 		**	If this bullet can be fired on aircraft, then this flag will be true.
 		*/
 		bool IsAntiAircraft;

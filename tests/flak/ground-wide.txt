@@ -1,0 +1,10 @@
+; The same Flak Track shots with BallisticScatter raised to 1024 leptons for this run, so the scatter exceeds the burst reach.
+; The "AUTOTEST flak impact FlakTProj" lines then land at the scattered points, not all on the aim point.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script tests/flak/ground-wide.txt -Map XMP29U2.MAP -Seconds 120
+30 dump
+35 reveal
+36 rule BallisticScatter 1024
+40 grantunit HTK 62 20
+42 spawn NAPOWR 72 20
+50 strike HTK 72 20
+1400 quit

@@ -20,6 +20,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
+| `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
 | `move <TypeID> <x> <y>` | Orders the player-controlled objects of that type (see `select`) to the cell |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
 | `view <x> <y>` | Centres the view on the cell |
@@ -56,9 +57,11 @@ A command runs once the game frame reaches its frame, in file order.
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the line to the debug log |
+| `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
+| `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
 | `quit` | Ends the process |
 
-Every step writes an `AUTOTEST` line to the debug log. `ScreenCapture` and `record` save pictures to
+Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. `ScreenCapture` and `record` save pictures to
 the `Screenshots` folder of the user data directory, numbered in order, so a recording can be joined
 into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 

@@ -1,0 +1,10 @@
+; A computer Flak Track's invisible anti-air shot (FlakProj: Inviso, FlakScatter) fires at a player helicopter flying past it.
+; Each shot logs "AUTOTEST scatter moveto FlakProj": the target point moves by the spread, up to twice BallisticScatter
+; times the distance over the range. Shots with a spread above 128 leptons burst at the moved point.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script tests/flak/air-move.txt -Map XMP29U2.MAP -Seconds 120
+30 dump
+35 reveal
+40 grantunit HIND 66 22
+42 spawn HTK 74 20
+50 move HIND 84 22
+600 quit
