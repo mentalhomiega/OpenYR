@@ -1,0 +1,17 @@
+; An organic vehicle heals at the infantry rate: a house with a tech hospital (InfantryGainSelfHeal=1)
+; mends a wounded DNOB (Animal T-Rex, Organic=yes). A wounded MTNK gets no heal, since the house has no
+; machine shop (UnitsGainSelfHeal=0). SelfHealInfantryFrames=50 and Amount=20 apply to the DNOB.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 own CAHOSP 62 26
+110 own DNOB 56 30
+111 own MTNK 56 34
+120 hurt DNOB 20
+121 hurt MTNK 20
+200 where DNOB
+260 where DNOB
+300 where MTNK
+400 where DNOB
+500 where MTNK
+600 quit

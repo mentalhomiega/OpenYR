@@ -317,9 +317,9 @@ A healer's kind decides what it can heal: infantry heal infantry, and every othe
 
 ## Healing from support structures
 
-Structures with [`InfantryGainSelfHeal`](/keys/infantrygainselfheal/), such as a hospital, mend every infantryman their owner has, and structures with [`UnitsGainSelfHeal`](/keys/unitsgainselfheal/), such as a machine shop, mend every vehicle, wherever it is. No order or credits are needed.
+Structures with [`InfantryGainSelfHeal`](/keys/infantrygainselfheal/), such as a hospital, mend every infantryman their owner has, and structures with [`UnitsGainSelfHeal`](/keys/unitsgainselfheal/), such as a machine shop, mend every vehicle that is not [`Organic=yes`](/keys/organic/), wherever it is. An `Organic=yes` vehicle is mended by the infantry settings instead. No order or credits are needed.
 
-Every [`SelfHealInfantryFrames`](/keys/selfhealinfantryframes/) frames, each damaged infantryman gains [`SelfHealInfantryAmount`](/keys/selfhealinfantryamount/) strength for every point of `InfantryGainSelfHeal` its house's structures add up to. Vehicles use [`SelfHealUnitFrames`](/keys/selfhealunitframes/) and [`SelfHealUnitAmount`](/keys/selfhealunitamount/) with `UnitsGainSelfHeal` the same way. Aircraft and structures gain nothing.
+Every [`SelfHealInfantryFrames`](/keys/selfhealinfantryframes/) frames, each damaged infantryman gains [`SelfHealInfantryAmount`](/keys/selfhealinfantryamount/) strength for every point of `InfantryGainSelfHeal` its house's structures add up to. Vehicles that are not `Organic=yes` use [`SelfHealUnitFrames`](/keys/selfhealunitframes/) and [`SelfHealUnitAmount`](/keys/selfhealunitamount/) with `UnitsGainSelfHeal` the same way. An `Organic=yes` vehicle uses the infantry settings, with `InfantryGainSelfHeal`. Aircraft and structures gain nothing.
 
 - Healing stops at maximum strength and has no ceiling.
 - A structure counts from the moment it is placed until it is sold or destroyed, whether or not its owner has power. A captured structure counts for its new owner.

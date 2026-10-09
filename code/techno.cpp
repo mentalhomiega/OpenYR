@@ -3606,10 +3606,10 @@ void TechnoClass::AI(void)
 		}
 	}
 
-	// A house's hospitals mend its infantry and its machine shops its vehicles, as
-	// TechnoClass::Update (0x6F9E50) does.
+	// A house's hospitals mend its infantry and its organic vehicles, and its machine shops its
+	// other vehicles, as TechnoClass::Update (0x6F9E50) does.
 	if ((RTTI == RTTI_INFANTRY || RTTI == RTTI_UNIT) && Strength > 0 && Strength < TClass->MaxStrength) {
-		bool infantry = RTTI == RTTI_INFANTRY;
+		bool infantry = RTTI == RTTI_INFANTRY || TClass->IsOrganic;
 		int frames = infantry ? Rule->SelfHealInfantryFrames : Rule->SelfHealUnitFrames;
 		if (frames > 0 && (Frame % frames) == 0) {
 			int step = (infantry ? Rule->SelfHealInfantryAmount : Rule->SelfHealUnitAmount) * House->Self_Heal_Points(infantry);
