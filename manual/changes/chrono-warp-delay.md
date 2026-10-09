@@ -24,4 +24,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A teleport locomotor no longer jumps at once. It waits a warp-out delay set by `ChronoTrigger`, `ChronoDistanceFactor`, `ChronoMinimumDelay` and `ChronoRangeMinimum`, then lands and holds for `ChronoDelay` frames. A Chrono Miner's AI waits through both, as it does in Yuri's Revenge. Before, the jump was instant and nothing held the unit after it landed.
+We made a teleport wait before it jumps. The wait is set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/). The object then lands and holds still for [`ChronoDelay`](/keys/chronodelay/) frames. Its AI waits through both, as in Yuri's Revenge. Before, the jump was instant and nothing held the unit after it landed.

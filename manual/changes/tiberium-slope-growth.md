@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Tiberium no longer grows on a sloped cell, and it no longer spreads from one or onto one. Before, the four simple slopes took new Tiberium through their slope overlays, and a type whose set had none could waste its spread passes. A new spread cell also starts at stage 3, as in Yuri's Revenge, instead of stage 5.
+We stopped Tiberium from growing or spreading onto a slope, as in Yuri's Revenge. Before, the four simple slopes took new Tiberium through their slope overlays, and a type whose set had none could waste its spread passes. A spreading patch also starts at stage 3 instead of stage 5.

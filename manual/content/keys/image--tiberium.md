@@ -18,7 +18,7 @@ when_omitted:
 | `4` | The third Tiberium set |
 | `-1` | None, the same as leaving the key out |
 
-Every set has twelve growth stages. Only the large-Tiberium set has no slope overlays, so a type that uses it never spreads onto a slope and is not drawn on one.
+Every set has twelve growth stages. Only the large-Tiberium set has no slope overlays, so a type that uses it shows nothing on a slope where a map places its Tiberium. No type grows or spreads onto a slope.
 
 :::caution[Give every Tiberium type an Image from 1 to 4]
 A Tiberium type with `Image=-1`, or with no `Image`, has no overlay set. The game can crash as soon as any Tiberium is on the map.

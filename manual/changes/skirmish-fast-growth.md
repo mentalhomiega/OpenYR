@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A skirmish game no longer takes [`TiberiumGrows`](/keys/tiberiumgrows/#scope-scenarios) from the map's `[SpecialFlags]`. It keeps the growth speed the session already has, which is the full delay unless a network game earlier in the session turned fast growth on. Only a campaign mission reads the entry from its map, as in Yuri's Revenge.
+We stopped a skirmish from reading [`TiberiumGrows`](/keys/tiberiumgrows/#scope-scenarios) from its map. A skirmish keeps the growth speed the session already has: the full delay, unless a network game earlier in the session turned fast growth on. Only a campaign mission reads the entry from its map, as in Yuri's Revenge.

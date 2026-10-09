@@ -79,7 +79,7 @@ Harvesters, storage buildings and houses each hold four Tiberium compartments, o
 [`Image`](/keys/image/#scope-tiberium) selects the type's overlay set. Every set has twelve growth stages, and the set decides whether the type can grow on sloped ground.
 
 :::note[The large-Tiberium set]
-In the shipped rules, the twelve overlays of the [`Image=2`](/keys/image/#scope-tiberium) set have no shape of their own and show their [`CellAnim`](/keys/cellanim/) instead, so a cell looks the same at every stage. They also set `Land=Rock`, so harvesters cannot collect them. The set has no slope overlays, so a type using it never spreads onto a slope.
+In the shipped rules, the twelve overlays of the [`Image=2`](/keys/image/#scope-tiberium) set have no shape of their own and show their [`CellAnim`](/keys/cellanim/) instead, so a cell looks the same at every stage. They also set `Land=Rock`, so harvesters cannot collect them. The set has no slope overlays, so a type using it shows nothing on a slope.
 :::
 
 :::danger[Give every registered type an overlay set]
