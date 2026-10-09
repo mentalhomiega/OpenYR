@@ -3121,6 +3121,10 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 
 					base->ArchiveTarget = Rally_Point_For(base);
 
+					if (Class->IsNaval) {
+						return(Exit_Naval_Object(base));
+					}
+
 					if (Mission == MISSION_UNLOAD) {
 						for (int index = 0; index < Buildings.Count(); index++) {
 							BuildingClass * bldg = Buildings[index];
@@ -7099,6 +7103,61 @@ int BuildingClass::Flush_For_Placement(TechnoClass * techno, Cell const & cell)
 		return(((BuildingTypeClass const *)techno->Class_Of())->Flush_For_Placement(cell, House));
 	}
 	return(-1);
+}
+
+
+/// <summary>
+/// Releases a ship from a naval yard, as the naval branch of BuildingClass::KickOutUnit does
+/// (0x443C60). The ship goes to the first water cell out of the yard in the direction of its
+/// rally point when that cell is free, and otherwise to the water cell nearest the yard. The
+/// yard's own exit coordinate is not used, since it can lie on land or inside the footprint.
+/// </summary>
+/// <param name="base">The ship leaving the yard.</param>
+/// <returns>int; 2 when the ship was placed, 0 when no cell could take it.</returns>
+int BuildingClass::Exit_Naval_Object(TechnoClass * base)
+{
+	// The yard queues its unload mission when no radio link holds, as the naval branch of gamemd does.
+	if (!In_Radio_Contact()) {
+		Assign_Mission(MISSION_UNLOAD);
+	}
+
+	Cell const start = Get_Cell();
+	Cell exitcell = CELL_NONE;
+
+	AbstractClass * rally = base->ArchiveTarget;
+	if (rally != NULL) {
+		FacingType const face = ::Direction(Coord(start), rally->Center_Coord()).As_Facing();
+		Cell cell = start;
+		for (int step = 0; step < 16 && Map[cell].Cell_Building() == this; step++) {
+			cell = Adjacent_Cell(cell, face);
+		}
+		if (Map[cell].Land_Type() == LAND_WATER && Map[cell].Cell_Techno() == NULL && Map.In_Local_Radar(cell)) {
+			exitcell = cell;
+		}
+	}
+
+	if (exitcell == CELL_NONE) {
+		exitcell = Map.Nearby_Location(start, base->TClass->Speed);
+	}
+	if (exitcell == CELL_NONE) {
+		return(0);
+	}
+
+	Coord const exitcoord = Map[exitcell].Center_Coord();
+	ScenarioInit++;
+	if (base->Unlimbo(exitcoord, DIR_E)) {
+		base->Mark(MARK_UP);
+		base->Set_Coord(exitcoord);
+		base->Mark(MARK_DOWN);
+		if (rally != NULL) {
+			base->Assign_Destination(rally);
+			base->Assign_Mission(MISSION_MOVE);
+		}
+		ScenarioInit--;
+		return(2);
+	}
+	ScenarioInit--;
+	return(0);
 }
 
 
