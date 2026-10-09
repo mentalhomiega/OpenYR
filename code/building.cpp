@@ -2891,6 +2891,12 @@ void BuildingClass::Assign_Rally_Point(Cell const & cell)
 		mzone = MZONE_FLYER;
 	}
 
+	// A naval structure searches with the amphibious zone, so a water cell can be a rally point.
+	if (Class->IsNaval) {
+		speed = SPEED_AMPHIBIOUS;
+		mzone = MZONE_AMPHIBIOUS_CRUSHER;
+	}
+
 	int zone = Map.Get_Cell_Zone(Get_Coord().As_Cell(), mzone, underbridge);
 
 	Cell nearbyloc = Map.Nearby_Location(cell, speed, zone, mzone, underbridge);
