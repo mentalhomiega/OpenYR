@@ -111,6 +111,7 @@ struct UISkirmishState
 	bool ShortGame = false;
 	bool MultiEngineer = false;
 	bool SuperWeapons = true;
+	bool BuildOffAlly = false;
 
 	int UnitCount = 0;
 	int UnitCountMin = 0;

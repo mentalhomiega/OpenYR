@@ -279,6 +279,8 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 		State.MultiEngineer = intent.Value != 0;
 	} else if (intent.Name == "superweapons") {
 		State.SuperWeapons = intent.Value != 0;
+	} else if (intent.Name == "buildoffally") {
+		State.BuildOffAlly = intent.Value != 0;
 	} else if (intent.Name == "units") {
 		State.UnitCount = Clamp(intent.Value, State.UnitCountMin, State.UnitCountMax);
 	} else if (intent.Name == "credits") {
@@ -468,6 +470,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 				&& model.Bind("shortgame", &state.ShortGame)
 				&& model.Bind("engineer", &state.MultiEngineer)
 				&& model.Bind("superweapons", &state.SuperWeapons)
+				&& model.Bind("buildoffally", &state.BuildOffAlly)
 				&& model.Bind("units", &state.UnitCount)
 				&& model.Bind("unitsmin", &state.UnitCountMin)
 				&& model.Bind("unitsmax", &state.UnitCountMax)

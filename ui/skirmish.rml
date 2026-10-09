@@ -63,6 +63,7 @@
 				<label class="check"><input type="checkbox" data-attrif-checked="shortgame" data-event-click="queue('short', shortgame ? 0 : 1)"/>Short Game</label>
 				<label class="check"><input type="checkbox" data-attrif-checked="engineer" data-event-click="queue('engineer', engineer ? 0 : 1)"/>Multi Engineer</label>
 				<label class="check"><input type="checkbox" data-attrif-checked="superweapons" data-event-click="queue('superweapons', superweapons ? 0 : 1)"/>Superweapons</label>
+				<label class="check"><input type="checkbox" data-attrif-checked="buildoffally" data-event-click="queue('buildoffally', buildoffally ? 0 : 1)"/>Build Off Ally</label>
 			</div>
 		</div>
 		<div id="right">
