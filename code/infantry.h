@@ -102,6 +102,9 @@ class InfantryClass : public FootClass
 		*/
 		bool WasSelected;
 
+		// Set when a computer's soldier stops to dig in (InfantryClass::Do_Guard_Deploy, 0x521320).
+		bool ShouldDeploy;
+
 		// Whether an AmphibiousDestroyer soldier was last animated on land (1), in water (0) or neither yet (2).
 		int LandState;
 
@@ -149,6 +152,9 @@ class InfantryClass : public FootClass
 		bool Can_Cheer(void) const;
 		void Cheer(bool force=false);
 		bool Is_Area_Fire_Deployer(void) const;
+		int Do_Guard_Deploy(void);
+		void Refresh_Deployed_Target(void);
+		int Deploy_Delay(void) const;
 		virtual void const * Get_Image_Data(void) const override;
 		int Shape_Number(void) const;
 		virtual ObjectTypeClass const * Class_Of(void) const override;

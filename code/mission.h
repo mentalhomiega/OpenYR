@@ -68,6 +68,9 @@ class MissionClass : public ObjectClass
 		// Frames since the mission began or a mission handler last reset it.
 		int MissionAccumulateTime;
 
+		// The frame the current mission was set or started on, unlike MissionAccumulateTime, which handlers reset.
+		int MissionStartFrame;
+
 		bool IsMissionUnloadStandby;
 
 		/*---------------------------------------------------------------------

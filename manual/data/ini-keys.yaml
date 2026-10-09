@@ -105,6 +105,24 @@ AIAlternateProductionCreditCutoff:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIAutoDeployFrameDelay:
+  key: AIAutoDeployFrameDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: AIAutoDeployFrameDelay
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIBaseDefenseCoefficient:
   key: AIBaseDefenseCoefficient
   scopes:

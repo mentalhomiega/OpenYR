@@ -85,6 +85,7 @@ MissionClass::MissionClass(void) :
 	MissionQueue(MISSION_NONE),
 	Status(0),
 	MissionAccumulateTime(0),
+	MissionStartFrame(0),
 	IsMissionUnloadStandby(false),
 	Timer(0)
 {
@@ -156,6 +157,7 @@ void MissionClass::Set_Mission(MissionType mission)
 	CurrentMission = mission;
 	MissionQueue = MISSION_NONE;
 	MissionAccumulateTime = 0;
+	MissionStartFrame = Frame;
 	IsMissionUnloadStandby = false;
 }
 
@@ -328,6 +330,7 @@ bool MissionClass::Commence(void)
 		Timer = 0;
 		Status = 0;
 		MissionAccumulateTime = 0;
+		MissionStartFrame = Frame;
 		IsMissionUnloadStandby = false;
 		return(true);
 	}
@@ -576,6 +579,7 @@ void MissionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MissionQueue);
 	stream.Serialize(Status);
 	stream.Serialize(MissionAccumulateTime);
+	stream.Serialize(MissionStartFrame);
 	stream.Serialize(IsMissionUnloadStandby);
 	stream.Serialize(Timer);
 }
@@ -593,6 +597,7 @@ void MissionClass::Compute_CRC(CRCEngine &crc) const
 	crc(SuspendedMission);
 	crc(MissionQueue);
 	crc(Status);
+	crc(MissionStartFrame);
 	crc((int)Timer);
 }
 

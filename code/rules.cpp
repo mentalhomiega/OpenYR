@@ -815,7 +815,9 @@ RulesClass::RulesClass(void) :
 	HunterSeekerAscentSpeed(0),
 	HunterSeekerEmergeSpeed(0)
 {
-	/// nothing
+	AIAutoDeployFrameDelay.Add(15);
+	AIAutoDeployFrameDelay.Add(25);
+	AIAutoDeployFrameDelay.Add(100);
 }
 
 
@@ -1491,6 +1493,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		PrismSupportMax = ini.Get_Int(GENERAL, "PrismSupportMax", PrismSupportMax);
 		PrismSupportDelay = ini.Get_Int(GENERAL, "PrismSupportDelay", PrismSupportDelay);
 		PrismSupportDuration = ini.Get_Int(GENERAL, "PrismSupportDuration", PrismSupportDuration);
+		AIAutoDeployFrameDelay = ini.Get_IntList(GENERAL, "AIAutoDeployFrameDelay", AIAutoDeployFrameDelay);
 		AllyParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AllyParaDropInf", AllyParaDropInf);
 		AllyParaDropNum = ini.Get_IntList(GENERAL, "AllyParaDropNum", AllyParaDropNum);
 		SovParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "SovParaDropInf", SovParaDropInf);
@@ -2720,6 +2723,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoSparkle1);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
+	stream.Serialize(AIAutoDeployFrameDelay);
 	stream.Serialize(AllyParaDropInf);
 	stream.Serialize(AllyParaDropNum);
 	stream.Serialize(SovParaDropInf);

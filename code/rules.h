@@ -243,6 +243,12 @@ class RulesClass
 		 * of each, how close to the target a plane starts dropping, and the spy plane's camera
 		 * sound and how many frames apart it photographs.
 		 */
+		/*
+		 * The frames the computer waits, by its difficulty (Easy, Normal, Hard), before it digs in a
+		 * Deployer soldier that is on guard (InfantryClass::Do_Guard_Deploy, 0x521320).
+		 */
+		TypeList<int> AIAutoDeployFrameDelay;
+
 		TypeList<InfantryTypeClass const *> AllyParaDropInf;
 		TypeList<int> AllyParaDropNum;
 		TypeList<InfantryTypeClass const *> SovParaDropInf;
