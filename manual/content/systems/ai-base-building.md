@@ -346,6 +346,14 @@ Finally the base rectangle becomes the wall ring, so a later `-3` node plans its
 Every side-specific choice on this page is read from the side of the country the house [acts as](/keys/actslike/), through the section named after that side. The first two sides start from the `GDI`- and `Nod`-prefixed keys in the rules. A house acting for no country, or for a country in no side, plans with the defaults of a third or later side. Those are a coefficient of 1, two placeholders per difficulty step, no towers, and a wall when the global `AIBuildsWalls` allows one.
 :::
 
+### Protective walls
+
+A defense turn first takes the wall roll. The house draws a number from `0` to `99`, and below its slot's entry in [`AIPickWallDefensePercent`](/keys/aipickwalldefensepercent/) it looks for a structure to wall. The roll is drawn on every defense turn, and the house does not check [`AIBuildsWalls`](/keys/aibuildswalls/) for it.
+
+The structure is the last one before the defense turn whose type has [`ProtectWithWall=yes`](/keys/protectwithwall/), whose plan node is built, and whose next plan node is not a wall. The house needs a [`ConcreteWalls`](/keys/concretewalls/) entry its country may own. The walls are laid one cell outside the foundation on each side: the cells along the north and south edges, then along the west and east edges, then the four corners. Their nodes go straight after the structure's node, so they are built before the defense. The defense turn itself is then removed from the plan, so that turn places no defense.
+
+When the roll fails, or no structure qualifies, the turn fills the defense as the planner describes above.
+
 ## Power and money interventions
 
 A house that is not following a map plan checks power before it starts a structure. It inserts a power plant node just before the current node when all of these hold:

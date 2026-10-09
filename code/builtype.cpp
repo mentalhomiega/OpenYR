@@ -280,6 +280,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsEligibileForAllyBuilding(false),
 	IsBibbed(false),
 	IsWall(false),
+	ProtectWithWall(false),
 	IsCaptureable(false),
 	IsNeedsEngineer(false),
 	IsCanBeOccupied(false),
@@ -1291,6 +1292,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsEligibileForAllyBuilding = ini.Get_Bool(Name(), "EligibileForAllyBuilding", IsEligibileForAllyBuilding);
 
 		IsWall = ini.Get_Bool(Name(), "Wall", IsWall);
+		ProtectWithWall = ini.Get_Bool(Name(), "ProtectWithWall", ProtectWithWall);
 		IsWeeder = ini.Get_Bool(Name(), "Weeder", IsWeeder);
 		IsHelipad = ini.Get_Bool(Name(), "Helipad", IsHelipad);
 		NumberOfDocks = ini.Get_Int(Name(), "NumberOfDocks", NumberOfDocks);
@@ -2206,6 +2208,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsEligibileForAllyBuilding);
 	crc(IsBibbed);
 	crc(IsWall);
+	crc(ProtectWithWall);
 	crc(IsCaptureable);
 	crc(IsNeedsEngineer);
 	crc(IsPowered);
@@ -2355,6 +2358,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEligibileForAllyBuilding);
 	stream.Serialize(IsBibbed);
 	stream.Serialize(IsWall);
+	stream.Serialize(ProtectWithWall);
 	stream.Serialize(IsCaptureable);
 	stream.Serialize(IsNeedsEngineer);
 	stream.Serialize(IsCanBeOccupied);

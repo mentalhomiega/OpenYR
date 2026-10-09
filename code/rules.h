@@ -1410,6 +1410,10 @@ class RulesClass
 		// dropped on the failure after this count, outside campaign games.
 		int MaximumBuildingPlacementFailures;
 
+		// The percent chance, per difficulty slot, that a computer house rings a protected structure with
+		// walls instead of placing the base defense at its turn.
+		TypeList<int> AIPickWallDefensePercent;
+
 		// The ore gatherers a computer house keeps for each refinery it owns, per difficulty slot.
 		TypeList<int> HarvestersPerRefinery;
 
