@@ -1339,6 +1339,10 @@ void Run(StepType const & step)
 			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo);
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
+			if (techno->RTTI == RTTI_INFANTRY) {
+				InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
+				DebugString("AUTOTEST   soldier %s do %d deployed %d\n", soldier->Class->Name(), (int)soldier->Doing, (int)soldier->Is_Deployed());
+			}
 		}
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
