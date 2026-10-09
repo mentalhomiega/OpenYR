@@ -275,6 +275,21 @@ TeamClass * TeamTypeClass::Create_One_Of(HouseClass * house) const
 }
 
 
+/// <summary>
+/// Gives a team type that has no script a new one, as gamemd does before a reinforcement.
+/// The new script holds a single zero-length Guard mission and stays on the team type, so later
+/// teams of that type share it. A team type that already has a script is left alone.
+/// </summary>
+void TeamTypeClass::Ensure_Script(void)
+{
+	if (Script == NULL) {
+		Script = new ScriptTypeClass();
+		Script->MissionList[0] = TeamMissionClass(TMISSION_GUARD, 0);
+		Script->MissionCount = 1;
+	}
+}
+
+
 /***********************************************************************************************
  * TeamTypeClass::Destroy_All_Of -- Destroy all teams of this type.                            *
  *                                                                                             *
