@@ -6828,14 +6828,18 @@ bool HouseClass::Fetch_Waypoint_Data(WaypointClass * waypt, PathType & xpath, ch
 /// <param name="bycapture">Was this object lost to a capture?</param>
 void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 {
-	TechnoTypeClass const * ttype;
+	// An object in limbo was never counted as active (HouseClass::RegisterLoss, 0x5025F0 runs only out of limbo).
+	if (techno->IsInLimbo) return;
+
+	TechnoTypeClass const * ttype = techno->TClass;
 
 	switch (techno->Fetch_RTTI()) {
 		case RTTI_BUILDING:
-			ttype = techno->TClass;
-			ABQuantity.Decrement(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				ABQuantity.Decrement(ttype->Fetch_Heap_ID());
+			}
 
-			if (techno != NULL) {
+			{
 				BuildingClass * bptr = (BuildingClass *)techno;
 
 				RecalcPower = true;
@@ -6855,18 +6859,22 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 			break;
 
 		case RTTI_AIRCRAFT:
-			ttype = techno->TClass;
-			AAQuantity.Decrement(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				AAQuantity.Decrement(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_INFANTRY:
-			ttype = techno->TClass;
-			AIQuantity.Decrement(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				AIQuantity.Decrement(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_UNIT:
-			ttype = techno->TClass;
-			AUQuantity.Decrement(ttype->Fetch_Heap_ID());
+			// Unlike the other types, a unit with DontScore is not subtracted here, though it was added on entry (see Tracking_Active_Add).
+			if (!ttype->IsDontScore) {
+				AUQuantity.Decrement(ttype->Fetch_Heap_ID());
+			}
 			break;
 	}
 }
@@ -6880,13 +6888,17 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 /// <param name="techno">The object to begin tracking.</param>
 void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 {
-	TechnoTypeClass const * ttype;
+	// An object in limbo is not active until it leaves limbo (HouseClass::RegisterGain, 0x502A80 runs only out of limbo).
+	if (techno->IsInLimbo) return;
+
+	TechnoTypeClass const * ttype = techno->TClass;
 	BuildingClass * bptr;
 
 	switch (techno->Fetch_RTTI()) {
 		case RTTI_BUILDING:
-			ttype = techno->TClass;
-			ABQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				ABQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			bptr = dynamic_cast<BuildingClass *>(techno);
 			if (bptr != NULL) {
 				Adjust_Drain(bptr->Power_Drain());
@@ -6896,19 +6908,20 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 			break;
 
 		case RTTI_AIRCRAFT:
-			ttype = techno->TClass;
-			AAQuantity.Increment(ttype->Fetch_Heap_ID());
+			if (!ttype->IsDontScore) {
+				AAQuantity.Increment(ttype->Fetch_Heap_ID());
+			}
 			break;
 
 		case RTTI_INFANTRY:
-			if (!((InfantryClass *)techno)->IsTechnician) {
-				ttype = techno->TClass;
+			// A technician is not counted as active (RegisterGain checks InfantryClass::Technician).
+			if (!((InfantryClass *)techno)->IsTechnician && !ttype->IsDontScore) {
 				AIQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_UNIT:
-			ttype = techno->TClass;
+			// Every unit is counted as active, DontScore or not (RegisterGain has no DontScore check for units).
 			AUQuantity.Increment(ttype->Fetch_Heap_ID());
 			break;
 	}

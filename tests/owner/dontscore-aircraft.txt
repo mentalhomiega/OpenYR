@@ -1,0 +1,9 @@
+; A DontScore aircraft (V3ROCKET) that a mind control capture gives to the player. Neither house counts it
+; as owned or in service, so "quantity V3ROCKET" writes no line before or after the capture.
+; Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn V3ROCKET 48 90
+90 quantity V3ROCKET
+120 transfer V3ROCKET
+130 quantity V3ROCKET
+200 quit
