@@ -1633,6 +1633,14 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		if (!forced) {
 			damage = Modify_Damage(damage, warhead, Class_Of()->Armor, distance);
 		}
+
+		/*
+		**	A building whose type has CanC4=no takes at least one point even when armor
+		**	reduces the hit to nothing (ObjectClass::Take_Damage, 0x5F5390).
+		*/
+		if (RTTI == RTTI_BUILDING && !((BuildingClass *)this)->Class->IsCanC4 && damage < 1) {
+			damage = 1;
+		}
 		if (damage == 0) return(RESULT_NONE);
 
 		/*
