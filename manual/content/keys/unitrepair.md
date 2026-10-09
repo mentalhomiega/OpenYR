@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-`UnitRepair=yes` makes a building a service depot. It takes in one vehicle or aircraft per [dock](/keys/numberofdocks--buildingtype/), one dock unless the type sets more, and repairs each step by step, charging credits for each step. [The repair cycle](/systems/repair/#one-step-at-a-time) covers the steps and their cost.
+`UnitRepair=yes` makes a building a service depot. It takes in one vehicle or aircraft per [dock](/keys/numberofdocks/), one dock unless the type sets more, and repairs each step by step, charging credits for each step. [The repair cycle](/systems/repair/#one-step-at-a-time) covers the steps and their cost.
 
 The flag also has these effects:
 

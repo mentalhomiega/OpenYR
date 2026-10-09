@@ -252,7 +252,7 @@ A structure, a vehicle and an aircraft change owner through the same steps.
 A captured structure also goes through these steps:
 
 - The storage capacity from its [`Storage`](/keys/storage/) moves to the new owner. So does the Tiberium stored in it: the losing house loses it, and the new owner gains it at once without it counting as harvested.
-- Anything loaded inside is captured with it. Each object in radio contact is captured too if the structure is a weapons factory or the object is within a quarter of a cell of its docking point, which is its own dock's spot at a structure with several [docks](/keys/numberofdocks--buildingtype/). Any other object in radio contact is told to move away, and contact is broken.
+- Anything loaded inside is captured with it. Each object in radio contact is captured too if the structure is a weapons factory or the object is within a quarter of a cell of its docking point, which is its own dock's spot at a structure with several [docks](/keys/numberofdocks/). Any other object in radio contact is told to move away, and contact is broken.
 - Production in progress is abandoned. The object under construction is removed, and the money spent on it so far is refunded to the losing house.
 - Both houses recount their factories. A captured construction yard moves between the two houses' lists of construction yards. If the player loses their last construction yard this way, any structure placement in progress is canceled.
 - The structure opens as a capture, not as a new build. It therefore gives out no free units: a captured [`FreeUnit`](/keys/freeunit/) structure yields nothing, and a captured helipad gets no free aircraft.

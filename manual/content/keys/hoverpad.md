@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A structure with this flag receives one free aircraft when its construction finishes. A structure placed already built receives it when it first appears on the map. Capturing the structure gives the new owner none. The aircraft is the first type listed in [`PadAircraft`](/keys/padaircraft/) and belongs to the structure's house. It appears parked on the structure, at ground level, at its center, or on its dock's spot when the structure has several [docks](/keys/numberofdocks--buildingtype/), facing [`PoseDir`](/keys/posedir/). It starts on guard, linked to the structure as the aircraft docked there.
+A structure with this flag receives one free aircraft when its construction finishes. A structure placed already built receives it when it first appears on the map. Capturing the structure gives the new owner none. The aircraft is the first type listed in [`PadAircraft`](/keys/padaircraft/) and belongs to the structure's house. It appears parked on the structure, at ground level, at its center, or on its dock's spot when the structure has several [docks](/keys/numberofdocks/), facing [`PoseDir`](/keys/posedir/). It starts on guard, linked to the structure as the aircraft docked there.
 
 No aircraft is given when **any of** the following holds:
 

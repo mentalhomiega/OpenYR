@@ -1,7 +1,5 @@
 ---
 key: NumberOfDocks
-scope: buildingtype
-label: Number of docks
 summary: How many objects a structure services at once, each on its own dock.
 when_omitted:
   kind: value
