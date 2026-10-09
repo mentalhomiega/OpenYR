@@ -54,7 +54,7 @@ Because the search reaches one cell beyond the `Adjacent` value, `Adjacent=0` st
 
 ## Building off an ally
 
-`BuildOffAlly=yes` in the [launch file](/formats/spawn-ini/) lets a player's placements use an ally's buildings as anchors, but only those whose type sets [`EligibileForAllyBuilding=yes`](/keys/eligibileforallybuilding/). The stock rules set that flag only on the two construction yards, so with the stock rules allies can place next to each other's construction yards and no other structure.
+`BuildOffAlly=yes` in the [launch file](/formats/spawn-ini/), or the Build Off Ally checkbox in the skirmish lobby, lets a player's placements use an ally's buildings as anchors, but only those whose type sets [`EligibileForAllyBuilding=yes`](/keys/eligibileforallybuilding/). The stock rules set that flag only on the two construction yards, so with the stock rules allies can place next to each other's construction yards and no other structure.
 
 The test reads only the alliance held by a building's owner. A building anchors when its owner counts the placing player as an ally, even if the placing player does not count its owner. The alliance does not need to run both ways.
 
