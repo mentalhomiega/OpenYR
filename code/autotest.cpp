@@ -145,6 +145,7 @@
 #include "tactical.h"
 #include "tiberium.h"
 #include "scheme.h"
+#include "side.h"
 #include "rules.h"
 #include "saveload.h"
 #include "scenario.h"
@@ -931,18 +932,29 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST spawn %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
 		}
-	} else if (step.Command == "own") {
-		// own <TypeID> x y: puts an object of the type, owned by the player, on that cell.
+	} else if (step.Command == "own" || step.Command == "neutral") {
+		// own <TypeID> x y: puts an object of the type, owned by the player, on that cell. neutral does the
+		// same for the house of the Civilian side.
+		HouseClass * owner = PlayerPtr;
+		if (step.Command == "neutral") {
+			owner = NULL;
+			SideType const civilian = SideClass::From_Name("Civilian");
+			for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+				if (Houses[index]->Class->Side == civilian) {
+					owner = Houses[index];
+				}
+			}
+		}
 		TechnoTypeClass const * type = Find_Type(step.Argument);
-		if (type != NULL) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(PlayerPtr));
+		if (type != NULL && owner != NULL) {
+			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
 			Cell cell(step.X, step.Y);
 			ScenarioInit++;
 			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
 			ScenarioInit--;
-			DebugString("AUTOTEST own %s at %d,%d: %s\n", type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
-			DebugString("AUTOTEST own %s: no such type\n", step.Argument.c_str());
+			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no civilian house");
 		}
 	} else if (step.Command == "hurt") {
 		// hurt <TypeID> <percent>: sets the strength of the player's objects of that type to that share.

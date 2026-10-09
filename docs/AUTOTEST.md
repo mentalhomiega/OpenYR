@@ -47,6 +47,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
 | `infiltrate barracks\|warfactory` | Marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans |
 | `occupy <TypeID> x y` | Puts the player's first infantry of that type inside the structure on that cell, without walking there |
+| `neutral <TypeID> x y` | Puts an object of the type on that cell, owned by the house of the Civilian side, as `own` does for the player |
 | `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
 | `veterancy <TypeID>` | Writes the rules' `VeteranRatio` and `VeteranCap`, the player's score, then each object of that type with its rank, experience and cost |
 | `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
