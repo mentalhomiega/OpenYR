@@ -280,12 +280,3 @@
   replacement:
     type: key
     id: MinLowPowerProductionSpeed
-- type: key
-  id: BuildOffAllyAnyStructure
-  route: /keys/buildoffallyanystructure/
-  search_aliases:
-    - BuildOffAllyAnyStructure
-  summary: Chose which of an ally's buildings anchored a placement, in [MultiplayerDefaults]. The engine no longer reads the key; EligibileForAllyBuilding=yes in a building type's section now marks each type an ally may build next to.
-  replacement:
-    type: key
-    id: EligibileForAllyBuilding
