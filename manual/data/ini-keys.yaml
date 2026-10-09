@@ -678,6 +678,24 @@ AIMinorSuperReadyPercent:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIPickWallDefensePercent:
+  key: AIPickWallDefensePercent
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: AIPickWallDefensePercent
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIRestrictReplaceTime:
   key: AIRestrictReplaceTime
   scopes:
@@ -27311,6 +27329,23 @@ PropulsionSoundEffect:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+ProtectWithWall:
+  key: ProtectWithWall
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: ProtectWithWall
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Proximity:
   key: Proximity
   scopes:

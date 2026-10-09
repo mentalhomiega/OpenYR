@@ -437,6 +437,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		*/
 		bool IsWall;
 
+		// A computer house rings this structure with walls when it places a base defense, once it is
+		// protected by the wall roll (HouseClass::AI_Build_Protective_Walls).
+		bool ProtectWithWall;
+
 		/*
 		**	Certain building types can be captures by enemy infantry. For those
 		**	building types, this flag will be true. Typically, military or hardened

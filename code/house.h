@@ -928,6 +928,7 @@ class HouseClass : public AbstractClass
 
 		void Calculate_Enemy_Predictions(void);
 		bool AI_Build_Defense(int nodeid, DynamicVectorClass<Cell> * cells);
+		bool AI_Build_Protective_Walls(int nodeindex);
 		void AI_Build_Wall(void);
 
 		void Clear_Anger(HouseClass const * house);

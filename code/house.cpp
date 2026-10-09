@@ -4887,6 +4887,19 @@ int HouseClass::AI_Building(void)
 	if (node->Type == DEFENSE || tower_node) {
 
 		int nodeid = Base.Nodes.ID(node);
+
+		/*
+		**	A defense turn may become a wall ring instead, when the roll picks walls.
+		*/
+		int const roll = Random_Pick(0, 99);
+		if (roll < Difficulty_Entry(Rule->AIPickWallDefensePercent, Difficulty)) {
+			int const count = Base.Nodes.Count();
+			if (AI_Build_Protective_Walls(nodeid)) {
+				Base.Nodes.Delete_Index(nodeid + Base.Nodes.Count() - count);
+				return(1);
+			}
+		}
+
 		DynamicVectorClass<Cell> * cells = NULL;
 		if (Base.OuterCells.Count() > 0) {
 			cells = &Base.OuterCells;
@@ -8239,6 +8252,64 @@ void HouseClass::Calculate_Defense_Values(BuildingClass const * building, int va
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Places a ring of wall nodes around the nearest structure that protects itself with walls.
+/// The ring is one cell outside the structure's foundation on every side, corners included, and
+/// goes straight after that structure's node, so its walls are built before the defense node at
+/// nodeindex.
+/// </summary>
+/// <param name="nodeindex">The base node the walls come ahead of.</param>
+/// <returns>bool; Was a ring placed? False when no structure qualifies or the country owns no
+/// concrete wall type.</returns>
+bool HouseClass::AI_Build_Protective_Walls(int nodeindex)
+{
+	BuildingTypeClass const * wall = Get_First_Acted(Rule->ConcreteWalls);
+	if (wall == NULL) {
+		return(false);
+	}
+
+	/*
+	**	The last structure before the defense that protects itself and has no wall after it.
+	*/
+	int protect = nodeindex - 1;
+	BuildingClass * building = NULL;
+	for (; protect >= 0; protect--) {
+		building = Base.Get_Building(protect);
+		if (building != NULL && building->Class->ProtectWithWall && Base.Nodes[protect + 1].Type != wall->HeapID) {
+			break;
+		}
+	}
+	if (protect < 0) {
+		return(false);
+	}
+
+	int const x = building->Get_Cell().X;
+	int const y = building->Get_Cell().Y;
+	int const width = building->Class->Width();
+	int const height = building->Class->Height(false);
+
+	/*
+	**	Each ring cell goes in just after the structure's node, so the cell added last comes first.
+	*/
+	auto add = [&](int cx, int cy) {
+		Base.Nodes.Insert_After(protect, BaseNodeClass(wall->HeapID, Cell(cx, cy)));
+	};
+	for (int i = 1; i <= width; i++) {
+		add(x - 1 + i, y - 1);
+		add(x - 1 + i, y + height);
+	}
+	for (int i = 1; i <= height; i++) {
+		add(x - 1, y - 1 + i);
+		add(x + width, y - 1 + i);
+	}
+	add(x - 1, y - 1);
+	add(x + width, y - 1);
+	add(x - 1, y + height);
+	add(x + width, y + height);
+	return(true);
 }
 
 
