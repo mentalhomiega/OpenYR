@@ -371,6 +371,7 @@ void SpawnManagerClass::Kill_Nodes(void)
 {
 	for (NodeType & node : Nodes) {
 		AircraftClass * unit = node.Unit;
+		int const status = node.Status;
 		node.Unit = NULL;
 		node.Status = NODE_DEAD;
 		node.Start_Timer(RegenRate);
@@ -378,14 +379,17 @@ void SpawnManagerClass::Kill_Nodes(void)
 			continue;
 		}
 		unit->SpawnOwner = NULL;
-		if (unit->IsInLimbo || node.IsMissile) {
-			if (node.IsMissile && !unit->IsInLimbo && unit->Locomotion->Is_Moving()) {
-				continue;
-			}
+
+		// A spawn that is docked, reloading or taking off is removed without damage, and one in flight
+		// crashes (gamemd's SpawnManagerClass::KillNodes, 0x6B7100). A missile still moving flies on.
+		if (status == NODE_IDLE || status == NODE_RELOADING || status == NODE_TAKEOFF || unit->IsInLimbo) {
 			unit->Delete_Me();
-		} else {
-			int damage = unit->Strength;
-			unit->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+		} else if (node.IsMissile) {
+			if (!unit->Locomotion->Is_Moving()) {
+				unit->Delete_Me();
+			}
+		} else if (!unit->Crash(NULL)) {
+			unit->Delete_Me();
 		}
 	}
 	Target = NULL;
