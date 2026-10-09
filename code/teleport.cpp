@@ -206,8 +206,8 @@ Coord TeleportLocomotionClass::Landing_Spot(Coord const & dest)
 
 	Coord spot = dest;
 	bool const soldier = LinkedTo->RTTI == RTTI_INFANTRY;
-	// A structure a harvester docks with may cover its dock cell, as a refinery's bib does, and walking
-	// harvesters stand on it when they dock; the landing keeps that cell.
+	// A harvester's dock cell can lie inside the structure it docks with. The landing keeps that cell
+	// instead of moving the harvester off it.
 	bool docking = false;
 	if (LinkedTo->RTTI == RTTI_UNIT) {
 		BuildingClass const * target = Map[cell].Cell_Building();
