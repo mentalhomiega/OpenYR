@@ -8040,7 +8040,7 @@ void BuildingClass::Repair_AI(void)
 			} else {
 				if ((Session.Type != GAME_NORMAL || IsAllowedToSell) &&
 					IsTickedOff &&
-					(unsigned)House->Control.TechLevel >= (unsigned)Rule->IQSellBack &&
+					(unsigned)House->Control.IQ >= (unsigned)Rule->IQSellBack &&
 					(unsigned)Random_Pick(0, 50) < (unsigned)House->Control.TechLevel &&
 					Tag == NULL &&
 					Class->ToBuild != RTTI_BUILDINGTYPE &&
