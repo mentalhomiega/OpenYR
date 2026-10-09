@@ -1,0 +1,13 @@
+; A tech oil derrick pays its owner only after an engineer has captured it. A neutral derrick that an
+; engineer captures pays the 1000 startup, then 20 every 100 frames. Credits start at 10000.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 neutral CAOILD 66 40
+110 own ENGINEER 62 40
+200 dump
+220 capture ENGINEER 66 40
+400 dump
+600 dump
+800 dump
+900 quit

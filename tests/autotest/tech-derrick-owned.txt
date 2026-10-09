@@ -1,0 +1,10 @@
+; A tech oil derrick that a player owns without an engineer capturing it pays nothing (NeedsEngineer,
+; HasEngineer=no). Credits start at 10000.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 own CAOILD 66 40
+200 dump
+400 dump
+600 dump
+800 quit

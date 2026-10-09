@@ -17,4 +17,4 @@ A structure pays [`ProduceCashAmount`](/keys/producecashamount/) once every `Pro
 
 A value of zero or less turns the recurring payment off. A type that sets `ProduceCashAmount` without this key never pays on a schedule, although it can still pay [`ProduceCashStartup`](/keys/producecashstartup/) on capture.
 
-On a [`Powered=yes`](/keys/powered/) structure, the count pauses while the structure lacks power and resumes with the frames it had left. [Buildings that produce cash](/systems/produce-cash/#power) says what counts as lacking power.
+The count keeps running while the structure cannot pay, for example while a [`Powered=yes`](/keys/powered/) structure lacks power. A payment that falls due then is skipped, not made up later. [Buildings that produce cash](/systems/produce-cash/#power) says what stops a payment.

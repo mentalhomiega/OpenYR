@@ -286,6 +286,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
 	IsProduceCashStartupPaid(false),
+	HasEngineer(false),
 	SecretProduct(NULL)
 {
 	Create_ID();
@@ -4748,6 +4749,7 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		TargetClass tocap = this;
 
 		IsCaptured = true;
+		HasEngineer = true;
 		if (Rule->BuildConst.Is_In_List(Class)) {
 			oldowner->ConYards.Delete(this);
 		}
@@ -8040,8 +8042,9 @@ void BuildingClass::Repair_AI(void)
 
 /// <summary>
 /// Pays this building's owner the cash its type produces, once the interval has run out.
-/// A building pays only while it is open for business, not being sold, and, if it runs on
-/// power, supplied with all of it.
+/// The interval keeps running while the building cannot pay. A building pays only while it is
+/// open for business, not being sold, owned by a house that is not passive, captured if it
+/// needs an engineer, and, if it runs on power, supplied with all of it.
 /// </summary>
 void BuildingClass::Produce_Cash_AI(void)
 {
@@ -8055,6 +8058,13 @@ void BuildingClass::Produce_Cash_AI(void)
 		return;
 	}
 
+	// The interval runs on through an outage. An outage only skips the payment due at its end (BuildingClass::AI, 0x43FD56).
+	ProduceCashTimer.Start();
+	if (ProduceCashTimer != 0) {
+		return;
+	}
+	ProduceCashTimer = Class->ProduceCashDelay;
+
 	if (Mission == MISSION_DECONSTRUCTION || MissionQueue == MISSION_DECONSTRUCTION) {
 		return;
 	}
@@ -8063,17 +8073,15 @@ void BuildingClass::Produce_Cash_AI(void)
 		return;
 	}
 
+	// gamemd pays only while IsPowerOnline (0x4555D0) holds, and that needs HasEngineer on a NeedsEngineer building.
+	if (Class->IsNeedsEngineer && !HasEngineer) {
+		return;
+	}
+
 	// The house's supply is consulted even for a building that drains none of it.
 	if (Class->IsPowered && (!Is_Powered_On() || House->Power_Fraction() < 1.0)) {
-		ProduceCashTimer.Stop();
 		return;
 	}
-	ProduceCashTimer.Start();
-
-	if (ProduceCashTimer != 0) {
-		return;
-	}
-	ProduceCashTimer = Class->ProduceCashDelay;
 
 	// Clamping lands the budget exactly on zero, so the last installment is paid in full.
 	if (ProduceCashRemaining > 0) {
@@ -10249,6 +10257,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashTimer);
 	stream.Serialize(ProduceCashRemaining);
 	stream.Serialize(IsProduceCashStartupPaid);
+	stream.Serialize(HasEngineer);
 	stream.Serialize(SecretProduct);
 }
 
@@ -10329,6 +10338,7 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)ProduceCashTimer);
 	crc(ProduceCashRemaining);
 	crc(IsProduceCashStartupPaid);
+	crc(HasEngineer);
 	if (SecretProduct != NULL) {
 		crc(SecretProduct->Fetch_RTTI());
 		crc(SecretProduct->Fetch_ID());
