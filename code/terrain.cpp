@@ -157,10 +157,6 @@ ResultType TerrainClass::Take_Damage(int & damage, int distance, WarheadTypeClas
 			return(res);
 		}
 
-		if (!IsOnFire && damage > 0 && warhead->IsSparky) {
-			Catch_Fire();
-		}
-
 		/*
 		**	If the terrain object is destroyed by this damage, then only remove it if it
 		**	currently isn't on fire and isn't in the process of crumbling.
@@ -173,7 +169,6 @@ ResultType TerrainClass::Take_Damage(int & damage, int distance, WarheadTypeClas
 
 				new AnimClass(Combat_Anim(_damage, Rule->C4Warhead, Map[Get_Coord()].Land_Type(), Get_Coord()), Get_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), Get_Explosion_Z(Get_Coord()));
 				Explosion_Damage(Get_Coord(), _damage, NULL, Rule->C4Warhead, true);
-				Chain_Reaction_Damage(Get_Cell());
 			} else if (IsOnFire) {
 
 				/*
@@ -655,21 +650,6 @@ void TerrainClass::AI(void)
 			Set_Stage(0);
 			Set_Rate(0);
 			Map[Get_Coord()].Spread_Tiberium(true);
-		}
-	}
-
-	if (IsOnFire) {
-		static int const _interval = 100;
-
-		if (abs(Scen->RandomNumber()) % _interval == 0) {
-			CellClass & cellptr = Map[Get_Coord()];
-			for (FacingType facing = FACING_FIRST; facing < FACING_COUNT; facing++) {
-				CellClass & adjacent = cellptr.Adjacent_Cell(facing);
-				TerrainClass * terrain = adjacent.Cell_Terrain();
-				if (terrain && !terrain->IsOnFire && Random_Double(0.0, 1.0) < Rule->TreeFlammability) {
-					terrain->Catch_Fire();
-				}
-			}
 		}
 	}
 }

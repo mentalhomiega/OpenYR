@@ -63,6 +63,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `log <text>` | Writes the line to the debug log |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
 | `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
+| `treehit <Warhead> x y` | Hits the terrain object on that cell with 100 points of damage from the warhead, with no firer, and writes its strength before and after |
+| `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |
 | `quit` | Ends the process |
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. `ScreenCapture` and `record` save pictures to

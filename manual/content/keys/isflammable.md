@@ -8,4 +8,4 @@ when_omitted:
   value: "no"
 ---
 
-The flag neither makes a terrain object burn nor stops it burning. A terrain object can catch fire when its type has `Armor=wood` and does not set [`SpawnsTiberium=yes`](/keys/spawnstiberium/). [`TreeFlammability`](/keys/treeflammability/) covers the full conditions and how fire spreads between terrain objects.
+The flag has no effect. No terrain object catches fire in gamemd, whatever its armor or other flags.
