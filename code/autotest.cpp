@@ -138,6 +138,7 @@
 #include "saveload.h"
 #include "scenario.h"
 #include "script.h"
+#include "session.h"
 #include "super.h"
 #include "suprtype.h"
 #include "taskforc.h"
