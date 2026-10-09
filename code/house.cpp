@@ -4761,8 +4761,11 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 
 
 /// Tells whether the computer may place the structure of a base node that is not standing.
-/// A structure lost after it was placed waits until AIRestrictReplaceTime frames after the house
-/// last took damage, unless it is a wall, a base defense or a power plant. The campaign never waits.
+/// A node that has never held a structure is always placed. Otherwise the check follows gamemd's
+/// placement test at 0x0050CAD0: a resource structure waits for the slave miner count, an armed
+/// structure and a power plant are placed at once, a wall needs one of the house's structures
+/// beside it, and any other structure waits until AIRestrictReplaceTime frames after the house
+/// last took damage. The campaign never waits.
 bool HouseClass::Can_Replace_Node(int index) const
 {
 	if (Session.Type == GAME_NORMAL) {
@@ -4770,12 +4773,27 @@ bool HouseClass::Can_Replace_Node(int index) const
 	}
 
 	BaseNodeClass const & node = Base.Nodes[index];
-	if (node.Type < STRUCT_FIRST || node.CellID == Cell(0, 0) || node.CellID == CELL_NONE) {
+	if (node.Type < STRUCT_FIRST || node.CellID == Cell(0, 0) || node.CellID == CELL_NONE || !node.Placed) {
 		return(true);
 	}
 
 	BuildingTypeClass const * btype = BuildingTypes[node.Type];
-	if (btype->IsWall || btype->IsBaseDefense || btype->Power > 0) {
+	if (btype->IsResourceGatherer && btype->IsResourceDestination) {
+		return(Count_Resource_Gatherers() < Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
+	}
+	if (btype->Get_Weapon(0)->Weapon != NULL) {
+		return(true);
+	}
+	if (btype->IsWall) {
+		for (FacingType face = FACING_FIRST; face < FACING_COUNT; face++) {
+			BuildingClass const * neighbour = Map[node.CellID].Adjacent_Cell(face).Cell_Building();
+			if (neighbour != NULL && neighbour->House == this) {
+				return(true);
+			}
+		}
+		return(false);
+	}
+	if (btype->Power > 0) {
 		return(true);
 	}
 
@@ -4784,14 +4802,18 @@ bool HouseClass::Can_Replace_Node(int index) const
 
 
 /// Returns the first base node whose structure is not standing and may be placed now, or NULL.
+/// A node whose structure stands is marked as having held one, so that a later loss is held back.
 BaseNodeClass * HouseClass::Next_Buildable_Node(void)
 {
+	BaseNodeClass * found = NULL;
 	for (int i = 0; i < Base.Nodes.Count(); i++) {
-		if (!Base.Is_Built(i) && Can_Replace_Node(i)) {
-			return(&Base.Nodes[i]);
+		if (Base.Is_Built(i)) {
+			Base.Nodes[i].Placed = true;
+		} else if (found == NULL && Can_Replace_Node(i)) {
+			found = &Base.Nodes[i];
 		}
 	}
-	return(NULL);
+	return(found);
 }
 
 

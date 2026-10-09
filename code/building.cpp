@@ -3433,6 +3433,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						case 0:
 							if (base->Unlimbo(placementcoord)) {
 								if (node != NULL) {
+									node->Placed = true;
 									if (building->Class->HeapID == House->BuildStructure) {
 										House->BuildStructure = STRUCT_NONE;
 									}

@@ -381,7 +381,13 @@ The house sends every vehicle, infantry and aircraft it owns to hunt in any of t
 
 A structure taken off the map, destroyed or sold, no longer matches its node, so the node becomes a gap the house fills again in list order, subject to the hold-back below.
 
-In a skirmish or multiplayer game, a lost structure is held back while [`AIRestrictReplaceTime`](/keys/airestrictreplacetime/) is open. The window runs that many frames from the latest time one of the house's structures took damage from an attacker. Walls, base defenses and power plants are never held back, and a node that has not yet held a structure is filled at once.
+In a skirmish or multiplayer game, a node that has held a structure is checked when its structure is lost. A node that has never held one is filled at once. For a node that has held one, the first rule below that applies decides:
+
+- An armed structure, one with a primary weapon, and a power plant are filled at once.
+- A wall is filled only when one of the house's structures stands in one of the eight cells beside it. It is never held back by time.
+- Any other structure, including an unarmed base defense and a construction yard, is held back until [`AIRestrictReplaceTime`](/keys/airestrictreplacetime/) frames have passed since one of the house's structures last took damage from an attacker.
+
+A house with no construction yard builds nothing, so a lost construction yard is not rebuilt by the base planner.
 
 When a structure that matches a node is taken off the map, every other node on its cell loses its cell. What happens to a base defense's node depends on the house:
 
