@@ -58,7 +58,7 @@ With the menu's settings, the player's houses and the computer's houses read opp
 
 Outside a campaign game, every human house plays at slot 1, whatever the session was set to. There, only the computer houses take their handicap from the setting.
 
-A computer seat's `[HouseHandicaps]` entry in a [launch file](/formats/spawn-ini/#who-is-playing) sets that house's slot directly. The entry replaces the computer's slot from the table and [the multiplayer bonus](#the-computers-bonus-with-more-than-one-human).
+A computer seat's `[HouseHandicaps]` entry in a [launch file](/formats/spawn-ini/#who-is-playing) sets that house's slot in place of the computer's slot from the table. [The multiplayer bonus](#the-computers-bonus-with-more-than-one-human) still applies to that slot.
 
 A campaign mission names its difficulty in a message as it starts. The name follows the computer's difficulty and describes the game from the player's side. When the computer houses read `[Easy]` the mission is announced as Hard, `[Normal]` as Medium and `[Difficult]` as Easy. A launch file can supply its own name instead, so a client that offers more than three difficulties can name the one it chose.
 

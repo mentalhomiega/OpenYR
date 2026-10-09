@@ -2628,11 +2628,11 @@ void Assign_Houses(void)
 		}
 
 		DiffType difficulty = Scen->CDifficulty;
-		if (Session.Players.Count() > 1 && Rule->IsCompEasyBonus && difficulty > DIFF_EASY) {
-			difficulty = (DiffType)(difficulty - 1);
-		}
 		if (seat != NULL && seat->Player.Handicap >= 0) {
 			difficulty = (DiffType)seat->Player.Handicap;
+		}
+		if (Session.Players.Count() > 1 && Rule->IsCompEasyBonus && difficulty > DIFF_EASY) {
+			difficulty = (DiffType)(difficulty - 1);
 		}
 		housep->Assign_Handicap(difficulty);
 
