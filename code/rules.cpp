@@ -2043,6 +2043,7 @@ bool RulesClass::Do_Sides(CCINIClass const & ini)
 		} else {
 			sidep = ::Sides[side];
 		}
+		sidep->ListPosition = i;
 		DebugString("Side %d: %s \n", i, (char const *)sidep->IniName);
 		sidep->Houses = ini.Get_House_List(SIDES, name, sidep->Houses);
 		for (int house = 0; house < sidep->Houses.Count(); house++) {

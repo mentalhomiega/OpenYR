@@ -8339,15 +8339,20 @@ int BuildingClass::How_Many_Survivors(void) const
 {
 	if (IsSurvivorless || !Class->IsCrew) return(0);
 
+	/*
+	**	The divisor follows the house's place in [Sides], as BuildingClass::GetCrewCount (0x451330)
+	**	reads its SideIndex. Civilians hold the third place in the stock rules, so they use the
+	**	third divisor; a house on the fourth place or on no side releases no survivors.
+	*/
 	int divisor;
-	switch (House->Class->Side) {
-		case SIDE_GDI:
+	switch (SideClass::Place_In_Sides(House->Class->Side)) {
+		case 0:
 			divisor = Rule->AlliedSurvivorDivisor;
 			break;
-		case SIDE_NOD:
+		case 1:
 			divisor = Rule->SovietSurvivorDivisor;
 			break;
-		case SIDE_THIRD:
+		case 2:
 			divisor = Rule->ThirdSurvivorDivisor;
 			break;
 		default:
