@@ -25,3 +25,8 @@ add_test(NAME inicheck-cli
     COMMAND inicheck --catalog "${CMAKE_CURRENT_SOURCE_DIR}/sample-catalog.tsv" "${CMAKE_CURRENT_SOURCE_DIR}/sample.ini"
 )
 set_tests_properties(inicheck-cli PROPERTIES PASS_REGULAR_EXPRESSION "line 8: \\[MYTANK\\] Speed=fast: expected a whole number")
+
+add_test(NAME inicheck-cli-art
+    COMMAND inicheck --catalog "${CMAKE_CURRENT_SOURCE_DIR}/sample-catalog.tsv" --art "${CMAKE_CURRENT_SOURCE_DIR}/sample-art.ini" "${CMAKE_CURRENT_SOURCE_DIR}/sample.ini"
+)
+set_tests_properties(inicheck-cli-art PROPERTIES PASS_REGULAR_EXPRESSION "sample-art.ini: line 2: \\[MYTANK\\] RotCount=many: expected a whole number")

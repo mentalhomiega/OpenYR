@@ -40,7 +40,7 @@ OccupyPip=PersonBlue
 A structure can take a soldier with `Occupier=yes` when all of these hold. A soldier with `Assaulter=yes` and no `Occupier=yes` enters a structure under [Clearing](#clearing) instead.
 
 - the soldier's type sets `Occupier=yes`;
-- the soldier is not under mind control;
+- the soldier is not under [mind control](/systems/mind-control/#going-into-transports-and-structures);
 - fewer than `MaxNumberOccupants` soldiers are inside;
 - the structure is above the [`ConditionRed`](/keys/conditionred/) health ratio;
 - the structure is not being built up or sold;

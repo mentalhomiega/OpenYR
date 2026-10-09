@@ -224,6 +224,8 @@ The depot acts on the object's answer to each request:
 - **Unaffordable.** The depot announces insufficient funds and stops the cycle. The object stays parked, and the depot asks again at each mission update as it does for the first step.
 - **Anything else.** This covers a step that finishes the repair, an object that needs nothing, and an object that has been given a destination. The depot announces that the unit is repaired and releases the object. A computer-owned object with a remembered position returns there, as a computer vehicle does after [reaching the pad](#reaching-the-pad) on its own. Every other object moves to an exit cell beside the depot.
 
+A depot with several [docks](/keys/numberofdocks--buildingtype/) runs the same cycle for the object on each dock. Each object pays for its own steps, and the depot releases each one when it is repaired. With one dock, which is the default, the depot serves one object at a time.
+
 ### What a depot does for free
 
 Each request to an object with no destination clears its limpet mine and resets its turret and body turn rates to the type's [`ROT`](/keys/rot/#scope-aircrafttype), at no charge.
@@ -232,7 +234,7 @@ A [`ManualReload=yes`](/keys/manualreload/) object whose ammunition is not full 
 
 ### Selling at the pad
 
-Selling a depot while an object is parked within half a cell of it sells the object instead. The object is released and sold, the depot is not sold, and the depot returns to guard duty. The same condition is what lets the player sell a parked vehicle or aircraft at all.
+Selling a depot while an object is parked within half a cell of its center sells the object instead. A depot with several [docks](/keys/numberofdocks--buildingtype/) sells every object parked that close. The objects are released and sold, the depot is not sold, and the depot returns to guard duty. When no object is that close, the depot is sold and every docked object is told to move away. The same condition is what lets the player sell a parked vehicle or aircraft at all.
 
 A computer house sells a harvester or weeder that has run out of places to harvest, if it is below maximum strength. The depot first charges for and restores one step, then sells the harvester at the point where the repair cycle would start. At maximum strength, such a harvester is released at once like any object that needs nothing. A human house's harvester in the same state is repaired and released as usual.
 
@@ -261,6 +263,7 @@ The building admits the infantry under **all of**, in this order:
 - it is not in contact with anything other than this infantry;
 - it is switched on;
 - the caller is infantry, not a vehicle or an aircraft;
+- the caller is not under [mind control](/systems/mind-control/#going-into-transports-and-structures);
 - its [`Ammo`](/keys/ammo/) count is not zero;
 - it is not already serving someone.
 

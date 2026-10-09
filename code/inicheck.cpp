@@ -49,6 +49,39 @@ RegistryType const RULES_REGISTRIES[] = {
 };
 
 
+// Keys whose value names another object section: the type kinds whose sections the engine reads
+// the key from, and the kind it reads the named section as.
+struct Reference {
+	char const * Key;
+	char const * From;
+	char const * Kind;
+};
+
+char const TECHNO_KINDS[] = "AircraftType,BuildingType,InfantryType,UnitType";
+
+Reference const RULES_REFERENCES[] = {
+	{"Primary", TECHNO_KINDS, "WeaponType"},
+	{"Secondary", TECHNO_KINDS, "WeaponType"},
+	{"ElitePrimary", TECHNO_KINDS, "WeaponType"},
+	{"EliteSecondary", TECHNO_KINDS, "WeaponType"},
+	{"Weapon{1-18}", TECHNO_KINDS, "WeaponType"},
+	{"EliteWeapon{1-18}", TECHNO_KINDS, "WeaponType"},
+	{"Projectile", "WeaponType", "BulletType"},
+	{"Warhead", "WeaponType", "WarheadType"},
+};
+
+
+// Does a key name or pattern such as "Weapon{1-18}" name this key?
+bool Names_Key(char const * name, std::string_view key)
+{
+	KeyPattern pattern;
+	if (KeyPattern::Parse(name, pattern)) {
+		return(pattern.Matches(key));
+	}
+	return(key == name);
+}
+
+
 bool Is_Blank(char letter)
 {
 	return((unsigned char)letter <= 32);
@@ -347,10 +380,18 @@ bool Catalog::Load(std::istream & in, std::string & error)
 }
 
 
+/// <summary>
+/// Adds one scope for a key. A key holding a range such as "Weapon{1-18}" is kept as a pattern.
+/// </summary>
 void Catalog::Add(std::string const & key, KeyScope scope)
 {
 	if (!scope.Section.empty() && scope.Section[0] != '@') {
 		Sections.insert(scope.File + "\n" + scope.Section);
+	}
+	KeyPattern pattern;
+	if (key.find('{') != std::string::npos && KeyPattern::Parse(key, pattern)) {
+		Patterns.emplace_back(std::move(pattern), std::move(scope));
+		return;
 	}
 	Keys[key].push_back(std::move(scope));
 }
@@ -373,6 +414,85 @@ std::vector<KeyScope> const * Catalog::Find(std::string const & key) const
 
 
 /// <summary>
+/// Every scope for this key: its exact entries, then the patterns it matches.
+/// </summary>
+std::vector<KeyScope const *> Catalog::Find_All(std::string const & key) const
+{
+	std::vector<KeyScope const *> scopes;
+	if (auto const * exact = Find(key)) {
+		for (KeyScope const & scope : *exact) {
+			scopes.push_back(&scope);
+		}
+	}
+	for (auto const & [pattern, scope] : Patterns) {
+		if (pattern.Matches(key)) {
+			scopes.push_back(&scope);
+		}
+	}
+	return(scopes);
+}
+
+
+/// <summary>
+/// Reads a pattern such as "Weapon{1-18}FLH" or "DockingOffset{0-}".
+/// </summary>
+/// <returns>bool; Does text hold exactly one well formed range?</returns>
+bool KeyPattern::Parse(std::string const & text, KeyPattern & pattern)
+{
+	std::size_t const open = text.find('{');
+	std::size_t const close = text.find('}', open);
+	if (open == std::string::npos || close == std::string::npos || text.find('{', close) != std::string::npos) {
+		return(false);
+	}
+	std::string const range = text.substr(open + 1, close - open - 1);
+	std::size_t const dash = range.find('-');
+	if (dash == std::string::npos || dash == 0) {
+		return(false);
+	}
+	char * end = nullptr;
+	pattern.Low = std::strtol(range.c_str(), &end, 10);
+	if (end != range.c_str() + dash) {
+		return(false);
+	}
+	pattern.Width = (dash > 1 && range[0] == '0') ? (int)dash : 0;
+	pattern.High = -1;
+	if (dash + 1 < range.size()) {
+		pattern.High = std::strtol(range.c_str() + dash + 1, &end, 10);
+		if (*end != '\0' || pattern.High < pattern.Low) {
+			return(false);
+		}
+	}
+	pattern.Prefix = text.substr(0, open);
+	pattern.Suffix = text.substr(close + 1);
+	return(true);
+}
+
+
+bool KeyPattern::Matches(std::string_view key) const
+{
+	if (key.size() <= Prefix.size() + Suffix.size() || !key.starts_with(Prefix) || !key.ends_with(Suffix)) {
+		return(false);
+	}
+	std::string_view const digits = key.substr(Prefix.size(), key.size() - Prefix.size() - Suffix.size());
+	if (digits.size() > 9) {
+		return(false);
+	}
+	long number = 0;
+	for (char const letter : digits) {
+		if (!std::isdigit((unsigned char)letter)) {
+			return(false);
+		}
+		number = number * 10 + (letter - '0');
+	}
+
+	// Only the spelling the engine prints counts, so "007" does not match a width of 2.
+	char printed[16];
+	std::snprintf(printed, sizeof(printed), "%0*ld", Width, number);
+	return(digits == printed && number >= Low && (High < 0 || number <= High));
+}
+
+
+/// <summary>
 /// The catalog spelling of a key that matches this one only when case is ignored, or an empty
 /// string.
 /// </summary>
@@ -388,31 +508,66 @@ std::string Catalog::Find_Other_Case(std::string const & key) const
 }
 
 
-/// <summary>
-/// Checks rules text against the catalog scopes for file. Sections named in a rules list such as
-/// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
-/// [General] against their own keys. Every other section is listed as unchecked. Findings come
-/// in line order.
-/// </summary>
-Report Check_Rules(Catalog const & catalog, std::string_view text, std::string const & file)
-{
-	std::vector<Section> const sections = Parse(text);
+namespace {
 
-	std::set<std::string> lists;
-	std::map<std::string, std::set<std::string>> kinds;
+// The type kinds the rules lists place, and the kinds that gain a rules list's entries through
+// the references the rules sections hold. A rules list is not itself checked.
+struct Placement {
+	std::set<std::string> Lists;
+	std::map<std::string, std::set<std::string>> Kinds;
+};
+
+
+Placement Place_Rules(std::vector<Section> const & sections)
+{
+	Placement placement;
 	for (RegistryType const & registry : RULES_REGISTRIES) {
-		lists.insert(registry.List);
+		placement.Lists.insert(registry.List);
 	}
 	for (Section const & section : sections) {
 		for (RegistryType const & registry : RULES_REGISTRIES) {
 			if (section.Name == registry.List) {
 				for (Entry const & entry : section.Entries) {
-					kinds[entry.Value].insert(registry.Kind);
+					placement.Kinds[entry.Value].insert(registry.Kind);
 				}
 			}
 		}
 	}
 
+	// A section a checked object section names, such as a weapon in Primary=, is checked as that
+	// kind too; repeat until no section gains a kind, so weapons lead on to their warheads.
+	std::map<std::string, std::set<std::string>> & kinds = placement.Kinds;
+	bool added = true;
+	while (added) {
+		added = false;
+		for (Section const & section : sections) {
+			auto const kind = kinds.find(section.Name);
+			if (kind == kinds.end()) {
+				continue;
+			}
+			for (Entry const & entry : section.Entries) {
+				for (Reference const & reference : RULES_REFERENCES) {
+					bool from = false;
+					for (std::string const & type : Split(reference.From, ',')) {
+						from = from || kind->second.contains(type);
+					}
+					if (from && Names_Key(reference.Key, entry.Key) && !kinds[entry.Value].contains(reference.Kind)) {
+						kinds[entry.Value].insert(reference.Kind);
+						added = true;
+					}
+				}
+			}
+		}
+	}
+	return(placement);
+}
+
+
+// Checks each section that is a literal section of the file or has type kinds, against the
+// catalog scopes of the file. An art section takes the scopes written for "@image" as well,
+// since an object's art section is placed by kind and not named in the catalog.
+Report Check_Sections(Catalog const & catalog, std::vector<Section> const & sections, std::set<std::string> const & lists, std::map<std::string, std::set<std::string>> const & kinds, std::string const & file, bool art)
+{
 	Report report;
 	for (Section const & section : sections) {
 		if (lists.contains(section.Name)) {
@@ -428,22 +583,21 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 
 		for (Entry const & entry : section.Entries) {
 			std::vector<KeyScope const *> matches;
-			if (auto const * scopes = catalog.Find(entry.Key)) {
-				for (KeyScope const & scope : *scopes) {
-					if (scope.File != file) {
-						continue;
-					}
-					bool applies = is_literal && scope.Section == section.Name;
-					if (!applies && is_object && scope.Section.empty()) {
-						for (std::string const & type : scope.AppliesTo) {
-							if (kind->second.contains(type)) {
-								applies = true;
-							}
+			for (KeyScope const * scope : catalog.Find_All(entry.Key)) {
+				if (scope->File != file) {
+					continue;
+				}
+				bool applies = is_literal && scope->Section == section.Name;
+				bool const by_kind = scope->Section.empty() || (art && scope->Section == "@image");
+				if (!applies && is_object && by_kind) {
+					for (std::string const & type : scope->AppliesTo) {
+						if (kind->second.contains(type)) {
+							applies = true;
 						}
 					}
-					if (applies) {
-						matches.push_back(&scope);
-					}
+				}
+				if (applies) {
+					matches.push_back(scope);
 				}
 			}
 
@@ -481,6 +635,85 @@ Report Check_Rules(Catalog const & catalog, std::string_view text, std::string c
 
 	std::stable_sort(report.Findings.begin(), report.Findings.end(), [](Finding const & a, Finding const & b) { return(a.Line < b.Line); });
 	return(report);
+}
+
+
+// The object kinds that read an art section, and whether they read one only when the rules
+// section holds an Image=. Animation types read the section of their own name and have no
+// Image= redirect.
+struct ArtKind {
+	char const * Kind;
+	bool Needs_Image;
+};
+
+ArtKind const ART_KINDS[] = {
+	{"InfantryType", false},
+	{"UnitType", false},
+	{"AircraftType", false},
+	{"BuildingType", false},
+	{"TerrainType", false},
+	{"OverlayType", false},
+	{"SmudgeType", false},
+	{"VoxelAnimType", false},
+	{"ParticleType", false},
+	{"ParticleSystemType", false},
+	{"AnimType", false},
+	{"BulletType", true},
+};
+
+}
+
+
+/// <summary>
+/// Checks rules text against the catalog scopes for file. Sections named in a rules list such as
+/// [VehicleTypes] are checked against the keys of that type kind, and literal sections such as
+/// [General] against their own keys. Every other section is listed as unchecked. Findings come
+/// in line order.
+/// </summary>
+Report Check_Rules(Catalog const & catalog, std::string_view text, std::string const & file)
+{
+	std::vector<Section> const sections = Parse(text);
+	Placement const placement = Place_Rules(sections);
+	return(Check_Sections(catalog, sections, placement.Lists, placement.Kinds, file, false));
+}
+
+
+/// <summary>
+/// Checks art text against the catalog scopes for file, placing each section through the rules
+/// text. An object type reads the art section named by its Image= in the rules, or else the
+/// section of its own name; a projectile reads art only when it has an Image=. A section no type
+/// reads is listed as unchecked. Findings come in line order.
+/// </summary>
+Report Check_Art(Catalog const & catalog, std::string_view rules_text, std::string_view art_text, std::string const & file)
+{
+	std::vector<Section> const rules = Parse(rules_text);
+	Placement const placement = Place_Rules(rules);
+
+	std::map<std::string, std::string> images;
+	for (Section const & section : rules) {
+		for (Entry const & entry : section.Entries) {
+			if (entry.Key == "Image") {
+				images[section.Name] = entry.Value;
+			}
+		}
+	}
+
+	std::map<std::string, std::set<std::string>> art_kinds;
+	for (auto const & [name, kinds] : placement.Kinds) {
+		if (placement.Lists.contains(name)) {
+			continue;
+		}
+		std::string const image = images[name];
+		for (ArtKind const & art : ART_KINDS) {
+			if (!kinds.contains(art.Kind) || (art.Needs_Image && image.empty())) {
+				continue;
+			}
+			bool const own_section = image.empty() || std::string_view(art.Kind) == "AnimType";
+			art_kinds[own_section ? name : image].insert(art.Kind);
+		}
+	}
+
+	return(Check_Sections(catalog, Parse(art_text), {}, art_kinds, file, true));
 }
 
 

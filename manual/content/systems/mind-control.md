@@ -69,6 +69,23 @@ When the firer is destroyed or removed from the game, every object it holds goes
 
 When the [psychic dominator](/systems/superweapons/#psychic-dominator) takes a unit under mind control, the unit is let go in the same way before it joins the dominator's house. Nothing can take it over after that.
 
+## Going into transports and structures
+
+An infantryman or vehicle under mind control may not:
+
+- board a [transport](/systems/transports/);
+- [garrison](/systems/garrisons/) a structure;
+- enter a [tank bunker](/systems/tank-bunkers/);
+- enter a [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure.
+
+A player pointing such an object at one of these gets the cannot-enter cursor. Over a structure it could otherwise garrison, it gets the cursor a soldier that is not an `Occupier=yes` type would get there.
+
+Other structures take it in under their usual conditions: a [`Grinding=yes`](/keys/grinding/) structure, an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure such as the Bio Reactor, and a structure an [`Engineer=yes`](/keys/engineer/#scope-infantrytype) or [`Infiltrate=yes`](/keys/infiltrate/) soldier goes into to [repair, capture or infiltrate](/systems/capture/) it.
+
+Taking an object over gives it a new order, so one that was on its way in does not go in. A computer team that loads its transport leaves its members under mind control outside.
+
+An object the psychic dominator took is no longer under mind control, so it may go in anywhere its house's other objects may.
+
 ## Overload
 
 An `InfiniteMindControl=yes` weapon takes objects without limit and hurts its firer for each look at the overload table that finds damage to deal. The first look comes 30 frames after the firer is placed. At each look, the firer uses the first [`OverloadCount`](/keys/overloadcount/) entry at or above the number of objects it holds, or the last entry when none is that high. It takes the [`OverloadDamage`](/keys/overloaddamage/) entry at the same position and looks again after the [`OverloadFrames`](/keys/overloadframes/) entry at that position.
