@@ -45,7 +45,7 @@ class SaveVersionInfo
 		 * change to what a save holds, such as a member added to a Serialize or a saved array
 		 * resized; a build refuses a save of any other revision before reading its state.
 		 */
-		static constexpr int REVISION = 37;
+		static constexpr int REVISION = 38;
 
 		SaveVersionInfo(void);
 
