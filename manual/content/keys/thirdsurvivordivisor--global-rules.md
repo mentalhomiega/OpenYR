@@ -9,11 +9,11 @@ when_omitted:
   value: "300"
 ---
 
-`ThirdSurvivorDivisor` sets how many credits of a sale refund make one survivor when a [`Crewed=yes`](/keys/crewed/) structure is destroyed or sold by a house on the third side in `[Sides]`. The stock rules do not set it. Such a structure's survivor count is its refund divided by this value, rounded down and limited to between 1 and 5.
+`ThirdSurvivorDivisor` sets how many credits of a sale refund make one survivor when a [`Crewed=yes`](/keys/crewed/) structure is destroyed or sold by a house on the third side in `[Sides]`. In the stock rules that side is ThirdSide, the side Yuri plays, and the stock value is 750. Such a structure's survivor count is its refund divided by this value, rounded down and limited to between 1 and 5.
 
 ```ini title="rules.ini"
 [General]
-ThirdSurvivorDivisor=300  ; a refund of 1,500 credits gives five survivors
+ThirdSurvivorDivisor=750  ; a refund of 1,500 credits gives two survivors
 ```
 
 The refund is the amount a sale of the structure returns, as [`RefundPercent`](/keys/refundpercent/) works it out, with the structure's [`Soylent=`](/keys/soylent/) value in its place when its type sets one. A refund smaller than the divisor still gives a count of one.

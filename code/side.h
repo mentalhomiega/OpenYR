@@ -42,6 +42,13 @@ class SideClass : public AbstractTypeClass
 
 		static SideType From_Name(char const * name);
 
+		/*
+		 * The place a side holds in the [Sides] list, counting from zero, or -1 when the side is
+		 * none or no entry lists it. gamemd's HouseTypeClass::SideIndex counts it the same way, and
+		 * the survivor divisor and the crew both follow it.
+		 */
+		static int Place_In_Sides(SideType side);
+
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
 	public:
@@ -50,6 +57,12 @@ class SideClass : public AbstractTypeClass
 		 * list is kept in step with each house type's own Side field.
 		 */
 		TypeList<int> Houses;
+
+		/*
+		 * The place this side has in the [Sides] list that the rules read (see Place_In_Sides), or -1
+		 * until the list names it.
+		 */
+		int ListPosition;
 
 		/*
 		 * The base building the computer does when it plays for this side, read from the

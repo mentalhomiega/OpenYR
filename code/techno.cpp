@@ -170,6 +170,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
+#include "side.h"
 #include "houstype.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -8085,7 +8086,7 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	*/
 	// The crew follows the side of the owning house, as TechnoClass::GetCrew (0x707D20) does.
 	InfantryTypeClass const * infantry = Rule->Technician;
-	switch (House->Class->Side) {
+	switch (SideClass::Place_In_Sides(House->Class->Side)) {
 		case 0:
 			infantry = Rule->AlliedCrew;
 			break;

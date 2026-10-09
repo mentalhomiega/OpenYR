@@ -30,6 +30,7 @@
 SideClass::SideClass(char const * ininame) :
 	BASECLASS(ininame),
 	Houses(),
+	ListPosition(-1),
 	RegularPowerPlant(NULL),
 	AdvancedPowerPlant(NULL),
 	PowerTurbine(NULL),
@@ -73,6 +74,19 @@ SideClass::~SideClass(void)
 /// This routine is used when the rules are parsed and a side must be resolved from the
 /// text name it was written under. The comparison ignores case.
 /// </summary>
+/// <summary>
+/// Fetches the place a side holds in the [Sides] list, counting from zero.
+/// </summary>
+/// <returns>The place, or -1 when the side is none or no list entry names it.</returns>
+int SideClass::Place_In_Sides(SideType side)
+{
+	if (side < 0 || side >= Sides.Count()) {
+		return(-1);
+	}
+	return(Sides[side]->ListPosition);
+}
+
+
 /// <returns>Returns with the identifier of the matching side, or SIDE_NONE if there is no
 /// such side.</returns>
 SideType SideClass::From_Name(char const * name)
@@ -146,6 +160,7 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(Houses);
+	stream.Serialize(ListPosition);
 	stream.Serialize(RegularPowerPlant);
 	stream.Serialize(AdvancedPowerPlant);
 	stream.Serialize(PowerTurbine);
