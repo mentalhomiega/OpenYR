@@ -212,7 +212,7 @@ What happens to the node depends on its type:
 
 - A `-2` node stops the house. Nothing after it is built.
 - A `-3` node is removed from the list, and the [perimeter wall planner](#walls-and-gates) appends the wall nodes.
-- A `-1` placeholder, or a node of one of the acted side's [`AIWallTowers`](/keys/aiwalltowers/) types that has no cell, goes to the [defense planner](#base-defenses). If the planner cannot fill it, the node is deleted. A tower node also takes the node after it.
+- A `-1` placeholder, or a node of one of the acted side's [`AIWallTowers`](/keys/aiwalltowers/) types that has no cell, goes to the [defense planner](#base-defenses). If the planner cannot fill it, the node is deleted. A tower node also takes the node after it. When the planner fills a node, a `-1` or `-3` placeholder that comes next waits for the next call.
 - Any other node becomes the house's pending structure. A construction yard starts producing it once the house is [started](/keys/production/) and has more than 10 credits.
 
 Because the house always takes the first unbuilt node, a node that no owned factory can produce holds up every node after it.
