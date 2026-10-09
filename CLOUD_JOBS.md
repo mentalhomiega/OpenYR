@@ -55,7 +55,7 @@ Follow docs/research/RESEARCH_BRIEFING.md, output 4 (specs). Read docs/research/
 ### 6. Research: finish the tables and the scanner
 
 ```text
-Follow docs/research/RESEARCH_BRIEFING.md. Continue from the newest `origin/cloud/research-*` branch and its log in `docs/research/log/`. Do the log's "Next session" items that need no game files: the two `mod_scan.py` changes the briefing describes (reading rules from unencrypted MIX archives in memory, and the "stock Yuri's Revenge, not read by this engine" origin), each with tests; table the Phobos AI scripting and miscellaneous pages; and tick the Ares bug fix rows that `code/` on `modern` already handles, citing the function. Stop when those are done. Branch: cloud/research-YYYY-MM-DD, begun from the newest `origin/cloud/research-*` branch merged with `origin/modern`.
+Follow docs/research/RESEARCH_BRIEFING.md. Continue from the newest `origin/cloud/research-*` branch and its log in `docs/research/log/`. Do the log's "Next session" items that need no game files (the `mod_scan.py` MIX-archive and stock-key changes are already on `modern`): table the Phobos AI scripting and miscellaneous pages; and tick the Ares bug fix rows that `code/` on `modern` already handles, citing the function. Stop when those are done. Branch: cloud/research-YYYY-MM-DD, begun from the newest `origin/cloud/research-*` branch merged with `origin/modern`.
 ```
 
 ### 7. Unit tests for the new rules maths
