@@ -59,6 +59,7 @@
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
+**	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
@@ -77,13 +78,13 @@
 **	unload x y				orders the structure on that cell to unload
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
-**	houses					writes each house's money, power and spy effects
+**	houses					writes each house's money, power, spy effects, resource gatherers and powered unit centres
 **	statics					writes how many sounds that Play Sound Effect At started are still going
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target
-**	quantity <StructureID>	writes how many of that structure each house is counted as having, owned and active
+**	quantity <TypeID>		writes how many of that type each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
 **							reload countdown of every live object of that type
@@ -640,6 +641,21 @@ void Run(StepType const & step)
 			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
 				building->Active_Click_With(ACTION_RALLY_TO_POINT, Cell(step.X, step.Y), false);
 				DebugString("AUTOTEST rallyclick %s at %d,%d\n", building->Class->Name(), step.X, step.Y);
+			}
+		}
+		return;
+	}
+
+	if (step.Command == "transfer") {
+		// transfer <TypeID>: gives the first live object of that type that a computer house owns to the
+		// player through TechnoClass::Set_Owning_House, the path a mind control capture takes.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House != PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				HouseClass * from = techno->House;
+				bool const given = techno->Set_Owning_House(PlayerPtr);
+				DebugString("AUTOTEST transfer %s at %d,%d from %s: %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, from->Class->Name(), given ? "given" : "refused");
+				break;
 			}
 		}
 		return;
@@ -1387,6 +1403,7 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated);
+			DebugString("AUTOTEST   gatherers %s %d powered %d\n", house->Class->Name(), house->Count_Resource_Gatherers(), house->PoweredUnitCenters);
 		}
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * lab = Buildings[index];
@@ -1466,12 +1483,20 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "quantity") {
-		// quantity <StructureID>: how many of that structure each house is counted as having, owned and active.
-		StructType const type = BuildingTypeClass::From_Name(step.Argument.c_str());
-		for (int house = 0; type != STRUCT_NONE && house < Houses.Count(); house++) {
-			int const owned = Houses[house]->BQuantity.Value(type);
-			int const active = Houses[house]->ABQuantity.Value(type);
-			if (owned != 0 || active != 0) DebugString("AUTOTEST   quantity %s (%d) house %s owned %d active %d\n", step.Argument.c_str(), (int)type, Houses[house]->Class->Name(), owned, active);
+		// quantity <TypeID>: how many of that type each house is counted as having, owned and active. A
+		// structure uses the building counts, and a unit, infantry or aircraft type its own counts.
+		TechnoTypeClass const * ttype = Find_Type(step.Argument);
+		if (ttype != NULL) {
+			int const id = ttype->Fetch_Heap_ID();
+			bool const building = dynamic_cast<BuildingTypeClass const *>(ttype) != NULL;
+			bool const aircraft = dynamic_cast<AircraftTypeClass const *>(ttype) != NULL;
+			bool const infantry = dynamic_cast<InfantryTypeClass const *>(ttype) != NULL;
+			for (int house = 0; house < Houses.Count(); house++) {
+				HouseClass * owner = Houses[house];
+				CounterClass const & owned = building ? owner->BQuantity : aircraft ? owner->AQuantity : infantry ? owner->IQuantity : owner->UQuantity;
+				CounterClass const & active = building ? owner->ABQuantity : aircraft ? owner->AAQuantity : infantry ? owner->AIQuantity : owner->AUQuantity;
+				if (owned.Value(id) != 0 || active.Value(id) != 0) DebugString("AUTOTEST   quantity %s (%d) house %s owned %d active %d\n", step.Argument.c_str(), id, owner->Class->Name(), owned.Value(id), active.Value(id));
+			}
 		}
 	} else if (step.Command == "effects") {
 		for (int index = 0; index < Technos.Count(); index++) {
