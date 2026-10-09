@@ -4751,6 +4751,14 @@ bool InfantryClass::Should_JumpJet_Fly(Cell const & from, Cell const & to)
 /// </summary>
 void InfantryClass::Approach_Target(void)
 {
+	// A dug-in soldier holds its ground. A computer's soldier packs up when its target is out of the reach of its deploy weapon (InfantryClass::ApproachTarget, 0x522340).
+	if (Is_Deployed()) {
+		if (TarCom != NULL && !House->Is_Human_Player() && Class->IsDeployFire && !Is_Area_Fire_Deployer() && Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon != NULL && !In_Range(TarCom, Class->DeployFireWeapon)) {
+			Do_Action(DO_UNDEPLOY, true);
+		}
+		return;
+	}
+
 	if (TarCom) {
 		if (!Class->IsEngineer || NavCom == TarCom)	{
 			BASECLASS::Approach_Target();
