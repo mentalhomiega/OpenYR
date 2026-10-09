@@ -1,0 +1,16 @@
+; A tech airport gives its owner the paradrop super weapon. Owning it grants ParaDropSpecial, which charges
+; from zero for 3600 frames and then drops the owner side's GIs (six E1 for the Allies) on the cell it is fired at.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 own CAAIRP 62 26
+150 supers
+200 count E1
+3700 supers
+3750 fire ParaDropSpecial 64 38
+3800 supers
+3850 count E1
+4200 count E1
+4200 count PDPLANE
+4300 supers
+4400 quit
