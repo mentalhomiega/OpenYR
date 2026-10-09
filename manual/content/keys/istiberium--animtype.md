@@ -22,7 +22,7 @@ A cell takes Tiberium only when it meets **All of:**
 - no Tiberium-spawning terrain object stands on it;
 - its land type is one that can be built on;
 - it holds no overlay of any kind;
-- it is flat or on one of the four simple slopes;
+- it is flat;
 - its terrain tile allows Tiberium.
 
 Cells that fail any condition are skipped.
