@@ -6006,10 +6006,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	/*
 	 * If not a forced damage condition, adjust damage according to the house and
-	 * object armor bias, veterancy armor bonus, and type-immunity.
+	 * object armor bias, veterancy armor bonus, and type-immunity. An unforced hit is raised
+	 * to one point even when it is zero (TechnoClass::ReceiveDamage, 0x701900); a Webby hit
+	 * carries no damage and stays at zero.
 	 */
-	if (!forced && damage > 0) {
-		damage = (int)(1.0 / (House->ArmorBias * ArmorBias * AttachedEffects.Armor_Multiplier()) * (double)damage);
+	if (!forced && !negative && !(damage == 0 && warhead != NULL && warhead->IsWebby)) {
+		damage = (int)((double)damage / (House->ArmorBias * ArmorBias * AttachedEffects.Armor_Multiplier()));
 
 		if (Has_Ability(ABILITY_STRONGER)) {
 			damage = (int)((double)damage / Rule->VeteranArmor);

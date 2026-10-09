@@ -168,7 +168,7 @@ Every candidate receives the same raw figure and then reduces it separately, so 
 2. **Web.** A [`Webby=yes`](/keys/webby/) warhead entangles any infantryman whose type is not [`IsWebImmune=yes`](/keys/iswebimmune/). The figure becomes zero, so the hit does nothing else.
 3. **Armor multipliers.** The figure is divided by the owning house's armor multiplier and by the object's crate armor multiplier, then rounded down. The crate multiplier stays `1` until an armor crate raises it. In a campaign, the house multiplier is the difficulty's [`Armor=`](/keys/armor/#scope-difficulty-settings). In any other game, it is that figure multiplied by the country's [`Armor=`](/keys/armor/#scope-housetype). [Difficulty settings](/systems/difficulty/#how-the-figures-are-combined) shows how the two combine.
 4. **Veteran armor.** An object with the `STRONGER` [ability](/systems/veterancy/#abilities) divides the figure again by one plus [`VeteranArmor`](/keys/veteranarmor/), rounded down.
-5. **Minimum of one.** If steps 3 and 4 left less than one point, the figure becomes one point.
+5. **Minimum of one.** If steps 3 and 4 left less than one point, the figure becomes one point. This includes a hit of zero to begin with, except a [`Webby=yes`](/keys/webby/) hit, which stays at zero.
 6. **Type immunity.** An object whose type is [`TypeImmune=yes`](/keys/typeimmune/) takes no damage from a credited attacker of the same type owned by the same house.
 7. **Iron Curtain.** An object under the [Iron Curtain](/systems/superweapons/#iron-curtain) takes no damage.
 8. **Allies.** An [`AffectsAllies=no`](/keys/affectsallies/) warhead does nothing to an object whose owner is an ally of the credited attacker's house, the attacker's own house included.
