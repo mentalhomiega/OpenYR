@@ -595,6 +595,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		int TurretCount;
 		int WeaponCount;
 
+		// ClearAllWeapons=yes drops the primary and secondary weapons, elite included, after the weapon keys are read.
+		bool IsClearAllWeapons;
+
+		// MobileFire=no stops a unit with a destination from firing and quarters its firing delay when it halts.
+		bool IsMobileFire;
+
 		/*
 		 * A gattling type fires the weapon pair for its current stage. Firing raises its spin by
 		 * RateUp a frame and idling lowers it by RateDown; the spin moves it up a stage on

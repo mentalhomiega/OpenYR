@@ -7687,6 +7687,23 @@ Civilian:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+ClearAllWeapons:
+  key: ClearAllWeapons
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsClearAllWeapons
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ClearTile:
   key: ClearTile
   scopes:
@@ -22859,6 +22876,23 @@ MissileSpeedVar:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MobileFire:
+  key: MobileFire
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsMobileFire
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Mods:
   key: Mods
   scopes:

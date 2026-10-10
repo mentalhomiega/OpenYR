@@ -2444,7 +2444,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	Certain units require some setup time after they come to a halt.
 		*/
 		if (NavCom == NULL && Path[0] == FACING_NONE) {
-			if (Class->IsNoFireWhileMoving) {
+			if (Class->IsNoFireWhileMoving || !Class->IsMobileFire) {
 				Arm = Rearm_Delay(true)/4;
 			}
 		}
@@ -5159,7 +5159,7 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 		/*
 		**	If this unit cannot fire while moving, then bail.
 		*/
-		if ((Class->IsNoFireWhileMoving /*!Class->IsTurretEquipped || Class->IsLockTurret*/) && NavCom != NULL) {
+		if ((Class->IsNoFireWhileMoving || !Class->IsMobileFire) && NavCom != NULL) {
 			return(FIRE_MOVING);
 		}
 
