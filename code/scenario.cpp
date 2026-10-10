@@ -410,7 +410,10 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 			transit_playing = true;
 		}
 
-		Restate_Mission(Scen);
+		// An unattended test run has nobody to read the briefing page, so it goes on to the game.
+		if (!AutoTest_Active()) {
+			Restate_Mission(Scen);
+		}
 	}
 
 	/*
