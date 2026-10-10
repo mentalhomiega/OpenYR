@@ -1,6 +1,7 @@
 ---
 key: FirePower
-summary: The multiplier a difficulty setting applies to the damage its houses deal by firing a weapon.
+summary: A multiplier on a difficulty setting that this build reads but does not apply to damage.
+no_effect: true
 see_also: ["system:difficulty"]
 when_omitted:
   kind: value
@@ -8,23 +9,6 @@ when_omitted:
   note: A later file that contains the section without this key resets it to 1.
 ---
 
-`FirePower` multiplies the damage of the weapons fired by houses in this difficulty slot. A value above 1 deals more damage. `[Easy]`, `[Normal]` and `[Difficult]` each set a value, and a house uses the one for [its difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot).
+`[Easy]`, `[Normal]` and `[Difficult]` each set a value, and this build reads it but does not apply it. No difficulty changes how much damage any object's weapons deal, for human and computer houses alike.
 
-```ini title="rules.ini"
-[Difficult]
-FirePower=1.2
-```
-
-The multiplier scales the [`Damage`](/keys/damage/#scope-weapontype) of each projectile an object fires from its weapon. A firepower crate and the veteran firepower bonus ([`VeteranCombat`](/keys/veterancombat/)) scale the same damage further.
-
-These deal their damage without the multiplier:
-
-- a nuclear missile launch;
-- an EM pulse, from a structure or from a vehicle;
-- other superweapon launches;
-- projectiles created by a trigger action;
-- the projectiles a splitting projectile releases;
-- sonic weapons and weapons that use fire particles;
-- weapons with a `Damage` of 0 or below, such as healing weapons.
-
-A house's multiplier is computed each time the house is [assigned its slot](/systems/difficulty/#when-a-house-is-re-handicapped), so a later change to the section reaches the house only then. Outside a campaign game, it is also multiplied by the country's [`Firepower=`](/keys/firepower-housetype/); a campaign game ignores the country value.
+Yuri's Revenge does apply it: the damage of each weapon a house fires is multiplied by the figure for [its difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot). We left that out on purpose, so that the difficulty never changes what a unit can do. A weapon's damage is still scaled by [the country's `Firepower=`](/keys/firepower-housetype/) outside a campaign game, by a firepower crate and by the veteran firepower bonus ([`VeteranCombat`](/keys/veterancombat/)).
