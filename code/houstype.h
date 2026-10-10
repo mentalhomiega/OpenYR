@@ -85,6 +85,11 @@ class HouseTypeClass : public AbstractTypeClass
 		double ArmorBuildingsMult;
 		double ArmorDefensesMult;
 
+		// Scale the top speed of this country's infantry, vehicles and aircraft.
+		double SpeedInfantryMult;
+		double SpeedUnitsMult;
+		double SpeedAircraftMult;
+
 		/*
 		**	This is the filename suffix to use when creating a house specific
 		**	file name. Longer suffixes such as "Allied" are kept whole, up to

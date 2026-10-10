@@ -241,7 +241,7 @@ The route search adds up a [path cost](/glossary/#path-cost) for each route, and
 
 [`Speed=`](/keys/speed/) takes a value from `0` to `100`. A value above `100` is treated as `100`, so raising a fast type's `Speed=` past that changes nothing.
 
-For a vehicle moved by the drive locomotor, the distance it covers each frame comes from the chain of factors below. Steps 1 to 4 set the **throttle**, a fraction from 0 to 1. Steps 1 to 3 are worked out as the vehicle starts each step into a new cell. The terrain affects only the throttle. Steps 5 to 9 are recalculated every frame.
+For a vehicle moved by the drive locomotor, the distance it covers each frame comes from the chain of factors below. Steps 1 to 4 set the **throttle**, a fraction from 0 to 1. Steps 1 to 3 are worked out as the vehicle starts each step into a new cell. The terrain affects only the throttle. Steps 5 to 10 are recalculated every frame.
 
 | Step | Factor |
 | --- | --- |
@@ -250,17 +250,18 @@ For a vehicle moved by the drive locomotor, the distance it covers each frame co
 | 3 | Three quarters, once the vehicle's health has fallen to the yellow condition |
 | 4 | On an [`Accelerates=yes`](/keys/accelerates/) vehicle only: at most a fifth while the vehicle is crushing something, otherwise the acceleration ramp toward the throttle from steps 1 to 3 |
 | 5 | The type's top speed, reduced by any limpet drone clamped to the vehicle |
-| 6 | The speed multiplier a [crate](/systems/crates/#results-that-sweep-a-radius) gave the vehicle. Only the first speed crate counts; later ones do not raise it |
-| 7 | [`VeteranSpeed`](/keys/veteranspeed/) plus one, for a vehicle that has the [`FASTER` ability](/systems/veterancy/#abilities) |
-| 8 | The throttle from steps 1 to 4 |
-| 9 | Half, while the vehicle is carrying a captured flag |
+| 6 | The owner country's speed multiplier for the object's kind: [`SpeedInfantryMult`](/keys/speedinfantrymult/) for infantry and [`SpeedUnitsMult`](/keys/speedunitsmult/) for vehicles |
+| 7 | The speed multiplier a [crate](/systems/crates/#results-that-sweep-a-radius) gave the vehicle. Only the first speed crate counts; later ones do not raise it |
+| 8 | [`VeteranSpeed`](/keys/veteranspeed/) plus one, for a vehicle that has the [`FASTER` ability](/systems/veterancy/#abilities) |
+| 9 | The throttle from steps 1 to 4 |
+| 10 | Half, while the vehicle is carrying a captured flag |
 
 Several details change the result:
 
 - Step 1 uses the `[Road]` figures whenever the destination's ground is two or more levels from the height the vehicle travels at, as on a bridge deck. A vehicle therefore keeps its speed on a bridge over water.
 - The slope multiplier depends only on speed type. `Track` uses [`TrackedUphill`](/keys/trackeduphill/) and [`TrackedDownhill`](/keys/trackeddownhill/). Every other speed type uses [`WheeledUphill`](/keys/wheeleduphill/) and [`WheeledDownhill`](/keys/wheeleddownhill/), whatever its name suggests.
 - If the terrain figure times the slope multiplier is exactly zero, the vehicle moves at half speed instead of stopping.
-- Steps 5 to 9 round down to a whole number several times along the way, so a slow type loses proportionally more to each factor than a fast one.
+- Steps 5 to 10 round down to a whole number several times along the way, so a slow type loses proportionally more to each factor than a fast one.
 - [`TiltsWhenCrushes`](/keys/tiltswhencrushes/) changes only whether the hull tilts while the vehicle crushes something, not its speed.
 
 The damage penalty in step 3 belongs to the drive locomotor alone. Every other object moves at the same speed damaged or undamaged.
@@ -272,7 +273,7 @@ The damage penalty in step 3 belongs to the drive locomotor alone. Every other o
 | Locomotor | Speed comes from | Terrain figure |
 | --- | --- | --- |
 | Drive | The full chain above | Sets the throttle |
-| Walk, Mech | Steps 5 to 9 above, with the throttle fixed at full | Ignored |
+| Walk, Mech | Steps 5 to 10 above, with the throttle fixed at full | Ignored |
 | Hover | The same, times the hover locomotor's own acceleration ramp | Ignored |
 | Tunnel | The same, times [`TunnelSpeed`](/keys/tunnelspeed/) while digging down and coming up; a fixed rate underground | Ignored |
 | Fly | The type's top speed times the aircraft's own throttle, and nothing else | Ignored |
@@ -281,7 +282,7 @@ The damage penalty in step 3 belongs to the drive locomotor alone. Every other o
 | Drop pod | Its height above the ground, with the rules-wide descent rate as the minimum | Ignored |
 | Teleport | Instantaneous | Ignored |
 
-An aircraft's speed therefore ignores the crate multiplier, the veteran ability, the flag penalty and the damage penalty. The difficulty and country speed multipliers are stored but never read, for ground objects and aircraft alike; [difficulty settings](/systems/difficulty/#parsed-settings-without-effect) covers them.
+An aircraft's speed therefore ignores the country's speed multiplier, the crate multiplier, the veteran ability, the flag penalty and the damage penalty. The difficulty and country `Groundspeed=` and `Airspeed=` are stored but never read; [difficulty settings](/systems/difficulty/#parsed-settings-without-effect) covers them.
 
 The other movement settings on this page each reach only the locomotors listed here:
 
