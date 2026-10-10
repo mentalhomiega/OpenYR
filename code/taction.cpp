@@ -68,6 +68,7 @@
 #include "infantry.h"
 #include "ion.h"
 #include "ionblast.h"
+#include "lstorm.h"
 #include "map.h"
 #include "movie.h"
 #include "partsys.h"
@@ -311,7 +312,6 @@ enum ParamCodeType {
 static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
-		case TACTION_LIGHTNING_STORM_STRIKE:
 		case TACTION_PAUSE_GAME:
 		case TACTION_MIND_CONTROL_BASE:
 		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
@@ -890,6 +890,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(RETINT_GREEN);
 		INVOKE(RETINT_BLUE);
 		INVOKE(IRON_CURTAIN_AT);
+		INVOKE(LIGHTNING_STORM_STRIKE);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3216,6 +3217,22 @@ bool TActionClass::TAction_IRON_CURTAIN_AT(HouseClass * , ObjectClass * , Trigge
 			techno->Iron_Curtain(Rule->IronCurtainDuration, NULL, false);
 		}
 	}
+	return(true);
+}
+
+
+/// <summary>
+/// Calls a lightning storm centered on the waypoint for the trigger's house, as the Lightning
+/// Storm super weapon does with LightningStormDuration and LightningDeferment. The storm rages
+/// after the warning period, and the house's enemies lose their radar while it lasts.
+/// </summary>
+/// <returns>bool; Was the storm called? It fails while another storm is raging or the waypoint does not exist.</returns>
+bool TActionClass::TAction_LIGHTNING_STORM_STRIKE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (LightningStormClass::Is_Active() || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+	LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, Scen->Get_Waypoint_Cell(EffectLocation), house);
 	return(true);
 }
 

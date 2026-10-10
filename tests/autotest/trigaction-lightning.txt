@@ -1,0 +1,8 @@
+; Lightning Storm strike (action 102) calls a storm at waypoint 1 (cell 65,20 on the default map).
+; The storm is pending right away and raging once LightningDeferment has passed. A second call
+; while it rages fails.
+30 trigaction 102 0 1
+40 trigaction 0 0 1
+400 trigaction 0 0 1
+410 trigaction 102 0 1
+420 quit
