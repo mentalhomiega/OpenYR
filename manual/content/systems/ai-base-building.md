@@ -372,7 +372,15 @@ The plant comes from the acted side. The house takes the first of these that app
 
 With no plant to insert, the node is built as it stands.
 
-A house that is not following a map plan also sells its base when it cannot make money. A house that can make money does not sell. Otherwise it sells unless it can pay for the item it needs next:
+A house that is not following a map plan also sells its base when it cannot make money. A house can make money in these cases, checked in this order:
+
+- It owns a [`ResourceDestination`](/keys/resourcedestination/) object and a [`ResourceGatherer`](/keys/resourcegatherer/) object.
+- Its country lists no [`HarvesterUnit`](/keys/harvesterunit/), a refinery can be built, and it owns a gatherer. Or it owns a construction yard or a [`BaseUnit`](/keys/baseunit/), and its money covers a refinery.
+- Its country lists a harvester and no refinery can be built. It owns a gatherer. Or it owns a war factory and its money covers a harvester. Or it owns a construction yard or a base unit, and its money covers a harvester and a war factory.
+- Its country lists a harvester, a refinery can be built, and it owns no refinery. It owns a construction yard or a base unit, and its money is more than a refinery costs.
+- Its country lists a harvester, a refinery can be built, and it owns a refinery. It owns a war factory and its money covers a harvester. Or it owns a construction yard or a base unit, and its money covers a harvester and a war factory, or a refinery.
+
+Otherwise it sells unless it can pay for the item it needs next:
 
 - With no refinery, the item is the first refinery its country may build. If none is buildable, it is the first war factory. If neither is buildable, the house sells.
 - With a refinery, a refinery still under construction stops the sale. Otherwise the item is the first harvester its country may build. If its country lists none, the house sells.
