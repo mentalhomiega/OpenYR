@@ -975,6 +975,7 @@ class HouseClass : public AbstractClass
 		double Cost_Multiplier(TechnoTypeClass const * type) const;
 		double Country_Armor_Multiplier(TechnoTypeClass const * type) const;
 		double Country_Speed_Multiplier(TechnoTypeClass const * type) const;
+		double Country_Build_Time_Multiplier(TechnoTypeClass const * type) const;
 		double Country_Cost_Multiplier(TechnoTypeClass const * type) const;
 		double Plant_Cost_Multiplier(TechnoTypeClass const * type) const;
 		void Harvested_Weed(int weed, int slot);
