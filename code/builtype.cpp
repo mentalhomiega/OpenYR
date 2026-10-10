@@ -362,6 +362,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	NumberOfDocks(1),
 	IsGDIBarracks(false),
 	IsNODBarracks(false),
+	IsYuriBarracks(false),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -1372,6 +1373,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsArmory = ini.Get_Bool(Name(), "Armory", IsArmory);
 		IsGDIBarracks = ini.Get_Bool(Name(), "GDIBarracks", IsGDIBarracks);
 		IsNODBarracks = ini.Get_Bool(Name(), "NODBarracks", IsNODBarracks);
+		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
 		SuperWeapon = ini.Get_SuperWeaponType(Name(), "SuperWeapon", SuperWeapon);

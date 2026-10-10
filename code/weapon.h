@@ -292,6 +292,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// Can a passenger fire this weapon from inside an open-topped transport, and with which firing animation?
 		bool IsFireInTransport;
 
+		// FireWhileMoving=no keeps a unit with a destination from firing this weapon; BalloonHover units are exempt.
+		bool IsFireWhileMoving;
+
 		// Does this weapon draw a wavy beam from its muzzle to its target as it fires?
 		bool IsRadBeam;
 

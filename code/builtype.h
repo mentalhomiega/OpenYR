@@ -777,6 +777,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsNODBarracks;
 
+		// YuriBarracks=yes gives the structure an extra exit cell, two cells right and one down from its origin.
+		bool IsYuriBarracks;
+
 		/*
 		 * This is the super weapon this building grants its owner while it stands, or
 		 * SUPER_NONE if it grants none.

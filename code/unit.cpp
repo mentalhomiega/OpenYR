@@ -5163,6 +5163,11 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 			return(FIRE_MOVING);
 		}
 
+		// A weapon with FireWhileMoving=no waits for the unit to stop, unless the unit is a BalloonHover type.
+		if (!weapon->IsFireWhileMoving && !Class->IsBalloonHover && NavCom != NULL) {
+			return(FIRE_MOVING);
+		}
+
 		if ((weapon->UseSparkParticles || weapon->UseFireParticles) && NavCom != NULL) {
 			return(FIRE_MOVING);
 		}
