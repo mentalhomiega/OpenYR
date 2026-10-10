@@ -266,10 +266,9 @@ A computer house's factories never check the limit, so the computer keeps produc
 Build time is counted in game frames. It is computed in this order and truncated to a whole number after each step:
 
 1. Start from the object's [`Cost=`](/keys/cost/#scope-aircrafttype), multiplied by [`BuildSpeed`](/keys/buildspeed/) and by 0.9 frames per credit. A structure uses its `Cost=` as written, which includes the price of any [`FreeUnit`](/keys/freeunit/) or pad aircraft that comes with it. (Repair costs use the price without them.)
-2. Multiply by the house's build-time multiplier. That multiplier is fixed when the house is given its difficulty, as the country's [`BuildTime=`](/keys/buildtime/#scope-housetype) times the difficulty's [`BuildTime=`](/keys/buildtime/#scope-difficulty-settings) times [`GameSpeedBias`](/keys/gamespeedbias/). Campaign games leave out the country's `BuildTime=`.
-3. Divide by the house's [production speed](#power).
-4. Multiply by the [multiple-factory adjustment](#more-than-one-factory).
-5. For a [`Wall=yes`](/keys/wall/#scope-buildingtype) BuildingType, multiply by [`WallBuildSpeedCoefficient`](/keys/wallbuildspeedcoefficient/).
+2. Divide by the house's [production speed](#power).
+3. Multiply by the [multiple-factory adjustment](#more-than-one-factory).
+4. For a [`Wall=yes`](/keys/wall/#scope-buildingtype) BuildingType, multiply by [`WallBuildSpeedCoefficient`](/keys/wallbuildspeedcoefficient/).
 
 ### Production steps
 
@@ -300,9 +299,7 @@ The speed is refreshed whenever the house's power is recalculated: when a struct
 
 ### Difficulty and campaign games
 
-The country and difficulty build-time multipliers are combined once, when the house is given its difficulty, not for each order. Campaign games leave out the country's multiplier. The `BuildTime=` in a country section such as `[GDI]` or `[Nod]` therefore affects only skirmish and multiplayer games.
-
-The `Cost=` in a country or difficulty section changes no price, so neither changes what a build costs. [What a house pays](/keys/cost/#what-a-house-pays) lists the multipliers that do.
+The `BuildTime=` in a country or difficulty section, and [`GameSpeedBias`](/keys/gamespeedbias/), change no build time. The `Cost=` in a country or difficulty section changes no price, so neither changes what a build costs. [What a house pays](/keys/cost/#what-a-house-pays) lists the multipliers that do.
 
 ## Paying for it
 

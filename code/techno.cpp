@@ -953,9 +953,7 @@ int TechnoClass::Time_To_Build(void) const
 {
 	int val = Class_Of()->Time_To_Build();
 
-	val *= House->BuildSpeedBias;
-
-	// The type's own multiplier follows the house's, each step rounded down (TechnoClass::TimeToBuild).
+	// Each step is rounded down (TechnoClass::TimeToBuild).
 	val *= TClass->BuildTimeMultiplier;
 
 	/*
