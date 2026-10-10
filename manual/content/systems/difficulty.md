@@ -1,6 +1,6 @@
 ---
 title: Difficulty settings and handicaps
-summary: "Turns the chosen difficulty into one slot per house and scales that house's damage, rate of fire and build times by the figures the slot holds."
+summary: "Turns the chosen difficulty into one slot per house and scales that house's damage and rate of fire by the figures the slot holds."
 category: ai-teams
 keys:
   - AIHateDelays
@@ -70,14 +70,13 @@ The map's `[Basic] Player=` entry does not put its house in the player's column.
 
 ## What one difficulty section sets
 
-A difficulty section has five settings that take effect. The three multipliers do not all point the same way. A value above 1 makes the house deal more damage. It also makes the house fire more slowly and build more slowly. Each house uses the values in its section as written; only the choice of section is inverted.
+A difficulty section has four settings that take effect. The two multipliers point opposite ways. A value above 1 makes the house deal more damage, and a value above 1 also makes it fire more slowly. Each house uses the values in its section as written; only the choice of section is inverted.
 
 | Setting | Effect on a house in that slot |
 | --- | --- |
 | [`FirePower=`](/keys/firepower-difficulty-settings/) | Multiplies the damage of most weapons its objects fire; above 1 deals more. The key page lists the projectiles it does not scale. |
 | [`Armor=`](/keys/armor/#scope-difficulty-settings) | Read, but it does not change damage. The house's armor divisor comes from its country's [`Armor=`](/keys/armor/#scope-housetype). |
 | [`ROF=`](/keys/rof/#scope-difficulty-settings) | Multiplies the delay between its shots; above 1 fires more slowly. |
-| [`BuildTime=`](/keys/buildtime/#scope-difficulty-settings) | Multiplies the build time of everything it produces; above 1 builds more slowly. |
 | [`RepairDelay=`](/keys/repairdelay/) | Sets how long a computer house waits after starting one building repair before it can start another. The wait is a random time between a quarter of the value and twice the value, in minutes. |
 | [`DestroyWalls=`](/keys/destroywalls/) | `no` stops a computer house's objects from [scoring walls as targets](/systems/target-selection/#picking-the-winner). |
 
@@ -85,7 +84,6 @@ A difficulty section has five settings that take effect. The three multipliers d
 [Difficult] ; example values that weaken the house reading this section
 FirePower=0.8
 ROF=1.2
-BuildTime=1.2
 RepairDelay=0.05
 DestroyWalls=no
 ```
@@ -110,20 +108,19 @@ Files that contain a difficulty section are read in this order: [each rules file
 
 A house's copied figures are computed once, when the house gets its slot. They are not recomputed per shot, order or frame, so a later change to a difficulty section or a country reaches the house only when it is re-handicapped.
 
-Outside a campaign game, three of the figures are also multiplied by the matching setting in the house's country section. A campaign game leaves the country out and keeps everything else:
+Outside a campaign game, two of the figures are also multiplied by the matching setting in the house's country section. A campaign game leaves the country out and keeps everything else:
 
 | Difficulty setting | Campaign game | Outside a campaign |
 | --- | --- | --- |
 | `FirePower=` | On its own | Times the country's [`Firepower=`](/keys/firepower-housetype/) |
 | `ROF=` | On its own | Times the country's [`ROF=`](/keys/rof/#scope-housetype) |
-| `BuildTime=` | Times `GameSpeedBias` | Times the country's [`BuildTime=`](/keys/buildtime/#scope-housetype) and `GameSpeedBias` |
 | `RepairDelay=` | Taken as written | Taken as written |
 
 `Armor=` is not in the table. A house's armor divisor is its country's `Armor=` in every game, and the difficulty figure does not change damage.
 
 The country multipliers each default to 1, so a rules tree that never sets them gives the same figures in both columns.
 
-[How long it takes](/systems/production/#how-long-it-takes) places the build-time figure in the production chain. [When the computer repairs](/systems/repair/#when-the-computer-repairs) covers how the repair delay is used.
+[When the computer repairs](/systems/repair/#when-the-computer-repairs) covers how the repair delay is used.
 
 ## When a house is re-handicapped
 
@@ -188,10 +185,10 @@ A map's triggers do not use a house's slot. They follow the scenario's difficult
 
 ## Parsed settings without effect
 
-Six keys in the difficulty sections are read but change nothing:
+Seven keys in the difficulty sections are read but change nothing:
 
 - [`BuildSlowdown`](/keys/buildslowdown/) is never used.
 - [`ContentScan`](/keys/contentscan/#scope-difficulty-settings) is tested only in code the game never runs.
-- [`Groundspeed`](/keys/groundspeed/#scope-difficulty-settings), [`Airspeed`](/keys/airspeed/#scope-difficulty-settings), [`Cost`](/keys/cost/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are copied into the house's figures, but nothing uses those figures. A country's [`Groundspeed=`](/keys/groundspeed/#scope-housetype), [`Airspeed=`](/keys/airspeed/#scope-housetype) and [`Cost=`](/keys/cost/#scope-housetype) are combined into the same unused figures, and so is [`GameSpeedBias`](/keys/gamespeedbias/).
+- [`Groundspeed`](/keys/groundspeed/#scope-difficulty-settings), [`Airspeed`](/keys/airspeed/#scope-difficulty-settings), [`Cost`](/keys/cost/#scope-difficulty-settings), [`BuildTime`](/keys/buildtime/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are copied into the house's figures, but nothing uses those figures. A country's [`Groundspeed=`](/keys/groundspeed/#scope-housetype), [`Airspeed=`](/keys/airspeed/#scope-housetype) and [`Cost=`](/keys/cost/#scope-housetype) and [`BuildTime=`](/keys/buildtime/#scope-housetype) are combined into the same unused figures, and so is [`GameSpeedBias`](/keys/gamespeedbias/).
 
 Two related keys elsewhere have no effect either. [`FineDiffControl`](/keys/finediffcontrol/) in `[General]` is never used. The [`ContentScan`](/keys/contentscan/#scope-global-rules) threshold in `[IQ]` belongs to the same test as the difficulty section's `ContentScan`, which never runs.

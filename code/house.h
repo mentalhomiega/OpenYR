@@ -194,7 +194,7 @@ class HouseClass : public AbstractClass
 		double ArmorBias;
 		double ROFBias;
 		double CostBias;		// Filled from the rules but never read, as in gamemd.
-		double BuildSpeedBias;
+		double BuildSpeedBias;	// Filled from the rules but never read, as in gamemd.
 		double RepairDelay;
 		double BuildDelay;
 

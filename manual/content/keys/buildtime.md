@@ -1,4 +1,6 @@
 ---
 key: BuildTime
-summary: The build-time multiplier a country applies to everything it produces, or the one a difficulty setting applies.
+summary: A multiplier on a country or a difficulty setting that changes no build time in the game.
+no_effect: true
+see_also: ["system:production"]
 ---
