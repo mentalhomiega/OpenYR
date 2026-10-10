@@ -13,7 +13,7 @@ Each job is sized for one session and ends at a stated point. Sessions started t
 ## Shared opening
 
 ```text
-You are working on the GitHub repository mentalhomiega/OpenYR, a fork of OpenTS that rebuilds the Red Alert 2: Yuri's Revenge engine. Run `git fetch origin` and `git checkout modern`, then read CLOUD_BRIEFING.md at the repository root and follow its hard rules, its session-log section and its report section. You cannot run the game and there are no game files; never add game assets, binaries or decompiled code. Never write the owner's real name anywhere; the owner is MentalHomiega, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>` (set it with git config before committing). Commit in small commits with imperative subjects of at most 72 characters and no AI-attribution or Co-authored-by lines. Begin your branch from `origin/modern` unless the job says otherwise, and push only to the new branch named in the job (add today's UTC date where it says YYYY-MM-DD); never push to `modern`, `yr` or `main`, never force-push, delete branches or open pull requests, issues or comments anywhere. Before finishing, add your log as `cloud-log/YYYY-MM-DD-<job>.md` on your branch, then end with the briefing's report.
+You are working on the GitHub repository mentalhomiega/OpenYR, a fork of OpenTS that rebuilds the Red Alert 2: Yuri's Revenge engine. Run `git fetch origin` and `git checkout modern`, then read CLOUD_BRIEFING.md at the repository root and follow its hard rules, its session-log section and its report section. You cannot run the game and there are no game files; never add game assets, binaries or decompiled code. Never write the owner's real name anywhere; the owner is MentalHomiega, and commits use `MentalHomiega <182634060+mentalhomiega@users.noreply.github.com>` (set it with git config before committing). Commit in small commits with imperative subjects of at most 72 characters and no AI-attribution or Co-authored-by lines. Begin your branch from `origin/modern` unless the job says otherwise, and push only to the new branch named in the job (add today's UTC date where it says YYYY-MM-DD), with `git push origin HEAD:refs/heads/<that branch>`; never push to `modern`, `yr` or `main`, never force-push, delete branches or open pull requests, issues or comments anywhere. Before finishing, add your log as `cloud-log/YYYY-MM-DD-<job>.md` on your branch, then end with the briefing's report.
 
 Your job:
 ```
@@ -49,13 +49,13 @@ The save revision in `code/savever.h` went from 19 to 31 since `1cb8bf7` as new 
 ### 5. Research: specs for the next priorities
 
 ```text
-Follow docs/research/RESEARCH_BRIEFING.md, output 4 (specs). Read docs/research/priorities.md and docs/research/specs/README.md, then write specs for the three highest-ranked feature groups that have no spec yet. The ranking currently puts first the Ares super weapon keys (`SW.*`, `EVA.*`, `Message.*`, `Money.*` and the per-type keys), then the Ares building keys mods use most (`Foundation.*` and `FoundationOutline.*` custom shapes, `UC.*` units passing between buildings), then Phobos shields (`ShieldType`). For each, give where it hooks into `code/` on `modern`, the saved state it needs, and a test plan we can run in the real game. Stop after three specs. Branch: cloud/research-YYYY-MM-DD, begun from the newest `origin/cloud/research-*` branch merged with `origin/modern`.
+Follow docs/research/RESEARCH_BRIEFING.md, output 4 (specs). Read docs/research/priorities.md, docs/research/specs/README.md and the newest log in docs/research/log/, then write specs for the three highest-ranked items that have no spec yet. Items 3, 5, 6, 7 and 8 already have specs (per-type rules, weapon selection, attached effects, shields, auto-death and conversion). Next are item 2 (the Ares and Phobos small per-type switches, as one spec listing each switch and its single check), item 9 (Phobos projectile trajectories and interception) and item 10 (superweapon extensions, Ares `SW.*` and Phobos). For each, give where it hooks into `code/` on `modern`, the saved state it needs, and a test plan we can run in the real game. Stop after three specs. Branch: cloud/research-YYYY-MM-DD, begun from `origin/modern`.
 ```
 
-### 6. Research: finish the tables and the scanner
+### 6. Research: check the tables
 
 ```text
-Follow docs/research/RESEARCH_BRIEFING.md. Continue from the newest `origin/cloud/research-*` branch and its log in `docs/research/log/`. Do the log's "Next session" items that need no game files (the `mod_scan.py` MIX-archive and stock-key changes are already on `modern`): table the Phobos AI scripting and miscellaneous pages; and tick the Ares bug fix rows that `code/` on `modern` already handles, citing the function. Stop when those are done. Branch: cloud/research-YYYY-MM-DD, begun from the newest `origin/cloud/research-*` branch merged with `origin/modern`.
+Follow docs/research/RESEARCH_BRIEFING.md. Begin from `origin/modern` and read the newest log in `docs/research/log/`. Do its "Next session" items that need no game files: spot-check the effect and size of the rows ranked first to seventh in `docs/research/priorities.md` against their sources, merge the two `AnimRemapDefaultColorScheme` rows, and check the 14 ticked rows against the manual and `code/`. Leave the mod scan and the `Foundation.*` and `UC.*` questions for us. Stop when those are done. Branch: cloud/research-tables-YYYY-MM-DD.
 ```
 
 ### 7. Unit tests for the new rules maths
@@ -70,13 +70,22 @@ Add unit tests that need no game files for self-contained calculations added to 
 For every file added to `manual/changes/` since `1cb8bf7` (`git diff --name-only --diff-filter=A 1cb8bf7 origin/modern -- manual/changes`), and the key and system pages those commits changed, check each claim against the current source on `modern`. Narrow or correct any claim the code does not support, following `manual/AGENTS.md` and the prose rules in `AGENTS.md`. Keep each page's fix in its own commit. Stop when every new record has been checked. Branch: cloud/manual-audit-YYYY-MM-DD.
 ```
 
-## Waiting
+### 9. INI checker: tile sets and infantry sequences
 
-These need earlier cloud branches merged into `modern` first. The local session moves them up when that is done.
+```text
+Read docs/INICHECK.md and the "Open" section of `cloud-log/2026-10-06-inicheck.md` (on `origin/modern`). Extend the INI checker in two steps, each with unit tests in `tests/inicheck` and its docs update: (1) place `[TileSet0000]`-style sections (`TileSet%04d`, as `code/isotype.cpp` reads them) from a theater control file passed with a new CLI option, and check their keys, including the zero-padded `Tile{01-}` keys; (2) place the `Sequence=` sections named by infantry art sections in `art.ini` and check their keys against what `code/` reads. Stop when both are done. Branch: cloud/inicheck-YYYY-MM-DD.
+```
 
-- **Static analysis follow-up** (from `cloud/static-2026-10-06`).
-- **INI checker, next stage** (from `cloud/inicheck-2026-10-06`).
+### 10. Static analysis: the remaining cppcheck findings
+
+```text
+Read `cloud-log/2026-10-04-static.md` and `cloud-log/2026-10-06-static.md` on `origin/modern`. Work through the findings they left: printf format mismatches, `selfAssignment` in the network and VQA code, `ignoredReturnValue`, virtual calls in constructors, `duplInheritedMember`, and the always-true test at `code/object.cpp:1748`. For each, read it in context and decide: a real defect (fix it in its own commit, smallest change that keeps behaviour otherwise the same), harmless (say why), or needs gamemd evidence (list it for us). Do not change reconstructed conditions without proof. Stop when every listed finding has a verdict. Branch: cloud/static-YYYY-MM-DD.
+```
+
+## Answers we still owe
+
+Questions from earlier logs that wait on MentalHomiega: how Mental Omega's `Foundation.*` keys draw, which Ares version Mental Omega runs, whether the `[Phobos]` RA2MD.INI options get their own page, and whether research sessions should start porting Ares or Phobos behaviour.
 
 ## Done
 
-Earlier jobs whose branches are pushed and wait for the local session to test and merge: research (4 and 6 October), INI checker, static analysis, unit tests, docks and radio, mind-controlled units entering buildings, the manual CI check, and the nightly combined branches up to 7 October.
+Merged into `modern` and `yr`: research (4, 6 and 9 October, including the Phobos specs for items 3 and 5 to 8), INI checker, static analysis, unit tests, docks and radio, mind-controlled units entering buildings, the manual CI check, and the nightly combined branches up to 7 October.
