@@ -3292,6 +3292,40 @@ Armor:
       source: code/rules.cpp
       guard: null
     level: DifficultyClass
+ArmorAircraftMult:
+  key: ArmorAircraftMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: ArmorAircraftMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+ArmorBuildingsMult:
+  key: ArmorBuildingsMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: ArmorBuildingsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 ArmorCrateStacks:
   key: ArmorCrateStacks
   scopes:
@@ -3310,6 +3344,57 @@ ArmorCrateStacks:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ArmorDefensesMult:
+  key: ArmorDefensesMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: ArmorDefensesMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+ArmorInfantryMult:
+  key: ArmorInfantryMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: ArmorInfantryMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+ArmorUnitsMult:
+  key: ArmorUnitsMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: ArmorUnitsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 Armory:
   key: Armory
   scopes:

@@ -705,9 +705,8 @@ DiffType HouseClass::Assign_Handicap(DiffType handicap)
 		BuildSpeedBias = Rule->Diff[handicap].BuildSpeedBias * Rule->GameSpeedBias;
 	}
 
-	// Only the country's Armor= reaches damage: the difficulty's Armor= is stored in
-	// HouseClass::ArmorMultiplier, which gamemd's damage path never reads.
-	ArmorBias = Class->ArmorBias;
+	// Filled as in gamemd, where the damage path never reads it.
+	ArmorBias = (Session.Type != GAME_NORMAL ? Class->ArmorBias : 1.0) * Rule->Diff[handicap].ArmorBias;
 
 	TeamTime = 175 * HeapID + Rule->TeamDelays[handicap];
 
@@ -2046,6 +2045,22 @@ double HouseClass::Country_Cost_Multiplier(TechnoTypeClass const * type) const
 	}
 	double const country[5] = {Class->CostInfantryMult, Class->CostUnitsMult, Class->CostAircraftMult, Class->CostBuildingsMult, Class->CostDefensesMult};
 	return(country[category]);
+}
+
+
+/// <summary>
+/// Fetches the divisor this house's country applies to the damage its objects of the type's
+/// category take, as HouseClass::GetArmorMultiplier (0x50BD30) reads it. The country's own Armor=
+/// and the difficulty's are not part of it.
+/// </summary>
+double HouseClass::Country_Armor_Multiplier(TechnoTypeClass const * type) const
+{
+	int const category = Price_Category(type);
+	if (category < 0) {
+		return(1.0);
+	}
+	double const country[5] = {Class->ArmorInfantryMult, Class->ArmorUnitsMult, Class->ArmorAircraftMult, Class->ArmorBuildingsMult, Class->ArmorDefensesMult};
+	return(static_cast<float>(country[category]));
 }
 
 

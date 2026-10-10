@@ -91,6 +91,11 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	CostAircraftMult(1.0),
 	CostBuildingsMult(1.0),
 	CostDefensesMult(1.0),
+	ArmorInfantryMult(1.0),
+	ArmorUnitsMult(1.0),
+	ArmorAircraftMult(1.0),
+	ArmorBuildingsMult(1.0),
+	ArmorDefensesMult(1.0),
 	Scheme(0),
 	Prefix('A'),
 	IsMultiplay(false),
@@ -220,6 +225,11 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		CostAircraftMult = ini.Get_Float(Name(), "CostAircraftMult", CostAircraftMult);
 		CostBuildingsMult = ini.Get_Float(Name(), "CostBuildingsMult", CostBuildingsMult);
 		CostDefensesMult = ini.Get_Float(Name(), "CostDefensesMult", CostDefensesMult);
+		ArmorInfantryMult = ini.Get_Float(Name(), "ArmorInfantryMult", ArmorInfantryMult);
+		ArmorUnitsMult = ini.Get_Float(Name(), "ArmorUnitsMult", ArmorUnitsMult);
+		ArmorAircraftMult = ini.Get_Float(Name(), "ArmorAircraftMult", ArmorAircraftMult);
+		ArmorBuildingsMult = ini.Get_Float(Name(), "ArmorBuildingsMult", ArmorBuildingsMult);
+		ArmorDefensesMult = ini.Get_Float(Name(), "ArmorDefensesMult", ArmorDefensesMult);
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
@@ -296,6 +306,11 @@ void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
 	CostAircraftMult = parent.CostAircraftMult;
 	CostBuildingsMult = parent.CostBuildingsMult;
 	CostDefensesMult = parent.CostDefensesMult;
+	ArmorInfantryMult = parent.ArmorInfantryMult;
+	ArmorUnitsMult = parent.ArmorUnitsMult;
+	ArmorAircraftMult = parent.ArmorAircraftMult;
+	ArmorBuildingsMult = parent.ArmorBuildingsMult;
+	ArmorDefensesMult = parent.ArmorDefensesMult;
 	strcpy(Suffix, parent.Suffix);
 	Prefix = parent.Prefix;
 	IsMultiplayPassive = parent.IsMultiplayPassive;
@@ -342,6 +357,11 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(CostAircraftMult);
 	crc(CostBuildingsMult);
 	crc(CostDefensesMult);
+	crc(ArmorInfantryMult);
+	crc(ArmorUnitsMult);
+	crc(ArmorAircraftMult);
+	crc(ArmorBuildingsMult);
+	crc(ArmorDefensesMult);
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
@@ -376,6 +396,11 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CostAircraftMult);
 	stream.Serialize(CostBuildingsMult);
 	stream.Serialize(CostDefensesMult);
+	stream.Serialize(ArmorInfantryMult);
+	stream.Serialize(ArmorUnitsMult);
+	stream.Serialize(ArmorAircraftMult);
+	stream.Serialize(ArmorBuildingsMult);
+	stream.Serialize(ArmorDefensesMult);
 	stream.Serialize(Suffix);
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);
