@@ -1,6 +1,6 @@
 ---
 key: Cost
-summary: The credit price of one object of this type, or the multiplier a country or a difficulty applies to every price it pays.
+summary: The credit price of one object of this type. A country or a difficulty setting also has a `Cost=` that changes no price.
 ---
 
 An object's `Cost=` is the base for most credit amounts in the game: what a factory charges, what selling refunds, the score a kill or capture adds, and the experience a kill awards. [`Points=`](/keys/points/) affects none of these.
@@ -27,11 +27,8 @@ The reduced price is used in two places:
 
 ## What a house pays
 
-The country and difficulty forms of this key are price multipliers. A [country](/keys/cost/#scope-housetype) sets one and a [difficulty](/keys/cost/#scope-difficulty-settings) sets the other. A house multiplies the price of every object it buys by:
+A house pays an object's price multiplied by two factors that depend on the kind of object bought, in every game type. The country sets one with [`CostInfantryMult`](/keys/costinfantrymult/), [`CostUnitsMult`](/keys/costunitsmult/), [`CostAircraftMult`](/keys/costaircraftmult/), [`CostBuildingsMult`](/keys/costbuildingsmult/) or [`CostDefensesMult`](/keys/costdefensesmult/). Every [`FactoryPlant=yes`](/keys/factoryplant/) structure the house has on the map adds another, from its matching `CostBonus` key. A structure counts as a defense when its [`BuildCat`](/keys/buildcat/) is `Combat`. The product is applied to the price, and any fraction is dropped once at the end.
 
-- **In a skirmish or a multiplayer match**, its country's multiplier times its difficulty's.
-- **In a single-player campaign**, its difficulty's alone. The country's multiplier has no effect in a campaign.
+Under the multipliers, the reduced price and each deduction are multiplied separately, and each drops any fraction. The full price of a structure with a reduced price can therefore differ by a few credits from `Cost=` times the multiplier.
 
-Under a price multiplier, the reduced price and each deduction are multiplied separately, and each drops any fraction. The full price of a structure with a reduced price can therefore differ by a few credits from `Cost=` times the multiplier.
-
-Two more factors then apply by the kind of object bought, in every game type. The country sets one with [`CostInfantryMult`](/keys/costinfantrymult/), [`CostUnitsMult`](/keys/costunitsmult/), [`CostAircraftMult`](/keys/costaircraftmult/), [`CostBuildingsMult`](/keys/costbuildingsmult/) or [`CostDefensesMult`](/keys/costdefensesmult/). Every [`FactoryPlant=yes`](/keys/factoryplant/) structure the house has on the map adds another, from its matching `CostBonus` key. A structure counts as a defense when its [`BuildCat`](/keys/buildcat/) is `Combat`. The product is applied to the price above, and any fraction is dropped once at the end.
+A [country](/keys/cost/#scope-housetype) and a [difficulty section](/keys/cost/#scope-difficulty-settings) also have a `Cost=`, but neither changes a price.

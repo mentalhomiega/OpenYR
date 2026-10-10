@@ -300,9 +300,9 @@ The speed is refreshed whenever the house's power is recalculated: when a struct
 
 ### Difficulty and campaign games
 
-The country and difficulty multipliers are combined once, when the house is given its difficulty, not for each order. Campaign games leave out the country's multipliers for both build time and price. The `Cost=` and `BuildTime=` in a country section such as `[GDI]` or `[Nod]` therefore affect only skirmish and multiplayer games.
+The country and difficulty build-time multipliers are combined once, when the house is given its difficulty, not for each order. Campaign games leave out the country's multiplier. The `BuildTime=` in a country section such as `[GDI]` or `[Nod]` therefore affects only skirmish and multiplayer games.
 
-A difficulty's `Cost=` and `BuildTime=` are independent. `Cost=` changes what everything costs without changing build times, and `BuildTime=` changes build times without changing costs.
+The `Cost=` in a country or difficulty section changes no price, so neither changes what a build costs. [What a house pays](/keys/cost/#what-a-house-pays) lists the multipliers that do.
 
 ## Paying for it
 
