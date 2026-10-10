@@ -77,6 +77,14 @@ class HouseTypeClass : public AbstractTypeClass
 		double CostBuildingsMult;
 		double CostDefensesMult;
 
+		// Divide the damage this country's infantry, vehicles, aircraft, structures and
+		// BuildCat=Combat structures take.
+		double ArmorInfantryMult;
+		double ArmorUnitsMult;
+		double ArmorAircraftMult;
+		double ArmorBuildingsMult;
+		double ArmorDefensesMult;
+
 		/*
 		**	This is the filename suffix to use when creating a house specific
 		**	file name. Longer suffixes such as "Allied" are kept whole, up to

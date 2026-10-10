@@ -191,7 +191,7 @@ class HouseClass : public AbstractClass
 		double FirepowerBias;
 		double GroundspeedBias;		// Filled from the rules but never read, as in gamemd.
 		double AirspeedBias;		// Filled from the rules but never read, as in gamemd.
-		double ArmorBias;
+		double ArmorBias;		// Filled from the rules but never read, as in gamemd.
 		double ROFBias;
 		double CostBias;		// Filled from the rules but never read, as in gamemd.
 		double BuildSpeedBias;	// Filled from the rules but never read, as in gamemd.
@@ -973,6 +973,7 @@ class HouseClass : public AbstractClass
 		void Purified(int tiberium, TiberiumType slot);
 		int Self_Heal_Points(bool infantry) const;
 		double Cost_Multiplier(TechnoTypeClass const * type) const;
+		double Country_Armor_Multiplier(TechnoTypeClass const * type) const;
 		double Country_Cost_Multiplier(TechnoTypeClass const * type) const;
 		double Plant_Cost_Multiplier(TechnoTypeClass const * type) const;
 		void Harvested_Weed(int weed, int slot);

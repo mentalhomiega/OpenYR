@@ -75,7 +75,6 @@ A difficulty section has four settings that take effect. The two multipliers poi
 | Setting | Effect on a house in that slot |
 | --- | --- |
 | [`FirePower=`](/keys/firepower-difficulty-settings/) | Multiplies the damage of most weapons its objects fire; above 1 deals more. The key page lists the projectiles it does not scale. |
-| [`Armor=`](/keys/armor/#scope-difficulty-settings) | Read, but it does not change damage. The house's armor divisor comes from its country's [`Armor=`](/keys/armor/#scope-housetype). |
 | [`ROF=`](/keys/rof/#scope-difficulty-settings) | Multiplies the delay between its shots; above 1 fires more slowly. |
 | [`RepairDelay=`](/keys/repairdelay/) | Sets how long a computer house waits after starting one building repair before it can start another. The wait is a random time between a quarter of the value and twice the value, in minutes. |
 | [`DestroyWalls=`](/keys/destroywalls/) | `no` stops a computer house's objects from [scoring walls as targets](/systems/target-selection/#picking-the-winner). |
@@ -116,7 +115,7 @@ Outside a campaign game, two of the figures are also multiplied by the matching 
 | `ROF=` | On its own | Times the country's [`ROF=`](/keys/rof/#scope-housetype) |
 | `RepairDelay=` | Taken as written | Taken as written |
 
-`Armor=` is not in the table. A house's armor divisor is its country's `Armor=` in every game, and the difficulty figure does not change damage.
+`Armor=` is not in the table because it changes no damage. The divisor on a house's damage comes from the country's [`ArmorInfantryMult`](/keys/armorinfantrymult/) family in every game.
 
 The country multipliers each default to 1, so a rules tree that never sets them gives the same figures in both columns.
 
@@ -185,10 +184,10 @@ A map's triggers do not use a house's slot. They follow the scenario's difficult
 
 ## Parsed settings without effect
 
-Seven keys in the difficulty sections are read but change nothing:
+Eight keys in the difficulty sections are read but change nothing:
 
 - [`BuildSlowdown`](/keys/buildslowdown/) is never used.
 - [`ContentScan`](/keys/contentscan/#scope-difficulty-settings) is tested only in code the game never runs.
-- [`Groundspeed`](/keys/groundspeed/#scope-difficulty-settings), [`Airspeed`](/keys/airspeed/#scope-difficulty-settings), [`Cost`](/keys/cost/#scope-difficulty-settings), [`BuildTime`](/keys/buildtime/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are copied into the house's figures, but nothing uses those figures. A country's [`Groundspeed=`](/keys/groundspeed/#scope-housetype), [`Airspeed=`](/keys/airspeed/#scope-housetype) and [`Cost=`](/keys/cost/#scope-housetype) and [`BuildTime=`](/keys/buildtime/#scope-housetype) are combined into the same unused figures, and so is [`GameSpeedBias`](/keys/gamespeedbias/).
+- [`Armor`](/keys/armor/#scope-difficulty-settings), [`Groundspeed`](/keys/groundspeed/#scope-difficulty-settings), [`Airspeed`](/keys/airspeed/#scope-difficulty-settings), [`Cost`](/keys/cost/#scope-difficulty-settings), [`BuildTime`](/keys/buildtime/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are copied into the house's figures, but nothing uses those figures. A country's [`Armor=`](/keys/armor/#scope-housetype), [`Groundspeed=`](/keys/groundspeed/#scope-housetype), [`Airspeed=`](/keys/airspeed/#scope-housetype), [`Cost=`](/keys/cost/#scope-housetype) and [`BuildTime=`](/keys/buildtime/#scope-housetype) are combined into the same unused figures, and so is [`GameSpeedBias`](/keys/gamespeedbias/).
 
 Two related keys elsewhere have no effect either. [`FineDiffControl`](/keys/finediffcontrol/) in `[General]` is never used. The [`ContentScan`](/keys/contentscan/#scope-global-rules) threshold in `[IQ]` belongs to the same test as the difficulty section's `ContentScan`, which never runs.
