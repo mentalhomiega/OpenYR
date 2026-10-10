@@ -658,9 +658,10 @@ static void Trigger_Action_Step(StepType const & step)
 	action->EffectLocation = step.Y;
 	bool const done = (*action)(PlayerPtr, NULL, NULL, Cell(0, 0));
 	Point2D const view = TacticalMap->Get_Tactical_Position();
-	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d, scenario tint %d,%d,%d, first tile tint %d,%d,%d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y,
+	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d, scenario tint %d,%d,%d, first tile tint %d,%d,%d, waypoint cell %d,%d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y,
 		Scen->RedTint, Scen->GreenTint, Scen->BlueTint,
-		TileDrawers.Count() > 0 ? TileDrawers[0]->NormalRedTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->NormalGreenTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->NormalBlueTint : -1);
+		TileDrawers.Count() > 0 ? TileDrawers[0]->NormalRedTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->NormalGreenTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->NormalBlueTint : -1,
+		Scen->Is_Valid_Waypoint(step.Y) ? Scen->Get_Waypoint_Cell(step.Y).X : -1, Scen->Is_Valid_Waypoint(step.Y) ? Scen->Get_Waypoint_Cell(step.Y).Y : -1);
 	delete action;
 }
 

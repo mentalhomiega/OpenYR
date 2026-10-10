@@ -312,7 +312,6 @@ static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
 		case TACTION_LIGHTNING_STORM_STRIKE:
-		case TACTION_IRON_CURTAIN_AT:
 		case TACTION_PAUSE_GAME:
 		case TACTION_MIND_CONTROL_BASE:
 		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
@@ -890,6 +889,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(RETINT_RED);
 		INVOKE(RETINT_GREEN);
 		INVOKE(RETINT_BLUE);
+		INVOKE(IRON_CURTAIN_AT);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3172,6 +3172,50 @@ bool TActionClass::TAction_RETINT_GREEN(HouseClass * , ObjectClass * , TriggerCl
 bool TActionClass::TAction_RETINT_BLUE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	IonStormClass::Retint(Scen->RedTint, Scen->GreenTint, Data.Value);
+	return(true);
+}
+
+
+/// <summary>
+/// Puts everything on the waypoint's cell and the eight around it under the Iron Curtain for
+/// IronCurtainDuration, after the invoke animation starts over the waypoint. The curtain is not
+/// credited to any house, so infantry and organic vehicles it kills count for nobody.
+/// </summary>
+/// <returns>bool; Does the waypoint exist?</returns>
+bool TActionClass::TAction_IRON_CURTAIN_AT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+
+	Cell const waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
+	Coord coord = Map[waypoint].Center_Coord();
+	coord.Z += 5;
+	if (Rule->IronCurtainInvokeAnim != NULL) {
+		new AnimClass(Rule->IronCurtainInvokeAnim, coord);
+	}
+
+	// The curtain kills infantry, so everything is gathered before any of it is covered.
+	DynamicVectorClass<TechnoClass *> covered;
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			Cell const where = waypoint + Cell(dx, dy);
+			if (!Map.In_Radar(where)) {
+				continue;
+			}
+			for (ObjectClass * object = Map[where].Cell_Occupier(); object != NULL; object = object->Next) {
+				if (object->Is_Techno()) {
+					covered.Add((TechnoClass *)object);
+				}
+			}
+		}
+	}
+	for (int index = 0; index < covered.Count(); index++) {
+		TechnoClass * techno = covered[index];
+		if (techno->IsActive && !techno->IsInLimbo) {
+			techno->Iron_Curtain(Rule->IronCurtainDuration, NULL, false);
+		}
+	}
 	return(true);
 }
 

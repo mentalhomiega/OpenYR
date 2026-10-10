@@ -1,0 +1,14 @@
+; Iron Curtain At (action 109) covers the waypoint's cell and the eight around it: the two tanks there
+; shrug off damage and the soldier there dies. The tank two cells away is not covered.
+; Waypoint 1 of the default map is at cell 65,20.
+30 command CenterBase
+300 own MTNK 65 20
+301 own MTNK 66 21
+302 own E1 64 21
+303 own MTNK 68 20
+320 view 65 20
+330 trigaction 109 0 1
+340 dump
+400 damage MTNK 200
+1500 dump
+1510 quit
