@@ -374,9 +374,10 @@ With no plant to insert, the node is built as it stands.
 
 A house that is not following a map plan also sells its base when it cannot make money. That happens when it lacks a refinery or a harvester and cannot afford the missing one. It works through the node list from the back:
 
-- A structure carrying an upgrade loses its top upgrade, and the house is credited that upgrade's full cost.
-- Any other structure is sold.
-- Walls and gates are sold and their nodes removed.
+- A sellable structure that carries an upgrade loses its top upgrade, and the house is credited that upgrade's full cost.
+- A sellable structure is sold. A gate is a structure, so its node is removed with it.
+- A structure that cannot be sold is not sold, and its node is removed. A structure cannot be sold when it is marked [`Unsellable`](/keys/unsellable/) or a drain weapon is draining it. Otherwise it can be sold only while it has a buildup animation and is neither under construction nor being deconstructed. A Firestorm wall that is neither unsellable nor drained is sold while its house's Firestorm defense is off, whatever its buildup and construction state.
+- A built wall segment is not sold for a computer house, and its node is removed.
 
 The house sells until its money covers what it needs: a harvester when it owns both a refinery and a war factory, a refinery otherwise. It then cancels everything in production. It either orders the harvester, or inserts a refinery node ahead of the next unbuilt node and removes the later refinery nodes.
 
