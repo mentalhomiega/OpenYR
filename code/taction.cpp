@@ -64,6 +64,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
+#include "init.h"
 #include "infantry.h"
 #include "ion.h"
 #include "ionblast.h"
@@ -321,7 +322,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_RETINT_RED:
 		case TACTION_RETINT_GREEN:
 		case TACTION_RETINT_BLUE:
-		case TACTION_JUMP_CAMERA_HOME:
 			return(true);
 
 		default:
@@ -889,6 +889,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CENTER_BASE_CELL_SET);
 		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
 		INVOKE(SET_PREFERRED_TARGET_CELL);
+		INVOKE(JUMP_CAMERA_HOME);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3137,6 +3138,17 @@ bool TActionClass::TAction_JUMP_CAMERA(HouseClass * , ObjectClass * , TriggerCla
 	}
 
 	TacticalMap->Set_Tactical_Position(coord);
+	return(true);
+}
+
+
+/// <summary>
+/// Centers the view on the local player's base, as the CenterBase key does.
+/// </summary>
+/// <returns>bool; Always true.</returns>
+bool TActionClass::TAction_JUMP_CAMERA_HOME(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	Execute_Command("CenterBase");
 	return(true);
 }
 

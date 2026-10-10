@@ -1,0 +1,7 @@
+; Jump Camera Home (action 145) moves the view to where the CenterBase key puts it.
+; The view logged after step 31 and after step 50 must match; the step at frame 40 moves it away first.
+30 command CenterBase
+31 trigaction 0 0 0
+40 view 10 10
+50 trigaction 145 0 0
+60 quit
