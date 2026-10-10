@@ -90,6 +90,14 @@ class HouseTypeClass : public AbstractTypeClass
 		double SpeedUnitsMult;
 		double SpeedAircraftMult;
 
+		// Scale the time this country takes to build infantry, vehicles, aircraft, structures and
+		// BuildCat=Combat structures.
+		double BuildTimeInfantryMult;
+		double BuildTimeUnitsMult;
+		double BuildTimeAircraftMult;
+		double BuildTimeBuildingsMult;
+		double BuildTimeDefensesMult;
+
 		/*
 		**	This is the filename suffix to use when creating a house specific
 		**	file name. Longer suffixes such as "Allied" are kept whole, up to

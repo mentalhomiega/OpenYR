@@ -10,4 +10,4 @@ An object's base build time, in game frames, is its [`Cost`](/keys/cost/#scope-a
 
 The value scales every producible object type alike. A value of `2` doubles every base build time.
 
-The other build-time factors apply to the base time afterwards, as [How long it takes](/systems/production/#how-long-it-takes) lists: the [power](/systems/power/#production) divisor, the number of factories, and the [wall coefficient](/keys/wallbuildspeedcoefficient/).
+The other build-time factors apply to the base time afterwards, as [How long it takes](/systems/production/#how-long-it-takes) lists: the country's build-time multiplier for the object's kind, the type's [`BuildTimeMultiplier`](/keys/buildtimemultiplier/), the [power](/systems/power/#production) divisor, the number of factories, and the [wall coefficient](/keys/wallbuildspeedcoefficient/).

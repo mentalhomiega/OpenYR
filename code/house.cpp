@@ -2081,6 +2081,22 @@ double HouseClass::Country_Speed_Multiplier(TechnoTypeClass const * type) const
 
 
 /// <summary>
+/// Fetches the factor this house's country applies to the build time of the type's category, as
+/// TechnoClass::TimeToBuild (0x6F47A0) reads it through 0x50C0A0. The country's BuildTime= and the
+/// difficulty's are not part of it.
+/// </summary>
+double HouseClass::Country_Build_Time_Multiplier(TechnoTypeClass const * type) const
+{
+	int const category = Price_Category(type);
+	if (category < 0) {
+		return(1.0);
+	}
+	double const country[5] = {Class->BuildTimeInfantryMult, Class->BuildTimeUnitsMult, Class->BuildTimeAircraftMult, Class->BuildTimeBuildingsMult, Class->BuildTimeDefensesMult};
+	return(static_cast<float>(country[category]));
+}
+
+
+/// <summary>
 /// Fetches the bonus of every factory plant this house has on the map for the type's category,
 /// as HouseClass::Plant_Cost_Multiplier (0x50BEB0) reads it.
 /// </summary>

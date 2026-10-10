@@ -5876,6 +5876,74 @@ BuildTime.MultipleFactory:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+BuildTimeAircraftMult:
+  key: BuildTimeAircraftMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: BuildTimeAircraftMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+BuildTimeBuildingsMult:
+  key: BuildTimeBuildingsMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: BuildTimeBuildingsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+BuildTimeDefensesMult:
+  key: BuildTimeDefensesMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: BuildTimeDefensesMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+BuildTimeInfantryMult:
+  key: BuildTimeInfantryMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: BuildTimeInfantryMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 BuildTimeMultiplier:
   key: BuildTimeMultiplier
   scopes:
@@ -5893,6 +5961,23 @@ BuildTimeMultiplier:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+BuildTimeUnitsMult:
+  key: BuildTimeUnitsMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: BuildTimeUnitsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 BuildWeapons:
   key: BuildWeapons
   scopes:

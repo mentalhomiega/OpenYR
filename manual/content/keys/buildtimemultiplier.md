@@ -6,7 +6,7 @@ when_omitted:
   value: "1.0"
 ---
 
-`BuildTimeMultiplier` scales the build time of one type. The build time starts from the type's cost and the house's build speed, is multiplied by this value, and then has the low power and extra factory adjustments applied, so `0.5` builds the type twice as fast and `2` half as fast. The time is rounded down to whole game frames after each step.
+`BuildTimeMultiplier` scales the build time of one type. The build time starts from the type's cost and [`BuildSpeed`](/keys/buildspeed/), is multiplied by the owner country's build-time multiplier for the type's kind, then by this value, and then has the low power and extra factory adjustments applied, so `0.5` builds the type twice as fast and `2` half as fast. The time is rounded down to whole game frames after each step.
 
 ```ini title="rulesmd.ini"
 [MTNK]

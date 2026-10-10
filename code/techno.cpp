@@ -954,6 +954,7 @@ int TechnoClass::Time_To_Build(void) const
 	int val = Class_Of()->Time_To_Build();
 
 	// Each step is rounded down (TechnoClass::TimeToBuild).
+	val *= House->Country_Build_Time_Multiplier(TClass);
 	val *= TClass->BuildTimeMultiplier;
 
 	/*

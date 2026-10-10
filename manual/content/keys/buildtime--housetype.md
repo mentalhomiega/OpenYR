@@ -10,4 +10,4 @@ when_omitted:
 
 A house of this country combines this multiplier with [the difficulty section's `BuildTime=`](/keys/buildtime/#scope-difficulty-settings) and [`GameSpeedBias`](/keys/gamespeedbias/) [when it is given its difficulty slot](/systems/difficulty/#how-the-figures-are-combined). A campaign game leaves the country's value out and keeps the other two.
 
-Nothing in the game reads the combined figure, so no value here changes a build time. [How long it takes](/systems/production/#how-long-it-takes) lists the factors that do.
+Nothing in the game reads the combined figure, so no value here changes a build time. The country's build-time multipliers are [`BuildTimeInfantryMult`](/keys/buildtimeinfantrymult/), [`BuildTimeUnitsMult`](/keys/buildtimeunitsmult/), [`BuildTimeAircraftMult`](/keys/buildtimeaircraftmult/), [`BuildTimeBuildingsMult`](/keys/buildtimebuildingsmult/) and [`BuildTimeDefensesMult`](/keys/buildtimedefensesmult/); [How long it takes](/systems/production/#how-long-it-takes) lists the rest.
