@@ -4723,7 +4723,7 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 	for (; i >= 0; i--) {
 
 		BuildingClass * bptr = Base.Get_Building(i);
-		if (bptr != NULL) {
+		if (bptr != NULL && bptr->Can_Demolish()) {
 			char level = bptr->UpgradeLevel;
 			if (level != 0) {
 				int cost = bptr->Upgrades[level - 1]->Cost_Of(this);
@@ -4740,6 +4740,7 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 				refund += bptr->Refund_Amount();
 			}
 		} else if (Base.Is_Built(i)) {
+			// A structure that cannot be sold loses its node without a sale, as gamemd 0x4fdd10 does.
 			Sell_Wall(Base.Nodes[i].CellID, false);
 			Base.Nodes.Delete_Index(i);
 		}
