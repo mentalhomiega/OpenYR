@@ -1,6 +1,6 @@
 ---
 title: Difficulty settings and handicaps
-summary: "Turns the chosen difficulty into one slot per house and scales that house's damage and rate of fire by the figures the slot holds."
+summary: "Turns the chosen difficulty into one slot per house, which sets how a computer house repairs and whether it scores walls as targets. The slot never changes damage, rate of fire, speed, prices or build times."
 category: ai-teams
 keys:
   - AIHateDelays
@@ -70,29 +70,29 @@ The map's `[Basic] Player=` entry does not put its house in the player's column.
 
 ## What one difficulty section sets
 
-A difficulty section has four settings that take effect. The two multipliers point opposite ways. A value above 1 makes the house deal more damage, and a value above 1 also makes it fire more slowly. Each house uses the values in its section as written; only the choice of section is inverted.
+A difficulty section has two settings that take effect. Both change how a computer house behaves, and neither changes a unit.
 
 | Setting | Effect on a house in that slot |
 | --- | --- |
-| [`FirePower=`](/keys/firepower-difficulty-settings/) | Multiplies the damage of most weapons its objects fire; above 1 deals more. The key page lists the projectiles it does not scale. |
-| [`ROF=`](/keys/rof/#scope-difficulty-settings) | Multiplies the delay between its shots; above 1 fires more slowly. |
 | [`RepairDelay=`](/keys/repairdelay/) | Sets how long a computer house waits after starting one building repair before it can start another. The wait is a random time between a quarter of the value and twice the value, in minutes. |
 | [`DestroyWalls=`](/keys/destroywalls/) | `no` stops a computer house's objects from [scoring walls as targets](/systems/target-selection/#picking-the-winner). |
 
 ```ini title="rules.ini"
-[Difficult] ; example values that weaken the house reading this section
-FirePower=0.8
-ROF=1.2
+[Difficult] ; example values that weaken the computer house reading this section
 RepairDelay=0.05
 DestroyWalls=no
 ```
 
+:::note[Unlike the original game]
+The difficulty never changes what a unit can do. Yuri's Revenge multiplies a house's damage by `FirePower=` and the delay between its shots by `ROF=`, and we read both but leave them out on purpose. [`FirePower=`](/keys/firepower-difficulty-settings/) and [`ROF=`](/keys/rof/#scope-difficulty-settings) therefore change nothing, for human and computer houses alike.
+:::
+
 The linked key pages give the defaults.
 
-Every setting except `DestroyWalls` is read when the house gets its slot, as [the next section](#how-the-figures-are-combined) describes. `DestroyWalls` is read from the section whenever a computer object considers a wall. The section's current value therefore always applies, and no country setting changes it.
+`RepairDelay` is read when the house gets its slot, as [the next section](#how-the-figures-are-combined) describes. `DestroyWalls` is read from the section whenever a computer object considers a wall. The section's current value therefore always applies, and no country setting changes it.
 
 :::caution[Keep all three sections in the rules files]
-Until some file supplies a difficulty section, every value in it is zero and each flag is `no`. A house in that slot deals no damage. A computer house in that slot also ignores walls as targets, since `DestroyWalls` is `no`.
+Until some file supplies a difficulty section, every value in it is zero and each flag is `no`. A computer house in that slot waits no time between repairs and ignores walls as targets, since `RepairDelay` is zero and `DestroyWalls` is `no`.
 
 When no rules file supplies a section, the version a map or a campaign's companion file supplied stays in force for later scenarios in the same session, until another file supplies that section again. A rules file that supplies the section replaces the map's version at the next scenario load.
 :::
@@ -101,23 +101,15 @@ When no rules file supplies a section, the version a map or a campaign's compani
 A file that contains a difficulty section resets every key it leaves out to that key's built-in default. A map that declares `[Difficult]` to change one multiplier therefore returns the section's other keys to those defaults, not to the values in the rules files. Copy the whole section to keep the other values.
 :::
 
-Files that contain a difficulty section are read in this order: [each rules file in turn](/formats/rules-registries/), then the map. In a campaign, the companion `.INI` named for the scenario is read after every house already has its handicap. Its difficulty sections therefore change only `DestroyWalls`, not the seven figures the houses already hold.
+Files that contain a difficulty section are read in this order: [each rules file in turn](/formats/rules-registries/), then the map. In a campaign, the companion `.INI` named for the scenario is read after every house already has its handicap. Its difficulty sections therefore change only `DestroyWalls`, not the figures the houses already hold.
 
 ## How the figures are combined
 
 A house's copied figures are computed once, when the house gets its slot. They are not recomputed per shot, order or frame, so a later change to a difficulty section or a country reaches the house only when it is re-handicapped.
 
-Outside a campaign game, two of the figures are also multiplied by the matching setting in the house's country section. A campaign game leaves the country out and keeps everything else:
+A house's firepower and rate-of-fire figures come from its country alone: its country's [`Firepower=`](/keys/firepower-housetype/) and [`ROF=`](/keys/rof/#scope-housetype) outside a campaign game, and 1 in a campaign. The difficulty section takes no part. The repair delay is taken as written from the section.
 
-| Difficulty setting | Campaign game | Outside a campaign |
-| --- | --- | --- |
-| `FirePower=` | On its own | Times the country's [`Firepower=`](/keys/firepower-housetype/) |
-| `ROF=` | On its own | Times the country's [`ROF=`](/keys/rof/#scope-housetype) |
-| `RepairDelay=` | Taken as written | Taken as written |
-
-`Armor=` is not in the table because it changes no damage. The divisor on a house's damage comes from the country's [`ArmorInfantryMult`](/keys/armorinfantrymult/) family in every game.
-
-The country multipliers each default to 1, so a rules tree that never sets them gives the same figures in both columns.
+`Armor=` changes no damage. The divisor on a house's damage comes from the country's [`ArmorInfantryMult`](/keys/armorinfantrymult/) family in every game.
 
 [When the computer repairs](/systems/repair/#when-the-computer-repairs) covers how the repair delay is used.
 
@@ -184,8 +176,9 @@ A map's triggers do not use a house's slot. They follow the scenario's difficult
 
 ## Parsed settings without effect
 
-Eight keys in the difficulty sections are read but change nothing:
+Ten keys in the difficulty sections are read but change nothing:
 
+- [`FirePower`](/keys/firepower-difficulty-settings/) and [`ROF`](/keys/rof/#scope-difficulty-settings) are applied by Yuri's Revenge, and we leave them out on purpose.
 - [`BuildSlowdown`](/keys/buildslowdown/) is never used.
 - [`ContentScan`](/keys/contentscan/#scope-difficulty-settings) is tested only in code the game never runs.
 - [`Armor`](/keys/armor/#scope-difficulty-settings), [`Groundspeed`](/keys/groundspeed/#scope-difficulty-settings), [`Airspeed`](/keys/airspeed/#scope-difficulty-settings), [`Cost`](/keys/cost/#scope-difficulty-settings), [`BuildTime`](/keys/buildtime/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are copied into the house's figures, but nothing uses those figures. A country's [`Armor=`](/keys/armor/#scope-housetype), [`Groundspeed=`](/keys/groundspeed/#scope-housetype), [`Airspeed=`](/keys/airspeed/#scope-housetype), [`Cost=`](/keys/cost/#scope-housetype) and [`BuildTime=`](/keys/buildtime/#scope-housetype) are combined into the same unused figures, and so is [`GameSpeedBias`](/keys/gamespeedbias/).

@@ -18,7 +18,7 @@ ROF=80
 
 Unless one of the cases further down applies, the value is adjusted in this order:
 
-1. It is multiplied by the firing house's rate-of-fire multiplier. That multiplier is the [difficulty `ROF`](/keys/rof/#scope-difficulty-settings) of the house's difficulty slot. In skirmish and multiplayer games it is also multiplied by the house's [country `ROF`](/keys/rof/#scope-housetype).
+1. In skirmish and multiplayer games it is multiplied by the firing house's [country `ROF`](/keys/rof/#scope-housetype). The [difficulty `ROF`](/keys/rof/#scope-difficulty-settings) takes no part.
 2. A random 0 to 2 frames is added.
 3. If the firer has earned the rate-of-fire ability, the result is divided by one plus [`VeteranROF`](/keys/veteranrof/).
 

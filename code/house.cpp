@@ -686,24 +686,27 @@ DiffType HouseClass::Assign_Handicap(DiffType handicap)
 
 	if (Session.Type != GAME_NORMAL) {
 		HouseTypeClass const * hptr = Class;
-		FirepowerBias = hptr->FirepowerBias * Rule->Diff[handicap].FirepowerBias;
+		FirepowerBias = hptr->FirepowerBias;
 		GroundspeedBias = hptr->GroundspeedBias * Rule->Diff[handicap].GroundspeedBias * Rule->GameSpeedBias;
 		AirspeedBias = hptr->AirspeedBias * Rule->Diff[handicap].AirspeedBias * Rule->GameSpeedBias;
-		ROFBias = hptr->ROFBias * Rule->Diff[handicap].ROFBias;
+		ROFBias = hptr->ROFBias;
 		CostBias = hptr->CostBias * Rule->Diff[handicap].CostBias;
 		RepairDelay = Rule->Diff[handicap].RepairDelay;
 		BuildDelay = Rule->Diff[handicap].BuildDelay;
 		BuildSpeedBias = hptr->BuildSpeedBias * Rule->Diff[handicap].BuildSpeedBias * Rule->GameSpeedBias;
 	} else {
-		FirepowerBias = Rule->Diff[handicap].FirepowerBias;
+		FirepowerBias = 1.0;
 		GroundspeedBias = Rule->Diff[handicap].GroundspeedBias * Rule->GameSpeedBias;
 		AirspeedBias = Rule->Diff[handicap].AirspeedBias * Rule->GameSpeedBias;
-		ROFBias = Rule->Diff[handicap].ROFBias;
+		ROFBias = 1.0;
 		CostBias = Rule->Diff[handicap].CostBias;
 		RepairDelay = Rule->Diff[handicap].RepairDelay;
 		BuildDelay = Rule->Diff[handicap].BuildDelay;
 		BuildSpeedBias = Rule->Diff[handicap].BuildSpeedBias * Rule->GameSpeedBias;
 	}
+
+	// Unlike gamemd, the difficulty's FirePower= and ROF= are left out of the figures above, so that
+	// difficulty never changes what a unit can do.
 
 	// Filled as in gamemd, where the damage path never reads it.
 	ArmorBias = (Session.Type != GAME_NORMAL ? Class->ArmorBias : 1.0) * Rule->Diff[handicap].ArmorBias;
