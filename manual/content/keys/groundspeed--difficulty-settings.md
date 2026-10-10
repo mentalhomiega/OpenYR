@@ -9,11 +9,6 @@ when_omitted:
   note: The difficulty block is re-read from fixed defaults whenever its section is present, so a later file that contains the section without this key restores 1 rather than keeping the earlier value.
 ---
 
-`[Easy]`, `[Normal]` and `[Difficult]` each set their own multiplier, and a house takes the one for [its difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot). The house's objects have their top speed multiplied by it, so a value above 1 moves them faster. Veterancy and the object's current throttle still apply on top. The multiplier scales objects whose [`Locomotor=`](/keys/locomotor/) is Drive, Hover, Walk, Mech or Tunnel. Objects on any other locomotor, including aircraft and jumpjets, take their speed from elsewhere, and this multiplier does not scale them.
+`[Easy]`, `[Normal]` and `[Difficult]` each set their own multiplier. A house combines the one for [its difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot) with [`GameSpeedBias`](/keys/gamespeedbias/) and, outside a campaign game, with [its country's `Groundspeed=`](/keys/groundspeed/#scope-housetype).
 
-```ini title="rules.ini"
-[Difficult]
-Groundspeed=1.2 ; example: ground objects on this difficulty travel 20% faster
-```
-
-[When the house is given its slot](/systems/difficulty/#how-the-figures-are-combined), it multiplies this value by [`GameSpeedBias`](/keys/gamespeedbias/) and, outside a campaign game, by [its country's `Groundspeed=`](/keys/groundspeed/#scope-housetype).
+Nothing in the game reads the combined figure, so no value here changes how fast anything moves. Vehicles and soldiers move at the speed [`Speed=`](/keys/speed/#scope-aircrafttype) gives their type, scaled by the factors in [Why it is slower than its Speed says](/systems/movement-and-terrain/#why-it-is-slower-than-its-speed-says).

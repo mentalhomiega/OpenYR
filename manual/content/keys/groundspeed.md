@@ -1,4 +1,6 @@
 ---
 key: Groundspeed
-summary: The multiplier a country or a difficulty setting applies to the top speed of its houses' vehicles and infantry.
+summary: A multiplier on a country or a difficulty setting that changes no speed in the game.
+no_effect: true
+see_also: ["system:difficulty"]
 ---

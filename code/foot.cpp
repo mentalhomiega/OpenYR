@@ -3692,14 +3692,15 @@ void FootClass::Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_i
 
 /// <summary>
 /// Fetches the speed this object should be traveling at.
-/// This is the type's maximum speed after the owner house's ground speed bias, any veteran
-/// speed ability, and the object's current throttle have all been taken into account. A unit
-/// that is carrying the flag is deliberately hobbled.
+/// This is the type's maximum speed after the object's own speed bias, any veteran speed
+/// ability, and the object's current throttle have all been taken into account. The owner
+/// house's ground speed figure is not part of it, as in gamemd. A unit that is carrying the
+/// flag is deliberately hobbled.
 /// </summary>
 /// <returns>Returns with the current speed of the object.</returns>
 int FootClass::Current_Speed(void)
 {
-	int speed = Get_Max_Speed() * House->GroundspeedBias * SpeedBias * AttachedEffects.Speed_Multiplier();
+	int speed = Get_Max_Speed() * SpeedBias * AttachedEffects.Speed_Multiplier();
 	if (Has_Ability(ABILITY_FASTER)) {
 		speed *= Rule->VeteranSpeed;
 	}
