@@ -28,7 +28,7 @@ Most of these events deal forced damage. Forced damage skips the warhead's [`Ver
 
 The other events deal an explosion around a point. The warhead's `Verses` table, [`Spread`](/keys/spread/#scope-warheadtype) and `Immune=yes` apply to it as they do to a weapon's blast. The events that explode through this warhead are:
 
-- a Tiberium chain reaction, and the destruction of a Tiberium-spawning terrain object;
+- an animation with [`TiberiumChainReaction=yes`](/keys/tiberiumchainreaction/) that starts on a Tiberium cell, and the destruction of a Tiberium-spawning terrain object;
 - an [`Explodes=yes`](/keys/explodes/#scope-overlaytype) overlay such as a barrel;
 - a harvester exploding with its load;
 - an aircraft falling to the ground;
@@ -40,7 +40,7 @@ The other events deal an explosion around a point. The warhead's `Verses` table,
 
 The [structure damage tick](/systems/power/#the-structure-damage-tick) a house takes while short of power also uses this warhead without forcing it, so `Verses` and `Immune=yes` apply to it.
 
-An aircraft that falls while it still has strength, a stranded vehicle, a destroyed Tiberium-spawning terrain object, a failed drop pod, an explosive crate and a Tiberium chain reaction show explosions chosen from the warhead's [`AnimList`](/keys/animlist/). Over water, a falling aircraft and a stranded vehicle use [`SplashList`](/keys/splashlist/) instead when the warhead sets [`Conventional=yes`](/keys/conventional/).
+An aircraft that falls while it still has strength, a stranded vehicle, a destroyed Tiberium-spawning terrain object, a failed drop pod, an explosive crate and a `TiberiumChainReaction=yes` animation show explosions chosen from the warhead's [`AnimList`](/keys/animlist/). Over water, a falling aircraft and a stranded vehicle use [`SplashList`](/keys/splashlist/) instead when the warhead sets [`Conventional=yes`](/keys/conventional/).
 
 :::danger[Set `C4Warhead` to a warhead with an `AnimList`]
 Without `C4Warhead`, the game crashes the first time any of these happens:
@@ -55,4 +55,4 @@ Without `C4Warhead`, the game crashes the first time any of these happens:
 A warhead with no explosion animation for the blast crashes the first five events in the same way. [`AnimList`](/keys/animlist/) covers when a blast has none. Over water, a `Conventional=yes` warhead also crashes a falling aircraft or a stranded vehicle when `SplashList` is empty.
 :::
 
-Without `C4Warhead`, the events that explode deal no damage, and neither does the power tick. A Tiberium chain reaction still burns the Tiberium away. Forced damage still lands in full.
+Without `C4Warhead`, the events that explode deal no damage, and neither does the power tick. A `TiberiumChainReaction=yes` animation still burns the Tiberium away. Forced damage still lands in full.
