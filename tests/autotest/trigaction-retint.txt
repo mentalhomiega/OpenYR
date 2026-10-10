@@ -1,0 +1,11 @@
+; Retint Red, Green and Blue (actions 142 to 144) change the map's lighting tint, in hundredths.
+; The log shows the scenario tint and the first tile palette's tint after each action.
+30 command CenterBase
+60 trigaction 0 0 0
+70 command ScreenCapture
+80 trigaction 142 200 0
+90 command ScreenCapture
+100 trigaction 143 20 0
+110 trigaction 144 30 0
+120 command ScreenCapture
+130 quit

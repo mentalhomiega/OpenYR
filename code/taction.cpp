@@ -319,9 +319,6 @@ static bool Is_Skipped_Action(TActionType action)
 		case TACTION_RESTORE_STARTING_UNITS:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
-		case TACTION_RETINT_RED:
-		case TACTION_RETINT_GREEN:
-		case TACTION_RETINT_BLUE:
 			return(true);
 
 		default:
@@ -890,6 +887,9 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(CLEAR_PREFERRED_TARGET_CELL);
 		INVOKE(SET_PREFERRED_TARGET_CELL);
 		INVOKE(JUMP_CAMERA_HOME);
+		INVOKE(RETINT_RED);
+		INVOKE(RETINT_GREEN);
+		INVOKE(RETINT_BLUE);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3138,6 +3138,40 @@ bool TActionClass::TAction_JUMP_CAMERA(HouseClass * , ObjectClass * , TriggerCla
 	}
 
 	TacticalMap->Set_Tactical_Position(coord);
+	return(true);
+}
+
+
+/// <summary>
+/// Sets the red part of the scenario's lighting tint to the action's number, in hundredths, and
+/// tints terrain and objects in it at once.
+/// </summary>
+/// <returns>bool; Always true.</returns>
+bool TActionClass::TAction_RETINT_RED(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	IonStormClass::Retint(Data.Value, Scen->GreenTint, Scen->BlueTint);
+	return(true);
+}
+
+
+/// <summary>
+/// Sets the green part of the scenario's lighting tint to the action's number, in hundredths.
+/// </summary>
+/// <returns>bool; Always true.</returns>
+bool TActionClass::TAction_RETINT_GREEN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	IonStormClass::Retint(Scen->RedTint, Data.Value, Scen->BlueTint);
+	return(true);
+}
+
+
+/// <summary>
+/// Sets the blue part of the scenario's lighting tint to the action's number, in hundredths.
+/// </summary>
+/// <returns>bool; Always true.</returns>
+bool TActionClass::TAction_RETINT_BLUE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	IonStormClass::Retint(Scen->RedTint, Scen->GreenTint, Data.Value);
 	return(true);
 }
 

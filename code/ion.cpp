@@ -375,6 +375,38 @@ void IonStormClass::Set_Storm_Lighting(bool on)
 
 
 /// <summary>
+/// Gives the scenario's normal lighting a new tint, as ScenarioClass::RecalcLighting (0x53AD00)
+/// does for the retint trigger actions. Terrain and objects are redrawn in the new tint at once.
+/// A storm tint that was showing is replaced by the normal one.
+/// </summary>
+/// <param name="red">The red tint in hundredths, where 100 leaves red untouched.</param>
+/// <param name="green">The green tint in hundredths.</param>
+/// <param name="blue">The blue tint in hundredths.</param>
+void IonStormClass::Retint(int red, int green, int blue)
+{
+	Scen->RedTint = red;
+	Scen->GreenTint = green;
+	Scen->BlueTint = blue;
+
+	int const r = NORMAL_LIGHT * red / 100;
+	int const g = NORMAL_LIGHT * green / 100;
+	int const b = NORMAL_LIGHT * blue / 100;
+	for (int i = 0; i < TileDrawers.Count(); i++) {
+		TileDrawers[i]->Apply_Tint(r, g, b, false);
+	}
+	for (int i = 0; i < ColorSchemes.Count(); i++) {
+		ColorScheme * scheme = ColorSchemes[i];
+		if (scheme->IntensityLevels > 1) {
+			scheme->Converter->Apply_Tint(r, g, b, false);
+		}
+	}
+
+	Map.Update_Cell_Colors();
+	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+}
+
+
+/// <summary>
 /// Strikes the specified cell with a bolt of lightning.
 /// This routine handles the whole spectacle -- the thunderclap, the explosion animation,
 /// the combat lighting flash, and the damage inflicted on whatever was unlucky enough to
