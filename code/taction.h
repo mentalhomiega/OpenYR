@@ -299,6 +299,7 @@ class TActionClass : public AbstractClass
 		bool TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_JUMP_CAMERA(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_JUMP_CAMERA_HOME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_SET_TECH_LEVEL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_CREATE_CRATE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_REINFORCEMENTS_CHRONO(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
