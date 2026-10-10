@@ -110,6 +110,20 @@ MatchLayoutType const MATCH_800 = {Point2D(16, 321), 406, Rect(540, 310, 200, 20
 MatchLayoutType const MATCH_640 = {Point2D(12, 256), 326, Rect(385, 436, 200, 20), Point2D(16, 72), Rect(16, 126, 318, 104), Point2D(16, 235), Rect(385, 270, 200, 200)};
 
 
+// True when the scenario's [Basic] Player house is on the first side. A missing or unknown house counts as the first side.
+bool Campaign_Is_Allied(CCINIClass const * mission)
+{
+	if (mission == NULL) {
+		return(true);
+	}
+	HousesType const house = mission->Get_HousesType("Basic", "Player", HOUSE_NONE);
+	if (house == HOUSE_NONE || house < 0 || house >= HouseTypes.Count()) {
+		return(true);
+	}
+	return(HouseTypes[house]->Side == SIDE_FIRST);
+}
+
+
 std::unique_ptr<MixFileClass> Mount(char const * name)
 {
 	if (!CCFileClass(name).Is_Available()) {
@@ -558,7 +572,7 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 	Backdrop->Fill(0);
 
 	Match = Session.Type != GAME_NORMAL;
-	if (!(Match ? Begin_Match(ini, players) : Begin_Campaign(scenario))) {
+	if (!(Match ? Begin_Match(ini, players) : Begin_Campaign(scenario, ini))) {
 		End();
 		return(false);
 	}
@@ -571,7 +585,7 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 }
 
 
-bool LoadScreenClass::Begin_Campaign(char const * scenario)
+bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * mission)
 {
 	CCFileClass database("MISSIONMD.INI");
 	if (!database.Is_Available()) {
@@ -586,9 +600,11 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario)
 		return(false);
 	}
 
-	// Both picture sizes are drawn with the 800x600 picture's palette.
+	// The 640 by 480 picture is drawn with its side's loading palette; the 800 by 600 picture with LS800BkgdPal=.
 	ShapeFile const picture(PictureName.c_str());
-	std::unique_ptr<ConvertClass> const picture_drawer = Load_Drawer(ini.Get_String(scenario, "LS800BkgdPal"), *Backdrop);
+	std::unique_ptr<ConvertClass> const picture_drawer = small
+		? Load_Drawer(Campaign_Is_Allied(mission) ? "LDSCRNA.PAL" : "LDSCRNS.PAL", *Backdrop)
+		: Load_Drawer(ini.Get_String(scenario, "LS800BkgdPal"), *Backdrop);
 	if (picture.Get() == NULL || picture_drawer == nullptr) {
 		return(false);
 	}

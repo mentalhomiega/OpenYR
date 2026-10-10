@@ -49,7 +49,7 @@ class LoadScreenClass
 	private:
 		class ShapeFile;
 
-		bool Begin_Campaign(char const * scenario);
+		bool Begin_Campaign(char const * scenario, CCINIClass const * mission);
 		bool Begin_Match(CCINIClass const * ini, int players);
 		void Draw_Preview(void);
 		void Draw_Rows(int players);

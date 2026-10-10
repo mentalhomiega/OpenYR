@@ -29,7 +29,7 @@ A campaign mission shows the picture [MISSIONMD.INI](/formats/missionmd-ini/) na
 | The next 520 | The mission's picture, `LS800BkgdName=` | `LS800BkgdPal=` |
 | The bottom 40 | Progress strip, `SPLDBRL.SHP` | `SPLDBR.PAL` |
 
-On a screen 640 pixels wide the layout is 640 by 480 instead. Its title bar is `TTLBR640.SHP`, its picture is `LS640BkgdName=` in 400 rows, still drawn with the `LS800BkgdPal=` palette, and its progress strip is `SPLDBRS.SHP`. Missing title bar or strip art leaves those rows black.
+On a screen 640 pixels wide the layout is 640 by 480 instead. Its title bar is `TTLBR640.SHP`, its picture is `LS640BkgdName=` in 400 rows, and its progress strip is `SPLDBRS.SHP`. The 640 by 480 picture is drawn with `LDSCRNA.PAL` when the mission's [Basic] `Player=` house belongs to the first side in the rules `[Sides]` list, and with `LDSCRNS.PAL` for any other side; `LS800BkgdPal=` is not used at that size. A scenario that names no house counts as the first side. Missing title bar or strip art leaves those rows black.
 
 The title bar shows the text `LSLoadMessage=` names, 10 pixels in from the bar's left and top edges. The text `LSLoadBriefing=` names is printed over the picture, with its top-left corner `LS800BriefLocX=` pixels right of and `LS800BriefLocY=` pixels below the picture's top-left corner; the 640 by 480 layout uses `LS640BriefLocX=` and `LS640BriefLocY=`. The briefing breaks onto a new line at each line break in the string, and at the space that keeps a line within 400 pixels. The picture behind the briefing is darkened to about two-fifths of its brightness, in a box reaching 4 pixels beyond the text on every side.
 

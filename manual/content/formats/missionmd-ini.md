@@ -30,7 +30,7 @@ A value that names text is a label of the game's [string table](/formats/csf/). 
 | `LSLoadBriefing=` | The label of the text printed over the loading picture. Omitted, the picture has no text. |
 | `LS800BkgdName=` | The loading picture, a [SHP](/formats/shp/) file. Write the file name with its extension. |
 | `LS640BkgdName=` | The loading picture on a screen 640 pixels wide. |
-| `LS800BkgdPal=` | The palette file both pictures are drawn with. |
+| `LS800BkgdPal=` | The palette file the 800 by 600 picture is drawn with. The 640 by 480 picture uses its side's loading palette instead. |
 | `LS800BriefLocX=`, `LS800BriefLocY=` | Where the loading briefing's top-left corner sits, in pixels right of and below the picture's top-left corner. Each is `0` when omitted. |
 | `LS640BriefLocX=`, `LS640BriefLocY=` | The same position for the picture on a screen 640 pixels wide. |
 
