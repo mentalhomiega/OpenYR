@@ -4618,11 +4618,6 @@ UrgencyType HouseClass::Check_Fire_Sale(void)
 /// <returns>Returns with the urgency of this house's money troubles.</returns>
 UrgencyType HouseClass::Check_Raise_Money(void)
 {
-	int i;
-	int j;
-
-	UrgencyType urgency = URGENCY_NONE;
-
 	/*
 	 * Humans look after their own finances.
 	 */
@@ -4630,79 +4625,105 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 		return(URGENCY_NONE);
 	}
 
-	if (!Can_Make_Money()) {
-		if (Owns_Any(ABQuantity, Rule->BuildRefinery)) {
+	/*
+	 * A house that can make money has its income in hand (gamemd FUN_004f6540).
+	 */
+	if (Can_Make_Money()) {
+		return(URGENCY_NONE);
+	}
 
-			/*
-			 * A refinery already going up means the situation is being taken care of.
-			 */
-			for (i = 0; i < Buildings.Count(); i++) {
-				if (Buildings[i]->House == this) {
-					if (Rule->BuildRefinery.Is_In_List(Buildings[i]->Class) && Buildings[i]->CurrentMission == MISSION_CONSTRUCTION) {
-						return(URGENCY_NONE);
+	if (!Owns_Any(ABQuantity, Rule->BuildRefinery)) {
+
+		/*
+		 * Without a refinery the wanted structure is the first refinery this house may build, or
+		 * the first war factory when none is buildable. With neither, cash is short.
+		 */
+		BuildingTypeClass const * target = Get_First_Acted(Rule->BuildRefinery);
+		if (target == NULL) {
+			target = Get_First_Acted(Rule->BuildWeapons);
+		}
+		if (target == NULL) {
+			return(URGENCY_LOW);
+		}
+
+		if (BuildStructure != target->HeapID) {
+			if (Available_Money() < target->Cost_Of(this)) {
+				return(URGENCY_LOW);
+			}
+			return(URGENCY_NONE);
+		}
+
+		/*
+		 * The wanted structure is in production, so the balance still owed decides.
+		 */
+		for (int j = 0; j < Factories.Count(); j++) {
+			FactoryClass * fptr = Factories[j];
+			if (fptr->House == this && fptr->Get_Object() != NULL) {
+				BuildingClass * building = (BuildingClass *)fptr->Get_Object();
+				if (building->RTTI == RTTI_BUILDING && building->Class == target) {
+					if (Available_Money() < fptr->Balance) {
+						return(URGENCY_LOW);
 					}
-					urgency = URGENCY_NONE;
+					return(URGENCY_NONE);
 				}
 			}
+		}
+		return(URGENCY_LOW);
+	}
 
-			/*
-			 * There is a refinery, so a harvester is what this house is short of. If one is
-			 * not on order, or is on order but cannot be paid for, then cash must be raised.
-			 */
-			if (BuildUnit == UNIT_NONE || !Is_Harvester_Unit(UnitTypes[BuildUnit])) {
-				if (Available_Money() < Preferred_Harvester()->Cost_Of(this)) {
-					urgency++;
+	/*
+	 * A refinery already going up stops the sale. gamemd looks only at the first Buildings.Count
+	 * entries of the global building list and ignores their owners, and this copies that.
+	 */
+	int refineries = Rule->BuildRefinery.Count() > 1 ? 2 : Rule->BuildRefinery.Count();
+	for (int i = 0; i < CurBuildings && i < Buildings.Count(); i++) {
+		BuildingClass * bptr = Buildings[i];
+		if (bptr->CurrentMission == MISSION_CONSTRUCTION) {
+			for (int k = 0; k < refineries; k++) {
+				if (bptr->Class == Rule->BuildRefinery[k]) {
+					return(URGENCY_NONE);
 				}
-			} else {
-				for (j = 0; j < Factories.Count(); j++) {
-					FactoryClass * fptr = Factories[j];
-					if (fptr->House == this && Factories[j]->Get_Object() != NULL) {
-						UnitClass * unit = (UnitClass *)Factories[j]->Get_Object();
-						if (unit->RTTI == RTTI_UNIT && Is_Harvester_Unit(unit->Class)) {
-							fptr = Factories[j];
-							if (fptr != NULL) {
-								int owed = fptr->Balance;
-								if (Available_Money() >= owed) {
-									return(urgency);
-								}
-							}
-							break;
-						}
-					}
-				}
-				urgency++;
-			}
-		} else {
-
-			/*
-			 * No refinery at all. The same reasoning applies to getting one built.
-			 */
-			if (BuildStructure == STRUCT_NONE || !Rule->BuildRefinery.Is_In_List(BuildingTypes[BuildStructure])) {
-				if (Available_Money() < Get_Preferred(Rule->BuildRefinery)->Cost_Of(this)) {
-					urgency++;
-				}
-			} else {
-				for (j = 0; j < Factories.Count(); j++) {
-					FactoryClass * fptr = Factories[j];
-					if (fptr->House == this && Factories[j]->Get_Object() != NULL) {
-						BuildingClass * building = (BuildingClass *)Factories[j]->Get_Object();
-						if (building->RTTI == RTTI_BUILDING && Rule->BuildRefinery.Is_In_List(building->Class)) {
-							fptr = Factories[j];
-							if (fptr != NULL) {
-								int owed = fptr->Balance;
-								if (Available_Money() >= owed) {
-									return(urgency);
-								}
-							}
-							break;
-						}
-					}
-				}
-				urgency++;
 			}
 		}
 	}
-	return(urgency);
+
+	/*
+	 * The harvester is the first listed one that the house's country bit allows (gamemd checks
+	 * only that bit). A house with a refinery is short of a harvester when it cannot afford one,
+	 * or when the one in production is not paid for.
+	 */
+	UnitTypeClass const * harvester = NULL;
+	int mask = Acted_Mask();
+	for (int i = 0; i < Rule->HarvesterUnit.Count(); i++) {
+		if ((mask & Rule->HarvesterUnit[i]->Ownable) != 0) {
+			harvester = Rule->HarvesterUnit[i];
+			break;
+		}
+	}
+	if (harvester == NULL) {
+		return(URGENCY_LOW);
+	}
+
+	if (BuildUnit != harvester->HeapID) {
+		if (Available_Money() < harvester->Cost_Of(this)) {
+			return(URGENCY_LOW);
+		}
+		return(URGENCY_NONE);
+	}
+
+	for (int j = 0; j < Factories.Count(); j++) {
+		FactoryClass * fptr = Factories[j];
+		if (fptr->House == this && fptr->Get_Object() != NULL) {
+			UnitClass * unit = (UnitClass *)fptr->Get_Object();
+			if (unit->RTTI == RTTI_UNIT && Is_Harvester_Unit(unit->Class)) {
+				if (Available_Money() < fptr->Balance) {
+					return(URGENCY_LOW);
+				}
+				return(URGENCY_NONE);
+			}
+		}
+	}
+	return(URGENCY_LOW);
 }
 
 
