@@ -23,7 +23,7 @@ ROF=120
 
 The wave grows from the muzzle by a twentieth of the distance each frame, and reaches the target after 20 frames. It holds at full length for about 60 more frames, then fades from its trailing edge over the last 20. The whole wave lasts about 100 frames.
 
-The wave damages the objects in every cell it covers on every frame it lasts, so an object that stays under it is hit many times. Even a small `AmbientDamage` adds up. If the firer is destroyed, the wave deals no more damage and fades. [`AmbientDamage`](/keys/ambientdamage/) covers the damage each hit deals, and its effect on walls and chain reactive overlay. On every frame, a destroyable cliff under the wave may also collapse, at the chance [`[CombatDamage] CollapseChance`](/keys/collapsechance/) sets.
+The wave damages the objects in every cell it covers on every frame it lasts, so an object that stays under it is hit many times. Even a small `AmbientDamage` adds up. If the firer is destroyed, the wave deals no more damage and fades. [`AmbientDamage`](/keys/ambientdamage/) covers the damage each hit deals, and its effect on walls. On every frame, a destroyable cliff under the wave may also collapse, at the chance [`[CombatDamage] CollapseChance`](/keys/collapsechance/) sets.
 
 :::caution[A wave fired beyond about 8.5 cells dies at once]
 The wave keeps growing and holding only while the firer still targets the same object and the two are no more than 2172 leptons apart, a little under 8.5 cells. When that stops being true, the wave fades early from its trailing edge. A wave fired from beyond that distance is removed as soon as it appears and damages nothing, so a sonic weapon whose [`Range=`](/keys/range/#scope-weapontype) reaches further deals no damage at its longest shots.

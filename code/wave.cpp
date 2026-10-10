@@ -305,7 +305,7 @@ FacingType Facing_Between_Points(Point2D const & pt1, Point2D const & pt2)
 /// <summary>
 /// Inflicts the wave's damage upon one cell.
 /// Everything standing in the cell takes the firing weapon's ambient damage, walls are worn
-/// down, chain reactive overlay is set off, and a destroyable cliff may be brought down.
+/// down, and a destroyable cliff may be brought down. A chain reactive overlay is left alone.
 /// The object that fired the wave is never harmed by its own weapon.
 /// </summary>
 /// <param name="coord">The coordinate of the cell to damage.</param>
@@ -333,10 +333,6 @@ void WaveClass::Sonic_Damage(Coord const & coord)
 
 		if (cptr->Overlay != OVERLAY_NONE) {
 			OverlayTypeClass *optr = OverlayTypes[cptr->Overlay];
-			if (optr->IsChainReaction) {
-				Cell cell = cptr->CellID;
-				Chain_Reaction_Damage(cell);
-			}
 			if (optr->IsWall) {
 				cptr->Reduce_Wall(weapon->AmbientDamage);
 			}

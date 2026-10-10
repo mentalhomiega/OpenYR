@@ -27,7 +27,6 @@ class Coord;
 class DirType;
 
 int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor, int distance);
-void Chain_Reaction_Damage(Cell const & cell);
 // Returns whether the blast struck an Iron Curtained object at its center, which nullifies it.
 bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL);
 

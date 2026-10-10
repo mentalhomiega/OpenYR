@@ -260,11 +260,7 @@ Infantry take damage each time they finish moving into a Tiberium cell. The dama
 
 Infantry whose type sets [`TiberiumProof=yes`](/keys/tiberiumproof/), or that have the [`TIBERIUM_PROOF`](/systems/veterancy/#abilities) veteran ability, take none. When the scenario sets [`TiberiumDeathToVisceroid=yes`](/keys/tiberiumdeathtovisceroid/), infantry killed this way leave a small visceroid owned by the Neutral house, unless a vehicle stands in the cell.
 
-An overlay with [`ChainReaction=yes`](/keys/chainreaction/) lets a sonic wave passing over the cell set off the Tiberium there. Explosions never set it off.
-
-A cell detonates only at stage 2 or higher, with a chance of 5% per stage. The detonation removes half the cell's stages, rounded down. It deals that many stages multiplied by `Power` as damage, through the [`C4Warhead`](/keys/c4warhead/).
-
-After a detonation, each neighboring Tiberium cell above stage 2 has an 80% chance of being hit 1 to 8 seconds later by the `INVISO` animation. With the shipped rules, that hit can set off a neighbor whose overlay has `ChainReaction=yes` in turn. A type with `Power=0` shows no explosion and deals no damage, but its detonation still removes the stages and still hits neighbors.
+A sonic wave passing over a cell does not set off the Tiberium in it, whatever the overlay's [`ChainReaction`](/keys/chainreaction/) setting.
 
 On an overlay with `ChainReaction=yes`, an explosion that reaches the cell removes one stage for every ten points of its damage, when the explosion's warhead sets [`Tiberium=yes`](/keys/tiberium/#scope-warheadtype). Explosions never thin a cell whose overlay lacks it. In the shipped rules, the overlays of the `Image=1` set do not set it.
 
