@@ -18,6 +18,7 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
+#include "gameoptrules.h"
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "lzopipe.h"
@@ -42,7 +43,9 @@
 #include "xstraw.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <ctime>
+#include <string>
 
 
 const COLORREF ColorSystem     = RGB(255, 255, 255)|(255<<24);  /// 0xFFFFFFFF
@@ -491,7 +494,8 @@ bool DecodePubGameopt(char * options, char * name)
 	}
 
 	bool same_scenario = true;
-	char * scenario_description = strtok(NULL, ",");
+	char * scenario_field = strtok(NULL, ",");
+	std::string const scenario_description = scenario_field != NULL ? GameoptRules::Unescape_Description(scenario_field) : std::string();
 
 	token = strtok(NULL, ",");
 	bool old_official = Session.ScenarioIsOfficial;
@@ -533,8 +537,8 @@ bool DecodePubGameopt(char * options, char * name)
 				break;
 			}
 		}
-		if (!found && scenario_description != NULL) {
-			strcpy(Session.Options.ScenarioDescription, scenario_description);
+		if (!found && scenario_field != NULL) {
+			snprintf(Session.Options.ScenarioDescription, sizeof(Session.Options.ScenarioDescription), "%s", scenario_description.c_str());
 		}
 		if (stricmp(Session.ScenarioFileName, RANDOM_MAP_FILE_NAME) == 0) {
 			strcpy(Session.Options.ScenarioDescription, Fetch_String(TXT_RANDOM_MAP_DESCRIPTION));

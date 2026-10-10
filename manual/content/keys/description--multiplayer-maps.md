@@ -15,8 +15,4 @@ A loose `.YRM` or `.MPR` map, one found on its own in the searched folders and n
 Description=Four player canyon
 ```
 
-In the game's own network lobby, the host sends this text to the other players with the game options. A joining player who has a map with the same file name sees the text their own list gives it. The host's text is shown only to a player who does not have the map.
-
-:::caution[Keep commas out of the description]
-The game options travel as a comma-separated list, and this text is written into it as it stands. A comma in it makes each joining player misread the fields after it, including the map's file name, so the map is not matched.
-:::
+In the game's own network lobby, the host sends this text to the other players with the game options. Each comma in it is sent as `%2C` and shown as a comma. A joining player who has a map with the same file name sees the text their own list gives it. The host's text is shown only to a player who does not have the map.

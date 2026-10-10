@@ -25,7 +25,7 @@ The list starts with the maps in `MISSIONSMD.PKT`, which the game's archives hol
 
 The map file is the section name with `.MAP` appended, `MYMAP.MAP` in this example. When it builds the list, the game reads that file only for its digest, which other players' copies are checked against, and never for a description.
 
-In the game's own network lobby, the host sends the row text to the other players with the game options, with each comma in it replaced by a semicolon. A joining player who has a map with the same file name sees the text their own list gives it. The host's text is shown only to a player who does not have the map.
+In the game's own network lobby, the host sends the row text to the other players with the game options. Each comma in it is sent as `%2C` and shown as a comma. A joining player who has a map with the same file name sees the text their own list gives it. The host's text is shown only to a player who does not have the map.
 
 :::caution[Give every packet map a description]
 The game options travel as a comma-separated list. An empty description makes each joining player misread the fields after it, including the map's file name, so the map is not matched.
