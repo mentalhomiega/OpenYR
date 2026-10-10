@@ -5260,7 +5260,15 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	If firing is possible and legal, then return this action potential.
 		*/
 		TechnoTypeClass const * ttype = TClass;
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
+
+		// A terrain object takes the attack cursor under TreeTargeting, or when the weapon that would fire at it has TerrainFire=yes (the terrain branch of gamemd's test, 0x70EF00).
+		bool terrain_target = false;
+		if (object->RTTI == RTTI_TERRAIN) {
+			WeaponTypeClass const * terrain_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			terrain_target = Rule->IsTreeTarget || (terrain_weapon != NULL && terrain_weapon->IsTerrainFire);
+		}
+
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
 			if (Is_Weapon_Equipped() ||
 					(RTTI == RTTI_INFANTRY &&
@@ -5385,14 +5393,21 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 			}
 		}
 
-		if (ctrldown || (optr != NULL && optr->IsLegalTarget) || destroyable || legal) {
+		// An IsARock overlay takes the attack cursor for a TerrainFire weapon (the cell branch of gamemd's test, 0x70EF00, reads the IsARock flag at +0x2B5).
+		bool rock_target = false;
+		if (optr != NULL && optr->IsARock) {
+			WeaponTypeClass const * cell_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(&Map[cell]))->Weapon;
+			rock_target = cell_weapon != NULL && cell_weapon->IsTerrainFire;
+		}
+
+		if (ctrldown || (optr != NULL && optr->IsLegalTarget) || destroyable || legal || rock_target) {
 			WarheadTypeClass const * warhead = Get_Class_Weapon_Data(0)->Weapon->WarheadPtr;
 			bool isally = (cellptr->Owner != HOUSE_NONE) && !Houses[cellptr->Owner]->Is_Ally(House);
 
 			VeinholeMonsterClass * monster = VeinholeMonsterClass::Get_Monster_At(cell);
 			bool isvein = (monster != NULL && !monster->IsDead && monster->Strength > 0);
 
-			if (ctrldown || optr == NULL || isvein || (isally && optr->IsWall && (warhead->IsWallDestroyer || (warhead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)))) {
+			if (ctrldown || optr == NULL || isvein || rock_target || (isally && optr->IsWall && (warhead->IsWallDestroyer || (warhead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)))) {
 				int primary = What_Weapon_Should_I_Use(&Map[cell]);
 				if (Can_Player_Move()) {
 					return(ACTION_ATTACK);

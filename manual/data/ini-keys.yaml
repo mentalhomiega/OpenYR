@@ -36576,6 +36576,23 @@ Temporal:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+TerrainFire:
+  key: TerrainFire
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsTerrainFire
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 TerrainPalette:
   key: TerrainPalette
   scopes:

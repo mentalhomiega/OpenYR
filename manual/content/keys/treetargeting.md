@@ -7,6 +7,6 @@ when_omitted:
   value: "no"
 ---
 
-With `TreeTargeting=yes`, a player's selected armed object shows the attack cursor over any terrain object, and a click orders the attack, without the force-fire modifier. With `no`, it does so only while the modifier is held, or over a terrain type that sets [`LegalTarget=yes`](/keys/legaltarget/) or [`IsVeinhole=yes`](/keys/isveinhole/).
+With `TreeTargeting=yes`, a player's selected armed object shows the attack cursor over any terrain object, and a click orders the attack, without the force-fire modifier. With `no`, it does so only while the modifier is held, over a terrain type that sets [`LegalTarget=yes`](/keys/legaltarget/) or [`IsVeinhole=yes`](/keys/isveinhole/), or over a terrain object that the object's weapon can fire at under [`TerrainFire=yes`](/keys/terrainfire/).
 
 The setting affects only the player's cursor and click. It does not make terrain objects targets for automatic target scans or for a computer-controlled house.
