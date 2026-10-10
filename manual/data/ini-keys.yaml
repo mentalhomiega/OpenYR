@@ -41378,6 +41378,23 @@ WallTower:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+WantsExtraSpace:
+  key: WantsExtraSpace
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: WantsExtraSpace
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 WarLimit:
   key: WarLimit
   scopes:
