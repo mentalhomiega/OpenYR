@@ -11802,18 +11802,21 @@ void MapClass::Deinit_Fog_System(void)
 
 
 /// <summary>
-/// Determines if a block of cells is free for a house to use.
-/// This routine checks that the house is not already occupying any part of the area and that
-/// the whole of it lies on the playable map.
+/// Determines if a block of cells is free for a computer house to build in.
+/// A cell is free when it is flat and clear: no terrain object, structure or overlay stands on
+/// it, nothing blocks it, and the house has not reserved it as spacing around one of its own
+/// structures. The whole block must also lie on the playable map, as MapClass::IsAreaFree
+/// (0x586780) decides.
 /// </summary>
-/// <param name="house">The house whose occupancy is being tested for.</param>
-/// <returns>bool; Is the area clear of this house and on the map?</returns>
+/// <param name="house">The house whose spacing reservations are tested for.</param>
+/// <returns>bool; Is the area clear and on the map?</returns>
 bool MapClass::Is_Area_Available(Rect const & rect, HouseClass const * house)
 {
 	for (int x = rect.X; x < rect.X + rect.Width; x++) {
 		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
 			CellClass * cptr = &Map[Cell(x,y)];
-			if (cptr->OccupiedBy[house]) {
+			if (cptr->Cell_Terrain() != NULL || cptr->OccupiedBy[house] || cptr->Overlay != OVERLAY_NONE ||
+				cptr->Passability != PASSABLE_LAND || cptr->Ramp != 0 || cptr->Cell_Building() != NULL) {
 				return(false);
 			}
 		}

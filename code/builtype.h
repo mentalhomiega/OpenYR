@@ -447,6 +447,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		// protected by the wall roll (HouseClass::AI_Build_Protective_Walls).
 		bool ProtectWithWall;
 
+		// A computer house looks for one more cell of free border when it places this structure
+		// (HouseClass::Where_To_Place_Building).
+		bool WantsExtraSpace;
+
 		/*
 		**	Certain building types can be captures by enemy infantry. For those
 		**	building types, this flag will be true. Typically, military or hardened

@@ -8334,8 +8334,10 @@ int HouseClass::Base_Cell_Weight_By_Defense_Coverage(HouseClass const & house, C
 /// Determines where a structure should be placed within the computer's base.
 /// This routine ranks the cells the base occupies with a weight function supplied by the
 /// caller, then works outward from the best of them looking for a spot that is clear, level
-/// with the base, and legal for the structure. The house's base spacing is honored on the
-/// first pass and relaxed on the second, so that a cramped base still gets built up.
+/// with the base, and legal for the structure (HouseClass placement search, 0x5060B0). The
+/// site and the AIBaseSpacing border around it must be flat and free of terrain, overlays and
+/// structures. A structure with ProtectWithWall or WantsExtraSpace asks for one more cell of
+/// border on the first try and settles for one cell on the second.
 /// </summary>
 /// <param name="buildingtype">The structure that needs somewhere to go.</param>
 /// <param name="func">The weight function used to rank the candidate cells; lower wins.</param>
@@ -8379,7 +8381,9 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	/// the cloak generator distance temporary and the whole slot map shifts.
 	Cell base_cell;
 
-	for (int pass = 0; pass < 2; pass++) {
+	int const full_spacing = Rule->AIBaseSpacing + ((buildingtype->ProtectWithWall || buildingtype->WantsExtraSpace) ? 1 : 0);
+
+	{
 		for (int index = 0; index < sorted_cells.Count(); index++) {
 			base_cell = sorted_cells[index];
 			Cell occupied_dir(0, 0);
@@ -8409,14 +8413,14 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 			 */
 			Cell place_offset(0, 0);
 			if (facing >= FACING_NE && facing <= FACING_SE) {
-				place_offset.X = (short)Rule->AIBaseSpacing;
+				place_offset.X = (short)full_spacing;
 			} else if (facing >= FACING_SW && facing <= FACING_NW) {
-				place_offset.X = (short)(1 - Rule->AIBaseSpacing - buildingtype->Width());
+				place_offset.X = (short)(1 - full_spacing - buildingtype->Width());
 			}
 			if (facing >= FACING_SE && facing <= FACING_SW) {
-				place_offset.Y = (short)Rule->AIBaseSpacing;
+				place_offset.Y = (short)(full_spacing + 1);
 			} else if (facing >= FACING_NW || facing <= FACING_NE) {
-				place_offset.Y = (short)(1 - Rule->AIBaseSpacing - buildingtype->Height(false));
+				place_offset.Y = (short)(1 - full_spacing - buildingtype->Height(false));
 			}
 
 			static Cell scan_offsets[FACING_COUNT] = {
@@ -8444,29 +8448,20 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 					pos = Adjacent_Cell(pos, Facing_Sub(facing, FACING_COUNT / 2));
 				}
 
-				/// The spacing border applies only on the first placement try.
-				int use_spacing = (trial != 1);
+				/// The second placement try drops the AIBaseSpacing part of the border.
+				int const spacing = (trial == 1) ? full_spacing - Rule->AIBaseSpacing : full_spacing;
 				int attempt = 0;
 
 				while (attempt < 3) {
-					int total_height = buildingtype->Height(false);
-					total_height += 2 * (Rule->AIBaseSpacing * use_spacing);
-					int spacing      = Rule->AIBaseSpacing * use_spacing;
-					int total_width  = buildingtype->Width() + 2 * spacing;
-
 					Rect rect;
 					rect.X      = pos.X - spacing;
 					rect.Y      = pos.Y - spacing;
-					rect.Width  = total_width;
-					rect.Height = total_height;
+					rect.Width  = buildingtype->Width() + 2 * spacing;
+					rect.Height = buildingtype->Height(false) + 2 * spacing;
 
-					/// The second pass relaxes the area-availability requirement.
-					if (pass == 1 || Map.Is_Area_Available(rect, this)) {
-						if (buildingtype->Legal_Placement(pos, this)) {
-							if (abs(base_height - Map[pos].Height) < 3 && Can_Build_Here(buildingtype, pos)) {
-								return(pos);
-							}
-						}
+					if (Map.Is_Area_Available(rect, this) && buildingtype->Legal_Placement(pos, this) &&
+						abs(base_height - Map[pos].Height) < 3 && Can_Build_Here(buildingtype, pos)) {
+						return(pos);
 					}
 
 					pos += step_offsets[facing];

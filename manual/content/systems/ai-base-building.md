@@ -244,12 +244,14 @@ A house with no base center skips the search and all of its tests. Its structure
 
 From each edge cell the search looks outward, away from the reserved area, and tries up to three positions in a line. A position is accepted when all of these hold:
 
-- the structure's footprint, grown by `AIBaseSpacing` on every side, contains no cell this house has reserved and lies inside the playable area;
+- the structure's footprint, grown by `AIBaseSpacing` on every side, lies inside the playable area, and every cell of it is free: no terrain object, structure or overlay stands there, the cell is not blocked or sloped, and this house has not reserved it. A type with [`ProtectWithWall=yes`](/keys/protectwithwall/) or [`WantsExtraSpace=yes`](/keys/wantsextraspace/) needs one more cell of border;
 - every cell of the foundation is clear to build on. A type that lays a tile under itself needs only one clear cell, and a [`PlaceAnywhere=yes`](/keys/placeanywhere/) type skips this test;
 - the ground height at the position is within 2 of the height at the base center;
 - the compactness test accepts the position.
 
-When nothing passes, the search relaxes the first test in two stages, so a cramped base still builds. Each edge cell gets a second try that starts one cell closer to the base and drops the `AIBaseSpacing` margin from that test. After every edge cell has failed, a second pass skips that test entirely. If the second pass also fails, the search finds no cell, and the structure is abandoned as described below.
+When no position passes, each edge cell gets a second try that starts one cell closer to the base and shrinks the border from `AIBaseSpacing` to nothing, or to one cell for a type that asks for extra space. If every edge cell fails both tries, the search finds no cell, and the structure is abandoned as described below.
+
+The first position looked at lies `AIBaseSpacing` cells beyond the edge cell, one more on the sides that face south.
 
 ### The compactness test
 
