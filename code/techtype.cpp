@@ -472,7 +472,7 @@ int TechnoTypeClass::Time_To_Build(void) const
 int TechnoTypeClass::Cost_Of(HouseClass * house) const
 {
 	if (house != NULL) {
-		return((int)(Raw_Cost() * house->CostBias * house->Cost_Multiplier(this)));
+		return((int)(Raw_Cost() * house->Cost_Multiplier(this)));
 	}
 	return(Raw_Cost());
 }

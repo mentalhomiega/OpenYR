@@ -130,7 +130,7 @@ Repairing the structure from one hit point takes 80 steps and costs 240 credits,
 
 The one-credit minimum raises the cost of a cheap structure with high strength. A structure with a raw cost of 100 and `Strength=1000` has 200 steps. `100 / 200` is already 0 before the multiplier applies, so every step costs the 1-credit minimum. A full repair costs 200 credits, twice what the structure cost to build.
 
-The raw cost is the type's [`Cost`](/keys/cost/#scope-aircrafttype), before any country or difficulty multiplier. For a structure, the price of what it gives away is subtracted:
+The raw cost is the type's [`Cost`](/keys/cost/#scope-aircrafttype), before any price multiplier. For a structure, the price of what it gives away is subtracted:
 
 - the cost of its [`FreeUnit`](/keys/freeunit/);
 - the average cost of the [`PadAircraft`](/keys/padaircraft/) types, on one structure type only: the first entry in the `Dock` list of the first `PadAircraft` type. This subtraction does not apply when [`SeparateAircraft=yes`](/keys/separateaircraft/), or when that structure's `FreeUnit` is an aircraft.
