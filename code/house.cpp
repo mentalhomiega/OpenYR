@@ -468,6 +468,23 @@ static int Difficulty_Entry(TypeList<int> const & list, int difficulty);
 
 
 /// <summary>
+/// Returns the first harvester type the house's acted country may own. Unlike
+/// Preferred_Harvester, no slave miner stands in when the country lists none.
+/// </summary>
+/// <returns>Returns with the unit type, or NULL when the country owns no listed harvester.</returns>
+UnitTypeClass const * HouseClass::Country_Harvester(void) const
+{
+	int mask = Acted_Mask();
+	for (int i = 0; i < Rule->HarvesterUnit.Count(); i++) {
+		if ((mask & Rule->HarvesterUnit[i]->Ownable) != 0) {
+			return(Rule->HarvesterUnit[i]);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
 /// Picks the unit this house builds to bring ore home.
 /// The first harvester the house's country may own wins. A country that may own none, such as
 /// Yuri's, builds the slave miner that its refinery packs up into instead.
@@ -4691,14 +4708,7 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 	 * only that bit). A house with a refinery is short of a harvester when it cannot afford one,
 	 * or when the one in production is not paid for.
 	 */
-	UnitTypeClass const * harvester = NULL;
-	int mask = Acted_Mask();
-	for (int i = 0; i < Rule->HarvesterUnit.Count(); i++) {
-		if ((mask & Rule->HarvesterUnit[i]->Ownable) != 0) {
-			harvester = Rule->HarvesterUnit[i];
-			break;
-		}
-	}
+	UnitTypeClass const * harvester = Country_Harvester();
 	if (harvester == NULL) {
 		return(URGENCY_LOW);
 	}
@@ -4768,22 +4778,42 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 	int refund = 0;
 	int needed = 0;
 
-	BuildingTypeClass const * refinery = Get_Preferred(Rule->BuildRefinery);
-	UnitTypeClass const * harvester = Preferred_Harvester();
-	if (refinery == NULL || harvester == NULL) {
+	/*
+	 * The item to buy once the sale ends follows gamemd's FUN_004fdd10. A harvester is wanted
+	 * when the house owns a refinery and a war factory, or when no refinery can be built and it
+	 * owns a war factory. Otherwise a refinery is wanted when one can be built, and a war factory
+	 * when none can. With no harvester for the country, a refinery is wanted when one can be
+	 * built, and nothing is sold while a war factory is owned.
+	 */
+	BuildingTypeClass const * refinery = Get_First_Acted(Rule->BuildRefinery);
+	BuildingTypeClass const * factory = Get_First_Acted(Rule->BuildWeapons);
+	UnitTypeClass const * harvester = Country_Harvester();
+	bool has_refinery = Owns_Any(ABQuantity, Rule->BuildRefinery);
+	bool has_factory = Owns_Any(ABQuantity, Rule->BuildWeapons);
+
+	UnitTypeClass const * unit = NULL;
+	BuildingTypeClass const * structure = NULL;
+	if (harvester != NULL) {
+		if (has_refinery && has_factory) {
+			unit = harvester;
+		} else if (refinery != NULL) {
+			structure = refinery;
+		} else if (has_factory) {
+			unit = harvester;
+		} else {
+			structure = factory;
+		}
+	} else if (refinery != NULL) {
+		structure = refinery;
+	} else if (has_factory) {
+		return(false);
+	} else {
+		structure = factory;
+	}
+	if (unit == NULL && structure == NULL) {
 		return(false);
 	}
-
-	/*
-	 * A refinery plus a war factory means a harvester is the cheaper way back into business.
-	 */
-	bool can_build_harvester = Owns_Any(ABQuantity, Rule->BuildRefinery) &&
-		Owns_Any(ABQuantity, Rule->BuildWeapons);
-	if (can_build_harvester) {
-		needed = harvester->Cost_Of(this);
-	} else {
-		needed = refinery->Cost_Of(this);
-	}
+	needed = unit != NULL ? unit->Cost_Of(this) : structure->Cost_Of(this);
 
 	/*
 	 * Sell the base off from the back of the build list forward, stopping as soon as enough
@@ -4833,18 +4863,13 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 			BuildInfantry = INFANTRY_NONE;
 			BuildAircraft = AIRCRAFT_NONE;
 			BuildStructure = STRUCT_NONE;
-			if (can_build_harvester) {
-				BuildUnit = harvester->HeapID;
+			if (unit != NULL) {
+				BuildUnit = unit->HeapID;
 				ProductionMode = UNITS;
 			} else {
 				int next = Base.Next_Buildable_Index();
 				if (next != 0) {
-					Base.Nodes.Insert_After(next - 1, BaseNodeClass(refinery->HeapID, Cell(0, 0)));
-					for (j = Base.Nodes.Count() - 1; j > next; j--) {
-						if (Base.Nodes[j].Type >= STRUCT_FIRST && Rule->BuildRefinery.Is_In_List(BuildingTypes[Base.Nodes[j].Type])) {
-							Base.Nodes.Delete_Index(j);
-						}
-					}
+					Base.Nodes.Insert_After(next - 1, BaseNodeClass(structure->HeapID, Cell(0, 0)));
 					ProductionMode = BUILDINGS;
 					AI_Building();
 				} else {
