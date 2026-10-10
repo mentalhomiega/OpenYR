@@ -284,6 +284,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	EliteAirstrikeRechargeTime(0),
 	TurretCount(0),
 	WeaponCount(0),
+	IsClearAllWeapons(false),
+	IsMobileFire(true),
 	IsGattling(false),
 	IsChargeTurret(false),
 	WeaponStages(0),
@@ -983,6 +985,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DestroyAnim = TGet_TypeList<AnimTypeClass>(ini, IniName, "DestroyAnim", DestroyAnim);
 		TurretCount = ini.Get_Int(Name(), "TurretCount", TurretCount);
 		WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
+		IsClearAllWeapons = ini.Get_Bool(Name(), "ClearAllWeapons", IsClearAllWeapons);
+		IsMobileFire = ini.Get_Bool(Name(), "MobileFire", IsMobileFire);
 		if (!Has_Multiple_Turrets()) {
 			Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
 			Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
@@ -996,6 +1000,12 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 				sprintf(buf, "EliteWeapon%d", i + 1);
 				EliteWeapons[i].Weapon = TGet_Class(ini, Name(), buf, EliteWeapons[i].Weapon);
 			}
+		}
+		if (IsClearAllWeapons) {
+			Weapons[0].Weapon = NULL;
+			Weapons[1].Weapon = NULL;
+			EliteWeapons[0].Weapon = NULL;
+			EliteWeapons[1].Weapon = NULL;
 		}
 		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
 		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
