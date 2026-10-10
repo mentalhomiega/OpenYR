@@ -8,11 +8,6 @@ when_omitted:
   value: "1.0"
 ---
 
-The objects of a house of this country have their top speed multiplied by this value, so a value above 1 moves them faster. It scales objects whose [`Locomotor=`](/keys/locomotor/) is Drive, Hover, Walk, Mech or Tunnel: driven vehicles, hovercraft, infantry, walkers and burrowing vehicles. Objects on any other locomotor, including aircraft and jumpjets, do not use it.
+A house of this country combines this multiplier with [the difficulty section's `Groundspeed=`](/keys/groundspeed/#scope-difficulty-settings) and [`GameSpeedBias`](/keys/gamespeedbias/) [when it is given its difficulty slot](/systems/difficulty/#how-the-figures-are-combined). A campaign game leaves the country's value out, as it does for [`Airspeed=`](/keys/airspeed/#scope-housetype).
 
-```ini title="rules.ini"
-[NOD]
-Groundspeed=1.2 ; example: NOD's ground objects travel 20% faster
-```
-
-Outside a campaign game, the house multiplies this value by [the difficulty section's `Groundspeed=`](/keys/groundspeed/#scope-difficulty-settings) and [`GameSpeedBias`](/keys/gamespeedbias/) once, [when it is given its difficulty slot](/systems/difficulty/#how-the-figures-are-combined). A campaign game leaves the country's value out and keeps the other two.
+Nothing in the game reads the combined figure, so no value here changes how fast anything moves. Vehicles and soldiers move at the speed [`Speed=`](/keys/speed/#scope-aircrafttype) gives their type, scaled by the factors in [Why it is slower than its Speed says](/systems/movement-and-terrain/#why-it-is-slower-than-its-speed-says).

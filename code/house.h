@@ -189,8 +189,8 @@ class HouseClass : public AbstractClass
 		**	Override handicap control values.
 		*/
 		double FirepowerBias;
-		double GroundspeedBias;
-		double AirspeedBias;
+		double GroundspeedBias;		// Filled from the rules but never read, as in gamemd.
+		double AirspeedBias;		// Filled from the rules but never read, as in gamemd.
 		double ArmorBias;
 		double ROFBias;
 		double CostBias;

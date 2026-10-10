@@ -20,7 +20,6 @@ The stored value is how many leptons the object covers in one game frame at full
 
 Infantry and vehicles have that distance scaled by:
 
-- their owner's [combined ground speed bias](/systems/difficulty/#how-the-figures-are-combined);
 - the veteran speed ability ([`VeteranSpeed`](/keys/veteranspeed/));
 - a limpet attached to a vehicle ([`LimpetFactor`](/keys/limpetfactor/));
 - a [speed crate](/systems/crates/);
