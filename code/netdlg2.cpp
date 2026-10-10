@@ -25,6 +25,7 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
+#include "gameoptrules.h"
 #include "houstype.h"
 #include "init.h"
 #include "ipxmgr.h"
@@ -591,10 +592,8 @@ void Net2ServiceGameList(void)
 /// every player in the game.</remarks>
 void Net2EncodeGameopt(char *out, int size)
 {
-	// A comma in the map's name would split its field and shift every field after it.
-	char description[sizeof(Session.Options.ScenarioDescription)];
-	strcpy(description, Session.Options.ScenarioDescription);
-	std::replace(description, description + strlen(description), ',', ';');
+	// A comma in the map's name would split its field and shift every field after it, so the name is escaped.
+	std::string const description = GameoptRules::Escape_Description(Session.Options.ScenarioDescription);
 
 	int length = snprintf(out, size, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
 		"%s,%d,%d,%s,%s:",
@@ -616,7 +615,7 @@ void Net2EncodeGameopt(char *out, int size)
 		Session.Options.ShortGame,
 		Session.Options.CrapEngineers,
 		Session.Options.GameSpeed,
-		description,
+		description.c_str(),
 		Session.ScenarioIsOfficial,
 		Session.ScenarioFileLength,
 		Session.ScenarioFileName,
