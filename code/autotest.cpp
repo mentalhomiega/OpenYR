@@ -60,6 +60,7 @@
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
+**	trigaction <number> <value> <waypoint>	carries out that trigger action for the player's house, with the value in its number, house or time field
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
@@ -643,12 +644,34 @@ static void Terrain_Step(StepType const & step)
 }
 
 
+/*
+**	trigaction <number> <value> <waypoint>: carries out that trigger action for the player's house, as a
+**	trigger would. The value fills the action's number, house or time field.
+*/
+static void Trigger_Action_Step(StepType const & step)
+{
+	TActionClass * action = new TActionClass;
+	action->Action = (TActionType)std::atoi(step.Argument.c_str());
+	action->Data.Value = step.X;
+	action->EffectLocation = step.Y;
+	bool const done = (*action)(PlayerPtr, NULL, NULL, Cell(0, 0));
+	Point2D const view = TacticalMap->Get_Tactical_Position();
+	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y);
+	delete action;
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
 	if (step.Command == "treehit" || step.Command == "trees") {
 		Terrain_Step(step);
+		return;
+	}
+
+	if (step.Command == "trigaction") {
+		Trigger_Action_Step(step);
 		return;
 	}
 
