@@ -17,7 +17,7 @@ IsSonic=yes
 Range=6
 ```
 
-A sonic wave deals the damage on every frame to each object on the ground in a cell it covers, so an object that stays under the wave is hit many times. The firing object is skipped. Wall overlay in a covered cell takes a hit of the full `AmbientDamage` each frame, whatever the warhead, as [Walls and gates](/systems/walls-and-gates/#taking-damage) describes. Chain reactive overlay in a covered cell is set off. [`IsSonic`](/keys/issonic/) covers how long the wave lasts and how far it reaches.
+A sonic wave deals the damage on every frame to each object on the ground in a cell it covers, so an object that stays under the wave is hit many times. The firing object is skipped. Wall overlay in a covered cell takes a hit of the full `AmbientDamage` each frame, whatever the warhead, as [Walls and gates](/systems/walls-and-gates/#taking-damage) describes. A chain reactive overlay in a covered cell is not set off. [`IsSonic`](/keys/issonic/) covers how long the wave lasts and how far it reaches.
 
 At elite rank, the wave uses the elite first-slot weapon. Put a sonic weapon in the first slot, or give the first-slot weapon the values the wave should use.
 
