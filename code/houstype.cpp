@@ -96,6 +96,9 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	ArmorAircraftMult(1.0),
 	ArmorBuildingsMult(1.0),
 	ArmorDefensesMult(1.0),
+	SpeedInfantryMult(1.0),
+	SpeedUnitsMult(1.0),
+	SpeedAircraftMult(1.0),
 	Scheme(0),
 	Prefix('A'),
 	IsMultiplay(false),
@@ -230,6 +233,9 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		ArmorAircraftMult = ini.Get_Float(Name(), "ArmorAircraftMult", ArmorAircraftMult);
 		ArmorBuildingsMult = ini.Get_Float(Name(), "ArmorBuildingsMult", ArmorBuildingsMult);
 		ArmorDefensesMult = ini.Get_Float(Name(), "ArmorDefensesMult", ArmorDefensesMult);
+		SpeedInfantryMult = ini.Get_Float(Name(), "SpeedInfantryMult", SpeedInfantryMult);
+		SpeedUnitsMult = ini.Get_Float(Name(), "SpeedUnitsMult", SpeedUnitsMult);
+		SpeedAircraftMult = ini.Get_Float(Name(), "SpeedAircraftMult", SpeedAircraftMult);
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
@@ -311,6 +317,9 @@ void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
 	ArmorAircraftMult = parent.ArmorAircraftMult;
 	ArmorBuildingsMult = parent.ArmorBuildingsMult;
 	ArmorDefensesMult = parent.ArmorDefensesMult;
+	SpeedInfantryMult = parent.SpeedInfantryMult;
+	SpeedUnitsMult = parent.SpeedUnitsMult;
+	SpeedAircraftMult = parent.SpeedAircraftMult;
 	strcpy(Suffix, parent.Suffix);
 	Prefix = parent.Prefix;
 	IsMultiplayPassive = parent.IsMultiplayPassive;
@@ -362,6 +371,9 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ArmorAircraftMult);
 	crc(ArmorBuildingsMult);
 	crc(ArmorDefensesMult);
+	crc(SpeedInfantryMult);
+	crc(SpeedUnitsMult);
+	crc(SpeedAircraftMult);
 	crc(Suffix, strlen(Suffix));
 	crc(Prefix);
 	crc(IsMultiplay);
@@ -401,6 +413,9 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ArmorAircraftMult);
 	stream.Serialize(ArmorBuildingsMult);
 	stream.Serialize(ArmorDefensesMult);
+	stream.Serialize(SpeedInfantryMult);
+	stream.Serialize(SpeedUnitsMult);
+	stream.Serialize(SpeedAircraftMult);
 	stream.Serialize(Suffix);
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);

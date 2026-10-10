@@ -2065,6 +2065,22 @@ double HouseClass::Country_Armor_Multiplier(TechnoTypeClass const * type) const
 
 
 /// <summary>
+/// Fetches the factor this house's country applies to the top speed of the type's objects, as
+/// the speed routine FootClass::GetCurrentSpeed (0x4DB1A0) reads it through 0x50C050. Only infantry,
+/// vehicle and aircraft types have one. The country's Groundspeed= and Airspeed= are not part of it.
+/// </summary>
+double HouseClass::Country_Speed_Multiplier(TechnoTypeClass const * type) const
+{
+	int const category = Price_Category(type);
+	if (category < 0 || category > 2) {
+		return(1.0);
+	}
+	double const country[3] = {Class->SpeedInfantryMult, Class->SpeedUnitsMult, Class->SpeedAircraftMult};
+	return(static_cast<float>(country[category]));
+}
+
+
+/// <summary>
 /// Fetches the bonus of every factory plant this house has on the map for the type's category,
 /// as HouseClass::Plant_Cost_Multiplier (0x50BEB0) reads it.
 /// </summary>

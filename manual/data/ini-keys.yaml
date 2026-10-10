@@ -33506,6 +33506,40 @@ Speed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SpeedAircraftMult:
+  key: SpeedAircraftMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: SpeedAircraftMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+SpeedInfantryMult:
+  key: SpeedInfantryMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: SpeedInfantryMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 SpeedType:
   key: SpeedType
   scopes:
@@ -33523,6 +33557,23 @@ SpeedType:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SpeedUnitsMult:
+  key: SpeedUnitsMult
+  scopes:
+  - applies_to: *id011
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: HouseTypeClass
+      member: SpeedUnitsMult
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 SpiralDeltaPerCoord:
   key: SpiralDeltaPerCoord
   scopes:
