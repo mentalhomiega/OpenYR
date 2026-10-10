@@ -270,6 +270,7 @@ class HouseClass : public AbstractClass
 
 		// How many objects this house has in service that gather ore (HouseClass::RegisterGain and RegisterLoss keep it).
 		int CountResourceGatherers;
+		int CountResourceDestinations;
 
 		// While the outage runs, this house has no radar (a lightning storm called by an enemy).
 		CDTimerClass<FrameTimerClass> RadarBlackout;
@@ -909,6 +910,7 @@ class HouseClass : public AbstractClass
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
 		int Planning_Side(void) const;
 		UnitTypeClass const * Preferred_Harvester(void) const;
+		UnitTypeClass const * Country_Unit(DynamicVectorClass<UnitTypeClass const *> const & list) const;
 		UnitTypeClass const * Country_Harvester(void) const;
 		int Count_Resource_Gatherers(void) const;
 		bool Is_Harvester_Unit(UnitTypeClass const * type) const;

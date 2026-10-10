@@ -253,6 +253,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsPowerBlackout(false),
 	PoweredUnitCenters(0),
 	CountResourceGatherers(0),
+	CountResourceDestinations(0),
 	RadarBlackout(0),
 	IsRadarBlackout(false),
 	IsAlerted(false),
@@ -472,15 +473,20 @@ static int Difficulty_Entry(TypeList<int> const & list, int difficulty);
 /// Preferred_Harvester, no slave miner stands in when the country lists none.
 /// </summary>
 /// <returns>Returns with the unit type, or NULL when the country owns no listed harvester.</returns>
-UnitTypeClass const * HouseClass::Country_Harvester(void) const
+UnitTypeClass const * HouseClass::Country_Unit(DynamicVectorClass<UnitTypeClass const *> const & list) const
 {
 	int mask = Acted_Mask();
-	for (int i = 0; i < Rule->HarvesterUnit.Count(); i++) {
-		if ((mask & Rule->HarvesterUnit[i]->Ownable) != 0) {
-			return(Rule->HarvesterUnit[i]);
+	for (int i = 0; i < list.Count(); i++) {
+		if ((mask & list[i]->Ownable) != 0) {
+			return(list[i]);
 		}
 	}
 	return(NULL);
+}
+
+UnitTypeClass const * HouseClass::Country_Harvester(void) const
+{
+	return(Country_Unit(Rule->HarvesterUnit));
 }
 
 
@@ -536,49 +542,69 @@ int HouseClass::Count_Resource_Gatherers(void) const
 /// <returns>bool; Is the house able to keep earning credits?</returns>
 bool HouseClass::Can_Make_Money(void)
 {
-	BuildingTypeClass const * refinery = Get_Preferred(Rule->BuildRefinery);
-	UnitTypeClass const * harvester = Preferred_Harvester();
-	if (refinery == NULL || harvester == NULL) {
+	/*
+	 * Follows gamemd's HouseClass::ShouldBuildHarvester (FUN_004f6540). With no refinery and no
+	 * harvester that can be built, gamemd has no price to compare with and faults; this keeps the
+	 * answer yes there, as before.
+	 */
+	int credits = Available_Money();
+	bool has_refinery = CountResourceDestinations > 0;
+	bool has_gatherer = Count_Resource_Gatherers() > 0;
+	bool has_factory = Owns_Any(ABQuantity, Rule->BuildWeapons);
+	bool has_base = ConYards.Count() > 0;
+
+	UnitTypeClass const * base_unit = Country_Unit(Rule->BaseUnit);
+	if (base_unit != NULL && AUQuantity.Value(base_unit->HeapID) > 0) {
+		has_base = true;
+	}
+
+	if (has_refinery && has_gatherer) {
 		return(true);
 	}
 
-	int credits = Available_Money();
+	BuildingTypeClass const * refinery = Get_First_Acted(Rule->BuildRefinery);
+	BuildingTypeClass const * factory = Get_First_Acted(Rule->BuildWeapons);
+	UnitTypeClass const * harvester = Country_Harvester();
+	if (refinery == NULL && harvester == NULL) {
+		return(true);
+	}
+
+	int factorycost = factory != NULL ? factory->Cost_Of(this) : 0;
+
+	if (refinery == NULL) {
+		if (has_gatherer) {
+			return(true);
+		}
+		int harvcost = harvester->Cost_Of(this);
+		if (has_factory && credits >= harvcost) {
+			return(true);
+		}
+		return(has_base && credits >= harvcost + factorycost);
+	}
+
 	int refcost = refinery->Cost_Of(this);
+
+	if (harvester == NULL) {
+		if (has_gatherer) {
+			return(true);
+		}
+		return(has_base && credits >= refcost);
+	}
+
 	int harvcost = harvester->Cost_Of(this);
-
-	// A slave miner on the road is a refinery that has packed up, so it still counts.
-	bool hasref = Owns_Any(ABQuantity, Rule->BuildRefinery) ||
-		(harvester->DeploysInto != NULL && Rule->BuildRefinery.Is_In_List(harvester->DeploysInto) && AUQuantity.Value(harvester->HeapID) > 0);
-	bool hasharv = Owns_Any(AUQuantity, Rule->HarvesterUnit) || Count_Resource_Gatherers() > 0;
-
-	/*
-	 * If we don't have any refineries, building one is a priority.
-	 */
-	if (hasref) {
-
-		/*
-		 * If we have a refinery and a harvester, all's well.
-		 */
-		if (hasharv) {
-			return(true);
-		}
-
-		bool hasfactory = Owns_Any(ABQuantity, Rule->BuildWeapons);
-
-		BuildingTypeClass const * factory = Get_Preferred(Rule->BuildWeapons);
-		int factorycost = factory != NULL ? factory->Cost_Of(this) : 0;
-		if ((hasfactory && credits >= harvcost) || (credits >= harvcost + factorycost) || (credits >= refcost)) {
-			return(true);
-		}
-
+	if (!has_refinery) {
+		return(has_base && credits > refcost);
+	}
+	if (has_factory && credits >= harvcost) {
+		return(true);
+	}
+	if (!has_base) {
 		return(false);
 	}
-
-	if (credits > refcost) {
+	if (credits >= harvcost + factorycost) {
 		return(true);
 	}
-
-	return(false);
+	return(credits >= refcost);
 }
 
 
@@ -6946,6 +6972,9 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 	if (ttype->IsResourceGatherer) {
 		CountResourceGatherers--;
 	}
+	if (ttype->IsResourceDestination) {
+		CountResourceDestinations--;
+	}
 
 	switch (techno->Fetch_RTTI()) {
 		case RTTI_BUILDING:
@@ -7008,6 +7037,9 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 	TechnoTypeClass const * ttype = techno->TClass;
 	if (ttype->IsResourceGatherer) {
 		CountResourceGatherers++;
+	}
+	if (ttype->IsResourceDestination) {
+		CountResourceDestinations++;
 	}
 	BuildingClass * bptr;
 
@@ -7271,6 +7303,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPowerBlackout);
 	stream.Serialize(PoweredUnitCenters);
 	stream.Serialize(CountResourceGatherers);
+	stream.Serialize(CountResourceDestinations);
 	stream.Serialize(RadarBlackout);
 	stream.Serialize(IsRadarBlackout);
 	stream.Serialize(IsAlerted);

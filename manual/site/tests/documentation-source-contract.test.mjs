@@ -849,11 +849,12 @@ test('The economy counts every listed refinery and harvester and prices a prefer
 
 	assert.doesNotMatch(house, /HarvesterUnit\[0\]|BuildRefinery\[0\]/, 'no refinery or harvester is read by position');
 	assertOrdered(functionBody(house, 'bool HouseClass::Can_Make_Money(void)'), [
-		'Get_Preferred(Rule->BuildRefinery)',
-		'Preferred_Harvester()',
-		'Owns_Any(ABQuantity, Rule->BuildRefinery)',
-		'Owns_Any(AUQuantity, Rule->HarvesterUnit)',
-	], 'the money check prices a preferred entry and counts the whole list');
+		'CountResourceDestinations > 0',
+		'Count_Resource_Gatherers() > 0',
+		'AUQuantity.Value(base_unit->HeapID)',
+		'Get_First_Acted(Rule->BuildRefinery)',
+		'Country_Harvester()',
+	], 'the money check reads the refinery and gatherer counts gamemd reads, then prices the first acted refinery and the country harvester');
 });
 
 test('The harvester truce shields and refuses theft over the same list', () => {
@@ -878,7 +879,7 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 8, 'the availability test, the buildable scan, the harvester scan (Country_Harvester) and the three defense scans ask the seam');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 8, 'the availability test, the buildable scan, the harvester scan (Country_Unit) and the three defense scans ask the seam');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 
