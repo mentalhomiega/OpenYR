@@ -18,7 +18,7 @@ A computer house whose [`IQ`](/keys/iq/) is at or above this value lets its vehi
 - the attacker is no farther away than [`Crush`](/keys/crush/);
 - the house is not in difficulty slot 2, the `[Difficult]` section;
 - the house's IQ is at or above this value;
-- the attacker is not infantry whose type has [`Disguised=yes`](/keys/disguised/).
+- the attacker is not infantry whose type has [`Disguised=yes`](/keys/disguised/), and does not look like a friend to the vehicle's house, as [Disguises](/systems/disguises/) defines it.
 
 :::caution[The `[Difficult]` slot never crushes in answer to fire]
 A computer house in [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot) 2 never answers fire by driving over the attacker, whatever its IQ. With the menu's settings, computer houses take that slot when the player chooses Easy, so on the easiest setting no computer vehicle answers fire this way. Outside a campaign, [`CompEasyBonus=yes`](/keys/compeasybonus/) moves each computer house down to slot 1, the `[Normal]` section, when the session has more than one human player, and those houses crush again.
