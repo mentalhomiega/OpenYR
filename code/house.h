@@ -909,6 +909,7 @@ class HouseClass : public AbstractClass
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
 		int Planning_Side(void) const;
 		UnitTypeClass const * Preferred_Harvester(void) const;
+		UnitTypeClass const * Country_Harvester(void) const;
 		int Count_Resource_Gatherers(void) const;
 		bool Is_Harvester_Unit(UnitTypeClass const * type) const;
 		template<typename T> T const * Get_Preferred(DynamicVectorClass<T const *> const & list) const;

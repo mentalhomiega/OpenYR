@@ -878,7 +878,7 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 8, 'the availability test, the buildable scan, the harvester scan, the urgency check\'s harvester scan and the three defense scans ask the seam');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 8, 'the availability test, the buildable scan, the harvester scan (Country_Harvester) and the three defense scans ask the seam');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 

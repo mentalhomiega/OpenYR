@@ -386,13 +386,23 @@ Once the house sells, it works through the node list from the back:
 - A structure that cannot be sold is not sold, and its node is removed. A structure cannot be sold when it is marked [`Unsellable`](/keys/unsellable/) or a drain weapon is draining it. Otherwise it can be sold only while it has a buildup animation and is neither under construction nor being deconstructed. A Firestorm wall that is neither unsellable nor drained is sold while its house's Firestorm defense is off, whatever its buildup and construction state.
 - A built wall segment is not sold for a computer house, and its node is removed.
 
-The house sells until its money covers what it needs: a harvester when it owns both a refinery and a war factory, a refinery otherwise. It then cancels everything in production. It either orders the harvester, or inserts a refinery node ahead of the next unbuilt node and removes the later refinery nodes.
+The house chooses the item its money must cover by the first case that applies:
+
+- The country lists a harvester, and the house owns a refinery and a war factory: the harvester.
+- The country lists a harvester, and a refinery can be built: the refinery.
+- The country lists a harvester, and the house owns a war factory: the harvester.
+- The country lists a harvester: the first war factory that can be built.
+- The country lists no harvester, and a refinery can be built: the refinery.
+- The country lists no harvester, and the house owns a war factory: the house sells nothing.
+- Otherwise: the first war factory that can be built.
+
+When no item can be named, the house sells nothing. Otherwise it sells until its money covers the item's cost. It then cancels everything in production. For a harvester, it orders the harvester. For a refinery or war factory, it inserts that structure's node ahead of the next unbuilt node. No other node is removed.
 
 The house sends every vehicle, infantry and aircraft it owns to hunt in any of these cases:
 
 - selling everything in the list does not raise enough;
-- the money is raised only when selling reaches the first node in the list. The house still orders the harvester or inserts the refinery node;
-- it needs a refinery and the next unbuilt node is the first in the list, so no refinery node is inserted.
+- the money is raised only when selling reaches the first node in the list. The house still orders the harvester or inserts the structure's node;
+- it needs a refinery or a war factory and the next unbuilt node is the first in the list, so no node is inserted.
 
 ## Rebuilding
 
