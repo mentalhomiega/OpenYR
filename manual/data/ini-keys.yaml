@@ -14501,6 +14501,23 @@ FireUp:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+FireWhileMoving:
+  key: FireWhileMoving
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WeaponTypeClass
+      member: IsFireWhileMoving
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Firepower:
   key: Firepower
   scopes:
@@ -42477,6 +42494,23 @@ YVelocity:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+YuriBarracks:
+  key: YuriBarracks
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsYuriBarracks
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 YuriMindControlSound:
   key: YuriMindControlSound
   scopes:

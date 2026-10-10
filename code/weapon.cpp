@@ -85,6 +85,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsCamera(false),
 	IsInfiniteMindControl(false),
 	IsFireInTransport(true),
+	IsFireWhileMoving(true),
 	IsRadBeam(false),
 	RadLevel(0),
 	IsLimboLaunch(false),
@@ -225,6 +226,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsCamera = ini.Get_Bool(IniName, "Camera", IsCamera);
 		IsInfiniteMindControl = ini.Get_Bool(IniName, "InfiniteMindControl", IsInfiniteMindControl);
 		IsFireInTransport = ini.Get_Bool(IniName, "FireInTransport", IsFireInTransport);
+		IsFireWhileMoving = ini.Get_Bool(IniName, "FireWhileMoving", IsFireWhileMoving);
 		IsRadBeam = ini.Get_Bool(IniName, "IsRadBeam", IsRadBeam);
 		RadLevel = ini.Get_Int(IniName, "RadLevel", RadLevel);
 		IsLimboLaunch = ini.Get_Bool(IniName, "LimboLaunch", IsLimboLaunch);

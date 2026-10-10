@@ -3207,6 +3207,9 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					if (Class->IsNODBarracks && exitcell.X == x + 2 && exitcell.Y == y + 2) {
 						exitcoord = exitcoord + Class->ExitCoordinate;
 					}
+					if (Class->IsYuriBarracks && exitcell.X == x + 2 && exitcell.Y == y + 1) {
+						exitcoord = exitcoord + Class->ExitCoordinate;
+					}
 
 					ScenarioInit++;
 					if (base->Unlimbo(exitcoord, dir)) {
@@ -3292,6 +3295,9 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						}
 					}
 					if (Class->IsNODBarracks && exitcell.X == x + 2 && exitcell.Y == y + 2) {
+						exitcoord = exitcoord + Class->ExitCoordinate;
+					}
+					if (Class->IsYuriBarracks && exitcell.X == x + 2 && exitcell.Y == y + 1) {
 						exitcoord = exitcoord + Class->ExitCoordinate;
 					}
 
@@ -7341,6 +7347,13 @@ Cell BuildingClass::Find_Exit_Cell(TechnoClass const * techno) const
 
 	if (Class->IsNODBarracks) {
 		Cell cell = origin + Cell(2,2);
+		if (Map.In_Radar(cell) && techno->Can_Enter_Cell(&Map[cell]) == MOVE_OK) {
+			return(cell);
+		}
+	}
+
+	if (Class->IsYuriBarracks) {
+		Cell cell = origin + Cell(2,1);
 		if (Map.In_Radar(cell) && techno->Can_Enter_Cell(&Map[cell]) == MOVE_OK) {
 			return(cell);
 		}
