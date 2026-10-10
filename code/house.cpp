@@ -123,7 +123,6 @@
  *   HouseClass::operator HousesType -- Conversion to HousesType operator.                     *
  *   HouseClass::~HouseClass -- Default destructor for a house object.                         *
  *   HouseStaticClass::HouseStaticClass -- Default constructor for house static class.         *
- *   HouseClass::AI_Raise_Power -- Try to raise power levels by selling off buildings.         *
  *   HouseClass::AI_Raise_Money -- Raise emergency cash by selling buildings.                  *
  *   HouseClass::Random_Cell_In_Zone -- Find a (technically) legal cell in the zone specified. *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
