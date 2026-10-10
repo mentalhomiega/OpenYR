@@ -6162,10 +6162,12 @@ bool UnitClass::Should_Crush_It(TechnoClass const * it) const
 	if (!House->Is_Human_Player() && House->IQ < Rule->IQCrush) return(false);
 
 	/*
-	**	Don't allow crushing of spies by computer-controlled vehicles.
+	**	A soldier of a Disguised=yes type, or one that looks like a friend to this house, is not
+	**	crushed. UnitClass::ShouldCrashIt (0x7438F0) applies IsDisguisedAs (0x5227F0) for this test.
 	*/
-	if (it->RTTI == RTTI_INFANTRY && ((InfantryClass *)it)->Class->IsDisguised) {
-		return(false);
+	if (it->RTTI == RTTI_INFANTRY) {
+		InfantryClass const * soldier = static_cast<InfantryClass const *>(it);
+		if (soldier->Class->IsDisguised || soldier->Looks_Friendly_To(House)) return(false);
 	}
 
 	return(true);

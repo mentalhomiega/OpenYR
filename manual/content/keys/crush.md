@@ -18,6 +18,6 @@ When a computer-controlled crusher that is not in a team and not docked is hit b
 - the attacker is no farther away than this distance;
 - the house's IQ is at or above [`[IQ] AutoCrush`](/keys/autocrush/#scope-global-rules);
 - the house is not in difficulty slot 2, the `[Difficult]` section;
-- the attacker is not infantry whose type has [`Disguised=yes`](/keys/disguised/).
+- the attacker is not infantry whose type has [`Disguised=yes`](/keys/disguised/), and does not look like a friend to the crusher's house, as [Disguises](/systems/disguises/) defines it.
 
 With the menu's settings, a computer house takes slot 2 when the player chooses Easy, so its vehicles do not run over their attackers. [Difficulty settings and handicaps](/systems/difficulty/) covers the cases that move a computer house to another slot, such as a launch file's handicaps or [`CompEasyBonus`](/keys/compeasybonus/).
