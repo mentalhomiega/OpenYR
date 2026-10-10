@@ -8,6 +8,7 @@ filenames:
 source_files:
   - code/loadscreen.cpp
   - code/restate.cpp
+  - code/scenario.cpp
 related:
   - type: system
     id: loading-screens
@@ -26,6 +27,7 @@ A value that names text is a label of the game's [string table](/formats/csf/). 
 | Key | Value |
 | --- | --- |
 | `Briefing=` | The label of the written briefing on the objectives screen. [`Brief`](/keys/brief/) covers that screen and what it shows without this key. |
+| `UIName=` | The label of the mission's name. A campaign save is described by this text. A label the table lacks is ignored. |
 | `LSLoadMessage=` | The label of the line printed in the loading screen's title bar. Omitted, the title bar has no text. |
 | `LSLoadBriefing=` | The label of the text printed over the loading picture. Omitted, the picture has no text. |
 | `LS800BkgdName=` | The loading picture, a [SHP](/formats/shp/) file. Write the file name with its extension. |
@@ -36,11 +38,10 @@ A value that names text is a label of the game's [string table](/formats/csf/). 
 
 [Loading screens](/systems/loading-screens/#a-campaign-mission) covers where the picture and the texts appear, their color, and the older screen a mission shows when its picture or palette is missing.
 
-`UIName=` is not read.
-
 ```ini title="MISSIONMD.INI"
 [ALL01UMD.MAP]
 Briefing=Brief:All01md
+UIName=Name:All01md
 LSLoadMessage=LoadMsg:All01md
 LSLoadBriefing=LoadBrief:All01md
 LS640BriefLocX=20

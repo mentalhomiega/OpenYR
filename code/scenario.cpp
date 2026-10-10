@@ -93,6 +93,7 @@
 #include "conquer.h"
 #include "convert.h"
 #include "crc.h"
+#include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -170,6 +171,7 @@
 #include "ui/uishell.h"
 #include "unit.h"
 #include "unittype.h"
+#include "utf8.h"
 #include "vein.h"
 #include "viewzoom.h"
 #include "voc.h"
@@ -2262,6 +2264,17 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 				if (strlen(buffer) > 0) {
 					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
 				}
+			}
+		}
+
+		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
+		CCFileClass database("MISSIONMD.INI");
+		if (database.Is_Available()) {
+			CCINIClass missions;
+			missions.Load(database, false);
+			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
+			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
 			}
 		}
 	}
