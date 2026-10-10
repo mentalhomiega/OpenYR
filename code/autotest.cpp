@@ -1882,6 +1882,10 @@ bool AutoTest_Load(char const * filename)
 
 	char line[512];
 	while (std::fgets(line, sizeof(line), file) != NULL) {
+		// A "ui" menu step belongs to the modern build's UI script, which this build does not have.
+		if (std::strncmp(line, "ui ", 3) == 0) {
+			continue;
+		}
 		char command[64] = "";
 		char argument[256] = "";
 		int frame = 0;

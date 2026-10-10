@@ -82,7 +82,7 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 
 A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`. The
 script starts with `ui` lines, which are played in file order before any game frame: five `ui click more` with a `ui wait 300` after each, then `ui click resume`, click through the briefing page.
-The briefing movies are skipped in an unattended run.
+The briefing movies are skipped in an unattended run. The yr build has no menu script, so it skips the `ui` lines.
 
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
