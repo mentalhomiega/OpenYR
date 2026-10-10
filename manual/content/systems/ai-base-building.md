@@ -372,7 +372,14 @@ The plant comes from the acted side. The house takes the first of these that app
 
 With no plant to insert, the node is built as it stands.
 
-A house that is not following a map plan also sells its base when it cannot make money. That happens when it lacks a refinery or a harvester and cannot afford the missing one. It works through the node list from the back:
+A house that is not following a map plan also sells its base when it cannot make money. A house that can make money does not sell. Otherwise it sells unless it can pay for the item it needs next:
+
+- With no refinery, the item is the first refinery its country may build. If none is buildable, it is the first war factory. If neither is buildable, the house sells.
+- With a refinery, a refinery still under construction stops the sale. Otherwise the item is the first harvester its country may build. If its country lists none, the house sells.
+
+The house can pay for an item that is not in production when its money covers the item's cost. For an item in production, the money must cover the balance its factory still owes. A refinery under construction is checked among the first entries of the global building list, as many as the house owns, and owners are not checked. A refinery of another house in those entries therefore stops the sale too.
+
+Once the house sells, it works through the node list from the back:
 
 - A sellable structure that carries an upgrade loses its top upgrade, and the house is credited that upgrade's full cost.
 - A sellable structure is sold. A gate is a structure, so its node is removed with it.
