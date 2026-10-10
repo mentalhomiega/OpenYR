@@ -262,6 +262,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// With RevealOnFire=no, firing this weapon does not reveal the firer to the target's owner.
 		bool IsRevealOnFire;
 
+		// With TerrainFire=yes, the attack cursor shows over terrain objects and IsARock cells that this weapon would fire at.
+		bool IsTerrainFire;
+
 		// How many frames a DisguiseWhenStill vehicle stays open to computer targeting after it fires this weapon.
 		int DisguiseFakeBlinkTime;
 
