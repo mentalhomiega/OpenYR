@@ -1416,7 +1416,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	}
 
 	bool allied = House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr];
-	bool pips_shown = allied || (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Class->IsCanBeOccupied);
+	bool pips_shown = allied || TClass->IsPipsDrawForAll || (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Class->IsCanBeOccupied);
 
 	// Rank insignia show whoever owns the object, as TechnoClass::DrawExtras (0x6F5190) draws them.
 	if (Is_Decoration_Visible()) {

@@ -26549,6 +26549,23 @@ PipScale:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+PipsDrawForAll:
+  key: PipsDrawForAll
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsPipsDrawForAll
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PistolTurretIndex:
   key: PistolTurretIndex
   scopes:

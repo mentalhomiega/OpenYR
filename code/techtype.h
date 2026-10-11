@@ -76,6 +76,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A non-zero IdleRate makes a stopped unit step its walk animation once every IdleRate frames.
 		int IdleRate;
 
+		// A PipsDrawForAll=yes object shows its pips to every player, not only its owner's allies.
+		bool IsPipsDrawForAll;
+
 		/*
 		 * These are the abilities an object of this type gains as its crew is promoted. A
 		 * veteran has the veteran set; an elite has both, so nothing is lost on promotion.
