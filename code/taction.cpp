@@ -3804,9 +3804,9 @@ bool TActionClass::TAction_STOP_SOUNDS_AT(HouseClass * , ObjectClass * , Trigger
 
 
 /// <summary>
-/// Whites out the battlefield and fades it back in, as the chronoshift screen effect does. Each
-/// fade lasts the number of frames the action gives. This engine only fades the picture, where
-/// Yuri's Revenge twirls it, and does not lock the player's input meanwhile.
+/// Twirls the battlefield into white and back, as the chronoshift screen effect does. Each
+/// swirl lasts the number of frames the action gives, with 45 frames of white between them. The
+/// player's input is locked while the effect runs, unless it was locked already.
 /// </summary>
 /// <returns>bool; Was there a number of frames to run for?</returns>
 bool TActionClass::TAction_CHRONO_SCREEN_EFFECT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
