@@ -3256,7 +3256,14 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 			}
 		}
 
-		if (placed) Just_Built(tech);
+		if (placed) {
+			Just_Built(tech);
+
+			BuildingClass const * source = tech->Who_Can_Build_Me(false, true);
+			if (source != NULL && source->Class->CreateUnitSound != VOC_NONE) {
+				Sound_Effect(source->Class->CreateUnitSound, tech->PositionCoord);
+			}
+		}
 	}
 
 	return(placed);

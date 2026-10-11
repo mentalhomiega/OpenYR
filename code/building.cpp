@@ -7982,6 +7982,9 @@ void BuildingClass::Factory_AI(void)
 			**	tracking logic that the requested object has been produced.
 			*/
 			case 2:
+				if (Class->CreateUnitSound != VOC_NONE) {
+					Sound_Effect(Class->CreateUnitSound, PositionCoord);
+				}
 				House->Just_Built(product);
 //				fact->Completed();
 				Factory->Completed();

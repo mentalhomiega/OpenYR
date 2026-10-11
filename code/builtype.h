@@ -724,6 +724,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Played as the structure starts to build up.
 		VocType BuildupSound;
 
+		// Played where a unit this structure produces appears, after the unit's own CreateSound.
+		VocType CreateUnitSound;
+
 		// The frames a prism tower charges before it fires or sends its support beam.
 		int DelayedFireDelay;
 
