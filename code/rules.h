@@ -1678,6 +1678,12 @@ class RulesClass
 		 */
 		WarheadTypeClass const * C4Warhead;
 
+		/*
+		 * This is the warhead a vehicle that a locomotor let go of in the air hits things
+		 * with when it comes down on them.
+		 */
+		WarheadTypeClass const * CrushWarhead;
+
 		// The warheads V3 rockets and Dreadnought and Boomer missiles explode with, normal and elite.
 		// A drained refinery's owner pays DrainMoneyAmount every DrainMoneyFrameDelay frames to the drainer's owner,
 		// and the drainer shows DrainAnimationType while it drains.
