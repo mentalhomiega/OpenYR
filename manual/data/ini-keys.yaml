@@ -9697,7 +9697,7 @@ CrystalTile:
 Culling:
   key: Culling
   scopes:
-  - applies_to: *id005
+  - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
@@ -25034,7 +25034,7 @@ NumPlayers:
 NumberImpassableRows:
   key: NumberImpassableRows
   scopes:
-  - applies_to: *id004
+  - applies_to: *id005
     file: rules.ini
     section:
       kind: identifier
