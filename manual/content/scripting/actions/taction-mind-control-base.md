@@ -8,7 +8,7 @@ valid_values:
 caveats:
   - "Every structure the named house owns changes owner, together with what a structure carries or has docked. The structures keep their place, strength and veterancy, and their production queues are dropped."
   - "No capture announcement is played and no trigger attached to a structure for `Entered by...` springs."
-  - "Each structure remembers the house it came from until [Restore Mind Controlled Base](/scripting/actions/taction-restore-mind-controlled-base/) returns it. Another house's mind control unit cannot take a structure while it is held this way."
+  - "Each structure remembers the house it came from until [Restore Mind Controlled Base](/mapping/actions/taction-restore-mind-controlled-base/) returns it. Another house's mind control unit cannot take a structure while it is held this way."
   - "Vehicles, infantry and aircraft of the named house are not taken."
   - "The action fails when the trigger has no house or the named house is not in play."
 related:
