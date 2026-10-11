@@ -18,6 +18,10 @@ keys:
   - AIIonCannonThiefValue
   - AIIonCannonWarFactoryValue
   - AIMinorSuperReadyPercent
+  - AIDefendAgainst
+  - AISuperDefenseDistance
+  - AISuperDefenseFrames
+  - AISuperDefenseProbability
   - Action
   - AllyParaDropInf
   - AllyParaDropNum
@@ -369,7 +373,7 @@ Every handler waits until the house has a [declared enemy](/systems/base-attacke
 - **Genetic mutator** aims at the infantryman, of any house, with the most infantry of other, unallied houses on its cell and the cells around it. We do not fire it while a trigger has aimed the house's weapons.
 - **Psychic dominator** aims at the object, of any house, with the most enemy units it could take over within about three cells. It waits while a dominator blast is still running. We hold it while a trigger has aimed the house's weapons.
 
-The computer never fires the force shield or the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/mapping/missions/tmission-chrono-prep-abwp/) and [Chrono prep for AQ](/mapping/missions/tmission-chrono-prep-aq/) script lines.
+The computer fires the force shield only in [defense of its base](#the-computers-force-shield), and never fires the chronosphere on its own. Yuri's Revenge computer teams use the chronosphere through the [Chrono prep for ABwP](/mapping/missions/tmission-chrono-prep-abwp/) and [Chrono prep for AQ](/mapping/missions/tmission-chrono-prep-aq/) script lines.
 
 The ion cannon's rating is the only one with settings. We use it for the nuke as well, and for the lightning storm, while the preferred target is Anything.
 
@@ -403,6 +407,15 @@ The rows are tested from the top for each kind of object, and the first match wi
 No row covers aircraft, so an aircraft on the ground is a candidate rated 1 however badly damaged it is.
 
 A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the chem missile handler uses.
+
+### The computer's force shield
+
+A computer house fires a charged `Type=ForceShield` weapon only over a defensive cell it wants covered. It has such a cell for [`AISuperDefenseFrames`](/keys/aisuperdefenseframes/) frames after one is set, and the weapon is fired at it in the next AI pass. A set cell that has outlived that time is ignored, and a house with no cell never fires the weapon. Two things set the cell:
+
+- A weapon fired by any house near the base. When the weapon's type has [`AIDefendAgainst=yes`](/keys/aidefendagainst/) and its target lies within [`AISuperDefenseDistance`](/keys/aisuperdefensedistance/) of the center of the computer house's base, the house rolls [`AISuperDefenseProbability`](/keys/aisuperdefenseprobability/) for its difficulty slot. On success the cell is the center of its first construction yard, or the center of its base when it has none. A house that is human or passive, or has no base, does not react.
+- The [Set Defensive Target Cell](/mapping/actions/taction-set-defensive-target-cell/) trigger action, which sets the cell to a waypoint. [Clear Defensive Target Cell](/mapping/actions/taction-clear-defensive-target-cell/) drops it.
+
+The shield then covers what [Force shield](#force-shield) says it covers around the cell. A save game keeps the cell and the frame it was set.
 
 ### The preferred target
 

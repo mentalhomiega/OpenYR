@@ -491,6 +491,9 @@ RulesClass::RulesClass(void) :
 	OverloadDamage(),
 	OverloadFrames(),
 	AIMinorSuperReadyPercent(0.8),
+	AISuperDefenseProbability(),
+	AISuperDefenseFrames(25),
+	AISuperDefenseDistance(10),
 	AICaptureNormal(),
 	AICaptureWounded(),
 	AICaptureLowPower(),
@@ -1556,6 +1559,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		DominatorWarhead = TGet_Class(ini, GENERAL, "DominatorWarhead", DominatorWarhead);
 		DominatorCaptureRange = ini.Get_Int(GENERAL, "DominatorCaptureRange", DominatorCaptureRange);
 		AIMinorSuperReadyPercent = ini.Get_Float(GENERAL, "AIMinorSuperReadyPercent", AIMinorSuperReadyPercent);
+		AISuperDefenseProbability = ini.Get_IntList(GENERAL, "AISuperDefenseProbability", AISuperDefenseProbability);
+		AISuperDefenseFrames = ini.Get_Int(GENERAL, "AISuperDefenseFrames", AISuperDefenseFrames);
+		AISuperDefenseDistance = ini.Get_Lepton(GENERAL, "AISuperDefenseDistance", AISuperDefenseDistance);
 		AICaptureNormal = ini.Get_IntList(GENERAL, "AICaptureNormal", AICaptureNormal);
 		AICaptureWounded = ini.Get_IntList(GENERAL, "AICaptureWounded", AICaptureWounded);
 		AICaptureLowPower = ini.Get_IntList(GENERAL, "AICaptureLowPower", AICaptureLowPower);
@@ -2865,6 +2871,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OverloadDamage);
 	stream.Serialize(OverloadFrames);
 	stream.Serialize(AIMinorSuperReadyPercent);
+	stream.Serialize(AISuperDefenseProbability);
+	stream.Serialize(AISuperDefenseFrames);
+	stream.Serialize(AISuperDefenseDistance);
 	stream.Serialize(AICaptureNormal);
 	stream.Serialize(AICaptureWounded);
 	stream.Serialize(AICaptureLowPower);

@@ -1,0 +1,14 @@
+; Set Defensive Target Cell (action 140) makes the computer house raise its force shield: the
+; shield super weapon is ready at frame 70 and spent within the next 50 frames, and the supers lines show the aimed
+; defensive cell and the frame it was set. Clear Defensive Target Cell (action 141) drops the cell.
+; The default map's computer house, the Alliance when run with -AICountries 1, has its base near waypoint 0 (cell 52,97).
+30 command CenterBase
+60 grantai ForceShieldSpecial
+70 supers
+75 trigaction 140@Alliance 0 0
+80 supers
+100 supers
+124 supers
+200 trigaction 141@Alliance 0 0
+210 supers
+220 quit

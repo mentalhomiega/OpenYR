@@ -88,6 +88,7 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	AuxBuilding(NULL),
 	SidebarImage(),
 	UseChargeDrain(false),
+	AIDefendAgainst(false),
 	IsPowered(true),
 	IsManualControl(false),
 	IsDisableableFromShell(false),
@@ -163,6 +164,7 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SidebarImage);
 	stream.Serialize(SidebarPCX);
 	stream.Serialize(UseChargeDrain);
+	stream.Serialize(AIDefendAgainst);
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsManualControl);
 	stream.Serialize(IsDisableableFromShell);
@@ -201,6 +203,7 @@ void SuperWeaponTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(RechargeTime);
 	crc(Type);
 	crc(UseChargeDrain);
+	crc(AIDefendAgainst);
 	crc(IsManualControl);
 	crc(IsDisableableFromShell);
 	crc(IsPreClick);
@@ -251,6 +254,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		AuxBuilding = TGet_Class(ini, IniName, "AuxBuilding", AuxBuilding);
 		UseChargeDrain = ini.Get_Bool(IniName, "UseChargeDrain", UseChargeDrain);
+		AIDefendAgainst = ini.Get_Bool(IniName, "AIDefendAgainst", AIDefendAgainst);
 		IsManualControl = ini.Get_Bool(IniName, "ManualControl", IsManualControl);
 		IsDisableableFromShell = ini.Get_Bool(IniName, "DisableableFromShell", IsDisableableFromShell);
 		IsPreClick = ini.Get_Bool(IniName, "PreClick", IsPreClick);

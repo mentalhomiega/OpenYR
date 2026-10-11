@@ -675,6 +675,15 @@ class HouseClass : public AbstractClass
 		Cell PreferredTargetCell;
 
 		/*
+		**	Where the computer raises its force shield. A trigger action, or a super weapon aimed
+		**	near the base, sets the first cell and stamps the frame. The second cell, when set,
+		**	is used without the time limit. Both are CELL_NONE until one is set.
+		*/
+		Cell PreferredDefensiveCell;
+		Cell PreferredDefensiveCell2;
+		int PreferredDefensiveCellStartTime;
+
+		/*
 		**	A trigger action can also fix the center of this house's base on a cell of its own, in
 		**	place of the average of its buildings. It is CELL_NONE until one does.
 		*/
@@ -831,6 +840,7 @@ class HouseClass : public AbstractClass
 		void Restore_Starting_Buildings(void);
 		void Restore_Starting_Forces(void);
 		void Mind_Control_Base(HouseClass * target);
+		void AI_Super_Weapon_Defense(SuperClass const * super, Cell const & target);
 		void Restore_Mind_Controlled_Base(HouseClass * target);
 		void All_To_Hunt(void);
 
