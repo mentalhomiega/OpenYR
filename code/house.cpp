@@ -129,6 +129,8 @@
 
 #include "always.h"
 
+#include <cmath>
+
 #include "house.h"
 
 #include "_logic.h"
@@ -339,6 +341,9 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	PointTotal(0),
 	PreferredTarget(QUARRY_ANYTHING),
 	PreferredTargetCell(CELL_NONE),
+	PreferredDefensiveCell(CELL_NONE),
+	PreferredDefensiveCell2(CELL_NONE),
+	PreferredDefensiveCellStartTime(-100),
 	CenterOverride(CELL_NONE),
 	Attack(),
 	Enemy(HOUSE_NONE),
@@ -3080,7 +3085,52 @@ bool HouseClass::Place_Special_Blast(SuperWeaponType id, Cell const & cell)
 {
 	SuperWeapon[id]->Discharged(this == PlayerPtr, cell);
 
+	// Every computer house gets to react to a strike, as HouseClass::Fire_SW (0x4FAE50) lets it.
+	if (cell != CELL_NONE) {
+		for (int index = 0; index < Houses.Count(); index++) {
+			Houses[index]->AI_Super_Weapon_Defense(SuperWeapon[id], cell);
+		}
+	}
+
 	return(true);
+}
+
+
+/// <summary>
+/// Lets a computer house react to a super weapon that was just fired (HouseClass::AI_SuperWeaponDefense,
+/// 0x4FAF00). When the weapon's type sets AIDefendAgainst=yes and the target lies within
+/// AISuperDefenseDistance of the house's base, the house rolls AISuperDefenseProbability for its
+/// difficulty slot. On success it wants its force shield over its first construction yard, or over the
+/// center of its base when it has none, for the next AISuperDefenseFrames frames.
+/// </summary>
+/// <param name="super">The super weapon that was fired.</param>
+/// <param name="target">The cell it was aimed at.</param>
+void HouseClass::AI_Super_Weapon_Defense(SuperClass const * super, Cell const & target)
+{
+	if (Class->IsMultiplayPassive || IsHuman || super == NULL || !super->Class->AIDefendAgainst) {
+		return;
+	}
+
+	Cell base = Center != COORD_NONE ? Center.As_Cell() : CELL_NONE;
+	if (base == CELL_NONE) {
+		return;
+	}
+
+	Coord const from = Map[base].Center_Coord();
+	Coord const to = Map[target].Center_Coord();
+	double const dx = from.X - to.X;
+	double const dy = from.Y - to.Y;
+	double const dz = from.Z - to.Z;
+	if ((int)std::sqrt(dx * dx + dy * dy + dz * dz) > Rule->AISuperDefenseDistance) {
+		return;
+	}
+
+	if (Difficulty < 0 || Difficulty >= Rule->AISuperDefenseProbability.Count() || Random_Pick(0, 99) > Rule->AISuperDefenseProbability[Difficulty]) {
+		return;
+	}
+
+	PreferredDefensiveCell = ConYards.Count() > 0 ? ConYards[0]->Center_Coord().As_Cell() : base;
+	PreferredDefensiveCellStartTime = Frame;
 }
 
 
@@ -7497,6 +7547,9 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PointTotal);
 	stream.Serialize(PreferredTarget);
 	stream.Serialize(PreferredTargetCell);
+	stream.Serialize(PreferredDefensiveCell);
+	stream.Serialize(PreferredDefensiveCell2);
+	stream.Serialize(PreferredDefensiveCellStartTime);
 	stream.Serialize(CenterOverride);
 	stream.Serialize(StartingObjects);
 	stream.Serialize(BQuantity);
@@ -9657,6 +9710,19 @@ void HouseClass::AI_Super_Weapons(void)
 						if (cell != CELL_NONE) {
 							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 						}
+						break;
+					}
+
+					case SUPER_FORCE_SHIELD: {
+						// Wanted over the defensive cell, for AISuperDefenseFrames after it was set, unless a second cell is fixed (HouseClass::AI_TryFireSW).
+						Cell cell = PreferredDefensiveCell2;
+						if (cell == CELL_NONE) {
+							if (PreferredDefensiveCell == CELL_NONE || PreferredDefensiveCellStartTime + Rule->AISuperDefenseFrames <= Frame) {
+								break;
+							}
+							cell = PreferredDefensiveCell;
+						}
+						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 						break;
 					}
 

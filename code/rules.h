@@ -407,6 +407,11 @@ class RulesClass
 		double AIMinorSuperReadyPercent;
 
 		// The weights a computer house rolls against to decide what a unit it takes over does, by its situation.
+		// How a computer house defends against a super weapon aimed near its base: the chance in percent, by difficulty slot, that it raises its force shield, how many frames the shield stays wanted, and how close to the base a strike must land.
+		TypeList<int> AISuperDefenseProbability;
+		int AISuperDefenseFrames;
+		LEPTON AISuperDefenseDistance;
+
 		TypeList<int> AICaptureNormal;
 		TypeList<int> AICaptureWounded;
 		TypeList<int> AICaptureLowPower;

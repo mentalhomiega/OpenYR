@@ -46,7 +46,7 @@ The line is split on commas and empty fields are skipped, so nothing marks where
 
 Maps and saves store action numbers, and a Yuri's Revenge map stores that game's numbers. Numbers `0` through `100` are the Tiberian Sun set, `101` through `145` are Yuri's Revenge's own, ending at `TACTION_JUMP_CAMERA_HOME`, and OpenTS adds actions from `146`. Append new OpenTS enumerators before `TACTION_COUNT`, and never reorder or reuse existing values. `tests/actionids` pins the numbers of both ranges.
 
-Yuri's Revenge actions that no handler carries out yet are listed in `Is_Skipped_Action`. Such an action does nothing when the trigger springs, and the log notes the first time a map uses it and the first time it runs. A number outside the enumeration is logged and does nothing.
+A Yuri's Revenge action that has no handler is listed in `Is_Skipped_Action`, which is empty now that every one of them has one. Such an action would do nothing when the trigger springs, and the log would note the first time a map uses it and the first time it runs. A number outside the enumeration is logged and does nothing.
 
 ## Registration
 

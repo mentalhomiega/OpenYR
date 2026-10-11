@@ -134,6 +134,9 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		 */
 		bool UseChargeDrain;
 
+		// A computer house whose base lies near the target of this super weapon may raise its force shield.
+		bool AIDefendAgainst;
+
 		/*
 		 * If this super weapon needs power in order to charge, then this flag will be true.
 		 * An owner short of power suspends the charging rather than losing the weapon.

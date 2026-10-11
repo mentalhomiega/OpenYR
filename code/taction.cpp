@@ -312,10 +312,6 @@ enum ParamCodeType {
 static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
-		case TACTION_SET_DEFENSIVE_TARGET_CELL:
-		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
-			return(true);
-
 		default:
 			break;
 	}
@@ -891,6 +887,8 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(RESTORE_MIND_CONTROLLED_BASE);
 		INVOKE(RESTORE_STARTING_UNITS);
 		INVOKE(PAUSE_GAME);
+		INVOKE(SET_DEFENSIVE_TARGET_CELL);
+		INVOKE(CLEAR_DEFENSIVE_TARGET_CELL);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3575,6 +3573,38 @@ bool TActionClass::TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectC
 		return(false);
 	}
 	house->PreferredTargetCell = Scen->Get_Waypoint_Cell(EffectLocation);
+	return(true);
+}
+
+
+/// <summary>
+/// Wants the force shield of the trigger's house over the action's waypoint for the next
+/// AISuperDefenseFrames frames. Only a computer house raises its force shield by itself.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
+bool TActionClass::TAction_SET_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+		return(false);
+	}
+	house->PreferredDefensiveCell = Scen->Get_Waypoint_Cell(EffectLocation);
+	house->PreferredDefensiveCellStartTime = Frame;
+	return(true);
+}
+
+
+/// <summary>
+/// Drops the cell the trigger's house wants its force shield over, and the time it was set.
+/// </summary>
+/// <returns>bool; Does the trigger have a house?</returns>
+bool TActionClass::TAction_CLEAR_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	if (house == NULL) {
+		return(false);
+	}
+	house->PreferredDefensiveCell = CELL_NONE;
+	house->PreferredDefensiveCell2 = CELL_NONE;
+	house->PreferredDefensiveCellStartTime = -100;
 	return(true);
 }
 

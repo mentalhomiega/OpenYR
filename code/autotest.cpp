@@ -56,7 +56,7 @@
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
-**	trigaction <number> <value> <waypoint>	carries out that trigger action for the player's house, with the value in its number, house or time field
+**	trigaction <number>[@<House>] <value> <waypoint>	carries out that trigger action for the player's house, or the named one, with the value in its number, house or time field
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
@@ -630,7 +630,16 @@ static void Trigger_Action_Step(StepType const & step)
 	action->Action = (TActionType)std::atoi(step.Argument.c_str());
 	action->Data.Value = step.X;
 	action->EffectLocation = step.Y;
-	bool const done = (*action)(PlayerPtr, NULL, NULL, Cell(0, 0));
+
+	// "<number>@<House>" runs the action for that house, with underscores for spaces, instead of the player's.
+	HouseClass * house = PlayerPtr;
+	std::size_t const at = step.Argument.find('@');
+	if (at != std::string::npos) {
+		std::string name = step.Argument.substr(at + 1);
+		std::replace(name.begin(), name.end(), '_', ' ');
+		house = House_From_Name(name.c_str());
+	}
+	bool const done = house != NULL && (*action)(house, NULL, NULL, Cell(0, 0));
 	Point2D const view = TacticalMap->Get_Tactical_Position();
 	DebugString("AUTOTEST   trigaction %d value %d waypoint %d: %s, view %d,%d, scenario tint %d,%d,%d, first tile tint %d,%d,%d, waypoint cell %d,%d, lightning storm active %d pending %d\n", (int)action->Action, step.X, step.Y, done ? "done" : "failed", view.X, view.Y,
 		Scen->RedTint, Scen->GreenTint, Scen->BlueTint,
@@ -1532,9 +1541,10 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   statics %d\n", Static_Sounds_Active(STATIC_SOUND_TRIGGER));
 	} else if (step.Command == "supers") {
 		// supers: each super weapon a house has, how much of its charge is left and the time it charges in.
+		DebugString("AUTOTEST   super defense frames %d distance %d probability %d,%d,%d\n", Rule->AISuperDefenseFrames, (int)Rule->AISuperDefenseDistance, Rule->AISuperDefenseProbability.Count() > 0 ? Rule->AISuperDefenseProbability[0] : -1, Rule->AISuperDefenseProbability.Count() > 1 ? Rule->AISuperDefenseProbability[1] : -1, Rule->AISuperDefenseProbability.Count() > 2 ? Rule->AISuperDefenseProbability[2] : -1);
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
-			DebugString("AUTOTEST   aim house %s target %d,%d base center %d,%d\n", house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->Center.As_Cell().X, (int)house->Center.As_Cell().Y);
+			DebugString("AUTOTEST   aim house %s target %d,%d base center %d,%d defensive cell %d,%d since frame %d\n", house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->Center.As_Cell().X, (int)house->Center.As_Cell().Y, (int)house->PreferredDefensiveCell.X, (int)house->PreferredDefensiveCell.Y, house->PreferredDefensiveCellStartTime);
 			for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 				SuperClass * super = house->SuperWeapon[s];
 				if (super == NULL || !super->Is_Present()) continue;
