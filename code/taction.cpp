@@ -313,7 +313,6 @@ static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
 		case TACTION_PAUSE_GAME:
-		case TACTION_RESTORE_STARTING_UNITS:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 			return(true);
@@ -891,6 +890,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(LIGHTNING_STORM_STRIKE);
 		INVOKE(MIND_CONTROL_BASE);
 		INVOKE(RESTORE_MIND_CONTROLLED_BASE);
+		INVOKE(RESTORE_STARTING_UNITS);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3285,6 +3285,22 @@ bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, Obje
 		return(false);
 	}
 	house->Restore_Mind_Controlled_Base(target);
+	return(true);
+}
+
+
+/// <summary>
+/// Puts back what the named house had on the map when the scenario finished loading: its
+/// structures, vehicles, infantry and aircraft, each in its starting cell.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
+bool TActionClass::TAction_RESTORE_STARTING_UNITS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * target = Named_House(house);
+	if (house == NULL || target == NULL) {
+		return(false);
+	}
+	target->Restore_Starting_Forces();
 	return(true);
 }
 

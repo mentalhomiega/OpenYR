@@ -681,21 +681,24 @@ class HouseClass : public AbstractClass
 		Cell CenterOverride;
 
 		/*
-		**	The buildings the scenario placed for this house when it was read, with the cell each stands
-		**	on. A trigger action can have them put back.
+		**	The structures, vehicles, infantry and aircraft this house had on the map when the scenario
+		**	finished loading, each with its kind, its type's number and the cell it stood on. A trigger
+		**	action can have them put back.
 		*/
-		struct StartingBuildingType {
-			StructType Type;
+		struct StartingObjectType {
+			int Kind;
+			int Type;
 			Cell Position;
 
 			template<typename S>
 			void Serialize(S & stream)
 			{
+				stream.Serialize(Kind);
 				stream.Serialize(Type);
 				stream.Serialize(Position);
 			}
 		};
-		std::vector<StartingBuildingType> StartingBuildings;
+		std::vector<StartingObjectType> StartingObjects;
 
 	//private:
 
@@ -824,7 +827,9 @@ class HouseClass : public AbstractClass
 		int Power_Drain(void);
 		bool Fire_Sale(void);
 		void Cheer(void);
+		void Record_Starting_Forces(void);
 		void Restore_Starting_Buildings(void);
+		void Restore_Starting_Forces(void);
 		void Mind_Control_Base(HouseClass * target);
 		void Restore_Mind_Controlled_Base(HouseClass * target);
 		void All_To_Hunt(void);

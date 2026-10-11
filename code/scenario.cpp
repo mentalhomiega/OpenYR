@@ -868,6 +868,11 @@ bool Read_Scenario(char const * fname)
 
 	Scen->IsReadingScenario = false;
 
+	// A trigger action can have what each house starts with put back.
+	for (int index = 0; index < Houses.Count(); index++) {
+		Houses[index]->Record_Starting_Forces();
+	}
+
 	Progress.End();
 	LoadScreen.End();
 
