@@ -92,4 +92,4 @@ The folder names are compared without regard to case. A save from a build that d
 
 ## Limits
 
-- The game does not check that players run the same mods. Give every player in a multiplayer game the same mods in the same order; a game between players whose mods differ can go out of sync.
+- The [mod check](/systems/mod-check/) refuses a player who joins a LAN game with different mods from the host's, but it does not cover games started from a launch file. Give every player in such a game the same mods in the same order; players whose mods differ can go out of sync.

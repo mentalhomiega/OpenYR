@@ -75,6 +75,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `waitlocal <index> <0\|1> [timeout]` | Pauses the script until that scenario local variable has that value |
 | `triggerlog <0\|1>` | With `1`, writes `AUTOTEST trigger fired frame N: <ID> <name> house <house>` each time a trigger springs |
 | `triggercoverage` | Writes each trigger type in the scenario with how many times it has sprung since the run started, then the types that never sprung. A long list runs over several lines, the later ones marked `(continued)` |
+| `modsig [text]` | Writes the mods in force as a join request carries them: each folder name with a hash of its `mod.ini` and overlay files. With a signature as text, which is another machine's, also writes whether a host with these mods would take that machine in, and how the mods differ |
 | `quit` | Ends the process |
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to

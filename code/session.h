@@ -275,6 +275,9 @@ struct RemoteFileTransferType {
 // and a name, house and color for every player.
 #define MAX_GAMEOPT_LENGTH	(MAX_PLAYERS * (MPLAYER_NAME_MAX + 8) + 384)
 
+// The room a packet gives to a mod signature, terminating zero included (ModSync::CAPACITY).
+#define MOD_SIGNATURE_MAX	384
+
 
 //...........................................................................
 // Packet sent over the network Global Channel
@@ -298,6 +301,7 @@ struct GlobalPacketType {
 			int AICheatCheck;					/// Unique ID of "ai.ini" file.
 			int ArtCheatCheck;					/// Unique ID of "art.ini" file.
 			unsigned int BuildNumber;			///
+			char Mods[MOD_SIGNATURE_MAX];		// The mods the player runs, as ModSync writes them; empty for none or for a build without the check.
 		} PlayerInfo;
 		struct {
 			#if 0 /// Fields that fall 13 bytes short of where TS keeps FileLength (offset 0x83), so the region is padded instead of mapped.
@@ -333,6 +337,7 @@ struct GlobalPacketType {
 		} ResponseTime;
 		struct {
 			int Why;							// why were we rejected from the game?
+			char Mods[MOD_SIGNATURE_MAX];		// With REJECT_MODS, the mods the host runs, as ModSync writes them.
 		} Reject;
 		struct {
 			unsigned int ID;   // unique ID for this chat node

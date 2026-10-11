@@ -843,6 +843,10 @@ void Test_Global_Packets(void)
 		"a kick target must be a current session member");
 
 	Check(sizeof(GlobalPacketType) == 1059, "the global packet keeps its wire size");
+	Check(offsetof(GlobalPacketType, PlayerInfo.Mods) == offsetof(GlobalPacketType, PlayerInfo.BuildNumber) + sizeof(unsigned int),
+		"a join request carries its mods right after the build number");
+	Check(offsetof(GlobalPacketType, Reject.Mods) == offsetof(GlobalPacketType, Reject.Why) + sizeof(int),
+		"a refusal carries the host's mods right after the reason");
 
 	NetGlobal::ValidationContext master = Member_Context();
 	master.MasterPlayerID = 2;

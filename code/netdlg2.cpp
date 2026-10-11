@@ -31,6 +31,8 @@
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "mapgen.h"
+#include "modsync.h"
+#include "mods.h"
 #include "mplayer.h"
 #include "msgbox.h"
 #include "netdlg.h"
@@ -50,6 +52,10 @@
 #include "wsproto.h"
 
 #include <algorithm>
+#include <cstring>
+#include <string>
+
+static_assert(ModSync::CAPACITY == MOD_SIGNATURE_MAX, "the packet field holds one mod signature");
 
 
 /*
@@ -59,6 +65,27 @@ static int Request_To_Join(int join_index);
 static void Unjoin_Game(int game_index);
 static void Send_Join_Queries(int gamenow, int playernow, int chatnow, int init = 0);
 static void Get_Join_Responses(void);
+
+// The mods this machine runs, as the join packet carries them.
+static ModSync::Signature Local_Mod_Signature(void)
+{
+	return(ModSync::Describe(Active_Mods()));
+}
+
+// Reads the mods a packet field names. A field that is not a signature counts as no mods.
+static ModSync::Signature Packet_Mod_Signature(char const (&field)[MOD_SIGNATURE_MAX])
+{
+	ModSync::Signature signature;
+	ModSync::Decode(std::string_view(field, strnlen(field, sizeof(field))), signature);
+	return(signature);
+}
+
+static void Put_Packet_Mod_Signature(char (&field)[MOD_SIGNATURE_MAX], ModSync::Signature const & signature)
+{
+	std::string const text = ModSync::Encode(signature);
+	std::memset(field, 0, sizeof(field));
+	std::memcpy(field, text.data(), std::min(text.size(), sizeof(field) - 1));
+}
 
 bool Net2ReadyToGo(int load_game);
 void Net2ServiceGameList(void);
@@ -1147,6 +1174,7 @@ static int Request_To_Join(int join_index)
 	Session.GPacket.PlayerInfo.ArtCheatCheck = ArtID;
 	Session.GPacket.PlayerInfo.AICheatCheck = AIID;
 	Session.GPacket.PlayerInfo.BuildNumber = Build_Number();
+	Put_Packet_Mod_Signature(Session.GPacket.PlayerInfo.Mods, Local_Mod_Signature());
 
 	DebugString("RulesID = %lX\n", RulesID);
 	DebugString("ArtID = %lX\n", ArtID);
@@ -1823,6 +1851,14 @@ static void Get_Join_Responses(void)
 				else if (why==REJECT_DUPLICATE_SERIAL) {
 					item = (char *)Fetch_String(TXT_SERIAL_DUP);
 				}
+				else if (why==REJECT_MODS) {
+					static char modtext[640];
+					ModSync::Signature const mine = Local_Mod_Signature();
+					ModSync::Signature const theirs = Packet_Mod_Signature(Session.GPacket.Reject.Mods);
+					std::string const text = "The host cannot take you in. " + ModSync::Describe_Difference(ModSync::Compare(mine, theirs), mine, theirs, "The host");
+					std::snprintf(modtext, sizeof(modtext), "%s", text.c_str());
+					item = modtext;
+				}
 				if (item) {
 					UI_Network_Message_Box(item, UI_NETWORK_MESSAGE_OK, Net2Callback);
 				}
@@ -2216,6 +2252,28 @@ static void Get_Join_Responses(void)
 				Ipx.Send_Global_Message (&packet, sizeof (GlobalPacketType),
 					1, &Session.GAddress);
 				continue;
+			}
+
+			//.....................................................................
+			// Reject a player whose mods differ from the host's. A build that predates
+			// the check sends no mods, which only matches a host with none.
+			//.....................................................................
+			if (!resend) {
+				ModSync::Signature const mine = Local_Mod_Signature();
+				ModSync::Signature const theirs = Packet_Mod_Signature(Session.GPacket.PlayerInfo.Mods);
+				ModSync::Difference const difference = ModSync::Compare(mine, theirs);
+				if (!difference.Same()) {
+					DebugString("[Mods] %s asked to join with mods \"%s\"; the host runs \"%s\".\n",
+						Session.GPacket.Name, ModSync::List_Names(theirs).c_str(), ModSync::List_Names(mine).c_str());
+					PMessagePrintf(ColorSystem, "%s was refused: %s", Session.GPacket.Name,
+						ModSync::Describe_Difference(difference, mine, theirs, Session.GPacket.Name).c_str());
+					memset (&packet, 0, sizeof(GlobalPacketType));
+					packet.Command = NET_REJECT_JOIN;
+					packet.Reject.Why = (int)REJECT_MODS;
+					Put_Packet_Mod_Signature(packet.Reject.Mods, mine);
+					Ipx.Send_Global_Message (&packet, sizeof (GlobalPacketType), 1, &Session.GAddress);
+					continue;
+				}
 			}
 
 			bool match = true;

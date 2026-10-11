@@ -183,6 +183,8 @@
 #include "voc.h"
 #include "unit.h"
 #include "viewzoom.h"
+#include "modsync.h"
+#include "mods.h"
 #include "vidscale.h"
 #include "video.h"
 #include "bgfxbackend.h"
@@ -982,6 +984,22 @@ bool Wait_Over(StepType const & step)
 }
 
 
+// modsig [text]: the mods in force as a join request carries them. With text, which is another machine's
+// signature, also says whether a host with these mods would take that machine in.
+static void Mod_Signature_Step(StepType const & step)
+{
+	ModSync::Signature const mine = ModSync::Describe(Active_Mods());
+	DebugString("AUTOTEST   modsig [%s] names %s\n", ModSync::Encode(mine).c_str(), ModSync::List_Names(mine).c_str());
+	if (!step.Argument.empty()) {
+		ModSync::Signature theirs;
+		bool const valid = ModSync::Decode(step.Argument, theirs);
+		ModSync::Difference const difference = ModSync::Compare(mine, theirs);
+		DebugString("AUTOTEST   modsig join %s valid %d: %s\n", difference.Same() ? "accepted" : "refused", (int)valid,
+			difference.Same() ? "same mods" : ModSync::Describe_Difference(difference, mine, theirs, "The joiner").c_str());
+	}
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -989,6 +1007,11 @@ void Run(StepType const & step)
 	// chrono <frames>: starts the chronoshift screen effect, as the Chrono Screen Effect trigger action does.
 	if (step.Command == "chrono") {
 		Start_Chrono_Screen_Effect(std::atoi(step.Argument.c_str()));
+		return;
+	}
+
+	if (step.Command == "modsig") {
+		Mod_Signature_Step(step);
 		return;
 	}
 

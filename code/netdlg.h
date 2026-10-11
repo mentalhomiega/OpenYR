@@ -61,4 +61,5 @@ enum RejectType {
 	REJECT_DISBANDED,               // game was disbanded
 	REJECT_MISMATCH,                // "rules.ini" file mismatch.
 	REJECT_DUPLICATE_SERIAL,        /// player's serial is a duplicate
+	REJECT_MODS,                    // the joiner's mods differ from the host's
 };
