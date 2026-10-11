@@ -10768,6 +10768,24 @@ DemandLoadBuildup:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+DeployDir:
+  key: DeployDir
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RulesClass
+      member: null
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DeployFire:
   key: DeployFire
   scopes:

@@ -487,6 +487,12 @@ class RulesClass
 		 */
 		Dir256 PoseDir;
 
+		/*
+		 * This is the facing a DeployToLand vehicle turns to while it comes down, in steps of
+		 * eight (0 is north, 1 northeast, 2 east and so on), stored as a 256-step direction.
+		 */
+		Dir256 DeployDir;
+
 		/// Unused
 		AnimTypeClass const * DropPodPuff;
 

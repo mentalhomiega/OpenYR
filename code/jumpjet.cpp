@@ -559,6 +559,14 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 /// </summary>
 void JumpjetLocomotionClass::Process_Descent(void)
 {
+	// A DeployToLand vehicle turns to DeployDir as it comes down (JumpjetLocomotionClass, 0x54C550).
+	if (LinkedTo->RTTI == RTTI_UNIT && static_cast<UnitClass const *>(LinkedTo)->Class->IsDeployToLand) {
+		DirType const deploy(Rule->DeployDir);
+		if (Facing.Current() != deploy) {
+			Facing.Set_Desired(deploy);
+		}
+	}
+
 	CellClass * cellptr = &Map[HeadToCoord];
 	MoveType move = LinkedTo->Can_Enter_Cell(cellptr);
 	int spot = CellClass::Spot_Index(HeadToCoord);
