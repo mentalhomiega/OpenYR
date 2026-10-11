@@ -118,6 +118,7 @@
 #include "effects.h"
 #include "foot.h"
 #include "globals.h"
+#include "hud.h"
 #include "goptions.h"
 #include "incdec.h"
 #include "infatype.h"
@@ -252,16 +253,7 @@ void DisplayClass::One_Time(void)
 	PlacementShapes = MFCD::Retrieve("PLACE.SHP");
 	ShadowShapes = MFCD::Retrieve("SHADOW.SHP");
 
-	Rect rect = VisibleRect;
-	if (Options.IsSidebarOnRight || Debug_Map) {
-		rect.X = 0;
-	} else {
-		rect.X = SidebarClass::SIDE_WIDTH;
-	}
-	rect.Y = SidebarClass::VIEW_TOP;
-	rect.Width = rect.Width - SidebarClass::SIDE_WIDTH;
-	rect.Height = rect.Height - SidebarClass::VIEW_TOP - SidebarClass::COMMAND_BAR_HEIGHT;
-	Set_View_Dimensions(rect);
+	Set_View_Dimensions(Tactical_View_Rect());
 }
 
 

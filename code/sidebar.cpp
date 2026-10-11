@@ -102,6 +102,7 @@
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
+#include "hud.h"
 #include "incdec.h"
 #include "init.h"
 #include "language/language.h"
@@ -423,7 +424,7 @@ void SidebarClass::Init_IO(void)
 {
 	BASECLASS::Init_IO();
 
-	SidebarRect.X = ScreenTacticalRect.X + ScreenTacticalRect.Width;
+	SidebarRect.X = Sidebar_Screen_X();
 	SidebarRect.Y = SIDE_Y;
 	SidebarRect.Width = 641 - SidebarRect.X;
 	SidebarRect.Height = (ScreenTacticalRect.Y - SidebarRect.Y) + ScreenTacticalRect.Height + COMMAND_BAR_HEIGHT;
@@ -1081,6 +1082,20 @@ void SidebarClass::Draw_It(bool complete)
 
 
 /// <summary>
+/// Copies the sidebar onto the frame at its place on the right, over the map, for the modern
+/// interface.
+/// </summary>
+void SidebarClass::Draw_Panels(Surface & surface)
+{
+	if (IsSidebarActive && GameActive && ScenarioActive && SidebarSurface != NULL) {
+		Rect const source = SidebarSurface->Get_Rect();
+		surface.Blit_From(Rect(Sidebar_Screen_X(), 0, source.Width, source.Height), *SidebarSurface, source);
+	}
+	BASECLASS::Draw_Panels(surface);
+}
+
+
+/// <summary>
 /// Copies the sidebar onto the visible screen.
 /// This routine is the last step of the sidebar's redraw. When nothing but the credits have
 /// changed, only that much is copied, so an idle sidebar costs almost nothing.
@@ -1089,6 +1104,12 @@ void SidebarClass::Draw_It(bool complete)
 /// that changed?</param>
 void SidebarClass::Blit_Sidebar(bool complete)
 {
+	// The modern interface copies the sidebar onto the frame in Draw_Panels instead.
+	if (Modern_Interface()) {
+		IsToBlitSidebar = false;
+		return;
+	}
+
 	if (IsSidebarActive && GameActive && ScenarioActive) {
 
 		if (!IsToBlitSidebar && !complete) {
@@ -2858,10 +2879,10 @@ void SidebarClass::Reposition_Sidebar(void)
 	/*
 	 * Position the sidebar.
 	 */
-	SidebarRect.X = Options.IsSidebarOnRight ? ScreenTacticalRect.X + ScreenTacticalRect.Width : 0;
+	SidebarRect.X = Sidebar_Screen_X();
 	SidebarRect.Y = SIDE_Y;
 	SidebarRect.Width = SIDE_WIDTH;
-	SidebarRect.Height = ScreenTacticalRect.Height + ScreenTacticalRect.Y + COMMAND_BAR_HEIGHT - SIDE_Y;
+	SidebarRect.Height = VisibleRect.Height - SIDE_Y;
 
 	BASECLASS::Reposition_Sidebar();
 
@@ -2972,7 +2993,7 @@ void SidebarClass::Reposition_Sidebar(void)
 	int x = 0;
 	int y = RadarButton.Y + RadarButton.Height;
 	if (Options.IsSidebarOnRight) {
-		Background.Set_Position(ScreenTacticalRect.X + ScreenTacticalRect.Width, y);
+		Background.Set_Position(Sidebar_Screen_X(), y);
 	} else {
 		Background.Set_Position(x, y);
 	}

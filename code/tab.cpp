@@ -49,6 +49,7 @@
 #include "draw.h"
 #include "goptions.h"
 #include "globals.h"
+#include "hud.h"
 #include "house.h"
 #include "init.h"
 #include "language/language.h"
@@ -174,7 +175,9 @@ void TabClass::Draw_It(bool complete)
 	if (!Debug_Map) {
 		Credits.Graphic_Logic(complete || IsToRedraw);
 		IsToRedraw = false;
-		Draw_Command_Bar();
+		if (!Modern_Interface()) {
+			Draw_Command_Bar();
+		}
 	}
 
 	BASECLASS::Draw_It(complete);
@@ -478,6 +481,16 @@ void TabClass::Place_Command_Buttons(void)
 			IsCommandButtonListed[index] = shown;
 		}
 	}
+}
+
+
+/// <summary>
+/// Draws the command bar over the finished map, for the modern interface.
+/// </summary>
+void TabClass::Draw_Panel_Backdrops(Surface & surface)
+{
+	Draw_Command_Bar();
+	BASECLASS::Draw_Panel_Backdrops(surface);
 }
 
 

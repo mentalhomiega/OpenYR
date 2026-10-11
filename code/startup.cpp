@@ -85,6 +85,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "hover.h"
+#include "hud.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
@@ -549,6 +550,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Options.ScreenHeight = ConfigINI.Get_Int("Video", "ScreenHeight", Options.ScreenHeight);
 		Options.Load_Menu_Style();
 		Options.Load_Interface_Scale();
+		Options.Load_Interface_Style();
 
 		/*
 		 * These are wanted before the window and the renderer exist, which is well
@@ -637,8 +639,8 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		VisibleSurface->Fill(0);
 
 		Rect sidebar_rect(0,0,SidebarClass::SIDE_WIDTH,VisibleRect.Height);
-		Rect tile_rect(0,0,VisibleRect.Width-sidebar_rect.Width, sidebar_rect.Height);
-		Rect composite_rect(0,0,VisibleRect.Width-sidebar_rect.Width, sidebar_rect.Height);
+		Rect tile_rect(0,0,Tactical_View_Rect().Width, sidebar_rect.Height);
+		Rect composite_rect(0,0,Tactical_View_Rect().Width, sidebar_rect.Height);
 
 		Allocate_Surfaces(VisibleRect, composite_rect, tile_rect, sidebar_rect, false);
 		LogicalSurface = HiddenSurface;

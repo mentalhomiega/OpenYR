@@ -46,6 +46,7 @@ class TabClass: public SidebarClass
 
 		virtual void AI(KeyNumType &input, Point2D const & xy) override;
 		virtual void Draw_It(bool complete=false) override;
+		virtual void Draw_Panel_Backdrops(Surface & surface) override;
 		static void Draw_Credits_Tab(void);
 		static void Hilite_Tab(int tab);
 		void Flash_Money(void);

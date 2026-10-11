@@ -157,6 +157,7 @@ class SidebarClass : public PowerClass
 		void Set_Cameo_Text(bool state);
 
 		void Blit_Sidebar(bool complete);
+		virtual void Draw_Panels(Surface & surface) override;
 
 		/*
 		**	Each side strip is managed by this class. It handles all strip specific

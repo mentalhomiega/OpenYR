@@ -50,6 +50,7 @@
 #include "gametime.h"
 #include "goptions.h"
 #include "house.h"
+#include "hud.h"
 #include "incdec.h"
 #include "init.h"
 #include "inline.h"
@@ -417,7 +418,7 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 			Point2D p = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(point);
 			int x = p.X;
 			int y = p.Y;
-			int w = (CompositeSurface->Get_Width()+SidebarSurface->Get_Width()) - 1;
+			int w = VisibleRect.Width - 1;
 			int h = CompositeSurface->Get_Height() - 1;
 
 			bool at_screen_edge = (y <= 0 || x == 0 || x >= w || y >= h);
@@ -568,7 +569,7 @@ void ScrollClass::Scroll_AI(void)
 			ObjectClass *	object /*= 0*/;				// what object is in the cell
 			bool			fog;						/// is the cell in fog or not
 			bool			shadow;						// is the cell in shadow or not
-			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
+			if (Point_Over_Map(mouse) && Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				HoverObject = object;
 				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
 			} else {
@@ -643,8 +644,8 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	Point2D			point;						/// click position relative to the tactical view
 
 	// The map does not act on the second press of a double click.
-	// A press outside the map's screen area belongs to the sidebar or bars, even where the zoomed view's map pixels reach under them.
-	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1 && ScreenTacticalRect.Is_Point_Within(Point2D(event.X, event.Y)));
+	// A press outside the map's screen area, or over a panel drawn on the map, belongs to the sidebar or bars.
+	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1 && Point_Over_Map(Point2D(event.X, event.Y)));
 	bool const release = (event.Type == WINDOW_EVENT_MOUSE_UP);
 
 	if (event.Type == WINDOW_EVENT_CAPTURE_LOST) {

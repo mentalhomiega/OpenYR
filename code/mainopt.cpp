@@ -22,6 +22,7 @@
 #include "dsurface.h"
 #include "gamedlg.h"
 #include "globals.h"
+#include "hud.h"
 #include "init.h"
 #include "language/language.h"
 #include "misc.h"
@@ -224,11 +225,7 @@ bool Change_Display_Mode(int width, int height)
 		Main_Window_Resize(width, height);
 	}
 
-	Rect temp = VisibleRect;
-	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = SidebarClass::VIEW_TOP;
-	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= SidebarClass::VIEW_TOP + SidebarClass::COMMAND_BAR_HEIGHT;
+	Rect temp = Tactical_View_Rect();
 
 	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
 	LogicalSurface = HiddenSurface;

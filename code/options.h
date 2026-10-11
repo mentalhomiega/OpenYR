@@ -67,6 +67,7 @@ class OptionsClass {
 		void Load_Settings(void);
 		void Load_Menu_Style(void);
 		void Load_Interface_Scale(void);
+		void Load_Interface_Style(void);
 		void Load_Seen_Movies(void);
 		void Save_Seen_Movies(void) const;
 		void Save_Settings(void);
@@ -107,6 +108,9 @@ class OptionsClass {
 		 * will be true. Tiberian Sun offers no way to move it, so it is always true.
 		 */
 		bool IsSidebarOnRight;
+
+		// The modern interface draws the map over the whole screen with the controls in panels over it.
+		bool ModernInterface;
 
 		/*
 		 * If each sidebar cameo is to be captioned with the name of what it builds, then this

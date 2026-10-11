@@ -18,6 +18,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "goptions.h"
+#include "hud.h"
 #include "scheme.h"
 #include "viewzoom.h"
 #include "wwfont.h"
@@ -48,7 +49,7 @@ bool CCToolTip::Update(ToolTipText * text)
 
 		Rect * trect;
 		if (Options.IsSidebarOnRight == true) {
-			if (text->Pos.X <= ScreenTacticalRect.X + ScreenTacticalRect.Width) {
+			if (text->Pos.X <= Sidebar_Screen_X()) {
 				trect = &ScreenTacticalRect;
 			} else {
 				trect = &SidebarRect;
@@ -104,7 +105,7 @@ void CCToolTip::Reset(const ToolTipText * text)
 {
 	bool redraw = false;
 	if (Options.IsSidebarOnRight == true) {
-		if (text->Pos.X >= ScreenTacticalRect.X + ScreenTacticalRect.Width) {
+		if (text->Pos.X >= Sidebar_Screen_X()) {
 			redraw = true;
 		}
 	} else {
@@ -151,7 +152,7 @@ void CCToolTip::Draw(const ToolTipText * text)
 	Surface * surface = NULL;
 
 	if (Options.IsSidebarOnRight == true) {
-		int offset = ScreenTacticalRect.X + ScreenTacticalRect.Width;
+		int offset = Sidebar_Screen_X();
 		if (point.X + text->TextWidth <= offset) {
 			surface = CompositeSurface;
 		} else if (UseSidebarSurface == true && point.X >= offset) {

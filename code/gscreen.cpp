@@ -58,6 +58,7 @@
 #include "cctooltip.h"
 #include "gadget.h"
 #include "globals.h"
+#include "hud.h"
 #include "goptions.h"
 #include "keyboard.h"
 #include "savestream.h"
@@ -436,7 +437,13 @@ void GScreenClass::Render(void)
 		Video_Set_Map_Layer(NULL, Rect(), Rect());
 	}
 
+	if (Modern_Interface()) {
+		Draw_Panel_Backdrops(*CompositeSurface);
+	}
 	if (Buttons) Buttons->Draw_All(false);
+	if (Modern_Interface()) {
+		Draw_Panels(*CompositeSurface);
+	}
 
 #ifdef _DEBUG
 	/*

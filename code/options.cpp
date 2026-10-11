@@ -193,6 +193,7 @@ OptionsClass::OptionsClass(void) :
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
 	IsSidebarOnRight(true),
+	ModernInterface(false),
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
@@ -549,6 +550,19 @@ void OptionsClass::Load_Menu_Style(void)
 	char menustyle[32];
 	ConfigINI.Get_String("Options", "MenuStyle", "Modern", menustyle, sizeof(menustyle));
 	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
+}
+
+
+/// <summary>
+/// Reads the in-game interface style from the settings file. Startup calls it before the
+/// surfaces are made, since the style decides the size of the map view.
+/// </summary>
+void OptionsClass::Load_Interface_Style(void)
+{
+	char style[16];
+	ConfigINI.Get_String("Options", "InterfaceStyle", "Classic", style, sizeof(style));
+	ModernInterface = (stricmp(style, "Modern") == 0);
+	DebugString("Interface style is %s\n", ModernInterface ? "Modern" : "Classic");
 }
 
 

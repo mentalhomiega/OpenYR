@@ -77,6 +77,7 @@
 #include "fog.h"
 #include "gamedirs.h"
 #include "globals.h"
+#include "hud.h"
 #include "goptions.h"
 #include "houstype.h"
 #include "infantry.h"
@@ -851,11 +852,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	Rect temp = VisibleRect;
-	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = SidebarClass::VIEW_TOP;
-	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= SidebarClass::VIEW_TOP + SidebarClass::COMMAND_BAR_HEIGHT;
+	Rect temp = Tactical_View_Rect();
 
 	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
 

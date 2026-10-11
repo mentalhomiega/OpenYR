@@ -106,6 +106,11 @@ class GScreenClass
 		*/
 		virtual void Draw_It(bool =false) {};
 
+		// The modern interface's panels: backdrops are drawn onto the frame before the buttons,
+		// and the panels themselves after them, both over the finished map.
+		virtual void Draw_Panel_Backdrops(Surface &) {};
+		virtual void Draw_Panels(Surface &) {};
+
 		/*
 		**	This moves the hidpage up to the seenpage.
 		*/

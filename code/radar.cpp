@@ -89,6 +89,7 @@
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
+#include "hud.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -537,7 +538,7 @@ int RadarClass::RTacticalClass::Action(unsigned flags, KeyNumType & key)
 	}
 
 
-	x -= Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0;
+	x -= Sidebar_Screen_X();
 
 	/*
 	**	See if the mouse is over the radar general area, but not yet
@@ -847,7 +848,7 @@ void RadarClass::Draw_Names(void)
 void RadarClass::Reposition_Sidebar(void)
 {
 	BASECLASS::Reposition_Sidebar();
-	RadarButton.Set_Position(RadX + (Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), RadY);
+	RadarButton.Set_Position(RadX + Sidebar_Screen_X(), RadY);
 	RadarButton.Flag_To_Redraw();
 	FullRedraw = true;
 }
