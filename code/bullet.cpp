@@ -1384,6 +1384,9 @@ void BulletClass::Detonate(Coord const & coord)
 
 	WarheadTypeClass * warhead = Warhead;
 	bool nullified = false;
+	if (AutoTest_Active() && stricmp(warhead->Name(), "NUKE") == 0) {
+		DebugString("AUTOTEST nuke detonates at frame %d at %d,%d,%d\n", Frame, coord.X, coord.Y, coord.Z);
+	}
 
 	if (Class->ShrapnelWeapon != NULL) {
 		Shrapnel();
@@ -1790,6 +1793,11 @@ void BulletClass::Nuke_Maker(void)
 
 	BulletClass * bullet = Create_Bullet(weapon->Bullet, TarCom, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->ProjectileRange, true);
 	if (bullet != NULL) {
+		// The payload keeps its weapon, so its blast leaves the weapon's RadLevel behind (0x46B310).
+		bullet->Weapon = weapon;
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST nuke payload released at frame %d from height %d\n", Frame, coord.Z);
+		}
 		if (!bullet->Unlimbo(coord, TVelocity3D<double>(0.0, 0.0, -1.0))) {
 			delete bullet;
 		}

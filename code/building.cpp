@@ -104,6 +104,7 @@
 
 #include "always.h"
 
+#include "autotest.h"
 #include "building.h"
 
 #include "_convert.h"
@@ -6492,6 +6493,9 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						} else {
 							if (Rule->NukeTakeOff != NULL) {
 								new AnimClass(Rule->NukeTakeOff, launch, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -100);
+							}
+							if (AutoTest_Active()) {
+								DebugString("AUTOTEST missile leaves %s at frame %d\n", Class->Name(), Frame);
 							}
 							// The announcer file announces every launch when it is fired instead.
 							if (!House->Is_Player_Control() && !Is_Eva_Loaded()) {

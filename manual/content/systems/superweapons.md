@@ -465,7 +465,7 @@ The house stores a single missile target. A second launch before the first silo 
 
 The silo opens its door and launches the missile on the same frame, without waiting for the door to finish opening. It then closes the door and returns to guard. The projectile, warhead, maximum speed and range come from the `WeaponType=` of the section the [declaration warning](#declaring-a-superweapon) describes. The silo ignores that weapon's `Damage=` and gives the projectile a fixed strength of 200. The missile leaves five eighths of a cell (160 leptons) north of the silo's center, pointing straight up, and [`NukeTakeOff`](/keys/nuketakeoff/) plays there. When the launching house is not the local player's, the player hears the launch-detected announcement.
 
-In Yuri's Revenge the missile is a [`Vertical=yes`](/keys/vertical/) projectile with a [`NukeMaker=yes`](/keys/nukemaker/) warhead. It climbs off the top of the screen and explodes at its [`DetonationAltitude`](/keys/detonationaltitude/), and the `NukePayload` weapon's projectile then falls onto the target from the same height and deals the payload's damage.
+In Yuri's Revenge the missile is a [`Vertical=yes`](/keys/vertical/) projectile with a [`NukeMaker=yes`](/keys/nukemaker/) warhead. It climbs off the top of the screen and explodes at its [`DetonationAltitude`](/keys/detonationaltitude/), and the `NukePayload` weapon's projectile then falls onto the target from the same height and deals the payload's damage. The payload carries the weapon's [`RadLevel`](/keys/radlevel/), so its blast leaves [radiation](/systems/radiation/) on the target.
 
 ```ini title="rulesmd.ini"
 [NukeSpecial]
