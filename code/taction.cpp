@@ -312,7 +312,6 @@ enum ParamCodeType {
 static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
-		case TACTION_PAUSE_GAME:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
 			return(true);
@@ -891,6 +890,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(MIND_CONTROL_BASE);
 		INVOKE(RESTORE_MIND_CONTROLLED_BASE);
 		INVOKE(RESTORE_STARTING_UNITS);
+		INVOKE(PAUSE_GAME);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3301,6 +3301,18 @@ bool TActionClass::TAction_RESTORE_STARTING_UNITS(HouseClass * house, ObjectClas
 		return(false);
 	}
 	target->Restore_Starting_Forces();
+	return(true);
+}
+
+
+/// <summary>
+/// Freezes the game for the action's number of seconds. Nothing in the scenario moves, the mission
+/// clock stops and input is ignored until the time is up.
+/// </summary>
+/// <returns>bool; Always true.</returns>
+bool TActionClass::TAction_PAUSE_GAME(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	Pause_Game_For(Data.Value);
 	return(true);
 }
 

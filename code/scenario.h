@@ -635,6 +635,8 @@ void Unlock_Scenario_Input(void);
 
 void Pause_Scenario(void);
 void Resume_Scenario(void);
+bool Pause_Game_For(int seconds);
+bool Is_Game_Held(void);
 
 int Adjust_To_CPU_Timing(int time);
 void Toggle_Display_Mode(bool ingame);

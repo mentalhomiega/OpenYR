@@ -530,6 +530,49 @@ void Resume_Scenario(void)
 }
 
 
+static unsigned int HoldEnd = 0;
+static bool IsHeld = false;
+
+
+/// <summary>
+/// Freezes the game for a number of real seconds, as the Pause Game trigger action does. The
+/// scenario stops advancing and the clock and input stop with it. A hold already running is
+/// timed again from now instead of being added to.
+/// </summary>
+/// <param name="seconds">How many seconds to hold the game.</param>
+/// <returns>bool; Was the game held? Only a campaign or skirmish game can be, and not for no time.</returns>
+bool Pause_Game_For(int seconds)
+{
+	if ((Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) || seconds <= 0) {
+		return(false);
+	}
+	HoldEnd = timeGetTime() + (unsigned int)seconds * 1000;
+	if (!IsHeld) {
+		IsHeld = true;
+		Pause_Scenario();
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Is the game frozen by Pause_Game_For? The hold is lifted here once its time is up.
+/// </summary>
+bool Is_Game_Held(void)
+{
+	if (!IsHeld) {
+		return(false);
+	}
+	if ((int)(timeGetTime() - HoldEnd) >= 0) {
+		IsHeld = false;
+		Resume_Scenario();
+		Keyboard->Clear();
+		return(false);
+	}
+	return(true);
+}
+
+
 /// <summary>
 /// Takes control of the game away from the player.
 /// This routine is used while a scripted sequence plays out, so that the player cannot
