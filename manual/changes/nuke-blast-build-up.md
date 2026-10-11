@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-A projectile whose warhead is named `NUKE` now plays the `NUKEBALL` animation where it lands, and deals its damage when that animation ends. Before, the damage went off the moment the projectile landed, and `NUKEBALL` never played.
+A projectile whose warhead is named `NUKE` now plays the `NUKEBALL` animation where it lands, and deals its damage when that animation ends. Before, the damage went off the moment the projectile landed, and `NUKEBALL` never played. Saves made by earlier builds no longer load, because a projectile now saves the animation it waits for.

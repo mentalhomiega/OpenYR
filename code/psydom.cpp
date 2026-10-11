@@ -154,7 +154,7 @@ void PsychicDominatorClass::Print_Refusal(void)
 /// <summary>
 /// Fires the blast (FUN_0053B080): a shockwave and DominatorSecondAnim over the target,
 /// DominatorDamage through DominatorWarhead, and every unit within DominatorCaptureRange cells
-/// that can be dominated joins the firing house. A computer house sends its new units hunting.
+/// that can be dominated joins the firing house. That includes the firing house's own units, which only gain the mark and the ring. A computer house sends the units it dominated hunting.
 /// </summary>
 void PsychicDominatorClass::Fire(void)
 {
@@ -175,7 +175,7 @@ void PsychicDominatorClass::Fire(void)
 		for (ObjectClass * object = Map[where].Cell_Occupier(); object != NULL; object = object->Next) {
 			if (!object->Is_Techno()) continue;
 			TechnoClass * techno = (TechnoClass *)object;
-			if (!Can_Be_Dominated(techno) || techno->House == Owner) continue;
+			if (!Can_Be_Dominated(techno)) continue;
 			captured.Add(techno);
 		}
 	}
