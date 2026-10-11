@@ -3788,7 +3788,7 @@ void TeamClass::TMission_MOVE_TO_OWN_BUILDING(TeamMissionClass * mission, bool f
 			if (bptr != NULL) {
 				MZoneType mzone = unit->TClass->MZone;
 				Cell cell = bptr->PositionCoord.As_Cell();
-				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(cell, mzone, unit->IsOnBridge), mzone, false, Point2D(3,3));
+				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(unit->Center_Coord().As_Cell(), mzone, unit->IsOnBridge), mzone, false, Point2D(1,1));
 				Assign_Mission_Target(newcell != CELL_NONE ? &Map[newcell] : NULL);
 			}
 		}

@@ -1,0 +1,14 @@
+; Move to own building (script line 58) sends a computer team to a cell beside its own construction
+; yard. Run with -AICountries 1. The TEAMTRACE lines show the line starting and the success line
+; following once the tanks have arrived, and the where lines their cells.
+30 command CenterBase
+1 teamtrace 1
+300 spawn MTNK 70 60
+301 spawn MTNK 71 60
+310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-moveown.ini
+320 team TSTMOVET
+330 where MTNK
+600 where MTNK
+900 where MTNK
+1200 where MTNK
+1300 quit
