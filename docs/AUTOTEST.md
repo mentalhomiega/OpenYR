@@ -66,7 +66,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |
 | `quit` | Ends the process |
 
-Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. `ScreenCapture` and `record` save pictures to
+Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to
 the `Screenshots` folder of the user data directory, numbered in order, so a recording can be joined
 into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 
