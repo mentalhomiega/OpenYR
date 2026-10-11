@@ -246,6 +246,9 @@ class HouseClass : public AbstractClass
 		*/
 		bool IsNavalPlaceable;
 
+		// Set by the autotest to log each structure a computer house starts and where it places it.
+		static bool TraceBuilding;
+
 		/*
 		**	Set once this house has stolen the technology of the first, second or third side.
 		*/

@@ -208,6 +208,7 @@
 
 
 DynamicVectorClass<HouseClass::BuildChoiceClass *> HouseClass::BuildChoice;
+bool HouseClass::TraceBuilding = false;
 
 
 /***********************************************************************************************
@@ -5204,6 +5205,9 @@ int HouseClass::AI_Building(void)
 	}
 
 	BuildStructure = node->Type;
+	if (TraceBuilding) {
+		DebugString("BUILDTRACE frame %d house %s starts %s node %d of %d cell %d,%d\n", Frame, Class->Name(), b->Name(), Base.Nodes.ID(node), Base.Nodes.Count(), node->CellID.X, node->CellID.Y);
+	}
 
 	return(TICKS_PER_SECOND);
 }

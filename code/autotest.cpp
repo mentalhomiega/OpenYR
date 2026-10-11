@@ -99,6 +99,7 @@
 **	schemes					writes the color schemes and the scheme each house draws with
 **	seq <TypeID>			writes an infantry type's art sequences
 **	plan					writes each computer house's base plan
+**	buildtrace <0|1>		logs the structures a computer house starts and places
 **	truecolour <NAME.SHP>	writes whether a PNG replaces that shape, with its sheet size and one pixel
 **	truecolourdir <path>	adds a directory the game searches for files, such as PNG sprites
 **	dump					writes the player's credits, objects and missions to the log
@@ -1901,9 +1902,14 @@ void Run(StepType const & step)
 			}
 		}
 		DebugString("AUTOTEST team %s: %s, %d members, heap %d\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added, type != NULL ? type->Fetch_Heap_ID() : -1);
-	} else if (step.Command == "teamtrace") {
+	} else if (step.Command == "teamtrace" || step.Command == "buildtrace") {
 		// teamtrace <0|1>: logs each team script line a team starts, as TEAMTRACE lines.
-		TeamClass::TraceScripts = std::atoi(step.Argument.c_str()) != 0;
+		// buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
+		if (step.Command == "teamtrace") {
+			TeamClass::TraceScripts = std::atoi(step.Argument.c_str()) != 0;
+		} else {
+			HouseClass::TraceBuilding = std::atoi(step.Argument.c_str()) != 0;
+		}
 	} else if (step.Command == "teams") {
 		for (int index = 0; index < Teams.Count(); index++) {
 			TeamClass * team = Teams[index];
