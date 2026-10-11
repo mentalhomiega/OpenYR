@@ -13894,6 +13894,20 @@ EnterBioReactorSound:
 EnterGrinderSound:
   key: EnterGrinderSound
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: EnterGrinderSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -13901,7 +13915,7 @@ EnterGrinderSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -20783,6 +20797,38 @@ LeaveBioReactorSound:
       default_candidate: none
       declared_in: RulesClass
       member: LeaveBioReactorSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LeaveGrinderSound:
+  key: LeaveGrinderSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: LeaveGrinderSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: LeaveGrinderSound
       source: code/rules.cpp
       guard: null
     level: RulesClass
