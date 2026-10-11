@@ -1392,7 +1392,8 @@ Cell DisplayClass::Calculated_Cell(SourceType dir, Cell const & waypoint, Cell c
 	**	If the cell or waypoint specified as been detected as legal, then set up the map edge
 	**	scanning values accordingly.
 	*/
-	Point2D trypoint = Cell_To_LocalRect_Point(Point2D(trycell.X, trycell.Y));
+	// The edge tests below subtract LocalRect's origin, so the point must be in playfield coordinates.
+	Point2D trypoint = Cell_To_PlayRect_Point(Point2D(trycell.X, trycell.Y));
 	if (trycell != CELL_NONE) {
 		x = trypoint.X - LocalRect.X;
 		x = std::min(x, (-trypoint.X + (LocalRect.X+LocalRect.Width)));
