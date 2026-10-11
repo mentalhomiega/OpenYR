@@ -1,0 +1,41 @@
+; Full airfield: ten Harriers attack the computer base at 51,86. Its anti-air kills most of them, and the survivors come
+; home at the same time to the four docks of the Air Force Command (NumberOfDocks=4). Expected: each survivor lands on a
+; free dock, and when all four docks are taken, the ammunition of each one is restored to 1 while it rests (radio GAAIRC).
+; A Harrier that returns with no free dock would crash in the gamemd logic (FootClass::FindCloserDockBuilding and
+; AircraftClass::EnterIdleMode), but this run had no more survivors than docks, so that case is not checked here.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 60 45
+311 grantunit ORCA 62 45
+312 grantunit ORCA 64 45
+313 grantunit ORCA 58 45
+314 grantunit ORCA 66 45
+315 grantunit ORCA 68 45
+316 grantunit ORCA 56 45
+317 grantunit ORCA 70 45
+318 grantunit ORCA 72 45
+319 grantunit ORCA 54 45
+2500 dump
+2600 attack ORCA
+2650 dump
+2800 dump
+2950 dump
+3100 dump
+3250 dump
+3400 dump
+3550 dump
+3700 dump
+3850 dump
+4000 dump
+4150 dump
+4300 dump
+4450 dump
+4600 dump
+4750 dump
+4900 dump
+
+5001 quit

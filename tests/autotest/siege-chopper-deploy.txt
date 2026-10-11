@@ -1,0 +1,30 @@
+; Siege Chopper deploy: a granted Siege Chopper (SCHP) on open ground deploys in place. Expected from its rules
+; (DeployingAnim=SCHPDEPL, DeployFire=yes): the deploy logs "Deploy: SCHP deploys" and the unit stays on Guard.
+; Not checked here: a deploy from flight, which lands first (DeployToLand=yes), and its cannon firing at a target.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit SCHP 62 46
+400 dump
+420 select SCHP
+430 command DeployObject
+500 dump
+600 dump
+700 dump
+800 dump
+900 dump
+1000 dump
+1100 dump
+1200 dump
+1300 dump
+1400 dump
+1500 dump
+1600 dump
+1700 dump
+1800 dump
+1900 dump
+2000 dump
+2001 quit
