@@ -19,7 +19,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture` |
 | `chrono <frames>` | Starts the chronoshift screen effect for that many frames per swirl, as the Chrono Screen Effect trigger action does |
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
-| `produce <TypeID>` | Starts building that type, as a click on its cameo does |
+| `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
 | `move <TypeID> <x> <y>` | Orders the player-controlled objects of that type (see `select`) to the cell |
