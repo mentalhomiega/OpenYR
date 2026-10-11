@@ -399,8 +399,8 @@ for (const [relative, keyRoute, state, badge] of [
 	['reference/all/index.html', 'armor', 'partial', partlyNoEffectBadge],
 	['reference/art/animtype/index.html', 'armor', 'none', noEffectBadge],
 	['reference/rules/objecttype/index.html', 'armor', 'used', ''],
-	['reference/rules/housetype/index.html', 'armor', 'used', ''],
-	['reference/rules/difficulty-settings/index.html', 'armor', 'used', ''],
+	['reference/rules/housetype/index.html', 'armor', 'none', noEffectBadge],
+	['reference/rules/difficulty-settings/index.html', 'armor', 'none', noEffectBadge],
 ]) {
 	const row = renderedReferenceRow(relative, keyRoute);
 	if (!row.includes(`data-effect-value="${state}"`)) {
