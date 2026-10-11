@@ -3922,6 +3922,9 @@ static int ChronoPictureTaken = 0;
 // True when the effect locked the input and must unlock it when it ends.
 static bool ChronoLockedInput = false;
 
+// The looping sound of the swirl that is playing: the first swirl's, then the second's.
+static AudioHandle ChronoSound;
+
 
 /// <summary>
 /// Starts the chronoshift screen effect, with the fades lasting the number of frames given.
@@ -3939,6 +3942,9 @@ void Start_Chrono_Screen_Effect(int frames)
 	ChronoEffectStart = Frame;
 	ChronoEffectFrames = frames;
 	ChronoPictureTaken = 0;
+	if (Rule->LetsDoTheTimeWarpOutAgain != VOC_NONE) {
+		Sound_Effect(Rule->LetsDoTheTimeWarpOutAgain, 1.0f, SOUND_PAN_CENTER, &ChronoSound);
+	}
 }
 
 
@@ -3950,6 +3956,8 @@ static void End_Chrono_Screen_Effect(void)
 	ChronoEffectStart = -1;
 	ChronoPicture.reset();
 	ChronoPictureTaken = 0;
+	ChronoSound.End_Looping();
+	ChronoSound.Clear();
 	if (ChronoLockedInput) {
 		ChronoLockedInput = false;
 		Unlock_Scenario_Input();
@@ -4067,6 +4075,10 @@ void Tactical::Draw_Chrono_Screen_Effect(void)
 		if (ChronoPictureTaken != 2) {
 			Take_Chrono_Picture();
 			ChronoPictureTaken = 2;
+			ChronoSound.End_Looping();
+			if (Rule->LetsDoTheTimeWarpInAgain != VOC_NONE) {
+				Sound_Effect(Rule->LetsDoTheTimeWarpInAgain, 1.0f, SOUND_PAN_CENTER, &ChronoSound);
+			}
 		}
 		Draw_Chrono_Swirl(*LogicalSurface, *ChronoPicture, fade - (t - fade - CHRONO_EFFECT_HOLD), fade);
 	}
