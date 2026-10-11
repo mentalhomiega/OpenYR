@@ -2899,7 +2899,7 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 	shapenum = Shape_Facing_Index(PrimaryFacing.Current(), Class->Facings);
 
-	if (Locomotion->Is_Moving()) {
+	if (Locomotion->Is_Moving() || (Class->IdleRate != 0 && FiringSyncDelay < 0)) {
 		shapenum = Class->StartWalkFrame + shapenum * Class->WalkFrames + TotalFramesWalked % Class->WalkFrames;
 	} else {
 		if (FiringSyncDelay >= 0) {
