@@ -24,6 +24,14 @@ class SpotLightClass
 		~SpotLightClass(void);
 
 		void Set_Radius(int radius) {Radius=radius;}
+		void Set_Disabled_Channels(int flags) {DisableFlags=flags;}
+
+		// The channels a light can leave out, as bit flags.
+		enum {
+			DISABLE_RED = 2,
+			DISABLE_GREEN = 4,
+			DISABLE_BLUE = 8,
+		};
 		void AI(void);
 		void Draw_It(void);
 
@@ -59,6 +67,12 @@ class SpotLightClass
 		 * small one of the same age.
 		 */
 		int Size;
+
+		/*
+		 * These are the color channels this light leaves unbrightened, as DISABLE_RED, DISABLE_GREEN
+		 * and DISABLE_BLUE flags.
+		 */
+		int DisableFlags;
 };
 
 

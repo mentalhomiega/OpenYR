@@ -6692,6 +6692,57 @@ CD:
       source: code/campaign.cpp
       guard: null
     level: CampaignClass
+CLDisableBlue:
+  key: CLDisableBlue
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsCLDisableBlue
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+CLDisableGreen:
+  key: CLDisableGreen
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsCLDisableGreen
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+CLDisableRed:
+  key: CLDisableRed
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsCLDisableRed
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 CMislEliteWarhead:
   key: CMislEliteWarhead
   scopes:

@@ -58,7 +58,8 @@ void __cdecl Brighten_Color_655(unsigned char *mul_buffer, unsigned short *color
 SpotLightClass::SpotLightClass(Coord pos, int size) :
 	Radius(0),
 	Position(pos),
-	Size(size)
+	Size(size),
+	DisableFlags(0)
 
 {
 	SpotLights.Add(this);
@@ -230,7 +231,7 @@ void SpotLightClass::Draw_It(void)
 				unsigned char *sptr_row = sptr;
 				unsigned short *dptr_row = dptr;
 
-				if (SpotLightColorTable != NULL) {
+				if (SpotLightColorTable != NULL && DisableFlags == 0) {
 					switch (SpotLightColorMode) {
 
 						case COLORMODE_555:
@@ -260,9 +261,12 @@ void SpotLightClass::Draw_It(void)
 							if (spixel != 0) {
 								unsigned short dpixel = *dptr;
 								RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(dpixel);
-								int rr = rgb.Get_Red() + ((rgb.Get_Red() * spixel) >> 8);
-								int gg = rgb.Get_Green() + ((rgb.Get_Green() * spixel) >> 8);
-								int bb = rgb.Get_Blue() + ((rgb.Get_Blue() * spixel) >> 8);
+								int rr = rgb.Get_Red();
+								int gg = rgb.Get_Green();
+								int bb = rgb.Get_Blue();
+								if (!(DisableFlags & DISABLE_RED)) rr += (rr * spixel) >> 8;
+								if (!(DisableFlags & DISABLE_GREEN)) gg += (gg * spixel) >> 8;
+								if (!(DisableFlags & DISABLE_BLUE)) bb += (bb * spixel) >> 8;
 								*dptr = DSurface::Build_Hicolor_Pixel(std::min(255, rr), std::min(255, gg), std::min(255, bb));
 							}
 							dptr++;

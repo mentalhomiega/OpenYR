@@ -321,6 +321,11 @@ class WarheadTypeClass : public AbstractTypeClass
 		 */
 		bool IsBright;
 
+		// The color channels the flash of this warhead's bright shots leaves out, which tints the light.
+		bool IsCLDisableRed;
+		bool IsCLDisableGreen;
+		bool IsCLDisableBlue;
+
 		/*
 		 * If this warhead detonates as an electromagnetic pulse rather than as a blast, then
 		 * this flag will be true. Its impact animation is also picked at random rather than
