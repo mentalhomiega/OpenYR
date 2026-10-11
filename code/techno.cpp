@@ -292,6 +292,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsLetGoByLocomotor(false),
 	LetGoBy(NULL),
 	LetGoByHouse(NULL),
+	ThreatPosed(0),
 	AirstrikeReadyFrame(0),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
@@ -1952,15 +1953,15 @@ bool TechnoClass::Limbo(void)
 
 	if (!IsInLimbo) {
 		House->Tracking_Active_Remove(this, false);
-		int risk = Risk();
 		HousesType owner = Owner();
-		if (risk > 0) {
+		if (ThreatPosed > 0) {
 			FootClass * foot = dynamic_cast<FootClass *>(this);
 			if (foot) {
-				Map[foot->LastAdjacencyCell].Adjust_Threat(owner, -risk);
+				Map[foot->LastAdjacencyCell].Adjust_Threat(owner, -ThreatPosed);
 			} else {
-				Get_Cell_Ptr()->Adjust_Threat(owner, -risk);
+				Get_Cell_Ptr()->Adjust_Threat(owner, -ThreatPosed);
 			}
+			ThreatPosed = 0;
 		}
 	}
 	return(BASECLASS::Limbo());
@@ -2029,9 +2030,9 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 			Forget_Human_Discovery();
 		}
 
-		int risk = Risk();
 		HousesType owner = Owner();
-		Get_Cell_Ptr()->Adjust_Threat(owner, risk);
+		ThreatPosed = Risk();
+		Get_Cell_Ptr()->Adjust_Threat(owner, ThreatPosed);
 
 		RadarPos = Map.Coord_To_Radar_Pixel(PositionCoord, true);
 
@@ -5893,8 +5894,9 @@ bool TechnoClass::Captured(HouseClass * newowner)
 
 		if (!IsInLimbo) {
 			CellClass * cptr = !Is_Foot() ? &Map[Get_Coord()] : &Map[((FootClass *)this)->LastAdjacencyCell];
-			cptr->Adjust_Threat(House->HeapID, -Risk());
-			cptr->Adjust_Threat(newowner->HeapID, Risk());
+			cptr->Adjust_Threat(House->HeapID, -ThreatPosed);
+			ThreatPosed = Risk();
+			cptr->Adjust_Threat(newowner->HeapID, ThreatPosed);
 		}
 
 		/*
@@ -6006,8 +6008,9 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner)
 
 	if (!IsInLimbo) {
 		CellClass * cptr = !Is_Foot() ? &Map[Get_Coord()] : &Map[((FootClass *)this)->LastAdjacencyCell];
-		cptr->Adjust_Threat(oldowner->HeapID, -Risk());
-		cptr->Adjust_Threat(newowner->HeapID, Risk());
+		cptr->Adjust_Threat(oldowner->HeapID, -ThreatPosed);
+		ThreatPosed = Risk();
+		cptr->Adjust_Threat(newowner->HeapID, ThreatPosed);
 	}
 
 	House = newowner;
@@ -8843,10 +8846,40 @@ int TechnoClass::Risk(void) const
 {
 	TechnoTypeClass const *ttptr = TClass;
 	if (ttptr != NULL) {
+		/*
+		**	A structure with soldiers inside poses ThreatPerOccupant for each of them; a bunker
+		**	with a vehicle in it poses that vehicle's threat (TechnoClass::GetThreatValue, 0x708B40).
+		*/
+		if (RTTI == RTTI_BUILDING) {
+			int const occupants = static_cast<BuildingClass const *>(this)->Occupants.Count();
+			if (occupants > 0) {
+				return(occupants * Rule->ThreatPerOccupant);
+			}
+			if (BunkerLinkedItem != NULL) {
+				return(BunkerLinkedItem->TClass->Risk);
+			}
+		}
 		return(ttptr->Risk);
 	}
 
 	return(0);
+}
+
+
+/// <summary>
+/// Moves the threat this structure has added to its cell to what it poses now (TechnoClass::UpdateThreatInCell,
+/// 0x70F6E0). It is called when soldiers enter or leave a garrisoned structure.
+/// </summary>
+void TechnoClass::Update_Threat_In_Cell(void)
+{
+	if (IsInLimbo) {
+		return;
+	}
+	CellClass * cptr = Get_Cell_Ptr();
+	HousesType const owner = Owner();
+	cptr->Adjust_Threat(owner, -ThreatPosed);
+	ThreatPosed = Risk();
+	cptr->Adjust_Threat(owner, ThreatPosed);
 }
 
 
@@ -9974,6 +10007,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLetGoByLocomotor);
 	stream.Serialize(LetGoBy);
 	stream.Serialize(LetGoByHouse);
+	stream.Serialize(ThreatPosed);
 	stream.Serialize(AirstrikeReadyFrame);
 	stream.Serialize(AirstrikePlanes);
 	stream.Serialize(DrainTarget);

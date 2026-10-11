@@ -176,6 +176,7 @@ void TemporalClass::Update(void)
 			occupant->Record_The_Kill(nullptr);
 			occupant->Delete_Me();
 		}
+		building->Update_Threat_In_Cell();
 	}
 	// The target's slaves go to the warp's owner before the kill, as gamemd's TemporalClass::Update does.
 	if (target->SlaveManager) {

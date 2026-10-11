@@ -191,6 +191,10 @@ class TechnoClass :	public RadioClass,
 		TechnoClass * LetGoBy;
 		HouseClass * LetGoByHouse;
 		void Crush_On_Landing(void);
+
+		// The threat this object has added to the cell it stands in, so it can be taken back exactly.
+		int ThreatPosed;
+		void Update_Threat_In_Cell(void);
 		void Fall_After_Release(void);
 		void Release_Locomotor(bool clear_target);
 		void Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor);
