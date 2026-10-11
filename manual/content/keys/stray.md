@@ -14,7 +14,7 @@ The team applies this distance in several tests:
 
 - A newly recruited member farther than this from the team's center is sent to the center. Until it comes within this distance, it holds up the team's arrival at a move target.
 - While the team regroups, any member farther than this from the center is sent back to it.
-- While the team moves, a member farther than this from the move target is ordered toward it. An aircraft is allowed three times the distance.
+- While the team moves, a member farther than this from the move target is ordered toward it. A member in the air is allowed twice the distance.
 - One team mission sends a member back to the center only once it is more than twice this distance away.
 
 [Team execution](/systems/ai-team-execution/#keeping-the-members-together) sets out each test and the exceptions to it.

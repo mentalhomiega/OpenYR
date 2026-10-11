@@ -1919,20 +1919,6 @@ void TeamClass::Coordinate_Move(void)
 
 	if (Target != NULL) {
 
-		if (Class->TransportsReturnOnUnload) {
-			FootClass * obj = unit;
-			while (obj != NULL) {
-				if (!obj) {
-					break;
-				}
-				if (obj->TClass->Max_Passengers() > 0 && obj->ArchiveTarget == NULL) {
-					obj->ArchiveTarget = &Map[obj->Get_Coord()];
-				}
-				obj = obj->Member;
-			}
-
-		}
-
 		if (!Lagging_Units()) {
 
 			while (unit != NULL) {
@@ -1953,8 +1939,8 @@ void TeamClass::Coordinate_Move(void)
 
 				if (_Is_It_Playing(unit) && unit->Mission != MISSION_UNLOAD && unit->MissionQueue != MISSION_UNLOAD) {
 					int stray = Stray_Distance();
-					if (unit->RTTI == RTTI_AIRCRAFT) {
-						stray *= 3;
+					if (unit->In_Air()) {
+						stray *= 2;
 					}
 
 					found = true;

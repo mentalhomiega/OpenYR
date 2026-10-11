@@ -187,7 +187,7 @@ The coordinator reports the team gathered on a turn when it sends no member to t
 
 The move coordinator walks the team toward its current target, or toward its mission target when the current target is empty. Each member in formation or aircraft that is not unloading is ordered toward the target under **any of:**
 
-- it is farther from the target than `Stray`, or three times `Stray` for an aircraft;
+- it is farther from the target than `Stray`, or twice `Stray` while it is in the air;
 - **All of:**
   - it is below ground level;
   - the next line of the Script is not a [Move to waypoint](/mapping/missions/tmission-move/) line.
@@ -219,8 +219,6 @@ The team has arrived on a turn that meets **all of:**
 Arrival raises the [advance flag](#the-script-cursor) only for a team that is under way. A stopped team walking to its regroup point therefore never advances its Script. A team whose members are all unloading, or all still out of formation, never arrives.
 
 [`Aggressive=yes`](/keys/aggressive/) exempts a member that already holds a target. If that member would be ordered toward the team's target, it is left alone instead and does not count against arrival. The rest of the team can then arrive and move on without it.
-
-[`TransportsReturnOnUnload=yes`](/keys/transportsreturnonunload/) makes this coordinator record a return point for each member that can carry passengers and has none yet. The point is the cell the member stands in on the first move toward a target after the Script last advanced, and it does not follow the member afterward. Each advance clears the record. The [key page](/keys/transportsreturnonunload/) explains what the transport receives.
 
 ## The team's two targets
 
