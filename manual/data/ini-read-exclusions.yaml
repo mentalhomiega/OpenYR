@@ -15,6 +15,13 @@ reader_exclusions:
     reason: The overlay pack fields are compressed scenario payloads, not authored scalar settings.
 
 site_exclusions:
+  - path: code/loadscreen.cpp
+    function: Campaign_Is_Allied
+    keys: [Player]
+    classification: duplicate
+    canonical_key: Player
+    reason: The loading screen re-reads the scenario's Basic Player house to pick the 640x480 picture palette; the scenario reader owns the key.
+
   - path: code/preview.cpp
     function: MapPreviewClass::Read_INI
     keys: [Size]
