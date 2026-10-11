@@ -1,6 +1,6 @@
 ---
 title: Mod check
-summary: A host refuses a player who joins a LAN game with different mods from its own, and names the mods that differ.
+summary: A host refuses a player who joins a LAN game with different mods from its own, and names the mods that differ unless the lists are too long to send.
 category: multiplayer-networking
 keys: []
 related:
@@ -10,7 +10,7 @@ related:
     id: network-packet-validation
 ---
 
-A player who asks to join a LAN game sends the mods in force on his machine, in the order the game reads them. The host compares them with its own and refuses a player whose mods differ. The refused player sees a message naming the host's mods and which of them differ, and the host sees the same comparison in the lobby's message list, headed by the player's name.
+A player who asks to join a LAN game sends the mods in force on his machine, in the order the game reads them. The host compares them with its own and refuses a player whose mods differ. The refused player sees a message naming the host's mods and which of them differ, and the host sees the same comparison in the lobby's message list, headed by the player's name. When a list is too long to send, the message says less about the difference; see Long lists below.
 
 ## What is compared
 
@@ -22,7 +22,7 @@ Each mod is sent as its folder's name with a hash of its [`mod.ini`](/formats/mo
 
 Carriage returns are left out of the hash, so a file with Windows or Unix line endings is the same mod. A mod's other files, such as sprites, sounds and maps, are not hashed. Two players with a mod of the same name but different sprites are not told apart, and neither are two copies of one mod whose overlays match.
 
-The message tells apart the mods a player lacks, the mods he has that the host lacks, the mods whose files differ, and mods that are the same but in a different order.
+When both lists are sent in full, the message tells apart the mods a player lacks, the mods he has that the host lacks, the mods whose files differ, and mods that are the same but in a different order.
 
 ## Players with no mods
 
@@ -30,7 +30,7 @@ A player with no mods sends an empty list, which is also what a build without th
 
 ## Long lists
 
-The list shares a packet field of 384 characters with its terminator. A list whose text does not fit is sent as the number of mods and one hash of the whole list. Two such lists are still refused when they differ, but the message gives only the number of mods and cannot name the ones that differ.
+The list shares a packet field of 384 characters with its terminator. A list whose text does not fit is sent as the number of mods and one hash of the whole list. A list sent that way is still refused when it differs from the other list. The message then says that the lists differ and gives the number of mods in each such list. It does not say whether the names, the order or the files differ, and it names no mod from such a list. The mods of a list short enough to send in full are still named.
 
 ## Games the check does not cover
 

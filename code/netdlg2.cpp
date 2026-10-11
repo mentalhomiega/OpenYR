@@ -1856,7 +1856,7 @@ static void Get_Join_Responses(void)
 					ModSync::Signature const mine = Local_Mod_Signature();
 					ModSync::Signature const theirs = Packet_Mod_Signature(Session.GPacket.Reject.Mods);
 					std::string const text = "The host cannot take you in. " + ModSync::Describe_Difference(ModSync::Compare(mine, theirs), mine, theirs, "The host");
-					std::snprintf(modtext, sizeof(modtext), "%s", text.c_str());
+					UTF8::Copy(modtext, sizeof(modtext), text.c_str());
 					item = modtext;
 				}
 				if (item) {

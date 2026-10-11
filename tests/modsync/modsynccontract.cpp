@@ -204,6 +204,15 @@ int main(void)
 		ModSync::Difference opaque = Differ(Sign(fewer), read);
 		Check(opaque.IsOpaque && !opaque.Same(), "a digest differs from another list and cannot name the mods");
 		Check_Text(ModSync::List_Names(read), "12 mods", "a digest is listed by its count");
+		ModSync::Signature fewer_digest = read;
+		fewer_digest.DigestCount = 11;
+		Check_Text(ModSync::Describe_Difference(Differ(fewer_digest, read), fewer_digest, read, "The host"), "The host uses mods: 12 mods. You use: 11 mods. The mod lists differ in names, order, or files.", "a digest that differs says the lists differ and names no mods");
+
+		ModSync::Signature same_count = read;
+		same_count.DigestHash ^= 1u;
+		ModSync::Difference const equal_counts = Differ(read, same_count);
+		Check(equal_counts.IsOpaque && !equal_counts.Same(), "digests of equal counts with different hashes differ");
+		Check_Text(ModSync::Describe_Difference(equal_counts, read, same_count, "Bob"), "Bob uses mods: 12 mods. You use: 12 mods. The mod lists differ in names, order, or files.", "a digest of equal count still says the lists differ");
 	}
 
 	/*

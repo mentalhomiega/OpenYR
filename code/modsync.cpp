@@ -335,6 +335,10 @@ namespace ModSync
 	{
 		std::string text = who + " uses mods: " + List_Names(there) + ". You use: " + List_Names(here) + ".";
 
+		// A digest carries no names, so the message cannot say which mods differ.
+		if (difference.IsOpaque) {
+			text += " The mod lists differ in names, order, or files.";
+		}
 		if (!difference.OnlyThere.empty()) {
 			text += " You lack: ";
 			Append_Names(text, difference.OnlyThere);
