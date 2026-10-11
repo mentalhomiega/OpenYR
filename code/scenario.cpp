@@ -2747,10 +2747,15 @@ static void Append_Open_Start_Positions(DynamicVectorClass<Cell> & waypts, int &
 		Cell trycell = Cell(Map.MapRect.X + Random_Pick(10, Map.MapRect.Width - 10), Map.MapRect.Y + 10 + Random_Pick(0, Map.MapRect.Height - 10));
 
 		trycell = Map.Nearby_Location(trycell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(8, 8));
-		if (trycell != CELL_NONE) {
-			waypts.Add(trycell);
+
+		// Nearby_Location tests only the anchor cell against the playable area, so the open 8x8
+		// block is tested here too. The start is cell 3 along each axis of the block, so a deploy
+		// foundation of up to six cells, laid one cell north-west of the start, stays inside it.
+		if (trycell != CELL_NONE && Map.In_Local_Radar(Rect(trycell.X, trycell.Y, 8, 8))) {
+			Cell const start(trycell.X + 3, trycell.Y + 3);
+			waypts.Add(start);
 			usable++;
-			DebugString("Random multiplayer start waypoint added at cell %d,%d\n", trycell.X, trycell.Y);
+			DebugString("Random multiplayer start waypoint added at cell %d,%d\n", start.X, start.Y);
 		}
 	}
 }
