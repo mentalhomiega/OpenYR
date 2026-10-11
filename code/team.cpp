@@ -829,6 +829,11 @@ void TeamClass::Regroup(void)
 	if (Total > 0) {
 		Calc_Center(Zone, ClosestMember);
 
+		// A team whose members all ride in transports has no place on the map to regroup from.
+		if (Zone == NULL) {
+			return;
+		}
+
 		/*
 		**	When a team is badly damaged and needs to regroup it should
 		**	pick a friendly building to go and regroup at.  Its first preference
