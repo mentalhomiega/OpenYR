@@ -816,4 +816,8 @@ class SessionClass
 
 extern SessionClass Session;
 
+// Mounts every map pack in the searched folders, so a scenario inside one can be read before the
+// skirmish list is built.
+void Mount_Map_Packs(void);
+
 /*************************** end of session.h ******************************/
