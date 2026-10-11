@@ -9385,6 +9385,20 @@ CreateSound:
 CreateUnitSound:
   key: CreateUnitSound
   scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: CreateUnitSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -9392,7 +9406,7 @@ CreateUnitSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass
