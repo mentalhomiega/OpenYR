@@ -8354,6 +8354,24 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	int i;
 	DynamicVectorClass<Cell> sorted_cells;
 
+	// A naval structure goes on open water near the base, no further from the first construction yard
+	// than AINavalYardAdjacency (0x5060B0).
+	if (buildingtype->IsNaval) {
+		BuildingTypeClass const * yard = Get_First_Acted(Rule->Shipyard);
+		if (yard == NULL) {
+			yard = buildingtype;
+		}
+		Point2D const size(yard->Width() + 2, yard->Height(false) + 2);
+		Cell const site = Map.Nearby_Location(Center.As_Cell(), SPEED_FLOAT, -1, MZONE_NORMAL, false, size, false, false, false, true, Cell(0, 0));
+		if (site == Cell(0, 0)) {
+			return(Cell(0, 0));
+		}
+		if (ConYards.Count() > 0 && (ConYards[0]->Center_Coord() - Coord(site)).Length() > Rule->AINavalYardAdjacency * CELL_LEPTON_W) {
+			return(Cell(0, 0));
+		}
+		return(site);
+	}
+
 	if (Base.PlacementCenter == Cell(0, 0)) {
 		return(Center.As_Cell());
 	}

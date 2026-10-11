@@ -1409,6 +1409,7 @@ class RulesClass
 		TypeList<BuildingTypeClass const *> BuildConst;
 		TypeList<BuildingTypeClass const *> BuildPower;
 		TypeList<BuildingTypeClass const *> BuildRefinery;
+		TypeList<BuildingTypeClass const *> Shipyard;
 		TypeList<BuildingTypeClass const *> BuildBarracks;
 		TypeList<BuildingTypeClass const *> BuildTech;
 		TypeList<BuildingTypeClass const *> BuildWeapons;
@@ -2183,6 +2184,9 @@ class RulesClass
 		 * buildings of its base when it lays out base nodes.
 		 */
 		int AIBaseSpacing;
+
+		// How far, in cells, from its construction yard the computer may place a naval yard.
+		int AINavalYardAdjacency;
 
 		/*
 		**	The silver and wood crates in solo play will have these powerups.

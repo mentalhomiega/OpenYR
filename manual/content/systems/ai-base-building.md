@@ -19,6 +19,7 @@ keys:
   - AIBaseDefensesWithWalls
   - AIBaseSpacing
   - AIBuildsWalls
+  - AINavalYardAdjacency
   - AIBuildThis
   - AIUseTurbineUpgradeProbability
   - AirstripLimit
@@ -78,6 +79,7 @@ keys:
   - RefineryLimit
   - RefineryRatio
   - RegularPowerPlant
+  - Shipyard
   - TechLevel
   - TeslaLimit
   - TeslaRatio
@@ -234,6 +236,8 @@ An upgrade node that already has a cell keeps it only while the structure on tha
 Every structure placed on the map, by any house, reserves its footprint plus [`AIBaseSpacing`](/keys/aibasespacing/) cells on every side for its owner. The exception is a structure that sets [`UndeploysInto`](/keys/undeploysinto/) and is not a construction yard, which reserves nothing. The owner's **base rectangle** grows to hold that reserved area.
 
 The search starts from the edge of the reserved area: cells with at least one, but not all eight, reserved neighbors. It tries those edge cells in order of preference. An ordinary structure prefers cells near the **base center**. A base defense prefers cells that existing defenses cover least, toward the quadrant chosen for it in [Base defenses](#base-defenses).
+
+A naval structure skips this search. The house looks for open water near its base center that fits the foundation of the first [`Shipyard`](/keys/shipyard/) type it may own, grown by one cell on every side. The site is dropped when it lies farther than [`AINavalYardAdjacency`](/keys/ainavalyardadjacency/) cells from the house's first construction yard. A house that finds no site abandons the structure and plans no further naval structures.
 
 The base center is a cell set by one of three events:
 
