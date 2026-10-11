@@ -1,0 +1,6 @@
+; Pause Game (action 110) holds the game for the number of seconds in its field. The step at frame 31
+; runs about three seconds after the step at frame 30 in the log's time stamps, and the frame
+; counter does not move in between.
+30 trigaction 110 3 0
+31 log after the pause
+40 quit

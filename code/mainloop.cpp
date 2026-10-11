@@ -260,6 +260,19 @@ bool Main_Loop(void)
 	Check_For_Focus_Loss();
 
 	/*
+	**	A trigger can freeze the game for a while. The view is kept drawn and the messages
+	**	pumped, but nothing in the scenario moves on.
+	*/
+	if (Is_Game_Held()) {
+		Call_Back();
+		if (GameInFocus) {
+			Map.Render();
+		}
+		Sleep(10);
+		return(!GameActive);
+	}
+
+	/*
 	**	Sync-bug trapping code
 	*/
 	if (Frame >= Session.TrapFrame) {
