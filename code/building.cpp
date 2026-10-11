@@ -6479,16 +6479,15 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					WeaponTypeClass const * weap = SuperWeaponTypes[LastSuperWeaponIndex]->Weapon;
 					BulletTypeClass const * bullet_type = weap->Bullet;
 					WarheadTypeClass const * warhead = weap->WarheadPtr;
-					MPHType max_speed = weap->MaxSpeed;
 					LEPTON range = weap->ProjectileRange;
-					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, 200, warhead, max_speed, range, true);
+					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, range, true);
 					if (bullet) {
 						bullet->Limbo();
 						Coord launch = Move_Coord(Center_Coord(), DIR_N, 5 * CELL_LEPTON / 8);
 						/*
 						 * The nuke takes off straight up (pitch DIR_N).
 						 */
-						if (!bullet->Unlimbo(launch, TVelocity3D<double>(DirType(DIR_N), DirType(DIR_N), 100))) {
+						if (!bullet->Unlimbo(launch, TVelocity3D<double>(DirType(DIR_N), DirType(DIR_N), 10))) {
 							delete bullet;
 						} else {
 							if (Rule->NukeTakeOff != NULL) {
