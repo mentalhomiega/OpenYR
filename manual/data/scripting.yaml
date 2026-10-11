@@ -633,7 +633,7 @@ trigger_actions:
   kind: trigger-action
   index: 44
   editor_name: Ion Storm start...
-  editor_description: Starts an ion storm sequence to run for the specified number of game frames.
+  editor_description: Calls a lightning storm to rage for the specified number of game frames.
   need: NEED_NUMBER
   parameters:
   - name: Number
@@ -647,7 +647,7 @@ trigger_actions:
   kind: trigger-action
   index: 45
   editor_name: Ion Storm stop...
-  editor_description: End an Ion storm in progress.
+  editor_description: Ends the lightning storm that is raging.
   need: NEED_NONE
   parameters: []
   ini_example:
@@ -3423,7 +3423,7 @@ team_missions:
   kind: team-mission
   index: 32
   editor_name: Ion storm start in...
-  editor_description: Causes an ion storm to begin at the specified time
+  editor_description: Calls a lightning storm for the specified number of frames
   need: NEED_NUMBER
   parameters:
   - name: Number
@@ -3433,7 +3433,7 @@ team_missions:
   kind: team-mission
   index: 33
   editor_name: Ion storn end
-  editor_description: Causes an ion storm to end
+  editor_description: Ends the lightning storm that is raging
   need: NEED_NONE
   parameters: []
   status: generated

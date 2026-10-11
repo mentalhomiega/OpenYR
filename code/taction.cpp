@@ -163,8 +163,8 @@ static const struct {
 	{"Play Anim At...", "Plays the specified anim in the specified cell."},
 	{"Do Explosion At...", "Creates an explosion in the specified cell, using the specified warhead."},
 	{"Meteor Impact At...", "Sends a meteor at the specified cell."},
-	{"Ion Storm start...", "Starts an ion storm sequence to run for the specified number of game frames."},
-	{"Ion Storm stop...", "End an Ion storm in progress."},
+	{"Ion Storm start...", "Calls a lightning storm to rage for the specified number of game frames."},
+	{"Ion Storm stop...", "Ends the lightning storm that is raging."},
 	{"Lock input", "Disables user input."},
 	{"Unlock input", "Enables user input."},
 	{"Center Camera at Waypoint...", "Moves the tactical view to a specified waypoint."},
@@ -2217,32 +2217,32 @@ bool TActionClass::TAction_METEOR_IMPACT(HouseClass * , ObjectClass * , TriggerC
 
 
 /// <summary>
-/// Brews up an ion storm over the battlefield.
-/// The storm lasts for the number of seconds the action specifies, and the lightning
-/// holds off for the warning period the rules call for.
+/// Calls a lightning storm over a random cell, as Yuri's Revenge's action 44 does. The storm
+/// lasts the action's number of game frames, after the LightningDeferment warning. No house owns
+/// it, so every house loses its radar while it rages.
 /// </summary>
-/// <returns>bool; Was the storm started? A storm already raging blocks a new one.</returns>
+/// <returns>bool; Was the storm called? A storm already raging blocks a new one.</returns>
 bool TActionClass::TAction_ION_STORM_START(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (IonStormClass::Is_Ion_Storm_Active()) {
+	if (LightningStormClass::Is_Active()) {
 		return(false);
 	}
-	IonStormClass::Ion_Storm_Begin(TICKS_PER_SECOND * Data.Value, TICKS_PER_SECOND * Rule->LightningDeferment);
+	LightningStormClass::Start(Data.Value, Rule->LightningStormDeferment, CELL_NONE, NULL);
 	return(true);
 }
 
 
 /// <summary>
-/// Brings an ion storm to an end.
+/// Ends the lightning storm that is raging.
 /// </summary>
-/// <returns>bool; Was there a storm in progress to stop?</returns>
+/// <returns>bool; Was there a storm raging to end?</returns>
 bool TActionClass::TAction_ION_STORM_STOP(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (!IonStormClass::Is_Ion_Storm_Active()) {
+	if (!LightningStormClass::Is_Active()) {
 		return(false);
 	}
 
-	IonStormClass::Ion_Storm_End();
+	LightningStormClass::End();
 	return(true);
 }
 

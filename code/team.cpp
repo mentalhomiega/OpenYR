@@ -73,6 +73,7 @@
 #include "always.h"
 
 #include "team.h"
+#include "lstorm.h"
 
 #include "_map.h"
 #include "_rtti.h"
@@ -3549,28 +3550,26 @@ void TeamClass::TMission_DESTROY_MEMBERS(TeamMissionClass * mission, bool)
 
 
 /// <summary>
-/// Handles the ion storm start team mission.
-/// This routine kicks off an ion storm of the scripted duration, unless one is already under
-/// way.
+/// Handles the ion storm start team mission (0x6EE0A0).
+/// This routine calls a lightning storm over a random cell for the scripted number of frames,
+/// unless one is already raging.
 /// </summary>
 void TeamClass::TMission_ION_STORM_START(TeamMissionClass * mission, bool)
 {
-	if (!IonStormClass::Is_Ion_Storm_Active()) {
-		IonStormClass::Ion_Storm_Begin(mission->Data.Value, TICKS_PER_SECOND * Rule->LightningDeferment);
+	if (!LightningStormClass::Is_Active()) {
+		LightningStormClass::Start(mission->Data.Value, Rule->LightningStormDeferment, CELL_NONE, NULL);
 	}
 	IsNextMission = true;
 }
 
 
 /// <summary>
-/// Handles the ion storm end team mission.
-/// This routine shuts down the ion storm if one happens to be raging.
+/// Handles the ion storm end team mission (0x6EE0E0).
+/// This routine ends the lightning storm if one is raging.
 /// </summary>
 void TeamClass::TMission_ION_STORM_END(TeamMissionClass * mission, bool)
 {
-	if (IonStormClass::Is_Ion_Storm_Active()) {
-		IonStormClass::Ion_Storm_End();
-	}
+	LightningStormClass::End();
 	IsNextMission = true;
 }
 

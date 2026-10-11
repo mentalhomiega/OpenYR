@@ -48,7 +48,11 @@ related:
     id: locomotion
 ---
 
-One storm runs at a time, and it covers the whole map for every house. Every storm comes from scenario scripting. No rules setting, timer, or weather model starts one.
+One storm runs at a time, and it covers the whole map for every house.
+
+:::caution[Nothing starts an ion storm]
+[Ion Storm start...](/mapping/actions/taction-ion-storm-start/) and [Ion storm start in...](/mapping/missions/tmission-ion-storm-start/) call the [lightning storm](/systems/superweapons/#lightning-storm), as Yuri's Revenge does. No script, rules setting, timer, or weather model starts the storm this page describes, so a running game never reaches it. The page records the engine's ion storm code, which [Lightning strike at...](/mapping/actions/taction-ion-lightning-strike/) and the locomotor rules still read.
+:::
 
 ## Locomotors in brief
 
@@ -62,33 +66,15 @@ On this page, "aircraft" means objects of a type listed in `[AircraftTypes]`. A 
 
 ## Starting a storm
 
-### Trigger action
-
-[Ion Storm start...](/mapping/actions/taction-ion-storm-start/) takes a number and starts a storm that lasts that many **seconds**. The action does nothing while a storm is already running.
-
-### Team mission
-
-[Ion storm start in...](/mapping/missions/tmission-ion-storm-start/) takes a number and starts a storm that lasts that many **game frames**. The team skips the mission while a storm is already running.
-
-:::caution[The two scripted durations use different units]
-The trigger action multiplies its number by 15 frames per second. The team mission uses its number as frames. `Ion Storm start...` with `20` gives a storm of 20 seconds, and `Ion storm start in...` with `20` gives a storm of 20 frames.
-:::
-
-A duration of `-1` never expires. Such a storm lasts until [Ion Storm stop...](/mapping/actions/taction-ion-storm-stop/) or [Ion storn end](/mapping/missions/tmission-ion-storm-end/) runs. "Ion storn end" is the engine's spelling of that mission's name.
-
-Only the team mission can give a duration of `-1`, because the trigger action turns `-1` into `-15`. Any other duration of `0` or less ends the storm on the frame it breaks or the next one. Such a storm still has every effect of [the break](#the-storm-breaks), so the airborne aircraft it crashes stay lost.
+The engine starts this storm with a length in game frames and a warning in seconds. No trigger action or team mission supplies them any longer, which is why [the warning](#the-warning) below describes a countdown that never runs.
 
 ### Random maps
 
-[`UseIonStorms=yes`](/keys/useionstorms/) in a random map seed makes the generator load the file `ION.INI`. The generator applies that file's `[General]` section over the loaded rules and takes the six ion lighting values from its `[Lighting]` section. It also adds the file's trigger types and tag types to the generated map. Storms come only from those triggers; the option does not schedule any storm itself.
+[`UseIonStorms=yes`](/keys/useionstorms/) in a random map seed makes the generator load the file `ION.INI`. The generator applies that file's `[General]` section over the loaded rules and takes the six ion lighting values from its `[Lighting]` section. It also adds the file's trigger types and tag types to the generated map. The triggers' storm actions call the lightning storm; the option does not schedule any storm itself.
 
 ## The warning
 
-Both the trigger action and the team mission start a countdown of [`IonStormWarning`](/keys/ionstormwarning/) seconds. The storm breaks when the countdown ends. With `IonStormWarning=0`, there is no countdown and the storm breaks on the frame the action or mission runs.
-
-Each time the remaining time reaches a multiple of 15 seconds, EVA announces the approaching storm and an on-screen message shows for ten seconds. With `IonStormWarning=31`, the announcements come 30 and 15 seconds before the storm. A countdown of 15 seconds or less gives no announcement.
-
-A second start request during the countdown does not restart it. The storm still breaks when the first countdown ends, but it lasts as long as the second request asked.
+The engine counts [`IonStormWarning`](/keys/ionstormwarning/) seconds down before the storm breaks, with an EVA announcement and an on-screen message each time the remaining time reaches a multiple of 15 seconds. A second start request during the countdown does not restart it. The storm still breaks when the first countdown ends, but it lasts as long as the second request asked.
 
 ## The storm breaks
 
@@ -250,7 +236,7 @@ With `AmbientChangeRate=0`, the light level never fades. A storm then tints the 
 
 ## The storm ends
 
-A storm ends when its duration runs out, or when `Ion Storm stop...` or `Ion storn end` runs. Neither of those stops a storm that is still in its warning countdown, so that storm breaks as scheduled. When a storm ends, the engine:
+A storm ends when its duration runs out. When a storm ends, the engine:
 
 1. Restores power to every object with an ion-sensitive locomotor, including those in [limbo](/glossary/#limbo) that the break skipped.
 2. Makes the scenario's ambient level the target of the ambient fade, so the map fades back instead of snapping. That level is `Ambient`, or the level a `Set ambient light...` action stored during the storm.
@@ -258,13 +244,13 @@ A storm ends when its duration runs out, or when `Ion Storm stop...` or `Ion sto
 4. Ends the storm's audio. The storm sound ends, playing its decay if it has one, and the music rises back to its own level over `FadeOut=` seconds. With a storm track, that track stops and the paused track resumes from where it paused. If the music was changed during the storm, for example by a Play music theme action or the player, the track playing then continues instead and the paused track is dropped.
 5. Removes the ion tint from every terrain palette and color scheme, again behind screen static.
 
-Losses are permanent. Crashed aircraft and destroyed jumpjets do not come back. Nothing schedules another storm; it needs another trigger action or team mission.
+Losses are permanent. Crashed aircraft and destroyed jumpjets do not come back. Nothing schedules another storm.
 
 ## Settings the engine ignores
 
 Two settings look like ion storm controls but have no effect:
 
-- [`IonStormDuration`](/keys/ionstormduration/) in `[General]` is not a default storm length. Every storm lasts as long as its trigger action or team mission says.
+- [`IonStormDuration`](/keys/ionstormduration/) in `[General]` is not a default storm length. The engine takes a storm's length from whatever starts it, and nothing starts one.
 - [`IonStorms`](/keys/ionstorms/) in `[SpecialFlags]` does not enable or disable storms. Scripted storms run whether it is set or cleared.
 
 The ion storm crate result starts no storm. [Crates](/systems/crates/#settings-and-results-without-effect) owns that result.

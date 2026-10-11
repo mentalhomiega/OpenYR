@@ -8,6 +8,4 @@ when_omitted:
   value: "20"
 ---
 
-A storm lasts as long as the number given to the [Ion Storm start...](/mapping/actions/taction-ion-storm-start/) trigger action or the [Ion storm start in...](/mapping/missions/tmission-ion-storm-start/) team mission. The two count in different units, which [Starting a storm](/systems/ion-storms/#starting-a-storm) explains.
-
-[`IonStormWarning`](/keys/ionstormwarning/), in the same section, is the storm timing setting the engine does use.
+The [Ion Storm start...](/mapping/actions/taction-ion-storm-start/) trigger action and the [Ion storm start in...](/mapping/missions/tmission-ion-storm-start/) team mission take the length of their storm from their own number, in game frames. They call the [lightning storm](/systems/superweapons/#lightning-storm), whose length is [`LightningStormDuration`](/keys/lightningstormduration/) when a super weapon calls it.
