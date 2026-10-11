@@ -48,6 +48,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "ovrlight.h"
 
 #include "autotest.h"
 #include "bullet.h"
@@ -1586,7 +1587,13 @@ void BulletClass::Detonate(Coord const & coord)
 	const AnimTypeClass * anim = (nullified && Rule->WeaponNullifyAnim != NULL) ? Rule->WeaponNullifyAnim : Combat_Anim(Strength, Warhead, land, PositionCoord);
 
 	if (IsBright) {
-		Combat_Lighting(blast_coord, Strength, Warhead, true);
+		int disabled = 0;
+		if (Warhead != NULL) {
+			if (Warhead->IsCLDisableRed) disabled |= SpotLightClass::DISABLE_RED;
+			if (Warhead->IsCLDisableGreen) disabled |= SpotLightClass::DISABLE_GREEN;
+			if (Warhead->IsCLDisableBlue) disabled |= SpotLightClass::DISABLE_BLUE;
+		}
+		Combat_Lighting(blast_coord, Strength, Warhead, true, disabled);
 	}
 
 	if (anim != NULL) {

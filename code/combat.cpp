@@ -643,7 +643,8 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 /// <param name="coord">The coordinate the blast is centered upon.</param>
 /// <param name="damage">The strength of the blast, which governs the size of the flash.</param>
 /// <param name="forced">Should the flash occur even if the warhead is not a bright one?</param>
-void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced)
+/// <param name="disabled_channels">The SpotLightClass channel flags the flash leaves out.</param>
+void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced, int disabled_channels)
 {
 	if (forced || warhead != NULL && warhead->IsBright) {
 		damage *= 64;
@@ -654,7 +655,8 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 			size = 21;
 		}
 
-		new SpotLightClass(coord, size);
+		SpotLightClass * light = new SpotLightClass(coord, size);
+		light->Set_Disabled_Channels(disabled_channels);
 	}
 }
 

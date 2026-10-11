@@ -36,7 +36,7 @@ int Cell_Spread_Count(int radius);
 Cell Cell_Spread_Offset(int index);
 
 AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, LandType land, Coord const & coord);
-void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced=false);
+void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced=false, int disabled_channels=0);
 void Wide_Area_Damage(Coord const & coord, LEPTON radius, int rawdamage, TechnoClass * source, WarheadTypeClass const * warhead);
 
 bool Calculate_Projectile_Pitch(bool high_arc, int speed, int distance, int height, double gravity, DirType & pitch);

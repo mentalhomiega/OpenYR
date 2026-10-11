@@ -142,6 +142,9 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsConventional(false),
 	IsRocker(false),
 	IsBright(false),
+	IsCLDisableRed(false),
+	IsCLDisableGreen(false),
+	IsCLDisableBlue(false),
 	IsEMEffect(false),
 	IsVeinhole(false)
 {
@@ -198,6 +201,9 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsRocker = ini.Get_Bool(Name(), "Rocker", IsRocker);
 		IsFire = ini.Get_Bool(Name(), "Fire", IsFire);
 		IsBright = ini.Get_Bool(Name(), "Bright", IsBright);
+		IsCLDisableRed = ini.Get_Bool(Name(), "CLDisableRed", IsCLDisableRed);
+		IsCLDisableGreen = ini.Get_Bool(Name(), "CLDisableGreen", IsCLDisableGreen);
+		IsCLDisableBlue = ini.Get_Bool(Name(), "CLDisableBlue", IsCLDisableBlue);
 
 		ExplosionSet = TGet_TypeList<AnimTypeClass>(ini, Name(), "AnimList", ExplosionSet);
 
@@ -323,6 +329,9 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsConventional);
 	crc(IsRocker);
 	crc(IsBright);
+	crc(IsCLDisableRed);
+	crc(IsCLDisableGreen);
+	crc(IsCLDisableBlue);
 	crc(Deform);
 	crc(DeformThreshhold);
 	crc(ProneDamage);
@@ -474,6 +483,9 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsConventional);
 	stream.Serialize(IsRocker);
 	stream.Serialize(IsBright);
+	stream.Serialize(IsCLDisableRed);
+	stream.Serialize(IsCLDisableGreen);
+	stream.Serialize(IsCLDisableBlue);
 	stream.Serialize(IsEMEffect);
 	stream.Serialize(IsVeinhole);
 	stream.Serialize(AttachEffect);
