@@ -43,6 +43,7 @@
 class BulletTypeClass;
 class TechnoClass;
 class WeaponTypeClass;
+class AnimClass;
 struct VoxelDataStruct;
 class Matrix3D;
 
@@ -107,6 +108,7 @@ class BulletClass : public ObjectClass
 		void Detonate(Coord const & coord);
 		void Shrapnel(void);
 		void Nuke_Maker(void);
+		bool Start_Nuke_Blast(void);
 
 		/*
 		**	If this bullet is forced to be inaccurate because of some outside means. A tank
@@ -116,6 +118,13 @@ class BulletClass : public ObjectClass
 
 		// The weapon that fired this projectile, if a weapon did.
 		WeaponTypeClass const * Weapon;
+
+		/*
+		 * A nuclear blast builds up under an animation before it goes off. While SpawnNextAnim is
+		 * set the projectile waits for NextAnim to finish, then detonates.
+		 */
+		AnimClass * NextAnim;
+		bool SpawnNextAnim;
 
 		void Set_Payback(TechnoClass * firer) { Payback = firer; }
 
