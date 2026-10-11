@@ -285,6 +285,13 @@ class WarheadTypeClass : public AbstractTypeClass
 		bool IsSparky;
 
 		/*
+		 * If this warhead is a sonic one, then this flag will be true. A foot that it damages
+		 * throws off any parasite eating it, and a weapon carrying it takes the attack cursor over
+		 * an allied foot that has a parasite inside.
+		 */
+		bool IsSonic;
+
+		/*
 		 * If this warhead burns rather than blasts, then this flag will be true. Fire melts
 		 * the ice it lands on, but it cannot bring down a destroyable cliff, so the attack
 		 * cursor will not offer one as a target.

@@ -32314,6 +32314,23 @@ SoloCrateMoney:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Sonic:
+  key: Sonic
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsSonic
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 SortCameoAsBaseDefense:
   key: SortCameoAsBaseDefense
   scopes:

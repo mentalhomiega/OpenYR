@@ -5270,7 +5270,14 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 			terrain_target = Rule->IsTreeTarget || (terrain_weapon != NULL && terrain_weapon->IsTerrainFire);
 		}
 
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
+		// A weapon with a sonic warhead takes the attack cursor over a foot that has a parasite inside, even an allied one (TechnoClass::MouseOverObject, 0x6FFEC0).
+		bool sonic_parasite = false;
+		if (object->Is_Foot() && ((FootClass const *)object)->ParasiteEatingMe != NULL) {
+			WeaponTypeClass const * sonic_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			sonic_parasite = sonic_weapon != NULL && sonic_weapon->WarheadPtr != NULL && sonic_weapon->WarheadPtr->IsSonic;
+		}
+
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
 			if (Is_Weapon_Equipped() ||
 					(RTTI == RTTI_INFANTRY &&

@@ -1632,6 +1632,14 @@ bool FootClass::Unlimbo(Coord const & coord, Dir256 dir)
  *=============================================================================================*/
 ResultType FootClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
+	// A sonic warhead drives out a parasite eating this foot, and the attacker drops its target (FootClass::ReceiveDamage, 0x4D7330).
+	if (warhead != NULL && warhead->IsSonic && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
+		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+		if (source != NULL) {
+			source->Assign_Target(NULL);
+		}
+	}
+
 	ResultType result = BASECLASS::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
 
 	if (result == RESULT_ALREADY_DESTROYED) {
