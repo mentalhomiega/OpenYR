@@ -13,8 +13,8 @@ The Unload mission's argument, the number on its script line, still decides what
 
 The transport drives back to a return point the team keeps for it:
 
-1. A [Load onto Transport](/scripting/missions/14/) line that finishes records the cell its transport stands in. Each time the team moves toward a target, every transport that has no return point yet records the cell it stands in.
+1. A [Load onto Transport](/scripting/missions/14/) line that finishes records the cell its transport stands in.
 2. When the team advances to the next line of its script, it erases the return point of every member except a transport.
 3. On release, the transport is sent to its return point, and the point is cleared.
 
-A transport that never loaded or moved with the team has no return point. With no destination, the Move mission sends it straight to its idle behavior.
+A transport that never finished a Load onto Transport line has no return point. With no destination, the Move mission sends it straight to its idle behavior.
