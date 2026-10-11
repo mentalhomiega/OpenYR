@@ -24692,6 +24692,23 @@ NumPlayers:
       source: code/netshare.cpp
       guard: null
     level: RandomMap
+NumberImpassableRows:
+  key: NumberImpassableRows
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: NumberImpassableRows
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 NumberOfDocks:
   key: NumberOfDocks
   scopes:

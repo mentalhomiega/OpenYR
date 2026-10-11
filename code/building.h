@@ -618,6 +618,7 @@ class BuildingClass : public TechnoClass
 		bool Release_Passenger(void);
 		bool Takes_Walk_Ins(FootClass const * object) const;
 		bool Can_Bunker(FootClass const * object) const;
+		bool Blocks_Cell(CellClass const * cell) const;
 		void Bunker_Up(FootClass * object);
 		void Bunker_Down(void);
 		void Garrison_AI(void);

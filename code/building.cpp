@@ -9143,6 +9143,27 @@ bool BuildingClass::Takes_Walk_Ins(FootClass const * object) const
 
 
 /// <summary>
+/// Tells whether a vehicle that may enter this structure is still stopped by the cell
+/// (UnitClass::CanReach, 0x73F0A0, via 0x458A00). A cell whose structure is another one does not stop it. With
+/// NumberImpassableRows set, only the first columns of the foundation stop it, and a bunker holding a vehicle
+/// stops it everywhere.
+/// </summary>
+bool BuildingClass::Blocks_Cell(CellClass const * cell) const
+{
+	if (cell->Cell_Building() != this) {
+		return(false);
+	}
+	if (Class->NumberImpassableRows == -1) {
+		return(true);
+	}
+	if (Class->IsBunker && BunkerLinkedItem != NULL) {
+		return(true);
+	}
+	return(cell->CellID.X < PositionCell.X + Class->NumberImpassableRows);
+}
+
+
+/// <summary>
 /// Tells whether this Bunker=yes structure can take the vehicle in now (TechnoClass::CanBunker,
 /// 0x70FB50): the vehicle must be its owner's, Bunkerable and armed, and the bunker must be
 /// finished and empty. A vehicle under mind control may not enter, as in Yuri's Revenge.
