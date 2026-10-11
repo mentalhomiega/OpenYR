@@ -39,6 +39,7 @@ class IonStormClass
 		 * The lighting a lightning storm, a psychic dominator blast and a nuclear flash
 		 * each impose on the map (ScenarioClass::UpdateLighting, 0x53C280). The map wears
 		 * the lighting of the first of these that applies: the flash, the storm, the blast.
+		 * A chronoshift screen effect that runs counts as the flash.
 		 */
 		static void Update_Special_Lighting(void);
 		static void Reset_Special_Lighting(void);
