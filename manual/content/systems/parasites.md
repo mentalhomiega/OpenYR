@@ -10,6 +10,7 @@ keys:
   - ReselectIfLimboed
   - Paralyzes
   - Sonic
+  - Culling
 related:
   - type: system
     id: temporal-weapons
@@ -40,7 +41,7 @@ A parasite weapon does not fire at a target it could not get into. It never fire
 
 ## Eating the victim
 
-A vehicle or aircraft victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A soldier instead loses all of its remaining strength at its first bite. That bite ignores the soldier's armor and defenses, so an attack dog kills a soldier at once. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time.
+A vehicle or aircraft victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A soldier instead loses all of its remaining strength at its first bite. That bite ignores the soldier's armor and defenses, so an attack dog kills a soldier at once. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time. A giant squid whose warhead has [`Culling=yes`](/keys/culling/) sinks a weak victim at its bite instead.
 
 ## Holding the victim
 

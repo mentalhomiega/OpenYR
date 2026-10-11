@@ -112,6 +112,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsTemporal(false),
 	IsRadiation(false),
 	IsParasite(false),
+	IsCulling(false),
 	IsIvanBomb(false),
 	IsAffectsAllies(true),
 	IsPsychedelic(false),
@@ -216,6 +217,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
 		IsParasite = ini.Get_Bool(Name(), "Parasite", IsParasite);
+		IsCulling = ini.Get_Bool(Name(), "Culling", IsCulling);
 		IsIvanBomb = ini.Get_Bool(Name(), "IvanBomb", IsIvanBomb);
 		IsAffectsAllies = ini.Get_Bool(Name(), "AffectsAllies", IsAffectsAllies);
 		IsPsychedelic = ini.Get_Bool(Name(), "Psychedelic", IsPsychedelic);
@@ -442,6 +444,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTemporal);
 	stream.Serialize(IsRadiation);
 	stream.Serialize(IsParasite);
+	stream.Serialize(IsCulling);
 	stream.Serialize(IsIvanBomb);
 	stream.Serialize(IsAffectsAllies);
 	stream.Serialize(IsPsychedelic);
