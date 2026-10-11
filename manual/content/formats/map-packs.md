@@ -39,10 +39,10 @@ Each time the game builds the multiplayer map list, it mounts every pack it find
 
 A pack's map shows its player limits after its row text, as in `Four player canyon (2-4)` for the example above. When [`MinPlayers`](/keys/minplayers/#scope-map-packets) and [`MaxPlayers`](/keys/maxplayers/#scope-map-packets) are equal, the row shows one number, as in `Four player canyon (4)`. The row keeps at most 43 bytes, so a long name loses some or all of its limits.
 
-A match started from a spawn file does not build the map list, so it cannot play a map that only a pack holds.
+A match started from a spawn file does not build the map list, so the game mounts every pack before it reads the file's scenario. A spawn file's `Scenario=` can therefore name a map that only a pack holds.
 
 ## Mounting
 
-A pack is mounted the first time the list is built after the game finds it, and it stays mounted until the game exits. Its members are searched after every archive in the [startup list](/formats/mix/#mounting-and-search-order), and a loose file of the same name is read in place of a member.
+A pack is mounted the first time the list is built after the game finds it, or when a spawn file starts a match, and it stays mounted until the game exits. Its members are searched after every archive in the [startup list](/formats/mix/#mounting-and-search-order), and a loose file of the same name is read in place of a member.
 
 In a network game, a map listed by a pack counts as one that shipped with the game. A guest without the same map cannot download it from the host; the guest shows a message that it cannot play the map and leaves the game.

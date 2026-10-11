@@ -898,6 +898,21 @@ static void Mount_Map_Pack(char const * filename)
 }
 
 
+/// <summary>
+/// Mounts every map pack in the searched folders, except the reserved mission pack, so that a
+/// scenario inside one can be read by name. The skirmish list mounts them too, and a pack
+/// already mounted is left as it is.
+/// </summary>
+void Mount_Map_Packs(void)
+{
+	for (std::string const & pack : Search_Files("*.YRO")) {
+		if (stricmp(pack.c_str(), RESERVED_MAP_PACK) != 0) {
+			Mount_Map_Pack(pack.c_str());
+		}
+	}
+}
+
+
 /***************************************************************************
  * SessionClass::Read_Scenario_Descriptions -- reads scen. descriptions    *
  *                                                                         *

@@ -527,6 +527,9 @@ bool Spawner_Prepare(bool & gameloaded)
 
 	SpawnConsumed = true;
 
+	// The scenario may sit in a map pack, which the skirmish list would otherwise mount later.
+	Mount_Map_Packs();
+
 	Spawner_Bind_Autosave();
 	Spawner_Bind_Presentation();
 
