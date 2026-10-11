@@ -603,6 +603,7 @@ RulesClass::RulesClass(void) :
 	DropPodAngle(M_PI/2), /// 90 deg
 	ScrollMultiplier(1),
 	CrewEscape(.5),
+	ThreatPerOccupant(5),
 	ShakeScreen(400),
 	HoverHeight(120),
 	HoverBob(30),
@@ -1607,6 +1608,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		DropPodAngle = std::min(DropPodAngle, DEG_TO_RAD(67.5));
 		DropPodAngle = std::max(DropPodAngle, DEG_TO_RAD(22.5));
 		CrewEscape = ini.Get_Float(GENERAL, "CrewEscape", CrewEscape);
+		ThreatPerOccupant = ini.Get_Int(GENERAL, "ThreatPerOccupant", ThreatPerOccupant);
 		TunnelSpeed = ini.Get_Float(GENERAL, "TunnelSpeed", TunnelSpeed);
 		HoverDampen = ini.Get_Float(GENERAL, "HoverDampen", HoverDampen);
 		HoverBob = ini.Get_Float(GENERAL, "HoverBob", HoverBob);
@@ -2993,6 +2995,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DropPodAngle);
 	stream.Serialize(ScrollMultiplier);
 	stream.Serialize(CrewEscape);
+	stream.Serialize(ThreatPerOccupant);
 	stream.Serialize(ShakeScreen);
 	stream.Serialize(HoverHeight);
 	stream.Serialize(HoverBob);

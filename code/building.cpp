@@ -7185,13 +7185,18 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
 	if (WhomToRepay == target) {
 		WhomToRepay = NULL;
 	}
+	bool lost_occupant = false;
 	for (int index = Occupants.Count() - 1; index >= 0; index--) {
 		if (Occupants[index] == target) {
 			Occupants.Delete(Occupants[index]);
+			lost_occupant = true;
 		}
 	}
 	if (FiringOccupantIndex >= Occupants.Count()) {
 		FiringOccupantIndex = 0;
+	}
+	if (lost_occupant) {
+		Update_Threat_In_Cell();
 	}
 	if (AnimToTrack == target) {
 		AnimToTrack = NULL;
@@ -9158,6 +9163,7 @@ void BuildingClass::Occupy(InfantryClass * infantry)
 {
 	infantry->Limbo();
 	Occupants.Add(infantry);
+	Update_Threat_In_Cell();
 	Mark(MARK_CHANGE);
 
 	// The player's first soldier inside is announced (0x5229C1).
@@ -9395,6 +9401,7 @@ void BuildingClass::Eject_Occupants(bool const keep_unplaced)
 		occupants.push_back(Occupants[index]);
 	}
 	Occupants.Clear();
+	Update_Threat_In_Cell();
 
 	Cell start = Get_Cell() + Cell(0, Class->Height());
 	for (InfantryClass * occupant : occupants) {
@@ -9432,6 +9439,7 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 		occupants.push_back(Occupants[index]);
 	}
 	Occupants.Clear();
+	Update_Threat_In_Cell();
 
 	for (int index = (int)occupants.size() - 1; index >= 0; index--) {
 		InfantryClass * occupant = occupants[index];

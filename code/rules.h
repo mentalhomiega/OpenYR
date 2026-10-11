@@ -908,6 +908,9 @@ class RulesClass
 		 */
 		double CrewEscape;
 
+		// Each soldier inside a garrisoned structure adds this much to the threat the structure poses.
+		int ThreatPerOccupant;
+
 		/*
 		 * This is how much cost or strength must be destroyed to rock the screen by one
 		 * shake, so a larger value means only the bigger explosions disturb the view.

@@ -2183,7 +2183,8 @@ void UnitClass::Per_Cell_Process(PCPType why)
 					if (Center_Coord().As_Cell() == NavCom->Center_Coord().As_Cell()) {
 						unit->Class = const_cast<UnitTypeClass *>(Rule->LargeVisceroid);
 						unit->Strength = unit->Class->MaxStrength;
-						Map[unit->LastAdjacencyCell].Adjust_Threat(unit->Owner(), unit->Risk());
+						unit->ThreatPosed = unit->Risk();
+						Map[unit->LastAdjacencyCell].Adjust_Threat(unit->Owner(), unit->ThreatPosed);
 						Delete_Me();
 						BEnd(BENCH_PCP);
 						return;

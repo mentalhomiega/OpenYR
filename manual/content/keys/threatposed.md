@@ -17,4 +17,6 @@ The figure rates how dangerous an object of this type is to other houses. It is 
 ThreatPosed=25
 ```
 
+A garrisoned structure adds [`ThreatPerOccupant`](/keys/threatperoccupant/) for each soldier inside in place of this figure.
+
 A type left at `0` adds nothing to the threat map, and an object of that type is never called back as a defender. An attacker of that type gives the [call-up](/systems/base-attacked/#the-strength-budget) a budget of zero, so no one is called back. The call-up still [empties and suspends the house's low-priority teams](/systems/base-attacked/#teams-are-emptied-first), and it does so again on every hit.

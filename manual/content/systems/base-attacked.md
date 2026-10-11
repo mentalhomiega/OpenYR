@@ -168,6 +168,8 @@ Each contribution is spread over a 3 by 3 block of regions around the object's r
 
 A region never drops below zero. Any part of a subtraction that would take it below zero is lost, so after such a subtraction the map can end up higher than the objects on it account for.
 
+A garrisoned structure adds [`ThreatPerOccupant`](/keys/threatperoccupant/) for each soldier inside instead of its type's `ThreatPosed`. A tank bunker holding a vehicle adds that vehicle type's `ThreatPosed`, but only when the map is rebuilt or the bunker is placed or changes owner, because a vehicle entering or leaving does not change the contribution.
+
 ### What adds and removes a contribution
 
 Each event below adds or removes a contribution, spread around the cell in the second column. That cell is not always where the object currently stands. For infantry, vehicles and aircraft, the **recorded cell** is the last cell the object finished moving into on the ground, or the cell where an aircraft last landed.
@@ -179,6 +181,7 @@ Each event below adds or removes a contribution, spread around the cell in the s
 | An infantry or vehicle finishes moving into a cell in a different region | Added around the new cell and removed around the previous one |
 | An object changes owner | The same cell as when it is taken off the map. The previous owner's map gains the contribution, and the new owner's map loses it. |
 | A small visceroid merges into a large one | Added around the large visceroid's recorded cell, with nothing removed |
+| A soldier moves into a garrisoned structure, or the soldiers inside are ejected, killed or lost | The structure's cell. Its previous contribution is removed and its new one added. |
 
 The visceroid merge is the only event that does not balance. The large visceroid's contribution is added on top of the small visceroid it replaced, and only the large figure is removed later. The small visceroid's `ThreatPosed` therefore stays on the map where the merge happened.
 

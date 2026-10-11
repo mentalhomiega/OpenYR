@@ -37419,6 +37419,24 @@ ThreatAvoidanceCoefficient:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ThreatPerOccupant:
+  key: ThreatPerOccupant
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: RulesClass
+      member: ThreatPerOccupant
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ThreatPosed:
   key: ThreatPosed
   scopes:

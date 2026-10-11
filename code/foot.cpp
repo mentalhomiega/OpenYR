@@ -2147,10 +2147,9 @@ void FootClass::Per_Cell_Process(PCPType why)
 
 		if (LastAdjacencyCell != Cell(0, 0)) {
 			if (Map.Cell_Region(LastAdjacencyCell) != Map.Cell_Region(PositionCell)) {
-				int risk = Risk();
 				HousesType owner = Owner();
-				Get_Cell_Ptr()->Adjust_Threat(owner, risk);
-				Map[LastAdjacencyCell].Adjust_Threat(owner, -risk);
+				Get_Cell_Ptr()->Adjust_Threat(owner, ThreatPosed);
+				Map[LastAdjacencyCell].Adjust_Threat(owner, -ThreatPosed);
 			}
 			int face;
 			for (face = FACING_FIRST; face < FACING_COUNT; face++) {
