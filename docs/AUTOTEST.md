@@ -101,6 +101,10 @@ Timed saves are off in a run started with `-SPAWN`, which `run_autotest.ps1` alw
 writes its own `SPAWN.INI` without that key, so a timed save needs `-SpawnIni <file>` with the key added to its `[Settings]` section. The saves are then written as
 `AUTOSAVE1.SAV` through `AUTOSAVE5.SAV`. A launch file's value replaces the player's `AutoSaveInterval` ([spawn-ini](/formats/spawn-ini/#automatic-saves)).
 
+## Choosing the player's country
+
+`run_autotest.ps1 -Country <index>` plays the player as that country, numbered by its place in the rules' `[Countries]` list. The stock list is `0` Americans (the default), `1` Alliance (Korea, which builds the Black Eagle), `8` Russians and `9` YuriCountry. The index is written as `Side=` in the generated `SPAWN.INI`, the same key a launch file uses for the player's country. The player's units and the start are the country's own: a Soviet player deploys `SMCV`, not `AMCV`. `-AICountries` still sets the computer players' countries.
+
 ## Comparing builds
 
 `hash` covers what decides play: each structure, vehicle, aircraft and soldier's position, facing,
