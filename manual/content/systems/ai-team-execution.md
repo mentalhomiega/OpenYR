@@ -81,7 +81,8 @@ Each team takes one turn per logic frame, and the turn runs the steps below in o
 8. **The fork.** The team runs its [current Script line](#the-script-cursor) under **all of:**
    - the team is under way;
    - it is not reforming;
-   - it is not under strength.
+   - it is not under strength;
+   - the member that joined most recently is not being chronoshifted in.
 
    Otherwise, a team that is under way runs the [regroup coordinator](#regrouping), and a team that is not runs the [move coordinator](#moving).
 

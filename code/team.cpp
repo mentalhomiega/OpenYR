@@ -625,7 +625,10 @@ void TeamClass::AI(void)
 	**	this time. Various events may cause the mission to advance, but it
 	**	all boils down to the following change-mission code.
 	*/
-	if (IsMoving && !IsReforming && !IsUnderStrength) {
+	// The script waits while the newest member is still being chronoshifted in (0x6E9140).
+	bool const warping_in = Member != NULL && Member->Is_Chrono_Warping();
+
+	if (IsMoving && !IsReforming && !IsUnderStrength && !warping_in) {
 		bool is_next = false;
 		if (IsNextMission) {
 			is_next = true;
