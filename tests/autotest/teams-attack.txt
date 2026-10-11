@@ -1,0 +1,16 @@
+; Attack (script line 0) sends a computer team of two tanks against the player's buildings. Run with
+; -AICountries 1. The TEAMTRACE lines show the attack line start and, once the target is gone or the
+; tanks are lost, the success line; the where lines show the tanks' targets.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 teamtrace 1
+300 spawn MTNK 62 28
+301 spawn MTNK 63 28
+310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-attack.ini
+320 team TSTATKT
+400 where MTNK
+800 where MTNK
+1200 where MTNK
+1800 where MTNK
+2400 quit
