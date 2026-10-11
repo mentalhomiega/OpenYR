@@ -6390,15 +6390,77 @@ void HouseClass::Cheer(void)
 
 
 /// <summary>
+/// Notes everything this house has on the map, as the end of a scenario load does
+/// (0x50D610). Objects that are off the map or carried inside another are left out.
+/// </summary>
+void HouseClass::Record_Starting_Forces(void)
+{
+	StartingObjects.clear();
+	for (int index = Technos.Count() - 1; index >= 0; index--) {
+		TechnoClass * techno = Technos[index];
+		if (techno == NULL || techno->House != this || !techno->IsActive || techno->IsInLimbo || techno->Transporter != NULL) {
+			continue;
+		}
+		StartingObjectType start;
+		start.Kind = techno->TClass->What_Am_I();
+		start.Type = techno->TClass->Fetch_Heap_ID();
+		start.Position = techno->Get_Cell();
+		StartingObjects.push_back(start);
+	}
+}
+
+
+/// <summary>
+/// Puts every recorded object back in the cell it stood on, as HouseClass::RespawnStartingForces
+/// (0x50D440) does. Each is made new for this house, at full strength and facing north, and is
+/// dropped again when something already fills the cell. Ones that are still alive are not touched,
+/// so a soldier whose cell has room left is joined by a second one.
+/// </summary>
+void HouseClass::Restore_Starting_Forces(void)
+{
+	for (int index = (int)StartingObjects.size() - 1; index >= 0; index--) {
+		StartingObjectType const & start = StartingObjects[index];
+		TechnoClass * object = NULL;
+
+		ScenarioInit++;
+		switch (start.Kind) {
+			case RTTI_BUILDINGTYPE:
+				if (start.Type >= 0 && start.Type < BuildingTypes.Count()) object = new BuildingClass(BuildingTypes[start.Type], this);
+				break;
+
+			case RTTI_UNITTYPE:
+				if (start.Type >= 0 && start.Type < UnitTypes.Count()) object = new UnitClass(UnitTypes[start.Type], this);
+				break;
+
+			case RTTI_INFANTRYTYPE:
+				if (start.Type >= 0 && start.Type < InfantryTypes.Count()) object = new InfantryClass(InfantryTypes[start.Type], this);
+				break;
+
+			case RTTI_AIRCRAFTTYPE:
+				if (start.Type >= 0 && start.Type < AircraftTypes.Count()) object = new AircraftClass(AircraftTypes[start.Type], this);
+				break;
+
+			default:
+				break;
+		}
+		if (object != NULL && !object->Unlimbo(Coord(start.Position))) {
+			delete object;
+		}
+		ScenarioInit--;
+	}
+}
+
+
+/// <summary>
 /// Puts back the buildings the scenario placed for this house, as HouseClass::RespawnStartingBuildings
 /// (0x50D320) does: one that is missing is built again where it stood, and one that still stands
 /// there is mended to full strength.
 /// </summary>
 void HouseClass::Restore_Starting_Buildings(void)
 {
-	for (int index = (int)StartingBuildings.size() - 1; index >= 0; index--) {
-		StartingBuildingType const & start = StartingBuildings[index];
-		if (start.Type < 0 || start.Type >= BuildingTypes.Count()) {
+	for (int index = (int)StartingObjects.size() - 1; index >= 0; index--) {
+		StartingObjectType const & start = StartingObjects[index];
+		if (start.Kind != RTTI_BUILDINGTYPE || start.Type < 0 || start.Type >= BuildingTypes.Count()) {
 			continue;
 		}
 
@@ -7436,7 +7498,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PreferredTarget);
 	stream.Serialize(PreferredTargetCell);
 	stream.Serialize(CenterOverride);
-	stream.Serialize(StartingBuildings);
+	stream.Serialize(StartingObjects);
 	stream.Serialize(BQuantity);
 	stream.Serialize(UQuantity);
 	stream.Serialize(IQuantity);

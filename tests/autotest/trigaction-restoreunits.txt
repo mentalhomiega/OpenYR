@@ -1,0 +1,12 @@
+; Restore Starting Units (action 126) puts back what the player's house had when the scenario
+; loaded: its construction vehicle is destroyed, then returns. A second action adds a second one
+; beside it. Number 8997 names the trigger's own house.
+30 command CenterBase
+40 count AMCV
+50 kill AMCV 1
+60 count AMCV
+70 trigaction 126 8997 0
+80 count AMCV
+90 trigaction 126 8997 0
+100 count AMCV
+110 quit
