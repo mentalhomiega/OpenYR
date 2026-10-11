@@ -88,6 +88,17 @@ The briefing movies are skipped in an unattended run. The modern build plays the
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
 
+## Saving and loading
+
+`command QuickSave` writes `QUICKSAVE.SAV` in the `Saved Games` folder of the user directory, and `command QuickLoad` loads it. A save made while the scenario's input is
+locked writes nothing and logs nothing. A trigger's `LOCK_INPUT` action locks the input until an `UNLOCK_INPUT` action runs, and ALL01UMD.MAP locks it from its start until
+about frame 1500. The log has `SAVING GAME [<file> - <description>]`, then `... - Complete`, and `LOADING GAME [<file>]` for a load. A save's description is `Quick Save: `
+or `Auto-Save N: ` followed by the mission's name from its `UIName=` in `MISSIONMD.INI`.
+
+Timed saves are off in a run started with `-SPAWN`, which `run_autotest.ps1` always passes, unless the `SPAWN.INI` it uses sets `AutoSaveGame=` to a number of frames. The script
+writes its own `SPAWN.INI` without that key, so a timed save needs `-SpawnIni <file>` with the key added to its `[Settings]` section. The saves are then written as
+`AUTOSAVE1.SAV` through `AUTOSAVE5.SAV`. A launch file's value replaces the player's `AutoSaveInterval` ([spawn-ini](/formats/spawn-ini/#automatic-saves)).
+
 ## Comparing builds
 
 `hash` covers what decides play: each structure, vehicle, aircraft and soldier's position, facing,
