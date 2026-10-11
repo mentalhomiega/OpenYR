@@ -8746,6 +8746,23 @@ Country:
       source: code/house.cpp
       guard: null
     level: HouseClass
+CourseLockDuration:
+  key: CourseLockDuration
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BulletTypeClass
+      member: CourseLockDuration
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 CowTurretIndex:
   key: CowTurretIndex
   scopes:

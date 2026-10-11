@@ -136,6 +136,7 @@ BulletClass::BulletClass(void) :
 	SmoothedClosure(0),
 	field_A4(true),
 	IsLaunching(true),
+	CourseLockCounter(0),
 	BounceCount(0),
 	TarCom(NULL),
 	MaxSpeed(0),
@@ -439,9 +440,18 @@ void BulletClass::AI(void)
 		/*
 		 * The projectile stays in its launch phase until it has worked up to
 		 * cruising speed. A fast projectile is given no launch phase at all.
+		 * A type with CourseLockDuration instead stays in it for that many frames
+		 * (BulletClass::Update, 0x4666E0).
 		 */
-		if (MaxSpeed >= 40 || speed + 0.5 >= max_speed) {
-			IsLaunching = false;
+		if (Class->CourseLockDuration == 0) {
+			if (MaxSpeed >= 40 || speed + 0.5 >= max_speed) {
+				IsLaunching = false;
+			}
+		} else if (CourseLockCounter < Class->CourseLockDuration) {
+			CourseLockCounter++;
+			if (CourseLockCounter >= Class->CourseLockDuration) {
+				IsLaunching = false;
+			}
 		}
 
 		int acceleration = Class->Acceleration;
@@ -451,7 +461,7 @@ void BulletClass::AI(void)
 		**	they only do so every other game frame (improves game speed and makes
 		**	missiles not so deadly).
 		*/
-		if (IsLaunching) {
+		if (IsLaunching && Class->CourseLockDuration == 0) {
 			acceleration = (Frame % 2 == 0) ? 1 : 0;
 		}
 
@@ -1638,6 +1648,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BounceCount);
 	stream.Serialize(field_A4);
 	stream.Serialize(IsLaunching);
+	stream.Serialize(CourseLockCounter);
 	stream.Serialize(TarCom);
 	stream.Serialize(MaxSpeed);
 	stream.Serialize(ClosureSamples);
