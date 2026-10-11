@@ -1,0 +1,12 @@
+; Change house (script line 20) gives the team's members to the country in its argument, here
+; country 0, which the player plays. Run with -AICountries 1. The where lines show the tanks of
+; the Alliance before and of Americans after.
+30 command CenterBase
+1 teamtrace 1
+300 spawn MTNK 70 60
+301 spawn MTNK 71 60
+305 where MTNK
+310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-changehouse.ini
+320 team TSTCHGT
+340 where MTNK
+400 quit
