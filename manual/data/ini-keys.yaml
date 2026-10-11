@@ -6695,7 +6695,7 @@ CD:
 CLDisableBlue:
   key: CLDisableBlue
   scopes:
-  - applies_to: *id005
+  - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
@@ -6712,7 +6712,7 @@ CLDisableBlue:
 CLDisableGreen:
   key: CLDisableGreen
   scopes:
-  - applies_to: *id005
+  - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
@@ -6729,7 +6729,7 @@ CLDisableGreen:
 CLDisableRed:
   key: CLDisableRed
   scopes:
-  - applies_to: *id005
+  - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
@@ -9454,7 +9454,7 @@ CreateSound:
 CreateUnitSound:
   key: CreateUnitSound
   scopes:
-  - applies_to: *id004
+  - applies_to: *id005
     file: rules.ini
     section:
       kind: identifier
@@ -27841,7 +27841,7 @@ Primary:
 PrimaryFireDualOffset:
   key: PrimaryFireDualOffset
   scopes:
-  - applies_to: *id004
+  - applies_to: *id005
     file: art.ini
     section:
       kind: image
@@ -28617,7 +28617,7 @@ PurifierBonus:
 QueueingCell:
   key: QueueingCell
   scopes:
-  - applies_to: *id004
+  - applies_to: *id005
     file: art.ini
     section:
       kind: image
@@ -41520,7 +41520,7 @@ WallTower:
 WantsExtraSpace:
   key: WantsExtraSpace
   scopes:
-  - applies_to: *id004
+  - applies_to: *id005
     file: rules.ini
     section:
       kind: identifier
