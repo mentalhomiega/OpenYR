@@ -638,9 +638,9 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 		VisibleSurface->Fill(0);
 
-		Rect sidebar_rect(0,0,SidebarClass::SIDE_WIDTH,VisibleRect.Height);
-		Rect tile_rect(0,0,Tactical_View_Rect().Width, sidebar_rect.Height);
-		Rect composite_rect(0,0,Tactical_View_Rect().Width, sidebar_rect.Height);
+		Rect sidebar_rect(0,0,Sidebar_Surface_Width(),VisibleRect.Height);
+		Rect tile_rect(0,0,Tactical_View_Rect().Width, VisibleRect.Height);
+		Rect composite_rect(0,0,Tactical_View_Rect().Width, VisibleRect.Height);
 
 		Allocate_Surfaces(VisibleRect, composite_rect, tile_rect, sidebar_rect, false);
 		LogicalSurface = HiddenSurface;

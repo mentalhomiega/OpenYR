@@ -574,6 +574,9 @@ void ScrollClass::Scroll_AI(void)
 				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
 			} else {
 				HoverObject = NULL;
+				if (Modern_Interface() && !Point_Over_Map(mouse)) {
+					Override_Mouse_Shape(MOUSE_NORMAL, false);
+				}
 			}
 			if (Options.AutoScroll && !Debug_Map) {
 				Scroll_Edge(point);

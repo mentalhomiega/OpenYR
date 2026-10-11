@@ -158,6 +158,9 @@ class SidebarClass : public PowerClass
 
 		void Blit_Sidebar(bool complete);
 		virtual void Draw_Panels(Surface & surface) override;
+		void Draw_Build_Area(void);
+		void Reposition_Panel(void);
+		void Add_Tool_Tips(void);
 
 		/*
 		**	Each side strip is managed by this class. It handles all strip specific
@@ -206,6 +209,7 @@ class SidebarClass : public PowerClass
 				bool Is_Cameo_Flashing(TechnoTypeClass const * type) const;
 				ShapeSet const * Get_Special_Cameo(SuperWeaponType type);
 				static int Column_Step(void);
+				static int Slot_Columns(void);
 
 				/*
 				**	Working numbers used when rendering and processing the side strip.

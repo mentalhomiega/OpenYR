@@ -46,6 +46,7 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "house.h"
+#include "hud.h"
 #include "language/language.h"
 #include "rules.h"
 #include "scenario.h"
@@ -109,6 +110,12 @@ void CreditClass::Graphic_Logic(bool forced)
 		BStart(BENCH_TABS);
 
 		int xx = SidebarSurface->Get_Width() / 2;
+		int yy = 0;
+		if (Modern_Interface()) {
+			Rect const credits = Hud_Layout().Credits;
+			xx = credits.X + credits.Width / 2;
+			yy = credits.Y + 2;
+		}
 
 		/*
 		**	Play a sound effect when the money display changes, but only if a sound
@@ -132,12 +139,12 @@ void CreditClass::Graphic_Logic(bool forced)
 			int minutes = (Current / 60) % 60;
 			int seconds = Current % 60;
 			if (hours != 0) {
-				Fancy_Text_Print(TXT_TIME_FORMAT_HOURS, *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), hours, minutes, seconds);
+				Fancy_Text_Print(TXT_TIME_FORMAT_HOURS, *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, yy), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), hours, minutes, seconds);
 			} else {
-				Fancy_Text_Print(TXT_TIME_FORMAT_NO_HOURS, *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), minutes, seconds);
+				Fancy_Text_Print(TXT_TIME_FORMAT_NO_HOURS, *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, yy), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), minutes, seconds);
 			}
 		} else {
-			Fancy_Text_Print("%d", *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), Current);
+			Fancy_Text_Print("%d", *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, yy), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), Current);
 		}
 
 		if (Scen->MissionTimer.Is_Active()) {

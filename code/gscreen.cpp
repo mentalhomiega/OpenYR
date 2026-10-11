@@ -422,6 +422,9 @@ void GScreenClass::Render(void)
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
 	use_map_surfaces(false);
+	if (complete && Modern_Interface() && SidebarSurface != NULL) {
+		Draw_Hud_Panel(*SidebarSurface);
+	}
 	Draw_It(complete);
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);

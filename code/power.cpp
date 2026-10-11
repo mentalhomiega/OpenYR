@@ -53,15 +53,19 @@
 #include "builtype.h"
 #include "cctooltip.h"
 #include "data.h"
+#include "dialog.h"
 #include "draw.h"
 #include "globals.h"
 #include "house.h"
+#include "hud.h"
 #include "language/language.h"
 #include "mixfile.h"
 #include "savestream.h"
+#include "scheme.h"
 #include "surface.h"
 
 #include "bench.hh"
+#include "color.hh"
 
 #include <algorithm>
 
@@ -265,6 +269,18 @@ int PowerClass::Update_Delay(void)
 
 
 /// <summary>
+/// The power bar's place on the sidebar surface.
+/// </summary>
+Rect PowerClass::Bar_Rect(void) const
+{
+	if (Modern_Interface()) {
+		return(Hud_Layout().Power);
+	}
+	return(Rect(POWER_X, SidebarRect.Y + POWER_Y, POWER_WIDTH, SidebarClass::StripClass::OBJECT_HEIGHT * Map.Max_Visible()));
+}
+
+
+/// <summary>
 /// Determines the maximum height of the power bar.
 /// This routine reports how many pips will fit alongside the sidebar at its current size.
 /// Every other power bar height is measured against this figure.
@@ -272,6 +288,9 @@ int PowerClass::Update_Delay(void)
 /// <returns>Returns with the maximum number of pips the power bar can hold.</returns>
 int PowerClass::Max_Power_Height(void)
 {
+	if (Modern_Interface()) {
+		return(Hud_Layout().Power.Height / POWER_PIP_HEIGHT);
+	}
 	return(SidebarClass::StripClass::SideBarGeneralEnums::OBJECT_HEIGHT * Map.Max_Visible() / POWER_PIP_HEIGHT);
 }
 
@@ -363,8 +382,9 @@ void PowerClass::Draw_It(bool complete)
 			Map.IsToBlitSidebar = true;
 
 			Rect rect = SidebarSurface->Get_Rect();
-			int x = POWER_X;
-			int y = SidebarRect.Y + POWER_Y;
+			Rect const bar = Bar_Rect();
+			int x = bar.X;
+			int y = bar.Y;
 
 			int num = Max_Power_Height() - RedPipCount - YellowPipCount - GreenPipCount;
 
@@ -408,6 +428,15 @@ void PowerClass::Draw_It(bool complete)
 					index++;
 				}
 				index = 0;
+			}
+
+			// The modern build panel also shows the power used and the power made as numbers.
+			if (Modern_Interface()) {
+				Rect const readout = Hud_Layout().PowerReadout;
+				int const drain = PlayerPtr->Power_Drain();
+				int const output = PlayerPtr->Power_Output();
+				Draw_Hud_Well(*SidebarSurface, readout);
+				Fancy_Text_Print("%d / %d", *SidebarSurface, rect, Point2D(readout.X + readout.Width / 2, readout.Y + (readout.Height - 12) / 2), Fetch_Scheme_By_Name(drain > output ? "Red" : "Green"), TBLACK, TextPrintType(TPF_CENTER | TPF_FULLSHADOW | TPF_8POINT), drain, output);
 			}
 		}
 		BEnd(BENCH_POWER);
@@ -589,10 +618,8 @@ void PowerClass::Reposition_Sidebar(void)
 		ToolTip tt;
 		tt.Text = TXT_NONE;
 		tt.ID = GADGET_POWER;
-		tt.Region.X = SidebarRect.X + POWER_X;
-		tt.Region.Y = SidebarRect.Y + POWER_Y;
-		tt.Region.Width = POWER_WIDTH;
-		tt.Region.Height = (SidebarClass::StripClass::SideBarGeneralEnums::OBJECT_HEIGHT) * Map.Max_Visible();
+		tt.Region = Bar_Rect();
+		tt.Region.X += SidebarRect.X;
 
 		ToolTips->Remove(tt.ID);
 		ToolTips->Add(&tt);

@@ -10,16 +10,15 @@ At 1920x1080:
 
 - **The map fills the whole screen.** There is no sidebar column and no strip kept for the command
   bar; panels draw over the map, and the map scrolls under them.
-- **The build panel** sits in the top-right corner, about 300 pixels wide, framed in the side's
-  colour (blue for the Allies, red for the Soviets, purple for Yuri). From the top:
-  - a row of icon buttons: repair, sell, power (toggle), waypoint mode, and options;
-  - the radar, square, with the power bar running down its left edge;
-  - a strip with the credits on the left, the game time (or a mission timer) in the middle, and the
-    power balance on the right;
-  - the build area: the category tabs in a column on the left (structures, defences, infantry,
-    vehicles, aircraft, naval), and the cameos of the chosen tab in a grid of three columns beside
-    it. Each cameo carries its name and, while it builds, a countdown and the progress shading. The
-    grid is as tall as the screen allows, and scrolls when a tab has more cameos than fit.
+- **The build panel** sits in the top-right corner, 250 pixels wide, framed in the side's colour
+  (blue for the Allies, red for the Soviets, purple for Yuri). From the top:
+  - the options button, the credits and the diplomacy button;
+  - the radar;
+  - the repair and sell buttons, with the power used and the power made on the right;
+  - the build area: the power bar on the left edge, the category tabs in a column beside it, and
+    the cameos of the chosen tab in a grid of three columns. Each cameo carries its name and, while
+    it builds, the countdown shading. The grid is as tall as the screen allows, with the scroll
+    buttons under it.
 - **The command bar** is a slim framed strip in the bottom-left corner, holding the [AdvancedCommandBar]
   buttons as icons.
 - **Superweapon timers** stack in the top-left corner: each superweapon's cameo with its countdown and

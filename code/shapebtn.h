@@ -34,6 +34,8 @@
 
 #include "toggle.h"
 
+#include <string>
+
 class ConvertClass;
 class ShapeSet;
 
@@ -45,6 +47,7 @@ class ShapeButtonClass : public ToggleClass
 		ShapeButtonClass(void);
 		ShapeButtonClass(unsigned id, ShapeSet const * shapes, int x, int y, int override_width = 0, int override_height = 0, bool faded = false);
 		virtual int Draw_Me(int forced=false) override;
+		int Draw_Label(int forced);
 		virtual void Set_Shape(ShapeSet const * data, int override_width = 0, int override_height = 0);
 		ShapeSet const * Get_Shape_Data(void) {return(ShapeData);};
 
@@ -55,6 +58,9 @@ class ShapeButtonClass : public ToggleClass
 		};
 
 		bool ReflectButtonState;
+
+		// A button with a label draws as a panel button showing that text, at its own size, instead of its shape.
+		std::string Label;
 
 		/*
 		 * These are the pixel offsets added to the button's position when its shape is

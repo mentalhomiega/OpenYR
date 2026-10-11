@@ -193,7 +193,9 @@ void TabClass::Draw_It(bool complete)
 void TabClass::Draw_Credits_Tab(void)
 {
 	// Yuri's Revenge clears the readout with its own backdrop; TS used a frame of the tab art.
-	if (CreditsShape != NULL) {
+	if (Modern_Interface()) {
+		Draw_Hud_Well(*SidebarSurface, Hud_Layout().Credits);
+	} else if (CreditsShape != NULL) {
 		Draw_Shape(*SidebarSurface, *SidebarDrawer, CreditsShape, 0, Point2D(0, 0), SidebarSurface->Get_Rect());
 	} else {
 		Draw_Shape(*SidebarSurface, *SidebarDrawer, TabShape, 2, Point2D(0, 0), SidebarSurface->Get_Rect());
@@ -421,8 +423,8 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 	int backwidth = std::max(1, ButtonBackShape->Get_Width());
 	int rightwidth = RightCapShape->Get_Width();
 
-	layout.RightCapX = VisibleRect.Width - SidebarClass::SIDE_WIDTH - rightwidth;
-	layout.Slots = std::max(0, (VisibleRect.Width - capwidth - SidebarClass::SIDE_WIDTH - rightwidth) / backwidth);
+	layout.RightCapX = VisibleRect.Width - Sidebar_Surface_Width() - rightwidth;
+	layout.Slots = std::max(0, (VisibleRect.Width - capwidth - Sidebar_Surface_Width() - rightwidth) / backwidth);
 	layout.ButtonX = layout.RightCapX - layout.Slots * backwidth;
 	layout.OpenCapX = layout.ButtonX - capwidth;
 	layout.ClosedCapX = layout.RightCapX - capwidth;

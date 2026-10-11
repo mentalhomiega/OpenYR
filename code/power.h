@@ -80,6 +80,7 @@ class PowerClass : public RadarClass
 	private:
 
 		int Max_Power_Height(void);
+		Rect Bar_Rect(void) const;
 		int Desired_Power_Height(void);
 		int Desired_Levels(int & green, int & yellow, int & red);
 		int Update_Delay(void);

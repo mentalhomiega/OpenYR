@@ -227,7 +227,7 @@ bool Change_Display_Mode(int width, int height)
 
 	Rect temp = Tactical_View_Rect();
 
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
+	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, Sidebar_Surface_Width(), VisibleRect.Height));
 	LogicalSurface = HiddenSurface;
 
 	Map.Set_View_Dimensions(temp);

@@ -41,7 +41,10 @@
 #include "_surface.h"
 #include "convert.h"
 #include "dbgprint.h"
+#include "dialog.h"
 #include "draw.h"
+#include "hud.h"
+#include "scheme.h"
 #include "shapeset.h"
 
 
@@ -154,6 +157,10 @@ void ShapeButtonClass::Set_Shape(ShapeSet const * data, int override_width, int 
  *=============================================================================================*/
 int ShapeButtonClass::Draw_Me(int forced)
 {
+	if (!Label.empty()) {
+		return(Draw_Label(forced));
+	}
+
 	if (ControlClass::Draw_Me(forced) && ShapeData) {
 		/*
 		**	Draw the body & set text color.
@@ -184,4 +191,27 @@ int ShapeButtonClass::Draw_Me(int forced)
 		return(true);
 	}
 	return(false);
+}
+
+/// <summary>
+/// Draws a labelled button as a panel button: a well with the label centred in it, framed in
+/// the side's colours while pressed.
+/// </summary>
+/// <returns>Was the button drawn?</returns>
+int ShapeButtonClass::Draw_Label(int forced)
+{
+	if (!ControlClass::Draw_Me(forced)) {
+		return(false);
+	}
+
+	Surface * surf = DrawOnSidebar ? SidebarSurface : LogicalSurface;
+	Rect const rect(X + DrawOffsetX, Y + DrawOffsetY, Width, Height);
+	if (IsPressed || (ReflectButtonState && IsOn)) {
+		Draw_Hud_Frame(*surf, rect);
+	} else {
+		Draw_Hud_Well(*surf, rect);
+	}
+	Fancy_Text_Print(Label.c_str(), *surf, surf->Get_Rect(), Point2D(rect.X + rect.Width / 2, rect.Y + (rect.Height - 12) / 2), Fetch_Scheme_By_Name(IsDisabled ? "Grey" : "LightGrey"), TBLACK, TextPrintType(TPF_CENTER | TPF_FULLSHADOW | TPF_8POINT));
+	IsDrawn = true;
+	return(true);
 }

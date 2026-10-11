@@ -212,6 +212,14 @@ void RadarClass::One_Time(void)
 	RadIWidth			 = 70 * 2/*RESFACTOR*/;
 	RadIHeight			 = 54 * 2/*RESFACTOR*/;
 
+	// The modern build panel centres the radar's housing in its radar box.
+	if (Modern_Interface()) {
+		Rect const box = Hud_Layout().Radar;
+		RadWidth = SidebarClass::SIDE_WIDTH;
+		RadX = box.X + (box.Width - RadWidth) / 2;
+		RadY = box.Y + (box.Height - RadHeight) / 2;
+	}
+
 	BASECLASS::One_Time();
 
 	RadarButton.X		= RadX + SidebarRect.X;
@@ -314,7 +322,7 @@ void RadarClass::Draw_It(bool forced)
 	FullRedraw = FullRedraw == true || forced == true;
 	IsToRedraw = IsToRedraw == true || FullRedraw == true;
 
-	if (FullRedraw && TopShape != NULL) {
+	if (FullRedraw && TopShape != NULL && !Modern_Interface()) {
 		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)TopShape, 0, Point2D(RadX, TOP_Y), SidebarSurface->Get_Rect());
 	}
 

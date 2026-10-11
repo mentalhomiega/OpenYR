@@ -331,7 +331,7 @@ SidebarClass::SidebarClass(void) :
 		new (&Column[index]) StripClass(InitClass());
 		Column[index].X = GRID_X;
 		Column[index].Y = GRID_Y;
-		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::SLOT_COLUMNS, StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::SLOT_COLUMNS);
+		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
 }
 
@@ -632,7 +632,7 @@ void SidebarClass::Reload_Sidebar(void)
 	for (int index = 0; index < COLUMNS; index++) {
 		Column[index].X = GRID_X;
 		Column[index].Y = GRID_Y;
-		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::SLOT_COLUMNS, StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::SLOT_COLUMNS);
+		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
 }
 
@@ -1017,7 +1017,10 @@ void SidebarClass::Draw_It(bool complete)
 	Rect window(0, 0, SidebarSurface->Get_Width(), SidebarSurface->Get_Height());
 
 	if (IsSidebarActive && (IsToRedraw || complete) && !Debug_Map) {
-		if (complete || Column[ActiveTab].IsToRedraw) {
+		if (Modern_Interface() && (complete || Column[ActiveTab].IsToRedraw)) {
+			Draw_Build_Area();
+			Column[ActiveTab].IsToRedraw = true;
+		} else if (complete || Column[ActiveTab].IsToRedraw) {
 
 			int y = SidebarRect.Y;
 
@@ -1082,14 +1085,36 @@ void SidebarClass::Draw_It(bool complete)
 
 
 /// <summary>
-/// Copies the sidebar onto the frame at its place on the right, over the map, for the modern
+/// Draws the modern build panel's backdrop under the tabs and the cameo slots. The radar, the
+/// power bar and the credits keep what they drew.
+/// </summary>
+void SidebarClass::Draw_Build_Area(void)
+{
+	HudLayout const layout = Hud_Layout();
+	int const left = layout.Tabs.X - 1;
+	int const top = layout.Grid.Y - 2;
+	int const bottom = layout.Arrows.Y + layout.Arrows.Height + 1;
+	Draw_Hud_Fill(*SidebarSurface, Rect(left, top, layout.Panel.Width - 2 - left, bottom - top));
+
+	for (int row = 0; row < layout.Rows; row++) {
+		for (int column = 0; column < HUD_GRID_COLUMNS; column++) {
+			Point2D const slot(layout.Grid.X + column * StripClass::Column_Step(), layout.Grid.Y + row * StripClass::OBJECT_HEIGHT);
+			Draw_Hud_Well(*SidebarSurface, Rect(slot.X - 1, slot.Y - 1, StripClass::OBJECT_WIDTH - 2, StripClass::OBJECT_HEIGHT));
+		}
+	}
+}
+
+
+/// <summary>
+/// Copies the build panel onto the frame at its place on the right, over the map, for the modern
 /// interface.
 /// </summary>
 void SidebarClass::Draw_Panels(Surface & surface)
 {
 	if (IsSidebarActive && GameActive && ScenarioActive && SidebarSurface != NULL) {
-		Rect const source = SidebarSurface->Get_Rect();
-		surface.Blit_From(Rect(Sidebar_Screen_X(), 0, source.Width, source.Height), *SidebarSurface, source);
+		Rect const panel = Hud_Layout().Panel;
+		Rect const source(0, 0, panel.Width, panel.Height);
+		surface.Blit_From(panel, *SidebarSurface, source);
 	}
 	BASECLASS::Draw_Panels(surface);
 }
@@ -1534,8 +1559,8 @@ void SidebarClass::StripClass::Init_IO(int id)
 	for (int index = 0; index < Map.Max_Visible(); index++) {
 		SelectClass & g = SelectButton[ID][index];
 		g.ID = BUTTON_SELECT;
-		g.X = SidebarRect.X + Map.Column[ID].X + (index % SLOT_COLUMNS) * Column_Step();
-		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT * (index / SLOT_COLUMNS));
+		g.X = SidebarRect.X + Map.Column[ID].X + (index % Slot_Columns()) * Column_Step();
+		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT * (index / Slot_Columns()));
 		g.Width = OBJECT_WIDTH;
 		g.Height = OBJECT_HEIGHT;
 		g.Set_Owner(*this, index);
@@ -1675,7 +1700,20 @@ bool SidebarClass::StripClass::Scroll(bool up)
 /// </summary>
 int SidebarClass::StripClass::Column_Step(void)
 {
+	if (Modern_Interface()) {
+		return(OBJECT_WIDTH);
+	}
 	return(PlayerPtr != NULL && PlayerPtr->Class->Side == SIDE_FIRST ? 63 : 64);
+}
+
+
+/// <summary>
+/// The number of cameos side by side in each row: two on the classic sidebar, three on the
+/// modern interface's build panel.
+/// </summary>
+int SidebarClass::StripClass::Slot_Columns(void)
+{
+	return(Modern_Interface() ? int(HUD_GRID_COLUMNS) : int(SLOT_COLUMNS));
 }
 
 
@@ -1691,10 +1729,10 @@ bool SidebarClass::StripClass::Page(bool up)
 {
 	if (up) {
 		if (!TopIndex) return(false);
-		Scroller-=Map.Max_Visible() / SLOT_COLUMNS;
+		Scroller-=Map.Max_Visible() / Slot_Columns();
 	} else {
 		if (TopIndex+Map.Max_Visible() >= BuildableCount) return(false);
-		Scroller+=Map.Max_Visible() / SLOT_COLUMNS;
+		Scroller+=Map.Max_Visible() / Slot_Columns();
 	}
 	return(true);
 }
@@ -1808,7 +1846,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 					Scroller++;
 					IsScrollingDown = false;
 					IsScrolling = true;
-					TopIndex = std::max(0, TopIndex - SLOT_COLUMNS);
+					TopIndex = std::max(0, TopIndex - Slot_Columns());
 					Slid = 0;
 				}
 
@@ -1834,7 +1872,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 			if (Slid <= 0) {
 				IsScrolling = false;
 				Slid = 0;
-				TopIndex += SLOT_COLUMNS;
+				TopIndex += Slot_Columns();
 			}
 		} else {
 			Slid += SCROLL_RATE;
@@ -2001,12 +2039,12 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 		**	Loop through all the buildable objects that are visible in the strip and render
 		**	them. Their Y offset may be adjusted if the strip is in the process of scrolling.
 		*/
-		for (int i = 0; i < Map.Max_Visible() + (IsScrolling ? SLOT_COLUMNS : 0); i++) {
+		for (int i = 0; i < Map.Max_Visible() + (IsScrolling ? Slot_Columns() : 0); i++) {
 			ShapeSet const * shapefile = NULL;
 
 			int index = i+TopIndex;
-			int x = X + (i % SLOT_COLUMNS) * Column_Step();
-			int y = Y + (i / SLOT_COLUMNS) * OBJECT_HEIGHT;
+			int x = X + (i % Slot_Columns()) * Column_Step();
+			int y = Y + (i / Slot_Columns()) * OBJECT_HEIGHT;
 
 			bool production = false;
 			bool completed = false;
@@ -2884,6 +2922,14 @@ void SidebarClass::Reposition_Sidebar(void)
 	SidebarRect.Width = SIDE_WIDTH;
 	SidebarRect.Height = VisibleRect.Height - SIDE_Y;
 
+	if (Modern_Interface()) {
+		SidebarRect = Hud_Layout().Panel;
+		BASECLASS::Reposition_Sidebar();
+		Reposition_Panel();
+		Add_Tool_Tips();
+		return;
+	}
+
 	BASECLASS::Reposition_Sidebar();
 
 	if (!SidebarShape) {
@@ -2950,15 +2996,94 @@ void SidebarClass::Reposition_Sidebar(void)
 
 		for (int i = 0; i < Max_Visible(); i++) {
 			StripClass::SelectButton[col][i].Set_Position(
-				SidebarRect.X + Column[col].X + (i % StripClass::SLOT_COLUMNS) * StripClass::Column_Step(),
-				SidebarRect.Y + Column[col].Y + StripClass::OBJECT_HEIGHT * (i / StripClass::SLOT_COLUMNS));
+				SidebarRect.X + Column[col].X + (i % StripClass::Slot_Columns()) * StripClass::Column_Step(),
+				SidebarRect.Y + Column[col].Y + StripClass::OBJECT_HEIGHT * (i / StripClass::Slot_Columns()));
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}
 
-	/*
-	 * Create the tooltips for the sidebar.
-	 */
+	Add_Tool_Tips();
+
+	int x = 0;
+	int y = RadarButton.Y + RadarButton.Height;
+	if (Options.IsSidebarOnRight) {
+		Background.Set_Position(Sidebar_Screen_X(), y);
+	} else {
+		Background.Set_Position(x, y);
+	}
+	Background.Set_Size(SidebarSurface->Get_Width(), SidebarSurface->Get_Height() - y);
+}
+
+
+/// <summary>
+/// Places the build panel's buttons and cameo slots for the modern interface: repair and sell
+/// on the left of the icon row and options and diplomacy on its right, the tabs one above the
+/// other, and the scroll buttons under the slots.
+/// </summary>
+void SidebarClass::Reposition_Panel(void)
+{
+	HudLayout const layout = Hud_Layout();
+	Point2D const origin(SidebarRect.X, SidebarRect.Y);
+
+	auto place = [&](ShapeButtonClass & button, int x, int y) {
+		button.Set_Position(origin.X + x, origin.Y + y);
+		button.DrawOffsetX = -origin.X;
+		button.DrawOffsetY = -origin.Y;
+		button.Flag_To_Redraw();
+	};
+	auto middle = [](Rect const & rect, int height) {
+		return(rect.Y + (rect.Height - height) / 2);
+	};
+
+	int x = layout.Icons.X + 2;
+	for (ShapeButtonClass * button : {&Repair, &Upgrade}) {
+		place(*button, x, middle(layout.Icons, button->Height));
+		x += button->Width + 4;
+	}
+	OptionsButton.Label = Panel_Text("GUI:Options", "Options");
+	place(OptionsButton, layout.Options.X, layout.Options.Y);
+	OptionsButton.Set_Size(layout.Options.Width, layout.Options.Height);
+	DiplomacyButton.Label = Panel_Text("GUI:Diplomacy", "Diplomacy");
+	place(DiplomacyButton, layout.Diplomacy.X, layout.Diplomacy.Y);
+	DiplomacyButton.Set_Size(layout.Diplomacy.Width, layout.Diplomacy.Height);
+
+	int y = layout.Tabs.Y;
+	for (int index = 0; index < COLUMNS; index++) {
+		place(TabButton[index], layout.Tabs.X + (layout.Tabs.Width - TabButton[index].Width) / 2, y);
+		y += TabButton[index].Height + 4;
+	}
+
+	int const centre = layout.Arrows.X + layout.Arrows.Width / 2;
+	for (int col = 0; col < COLUMNS; col++) {
+		ShapeButtonClass & up = StripClass::UpButton[col];
+		ShapeButtonClass & down = StripClass::DownButton[col];
+		place(up, centre - 4 - up.Width, middle(layout.Arrows, up.Height));
+		place(down, centre + 4, middle(layout.Arrows, down.Height));
+
+		Column[col].X = layout.Grid.X;
+		Column[col].Y = layout.Grid.Y;
+		Column[col].ObjectRect = layout.Grid;
+		for (int i = 0; i < Max_Visible(); i++) {
+			StripClass::SelectButton[col][i].Set_Position(
+				origin.X + layout.Grid.X + (i % HUD_GRID_COLUMNS) * StripClass::Column_Step(),
+				origin.Y + layout.Grid.Y + (i / HUD_GRID_COLUMNS) * StripClass::OBJECT_HEIGHT);
+			StripClass::SelectButton[col][i].Flag_To_Redraw();
+		}
+	}
+
+	Background.Set_Position(origin.X, origin.Y + layout.Icons.Y);
+	Background.Set_Size(layout.Panel.Width, layout.Panel.Height - layout.Icons.Y);
+	Background.Flag_To_Redraw();
+}
+
+
+/// <summary>
+/// Gives the cameo slots and the repair and sell buttons their tooltips at their current places.
+/// </summary>
+void SidebarClass::Add_Tool_Tips(void)
+{
+	int index;
+
 	if (ToolTips) {
 		ToolTip tooltip;
 
@@ -2989,15 +3114,6 @@ void SidebarClass::Reposition_Sidebar(void)
 		ToolTips->Remove(tooltip.ID);
 		ToolTips->Add(&tooltip);
 	}
-
-	int x = 0;
-	int y = RadarButton.Y + RadarButton.Height;
-	if (Options.IsSidebarOnRight) {
-		Background.Set_Position(Sidebar_Screen_X(), y);
-	} else {
-		Background.Set_Position(x, y);
-	}
-	Background.Set_Size(SidebarSurface->Get_Width(), SidebarSurface->Get_Height() - y);
 }
 
 
@@ -3117,6 +3233,9 @@ const char * SidebarClass::Help_Text(int id)
 /// shows the slots it has rather than the slots that would fit.</remarks>
 int SidebarClass::Max_Visible(void)
 {
+	if (Modern_Interface()) {
+		return(Hud_Layout().Rows * HUD_GRID_COLUMNS);
+	}
 	if (SidebarSurface != NULL) {
 		bool const first = PlayerPtr == NULL || PlayerPtr->Class->Side == SIDE_FIRST;
 		int const rows = (SidebarRect.Height - GRID_Y - (first ? 26 : 18) - 7) / StripClass::OBJECT_HEIGHT;
