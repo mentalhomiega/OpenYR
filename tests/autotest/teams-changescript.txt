@@ -1,0 +1,11 @@
+; Change script (script line 17) gives the team a copy of script 0 and leaves it before that script's
+; first line. gamemd runs no line from there, so the TEAMTRACE log shows line 0 starting and nothing
+; after it, and the team is still there at the end. Run with -AICountries 1.
+30 command CenterBase
+1 teamtrace 1
+300 spawn MTNK 70 60
+310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-changescript.ini
+320 team TSTCSCT
+330 teams
+900 teams
+1000 quit
