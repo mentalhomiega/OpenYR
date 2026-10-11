@@ -2875,9 +2875,29 @@ void TeamClass::TMission_SCATTER(TeamMissionClass * mission, bool)
 
 
 /// <summary>
+/// Hands a team member to another house as UnitClass::SetOwningHouse (0x7463A0) does: a vehicle that
+/// another vehicle follows takes its follower along.
+/// </summary>
+static void Give_To_House(FootClass * unit, HouseClass * newowner)
+{
+	if (unit->RTTI == RTTI_UNIT && newowner != unit->House) {
+		UnitClass * vehicle = (UnitClass *)unit;
+		UnitClass * follower = vehicle->FollowingMe;
+		vehicle->IsFollowing = false;
+		if (follower != NULL) {
+			Give_To_House(follower, newowner);
+			vehicle->FollowingMe = follower;
+			follower->IsFollowing = true;
+		}
+	}
+	unit->Set_Owning_House(newowner);
+}
+
+
+/// <summary>
 /// Handles the change house team mission.
-/// This routine hands every member of the team over to the scripted house, just as though
-/// they had been captured.
+/// This routine hands every member of the team over to the scripted house as a mind control
+/// capture does, with no "entered" trigger.
 /// </summary>
 void TeamClass::TMission_CHANGE_HOUSE(TeamMissionClass * mission, bool)
 {
@@ -2886,7 +2906,7 @@ void TeamClass::TMission_CHANGE_HOUSE(TeamMissionClass * mission, bool)
 		FootClass *unit = Member;
 		while (unit != NULL) {
 			FootClass *next = unit->Member;
-			unit->Captured(newowner);
+			Give_To_House(unit, newowner);
 			unit = next;
 		}
 	}
