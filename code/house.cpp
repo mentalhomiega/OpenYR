@@ -9531,9 +9531,11 @@ int HouseClass::Owned_Team_Count(TeamTypeClass const * teamtype) const
 
 /// <summary>
 /// Can this house field the specified team type?
-/// Every member of the team's task force must be something this house is able to build.
-/// Outside of campaign games an existing recruitable unit of that type will serve just as
-/// well, so that a house can still assemble teams from what it happens to own.
+/// Every member of the team's task force must be something one of this house's factories can
+/// produce, whether or not the house meets the member's prerequisites and tech level yet
+/// (HouseClass team test, 0x509610).
+/// In a campaign game, an existing recruitable unit of that type serves as well, so that a house
+/// can still assemble teams from what it happens to own.
 /// </summary>
 /// <returns>bool; Can the team be created by this house?</returns>
 bool HouseClass::Can_Create_Team(TeamTypeClass const * teamtype)
@@ -9541,7 +9543,7 @@ bool HouseClass::Can_Create_Team(TeamTypeClass const * teamtype)
 	if (teamtype != NULL && teamtype->TaskForce != NULL) {
 		for (int i = 0; i < teamtype->TaskForce->ClassCount; i++) {
 			TechnoTypeClass const * ttype = teamtype->TaskForce->Members[i].Class;
-			if (ttype == NULL || ttype->Who_Can_Build_Me(true, true, true, this) == NULL) {
+			if (ttype == NULL || ttype->Who_Can_Build_Me(true, true, false, this) == NULL) {
 				if (Session.Type != GAME_NORMAL) return(false);
 				bool found = false;
 				for (int j = Feet.Count() - 1; j >= 0; j--) {
