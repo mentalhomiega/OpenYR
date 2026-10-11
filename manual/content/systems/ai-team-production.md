@@ -194,7 +194,7 @@ The house tests each trigger against these gates in order. The first gate that f
 10. The house's tech level is at least the trigger's tech level requirement.
 11. Its [condition](#conditions) holds.
 12. Each of its TeamTypes can [reach the enemy](#reaching-the-enemy).
-13. The house can build every member of both TeamTypes' TaskForces.
+13. A factory of the house can produce every member of both TeamTypes' TaskForces.
 14. Neither TeamType has reached its [`Max`](/keys/max/) among the teams this house owns.
 
 The tech level requirement is not a field of the record. It is the highest `TechLevel` among the members of the trigger's TaskForces, so a trigger requires what its teams require. A member with `TechLevel=-1` raises the requirement to `11`, which rejects the trigger for every house below tech level 11.
@@ -203,8 +203,8 @@ The tech level requirement is not a field of the record. It is the highest `Tech
 Set [`TaskForce=`](/keys/taskforce/) on every TeamType that an AI trigger names. A TeamType with no `TaskForce=` takes the first one an earlier TeamType names. When no earlier TeamType names one, the game crashes while it reads that trigger during scenario loading.
 :::
 
-:::caution[Outside a campaign every team member must be buildable]
-In a campaign game, a member type the house cannot build still passes if the house owns an object of that type that the team could recruit. Outside a campaign there is no such substitute. One member type the house cannot currently build rejects the trigger, whether it lacks a working factory, a prerequisite, the tech level, or the right to own the type.
+:::caution[Outside a campaign every team member needs a factory]
+In a campaign game, a member type that no factory of the house can produce still passes if the house owns an object of that type that the team could recruit. Outside a campaign there is no such substitute. One member type without a powered factory of the house that makes its kind, or that the house's country may not own, rejects the trigger. The test does not check prerequisites or the tech level of the member, so a team can be created before the house can build all of its members.
 :::
 
 ## Difficulty
