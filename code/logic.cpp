@@ -307,7 +307,14 @@ void LogicClass::AI(void)
 	}
 
 	if (Scen->DesiredAmbientLight != Scen->CurrentAmbientLight && Rule->AmbientLightChangeRate != 0 && Scen->AmbientChangeTimer == 0) {
-		Scen->AmbientChangeTimer = TICKS_PER_MINUTE * Rule->AmbientLightChangeRate;
+		// A nuclear flash and a psychic dominator blast move the light every few frames (LogicClass::Update, 0x55B330).
+		if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out()) {
+			Scen->AmbientChangeTimer = Scen->NukeAmbientChangeRate;
+		} else if (PsychicDominatorClass::Is_Active()) {
+			Scen->AmbientChangeTimer = Scen->DominatorAmbientChangeRate;
+		} else {
+			Scen->AmbientChangeTimer = TICKS_PER_MINUTE * Rule->AmbientLightChangeRate;
+		}
 
 		Scen->DesiredAmbientLight = std::max(Scen->DesiredAmbientLight, 0);
 

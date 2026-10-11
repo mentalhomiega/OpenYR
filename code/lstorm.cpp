@@ -25,6 +25,7 @@
 #include "ion.h"
 #include "rules.h"
 #include "savestream.h"
+#include "scenario.h"
 #include "session.h"
 #include "shapeset.h"
 #include "stimer.h"
@@ -47,6 +48,63 @@ DynamicVectorClass<AnimClass *> LightningStormClass::Bolts;
 
 
 static int const WARNING_INTERVAL = 225;
+
+
+NukeFlashClass::StatusType NukeFlashClass::Status = NukeFlashClass::INACTIVE;
+int NukeFlashClass::StartTime = -1;
+int NukeFlashClass::Duration = -1;
+
+
+/// <summary>
+/// Ends any nuclear flash. Call when a scenario starts.
+/// </summary>
+void NukeFlashClass::Clear(void)
+{
+	Status = INACTIVE;
+	StartTime = -1;
+	Duration = -1;
+}
+
+
+/// <summary>
+/// Lights the map up for a nuclear blast, as the NukeFlash start (0x53AB70) does: the light fades
+/// in for 30 frames, then back out for 15.
+/// </summary>
+void NukeFlashClass::Start(void)
+{
+	Status = FADE_IN;
+	Duration = 30;
+	StartTime = Frame;
+	Scen->AmbientChangeTimer = 1;
+	IonStormClass::Update_Special_Lighting();
+}
+
+
+/// <summary>
+/// Runs the flash for one game frame (the top of LightningStorm::Update, 0x53A6C0). When the fade in
+/// is over the map starts back to its own lighting, and the fade out lasts 15 frames more.
+/// </summary>
+void NukeFlashClass::AI(void)
+{
+	if (Status == FADE_IN) {
+		if (Duration != -1 && StartTime + Duration < Frame) {
+			Status = FADE_OUT;
+			Duration = 15;
+			StartTime = Frame;
+			IonStormClass::Update_Special_Lighting();
+		}
+	} else if (Status == FADE_OUT && Duration != -1 && StartTime + Duration < Frame) {
+		Status = INACTIVE;
+	}
+}
+
+
+void NukeFlashClass::Serialize(SaveStreamClass & stream)
+{
+	stream.Serialize(Status);
+	stream.Serialize(StartTime);
+	stream.Serialize(Duration);
+}
 
 
 static void Storm_Message(char const * label, TextPrintType style)
@@ -91,9 +149,7 @@ static bool Cloud_Finished(AnimClass const * anim)
 /// </summary>
 void LightningStormClass::Clear(void)
 {
-	if (IsActive) {
-		IonStormClass::Set_Storm_Lighting(false);
-	}
+	NukeFlashClass::Clear();
 	IsActive = false;
 	IsTimeToEnd = false;
 	StartTime = 0;
@@ -156,7 +212,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 	if (PlayerPtr != NULL) {
 		PlayerPtr->RecalcRadar = true;
 	}
-	IonStormClass::Set_Storm_Lighting(true);
+	IonStormClass::Update_Special_Lighting();
 
 	if (Rule->LightningPrintText) {
 		Sound_Effect(Rule->StormSound);
@@ -182,6 +238,8 @@ void LightningStormClass::Print_Refusal(void)
 /// </summary>
 void LightningStormClass::AI(void)
 {
+	NukeFlashClass::AI();
+
 	for (int index = Bolts.Count() - 1; index >= 0; index--) {
 		if (Bolt_Finished(Bolts[index])) {
 			Bolts.Delete_Index(index);
@@ -206,7 +264,7 @@ void LightningStormClass::AI(void)
 		if (IsActive) {
 			IsActive = false;
 			Owner = NULL;
-			IonStormClass::Set_Storm_Lighting(false);
+			IonStormClass::Update_Special_Lighting();
 		}
 		IsTimeToEnd = false;
 	}
@@ -377,6 +435,7 @@ void LightningStormClass::Detach(AbstractClass const * target)
 
 void LightningStormClass::Serialize(SaveStreamClass & stream)
 {
+	NukeFlashClass::Serialize(stream);
 	stream.Serialize(IsActive);
 	stream.Serialize(IsTimeToEnd);
 	stream.Serialize(StartTime);
@@ -389,13 +448,3 @@ void LightningStormClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Bolts);
 }
 
-
-/// <summary>
-/// Darkens the sky again for a storm that was raging when the game was saved.
-/// </summary>
-void LightningStormClass::Post_Load_Game(void)
-{
-	if (IsActive) {
-		IonStormClass::Set_Storm_Lighting(true);
-	}
-}

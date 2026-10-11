@@ -90,7 +90,11 @@ LightConvertClass::LightConvertClass(PaletteClass const & artpalette, PaletteCla
 				NormalGreenTint = green_tint;
 				NormalBlueTint = blue_tint;
 			}
-			Apply_Tint(NORMAL_LIGHT * Scen->IonRedTint / 100, NORMAL_LIGHT * Scen->IonGreenTint / 100, NORMAL_LIGHT * Scen->IonBlueTint / 100, true);
+			int special_red;
+			int special_green;
+			int special_blue;
+			IonStormClass::Special_Tint(special_red, special_green, special_blue);
+			Apply_Tint(special_red, special_green, special_blue, true);
 		} else {
 			Apply_Tint(red_tint, green_tint, blue_tint, false);
 		}

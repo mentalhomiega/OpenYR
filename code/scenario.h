@@ -565,6 +565,20 @@ class ScenarioClass {
 		int IonLevelLight;
 
 		/*
+		 * These are the lighting values for the psychic dominator's blast, and the number of
+		 * game frames between steps of the ambient light while a nuclear flash or a dominator
+		 * blast changes it.
+		 */
+		int DominatorAmbientLight;
+		int DominatorRedTint;
+		int DominatorGreenTint;
+		int DominatorBlueTint;
+		int DominatorGroundLight;
+		int DominatorLevelLight;
+		int DominatorAmbientChangeRate;
+		int NukeAmbientChangeRate;
+
+		/*
 		 * If a scenario is in the process of being read in, then this flag will be true.
 		 * The game is not running yet, so only the housekeeping the load needs is done.
 		 */

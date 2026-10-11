@@ -21,9 +21,11 @@
 #include "dialog.hh"
 #include "globals.h"
 #include "house.h"
+#include "ion.h"
 #include "ionblast.h"
 #include "rules.h"
 #include "savestream.h"
+#include "scenario.h"
 #include "session.h"
 #include "shapeset.h"
 #include "stimer.h"
@@ -67,6 +69,8 @@ void PsychicDominatorClass::Start(Cell const & cell, HouseClass * owner)
 	Owner = owner;
 	Anim = new AnimClass(Rule->DominatorFirstAnim, Map[cell].Center_Coord());
 	Status = FIRST_ANIM;
+	Scen->AmbientChangeTimer = 1;
+	IonStormClass::Update_Special_Lighting();
 }
 
 
@@ -105,12 +109,16 @@ void PsychicDominatorClass::AI(void)
 			if (Anim == NULL || Anim_Frames(Anim) - Anim->Fetch_Stage() < 2) {
 				Status = OVER;
 				Anim = NULL;
+				IonStormClass::Update_Special_Lighting();
 			}
 			break;
 
 		case OVER:
-			Status = INACTIVE;
-			Owner = NULL;
+			// The dominator is free again once the light has settled back (FUN_0053AF40).
+			if (Scen->DesiredAmbientLight == Scen->CurrentAmbientLight) {
+				Status = INACTIVE;
+				Owner = NULL;
+			}
 			break;
 
 		default:

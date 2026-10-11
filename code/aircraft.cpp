@@ -425,12 +425,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 
 		TacticalMap->Add_To_Selectables((AircraftClass *)this, point);
 
-		int brightness;
-		if (IonStormClass::Is_Storm_Lighting()) {
-			brightness = Scen->IonLevelLight;
-		} else {
-			brightness = Scen->LevelLight;
-		}
+		int brightness = IonStormClass::Level_Light();
 
 		brightness *= (HeightAGL / (2 * LEVEL_LEPTON_H));
 		int newbrightness = Iron_Curtain_Brightness(brightness + Map[coord].Brightness + Rule->ExtraAircraftLight);

@@ -74,6 +74,7 @@
 #include "infantry.h"
 #include "inline.h"
 #include "lightcon.h"
+#include "lstorm.h"
 #include "map.h"
 #include "missile.h"
 #include "overtype.h"
@@ -1803,7 +1804,7 @@ ObjectTypeClass const * BulletClass::Class_Of(void) const
 
 /// <summary>
 /// Starts the build-up of a nuclear blast, as BulletClass::Update (0x4666E0) does when a projectile
-/// with the warhead named NUKE goes off. The projectile settles on the ground and plays NUKEBALL
+/// with the warhead named NUKE goes off. The map flashes, and the projectile settles on the ground and plays NUKEBALL
 /// where it is; the blast itself goes off when that animation ends.
 /// </summary>
 /// <returns>bool; Is the projectile waiting for the animation? False when there is no NUKEBALL animation, so the blast goes off at once.</returns>
@@ -1815,6 +1816,8 @@ bool BulletClass::Start_Nuke_Blast(void)
 		settled.Z = floor;
 		PositionCoord = settled;
 	}
+
+	NukeFlashClass::Start();
 
 	AnimType const type = AnimTypeClass::From_Name("NUKEBALL");
 	if (type == ANIM_NONE) {
