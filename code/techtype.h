@@ -505,6 +505,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsNatural;
 		bool IsUnnatural;
 
+		// A CloseRange object closes to melee distance: an infantryman steps to the sub-cell nearest its target, and the
+		// object accepts a spot within 1.2 cells of the target when its weapon cannot reach from there (TechnoTypeClass::CloseRange).
+		bool IsCloseRange;
+
 		// An Underwater object is a submerged target for NavalTargeting=1.
 		bool IsUnderwater;
 

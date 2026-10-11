@@ -1313,6 +1313,22 @@ void FootClass::Approach_Target(void)
 				maxrange = 255;
 			}
 
+			// A CloseRange infantryman searches at least 332 leptons out (FootClass::ApproachTarget, 0x4D5690).
+			if (RTTI == RTTI_INFANTRY && TClass->IsCloseRange && maxrange < 332.8) {
+				maxrange = 332;
+			}
+
+			// The free spot of a cell nearest a coordinate, in that cell (CellClass::FindInfantrySubposition, 0x481180).
+			// Nothing is free in a cell a vehicle or structure fills, and the result is then COORD_NONE.
+			auto subposition = [](CellClass & cell, Coord const & toward) -> Coord {
+				Coord const corner = Coord_Whole(cell.Cell_Coord());
+				Coord spot = cell.Closest_Free_Spot(Coord(corner.X + (toward.X & (CELL_LEPTON_W - 1)), corner.Y + (toward.Y & (CELL_LEPTON_H - 1)), toward.Z));
+				if (spot != COORD_NONE) {
+					spot.Z = Map.Get_Height_GL(toward);
+				}
+				return(spot);
+			};
+
 			Coord tcoord = TarCom->Center_Coord();
 			Coord trycoord;
 			Cell tcell = tcoord.As_Cell();
@@ -1336,6 +1352,40 @@ void FootClass::Approach_Target(void)
 			MZoneType mzone = TClass->MZone;
 			bool found = false;
 
+			// A CloseRange object lifts itself off the map while its destination zone is tested, so that it does not block its own spot.
+			auto clear_to_move = [&](Cell const & cell) -> bool {
+				if (TClass->IsCloseRange) {
+					Mark(MARK_UP);
+				}
+				bool const clear = Map[cell].Is_Clear_To_Move(TClass->Speed, false, false, Map.Get_Cell_Zone(Destination_Coord().As_Cell(), mzone, IsOnBridge), mzone);
+				if (TClass->IsCloseRange) {
+					Mark(MARK_DOWN);
+				}
+				return(clear);
+			};
+
+			// A CloseRange object already within 1.5 cells of its target just steps to the free spot of its own
+			// cell nearest the target, when that is closer than where it stands, and then heads for the target's cell.
+			if (TClass->IsCloseRange) {
+				Coord const here = Get_Cell_Ptr()->Cell_Coord();
+				Coord goal = TarCom->Center_Coord();
+				if (TarCom->Is_Techno()) {
+					goal = ((TechnoClass *)TarCom)->Get_Cell_Ptr()->Cell_Coord();
+				}
+				Coord const goalcell = Map[goal].Cell_Coord();
+				int const apart = (int)std::sqrt((double)(here.Y - goalcell.Y) * (here.Y - goalcell.Y) + (double)(here.X - goalcell.X) * (here.X - goalcell.X));
+				if (apart <= 384) {
+					Coord const spot = subposition(*Get_Cell_Ptr(), TarCom->Center_Coord());
+					if (spot != COORD_NONE) {
+						int const nearer = (int)std::sqrt((double)(spot.Y - goal.Y) * (spot.Y - goal.Y) + (double)(spot.X - goal.X) * (spot.X - goal.X));
+						if (nearer < apart) {
+							Locomotion->Force_Immediate_Destination(spot);
+							found = true;
+						}
+					}
+				}
+			}
+
 			/*
 			**	Sweep through the cells between the target and the unit, looking for
 			**	a cell that the unit can enter but which is also within weapon range
@@ -1343,7 +1393,7 @@ void FootClass::Approach_Target(void)
 			**	be found, then the target will be assigned as the movement destination
 			**	and let "the chips fall where they may."
 			*/
-			for (int range = maxrange; (double)range > CELL_LEPTON / 1.25; range -= CELL_LEPTON) {
+			for (int range = maxrange; !found && (double)range > CELL_LEPTON / 1.25; range -= CELL_LEPTON) {
 				static int _angles[] = {
 					DIR_MIN,
 					DIR_STEP_32, -DIR_STEP_32,
@@ -1357,6 +1407,12 @@ void FootClass::Approach_Target(void)
 				for (int index = 0; index < ARRAY_SIZE(_angles); index++) {
 					trycoord = Coord(Move_Coord(tcoord, DirType((Dir256)(dir + _angles[index])).Snap_To_256(), range).As_Cell(), 0);
 
+					// A CloseRange infantryman aims for the free spot of that cell nearest its target.
+					if (RTTI == RTTI_INFANTRY && TClass->IsCloseRange) {
+						trycoord = subposition(Map[trycoord], tcoord);
+						if (trycoord == COORD_NONE) continue;
+					}
+
 					if (checkbuild && !Map[trycoord].Can_Build_Here()) continue;
 
 					trycoord.Z = Map.Get_Height_GL(trycoord);
@@ -1364,9 +1420,15 @@ void FootClass::Approach_Target(void)
 						trycoord.Z += BRIDGE_LEPTON_HEIGHT;
 					}
 
-					if (TClass->In_Range(trycoord, TarCom, Get_Class_Weapon_Data(primary)->Weapon)) {
+					// A CloseRange object also takes a spot within 1.2 cells of the target, whatever its weapon's reach.
+					bool reaches = TClass->In_Range(trycoord, TarCom, Get_Class_Weapon_Data(primary)->Weapon);
+					if (!reaches && TClass->IsCloseRange) {
+						Coord const at = TarCom->Center_Coord();
+						reaches = (int)std::sqrt((double)(trycoord.X - at.X) * (trycoord.X - at.X) + (double)(trycoord.Y - at.Y) * (trycoord.Y - at.Y)) < 307.2;
+					}
+					if (reaches) {
 						trycell = trycoord.As_Cell();
-						if (Map.In_Local_Radar(trycell) && Map[trycell].Is_Clear_To_Move(TClass->Speed, false, false, Map.Get_Cell_Zone(Destination_Coord().As_Cell(), mzone, IsOnBridge), mzone)) {
+						if (Map.In_Local_Radar(trycell) && clear_to_move(trycell)) {
 
 							int maxdist = std::max(abs(trycell.X - tcell.X), abs(trycell.Y - tcell.Y));
 							CellClass * cellptr = &Map[trycell];
