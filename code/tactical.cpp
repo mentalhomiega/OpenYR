@@ -3950,6 +3950,19 @@ void Start_Chrono_Screen_Effect(int frames)
 
 
 /// <summary>
+/// Tells whether the chronoshift screen effect is running at the current frame. It runs from the
+/// frame it started until the second fade ends, so the answer does not depend on it being drawn.
+/// </summary>
+bool Chrono_Screen_Effect_Is_Running(void)
+{
+	if (ChronoEffectStart < 0 || Frame < ChronoEffectStart) {
+		return false;
+	}
+	return Frame - ChronoEffectStart < ChronoEffectFrames * 2 + CHRONO_EFFECT_HOLD;
+}
+
+
+/// <summary>
 /// Ends the chronoshift screen effect and returns the input to the player if the effect took it.
 /// </summary>
 static void End_Chrono_Screen_Effect(void)

@@ -12,6 +12,7 @@
 #include "ion.h"
 #include "lstorm.h"
 #include "psydom.h"
+#include "tactical.h"
 
 #include "_convert.h"
 #include "_map.h"
@@ -357,11 +358,21 @@ static int const NUKE_LEVEL_LIGHT = 100;
 
 
 /// <summary>
+/// Tells whether the nuclear lighting applies: while the flash fades in, or while a chronoshift
+/// screen effect runs. The original's UpdateLighting (0x53C280) tests the same two conditions.
+/// </summary>
+static bool Nuke_Lighting_Applies(void)
+{
+	return NukeFlashClass::Is_Fading_In() || Chrono_Screen_Effect_Is_Running();
+}
+
+
+/// <summary>
 /// Gives the map the lighting that suits what is on screen, as ScenarioClass::UpdateLighting (0x53C280)
-/// does: the nuclear flash while it fades in, else the lightning storm's lighting while it rages,
-/// else the psychic dominator's while the blast lasts, else the scenario's own. The ambient light
-/// then moves toward the new level a step at a time, and the palettes take the new tint at once.
-/// An ion storm does its own lighting.
+/// does: the nuclear lighting while the flash fades in or a chronoshift screen effect runs, else the
+/// lightning storm's lighting while it rages, else the psychic dominator's while the blast lasts, else
+/// the scenario's own. The ambient light then moves toward the new level a step at a time, and the
+/// palettes take the new tint at once. An ion storm does its own lighting.
 /// </summary>
 void IonStormClass::Update_Special_Lighting(void)
 {
@@ -370,7 +381,7 @@ void IonStormClass::Update_Special_Lighting(void)
 	}
 
 	SpecialLightType mode = SPECIAL_LIGHT_NONE;
-	if (NukeFlashClass::Is_Fading_In()) {
+	if (Nuke_Lighting_Applies()) {
 		mode = SPECIAL_LIGHT_NUKE;
 	} else if (LightningStormClass::Is_Active()) {
 		mode = SPECIAL_LIGHT_STORM;
@@ -470,7 +481,7 @@ void IonStormClass::Clear_Special_Lighting(void)
 void IonStormClass::Restore_Special_Lighting(void)
 {
 	Applied_Light = SPECIAL_LIGHT_NONE;
-	if (NukeFlashClass::Is_Fading_In() || LightningStormClass::Is_Active() || PsychicDominatorClass::Is_Lit()) {
+	if (Nuke_Lighting_Applies() || LightningStormClass::Is_Active() || PsychicDominatorClass::Is_Lit()) {
 		Update_Special_Lighting();
 	}
 }

@@ -429,6 +429,9 @@ class Tactical : public AbstractClass
 // Starts the chronoshift screen effect, with each fade lasting the frames given.
 void Start_Chrono_Screen_Effect(int frames);
 
+// Tells whether the chronoshift screen effect runs at the current frame. The answer does not wait for the effect to be drawn.
+bool Chrono_Screen_Effect_Is_Running(void);
+
 #ifdef _DEBUG
 extern bool DrawOccupierLinks;
 extern bool OccupationBitPrint;
