@@ -130,6 +130,8 @@ BulletClass::BulletClass(void) :
 	SourceCoord(COORD_NONE),
 	LastCell(CELL_NONE),
 	Weapon(NULL),
+	NextAnim(NULL),
+	SpawnNextAnim(false),
 	IsInaccurate(false),
 	Fuse(),
 	IsBright(false),
@@ -147,6 +149,7 @@ BulletClass::BulletClass(void) :
 {
 	Create_ID();
 	Bullets.Add(this);
+	AnimPtrTracker.Add(this);
 }
 
 
@@ -192,6 +195,7 @@ void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *ta
  *=============================================================================================*/
 BulletClass::~BulletClass(void)
 {
+	AnimPtrTracker.Delete(this);
 	Detach_This_From_All(this, true);
 
 	if (GameActive) {
@@ -344,6 +348,20 @@ void BulletClass::AI(void)
 	int is_aircraft = false;
 
 	if (!IsActive) return;
+
+	/*
+	 * A nuclear blast waits here while its build-up animation plays, and goes off when that
+	 * animation ends (BulletClass::Update, 0x4666E0).
+	 */
+	if (SpawnNextAnim) {
+		if (NextAnim != NULL) {
+			return;
+		}
+		SpawnNextAnim = false;
+		Bullet_Explodes(false);
+		Delete_Me();
+		return;
+	}
 
 	/*
 	**	Ballistic objects are handled here.
@@ -924,6 +942,9 @@ void BulletClass::AI(void)
 						}
 					}
 				}
+				if (stricmp(Warhead->Name(), "NUKE") == 0 && Start_Nuke_Blast()) {
+					break;
+				}
 				Bullet_Explodes(forced);
 				Delete_Me();
 			}
@@ -984,6 +1005,8 @@ int BulletClass::Shape_Number(void) const
  *=============================================================================================*/
 void BulletClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
+	if (SpawnNextAnim) return;
+
 	if (Scen->Special.IsFogOfWar && Map.Is_Fogged(PositionCoord)) return;
 
 	/*
@@ -1090,6 +1113,9 @@ void BulletClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (Class == target) {
 		Class = NULL;
+	}
+	if (NextAnim == target) {
+		NextAnim = NULL;
 	}
 }
 
@@ -1653,6 +1679,8 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SourceCoord);
 	stream.Serialize(LastCell);
 	stream.Serialize(Weapon);
+	stream.Serialize(NextAnim);
+	stream.Serialize(SpawnNextAnim);
 	stream.Serialize(IsInaccurate);
 	stream.Serialize(Fuse);
 	stream.Serialize(IsBright);
@@ -1770,6 +1798,34 @@ void BulletClass::Assign_Target(AbstractClass * target)
 ObjectTypeClass const * BulletClass::Class_Of(void) const
 {
 	return((ObjectTypeClass const *)Class);
+}
+
+
+/// <summary>
+/// Starts the build-up of a nuclear blast, as BulletClass::Update (0x4666E0) does when a projectile
+/// with the warhead named NUKE goes off. The projectile settles on the ground and plays NUKEBALL
+/// where it is; the blast itself goes off when that animation ends.
+/// </summary>
+/// <returns>bool; Is the projectile waiting for the animation? False when there is no NUKEBALL animation, so the blast goes off at once.</returns>
+bool BulletClass::Start_Nuke_Blast(void)
+{
+	int const floor = Map.Get_Height_GL(PositionCoord);
+	if (PositionCoord.Z < floor) {
+		Coord settled = PositionCoord;
+		settled.Z = floor;
+		PositionCoord = settled;
+	}
+
+	AnimType const type = AnimTypeClass::From_Name("NUKEBALL");
+	if (type == ANIM_NONE) {
+		return(false);
+	}
+	NextAnim = new AnimClass(AnimTypes[type], PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord));
+	SpawnNextAnim = true;
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST nuke blast builds up at frame %d\n", Frame);
+	}
+	return(true);
 }
 
 
