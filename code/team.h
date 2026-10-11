@@ -239,6 +239,12 @@ class TeamClass : public AbstractClass
 		bool IsNextMission;
 
 		/*
+		**	Set when the leader finds that it can never fire at the team's target. On the next turn the
+		**	team drops the target and its script line picks a new one, as it does when a line starts.
+		*/
+		bool IsTargetNotAssigned;
+
+		/*
 		**	If at least one member of this team successfully left the map, then this
 		**	flag will be set. At the time the team is terminated, if this flag is true, then
 		**	if there are any triggers that depend upon this team leaving, they will be
