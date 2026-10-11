@@ -60,6 +60,7 @@
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
+**	dumpfile <name>	copies a file the game can read to dump-<name> in the working directory
 **	trigaction <number>[@<House>] <value> <waypoint>	carries out that trigger action for the player's house, or the named one, with the value in its number, house or time field
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
@@ -694,6 +695,27 @@ void Run(StepType const & step)
 
 	if (step.Command == "trigaction") {
 		Trigger_Action_Step(step);
+		return;
+	}
+
+	if (step.Command == "dumpfile") {
+		// dumpfile <name>: copies a file the game can read, from a MIX or the game folder, to "dump-<name>" in the working directory.
+		CCFileClass file(step.Argument.c_str());
+		std::string const path = "dump-" + step.Argument;
+		if (file.Is_Available() && file.Open(FileClass::READ)) {
+			int const size = file.Size();
+			std::vector<char> data(size);
+			file.Read(data.data(), size);
+			file.Close();
+			FILE * f = std::fopen(path.c_str(), "wb");
+			if (f != NULL) {
+				std::fwrite(data.data(), 1, size, f);
+				std::fclose(f);
+			}
+			DebugString("AUTOTEST   dumpfile %s: %d bytes to %s\n", step.Argument.c_str(), size, path.c_str());
+		} else {
+			DebugString("AUTOTEST   dumpfile %s: not found\n", step.Argument.c_str());
+		}
 		return;
 	}
 

@@ -47,6 +47,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
 | `kill <TypeID> [1]` | Destroys every computer object of the type with no attacker, the C4 warhead forced; with a `1`, every player object of the type instead |
 | `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
+| `dumpfile <name>` | Copies the file the game finds under that name, from a MIX or the game folder, to `dump-<name>` in the working directory, and logs its size |
 | `trigaction <number>[@<House>] <value> <waypoint>` | Carries out the trigger action with that number for the player's house, or for the named house with an underscore in place of a space, as a trigger would. The value fills the action's number, house or time field and the waypoint its waypoint field. The log gets `done` or `failed` |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
