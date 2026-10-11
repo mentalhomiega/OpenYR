@@ -370,6 +370,12 @@ class BuildingClass : public TechnoClass
 		// Is this gap generator's shroud in place, and did it count against the local player's view?
 		bool IsGeneratingGap;
 
+		// The radius of the shroud this gap generator makes or lifts, 0 until it first does, and whether its owner has
+		// charged it to SuperGapRadiusInCells, which costs ExtraPower more drain (BuildingClass::GapRadius, GapSuperCharged, HasExtraPowerDrain).
+		int GapRadius;
+		bool IsGapSuperCharged;
+		bool HasExtraPowerDrain;
+
 		// The fires burning on the structure while it is badly damaged, and whether it should have them.
 		AnimClass * DamageFireAnims[8];
 		bool IsRequiresDamageFires;

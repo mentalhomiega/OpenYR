@@ -333,6 +333,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 
+		// A gap generator charged by its owner covers this many cells instead; 0 leaves it uncharged-only (TechnoTypeClass::SuperGapRadiusInCells).
+		int SuperGapRadiusInCells;
+
 		// How near an Ivan bomb must be for this object to show it to its owner, in cells.
 		int BombSight;
 

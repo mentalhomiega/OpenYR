@@ -274,6 +274,9 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	CloakGeneratorState(CLOAK_SETTLED),
 	CurrentCloakRadius(0),
 	IsGeneratingGap(false),
+	GapRadius(0),
+	IsGapSuperCharged(false),
+	HasExtraPowerDrain(false),
 	DamageFireAnims{},
 	IsRequiresDamageFires(false),
 	IsGapCounted(false),
@@ -1703,6 +1706,13 @@ void BuildingClass::AI(void)
 			Create_Gap();
 		} else if (!gap && IsGeneratingGap) {
 			Destroy_Gap();
+			// A gap generator that loses power drops its charge (the power change handler, 0x4549B0).
+			if (IsGapSuperCharged) {
+				IsGapSuperCharged = false;
+				HasExtraPowerDrain = false;
+				House->RecalcPower = true;
+				GapRadius = Class->GapRadiusInCells;
+			}
 		}
 	}
 
@@ -2817,6 +2827,9 @@ bool BuildingClass::Active_Click_With(ActionType action, ObjectClass * object, b
 	}
 
 	if (action == ACTION_SELF) {
+		if (Class->IsGapGenerator) {
+			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
+		}
 		if (Occupants.Count() > 0 || ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0)) {
 			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
 			return(true);
@@ -4270,6 +4283,11 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 	bool absorbed = (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0;
 	if (action == ACTION_SELF && (Occupants.Count() > 0 || absorbed)) {
 		if (StunDuration > 0 || House != PlayerPtr) {
+			action = ACTION_NONE;
+		}
+	} else if (action == ACTION_SELF && Class->IsGapGenerator && House == PlayerPtr) {
+		// The owner can charge a gap generator while its power covers the extra drain, and can always discharge it.
+		if (!IsGapSuperCharged && House->Power - House->Drain <= Class->ExtraPowerDrain) {
 			action = ACTION_NONE;
 		}
 	} else if (action == ACTION_SELF) {
@@ -6931,6 +6949,30 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 	}
 
+	// A gap generator with a SuperGapRadiusInCells switches between its normal and its charged shroud. The charge costs ExtraPower
+	// more drain, and a generator that is off stays uncharged (BuildingClass::Mission_Unload, 0x44D880).
+	if (Class->IsGapGenerator && Class->SuperGapRadiusInCells != 0) {
+		Destroy_Gap();
+		if (!IsGapSuperCharged) {
+			GapRadius = Class->SuperGapRadiusInCells;
+			if (!Is_Powered_On()) {
+				GapRadius = Class->GapRadiusInCells;
+				Create_Gap();
+				Assign_Mission(MISSION_GUARD);
+				return(1);
+			}
+			Create_Gap();
+			IsGapSuperCharged = true;
+			HasExtraPowerDrain = true;
+		} else {
+			IsGapSuperCharged = false;
+			HasExtraPowerDrain = false;
+			GapRadius = Class->GapRadiusInCells;
+			Create_Gap();
+		}
+		House->RecalcPower = true;
+	}
+
 	Assign_Mission(MISSION_GUARD);
 	return(1);
 }
@@ -7101,6 +7143,9 @@ int BuildingClass::Power_Drain(void) const
 {
 	if (IsOn) {
 		int drain = Class->Drain;
+		if (HasExtraPowerDrain) {
+			drain += Class->ExtraPowerDrain;
+		}
 		if (UpgradeLevel != 0) {
 			for (int i = 0; i < BUILDING_UPGRADE_MAX; i++) {
 				if (Upgrades[i] != NULL) {
@@ -10383,6 +10428,9 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CloakGeneratorState);
 	stream.Serialize(CurrentCloakRadius);
 	stream.Serialize(IsGeneratingGap);
+	stream.Serialize(GapRadius);
+	stream.Serialize(IsGapSuperCharged);
+	stream.Serialize(HasExtraPowerDrain);
 	stream.Serialize(DamageFireAnims);
 	stream.Serialize(IsRequiresDamageFires);
 	stream.Serialize(IsGapCounted);
@@ -10472,6 +10520,9 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 	crc(HasOpened);
 	crc(UnusedBuildingBool1);
 	crc(IsDamagedAnims);
+	crc(GapRadius);
+	crc(IsGapSuperCharged);
+	crc(HasExtraPowerDrain);
 	crc(Brightness);
 	crc(UpgradeLevel);
 	crc((int)ProduceCashTimer);
@@ -10632,13 +10683,13 @@ bool BuildingClass::Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover)
 
 
 /// <summary>
-/// Calls the function with every cell within GapRadiusInCells cells of the cell the building
-/// is drawn over.
+/// Calls the function with every cell within the building's GapRadius cells of the cell the
+/// building is drawn over.
 /// </summary>
 template<typename Fn>
 static void For_Each_Gap_Cell(BuildingClass const * building, Fn && fn)
 {
-	int const radius = building->Techno_Type_Class()->GapRadiusInCells;
+	int const radius = building->GapRadius;
 	Coord coord = building->Center_Coord();
 	coord.X = coord.X + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
 	coord.Y = coord.Y + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
@@ -10667,6 +10718,9 @@ void BuildingClass::Create_Gap(void)
 	if (PlayerPtr == NULL || IsGeneratingGap) {
 		return;
 	}
+	if (GapRadius == 0) {
+		GapRadius = Class->GapRadiusInCells;
+	}
 	IsGeneratingGap = true;
 	IsGapCounted = (House != PlayerPtr && !House->Is_Ally(PlayerPtr) && !PlayerPtr->IsDefeated);
 	if (!IsGapCounted) {
@@ -10694,6 +10748,9 @@ void BuildingClass::Destroy_Gap(void)
 {
 	if (!IsGeneratingGap) {
 		return;
+	}
+	if (GapRadius == 0) {
+		GapRadius = Class->GapRadiusInCells;
 	}
 	IsGeneratingGap = false;
 	if (!IsGapCounted) {

@@ -540,6 +540,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsUnitAbsorb;
 		int ExtraPowerBonus;
 
+		// A negative ExtraPower is the power a charged gap generator draws on top of its Power (BuildingTypeClass::ExtraPowerDrain).
+		int ExtraPowerDrain;
+
 		// Each FactoryPlant=yes structure multiplies its owner's prices by these, per category.
 		bool IsFactoryPlant;
 

@@ -11,6 +11,7 @@ keys:
   - SpySatDeactivationSound
   - GapGenerator
   - GapRadiusInCells
+  - SuperGapRadiusInCells
   - AttackingAircraftSightRange
   - FlashFrameTime
   - FogRate
@@ -235,7 +236,7 @@ The structure works while it stands on the map, is [operational](/systems/power/
 
 When the structure stops working because it is sold, destroyed, captured or loses power, the cells stay covered. The local player's objects look again at once, so the ground they see is uncovered, and a working spy satellite reveals the whole map again. A captured gap generator starts working for its new owner on its next update.
 
-Yuri's Revenge also lets a gap generator widen its gap to `SuperGapRadiusInCells` when deployed. That is not done yet.
+The owner can also charge the structure by clicking it, if its type has [`SuperGapRadiusInCells`](/keys/supergapradiusincells/). The gap then covers that many cells until the owner discharges it by clicking again or the structure loses power. The change happens at once: the old gap is lifted and the new one put in place.
 
 ## The fog of war
 
