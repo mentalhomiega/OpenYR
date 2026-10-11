@@ -6,7 +6,7 @@ summary: "The trigger's house gives back the structures it took from a house wit
 valid_values:
   - "A house by number, either a country or a spawn house. `8997` names the trigger's own house."
 caveats:
-  - "Only structures the trigger's house took from the named house with [Mind Control Base](/scripting/actions/taction-mind-control-base/) go back. A structure the trigger's house has since captured, bought or lost to a third house is left alone."
+  - "Only structures the trigger's house took from the named house with [Mind Control Base](/mapping/actions/taction-mind-control-base/) go back. A structure the trigger's house has since captured, bought or lost to a third house is left alone."
   - "No capture announcement is played and no trigger attached to a structure for `Entered by...` springs."
   - "The action fails when the trigger has no house or the named house is not in play. It succeeds when there is nothing to give back."
 related:

@@ -22,4 +22,4 @@ related:
 Fix=1,130,0,12,0,0,0,0,A ; the starting structures of the house at index 12 are back
 ```
 
-A [save game](/formats/save-games/) keeps each house's list of starting structures, which is the list [Restore Starting Units of...](/scripting/actions/taction-restore-starting-units/) also reads.
+A [save game](/formats/save-games/) keeps each house's list of starting structures, which is the list [Restore Starting Units of...](/mapping/actions/taction-restore-starting-units/) also reads.
