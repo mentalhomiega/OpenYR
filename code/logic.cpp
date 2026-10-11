@@ -307,8 +307,8 @@ void LogicClass::AI(void)
 	}
 
 	if (Scen->DesiredAmbientLight != Scen->CurrentAmbientLight && Rule->AmbientLightChangeRate != 0 && Scen->AmbientChangeTimer == 0) {
-		// A nuclear flash and a psychic dominator blast move the light every few frames (LogicClass::Update, 0x55B330).
-		if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out()) {
+		// A nuclear flash or a chronoshift screen effect moves the light at the nuclear rate, a dominator blast at its own (LogicClass::Update, 0x55B330).
+		if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out() || Chrono_Screen_Effect_Is_Running()) {
 			Scen->AmbientChangeTimer = Scen->NukeAmbientChangeRate;
 		} else if (PsychicDominatorClass::Is_Active()) {
 			Scen->AmbientChangeTimer = Scen->DominatorAmbientChangeRate;
