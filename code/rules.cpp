@@ -512,6 +512,7 @@ RulesClass::RulesClass(void) :
 	IsFreeMCV(false),
 	IsBerzerkAllowed(false),
 	PoseDir(DIR_N),
+	DeployDir(DIR_N),
 	DropPodPuff(NULL),
 	WaypointAnimationSpeed(12),
 	BarrelExplode(NULL),
@@ -1097,6 +1098,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		UnloadingHarvester = TGet_Class(ini, AUDIOVISUAL, "UnloadingHarvester", UnloadingHarvester);
 		IsBountyDisplay = ini.Get_Bool(AUDIOVISUAL, "BountyDisplay", IsBountyDisplay);
 		PoseDir = (Dir256)ini.Get_Int(AUDIOVISUAL, "PoseDir", PoseDir);
+		DeployDir = (Dir256)((ini.Get_Int(AUDIOVISUAL, "DeployDir", DeployDir >> 5) << 5) & 0xFF);
 		DropPodPuff = TGet_Class(ini, AUDIOVISUAL, "DropPodPuff", DropPodPuff);
 		WaypointAnimationSpeed = ini.Get_Int(AUDIOVISUAL, "WaypointAnimationSpeed", WaypointAnimationSpeed);
 		BarrelExplode = TGet_Class(ini, AUDIOVISUAL, "BarrelExplode", BarrelExplode);
@@ -2900,6 +2902,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFreeMCV);
 	stream.Serialize(IsBerzerkAllowed);
 	stream.Serialize(PoseDir);
+	stream.Serialize(DeployDir);
 	stream.Serialize(DropPodPuff);
 	stream.Serialize(WaypointAnimationSpeed);
 	stream.Serialize(BarrelExplode);
