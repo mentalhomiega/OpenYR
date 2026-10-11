@@ -187,6 +187,17 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 
 	bool has_air_transport = team->Has_Air_Transport();
 
+	/*
+	**	A task force with a naval member takes only naval transports. Its other members with
+	**	passenger room ride inside them rather than arriving as transports of their own.
+	*/
+	bool naval_group = false;
+	for (int index = 0; index < teamtype->TaskForce->ClassCount; index++) {
+		if (teamtype->TaskForce->Members[index].Class->IsNaval) {
+			naval_group = true;
+		}
+	}
+
 	bool drop_pod = false;
 	if (teamtype->IsDroppod) {
 		if (teamtype->TaskForce->Has_Only_Infantry()) {
@@ -238,8 +249,12 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 					temp->IsInitiated = true;
 				}
 
+				/*
+				**	Only a Full team carries passengers, so only its members with passenger room
+				**	can be transports (gamemd, TeamTypeClass::CreateMembers).
+				*/
 				bool transporter = false;
-				if (tclass->Max_Passengers() > 0) {
+				if (tclass->Max_Passengers() > 0 && teamtype->IsFull) {
 					if (has_air_transport) {
 						if (temp->RTTI == RTTI_AIRCRAFT) {
 							transporter = true;
@@ -252,6 +267,9 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 						} else {
 							transporter = false;
 						}
+					}
+					if (naval_group && !tclass->IsNaval) {
+						transporter = false;
 					}
 				}
 
