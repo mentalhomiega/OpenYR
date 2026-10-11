@@ -343,6 +343,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	Door(),
 	BarrelPitch(3),
 	BurstIndex(0),
+	RadialFireIndex(0),
 	IsBurstResetPending(false),
 	BurstResetTimer(),
 	TargetingLaserTimer(),
@@ -4859,9 +4860,27 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			max_speed = displacement.Length() / 2;
 		}
 
-		if (weapon->Bullet->ROT > 0) {
+		// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
+		// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
+		int const segments = TClass->RadialFireSegments;
+		if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
 			bullet->MaxSpeed = weapon->MaxSpeed;
-			max_speed = 1;
+			if (segments == 0) {
+				max_speed = 1;
+			}
+		}
+
+		// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
+		// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
+		if (segments > 0) {
+			double const step = -9.587672516830327e-05;
+			double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
+			double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
+			dir = DirType((int)(short)(int)raw);
+			RadialFireIndex++;
+			if (RadialFireIndex >= segments) {
+				RadialFireIndex = 0;
+			}
 		}
 
 		TVelocity3D<double> velocity;
@@ -10003,6 +10022,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrimaryFacing);
 	stream.Serialize(SecondaryFacing);
 	stream.Serialize(BurstIndex);
+	stream.Serialize(RadialFireIndex);
 	stream.Serialize(IsBurstResetPending);
 	stream.Serialize(BurstResetTimer);
 	stream.Serialize(TargetingLaserTimer);
@@ -10069,6 +10089,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(Ammo);
 	crc(PurchasePrice);
 	crc(BurstIndex);
+	crc(RadialFireIndex);
 	crc(IsBurstResetPending);
 	crc((int)BurstResetTimer);
 	crc(AngleRotatedSideways);

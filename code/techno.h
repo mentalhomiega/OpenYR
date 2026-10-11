@@ -419,6 +419,10 @@ class TechnoClass :	public RadioClass,
 		 */
 		int BurstIndex;
 
+		// The segment of its RadialFireSegments fan that this object's next homing shot takes. It counts
+		// up per shot and wraps to zero at the segment count (TechnoClass::Fire, 0x6FDD50).
+		int RadialFireIndex;
+
 		/*
 		 * Losing a target partway through a burst starts this countdown. The burst keeps its
 		 * next-shot index until a new target is acquired or the full rearm interval expires.
