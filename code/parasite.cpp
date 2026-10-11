@@ -119,6 +119,30 @@ void ParasiteClass::Update(void)
 	if (victim->Is_Foot()) {
 		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0;
 	}
+
+	// A giant squid, a Naval Organic owner, runs the grapple that reads Culling (ParasiteClass::UpdateSquid, 0x6297F0).
+	// A Culling warhead sinks a red victim at once, and a yellow one when the squid is elite.
+	if (weapon->WarheadPtr != nullptr && weapon->WarheadPtr->IsCulling && Owner->TClass->IsNaval && Owner->TClass->IsOrganic) {
+		bool const red = victim->Strength > 0 && victim->HealthRatio <= Rule->ConditionRed;
+		bool const yellow = victim->HealthRatio > Rule->ConditionRed && victim->HealthRatio <= Rule->ConditionYellow;
+		if (red || (yellow && Owner->Veterancy.Is_Elite())) {
+			TechnoClass * const squid = Owner;
+			if (squid->TClass->IsTrainable) {
+				squid->Veterancy.Made_A_Kill(squid->TClass->Cost_Of(squid->House), victim->TClass->Cost_Of(victim->House));
+			}
+			Exit_Unit();
+			victim->IsSinking = true;
+			if (victim->Is_Foot()) {
+				((FootClass *)victim)->Death_Announcement(squid);
+			}
+			victim->Stun();
+			if (squid->IsActive && squid->Is_Foot()) {
+				((FootClass *)squid)->ParalysisTimer = 0;
+			}
+			return;
+		}
+	}
+
 	int damage = infantry ? victim->Strength : weapon->Attack;
 	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner, infantry, true);
 }

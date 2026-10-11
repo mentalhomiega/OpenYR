@@ -215,6 +215,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A parasite warhead puts its firer inside the target instead of hurting it.
 		bool IsParasite;
 
+		// A Culling warhead of a giant squid's grapple kills a victim already in poor health instead of damaging it.
+		bool IsCulling;
+
 		// An Ivan bomb warhead fixes a time bomb to its target instead of hurting it.
 		bool IsIvanBomb;
 
