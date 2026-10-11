@@ -3756,7 +3756,7 @@ void TeamClass::TMission_MOVETO_BUILDING_WITH_PROPERTY(TeamMissionClass * missio
 			if (bptr != NULL) {
 				MZoneType mzone = unit->TClass->MZone;
 				Cell cell = bptr->PositionCoord.As_Cell();
-				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(cell, mzone, unit->IsOnBridge), mzone, false, Point2D(3,3));
+				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(unit->Center_Coord().As_Cell(), mzone, unit->IsOnBridge), mzone, false, Point2D(1,1));
 				if (newcell != CELL_NONE) {
 					Assign_Mission_Target(&Map[newcell]);
 				} else {
