@@ -3235,6 +3235,24 @@ AntiInfantryValue:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ApproachTargetResetMultiplier:
+  key: ApproachTargetResetMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: ApproachTargetResetMultiplier
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Arcing:
   key: Arcing
   scopes:
@@ -6930,6 +6948,23 @@ CanPassiveAquire:
       default_candidate: 'yes'
       declared_in: TechnoTypeClass
       member: IsCanPassiveAquire
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CanRecalcApproachTarget:
+  key: CanRecalcApproachTarget
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanRecalcApproachTarget
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

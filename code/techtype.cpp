@@ -258,6 +258,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsBunkerable(false),
 	IsDistributedFire(false),
 	IsCanApproachTarget(true),
+	IsCanRecalcApproachTarget(true),
 	SensorsSight(0),
 	IsPoweredUnit(false),
 	ActivateSound(VOC_NONE),
@@ -947,6 +948,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsBunkerable = ini.Get_Bool(Name(), "Bunkerable", IsBunkerable);
 		IsDistributedFire = ini.Get_Bool(Name(), "DistributedFire", IsDistributedFire);
 		IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
+		IsCanRecalcApproachTarget = ini.Get_Bool(Name(), "CanRecalcApproachTarget", IsCanRecalcApproachTarget);
 		SensorsSight = ini.Get_Int(Name(), "SensorsSight", SensorsSight);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 		ActivateSound = ini.Get_VocType(Name(), "ActivateSound", ActivateSound);
@@ -1640,6 +1642,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBunkerable);
 	stream.Serialize(IsDistributedFire);
 	stream.Serialize(IsCanApproachTarget);
+	stream.Serialize(IsCanRecalcApproachTarget);
 	stream.Serialize(SensorsSight);
 	stream.Serialize(IsPoweredUnit);
 	stream.Serialize(ActivateSound);
