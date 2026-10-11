@@ -702,6 +702,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		// A Bunker=yes structure holds one of its owner's Bunkerable vehicles, which fights from inside it.
 		bool IsBunker;
 
+		// NumberImpassableRows is how many columns of the foundation, counted from its west corner, a unit that
+		// has the structure's authority cannot cross. -1 leaves every column impassable.
+		int NumberImpassableRows;
+
 		// A structure with a PsychicDetectionRadius shows its owner which targets enemies within this many cells have.
 		int PsychicDetectionRadius;
 

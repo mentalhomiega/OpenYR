@@ -4145,6 +4145,13 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 
 		if (const_cast<UnitClass *>(this) != obj) {
 
+			// A structure in radio contact with this vehicle does not stop it on a cell outside the structure's
+			// NumberImpassableRows (UnitClass::CanReach, 0x73F0A0).
+			if (obj->RTTI == RTTI_BUILDING && obj == Contact_With_Whom() && !((BuildingClass *)obj)->Blocks_Cell(cellptr)) {
+				obj = obj->Next;
+				continue;
+			}
+
 			/*
 			**	Always allow entry if trying to move on a cell with
 			**	authorization from the occupier.
@@ -4177,6 +4184,12 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
 						}
 					}
+					obj = obj->Next;
+					continue;
+				}
+
+				// The cells outside the NumberImpassableRows of a service depot or bunker do not stop a vehicle (UnitClass::CanReach, 0x73F0A0).
+				if ((bptr->Class->IsCanUnitRepair || bptr->Class->IsBunker) && !bptr->Blocks_Cell(cellptr)) {
 					obj = obj->Next;
 					continue;
 				}
