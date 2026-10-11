@@ -81,6 +81,7 @@ keys:
   - TechLevel
   - TeslaLimit
   - TeslaRatio
+  - ThirdPowerPlant
   - UseMPAIBaseNodes
   - Verses
   - WallTower

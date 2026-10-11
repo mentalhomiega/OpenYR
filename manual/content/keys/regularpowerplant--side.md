@@ -5,7 +5,7 @@ label: Side power plant
 see_also: [AdvancedPowerPlant, PowerTurbine, BuildPower, "system:ai-base-building"]
 when_omitted:
   kind: computed
-  note: The first side takes GDIPowerPlant and the second NodRegularPower, as each rules file sets them; any other side names no plant and inserts the first BuildPower entry the house's country may own.
+  note: The first side takes GDIPowerPlant, the second NodRegularPower and the third ThirdPowerPlant, as each rules file sets them; any other side names no plant and inserts the first BuildPower entry the house's country may own.
 ---
 
 ```ini title="rules.ini"

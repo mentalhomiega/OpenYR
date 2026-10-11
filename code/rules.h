@@ -1385,6 +1385,7 @@ class RulesClass
 		BuildingTypeClass const * GDIPowerTurbine;
 		BuildingTypeClass const * NodRegularPower;
 		BuildingTypeClass const * NodAdvancedPower;
+		BuildingTypeClass const * ThirdPowerPlant;
 
 		/*
 		 * This is the building that raises the firestorm wall, recognized specially so
