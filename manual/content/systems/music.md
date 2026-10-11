@@ -36,7 +36,7 @@ An ion storm that plays the storm track still plays it after Stop, and a Play mu
 
 Starting a scenario stops the current track. The game then plays the scenario's [`Theme=`](/keys/theme/) track if it names one, and otherwise the next allowed track. There are two exceptions:
 
-1. In a campaign mission with no briefing movie and no action movie, the `Theme=` track starts at once behind the mission briefing screen. When the mission begins, that track fades out and the next allowed track follows, unless the `Theme=` track repeats.
+1. In a campaign mission with no briefing movie and no action movie, the `Theme=` track starts at once behind the objectives screen when the mission shows one. Otherwise it is queued as the mission begins. When the mission begins, that track fades out and the next allowed track follows, unless the `Theme=` track repeats.
 2. In a scenario with an action movie, the game requests the `Theme=` track only when that movie plays. If the movie does not play, for example when the player restarts a mission after a defeat, the game starts with the next allowed track.
 
 A request for a track whose file cannot be played produces no music. A queued request still fades out the current track, and an immediate one still stops it. During a game, the next allowed track is chosen about a second later, as if the failed track had just ended. The failed track is chosen again only when no other track is allowed, even when it repeats.

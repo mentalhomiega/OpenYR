@@ -85,9 +85,10 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 
 ## Campaign missions
 
-A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`. The
-script starts with `ui` lines, which are played in file order before any game frame: five `ui click more` with a `ui wait 300` after each, then `ui click resume`, click through the briefing page.
-The briefing movies are skipped in an unattended run.
+A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`.
+The mission opens on its loading screen, which prints the briefing; no briefing page follows it, as in Yuri's Revenge, so a script needs no `ui` lines to start. The briefing
+movies are skipped in an unattended run. The older scripts still begin with `ui click more` and `ui click resume` lines; with no page to click, each one logs `no such visible element`
+and does nothing.
 
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.

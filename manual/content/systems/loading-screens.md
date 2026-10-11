@@ -37,7 +37,7 @@ Both texts are printed in the `AlliedLoad` color of the rules `[Colors]` section
 
 The progress bar is the first frame of `SPLDBR.SHP`, drawn with `SPLDBR.PAL` in the progress strip, starting 172 pixels from its left edge in the 800 by 600 layout and 92 pixels in the 640 by 480 one. It shows as much of its width as the share of the scenario already loaded.
 
-A mission falls back to the older loading screen, which shows a picture picked for the campaign's side, when MISSIONMD.INI is missing, has no section for it, names no picture for the screen's layout, or names a picture or palette the game cannot find or read. [`CD=`](/keys/cd/) describes how that picture is picked.
+A mission whose loading screen prints a briefing opens without an objectives screen; the briefing is reached from the game options. A mission falls back to the older loading screen, which shows a picture picked for the campaign's side, when MISSIONMD.INI is missing, has no section for it, names no picture for the screen's layout, or names a picture or palette the game cannot find or read. [`CD=`](/keys/cd/) describes how that picture is picked.
 
 ## Skirmish and multiplayer
 

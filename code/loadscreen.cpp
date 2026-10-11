@@ -644,6 +644,7 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 		std::vector<std::string> const lines = Wrap_Text(Fetch_String_UTF8(briefing.c_str()), BRIEFING_WIDTH);
 		Shade(*Backdrop, Rect(at.X, at.Y, Widest_Line(lines), Text_Font().Get_Height() * (int)lines.size()));
 		Print_Lines(lines, *Backdrop, at, color);
+		CampaignBriefing = true;
 	}
 	return(true);
 }

@@ -384,9 +384,12 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	DebugString("Reading scenario: %s\n", name);
 
+	LoadScreen.Clear_Campaign_Briefing();
 	if (!Read_Scenario(name)) {
 		return(false);
 	}
+	// Yuri's Revenge prints a campaign mission's briefing on its loading screen and has no page for it.
+	bool const briefing_on_loading_screen = LoadScreen.Shows_Campaign_Briefing();
 
 	Theme.Stop();
 
@@ -409,7 +412,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	bool transit_playing = false;
 
-	if (briefing && Session.Type == GAME_NORMAL && !has_briefing_movie) {
+	if (briefing && Session.Type == GAME_NORMAL && !has_briefing_movie && !briefing_on_loading_screen) {
 		if (Scen->TransitTheme != THEME_NONE) {
 			Theme.Play_Song(Scen->TransitTheme);
 			transit_playing = true;

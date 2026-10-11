@@ -44,6 +44,10 @@ class LoadScreenClass
 		void End(void);
 
 		bool Is_Active(void) const {return(Active);}
+
+		// True when the campaign loading screen drawn by the last Begin printed a mission briefing.
+		bool Shows_Campaign_Briefing(void) const {return(CampaignBriefing);}
+		void Clear_Campaign_Briefing(void) {CampaignBriefing = false;}
 		std::string const & Picture_Name(void) const {return(PictureName);}
 
 	private:
@@ -58,6 +62,7 @@ class LoadScreenClass
 		void Present(Rect const & area);
 
 		bool Active = false;
+		bool CampaignBriefing = false;
 		bool Match = false;
 		std::string PictureName;
 

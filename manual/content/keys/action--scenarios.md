@@ -14,7 +14,7 @@ Action=NOD_M04
 Theme=APPROACH
 ```
 
-The movie plays just before the mission begins. It follows the mission's briefing, either the [`Brief`](/keys/brief/) movie or the objectives screen, and the dropship loadout screen if the mission has one. It plays only on a fresh start. A restart from the menu or a replay after a loss skips it.
+The movie plays just before the mission begins. It follows the mission's briefing, either the [`Brief`](/keys/brief/) movie or, when the mission has none, the objectives screen or the briefing on its loading screen, and the dropship loadout screen if the mission has one. It plays only on a fresh start. A restart from the menu or a replay after a loss skips it.
 
 The movie queues the mission's [`Theme`](/keys/theme/) track as it opens. If the `Theme` track is already playing behind the objectives screen, it fades out before the movie. A mission that names no action movie queues its `Theme` at the same point instead.
 
