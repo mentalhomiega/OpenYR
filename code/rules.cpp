@@ -402,6 +402,8 @@ RulesClass::RulesClass(void) :
 	ChronoSparkle1(NULL),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
+	LetsDoTheTimeWarpOutAgain(VOC_NONE),
+	LetsDoTheTimeWarpInAgain(VOC_NONE),
 	AllyParaDropInf(),
 	AllyParaDropNum(),
 	SovParaDropInf(),
@@ -1208,6 +1210,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		MindClearedSound = ini.Get_VocType(AUDIOVISUAL, "MindClearedSound", MindClearedSound);
 		MasterMindOverloadDeathSound = ini.Get_VocType(AUDIOVISUAL, "MasterMindOverloadDeathSound", MasterMindOverloadDeathSound);
 		ChronoOutSound = ini.Get_VocType(AUDIOVISUAL, "ChronoOutSound", ChronoOutSound);
+		LetsDoTheTimeWarpOutAgain = ini.Get_VocType(AUDIOVISUAL, "LetsDoTheTimeWarpOutAgain", LetsDoTheTimeWarpOutAgain);
+		LetsDoTheTimeWarpInAgain = ini.Get_VocType(AUDIOVISUAL, "LetsDoTheTimeWarpInAgain", LetsDoTheTimeWarpInAgain);
 		SpyPlaneCamera = ini.Get_VocType(AUDIOVISUAL, "SpyPlaneCamera", SpyPlaneCamera);
 		SpyPlaneCameraFrames = ini.Get_Int(AUDIOVISUAL, "SpyPlaneCameraFrames", SpyPlaneCameraFrames);
 		TreeFire = TGet_TypeList<AnimTypeClass>(ini, AUDIOVISUAL, "TreeFire", TreeFire);

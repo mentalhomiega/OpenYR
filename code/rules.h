@@ -239,6 +239,10 @@ class RulesClass
 		VocType ChronoInSound;
 		VocType ChronoOutSound;
 
+		// The looping sounds of the chronoshift screen effect: the first swirl, then the second.
+		VocType LetsDoTheTimeWarpOutAgain;
+		VocType LetsDoTheTimeWarpInAgain;
+
 		/*
 		 * The paradrop superweapons: the infantry types each side's planes carry and how many
 		 * of each, how close to the target a plane starts dropping, and the spy plane's camera

@@ -9,6 +9,7 @@ caveats:
   - "A number of `0` or less does nothing, and the action fails."
   - "The picture is swirled as it stood when the action ran, then whitened, then swirled back from the picture as it stands after the white. The swirl grows stronger and whitens during the first swirl, and unwinds and clears during the second."
   - "The player's input is locked while the effect runs, unless it was already locked before the action."
+  - "The first swirl plays the [AudioVisual] `LetsDoTheTimeWarpOutAgain=` sound and the second swirl the `LetsDoTheTimeWarpInAgain=` sound, each looping until its swirl ends. The first swirl's sound stops when the white ends."
   - "The effect is not kept in a save game."
 related:
   - type: action
