@@ -3414,6 +3414,12 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 				Coord placementcoord(0, 0, 0);
 				BuildingTypeClass * buildingtype = building->Class;
 
+				// The search reports cell 0,0 when it finds no place.
+				auto search_for_place = [&]() {
+					Cell found = House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1);
+					return(found == Cell(0, 0) ? COORD_NONE : Coord(found));
+				};
+
 				if (node != NULL && node->CellID != Cell(0, 0)) {
 
 					if (!buildingtype->PowersUpBuilding.empty() || House->Can_Build_Here(buildingtype, node->CellID)) {
@@ -3423,7 +3429,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						/*
 						**	Find a suitable new spot to place.
 						*/
-						placementcoord = Coord(House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1));
+						placementcoord = search_for_place();
 						if (placementcoord == COORD_NONE) {
 							return(0);
 						}
@@ -3433,7 +3439,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 				} else {
 
 					if (buildingtype->PowersUpBuilding.empty()) {
-						placementcoord = Coord(House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1));
+						placementcoord = search_for_place();
 					} else {
 						cell = House->Where_To_Place_Upgrade(buildingtype);
 						if (cell != CELL_NONE) {
@@ -3444,6 +3450,11 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					if (node != NULL && placementcoord != COORD_NONE) {
 						node->CellID = placementcoord.As_Cell();
 					}
+				}
+
+				if (HouseClass::TraceBuilding) {
+					DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
+						placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
 				}
 
 				if (placementcoord != COORD_NONE) {
