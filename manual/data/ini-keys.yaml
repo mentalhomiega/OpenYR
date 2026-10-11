@@ -11760,6 +11760,60 @@ Doggie:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+DominatorAmbient:
+  key: DominatorAmbient
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+DominatorAmbientChangeRate:
+  key: DominatorAmbientChangeRate
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: DominatorAmbientChangeRate
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+DominatorBlue:
+  key: DominatorBlue
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 DominatorCaptureRange:
   key: DominatorCaptureRange
   scopes:
@@ -11832,6 +11886,78 @@ DominatorFirstAnim:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DominatorGreen:
+  key: DominatorGreen
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+DominatorGround:
+  key: DominatorGround
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+DominatorLevel:
+  key: DominatorLevel
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+DominatorRed:
+  key: DominatorRed
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 DominatorSecondAnim:
   key: DominatorSecondAnim
   scopes:
@@ -24716,6 +24842,24 @@ NotWorkingSound:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+NukeAmbientChangeRate:
+  key: NukeAmbientChangeRate
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Lighting
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: NukeAmbientChangeRate
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 NukeDown:
   key: NukeDown
   scopes:

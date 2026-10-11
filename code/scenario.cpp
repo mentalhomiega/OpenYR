@@ -323,6 +323,14 @@ void ScenarioClass::Reset(void)
 	IonBlueTint = 0;
 	IonGroundLight = NORMAL_LIGHT / 10;
 	IonLevelLight = NORMAL_LIGHT / 60;
+	DominatorAmbientLight = 150;
+	DominatorRedTint = 85;
+	DominatorGreenTint = 20;
+	DominatorBlueTint = 30;
+	DominatorGroundLight = 0;
+	DominatorLevelLight = 0;
+	DominatorAmbientChangeRate = 1;
+	NukeAmbientChangeRate = 1;
 	InitTime = 10000;
 	Stage = 0;
 	IsInputLocked = false;
@@ -1099,7 +1107,7 @@ void Post_Load_Game(void)
 	Search.Update_Map_Dimensions(Map.PlayRect);
 
 	IonStormClass::Apply_Secondary_Effect(false);
-	LightningStormClass::Post_Load_Game();
+	IonStormClass::Restore_Special_Lighting();
 
 	AnimClass::Post_Load_Game();
 
@@ -1187,6 +1195,7 @@ void Clear_Scenario(void)
 	IonStormClass::Init();
 	LightningStormClass::Clear();
 	PsychicDominatorClass::Clear();
+	IonStormClass::Clear_Special_Lighting();
 	RadSiteClass::Clear_All();
 	EMPulseClass::Reset();
 	VeinholeMonsterClass::Reset();
@@ -3602,6 +3611,14 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IonBlueTint);
 	stream.Serialize(IonGroundLight);
 	stream.Serialize(IonLevelLight);
+	stream.Serialize(DominatorAmbientLight);
+	stream.Serialize(DominatorRedTint);
+	stream.Serialize(DominatorGreenTint);
+	stream.Serialize(DominatorBlueTint);
+	stream.Serialize(DominatorGroundLight);
+	stream.Serialize(DominatorLevelLight);
+	stream.Serialize(DominatorAmbientChangeRate);
+	stream.Serialize(NukeAmbientChangeRate);
 	stream.Serialize(IsReadingScenario);
 	stream.Serialize(InitTime);
 	stream.Serialize(RequiredAddOn);
@@ -4021,6 +4038,14 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	IonBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "IonBlue", BlueTint / 100.0));
 	IonGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonGround", GroundLight / NORMAL_LIGHT));
 	IonLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonLevel", LevelLight / NORMAL_LIGHT));
+	NukeAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "NukeAmbientChangeRate", (float)NukeAmbientChangeRate);
+	DominatorAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorAmbient", DominatorAmbientLight / 100.0) + 0.5);
+	DominatorRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorRed", DominatorRedTint / 100.0) + 0.5);
+	DominatorGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorGreen", DominatorGreenTint / 100.0) + 0.5);
+	DominatorBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorBlue", DominatorBlueTint / 100.0) + 0.5);
+	DominatorGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorGround", DominatorGroundLight / (float)NORMAL_LIGHT) + 0.5);
+	DominatorLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorLevel", DominatorLevelLight / (float)NORMAL_LIGHT) + 0.5);
+	DominatorAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "DominatorAmbientChangeRate", (float)DominatorAmbientChangeRate);
 
 	Session.Update_Progress(55);
 	Call_Back();

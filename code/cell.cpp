@@ -4909,13 +4909,8 @@ void CellClass::Init_Light(int & intensity, int & ambient, int & brightness, int
 		brightness += ambient;
 		alt_brightness = brightness;
 
-		if (IonStormClass::Is_Storm_Lighting()) {
-			brightness += Height * Scen->IonLevelLight - Scen->IonGroundLight;
-			alt_brightness += (Height + BRIDGE_CELL_HEIGHT) * Scen->IonLevelLight - Scen->IonGroundLight;
-		} else {
-			brightness += Height * Scen->LevelLight - Scen->GroundLight;
-			alt_brightness += (Height + BRIDGE_CELL_HEIGHT) * Scen->LevelLight - Scen->GroundLight;
-		}
+		brightness += Height * IonStormClass::Level_Light() - IonStormClass::Ground_Light();
+		alt_brightness += (Height + BRIDGE_CELL_HEIGHT) * IonStormClass::Level_Light() - IonStormClass::Ground_Light();
 
 		tile_brightness = brightness;
 
@@ -4954,13 +4949,8 @@ void CellClass::Recalc_Light(void)
 	Brightness = Ambient + (NORMAL_LIGHT * Scen->CurrentAmbientLight) / 100;
 	AltBrightness = Brightness;
 
-	if (IonStormClass::Is_Storm_Lighting()) {
-		Brightness += Height * Scen->IonLevelLight - Scen->IonGroundLight;
-		AltBrightness += (Height + BRIDGE_CELL_HEIGHT) * Scen->IonLevelLight - Scen->IonGroundLight;
-	} else {
-		Brightness += Height * Scen->LevelLight - Scen->GroundLight;
-		AltBrightness += (Height + BRIDGE_CELL_HEIGHT) * Scen->LevelLight - Scen->GroundLight;
-	}
+	Brightness += Height * IonStormClass::Level_Light() - IonStormClass::Ground_Light();
+	AltBrightness += (Height + BRIDGE_CELL_HEIGHT) * IonStormClass::Level_Light() - IonStormClass::Ground_Light();
 
 	TileBrightness = (Brightness * Intensity) >> 16;
 	AltBrightness = (AltBrightness * Intensity) >> 16;

@@ -18,6 +18,33 @@ class HouseClass;
 class SaveStreamClass;
 
 /*
+ * The flash of a nuclear blast. The map lights up for a moment when a nuclear payload lands, then
+ * fades back; the lightning storm's frame update runs it.
+ */
+class NukeFlashClass
+{
+	public:
+		static void Clear(void);
+		static void Start(void);
+		static void AI(void);
+		static bool Is_Fading_In(void) {return(Status == FADE_IN);}
+		static bool Is_Fading_Out(void) {return(Status == FADE_OUT);}
+		static void Serialize(SaveStreamClass & stream);
+
+	private:
+		enum StatusType {
+			INACTIVE,
+			FADE_IN,
+			FADE_OUT
+		};
+
+		static StatusType Status;
+		static int StartTime;
+		static int Duration;
+};
+
+
+/*
  * The Yuri's Revenge lightning storm, raised by a LightningStorm super weapon. After a
  * warning delay the sky darkens and clouds gather over the target; a bolt drops from each
  * cloud halfway through its animation. One storm can rage at a time.
@@ -34,7 +61,6 @@ class LightningStormClass
 		static void Print_Refusal(void);
 		static void Detach(AbstractClass const * target);
 		static void Serialize(SaveStreamClass & stream);
-		static void Post_Load_Game(void);
 
 	private:
 		static void Strike(Cell const & cell);

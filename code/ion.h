@@ -33,8 +33,20 @@ class IonStormClass
 		static void Set_Ion_Storm_Active(bool active);
 		static bool Is_Ion_Storm_Active(void);
 		static bool Is_Storm_Lighting(void);
-		static void Set_Storm_Lighting(bool on);
 		static void Retint(int red, int green, int blue);
+
+		/*
+		 * The lighting a lightning storm, a psychic dominator blast and a nuclear flash
+		 * each impose on the map (ScenarioClass::UpdateLighting, 0x53C280). The map wears
+		 * the lighting of the first of these that applies: the flash, the storm, the blast.
+		 */
+		static void Update_Special_Lighting(void);
+		static void Reset_Special_Lighting(void);
+		static void Clear_Special_Lighting(void);
+		static void Restore_Special_Lighting(void);
+		static void Special_Tint(int & red, int & green, int & blue);
+		static int Ground_Light(void);
+		static int Level_Light(void);
 		static void Ion_Storm_Begin(int duration, int warning=0);
 		static void Ion_Storm_End(void);
 		static void AI(void);
@@ -48,6 +60,15 @@ class IonStormClass
 		static void Restart_Audio(void);
 
 	private:
+		enum SpecialLightType {
+			SPECIAL_LIGHT_NONE,
+			SPECIAL_LIGHT_STORM,
+			SPECIAL_LIGHT_DOMINATOR,
+			SPECIAL_LIGHT_NUKE
+		};
+
+		static SpecialLightType Applied_Light;
+
 		static void Start_Audio(bool instant);
 		static void End_Audio(void);
 

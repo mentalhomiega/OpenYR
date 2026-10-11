@@ -11,6 +11,7 @@
 
 #include "ion.h"
 #include "lstorm.h"
+#include "psydom.h"
 
 #include "_convert.h"
 #include "_map.h"
@@ -340,32 +341,68 @@ bool IonStormClass::Is_Ion_Storm_Active(void)
 /// </summary>
 bool IonStormClass::Is_Storm_Lighting(void)
 {
-	return(IsActive || LightningStormClass::Is_Active());
+	return(IsActive || Applied_Light != SPECIAL_LIGHT_NONE);
 }
 
 
+IonStormClass::SpecialLightType IonStormClass::Applied_Light = IonStormClass::SPECIAL_LIGHT_NONE;
+
+// A nuclear flash lights the map at twice the daylight, tinted warm, with the ground and the levels each worth a tenth.
+static int const NUKE_AMBIENT_LIGHT = 200;
+static int const NUKE_RED_TINT = 175;
+static int const NUKE_GREEN_TINT = 150;
+static int const NUKE_BLUE_TINT = 125;
+static int const NUKE_GROUND_LIGHT = 100;
+static int const NUKE_LEVEL_LIGHT = 100;
+
+
 /// <summary>
-/// Darkens the map with the scenario's ion lighting, or restores the normal lighting, for
-/// a lightning storm. An ion storm does its own lighting.
+/// Gives the map the lighting that suits what is on screen, as ScenarioClass::UpdateLighting (0x53C280)
+/// does: the nuclear flash while it fades in, else the lightning storm's lighting while it rages,
+/// else the psychic dominator's while the blast lasts, else the scenario's own. The ambient light
+/// then moves toward the new level a step at a time, and the palettes take the new tint at once.
+/// An ion storm does its own lighting.
 /// </summary>
-void IonStormClass::Set_Storm_Lighting(bool on)
+void IonStormClass::Update_Special_Lighting(void)
 {
 	if (IsActive) {
 		return;
 	}
 
-	Scen->DesiredAmbientLight = on ? Scen->IonAmbientLight : Scen->AmbientLight;
-
-	int const red = on ? NORMAL_LIGHT * Scen->IonRedTint / 100 : -1;
-	int const green = on ? NORMAL_LIGHT * Scen->IonGreenTint / 100 : -1;
-	int const blue = on ? NORMAL_LIGHT * Scen->IonBlueTint / 100 : -1;
-	for (int i = 0; i < TileDrawers.Count(); i++) {
-		TileDrawers[i]->Apply_Tint(red, green, blue, on);
+	SpecialLightType mode = SPECIAL_LIGHT_NONE;
+	if (NukeFlashClass::Is_Fading_In()) {
+		mode = SPECIAL_LIGHT_NUKE;
+	} else if (LightningStormClass::Is_Active()) {
+		mode = SPECIAL_LIGHT_STORM;
+	} else if (PsychicDominatorClass::Is_Lit()) {
+		mode = SPECIAL_LIGHT_DOMINATOR;
 	}
-	for (int i = 0; i < ColorSchemes.Count(); i++) {
-		ColorScheme * scheme = ColorSchemes[i];
-		if (!on || scheme->IntensityLevels > 1) {
-			scheme->Converter->Apply_Tint(red, green, blue, on);
+
+	int ambient = Scen->AmbientLight;
+	switch (mode) {
+		case SPECIAL_LIGHT_NUKE: ambient = NUKE_AMBIENT_LIGHT; break;
+		case SPECIAL_LIGHT_STORM: ambient = Scen->IonAmbientLight; break;
+		case SPECIAL_LIGHT_DOMINATOR: ambient = Scen->DominatorAmbientLight; break;
+		default: break;
+	}
+	Scen->DesiredAmbientLight = ambient;
+
+	if (mode != Applied_Light) {
+		Applied_Light = mode;
+		int red = -1;
+		int green = -1;
+		int blue = -1;
+		if (mode != SPECIAL_LIGHT_NONE) {
+			Special_Tint(red, green, blue);
+		}
+		for (int i = 0; i < TileDrawers.Count(); i++) {
+			TileDrawers[i]->Apply_Tint(red, green, blue, mode != SPECIAL_LIGHT_NONE);
+		}
+		for (int i = 0; i < ColorSchemes.Count(); i++) {
+			ColorScheme * scheme = ColorSchemes[i];
+			if (mode == SPECIAL_LIGHT_NONE || scheme->IntensityLevels > 1) {
+				scheme->Converter->Apply_Tint(red, green, blue, mode != SPECIAL_LIGHT_NONE);
+			}
 		}
 	}
 
@@ -403,6 +440,101 @@ void IonStormClass::Retint(int red, int green, int blue)
 
 	Map.Update_Cell_Colors();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+}
+
+
+/// <summary>
+/// Forgets which special lighting the palettes wear, for a scenario that has just started or a
+/// game just loaded. The next Update_Special_Lighting applies the lighting that suits the state.
+/// </summary>
+void IonStormClass::Reset_Special_Lighting(void)
+{
+	Applied_Light = SPECIAL_LIGHT_NONE;
+}
+
+
+/// <summary>
+/// Puts the scenario's own lighting back once the effects behind the special lighting have been cleared.
+/// </summary>
+void IonStormClass::Clear_Special_Lighting(void)
+{
+	if (Applied_Light != SPECIAL_LIGHT_NONE) {
+		Update_Special_Lighting();
+	}
+}
+
+
+/// <summary>
+/// Puts the special lighting back on a game that has just been loaded, if one of its effects is on screen.
+/// </summary>
+void IonStormClass::Restore_Special_Lighting(void)
+{
+	Applied_Light = SPECIAL_LIGHT_NONE;
+	if (NukeFlashClass::Is_Fading_In() || LightningStormClass::Is_Active() || PsychicDominatorClass::Is_Lit()) {
+		Update_Special_Lighting();
+	}
+}
+
+
+/// <summary>
+/// Fetches the tint of the special lighting the palettes wear, or of the ion storm.
+/// </summary>
+void IonStormClass::Special_Tint(int & red, int & green, int & blue)
+{
+	int r = Scen->IonRedTint;
+	int g = Scen->IonGreenTint;
+	int b = Scen->IonBlueTint;
+	if (!IsActive) {
+		if (Applied_Light == SPECIAL_LIGHT_NUKE) {
+			r = NUKE_RED_TINT;
+			g = NUKE_GREEN_TINT;
+			b = NUKE_BLUE_TINT;
+		} else if (Applied_Light == SPECIAL_LIGHT_DOMINATOR) {
+			r = Scen->DominatorRedTint;
+			g = Scen->DominatorGreenTint;
+			b = Scen->DominatorBlueTint;
+		}
+	}
+	red = NORMAL_LIGHT * r / 100;
+	green = NORMAL_LIGHT * g / 100;
+	blue = NORMAL_LIGHT * b / 100;
+}
+
+
+/// <summary>
+/// Gives the amount each level of height lightens a cell: the storm's while one rages, then the
+/// dominator's while its blast lasts, then the flash's, then the scenario's (0x484440).
+/// </summary>
+int IonStormClass::Level_Light(void)
+{
+	if (IsActive || LightningStormClass::Is_Active()) {
+		return(Scen->IonLevelLight);
+	}
+	if (PsychicDominatorClass::Is_Active()) {
+		return(Scen->DominatorLevelLight);
+	}
+	if (NukeFlashClass::Is_Fading_In()) {
+		return(NUKE_LEVEL_LIGHT);
+	}
+	return(Scen->LevelLight);
+}
+
+
+/// <summary>
+/// Gives the amount the ground is darkened, chosen like Level_Light.
+/// </summary>
+int IonStormClass::Ground_Light(void)
+{
+	if (IsActive || LightningStormClass::Is_Active()) {
+		return(Scen->IonGroundLight);
+	}
+	if (PsychicDominatorClass::Is_Active()) {
+		return(Scen->DominatorGroundLight);
+	}
+	if (NukeFlashClass::Is_Fading_In()) {
+		return(NUKE_GROUND_LIGHT);
+	}
+	return(Scen->GroundLight);
 }
 
 
