@@ -1,0 +1,11 @@
+; Ion Storm start (action 44) calls a lightning storm of 3000 frames: pending at once, raging after
+; the LightningDeferment warning. Ion Storm stop (action 45) ends it once the last cloud has gone, after which a second stop fails.
+30 trigaction 44 3000 0
+40 trigaction 0 0 0
+300 trigaction 0 0 0
+310 trigaction 45 0 0
+320 trigaction 0 0 0
+400 trigaction 0 0 0
+600 trigaction 0 0 0
+610 trigaction 45 0 0
+620 quit

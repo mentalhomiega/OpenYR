@@ -28,6 +28,7 @@ class LightningStormClass
 		static void Clear(void);
 		static void Start(int duration, int deferment, Cell const & cell, HouseClass * owner);
 		static void AI(void);
+		static void End(void) {if (IsActive) IsTimeToEnd = true;}
 		static bool Is_Active(void) {return(IsActive);}
 		static bool Is_Active_Or_Pending(void) {return(IsActive || Deferment > 0);}
 		static void Print_Refusal(void);
