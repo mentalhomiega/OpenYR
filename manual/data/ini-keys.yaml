@@ -3366,7 +3366,7 @@ Armor:
 ArmorAircraftMult:
   key: ArmorAircraftMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -3383,7 +3383,7 @@ ArmorAircraftMult:
 ArmorBuildingsMult:
   key: ArmorBuildingsMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -3418,7 +3418,7 @@ ArmorCrateStacks:
 ArmorDefensesMult:
   key: ArmorDefensesMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -3435,7 +3435,7 @@ ArmorDefensesMult:
 ArmorInfantryMult:
   key: ArmorInfantryMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -3452,7 +3452,7 @@ ArmorInfantryMult:
 ArmorUnitsMult:
   key: ArmorUnitsMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -5980,7 +5980,7 @@ BuildTime.MultipleFactory:
 BuildTimeAircraftMult:
   key: BuildTimeAircraftMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -5997,7 +5997,7 @@ BuildTimeAircraftMult:
 BuildTimeBuildingsMult:
   key: BuildTimeBuildingsMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -6014,7 +6014,7 @@ BuildTimeBuildingsMult:
 BuildTimeDefensesMult:
   key: BuildTimeDefensesMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -6031,7 +6031,7 @@ BuildTimeDefensesMult:
 BuildTimeInfantryMult:
   key: BuildTimeInfantryMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -6065,7 +6065,7 @@ BuildTimeMultiplier:
 BuildTimeUnitsMult:
   key: BuildTimeUnitsMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -14575,7 +14575,7 @@ FireUp:
 FireWhileMoving:
   key: FireWhileMoving
   scopes:
-  - applies_to: *id007
+  - applies_to: *id008
     file: rules.ini
     section:
       kind: identifier
@@ -20884,6 +20884,42 @@ LeptonsPerSightIncrease:
       default_candidate: '50'
       declared_in: RulesClass
       member: LeptonsPerSightIncrease
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LetsDoTheTimeWarpInAgain:
+  key: LetsDoTheTimeWarpInAgain
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: LetsDoTheTimeWarpInAgain
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+LetsDoTheTimeWarpOutAgain:
+  key: LetsDoTheTimeWarpOutAgain
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: LetsDoTheTimeWarpOutAgain
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -32487,7 +32523,7 @@ SoloCrateMoney:
 Sonic:
   key: Sonic
   scopes:
-  - applies_to: *id005
+  - applies_to: *id006
     file: rules.ini
     section:
       kind: identifier
@@ -33997,7 +34033,7 @@ Speed:
 SpeedAircraftMult:
   key: SpeedAircraftMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -34014,7 +34050,7 @@ SpeedAircraftMult:
 SpeedInfantryMult:
   key: SpeedInfantryMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -34048,7 +34084,7 @@ SpeedType:
 SpeedUnitsMult:
   key: SpeedUnitsMult
   scopes:
-  - applies_to: *id011
+  - applies_to: *id012
     file: rules.ini
     section:
       kind: identifier
@@ -36888,7 +36924,7 @@ Temporal:
 TerrainFire:
   key: TerrainFire
   scopes:
-  - applies_to: *id007
+  - applies_to: *id008
     file: rules.ini
     section:
       kind: identifier
@@ -42602,7 +42638,7 @@ YVelocity:
 YuriBarracks:
   key: YuriBarracks
   scopes:
-  - applies_to: *id004
+  - applies_to: *id005
     file: rules.ini
     section:
       kind: identifier
