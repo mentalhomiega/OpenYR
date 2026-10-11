@@ -6419,6 +6419,45 @@ void HouseClass::Restore_Starting_Buildings(void)
 }
 
 
+/// <summary>
+/// Takes every structure of another house, as a trigger's mind control of a base does. The
+/// structures change owner without a capture announcement or an "entered" trigger. Each one keeps
+/// the house it came from until Restore_Mind_Controlled_Base returns it.
+/// </summary>
+/// <param name="target">The house whose structures are taken.</param>
+void HouseClass::Mind_Control_Base(HouseClass * target)
+{
+	for (int index = Buildings.Count() - 1; index >= 0; index--) {
+		BuildingClass * building = Buildings[index];
+		if (building == NULL || building->House != target) {
+			continue;
+		}
+		building->Change_Owner(this, false, false);
+		building->OriginallyOwnedByHouse = target;
+		building->MindControlledByHouse = this;
+	}
+}
+
+
+/// <summary>
+/// Gives back the structures this house took from another through Mind_Control_Base, without a
+/// capture announcement.
+/// </summary>
+/// <param name="target">The house the structures came from.</param>
+void HouseClass::Restore_Mind_Controlled_Base(HouseClass * target)
+{
+	for (int index = Buildings.Count() - 1; index >= 0; index--) {
+		BuildingClass * building = Buildings[index];
+		if (building == NULL || building->House != this || building->OriginallyOwnedByHouse != target) {
+			continue;
+		}
+		building->Change_Owner(target, false, false);
+		building->OriginallyOwnedByHouse = NULL;
+		building->MindControlledByHouse = NULL;
+	}
+}
+
+
 /***********************************************************************************************
  * HouseClass::Fire_Sale -- Cause all buildings to be sold.                                    *
  *                                                                                             *

@@ -313,8 +313,6 @@ static bool Is_Skipped_Action(TActionType action)
 {
 	switch (action) {
 		case TACTION_PAUSE_GAME:
-		case TACTION_MIND_CONTROL_BASE:
-		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
 		case TACTION_RESTORE_STARTING_UNITS:
 		case TACTION_SET_DEFENSIVE_TARGET_CELL:
 		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
@@ -891,6 +889,8 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		INVOKE(RETINT_BLUE);
 		INVOKE(IRON_CURTAIN_AT);
 		INVOKE(LIGHTNING_STORM_STRIKE);
+		INVOKE(MIND_CONTROL_BASE);
+		INVOKE(RESTORE_MIND_CONTROLLED_BASE);
 
 		/*
 		**	Yuri's Revenge runs this one just like the other in-game movie.
@@ -3233,6 +3233,58 @@ bool TActionClass::TAction_LIGHTNING_STORM_STRIKE(HouseClass * house, ObjectClas
 		return(false);
 	}
 	LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, Scen->Get_Waypoint_Cell(EffectLocation), house);
+	return(true);
+}
+
+
+/// <summary>
+/// Fetches the house the action names. Number 8997 names the trigger's own house.
+/// </summary>
+/// <param name="trigger_house">The house that owns the trigger.</param>
+/// <returns>HouseClass *; The house, or NULL when the action names none in play.</returns>
+HouseClass * TActionClass::Named_House(HouseClass * trigger_house) const
+{
+	if (Data.Value == 8997) {
+		return(trigger_house);
+	}
+	if (Data.Value == -1) {
+		return(NULL);
+	}
+	return(House_From_HousesType(Data.House));
+}
+
+
+/// <summary>
+/// The trigger's house takes every structure of the named house, with their cargo and the
+/// vehicles docked at them, until Restore Mind Controlled Base gives them back. Nothing is
+/// announced.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
+bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * target = Named_House(house);
+	if (house == NULL || target == NULL) {
+		return(false);
+	}
+	if (target != house) {
+		house->Mind_Control_Base(target);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Gives the named house back the structures the trigger's house took from it with Mind Control
+/// Base. Structures that changed hands another way since stay where they are.
+/// </summary>
+/// <returns>bool; Does the trigger have a house, and is the named house in play?</returns>
+bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
+{
+	HouseClass * target = Named_House(house);
+	if (house == NULL || target == NULL) {
+		return(false);
+	}
+	house->Restore_Mind_Controlled_Base(target);
 	return(true);
 }
 

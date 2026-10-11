@@ -825,6 +825,8 @@ class HouseClass : public AbstractClass
 		bool Fire_Sale(void);
 		void Cheer(void);
 		void Restore_Starting_Buildings(void);
+		void Mind_Control_Base(HouseClass * target);
+		void Restore_Mind_Controlled_Base(HouseClass * target);
 		void All_To_Hunt(void);
 
 		virtual RTTIType Fetch_RTTI(void) const override;

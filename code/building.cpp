@@ -4685,6 +4685,21 @@ bool BuildingClass::Toggle_Primary(void)
  *=============================================================================================*/
 bool BuildingClass::Captured(HouseClass * newowner)
 {
+	return(Change_Owner(newowner, true, true));
+}
+
+
+/// <summary>
+/// Hands this structure to another house, with everything that has to follow: its production,
+/// its place in the houses' lists, its dockers and its lights. This is BuildingClass::SetOwningHouse
+/// (0x448260) with the capture's own steps made optional.
+/// </summary>
+/// <param name="newowner">The house that takes the structure.</param>
+/// <param name="announce">Does the local player hear that a structure was captured?</param>
+/// <param name="capture">Is this a capture, which springs the structure's "entered" trigger and counts as a kill? Otherwise the structure changes hands as it does under mind control.</param>
+/// <returns>bool; Was the structure given over? False when the house already owns it.</returns>
+bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capture)
+{
 	if (newowner != House) {
 
 		if (Class->IsCloakGenerator) {
@@ -4709,7 +4724,9 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		}
 
 		if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
-			Speak(VOX_BUILDING_CAPTURED);
+			if (announce) {
+				Speak(VOX_BUILDING_CAPTURED);
+			}
 			Map.PowerClass::IsToRedraw = true;
 			Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
 		}
@@ -4727,7 +4744,13 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		**	If there is something loaded, then it gets captured as well.
 		*/
 		TechnoClass * tech = Cargo.Attached_Object();
-		if (tech) tech->Captured(newowner);
+		if (tech) {
+			if (capture) {
+				tech->Captured(newowner);
+			} else {
+				tech->Set_Owning_House(newowner);
+			}
+		}
 
 		/*
 		**	If something isn't technically attached, but is sitting on this
@@ -4752,7 +4775,11 @@ bool BuildingClass::Captured(HouseClass * newowner)
 			}
 			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || ::Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
 				bool const tethered = docker->IsTethered;
-				docker->Captured(newowner);
+				if (capture) {
+					docker->Captured(newowner);
+				} else {
+					docker->Set_Owning_House(newowner);
+				}
 				captured_dockers.push_back({docker, tethered});
 			} else {
 				Transmit_Message(RADIO_RUN_AWAY, docker);
@@ -4805,7 +4832,11 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		bool const detecting = IsDetectingDisguise;
 		Disguise_Detector(false);
 
-		BASECLASS::Captured(newowner);
+		if (capture) {
+			BASECLASS::Captured(newowner);
+		} else {
+			Set_Owning_House(newowner);
+		}
 
 		if (detecting) {
 			Disguise_Detector(true);

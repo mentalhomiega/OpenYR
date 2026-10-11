@@ -300,6 +300,9 @@ class TActionClass : public AbstractClass
 		bool TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_JUMP_CAMERA(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_JUMP_CAMERA_HOME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		HouseClass * Named_House(HouseClass * trigger_house) const;
+		bool TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_IRON_CURTAIN_AT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_LIGHTNING_STORM_STRIKE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_RETINT_RED(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
