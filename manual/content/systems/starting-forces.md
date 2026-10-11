@@ -83,7 +83,7 @@ Houses take positions in this order:
 
 1. A house whose seat names a start position in [the launch file](/formats/spawn-ini/#who-is-playing) holds it before anybody draws. If that waypoint is not eligible, or another house already holds it, the house draws with the others instead.
 2. The remaining houses draw in turn. When no position is held yet, the house takes an eligible position at random. Otherwise it takes the open position with the greatest total distance from the positions already held.
-3. A house still without a position once every eligible waypoint is held starts at a random spot where an 8-by-8 block of cells is open ground that a tracked vehicle can cross. This cell is found after the map has loaded, and the house holds no numbered position.
+3. A house still without a position once every eligible waypoint is held starts at a random spot where an 8-by-8 block of cells inside the playable area is open ground that a tracked vehicle can cross. The start cell is three cells along on each axis from the block's first cell. This cell is found after the map has loaded, and the house holds no numbered position.
 
 On a map read from a file, the numbered positions are settled after the waypoints are read and before the spawn house sections, teams, triggers, and objects. That lets a [spawn house](/formats/scenario-objects/#spawn-houses) name the house that starts at each position.
 
