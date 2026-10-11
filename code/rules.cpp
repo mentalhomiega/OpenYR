@@ -598,6 +598,7 @@ RulesClass::RulesClass(void) :
 	MissileSpeedVar(.25),
 	MissileROTVar(.25),
 	MissileSafetyAltitude(500),
+	ApproachTargetResetMultiplier(1),
 	DropPodWeapon(NULL),
 	DropPodHeight(1500),
 	DropPodSpeed(40),
@@ -1603,6 +1604,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		MissileROTVar = ini.Get_Float(GENERAL, "MissileROTVar", MissileROTVar);
 		MissileSpeedVar = ini.Get_Float(GENERAL, "MissileSpeedVar", MissileSpeedVar);
 		MissileSafetyAltitude = ini.Get_Int(GENERAL, "MissileSafetyAltitude", MissileSafetyAltitude);
+		ApproachTargetResetMultiplier = ini.Get_Int(GENERAL, "ApproachTargetResetMultiplier", ApproachTargetResetMultiplier);
 		DropPodWeapon = TGet_Class(ini, GENERAL, "DropPodWeapon", DropPodWeapon);
 		DropPodHeight = ini.Get_Int(GENERAL, "DropPodHeight", DropPodHeight);
 		DropPodSpeed = ini.Get_Int(GENERAL, "DropPodSpeed", DropPodSpeed);
@@ -2992,6 +2994,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MissileSpeedVar);
 	stream.Serialize(MissileROTVar);
 	stream.Serialize(MissileSafetyAltitude);
+	stream.Serialize(ApproachTargetResetMultiplier);
 	stream.Serialize(DropPodWeapon);
 	stream.Serialize(DropPodHeight);
 	stream.Serialize(DropPodSpeed);

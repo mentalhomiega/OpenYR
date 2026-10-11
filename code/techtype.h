@@ -551,6 +551,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A CanApproachTarget=no object does not move toward a target out of its weapons' reach.
 		bool IsCanApproachTarget;
 
+		// A CanRecalcApproachTarget=no object keeps the spot it chose to fire from even when its target moves far from it.
+		bool IsCanRecalcApproachTarget;
+
 		// A mobile Sensors=yes object reveals its owner the cloaked objects within this many cells.
 		int SensorsSight;
 

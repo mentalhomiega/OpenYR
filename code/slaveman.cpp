@@ -290,9 +290,20 @@ void SlaveManagerClass::AI(void)
 					node.Slave = slave;
 					node.Status = NODE_RELOADING;
 					node.Start_Timer(ReloadRate);
-				} else if (slave->NavCom == NULL) {
-					slave->Assign_Destination(&Map[Home_Cell()]);
-					slave->Assign_Mission(MISSION_MOVE);
+				} else {
+					// A slave heading for a spot that is no longer by its miner is sent to the miner again (SlaveManagerClass::Update, 0x6AF6C0).
+					bool strayed = false;
+					if (slave->NavCom != NULL) {
+						Cell const there = slave->NavCom->Center_Coord().As_Cell();
+						Cell const home = Home_Cell();
+						int const dx = there.X - home.X;
+						int const dy = there.Y - home.Y;
+						strayed = Rule->ApproachTargetResetMultiplier < (int)std::sqrt((double)(dx * dx + dy * dy));
+					}
+					if (slave->NavCom == NULL || strayed) {
+						slave->Assign_Destination(&Map[Home_Cell()]);
+						slave->Assign_Mission(MISSION_MOVE);
+					}
 				}
 				break;
 			}

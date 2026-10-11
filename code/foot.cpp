@@ -1232,6 +1232,21 @@ void FootClass::Approach_Target(void)
 		}
 
 		/*
+		 * A unit heading for a spot it picked drops that spot, and picks another, once the
+		 * target is more than ApproachTargetResetMultiplier weapon ranges from it
+		 * (FootClass::ApproachTarget, 0x4D5690).
+		 */
+		if (NavCom != NULL && !inrange && TClass->IsCanRecalcApproachTarget) {
+			int reach = maxrange;
+			if (reach > 0x1FF) {
+				reach -= 0x80;
+			}
+			if (Rule->ApproachTargetResetMultiplier * reach < (TarCom->Center_Coord() - NavCom->Center_Coord()).Length()) {
+				NavCom = NULL;
+			}
+		}
+
+		/*
 		 * A unit that must deploy to fire, and is sitting on ground that it
 		 * cannot deploy upon, must restrict the search to deployable ground
 		 * within a reasonable distance of the target.

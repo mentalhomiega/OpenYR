@@ -875,6 +875,13 @@ class RulesClass
 		int MissileSafetyAltitude;
 
 		/*
+		 * A unit heading for a spot to shoot from drops the spot when its target is more than this many
+		 * weapon ranges from it. A slave miner's slave heading home is sent again when its goal is more
+		 * than this many cells from its miner.
+		 */
+		int ApproachTargetResetMultiplier;
+
+		/*
 		 * Pointer to the weapon that a descending drop pod strafes the ground with. If
 		 * NULL, then the pod falls harmlessly.
 		 */
