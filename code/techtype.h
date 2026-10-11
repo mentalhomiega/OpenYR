@@ -474,9 +474,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType EnterTransportSound;
 		VocType LeaveTransportSound;
 
-		// Read from the object's section, but nothing plays them: a grinder plays the rules' EnterGrinderSound.
+		// Read from the object's section, but nothing plays them: a grinder plays the rules' EnterGrinderSound, and a bio reactor the rules' LeaveBioReactorSound.
 		VocType EnterGrinderSound;
 		VocType LeaveGrinderSound;
+		VocType LeaveBioReactorSound;
 
 		// What a unit of this type says when the player orders it into something, to capture something, or to harvest.
 		VocType VoiceEnter;
