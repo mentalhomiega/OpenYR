@@ -1,7 +1,7 @@
 ---
 key: PrimaryFirePixelOffset
 summary: The screen offset a building's shots leave from, in place of its firing offsets.
-see_also: ["PrimaryFireFLH", "SecondaryFirePixelOffset", "BarrelAnimIsVoxel", "TurretAnimX", "Primary"]
+see_also: ["PrimaryFireDualOffset", "PrimaryFireFLH", "SecondaryFirePixelOffset", "BarrelAnimIsVoxel", "TurretAnimX", "Primary"]
 when_omitted:
   kind: value
   value: 65535,65535
@@ -15,7 +15,7 @@ Any pair other than `65535,65535` places three points of the building at that of
 - the muzzle, where the fire animation and beam appear;
 - the point the building aims from when it turns to face a target, which is measured from the building's center instead of its draw point.
 
-The offset applies to every weapon the building fires, not only the first.
+The offset applies to every weapon the building fires, not only the first. [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/) changes the muzzle to the firing offset plus this offset.
 
 ```ini title="art.ini"
 [MYOBELISK] ; the Image ID of a BuildingType

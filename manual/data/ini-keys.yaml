@@ -27301,6 +27301,23 @@ Primary:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+PrimaryFireDualOffset:
+  key: PrimaryFireDualOffset
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsPrimaryFireDualOffset
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 PrimaryFireFLH:
   key: PrimaryFireFLH
   scopes:

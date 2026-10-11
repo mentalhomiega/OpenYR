@@ -241,6 +241,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	LightBlueTint(1000000),
 	PrimaryFirePixelOffset(Point2D(0xFFFF, 0xFFFF)),
 	SecondaryFirePixelOffset(Point2D(0xFFFF, 0xFFFF)),
+	IsPrimaryFireDualOffset(false),
 	QueueingCell(Point2D(0, 0)),
 	ToOverlay(NULL),
 	ToTile(NULL),
@@ -1508,6 +1509,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		if (MaxNumberOccupants > 8) MuzzleFlash[8] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash8", MuzzleFlash[8]);
 		if (MaxNumberOccupants > 9) MuzzleFlash[9] = ArtINI.Get_Point(Graphic_Name(), "MuzzleFlash9", MuzzleFlash[9]);
 		SecondaryFirePixelOffset = ArtINI.Get_Point(Graphic_Name(), "SecondaryFirePixelOffset", SecondaryFirePixelOffset);
+		IsPrimaryFireDualOffset = ArtINI.Get_Bool(Graphic_Name(), "PrimaryFireDualOffset", IsPrimaryFireDualOffset);
 		QueueingCell = ArtINI.Get_Point(Graphic_Name(), "QueueingCell", QueueingCell);
 		IsExtraDamageStage = ArtINI.Get_Bool(Graphic_Name(), "ExtraDamageStage", IsExtraDamageStage);
 		SpecialZOverlayZAdjust = ArtINI.Get_Int(Graphic_Name(), "SpecialZOverlayZAdjust", SpecialZOverlayZAdjust);
@@ -2218,6 +2220,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(SpecialZOverlayZAdjust);
 	crc(QueueingCell.X);
 	crc(QueueingCell.Y);
+	crc(IsPrimaryFireDualOffset);
 	crc(IsHoverPad);
 	crc(IsPlug);
 	crc(IsTemple);
@@ -2333,6 +2336,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightBlueTint);
 	stream.Serialize(PrimaryFirePixelOffset);
 	stream.Serialize(SecondaryFirePixelOffset);
+	stream.Serialize(IsPrimaryFireDualOffset);
 	stream.Serialize(QueueingCell);
 	stream.Serialize(ToOverlay);
 	// ToTile -- named by the rules, and resolved once the tile types are in place.
