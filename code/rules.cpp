@@ -597,6 +597,7 @@ RulesClass::RulesClass(void) :
 	TreeFlammability(.1),
 	MissileSpeedVar(.25),
 	MissileROTVar(.25),
+	MissileSafetyAltitude(500),
 	DropPodWeapon(NULL),
 	DropPodHeight(1500),
 	DropPodSpeed(40),
@@ -1601,6 +1602,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		TreeFlammability = ini.Get_Float(GENERAL, "TreeFlammability", TreeFlammability);
 		MissileROTVar = ini.Get_Float(GENERAL, "MissileROTVar", MissileROTVar);
 		MissileSpeedVar = ini.Get_Float(GENERAL, "MissileSpeedVar", MissileSpeedVar);
+		MissileSafetyAltitude = ini.Get_Int(GENERAL, "MissileSafetyAltitude", MissileSafetyAltitude);
 		DropPodWeapon = TGet_Class(ini, GENERAL, "DropPodWeapon", DropPodWeapon);
 		DropPodHeight = ini.Get_Int(GENERAL, "DropPodHeight", DropPodHeight);
 		DropPodSpeed = ini.Get_Int(GENERAL, "DropPodSpeed", DropPodSpeed);
@@ -2989,6 +2991,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TreeFlammability);
 	stream.Serialize(MissileSpeedVar);
 	stream.Serialize(MissileROTVar);
+	stream.Serialize(MissileSafetyAltitude);
 	stream.Serialize(DropPodWeapon);
 	stream.Serialize(DropPodHeight);
 	stream.Serialize(DropPodSpeed);
