@@ -7,7 +7,7 @@ when_omitted:
   value: "0"
 ---
 
-A homing projectile, one with a [`ROT`](/keys/rot--bullettype/) above `0`, flies straight out of its launcher while its course is locked. It does not steer toward its target during that time. A projectile with `CourseLockDuration=0` stays locked until it reaches its weapon's speed, and one whose weapon has a `Speed` of 16 or more is never locked. With a value above `0`, the lock lasts that many frames after launch, whatever the projectile's speed, and the projectile gains its full [`Acceleration`](/keys/acceleration--bullettype/) each frame meanwhile.
+A homing projectile, one with a [`ROT`](/keys/rot/#scope-bullettype) above `0`, flies straight out of its launcher while its course is locked. It does not steer toward its target during that time. A projectile with `CourseLockDuration=0` stays locked until it reaches its weapon's speed, and one whose weapon has a `Speed` of 16 or more is never locked. With a value above `0`, the lock lasts that many frames after launch, whatever the projectile's speed, and the projectile gains its full [`Acceleration`](/keys/acceleration/#scope-bullettype) each frame meanwhile.
 
 The key has no effect on a projectile with no rate of turn.
 
