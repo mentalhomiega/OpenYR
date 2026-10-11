@@ -681,6 +681,12 @@ void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
+	// chrono <frames>: starts the chronoshift screen effect, as the Chrono Screen Effect trigger action does.
+	if (step.Command == "chrono") {
+		Start_Chrono_Screen_Effect(std::atoi(step.Argument.c_str()));
+		return;
+	}
+
 	if (step.Command == "treehit" || step.Command == "trees") {
 		Terrain_Step(step);
 		return;

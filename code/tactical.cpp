@@ -81,6 +81,8 @@
 #include "scrspeed.hh"
 
 #include <algorithm>
+#include <cmath>
+#include <memory>
 #include <utility>
 
 
@@ -3901,14 +3903,26 @@ void Tactical::Draw_Super_Timers(void)
 
 
 /*
-**	The chronoshift screen effect a trigger action can start: the view fades to white over the
-**	frames the action gives, stays white for 45 frames, and fades back in over the same time.
-**	Yuri's Revenge also twirls the picture and locks the player's input while it runs; this
-**	engine only fades. The effect is not saved, as it is over within a few seconds.
+**	The chronoshift screen effect a trigger action can start, as Yuri's Revenge draws it. The
+**	picture as it stood at the start is twirled into a swirl that grows stronger and whitens over
+**	the frames the action gives. The view then stays white for 45 frames. The picture as it then
+**	stands is twirled back, unwinding and clearing from white over the same frames. The input is
+**	locked while the effect runs, unless it was locked already. The effect is not saved.
 */
 static int ChronoEffectStart = -1;
 static int ChronoEffectFrames = 0;
 static int const CHRONO_EFFECT_HOLD = 45;
+
+// The bottom rows the swirl leaves untouched, as the original does with its status strip.
+static int const CHRONO_EFFECT_BOTTOM = 32;
+
+// The picture the swirl is drawn from: the scene before the white, then the scene after it.
+static std::unique_ptr<DSurface> ChronoPicture;
+static int ChronoPictureTaken = 0;
+
+// True when the effect locked the input and must unlock it when it ends.
+static bool ChronoLockedInput = false;
+
 
 /// <summary>
 /// Starts the chronoshift screen effect, with the fades lasting the number of frames given.
@@ -3916,38 +3930,147 @@ static int const CHRONO_EFFECT_HOLD = 45;
 /// <param name="frames">How many frames each fade lasts; none or less does nothing.</param>
 void Start_Chrono_Screen_Effect(int frames)
 {
-	if (frames > 0) {
-		ChronoEffectStart = Frame;
-		ChronoEffectFrames = frames;
+	if (frames <= 0) {
+		return;
+	}
+	if (ChronoEffectStart < 0 && !Scen->IsInputLocked) {
+		Lock_Scenario_Input();
+		ChronoLockedInput = true;
+	}
+	ChronoEffectStart = Frame;
+	ChronoEffectFrames = frames;
+	ChronoPictureTaken = 0;
+}
+
+
+/// <summary>
+/// Ends the chronoshift screen effect and returns the input to the player if the effect took it.
+/// </summary>
+static void End_Chrono_Screen_Effect(void)
+{
+	ChronoEffectStart = -1;
+	ChronoPicture.reset();
+	ChronoPictureTaken = 0;
+	if (ChronoLockedInput) {
+		ChronoLockedInput = false;
+		Unlock_Scenario_Input();
 	}
 }
 
 
 /// <summary>
-/// Whitens the battlefield for the chronoshift screen effect while it runs.
+/// Copies the scene now on the logical surface, for the swirl to be drawn from.
+/// </summary>
+static void Take_Chrono_Picture(void)
+{
+	if (!ChronoPicture || ChronoPicture->Get_Width() != LogicalSurface->Get_Width() || ChronoPicture->Get_Height() != LogicalSurface->Get_Height()) {
+		ChronoPicture = std::make_unique<DSurface>(LogicalSurface->Get_Width(), LogicalSurface->Get_Height());
+	}
+	ChronoPicture->Blit_From(*LogicalSurface);
+}
+
+
+/// <summary>
+/// Draws the picture twirled into a swirl of the strength the count gives, with each pixel blended
+/// toward white by the count out of the total. Nothing is drawn when a surface is not 16 bits deep.
+/// </summary>
+static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count, int total)
+{
+	if (dest.Bytes_Per_Pixel() != 2 || picture.Bytes_Per_Pixel() != 2 || picture.Get_Width() != dest.Get_Width() || picture.Get_Height() != dest.Get_Height()) {
+		return;
+	}
+
+	int const width = dest.Get_Width();
+	int const height = dest.Get_Height() - CHRONO_EFFECT_BOTTOM;
+	if (width <= 0 || height <= 0 || total <= 0) {
+		return;
+	}
+
+	// The centre and the radius come from the halves of the area, rounded down as the original does.
+	double const cx = width / 2;
+	double const cy = height / 2;
+	double const radius2 = cx * cx + cy * cy;
+	double const strength = 0.001 * count * (count + 1);
+	int const alpha = std::clamp(count * 255 / total, 0, 255);
+
+	struct ChannelType {
+		int Shift;
+		int Max;
+	};
+	ChannelType const channel[3] = {
+		{DSurface::RedRight, (1 << (8 - DSurface::RedLeft)) - 1},
+		{DSurface::GreenRight, (1 << (8 - DSurface::GreenLeft)) - 1},
+		{DSurface::BlueRight, (1 << (8 - DSurface::BlueLeft)) - 1}};
+
+	char const * spixels = (char const *)picture.Lock();
+	char * dpixels = (char *)dest.Lock();
+	if (spixels != NULL && dpixels != NULL) {
+		for (int y = 0; y < height; y++) {
+			double const dy = y - cy;
+			unsigned short * drow = (unsigned short *)(dpixels + y * dest.Stride());
+			for (int x = 0; x < width; x++) {
+				double const dx = x - cx;
+				double angle = (1.0 - (dx * dx + dy * dy) / radius2) * 5.0;
+				angle = angle * angle * strength;
+				double const s = std::sin(angle);
+				double const c = std::cos(angle);
+
+				int const sx = std::clamp((int)std::floor(s * dx + c * dy + cx + 0.5), 0, width - 1);
+				int const sy = std::clamp((int)std::floor(s * dy - c * dx + cy + 0.5), 0, height - 1);
+				unsigned short const source = ((unsigned short const *)(spixels + sy * picture.Stride()))[sx];
+
+				int pixel = 0;
+				for (int index = 0; index < 3; index++) {
+					int const value = (source >> channel[index].Shift) & channel[index].Max;
+					pixel |= (value + (((channel[index].Max - value) * alpha) >> 8)) << channel[index].Shift;
+				}
+				drow[x] = (unsigned short)pixel;
+			}
+		}
+	}
+	if (dpixels != NULL) {
+		dest.Unlock();
+	}
+	if (spixels != NULL) {
+		picture.Unlock();
+	}
+}
+
+
+/// <summary>
+/// Draws the chronoshift screen effect over the frame while it runs: the swirl of the scene
+/// before, the white, and the swirl of the scene after.
 /// </summary>
 void Tactical::Draw_Chrono_Screen_Effect(void)
 {
 	// A scenario restarts the frame count, which leaves a leftover start in the future.
 	if (ChronoEffectStart < 0 || Frame < ChronoEffectStart) {
-		ChronoEffectStart = -1;
+		End_Chrono_Screen_Effect();
 		return;
 	}
 
+	int const fade = ChronoEffectFrames;
 	int const t = Frame - ChronoEffectStart;
-	int const total = ChronoEffectFrames * 2 + CHRONO_EFFECT_HOLD;
-	if (t >= total) {
-		ChronoEffectStart = -1;
+	if (t >= fade * 2 + CHRONO_EFFECT_HOLD) {
+		End_Chrono_Screen_Effect();
 		return;
 	}
 
-	int opacity = 100;
-	if (t < ChronoEffectFrames) {
-		opacity = t * 100 / ChronoEffectFrames;
-	} else if (t >= ChronoEffectFrames + CHRONO_EFFECT_HOLD) {
-		opacity = (total - t) * 100 / ChronoEffectFrames;
+	if (t < fade) {
+		if (ChronoPictureTaken != 1) {
+			Take_Chrono_Picture();
+			ChronoPictureTaken = 1;
+		}
+		Draw_Chrono_Swirl(*LogicalSurface, *ChronoPicture, t, fade);
+	} else if (t < fade + CHRONO_EFFECT_HOLD) {
+		LogicalSurface->Fill_Rect_Trans(TacticalRect, RGBClass(255, 255, 255), 100);
+	} else {
+		if (ChronoPictureTaken != 2) {
+			Take_Chrono_Picture();
+			ChronoPictureTaken = 2;
+		}
+		Draw_Chrono_Swirl(*LogicalSurface, *ChronoPicture, fade - (t - fade - CHRONO_EFFECT_HOLD), fade);
 	}
-	LogicalSurface->Fill_Rect_Trans(TacticalRect, RGBClass(255, 255, 255), std::clamp(opacity, 0, 100));
 }
 
 
