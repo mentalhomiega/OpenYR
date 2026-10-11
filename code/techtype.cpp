@@ -238,6 +238,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	VoiceSecondaryEliteWeaponAttack(VOC_NONE),
 	IsNatural(false),
 	IsUnnatural(false),
+	IsCloseRange(false),
 	IsUnderwater(false),
 	NavalTargeting(0),
 	LandTargeting(0),
@@ -921,6 +922,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DamageSound = ini.Get_VocType(Name(), "DamageSound", DamageSound);
 		IsNatural = ini.Get_Bool(Name(), "Natural", IsNatural);
 		IsUnnatural = ini.Get_Bool(Name(), "Unnatural", IsUnnatural);
+		IsCloseRange = ini.Get_Bool(Name(), "CloseRange", IsCloseRange);
 		IsUnderwater = ini.Get_Bool(Name(), "Underwater", IsUnderwater);
 		NavalTargeting = ini.Get_Int(Name(), "NavalTargeting", NavalTargeting);
 		LandTargeting = ini.Get_Int(Name(), "LandTargeting", LandTargeting);
@@ -1612,6 +1614,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageSound);
 	stream.Serialize(IsNatural);
 	stream.Serialize(IsUnnatural);
+	stream.Serialize(IsCloseRange);
 	stream.Serialize(IsUnderwater);
 	stream.Serialize(NavalTargeting);
 	stream.Serialize(LandTargeting);

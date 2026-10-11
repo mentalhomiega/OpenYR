@@ -8152,6 +8152,23 @@ CloseEnough:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CloseRange:
+  key: CloseRange
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCloseRange
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Cluster:
   key: Cluster
   scopes:
