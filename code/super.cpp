@@ -1098,10 +1098,11 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 /// <summary>
 /// Warps the units the chronosphere picked to the cell, as the ChronoWarp case of
 /// SuperClass::Launch (0x6CC390) does. ChronoBlast plays over the picked cell and
-/// ChronoBlastDest over the target. Every unit on the ground on the picked cell and the eight
+/// ChronoBlastDest over the target. A parasite inside a unit on those cells dies. Every unit on the ground on the picked cell and the eight
 /// around it moves to the same place relative to the target; on a bridge cell only the units
 /// on the bridge go. Organic units that are not Teleporters are killed instead. Units under
-/// the Iron Curtain and vehicles standing in a war factory stay behind.
+/// the Iron Curtain, units already being chronoshifted or held by a temporal beam, and vehicles
+/// standing in a war factory stay behind.
 /// </summary>
 void SuperClass::Chrono_Warp(Cell const & cell) const
 {
@@ -1128,6 +1129,13 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 					continue;
 				}
 				FootClass * foot = (FootClass *)object;
+
+				// A parasite inside a unit the warp touches is doomed for 500 frames and driven out, so it dies (SuperClass::Launch, 0x6CC7B7).
+				if (foot->ParasiteEatingMe != NULL && foot->ParasiteEatingMe->ParasiteImUsing) {
+					foot->ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 500;
+					foot->ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+				}
+
 				BuildingClass const * building = cellptr.Cell_Building();
 				if (foot->RTTI == RTTI_UNIT && building != NULL && building->Class->IsWeaponsFactory) {
 					continue;
@@ -1137,7 +1145,7 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 				}
 				if (foot->TClass->IsOrganic && !foot->TClass->IsTeleporter) {
 					killed.Add(foot);
-				} else if (!foot->Is_Iron_Curtained()) {
+				} else if (!foot->Is_Iron_Curtained() && !foot->Is_Chrono_Warping() && !foot->IsBeingWarpedOut) {
 					moving.Add(foot);
 				}
 			}
