@@ -218,7 +218,7 @@ A building accepts a harvester only when all of the following hold:
 
 A player can also order a harvester into an allied house's refinery. Rule 2 still applies, so the alliance must run both ways.
 
-A harvester reserves the nearest free bay only when that bay is within [`HarvesterTooFarDistance`](/keys/harvestertoofardistance/) cells, measured in a straight line from the harvester. A farther free bay is not reserved. The harvester drives to the nearest bay of any kind, even a busy one, and waits there. It drives to a cell beside that bay when it is more than 3 cells away, and waits where it is when it is closer.
+A harvester reserves the nearest free bay only when that bay is within [`HarvesterTooFarDistance`](/keys/harvestertoofardistance/) cells, measured in a straight line from the harvester. A farther free bay is not reserved. The harvester drives to the nearest bay of any kind, even a busy one, and waits there. It drives to the free cell nearest the bay's [`QueueingCell`](/keys/queueingcell/) when it is more than 3 cells away, and waits where it is when it is closer.
 
 A waiting harvester checks again each time it stops, so it reserves a free bay as soon as one comes within reach. Waiting reserves nothing. A Chrono Miner uses [`ChronoHarvTooFarDistance`](/keys/chronoharvtoofardistance/) in place of `HarvesterTooFarDistance`, and it always drives to the nearest bay when it does not reserve one.
 

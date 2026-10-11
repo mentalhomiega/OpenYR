@@ -107,6 +107,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		Point2D PrimaryFirePixelOffset;
 		Point2D SecondaryFirePixelOffset;
 
+		// A harvester that cannot reserve this structure's dock heads for the cell this far from the structure's origin and waits there.
+		Point2D QueueingCell;
+
 		/*
 		 * This is the overlay type a wall building turns into when it is placed. The building
 		 * destroys itself on placement and leaves this overlay behind.
