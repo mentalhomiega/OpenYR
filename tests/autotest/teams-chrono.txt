@@ -1,0 +1,19 @@
+; Chrono prep for AQ (script line 57) fires the computer's Chronosphere and Chrono Warp at a team of two
+; tanks and its greatest threat. The success line (49) must start only after the tanks have finished
+; warping in, so the TEAMTRACE line for it comes well after the one for line 57. Run with
+; -AICountries 1.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 teamtrace 1
+300 spawn MTNK 52 92
+301 spawn MTNK 53 92
+305 grantai ChronoSphereSpecial
+306 grantai ChronoWarpSpecial
+310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-chrono.ini
+320 team TSTCHRT
+330 where MTNK
+400 where MTNK
+500 where MTNK
+700 where MTNK
+900 quit
