@@ -423,12 +423,44 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 	int backwidth = std::max(1, ButtonBackShape->Get_Width());
 	int rightwidth = RightCapShape->Get_Width();
 
+	// The modern interface's bar sits in a frame in the bottom-left corner, with just the slots it uses.
+	if (Modern_Interface()) {
+		int used = 0;
+		for (int index = 0; index < COMMAND_COUNT; index++) {
+			if (CommandShapes[index] != NULL) {
+				used = std::max(used, CommandSlot[index] + 1);
+			}
+		}
+		layout.Y = VisibleRect.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN - 3;
+		layout.OpenCapX = HUD_MARGIN + 3;
+		layout.ClosedCapX = layout.OpenCapX;
+		layout.ButtonX = layout.OpenCapX + capwidth;
+		layout.Slots = used;
+		layout.RightCapX = layout.ButtonX + (IsCommandBarOpen ? used * backwidth : 0);
+		return(layout);
+	}
+
 	layout.RightCapX = VisibleRect.Width - Sidebar_Surface_Width() - rightwidth;
 	layout.Slots = std::max(0, (VisibleRect.Width - capwidth - Sidebar_Surface_Width() - rightwidth) / backwidth);
 	layout.ButtonX = layout.RightCapX - layout.Slots * backwidth;
 	layout.OpenCapX = layout.ButtonX - capwidth;
 	layout.ClosedCapX = layout.RightCapX - capwidth;
 	return(layout);
+}
+
+
+/// <summary>
+/// The screen rectangle of the modern interface's command bar frame, which the map does not
+/// take clicks inside. It is empty until the bar's artwork is loaded.
+/// </summary>
+Rect TabClass::Command_Bar_Frame(void)
+{
+	if (LeftCapShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL) {
+		return(Rect(0, 0, 0, 0));
+	}
+	CommandBarLayout const layout = Command_Bar_Layout();
+	int const right = layout.RightCapX + 3;
+	return(Rect(HUD_MARGIN, layout.Y - 3, right - HUD_MARGIN, SidebarClass::COMMAND_BAR_HEIGHT + 6));
 }
 
 
@@ -508,6 +540,22 @@ void TabClass::Draw_Command_Bar(void)
 
 	CommandBarLayout layout = Command_Bar_Layout();
 	Rect clip = CompositeSurface->Get_Rect();
+
+	if (Modern_Interface()) {
+		Draw_Hud_Frame(*CompositeSurface, Command_Bar_Frame());
+		if (IsCommandBarOpen) {
+			for (int slot = 0; slot < layout.Slots; slot++) {
+				Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
+			}
+		}
+		ToggleButton.Flag_To_Redraw();
+		for (int index = 0; index < COMMAND_COUNT; index++) {
+			if (IsCommandButtonListed[index]) {
+				CommandButtons[index].Flag_To_Redraw();
+			}
+		}
+		return;
+	}
 
 	Draw_Shape(*CompositeSurface, *SidebarDrawer, SpacerShape, 0, Point2D(0, layout.Y), clip);
 	if (IsCommandBarOpen) {

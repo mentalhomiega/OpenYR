@@ -19,6 +19,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "sidebar.h"
+#include "tab.h"
 #include "viewzoom.h"
 
 #include <algorithm>
@@ -70,7 +71,7 @@ bool Point_Over_Map(Point2D const & point)
 	if (Hud_Layout().Panel.Is_Point_Within(point)) {
 		return(false);
 	}
-	return(point.Y < VisibleRect.Height - SidebarClass::COMMAND_BAR_HEIGHT);
+	return(!TabClass::Command_Bar_Frame().Is_Point_Within(point));
 }
 
 

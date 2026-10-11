@@ -123,4 +123,7 @@ class TabClass: public SidebarClass
 		static bool IsCommandButtonListed[COMMAND_COUNT];
 		static bool IsToggleListed;
 		static bool IsCommandBarOpen;
+
+	public:
+		static Rect Command_Bar_Frame(void);
 };
