@@ -1,0 +1,29 @@
+; Kirov airship (Soviet): run with -Country 8 (Russians). The Kirov is granted over the Soviet base and attacks the nearest
+; enemy construction yard. Its rules say Speed=5, BalloonHover=yes and Primary=BlimpBomb (range 1.5 cells, 250 damage).
+; Expected: it flies to the target at its slow speed, keeps the Attack mission over it, and the target's strength falls as
+; it bombs (NALASR 400 -> 167 between frames 2500 and 5500 in the run that wrote this header). The height is not checked.
+30 command CenterBase
+40 select SMCV
+45 command DeployObject
+300 own NAPOWR 56 40
+310 grantunit ZEP 60 46
+2500 dump
+2600 attack ZEP
+2700 dump
+2900 dump
+3100 dump
+3300 dump
+3500 dump
+3700 dump
+3900 dump
+4100 dump
+4300 dump
+4500 dump
+4700 dump
+4900 dump
+5100 dump
+5300 dump
+5500 dump
+5700 dump
+5900 dump
+6001 quit

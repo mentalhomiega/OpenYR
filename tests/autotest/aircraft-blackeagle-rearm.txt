@@ -1,0 +1,42 @@
+; Black Eagle rearm for Alliance (Korea): run with -Country 1. The Black Eagle needs RequiredHouses=Alliance, so the
+; player must be the Alliance country. It is built, attacks, runs out of ammunition, returns to the Air Force Command,
+; lands on a free pad and rearms to ammo 1. Expected: ammo 1 -> 0 while the target is passed, mission Enter on the way
+; back, ammo 1 again while it rests on the airfield (radio GAAIRC).
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 produce BEAG
+2500 dump
+2600 attack BEAG
+2650 dump
+2700 dump
+2750 dump
+2800 dump
+2850 dump
+2900 dump
+2950 dump
+3000 dump
+3050 dump
+3100 dump
+3150 dump
+3200 dump
+3250 dump
+3300 dump
+3350 dump
+3400 dump
+3450 dump
+3500 dump
+3550 dump
+3600 dump
+3650 dump
+3700 dump
+3750 dump
+3800 dump
+3850 dump
+3900 dump
+3950 dump
+4000 dump
+4001 quit
