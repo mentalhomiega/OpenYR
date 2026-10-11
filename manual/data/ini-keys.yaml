@@ -696,6 +696,24 @@ AIMinorSuperReadyPercent:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AINavalYardAdjacency:
+  key: AINavalYardAdjacency
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '20'
+      declared_in: RulesClass
+      member: AINavalYardAdjacency
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AIPickWallDefensePercent:
   key: AIPickWallDefensePercent
   scopes:
@@ -31748,6 +31766,24 @@ ShipSinkingWeight:
       default_candidate: '3'
       declared_in: RulesClass
       member: ShipSinkingWeight
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+Shipyard:
+  key: Shipyard
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: typelist
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: RulesClass
+      member: Shipyard
       source: code/rules.cpp
       guard: null
     level: RulesClass

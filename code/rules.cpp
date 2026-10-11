@@ -195,6 +195,7 @@ RulesClass::RulesClass(void) :
 	IQHarvester(3),
 	IQSellBack(2),
 	AIBaseSpacing(1),
+	AINavalYardAdjacency(20),
 	SilverCrate(CRATE_HEAL_BASE),
 	WoodCrate(CRATE_MONEY),
 	WaterCrate(CRATE_MONEY),
@@ -707,6 +708,7 @@ RulesClass::RulesClass(void) :
 	BuildConst(),
 	BuildPower(),
 	BuildRefinery(),
+	Shipyard(),
 	BuildBarracks(),
 	BuildTech(),
 	BuildWeapons(),
@@ -1660,6 +1662,8 @@ bool RulesClass::General(CCINIClass const & ini)
 		NodGateOne = TGet_Class(ini, GENERAL, "NodGateOne", NodGateOne);
 		NodGateTwo = TGet_Class(ini, GENERAL, "NodGateTwo", NodGateTwo);
 		WallTower = TGet_Class(ini, GENERAL, "WallTower", WallTower);
+		Shipyard = TGet_TypeList<BuildingTypeClass>(ini, GENERAL, "Shipyard", Shipyard);
+		AINavalYardAdjacency = ini.Get_Int(GENERAL, "AINavalYardAdjacency", AINavalYardAdjacency);
 		GDIPowerPlant = TGet_Class(ini, GENERAL, "GDIPowerPlant", GDIPowerPlant);
 		GDIPowerTurbine = TGet_Class(ini, GENERAL, "GDIPowerTurbine", GDIPowerTurbine);
 		NodRegularPower = TGet_Class(ini, GENERAL, "NodRegularPower", NodRegularPower);
@@ -3095,6 +3099,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BuildConst);
 	stream.Serialize(BuildPower);
 	stream.Serialize(BuildRefinery);
+	stream.Serialize(Shipyard);
 	stream.Serialize(BuildBarracks);
 	stream.Serialize(BuildTech);
 	stream.Serialize(BuildWeapons);
@@ -3301,6 +3306,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IQHarvester);
 	stream.Serialize(IQSellBack);
 	stream.Serialize(AIBaseSpacing);
+	stream.Serialize(AINavalYardAdjacency);
 	stream.Serialize(SilverCrate);
 	stream.Serialize(WoodCrate);
 	stream.Serialize(CrateMinimum);
@@ -3801,6 +3807,7 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	BuildConst.Delete((BuildingTypeClass const *)target);
 	BuildPower.Delete((BuildingTypeClass const *)target);
 	BuildRefinery.Delete((BuildingTypeClass const *)target);
+	Shipyard.Delete((BuildingTypeClass const *)target);
 	BuildBarracks.Delete((BuildingTypeClass const *)target);
 	BuildTech.Delete((BuildingTypeClass const *)target);
 	BuildWeapons.Delete((BuildingTypeClass const *)target);
