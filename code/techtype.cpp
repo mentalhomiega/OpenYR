@@ -179,6 +179,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
 	GapRadiusInCells(0),
+	SuperGapRadiusInCells(0),
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
@@ -802,6 +803,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
+		SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
 		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
 		DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
 		DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
@@ -1556,6 +1558,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
 	stream.Serialize(GapRadiusInCells);
+	stream.Serialize(SuperGapRadiusInCells);
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);

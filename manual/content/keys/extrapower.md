@@ -1,7 +1,7 @@
 ---
 key: ExtraPower
-summary: The power each object inside an absorbing structure adds to its output.
-see_also: [InfantryAbsorb, UnitAbsorb, Power, "system:power"]
+summary: The power each object inside an absorbing structure adds to its output, or the extra drain of a charged gap generator.
+see_also: [InfantryAbsorb, UnitAbsorb, SuperGapRadiusInCells, Power, "system:power"]
 when_omitted:
   kind: value
   value: "0"
@@ -16,4 +16,6 @@ Passengers=5
 ExtraPower=100 ; five soldiers inside add 500
 ```
 
-A value of `0` or below adds nothing. The key has no effect on a structure that absorbs nothing.
+A value of `0` adds nothing. The key has no effect on a structure that absorbs nothing.
+
+A negative value is a drain instead. A [`GapGenerator=yes`](/keys/gapgenerator/) structure that its owner has charged with [`SuperGapRadiusInCells`](/keys/supergapradiusincells/) adds the size of the value to its drain until it is discharged. Other structures ignore a negative value.

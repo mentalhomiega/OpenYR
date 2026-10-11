@@ -309,6 +309,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSpyable(false),
 	IsUnitAbsorb(false),
 	ExtraPowerBonus(0),
+	ExtraPowerDrain(0),
 	IsFactoryPlant(false),
 	DamageFireOffset{},
 	DamageFireOffsetCount(0),
@@ -1340,7 +1341,16 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsInfantryAbsorb = ini.Get_Bool(Name(), "InfantryAbsorb", IsInfantryAbsorb);
 		IsSpyable = ini.Get_Bool(Name(), "Spyable", IsSpyable);
 		IsUnitAbsorb = ini.Get_Bool(Name(), "UnitAbsorb", IsUnitAbsorb);
-		ExtraPowerBonus = ini.Get_Int(Name(), "ExtraPower", ExtraPowerBonus);
+		int extra_power = ExtraPowerBonus;
+		if (extra_power < 1) {
+			extra_power = -ExtraPowerDrain;
+		}
+		extra_power = ini.Get_Int(Name(), "ExtraPower", extra_power);
+		ExtraPowerBonus = extra_power;
+		if (extra_power < 0) {
+			ExtraPowerDrain = -extra_power;
+			ExtraPowerBonus = 0;
+		}
 		IsFactoryPlant = ini.Get_Bool(Name(), "FactoryPlant", IsFactoryPlant);
 
 		DamageFireOffsetCount = 0;
@@ -2391,6 +2401,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpyable);
 	stream.Serialize(IsUnitAbsorb);
 	stream.Serialize(ExtraPowerBonus);
+	stream.Serialize(ExtraPowerDrain);
 	stream.Serialize(IsFactoryPlant);
 	stream.Serialize(DamageFireOffset);
 	stream.Serialize(DamageFireOffsetCount);

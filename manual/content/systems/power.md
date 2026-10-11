@@ -80,7 +80,7 @@ LowPowerPenaltyModifier=1       ; scales the shortfall before it sets the speed
 
 A structure's output is its type's positive [`Power=`](/keys/power/#scope-buildingtype) plus the positive `Power=` of every plug installed in it, plus [`ExtraPower`](/keys/extrapower/) for each object inside an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). The sum is multiplied by the structure's current strength as a fraction of its maximum and rounded down.
 
-A structure's drain is the size of its type's negative `Power=`, plus the drain of its plugs. Damage does not change it.
+A structure's drain is the size of its type's negative `Power=`, plus the drain of its plugs, plus the size of a negative [`ExtraPower`](/keys/extrapower/) while it is a charged gap generator. Damage does not change it.
 
 The table shows what affects each total. A stun is an [EM pulse](/systems/emp-pulse/) disabling the structure for a set number of frames.
 
