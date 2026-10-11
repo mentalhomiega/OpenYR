@@ -700,6 +700,7 @@ RulesClass::RulesClass(void) :
 	GDIPowerTurbine(NULL),
 	NodRegularPower(NULL),
 	NodAdvancedPower(NULL),
+	ThirdPowerPlant(NULL),
 	GDIFirestormGenerator(NULL),
 	GDIHunterSeeker(NULL),
 	NodHunterSeeker(NULL),
@@ -1663,6 +1664,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		GDIPowerTurbine = TGet_Class(ini, GENERAL, "GDIPowerTurbine", GDIPowerTurbine);
 		NodRegularPower = TGet_Class(ini, GENERAL, "NodRegularPower", NodRegularPower);
 		NodAdvancedPower = TGet_Class(ini, GENERAL, "NodAdvancedPower", NodAdvancedPower);
+		ThirdPowerPlant = TGet_Class(ini, GENERAL, "ThirdPowerPlant", ThirdPowerPlant);
 		GDIFirestormGenerator = TGet_Class(ini, GENERAL, "GDIFirestormGenerator", GDIFirestormGenerator);
 		GDIHunterSeeker = TGet_Class(ini, GENERAL, "GDIHunterSeeker", GDIHunterSeeker);
 		NodHunterSeeker = TGet_Class(ini, GENERAL, "NodHunterSeeker", NodHunterSeeker);
@@ -1721,6 +1723,9 @@ bool RulesClass::General(CCINIClass const & ini)
 			if (ini.Is_Present(GENERAL, "NodAdvancedPower")) second->AdvancedPowerPlant = NodAdvancedPower;
 			if (ini.Is_Present(GENERAL, "NodHunterSeeker")) second->HunterSeeker = NodHunterSeeker;
 			if (ini.Is_Present(GENERAL, "NodAIBuildsWalls")) second->IsAIBuildsWalls = NodAIBuildsWalls;
+		}
+		if (Sides.Count() > 2) {
+			if (ini.Is_Present(GENERAL, "ThirdPowerPlant")) Sides[2]->RegularPowerPlant = ThirdPowerPlant;
 		}
 		FillEarliestTeamProbability = ini.Get_IntList(GENERAL, "FillEarliestTeamProbability", FillEarliestTeamProbability);
 		MinimumAIDefensiveTeams = ini.Get_IntList(GENERAL, "MinimumAIDefensiveTeams", MinimumAIDefensiveTeams);
@@ -3083,6 +3088,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GDIPowerTurbine);
 	stream.Serialize(NodRegularPower);
 	stream.Serialize(NodAdvancedPower);
+	stream.Serialize(ThirdPowerPlant);
 	stream.Serialize(GDIFirestormGenerator);
 	stream.Serialize(GDIHunterSeeker);
 	stream.Serialize(NodHunterSeeker);
@@ -3629,6 +3635,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == NodAdvancedPower) {
 		NodAdvancedPower = NULL;
+	}
+	if (target == ThirdPowerPlant) {
+		ThirdPowerPlant = NULL;
 	}
 	if (target == GDIFirestormGenerator) {
 		GDIFirestormGenerator = NULL;

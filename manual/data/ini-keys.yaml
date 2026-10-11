@@ -37395,6 +37395,24 @@ ThirdDisguise:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ThirdPowerPlant:
+  key: ThirdPowerPlant
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: ThirdPowerPlant
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ThirdSurvivorDivisor:
   key: ThirdSurvivorDivisor
   scopes:
