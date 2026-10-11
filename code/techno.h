@@ -186,6 +186,12 @@ class TechnoClass :	public RadioClass,
 		TechnoClass * LocomotorSource;
 		bool IsAttackedByLocomotor;
 		bool IsLetGoByLocomotor;
+
+		// The object and house that held this one, as they are credited with what it crushes when it lands.
+		TechnoClass * LetGoBy;
+		HouseClass * LetGoByHouse;
+		void Crush_On_Landing(void);
+		void Fall_After_Release(void);
 		void Release_Locomotor(bool clear_target);
 		void Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor);
 

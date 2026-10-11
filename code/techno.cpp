@@ -290,6 +290,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	LocomotorSource(NULL),
 	IsAttackedByLocomotor(false),
 	IsLetGoByLocomotor(false),
+	LetGoBy(NULL),
+	LetGoByHouse(NULL),
 	AirstrikeReadyFrame(0),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
@@ -3391,9 +3393,13 @@ void TechnoClass::AI(void)
 
 	AttachedEffects.AI(this);
 
-	// A vehicle let go in the air by its holder is destroyed when it reaches the ground (ReleaseLocomotor, 0x70FEE0).
+	// A vehicle let go in the air by its holder crushes what is under it and is destroyed when it reaches the ground (ReleaseLocomotor, 0x70FEE0).
 	if (IsLetGoByLocomotor && HeightAGL <= 0) {
 		IsLetGoByLocomotor = false;
+		Crush_On_Landing();
+		if (!IsActive) {
+			return;
+		}
 		int damage = Strength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
 		if (!IsActive) {
@@ -8022,14 +8028,15 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (LocomotorTarget == target) {
 			LocomotorTarget = NULL;
 		}
+		if (LetGoBy == target) {
+			LetGoBy = NULL;
+		}
 		if (LocomotorSource == target) {
 			LocomotorSource = NULL;
 			if (IsAttackedByLocomotor) {
 				IsAttackedByLocomotor = false;
 				IsLetGoByLocomotor = HeightAGL > 0;
-				if (Is_Foot() && ((FootClass *)this)->Locomotion != NULL) {
-					((FootClass *)this)->Locomotion->Stop_Moving();
-				}
+				Fall_After_Release();
 			}
 		}
 		if (DrainTarget == target) {
@@ -9965,6 +9972,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LocomotorSource);
 	stream.Serialize(IsAttackedByLocomotor);
 	stream.Serialize(IsLetGoByLocomotor);
+	stream.Serialize(LetGoBy);
+	stream.Serialize(LetGoByHouse);
 	stream.Serialize(AirstrikeReadyFrame);
 	stream.Serialize(AirstrikePlanes);
 	stream.Serialize(DrainTarget);
@@ -11210,12 +11219,74 @@ void TechnoClass::Release_Locomotor(bool clear_target)
 	target->LocomotorSource = NULL;
 	target->IsAttackedByLocomotor = false;
 	target->IsLetGoByLocomotor = target->HeightAGL > 0;
+	target->LetGoBy = this;
+	target->LetGoByHouse = House;
 	DebugString("Locomotor: %s lets go of %s%s\n", TClass->Name(), target->TClass->Name(), target->IsLetGoByLocomotor ? " in the air" : "");
-	if (target->Is_Foot() && ((FootClass *)target)->Locomotion != NULL) {
-		((FootClass *)target)->Locomotion->Stop_Moving();
-	}
+	target->Fall_After_Release();
 	if (clear_target) {
 		Assign_Target(NULL);
+	}
+}
+
+
+/// <summary>
+/// Sends a vehicle a locomotor let go of down to the ground. A vehicle the locomotor held
+/// still in the air has no move to stop, so it is ordered to the ground under it.
+/// </summary>
+void TechnoClass::Fall_After_Release(void)
+{
+	if (!Is_Foot() || ((FootClass *)this)->Locomotion == NULL) {
+		return;
+	}
+	ILocomotion * locomotion = ((FootClass *)this)->Locomotion.get();
+	locomotion->Stop_Moving();
+	if (HeightAGL > 0 && !locomotion->Is_Moving()) {
+		Coord ground = Get_Coord();
+		ground.Z = Map.Get_Height_GL(ground);
+		locomotion->Move_To(ground);
+	}
+}
+
+
+/// <summary>
+/// Crushes what stands where this vehicle lands after a locomotor let it go in the air
+/// (JumpjetLocomotionClass, 0x54CA90). Only the first object on the cell, apart from this one,
+/// decides what happens. A vehicle or structure is left alone. A soldier is crushed, and so is
+/// everything after it on the cell. Any other object takes damage from CrushWarhead equal to
+/// its strength, ignoring its defenses; with no CrushWarhead it takes none. The holder, or failing
+/// that its house, is credited.
+/// </summary>
+void TechnoClass::Crush_On_Landing(void)
+{
+	ObjectClass * object = Map[Get_Coord()].Cell_Occupier(false);
+	if (object == this && object != NULL) {
+		object = object->Next;
+	}
+	if (object == NULL || object->RTTI == RTTI_UNIT || object->RTTI == RTTI_BUILDING) {
+		return;
+	}
+
+	if (object->RTTI == RTTI_INFANTRY) {
+		while (object != NULL) {
+			ObjectClass * next = object->Next;
+			if (object != this) {
+				Sound_Effect(object->Class_Of()->CrushSound, PositionCoord);
+				if (LetGoBy != NULL) {
+					object->Record_The_Kill(LetGoBy);
+				} else if (LetGoByHouse != NULL) {
+					object->Record_The_Kill_By_House(LetGoByHouse);
+				} else {
+					object->Record_The_Kill(this);
+				}
+				object->Mark(MARK_UP);
+				object->Limbo();
+				object->Delete_Me();
+			}
+			object = next;
+		}
+	} else if (Rule->CrushWarhead != NULL) {
+		int damage = object->Strength;
+		object->Take_Damage(damage, 0, Rule->CrushWarhead, LetGoBy, true, false, LetGoByHouse);
 	}
 }
 
@@ -11249,6 +11320,8 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 
 	IsAttackedByLocomotor = true;
 	IsLetGoByLocomotor = false;
+	LetGoBy = NULL;
+	LetGoByHouse = source->House;
 	LocomotorSource = source;
 	source->LocomotorTarget = this;
 	Assign_Target(NULL);

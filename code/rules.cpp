@@ -792,6 +792,7 @@ RulesClass::RulesClass(void) :
 	EMPulseWarhead(NULL),
 	EMPulseProjectile(NULL),
 	C4Warhead(NULL),
+	CrushWarhead(NULL),
 	DrainMoneyFrameDelay(30),
 	DrainMoneyAmount(30),
 	DrainAnimationType(NULL),
@@ -1388,6 +1389,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		FlameDamage = TGet_Class(ini, COMBATDAMAGE, "FlameDamage", FlameDamage);
 		FlameDamage2 = TGet_Class(ini, COMBATDAMAGE, "FlameDamage2", FlameDamage2);
 		C4Warhead = TGet_Class(ini, COMBATDAMAGE, "C4Warhead", C4Warhead);
+		CrushWarhead = TGet_Class(ini, COMBATDAMAGE, "CrushWarhead", CrushWarhead);
 		DrainMoneyFrameDelay = ini.Get_Int(COMBATDAMAGE, "DrainMoneyFrameDelay", DrainMoneyFrameDelay);
 		DrainMoneyAmount = ini.Get_Int(COMBATDAMAGE, "DrainMoneyAmount", DrainMoneyAmount);
 		DrainAnimationType = TGet_Class(ini, COMBATDAMAGE, "DrainAnimationType", DrainAnimationType);
@@ -3154,6 +3156,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPulseWarhead);
 	stream.Serialize(EMPulseProjectile);
 	stream.Serialize(C4Warhead);
+	stream.Serialize(CrushWarhead);
 	stream.Serialize(DrainMoneyFrameDelay);
 	stream.Serialize(DrainMoneyAmount);
 	stream.Serialize(DrainAnimationType);
@@ -3466,6 +3469,9 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (target == C4Warhead) {
 		C4Warhead = NULL;
+	}
+	if (target == CrushWarhead) {
+		CrushWarhead = NULL;
 	}
 	if (target == DrainAnimationType) {
 		DrainAnimationType = NULL;

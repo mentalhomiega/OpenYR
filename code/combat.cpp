@@ -348,12 +348,12 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 		/*
 		 * A structure is measured from the cell it is found in, so a large one is struck once
-		 * for each of its cells in reach. The firer is spared unless its type is DamageSelf.
-		 * Harvesters are spared in a scenario that protects them.
+		 * for each of its cells in reach. The firer is spared unless its type is DamageSelf or
+		 * the blast is CrushWarhead's. Harvesters are spared in a scenario that protects them.
 		 */
 		Coord const cell_coord = cptr->Center_Coord();
 		for (object = cptr->Cell_Occupier(isbridge); object != NULL; object = object->Next) {
-			if (object == source && !source->TClass->IsDamageSelf) continue;
+			if (object == source && !source->TClass->IsDamageSelf && warhead != Rule->CrushWarhead) continue;
 			if (!object->IsActive) continue;
 			if (object->RTTI == RTTI_UNIT && Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List((UnitTypeClass *)object->Class_Of())) continue;
 
