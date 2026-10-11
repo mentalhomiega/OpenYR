@@ -25,6 +25,11 @@ void AutoTest_Game_Over(bool won);
 
 
 class HouseClass;
+class TriggerTypeClass;
+
+// Counts a spring of a trigger type for the triggerlog and triggercoverage steps and the waittrigger
+// wait. TriggerClass::Spring calls it only while a run is active.
+void AutoTest_Trigger_Sprung(TriggerTypeClass const * type);
 
 // Counts a unit, infantry, aircraft or structure that a house has just finished producing, so the
 // census can report production per house. The RTTI is the object's RTTIType.

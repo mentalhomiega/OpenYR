@@ -36,6 +36,12 @@
 **	triggers [all]			writes the trigger types with their owner, events and whether a live trigger of each is enabled (only
 **							the enabled ones, unless "all"), then every tag with the objects and cells it rides on, and the
 **							local and global variables that are set
+**	triggerlog <0|1>		writes a line each time a trigger springs
+**	triggercoverage			writes each trigger type with how many times it has sprung, then those that never did
+**	waitcell <TypeID> x y [radius] [timeout]	pauses the script until one of the player's objects of that type is within radius cells of the cell
+**	waittrigger <TriggerID|name> [timeout]	pauses the script until that trigger has sprung once
+**	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
+**	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
@@ -182,6 +188,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -214,6 +221,8 @@ struct StepType
 	std::string Argument;
 	int X;
 	int Y;
+	// The line as written, without trailing white space, for the wait messages.
+	std::string Line;
 };
 
 bool Active = false;
@@ -226,6 +235,20 @@ int HashInterval = 0;
 
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
+
+// Frames a wait step waits for its condition when its line gives no timeout.
+int const Wait_Default_Timeout = 3000;
+
+// A wait's steps run this many frames after their authored frames. It grows each time a wait ends,
+// so a line keeps its spacing from the wait line.
+int WaitShift = 0;
+
+// The index of the step whose arguments were last checked, so a wait's problems are logged once.
+std::size_t WaitChecked = static_cast<std::size_t>(-1);
+
+// Whether each trigger spring is logged, and how many times each trigger type has sprung this run.
+bool TriggerLog = false;
+std::map<TriggerTypeClass const *, int> TriggerSprings;
 
 
 TechnoTypeClass const * Find_Type(std::string const & name)
@@ -256,6 +279,27 @@ void For_Player_Objects(DynamicVectorClass<T *> & list, std::string const & name
 			action(object);
 		}
 	}
+}
+
+
+// Whether one of the player's objects of that type is on the map within radius cells of the cell,
+// measured as a straight line between the two cells.
+template<class T>
+bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & name, Cell const & cell, int radius)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		if (object == NULL || object->IsInLimbo || (object->House != PlayerPtr && !object->House->Is_Player_Control()) || stricmp(object->TClass->Name(), name.c_str()) != 0) {
+			continue;
+		}
+		Cell const at = object->Get_Cell();
+		int const dx = at.X - cell.X;
+		int const dy = at.Y - cell.Y;
+		if (dx * dx + dy * dy <= radius * radius) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -672,6 +716,246 @@ static void Trigger_Action_Step(StepType const & step)
 }
 
 
+// How many times the trigger type has sprung this run, or 0 for NULL or a type that has not sprung.
+int Trigger_Springs(TriggerTypeClass const * type)
+{
+	std::map<TriggerTypeClass const *, int>::const_iterator const found = TriggerSprings.find(type);
+	return(found != TriggerSprings.end() ? found->second : 0);
+}
+
+
+/*
+**	triggerlog <0|1>: writes a line each time a trigger springs. triggercoverage: writes each trigger
+**	type with how many times it has sprung this run, then the types that have not sprung at all.
+*/
+static void Trigger_Step(StepType const & step)
+{
+	if (step.Command == "triggerlog") {
+		TriggerLog = std::atoi(step.Argument.c_str()) != 0;
+		return;
+	}
+	std::vector<std::string> never;
+	for (int index = 0; index < TriggerTypes.Count(); index++) {
+		TriggerTypeClass const * type = TriggerTypes[index];
+		int const fired = Trigger_Springs(type);
+		DebugString("AUTOTEST trigger coverage %s '%s' house %s fired %d\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", fired);
+		if (fired == 0) {
+			never.push_back(std::string((char const *)type->IniName) + " '" + (char const *)type->GivenName + "'");
+		}
+	}
+
+	// A message holds 4096 bytes at most, so a long list goes out as several lines of about 3000 bytes.
+	std::string chunk;
+	bool first = true;
+	auto flush = [&]() {
+		if (first) {
+			DebugString("AUTOTEST trigger never fired (%d of %d): %s\n", (int)never.size(), TriggerTypes.Count(), chunk.c_str());
+		} else {
+			DebugString("AUTOTEST trigger never fired (continued): %s\n", chunk.c_str());
+		}
+		first = false;
+		chunk.clear();
+	};
+	for (std::string const & entry : never) {
+		if (!chunk.empty() && chunk.size() + entry.size() + 2 > 3000) {
+			flush();
+		}
+		if (!chunk.empty()) {
+			chunk += ", ";
+		}
+		chunk += entry;
+	}
+	if (never.empty()) {
+		chunk = "none";
+	}
+	flush();
+}
+
+
+/*
+**	Wait steps: waitcell, waittrigger, waitowns and waitlocal pause the script until their condition
+**	holds, or until their timeout passes. Their words are the line's frame and command, then the
+**	arguments: see the wait functions below for each one's word positions.
+*/
+bool Is_Wait_Command(std::string const & command)
+{
+	return(command == "waitcell" || command == "waittrigger" || command == "waitowns" || command == "waitlocal");
+}
+
+
+// The whitespace-separated words of a script line: the frame, the command, then the arguments.
+std::vector<std::string> Line_Words(std::string const & line)
+{
+	std::istringstream stream(line);
+	std::vector<std::string> words;
+	std::string word;
+	while (stream >> word) {
+		words.push_back(word);
+	}
+	return(words);
+}
+
+
+// Word <index> of a script line, or an empty string when the line has no such word.
+std::string Word(std::vector<std::string> const & words, std::size_t index)
+{
+	return(index < words.size() ? words[index] : std::string());
+}
+
+
+// Word <index> as a number, or fallback when the line has no such word.
+int Number(std::vector<std::string> const & words, std::size_t index, int fallback)
+{
+	return(index < words.size() ? std::atoi(words[index].c_str()) : fallback);
+}
+
+
+// The fewest words a wait line needs. waitcell is: frame, command, TypeID, x, y, then radius and timeout.
+// waittrigger is: frame, command, trigger, timeout. waitowns is: frame, command, house, TypeID, count,
+// timeout. waitlocal is: frame, command, index, value, timeout.
+std::size_t Wait_Min_Words(std::string const & command)
+{
+	if (command == "waitcell" || command == "waitowns") {
+		return(5);
+	}
+	if (command == "waittrigger") {
+		return(3);
+	}
+	return(4);
+}
+
+
+// The word that holds a wait's timeout, in the layout Wait_Min_Words describes.
+std::size_t Wait_Timeout_Word(std::string const & command)
+{
+	if (command == "waitcell") {
+		return(6);
+	}
+	if (command == "waittrigger") {
+		return(3);
+	}
+	if (command == "waitowns") {
+		return(5);
+	}
+	return(4);
+}
+
+
+// The house a wait names: "player" for the player, otherwise a house name with an underscore for each space.
+HouseClass * Wait_House(std::string name)
+{
+	if (stricmp(name.c_str(), "player") == 0) {
+		return(PlayerPtr);
+	}
+	std::replace(name.begin(), name.end(), '_', ' ');
+	return(House_From_Name(name.c_str()));
+}
+
+
+// How many of the type the house owns, counted as the quantity step counts it.
+int Owned_Count(HouseClass const * house, TechnoTypeClass const * type)
+{
+	int const id = type->Fetch_Heap_ID();
+	if (dynamic_cast<BuildingTypeClass const *>(type) != NULL) {
+		return(house->BQuantity.Value(id));
+	}
+	if (dynamic_cast<AircraftTypeClass const *>(type) != NULL) {
+		return(house->AQuantity.Value(id));
+	}
+	if (dynamic_cast<InfantryTypeClass const *>(type) != NULL) {
+		return(house->IQuantity.Value(id));
+	}
+	return(house->UQuantity.Value(id));
+}
+
+
+// Why a wait line cannot run as written, or an empty string when it can.
+std::string Wait_Problem(std::vector<std::string> const & words)
+{
+	std::string const command = Word(words, 1);
+	if (words.size() < Wait_Min_Words(command)) {
+		return("too few arguments");
+	}
+	if (command == "waitcell" && Find_Type(Word(words, 2)) == NULL) {
+		return("no such type " + Word(words, 2));
+	}
+	if (command == "waittrigger" && TriggerTypeClass::From_Name(Word(words, 2).c_str()) == NULL) {
+		return("no such trigger " + Word(words, 2));
+	}
+	if (command == "waitowns") {
+		if (Wait_House(Word(words, 2)) == NULL) {
+			return("no such house " + Word(words, 2));
+		}
+		if (Find_Type(Word(words, 3)) == NULL) {
+			return("no such type " + Word(words, 3));
+		}
+	}
+	if (command == "waitlocal") {
+		bool value = false;
+		if (!Scen->Fetch_Local_Value(Number(words, 2, -1), value)) {
+			return("no such local variable " + Word(words, 2));
+		}
+	}
+	return("");
+}
+
+
+// Whether a wait's condition holds now. A line that has a problem never holds.
+bool Wait_Met(std::vector<std::string> const & words)
+{
+	std::string const command = Word(words, 1);
+	if (words.size() < Wait_Min_Words(command)) {
+		return(false);
+	}
+	if (command == "waitcell") {
+		Cell const cell(Number(words, 3, 0), Number(words, 4, 0));
+		int const radius = Number(words, 5, 2);
+		std::string const name = Word(words, 2);
+		return(Player_Object_Within(Units, name, cell, radius) || Player_Object_Within(Infantry, name, cell, radius)
+			|| Player_Object_Within(Buildings, name, cell, radius) || Player_Object_Within(Aircraft, name, cell, radius));
+	}
+	if (command == "waittrigger") {
+		return(Trigger_Springs(TriggerTypeClass::From_Name(Word(words, 2).c_str())) > 0);
+	}
+	if (command == "waitowns") {
+		HouseClass * house = Wait_House(Word(words, 2));
+		TechnoTypeClass const * type = Find_Type(Word(words, 3));
+		return(house != NULL && type != NULL && Owned_Count(house, type) >= Number(words, 4, 0));
+	}
+	if (command == "waitlocal") {
+		bool value = false;
+		bool const legal = Scen->Fetch_Local_Value(Number(words, 2, -1), value);
+		return(legal && value == (Number(words, 3, 0) != 0));
+	}
+	return(false);
+}
+
+
+/*
+**	Ends the wait at the front of the script once its condition holds or its timeout passes. The
+**	steps after it move by the frames the wait took, so they keep their spacing from the wait line.
+**	Returns false while the wait goes on.
+*/
+bool Wait_Over(StepType const & step)
+{
+	std::vector<std::string> const words = Line_Words(step.Line);
+	int const timeout = Number(words, Wait_Timeout_Word(step.Command), Wait_Default_Timeout);
+	int const start = step.Frame + WaitShift;
+	bool const met = Wait_Met(words);
+	if (!met && Frame < start + timeout) {
+		return(false);
+	}
+	int const end = met ? Frame : start + timeout;
+	WaitShift = end - step.Frame;
+	if (met) {
+		DebugString("AUTOTEST wait done at frame %d: %s\n", end, step.Line.c_str());
+	} else {
+		DebugString("AUTOTEST wait timed out: %s\n", step.Line.c_str());
+	}
+	return(true);
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -684,6 +968,11 @@ void Run(StepType const & step)
 
 	if (step.Command == "treehit" || step.Command == "trees") {
 		Terrain_Step(step);
+		return;
+	}
+
+	if (step.Command == "triggerlog" || step.Command == "triggercoverage") {
+		Trigger_Step(step);
 		return;
 	}
 
@@ -2017,7 +2306,9 @@ bool AutoTest_Load(char const * filename)
 			}
 			CDFileClass::Add_Search_Drive(path.c_str());
 		}
-		Steps.push_back(StepType{frame, command, text, x, y});
+		std::string source = line;
+		source.erase(source.find_last_not_of(" \t\r\n") + 1);
+		Steps.push_back(StepType{frame, command, text, x, y, source});
 	}
 	std::fclose(file);
 
@@ -2034,8 +2325,23 @@ void AutoTest_Frame(void)
 	if (!Active || PlayerPtr == NULL) {
 		return;
 	}
-	while (Next < Steps.size() && Steps[Next].Frame <= Frame) {
-		Run(Steps[Next++]);
+	while (Next < Steps.size() && Steps[Next].Frame + WaitShift <= Frame) {
+		StepType const & step = Steps[Next];
+		if (Is_Wait_Command(step.Command)) {
+			if (WaitChecked != Next) {
+				WaitChecked = Next;
+				std::string const problem = Wait_Problem(Line_Words(step.Line));
+				if (!problem.empty()) {
+					DebugString("AUTOTEST wait problem: %s: %s\n", problem.c_str(), step.Line.c_str());
+				}
+			}
+			if (!Wait_Over(step)) {
+				break;
+			}
+		} else {
+			Run(step);
+		}
+		Next++;
 	}
 
 	if (!FollowType.empty() && (Frame % 15) == 0) {
@@ -2072,6 +2378,22 @@ void AutoTest_Frame(void)
 
 	if (HashInterval > 0 && (Frame % HashInterval) == 0) {
 		Log_State_Hash();
+	}
+}
+
+
+/// <summary>
+/// Counts a spring of a trigger type for triggerlog, triggercoverage and waittrigger. TriggerClass::Spring
+/// calls it only while an autotest run is active.
+/// </summary>
+void AutoTest_Trigger_Sprung(TriggerTypeClass const * type)
+{
+	if (!Active || type == NULL) {
+		return;
+	}
+	TriggerSprings[type]++;
+	if (TriggerLog) {
+		DebugString("AUTOTEST trigger fired frame %d: %s %s house %s\n", Frame, (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE");
 	}
 }
 

@@ -341,6 +341,7 @@ bool TriggerClass::Spring(ObjectClass * object, Cell cell)
 
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST   sprung %s '%s' frame %d\n", (char const *)Class->IniName, (char const *)Class->GivenName, Frame);
+		AutoTest_Trigger_Sprung(Class);
 	}
 
 	bool done = false;

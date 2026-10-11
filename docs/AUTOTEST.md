@@ -65,6 +65,12 @@ A command runs once the game frame reaches its frame, in file order.
 | `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
 | `treehit <Warhead> x y` | Hits the terrain object on that cell with 100 points of damage from the warhead, with no firer, and writes its strength before and after |
 | `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |
+| `waitcell <TypeID> <x> <y> [radius] [timeout]` | Pauses the script until one of the player's objects of that type is within `radius` cells of the cell (default 2), measured as a straight line. Objects not on the map do not count. See [Waiting for conditions](#waiting-for-conditions) |
+| `waittrigger <TriggerID or name> [timeout]` | Pauses the script until that trigger has sprung at least once. `runtrigger` and `trigaction` carry out actions without a spring, so they do not count |
+| `waitowns <House> <TypeID> <count> [timeout]` | Pauses the script until the house owns at least `count` of the type, counted as the `quantity` step counts owned. `player` names the player, and an underscore stands for a space |
+| `waitlocal <index> <0\|1> [timeout]` | Pauses the script until that scenario local variable has that value |
+| `triggerlog <0\|1>` | With `1`, writes `AUTOTEST trigger fired frame N: <ID> <name> house <house>` each time a trigger springs |
+| `triggercoverage` | Writes each trigger type in the scenario with how many times it has sprung since the run started, then the types that never sprung. A long list runs over several lines, the later ones marked `(continued)` |
 | `quit` | Ends the process |
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to
@@ -81,6 +87,21 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 2000 command ScreenCapture
 2100 quit
 ```
+
+### Waiting for conditions
+
+A wait step pauses the script at its line until its condition holds or its timeout passes. The timeout is the optional last argument in the syntax above, in game frames counted from the frame the wait starts. It defaults to 3000 frames, about the length of a win run.
+
+When the condition holds, the log has `AUTOTEST wait done at frame N: <line>` and the script goes on. When the timeout passes first, the log has `AUTOTEST wait timed out: <line>`, and the script still goes on, so the log shows where a run stopped. A line with an unknown type, trigger, house or local variable, or with too few arguments, logs `AUTOTEST wait problem: <reason>: <line>` once when it starts. It then waits until its timeout, as any other wait does.
+
+Each wait adds the frames it took to every later line, so a line keeps its spacing from the wait line. A line ten frames after a wait line runs ten frames after the wait ends:
+
+```text
+100 waittrigger Start_Briefing 600
+110 move MTNK 100 100
+```
+
+If `Start_Briefing` springs at frame 130, the wait ends at 130 and the move runs at frame 140. A timed-out wait counts its full timeout in the same way.
 
 ## Campaign missions
 

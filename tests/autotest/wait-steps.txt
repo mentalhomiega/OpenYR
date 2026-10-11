@@ -1,0 +1,17 @@
+; Wait steps and trigger coverage on ALL01UMD.MAP. Run with -Campaign -Map ALL01UMD.MAP.
+; Start_Briefing springs at frame 30, so the first wait ends there and the lines after it move 25 frames later.
+; Expected: wait done for the satisfied waits (waittrigger, waitcell, the 2-tank waitowns, waitlocal 99),
+; wait timed out for the 50-tank waitowns, the waitlocal on local 98 and the waitcell on NOSUCHTYPE,
+; a wait problem line for NOSUCHTYPE, and the trigger coverage report.
+1 triggerlog 1
+5 waittrigger Start_Briefing 600
+10 move MTNK 100 100
+11 waitcell MTNK 100 100 2 900
+12 waitowns player MTNK 2 60
+13 waitowns player MTNK 50 120
+14 setlocal 99 1
+15 waitlocal 99 1 30
+16 waitlocal 98 1 30
+17 waitcell NOSUCHTYPE 1 1 1 30
+400 triggercoverage
+410 quit
