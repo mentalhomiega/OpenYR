@@ -79,10 +79,6 @@ and at 1280x720, plus the campaign wins, since every mission is played through t
 
 ## Open questions
 
-- **Map edges under panels.** The view stops at the map's edge, so with step 1 the map's right-hand
-  strip, as wide as the sidebar, can only be seen by hiding the sidebar. The view needs to scroll
-  past the map edges by the width of the panel on that side.
-
 - **Cameo size.** The game's cameos are 60x48. At 1080p three columns of them make a panel about
   230 pixels wide; OpenRA's look is closer to 1.5x. We start at 1x for crisp art and add a scale.
 - **Radar size.** The radar's map picture is sized to the panel width; a very wide map gives a short

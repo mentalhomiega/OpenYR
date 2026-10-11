@@ -72,6 +72,7 @@
 #include "sidebar.h"
 #include "stimer.h"
 #include "sun.h"
+#include "viewzoom.h"
 #include "terrain.h"
 #include "terrtype.h"
 #include "vector.h"
@@ -2533,6 +2534,11 @@ bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
 	Point2D minimum;
 	Point2D maximum;
 	Tactical_Position_Limits(minimum, maximum);
+
+	// The modern build panel covers the right of the view, so the view may scroll that far past the map's edge.
+	if (Modern_Interface()) {
+		maximum.X += Screen_To_View_Offset(Point2D(HUD_PANEL_WIDTH, 0)).X;
+	}
 
 	if (maximum.X < minimum.X) {
 		minimum.X = maximum.X = (minimum.X + maximum.X) / 2;
