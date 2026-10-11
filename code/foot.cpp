@@ -3661,7 +3661,7 @@ void FootClass::AI(void)
 					TotalFramesWalked++;
 				}
 			} else if (TClass->IdleRate != 0 && (Frame % TClass->IdleRate) == 0 && !IsAttackedByLocomotor) {
-				// A stopped object steps its walk animation every IdleRate frames (FootClass::Update, 0x4D9920).
+				// A stopped object steps its walk animation every IdleRate frames (FootClass::Update, 0x4DA530).
 				TotalFramesWalked++;
 			}
 		}
