@@ -21,9 +21,9 @@ At 1920x1080:
     buttons under it.
 - **The command bar** is a slim framed strip in the bottom-left corner, holding the [AdvancedCommandBar]
   buttons as icons.
-- **Superweapon timers** stack in the top-left corner: each superweapon's cameo with its countdown and
-  name under it.
-- **Messages** (chat, EVA text) keep their place at the top left of the map, below the timers.
+- **Superweapon timers** and the mission timer stack in the bottom-left corner, above the command
+  bar, one line each in the owner's colour.
+- **Messages** (chat, EVA text) keep their place at the top left of the map.
 
 A tab with nothing to build is shown dimmed, as in Yuri's Revenge, and a tab whose cameo has
 finished building flashes.
@@ -70,7 +70,7 @@ Changing it takes effect at the next game start.
 2. **The build panel layout.** Code-drawn frames; the icon row; the radar and power bar; the credits,
    time and power strip; tabs in a column; three cameo columns with names; scrolling.
 3. **The command bar** in the bottom-left corner.
-4. **Superweapon timers** in the top-left corner.
+4. **Superweapon timers** in the bottom-left corner.
 5. **Polish:** side colours, hover and pressed states, flashing tabs, tooltips placed beside the
    panel, UI scale for high resolutions, and the options screen choice.
 

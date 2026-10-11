@@ -50,6 +50,7 @@
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
+#include "hud.h"
 #include "super.h"
 #include "suprtype.h"
 #include "incdec.h"
@@ -68,6 +69,7 @@
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
+#include "sidebar.h"
 #include "stimer.h"
 #include "sun.h"
 #include "terrain.h"
@@ -3856,6 +3858,17 @@ void Tactical::Draw_Super_Timers(void)
 {
 	int line = 0;
 
+	// The modern interface's build panel covers the bottom right, so its list stands in the bottom
+	// left above the command bar instead.
+	bool const modern = Modern_Interface();
+	TextPrintType const align = modern ? TextPrintType(0) : TPF_RIGHT;
+	auto place = [&](int index) {
+		if (modern) {
+			return(Point2D(HUD_MARGIN, TacticalRect.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN * 3 - 16 * (index + 1)));
+		}
+		return(Point2D(TacticalRect.Width - 3, TacticalRect.Height - 16 * (index + 1)));
+	};
+
 	/*
 	**	The mission timer leads the list, under the label a trigger action gave it, and turns red
 	**	once it runs down to the warning time.
@@ -3872,8 +3885,7 @@ void Tactical::Draw_Super_Timers(void)
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
 		if (scheme == NULL) scheme = ColorSchemes[PlayerPtr->Scheme];
-		Point2D const at(TacticalRect.Width - 3, TacticalRect.Height - 16 * (line + 1));
-		Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, at, scheme, 0, (TextPrintType)(TPF_RIGHT | TPF_EFNT | TPF_FULLSHADOW), 1);
+		Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 		line++;
 	}
 
@@ -3894,8 +3906,7 @@ void Tactical::Draw_Super_Timers(void)
 			} else {
 				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
 			}
-			Point2D const at(TacticalRect.Width - 3, TacticalRect.Height - 16 * (line + 1));
-			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, at, ColorSchemes[house->Scheme], 0, (TextPrintType)(TPF_RIGHT | TPF_EFNT | TPF_FULLSHADOW), 1);
+			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), ColorSchemes[house->Scheme], 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 			line++;
 		}
 	}
