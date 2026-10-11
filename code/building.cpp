@@ -10242,6 +10242,9 @@ Coord BuildingClass::Fire_Coord(int slot) const
 	}
 	if (Class->PrimaryFirePixelOffset != Point2D(0xFFFF, 0xFFFF)) {
 		Coord pt(TacticalMap->Pixel_To_Lepton(Class->PrimaryFirePixelOffset), 0);
+		if (Class->IsPrimaryFireDualOffset) {
+			return(BASECLASS::Fire_Coord(slot) + pt);
+		}
 		return(Render_Coord() + pt);
 	}
 	if (Class->IsBarrelAnimAVoxel) {

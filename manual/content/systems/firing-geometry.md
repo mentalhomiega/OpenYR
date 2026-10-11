@@ -137,7 +137,7 @@ The gun heading, and whether the points tilt with the body, depend on the kind o
 
 A structure can replace both points. The engine tests these cases in order and uses the first that applies:
 
-1. A structure with a [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` uses that screen offset, projected onto the ground, for both points and for every slot.
+1. A structure with a [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` uses that screen offset, projected onto the ground, for both points and for every slot. With [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/), the muzzle is instead the point described above with that offset added to it.
 2. A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure places both points at the end of its voxel barrel, from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/). Both points rise as the barrel elevates.
 3. Any other structure uses the points described above. When its turret is a voxel, the turret animation's screen offset is added to both.
 
@@ -161,7 +161,7 @@ The two groups appear on opposite sides of the gun when one counter value is odd
 
 A structure with a voxel barrel works the other way, because its muzzle uses the previous counter value, which cancels the advance. There the firing animation, sonic wave and laser beam appear at the projectile's barrel, while the fire, spark and railgun effects appear at the previous shot's barrel.
 
-A weapon is affected only if its `Burst` is above `1` and its lateral offset is not zero. `PrimaryFirePixelOffset` places every part at one point.
+A weapon is affected only if its `Burst` is above `1` and its lateral offset is not zero. `PrimaryFirePixelOffset` places every part at one point, unless `PrimaryFireDualOffset=yes` moves the muzzle back to the firing offset.
 :::
 
 ## What each part of a shot reads

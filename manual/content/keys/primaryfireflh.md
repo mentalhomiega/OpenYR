@@ -41,7 +41,7 @@ The elite primary slot reads its own offset from [`ElitePrimaryFireFLH`](/keys/e
 
 Two structure settings replace this offset for every weapon slot. If both are set, the first one listed applies:
 
-- A [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` pins both points to that screen offset.
+- A [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` pins both points to that screen offset. With [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/) the muzzle uses this offset with the pixel offset added.
 - A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure takes both points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/).
 
 Otherwise, a structure whose turret is a voxel adds the turret animation's screen offset to both points.

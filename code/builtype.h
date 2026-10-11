@@ -107,6 +107,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		Point2D PrimaryFirePixelOffset;
 		Point2D SecondaryFirePixelOffset;
 
+		// With a PrimaryFirePixelOffset, does the primary weapon fire from its FireFLH position plus that offset rather than from the draw point plus the offset?
+		bool IsPrimaryFireDualOffset;
+
 		// A harvester that cannot reserve this structure's dock heads for the cell this far from the structure's origin and waits there.
 		Point2D QueueingCell;
 
