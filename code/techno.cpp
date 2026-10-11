@@ -295,6 +295,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	DrainingMe(NULL),
 	DrainAnim(NULL),
 	IsPermaControlled(false),
+	OriginallyOwnedByHouse(NULL),
+	MindControlledByHouse(NULL),
 	CurrentWeaponNumber(0),
 	CurrentTurretNumber(-1),
 	ChargeTurretDelay(0),
@@ -5978,6 +5980,7 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner)
 
 	House = newowner;
 	IsOwnedByPlayer = (House == PlayerPtr);
+	OriginallyOwnedByHouse = NULL;
 	newowner->Tracking_Active_Add(this, true);
 
 	if (Is_Foot() && newowner->Is_Human_Player()) {
@@ -9921,6 +9924,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CaptureManager);
 	stream.Serialize(MindControlledBy);
 	stream.Serialize(IsPermaControlled);
+	stream.Serialize(OriginallyOwnedByHouse);
+	stream.Serialize(MindControlledByHouse);
 	stream.Serialize(SpawnManager);
 	stream.Serialize(SpawnOwner);
 	stream.Serialize(SlaveManager);

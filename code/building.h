@@ -566,6 +566,7 @@ class BuildingClass : public TechnoClass
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield) override;
 		virtual bool Captured(HouseClass * newowner) override;
+		bool Change_Owner(HouseClass * newowner, bool announce, bool capture);
 		virtual WeaponDataStruct const * Get_Class_Weapon_Data(int which=0) const override;
 		virtual bool Is_Turret_Equipped() const override;
 		void Update_Radar_Spied(void);

@@ -1,0 +1,14 @@
+; Mind Control Base (action 123) gives the player every structure of the computer house, number 5,
+; and Restore Mind Controlled Base (action 124) gives them back. The structure lists before, between
+; and after show the move.
+30 command CenterBase
+290 spawn GAPOWR 70 44
+291 spawn GAPILE 74 44
+300 enemies
+310 trigaction 123 5 0
+320 dump
+330 enemies
+340 trigaction 124 5 0
+350 dump
+360 enemies
+370 quit

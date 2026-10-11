@@ -145,6 +145,14 @@ class TechnoClass :	public RadioClass,
 		TechnoClass * MindControlledBy;
 		bool IsPermaControlled;
 
+		/*
+		 * A trigger can have a house take over another's whole base. Each structure taken
+		 * remembers the house it came from and the house that holds it, until a trigger
+		 * gives it back or it changes hands another way.
+		 */
+		HouseClass * OriginallyOwnedByHouse;
+		HouseClass * MindControlledByHouse;
+
 		// The aircraft or missiles a Spawns type carries, and for a spawned object the one that launched it.
 		std::optional<SpawnManagerClass> SpawnManager;
 		TechnoClass * SpawnOwner;
