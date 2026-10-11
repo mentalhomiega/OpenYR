@@ -541,9 +541,18 @@ void BulletClass::AI(void)
 		if (distance <= half_speed || HeightAGL <= 0) {
 			forced = true;
 			impact = IMPACT_NORMAL;
-			if (HeightAGL > 0 && !Class->IsAirburst) {
+			if (HeightAGL > 0 && !Class->IsAirburst && target_coord != COORD_NONE) {
 				coord = target_coord;
 			}
+		}
+
+		/*
+		 * A projectile whose target is gone detonates once it has climbed MissileSafetyAltitude
+		 * above the ground (the homing branch of BulletClass::AI, 0x4666E0).
+		 */
+		if (target_coord == COORD_NONE && HeightAGL >= Rule->MissileSafetyAltitude) {
+			forced = true;
+			impact = IMPACT_NORMAL;
 		}
 
 		/*

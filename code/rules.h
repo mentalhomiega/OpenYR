@@ -871,6 +871,9 @@ class RulesClass
 		 */
 		double MissileROTVar;
 
+		// A homing projectile with no target left detonates once it climbs this high above the ground.
+		int MissileSafetyAltitude;
+
 		/*
 		 * Pointer to the weapon that a descending drop pod strafes the ground with. If
 		 * NULL, then the pod falls harmlessly.

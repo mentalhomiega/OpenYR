@@ -22902,6 +22902,24 @@ MissileROTVar:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MissileSafetyAltitude:
+  key: MissileSafetyAltitude
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '500'
+      declared_in: RulesClass
+      member: MissileSafetyAltitude
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MissileSpawn:
   key: MissileSpawn
   scopes:
