@@ -1769,6 +1769,17 @@ void TeamClass::Coordinate_Attack(void)
 		}
 	}
 
+	/*
+	**	Every eighth frame the leader checks that its weapon may be aimed at the target at all. A target it can never
+	**	fire at is given up and the step ends (0x6EB490).
+	*/
+	if (Target != NULL && Member != NULL && Frame % 8 == 4) {
+		FootClass * leader = Fetch_A_Leader();
+		if (leader->Can_Fire(Target, leader->What_Weapon_Should_I_Use(Target)) == FIRE_ILLEGAL) {
+			IsNextMission = true;
+		}
+	}
+
 	if (Target == NULL) {
 		IsNextMission = true;
 
@@ -1801,6 +1812,9 @@ void TeamClass::Coordinate_Attack(void)
 				if (unit->RTTI != RTTI_AIRCRAFT || unit->PrimaryWeapon == NULL || unit->Ammo > 0) {
 					has_attacker = true;
 				}
+			} else if (Class->IsDroppod && unit->IsInLimbo) {
+				// A drop pod team's member still in the air above the map counts as able to attack.
+				has_attacker = true;
 			}
 
 			unit = unit->Member;
