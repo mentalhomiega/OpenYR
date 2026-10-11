@@ -28060,6 +28060,23 @@ PurifierBonus:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+QueueingCell:
+  key: QueueingCell
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y)
+    status: generated
+    _provenance:
+      default_candidate: 0,0
+      declared_in: BuildingTypeClass
+      member: QueueingCell
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ROF:
   key: ROF
   scopes:
