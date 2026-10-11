@@ -9,6 +9,7 @@ keys:
   - SuppressionThreshold
   - ReselectIfLimboed
   - Paralyzes
+  - Sonic
 related:
   - type: system
     id: temporal-weapons
@@ -52,5 +53,7 @@ When the victim dies or leaves the map, the parasite comes back out on the victi
 A parasite that comes out is paralyzed for one `ROF` of its primary weapon. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time.
 
 Heavy damage to the victim can kill the parasite instead. A hit from anyone else above the parasite type's [`SuppressionThreshold`](/keys/suppressionthreshold/) dooms the parasite for twice the damage less the threshold, in frames; if the victim dies or the parasite is driven out in that time, the parasite dies with it. Healing the victim kills the parasite.
+
+A hit from a warhead with [`Sonic=yes`](/keys/sonic/) drives the parasite out of its victim. The parasite comes out unless it is doomed, in which case it dies.
 
 Yuri's Revenge also draws the giant squid wrapped around the ship it holds, and rocks a vehicle each time the parasite bites. Neither is done yet.

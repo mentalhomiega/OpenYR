@@ -136,6 +136,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsTiberiumDestroyer(false),
 	IsOrganic(false),
 	IsSparky(false),
+	IsSonic(false),
 	IsFire(false),
 	IsConventional(false),
 	IsRocker(false),
@@ -192,6 +193,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsWoodDestroyer = ini.Get_Bool(Name(), "Wood", IsWoodDestroyer);
 		IsTiberiumDestroyer = ini.Get_Bool(Name(), "Tiberium", IsTiberiumDestroyer);
 		IsSparky = ini.Get_Bool(Name(), "Sparky", IsSparky);
+		IsSonic = ini.Get_Bool(Name(), "Sonic", IsSonic);
 		IsRocker = ini.Get_Bool(Name(), "Rocker", IsRocker);
 		IsFire = ini.Get_Bool(Name(), "Fire", IsFire);
 		IsBright = ini.Get_Bool(Name(), "Bright", IsBright);
@@ -314,6 +316,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsTiberiumDestroyer);
 	crc(IsOrganic);
 	crc(IsSparky);
+	crc(IsSonic);
 	crc(IsFire);
 	crc(IsConventional);
 	crc(IsRocker);
@@ -463,6 +466,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTiberiumDestroyer);
 	stream.Serialize(IsOrganic);
 	stream.Serialize(IsSparky);
+	stream.Serialize(IsSonic);
 	stream.Serialize(IsFire);
 	stream.Serialize(IsConventional);
 	stream.Serialize(IsRocker);
