@@ -296,6 +296,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsGunner(false),
 	IFVMode(0),
 	AirRangeBonus(0),
+	RadialFireSegments(0),
 	IsOpenTopped(false),
 	OpenTransportWeapon(-1),
 	FlightLevel(-1),
@@ -1010,6 +1011,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsGunner = ini.Get_Bool(Name(), "Gunner", IsGunner);
 		IFVMode = ini.Get_Int(Name(), "IFVMode", IFVMode);
 		AirRangeBonus = ini.Get_Lepton(Name(), "AirRangeBonus", AirRangeBonus);
+		RadialFireSegments = ini.Get_Int(Name(), "RadialFireSegments", RadialFireSegments);
 		if (ini.Is_Present(Name(), "OpenTopped.RangeBonus")) {
 			OpenToppedRangeBonus = ini.Get_Int(Name(), "OpenTopped.RangeBonus", 0);
 		}
@@ -1670,6 +1672,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGunner);
 	stream.Serialize(IFVMode);
 	stream.Serialize(AirRangeBonus);
+	stream.Serialize(RadialFireSegments);
 	stream.Serialize(OpenToppedRangeBonus);
 	stream.Serialize(OpenToppedDamageMultiplier);
 	stream.Serialize(OpenToppedWarpDistance);

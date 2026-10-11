@@ -626,6 +626,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Extra range, in leptons, against a target in the air (TechnoTypeClass::AirRangeBonus).
 		int AirRangeBonus;
 
+		// A homing weapon of this type fires its shots in a 180-degree fan of this many segments (TechnoTypeClass::RadialFireSegments).
+		int RadialFireSegments;
+
 		// This open-topped transport's own OpenTopped.RangeBonus, OpenTopped.DamageMultiplier and
 		// OpenTopped.WarpDistance; unset, the [CombatDamage] OpenTopped values apply (Phobos).
 		std::optional<int> OpenToppedRangeBonus;
