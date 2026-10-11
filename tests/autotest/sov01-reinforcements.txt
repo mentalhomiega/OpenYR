@@ -1,0 +1,37 @@
+; Soviet 1 transport reinforcements. Triggers SP2.4 to SP2.7 each create one team, all with a Full SAPC
+; (Armored Transport, 12 passengers): 4 Rhino Tanks (HTNK), 12 Conscripts (E2), 4 Flak Tracks (HTK)
+; and 1 Boris, 5 Shock Troopers, 3 Attack Dogs and 3 Soviet Engineers. The Flak Tracks are passengers of
+; the naval SAPC, not transports of their own.
+; SP2.1 springs when its tagged Allied ships die, so the script kills them at frame 60.
+; Expected at frame 420: 4 SAPC on the map, 0 HTK on the map, and 32 riders in limbo (4 HTNK, 12 E2,
+; 4 HTK, 1 BORIS, 5 SHK, 3 DOG, 3 SENGINEER). Expected at frame 1500: all 32 riders on the map.
+; Run from E:\Claude ra2 decomp:
+;   scripts/run_autotest.ps1 -Script src-agent8/tests/autotest/sov01-reinforcements.txt -Build agent8 -Campaign -Map SOV01UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (count|where)|AUTOTEST frame [0-9]+: log|Exception"
+1 teamtrace 1
+30 log expected at 420: 4 SAPC, 0 HTK, 32 riders in limbo (4 HTNK, 12 E2, 4 HTK, 1 BORIS, 5 SHK, 3 DOG, 3 SENGINEER)
+60 killtag 0B75455C
+420 log arrivals at 420
+420 count SAPC
+420 count HTK
+420 count HTNK
+420 count E2
+420 count BORIS
+420 count SHK
+420 count DOG
+420 count SENGINEER
+420 where HTK
+420 where HTNK
+420 where E2
+420 where BORIS
+420 where SHK
+420 where DOG
+420 where SENGINEER
+1500 log expected at 1500: 4 HTNK, 12 E2, 4 HTK, 1 BORIS, 5 SHK, 3 DOG, 3 SENGINEER on the map
+1500 count HTNK
+1500 count E2
+1500 count HTK
+1500 count BORIS
+1500 count SHK
+1500 count DOG
+1500 count SENGINEER
+1550 quit
