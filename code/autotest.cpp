@@ -835,7 +835,13 @@ void Run(StepType const & step)
 	} else if (step.Command == "produce") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
-			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
+
+			// A cameo is offered only for a type the house may build, and so is a produce step.
+			if (PlayerPtr->Can_Build(type, false, true) == 0) {
+				DebugString("AUTOTEST   produce %s: no cameo, the house may not build it\n", type->Name());
+			} else {
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
+			}
 		}
 	} else if (step.Command == "place") {
 		Place(step.Argument);
