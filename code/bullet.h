@@ -158,6 +158,9 @@ class BulletClass : public ObjectClass
 		 */
 		bool IsLaunching;
 
+		// The frames a projectile of a CourseLockDuration type has spent flying straight.
+		int CourseLockCounter;
+
 		/*
 		**	This is the target of the projectile. It is especially significant for those projectiles
 		**	that home in on a target.

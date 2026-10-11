@@ -16,6 +16,7 @@ keys:
   - BallisticScatter
   - Bouncy
   - Cluster
+  - CourseLockDuration
   - Degenerates
   - Dropping
   - Elasticity
@@ -150,7 +151,7 @@ The autopilot flies a projectile whose `ROT` is above zero. It homes on the targ
 
 Each frame the autopilot moves the projectile's speed toward the weapon's figure, gaining [`Acceleration`](/keys/acceleration/#scope-bullettype) leptons a frame. A projectile already faster than that figure slows by half of `Acceleration` a frame, rounded down.
 
-A new steered projectile is launching until it reaches that speed, unless the weapon's [`Speed=`](/keys/speed/#scope-weapontype) is `16` or more. `Speed=` is written on a 0-to-100 scale, and `16` converts to 40 leptons a frame. While launching, the projectile gains 1 lepton every other frame instead of `Acceleration`. It keeps its heading, and its pitch turns toward the target by less than one degree a frame.
+A new steered projectile is launching until it reaches that speed, unless the weapon's [`Speed=`](/keys/speed/#scope-weapontype) is `16` or more. `Speed=` is written on a 0-to-100 scale, and `16` converts to 40 leptons a frame. While launching, the projectile gains 1 lepton every other frame instead of `Acceleration`. It keeps its heading, and its pitch turns toward the target by less than one degree a frame. A projectile type with [`CourseLockDuration=`](/keys/courselockduration/) above `0` instead launches for that many frames whatever its speed, and gains `Acceleration` each frame while it does.
 
 After launching, the projectile may turn by up to its turn allowance each frame. The allowance is measured in 256ths of a full turn. It swings between `ROT` and `ROT` × (1 + 2 × [`MissileROTVar`](/keys/missilerotvar/)) over a 15-frame cycle, rounded down, which makes missiles weave. The cycle is offset for each projectile, so missiles fired together do not all weave in step. Within one cell of the target the allowance is multiplied by 1.5.
 

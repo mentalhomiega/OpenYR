@@ -105,6 +105,7 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	ShrapnelCount(0),
 	Elasticity(.75),
 	Acceleration(3),
+	CourseLockDuration(0),
 	IsVertical(false),
 	DetonationAltitude(0),
 	Color(0),
@@ -168,6 +169,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		ROT = ini.Get_Int(Name(), "ROT", ROT);
 		Elasticity = ini.Get_Float(Name(), "Elasticity", Elasticity);
 		Acceleration = ini.Get_Int(Name(), "Acceleration", Acceleration);
+		CourseLockDuration = ini.Get_Int(Name(), "CourseLockDuration", CourseLockDuration);
 		IsVertical = ini.Get_Bool(Name(), "Vertical", IsVertical);
 		DetonationAltitude = ini.Get_Int(Name(), "DetonationAltitude", DetonationAltitude);
 		Color = ini.Get_Scheme_Index(Name(), "Color", Color);
@@ -310,6 +312,7 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsBouncy);
 	crc(Elasticity);
 	crc(Acceleration);
+	crc(CourseLockDuration);
 	crc(ROT);
 	crc(Arming);
 	crc(IsSplits);
@@ -368,6 +371,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ShrapnelCount);
 	stream.Serialize(Elasticity);
 	stream.Serialize(Acceleration);
+	stream.Serialize(CourseLockDuration);
 	stream.Serialize(IsVertical);
 	stream.Serialize(DetonationAltitude);
 	stream.Serialize(Color);
