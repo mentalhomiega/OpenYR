@@ -1756,14 +1756,13 @@ void HouseClass::AI(void)
 		}
 	}
 
-	/*
-	**	Try to spring all events attached to this house. The triggers will check
-	**	for themselves if they actually need to be sprung or not.
-	*/
-	for (int index = 0; index < HouseTags.Count(); index++) {
-		if (HouseTags[index]->Spring() && index > 0) {
-			index--;
-			continue;
+	// Every eighth frame, offer every tag attached to this house one chance to spring, last
+	// first, as gamemd's HouseClass::AI (0x4F8440) does.
+	if ((Frame % 8) == 0) {
+		for (int index = HouseTags.Count() - 1; index >= 0; index--) {
+			if (index < HouseTags.Count()) {
+				HouseTags[index]->Spring();
+			}
 		}
 	}
 
