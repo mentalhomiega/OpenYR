@@ -21,8 +21,9 @@
 **	attack <TypeID>			orders the player's objects of that type to attack the nearest
 **							structure of an enemy that has a base
 **	enemies					writes the structures of other houses and the count of their units
-**	strikeobj <TypeID> x y [radius]	orders the player's armed units and infantry to attack the nearest live object
-**							of that type within radius cells (default 3) of the cell, looked up when the line runs
+**	strikeobj <TypeID> x y [radius] [land|naval|all]	orders the player's armed units and infantry to attack the nearest
+**							live object of that type within radius cells (default 3) of the cell, looked up when the line runs;
+**							land or naval limits the orders to units that are not, or are, ships (default all)
 **	owners <TypeID>			writes the type's owner bits and each house's country bit
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
@@ -445,8 +446,20 @@ void Attack(std::string const & name)
 **	is ordered to attack it. A target that moves stays the target, and an object that dies is
 **	replaced by the next strikeobj line.
 */
-void Strike_Object(std::string const & name, int x, int y, int radius)
+bool Strike_Side_Allows(bool naval, std::string const & side)
 {
+	if (side == "land") return !naval;
+	if (side == "naval") return naval;
+	return true;
+}
+
+
+void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side)
+{
+	if (side != "" && side != "all" && side != "land" && side != "naval") {
+		DebugString("AUTOTEST strikeobj %s: side must be land, naval or all, not %s\n", name.c_str(), side.c_str());
+		return;
+	}
 	TechnoClass * target = NULL;
 	int bestdistance = 0;
 	for (int index = 0; index < Technos.Count(); index++) {
@@ -471,7 +484,7 @@ void Strike_Object(std::string const & name, int x, int y, int radius)
 	int orders = 0;
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
-		if (unit->House == PlayerPtr && !unit->IsInLimbo && unit->Is_Weapon_Equipped()) {
+		if (unit->House == PlayerPtr && !unit->IsInLimbo && unit->Is_Weapon_Equipped() && Strike_Side_Allows(unit->TClass->IsNaval, side)) {
 			unit->Assign_Target(target);
 			unit->Assign_Mission(MISSION_ATTACK);
 			orders++;
@@ -479,7 +492,7 @@ void Strike_Object(std::string const & name, int x, int y, int radius)
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
-		if (infantry->House == PlayerPtr && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped()) {
+		if (infantry->House == PlayerPtr && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped() && Strike_Side_Allows(infantry->TClass->IsNaval, side)) {
 			infantry->Assign_Target(target);
 			infantry->Assign_Mission(MISSION_ATTACK);
 			orders++;
@@ -1058,7 +1071,8 @@ void Run(StepType const & step)
 
 	// strikeobj <TypeID> x y [radius]: see Strike_Object. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "strikeobj") {
-		Strike_Object(step.Argument, step.X, step.Y, Number(Line_Words(step.Line), 5, 3));
+		std::vector<std::string> const words = Line_Words(step.Line);
+		Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6));
 		return;
 	}
 

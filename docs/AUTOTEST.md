@@ -67,7 +67,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `log <text>` | Writes the line to the debug log |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
 | `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
-| `strikeobj <TypeID> x y [radius]` | The player's armed units and infantry attack the nearest live object of that type within `radius` cells (default 3) of the cell. The target is chosen when the line runs, so a target that has moved is still found; the units keep it until it dies or leaves the map |
+| `strikeobj <TypeID> x y [radius] [land\|naval\|all]` | The player's armed units and infantry attack the nearest live object of that type within `radius` cells (default 3) of the cell. The target is chosen when the line runs, so a target that has moved is still found; the units keep it until it dies or leaves the map. `land` orders only units that are not ships, `naval` only ships, and `all` (the default) every armed unit |
 | `treehit <Warhead> x y` | Hits the terrain object on that cell with 100 points of damage from the warhead, with no firer, and writes its strength before and after |
 | `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |
 | `waitcell <TypeID> <x> <y> [radius] [timeout]` | Pauses the script until one of the player's objects of that type is within `radius` cells of the cell (default 2), measured as a straight line. Objects not on the map do not count. See [Waiting for conditions](#waiting-for-conditions) |
