@@ -12,9 +12,10 @@ At 1920x1080:
   bar; panels draw over the map, and the map scrolls under them.
 - **The build panel** sits in the top-right corner, 250 pixels wide, framed in the side's colour
   (blue for the Allies, red for the Soviets, purple for Yuri). From the top:
-  - the options button, the credits and the diplomacy button;
-  - the radar;
-  - the repair and sell buttons, with the power used and the power made on the right;
+  - a row of buttons: place beacon, sell, power down and repair, then the options button. Place
+    beacon and power down show "Coming soon" and do nothing yet. There is no diplomacy button;
+  - the radar, whose map picture fills its box as far as the map's shape allows;
+  - the credits on the left and the power used and the power made on the right;
   - the build area: the power bar on the left edge, the category tabs in a column beside it, and
     the cameos of the chosen tab in a grid of three columns. Each cameo carries its name and, while
     it builds, the countdown shading. The grid has as many rows as the chosen tab's cameos need,
@@ -49,9 +50,11 @@ the same arrangement whether or not the map is zoomed:
    visible surface is skipped.
 3. **Frames.** The panel frames are drawn by code (filled boxes, borders and corner cuts in the
    side's colours from a small table), not from SIDEGDI shapes, so they fit any panel size. The
-   cameos, tab icons, power pips and radar keep the game's own art. Button icons come from the
-   game's art where Yuri's Revenge has it (repair, sell, waypoint), otherwise from small images in
-   the `ui` folder.
+   cameos, power pips and radar keep the game's own art. The tab, button and scroll icons are
+   PNG sheets in the `ui` folder, one set per side, named `HUD` plus the side letter (`A`, `S`
+   or `Y`) and the icon's code, such as `HUDSPW.png` for the Soviet power-down button. Each sheet
+   holds three square frames: normal, pressed and disabled. `tools/hudicons/make_hud_icons.py`
+   draws the current set. A button whose sheet is missing keeps Yuri's Revenge's art.
 4. **Input.** The panel and the command bar are hit-tested before the map: a click inside a panel's
    rectangle goes to the panel's buttons and never reaches the map, and the mouse over a panel shows
    the normal arrow. Edge scrolling stays at the screen edges.
@@ -86,7 +89,7 @@ and at 1280x720, plus the campaign wins, since every mission is played through t
   `[Video] InterfaceScale=` enlarges the panels with the rest of the frame (2x at 2160 lines), while
   the map keeps the screen's own detail. Whether 1080p wants a 1.5x panel, closer to OpenRA's look,
   is still open.
-- **Radar size.** The radar's map picture is sized to the panel width; a very wide map gives a short
-  radar. We keep the radar box square and centre the picture in it.
+- **Radar size.** The radar's map picture is scaled to fit its box and centred in it, so a square
+  map leaves dark bars at the sides. Whether the box should follow the map's shape is still open.
 - **Classic art option.** Whether the modern layout should also offer the Yuri's Revenge sidebar
   art (SIDEGDI) as its frames, instead of code-drawn ones.
