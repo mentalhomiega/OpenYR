@@ -57,6 +57,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			}
 		}
 
+		virtual void Set_Modern_Interface(bool on) override
+		{
+			Options.IsModernInterfaceChosen = on;
+		}
+
 		virtual void Set_Interface_Scale(float scale) override
 		{
 			// The caller resets the display, which settles the frame size from this.
@@ -81,6 +86,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.StretchMovies = Options.StretchMovies;
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
+	state.ModernInterface = Options.IsModernInterfaceChosen;
 
 	// Automatic, the usual steps, and whatever else the settings file has asked for.
 	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};

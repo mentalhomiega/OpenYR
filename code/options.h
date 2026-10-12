@@ -112,6 +112,9 @@ class OptionsClass {
 		// The modern interface draws the map over the whole screen with the controls in panels over it.
 		bool ModernInterface;
 
+		// The interface style the settings file holds. A change takes effect when the game next starts.
+		bool IsModernInterfaceChosen;
+
 		/*
 		 * If each sidebar cameo is to be captioned with the name of what it builds, then this
 		 * flag will be true.

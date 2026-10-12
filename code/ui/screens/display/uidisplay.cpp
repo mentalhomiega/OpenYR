@@ -37,6 +37,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "classicmenus") {
 		State.ClassicMenus = (intent.Value != 0);
 
+	} else if (intent.Name == "moderninterface") {
+		State.ModernInterface = (intent.Value != 0);
+
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
 
@@ -44,6 +47,7 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
 		Service.Set_Classic_Menus(State.ClassicMenus);
+		Service.Set_Modern_Interface(State.ModernInterface);
 		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
 			Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
 			ScaleChanged = true;
@@ -117,6 +121,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
 			Model.DirtyVariable("classicmenus");
+			Model.DirtyVariable("moderninterface");
 			Model.DirtyVariable("scale");
 		}
 
@@ -146,7 +151,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("selected", &state.Selected)
 				&& model.Bind("stretch", &state.StretchMovies)
 				&& model.Bind("systemcursor", &state.SystemCursor)
-				&& model.Bind("classicmenus", &state.ClassicMenus));
+				&& model.Bind("classicmenus", &state.ClassicMenus)
+				&& model.Bind("moderninterface", &state.ModernInterface));
 		}
 
 	private:

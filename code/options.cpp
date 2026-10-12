@@ -194,6 +194,7 @@ OptionsClass::OptionsClass(void) :
 	IsScoreShuffle(false),
 	IsSidebarOnRight(true),
 	ModernInterface(false),
+	IsModernInterfaceChosen(false),
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
@@ -562,6 +563,7 @@ void OptionsClass::Load_Interface_Style(void)
 	char style[16];
 	ConfigINI.Get_String("Options", "InterfaceStyle", "Classic", style, sizeof(style));
 	ModernInterface = (stricmp(style, "Modern") == 0);
+	IsModernInterfaceChosen = ModernInterface;
 	DebugString("Interface style is %s\n", ModernInterface ? "Modern" : "Classic");
 }
 
@@ -620,6 +622,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
+	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);

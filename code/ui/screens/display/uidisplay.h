@@ -41,6 +41,7 @@ class UIDisplayServiceClass
 		virtual void Set_Stretch_Movies(bool on) = 0;
 		virtual void Set_System_Cursor(bool on) = 0;
 		virtual void Set_Classic_Menus(bool on) = 0;
+		virtual void Set_Modern_Interface(bool on) = 0;
 		virtual void Set_Interface_Scale(float scale) = 0;
 };
 
@@ -52,6 +53,7 @@ struct UIDisplayState
 	bool StretchMovies = false;
 	bool SystemCursor = false;
 	bool ClassicMenus = false;
+	bool ModernInterface = false;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
 };

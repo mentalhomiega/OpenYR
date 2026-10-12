@@ -917,6 +917,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Stretch_Movies(bool on) override { Calls.push_back(on ? "stretch on" : "stretch off"); }
 		virtual void Set_System_Cursor(bool on) override { Calls.push_back(on ? "system cursor on" : "system cursor off"); }
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
+		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 };
 
@@ -952,7 +953,7 @@ void Test_Display_Presenter(void)
 		Check(presenter.State.Selected == 2 && presenter.State.StretchMovies && presenter.State.SystemCursor && service.Calls.empty() && !presenter.Picked.has_value(), "display edits are held until the player accepts");
 
 		Drive(presenter, "ok");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off" }, "accepting the display options applies the switches");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "modern interface off" }, "accepting the display options applies the switches");
 		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
 	}
 
@@ -962,7 +963,7 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "select", 2);
 		Drive(presenter, "select", 1);
 		Drive(presenter, "ok");
-		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off" }, "accepting on the starting row applies the switches and tries no mode");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off" }, "accepting on the starting row applies the switches and tries no mode");
 	}
 
 	{
@@ -971,7 +972,16 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "classicmenus", 1);
 		Check(presenter.State.ClassicMenus && service.Calls.empty(), "the menu style switch is held until the player accepts");
 		Drive(presenter, "ok");
-		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus on" }, "accepting applies the classic menu style");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus on", "modern interface off" }, "accepting applies the classic menu style");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "moderninterface", 1);
+		Check(presenter.State.ModernInterface && service.Calls.empty(), "the interface style switch is held until the player accepts");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface on" }, "accepting applies the modern interface style");
 	}
 
 	{
@@ -980,7 +990,7 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "scale", 3);
 		Check(presenter.State.Scale == 3 && service.Calls.empty(), "the interface scale is held until the player accepts");
 		Drive(presenter, "ok");
-		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "scale 20" } && presenter.ScaleChanged && !presenter.Picked.has_value(), "accepting applies the interface scale and flags it for a reset");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "scale 20" } && presenter.ScaleChanged && !presenter.Picked.has_value(), "accepting applies the interface scale and flags it for a reset");
 	}
 
 	{
@@ -989,7 +999,7 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "scale", 3);
 		Drive(presenter, "scale", 0);
 		Drive(presenter, "ok");
-		Check(!presenter.ScaleChanged && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off" }, "putting the scale back to its start applies nothing");
+		Check(!presenter.ScaleChanged && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off" }, "putting the scale back to its start applies nothing");
 	}
 
 	{
@@ -2571,7 +2581,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
-			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "scale 20" }, "OK applies the switches and the chosen scale");
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "modern interface off", "scale 20" }, "OK applies the switches and the chosen scale");
 			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
 		}
 
@@ -2862,6 +2872,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(context.GetFocusElement() == cursor, "the pointer switch follows the movie switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == classic, "the menu style switch follows the pointer switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == document->GetElementById("modern-interface"), "the interface style switch follows the menu style switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the switches");
 		Press(context, Rml::Input::KI_TAB);

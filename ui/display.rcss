@@ -11,9 +11,9 @@
 #reveal
 {
 	width: 344dp;
-	height: 398dp;
+	height: 424dp;
 	top: 50%;
-	margin-top: -199dp;
+	margin-top: -212dp;
 }
 
 #content
@@ -68,7 +68,7 @@
 	margin-top: 8dp;
 }
 
-#switch-system-cursor, #switch-classic-menus
+#switch-system-cursor, #switch-classic-menus, #switch-modern-interface
 {
 	margin-top: 3dp;
 }
