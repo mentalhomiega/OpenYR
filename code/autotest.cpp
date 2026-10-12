@@ -21,6 +21,8 @@
 **	attack <TypeID>			orders the player's objects of that type to attack the nearest
 **							structure of an enemy that has a base
 **	enemies					writes the structures of other houses and the count of their units
+**	strikeobj <TypeID> x y [radius]	orders the player's armed units and infantry to attack the nearest live object
+**							of that type within radius cells (default 3) of the cell, looked up when the line runs
 **	owners <TypeID>			writes the type's owner bits and each house's country bit
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
@@ -434,6 +436,56 @@ void Attack(std::string const & name)
 		AircraftClass * aircraft = Aircraft[index];
 		if (aircraft->IsSelected) aircraft->Assign_Target(target), aircraft->Assign_Mission(MISSION_ATTACK);
 	}
+}
+
+
+/*
+**	strikeobj: the nearest live object of the type within radius cells of the cell is the target,
+**	whoever owns it except the player and its allies. Every armed unit and infantry the player owns
+**	is ordered to attack it. A target that moves stays the target, and an object that dies is
+**	replaced by the next strikeobj line.
+*/
+void Strike_Object(std::string const & name, int x, int y, int radius)
+{
+	TechnoClass * target = NULL;
+	int bestdistance = 0;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->IsInLimbo || !techno->IsActive || techno->House == PlayerPtr || techno->House->Is_Ally(PlayerPtr)) continue;
+		if (stricmp(techno->TClass->Name(), name.c_str()) != 0) continue;
+		Cell const cell = techno->Get_Cell();
+		int const dx = cell.X - x;
+		int const dy = cell.Y - y;
+		int const distance = dx * dx + dy * dy;
+		if (distance > radius * radius) continue;
+		if (target == NULL || distance < bestdistance) {
+			target = techno;
+			bestdistance = distance;
+		}
+	}
+	if (target == NULL) {
+		DebugString("AUTOTEST strikeobj %s near %d,%d: no live target within %d cells\n", name.c_str(), x, y, radius);
+		return;
+	}
+
+	int orders = 0;
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass * unit = Units[index];
+		if (unit->House == PlayerPtr && !unit->IsInLimbo && unit->Is_Weapon_Equipped()) {
+			unit->Assign_Target(target);
+			unit->Assign_Mission(MISSION_ATTACK);
+			orders++;
+		}
+	}
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass * infantry = Infantry[index];
+		if (infantry->House == PlayerPtr && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped()) {
+			infantry->Assign_Target(target);
+			infantry->Assign_Mission(MISSION_ATTACK);
+			orders++;
+		}
+	}
+	DebugString("AUTOTEST strikeobj %s -> %s at %d,%d: %d orders\n", name.c_str(), target->TClass->Name(), target->Get_Cell().X, target->Get_Cell().Y, orders);
 }
 
 
@@ -1003,6 +1055,12 @@ static void Mod_Signature_Step(StepType const & step)
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
+
+	// strikeobj <TypeID> x y [radius]: see Strike_Object. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "strikeobj") {
+		Strike_Object(step.Argument, step.X, step.Y, Number(Line_Words(step.Line), 5, 3));
+		return;
+	}
 
 	// chrono <frames>: starts the chronoshift screen effect, as the Chrono Screen Effect trigger action does.
 	if (step.Command == "chrono") {
