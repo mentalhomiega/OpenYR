@@ -2055,8 +2055,9 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 		purifiers += Rule->AIVirtualPurifiers[Difficulty];
 	}
 
-	// The share is stored as single precision and paid unrounded, as UnitClass::Mission_Unload does at 0x73E441.
-	float const bonus = static_cast<float>(static_cast<double>(purifiers) * static_cast<float>(Rule->PurifierBonus) * static_cast<double>(tiberium));
+	// The share is truncated to single precision and paid without rounding to whole units, as UnitClass::Mission_Unload does at 0x73E441.
+	double const share = static_cast<double>(purifiers) * Truncate_To_Single(Rule->PurifierBonus) * static_cast<double>(tiberium);
+	float const bonus = Truncate_To_Single(share);
 	if (bonus > 0) {
 		PointTotal += static_cast<int>(bonus * 5.0);
 		Credits += static_cast<int>(Tiberiums[slot]->CreditValue * Class->IncomeMult * bonus);
