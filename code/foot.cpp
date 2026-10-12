@@ -1588,7 +1588,7 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 	**	Make sure that the unit has not strayed too far from the home position.
 	**	If it has, then race back to it.
 	*/
-	int maxrange = (int)(Threat_Range(1) * 0.75);
+	int maxrange = (int)(Threat_Range(1) * 1.1);
 
 	// A foot object as home uses GuardModeStray instead of the cell-home range.
 	if (ArchiveTarget != NULL && ArchiveTarget->As_FootClass() != NULL) {
