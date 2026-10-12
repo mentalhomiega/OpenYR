@@ -1590,6 +1590,11 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 	*/
 	int maxrange = (int)(Threat_Range(1) * 0.75);
 
+	// A foot object as home uses GuardModeStray instead of the cell-home range.
+	if (ArchiveTarget != NULL && ArchiveTarget->As_FootClass() != NULL) {
+		maxrange = Rule->GuardModeStrayDistance;
+	}
+
 	if (ArchiveTarget != NULL) {
 		if (!IsFiring && NavCom == NULL && Distance(ArchiveTarget) > maxrange) {
 			Assign_Target(NULL);
