@@ -57,6 +57,7 @@ class TabClass: public SidebarClass
 		virtual void Init_For_House(void) override;
 		virtual void Clear_For_House(void) override;
 		virtual void Init_IO(void) override;
+		virtual char const * Help_Text(int id) override;
 
 		CreditClass Credits;
 

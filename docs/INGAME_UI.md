@@ -25,7 +25,8 @@ At 1920x1080:
     grows and shrinks with the grid.
 - **The command bar** is a slim framed strip in the bottom-left corner, holding the [AdvancedCommandBar]
   buttons as icons in the same style as the panel's buttons. It is only as wide as the buttons the
-  list names, and it has no end cap, so it cannot be closed.
+  list names, and it has no end cap, so it cannot be closed. A button's tooltip, its `Tip:` label
+  from the string table as in Yuri's Revenge, shows just above the bar.
 - **Superweapon timers** and the mission timer stack in the bottom-left corner, above the command
   bar, one line each in the owner's colour.
 - **Messages** (chat, EVA text) keep their place at the top left of the map.

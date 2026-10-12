@@ -20,6 +20,7 @@
 #include "goptions.h"
 #include "hud.h"
 #include "scheme.h"
+#include "tab.h"
 #include "viewzoom.h"
 #include "wwfont.h"
 
@@ -54,6 +55,14 @@ bool CCToolTip::Update(ToolTipText * text)
 			if (panel.Is_Point_Within(Point2D(text->Pos.X, text->Pos.Y))) {
 				text->Pos.X = panel.X - text->TextWidth - HUD_TIP_PADDING * 2 - HUD_MARGIN;
 				text->Pos.Y = std::clamp(text->Pos.Y - text->TextHeight / 2, 0, std::max(0, int(ScreenTacticalRect.Height) - text->TextHeight));
+				return(true);
+			}
+
+			// A tooltip for the command bar sits just above the bar.
+			Rect const bar = TabClass::Command_Bar_Frame();
+			if (bar.Is_Point_Within(Point2D(text->Pos.X, text->Pos.Y))) {
+				text->Pos.X = std::clamp(text->Pos.X - text->TextWidth / 2, 0, std::max(0, int(ScreenTacticalRect.Width) - text->TextWidth - HUD_TIP_PADDING * 2));
+				text->Pos.Y = std::max(0, bar.Y - text->TextHeight - HUD_TIP_PADDING - HUD_MARGIN);
 				return(true);
 			}
 			trect = &ScreenTacticalRect;
