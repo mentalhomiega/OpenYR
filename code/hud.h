@@ -72,6 +72,9 @@ void Draw_Hud_Frame(Surface & surface, Rect const & rect);
 // Draws the dark well that a cameo slot, the radar or a readout sits in.
 void Draw_Hud_Well(Surface & surface, Rect const & rect);
 
+// Draws a well with a border in the player's side colour, for a button under the pointer.
+void Draw_Hud_Highlight(Surface & surface, Rect const & rect);
+
 // Fills a rectangle with the panel background colour.
 void Draw_Hud_Fill(Surface & surface, Rect const & rect);
 

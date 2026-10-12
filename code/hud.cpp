@@ -94,8 +94,8 @@ HudLayout Hud_Layout(void)
 
 	HudLayout layout {};
 	layout.Status = Rect(HUD_MARGIN, HUD_MARGIN, inner, 20);
-	layout.Options = Rect(layout.Status.X, layout.Status.Y, 58, layout.Status.Height);
-	layout.Diplomacy = Rect(layout.Status.X + layout.Status.Width - 58, layout.Status.Y, 58, layout.Status.Height);
+	layout.Options = Rect(layout.Status.X, layout.Status.Y, 64, layout.Status.Height);
+	layout.Diplomacy = Rect(layout.Status.X + layout.Status.Width - 64, layout.Status.Y, 64, layout.Status.Height);
 	layout.Credits = Rect(layout.Options.X + layout.Options.Width + 2, layout.Status.Y, layout.Diplomacy.X - 2 - (layout.Options.X + layout.Options.Width + 2), layout.Status.Height);
 	layout.Radar = Rect(HUD_MARGIN, layout.Status.Y + layout.Status.Height + 4, inner, 112);
 	layout.Icons = Rect(HUD_MARGIN, layout.Radar.Y + layout.Radar.Height + 4, inner, 32);
@@ -158,6 +158,13 @@ void Draw_Hud_Well(Surface & surface, Rect const & rect)
 {
 	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(8, 9, 11)));
 	surface.Draw_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(48, 52, 60)));
+}
+
+
+void Draw_Hud_Highlight(Surface & surface, Rect const & rect)
+{
+	Draw_Hud_Well(surface, rect);
+	surface.Draw_Rect(rect, DSurface::Build_Hicolor_Pixel(Side_Colors().Border));
 }
 
 

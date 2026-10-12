@@ -62,6 +62,9 @@ class ShapeButtonClass : public ToggleClass
 		// A button with a label draws as a panel button showing that text, at its own size, instead of its shape.
 		std::string Label;
 
+		// Is the pointer over a labelled button? Its owner sets this and flags the button for a redraw.
+		bool IsHovered = false;
+
 		/*
 		 * These are the pixel offsets added to the button's position when its shape is
 		 * drawn. The sidebar uses them to shift a button out of screen space and into the

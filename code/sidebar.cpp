@@ -1212,6 +1212,16 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	Fit_Panel_To_Strip();
 
+	if (Modern_Interface()) {
+		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
+			bool const over = Rect(button->X, button->Y, button->Width, button->Height).Is_Point_Within(xy);
+			if (over != button->IsHovered) {
+				button->IsHovered = over;
+				button->Flag_To_Redraw();
+			}
+		}
+	}
+
 	if (IsSidebarActive) {
 
 		/*

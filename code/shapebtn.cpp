@@ -208,6 +208,8 @@ int ShapeButtonClass::Draw_Label(int forced)
 	Rect const rect(X + DrawOffsetX, Y + DrawOffsetY, Width, Height);
 	if (IsPressed || (ReflectButtonState && IsOn)) {
 		Draw_Hud_Frame(*surf, rect);
+	} else if (IsHovered && !IsDisabled) {
+		Draw_Hud_Highlight(*surf, rect);
 	} else {
 		Draw_Hud_Well(*surf, rect);
 	}
