@@ -25,7 +25,7 @@ An engineer always takes that weapon-range guard radius, whatever its `GuardRang
 
 The area and patrol radii also limit how far an object strays:
 
-- A Guard Area object that is neither firing nor already moving somewhere drops its target and heads home once it is more than three quarters of the area radius from its home position.
+- A Guard Area object that is neither firing nor already moving somewhere drops its target and heads home once it is more than 1.1 times the area radius from its home position. When the object guards another infantryman, vehicle or aircraft rather than a spot, [`GuardModeStray`](/keys/guardmodestray/) sets that distance instead.
 - A patrolling object takes on a target it cannot already shoot only when the walk to it is shorter than the patrol radius, in cells, plus six.
 
 :::caution[The value is also a fence connection distance]
