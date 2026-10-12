@@ -14,4 +14,4 @@ Every `OrePurifier=yes` structure a house has on the map raises the payment for 
 OrePurifier=yes
 ```
 
-A purifier counts from the moment it is placed, while it builds up, whether or not its owner has power. It stops counting when it is sold or destroyed.
+A purifier counts from the moment it is placed, while it builds up, whether or not its owner has power. It stops counting when it is sold, or when it leaves the map after being destroyed. A destroyed purifier still on the map keeps counting while its destruction runs.

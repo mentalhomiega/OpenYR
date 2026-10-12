@@ -2036,8 +2036,9 @@ void HouseClass::Harvested(int tiberium, TiberiumType slot)
 /// <summary>
 /// Pays the ore purifier bonus on ore a harvester has just delivered, as UnitClass::Mission_Unload
 /// (0x73D630) does: PurifierBonus of the ore for every purifier the house has on the map, plus
-/// the AIVirtualPurifiers entry for a computer house outside a campaign. The bonus is paid at
-/// the ore's price without rounding to whole units; the credits and points it adds are each
+/// the AIVirtualPurifiers entry for a computer house outside a campaign. A purifier counts until
+/// it leaves the map, so one that is destroyed but still on the map counts too. The bonus is paid
+/// at the ore's price without rounding to whole units; the credits and points it adds are each
 /// truncated to whole numbers.
 /// </summary>
 /// <param name="tiberium">The amount of ore delivered.</param>
@@ -2047,7 +2048,7 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 	int purifiers = 0;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
-		if (building->House == this && building->Class->IsOrePurifier && !building->IsInLimbo && building->Strength > 0) {
+		if (building->House == this && building->Class->IsOrePurifier && !building->IsInLimbo) {
 			purifiers++;
 		}
 	}
