@@ -12,6 +12,7 @@
 #include "hud.h"
 
 #include "_rect.h"
+#include "bsurface.h"
 #include "csf.h"
 #include "dsurface.h"
 #include "globals.h"
@@ -19,8 +20,10 @@
 #include "house.h"
 #include "houstype.h"
 #include "sidebar.h"
+#include "shapeset.h"
 #include "tab.h"
 #include "viewzoom.h"
+#include "draw.h"
 
 #include <algorithm>
 
@@ -168,11 +171,92 @@ void Draw_Hud_Highlight(Surface & surface, Rect const & rect)
 }
 
 
-void Draw_Hud_Flash(Surface & surface, Rect const & rect)
+int Hud_Side_Pixel(void)
 {
-	unsigned const light = DSurface::Build_Hicolor_Pixel(RGBClass(230, 230, 230));
-	surface.Draw_Rect(rect, light);
-	surface.Draw_Rect(Rect(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), light);
+	return(DSurface::Build_Hicolor_Pixel(Side_Colors().Border));
+}
+
+
+int Hud_Flash_Pixel(void)
+{
+	return(DSurface::Build_Hicolor_Pixel(RGBClass(235, 235, 235)));
+}
+
+
+namespace {
+
+int Channel(int pixel, int right, int left)
+{
+	return(((pixel >> right) & (0xFF >> left)) << left);
+}
+
+// Is this hicolor pixel the near-black backing that Yuri's Revenge drew its sidebar buttons on?
+bool Is_Backing(int pixel)
+{
+	int const most = 24;
+	return(Channel(pixel, DSurface::RedRight, DSurface::RedLeft) <= most
+		&& Channel(pixel, DSurface::GreenRight, DSurface::GreenLeft) <= most
+		&& Channel(pixel, DSurface::BlueRight, DSurface::BlueLeft) <= most);
+}
+
+}
+
+
+void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * shape, int frame, Point2D const & at, int width, int height, int outline)
+{
+	if (shape == NULL || surface.Bytes_Per_Pixel() != 2 || width <= 0 || height <= 0) {
+		return;
+	}
+
+	static BSurface * _scratch = NULL;
+	int const w = width + 2;
+	int const h = height + 2;
+	if (_scratch == NULL || _scratch->Get_Width() < w || _scratch->Get_Height() < h) {
+		delete _scratch;
+		_scratch = new BSurface(std::max(w, 64), std::max(h, 64), 2);
+	}
+
+	int const key = DSurface::Build_Hicolor_Pixel(255, 0, 255);
+	Rect const area(0, 0, w, h);
+	_scratch->Fill_Rect(area, key);
+	Draw_Shape(*_scratch, drawer, shape, frame, Point2D(1, 1), area, SHAPE_NORMAL);
+
+	auto solid = [&](unsigned short const * row, int x) {
+		int const pixel = row[x];
+		return(pixel != key && !Is_Backing(pixel));
+	};
+
+	Rect const bounds = surface.Get_Rect();
+	unsigned short const * source = static_cast<unsigned short const *>(_scratch->Lock());
+	unsigned short * dest = static_cast<unsigned short *>(surface.Lock());
+	if (source != NULL && dest != NULL) {
+		int const sstride = _scratch->Stride() / 2;
+		int const dstride = surface.Stride() / 2;
+		for (int y = 0; y < h; y++) {
+			int const dy = at.Y - 1 + y;
+			if (dy < bounds.Y || dy >= bounds.Y + bounds.Height) {
+				continue;
+			}
+			unsigned short const * row = source + y * sstride;
+			for (int x = 0; x < w; x++) {
+				int const dx = at.X - 1 + x;
+				if (dx < bounds.X || dx >= bounds.X + bounds.Width) {
+					continue;
+				}
+				if (solid(row, x)) {
+					dest[dy * dstride + dx] = row[x];
+				} else if (outline != -1) {
+					bool const edge = (x > 0 && solid(row, x - 1)) || (x + 1 < w && solid(row, x + 1))
+						|| (y > 0 && solid(row - sstride, x)) || (y + 1 < h && solid(row + sstride, x));
+					if (edge) {
+						dest[dy * dstride + dx] = static_cast<unsigned short>(outline);
+					}
+				}
+			}
+		}
+	}
+	if (source != NULL) _scratch->Unlock();
+	if (dest != NULL) surface.Unlock();
 }
 
 

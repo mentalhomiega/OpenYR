@@ -13,6 +13,8 @@
 
 #include <string>
 
+class ConvertClass;
+class ShapeSet;
 class Surface;
 
 // Is the modern interface on: the map over the whole screen with the controls in panels over it?
@@ -75,8 +77,13 @@ void Draw_Hud_Well(Surface & surface, Rect const & rect);
 // Draws a well with a border in the player's side colour, for a button under the pointer.
 void Draw_Hud_Highlight(Surface & surface, Rect const & rect);
 
-// Draws a bright two-pixel border, for a tab that calls for attention.
-void Draw_Hud_Flash(Surface & surface, Rect const & rect);
+// Draws a shape frame with its near-black backing left out, so art made for the dark Yuri's Revenge
+// sidebar sits cleanly on a panel. An outline pixel other than -1 traces the shape one pixel outside it.
+void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * shape, int frame, Point2D const & at, int width, int height, int outline);
+
+// The hicolor pixels for an outline in the player's side colour and for a bright attention outline.
+int Hud_Side_Pixel(void);
+int Hud_Flash_Pixel(void);
 
 // Fills a rectangle with the panel background colour.
 void Draw_Hud_Fill(Surface & surface, Rect const & rect);

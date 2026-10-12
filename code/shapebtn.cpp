@@ -186,7 +186,11 @@ int ShapeButtonClass::Draw_Me(int forced)
 			surf = LogicalSurface;
 		}
 
-		Draw_Shape(*surf, *ShapeDrawer, ShapeData, shapenum, Point2D(DrawOffsetX + X, DrawOffsetY + Y), VisibleRect, DrawFaded != 0 ? SHAPE_ALPHA : SHAPE_NORMAL);
+		if (IsCutout) {
+			Draw_Hud_Cutout(*surf, *ShapeDrawer, ShapeData, shapenum, Point2D(DrawOffsetX + X, DrawOffsetY + Y), Width, Height, OutlinePixel);
+		} else {
+			Draw_Shape(*surf, *ShapeDrawer, ShapeData, shapenum, Point2D(DrawOffsetX + X, DrawOffsetY + Y), VisibleRect, DrawFaded != 0 ? SHAPE_ALPHA : SHAPE_NORMAL);
+		}
 		IsDrawn = true;
 		return(true);
 	}

@@ -65,6 +65,10 @@ class ShapeButtonClass : public ToggleClass
 		// Is the pointer over a labelled button? Its owner sets this and flags the button for a redraw.
 		bool IsHovered = false;
 
+		// Does the button draw without its art's near-black backing, and with what outline pixel (-1 for none)?
+		bool IsCutout = false;
+		int OutlinePixel = -1;
+
 		/*
 		 * These are the pixel offsets added to the button's position when its shape is
 		 * drawn. The sidebar uses them to shift a button out of screen space and into the

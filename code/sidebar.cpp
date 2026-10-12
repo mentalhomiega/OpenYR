@@ -1100,12 +1100,13 @@ void SidebarClass::Draw_Build_Area(void)
 	Draw_Hud_Fill(*SidebarSurface, Rect(left, top, layout.Panel.Width - 2 - left, bottom - top));
 
 	for (int index = 0; index < COLUMNS; index++) {
-		ShapeButtonClass const & tab = TabButton[index];
-		Rect const around(tab.X + tab.DrawOffsetX - 1, tab.Y + tab.DrawOffsetY - 1, tab.Width + 2, tab.Height + 2);
+		ShapeButtonClass & tab = TabButton[index];
+		tab.IsCutout = true;
+		tab.OutlinePixel = -1;
 		if (index == ActiveTab) {
-			Draw_Hud_Frame(*SidebarSurface, around);
+			tab.OutlinePixel = Hud_Side_Pixel();
 		} else if ((TabFlashMask & (1u << index)) != 0) {
-			Draw_Hud_Flash(*SidebarSurface, around);
+			tab.OutlinePixel = Hud_Flash_Pixel();
 		}
 	}
 
