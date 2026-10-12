@@ -168,6 +168,14 @@ void Draw_Hud_Highlight(Surface & surface, Rect const & rect)
 }
 
 
+void Draw_Hud_Flash(Surface & surface, Rect const & rect)
+{
+	unsigned const light = DSurface::Build_Hicolor_Pixel(RGBClass(230, 230, 230));
+	surface.Draw_Rect(rect, light);
+	surface.Draw_Rect(Rect(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2), light);
+}
+
+
 void Draw_Hud_Fill(Surface & surface, Rect const & rect)
 {
 	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(20, 22, 26)));

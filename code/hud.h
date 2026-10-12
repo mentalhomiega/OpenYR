@@ -75,6 +75,9 @@ void Draw_Hud_Well(Surface & surface, Rect const & rect);
 // Draws a well with a border in the player's side colour, for a button under the pointer.
 void Draw_Hud_Highlight(Surface & surface, Rect const & rect);
 
+// Draws a bright two-pixel border, for a tab that calls for attention.
+void Draw_Hud_Flash(Surface & surface, Rect const & rect);
+
 // Fills a rectangle with the panel background colour.
 void Draw_Hud_Fill(Surface & surface, Rect const & rect);
 

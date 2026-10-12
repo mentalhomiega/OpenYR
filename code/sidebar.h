@@ -162,6 +162,7 @@ class SidebarClass : public PowerClass
 		void Reposition_Panel(void);
 		void Add_Tool_Tips(void);
 		void Fit_Panel_To_Strip(void);
+		void Flash_Ready_Tabs(void);
 
 		/*
 		**	Each side strip is managed by this class. It handles all strip specific

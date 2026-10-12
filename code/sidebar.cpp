@@ -165,6 +165,9 @@ ShapeButtonClass SidebarClass::Power;
 ShapeButtonClass SidebarClass::Upgrade;
 ShapeButtonClass SidebarClass::Waypoint;
 ShapeButtonClass SidebarClass::TabButton[COLUMNS];
+
+// The modern panel's tabs lit on the current blink, one bit per tab.
+static unsigned TabFlashMask = 0;
 ShapeButtonClass SidebarClass::OptionsButton;
 ShapeButtonClass SidebarClass::DiplomacyButton;
 ShapeButtonClass SidebarClass::StripClass::UpButton[COLUMNS];
@@ -1096,8 +1099,15 @@ void SidebarClass::Draw_Build_Area(void)
 	int const bottom = layout.Arrows.Y + layout.Arrows.Height + 1;
 	Draw_Hud_Fill(*SidebarSurface, Rect(left, top, layout.Panel.Width - 2 - left, bottom - top));
 
-	ShapeButtonClass const & tab = TabButton[ActiveTab];
-	Draw_Hud_Frame(*SidebarSurface, Rect(tab.X + tab.DrawOffsetX - 2, tab.Y + tab.DrawOffsetY - 2, tab.Width + 4, tab.Height + 4));
+	for (int index = 0; index < COLUMNS; index++) {
+		ShapeButtonClass const & tab = TabButton[index];
+		Rect const around(tab.X + tab.DrawOffsetX - 1, tab.Y + tab.DrawOffsetY - 1, tab.Width + 2, tab.Height + 2);
+		if (index == ActiveTab) {
+			Draw_Hud_Frame(*SidebarSurface, around);
+		} else if ((TabFlashMask & (1u << index)) != 0) {
+			Draw_Hud_Flash(*SidebarSurface, around);
+		}
+	}
 
 	for (int row = 0; row < layout.Rows; row++) {
 		for (int column = 0; column < HUD_GRID_COLUMNS; column++) {
@@ -1213,6 +1223,7 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 	Fit_Panel_To_Strip();
 
 	if (Modern_Interface()) {
+		Flash_Ready_Tabs();
 		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
 			bool const over = Rect(button->X, button->Y, button->Width, button->Height).Is_Point_Within(xy);
 			if (over != button->IsHovered) {
@@ -3146,6 +3157,33 @@ void SidebarClass::Add_Tool_Tips(void)
 		tooltip.Region.Set(Upgrade.X, Upgrade.Y, Upgrade.Width, Upgrade.Height);
 		ToolTips->Remove(tooltip.ID);
 		ToolTips->Add(&tooltip);
+	}
+}
+
+
+/// <summary>
+/// Makes the modern panel's tabs blink while they hold a finished item and are not the tab shown.
+/// </summary>
+void SidebarClass::Flash_Ready_Tabs(void)
+{
+	unsigned mask = 0;
+	if ((Frame / (StripClass::CAMEO_FLASH_RATE * 2)) % 2 == 0) {
+		for (int index = 0; index < COLUMNS; index++) {
+			StripClass const & strip = Column[index];
+			for (int item = 0; index != ActiveTab && item < strip.BuildableCount; item++) {
+				FactoryClass * factory = strip.Buildables[item].Factory;
+				if (factory != NULL && factory->Has_Completed()) {
+					mask |= 1u << index;
+					break;
+				}
+			}
+		}
+	}
+
+	if (mask != TabFlashMask) {
+		TabFlashMask = mask;
+		IsToRedraw = true;
+		Column[ActiveTab].Flag_To_Redraw();
 	}
 }
 
