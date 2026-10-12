@@ -2477,6 +2477,24 @@ Allies:
     note: read from a house record in a campaign and, outside a campaign, from the spawn house section
       of the house holding that start position; both feed the same alliance state
     level: HouseClass
+AlliesAllowed:
+  key: AlliesAllowed
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: MultiplayerDialogSettings
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: AlliesAllowed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AllowBurrowing:
   key: AllowBurrowing
   scopes:
