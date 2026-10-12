@@ -539,6 +539,10 @@ void SlaveManagerClass::Miner_AI(void)
 			unit->Mark(MARK_DOWN);
 			if (legal) {
 				unit->Assign_Mission(MISSION_UNLOAD);
+				// Starts the unload here: a queued one would wait for the next turn, when a team's Area Guard order can replace it.
+				if (unit->Ready_To_Commence()) {
+					unit->Commence();
+				}
 				MinerStatus = MINER_DEPLOYING;
 			} else if (MinerStatus == MINER_MOVING) {
 				MinerStatus = MINER_WAITING;
