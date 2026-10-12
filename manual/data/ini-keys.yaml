@@ -16502,6 +16502,24 @@ GuardAreaTargetingDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GuardModeStray:
+  key: GuardModeStray
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: distance (cells)
+    status: generated
+    _provenance:
+      default_candidate: '512'
+      declared_in: RulesClass
+      member: GuardModeStrayDistance
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 GuardRange:
   key: GuardRange
   scopes:
