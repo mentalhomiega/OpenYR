@@ -40,11 +40,14 @@
 #include "tab.h"
 
 #include "_convert.h"
+#include "_tooltip.h"
 #include "_map.h"
 #include "_mixfile.h"
 #include "_rules.h"
 #include "_surface.h"
 #include "_uicontrol.h"
+#include "cctooltip.h"
+#include "csf.h"
 #include "dialog.h"
 #include "draw.h"
 #include "goptions.h"
@@ -87,6 +90,12 @@ namespace {
 char const * const CommandNames[] = {
 	"Team01", "Team02", "Team03", "TypeSelect", "Deploy", "AttackMove",
 	"Guard", "Beacon", "Stop", "PlanningMode", "Cheer"
+};
+
+// The tooltips' fallback text, in CommandButtonType order, for when the string table lacks a "Tip:" label.
+char const * const CommandTips[] = {
+	"Team 1", "Team 2", "Team 3", "Select same type", "Deploy", "Attack move",
+	"Guard", "Place beacon", "Stop", "Planning mode", "Cheer"
 };
 
 enum {
@@ -476,7 +485,37 @@ void TabClass::Place_Command_Buttons(void)
 			}
 			IsCommandButtonListed[index] = shown;
 		}
+
+		if (ToolTips != NULL) {
+			ToolTips->Remove(button.ID);
+			if (shown) {
+				ToolTip tooltip;
+				tooltip.ID = button.ID;
+				tooltip.Text = TXT_NONE;
+				tooltip.Region.Set(button.X, button.Y, button.Width, button.Height);
+				ToolTips->Add(&tooltip);
+			}
+		}
 	}
+}
+
+
+/// <summary>
+/// The tooltip for a command bar button is its "Tip:" label from the string table, as gamemd's;
+/// other gadgets get the sidebar's text.
+/// </summary>
+char const * TabClass::Help_Text(int id)
+{
+	if (id >= BUTTON_COMMAND && id < BUTTON_COMMAND + COMMAND_COUNT) {
+		static std::string _text;
+		std::string const label = std::string("Tip:") + CommandNames[id - BUTTON_COMMAND];
+		_text = StringTable.Find_UTF8(label.c_str());
+		if (_text.empty()) {
+			_text = CommandTips[id - BUTTON_COMMAND];
+		}
+		return(_text.c_str());
+	}
+	return(BASECLASS::Help_Text(id));
 }
 
 
