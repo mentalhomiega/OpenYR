@@ -286,6 +286,52 @@ void Draw_Hud_Ring(Surface & surface, Rect const & tile, int radius, int pixel, 
 }
 
 
+void Draw_Hud_Glyph(Surface & surface, Rect const & well, HudGlyphType glyph, RGBClass const & color)
+{
+	static char const * const _glyphs[][10] = {
+		{
+			"...##...",
+			".######.",
+			"##.##.##",
+			"##.##...",
+			".#####..",
+			"...####.",
+			"...##.##",
+			"##.##.##",
+			".######.",
+			"...##..."
+		},
+		{
+			"....####",
+			"...####.",
+			"..####..",
+			".####...",
+			"########",
+			"...####.",
+			"..####..",
+			".####...",
+			".##.....",
+			"#......."
+		}
+	};
+
+	char const * const * rows = _glyphs[glyph];
+	int const left = well.X + 5;
+	int const top = well.Y + (well.Height - 10) / 2;
+	int const shadow = DSurface::Build_Hicolor_Pixel(RGBClass(0, 0, 0));
+	int const pixel = DSurface::Build_Hicolor_Pixel(color);
+	for (int pass = 0; pass < 2; pass++) {
+		for (int y = 0; y < 10; y++) {
+			for (int x = 0; x < 8; x++) {
+				if (rows[y][x] == '#') {
+					surface.Put_Pixel(Point2D(left + x + 1 - pass, top + y + 1 - pass), pass == 0 ? shadow : pixel);
+				}
+			}
+		}
+	}
+}
+
+
 int Hud_Active_Pixel(void)
 {
 	RGBClass const & border = Side_Colors().Border;

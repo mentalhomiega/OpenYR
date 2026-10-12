@@ -14,6 +14,7 @@
 #include <string>
 
 class ConvertClass;
+class RGBClass;
 class ShapeSet;
 class Surface;
 
@@ -94,6 +95,14 @@ ShapeSet const * Hud_Icon(char const * name);
 int Hud_Side_Pixel(void);
 int Hud_Active_Pixel(void);		// The side colour lightened, to mark the chosen icon.
 int Hud_Flash_Pixel(void);
+
+enum HudGlyphType {
+	HUD_GLYPH_CREDITS,
+	HUD_GLYPH_POWER
+};
+
+// Draws a small credits or power symbol with a drop shadow at the left end of a readout well.
+void Draw_Hud_Glyph(Surface & surface, Rect const & well, HudGlyphType glyph, RGBClass const & color);
 
 // Fills a rectangle with the panel background colour.
 void Draw_Hud_Fill(Surface & surface, Rect const & rect);

@@ -206,6 +206,9 @@ void TabClass::Draw_Credits_Tab(void)
 	// Yuri's Revenge clears the readout with its own backdrop; TS used a frame of the tab art.
 	if (Modern_Interface()) {
 		Draw_Hud_Well(*SidebarSurface, Hud_Layout().Credits);
+		if (PlayerPtr != NULL && !PlayerPtr->IsObserver) {
+			Draw_Hud_Glyph(*SidebarSurface, Hud_Layout().Credits, HUD_GLYPH_CREDITS, RGBClass(255, 170, 57));
+		}
 	} else if (CreditsShape != NULL) {
 		Draw_Shape(*SidebarSurface, *SidebarDrawer, CreditsShape, 0, Point2D(0, 0), SidebarSurface->Get_Rect());
 	} else {

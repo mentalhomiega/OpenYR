@@ -15,7 +15,9 @@ At 1920x1080:
   - a row of buttons: place beacon, sell, power down and repair, then the options button. Place
     beacon and power down show "Coming soon" and do nothing yet. There is no diplomacy button;
   - the radar, whose map picture fills its box as far as the map's shape allows;
-  - the credits on the left and the power used and the power made on the right;
+  - the credits on the left and the power used and the power made on the right, each after a small
+    symbol: a gold dollar sign, and a lightning bolt that turns from green to red when the base uses
+    more power than it makes;
   - the build area: the power bar on the left edge, the category tabs in a column beside it, and
     the cameos of the chosen tab in a grid of three columns. Each cameo carries its name and, while
     it builds, the countdown shading. The grid has as many rows as the chosen tab's cameos need,

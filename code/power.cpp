@@ -436,6 +436,7 @@ void PowerClass::Draw_It(bool complete)
 				int const drain = PlayerPtr->Power_Drain();
 				int const output = PlayerPtr->Power_Output();
 				Draw_Hud_Well(*SidebarSurface, readout);
+				Draw_Hud_Glyph(*SidebarSurface, readout, HUD_GLYPH_POWER, drain > output ? RGBClass(231, 48, 41) : RGBClass(49, 190, 115));
 				Fancy_Text_Print("%d / %d", *SidebarSurface, rect, Point2D(readout.X + readout.Width / 2, readout.Y + (readout.Height - 12) / 2), Fetch_Scheme_By_Name(drain > output ? "Red" : "Green"), TBLACK, TextPrintType(TPF_CENTER | TPF_FULLSHADOW | TPF_8POINT), drain, output);
 			}
 		}
