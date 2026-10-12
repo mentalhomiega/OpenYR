@@ -227,7 +227,8 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		ROFBias = ini.Get_Float(Name(), "ROF", ROFBias);
 		CostBias = ini.Get_Float(Name(), "Cost", CostBias);
 		BuildSpeedBias = ini.Get_Float(Name(), "BuildTime", BuildSpeedBias);
-		IncomeMult = ini.Get_Float(Name(), "IncomeMult", IncomeMult);
+		// gamemd keeps IncomeMult as a float32 truncated from the INI value (store at 0x511D10).
+		IncomeMult = Truncate_To_Single(ini.Get_Float(Name(), "IncomeMult", IncomeMult));
 		CostInfantryMult = ini.Get_Float(Name(), "CostInfantryMult", CostInfantryMult);
 		CostUnitsMult = ini.Get_Float(Name(), "CostUnitsMult", CostUnitsMult);
 		CostAircraftMult = ini.Get_Float(Name(), "CostAircraftMult", CostAircraftMult);
@@ -423,6 +424,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CostBias);
 	stream.Serialize(BuildSpeedBias);
 	stream.Serialize(IncomeMult);
+	IncomeMult = Truncate_To_Single(IncomeMult);	// A save from before IncomeMult was single precision restores the same value.
 	stream.Serialize(CostInfantryMult);
 	stream.Serialize(CostUnitsMult);
 	stream.Serialize(CostAircraftMult);
