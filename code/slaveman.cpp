@@ -537,14 +537,16 @@ void SlaveManagerClass::Miner_AI(void)
 			}
 			unit->Locomotion->Mark_All_Occupation_Bits(MARK_DOWN);
 			unit->Mark(MARK_DOWN);
+			bool const moving = MinerStatus == MINER_MOVING;
 			if (legal) {
-				unit->Assign_Mission(MISSION_UNLOAD);
-				// Starts the unload here: a queued one would wait for the next turn, when a team's Area Guard order can replace it.
-				if (unit->Ready_To_Commence()) {
-					unit->Commence();
-				}
+				// Deploys at once with no order, as gamemd's miner does (0x6AFD60, state 2): a queued order can be replaced by a team's Guard order before it starts.
 				MinerStatus = MINER_DEPLOYING;
-			} else if (MinerStatus == MINER_MOVING) {
+				// A deploy that completes at once moves this manager into the new structure, so nothing after this call may use it.
+				if (unit->Try_To_Deploy()) {
+					return;
+				}
+			}
+			if (moving) {
 				MinerStatus = MINER_WAITING;
 				MinerTimer = Frame;
 			} else {

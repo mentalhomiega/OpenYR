@@ -3388,6 +3388,10 @@ void TechnoClass::AI(void)
 
 	if (SlaveManager) {
 		SlaveManager->AI();
+		// A slave miner whose deploy completes this frame is deleted by SlaveManagerClass::AI.
+		if (!IsActive) {
+			return;
+		}
 	}
 
 	DiskLaser.AI();
