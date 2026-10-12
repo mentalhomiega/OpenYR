@@ -82,8 +82,10 @@ and at 1280x720, plus the campaign wins, since every mission is played through t
 
 ## Open questions
 
-- **Cameo size.** The game's cameos are 60x48. At 1080p three columns of them make a panel about
-  230 pixels wide; OpenRA's look is closer to 1.5x. We start at 1x for crisp art and add a scale.
+- **Cameo size.** The game's cameos are 60x48, so three columns make a panel 250 pixels wide.
+  `[Video] InterfaceScale=` enlarges the panels with the rest of the frame (2x at 2160 lines), while
+  the map keeps the screen's own detail. Whether 1080p wants a 1.5x panel, closer to OpenRA's look,
+  is still open.
 - **Radar size.** The radar's map picture is sized to the panel width; a very wide map gives a short
   radar. We keep the radar box square and centre the picture in it.
 - **Classic art option.** Whether the modern layout should also offer the Yuri's Revenge sidebar

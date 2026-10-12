@@ -52,7 +52,7 @@ bool CCToolTip::Update(ToolTipText * text)
 			// A tooltip for the build panel sits on the map to the panel's left, level with the pointer.
 			Rect const panel = Hud_Layout().Panel;
 			if (panel.Is_Point_Within(Point2D(text->Pos.X, text->Pos.Y))) {
-				text->Pos.X = panel.X - text->TextWidth - HUD_MARGIN;
+				text->Pos.X = panel.X - text->TextWidth - HUD_TIP_PADDING * 2 - HUD_MARGIN;
 				text->Pos.Y = std::clamp(text->Pos.Y - text->TextHeight / 2, 0, std::max(0, int(ScreenTacticalRect.Height) - text->TextHeight));
 				return(true);
 			}
@@ -187,9 +187,10 @@ void CCToolTip::Draw(const ToolTipText * text)
 	}
 
 	if (surface != NULL && Modern_Interface()) {
-		drawrect.Set(point.X, point.Y, text->TextWidth, text->TextHeight);
+		drawrect.Set(point.X, point.Y, text->TextWidth + HUD_TIP_PADDING * 2, text->TextHeight + HUD_TIP_PADDING);
 		Draw_Hud_Frame(*surface, drawrect);
-		Fancy_Text_Print(text->Text, *surface, drawrect, Point2D(2, 1), Fetch_Scheme_By_Name("LightGrey"), TBLACK, Style);
+		Rect const inner(drawrect.X + HUD_TIP_PADDING + 2, drawrect.Y + HUD_TIP_PADDING / 2 + 1, text->TextWidth, text->TextHeight);
+		Fancy_Text_Print(text->Text, *surface, inner, Point2D(0, 0), Fetch_Scheme_By_Name("LightGrey"), TBLACK, Style);
 	} else if (surface != NULL) {
 		drawrect.Set(point.X, point.Y, text->TextWidth, text->TextHeight);
 		surface->Fill_Rect(drawrect, TBLACK);

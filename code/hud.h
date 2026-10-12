@@ -56,7 +56,8 @@ enum HudEnums {
 	HUD_MARGIN=6,
 	HUD_GRID_COLUMNS=3,
 	HUD_TAB_WIDTH=28,
-	HUD_MIN_ROWS=4
+	HUD_MIN_ROWS=4,
+	HUD_TIP_PADDING=3
 };
 
 HudLayout Hud_Layout(void);
