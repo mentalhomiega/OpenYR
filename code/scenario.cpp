@@ -306,6 +306,7 @@ void ScenarioClass::Reset(void)
 	IsIgnoreGlobalAITriggers = false;
 	IsMultiplayerOnly = false;
 	IsMPAIBaseNodes = false;
+	TeamsPresent = false;
 	IsCrateBeenPickedUp = false;
 	FadeTimer = 0;
 	StartingDropships = 0;
@@ -2677,6 +2678,11 @@ void Assign_Houses(void)
 		housep->Scheme = Session.Color_Index_To_Scheme(color);
 		housep->Initialize_Radar_Color();
 		housep->IniName = (seat != NULL && seat->Name[0] != '\0') ? seat->Name : Fetch_String(TXT_COMPUTER);
+
+		// A computer seat with allies makes this a team game, which Computer_Paranoid skips.
+		if (seat != NULL && seat->Player.AlliesMask != 0) {
+			Scen->TeamsPresent = true;
+		}
 
 		if (Session.Type != GAME_NORMAL) {
 			housep->IQ = Rule->MaxIQ;

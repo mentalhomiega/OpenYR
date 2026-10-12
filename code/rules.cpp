@@ -232,6 +232,7 @@ RulesClass::RulesClass(void) :
 	AtomDamage(1000),
 	Diff(),
 	IsComputerParanoid(true),
+	AlliesAllowed(false),
 	IsCurleyShuffle(false),
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(false),
@@ -1916,6 +1917,7 @@ bool RulesClass::MPlayer(CCINIClass const & ini)
 		IsMPCrates = ini.Get_Bool(MPDIALOG, "Crates", IsMPCrates);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPLAYER, "CaptureTheFlag", IsMPCaptureTheFlag);
 		IsMPCaptureTheFlag = ini.Get_Bool(MPDIALOG, "CaptureTheFlag", IsMPCaptureTheFlag);
+		AlliesAllowed = ini.Get_Bool(MPDIALOG, "AlliesAllowed", AlliesAllowed);
 		return(true);
 	}
 	return(false);

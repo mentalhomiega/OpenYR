@@ -2623,6 +2623,10 @@ class RulesClass
 		*/
 		bool IsComputerParanoid;
 
+		// Whether computer houses may ally with one another (gamemd's RulesClass::AlliesAllowed,
+		// read from [MultiplayerDialogSettings]). Not serialized; the rules INI sets it on every start.
+		bool AlliesAllowed;
+
 		/*
 		**	Should helicopters shuffle their position between firing on their
 		**	target?

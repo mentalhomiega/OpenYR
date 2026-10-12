@@ -2092,6 +2092,9 @@ bool UnitClass::Try_To_Deploy(void)
 					if (!House->Is_Human_Player() && building->Class->IsConstructionYard && Session.Type != GAME_NORMAL) {
 						Cell center = building->PositionCoord.As_Cell();
 						House->Center = center;
+
+						// Computer alliances form before the new base starts, as in gamemd's TryToDeploy.
+						HouseClass::Computer_Paranoid();
 						House->Begin_Construction(center);
 						House->IsStarted = true;
 						House->IsAITriggersOn = true;
