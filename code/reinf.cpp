@@ -538,9 +538,15 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 	}
 
 	/*
+	**	As in gamemd, only a trigger's waypoint inside the usable area places the group nearby.
+	**	Any other group is placed on its own cell.
+	*/
+	bool const atwaypoint = wp != -1 && origin != CELL_NONE && Map.In_Local_Radar(origin, true);
+
+	/*
 	**	Announce when the reinforcements have arrived.
 	*/
-	if (Create_Reinforcement(teamtype, object, origin, wp != -1) && teamtype->House->Is_Ally(PlayerPtr)) {
+	if (Create_Reinforcement(teamtype, object, origin, atwaypoint) && teamtype->House->Is_Ally(PlayerPtr)) {
 		LastRadarEventCell = origin;
 		Speak(VOX_REINFORCEMENTS);
 	}
@@ -573,9 +579,9 @@ inline bool _Can_Burrow(FootClass * object)
 /// <summary>
 /// Brings a chain of reinforcement objects onto the map.
 /// This routine is used by the reinforcement handlers to deliver a group, arriving either
-/// by drop pod, by burrowing in underground, or by driving onto the map from the owning
-/// house's edge. Any object that cannot be given a legal arrival cell is destroyed rather
-/// than left in limbo.
+/// by drop pod, by burrowing in underground, or on its own cell facing the owning house's
+/// edge. Any object that cannot be given a legal arrival cell is destroyed rather than left
+/// in limbo.
 /// </summary>
 /// <param name="object">The first object of the reinforcement chain to deliver.</param>
 /// <param name="xcell">The cell the reinforcement should arrive at or near.</param>
@@ -600,9 +606,8 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 	if (!drop_pod && !burrow && !atwaypoint) {
 
 		/*
-		**	The reinforcements must be delivered the old fashioned way -- by moving onto the
-		**	map using their own power. First order of business is to determine where they
-		**	should arrive from.
+		**	A group with a cell is placed on that cell, facing its house's edge. A group
+		**	with no cell takes an edge cell.
 		*/
 		SourceType source = teamtype->House->Control.Edge;
 		if (source == SOURCE_NONE) {
@@ -610,7 +615,9 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 		}
 
 		eface = (FacingType)(source << 1);
-		cell = Map.Calculated_Cell(source, cell, CELL_NONE, object->TClass->Speed);
+		if (cell == CELL_NONE) {
+			cell = Map.Calculated_Cell(source, cell, CELL_NONE, object->TClass->Speed);
+		}
 	} else {
 		cell = Map.Nearby_Location(cell, object->TClass->Speed);
 	}
