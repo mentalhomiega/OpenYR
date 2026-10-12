@@ -7,7 +7,7 @@ when_omitted:
   value: "0.25"
 ---
 
-For every [`OrePurifier=yes`](/keys/orepurifier/) structure a house has, each unit of ore its harvesters unload pays this share of its value again, and adds this share of its score.
+For every [`OrePurifier=yes`](/keys/orepurifier/) structure a house has, each unit of ore unloaded at a structure the house owns pays this share of its value again, and adds this share of its score.
 
 ```ini title="rulesmd.ini"
 [General]

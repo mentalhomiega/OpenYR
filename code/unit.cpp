@@ -3578,14 +3578,17 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 							int amount = Storage.Decrease_Amount(Storage.Get_Amount(slot), slot);
 							if (amount > 0) {
 								dumped = true;
-								int const before = House->Credits;
+								// Ore is paid to the house that owns the dock building, as UnitClass::Mission_Unload
+								// (0x73D630) does; weed goes to the harvester's house.
+								HouseClass * const payee = Class->IsToVeinHarvest ? House : building->House;
+								int const before = payee->Credits;
 								if (Class->IsToVeinHarvest) {
-									House->Harvested_Weed(amount, slot);
+									payee->Harvested_Weed(amount, slot);
 								} else {
-									House->Harvested(amount, (TiberiumType)slot);
-									House->Purified(amount, (TiberiumType)slot);
+									payee->Harvested(amount, (TiberiumType)slot);
+									payee->Purified(amount, (TiberiumType)slot);
 								}
-								DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, House->Credits - before);
+								DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, payee->Credits - before);
 								Set_Stage(0);
 							}
 						}

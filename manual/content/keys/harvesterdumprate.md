@@ -7,7 +7,7 @@ when_omitted:
   value: ".016"
 ---
 
-A docked harvester waits this many minutes of game time, then hands its house everything it holds of one Tiberium type. A minute is 900 frames, and the wait is rounded up to whole frames: the default `.016` gives 14.4, so a pass every 15 frames. A load of one type is therefore paid out 15 frames after the harvester docks, and each further type in a mixed load takes another 15 frames. One more pass finds the harvester empty, and the refinery's production animation starts after it. Weeders unload at the same rate.
+A docked harvester waits this many minutes of game time, then hands everything it holds of one Tiberium type to the house that owns the building west of it, or to its own house when it is a weeder. A minute is 900 frames, and the wait is rounded up to whole frames: the default `.016` gives 14.4, so a pass every 15 frames. A load of one type is therefore paid out 15 frames after the harvester docks, and each further type in a mixed load takes another 15 frames. One more pass finds the harvester empty, and the refinery's production animation starts after it. Weeders unload at the same rate.
 
 ```ini title="rules.ini"
 [General]
