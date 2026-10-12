@@ -240,6 +240,7 @@ RulesClass::RulesClass(void) :
 	AtomDamage(1000),
 	Diff(),
 	IsComputerParanoid(true),
+	AlliesAllowed(false),
 	IsCurleyShuffle(false),
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(false),
@@ -1929,6 +1930,7 @@ bool RulesClass::MPlayer(CCINIClass const & ini)
 		IsMPShortGame = ini.Get_Bool(MPDIALOG, "ShortGame", IsMPShortGame);
 		IsMPBuildOffAlly = ini.Get_Bool(MPLAYER, "BuildOffAlly", IsMPBuildOffAlly);
 		IsMPBuildOffAlly = ini.Get_Bool(MPDIALOG, "BuildOffAlly", IsMPBuildOffAlly);
+		AlliesAllowed = ini.Get_Bool(MPDIALOG, "AlliesAllowed", AlliesAllowed);
 		IsMPFogOfWar = ini.Get_Bool(MPLAYER, "FogOfWar", IsMPFogOfWar);
 		IsMPFogOfWar = ini.Get_Bool(MPDIALOG, "FogOfWar", IsMPFogOfWar);
 		IsMPMCVRedeploys = ini.Get_Bool(MPLAYER, "MCVRedeploys", IsMPMCVRedeploys);

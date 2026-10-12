@@ -2562,16 +2562,16 @@ void HouseClass::Make_Ally(HouseClass * house)
 			Control.Allies.Set(house);
 		}
 
-		if (!ScenarioInit) {
+		/*
+		**	An alliance with another human player will cause the computer players (if present) to
+		**	become paranoid. A campaign never does (HouseClass::MakeAlly checks SessionClass::GameMode
+		**	!= 0). During scenario setup this happens only in Internet games, as in gamemd.
+		*/
+		if (Session.Type != GAME_NORMAL && (!ScenarioInit || Session.Type == GAME_INTERNET) && Is_Human_Player() && Rule->IsComputerParanoid && !house->Class->IsMultiplayPassive) {
+			Computer_Paranoid();
+		}
 
-			/*
-			**	An alliance with another human player will cause the computer
-			**	players (if present) to become paranoid. A campaign never does (HouseClass::MakeAlly
-			**	checks SessionClass::GameMode != 0).
-			*/
-			if (Is_Human_Player() && Rule->IsComputerParanoid && !house->Class->IsMultiplayPassive && Session.Type != GAME_NORMAL) {
-				Computer_Paranoid();
-			}
+		if (!ScenarioInit) {
 
 			char buffer[80];
 
@@ -6742,6 +6742,15 @@ bool HouseClass::Is_Allowed_To_Ally(HouseClass * house) const
  *=============================================================================================*/
 void HouseClass::Computer_Paranoid(void)
 {
+	/*
+	**	Computer houses change alliances only when the rules allow alliances and the game has no
+	**	team allies (gamemd's HouseClass::AllyAIHouses). Its multiplayer game mode query is always
+	**	false, so the rules flag alone decides.
+	*/
+	if (!Rule->AlliesAllowed || Scen->TeamsPresent) {
+		return;
+	}
+
 	/*
 	**	Loop through every computer controlled house and make allies with all other computer
 	**	controlled houses and then make enemies with all other human controlled houses.

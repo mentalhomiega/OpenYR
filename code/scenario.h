@@ -476,6 +476,10 @@ class ScenarioClass {
 		// start position and builds as it does in a campaign.
 		bool IsMPAIBaseNodes;
 
+		// Set when a computer seat starts with allies, which makes the game a team game. Not
+		// serialized, so a loaded save starts with false.
+		bool TeamsPresent;
+
 		/*
 		 * If the map being played was built by the random map generator rather than read
 		 * from a scenario file, then this flag will be true.
