@@ -612,6 +612,7 @@ void SidebarClass::Use_Hud_Icons(void)
 		if (shape != NULL) {
 			button.Set_Shape(const_cast<ShapeSet *>(shape));
 		}
+		button.IsHudIcon = shape != NULL;
 		return(shape != NULL);
 	};
 
@@ -1289,12 +1290,13 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	if (Modern_Interface()) {
 		Flash_Ready_Tabs();
-		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
-			bool const over = Rect(button->X, button->Y, button->Width, button->Height).Is_Point_Within(xy);
-			if (over != button->IsHovered) {
-				button->IsHovered = over;
-				button->Flag_To_Redraw();
-			}
+		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton, &Repair, &Upgrade, &Power, &BeaconButton}) {
+			button->Track_Hover(xy);
+		}
+		for (int index = 0; index < COLUMNS; index++) {
+			TabButton[index].Track_Hover(xy);
+			StripClass::UpButton[index].Track_Hover(xy);
+			StripClass::DownButton[index].Track_Hover(xy);
 		}
 	}
 

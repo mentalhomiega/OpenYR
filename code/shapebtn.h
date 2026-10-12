@@ -62,8 +62,13 @@ class ShapeButtonClass : public ToggleClass
 		// A button with a label draws as a panel button showing that text, at its own size, instead of its shape.
 		std::string Label;
 
-		// Is the pointer over a labelled button? Its owner sets this and flags the button for a redraw.
+		// Is the pointer over the button? Only labelled buttons and HUD icons show it, and their owner
+		// keeps it current with Track_Hover.
 		bool IsHovered = false;
+		void Track_Hover(Point2D const & xy);
+
+		// Is the shape one of the modern interface's icons, whose edge lights up under the pointer?
+		bool IsHudIcon = false;
 
 		// Does the button draw without its art's near-black backing, and with what outline pixel (-1 for none)?
 		bool IsCutout = false;

@@ -191,11 +191,24 @@ int ShapeButtonClass::Draw_Me(int forced)
 		} else {
 			Draw_Shape(*surf, *ShapeDrawer, ShapeData, shapenum, Point2D(DrawOffsetX + X, DrawOffsetY + Y), VisibleRect, DrawFaded != 0 ? SHAPE_ALPHA : SHAPE_NORMAL);
 		}
+		if (IsHudIcon && IsHovered && shapenum == UP_SHAPE) {
+			Draw_Hud_Ring(*surf, Rect(DrawOffsetX + X + 1, DrawOffsetY + Y + 1, Width - 2, Height - 2), HUD_ICON_RADIUS - 1, Hud_Active_Pixel(), 1);
+		}
 		IsDrawn = true;
 		return(true);
 	}
 	return(false);
 }
+
+void ShapeButtonClass::Track_Hover(Point2D const & xy)
+{
+	bool const over = Rect(X, Y, Width, Height).Is_Point_Within(xy);
+	if (over != IsHovered) {
+		IsHovered = over;
+		Flag_To_Redraw();
+	}
+}
+
 
 /// <summary>
 /// Draws a labelled button as a panel button: a well with the label centred in it, framed in

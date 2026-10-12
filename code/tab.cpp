@@ -273,6 +273,11 @@ void TabClass::AI(KeyNumType &input, Point2D const & xy)
 	}
 
 	Credits.AI();
+	if (IsCommandIcons) {
+		for (int index = 0; index < COMMAND_COUNT; index++) {
+			CommandButtons[index].Track_Hover(xy);
+		}
+	}
 	Command_Bar_AI(input);
 	BASECLASS::AI(input, xy);
 }
@@ -382,6 +387,9 @@ void TabClass::Use_Command_Icons(void)
 {
 	IsCommandIcons = false;
 	CommandIconSet = Hud_Icon(CommandIconCodes[0]);
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		CommandButtons[index].IsHudIcon = false;
+	}
 	if (!Modern_Interface()) {
 		return;
 	}
@@ -395,6 +403,7 @@ void TabClass::Use_Command_Icons(void)
 	}
 	for (int index = 0; index < COMMAND_COUNT; index++) {
 		CommandShapes[index] = icons[index];
+		CommandButtons[index].IsHudIcon = true;
 	}
 	IsCommandIcons = true;
 }
