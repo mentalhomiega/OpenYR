@@ -2036,8 +2036,9 @@ void HouseClass::Harvested(int tiberium, TiberiumType slot)
 /// <summary>
 /// Pays the ore purifier bonus on ore a harvester has just delivered, as UnitClass::Mission_Unload
 /// (0x73D630) does: PurifierBonus of the ore for every purifier the house has on the map, plus
-/// the AIVirtualPurifiers entry for a computer house outside a campaign. The bonus is rounded
-/// down to whole bails before it is paid at the ore's price.
+/// the AIVirtualPurifiers entry for a computer house outside a campaign. The bonus is paid at
+/// the ore's price without rounding to whole units; the credits and points it adds are each
+/// truncated to whole numbers.
 /// </summary>
 /// <param name="tiberium">The amount of ore delivered.</param>
 /// <param name="slot">The kind of ore delivered.</param>
@@ -2054,12 +2055,11 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 		purifiers += Rule->AIVirtualPurifiers[Difficulty];
 	}
 
-	// The share is taken in single precision and kept as whole bails, as UnitClass::Mission_Unload does.
-	float const bonus = static_cast<float>(purifiers) * static_cast<float>(Rule->PurifierBonus) * static_cast<float>(tiberium);
-	int const bails = static_cast<int>(bonus);
-	if (bails > 0) {
-		PointTotal += bails * 5;
-		Credits += (int)(Tiberiums[slot]->CreditValue * Class->IncomeMult * bails);
+	// The share is stored as single precision and paid unrounded, as UnitClass::Mission_Unload does at 0x73E441.
+	float const bonus = static_cast<float>(static_cast<double>(purifiers) * static_cast<float>(Rule->PurifierBonus) * static_cast<double>(tiberium));
+	if (bonus > 0) {
+		PointTotal += static_cast<int>(bonus * 5.0);
+		Credits += static_cast<int>(Tiberiums[slot]->CreditValue * Class->IncomeMult * bonus);
 	}
 }
 
