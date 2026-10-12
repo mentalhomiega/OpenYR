@@ -92,6 +92,18 @@
 #define _stricmp stricmp
 #endif
 
+#include <cmath>
+
+// Rounds toward zero to single precision, as gamemd's float32 stores do under the chop mode its float-to-int helper (0x7C5F00) sets.
+inline float Truncate_To_Single(double value)
+{
+	float result = static_cast<float>(value);
+	if (std::fabs(static_cast<double>(result)) > std::fabs(value)) {
+		result = std::nextafter(result, 0.0f);
+	}
+	return(result);
+}
+
 
 /*
 ** Define some Windows specific values that are used throghout the games

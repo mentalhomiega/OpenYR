@@ -7,7 +7,7 @@ when_omitted:
   value: "1.0"
 ---
 
-Each unit of ore a harvester unloads pays its Tiberium type's [`Value`](/keys/value/) multiplied by this value, rounded down to whole credits for each delivery. [Credits and storage](/systems/tiberium/#credits-and-storage) covers the payment.
+Each unit of ore a harvester unloads pays its Tiberium type's [`Value`](/keys/value/) multiplied by this value, rounded down to whole credits for each delivery. The value is kept at single precision, rounded toward zero, so `1.1` is used as `1.0999999`. [Credits and storage](/systems/tiberium/#credits-and-storage) covers the payment.
 
 ```ini title="rulesmd.ini"
 [MyCountry] ; example country
