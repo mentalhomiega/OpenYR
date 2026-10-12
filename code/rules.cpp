@@ -292,6 +292,7 @@ RulesClass::RulesClass(void) :
 	CloseEnoughDistance(5 * CELL_LEPTON / 2),
 	StrayDistance(2 * CELL_LEPTON),
 	RelaxedStrayDistance(2 * CELL_LEPTON),
+	GuardModeStrayDistance(2 * CELL_LEPTON),
 	CrushDistance(3 * CELL_LEPTON / 2),
 	CrateRadius(5 * CELL_LEPTON / 2),
 	HomingScatter(2 * CELL_LEPTON),
@@ -1789,6 +1790,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		SelfHealCap = ini.Get_Float(GENERAL, "SelfHealCap", SelfHealCap);
 		StrayDistance = ini.Get_Lepton(GENERAL, "Stray", StrayDistance);
 		RelaxedStrayDistance = ini.Get_Lepton(GENERAL, "RelaxedStray", RelaxedStrayDistance);
+		GuardModeStrayDistance = ini.Get_Lepton(GENERAL, "GuardModeStray", GuardModeStrayDistance);
 		CloseEnoughDistance = ini.Get_Lepton(GENERAL, "CloseEnough", CloseEnoughDistance);
 		IsBlendedFog = ini.Get_Bool(GENERAL, "BlendedFog", IsBlendedFog);
 		AttackingAircraftSightRange = ini.Get_Int(GENERAL, "AttackingAircraftSightRange", AttackingAircraftSightRange);
@@ -3397,6 +3399,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CloseEnoughDistance);
 	stream.Serialize(StrayDistance);
 	stream.Serialize(RelaxedStrayDistance);
+	stream.Serialize(GuardModeStrayDistance);
 	stream.Serialize(CrushDistance);
 	stream.Serialize(CrateRadius);
 	stream.Serialize(HomingScatter);

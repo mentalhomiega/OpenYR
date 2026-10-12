@@ -2468,6 +2468,9 @@ class RulesClass
 		*/
 		LEPTON RelaxedStrayDistance;
 
+		// Distance an Area Guard unit may drift from a guarded foot object before it returns.
+		LEPTON GuardModeStrayDistance;
+
 		/*
 		**	If a vehicle is closer than this range to a target that it can crush
 		**	by driving over it, then it will try to drive over it instead of firing
