@@ -111,6 +111,7 @@ class TabClass: public SidebarClass
 		static void Draw_Command_Bar(void);
 		void Command_Bar_AI(KeyNumType & input);
 		static void Do_Command(CommandButtonType command);
+		static void Use_Command_Icons(void);
 
 		static ShapeSet const * SpacerShape;
 		static ShapeSet const * LeftCapShape;
@@ -123,6 +124,7 @@ class TabClass: public SidebarClass
 		static bool IsCommandButtonListed[COMMAND_COUNT];
 		static bool IsToggleListed;
 		static bool IsCommandBarOpen;
+		static bool IsCommandIcons;
 
 	public:
 		static Rect Command_Bar_Frame(void);

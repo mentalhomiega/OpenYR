@@ -172,6 +172,7 @@ static unsigned TabFlashMask = 0;
 
 // Do the modern panel's tabs show the icons drawn for it, rather than Yuri's Revenge's art?
 static bool TabIcons = false;
+static ShapeSet const * HudIconSet = NULL;
 ShapeButtonClass SidebarClass::OptionsButton;
 ShapeButtonClass SidebarClass::DiplomacyButton;
 ShapeButtonClass SidebarClass::BeaconButton;
@@ -634,6 +635,7 @@ void SidebarClass::Use_Hud_Icons(void)
 		tabs = use(TabButton[i], name) && tabs;
 	}
 	TabIcons = tabs;
+	HudIconSet = Hud_Icon("T0");
 }
 
 
@@ -1145,9 +1147,8 @@ void SidebarClass::Draw_It(bool complete)
 /// </summary>
 void SidebarClass::Draw_Build_Area(void)
 {
-	static ShapeSet const * _icon_set = NULL;
-	if (Hud_Icon("T0") != _icon_set) {
-		_icon_set = Hud_Icon("T0");
+	// Init_For_House can run before the player's side is known.
+	if (Hud_Icon("T0") != HudIconSet) {
 		Use_Hud_Icons();
 	}
 

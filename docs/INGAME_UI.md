@@ -22,7 +22,8 @@ At 1920x1080:
     at least four and no more than the screen allows, with the scroll buttons under it. The panel
     grows and shrinks with the grid.
 - **The command bar** is a slim framed strip in the bottom-left corner, holding the [AdvancedCommandBar]
-  buttons as icons.
+  buttons as icons in the same style as the panel's buttons. It is only as wide as the buttons the
+  list names, and it has no end cap, so it cannot be closed.
 - **Superweapon timers** and the mission timer stack in the bottom-left corner, above the command
   bar, one line each in the owner's colour.
 - **Messages** (chat, EVA text) keep their place at the top left of the map.
@@ -52,9 +53,12 @@ the same arrangement whether or not the map is zoomed:
    side's colours from a small table), not from SIDEGDI shapes, so they fit any panel size. The
    cameos, power pips and radar keep the game's own art. The tab, button and scroll icons are
    PNG sheets in the `ui` folder, one set per side, named `HUD` plus the side letter (`A`, `S`
-   or `Y`) and the icon's code, such as `HUDSPW.png` for the Soviet power-down button. Each sheet
+   or `Y`) and the icon's code, such as `HUDSPW.png` for the Soviet power-down button. The command
+   bar's codes are `C1` to `C3` for the teams, then `TS`, `DP`, `AM`, `GD`, `BC`, `ST`, `PL` and `CH`
+   in [AdvancedCommandBar] order; the beacon shares the panel's sheet. Each sheet
    holds three square frames: normal, pressed and disabled. `tools/hudicons/make_hud_icons.py`
-   draws the current set. A button whose sheet is missing keeps Yuri's Revenge's art.
+   draws the current set. A panel button whose sheet is missing keeps Yuri's Revenge's art; the
+   command bar keeps Yuri's Revenge's art for every button unless each listed button has a sheet.
 4. **Input.** The panel and the command bar are hit-tested before the map: a click inside a panel's
    rectangle goes to the panel's buttons and never reaches the map, and the mouse over a panel shows
    the normal arrow. Edge scrolling stays at the screen edges.

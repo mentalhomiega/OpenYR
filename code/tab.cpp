@@ -82,6 +82,7 @@ int TabClass::CommandSlot[COMMAND_COUNT];
 bool TabClass::IsCommandButtonListed[COMMAND_COUNT];
 bool TabClass::IsToggleListed = false;
 bool TabClass::IsCommandBarOpen = true;
+bool TabClass::IsCommandIcons = false;
 
 namespace {
 
@@ -90,6 +91,16 @@ char const * const CommandNames[] = {
 	"Team01", "Team02", "Team03", "TypeSelect", "Deploy", "AttackMove",
 	"Guard", "Beacon", "Stop", "PlanningMode", "Cheer"
 };
+
+// The modern interface's icon sheet codes, in CommandButtonType order.
+char const * const CommandIconCodes[] = {
+	"C1", "C2", "C3", "TS", "DP", "AM", "GD", "BC", "ST", "PL", "CH"
+};
+
+// Padding between the modern command bar's frame and its icons.
+int const COMMAND_ICON_PAD = 5;
+
+ShapeSet const * CommandIconSet = NULL;
 
 enum {
 	BUTTON_COMMAND = 300,
@@ -355,7 +366,34 @@ void TabClass::Init_For_House(void)
 		}
 	}
 
+	Use_Command_Icons();
 	Place_Command_Buttons();
+}
+
+
+/// <summary>
+/// Gives the modern command bar the side's icon sheets in place of Yuri's Revenge's buttons, when
+/// every command in the row has one. Otherwise the bar keeps the Yuri's Revenge art.
+/// </summary>
+void TabClass::Use_Command_Icons(void)
+{
+	IsCommandIcons = false;
+	CommandIconSet = Hud_Icon(CommandIconCodes[0]);
+	if (!Modern_Interface()) {
+		return;
+	}
+
+	ShapeSet const * icons[COMMAND_COUNT] {};
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		icons[index] = Hud_Icon(CommandIconCodes[index]);
+		if (icons[index] == NULL && CommandSlot[index] >= 0) {
+			return;
+		}
+	}
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		CommandShapes[index] = icons[index];
+	}
+	IsCommandIcons = true;
 }
 
 
@@ -372,6 +410,7 @@ void TabClass::Clear_For_House(void)
 		CommandButtons[index].Set_Shape(NULL);
 	}
 	ToggleButton.Set_Shape(NULL);
+	IsCommandIcons = false;
 	BASECLASS::Clear_For_House();
 }
 
@@ -432,6 +471,14 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 			}
 		}
 		layout.Y = VisibleRect.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN - 3;
+		if (IsCommandIcons) {
+			layout.ButtonX = HUD_MARGIN + COMMAND_ICON_PAD;
+			layout.OpenCapX = layout.ButtonX;
+			layout.ClosedCapX = layout.ButtonX;
+			layout.Slots = used;
+			layout.RightCapX = layout.ButtonX + std::max(0, used * (HUD_BUTTON_SIZE + HUD_BUTTON_GAP) - HUD_BUTTON_GAP) + COMMAND_ICON_PAD - 3;
+			return(layout);
+		}
 		layout.OpenCapX = HUD_MARGIN + 3;
 		layout.ClosedCapX = layout.OpenCapX;
 		layout.ButtonX = layout.OpenCapX + capwidth;
@@ -480,29 +527,33 @@ void TabClass::Place_Command_Buttons(void)
 	ToggleButton.Set_Shape(LeftCapShape);
 	ToggleButton.Set_Position(IsCommandBarOpen ? layout.OpenCapX : layout.ClosedCapX, layout.Y);
 	ToggleButton.Flag_To_Redraw();
-	if (ready != IsToggleListed) {
-		if (ready) {
+	bool toggle = ready && !IsCommandIcons;
+	if (toggle != IsToggleListed) {
+		if (toggle) {
 			ToggleButton.Zap();
 			Add_A_Button(ToggleButton);
 		} else {
 			Remove_A_Button(ToggleButton);
 		}
-		IsToggleListed = ready;
+		IsToggleListed = toggle;
 	}
 
+	// The modern icon bar has no end cap and stays open.
 	int backwidth = ready ? ButtonBackShape->Get_Width() : 0;
+	int pitch = IsCommandIcons ? HUD_BUTTON_SIZE + HUD_BUTTON_GAP : backwidth;
+	int y = IsCommandIcons ? layout.Y + COMMAND_ICON_PAD - 3 : layout.Y;
 	for (int index = 0; index < COMMAND_COUNT; index++) {
 		ShapeButtonClass & button = CommandButtons[index];
-		int x = layout.ButtonX + CommandSlot[index] * backwidth;
-		bool shown = ready && IsCommandBarOpen && CommandSlot[index] >= 0 && CommandShapes[index] != NULL
-			&& x + backwidth <= layout.RightCapX;
+		int x = layout.ButtonX + CommandSlot[index] * pitch;
+		bool shown = ready && CommandSlot[index] >= 0 && CommandShapes[index] != NULL
+			&& (IsCommandIcons ? CommandSlot[index] < layout.Slots : IsCommandBarOpen && x + backwidth <= layout.RightCapX);
 
 		button.ID = BUTTON_COMMAND + index;
 		button.IsSticky = true;
 		button.ShapeDrawer = SidebarDrawer;
 		button.IsPressed = false;
 		button.Set_Shape(CommandShapes[index]);
-		button.Set_Position(x, layout.Y);
+		button.Set_Position(x, y);
 		button.Flag_To_Redraw();
 
 		if (shown != IsCommandButtonListed[index]) {
@@ -542,8 +593,19 @@ void TabClass::Draw_Command_Bar(void)
 	Rect clip = CompositeSurface->Get_Rect();
 
 	if (Modern_Interface()) {
+		// Init_For_House can run before the player's side is known.
+		if (Hud_Icon(CommandIconCodes[0]) != CommandIconSet) {
+			for (int index = 0; index < COMMAND_COUNT; index++) {
+				char name[16];
+				std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
+				CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
+			}
+			Use_Command_Icons();
+			Map.Place_Command_Buttons();
+			layout = Command_Bar_Layout();
+		}
 		Draw_Hud_Frame(*CompositeSurface, Command_Bar_Frame());
-		if (IsCommandBarOpen) {
+		if (IsCommandBarOpen && !IsCommandIcons) {
 			for (int slot = 0; slot < layout.Slots; slot++) {
 				Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
 			}

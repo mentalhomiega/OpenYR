@@ -6,7 +6,7 @@ Run it from anywhere: python tools/hudicons/make_hud_icons.py
 """
 import math
 import os
-from PIL import Image, ImageDraw, ImageFilter, ImageChops
+from PIL import Image, ImageDraw, ImageFilter, ImageChops, ImageFont
 
 SS = 8  # supersampling factor
 
@@ -118,6 +118,42 @@ def glyph(kind, W, H):
                 points.append(P(14 + r * math.cos(a + da), 14 + r * math.sin(a + da)))
         d.polygon(points, fill=255)
         d.ellipse((*P(9.8, 9.8), *P(18.2, 18.2)), fill=0)
+    elif kind in ('team1', 'team2', 'team3'):  # the team number
+        try:
+            font = ImageFont.truetype('arialbd.ttf', int(19 * u))
+        except OSError:
+            font = ImageFont.load_default()
+        d.text(P(14, 14.5), kind[-1], fill=255, font=font, anchor='mm')
+    elif kind == 'typeselect':  # a grid of units, as Yuri's Revenge's button
+        for gx in (8, 14, 20):
+            for gy in (8, 14, 20):
+                d.rounded_rectangle((*P(gx - 2.3, gy - 2.3), *P(gx + 2.3, gy + 2.3)), 1 * u, fill=255)
+    elif kind == 'deploy':  # four arrows pointing out
+        for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+            tip = P(14 + dx * 10, 14 + dy * 10)
+            d.polygon([tip, P(14 + dx * 10, 14 + dy * 4), P(14 + dx * 4, 14 + dy * 10)], fill=255)
+            d.line((P(14 + dx * 2.5, 14 + dy * 2.5), P(14 + dx * 7.5, 14 + dy * 7.5)), fill=255, width=int(2.6 * u))
+    elif kind == 'attackmove':  # a crosshair
+        d.ellipse((*P(6.5, 6.5), *P(21.5, 21.5)), outline=255, width=int(2.4 * u))
+        for a, b in (((14, 3), (14, 10)), ((14, 18), (14, 25)), ((3, 14), (10, 14)), ((18, 14), (25, 14))):
+            d.line((P(*a), P(*b)), fill=255, width=int(2.4 * u))
+        d.ellipse((*P(12.3, 12.3), *P(15.7, 15.7)), fill=255)
+    elif kind == 'guard':  # a shield with a bar
+        d.polygon([P(14, 5), P(22, 8), P(21, 16), P(14, 23), P(7, 16), P(6, 8)], fill=255)
+        d.polygon([P(14, 8.5), P(19, 10.3), P(18.4, 15.5), P(14, 19.5)], fill=0)
+    elif kind == 'stop':  # an octagon
+        pts = [P(14 + 9.5 * math.cos(math.pi / 8 + i * math.pi / 4), 14 + 9.5 * math.sin(math.pi / 8 + i * math.pi / 4)) for i in range(8)]
+        d.polygon(pts, fill=255)
+        d.rectangle((*P(9.5, 12.6), *P(18.5, 15.4)), fill=0)
+    elif kind == 'planning':  # a route of waypoints ending in a flag
+        d.line((P(5, 22), P(12, 15), P(17, 19), P(21, 11)), fill=255, width=int(2 * u), joint='curve')
+        for x, y in ((5, 22), (12, 15), (17, 19)):
+            d.ellipse((*P(x - 2.4, y - 2.4), *P(x + 2.4, y + 2.4)), fill=255)
+        d.line((P(21, 4), P(21, 13)), fill=255, width=int(2 * u))
+        d.polygon([P(21.5, 4), P(26, 6.3), P(21.5, 8.6)], fill=255)
+    elif kind == 'cheer':  # a star
+        pts = [P(14 + (10.5 if i % 2 == 0 else 4.4) * math.cos(-math.pi / 2 + i * math.pi / 5), 14.8 + (10.5 if i % 2 == 0 else 4.4) * math.sin(-math.pi / 2 + i * math.pi / 5)) for i in range(10)]
+        d.polygon(pts, fill=255)
     elif kind == 'up':
         d.polygon([P(14, 7), P(23, 19), P(5, 19)], fill=255)
     elif kind == 'down':
@@ -133,7 +169,9 @@ def icon(kind, w, h, side, radius=4):
 
 # The file stem for each icon; the side's letter follows HUD.
 ICONS = [('T0', 'build'), ('T1', 'defense'), ('T2', 'infantry'), ('T3', 'vehicle'),
-         ('RP', 'repair'), ('SL', 'sell'), ('PW', 'power'), ('BC', 'beacon'), ('OP', 'options'), ('UP', 'up'), ('DN', 'down')]
+         ('RP', 'repair'), ('SL', 'sell'), ('PW', 'power'), ('BC', 'beacon'), ('OP', 'options'), ('C1', 'team1'), ('C2', 'team2'), ('C3', 'team3'), ('TS', 'typeselect'), ('DP', 'deploy'),
+         ('AM', 'attackmove'), ('GD', 'guard'), ('ST', 'stop'), ('PL', 'planning'), ('CH', 'cheer'),
+         ('UP', 'up'), ('DN', 'down')]
 LETTERS = {'allied': 'A', 'soviet': 'S', 'yuri': 'Y'}
 SIZES = {'up': 24, 'down': 24}
 
