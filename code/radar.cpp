@@ -218,6 +218,10 @@ void RadarClass::One_Time(void)
 		RadWidth = SidebarClass::SIDE_WIDTH;
 		RadX = box.X + (box.Width - RadWidth) / 2;
 		RadY = box.Y + (box.Height - RadHeight) / 2;
+		RadOffX = box.X + 1 - RadX;
+		RadOffY = box.Y + 1 - RadY;
+		RadPWidth = RadIWidth = box.Width - 2;
+		RadPHeight = RadIHeight = box.Height - 2;
 	}
 
 	BASECLASS::One_Time();
@@ -233,6 +237,20 @@ void RadarClass::One_Time(void)
 														GadgetClass::FlagEnum::RIGHTPRESS |
 														GadgetClass::FlagEnum::RIGHTRELEASE |
 														GadgetClass::FlagEnum::RIGHTUP));
+}
+
+
+/// <summary>
+/// Draws the radar's housing fully open, the backdrop the radar picture and the player names
+/// draw over. The modern panel's radar picture fills its box, so there it is an empty well.
+/// </summary>
+void RadarClass::Draw_Open_Housing(void)
+{
+	if (Modern_Interface()) {
+		Draw_Hud_Well(*SidebarSurface, Hud_Layout().Radar);
+	} else {
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+	}
 }
 
 
@@ -367,7 +385,7 @@ void RadarClass::Draw_It(bool forced)
 				if (IsToRedraw == true) {
 					IsToRedraw = false;
 					if (FullRedraw) {
-						Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+						Draw_Open_Housing();
 						Draw_Names();
 						LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 					} else {
@@ -394,7 +412,9 @@ void RadarClass::Draw_It(bool forced)
 	if (FullRedraw == true) {
 		FullRedraw = false;
 		Map.OptionsButton.Draw_Me(true);
-		Map.DiplomacyButton.Draw_Me(true);
+		if (!Modern_Interface()) {
+			Map.DiplomacyButton.Draw_Me(true);
+		}
 		Map.Repair.Draw_Me(true);
 		Map.Upgrade.Draw_Me(true);
 	}
@@ -786,7 +806,7 @@ void RadarClass::Draw_Names(void)
 		return;
 	}
 
-	Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+	Draw_Open_Housing();
 
 	y = RadY + RadOffY+(2);
 
@@ -953,13 +973,13 @@ void RadarClass::Compute_Radar_Image(void)
 	RadarRect.Height = BackgroundSurface->Get_Height();
 
 	RadarRect.X = RadX + RadOffX;
-	if (RadarRect.Width < 140) {
-		RadarRect.X += (140 - RadarRect.Width) / 2;
+	if (RadarRect.Width < RadIWidth) {
+		RadarRect.X += (RadIWidth - RadarRect.Width) / 2;
 	}
 
 	RadarRect.Y = RadY + RadOffY;
-	if (RadarRect.Height < 108) {
-		RadarRect.Y += (108 - RadarRect.Height) / 2;
+	if (RadarRect.Height < RadIHeight) {
+		RadarRect.Y += (RadIHeight - RadarRect.Height) / 2;
 	}
 
 	if (RadarSurface != NULL) {
@@ -1025,24 +1045,24 @@ Rect RadarClass::Compute_Background(Rect const & cell_rect, Rect & update_rect, 
 		/*
 		 * If the drawing surface does not exist, calculate zoom and surface size.
 		 */
-		zoom_scale = 140 / (float)rect1_width;
+		zoom_scale = RadIWidth / (float)rect1_width;
 		float scaled_height = cell_rect.Height * zoom_scale;
-		if (scaled_height < 108) {
+		if (scaled_height < RadIHeight) {
 
 			/*
 			 * Height fits within limit.
 			 */
-			surface_width = 140;
+			surface_width = RadIWidth;
 			surface_height = scaled_height;
 		} else {
 
 			/*
 			 * Otherwise scale to fit height and adjust width.
 			 */
-			zoom_scale = 108 / (float)cell_rect.Height;
+			zoom_scale = RadIHeight / (float)cell_rect.Height;
 			float scaled_width = rect1_width * zoom_scale;
 			surface_width = scaled_width;
-			surface_height = 108;
+			surface_height = RadIHeight;
 		}
 		ZoomFactor = zoom_scale;
 
@@ -2232,7 +2252,7 @@ void RadarClass::Render_Radar(void)
 		if (is_tactical) {
 			if (FullRedraw) {
 				LastDrawRect = RadarRect;
-				Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+				Draw_Open_Housing();
 			}
 
 			if (LastDrawRect.Is_Valid()) {
@@ -2285,7 +2305,7 @@ void RadarClass::Play_Movie(void)
 	}
 
 	if (FullRedraw == true) {
-		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+		Draw_Open_Housing();
 		LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 		DebugString("Radar: Movie full redrawn\n");
 	}

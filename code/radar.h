@@ -143,6 +143,7 @@ class RadarClass: public DisplayClass
 		//void Player_Names(bool on);
 		bool Is_Player_Names(void);
 		void Draw_Names(void);
+		void Draw_Open_Housing(void);
 		void Noop(int, int);
 		void Compute_Radar_Image(void);
 		Rect Compute_Background(Rect const & cell_rect, Rect & update_rect, bool fill_in);

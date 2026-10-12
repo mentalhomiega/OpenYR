@@ -148,6 +148,7 @@ class SidebarClass : public PowerClass
 		// The two buttons on the piece above the radar.
 		static ShapeButtonClass OptionsButton;
 		static ShapeButtonClass DiplomacyButton;
+		static ShapeButtonClass BeaconButton;
 		void Recalc(void);
 		bool Factory_Link(FactoryClass * factory, RTTIType type, int id);
 		bool Is_On_Sidebar(RTTIType type, int id) const;
@@ -163,6 +164,7 @@ class SidebarClass : public PowerClass
 		void Add_Tool_Tips(void);
 		void Fit_Panel_To_Strip(void);
 		void Flash_Ready_Tabs(void);
+		void Use_Hud_Icons(void);
 
 		/*
 		**	Each side strip is managed by this class. It handles all strip specific

@@ -153,7 +153,8 @@ enum ButtonNumberType {
 
 	BUTTON_TAB = 230,		// One per tab, after the strips' scroll and select buttons.
 	BUTTON_OPTIONS = BUTTON_TAB + 4,
-	BUTTON_DIPLOMACY
+	BUTTON_DIPLOMACY,
+	BUTTON_BEACON
 };
 
 /*
@@ -168,8 +169,12 @@ ShapeButtonClass SidebarClass::TabButton[COLUMNS];
 
 // The modern panel's tabs lit on the current blink, one bit per tab.
 static unsigned TabFlashMask = 0;
+
+// Do the modern panel's tabs show the icons drawn for it, rather than Yuri's Revenge's art?
+static bool TabIcons = false;
 ShapeButtonClass SidebarClass::OptionsButton;
 ShapeButtonClass SidebarClass::DiplomacyButton;
+ShapeButtonClass SidebarClass::BeaconButton;
 ShapeButtonClass SidebarClass::StripClass::UpButton[COLUMNS];
 ShapeButtonClass SidebarClass::StripClass::DownButton[COLUMNS];
 SidebarClass::StripClass::SelectClass
@@ -587,6 +592,48 @@ void SidebarClass::Init_For_House(void)
 		TabButton[i].Set_Shape((ShapeSet *)MFCD::Retrieve(name));
 		TabButton[i].ShapeDrawer = SidebarDrawer;
 	}
+
+	TabIcons = false;
+	if (Modern_Interface()) {
+		Use_Hud_Icons();
+	}
+}
+
+
+/// <summary>
+/// Gives the modern build panel's tabs, repair and sell buttons and scroll buttons the icons
+/// drawn for it, where the ui folder has them. A button without one keeps its Yuri's Revenge art.
+/// </summary>
+void SidebarClass::Use_Hud_Icons(void)
+{
+	auto use = [](ShapeButtonClass & button, char const * name) {
+		ShapeSet const * shape = Hud_Icon(name);
+		if (shape != NULL) {
+			button.Set_Shape(const_cast<ShapeSet *>(shape));
+		}
+		return(shape != NULL);
+	};
+
+	use(Repair, "RP");
+	use(Upgrade, "SL");
+	use(Power, "PW");
+	BeaconButton.IsSticky = true;
+	BeaconButton.ID = BUTTON_BEACON;
+	BeaconButton.DrawOnSidebar = true;
+	BeaconButton.ShapeDrawer = SidebarDrawer;
+	use(BeaconButton, "BC");
+	if (use(OptionsButton, "OP")) {
+		OptionsButton.Label.clear();
+	}
+	bool tabs = true;
+	for (int i = 0; i < COLUMNS; i++) {
+		use(StripClass::UpButton[i], "UP");
+		use(StripClass::DownButton[i], "DN");
+		char name[4];
+		sprintf(name, "T%d", i);
+		tabs = use(TabButton[i], name) && tabs;
+	}
+	TabIcons = tabs;
 }
 
 
@@ -1046,6 +1093,11 @@ void SidebarClass::Draw_It(bool complete)
 
 		Repair.Draw_Me(true);
 		Upgrade.Draw_Me(true);
+		if (Modern_Interface()) {
+			Power.Draw_Me(true);
+			BeaconButton.Draw_Me(true);
+			OptionsButton.Draw_Me(true);
+		}
 		for (int index = 0; index < COLUMNS; index++) {
 			TabButton[index].Draw_Me(true);
 		}
@@ -1093,6 +1145,12 @@ void SidebarClass::Draw_It(bool complete)
 /// </summary>
 void SidebarClass::Draw_Build_Area(void)
 {
+	static ShapeSet const * _icon_set = NULL;
+	if (Hud_Icon("T0") != _icon_set) {
+		_icon_set = Hud_Icon("T0");
+		Use_Hud_Icons();
+	}
+
 	HudLayout const layout = Hud_Layout();
 	int const left = layout.Tabs.X - 1;
 	int const top = layout.Grid.Y - 2;
@@ -1101,12 +1159,17 @@ void SidebarClass::Draw_Build_Area(void)
 
 	for (int index = 0; index < COLUMNS; index++) {
 		ShapeButtonClass & tab = TabButton[index];
-		tab.IsCutout = true;
-		tab.OutlinePixel = -1;
+		int outline = -1;
 		if (index == ActiveTab) {
-			tab.OutlinePixel = Hud_Side_Pixel();
+			outline = Hud_Side_Pixel();
 		} else if ((TabFlashMask & (1u << index)) != 0) {
-			tab.OutlinePixel = Hud_Flash_Pixel();
+			outline = Hud_Flash_Pixel();
+		}
+		tab.IsCutout = !TabIcons;
+		tab.OutlinePixel = TabIcons ? -1 : outline;
+		if (TabIcons && outline != -1) {
+			int const pixel = (index == ActiveTab) ? Hud_Active_Pixel() : outline;
+			Draw_Hud_Ring(*SidebarSurface, Rect(tab.X + tab.DrawOffsetX, tab.Y + tab.DrawOffsetY, tab.Width, tab.Height), HUD_ICON_RADIUS, pixel, 2);
 		}
 	}
 
@@ -1248,6 +1311,16 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 		if (input == (BUTTON_REPAIR|KN_BUTTON)) {
 			Repair_Mode_Control(-1);
+		}
+
+		// The modern panel shows the power and beacon buttons before they do anything.
+		if (Modern_Interface() && (input == (BUTTON_POWER|KN_BUTTON) || input == (BUTTON_BEACON|KN_BUTTON))) {
+			for (ShapeButtonClass * button : {&Power, &BeaconButton}) {
+				button->IsPressed = false;
+				button->Turn_Off();
+				button->Flag_To_Redraw();
+			}
+			input = KN_NONE;
 		}
 
 		if (input == (BUTTON_POWER|KN_BUTTON)) {
@@ -1403,8 +1476,15 @@ bool SidebarClass::Activate(int control)
 			}
 			OptionsButton.Zap();
 			Add_A_Button(OptionsButton);
-			DiplomacyButton.Zap();
-			Add_A_Button(DiplomacyButton);
+			if (Modern_Interface()) {
+				Power.Zap();
+				Add_A_Button(Power);
+				BeaconButton.Zap();
+				Add_A_Button(BeaconButton);
+			} else {
+				DiplomacyButton.Zap();
+				Add_A_Button(DiplomacyButton);
+			}
 			Column[ActiveTab].Activate();
 			Background.Zap();
 			Add_A_Button(Background);
@@ -1418,7 +1498,12 @@ bool SidebarClass::Activate(int control)
 				Remove_A_Button(TabButton[index]);
 			}
 			Remove_A_Button(OptionsButton);
-			Remove_A_Button(DiplomacyButton);
+			if (Modern_Interface()) {
+				Remove_A_Button(Power);
+				Remove_A_Button(BeaconButton);
+			} else {
+				Remove_A_Button(DiplomacyButton);
+			}
 			Remove_A_Button(Background);
 			Column[ActiveTab].Deactivate();
 			Remove_A_Button(RadarButton);
@@ -3080,17 +3165,18 @@ void SidebarClass::Reposition_Panel(void)
 		return(rect.Y + (rect.Height - height) / 2);
 	};
 
-	int x = layout.Icons.X + 2;
-	for (ShapeButtonClass * button : {&Repair, &Upgrade}) {
-		place(*button, x, middle(layout.Icons, button->Height));
-		x += button->Width + 4;
+	int x = layout.Buttons.X;
+	for (ShapeButtonClass * button : {&BeaconButton, &Upgrade, &Power, &Repair}) {
+		place(*button, x + (HUD_BUTTON_SIZE - button->Width) / 2, middle(layout.Buttons, button->Height));
+		x += HUD_BUTTON_SIZE + HUD_BUTTON_GAP;
 	}
-	OptionsButton.Label = Panel_Text("GUI:Options", "Options");
-	place(OptionsButton, layout.Options.X, layout.Options.Y);
-	OptionsButton.Set_Size(layout.Options.Width, layout.Options.Height);
-	DiplomacyButton.Label = Panel_Text("GUI:Diplomacy", "Diplomacy");
-	place(DiplomacyButton, layout.Diplomacy.X, layout.Diplomacy.Y);
-	DiplomacyButton.Set_Size(layout.Diplomacy.Width, layout.Diplomacy.Height);
+	if (OptionsButton.Label.empty() && OptionsButton.Get_Shape_Data() != NULL) {
+		place(OptionsButton, layout.Options.X, layout.Options.Y);
+	} else {
+		OptionsButton.Label = Panel_Text("GUI:Options", "Options");
+		place(OptionsButton, layout.Options.X - 36, layout.Options.Y);
+		OptionsButton.Set_Size(layout.Options.Width + 36, layout.Options.Height);
+	}
 
 	int y = layout.Tabs.Y;
 	for (int index = 0; index < COLUMNS; index++) {
@@ -3116,8 +3202,8 @@ void SidebarClass::Reposition_Panel(void)
 		}
 	}
 
-	Background.Set_Position(origin.X, origin.Y + layout.Icons.Y);
-	Background.Set_Size(layout.Panel.Width, layout.Panel.Height - layout.Icons.Y);
+	Background.Set_Position(origin.X, origin.Y + layout.Readouts.Y);
+	Background.Set_Size(layout.Panel.Width, layout.Panel.Height - layout.Readouts.Y);
 	Background.Flag_To_Redraw();
 }
 
@@ -3158,6 +3244,16 @@ void SidebarClass::Add_Tool_Tips(void)
 		tooltip.Region.Set(Upgrade.X, Upgrade.Y, Upgrade.Width, Upgrade.Height);
 		ToolTips->Remove(tooltip.ID);
 		ToolTips->Add(&tooltip);
+
+		if (Modern_Interface()) {
+			for (ShapeButtonClass const * button : {&Power, &BeaconButton, &OptionsButton}) {
+				tooltip.ID = button->ID;
+				tooltip.Text = TXT_NONE;
+				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
+				ToolTips->Remove(tooltip.ID);
+				ToolTips->Add(&tooltip);
+			}
+		}
 	}
 }
 
@@ -3322,6 +3418,21 @@ void SidebarClass::Flag_Strips_To_Redraw(void)
 /// <returns>Returns with a pointer to the help text, or NULL if the gadget has none.</returns>
 const char * SidebarClass::Help_Text(int id)
 {
+	if (Modern_Interface()) {
+		static std::string _text;
+		switch (id) {
+			case BUTTON_POWER:
+				_text = Panel_Text("GUI:PowerDown", "Power down") + "\n" + Panel_Text("GUI:ComingSoon", "Coming soon");
+				return(_text.c_str());
+			case BUTTON_BEACON:
+				_text = Panel_Text("GUI:PlaceBeacon", "Place beacon") + "\n" + Panel_Text("GUI:ComingSoon", "Coming soon");
+				return(_text.c_str());
+			case BUTTON_OPTIONS:
+				_text = Panel_Text("GUI:Options", "Options");
+				return(_text.c_str());
+		}
+	}
+
 	const char *text = BASECLASS::Help_Text(id);
 	if (text == NULL) {
 		id = id - GADGET_CAMEO;

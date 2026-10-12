@@ -39,12 +39,11 @@ bool Point_Over_Map(Point2D const & point);
 */
 struct HudLayout {
 	Rect Panel;
-	Rect Status;		// The options button, the credits and the diplomacy button.
-	Rect Options;
-	Rect Credits;
-	Rect Diplomacy;
+	Rect Buttons;		// The beacon, sell, power and repair buttons, left to right.
+	Rect Options;		// The options button, right of the others.
 	Rect Radar;
-	Rect Icons;			// The repair and sell buttons and the power readout.
+	Rect Readouts;		// The credits and the power readout.
+	Rect Credits;
 	Rect PowerReadout;
 	Rect Power;			// The power bar, beside the tabs.
 	Rect Tabs;			// The category tabs, one above the other.
@@ -59,7 +58,10 @@ enum HudEnums {
 	HUD_GRID_COLUMNS=3,
 	HUD_TAB_WIDTH=28,
 	HUD_MIN_ROWS=4,
-	HUD_TIP_PADDING=3
+	HUD_TIP_PADDING=3,
+	HUD_BUTTON_SIZE=28,
+	HUD_BUTTON_GAP=4,
+	HUD_ICON_RADIUS=4		// The corner radius of the icons in the ui folder.
 };
 
 HudLayout Hud_Layout(void);
@@ -81,8 +83,16 @@ void Draw_Hud_Highlight(Surface & surface, Rect const & rect);
 // sidebar sits cleanly on a panel. An outline pixel other than -1 traces the shape one pixel outside it.
 void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * shape, int frame, Point2D const & at, int width, int height, int outline);
 
+// Draws a ring of the given thickness just outside a rounded tile of the given corner radius.
+void Draw_Hud_Ring(Surface & surface, Rect const & tile, int radius, int pixel, int thickness);
+
+// The modern interface's icon for the player's side, such as "T0" for the first tab, from the
+// sheets in the ui folder. NULL when there is no sheet for it.
+ShapeSet const * Hud_Icon(char const * name);
+
 // The hicolor pixels for an outline in the player's side colour and for a bright attention outline.
 int Hud_Side_Pixel(void);
+int Hud_Active_Pixel(void);		// The side colour lightened, to mark the chosen icon.
 int Hud_Flash_Pixel(void);
 
 // Fills a rectangle with the panel background colour.

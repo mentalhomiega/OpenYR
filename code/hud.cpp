@@ -11,6 +11,7 @@
 
 #include "hud.h"
 
+#include "_mixfile.h"
 #include "_rect.h"
 #include "bsurface.h"
 #include "csf.h"
@@ -18,6 +19,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
+#include "mixfile.h"
 #include "houstype.h"
 #include "sidebar.h"
 #include "shapeset.h"
@@ -26,6 +28,8 @@
 #include "draw.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdio>
 
 
 bool Modern_Interface(void)
@@ -96,15 +100,19 @@ HudLayout Hud_Layout(void)
 	int const inner = HUD_PANEL_WIDTH - HUD_MARGIN * 2;
 
 	HudLayout layout {};
-	layout.Status = Rect(HUD_MARGIN, HUD_MARGIN, inner, 20);
-	layout.Options = Rect(layout.Status.X, layout.Status.Y, 64, layout.Status.Height);
-	layout.Diplomacy = Rect(layout.Status.X + layout.Status.Width - 64, layout.Status.Y, 64, layout.Status.Height);
-	layout.Credits = Rect(layout.Options.X + layout.Options.Width + 2, layout.Status.Y, layout.Diplomacy.X - 2 - (layout.Options.X + layout.Options.Width + 2), layout.Status.Height);
-	layout.Radar = Rect(HUD_MARGIN, layout.Status.Y + layout.Status.Height + 4, inner, 112);
-	layout.Icons = Rect(HUD_MARGIN, layout.Radar.Y + layout.Radar.Height + 4, inner, 32);
-	layout.PowerReadout = Rect(layout.Icons.X + layout.Icons.Width - 72, layout.Icons.Y + 6, 72, layout.Icons.Height - 12);
+	int const buttons = 4;
+	int const options_gap = 12;
+	int const row = buttons * HUD_BUTTON_SIZE + (buttons - 1) * HUD_BUTTON_GAP + options_gap + HUD_BUTTON_SIZE;
+	int const row_x = HUD_MARGIN + (inner - row) / 2;
+	layout.Buttons = Rect(row_x, HUD_MARGIN, row - options_gap - HUD_BUTTON_SIZE, HUD_BUTTON_SIZE);
+	layout.Options = Rect(row_x + row - HUD_BUTTON_SIZE, HUD_MARGIN, HUD_BUTTON_SIZE, HUD_BUTTON_SIZE);
+	layout.Radar = Rect(HUD_MARGIN, layout.Buttons.Y + layout.Buttons.Height + 4, inner, 112);
+	layout.Readouts = Rect(HUD_MARGIN, layout.Radar.Y + layout.Radar.Height + 4, inner, 20);
+	int const half = (inner - 4) / 2;
+	layout.Credits = Rect(layout.Readouts.X, layout.Readouts.Y, half, layout.Readouts.Height);
+	layout.PowerReadout = Rect(layout.Readouts.X + layout.Readouts.Width - half, layout.Readouts.Y, half, layout.Readouts.Height);
 
-	int const top = layout.Icons.Y + layout.Icons.Height + 6;
+	int const top = layout.Readouts.Y + layout.Readouts.Height + 6;
 	int const arrows = 26;
 	int const fit = (VisibleRect.Height - top - arrows - HUD_MARGIN) / object_height;
 	int const most = SidebarClass::StripClass::MAX_SLOTS / HUD_GRID_COLUMNS;
@@ -257,6 +265,44 @@ void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * 
 	}
 	if (source != NULL) _scratch->Unlock();
 	if (dest != NULL) surface.Unlock();
+}
+
+
+void Draw_Hud_Ring(Surface & surface, Rect const & tile, int radius, int pixel, int thickness)
+{
+	int const r = radius + thickness;
+	int const w = tile.Width + thickness * 2;
+	int const h = tile.Height + thickness * 2;
+	for (int y = 0; y < h; y++) {
+		for (int x = 0; x < w; x++) {
+			double const dx = x - std::clamp(x, r, w - 1 - r);
+			double const dy = y - std::clamp(y, r, h - 1 - r);
+			double const distance = std::sqrt(dx * dx + dy * dy);
+			if (distance >= radius + 0.5 && distance < r + 0.5) {
+				surface.Put_Pixel(Point2D(tile.X - thickness + x, tile.Y - thickness + y), pixel);
+			}
+		}
+	}
+}
+
+
+int Hud_Active_Pixel(void)
+{
+	RGBClass const & border = Side_Colors().Border;
+	return(DSurface::Build_Hicolor_Pixel(RGBClass((border.Get_Red() + 255) / 2, (border.Get_Green() + 255) / 2, (border.Get_Blue() + 255) / 2)));
+}
+
+
+ShapeSet const * Hud_Icon(char const * name)
+{
+	static char const _letters[] = {'A', 'S', 'Y'};
+	int side = (PlayerPtr != NULL) ? int(PlayerPtr->Class->Side) : 0;
+	if (side < 0 || side >= int(sizeof(_letters))) {
+		side = 0;
+	}
+	char file[16];
+	std::snprintf(file, sizeof(file), "HUD%c%s.SHP", _letters[side], name);
+	return(static_cast<ShapeSet const *>(MFCD::Retrieve(file)));
 }
 
 
