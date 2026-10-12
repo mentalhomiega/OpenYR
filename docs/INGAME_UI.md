@@ -17,13 +17,16 @@ At 1920x1080:
   - the repair and sell buttons, with the power used and the power made on the right;
   - the build area: the power bar on the left edge, the category tabs in a column beside it, and
     the cameos of the chosen tab in a grid of three columns. Each cameo carries its name and, while
-    it builds, the countdown shading. The grid is as tall as the screen allows, with the scroll
-    buttons under it.
+    it builds, the countdown shading. The grid has as many rows as the chosen tab's cameos need,
+    at least four and no more than the screen allows, with the scroll buttons under it. The panel
+    grows and shrinks with the grid.
 - **The command bar** is a slim framed strip in the bottom-left corner, holding the [AdvancedCommandBar]
   buttons as icons.
 - **Superweapon timers** and the mission timer stack in the bottom-left corner, above the command
   bar, one line each in the owner's colour.
 - **Messages** (chat, EVA text) keep their place at the top left of the map.
+- **Tooltips** for the build panel show on the map to the panel's left, level with the pointer,
+  in a frame of the side's colour.
 
 A tab with nothing to build is shown dimmed, as in Yuri's Revenge, and a tab whose cameo has
 finished building flashes.

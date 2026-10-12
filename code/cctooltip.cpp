@@ -48,7 +48,16 @@ bool CCToolTip::Update(ToolTipText * text)
 		text->TextHeight = std::max(rect.Height, text->TextHeight);
 
 		Rect * trect;
-		if (Options.IsSidebarOnRight == true) {
+		if (Modern_Interface()) {
+			// A tooltip for the build panel sits on the map to the panel's left, level with the pointer.
+			Rect const panel = Hud_Layout().Panel;
+			if (panel.Is_Point_Within(Point2D(text->Pos.X, text->Pos.Y))) {
+				text->Pos.X = panel.X - text->TextWidth - HUD_MARGIN;
+				text->Pos.Y = std::clamp(text->Pos.Y - text->TextHeight / 2, 0, std::max(0, int(ScreenTacticalRect.Height) - text->TextHeight));
+				return(true);
+			}
+			trect = &ScreenTacticalRect;
+		} else if (Options.IsSidebarOnRight == true) {
 			if (text->Pos.X <= Sidebar_Screen_X()) {
 				trect = &ScreenTacticalRect;
 			} else {
@@ -104,7 +113,9 @@ bool CCToolTip::Update(ToolTipText * text)
 void CCToolTip::Reset(const ToolTipText * text)
 {
 	bool redraw = false;
-	if (Options.IsSidebarOnRight == true) {
+	if (Modern_Interface()) {
+		// A modern tooltip lies on the map, which the map redraw below restores.
+	} else if (Options.IsSidebarOnRight == true) {
 		if (text->Pos.X >= Sidebar_Screen_X()) {
 			redraw = true;
 		}
@@ -151,7 +162,11 @@ void CCToolTip::Draw(const ToolTipText * text)
 	Point2D point = Point2D(text->Pos.X, text->Pos.Y);
 	Surface * surface = NULL;
 
-	if (Options.IsSidebarOnRight == true) {
+	if (Modern_Interface()) {
+		if (!UseSidebarSurface) {
+			surface = CompositeSurface;
+		}
+	} else if (Options.IsSidebarOnRight == true) {
 		int offset = Sidebar_Screen_X();
 		if (point.X + text->TextWidth <= offset) {
 			surface = CompositeSurface;
@@ -171,7 +186,11 @@ void CCToolTip::Draw(const ToolTipText * text)
 		}
 	}
 
-	if (surface != NULL) {
+	if (surface != NULL && Modern_Interface()) {
+		drawrect.Set(point.X, point.Y, text->TextWidth, text->TextHeight);
+		Draw_Hud_Frame(*surface, drawrect);
+		Fancy_Text_Print(text->Text, *surface, drawrect, Point2D(2, 1), Fetch_Scheme_By_Name("LightGrey"), TBLACK, Style);
+	} else if (surface != NULL) {
 		drawrect.Set(point.X, point.Y, text->TextWidth, text->TextHeight);
 		surface->Fill_Rect(drawrect, TBLACK);
 		surface->Draw_Rect(drawrect, DSurface::Build_Hicolor_Pixel(0, 255, 0));

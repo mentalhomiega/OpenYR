@@ -1096,6 +1096,9 @@ void SidebarClass::Draw_Build_Area(void)
 	int const bottom = layout.Arrows.Y + layout.Arrows.Height + 1;
 	Draw_Hud_Fill(*SidebarSurface, Rect(left, top, layout.Panel.Width - 2 - left, bottom - top));
 
+	ShapeButtonClass const & tab = TabButton[ActiveTab];
+	Draw_Hud_Frame(*SidebarSurface, Rect(tab.X + tab.DrawOffsetX - 2, tab.Y + tab.DrawOffsetY - 2, tab.Width + 4, tab.Height + 4));
+
 	for (int row = 0; row < layout.Rows; row++) {
 		for (int column = 0; column < HUD_GRID_COLUMNS; column++) {
 			Point2D const slot(layout.Grid.X + column * StripClass::Column_Step(), layout.Grid.Y + row * StripClass::OBJECT_HEIGHT);
@@ -1206,6 +1209,8 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 			Column[index].AI(input, xy_rel);
 		}
 	}
+
+	Fit_Panel_To_Strip();
 
 	if (IsSidebarActive) {
 
@@ -1989,6 +1994,19 @@ char const * SidebarClass::StripClass::Help_Text(int id)
 				return(NULL);
 			}
 
+			if (Modern_Interface()) {
+				static std::string _text;
+				_text = choice->Full_Name();
+				_text += "\n$" + std::to_string(choice->Cost_Of(PlayerPtr));
+				if (choice->RTTI == RTTI_BUILDINGTYPE) {
+					int const power = static_cast<BuildingTypeClass const *>(choice)->Power;
+					if (power != 0) {
+						_text += "\n" + Panel_Text("GUI:Power", "Power") + (power > 0 ? " +" : " ") + std::to_string(power);
+					}
+				}
+				return(_text.c_str());
+			}
+
 			if (Map.IsCameoText) {
 				sprintf(_buffer, Fetch_String(TXT_MONEY_FORMAT_1), choice->Cost_Of(PlayerPtr));
 			} else {
@@ -2183,7 +2201,12 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 				**	unavailable.
 				*/
 				if (darken) {
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, DarkenShapes, 0, Point2D(x, y), cliprect, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_DARKEN));
+					// The darkening shape is wider than a cameo, so the modern grid's narrower step clips it to the slot.
+					Rect darkrect = cliprect;
+					if (Modern_Interface()) {
+						darkrect = Intersect(Rect(cliprect.X + x, cliprect.Y + y, OBJECT_WIDTH, OBJECT_HEIGHT), cliprect);
+					}
+					Draw_Shape(*SidebarSurface, *SidebarDrawer, DarkenShapes, 0, Point2D(cliprect.X + x - darkrect.X, cliprect.Y + y - darkrect.Y), darkrect, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_DARKEN));
 				}
 			}
 
@@ -3118,6 +3141,44 @@ void SidebarClass::Add_Tool_Tips(void)
 
 
 /// <summary>
+/// Sizes the modern build panel's grid to the cameos of the shown tab, within the rows the screen
+/// allows, and moves the panel's buttons to match.
+/// </summary>
+void SidebarClass::Fit_Panel_To_Strip(void)
+{
+	if (!Modern_Interface()) {
+		return;
+	}
+
+	StripClass & strip = Column[ActiveTab];
+	int const before = Max_Visible();
+	if (!Set_Hud_Rows((strip.BuildableCount + HUD_GRID_COLUMNS - 1) / HUD_GRID_COLUMNS)) {
+		return;
+	}
+
+	int const after = Max_Visible();
+	if (IsSidebarActive) {
+		for (int i = before; i < after; i++) {
+			StripClass::SelectButton[ActiveTab][i].Zap();
+			Add_A_Button(StripClass::SelectButton[ActiveTab][i]);
+		}
+		for (int i = after; i < before; i++) {
+			Remove_A_Button(StripClass::SelectButton[ActiveTab][i]);
+		}
+	}
+
+	int const hidden = std::max(0, strip.BuildableCount - after);
+	int const last = (hidden + HUD_GRID_COLUMNS - 1) / HUD_GRID_COLUMNS * HUD_GRID_COLUMNS;
+	strip.TopIndex = std::clamp(strip.TopIndex, 0, last);
+
+	Reposition_Sidebar();
+	IsToRedraw = true;
+	strip.Flag_To_Redraw();
+	Flag_To_Redraw(GS_REDRAW_ALL);
+}
+
+
+/// <summary>
 /// Shows the strip of the tab given in place of the one shown before. The other strips keep
 /// building and counting down out of sight.
 /// </summary>
@@ -3139,6 +3200,7 @@ void SidebarClass::Set_Tab(int tab)
 	IsToRedraw = true;
 	Column[ActiveTab].Flag_To_Redraw();
 	Flag_To_Redraw();
+	Fit_Panel_To_Strip();
 }
 
 

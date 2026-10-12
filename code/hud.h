@@ -55,10 +55,15 @@ enum HudEnums {
 	HUD_PANEL_WIDTH=250,
 	HUD_MARGIN=6,
 	HUD_GRID_COLUMNS=3,
-	HUD_TAB_WIDTH=28
+	HUD_TAB_WIDTH=28,
+	HUD_MIN_ROWS=4
 };
 
 HudLayout Hud_Layout(void);
+
+// Asks for a build grid of this many rows, or of as many as fit for zero. The grid is never
+// shorter than HUD_MIN_ROWS or taller than the screen allows. Returns whether the layout changed.
+bool Set_Hud_Rows(int rows);
 
 // Draws a panel frame in the player's side colours: a dark fill inside a bright border.
 void Draw_Hud_Frame(Surface & surface, Rect const & rect);

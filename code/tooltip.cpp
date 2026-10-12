@@ -266,13 +266,14 @@ bool ToolTipManager::Find(unsigned id, ToolTip * tooltip)
 
 
 /// <summary>
-/// Finds the tooltip whose region covers the point specified.
-/// This routine is used to work out which tooltip, if any, the mouse is resting over.
+/// Finds the tooltip whose region covers the point specified. Where regions overlap, such as the
+/// map's and the modern interface's panels, the smallest wins; of equal ones, the earliest wins.
 /// </summary>
 /// <param name="xy">The point, in frame coordinates, to test the regions against.</param>
 /// <returns>Returns with a pointer to the tooltip found, or NULL if the point is bare.</returns>
 ToolTip const * ToolTipManager::Find_From_Pos(Point2D &xy)
 {
+	ToolTip const * found = NULL;
 	for (int i = 0; i < ToolTips.Count(); i++) {
 		Rect const & region = ToolTips[i]->Region;
 		if (xy.X >= region.X &&
@@ -280,10 +281,12 @@ ToolTip const * ToolTipManager::Find_From_Pos(Point2D &xy)
 			xy.Y >= region.Y &&
 			xy.Y <= region.Y + region.Height) {
 
-			return(ToolTips[i]);
+			if (found == NULL || region.Width * region.Height < found->Region.Width * found->Region.Height) {
+				found = ToolTips[i];
+			}
 		}
 	}
-	return(NULL);
+	return(found);
 }
 
 

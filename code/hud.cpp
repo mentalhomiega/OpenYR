@@ -75,6 +75,17 @@ bool Point_Over_Map(Point2D const & point)
 }
 
 
+static int HudRows = 0;
+
+
+bool Set_Hud_Rows(int rows)
+{
+	int const before = Hud_Layout().Rows;
+	HudRows = rows;
+	return(Hud_Layout().Rows != before);
+}
+
+
 HudLayout Hud_Layout(void)
 {
 	int const object_width = SidebarClass::StripClass::OBJECT_WIDTH;
@@ -94,7 +105,8 @@ HudLayout Hud_Layout(void)
 	int const arrows = 26;
 	int const fit = (VisibleRect.Height - top - arrows - HUD_MARGIN) / object_height;
 	int const most = SidebarClass::StripClass::MAX_SLOTS / HUD_GRID_COLUMNS;
-	layout.Rows = std::clamp(fit, 1, most);
+	int const room = std::clamp(fit, 1, most);
+	layout.Rows = (HudRows > 0) ? std::clamp(HudRows, std::min(int(HUD_MIN_ROWS), room), room) : room;
 
 	layout.Power = Rect(HUD_MARGIN, top, 12, layout.Rows * object_height);
 	layout.Tabs = Rect(layout.Power.X + layout.Power.Width + 2, top, HUD_TAB_WIDTH, layout.Rows * object_height);
