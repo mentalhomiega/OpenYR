@@ -632,7 +632,7 @@ void SlaveManagerClass::Free_All(TechnoClass * killer)
 		slave->Assign_Destination(NULL);
 		slave->Assign_Target(NULL);
 		if (house != NULL && house != slave->House) {
-			slave->Captured(house);
+			slave->Set_Owning_House(house, true);
 		}
 		slave->Assign_Mission(MISSION_GUARD);
 		freed = true;

@@ -1340,7 +1340,8 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 				techno->Tag != NULL &&
 				techno->Tag->Is_Trigger_Attached(trig)) {
 
-			techno->Captured(newowner);
+			// The action helper at 0x6E0AA0 (action 0x0E) calls SetOwningHouse without an announcement.
+			techno->Set_Owning_House(newowner, false);
 			success = true;
 		}
 	}
@@ -1381,7 +1382,8 @@ bool TActionClass::TAction_ALL_CHANGE_HOUSE(HouseClass * house, ObjectClass * , 
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		if (Technos[index]->House == house) {
-			Technos[index]->Captured(hptr);
+			// The action helper at 0x6E0B60 (action 0x24) calls SetOwningHouse without an announcement.
+			Technos[index]->Set_Owning_House(hptr, false);
 			retval = true;
 		}
 	}
