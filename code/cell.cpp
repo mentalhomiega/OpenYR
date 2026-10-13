@@ -4743,9 +4743,12 @@ void CellClass::Init_Drawer(LightConvertClass * drawer, int intensity, int ambie
 	if (drawer != NULL) {
 
 		/*
-		 * We got a drawer passed in, so use it.
+		 * We got a drawer passed in, so use it. A cell with no drawer yet, as after Init_Drawers,
+		 * holds no claim to release.
 		 */
-		Dec_Drawer_Ref_Count(Drawer);
+		if (Drawer != NULL) {
+			Dec_Drawer_Ref_Count(Drawer);
+		}
 		Drawer = drawer;
 		Inc_Drawer_Ref_Count(Drawer);
 
