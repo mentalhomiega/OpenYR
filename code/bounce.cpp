@@ -159,7 +159,7 @@ BounceResultType BounceClass::AI(void)
 	 * Clamp the velocity to the maximum allowed.
 	 */
 	if (max_velocity > 0.0) {
-		double speed = velocity.Length();
+		double speed = Gamemd_Magnitude_3D(velocity.X, velocity.Y, velocity.Z);
 		if (speed > max_velocity) {
 			velocity *= (float)(speed / speed);
 		}
