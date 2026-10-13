@@ -481,7 +481,7 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 		Cell nearby = Map.Nearby_Location(cell, TClass->Speed, Map.Get_Cell_Zone(PositionCell, mzone, IsOnBridge), mzone, IsOnBridge, Point2D(1, 1), false, true, check, true, PositionCell);
 		maxdist = std::max(abs(nearby.X - cell.X), abs(nearby.Y - cell.Y));
 
-		if (nearby != CELL_NONE && ::Distance(Coord(cell), Coord(nearby)) < dist) {
+		if (nearby != CELL_NONE && Gamemd_Distance(Coord(cell), Coord(nearby)) < dist) {
 
 			int adist = Search.Test_Cell_Walk(nearby, cell, this, Map[nearby].IsUnderBridge, Map[cell].IsUnderBridge, check ? MZONE_NORMAL : MZONE_NONE);
 			if (adist <= maxdist + 6) {
@@ -1388,11 +1388,11 @@ void FootClass::Approach_Target(void)
 					goal = ((TechnoClass *)TarCom)->Get_Cell_Ptr()->Cell_Coord();
 				}
 				Coord const goalcell = Map[goal].Cell_Coord();
-				int const apart = (int)std::sqrt((double)(here.Y - goalcell.Y) * (here.Y - goalcell.Y) + (double)(here.X - goalcell.X) * (here.X - goalcell.X));
+				int const apart = Gamemd_Length_2D(here.X - goalcell.X, here.Y - goalcell.Y);
 				if (apart <= 384) {
 					Coord const spot = subposition(*Get_Cell_Ptr(), TarCom->Center_Coord());
 					if (spot != COORD_NONE) {
-						int const nearer = (int)std::sqrt((double)(spot.Y - goal.Y) * (spot.Y - goal.Y) + (double)(spot.X - goal.X) * (spot.X - goal.X));
+						int const nearer = Gamemd_Length_2D(spot.X - goal.X, spot.Y - goal.Y);
 						if (nearer < apart) {
 							Locomotion->Force_Immediate_Destination(spot);
 							found = true;
@@ -1439,7 +1439,7 @@ void FootClass::Approach_Target(void)
 					bool reaches = TClass->In_Range(trycoord, TarCom, Get_Class_Weapon_Data(primary)->Weapon);
 					if (!reaches && TClass->IsCloseRange) {
 						Coord const at = TarCom->Center_Coord();
-						reaches = (int)std::sqrt((double)(trycoord.X - at.X) * (trycoord.X - at.X) + (double)(trycoord.Y - at.Y) * (trycoord.Y - at.Y)) < 307.2;
+						reaches = Gamemd_Length_2D(trycoord.X - at.X, trycoord.Y - at.Y) < 307.2;
 					}
 					if (reaches) {
 						trycell = trycoord.As_Cell();
