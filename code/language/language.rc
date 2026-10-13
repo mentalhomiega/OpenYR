@@ -1112,6 +1112,17 @@ BEGIN
     TXT_DEBUG_TOGGLE        "Debug: %s %s"
     TXT_DEBUG_ON            "ON"
     TXT_DEBUG_OFF           "OFF"
+    TXT_DEBUG_FULL_POWER    "Full Power"
+    TXT_DEBUG_FULL_POWER_DESC "Your power never counts as low, so production keeps full speed and structures stay online. Blackouts and drained power plants still apply. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_INVULNERABLE_UNITS "Invulnerable Units"
+    TXT_DEBUG_INVULNERABLE_UNITS_DESC "Your units and buildings take no damage; healing still applies. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_WIN_MISSION   "Win Mission"
+    TXT_DEBUG_WIN_MISSION_DESC "Ends the mission as a win, as a scenario's win action does. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_LOSE_MISSION  "Lose Mission"
+    TXT_DEBUG_LOSE_MISSION_DESC "Ends the mission as a loss, as a scenario's lose action does. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_CHARGE_SUPERWEAPONS "Charge Superweapons"
+    TXT_DEBUG_CHARGE_SUPERWEAPONS_DESC "Makes every superweapon you have ready now. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_RUN           "Debug: %s"
 END
 
 #endif    // English (U.S.) resources

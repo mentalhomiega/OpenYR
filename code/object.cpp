@@ -112,6 +112,7 @@
 #include "cell.h"
 #include "combat.h"
 #include "conquer.h"
+#include "debugmode.h"
 #include "foot.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -1637,6 +1638,12 @@ RadioMessageType ObjectClass::Receive_Message(RadioClass *, RadioMessageType mes
 ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool, HouseClass * sourcehouse)
 {
 	assert(this != NULL);
+
+	// The invulnerable cheat blocks damage only; a negative amount (healing) still applies.
+	if (damage > 0 && Debug_Cheat_Active_For(DebugCheat::INVULNERABLE_UNITS, Owner_HouseClass())) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
 
 	ResultType result = RESULT_NONE;
 	int oldstrength = Strength;

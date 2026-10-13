@@ -5871,6 +5871,116 @@ class DebugRevealMapCommandClass : public CommandClass
 };
 
 
+class DebugFullPowerCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugFullPower");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_FULL_POWER));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_FULL_POWER_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::FULL_POWER);
+		}
+};
+
+
+class DebugInvulnerableCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugInvulnerable");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_INVULNERABLE_UNITS));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_INVULNERABLE_UNITS_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::INVULNERABLE_UNITS);
+		}
+};
+
+
+class DebugWinMissionCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugWinMission");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_WIN_MISSION));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_WIN_MISSION_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Run(DebugCheat::WIN_MISSION);
+		}
+};
+
+
+class DebugLoseMissionCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugLoseMission");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_LOSE_MISSION));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_LOSE_MISSION_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Run(DebugCheat::LOSE_MISSION);
+		}
+};
+
+
+class DebugChargeSuperweaponsCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugChargeSuperweapons");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_CHARGE_SUPERWEAPONS));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_CHARGE_SUPERWEAPONS_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Run(DebugCheat::CHARGE_SUPERWEAPONS);
+		}
+};
+
+
 /// <summary>
 /// Gives a command a key when the keyboard file bound neither the command nor the key.
 /// </summary>
@@ -6073,6 +6183,16 @@ static void Init_Commands(void)
 	AllCommands.Add(debuginstantcmd);
 	CommandClass * debugrevealcmd = new DebugRevealMapCommandClass;
 	AllCommands.Add(debugrevealcmd);
+	CommandClass * debugfullpowercmd = new DebugFullPowerCommandClass;
+	AllCommands.Add(debugfullpowercmd);
+	CommandClass * debuginvulnerablecmd = new DebugInvulnerableCommandClass;
+	AllCommands.Add(debuginvulnerablecmd);
+	CommandClass * debugwincmd = new DebugWinMissionCommandClass;
+	AllCommands.Add(debugwincmd);
+	CommandClass * debuglosecmd = new DebugLoseMissionCommandClass;
+	AllCommands.Add(debuglosecmd);
+	CommandClass * debugchargecmd = new DebugChargeSuperweaponsCommandClass;
+	AllCommands.Add(debugchargecmd);
 
 	Init_Hotkeys();
 
@@ -6096,6 +6216,11 @@ static void Init_Commands(void)
 	Claim_Free_Key((KeyNumType)(KN_U | KN_CTRL_BIT | KN_SHIFT_BIT), debugunlockcmd);
 	Claim_Free_Key((KeyNumType)(KN_B | KN_CTRL_BIT | KN_SHIFT_BIT), debuginstantcmd);
 	Claim_Free_Key((KeyNumType)(KN_V | KN_CTRL_BIT | KN_SHIFT_BIT), debugrevealcmd);
+	Claim_Free_Key((KeyNumType)(KN_P | KN_CTRL_BIT | KN_SHIFT_BIT), debugfullpowercmd);
+	Claim_Free_Key((KeyNumType)(KN_G | KN_CTRL_BIT | KN_SHIFT_BIT), debuginvulnerablecmd);
+	Claim_Free_Key((KeyNumType)(KN_W | KN_CTRL_BIT | KN_SHIFT_BIT), debugwincmd);
+	Claim_Free_Key((KeyNumType)(KN_L | KN_CTRL_BIT | KN_SHIFT_BIT), debuglosecmd);
+	Claim_Free_Key((KeyNumType)(KN_K | KN_CTRL_BIT | KN_SHIFT_BIT), debugchargecmd);
 }
 
 

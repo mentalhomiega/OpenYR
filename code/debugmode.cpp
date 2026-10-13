@@ -23,6 +23,7 @@
 #include "options.h"
 #include "session.h"
 #include "stimer.h"
+#include "super.h"
 
 #include <cstdio>
 
@@ -43,6 +44,13 @@ bool Cheat_Logged[(int)DebugCheat::COUNT];
 bool Reveal_By_Cheat = false;
 
 
+// The cheats from WIN_MISSION on run once; the others are toggles.
+bool Is_One_Shot(DebugCheat cheat)
+{
+	return(cheat >= DebugCheat::WIN_MISSION);
+}
+
+
 char const * Cheat_Log_Name(DebugCheat cheat)
 {
 	switch (cheat) {
@@ -50,6 +58,11 @@ char const * Cheat_Log_Name(DebugCheat cheat)
 		case DebugCheat::UNLOCK_ALL: return("unlock everything");
 		case DebugCheat::INSTANT_BUILD: return("instant build");
 		case DebugCheat::REVEAL_MAP: return("reveal map");
+		case DebugCheat::FULL_POWER: return("full power");
+		case DebugCheat::INVULNERABLE_UNITS: return("invulnerable units");
+		case DebugCheat::WIN_MISSION: return("win mission");
+		case DebugCheat::LOSE_MISSION: return("lose mission");
+		case DebugCheat::CHARGE_SUPERWEAPONS: return("charge superweapons");
 		default: break;
 	}
 	return("unknown");
@@ -63,6 +76,11 @@ int Cheat_Name_TXT(DebugCheat cheat)
 		case DebugCheat::UNLOCK_ALL: return(TXT_DEBUG_UNLOCK_ALL);
 		case DebugCheat::INSTANT_BUILD: return(TXT_DEBUG_INSTANT_BUILD);
 		case DebugCheat::REVEAL_MAP: return(TXT_DEBUG_REVEAL_MAP);
+		case DebugCheat::FULL_POWER: return(TXT_DEBUG_FULL_POWER);
+		case DebugCheat::INVULNERABLE_UNITS: return(TXT_DEBUG_INVULNERABLE_UNITS);
+		case DebugCheat::WIN_MISSION: return(TXT_DEBUG_WIN_MISSION);
+		case DebugCheat::LOSE_MISSION: return(TXT_DEBUG_LOSE_MISSION);
+		case DebugCheat::CHARGE_SUPERWEAPONS: return(TXT_DEBUG_CHARGE_SUPERWEAPONS);
 		default: break;
 	}
 	return(TXT_NONE);
@@ -80,6 +98,42 @@ void Set_Reveal(bool on)
 		Reveal_By_Cheat = false;
 		Map.Shroud_The_Map(PlayerPtr);
 	}
+}
+
+
+// Re-runs the super weapon power check now, since it otherwise runs only when the power state changes.
+void Refresh_Power_States(void)
+{
+	PlayerPtr->RecalcPower = true;
+	PlayerPtr->Update_Present_Super_Weapons();
+}
+
+
+void Charge_Superweapons(HouseClass * house)
+{
+	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
+		if (house->SuperWeapon[index] != NULL) {
+			// Forced_Charge ignores a weapon the house lacks; false keeps it from speaking the ready line.
+			house->SuperWeapon[index]->Forced_Charge(false);
+		}
+	}
+	Map.Flag_Strips_To_Redraw();
+}
+
+
+void Log_First_Use(DebugCheat cheat)
+{
+	int const index = (int)cheat;
+	if (!Cheat_Logged[index]) {
+		Cheat_Logged[index] = true;
+		DebugString("Debug cheat used: %s\n", Cheat_Log_Name(cheat));
+	}
+}
+
+
+void Show_Cheat_Message(char const * text)
+{
+	Session.Messages.Add_Message(NULL, 0, text, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
 }
 
 }
@@ -116,18 +170,14 @@ void Debug_Top_Up_Credits(HouseClass * house)
 
 void Debug_Cheat_Toggle(DebugCheat cheat)
 {
-	if (!Debug_Mode_Active() || !GameActive || PlayerPtr == NULL) {
+	if (Is_One_Shot(cheat) || !Debug_Mode_Active() || !GameActive || PlayerPtr == NULL) {
 		return;
 	}
 
 	int const index = (int)cheat;
 	bool const on = !Cheat_On[index];
 	Cheat_On[index] = on;
-
-	if (!Cheat_Logged[index]) {
-		Cheat_Logged[index] = true;
-		DebugString("Debug cheat used: %s\n", Cheat_Log_Name(cheat));
-	}
+	Log_First_Use(cheat);
 
 	if (cheat == DebugCheat::REVEAL_MAP) {
 		Set_Reveal(on);
@@ -135,10 +185,45 @@ void Debug_Cheat_Toggle(DebugCheat cheat)
 	if (cheat == DebugCheat::UNLOCK_ALL) {
 		PlayerPtr->Production_Status_Changed();
 	}
+	if (cheat == DebugCheat::FULL_POWER) {
+		Refresh_Power_States();
+	}
 
 	char text[160];
 	std::snprintf(text, sizeof(text), Fetch_String(TXT_DEBUG_TOGGLE), Fetch_String(Cheat_Name_TXT(cheat)), Fetch_String(on ? TXT_DEBUG_ON : TXT_DEBUG_OFF));
-	Session.Messages.Add_Message(NULL, 0, text, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+	Show_Cheat_Message(text);
+}
+
+
+void Debug_Cheat_Run(DebugCheat cheat)
+{
+	if (!Is_One_Shot(cheat) || !Debug_Mode_Active() || !GameActive || PlayerPtr == NULL) {
+		return;
+	}
+
+	Log_First_Use(cheat);
+
+	// The scenario's win and lose actions call these for the player's house, so the game ends the same way.
+	switch (cheat) {
+		case DebugCheat::WIN_MISSION:
+			PlayerPtr->Flag_To_Win();
+			break;
+
+		case DebugCheat::LOSE_MISSION:
+			PlayerPtr->Flag_To_Lose();
+			break;
+
+		case DebugCheat::CHARGE_SUPERWEAPONS:
+			Charge_Superweapons(PlayerPtr);
+			break;
+
+		default:
+			break;
+	}
+
+	char text[160];
+	std::snprintf(text, sizeof(text), Fetch_String(TXT_DEBUG_RUN), Fetch_String(Cheat_Name_TXT(cheat)));
+	Show_Cheat_Message(text);
 }
 
 
@@ -154,11 +239,15 @@ void Debug_Cheats_Reset(void)
 
 void Debug_Mode_Set(bool on)
 {
+	bool const full_power = Debug_Cheat_Active(DebugCheat::FULL_POWER);
 	Options.DebugMode = on;
 	if (!on) {
 		if (GameActive && PlayerPtr != NULL) {
 			Set_Reveal(false);
 			PlayerPtr->Production_Status_Changed();
+			if (full_power) {
+				Refresh_Power_States();
+			}
 		}
 		Debug_Cheats_Reset();
 	}

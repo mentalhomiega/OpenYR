@@ -4250,6 +4250,8 @@ void HouseClass::Init_Data(int color, HousesType house, int credits)
  *=============================================================================================*/
 double HouseClass::Power_Fraction(void) const
 {
+	// The full power cheat reports full power for the player's house; the raw Power and Drain values stay as they are.
+	if (Debug_Cheat_Active_For(DebugCheat::FULL_POWER, this)) return(1);
 	if (Power >= Drain || Drain == 0) return(1);
 
 	if (Power) {
@@ -10692,12 +10694,9 @@ void HouseClass::Update_Present_Super_Weapons(void)
 					}
 				}
 
-				int power = Power;
-				int drain = Drain;
-				if (power < drain && drain != 0) {
-					if (power == 0 || (double)power / (double)drain < 1.0) {
-						enabled = false;
-					}
+				// Power_Fraction, not the raw Power and Drain, so that the full power cheat keeps these weapons available.
+				if (Power_Fraction() < 1.0) {
+					enabled = false;
 				}
 
 				if (present && !IsDefeated) {

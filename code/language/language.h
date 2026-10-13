@@ -904,6 +904,17 @@
 #define TXT_DEBUG_TOGGLE                1148
 #define TXT_DEBUG_ON                    1149
 #define TXT_DEBUG_OFF                   1150
+#define TXT_DEBUG_FULL_POWER            1157
+#define TXT_DEBUG_FULL_POWER_DESC       1158
+#define TXT_DEBUG_INVULNERABLE_UNITS    1159
+#define TXT_DEBUG_INVULNERABLE_UNITS_DESC 1160
+#define TXT_DEBUG_WIN_MISSION           1161
+#define TXT_DEBUG_WIN_MISSION_DESC      1162
+#define TXT_DEBUG_LOSE_MISSION          1163
+#define TXT_DEBUG_LOSE_MISSION_DESC     1164
+#define TXT_DEBUG_CHARGE_SUPERWEAPONS   1165
+#define TXT_DEBUG_CHARGE_SUPERWEAPONS_DESC 1166
+#define TXT_DEBUG_RUN                   1167
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046

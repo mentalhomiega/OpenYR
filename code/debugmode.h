@@ -12,14 +12,21 @@
 class HouseClass;
 
 
-// The tester debug cheats. Each cheat is on only while Debug_Mode_Active() holds, and the on
-// state is kept only for the current game: a new game or a loaded save starts with every cheat off.
+// The tester debug cheats. The first six are toggles, switched with Debug_Cheat_Toggle(). The
+// last three run once each, through Debug_Cheat_Run(). A toggle is on only while Debug_Mode_Active()
+// holds, and the on state is kept only for the current game: a new game or a loaded save starts
+// with every cheat off.
 enum class DebugCheat
 {
 	INFINITE_MONEY,
 	UNLOCK_ALL,
 	INSTANT_BUILD,
 	REVEAL_MAP,
+	FULL_POWER,
+	INVULNERABLE_UNITS,
+	WIN_MISSION,
+	LOSE_MISSION,
+	CHARGE_SUPERWEAPONS,
 	COUNT
 };
 
@@ -34,8 +41,12 @@ bool Debug_Cheat_Active(DebugCheat cheat);
 // Is the cheat on and the house the player's? The cheats act on the player's house only.
 bool Debug_Cheat_Active_For(DebugCheat cheat, HouseClass const * house);
 
-// Turns a cheat on or off and shows the result on screen. Does nothing unless Debug_Mode_Active().
+// Turns a toggle cheat on or off and shows the result on screen. Does nothing unless Debug_Mode_Active().
 void Debug_Cheat_Toggle(DebugCheat cheat);
+
+// Runs a one-shot cheat (win, lose or charge superweapons) and shows it on screen. Does nothing unless
+// Debug_Mode_Active().
+void Debug_Cheat_Run(DebugCheat cheat);
 
 // Raises the house's credits to the infinite money floor when the cheat is on for that house.
 void Debug_Top_Up_Credits(HouseClass * house);
