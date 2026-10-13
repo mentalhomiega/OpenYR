@@ -22,7 +22,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
-| `move <TypeID> <x> <y>` | Orders the player-controlled objects of that type (see `select`) to the cell |
+| `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
 | `view <x> <y>` | Centres the view on the cell |
 | `follow <TypeID>` | Keeps the view centred on one of the player's objects of that type, until the next `view` |

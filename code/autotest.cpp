@@ -414,6 +414,10 @@ void Move(std::string const & name, int x, int y)
 		InfantryClass * infantry = Infantry[index];
 		if (infantry->IsSelected) infantry->Assign_Destination(&Map[cell]), infantry->Assign_Mission(MISSION_MOVE);
 	}
+	for (int index = 0; index < Aircraft.Count(); index++) {
+		AircraftClass * aircraft = Aircraft[index];
+		if (aircraft->IsSelected) aircraft->Assign_Destination(&Map[cell]), aircraft->Assign_Mission(MISSION_MOVE);
+	}
 }
 
 
@@ -1666,15 +1670,6 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   water nearest %d,%d: %d,%d\n", from.X, from.Y, best.X, best.Y);
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
-	} else if (step.Command == "move") {
-		// move <TypeID> x y: orders every player object of the type to that cell.
-		for (int index = 0; index < Technos.Count(); index++) {
-			TechnoClass * techno = Technos[index];
-			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-				techno->Assign_Mission(MISSION_MOVE);
-				techno->Assign_Destination(&Map[Cell(step.X, step.Y)]);
-			}
-		}
 	} else if (step.Command == "enter") {
 		// enter <TypeID> x y: the player's objects of that type enter the structure, or else the vehicle, on that cell.
 		TechnoClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
