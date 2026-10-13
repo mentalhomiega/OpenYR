@@ -1363,8 +1363,9 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 	static char const * const COMBATDAMAGE = "CombatDamage";
 	if (ini.Is_Present(COMBATDAMAGE)) {
 		AmmoCrateDamage = ini.Get_Int(COMBATDAMAGE, "AmmoCrateDamage", AmmoCrateDamage);
-		OccupyDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier);
-		OpenToppedDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier);
+		// gamemd keeps these multipliers as float32 truncated from the INI value (RulesClass reader, (float) stores).
+		OccupyDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OccupyDamageMultiplier", OccupyDamageMultiplier));
+		OpenToppedDamageMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OpenToppedDamageMultiplier", OpenToppedDamageMultiplier));
 		OpenToppedRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenToppedRangeBonus", OpenToppedRangeBonus);
 		OpenTransportRangeBonus = ini.Get_Int(COMBATDAMAGE, "OpenTransport.RangeBonus", OpenTransportRangeBonus);
 		OpenTransportDamageMultiplier = ini.Get_Float(COMBATDAMAGE, "OpenTransport.DamageMultiplier", OpenTransportDamageMultiplier);
@@ -1378,7 +1379,7 @@ bool RulesClass::Combat_Damage(CCINIClass const & ini)
 		IsCanDetonateTimeBomb = ini.Get_Bool(COMBATDAMAGE, "CanDetonateTimeBomb", IsCanDetonateTimeBomb);
 		DeathWeapon = TGet_Class(ini, COMBATDAMAGE, "DeathWeapon", DeathWeapon);
 		IvanIconFlickerRate = ini.Get_Int(COMBATDAMAGE, "IvanIconFlickerRate", IvanIconFlickerRate);
-		OccupyROFMultiplier = ini.Get_Float(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier);
+		OccupyROFMultiplier = Truncate_To_Single(ini.Get_Double(COMBATDAMAGE, "OccupyROFMultiplier", OccupyROFMultiplier));
 		OccupyWeaponRange = ini.Get_Int(COMBATDAMAGE, "OccupyWeaponRange", OccupyWeaponRange);
 		IronCurtainDuration = ini.Get_Int(COMBATDAMAGE, "IronCurtainDuration", IronCurtainDuration);
 		PsychicRevealRadius = ini.Get_Int(COMBATDAMAGE, "PsychicRevealRadius", PsychicRevealRadius);
@@ -1594,9 +1595,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsShroudedSubteranneanMovesAllowed = ini.Get_Bool(GENERAL, "AllowShroudedSubteranneanMoves", IsShroudedSubteranneanMovesAllowed);
 		AircraftFogReveal = ini.Get_Int(GENERAL, "AircraftFogReveal", AircraftFogReveal);
 		MinLowPowerProductionSpeed = ini.Get_Float(GENERAL, "MinLowPowerProductionSpeed", MinLowPowerProductionSpeed);
-		MaxLowPowerProductionSpeed = ini.Get_Float(GENERAL, "MaxLowPowerProductionSpeed", MaxLowPowerProductionSpeed);
+		MaxLowPowerProductionSpeed = Truncate_To_Single(ini.Get_Double(GENERAL, "MaxLowPowerProductionSpeed", MaxLowPowerProductionSpeed));
 		LowPowerPenaltyModifier = ini.Get_Float(GENERAL, "LowPowerPenaltyModifier", LowPowerPenaltyModifier);
-		MultipleFactory = ini.Get_Float(GENERAL, "MultipleFactory", MultipleFactory);
+		MultipleFactory = Truncate_To_Single(ini.Get_Double(GENERAL, "MultipleFactory", MultipleFactory));
 		MultipleFactoryCap = ini.Get_Int(GENERAL, "MultipleFactoryCap", MultipleFactoryCap);
 		CraterLevel = ini.Get_Int(GENERAL, "CraterLevel", CraterLevel);
 		TreeFlammability = ini.Get_Float(GENERAL, "TreeFlammability", TreeFlammability);
