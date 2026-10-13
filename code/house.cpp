@@ -5845,11 +5845,13 @@ ZoneType HouseClass::Which_Zone(Coord const & coord) const
 {
 	if (coord == COORD_NONE) return(ZONE_NONE);
 
-	int distance = Gamemd_Distance(Center, coord);
+	// gamemd 0x4FFB20 measures the zone from the starting cell.
+	Coord const start = Starting_Coord_Or_Default();
+	int distance = Gamemd_Distance(start, coord);
 	if (distance <= Radius) return(ZONE_CORE);
 	if (distance > Radius*4) return(ZONE_NONE);
 
-	Dir256 facing = Direction(Center, coord).As_Dir256();
+	Dir256 facing = Direction(start, coord).As_Dir256();
 	/// Both tests are inverted. ZONE_NORTH claims everything except the north wedge, and
 	/// the ZONE_SOUTH arm can never be true at all.
 	if (facing > DIR_NE && facing < DIR_NW) return(ZONE_NORTH);
@@ -5920,21 +5922,23 @@ ZoneType HouseClass::Which_Zone(Cell const & cell) const
  *=============================================================================================*/
 Cell HouseClass::Zone_Cell(ZoneType zone) const
 {
+	// gamemd 0x4FFDD0 offsets the edge zones from the starting cell (case 0 returns it for the core).
+	Coord const start = Starting_Coord_Or_Default();
 	switch (zone) {
 		case ZONE_CORE:
-			return(Center.As_Cell());
+			return(Starting_Cell_Or_Default());
 
 		case ZONE_NORTH:
-			return(Move_Coord(Center, DIR_N, Radius*3).As_Cell());
+			return(Move_Coord(start, DIR_N, Radius*3).As_Cell());
 
 		case ZONE_EAST:
-			return(Move_Coord(Center, DIR_E, Radius*3).As_Cell());
+			return(Move_Coord(start, DIR_E, Radius*3).As_Cell());
 
 		case ZONE_WEST:
-			return(Move_Coord(Center, DIR_W, Radius*3).As_Cell());
+			return(Move_Coord(start, DIR_W, Radius*3).As_Cell());
 
 		case ZONE_SOUTH:
-			return(Move_Coord(Center, DIR_S, Radius*3).As_Cell());
+			return(Move_Coord(start, DIR_S, Radius*3).As_Cell());
 
 		default:
 			break;
