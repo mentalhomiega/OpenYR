@@ -1,0 +1,15 @@
+; An AA-only structure (NASAM, slot 0 AA=yes AG=no) on a powered base shoots a computer Kirov that flies over it.
+; The structure gets no attack cursor on the Kirov (see aa-structure-cursor.txt), but its automatic scan still fires at it.
+30 command CenterBase
+35 reveal
+40 own GAPOWR 56 18
+45 own NASAM 62 18
+50 spawn ZEP 64 22
+150 airborne ZEP
+155 where ZEP
+160 count ZEP
+190 where ZEP
+220 where NASAM
+260 where ZEP
+300 count ZEP
+400 quit

@@ -1,0 +1,15 @@
+; An AA-only structure (NASAM, slot 0 AA=yes AG=no) beside a computer Kirov in the air and a computer tank on the ground.
+; Expected by gamemd BuildingClass::MouseOverObject (0x447210, AG read at 0x447394): no attack cursor on either,
+; because slot 0's projectile is AG=no and there is no airborne exception.
+30 command CenterBase
+35 reveal
+40 own NASAM 62 18
+50 spawn ZEP 64 22
+51 spawn MTNK 60 24
+150 airborne ZEP
+151 weapons NASAM
+152 canfire NASAM 64 22
+153 action NASAM 64 22
+154 canfire NASAM 60 24
+155 action NASAM 60 24
+200 quit

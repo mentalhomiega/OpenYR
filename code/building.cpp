@@ -4361,12 +4361,11 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 		}
 	}
 
-	// Offer the attack only where the weapon could take the shot, CTRL key or not (TechnoClass::MouseOverObject, 0x6FFEC0, IsCloseEnough).
+	// The attack cursor needs an anti-ground first weapon, whatever the target: an AA-only structure
+	// gets none even against an airborne object (BuildingClass::MouseOverObject, 0x447210, AG read at 0x447394).
+	// The weapon must also be able to take the shot (TechnoClass::MouseOverObject, 0x6FFEC0, IsCloseEnough).
 	if (action == ACTION_ATTACK && PrimaryWeapon != NULL) {
-		bool engageable = PrimaryWeapon->Bullet->IsAntiGround
-			|| (object->In_Air() && PrimaryWeapon->Bullet->IsAntiAircraft);
-
-		if (!Is_Close_Enough((ObjectClass *)object, What_Weapon_Should_I_Use((ObjectClass *)object)) || !engageable) {
+		if (!Is_Close_Enough((ObjectClass *)object, What_Weapon_Should_I_Use((ObjectClass *)object)) || !PrimaryWeapon->Bullet->IsAntiGround) {
 			action = ACTION_NONE;
 		} else if (Class->IsEMPulseCannon || Class->IsLimpetMine) {
 			action = ACTION_NONE;

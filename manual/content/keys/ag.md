@@ -11,7 +11,7 @@ A weapon whose projectile is not anti-ground cannot fire at a map cell. The test
 
 An ordered attack on an object does not check `AG`. The weapon slot is chosen as for any other target, and a slot whose warhead does no damage to the target's armor is passed over.
 
-A structure's attack cursor reads its first weapon slot. When that slot's projectile is `AG=no`, the player cannot order the structure to attack a map cell, or any object unless the object is airborne and the projectile is [`AA=yes`](/keys/aa/).
+A structure's attack cursor reads its first weapon slot. When that slot's projectile is `AG=no`, the structure never gets the attack cursor, over a map cell or over any object, airborne ones included, so the player cannot order that attack. Automatic fire is unchanged: an [`AA=yes`](/keys/aa/) projectile still shoots at aircraft that the scan picks.
 
 With `AA=no` beside it, which is the default, the weapon is ground-only. `AA=yes` with `AG=no` is the mirror: the automatic scan picks aircraft for the weapon and no object on the ground.
 
