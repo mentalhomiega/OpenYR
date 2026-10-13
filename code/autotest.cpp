@@ -129,6 +129,7 @@
 **	truecolour <NAME.SHP>	writes whether a PNG replaces that shape, with its sheet size and one pixel
 **	truecolourdir <path>	adds a directory the game searches for files, such as PNG sprites
 **	dump					writes the player's credits, objects and missions to the log
+**	fps					writes the game frames counted in the last whole second, which the game's FPS readout shows
 **	log <text>				writes the text to the log
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
@@ -177,6 +178,7 @@
 #include "gamewindow.h"
 #include "keyboard.h"
 #include "loco.h"
+#include "logic.h"
 #include "fly.h"
 #include "jumpjet.h"
 #include "teleport.h"
@@ -2812,6 +2814,9 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   liveanims %s %d\n", step.Argument.c_str(), count);
 	} else if (step.Command == "record") {
 		RecordInterval = std::max(0, std::atoi(step.Argument.c_str()));
+	} else if (step.Command == "fps") {
+		// fps: the game frames counted in the last whole second, which the game's FPS readout shows.
+		DebugString("AUTOTEST fps frame %d %u\n", Frame, LastFramesPerSecond);
 	} else if (step.Command == "dump") {
 		Dump();
 	} else if (step.Command == "sounds") {

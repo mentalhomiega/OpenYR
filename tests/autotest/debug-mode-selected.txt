@@ -1,0 +1,37 @@
+; Heal, promote and destroy selected, with two E1 and one E2 the player owns (frames 40 to 200). Run from the
+; repository root with the setting on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-selected.txt -Seconds 150 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST|Debug cheat|Exception"
+; Run it again without -Settings: the cheats do nothing, so the strengths stay at 40 percent, every rank stays 0,
+; and the E2 is killed at frame 165 instead of surviving it.
+; Expected with the setting on: the two E1 strengths fall to about 40 percent at frame 50 and return to the
+; full value at frame 90, while the E2 stays at about 40 percent, because only E1 is selected. Veterancy
+; shows rank 2 for both E1 after frame 130 and rank 0 for the E2. With invulnerable units on, the kill at frame
+; 165 leaves the E2 alive (count 1 at frame 166), so the kill does not get past the cheat. The destroy at frame 170
+; removes both E1 (count 0 at frame 180) and the E2 still counts 1 at frame 181.
+40 own E1 60 36
+41 own E1 60 40
+42 own E2 60 44
+50 hurt E1 40
+51 hurt E2 40
+60 effects E1
+61 effects E2
+70 select E1
+80 command DebugHealSelected
+90 effects E1
+91 effects E2
+100 veterancy E1
+101 veterancy E2
+110 select E1
+120 command DebugPromoteSelected
+130 veterancy E1
+131 veterancy E2
+140 select E1
+150 count E1
+160 command DebugInvulnerable
+165 kill E2 1
+166 count E2
+170 command DebugDestroySelected
+180 count E1
+181 count E2
+190 command DebugInvulnerable
+200 quit
