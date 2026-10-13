@@ -50,6 +50,11 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		bool Stays_Aloft(void) const;
 		bool Hovers_At_Stop(void) const;
 
+		// Speeds in leptons per game frame, and the flight state's name, for the autotest speed probe.
+		double Current_Speed(void) const;
+		double Target_Speed(void) const;
+		char const * State_Name(void) const;
+
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
 		*/

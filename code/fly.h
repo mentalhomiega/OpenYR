@@ -81,6 +81,10 @@ class FlyLocomotionClass : public LocomotionClass
 		virtual int Get_Status(void) override;
 		virtual void Acquire_Hunter_Seeker_Target(void) override;
 
+		// Speeds as fractions of the type's full speed, for the autotest speed probe.
+		double Current_Speed(void) const;
+		double Target_Speed(void) const;
+
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
 		*/

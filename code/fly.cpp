@@ -1677,6 +1677,26 @@ int FlyLocomotionClass::Apparent_Speed(void)
 
 
 /// <summary>
+/// Reports the speed the aircraft has built up so far.
+/// </summary>
+/// <returns>double; The current speed, as a fraction of the type's full speed.</returns>
+double FlyLocomotionClass::Current_Speed(void) const
+{
+	return(CurrentSpeed);
+}
+
+
+/// <summary>
+/// Reports the speed the aircraft is working up to.
+/// </summary>
+/// <returns>double; The target speed, as a fraction of the type's full speed.</returns>
+double FlyLocomotionClass::Target_Speed(void) const
+{
+	return(TargetSpeed);
+}
+
+
+/// <summary>
 /// Fetches the broad flight status of the aircraft.
 /// This routine is used by outside logic that needs to know what the aircraft is busy
 /// doing without having to examine the locomotor itself.

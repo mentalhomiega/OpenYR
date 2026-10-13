@@ -248,6 +248,50 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 
 
 /// <summary>
+/// Reports the speed the jumpjet is moving at now.
+/// </summary>
+/// <returns>double; The current speed, in leptons per game frame.</returns>
+double JumpjetLocomotionClass::Current_Speed(void) const
+{
+	return(CurrentSpeed);
+}
+
+
+/// <summary>
+/// Reports the speed the jumpjet is working up to.
+/// </summary>
+/// <returns>double; The target speed, in leptons per game frame.</returns>
+double JumpjetLocomotionClass::Target_Speed(void) const
+{
+	return(TargetSpeed);
+}
+
+
+/// <summary>
+/// Names the flight state the jumpjet is in.
+/// </summary>
+/// <returns>char const *; The name of the ProcessStateType value.</returns>
+char const * JumpjetLocomotionClass::State_Name(void) const
+{
+	switch (CurrentState) {
+		case GROUNDED:
+			return("GROUNDED");
+		case ASCENDING:
+			return("ASCENDING");
+		case HOVERING:
+			return("HOVERING");
+		case CRUISING:
+			return("CRUISING");
+		case DESCENDING:
+			return("DESCENDING");
+		case UNKNOWN:
+			return("UNKNOWN");
+	}
+	return("INVALID");
+}
+
+
+/// <summary>
 /// Sets the facing of the jumpjet.
 /// The turn is immediate rather than gradual -- the flight states do their own steering
 /// through the locomotor's own facing tracker.

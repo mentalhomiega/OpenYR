@@ -112,6 +112,8 @@
 **	garrisons				writes every structure that can be garrisoned
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
+**	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
+**							now and every interval frames after when one is given
 **	quantity <TypeID>		writes how many of that type each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
@@ -173,6 +175,8 @@
 #include "gamewindow.h"
 #include "keyboard.h"
 #include "loco.h"
+#include "fly.h"
+#include "jumpjet.h"
 #include "teleport.h"
 #include "tactical.h"
 #include "tiberium.h"
@@ -278,6 +282,10 @@ std::size_t Next = 0;
 // Frames between the screenshots of a recording, or 0 when not recording.
 int RecordInterval = 0;
 int HashInterval = 0;
+
+// The type the speed probe logs, empty when it is off, and the frames between its logs (0 logs once).
+std::string SpeedProbeType;
+int SpeedProbeInterval = 0;
 
 // The type the view keeps centred on, or empty when it stays put.
 std::string FollowType;
@@ -735,6 +743,44 @@ void Log_State_Hash(void)
 		hash = (hash ^ random[index]) * 16777619u;
 	}
 	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
+}
+
+
+/// <summary>
+/// Logs the speed of each player object of the probed type. A flying object reports its speed
+/// as a fraction of its full speed, a jump-jet object in leptons per frame. Reading the state
+/// does not change it.
+/// </summary>
+void Log_Speed_Probe(void)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno->House != PlayerPtr || techno->IsInLimbo || !techno->Is_Foot() || stricmp(techno->TClass->Name(), SpeedProbeType.c_str()) != 0) {
+			continue;
+		}
+		FootClass const * foot = static_cast<FootClass const *>(techno);
+		Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		FlyLocomotionClass const * fly = dynamic_cast<FlyLocomotionClass const *>(foot->Locomotion.get());
+		JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+		if (fly != NULL) {
+			DebugString("AUTOTEST speed %s frame %d kind fly cell %d,%d height %d mission %s nav %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)foot->Locomotion->Is_Moving(), fly->Current_Speed(), fly->Target_Speed());
+		} else if (jump != NULL) {
+			Cell const head = foot->Locomotion->Head_To_Coord().As_Cell();
+			DebugString("AUTOTEST speed %s frame %d kind jump state %s cell %d,%d height %d mission %s nav %d,%d head %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, jump->State_Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, head.X, head.Y, (int)foot->Locomotion->Is_Moving(), jump->Current_Speed(), jump->Target_Speed());
+		} else {
+			DebugString("AUTOTEST speed %s frame %d kind other cell %d,%d height %d mission %s\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()));
+		}
+	}
+}
+
+
+// speed <TypeID> [interval]: logs the speed of the player's objects of that type now, and every interval frames
+// after when one is given. A line with interval 0 logs once and stops the repeats.
+static void Speed_Probe(StepType const & step)
+{
+	SpeedProbeType = step.Argument;
+	SpeedProbeInterval = std::max(0, step.X);
+	Log_Speed_Probe();
 }
 
 
@@ -1245,6 +1291,12 @@ void Run(StepType const & step)
 	// cursor <TypeID> x y: see Cursor_Probe. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "cursor") {
 		Cursor_Probe(step.Argument, step.X, step.Y);
+		return;
+	}
+
+	// speed <TypeID> [interval]: see Speed_Probe. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "speed") {
+		Speed_Probe(step);
 		return;
 	}
 
@@ -2947,6 +2999,10 @@ void AutoTest_Frame(void)
 
 	if (HashInterval > 0 && (Frame % HashInterval) == 0) {
 		Log_State_Hash();
+	}
+
+	if (SpeedProbeInterval > 0 && (Frame % SpeedProbeInterval) == 0) {
+		Log_Speed_Probe();
 	}
 }
 
