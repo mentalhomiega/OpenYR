@@ -455,7 +455,7 @@ The blast lands on the target cell, at the height of that cell's terrain. It pla
 
 The blast deals `IonCannonDamage` through [`IonCannonWarhead`](/keys/ioncannonwarhead/) with no attacker. The warhead's [`Verses`](/keys/verses/) table, its spread falloff and [`Immune=yes`](/keys/immune/) all apply, and no kill is credited. A bright warhead also lights the scene. A cell under a bridge is hit twice: once at bridge height and once at ground level.
 
-A shockwave then rolls outward and stops the infantry and vehicles it passes near the target. Vehicles driving out of a war factory, or standing on its exit cells, keep moving.
+A shockwave then rolls outward from the target at 7.1125 screen pixels a frame. Each infantry and vehicle that the ripple displaces under 248 screen pixels from the target is stopped, including a vehicle driving out of a war factory or standing on its exit cells.
 
 ### Multi missile and chem missile
 
