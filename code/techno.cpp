@@ -6413,10 +6413,17 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	// A hit that hurts a disguised object strips its disguise, unless the disguise is permanent (TechnoClass::ReceiveDamage, 0x701900).
-	if (result != RESULT_NONE && result != RESULT_DESTROYED && TClass->IsCanDisguise && !TClass->IsPermaDisguise && DisguiseType != NULL) {
-		DisguiseType = NULL;
-		DisguiseHouse = NULL;
-		Mark(MARK_CHANGE);
+	if (result != RESULT_NONE && result != RESULT_DESTROYED && TClass->IsCanDisguise && !TClass->IsPermaDisguise) {
+		if (DisguiseType != NULL) {
+			DisguiseType = NULL;
+			DisguiseHouse = NULL;
+			Mark(MARK_CHANGE);
+		}
+		// A DisguiseWhenStill vehicle's terrain look goes too (UnitClass::ClearDisguise, 0x746720).
+		if (RTTI == RTTI_UNIT && ((UnitClass *)this)->MirageType != NULL) {
+			((UnitClass *)this)->MirageType = NULL;
+			Mark(MARK_CHANGE);
+		}
 	}
 
 	/*
