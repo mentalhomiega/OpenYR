@@ -410,6 +410,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	SecretUnit(NULL),
 	SecretBuilding(NULL)
 {
+	// Buildings default to ImmuneToPsionics=yes in gamemd's constructor; an INI key overrides it.
+	IsImmuneToPsionics = true;
 	Create_ID();
 	BuildingTypes.Add(this);
 	HeapID = (StructType)BuildingTypes.ID(this);
