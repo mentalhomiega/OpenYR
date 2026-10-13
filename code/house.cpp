@@ -4411,6 +4411,7 @@ void HouseClass::Recalc_Center(void)
 	**	properly filled in below.
 	*/
 	Center = COORD_NONE;
+	BaseSpawnCell = CELL_NONE;
 	Radius = 0;
 	for (ZoneType zone = ZONE_FIRST; zone < ZONE_COUNT; zone++) {
 		ZoneInfo[zone].AirDefense = 0;
@@ -4459,6 +4460,7 @@ void HouseClass::Recalc_Center(void)
 			x /= count;
 			y /= count;
 			Center = Coord(x, y);
+			BaseSpawnCell = Map.Nearby_Location(Center.As_Cell(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(1, 1));
 		}
 
 		/*
