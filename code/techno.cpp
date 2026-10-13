@@ -6122,13 +6122,14 @@ bool TechnoClass::Captured(HouseClass * newowner)
 
 /// <summary>
 /// Gives this object to another house as TechnoClass::SetOwningHouse (0x7014A0) does for a mind
-/// control or psychic dominator capture. It drops its orders and joins the new house's lists. It
-/// springs no "player enters" trigger, unlike Captured, but a structure, aircraft or infantryman
-/// springs its destroyed-any events and counts as a loss for its old house.
+/// control, psychic dominator, trigger, team or slave transfer. It drops its orders and joins the
+/// new house's lists. It springs no "player enters" trigger, unlike Captured, but a structure,
+/// aircraft or infantryman springs its destroyed-any events and counts as a loss for its old house.
 /// </summary>
 /// <param name="newowner">The house that takes the object.</param>
+/// <param name="announce">Is the change announced? Only a structure speaks for it, in BuildingClass::Set_Owning_House.</param>
 /// <returns>bool; Was the object given over? False when the house already owns it.</returns>
-bool TechnoClass::Set_Owning_House(HouseClass * newowner)
+bool TechnoClass::Set_Owning_House(HouseClass * newowner, bool announce)
 {
 	if (newowner == NULL || newowner == House) {
 		return(false);
@@ -6214,14 +6215,17 @@ bool TechnoClass::Set_Owning_House(HouseClass * newowner)
 	OriginallyOwnedByHouse = NULL;
 	newowner->Tracking_Active_Add(this, true);
 
-	if (Is_Foot() && newowner->Is_Human_Player()) {
-		((FootClass *)this)->Remove_From_Team(false);
-	}
-
 	if (!IsInLimbo) {
-		Enter_Idle_Mode(false, true);
+		// A structure unloading, or a radio contact that is a weapons factory, keeps its mission.
+		RadioClass * const radio = Contact_With_Whom();
+		bool const keeps_unloading = RTTI == RTTI_BUILDING && CurrentMission == MISSION_UNLOAD && ((BuildingClass *)this)->Class->IsWeaponsFactory;
+		bool const keeps_contact = radio != NULL && radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory;
+		if (!keeps_unloading && !keeps_contact) {
+			Enter_Idle_Mode(false, true);
+		}
 		Radar_Untrack();
 		Radar_Track();
+		Look(false);
 	}
 	return(true);
 }

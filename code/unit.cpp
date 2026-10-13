@@ -7060,6 +7060,29 @@ bool UnitClass::Captured(HouseClass * house)
 
 
 /// <summary>
+/// Gives this unit to another house as UnitClass::SetOwningHouse (0x7463A0) does. A unit with a
+/// follower takes the follower along first, so the pair stays with one house.
+/// </summary>
+/// <param name="newowner">The house that takes the unit.</param>
+/// <param name="announce">Is the change announced? Passed on to the base class.</param>
+/// <returns>bool; Did ownership actually change hands?</returns>
+bool UnitClass::Set_Owning_House(HouseClass * newowner, bool announce)
+{
+	if (newowner == NULL || newowner == House) {
+		return(false);
+	}
+	UnitClass * follower = FollowingMe;
+	IsFollowing = false;
+	if (follower != NULL) {
+		follower->Set_Owning_House(newowner, true);
+		FollowingMe = follower;
+		follower->IsFollowing = true;
+	}
+	return(BASECLASS::Set_Owning_House(newowner, announce));
+}
+
+
+/// <summary>
 /// Is this object treated as a vehicle by the rest of the game?
 /// Some unit types -- visceroids and their kin -- are units only as a convenience and
 /// should not be counted or handled as vehicles.

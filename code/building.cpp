@@ -4755,22 +4755,18 @@ void BuildingClass::Claim_Vacant_Primary(void)
 
 
 /// <summary>
-/// Hands this structure to another house without the capture steps, as a mind control transfer does.
-/// The factory gives up its primary first, and then claims one for the new owner if it has none.
+/// Hands this structure to another house as a mind control, trigger or team transfer does: the
+/// full ownership change of Change_Owner without the capture's trigger and kill steps.
 /// </summary>
 /// <param name="newowner">The house that takes the structure.</param>
+/// <param name="announce">Does the local player hear the change announced?</param>
 /// <returns>bool; Was the structure given over? False when the house already owns it.</returns>
-bool BuildingClass::Set_Owning_House(HouseClass * newowner)
+bool BuildingClass::Set_Owning_House(HouseClass * newowner, bool announce)
 {
 	if (newowner == NULL || newowner == House) {
-		return(BASECLASS::Set_Owning_House(newowner));
+		return(false);
 	}
-	IsLeader = false;
-	bool const given = BASECLASS::Set_Owning_House(newowner);
-	if (given && Class->ToBuild != RTTI_NONE) {
-		Claim_Vacant_Primary();
-	}
-	return(given);
+	return(Change_Owner(newowner, announce, false));
 }
 
 
@@ -4853,13 +4849,10 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		/*
 		**	If there is something loaded, then it gets captured as well.
 		*/
+		// A radio-linked object changes hands the same way for a capture and a transfer (SetOwningHouse, 0x448260).
 		TechnoClass * tech = Cargo.Attached_Object();
 		if (tech) {
-			if (capture) {
-				tech->Captured(newowner);
-			} else {
-				tech->Set_Owning_House(newowner);
-			}
+			tech->Set_Owning_House(newowner, true);
 		}
 
 		/*
@@ -4885,11 +4878,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			}
 			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || Gamemd_Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
 				bool const tethered = docker->IsTethered;
-				if (capture) {
-					docker->Captured(newowner);
-				} else {
-					docker->Set_Owning_House(newowner);
-				}
+				docker->Set_Owning_House(newowner, true);
 				captured_dockers.push_back({docker, tethered});
 			} else {
 				Transmit_Message(RADIO_RUN_AWAY, docker);
@@ -4942,11 +4931,11 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		bool const detecting = IsDetectingDisguise;
 		Disguise_Detector(false);
 
+		// The base class's step is TechnoClass::Captured for a capture and TechnoClass::Set_Owning_House otherwise (0x7014A0).
 		if (capture) {
 			BASECLASS::Captured(newowner);
 		} else {
-			// The base call skips the override's claim; the claim below runs once the new owner is set.
-			BASECLASS::Set_Owning_House(newowner);
+			BASECLASS::Set_Owning_House(newowner, announce);
 		}
 
 		if (detecting) {
@@ -4986,7 +4975,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		}
 
 		IsRepairing = false;
-		Grand_Opening(true);
+		// Only a capture resets the production budget; a transfer leaves the opened structure as it is.
+		Grand_Opening(capture);
 
 		// The bonus is decided by the house the building came from, not by its new owner.
 		if (oldowner->Class->IsMultiplayPassive) {

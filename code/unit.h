@@ -249,6 +249,7 @@ class UnitClass : public FootClass
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		virtual BulletClass * Fire_At(AbstractClass * target, int which=0) override;
 		virtual bool Captured(HouseClass * newowner) override;
+		virtual bool Set_Owning_House(HouseClass * newowner, bool announce) override;
 		virtual bool Deploy_To_Fire(void) const override;
 		void EMPulse_Blast(void);
 		void Explode(void);

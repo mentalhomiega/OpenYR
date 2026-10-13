@@ -4259,6 +4259,29 @@ bool FootClass::Captured(HouseClass * newowner)
 
 
 /// <summary>
+/// Gives this foot object to another house as FootClass::SetOwningHouse (0x4DBED0) does. The
+/// object leaves its team when the new owner is the human player, and it remembers the cell it
+/// stands on for adjacency unless it is in the air.
+/// </summary>
+/// <param name="newowner">The house that takes the object.</param>
+/// <param name="announce">Is the change announced? Passed on to the base class.</param>
+/// <returns>bool; Was the object given over? False when the house already owns it.</returns>
+bool FootClass::Set_Owning_House(HouseClass * newowner, bool announce)
+{
+	if (!BASECLASS::Set_Owning_House(newowner, announce)) {
+		return(false);
+	}
+	if (newowner->Is_Human_Player()) {
+		Remove_From_Team(false);
+	}
+	if (!In_Air()) {
+		LastAdjacencyCell = PositionCell;
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Is this object considered slow?
 /// Slow is meant in the slow-witted sense. A team that has IsGuardSlower set will tweak
 /// itself to better guard the members that answer true -- typically the unarmed, the

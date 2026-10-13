@@ -84,7 +84,7 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 	}
 
 	HouseClass * const original = target->House;
-	if (!target->Set_Owning_House(Owner->House)) {
+	if (!target->Set_Owning_House(Owner->House, true)) {
 		return(false);
 	}
 
@@ -144,7 +144,7 @@ bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
 		Sound_Effect(sound, unit->Center_Coord());
 
 		if (original != NULL) {
-			unit->Set_Owning_House(original);
+			unit->Set_Owning_House(original, true);
 		}
 		Decide_Unit_Fate(unit);
 		unit->MindControlledBy = NULL;

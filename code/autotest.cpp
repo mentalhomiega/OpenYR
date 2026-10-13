@@ -1553,7 +1553,7 @@ void Run(StepType const & step)
 			TechnoClass * techno = Technos[index];
 			if (techno->House != PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				HouseClass * from = techno->House;
-				bool const given = techno->Set_Owning_House(PlayerPtr);
+				bool const given = techno->Set_Owning_House(PlayerPtr, true);
 				DebugString("AUTOTEST transfer %s at %d,%d from %s: %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, from->Class->Name(), given ? "given" : "refused");
 				break;
 			}

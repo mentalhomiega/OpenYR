@@ -2879,22 +2879,11 @@ void TeamClass::TMission_SCATTER(TeamMissionClass * mission, bool)
 
 
 /// <summary>
-/// Hands a team member to another house as UnitClass::SetOwningHouse (0x7463A0) does: a vehicle that
-/// another vehicle follows takes its follower along.
+/// Hands a team member to another house, announced, as the change house mission does.
 /// </summary>
 static void Give_To_House(FootClass * unit, HouseClass * newowner)
 {
-	if (unit->RTTI == RTTI_UNIT && newowner != unit->House) {
-		UnitClass * vehicle = (UnitClass *)unit;
-		UnitClass * follower = vehicle->FollowingMe;
-		vehicle->IsFollowing = false;
-		if (follower != NULL) {
-			Give_To_House(follower, newowner);
-			vehicle->FollowingMe = follower;
-			follower->IsFollowing = true;
-		}
-	}
-	unit->Set_Owning_House(newowner);
+	unit->Set_Owning_House(newowner, true);
 }
 
 

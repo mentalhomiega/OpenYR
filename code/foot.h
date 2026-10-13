@@ -527,6 +527,7 @@ class FootClass : public TechnoClass
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield) override;
 		virtual void Death_Announcement(TechnoClass const * source=0) const override;
 		virtual bool Captured(HouseClass * newowner) override;
+		virtual bool Set_Owning_House(HouseClass * newowner, bool announce) override;
 		virtual void Berzerk(void) {};
 		virtual void Start_Fear(void) {};
 		virtual void Stop_Fear(void) {};
