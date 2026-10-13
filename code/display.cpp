@@ -114,6 +114,7 @@
 #include "convert.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "debugmode.h"
 #include "dsurface.h"
 #include "effects.h"
 #include "foot.h"
@@ -2762,7 +2763,8 @@ static HouseSet Regrowing_Houses(void)
 {
 	HouseSet houses;
 	for (int index = 0; index < Houses.Count(); index++) {
-		if (!Houses[index]->Sees_Whole_Map()) {
+		// The reveal cheat keeps the player's map uncovered, so its shroud and fog do not creep back.
+		if (!Houses[index]->Sees_Whole_Map() && !Debug_Cheat_Active_For(DebugCheat::REVEAL_MAP, Houses[index])) {
 			houses.Set(Houses[index]);
 		}
 	}
