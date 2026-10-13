@@ -4240,7 +4240,8 @@ RTTIType TeamClass::Fetch_RTTI(void) const
 /// Sends each member that a structure accepts into the nearest such structure and drops it from
 /// the team; members no structure accepts stay. The step then ends. A structure is offered only
 /// the room left after the members this step has already sent to it. Only the member's own house's
-/// structures are considered unless own_only is false.
+/// structures are considered unless own_only is false. Distance runs to each structure's centre,
+/// and an exact tie goes to the structure listed last.
 /// </summary>
 void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only)
 {
@@ -4252,7 +4253,7 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 		BuildingClass * best = NULL;
 		int best_distance = INT_MAX;
 		if (member->IsActive && !member->IsInLimbo && member->Strength > 0) {
-			for (int index = 0; index < Buildings.Count(); index++) {
+			for (int index = Buildings.Count() - 1; index >= 0; index--) {
 				BuildingClass * building = Buildings[index];
 				if ((own_only && building->House != member->House) || building->IsInLimbo || !accepts(building, member, sent.contains(building) ? sent[building] : 0)) {
 					continue;
