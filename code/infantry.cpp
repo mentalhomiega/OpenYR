@@ -1064,7 +1064,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		if (Mission == MISSION_SABOTAGE) {
 			BuildingClass * building = cellptr->Cell_Building();
 			if (building != NULL && building == NavCom) {
-				if (!building->Class->IsRepairable) {
+				if (!building->Class->Can_Plant_C4()) {
 					Assign_Target(NULL);
 					Assign_Destination(NULL);
 					Enter_Idle_Mode();
@@ -3173,18 +3173,12 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	/*
 	**	See if it's a commando, and if he's attacking a building,
-	**	have him return ACTION_SABOTAGE instead
+	**	have him return ACTION_SABOTAGE instead. A structure that disallows C4, such as a
+	**	barrel, gets the normal attack (InfantryClass::MouseOverObject, 0x51E3B0).
 	*/
-	if (House->Is_Player_Control() && (Class->IsBomber || Has_Ability(ABILITY_C4)) && action == ACTION_ATTACK && object->RTTI == RTTI_BUILDING && !object->Considered_Vehicle()) {
+	if (House->Is_Player_Control() && (Class->IsBomber || Has_Ability(ABILITY_C4)) && action == ACTION_ATTACK && object->RTTI == RTTI_BUILDING && !((BuildingClass const *)object)->Class->Is_Single_Cell_Vehicle()) {
 		BuildingClass const * obj = (BuildingClass *)object;
-		/*
-		**	Hack: Tanya should shoot barrels, bomb other structures.
-		*/
-		if (obj->Class->IsRepairable) {
-			return(ACTION_SABOTAGE);
-		} else {
-			return(ACTION_ATTACK);
-		}
+		return(obj->Class->Can_Plant_C4() ? ACTION_SABOTAGE : ACTION_ATTACK);
 	}
 
 	/*
@@ -3221,8 +3215,9 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 				(object->RTTI == RTTI_BUILDING && (Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable)) )
 				) {
 
-					if (Class->IsBomber && object->Considered_Vehicle() == true) {
-						return(ACTION_SABOTAGE);
+					// A single-cell deployed vehicle is not a C4 target (IsStrange in gamemd, 0x51E3B0).
+					if (Class->IsBomber && ((BuildingClass const *)object)->Class->Is_Single_Cell_Vehicle()) {
+						return(ACTION_ATTACK);
 					}
 
 					/*
@@ -3395,7 +3390,7 @@ const char * InfantryClass::Full_Name(void) const
 int InfantryClass::Do_MISSION_ATTACK(void)
 {
 	BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-	if ((Class->IsBomber || Has_Ability(ABILITY_C4)) && building != NULL && building->Class->IsRepairable) {
+	if ((Class->IsBomber || Has_Ability(ABILITY_C4)) && building != NULL && building->Class->Can_Plant_C4()) {
 		Assign_Destination(TarCom);
 		Assign_Mission(MISSION_SABOTAGE);
 		return(1);

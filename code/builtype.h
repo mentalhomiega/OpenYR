@@ -1101,6 +1101,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		virtual bool Legal_Placement(Cell const & pos, HouseClass * house = NULL) const override;
 
 		bool Is_Factory(void) const {return(ToBuild != RTTI_NONE);}
+		// The C4 test gamemd applies before a soldier plants on a structure (InfantryClass::Mission_Attack, 0x51F3E0).
+		bool Can_Plant_C4(void) const {return(IsCanC4 && !IsInvisibleInGame);}
+		// gamemd's IsStrange for a structure: it undeploys into a vehicle and covers one cell (BuildingTypeClass::IsVehicle, 0x465D40).
+		bool Is_Single_Cell_Vehicle(void) const {return(UndeploysInto != NULL && Width() == 1 && Height(false) == 1);}
 		virtual int Raw_Cost(void) const override;
 
 		Cell const * Exit_List(void) const;
