@@ -298,7 +298,7 @@ void SlaveManagerClass::AI(void)
 						Cell const home = Home_Cell();
 						int const dx = there.X - home.X;
 						int const dy = there.Y - home.Y;
-						strayed = Rule->ApproachTargetResetMultiplier < (int)std::sqrt((double)(dx * dx + dy * dy));
+						strayed = Rule->ApproachTargetResetMultiplier < Gamemd_Length_2D(dx, dy);
 					}
 					if (slave->NavCom == NULL || strayed) {
 						slave->Assign_Destination(&Map[Home_Cell()]);
