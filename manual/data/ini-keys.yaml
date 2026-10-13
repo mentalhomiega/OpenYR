@@ -11527,6 +11527,41 @@ DigSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DirectRocker:
+  key: DirectRocker
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsDirectRocker
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+DirectRockingCoefficient:
+  key: DirectRockingCoefficient
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: DirectRockingCoefficient
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DirtRoadCurve:
   key: DirtRoadCurve
   scopes:

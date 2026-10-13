@@ -1417,10 +1417,13 @@ void BulletClass::Detonate(Coord const & coord)
 		DebugString("AUTOTEST nuke detonates at frame %d at %d,%d,%d\n", Frame, coord.X, coord.Y, coord.Z);
 	}
 
+	// A DirectRocker warhead that strikes a unit rocks it instead of blasting it (BulletClass::Detonate, 0x46978E).
+	bool const direct_rocks = warhead->IsDirectRocker && !warhead->IsAirstrike && Is_Target_Unit(TarCom);
+
 	// The warheads that gamemd tests before its damage step throw no shrapnel (BulletClass::Detonate, 0x469210).
 	bool const throws_shrapnel = !warhead->IsNukeMaker && !warhead->IsMindControl && !warhead->IsMakesDisguise
 		&& !warhead->IsIvanBomb && !warhead->IsElectricAssault && !warhead->IsLocomotor && !warhead->IsBombDisarm
-		&& !warhead->IsParasite && !warhead->IsTemporal && !warhead->IsAirstrike;
+		&& !warhead->IsParasite && !warhead->IsTemporal && !warhead->IsAirstrike && !direct_rocks;
 	if (Class->ShrapnelWeapon != NULL && throws_shrapnel) {
 		Shrapnel();
 	}
@@ -1438,7 +1441,7 @@ void BulletClass::Detonate(Coord const & coord)
 		RadSiteClass::Irradiate(coord, (int)warhead->CellSpread, Weapon->RadLevel);
 	}
 
-	if (warhead->IsNukeMaker) {
+	if (warhead->IsNukeMaker && !direct_rocks) {
 		Nuke_Maker();
 	}
 
@@ -1464,7 +1467,7 @@ void BulletClass::Detonate(Coord const & coord)
 	 * A disguise warhead makes a CanDisguise firer look like the soldier it hit, in that
 	 * soldier's house colors (TechnoClass::DisguiseAs, 0x70E280).
 	 */
-	else if (warhead->IsMakesDisguise) {
+	else if (warhead->IsMakesDisguise && !direct_rocks) {
 		InfantryClass const * target = dynamic_cast<InfantryClass const *>(TarCom);
 		if (Payback != NULL && Payback->TClass->IsCanDisguise && target != NULL && target != Payback) {
 			Payback->DisguiseType = target->Class;
@@ -1499,7 +1502,7 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	// A bomb disarming warhead removes the target's bomb (BombClass::Disarm, 0x4389B0).
-	else if (warhead->IsBombDisarm) {
+	else if (warhead->IsBombDisarm && !direct_rocks) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		if (target != NULL) {
 			target->Disarm_Bomb();
@@ -1558,6 +1561,27 @@ void BulletClass::Detonate(Coord const & coord)
 					}
 				}
 			}
+		}
+	}
+
+	/*
+	 * A direct rocker warhead tips the unit it strikes and deals it no blast damage. The tip point
+	 * lies 10 leptons from the unit toward the firer, and the force is the damage times
+	 * [AudioVisual] DirectRockingCoefficient divided by 100, capped at 4 (BulletClass::Detonate,
+	 * 0x46978E to 0x4699BF). An owner-less shot or a unit under an Iron Curtain is not rocked.
+	 * gamemd also links the firer and the unit (DirectRockerLinkedUnit, 0x4699AD); this port does not.
+	 */
+	else if (direct_rocks) {
+		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+		if (Payback != NULL && target != NULL && !target->Is_Iron_Curtained()) {
+			Coord const target_coord = target->PositionCoord;
+			TPoint3D<float> toward((float)(Payback->PositionCoord.X - target_coord.X), (float)(Payback->PositionCoord.Y - target_coord.Y), (float)(Payback->PositionCoord.Z - target_coord.Z));
+			toward = toward.Normalize() * 10;
+			Coord rock_coord = target_coord;
+			rock_coord += Coord(toward.X, toward.Y, toward.Z);
+			// Strength stands for gamemd's (DamageMultiplier * Health) >> 8, which equals Strength while the multiplier is 256.
+			double const force = std::min((double)Strength * Rule->DirectRockingCoefficient / 100.0, 4.0);
+			target->Rock(rock_coord, (float)force, true);
 		}
 	}
 

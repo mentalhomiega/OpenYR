@@ -9782,7 +9782,8 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 /// </summary>
 /// <param name="coord">Where the jolt came from.</param>
 /// <param name="force">How violent the jolt was.</param>
-void TechnoClass::Rock(Coord const & coord, float force)
+/// <param name="direct">True for a DirectRocker jolt, which keeps the full forward tip. An area jolt halves it.</param>
+void TechnoClass::Rock(Coord const & coord, float force, bool direct)
 {
 	if (TClass->Voxel.VoxLib != NULL && !TClass->Voxel.VoxLib->Load_Failed()) {
 		Coord pos = PositionCoord;
@@ -9818,7 +9819,8 @@ void TechnoClass::Rock(Coord const & coord, float force)
 			if (fabs(cangle * dist1 - sangle * dist2 - vec1.X) > 0.0002 || fabs(cangle * dist2 + sangle * dist1 - vec1.Y) > 0.0002) {
 				dist2 = -dist2;
 			}
-			RockingForwardsPerFrame = (float)((double)dist1 * scale / 2.0);
+			// The area jolt halves the forward tip (TechnoClass::vt_entry_3D8, 0x70B280, its third argument 0).
+			RockingForwardsPerFrame = (float)((double)dist1 * scale / (direct ? 1.0 : 2.0));
 			RockingSidewaysPerFrame = (float)-((double)dist2 * scale);
 		}
 	}
