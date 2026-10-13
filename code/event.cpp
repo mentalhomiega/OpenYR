@@ -102,6 +102,8 @@ namespace {
 		UnschedulableTiming,
 		InvalidNetworkReport,
 		InvalidAbandonCount,
+		InvalidPlannedOrder,
+		PlannedOrderLimit,
 		Count,
 	};
 
@@ -125,10 +127,15 @@ namespace {
 		"unschedulable timing",
 		"invalid network report",
 		"invalid abandon count",
+		"invalid planned order",
+		"planned order limit",
 	};
 
 	static_assert(ARRAY_SIZE(EventRejectReasonNames) == (int)EventRejectReason::Count);
 	unsigned int EventRejectCounts[(unsigned int)EventRejectReason::Count] = {};
+
+	// Set while a unit's planned leg runs, so the leg does not cancel the unit's remaining plan.
+	bool Executing_Planned_Leg = false;
 
 
 	/// <summary>Records a rejected synchronized event.</summary>
@@ -199,6 +206,9 @@ namespace {
 
 			case EventClass::MEGAMISSION:
 			case EventClass::MEGAMISSION_F:
+				return(event.Data.MegaMission.Whom.As_Techno());
+
+			case EventClass::PLAN_ORDER:
 				return(event.Data.MegaMission.Whom.As_Techno());
 
 			default:
@@ -458,6 +468,27 @@ EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetCl
 	if (index >= 0) {
 		ID = index;
 		Type = MEGAMISSION;
+		Data.MegaMission.Whom = src;
+		Data.MegaMission.Mission = mission;
+		Data.MegaMission.Target = target;
+		Data.MegaMission.Destination = destination;
+		Frame = ::Frame;
+	} else {
+		ID = -1;
+		Type = EMPTY;
+		Frame = ::Frame;
+	}
+}
+
+
+/// <summary>
+/// Builds an event of the given type that carries one mega mission's fields (a planned order or a MEGAMISSION).
+/// </summary>
+EventClass::EventClass(int index, unsigned char type, xTargetClass const & src, MissionType mission, xTargetClass const & target, xTargetClass const & destination)
+{
+	if (index >= 0) {
+		ID = index;
+		Type = type;
 		Data.MegaMission.Whom = src;
 		Data.MegaMission.Mission = mission;
 		Data.MegaMission.Target = target;
@@ -1088,6 +1119,11 @@ void EventClass::Execute(void)
 				if (techno->NearbyObject != NULL) {
 					techno->NearbyObject = NULL;
 				}
+				// A player order replaces the unit's remaining plan; a planned leg is part of that plan.
+				if (techno->Is_Foot() && !Executing_Planned_Leg) {
+					((FootClass *)techno)->Clear_Planned_Orders();
+				}
+
 				if (techno->Is_Foot()) {
 					//if (!formation) ((FootClass *)techno)->IsFormationMove = false;
 					if (((FootClass *)techno)->Team && Data.MegaMission.Mission != MISSION_UNLOAD) {
@@ -1174,6 +1210,7 @@ void EventClass::Execute(void)
 				}
 
 				if (techno->Is_Foot()) {
+					((FootClass *)techno)->Clear_Planned_Orders();
 					((FootClass *)techno)->NavQueue.Clear();
 					((FootClass *)techno)->Clear_Navigation_List();
 					((FootClass *)techno)->CurrentPath = PATH_NONE;
@@ -1207,6 +1244,29 @@ void EventClass::Execute(void)
 		// Every soldier of the sending house cheers (EventClass::Execute, 0x4C6CB0).
 		case ALL_CHEER:
 			house->Cheer();
+			break;
+
+		// Appends one planned order to a unit; the unit runs its queue after PLAN_COMMIT.
+		case PLAN_ORDER:
+			techno = Data.MegaMission.Whom.As_Techno();
+			if (techno != NULL && techno->IsActive && techno->Is_Foot() && techno->House == house) {
+				if (Data.MegaMission.Mission == MISSION_NONE || !NetSemantic::Mission_Is_Valid(Data.MegaMission.Mission, MISSION_NONE, MISSION_COUNT)) {
+					Log_Event_Rejection(EventRejectReason::InvalidPlannedOrder, Type, ID, Data.MegaMission.Mission);
+					break;
+				}
+				PlannedOrderClass order;
+				order.Mission = (MissionType)Data.MegaMission.Mission;
+				order.Target = Data.MegaMission.Target;
+				order.Destination = Data.MegaMission.Destination;
+				if (!((FootClass *)techno)->Add_Planned_Order(order)) {
+					Log_Event_Rejection(EventRejectReason::PlannedOrderLimit, Type, ID, Data.MegaMission.Mission);
+				}
+			}
+			break;
+
+		// Starts the first planned order of every unit of the sending house (planning mode, commit).
+		case PLAN_COMMIT:
+			Planned_Orders_Commit(house);
 			break;
 
 		case DEPLOY:
@@ -1516,4 +1576,15 @@ void EventClass::Execute(void)
 	//	printf("\n");
 	//}
 
+}
+
+
+/// <summary>
+/// Executes a planned order's mega mission for its unit at the unit's turn in the plan.
+/// </summary>
+void EventClass::Execute_Planned_Leg(void)
+{
+	Executing_Planned_Leg = true;
+	Execute();
+	Executing_Planned_Leg = false;
 }

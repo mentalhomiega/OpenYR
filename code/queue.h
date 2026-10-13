@@ -43,6 +43,20 @@
 
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination);
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination, SpeedType speed, MPHType maxspeed);
+
+// While one of these is alive with recording set, Queue_Mission turns the player's orders into planned orders.
+class PlanningRecordScope
+{
+	public:
+		explicit PlanningRecordScope(bool recording);
+		~PlanningRecordScope(void);
+		PlanningRecordScope(PlanningRecordScope const &) = delete;
+		PlanningRecordScope & operator = (PlanningRecordScope const &) = delete;
+
+	private:
+		bool Previous;
+};
+
 bool Queue_Options(void);
 bool Queue_Exit(void);
 void Queue_AI(void);

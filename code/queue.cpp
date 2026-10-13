@@ -395,8 +395,47 @@ void Dump_Packet_Too_Late_Stuff(EventClass *event);
  * HISTORY:                                                                  *
  *   09/21/1995 JLB : Created.                                               *
  *=========================================================================*/
+namespace {
+	bool Recording_Planned_Orders = false;
+
+
+	/// <summary>
+	/// Queues a planned order for one of the local player's units that can take one. Other
+	/// objects are passed over, as buildings take no planned orders.
+	/// </summary>
+	bool Record_Planned_Order(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination)
+	{
+		TechnoClass * techno = whom.As_Techno();
+		if (techno == NULL || !techno->IsActive || !techno->Is_Foot() || techno->House != PlayerPtr) {
+			return(false);
+		}
+		if (!static_cast<FootClass *>(techno)->Can_Take_Planned_Order()) {
+			return(false);
+		}
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLAN_ORDER, whom, mission, target, destination));
+		return(true);
+	}
+}
+
+
+PlanningRecordScope::PlanningRecordScope(bool recording)
+	: Previous(Recording_Planned_Orders)
+{
+	Recording_Planned_Orders = recording;
+}
+
+
+PlanningRecordScope::~PlanningRecordScope(void)
+{
+	Recording_Planned_Orders = Previous;
+}
+
+
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination)
 {
+	if (Recording_Planned_Orders) {
+		return(Record_Planned_Order(whom, mission, target, destination));
+	}
 	OutList.push_back(EventClass(PlayerPtr->HeapID, whom, mission, target, destination));
 	return(true);
 }

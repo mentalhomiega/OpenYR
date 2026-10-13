@@ -1,0 +1,41 @@
+; Planning mode: planned legs are recorded while planning is on, the commit starts them, each one runs
+; when the unit goes idle, and a normal order clears a unit's plan. Run in a skirmish on the default map.
+; The reveal at frame 305 opens the shroud. A click that Move_Order refuses records nothing, as a normal
+; click does, so every leg below is a cell that an infantry unit can reach from its start.
+; Expected AUTOTEST lines:
+;   frame 340: planstate E1 orders 3 running 0 (three legs recorded, none run).
+;   frame 351: E1 orders 2 running 1 (the commit issued the first leg).
+;   where E1 lines: the unit walks to 70,63, then 70,68, then 66,68, and then stays idle (mission Guard).
+;   frame 700: planstate E1 orders 1 running 1 (the second leg is under way, one leg still queued).
+;   frame 1421: E1 orders 1 running 1 after two more legs are committed.
+;   frame 1501: E1 orders 0 running 0 after the normal order at frame 1500 (the normal order clears the plan).
+;   frame 1830: E1 orders 0 running 1. The PlanningMode command and the click share frame 1820, so the
+;     hold release commits the plan on the next frame, since autotest reports no key held.
+30 command CenterBase
+300 grantunit E1 60 63
+305 reveal
+320 planning 1
+330 clickcell E1 70 63
+331 clickcell E1 70 68
+332 clickcell E1 66 68
+340 planstate E1
+350 planning 0
+351 planstate E1
+400 where E1
+600 where E1
+700 planstate E1
+900 where E1
+1400 planning 1
+1410 clickcell E1 62 72
+1411 clickcell E1 58 72
+1420 planning 0
+1421 planstate E1
+1500 clickcell E1 56 56
+1501 planstate E1
+1600 where E1
+1800 planstate E1
+1820 command PlanningMode
+1820 clickcell E1 74 63
+1830 planstate E1
+1900 where E1
+2000 quit

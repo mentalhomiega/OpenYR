@@ -113,6 +113,8 @@ class EventClass
 			ABANDON_COUNT,
 			DETONATE,       // Set off the Ivan bomb on the specified object.
 			ALL_CHEER,      // Every soldier of the sending house cheers.
+			PLAN_ORDER,     // Appends one planned order to a unit's queue (planning mode).
+			PLAN_COMMIT,    // Starts the planned orders of every unit of the sending house.
 
 			LAST_EVENT,			// one past the last event
 		};
@@ -266,6 +268,7 @@ class EventClass
 		EventClass(int index, unsigned char type, Cell const & cell);
 		EventClass(int index, unsigned char type, TargetClass src, TargetClass dest);
 		EventClass(int index, TargetClass src, MissionType mission, TargetClass target/*=TARGET_NONE*/, TargetClass destination/*=TARGET_NONE*/);
+		EventClass(int index, unsigned char type, xTargetClass const & src, MissionType mission, xTargetClass const & target, xTargetClass const & destination);
 
 		EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination, SpeedType speed, MPHType maxspeed);
 
@@ -279,6 +282,9 @@ class EventClass
 
 		// Process the event.
 		void Execute(void);
+
+		// Runs a MEGAMISSION event as a unit's planned leg. Unlike a player order, it keeps the rest of the plan.
+		void Execute_Planned_Leg(void);
 
 		int operator == (EventClass & q) {
 			return(memcmp(this, &q, sizeof(q)) == 0);

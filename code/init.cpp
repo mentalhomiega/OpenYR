@@ -4831,6 +4831,37 @@ class WaypointCommandClass : public CommandClass
 };
 
 /*
+ * Starts planning mode while the bound key is held; releasing the key commits the plan.
+ */
+class PlanningModeCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("PlanningMode");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Planning Mode");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Hold to plan orders for the selected units, then release to carry them out.");
+		}
+		virtual void Execute(void) const {
+			// The hold key is the first key bound to this command; a button press passes -1 instead.
+			int hold_key = -1;
+			for (int index = 0; index < HotkeyCommands.Count(); index++) {
+				if (HotkeyCommands.Fetch_By_Position(index) == this) {
+					hold_key = HotkeyCommands.Fetch_ID_By_Position(index) & 0xFF;
+					break;
+				}
+			}
+			Map.Planning_Mode_Control(1, hold_key);
+		}
+};
+
+/*
  * Capture the screen to SCRNnnnn.PCX file.
  */
 class ScreenCaptureCommandClass : public CommandClass
@@ -5852,6 +5883,8 @@ static void Init_Commands(void)
 
 	const CommandClass * delwpcmd = new DeleteWaypointCommandClass;
 	AllCommands.Add(delwpcmd);
+
+	AllCommands.Add(new PlanningModeCommandClass);
 
 	Init_Hotkeys();
 

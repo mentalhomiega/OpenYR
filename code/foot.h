@@ -46,6 +46,17 @@ class WaypointClass;
 struct PathStruct;
 
 
+/*
+ * One planned order: the mission a unit carries out when its turn in the plan comes.
+ */
+struct PlannedOrderClass
+{
+	MissionType Mission;
+	xTargetClass Target;
+	xTargetClass Destination;
+};
+
+
 /****************************************************************************
 **	Movable objects are handled by this class definition. Moveable objects
 **	cover everything except buildings.
@@ -133,6 +144,12 @@ class FootClass : public TechnoClass
 		 * each leg is reached, the next is popped and assigned as the destination.
 		 */
 		DynamicVectorClass<AbstractClass *> RouteQueue;
+
+		/*
+		 * Orders recorded in planning mode, carried out in order once the house commits.
+		 * The queue is neither saved nor part of the checksum, so a loaded game has no plans.
+		 */
+		DynamicVectorClass<PlannedOrderClass> PlannedOrders;
 
 		/*
 		**
@@ -364,6 +381,12 @@ class FootClass : public TechnoClass
 		bool IsIdle;
 
 		/*
+		 * This is true while a committed plan is running. Each time the unit goes idle the next
+		 * planned order is issued; the flag clears when the queue runs out.
+		 */
+		bool IsPlanRunning;
+
+		/*
 		 * This is the distance, expressed in screen pixels, that the object is lifted up
 		 * the display while an ion storm blast tosses it about. It is thrown away at the
 		 * start of every game frame, so the blast must keep renewing it to hold the object
@@ -452,6 +475,13 @@ class FootClass : public TechnoClass
 
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool = true) override;
+
+		// Planning mode: queue an order, start the queue on commit, and issue the next order when idle.
+		bool Can_Take_Planned_Order(void) const;
+		bool Add_Planned_Order(PlannedOrderClass const & order);
+		void Start_Planned_Orders(void);
+		bool Advance_Planned_Order(void);
+		void Clear_Planned_Orders(void);
 		virtual bool Is_Allowed_To_Leave_Map(void) const override;
 		virtual bool Is_Docked_For_Repair(void);
 		void Link_DropPod(void);
@@ -592,3 +622,6 @@ inline FootClass const * AbstractClass::As_FootClass(void) const
 
 
 extern DynamicVectorClass<FootClass *> Feet;
+
+// Starts the planned orders of every unit of the house (the PLAN_COMMIT event).
+void Planned_Orders_Commit(HouseClass const * house);

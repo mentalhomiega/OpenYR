@@ -179,6 +179,8 @@ class DisplayClass: public MapClass
 		Coord Closest_Free_Spot(Coord const & coord, bool any=false) const;
 		void Sell_Mode_Control(int control);
 		void Waypoint_Mode_Control(int control, bool edit_selected_path=false);
+		void Planning_Mode_Control(int control, int hold_key);
+		void Planning_Hold_Check(void);
 		void Power_Mode_Control(int control);
 		void Repair_Mode_Control(int control);
 		ObjectClass * Object_To_Follow(void) const;
@@ -230,6 +232,15 @@ class DisplayClass: public MapClass
 		 * true. While in this mode, the player can manage waypoint paths.
 		 */
 		bool IsWaypointMode;
+
+		/*
+		 * While planning mode is on, a click on a unit's order is recorded as a planned order
+		 * instead of being issued, and the orders run when the mode is turned off (commit).
+		 * PlanningHoldKey is the virtual key that started the mode, which turns it off on
+		 * release, or -1 when a button started it. Planning state is not saved.
+		 */
+		bool IsPlanningMode;
+		int PlanningHoldKey;
 
 		/*
 		**	If the player is currently in ion cannon targeting mode, then this

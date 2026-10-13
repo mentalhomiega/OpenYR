@@ -1648,6 +1648,17 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		return(false);
 	}
 
+	// A planned leg replaces the idle mission below. A second idle call in the same frame keeps that leg.
+	if (IsPlanRunning) {
+		if (IsIdle) {
+			return(true);
+		}
+		if (Advance_Planned_Order()) {
+			IsIdle = true;
+			return(true);
+		}
+	}
+
 	bool result = BASECLASS::Enter_Idle_Mode(initial, resume_waypoint);
 
 	MissionType mission = (House->Is_Human_Player() || Team || !Is_Weapon_Equipped()) ? MISSION_GUARD : MISSION_GUARD_AREA;

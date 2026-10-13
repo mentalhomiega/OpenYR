@@ -61,6 +61,8 @@ unsigned char EventClass::EventLength[EventClass::LAST_EVENT] = {
 	size_of(EventClass, Data.AbandonCount),          // ABANDON_COUNT
 	size_of(EventClass, Data.Target),                // DETONATE
 	0,                                               // ALL_CHEER
+	size_of(EventClass, Data.MegaMission),           // PLAN_ORDER
+	0,                                               // PLAN_COMMIT
 };
 
 char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
@@ -104,4 +106,6 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"ABANDON_COUNT",
 	"DETONATE",
 	"ALL_CHEER",
+	"PLAN_ORDER",
+	"PLAN_COMMIT",
 };

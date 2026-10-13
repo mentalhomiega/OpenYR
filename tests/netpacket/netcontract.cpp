@@ -154,7 +154,12 @@ void Test_Reader(void)
 void Test_Event_Contract(void)
 {
 	Check(EventClass::LATENCYFUDGE == 35, "the last inherited event keeps numeric ID 35");
-	Check(EventClass::NETWORK_REPORT == 36 && EventClass::ABANDON_COUNT == 37 && EventClass::DETONATE == 38 && EventClass::ALL_CHEER == 39 && EventClass::LAST_EVENT == 40, "the timing report, the multi-abandon, the bomb detonation and the all-cheer append without renumbering inherited events");
+	Check(EventClass::NETWORK_REPORT == 36 && EventClass::ABANDON_COUNT == 37 && EventClass::DETONATE == 38 && EventClass::ALL_CHEER == 39, "the timing report, the multi-abandon, the bomb detonation and the all-cheer keep their inherited numbers");
+	Check(EventClass::PLAN_ORDER == 40 && EventClass::PLAN_COMMIT == 41 && EventClass::LAST_EVENT == 42, "the planned order and its commit append after the inherited events");
+	Check(EventClass::EventLength[EventClass::PLAN_ORDER] == EventClass::EventLength[EventClass::MEGAMISSION], "PLAN_ORDER carries the mega mission payload");
+	Check(std::strcmp(EventClass::EventNames[EventClass::PLAN_ORDER], "PLAN_ORDER") == 0, "PLAN_ORDER has a diagnostic name");
+	Check(EventClass::EventLength[EventClass::PLAN_COMMIT] == 0, "PLAN_COMMIT carries no payload");
+	Check(std::strcmp(EventClass::EventNames[EventClass::PLAN_COMMIT], "PLAN_COMMIT") == 0, "PLAN_COMMIT has a diagnostic name");
 	Check(EventClass::EventLength[EventClass::NETWORK_REPORT] == sizeof(NetworkReportType) && sizeof(NetworkReportType) == 6, "NETWORK_REPORT uses its six-byte payload");
 	Check(std::strcmp(EventClass::EventNames[EventClass::NETWORK_REPORT], "NETWORK_REPORT") == 0, "NETWORK_REPORT has a diagnostic name");
 	Check(EventClass::EventLength[EventClass::ABANDON_COUNT] == sizeof(AbandonCountType) && sizeof(AbandonCountType) == 12, "ABANDON_COUNT uses its twelve-byte payload");

@@ -212,6 +212,8 @@ DisplayClass::DisplayClass(void) :
 	IsSellMode(false),
 	IsPowerMode(false),
 	IsWaypointMode(false),
+	IsPlanningMode(false),
+	PlanningHoldKey(-1),
 	IsTargettingMode(SUPER_NONE),
 	DraggedWaypoint(NULL),
 	DraggedWaypointCoord(0,0,0),
@@ -1695,6 +1697,8 @@ void DisplayClass::Mouse_Right_Release(Point2D const & point)
 		PendingObject = NULL;
 		PendingHouse = HOUSE_NONE;
 		Set_Cursor_Shape(NULL);
+	} else if (IsPlanningMode) {
+		// Planning mode issues no order on a right click and stays on (PlanningNodeClass::ResetPlanningState, 0x63AAC0).
 	} else {
 		if (IsRepairMode) {
 			Repair_Mode_Control(0);
@@ -2548,6 +2552,70 @@ void DisplayClass::Waypoint_Mode_Control(int control, bool edit_selected_path)
 				MouseCursor->Show_Mouse();
 			}
 		}
+	}
+}
+
+
+/// <summary>
+/// Turns planning mode on or off.
+/// Turning it on cancels the repair, sell, power and waypoint modes and keeps the selection.
+/// Turning it off queues the commit that starts every unit's planned orders.
+/// </summary>
+/// <param name="control">The mode to set. Zero turns planning mode off, one turns it on, and -1 toggles it.</param>
+/// <param name="hold_key">The virtual key that started the mode, or -1 when a button started it.</param>
+/// <remarks>Turning the mode on has no effect while a placement is pending or for a multiplayer
+/// observer.</remarks>
+void DisplayClass::Planning_Mode_Control(int control, int hold_key)
+{
+	bool mode = IsPlanningMode;
+	switch (control) {
+		case 0:
+			mode = false;
+			break;
+
+		case -1:
+			mode = (mode == false);
+			break;
+
+		case 1:
+			mode = true;
+			break;
+	}
+
+	if (mode == IsPlanningMode) {
+		return;
+	}
+
+	if (!mode) {
+		IsPlanningMode = false;
+		PlanningHoldKey = -1;
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLAN_COMMIT));
+		Revert_Mouse_Shape();
+		return;
+	}
+
+	if (PendingObject || PlayerPtr->IsObserver) {
+		return;
+	}
+	IsRepairMode = false;
+	IsSellMode = false;
+	IsPowerMode = false;
+	if (IsWaypointMode) {
+		Waypoint_Mode_Control(0);
+	}
+	IsPlanningMode = true;
+	PlanningHoldKey = hold_key;
+	Revert_Mouse_Shape();
+}
+
+
+/// <summary>
+/// Ends planning mode once the key that started it is released.
+/// </summary>
+void DisplayClass::Planning_Hold_Check(void)
+{
+	if (IsPlanningMode && PlanningHoldKey >= 0 && !Keyboard->Down(KeyNumType(PlanningHoldKey))) {
+		Planning_Mode_Control(0, -1);
 	}
 }
 
@@ -3737,6 +3805,9 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		return;
 	}
 
+	// In planning mode the orders below are recorded for later instead of being issued.
+	PlanningRecordScope const recording(IsPlanningMode);
+
 	cell = Map.Clip_To_Map(cell);
 	WaypointClass * waypoint = PlayerPtr->Waypoint_At(cell);
 	if (waypoint != NULL) {
@@ -3744,7 +3815,10 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 	}
 
 	for (index = 0; index < CurrentObject.Count(); index++) {
-		CurrentObject[index]->Set_Waypoint_Path(waypoint_path, waypoint_id);
+		// A planning click leaves each unit's house waypoint path alone.
+		if (!IsPlanningMode) {
+			CurrentObject[index]->Set_Waypoint_Path(waypoint_path, waypoint_id);
+		}
 		if (CurrentObject[index]->Is_Foot()) {
 			((TechnoClass *)CurrentObject[index])->IsOnPatrol = false;
 		}

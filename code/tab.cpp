@@ -751,8 +751,9 @@ void TabClass::Do_Command(CommandButtonType command)
 			Execute_Command("StopObject");
 			break;
 
+		// A click toggles planning mode: the first click starts it and the next one commits the plan.
 		case COMMAND_PLANNING_MODE:
-			Execute_Command("WaypointMode");
+			Map.Planning_Mode_Control(-1, -1);
 			break;
 
 		case COMMAND_CHEER:

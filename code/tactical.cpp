@@ -454,6 +454,8 @@ void Tactical::AI(void)
 		return;
 	}
 
+	Map.Planning_Hold_Check();
+
 	if (LastAIFrame != Frame) {
 		if (ScenarioActive) {
 			if (MoveTo != COORD_NONE && MoveSpeed != 0) {

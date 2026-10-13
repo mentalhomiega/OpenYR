@@ -142,6 +142,7 @@
 
 #include "_keyboar.h"
 #include "_map.h"
+#include "queue.h"
 #include "_rules.h"
 #include "_tactica.h"
 #include "audio/audioengine.h"
@@ -1437,6 +1438,24 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// planning <0|1>: turns planning mode on or off without the Z key. No hold key is set, so the mode stays on until planning 0.
+	if (step.Command == "planning") {
+		Map.Planning_Mode_Control(std::atoi(step.Argument.c_str()) != 0 ? 1 : 0, -1);
+		return;
+	}
+
+	// planstate <TypeName>: for each of the player's units of that type, its cell, queued planned orders and whether its plan runs.
+	if (step.Command == "planstate") {
+		for (int index = 0; index < Feet.Count(); index++) {
+			FootClass const * foot = Feet[index];
+			if (foot->House == PlayerPtr && stricmp(foot->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   planstate %s at %d,%d orders %d running %d mission %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y,
+					foot->PlannedOrders.Count(), foot->IsPlanRunning ? 1 : 0, (int)foot->CurrentMission);
+			}
+		}
+		return;
+	}
+
 	if (step.Command == "command") {
 		Execute_Command(step.Argument.c_str());
 	} else if (step.Command == "select") {
@@ -1950,6 +1969,8 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				ActionType const action = techno->What_Action(cell, false, false);
 				DebugString("AUTOTEST   clickcell %s at %d,%d: %s\n", techno->TClass->Name(), step.X, step.Y, ActionName[action]);
+				// Test hook: a click in planning mode is recorded as a planned order, as the real click path does.
+				PlanningRecordScope const recording(Map.IsPlanningMode);
 				techno->Active_Click_With(action, cell, false);
 				break;
 			}

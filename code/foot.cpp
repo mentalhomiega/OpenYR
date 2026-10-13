@@ -185,6 +185,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsNavQueueLoop(false),
 	IsScattering(false),
 	IsIdle(false),
+	IsPlanRunning(false),
 	IonBlastYDrawOffset(0),
 	IsCrushing(false),
 	IsOccupyingCell(true),
@@ -2105,6 +2106,10 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 			return(true);
 		}
 
+		if (Advance_Planned_Order()) {
+			return(true);
+		}
+
 		if (CurrentMission != MISSION_PATROL || Status == 0) {
 			if (CurrentPath != PATH_NONE && resume_waypoint) {
 				WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
@@ -2133,6 +2138,143 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 	}
 
 	return(false);
+}
+
+
+namespace {
+	// The most units in one house that may hold planned orders (PlanningNodeClass::CanCreatePlanningNode, 0x639130).
+	constexpr int PLANNED_UNIT_LIMIT = 128;
+
+
+	/// <summary>Counts the units of a house that hold at least one planned order.</summary>
+	int Planned_Unit_Count(HouseClass const * house)
+	{
+		int count = 0;
+		for (int index = 0; index < Feet.Count(); index++) {
+			FootClass const * foot = Feet[index];
+			if (foot->House == house && foot->PlannedOrders.Count() > 0) {
+				count++;
+			}
+		}
+		return(count);
+	}
+
+
+	/// <summary>
+	/// Checks that a planned order can still run: its unit, target and destination are alive, as
+	/// EventClass::Execute requires for a mega mission.
+	/// </summary>
+	bool Planned_Order_Is_Runnable(FootClass const & foot, PlannedOrderClass const & order)
+	{
+		if (!foot.IsActive || foot.IsInLimbo || foot.Strength <= 0) {
+			return(false);
+		}
+		xTargetClass const * targets[] = {&order.Target, &order.Destination};
+		for (xTargetClass const * target : targets) {
+			if (target->Is_Valid()) {
+				ObjectClass * object = target->As_Object();
+				if (object != NULL && (!object->IsActive || object->Strength == 0 || object->IsInLimbo)) {
+					return(false);
+				}
+			}
+		}
+		return(true);
+	}
+}
+
+
+/// <summary>
+/// Tells whether the unit can take one more planned order.
+/// </summary>
+/// <remarks>The unit's queue is capped by RulesClass::MaxWaypointPathLength. A unit with no orders
+/// yet also needs room in its house, which is capped at 128 units.</remarks>
+bool FootClass::Can_Take_Planned_Order(void) const
+{
+	int const queued = PlannedOrders.Count();
+	if (queued >= Rule->MaxWaypointPathLength) {
+		return(false);
+	}
+	return(queued > 0 || Planned_Unit_Count(House) < PLANNED_UNIT_LIMIT);
+}
+
+
+/// <summary>
+/// Appends a planned order to the unit's queue.
+/// </summary>
+/// <returns>bool; Was the order queued? False when the unit or its house is at the limit.</returns>
+bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
+{
+	if (!Can_Take_Planned_Order()) {
+		return(false);
+	}
+	PlannedOrders.Add(order);
+	return(true);
+}
+
+
+/// <summary>
+/// Starts the unit's committed plan by issuing its first order now. Each later order is issued
+/// when the unit goes idle.
+/// </summary>
+void FootClass::Start_Planned_Orders(void)
+{
+	if (PlannedOrders.Count() > 0) {
+		IsPlanRunning = true;
+		Advance_Planned_Order();
+	}
+}
+
+
+/// <summary>
+/// Issues the next planned order of a running plan.
+/// </summary>
+/// <returns>bool; Was an order issued? False when the plan is not running, has no orders left, or
+/// the next order cannot run. An order that cannot run clears the rest of the plan.</returns>
+bool FootClass::Advance_Planned_Order(void)
+{
+	if (!IsPlanRunning) {
+		return(false);
+	}
+	if (PlannedOrders.Count() == 0) {
+		IsPlanRunning = false;
+		return(false);
+	}
+
+	PlannedOrderClass const order = PlannedOrders[0];
+	PlannedOrders.Delete_Index(0);
+
+	if (!Planned_Order_Is_Runnable(*this, order)) {
+		Clear_Planned_Orders();
+		return(false);
+	}
+
+	EventClass leg(House->HeapID, EventClass::MEGAMISSION, TargetClass(this), order.Mission, order.Target, order.Destination);
+	leg.Execute_Planned_Leg();
+	return(true);
+}
+
+
+/// <summary>
+/// Drops every planned order the unit has not yet started and stops its running plan.
+/// </summary>
+void FootClass::Clear_Planned_Orders(void)
+{
+	PlannedOrders.Clear();
+	IsPlanRunning = false;
+}
+
+
+/// <summary>
+/// Starts the planned orders of every unit of the house, in the order of the global feet list.
+/// </summary>
+void Planned_Orders_Commit(HouseClass const * house)
+{
+	for (int index = 0; index < Feet.Count(); index++) {
+		FootClass * foot = Feet[index];
+		if (foot->House == house) {
+			foot->Start_Planned_Orders();
+		}
+	}
 }
 
 
