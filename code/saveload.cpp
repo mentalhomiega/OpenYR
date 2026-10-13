@@ -1325,6 +1325,8 @@ bool Load_Game(const char *file_name)
 	Session.CampaignDifficulty = Scen->Difficulty;
 	Session.CampaignCDifficulty = Scen->CDifficulty;
 
+	// Planned orders are not saved, so the loaded game starts with planning mode off.
+	Map.Reset_Planning_Mode();
 	Map.Init_IO();
 	Map.Activate(1);
 	Map.Reposition_Sidebar();

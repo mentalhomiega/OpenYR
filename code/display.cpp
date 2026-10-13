@@ -293,6 +293,7 @@ void DisplayClass::Init_Clear(void)
 	IsTentative = false;
 	IsSellMode = false;
 	IsPowerMode = false;
+	Reset_Planning_Mode();
 
 	/*
 	**	Empty all the display's layers
@@ -2618,6 +2619,17 @@ void DisplayClass::Planning_Hold_Check(void)
 	if (IsPlanningMode && PlanningHoldKey >= 0 && !Keyboard->Down(KeyNumType(PlanningHoldKey))) {
 		Planning_Mode_Control(0, -1);
 	}
+}
+
+
+/// <summary>
+/// Turns planning mode off at once, without queuing the commit that starts the plans.
+/// </summary>
+/// <remarks>Use it only where the plans are gone with the game state, such as a loaded save.</remarks>
+void DisplayClass::Reset_Planning_Mode(void)
+{
+	IsPlanningMode = false;
+	PlanningHoldKey = -1;
 }
 
 

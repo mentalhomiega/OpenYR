@@ -181,6 +181,7 @@ class DisplayClass: public MapClass
 		void Waypoint_Mode_Control(int control, bool edit_selected_path=false);
 		void Planning_Mode_Control(int control, int hold_key);
 		void Planning_Hold_Check(void);
+		void Reset_Planning_Mode(void);
 		void Power_Mode_Control(int control);
 		void Repair_Mode_Control(int control);
 		ObjectClass * Object_To_Follow(void) const;
