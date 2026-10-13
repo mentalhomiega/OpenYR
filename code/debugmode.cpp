@@ -30,6 +30,10 @@
 namespace
 {
 
+// The credits the infinite money cheat holds the player at. A purchase can leave the house below
+// it until its next AI update raises it back.
+int const CREDIT_FLOOR = 100000;
+
 bool Cheat_On[(int)DebugCheat::COUNT];
 
 // Records the first use of each cheat in a game, so that a bug report from a cheated game shows it.
@@ -99,6 +103,14 @@ bool Debug_Cheat_Active(DebugCheat cheat)
 bool Debug_Cheat_Active_For(DebugCheat cheat, HouseClass const * house)
 {
 	return(house != NULL && house == PlayerPtr && Debug_Cheat_Active(cheat));
+}
+
+
+void Debug_Top_Up_Credits(HouseClass * house)
+{
+	if (Debug_Cheat_Active_For(DebugCheat::INFINITE_MONEY, house) && house->Credits < CREDIT_FLOOR) {
+		house->Credits = CREDIT_FLOOR;
+	}
 }
 
 

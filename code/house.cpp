@@ -149,6 +149,7 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "debugmode.h"
 #include "ddist.h"
 #include "dsurface.h"
 #include "factory.h"
@@ -1450,6 +1451,8 @@ FactoryClass *HouseClass::Factory_Producing_This(ObjectTypeClass const * object)
 void HouseClass::AI(void)
 {
 	//assert(Houses.ID(this) == ID);
+
+	Debug_Top_Up_Credits(this);
 
 	if (IsPowerBlackout && PowerBlackout == 0) {
 		IsPowerBlackout = false;

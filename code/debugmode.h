@@ -37,6 +37,9 @@ bool Debug_Cheat_Active_For(DebugCheat cheat, HouseClass const * house);
 // Turns a cheat on or off and shows the result on screen. Does nothing unless Debug_Mode_Active().
 void Debug_Cheat_Toggle(DebugCheat cheat);
 
+// Raises the house's credits to the infinite money floor when the cheat is on for that house.
+void Debug_Top_Up_Credits(HouseClass * house);
+
 // Turns every cheat off and clears the record of which cheats were used. Call this when a game
 // starts or loads.
 void Debug_Cheats_Reset(void);
