@@ -121,6 +121,8 @@ class SpawnerConfigClass
 		// Where the machines reach one another, settled by whatever service arranged the match.
 		int TunnelId = 0;
 		int ListenPort = 1234;
+		// The address the listening socket binds in a direct match; empty binds every address.
+		std::string BindAddress;
 		std::string TunnelAddress = "0.0.0.0";
 		int TunnelPort = 0;
 

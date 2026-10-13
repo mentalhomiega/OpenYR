@@ -264,12 +264,14 @@ void IPXManagerClass::Configure_Tunnel(unsigned short local_id, unsigned long tu
 /// was given rather than one discovered by asking the network who is out there.
 /// </summary>
 /// <param name="listen_port">Port to play over, in host order.</param>
-void IPXManagerClass::Configure_Direct_Peers(unsigned short listen_port)
+/// <param name="local_address">Network-order address to bind; 0 binds every address.</param>
+void IPXManagerClass::Configure_Direct_Peers(unsigned short listen_port, uint32_t local_address)
 {
 	Shutdown();
 
 	UDPInterfaceClass *udp = new UDPInterfaceClass;
 	udp->Set_Local_Port(listen_port);
+	udp->Set_Local_Address(local_address);
 	udp->Set_Destination_Port(listen_port);
 
 	PacketTransport = udp;

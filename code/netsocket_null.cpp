@@ -14,7 +14,7 @@
 #include <cstring>
 
 
-bool NullSocketClass::Open(unsigned short port)
+bool NullSocketClass::Open(unsigned short port, uint32_t)
 {
 	Port = port;
 	Opened = true;

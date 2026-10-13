@@ -76,8 +76,9 @@ class SocketClass
 
 		// Binds a non-blocking datagram socket to the port, starting the
 		// platform's socket library on first use. The transport only ever
-		// polls, so there is no blocking mode to ask for.
-		virtual bool Open(unsigned short port) = 0;
+		// polls, so there is no blocking mode to ask for. local_address is a
+		// network-order IPv4 address; 0 (INADDR_ANY) binds every address.
+		virtual bool Open(unsigned short port, uint32_t local_address) = 0;
 		virtual void Close(void) = 0;
 		virtual bool Is_Open(void) const = 0;
 
@@ -108,7 +109,7 @@ class NullSocketClass : public SocketClass
 			std::vector<unsigned char> Bytes;
 		};
 
-		bool Open(unsigned short port) override;
+		bool Open(unsigned short port, uint32_t local_address) override;
 		void Close(void) override;
 		bool Is_Open(void) const override { return(Opened); }
 

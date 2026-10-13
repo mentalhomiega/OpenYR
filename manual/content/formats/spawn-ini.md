@@ -247,7 +247,7 @@ A saved game keeps the picture and the bar position. The first restart after the
 
 ## A game against other machines
 
-Each machine writes its own file, with itself in `[Settings]` and the other people in the `[OtherN]` sections. Write the other people in consecutive sections from `[Other1]`, so the computer players take the same file positions in every file. Apart from where each person is written, `Host`, and the `Ip` and `Port` entries of `[Settings]` and `[OtherN]`, every file must describe the same match:
+Each machine writes its own file, with itself in `[Settings]` and the other people in the `[OtherN]` sections. Write the other people in consecutive sections from `[Other1]`, so the computer players take the same file positions in every file. Apart from where each person is written, `Host`, `BindAddress`, and the `Ip` and `Port` entries of `[Settings]` and `[OtherN]`, every file must describe the same match:
 
 - the same `Scenario`, and the same scenario file on every machine;
 - the same [match options](#the-options-every-house-plays-under) and `AutoSaveGame`;
@@ -259,9 +259,11 @@ The keys under [What a player is shown](#what-a-player-is-shown) and the two wai
 
 Before play begins, the machines compare the scenarios they loaded. If they differ, the match stops with the message `Scenarios don't match.`
 
-The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) do not change it.
+The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, `BindAddress`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) do not change it.
 
 Without a tunnel, each `[OtherN]` section also gives `Ip`, the address that machine answers on, and `Port`, the port it listens on. `[Settings] Port` is the port this machine listens on, `1234` by default. Write each address as a dotted IPv4 address such as `203.0.113.7`; a host name is refused.
+
+`[Settings] BindAddress` is the address the listening socket binds, as a dotted IPv4 address such as `127.0.0.1`. Left out or empty, the socket binds every address. A machine that binds `127.0.0.1` receives only datagrams sent to that address, so other machines cannot reach it. Through a tunnel, the key has no effect.
 
 A `[Tunnel]` section with a nonzero `Port` plays the match through the tunnel server at its `Ip` and `Port`, and the `Ip` entries of `[Settings]` and `[OtherN]` are ignored. For a tunnel server on the same computer, write `127.0.0.1` as `[Tunnel] Ip`.
 
@@ -299,6 +301,7 @@ A game against other machines, new or resumed, is also refused when:
 
 - a person has no `Name`, or two people have the same name, ignoring case, or the same `Color`;
 - without a tunnel, `[Settings] Port` or another person's `Port` is outside `1` to `65535`, or another person's `Ip` is not a dotted IPv4 address other than `0.0.0.0`;
+- without a tunnel, `[Settings] BindAddress` is written but is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Tunnel] Port` is negative or above `65535`, or `[Tunnel] Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;
 - the network cannot be opened.

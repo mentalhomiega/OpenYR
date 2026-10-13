@@ -74,6 +74,7 @@ extern int WestwoodOnline_PortNumber;
 UDPInterfaceClass::UDPInterfaceClass (void) :
 	BASECLASS(),
 	LocalPort(0),
+	LocalAddress(0),
 	DestinationPort(0),
 	LocalPortSet(false),
 	DestinationPortSet(false),
@@ -92,6 +93,16 @@ void UDPInterfaceClass::Set_Local_Port(unsigned short port)
 {
 	LocalPort = port;
 	LocalPortSet = true;
+}
+
+
+/// <summary>
+/// Sets the address the socket binds when Open_Socket opens it.
+/// </summary>
+/// <param name="address">Network-order IPv4 address; 0 binds every address.</param>
+void UDPInterfaceClass::Set_Local_Address(uint32_t address)
+{
+	LocalAddress = address;
 }
 
 
@@ -301,7 +312,7 @@ bool UDPInterfaceClass::Open_Socket(void)
 	*/
 	unsigned short const port = LocalPortSet ? LocalPort : (unsigned short) WestwoodOnline_PortNumber;
 
-	if (!Socket->Open(port)) {
+	if (!Socket->Open(port, LocalAddress)) {
 		return(false);
 	}
 

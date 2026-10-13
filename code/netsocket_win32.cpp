@@ -77,7 +77,7 @@ class WinsockSocketClass : public SocketClass
 	public:
 		~WinsockSocketClass(void) override;
 
-		bool Open(unsigned short port) override;
+		bool Open(unsigned short port, uint32_t local_address) override;
 		void Close(void) override;
 		bool Is_Open(void) const override { return(Socket != INVALID_SOCKET); }
 
@@ -106,7 +106,7 @@ WinsockSocketClass::~WinsockSocketClass(void)
 }
 
 
-bool WinsockSocketClass::Open(unsigned short port)
+bool WinsockSocketClass::Open(unsigned short port, uint32_t local_address)
 {
 	if (!Started) {
 		if (!Start_Winsock()) return(false);
@@ -130,7 +130,7 @@ bool WinsockSocketClass::Open(unsigned short port)
 	sockaddr_in addr = {};
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	addr.sin_addr.s_addr = local_address;
 
 	DebugString("About to bind the UDP socket to port %d\n", port);
 

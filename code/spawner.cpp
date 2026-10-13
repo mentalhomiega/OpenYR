@@ -313,7 +313,9 @@ static bool Spawner_Wire_Network(void)
 		Ipx.Configure_Tunnel(htons((unsigned short)SpawnConfig.TunnelId),
 			inet_addr(SpawnConfig.TunnelAddress.c_str()), htons((unsigned short)SpawnConfig.TunnelPort));
 	} else {
-		Ipx.Configure_Direct_Peers((unsigned short)SpawnConfig.ListenPort);
+		uint32_t const bind_address = SpawnConfig.BindAddress.empty()
+			? htonl(INADDR_ANY) : inet_addr(SpawnConfig.BindAddress.c_str());
+		Ipx.Configure_Direct_Peers((unsigned short)SpawnConfig.ListenPort, bind_address);
 	}
 
 	// The local seat is first, so every seat after it is another machine.

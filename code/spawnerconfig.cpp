@@ -361,6 +361,9 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 			}
 		} else if (ListenPort < 1 || ListenPort > 65535) {
 			return(Fault(fault, "This machine listens on port %d, which is not a port.", ListenPort));
+		} else if (!BindAddress.empty() && !Is_Address(BindAddress)) {
+			return(Fault(fault, "This machine binds to %s, which is not a dotted IPv4 address.",
+				BindAddress.c_str()));
 		}
 	}
 
@@ -494,6 +497,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	// One key serves twice: the port the game listens on, and this machine's tunnel number.
 	TunnelId = ini.Get_Int(SETTINGS, "Port", TunnelId);
 	ListenPort = ini.Get_Int(SETTINGS, "Port", ListenPort);
+	BindAddress = Read_Text(ini, SETTINGS, "BindAddress", BindAddress);
 	TunnelAddress = Read_Text(ini, "Tunnel", "Ip", TunnelAddress);
 	TunnelPort = ini.Get_Int("Tunnel", "Port", TunnelPort);
 

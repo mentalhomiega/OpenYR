@@ -1126,6 +1126,67 @@ int main(void)
 			"a match is refused rather than read against countries the rules never declared");
 	}
 
+	/*
+	 * A direct match binds the address its file names. Left unset, it binds every address, and a
+	 * value that is not a dotted IPv4 address refuses the launch.
+	 */
+	{
+		char const bound[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=50003\n"
+			"BindAddress=127.0.0.1\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=4\n"
+			"Ip=127.0.0.1\n"
+			"Port=50004\n";
+		char const unbound[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=50003\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=4\n"
+			"Ip=127.0.0.1\n"
+			"Port=50004\n";
+		char const named[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=50003\n"
+			"BindAddress=localhost\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=4\n"
+			"Ip=127.0.0.1\n"
+			"Port=50004\n";
+
+		std::string reason;
+		SpawnerConfigClass bound_config = Read(bound, sizeof(bound) - 1);
+		Check(bound_config.BindAddress == "127.0.0.1",
+			"the listening socket binds the address the file names");
+		Check(Judge(bound, sizeof(bound) - 1, 2, 8, reason),
+			"a bind address written as dotted IPv4 is accepted");
+		Check(Read(unbound, sizeof(unbound) - 1).BindAddress.empty(),
+			"without BindAddress the listening socket binds every address");
+		Check(Judge(unbound, sizeof(unbound) - 1, 2, 8, reason),
+			"a file without BindAddress is accepted");
+		Check(!Judge(named, sizeof(named) - 1, 2, 8, reason) && reason.find("binds to") != std::string::npos,
+			"a bind address that is not dotted IPv4 is refused");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

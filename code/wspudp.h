@@ -58,6 +58,9 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 		void Set_Local_Port(unsigned short port);
 		void Set_Destination_Port(unsigned short port);
 
+		// Network-order IPv4 address to bind; 0 binds every address.
+		void Set_Local_Address(uint32_t address);
+
 		void Enable_Broadcast(bool enable);
 
 		/*
@@ -106,6 +109,7 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 		DynamicVectorClass <unsigned char *> LocalAddresses;
 
 		unsigned short LocalPort;
+		uint32_t LocalAddress;
 		unsigned short DestinationPort;
 		bool LocalPortSet;
 		bool DestinationPortSet;
