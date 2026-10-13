@@ -58,7 +58,7 @@ class TVelocity2D
 
 		DirType Get_Yaw(void) const
 		{
-			return(std::atan2((double)-Y, (double)X));
+			return(Gamemd_Atan2((double)-Y, (double)X));
 		}
 
 		void Nonzero_Check(void)
@@ -162,7 +162,7 @@ class TVelocity3D : public TVelocity2D<T>
 
 		DirType Get_Pitch(void) const
 		{
-			return(std::atan2((double)Z, Horizontal_Speed()));
+			return(Gamemd_Atan2((double)Z, Horizontal_Speed()));
 		}
 
 		void Nonzero_Check(void)
