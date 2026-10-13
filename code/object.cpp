@@ -1640,7 +1640,7 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	assert(this != NULL);
 
 	// The invulnerable cheat blocks damage only; a negative amount (healing) still applies.
-	if (damage > 0 && Debug_Cheat_Active_For(DebugCheat::INVULNERABLE_UNITS, Owner_HouseClass())) {
+	if (damage > 0 && Debug_Blocks_Damage(this)) {
 		damage = 0;
 		return(RESULT_NONE);
 	}

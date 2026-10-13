@@ -2038,6 +2038,71 @@ registered_commands:
     source: code/init.cpp
     class: DebugChargeSuperweaponsCommandClass
     guard: null
+- id: DebugHealSelected
+  route_id: debughealselected
+  kind: registered
+  title: Heal Selected
+  description: Restores full strength to your selected units and buildings. Works only with Debug mode
+    on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugHealSelectedCommandClass
+    guard: null
+- id: DebugPromoteSelected
+  route_id: debugpromoteselected
+  kind: registered
+  title: Promote Selected
+  description: Makes your selected trainable units elite, so their elite weapons and abilities apply.
+    Works only with Debug mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugPromoteSelectedCommandClass
+    guard: null
+- id: DebugDestroySelected
+  route_id: debugdestroyselected
+  kind: registered
+  title: Destroy Selected
+  description: Destroys your selected units and buildings through the normal death path, with their explosions
+    and triggers. Works even while Invulnerable Units is on. Works only with Debug mode on in single-player
+    games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugDestroySelectedCommandClass
+    guard: null
+- id: DebugFastForward
+  route_id: debugfastforward
+  kind: registered
+  title: Fast-Forward
+  description: Runs the game without the frame limit that the game speed sets, so it runs much faster.
+    Each tick does the same work as usual. Works only with Debug mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugFastForwardCommandClass
+    guard: null
 fixed_controls:
 - id: fixed:options-menu
   route_id: fixed-options-menu

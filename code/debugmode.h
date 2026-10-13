@@ -10,10 +10,11 @@
 #pragma once
 
 class HouseClass;
+class ObjectClass;
 
 
-// The tester debug cheats. The first six are toggles, switched with Debug_Cheat_Toggle(). The
-// last three run once each, through Debug_Cheat_Run(). A toggle is on only while Debug_Mode_Active()
+// The tester debug cheats. The first seven are toggles, switched with Debug_Cheat_Toggle(). The
+// rest run once each, through Debug_Cheat_Run(). A toggle is on only while Debug_Mode_Active()
 // holds, and the on state is kept only for the current game: a new game or a loaded save starts
 // with every cheat off.
 enum class DebugCheat
@@ -24,9 +25,13 @@ enum class DebugCheat
 	REVEAL_MAP,
 	FULL_POWER,
 	INVULNERABLE_UNITS,
+	FAST_FORWARD,
 	WIN_MISSION,
 	LOSE_MISSION,
 	CHARGE_SUPERWEAPONS,
+	HEAL_SELECTED,
+	PROMOTE_SELECTED,
+	DESTROY_SELECTED,
 	COUNT
 };
 
@@ -40,6 +45,9 @@ bool Debug_Cheat_Active(DebugCheat cheat);
 
 // Is the cheat on and the house the player's? The cheats act on the player's house only.
 bool Debug_Cheat_Active_For(DebugCheat cheat, HouseClass const * house);
+
+// Does the invulnerable cheat block damage to this object? Destroy Selected is not blocked on the object it removes.
+bool Debug_Blocks_Damage(ObjectClass const * object);
 
 // Turns a toggle cheat on or off and shows the result on screen. Does nothing unless Debug_Mode_Active().
 void Debug_Cheat_Toggle(DebugCheat cheat);

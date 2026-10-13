@@ -34,6 +34,7 @@
 #include "conquer.h"
 #include "data.h"
 #include "debug.h"
+#include "debugmode.h"
 #include "dialog.h"
 #include "dsurface.h"
 #include "fog.h"
@@ -218,6 +219,10 @@ static void Finish_Decided_Game(void)
 static int Target_Frame_Rate(void)
 {
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
+		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
+		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD)) {
+			return(0);
+		}
 		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
 	}
 

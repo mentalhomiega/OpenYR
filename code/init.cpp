@@ -5981,6 +5981,94 @@ class DebugChargeSuperweaponsCommandClass : public CommandClass
 };
 
 
+class DebugHealSelectedCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugHealSelected");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_HEAL_SELECTED));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_HEAL_SELECTED_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Run(DebugCheat::HEAL_SELECTED);
+		}
+};
+
+
+class DebugPromoteSelectedCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugPromoteSelected");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_PROMOTE_SELECTED));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_PROMOTE_SELECTED_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Run(DebugCheat::PROMOTE_SELECTED);
+		}
+};
+
+
+class DebugDestroySelectedCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugDestroySelected");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_DESTROY_SELECTED));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_DESTROY_SELECTED_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Run(DebugCheat::DESTROY_SELECTED);
+		}
+};
+
+
+class DebugFastForwardCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugFastForward");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_FAST_FORWARD));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_FAST_FORWARD_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::FAST_FORWARD);
+		}
+};
+
+
 /// <summary>
 /// Gives a command a key when the keyboard file bound neither the command nor the key.
 /// </summary>
@@ -6193,6 +6281,14 @@ static void Init_Commands(void)
 	AllCommands.Add(debuglosecmd);
 	CommandClass * debugchargecmd = new DebugChargeSuperweaponsCommandClass;
 	AllCommands.Add(debugchargecmd);
+	CommandClass * debughealcmd = new DebugHealSelectedCommandClass;
+	AllCommands.Add(debughealcmd);
+	CommandClass * debugpromotecmd = new DebugPromoteSelectedCommandClass;
+	AllCommands.Add(debugpromotecmd);
+	CommandClass * debugdestroycmd = new DebugDestroySelectedCommandClass;
+	AllCommands.Add(debugdestroycmd);
+	CommandClass * debugfastforwardcmd = new DebugFastForwardCommandClass;
+	AllCommands.Add(debugfastforwardcmd);
 
 	Init_Hotkeys();
 
@@ -6221,6 +6317,10 @@ static void Init_Commands(void)
 	Claim_Free_Key((KeyNumType)(KN_W | KN_CTRL_BIT | KN_SHIFT_BIT), debugwincmd);
 	Claim_Free_Key((KeyNumType)(KN_L | KN_CTRL_BIT | KN_SHIFT_BIT), debuglosecmd);
 	Claim_Free_Key((KeyNumType)(KN_K | KN_CTRL_BIT | KN_SHIFT_BIT), debugchargecmd);
+	Claim_Free_Key((KeyNumType)(KN_H | KN_CTRL_BIT | KN_SHIFT_BIT), debughealcmd);
+	Claim_Free_Key((KeyNumType)(KN_E | KN_CTRL_BIT | KN_SHIFT_BIT), debugpromotecmd);
+	Claim_Free_Key((KeyNumType)(KN_D | KN_CTRL_BIT | KN_SHIFT_BIT), debugdestroycmd);
+	Claim_Free_Key((KeyNumType)(KN_F | KN_CTRL_BIT | KN_SHIFT_BIT), debugfastforwardcmd);
 }
 
 

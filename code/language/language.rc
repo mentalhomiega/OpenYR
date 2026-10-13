@@ -1123,6 +1123,14 @@ BEGIN
     TXT_DEBUG_CHARGE_SUPERWEAPONS "Charge Superweapons"
     TXT_DEBUG_CHARGE_SUPERWEAPONS_DESC "Makes every superweapon you have ready now. Works only with Debug mode on in single-player games."
     TXT_DEBUG_RUN           "Debug: %s"
+    TXT_DEBUG_HEAL_SELECTED "Heal Selected"
+    TXT_DEBUG_HEAL_SELECTED_DESC "Restores full strength to your selected units and buildings. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_PROMOTE_SELECTED "Promote Selected"
+    TXT_DEBUG_PROMOTE_SELECTED_DESC "Makes your selected trainable units elite, so their elite weapons and abilities apply. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_DESTROY_SELECTED "Destroy Selected"
+    TXT_DEBUG_DESTROY_SELECTED_DESC "Destroys your selected units and buildings through the normal death path, with their explosions and triggers. Works even while Invulnerable Units is on. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_FAST_FORWARD  "Fast-Forward"
+    TXT_DEBUG_FAST_FORWARD_DESC "Runs the game without the frame limit that the game speed sets, so it runs much faster. Each tick does the same work as usual. Works only with Debug mode on in single-player games."
 END
 
 #endif    // English (U.S.) resources
