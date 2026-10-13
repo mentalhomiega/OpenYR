@@ -91,6 +91,8 @@ class FlyLocomotionClass : public LocomotionClass
 		bool Landing_Takeoff_AI(void);
 		bool Edge_Of_World_AI(void);
 		void Movement_AI(void);
+		bool Is_Held_To_Playfield(void);
+		bool Pull_Back_Onto_Playfield(Coord & coord);
 		ImpactType Physics(Coord & coord, DirType facing);
 		void Rotation_AI(void);
 

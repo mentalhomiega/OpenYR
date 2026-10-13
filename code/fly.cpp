@@ -469,6 +469,47 @@ bool FlyLocomotionClass::Edge_Of_World_AI(void)
 }
 
 
+/// <summary>
+/// Is this object held to the playfield when it has moved beyond it?
+/// Only an object that is leaving the map is held. Gamemd exempts only a fly by aircraft; a fly
+/// back aircraft is exempt here as well, so AircraftClass::AI can remove it at the playfield edge.
+/// </summary>
+/// <returns>bool; Should the object be held to the playfield?</returns>
+bool FlyLocomotionClass::Is_Held_To_Playfield(void)
+{
+	if (LinkedTo->RTTI == RTTI_AIRCRAFT) {
+		AircraftClass const * plane = static_cast<AircraftClass const *>(LinkedTo);
+		if (plane->Class->IsFlyBy || plane->Class->IsFlyBack) {
+			return(false);
+		}
+	}
+	return(LinkedTo->Should_Delete_Off_Map());
+}
+
+
+/// <summary>
+/// Moves a position beyond the playfield back onto it: half a cell along X toward the middle of
+/// the map, or else to a random spot near that.
+/// </summary>
+/// <param name="coord">The position to pull back. It is changed even when no spot is found.</param>
+/// <returns>bool; Does the position now lie on the playfield? When false, the object keeps the
+/// position it had before the move.</returns>
+bool FlyLocomotionClass::Pull_Back_Onto_Playfield(Coord & coord)
+{
+	Cell edge = Map.Cell_To_LocalRect(coord.As_Cell());
+	if (edge.X < Map.MapRect.Width / 2) {
+		coord.X += CELL_LEPTON_W / 2;
+	} else {
+		coord.X -= CELL_LEPTON_W / 2;
+	}
+
+	if (!Map.In_Radar(coord.As_Cell())) {
+		coord = Coord_Scatter(coord, CELL_LEPTON / 4, false);
+	}
+	return(Map.In_Radar(coord.As_Cell()));
+}
+
+
 /***********************************************************************************************
  * AircraftClass::Movement_AI -- Handles aircraft physical movement logic.                     *
  *                                                                                             *
@@ -594,22 +635,13 @@ void FlyLocomotionClass::Movement_AI(void)
 	coord = LinkedTo->Get_Coord();
 	Physics(coord, LinkedTo->PrimaryFacing.Current());
 
-	// A leaving aircraft may cross the playfield edge; AircraftClass::Update removes it there (0x414FA1).
-	bool const leaving = LinkedTo->Should_Delete_Off_Map();
-	if (!leaving && !Map.In_Radar(coord.As_Cell())) {
-		Cell edge = Map.Cell_To_LocalRect(coord.As_Cell());
-		if (edge.X < Map.MapRect.Width / 2) {
-			coord.X += CELL_LEPTON_W / 2;
-		} else {
-			coord.X -= CELL_LEPTON_W / 2;
-		}
-
-		if (!Map.In_Radar(coord.As_Cell())) {
-			coord = Coord_Scatter(coord, CELL_LEPTON / 4, false);
-		}
+	// Only an object that is leaving is held to the playfield; anything else keeps the position it
+	// flew to, past the edge too (FlyLocomotionClass::Movement_AI, 0x4CD600).
+	bool place = true;
+	if (!Map.In_Radar(coord.As_Cell()) && Is_Held_To_Playfield()) {
+		place = Pull_Back_Onto_Playfield(coord);
 	}
-
-	if (leaving || Map.In_Radar(coord.As_Cell())) {
+	if (place) {
 		LinkedTo->Set_Coord(coord);
 	}
 
