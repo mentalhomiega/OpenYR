@@ -2862,6 +2862,9 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 		return(false);
 	}
 
+	// A mind-controlled passenger of an open-topped transport stops on allies rather than enemies (TechnoClass::Evaluate_Cell, 0x6F8960).
+	bool const mc_passenger = Transporter != NULL && Transporter->TClass->IsOpenTopped && Transporter->MindControlledBy != NULL;
+
 	ObjectClass const * tentative = cellptr->Cell_Occupier(true);
 	TechnoClass * tech = NULL;
 	if (tentative == NULL) {
@@ -2873,10 +2876,13 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 			tech = Dynamic_Cast<TechnoClass *>((ObjectClass *)tentative);
 			if (tech) {
 				if (Combat_Damage() < 0) {
-					if (tech->HealthRatio < Rule->ConditionGreen && House->Is_Ally(tech) && Can_Heal(tech)) break;
+					if (tech->HealthRatio < Rule->ConditionGreen && House->Is_Ally(tech)) break;
 				} else {
-					if (!House->Is_Ally(tech)
+					bool const ally = House->Is_Ally(tech);
+					if ((!ally && !mc_passenger)
+						|| TClass->IsAttackFriendlies
 						|| IsBerzerk
+						|| (mc_passenger && ally)
 						|| (RTTI == RTTI_INFANTRY
 							&& ((((InfantryClass*)this)->Class->IsEngineer
 								&& CurrentMission == MISSION_GUARD_AREA
