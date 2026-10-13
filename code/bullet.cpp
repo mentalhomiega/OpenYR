@@ -73,6 +73,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "infantry.h"
+#include "infatype.h"
 #include "inline.h"
 #include "lightcon.h"
 #include "lstorm.h"
@@ -903,6 +904,14 @@ void BulletClass::AI(void)
 			// Ranged=yes projectiles (IsFueled) check their fuse as homing ones do, so a flak shell bursts near its aim
 			// point rather than falling to the ground (BulletClass::Update, 0x467C0C).
 			FuseResultType fuse = (Is_Homing() || Class->IsFueled) ? Fuse.Fuse_Checkup(coord) : FUSE_WAIT;
+
+			// A far trip by a jump-jet infantry owner counts as close (BulletClass::Update, 0x467C3C).
+			if (fuse == FUSE_EXPLODE_FAR) {
+				InfantryClass const * jumper = dynamic_cast<InfantryClass const *>(Payback);
+				if (jumper != NULL && jumper->Class->IsJumpJet) {
+					fuse = FUSE_EXPLODE_CLOSE;
+				}
+			}
 			if (!forced && (Class->IsDropping || fuse == FUSE_WAIT)) {
 				/*
 				**	Certain projectiles lose strength when they travel.

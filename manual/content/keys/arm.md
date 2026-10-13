@@ -13,7 +13,7 @@ Only a projectile with a [`ROT`](/keys/rot/#scope-bullettype) above zero has a f
 
 A shot fired at an aircraft is armed at once, whatever `Arm` says.
 
-Once armed, the fuse trips when the projectile comes within 64 leptons of the fuse point, height included, or when it is within two cells of the fuse point and moving away from it.
+Once armed, the fuse trips when the projectile comes within 64 leptons of the fuse point, height included, or when it is within two cells of the fuse point and moving away from it. When the firer is a [`JumpJet=yes`](/keys/jumpjet/) infantry, the second kind of trip counts as the first.
 
 The fuse point is the target's position at the moment of launch, not the predicted aim point. It does not follow a target that moves afterward.
 
