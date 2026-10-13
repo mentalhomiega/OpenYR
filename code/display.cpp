@@ -1506,7 +1506,7 @@ Cell DisplayClass::Calculated_Cell(SourceType dir, Cell const & waypoint, Cell c
 				int dist = -1;
 				Cell best = CELL_NONE;
 				for (int i = 0; i < cells.Count(); i++) {
-					int d = trycell.Distance_To(cells[i]);
+					int d = Gamemd_Length_2D(trycell.X - cells[i].X, trycell.Y - cells[i].Y);
 					if (dist == -1 || d < dist) {
 						best = cells[i];
 						dist = d;
