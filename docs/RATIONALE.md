@@ -92,6 +92,10 @@ builds the same values.
   Two quarter-turn entries, at 4096 and 8192, are stored as gamemd has them
   because no formula found reproduces them. The table is verified against the
   executable for every entry the game can reach.
+- The arccosine (`Gamemd_Acos`) returns pi / 2 minus the table of
+  single-precision arcsines at `trunc((x + 1) * 2048)`. The table is built from
+  IEEE double arithmetic and matches all 4097 entries of gamemd's table. The
+  angle therefore moves in steps of about 1 / 2048 of its argument.
 - The arctangent table (`atan2` in gamemd) is generated the way the original
   was. Its argument starts at 0 and each step adds `K`, about 0.0244, with both
   rounded toward zero to single precision. Entry `i` is the single precision

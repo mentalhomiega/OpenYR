@@ -129,6 +129,17 @@ int main(void)
 	Check(close_to_library, "every angle is within one table step (0.0245) of the library value");
 	Check(not_toward_axis, "the table angle lies between the library value and the x axis, to 1e-6");
 
+	std::printf("\nArccosine (gamemd 0x4CADB0)\n");
+	Check(std::fabs(Gamemd_Acos(0.0) - 3.141592653589793 / 2.0) < 1.0e-6, "arccosine of 0 is a quarter turn");
+	Check(std::fabs(Gamemd_Acos(-1.0) - 3.141592653589793) < 1.0e-6, "arccosine of -1 is a half turn");
+	Check(std::fabs(Gamemd_Acos(0.5) - std::acos(0.5)) < 1.0e-6, "arccosine of one half is within 1e-6 of the library value");
+	Check(Gamemd_Acos(2.0) == Gamemd_Acos(1.0) && Gamemd_Acos(-2.0) == Gamemd_Acos(-1.0), "values outside [-1, 1] use the nearest end");
+	bool acos_falls = true;
+	for (int step = -1000; step < 1000; step++) {
+		acos_falls = acos_falls && Gamemd_Acos(step / 1000.0) >= Gamemd_Acos((step + 1) / 1000.0);
+	}
+	Check(acos_falls, "arccosine falls as its value rises");
+
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Checks FAILED.");
 	return(Failures == 0 ? 0 : 1);
 }

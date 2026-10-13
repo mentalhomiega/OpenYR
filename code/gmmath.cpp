@@ -140,6 +140,53 @@ std::array<float, SINE_TABLE_SIZE> const & Sine_Table(void)
 }
 
 
+constexpr int ASIN_TABLE_SIZE = 4097;
+constexpr double HALF_PI_DOUBLE = 1.5707963267948966;
+
+
+// asin(y) for 0 <= y <= 1/2 by its power series, through y^79.
+double Asin_Series(double y)
+{
+	double const square = y * y;
+	double term = y;
+	double sum = y;
+	for (int n = 1; n <= 39; n++) {
+		term = term * double((2 * n - 1) * (2 * n - 1)) * square / double((2 * n) * (2 * n + 1));
+		sum += term;
+	}
+	return sum;
+}
+
+
+// asin(x) for |x| <= 1 from IEEE double arithmetic only. Above one half, pi / 2 - 2 asin(y) with
+// y = sqrt((1 - |x|) / 2) keeps the series argument at or below 1/2.
+double Asin_Formula(double x)
+{
+	double const magnitude = std::fabs(x);
+	double result = 0.0;
+	if (magnitude <= 0.5) {
+		result = Asin_Series(magnitude);
+	} else {
+		result = HALF_PI_DOUBLE - 2.0 * Asin_Series(std::sqrt((1.0 - magnitude) / 2.0));
+	}
+	return x < 0.0 ? -result : result;
+}
+
+
+// Entry m is asin(m / 2048 - 1) truncated to single precision, for m from 0 through 4096.
+std::array<float, ASIN_TABLE_SIZE> const & Asin_Table(void)
+{
+	static std::array<float, ASIN_TABLE_SIZE> const table = [] {
+		std::array<float, ASIN_TABLE_SIZE> built{};
+		for (int index = 0; index < ASIN_TABLE_SIZE; index++) {
+			built[index] = Truncate_To_Single(Asin_Formula(double(index) / 2048.0 - 1.0));
+		}
+		return built;
+	}();
+	return table;
+}
+
+
 // trunc(value * scale) from the exact product. gamemd rounds the product toward zero to double
 // and then truncates, which gives the same integer as truncating the exact product.
 std::int64_t Truncated_Product(double value, double scale)
@@ -310,6 +357,17 @@ float Gamemd_Cosine(double radians)
 {
 	std::int32_t const n = std::int32_t(Truncated_Product(radians, double(TRIG_SCALE)));
 	return Sine_Table()[Table_Index(n, true)];
+}
+
+
+double Gamemd_Acos(double value)
+{
+	double const scaled = Chop_Sum(value, 1.0) * 2048.0;
+	std::int64_t index = scaled > 0.0 ? std::int64_t(scaled) : 0;
+	if (index >= ASIN_TABLE_SIZE) {
+		index = ASIN_TABLE_SIZE - 1;
+	}
+	return Chop_Sum(HALF_PI_DOUBLE, -double(Asin_Table()[std::size_t(index)]));
 }
 
 
