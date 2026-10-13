@@ -46,7 +46,7 @@ Six settings on an InfantryType decide what a soldier does when it reaches whate
 | Setting | What the soldier does on arrival |
 | --- | --- |
 | [`Engineer=yes`](/keys/engineer/#scope-infantrytype) | Restores an allied structure, takes or damages a non-allied one, repairs a bridge |
-| [`C4=yes`](/keys/c4/) | Arms a [`Repairable=yes`](/keys/repairable/) structure with a demolition charge and walks away |
+| [`C4=yes`](/keys/c4/) | Arms a structure that [`CanC4`](/keys/canc4/) allows with a demolition charge and walks away |
 | [`Agent=yes`](/keys/agent/) | Spies on the structure it enters |
 | [`Infiltrate=yes`](/keys/infiltrate/) | Lets the soldier be sent into a structure. On its own, the soldier is consumed on arrival and nothing else happens |
 | [`VehicleThief=yes`](/keys/vehiclethief/) | Takes the vehicle it was sent at |
@@ -60,7 +60,7 @@ Six settings on an InfantryType decide what a soldier does when it reaches whate
 
 ### An engineer over a structure
 
-A **deployed vehicle** is a structure whose type names an [`UndeploysInto`](/keys/undeploysinto/) vehicle and is not a construction yard. The engine counts a deployed vehicle as a vehicle, not as a structure, and that distinction runs through the rest of this page.
+A **deployed vehicle** is a structure whose type names an [`UndeploysInto`](/keys/undeploysinto/) vehicle and is not a construction yard. The engine counts a deployed vehicle as a vehicle, not as a structure, and that distinction runs through the rest of this page, except in the [commando rules](#a-commando-over-a-structure).
 
 A player-controlled engineer has separate cursor rules for a structure that meets **all of**:
 
@@ -91,9 +91,9 @@ With fog of war on, an engineer over a cell holding a fogged structure record ge
 
 ### A commando over a structure
 
-A player-controlled soldier with `C4=yes` or the [`C4` ability](/systems/veterancy/#abilities) gets the demolitions cursor in place of the attack cursor over a `Repairable=yes` structure that is not a deployed vehicle. Over any other structure the attack cursor stays, but the attack order [turns into a capture order](#what-the-click-issues). The commando then walks up to the structure and is consumed when it arrives, unless the structure is destroyed first. Force fire gives the attack cursor over an allied or own structure too, so the same rule lets a commando bomb a `Repairable=yes` structure of its own side.
+A player-controlled soldier with `C4=yes` or the [`C4` ability](/systems/veterancy/#abilities) gets the demolitions cursor in place of the attack cursor over a non-allied structure that [`CanC4`](/keys/canc4/) allows. The cursor does not appear over an `InvisibleInGame=yes` structure or over a deployed vehicle that covers one cell. Over any other non-allied structure the soldier gets the attack cursor and attacks the structure with its weapon. It does not walk in. Force fire gives the attack cursor over an allied or own structure too, so the same rule lets a commando bomb a structure of its own side that `CanC4` allows.
 
-A `C4=yes` soldier also gets the demolitions cursor over a non-allied `Capturable=yes`, `LegalTarget=yes` deployed vehicle. The click gives an order only when that type is also `Repairable=yes`.
+The demolitions cursor applies to a deployed vehicle that covers more than one cell, as it does to any other structure that `CanC4` allows. A deployed vehicle that covers one cell gets the attack cursor.
 
 ### A vehicle thief over a vehicle
 
@@ -110,15 +110,15 @@ A click on an object gives an order according to the cursor the rules above prod
 | Cursor | Order issued |
 | --- | --- |
 | Repair, enter, or the damage action | The [capture mission](/reference/enums/mission/), with the object as the destination |
-| Demolitions | The sabotage mission, with the structure as the destination, when the structure is `Repairable=yes` |
-| Area guard, over a non-allied `Repairable=yes` structure, from a soldier with `C4=yes` or the `C4` ability | The sabotage mission |
+| Demolitions | The sabotage mission, with the structure as the destination, when the structure `CanC4` allows |
+| Area guard, over a non-allied structure that `CanC4` allows, from a soldier with `C4=yes` or the `C4` ability | The sabotage mission |
 | Refusal | Nothing |
 
 The repair cursor gives an attack order instead when the soldier's weapon heals.
 
 Both missions run at the interval their [`Rate`](/keys/rate/#scope-mission-behavior) sets in the `[Capture]` and `[Sabotage]` sections, plus up to two extra frames at random.
 
-An attack order against a structure can also turn into one of these missions. A soldier with `C4=yes` or the `C4` ability switches to sabotage when the structure is `Repairable=yes`. Otherwise an `Infiltrate=yes` soldier switches to capture.
+An attack order against a structure can also turn into one of these missions. A soldier with `C4=yes` or the `C4` ability switches to sabotage when the structure `CanC4` allows. A computer-owned soldier of that kind walks into any other structure, as an `Infiltrate=yes` soldier does. A player's soldier attacks any other structure instead. An `Infiltrate=yes` soldier without either ability switches to capture.
 
 ## Walking in
 
