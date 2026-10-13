@@ -62,12 +62,15 @@ class PowerClass : public RadarClass
 		bool IsToRedraw;
 
 	protected:
+		// Draws the pips into the sidebar surface. The sidebar calls it after its body, so a repaint
+		// of the body cannot cover the bar.
+		void Draw_Power_Bar(bool complete);
+
 		enum PowerEnums {
 			GADGET_POWER=999,
-			POWER_X=8,
-			POWER_Y=25,
 			POWER_WIDTH=12,
-			POWER_PIP_HEIGHT=4,
+			POWER_PIP_HEIGHT=3,				// Pixel step between pips, as gamemd's PowerClass::Draw (0x63FB20) uses.
+			POWER_X_ALLIED=5,				// Left edge of the bar on the Allied sidebar; other sides use 0.
 			POWER_PIP_EMPTY=0,
 			POWER_PIP_GREEN=1,
 			POWER_PIP_YELLOW=2,
@@ -79,13 +82,12 @@ class PowerClass : public RadarClass
 
 	private:
 
-		int Max_Power_Height(void);
+		int Max_Power_Height(void) const;
 		Rect Bar_Rect(void) const;
 		int Desired_Power_Height(void);
 		int Desired_Levels(int & green, int & yellow, int & red);
 		int Update_Delay(void);
-		void Remove_Pip(void);
-		void Add_Pip(void);
+		void Step_Pips(int green, int yellow, int red);
 
 		/*
 		**	If the power bar should be rendered with some flash effect then

@@ -57,6 +57,7 @@
 #include "draw.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
 #include "hud.h"
 #include "language/language.h"
 #include "mixfile.h"
@@ -270,28 +271,35 @@ int PowerClass::Update_Delay(void)
 
 /// <summary>
 /// The power bar's place on the sidebar surface.
+/// The bar starts at the top of the cameo grid, as gamemd's PowerClass::Draw (0x63FB20) does, and
+/// it is as tall as its pips.
 /// </summary>
 Rect PowerClass::Bar_Rect(void) const
 {
 	if (Modern_Interface()) {
 		return(Hud_Layout().Power);
 	}
-	return(Rect(POWER_X, SidebarRect.Y + POWER_Y, POWER_WIDTH, SidebarClass::StripClass::OBJECT_HEIGHT * Map.Max_Visible()));
+	bool const first = PlayerPtr == NULL || PlayerPtr->Class->Side == SIDE_FIRST;
+	int const x = first ? POWER_X_ALLIED : 0;
+	return(Rect(x, SidebarRect.Y + SidebarClass::GRID_Y, POWER_WIDTH, Max_Power_Height() * POWER_PIP_HEIGHT));
 }
 
 
 /// <summary>
-/// Determines the maximum height of the power bar.
-/// This routine reports how many pips will fit alongside the sidebar at its current size.
-/// Every other power bar height is measured against this figure.
+/// Determines the maximum height of the power bar, in pips.
+/// The bar spans the cameo strip, which is one row of cameos (50 pixels) for every visible row.
+/// gamemd takes (strip + 3) / 3 pips (0x63F850, 0x63F960), so the bar can run one pip past the strip.
 /// </summary>
 /// <returns>Returns with the maximum number of pips the power bar can hold.</returns>
-int PowerClass::Max_Power_Height(void)
+int PowerClass::Max_Power_Height(void) const
 {
+	int strip;
 	if (Modern_Interface()) {
-		return(Hud_Layout().Power.Height / POWER_PIP_HEIGHT);
+		strip = Hud_Layout().Power.Height;
+	} else {
+		strip = (Map.Max_Visible() / SidebarClass::StripClass::SLOT_COLUMNS) * SidebarClass::StripClass::OBJECT_HEIGHT;
 	}
-	return(SidebarClass::StripClass::SideBarGeneralEnums::OBJECT_HEIGHT * Map.Max_Visible() / POWER_PIP_HEIGHT);
+	return((strip + POWER_PIP_HEIGHT) / POWER_PIP_HEIGHT);
 }
 
 
@@ -310,15 +318,7 @@ int PowerClass::Desired_Levels(int & green, int & yellow, int & red)
 	int max_pips = Max_Power_Height();
 	int desired_pips = Desired_Power_Height();
 
-	int drain = 0;
-	int power = 0;
-
-	for (int i = 0; i < Buildings.Count(); i++) {
-		BuildingClass * bptr = Buildings[i];
-		drain += bptr->Class->Drain;
-		power += bptr->Class->Power;
-	}
-
+	// gamemd (0x63F960) takes the surplus as output minus drain, then splits it into a first 100 and the rest.
 	double power_delta = PlayerPtr->Power_Output() - PlayerPtr->Power_Drain();
 
 	double green_power = 0.0;
@@ -356,10 +356,24 @@ int PowerClass::Desired_Levels(int & green, int & yellow, int & red)
 }
 
 
+/// <summary>
+/// Draws the power bar and then the radar.
+/// The sidebar calls Draw_Power_Bar itself, after its body, so this routine is only used where
+/// the bar comes first.
+/// </summary>
+/// <param name="complete">Should the power bar be redrawn even if it isn't flagged to do so?</param>
+void PowerClass::Draw_It(bool complete)
+{
+	Draw_Power_Bar(complete);
+	BASECLASS::Draw_It(complete);
+}
+
+
 /***********************************************************************************************
- * PowerClass::Draw_It -- Renders the power bar graphic.                                       *
+ * PowerClass::Draw_Power_Bar -- Renders the power bar graphic.                                *
  *                                                                                             *
- *    This routine will draw the power bar graphic to the LogicPage.                           *
+ *    This routine will draw the power bar graphic to the LogicPage. The bar is repainted in   *
+ *    full whenever it is drawn, because the empty pips fill whatever the colored bands leave.  *
  *                                                                                             *
  * INPUT:   complete -- Should the power bar be redrawn even if it isn't specifically flagged  *
  *                      to do so?                                                              *
@@ -372,7 +386,7 @@ int PowerClass::Desired_Levels(int & green, int & yellow, int & red)
  *   12/20/1994 JLB : Created.                                                                 *
  *   12/27/1994 JLB : Changes power bar color depending on amount of power.                    *
  *=============================================================================================*/
-void PowerClass::Draw_It(bool complete)
+void PowerClass::Draw_Power_Bar(bool complete)
 {
 	if (complete || IsToRedraw) {
 		BStart(BENCH_POWER);
@@ -442,53 +456,64 @@ void PowerClass::Draw_It(bool complete)
 		}
 		BEnd(BENCH_POWER);
 	}
-
-	BASECLASS::Draw_It(complete);
 }
 
 
 /// <summary>
-/// Removes one pip from the power bar.
-/// This routine trims whichever color band carries more pips than it should, so that the
-/// bar shrinks toward the level the player's power warrants.
+/// Moves the bar one pip toward the band sizes the player's power calls for, as gamemd's
+/// PowerClass::Update (0x63FEA0) does. Red is settled first, then green, then yellow, and each
+/// call moves one band by one pip. A red decrease gives its pip to green if green is below its
+/// target, else to yellow if yellow is below its target. A red increase takes its pip from green
+/// if green is above its target, else from yellow if yellow is above its target. A green change
+/// gives or takes its pip with yellow only. HasChanged is set when a band was out of step, so the
+/// caller keeps the bar stepping until every band is at its target.
 /// </summary>
-void PowerClass::Remove_Pip(void)
+/// <param name="green">The surplus band size the bar is moving toward.</param>
+/// <param name="yellow">The first-hundred band size the bar is moving toward.</param>
+/// <param name="red">The consumed band size the bar is moving toward.</param>
+void PowerClass::Step_Pips(int green, int yellow, int red)
 {
-	int green;
-	int red;
-	int yellow;
+	HasChanged = false;
 
-	Desired_Levels(green, yellow, red);
+	if (RedPipCount != red) {
+		HasChanged = true;
+		if (RedPipCount > red) {
+			RedPipCount--;
+			if (GreenPipCount < green) {
+				GreenPipCount++;
+			} else if (YellowPipCount < yellow) {
+				YellowPipCount++;
+			}
+		} else {
+			RedPipCount++;
+			if (GreenPipCount > green) {
+				GreenPipCount--;
+			} else if (YellowPipCount > yellow) {
+				YellowPipCount--;
+			}
+		}
 
-	if (GreenPipCount > green) {
-		GreenPipCount--;
-	} else if (RedPipCount > red) {
-		RedPipCount--;
-	} else if (YellowPipCount > yellow) {
-		YellowPipCount--;
-	}
-}
+	} else if (GreenPipCount != green) {
+		HasChanged = true;
+		if (GreenPipCount > green) {
+			GreenPipCount--;
+			if (YellowPipCount < yellow) {
+				YellowPipCount++;
+			}
+		} else {
+			GreenPipCount++;
+			if (YellowPipCount > yellow) {
+				YellowPipCount--;
+			}
+		}
 
-
-/// <summary>
-/// Adds one pip to the power bar.
-/// This routine grows whichever color band falls short of the level the player's power
-/// warrants. It is used by the power bar logic to animate the bar one pip at a time.
-/// </summary>
-void PowerClass::Add_Pip(void)
-{
-	int green;
-	int red;
-	int yellow;
-
-	Desired_Levels(green, yellow, red);
-
-	if ( RedPipCount < red ) {
-		RedPipCount++;
-	} else if ( GreenPipCount < green ) {
-		GreenPipCount++;
-	} else if ( YellowPipCount < yellow ) {
-		YellowPipCount++;
+	} else if (YellowPipCount != yellow) {
+		HasChanged = true;
+		if (YellowPipCount > yellow) {
+			YellowPipCount--;
+		} else {
+			YellowPipCount++;
+		}
 	}
 }
 
@@ -526,7 +551,7 @@ void PowerClass::AI(KeyNumType &input, Point2D const &xy)
 
 		/*
 		 * If the recorded power or drain value has changed we need to adjust for
-		 * it.
+		 * it. The bar also redraws while it is still moving toward its target.
 		 */
 		if (PlayerPtr->Power_Drain() != RecordedDrain || PlayerPtr->Power_Output() != RecordedPower || HasChanged) {
 
@@ -544,59 +569,19 @@ void PowerClass::AI(KeyNumType &input, Point2D const &xy)
 
 			RecordedDrain = PlayerPtr->Power_Drain();
 			RecordedPower = PlayerPtr->Power_Output();
+		}
 
+		/*
+		 * The pips move one step each time the update timer runs out (gamemd PowerClass::Update,
+		 * 0x63FEA0). The timer is restarted only while a band is still moving.
+		 */
+		if (UpdateTimer == 0) {
 			int green, yellow, red;
 			Desired_Levels(green, yellow, red);
+			Step_Pips(green, yellow, red);
 
-			if (UpdateTimer == 0) {
-				HasChanged = false;
-
-				/*
-				 * If we need to move the red level height then do so.
-				 */
-				if (RedPipCount != red) {
-					HasChanged = true;
-
-					if (RedPipCount > red) {
-						RedPipCount--;
-						Add_Pip();
-					} else {
-						RedPipCount++;
-						Remove_Pip();
-					}
-
-				/*
-				 * If we need to move the green level height then do so.
-				 */
-				} else if (GreenPipCount != green) {
-					HasChanged = true;
-
-					if (GreenPipCount > green) {
-						GreenPipCount--;
-						Add_Pip();
-					} else {
-						GreenPipCount++;
-						Remove_Pip();
-					}
-
-				/*
-				 * If we need to move the yellow level height then do so.
-				 */
-				} else if (YellowPipCount != yellow) {
-					HasChanged = true;
-
-					if (YellowPipCount > yellow) {
-						YellowPipCount--;
-						Add_Pip();
-					} else {
-						YellowPipCount++;
-						Remove_Pip();
-					}
-				}
-
-				if (HasChanged) {
-					UpdateTimer = Update_Delay();
-				}
+			if (HasChanged) {
+				UpdateTimer = Update_Delay();
 			}
 		}
 	}

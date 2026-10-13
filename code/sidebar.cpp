@@ -1065,7 +1065,9 @@ void SidebarClass::Draw_It(bool complete)
 	complete = complete || IsForceCompleteRedraw;
 	Map.LastDrawRect = RECT_NONE;
 
-	BASECLASS::Draw_It(complete);
+	// The power bar is drawn after the body below, as gamemd's SidebarClass::Draw (0x6A6C30) draws it
+	// last, so a repaint of the body cannot cover the bar.
+	RadarClass::Draw_It(complete);
 
 	BStart(BENCH_SIDEBAR);
 
@@ -1074,7 +1076,8 @@ void SidebarClass::Draw_It(bool complete)
 
 	Rect window(0, 0, SidebarSurface->Get_Width(), SidebarSurface->Get_Height());
 
-	if (IsSidebarActive && (IsToRedraw || complete) && !Debug_Map) {
+	bool const body_drawn = IsSidebarActive && (IsToRedraw || complete) && !Debug_Map;
+	if (body_drawn) {
 		if (Modern_Interface() && (complete || Column[ActiveTab].IsToRedraw)) {
 			Draw_Build_Area();
 			Column[ActiveTab].IsToRedraw = true;
@@ -1118,6 +1121,7 @@ void SidebarClass::Draw_It(bool complete)
 	if (IsSidebarActive) {
 		Column[ActiveTab].Draw_It(complete);
 	}
+	Draw_Power_Bar(complete || body_drawn);
 	if (Repair.IsDrawn) {
 		IsToBlitSidebar = true;
 		Repair.IsDrawn = false;
