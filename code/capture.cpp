@@ -14,6 +14,7 @@
 #include "_rules.h"
 #include "anim.h"
 #include "animtype.h"
+#include "autotest.h"
 #include "building.h"
 #include "builtype.h"
 #include "ccrand.h"
@@ -21,6 +22,7 @@
 #include "gmmath.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
 #include "partsys.h"
 #include "rules.h"
 #include "savestream.h"
@@ -44,17 +46,20 @@ CaptureManagerClass::CaptureManagerClass(TechnoClass * owner, int maxnodes, bool
 
 /// <summary>
 /// Can this manager take the target over (CaptureManagerClass::CanCapture, 0x471C90)? Not an
-/// object of the firer's own house, an ImmuneToPsionics type, an object already under mind
-/// control or taken for good by the psychic dominator, one under the Iron Curtain, or a
-/// structure being built or sold. A full manager refuses, unless it holds a single unit,
-/// which it lets go for the new one.
+/// object of the firer's own house, an ImmuneToPsionics type, a vehicle linked to a bunker, an
+/// object already under mind control or taken for good by the psychic dominator, one under the
+/// Iron Curtain, or a structure being built or sold. A full manager refuses, unless it holds a
+/// single unit, which it lets go for the new one.
 /// </summary>
 bool CaptureManagerClass::Can_Capture(TechnoClass const * target) const
 {
 	if (target == NULL || Owner == NULL || target->House == Owner->House) {
 		return(false);
 	}
-	if (target->Is_Immune_To_Psionics() || target->MindControlledBy != NULL || target->MindControlledByHouse != NULL || target->IsPermaControlled) {
+	if (target->Is_Immune_To_Psionics() || (target->RTTI == RTTI_UNIT && target->BunkerLinkedItem != NULL)) {
+		return(false);
+	}
+	if (target->MindControlledBy != NULL || target->MindControlledByHouse != NULL || target->IsPermaControlled) {
 		return(false);
 	}
 	if (target->Is_Iron_Curtained()) {
@@ -94,6 +99,10 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 	node.LinkTimer = Rule->MindControlAttackLineFrames;
 	Nodes.push_back(node);
 	target->MindControlledBy = Owner;
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST mind control %s taken from %s by %s, link %d frames, ring %s\n", target->TClass->Name(), original != NULL ? original->Class->Name() : "-",
+			Owner->House->Class->Name(), (int)Rule->MindControlAttackLineFrames, Rule->ControlledAnimationType != NULL ? Rule->ControlledAnimationType->Name() : "none");
+	}
 
 	bool const unloading = target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->CurrentMission == MISSION_UNLOAD;
 	if (!unloading && target->CurrentMission != MISSION_DECONSTRUCTION && target->CurrentMission != MISSION_CONSTRUCTION) {
@@ -143,6 +152,9 @@ bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
 		VocType const sound = unit->TClass->MindClearedSound != VOC_NONE ? unit->TClass->MindClearedSound : Rule->MindClearedSound;
 		Sound_Effect(sound, unit->Center_Coord());
 
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST mind control released %s to %s\n", unit->TClass->Name(), original != NULL ? original->Class->Name() : "-");
+		}
 		if (original != NULL) {
 			unit->Set_Owning_House(original, true);
 		}

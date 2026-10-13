@@ -49,7 +49,8 @@ MindControl=yes
 The weapon fires only at an object it could take. It refuses:
 
 - an object of the firer's own house;
-- an [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) type;
+- an [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) type, which includes a structure with no `ImmuneToPsionics=` line;
+- a vehicle in a [tank bunker](/systems/tank-bunkers/);
 - an object already under mind control, or one the [psychic dominator](/systems/superweapons/#psychic-dominator) has taken;
 - an object under the Iron Curtain or a force shield;
 - a structure being built or sold;
