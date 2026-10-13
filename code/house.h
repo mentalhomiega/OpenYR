@@ -861,7 +861,7 @@ class HouseClass : public AbstractClass
 		int * Factory_Counter(RTTIType rtti);
 		int Factory_Count(RTTIType rtti) const;
 		DiffType Assign_Handicap(DiffType handicap);
-		AbstractClass * Find_Juicy_Target(Coord const & coord) const;
+		UnitClass * Find_Nearest_Enemy_Unit_In_Spread(Coord const & coord) const;
 		Cell Where_To_Go(FootClass const * object) const;
 		Cell Zone_Cell(ZoneType zone) const;
 		ZoneType Which_Zone(Coord const & coord) const;
