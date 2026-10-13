@@ -198,7 +198,7 @@ An obstacle is a structure or a wall in the cell, and it counts only while the p
 - a one-cell structure whose type names an [`UndeploysInto`](/keys/undeploysinto/) vehicle;
 - a friendly structure.
 
-Walls have no exemptions, so a wall also stops ballistic fire from its owner's house and allies. Only two overlays count as walls in this test: the ones at positions 2 and 26 of the `[OverlayTypes]` list, counting from 0. The stock list puts `GAWALL` and `NAWALL` there.
+Walls have no exemptions, so a wall also stops ballistic fire from its owner's house and allies. Only three overlays count as walls in this test: the ones at positions 2, 26 and 243 of the `[OverlayTypes]` list, counting from 0. The stock list puts `GAWALL`, `NAWALL` and `GAFWLL` there.
 
 Another overlay marked [`High=yes`](/keys/high/#scope-overlaytype) stops a shot only through the tall-overlay test in [What ends a flight](#what-ends-a-flight). That test applies to both flight models and exempts a projectile marked [`High=yes`](/keys/high/#scope-bullettype). A `High=yes` projectile gets no exemption from the wall test above. The stock sandbag wall, `GASAND`, sets [`Wall=yes`](/keys/wall/) but not `High=yes`, so neither test stops a shot passing over it.
 

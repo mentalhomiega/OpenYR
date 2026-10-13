@@ -238,6 +238,9 @@ enum OverlayType {
 	*/
 	OVERLAY_GDI_WALL = OVERLAY_BRICK_WALL,
 
+	// Index 243 of [OverlayTypes] (GAFWLL in the stock rules), past the built-in list.
+	OVERLAY_WALL_INDEX_243 = 243,
+
 	OVERLAY_TRAIN_FIRST = OVERLAY_TRAIN_01,
 	OVERLAY_TRAIN_LAST = OVERLAY_TRAIN_16,
 

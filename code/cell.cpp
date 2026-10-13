@@ -2767,8 +2767,11 @@ bool CellClass::Has_Wall_Or_Gate(OverlayType type, FacingType facing) const
 	if (Overlay == type && Overlay != OVERLAY_NONE) {
 		return(true);
 	}
+
+	// With no particular wall asked for, gamemd counts the overlays at indices 2, 26 and 243 of
+	// [OverlayTypes] as walls (CellClass::ConnectsToOverlay, 0x480510).
 	if (type == OVERLAY_NONE) {
-		if (Overlay == OVERLAY_GDI_WALL || Overlay == OVERLAY_NOD_WALL) {
+		if (Overlay == OVERLAY_GDI_WALL || Overlay == OVERLAY_NOD_WALL || Overlay == OVERLAY_WALL_INDEX_243) {
 			return(true);
 		}
 		return(false);
