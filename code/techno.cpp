@@ -2327,6 +2327,16 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	/*
+	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
+	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
+		&& Can_Fire(const_cast<TechnoClass *>(object), What_Weapon_Should_I_Use(const_cast<TechnoClass *>(object))) == FIRE_ILLEGAL) {
+		BEnd(BENCH_EVAL_OBJECT);
+		return(false);
+	}
+
+	/*
 	**	If the object is cloaked, then it isn't a legal target.
 	*/
 	if (object->Cloak == CLOAKED) {

@@ -207,6 +207,7 @@ The engine tests each candidate against these rows in order and rejects it at th
 | Rejected when | Detail |
 | --- | --- |
 | The candidate is in [limbo](/glossary/#limbo), or already at zero strength | |
+| The weapon chosen against it refuses to fire at it outright | The chosen weapon's fire check returns a refusal for this candidate, such as an airborne candidate when that weapon's projectile is `AA=no`. Range is not part of this check, so an out-of-range candidate passes it |
 | It is cloaked, its cell is not sensed by this house, and it belongs to another house | |
 | It has not yet entered the playable area | Reinforcements still crossing in from off the map are not targeted |
 | Its current mission sets [`NoThreat=yes`](/keys/nothreat/) | |
