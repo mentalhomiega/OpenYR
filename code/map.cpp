@@ -12261,11 +12261,12 @@ static bool Is_East_West_Bridge(CellClass const * cptr)
 
 /*
  * Whether a cell carries the bridge state the destruction walk follows: it lies under a bridge
- * deck (gamemd flag 0x100) or it is a footprint left by a destroyed span (flag 0x400).
+ * deck (gamemd flag 0x100) or it is a footprint left by a destroyed span (flag 0x400). With
+ * tiles set, a bridge tile also counts, for a span that has no flags.
  */
-static bool Has_Bridge_Mark(CellClass const * cptr)
+static bool Has_Bridge_Mark(CellClass const * cptr, bool tiles)
 {
-	return(cptr != NULL && (Is_Under_Bridge(cptr) || cptr->WasUnderBridge));
+	return(cptr != NULL && (cptr->IsUnderBridge || cptr->WasUnderBridge || (tiles && Is_Bridge_Tile(cptr))));
 }
 
 
@@ -12406,14 +12407,20 @@ void MapClass::Destroy_Bridge_Span_Near(Cell const & cell)
 {
 	CellClass * target = Bridge_Cell_At(cell);
 
-	if (!Has_Bridge_Mark(target)) {
+	/*
+	 * The first pass searches the bridge flags alone, as gamemd does. The second pass also
+	 * takes the tiles of a span that has no flags, and runs only when the first finds nothing.
+	 */
+	for (int pass = 0; pass < 2 && !Has_Bridge_Mark(target, pass == 1); pass++) {
+		bool const tiles = pass == 1;
 		bool found = false;
 		for (int dir = 0; dir < FACING_COUNT && !found; dir++) {
 			Cell probe = cell;
 			for (int step = 0; step < 3; step++) {
 				probe = probe + AdjacentCell[dir];
-				target = Bridge_Cell_At(probe);
-				if (Has_Bridge_Mark(target)) {
+				CellClass * next = Bridge_Cell_At(probe);
+				if (Has_Bridge_Mark(next, tiles)) {
+					target = next;
 					found = true;
 					break;
 				}
@@ -12421,7 +12428,7 @@ void MapClass::Destroy_Bridge_Span_Near(Cell const & cell)
 		}
 	}
 
-	if (!Has_Bridge_Mark(target)) {
+	if (!Has_Bridge_Mark(target, true)) {
 		return;
 	}
 
@@ -12648,10 +12655,12 @@ void MapClass::Spawn_Bridge_Explosion(Cell const & cell)
 /// Damages the bridge at one cell and picks the routine that does it (gamemd
 /// MapClass::Damage_Bridge_At_Cell, 0x587180). A wood low bridge overlay is damaged with
 /// Damage_Bridge. A deck cell whose owner carries a road bridge overlay is blown up as a road
-/// span (Blow_Up_High_Bridge_Area). A railway middle piece, or a cell whose owner carries
-/// overlay 237 or 238, is blown up as a railway span (Blow_Up_Train_Bridge_At). A road middle
-/// piece is left alone. A concrete low bridge overlay is not ported (see
-/// Destroy_Concrete_Bridge_At).
+/// span (Blow_Up_High_Bridge_Area). A railway deck under a bridge (its owner carries overlay
+/// 237 or 238) is damaged by the overlay state machine of Damage_Train_Bridge, as gamemd's
+/// under-bridge path of BlowUpBridgeAt does. A railway middle piece, or a cell whose owner
+/// carries overlay 237 or 238 without a bridge flag, is blown up as a railway span
+/// (Blow_Up_Train_Bridge_At). A road middle piece is left alone. A concrete low bridge overlay
+/// is not ported (see Destroy_Concrete_Bridge_At).
 /// </summary>
 /// <param name="cell">The cell to damage.</param>
 /// <returns>bool; Did a span come down?</returns>
@@ -12687,7 +12696,9 @@ bool MapClass::Damage_Bridge_At_Cell(Cell const & cell)
 					(rail >= IsometricTileTypeClass::BridgeMiddle2 && rail <= IsometricTileTypeClass::BridgeMiddle2 + 3);
 				bool const owner_rail = owner != NULL && (owner->Overlay == 237 || owner->Overlay == 238);
 
-				if (rail_middle || owner_rail) {
+				if (owner_rail && Is_Under_Bridge(cptr)) {
+					result = Damage_Train_Bridge(cell);
+				} else if (rail_middle || owner_rail) {
 					result = Blow_Up_Train_Bridge_At(cell);
 				}
 			}

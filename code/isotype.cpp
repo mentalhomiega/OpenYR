@@ -796,6 +796,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 	IsometricTileType _BlackTile = (IsometricTileType)ini.Get_Int("General", "BlackTile", ISOTILE_INVALID);
 	IsometricTileType _BridgeSet = (IsometricTileType)ini.Get_Int("General", "BridgeSet", ISOTILE_INVALID);
 	IsometricTileType _TrainBridgeSet = (IsometricTileType)ini.Get_Int("General", "TrainBridgeSet", ISOTILE_INVALID);
+	IsometricTileType _WoodBridgeSet = (IsometricTileType)ini.Get_Int("General", "WoodBridgeSet", ISOTILE_INVALID);
 	IsometricTileType _CliffSet = (IsometricTileType)ini.Get_Int("General", "CliffSet", ISOTILE_INVALID);
 	IsometricTileType _ShorePieces = (IsometricTileType)ini.Get_Int("General", "ShorePieces", ISOTILE_INVALID);
 	IsometricTileType _WaterBridge = (IsometricTileType)ini.Get_Int("General", "WaterBridge", ISOTILE_INVALID);
@@ -951,6 +952,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 		if (setid == _BlackTile) BlackTile = (IsometricTileType)heapid;
 		if (setid == _BridgeSet) BridgeSet = (IsometricTileType)heapid;
 		if (setid == _TrainBridgeSet) TrainBridgeSet = (IsometricTileType)heapid;
+		if (setid == _WoodBridgeSet) TrainBridgeSet = (IsometricTileType)heapid;
 		if (setid == _CliffSet) CliffSet = (IsometricTileType)heapid;
 		if (setid == _ShorePieces) ShorePieces = (IsometricTileType)heapid;
 		if (setid == _WaterBridge) WaterBridge = (IsometricTileType)heapid;

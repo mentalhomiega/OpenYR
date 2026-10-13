@@ -10,6 +10,8 @@ when_omitted:
 
 The set is laid out like the road bridge set and uses the same ten `Bridge` position keys. [`BridgeSet`](/keys/bridgeset/) covers how a position selects a tile.
 
+When `[General]` also names a `WoodBridgeSet`, that set is the railway set and this key is not used. The engine reads only `WoodBridgeSet` for this role. In the Yuri's Revenge theaters checked so far, this key named an empty tile set, so the railway role would otherwise resolve to the tiles after it.
+
 This set decides which kind of bridge an engineer rebuilds. When an engineer enters a [`BridgeRepairHut=yes`](/keys/bridgerepairhut/) structure, the engine searches the five-by-five block of cells centered on the engineer. One tile of this set anywhere in that block selects the railway repair; otherwise the road repair runs. [Repairing a bridge](/systems/capture/#repairing-a-bridge) covers the rest of that visit.
 
 Weapon damage tests the road set first. Both sets are tested for the same middle pieces: the first four middle pieces of either span direction, counted from [`BridgeMiddle1`](/keys/bridgemiddle1/) or [`BridgeMiddle2`](/keys/bridgemiddle2/). A struck cell is damaged as a railway bridge when it holds one of those pieces from this set or carries a railway bridge deck, and none of these apply:

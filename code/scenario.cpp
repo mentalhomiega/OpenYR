@@ -1063,6 +1063,18 @@ void Fill_In_Data(void)
 	WaveClass::Init_Statics();
 
 	/*
+	**	The railway deck overlays come from the map without the deck flags that a placed bridge
+	**	gets. They are flagged here, as gamemd flags them at load (its Damage_Bridge_At_Cell tests
+	**	overlay 237 and 238 as railway owners), so that a standing span stays passable.
+	*/
+	Map.Reset_Iterator();
+	for (CellClass * cellptr = Map.Iterate(); cellptr != NULL; cellptr = Map.Iterate()) {
+		if (cellptr->Overlay == 237 || cellptr->Overlay == 238) {
+			cellptr->Set_Under_Rail_Bridge(cellptr->Overlay == 237 ? FACING_N : FACING_W);
+		}
+	}
+
+	/*
 	**	Reset the movement zones according to the terrain passability.
 	*/
 	Map.Reset_Iterator();
