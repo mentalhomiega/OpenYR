@@ -197,6 +197,9 @@ ObjectClass::~ObjectClass(void)
 	AbstractTypePtrTracker.Delete(this);
 	TagPtrTracker.Delete(this);
 
+	// An open-topped passenger is in the logic list while aboard (TechnoClass::EnteredOpenTopped, 0x710470), so it leaves the list before its memory is freed.
+	Logic.Remove(this);
+
 	Next = NULL;
 	IsActive = false;
 }
