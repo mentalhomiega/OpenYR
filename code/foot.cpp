@@ -1212,6 +1212,11 @@ void FootClass::Approach_Target(void)
 		int maxrange = Weapon_Range(primary);
 		bool inrange = In_Range(TarCom, primary);
 
+		// The approach reach is 128 leptons shorter than the weapon range from 512 leptons up (FootClass::ApproachTarget, 0x4D56E6).
+		if (maxrange > 0x1FF) {
+			maxrange -= 0x80;
+		}
+
 		/*
 		 * A unit on a sticky mission that finds its target out of range will
 		 * just forget about the target rather than give chase.
@@ -1232,21 +1237,6 @@ void FootClass::Approach_Target(void)
 		}
 
 		/*
-		 * A unit heading for a spot it picked drops that spot, and picks another, once the
-		 * target is more than ApproachTargetResetMultiplier weapon ranges from it
-		 * (FootClass::ApproachTarget, 0x4D5690).
-		 */
-		if (NavCom != NULL && !inrange && TClass->IsCanRecalcApproachTarget) {
-			int reach = maxrange;
-			if (reach > 0x1FF) {
-				reach -= 0x80;
-			}
-			if (Rule->ApproachTargetResetMultiplier * reach < (TarCom->Center_Coord() - NavCom->Center_Coord()).Gamemd_Length()) {
-				NavCom = NULL;
-			}
-		}
-
-		/*
 		 * A unit that must deploy to fire, and is sitting on ground that it
 		 * cannot deploy upon, must restrict the search to deployable ground
 		 * within a reasonable distance of the target.
@@ -1259,6 +1249,17 @@ void FootClass::Approach_Target(void)
 				if (maxrange >= dist) {
 					maxrange = dist;
 				}
+			}
+		}
+
+		/*
+		 * A unit heading for a spot it picked drops that spot, and picks another, once the
+		 * target is more than ApproachTargetResetMultiplier times the reach from it. gamemd
+		 * compares the whole-lepton 3D distance (FootClass::ApproachTarget, 0x4D59D2).
+		 */
+		if (NavCom != NULL && !inrange && TClass->IsCanRecalcApproachTarget) {
+			if (Rule->ApproachTargetResetMultiplier * maxrange < (TarCom->Center_Coord() - NavCom->Center_Coord()).Gamemd_Length()) {
+				NavCom = NULL;
 			}
 		}
 
@@ -1324,8 +1325,8 @@ void FootClass::Approach_Target(void)
 			}
 			maxrange = (int)adjust;
 			maxrange = (maxrange <= 0) ? 0 : maxrange;
-			if (maxrange > 0 && maxrange <= 255) {
-				maxrange = 255;
+			if (maxrange > 0 && maxrange <= 256) {
+				maxrange = 256;
 			}
 
 			// A CloseRange infantryman searches at least 332 leptons out (FootClass::ApproachTarget, 0x4D5690).
