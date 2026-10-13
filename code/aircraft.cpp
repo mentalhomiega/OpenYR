@@ -1648,6 +1648,15 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		return(false);
 	}
 
+	// A paradrop or spy plane on its approach or overfly keeps that mission, and one with a queued approach starts it (AircraftClass::EnterIdleMode, 0x4176F0).
+	if (CurrentMission == MISSION_PARADROP_APPROACH || CurrentMission == MISSION_PARADROP_OVERFLY || CurrentMission == MISSION_SPYPLANE_APPROACH || CurrentMission == MISSION_SPYPLANE_OVERFLY) {
+		return(false);
+	}
+	if (MissionQueue == MISSION_PARADROP_APPROACH || MissionQueue == MISSION_SPYPLANE_APPROACH) {
+		Commence();
+		return(false);
+	}
+
 	// A planned leg replaces the idle mission below. A second idle call in the same frame keeps that leg.
 	if (IsPlanRunning) {
 		if (IsIdle) {
@@ -4225,7 +4234,8 @@ int AircraftClass::Do_MISSION_PARADROP_APPROACH(void)
 /// </summary>
 int AircraftClass::Do_MISSION_PARADROP_OVERFLY(void)
 {
-	IsLocked = true;
+	// The straight-flight lock carries the plane past its target; without it the plane stops on the target cell.
+	IsLockedStraight = true;
 	if (TarCom != NULL && Cargo.Is_Something_Attached()) {
 		if (Planar_Distance(TarCom) <= Rule->ParadropRadius) {
 			if (Map.In_Local_Radar(PositionCell)) {
@@ -4233,13 +4243,13 @@ int AircraftClass::Do_MISSION_PARADROP_OVERFLY(void)
 			}
 			return(5);
 		}
-		IsLocked = false;
+		IsLockedStraight = false;
 		if (ParadropPasses > 0) {
 			Assign_Mission(MISSION_PARADROP_APPROACH);
 			return(5);
 		}
 	} else {
-		IsLocked = false;
+		IsLockedStraight = false;
 	}
 	Assign_Target(NULL);
 	Assign_Destination(NULL);
@@ -4362,13 +4372,11 @@ int AircraftClass::Do_MISSION_SPYPLANE_OVERFLY(void)
 /// <returns>bool; Should this aircraft be deleted when it flies off the map?</returns>
 bool AircraftClass::Should_Delete_Off_Map(void)
 {
-	if (TarCom == NULL && IsLocked) {
+	// AircraftClass::IsLeavingMap (0x41B890) does not test IsLocked; a plane that retreats outside the local view must still leave.
+	if (TarCom == NULL || CurrentMission == MISSION_SPYPLANE_OVERFLY) {
 		if ((Team == NULL && IsALoaner) || (Team != NULL && Team->Is_Leaving_Map())) {
 			return(true);
 		}
-	}
-	if (IsALoaner && IsLocked && Mission == MISSION_SPYPLANE_OVERFLY) {
-		return(true);
 	}
 	return(false);
 }
