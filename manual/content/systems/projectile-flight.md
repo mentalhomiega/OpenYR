@@ -243,6 +243,8 @@ The blast does not always go off where the projectile stood. Up to three moves p
 2. The blast moves onto the target's center when it is within 32 leptons of it. `Airburst=yes` and [`Inaccurate=yes`](/keys/inaccurate/) projectiles skip this move.
 3. Unless the warhead is [`EMEffect=yes`](/keys/emeffect/), or the projectile is [`Splits=yes`](/keys/splits/) or [`Inaccurate=yes`](/keys/inaccurate/), the blast moves onto a nearby target. An airborne target within 128 leptons of the projectile pulls the blast onto the point weapons aim at on it. Any other target within 42 leptons pulls the blast onto its position, and a structure's distance is measured to its edge.
 
+Between the second move and the third, a projectile that is not steered, not [`Arcing=yes`](/keys/arcing/), and not [`Airburst=yes`](/keys/airburst/) or [`Inaccurate=yes`](/keys/inaccurate/) blasts at its fuse point, the target's position at launch. A test that forces the blast where the projectile stands, such as the cliff, wall, below-ground or anti-aircraft test, keeps it there. [`Splits=yes`](/keys/splits/) projectiles and [`EMEffect=yes`](/keys/emeffect/) warheads do not use the fuse point.
+
 The warhead decides what the blast does. [`AnimList`](/keys/animlist/) chooses the explosion by damage, [`SplashList`](/keys/splashlist/) replaces it over water, and [`Spread`](/keys/spread/#scope-warheadtype) sets how the damage thins with distance. An [`EMEffect=yes`](/keys/emeffect/) warhead spends the damage as [a pulse](/systems/emp-pulse/) instead.
 
 ## Clusters and splitting
