@@ -217,7 +217,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsWebby = ini.Get_Bool(Name(), "Webby", IsWebby);
 		CellSpread = ini.Get_Float(Name(), "CellSpread", CellSpread);
-		PercentAtMax = ini.Get_Float(Name(), "PercentAtMax", PercentAtMax);
+		// gamemd stores PercentAtMax as a float32 truncated from the INI value (WarheadTypeClass reader).
+		PercentAtMax = Truncate_To_Single(ini.Get_Double(Name(), "PercentAtMax", PercentAtMax));
 		IsWallAbsoluteDestroyer = ini.Get_Bool(Name(), "WallAbsoluteDestroyer", IsWallAbsoluteDestroyer);
 		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		IsMindControl = ini.Get_Bool(Name(), "MindControl", IsMindControl);
