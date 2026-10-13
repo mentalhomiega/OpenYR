@@ -24,8 +24,8 @@ float Gamemd_Sqrt(double value);
 float Gamemd_Sine(double radians);
 float Gamemd_Cosine(double radians);
 
-// gamemd 0x4C1B50 (2D) and 0x41C380 (3D). The squared components are summed in double precision
-// and the root is truncated toward zero, so the result is exact for components below 2^26.
+// gamemd 0x4C1B50 (2D) and 0x41C380 (3D). The squares are summed with gamemd's rounding, which is
+// exact for components below 2^26. The root is the table value, truncated toward zero.
 int Gamemd_Length_2D(int x, int y);
 int Gamemd_Length_3D(int x, int y, int z);
 
