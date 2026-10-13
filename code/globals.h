@@ -124,6 +124,7 @@ extern bool Debug_Trap_Check_Heap;
 extern bool Debug_Print_Events;
 extern bool Debug_Console;
 extern bool Debug_MultipleInstances;
+extern bool Debug_SyncLog;
 
 extern ParticleSystemClass *GasSystem;
 

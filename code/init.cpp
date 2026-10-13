@@ -1613,6 +1613,14 @@ bool Parse_Command_Line(int argc, char * argv[])
 		}
 
 		/*
+		 * Writes the frame check value to the debug log on every game frame, for comparing two copies.
+		 */
+		if (stricmp(string, "-SYNCLOG") == 0) {
+			Debug_SyncLog = true;
+			continue;
+		}
+
+		/*
 		 * Arms a deliberate fault; the mode decides where it is raised later.
 		 */
 		if (strnicmp(string, "-EXCEPTIONTEST=", strlen("-EXCEPTIONTEST=")) == 0) {

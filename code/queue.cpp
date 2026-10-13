@@ -790,6 +790,11 @@ static void Queue_AI_Multiplayer(void)
 
 	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
 
+	// Frame info packets carry this value to the other machines.
+	if (Debug_SyncLog) {
+		DebugString("SYNC frame %d crc %08x\n", Frame, GameCRC);
+	}
+
 	//------------------------------------------------------------------------
 	// If we've just started a game, or loaded a multiplayer game, we must
 	// wait for all other systems to signal ready.

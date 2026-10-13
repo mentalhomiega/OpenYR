@@ -117,6 +117,7 @@ bool Debug_Trap_Check_Heap = false; // true = check the Heap
 bool Debug_Print_Events = false;    // true = print event & packet processing
 bool Debug_Console = false;
 bool Debug_MultipleInstances = false;	// true = let this copy run beside another one
+bool Debug_SyncLog = false;	// true = log the frame check value that the network compares, each frame
 
 
 ParticleSystemClass * GasSystem;
