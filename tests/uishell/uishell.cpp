@@ -1485,6 +1485,10 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Show_Hidden(bool on) override { Calls.push_back(on ? "hidden on" : "hidden off"); }
 		virtual void Set_Edge_Scroll(bool on) override { Calls.push_back(on ? "edge on" : "edge off"); }
 		virtual void Set_Difficulty(int difficulty) override { Calls.push_back("difficulty " + std::to_string(difficulty)); }
+		virtual void Set_Alt_To_Rally(bool on) override { Calls.push_back(on ? "rally on" : "rally off"); }
+		virtual void Set_Simulate_Unfocused(bool on) override { Calls.push_back(on ? "background on" : "background off"); }
+		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
+		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
 		virtual void Save(void) override { Calls.push_back("save"); }
 
 		std::string Joined(void) const
@@ -1566,6 +1570,38 @@ void Test_Game_Controls_Presenter(void)
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED &&
 			service.Joined() == "speed 0; scroll 1; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; difficulty 0; save",
 			"Escape keeps and saves what was set");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.HasSpeed = false;
+		state.HasDifficulty = false;
+		state.Autosaves = { { 0, "Off" }, { 5400, "5400 frames" }, { 10800, "10800 frames" } };
+		state.Autosave = 2;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "rally", 1);
+		Drive(presenter, "background", 1);
+		Drive(presenter, "sorting", 1);
+		Drive(presenter, "autosave", 0);
+		Drive(presenter, "ok");
+		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; rally on; background on; sorting on; autosave 0; save",
+			"accepting applies the changed rally, background, sorting and autosave settings");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.HasSpeed = false;
+		state.HasDifficulty = false;
+		state.SidebarSorting = true;
+		state.Autosaves = { { 0, "Off" }, { 10800, "10800 frames" } };
+		state.Autosave = 1;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "autosave", 7);
+		Drive(presenter, "ok");
+		Check(presenter.State.Autosave == 1 && service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; save",
+			"unchanged extra settings are not applied and an unknown autosave choice keeps the starting one");
 	}
 }
 

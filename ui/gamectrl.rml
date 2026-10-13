@@ -27,6 +27,15 @@
 		<label class="check" id="switch-coasting"><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/>Scroll Coasting</label>
 		<label class="check" id="switch-hidden"><input type="checkbox" id="hidden" data-attrif-checked="hidden" data-event-click="queue('hidden', hidden ? 0 : 1)"/>Hidden Units</label>
 	</div></div>
+	<div id="extras" data-if="extras"><div class="column">
+		<label class="check" id="switch-rally"><input type="checkbox" id="rally" data-attrif-checked="rally" data-event-click="queue('rally', rally ? 0 : 1)"/>Rally With Force-Move</label>
+		<label class="check" id="switch-sorting"><input type="checkbox" id="sorting" data-attrif-checked="sorting" data-event-click="queue('sorting', sorting ? 0 : 1)"/>Sort Sidebar</label>
+	</div><div class="column">
+		<label class="check" id="switch-background"><input type="checkbox" id="background" data-attrif-checked="background" data-event-click="queue('background', background ? 0 : 1)"/>Play In Background</label>
+		<div id="autosave-row"><span id="autosave-label">Autosave</span><select id="autosave" data-value="autosave" data-event-change="queue('autosave', ev.value)">
+			<option data-for="entry : autosaves" data-attr-value="it_index">{{entry.label}}</option>
+		</select></div>
+	</div></div>
 	<div id="buttons">
 		<button id="sound" data-if="ingame" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
 		<button id="keyboard" data-if="ingame" data-event-click="queue('keyboard')">Keyboard</button>

@@ -19,13 +19,17 @@
 #include "globals.h"
 #include "goptions.h"
 #include "queue.h"
+#include "savemgr.h"
 #include "session.h"
+#include "spawner.h"
 #include "techno.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uisettings.h"
 #include "ui/uiview.h"
+
+#include <string>
 
 
 namespace
@@ -100,6 +104,31 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.Difficulty = difficulty;
 		}
 
+		virtual void Set_Alt_To_Rally(bool on) override
+		{
+			Options.AltToRally = on;
+		}
+
+		virtual void Set_Simulate_Unfocused(bool on) override
+		{
+			Options.SimulateWhileUnfocused = on;
+		}
+
+		virtual void Set_Sidebar_Sorting(bool on) override
+		{
+			Options.SidebarSorting = on;
+		}
+
+		virtual void Set_Autosave_Interval(int frames) override
+		{
+			Options.AutoSaveInterval = frames;
+
+			// A launch file's interval stays in charge of the games it starts.
+			if (!Spawner_Is_Requested()) {
+				SaveManager.Autosave.Set_Interval(frames);
+			}
+		}
+
 		virtual void Save(void) override
 		{
 			Options.Save_Settings();
@@ -149,6 +178,30 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	Fetch_Names(state.ScrollNames, GameScrollSpeedNames, OptionsClass::MAX_SCROLL_SETTING);
 	Fetch_Names(state.DetailNames, GameDetailLevelNames, OptionsClass::MAX_DETAIL_SETTING);
 	Fetch_Names(state.DifficultyNames, GameDifficultyNames, OptionsClass::MAX_DIFFICULTY_SETTING);
+
+	state.AltToRally = Options.AltToRally;
+	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
+	state.SidebarSorting = Options.SidebarSorting;
+
+	static int const intervals[] = {0, 5400, 10800, 21600};
+	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;
+	state.Autosave = -1;
+	for (int frames : intervals) {
+		if (frames == current) {
+			state.Autosave = (int)state.Autosaves.size();
+		}
+		UIGameControlsChoice choice;
+		choice.Value = frames;
+		choice.Label = (frames > 0) ? std::to_string(frames) + " frames" : std::string("Off");
+		state.Autosaves.push_back(choice);
+	}
+	if (state.Autosave < 0) {
+		UIGameControlsChoice choice;
+		choice.Value = current;
+		choice.Label = std::to_string(current) + " frames";
+		state.Autosave = (int)state.Autosaves.size();
+		state.Autosaves.push_back(choice);
+	}
 }
 
 
@@ -161,6 +214,7 @@ void UI_Game_Controls_Dialog(void)
 	UI_Settings_Join(presenter, UI_TAB_GAME);
 	if (presenter.Settings_Tab() != UI_TAB_NONE) {
 		presenter.State.LeaveLabel = UI_Settings_Back_Label();
+		presenter.State.Extras = true;
 	}
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 

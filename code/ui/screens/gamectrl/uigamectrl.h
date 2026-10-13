@@ -18,6 +18,13 @@
 class UIViewClass;
 
 
+struct UIGameControlsChoice
+{
+	int Value = 0;
+	std::string Label;
+};
+
+
 class UIGameControlsServiceClass
 {
 	public:
@@ -32,6 +39,10 @@ class UIGameControlsServiceClass
 		virtual void Set_Edge_Scroll(bool on) = 0;
 		virtual void Set_Show_Hidden(bool on) = 0;
 		virtual void Set_Difficulty(int difficulty) = 0;
+		virtual void Set_Alt_To_Rally(bool on) = 0;
+		virtual void Set_Simulate_Unfocused(bool on) = 0;
+		virtual void Set_Sidebar_Sorting(bool on) = 0;
+		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Save(void) = 0;
 };
 
@@ -52,6 +63,15 @@ struct UIGameControlsState
 	bool HasSpeed = true;
 	bool HasDifficulty = true;
 	bool SoundEnabled = false;
+
+	// The settings Yuri's Revenge never offered, shown on the Settings tabs only.
+	bool Extras = false;
+	bool AltToRally = false;
+	bool SimulateUnfocused = false;
+	bool SidebarSorting = false;
+	std::vector<UIGameControlsChoice> Autosaves;
+	int Autosave = 0;
+
 	std::vector<std::string> SpeedNames;
 	std::vector<std::string> ScrollNames;
 	std::vector<std::string> DetailNames;
@@ -94,6 +114,10 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		void Update_Names(void);
 
 		UIGameControlsServiceClass & Service;
+		bool InitialAltToRally;
+		bool InitialSimulateUnfocused;
+		bool InitialSidebarSorting;
+		int InitialAutosave;
 };
 
 

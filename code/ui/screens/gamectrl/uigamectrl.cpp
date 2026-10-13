@@ -37,7 +37,11 @@ static std::string Name_Of(std::vector<std::string> const & names, int level)
 
 UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsServiceClass & service, UIGameControlsState state) :
 	State(std::move(state)),
-	Service(service)
+	Service(service),
+	InitialAltToRally(State.AltToRally),
+	InitialSimulateUnfocused(State.SimulateUnfocused),
+	InitialSidebarSorting(State.SidebarSorting),
+	InitialAutosave(State.Autosave)
 {
 	Update_Names();
 }
@@ -65,6 +69,14 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.EdgeScroll = (intent.Value != 0);
 	} else if (intent.Name == "hidden") {
 		State.ShowHidden = (intent.Value != 0);
+	} else if (intent.Name == "rally") {
+		State.AltToRally = (intent.Value != 0);
+	} else if (intent.Name == "background") {
+		State.SimulateUnfocused = (intent.Value != 0);
+	} else if (intent.Name == "sorting") {
+		State.SidebarSorting = (intent.Value != 0);
+	} else if (intent.Name == "autosave") {
+		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : InitialAutosave;
 	} else if (intent.Name == "ok") {
 		Apply();
 		Result = UI_RESULT_ACCEPTED;
@@ -109,6 +121,18 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.HasDifficulty) {
 		Service.Set_Difficulty(State.Difficulty);
 	}
+	if (State.AltToRally != InitialAltToRally) {
+		Service.Set_Alt_To_Rally(State.AltToRally);
+	}
+	if (State.SimulateUnfocused != InitialSimulateUnfocused) {
+		Service.Set_Simulate_Unfocused(State.SimulateUnfocused);
+	}
+	if (State.SidebarSorting != InitialSidebarSorting) {
+		Service.Set_Sidebar_Sorting(State.SidebarSorting);
+	}
+	if (State.Autosave != InitialAutosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
+		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
+	}
 	Service.Save();
 }
 
@@ -150,13 +174,24 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("scrollname");
 			Model.DirtyVariable("detailname");
 			Model.DirtyVariable("difficultyname");
+			Model.DirtyVariable("rally");
+			Model.DirtyVariable("background");
+			Model.DirtyVariable("sorting");
+			Model.DirtyVariable("autosave");
 		}
 
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
+			Rml::StructHandle<UIGameControlsChoice> choice = model.RegisterStruct<UIGameControlsChoice>();
+			if (!choice) {
+				return(false);
+			}
+			choice.RegisterMember("label", &UIGameControlsChoice::Label);
+
 			UIGameControlsState & state = Data.State;
-			return(model.Bind("speed", &state.Speed)
+			return(model.RegisterArray<std::vector<UIGameControlsChoice>>()
+				&& model.Bind("speed", &state.Speed)
 				&& model.Bind("scroll", &state.Scroll)
 				&& model.Bind("detail", &state.Detail)
 				&& model.Bind("difficulty", &state.Difficulty)
@@ -174,7 +209,13 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("scrollname", &state.ScrollName)
 				&& model.Bind("detailname", &state.DetailName)
 				&& model.Bind("difficultyname", &state.DifficultyName)
-				&& model.Bind("leavelabel", &state.LeaveLabel));
+				&& model.Bind("leavelabel", &state.LeaveLabel)
+				&& model.Bind("extras", &state.Extras)
+				&& model.Bind("rally", &state.AltToRally)
+				&& model.Bind("background", &state.SimulateUnfocused)
+				&& model.Bind("sorting", &state.SidebarSorting)
+				&& model.Bind("autosaves", &state.Autosaves)
+				&& model.Bind("autosave", &state.Autosave));
 		}
 
 	private:

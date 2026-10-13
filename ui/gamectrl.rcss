@@ -143,6 +143,45 @@
 	margin-top: 7dp;
 }
 
+#extras
+{
+	display: flex;
+	margin-top: 10dp;
+}
+
+#extras > .column
+{
+	width: 187dp;
+}
+
+#extras > .column > label.check + label.check
+{
+	margin-top: 10dp;
+}
+
+#autosave-row
+{
+	display: flex;
+	margin-top: 6dp;
+	height: 24dp;
+}
+
+#autosave-label
+{
+	width: 70dp;
+	line-height: 24dp;
+}
+
+#autosave
+{
+	width: 112dp;
+}
+
+#autosave selectbox
+{
+	background-color: #0a0615;
+}
+
 #buttons
 {
 	display: flex;
