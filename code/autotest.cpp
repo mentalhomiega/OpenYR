@@ -121,10 +121,12 @@
 **	loadshot <name>			saves what the window shows each time a loading screen is
 **							complete, as <name>-<count>.tga in the screenshots folder; it
 **							applies from the start, whatever the frame
-**	continuewin				a won mission goes on to the next one instead of ending the run; the game over
-**							line still says won. The score screen then ends at once, and the map selection
-**							takes the stage's first choice, since no step runs there. It applies from the start,
-**							whatever the frame
+**	continuewin [screen]	a won mission goes on to the next one instead of ending the run; the game over
+**							line still says won. The score screen then ends at once. The map selection takes
+**							the stage's first choice, since no step runs there, unless "screen" is given: then
+**							the map selection runs its own presentation, and its fallback takes the first
+**							choice when the screen's art is missing. With the art present, the screen waits
+**							for a click no step gives. It applies from the start, whatever the frame
 **	quit					ends the process
 */
 
@@ -277,6 +279,8 @@ int LoadShotCount = 0;
 // Set by a continuewin step; a won mission then carries on instead of ending the run.
 bool ContinueAfterWin = false;
 bool PostWinContinue = false;
+// continuewin screen leaves the map selection to its own presentation instead of the first choice.
+bool ContinueWithMapScreen = false;
 
 // Frames a wait step waits for its condition when its line gives no timeout.
 int const Wait_Default_Timeout = 3000;
@@ -2631,6 +2635,7 @@ bool AutoTest_Load(char const * filename)
 		// continuewin is kept when the script is read, so it needs no step.
 		if (std::strcmp(command, "continuewin") == 0) {
 			ContinueAfterWin = true;
+			ContinueWithMapScreen = (text == "screen");
 			continue;
 		}
 		std::string source = line;
@@ -2742,4 +2747,10 @@ void AutoTest_Game_Over(bool won)
 bool AutoTest_Post_Win(void)
 {
 	return(Active && PostWinContinue);
+}
+
+
+bool AutoTest_Skip_Map_Screen(void)
+{
+	return(AutoTest_Post_Win() && !ContinueWithMapScreen);
 }
