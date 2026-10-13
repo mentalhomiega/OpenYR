@@ -214,7 +214,7 @@ The out-of-sync comparison is positional: it compares line N of one report with 
 Two results from testing set the limits of a tunnel run:
 
 - In tunnel mode the game's socket binds an ephemeral port on every address. The engine ignores `BindAddress` there, so the runner's listing shows `0.0.0.0`.
-- Every global-channel message is 1076 bytes, because its struct is padded to the scenario layout. The CnCNet server source reads into a 1024-byte buffer and has no size check. A relay with a 1024-byte limit drops those messages, and the match never starts. `-RelayBuffer 2048` lets them through. The tunnel runs use that value. Whether the real server drops or truncates such a datagram is not confirmed.
+- A game datagram is at most 1016 bytes: the server's 1024-byte buffer less the bridge's 8-byte envelope. The game does not send a larger datagram in tunnel mode and logs each refused size once. Global-channel packets carry only the bytes their command reads, so the largest one is 1016 bytes on the wire. A relay with a 1024-byte limit therefore passes every datagram, and the tunnel runs use `-RelayBuffer 1024`. Before this limit, every global-channel message was 1076 bytes and a 1024-byte relay dropped them all. Whether the real server drops or truncates an oversized datagram is not confirmed.
 
 Check the relay's routing before a match:
 
