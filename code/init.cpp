@@ -4206,6 +4206,11 @@ class SidebarTabCommandClass : public CommandClass
 		virtual void Execute(void) const {
 			if (Map.Column[Tab].BuildableCount > 0) {
 				Map.Set_Tab(Tab);
+
+				// Only the structure and defense tabs hold a completed building to place.
+				if (Tab < 2) {
+					Map.Place_Completed_Building(Tab);
+				}
 			}
 		}
 

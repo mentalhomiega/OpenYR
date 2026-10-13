@@ -2093,6 +2093,7 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 		*/
 		if (ProximityCheck && ShroudCheck) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, PendingObjectPtr->RTTI, cell + ZoneOffset));
+			Map.Forget_Completed_Building(PendingObjectPtr);
 		} else {
 			Speak(VOX_DEPLOY);
 		}

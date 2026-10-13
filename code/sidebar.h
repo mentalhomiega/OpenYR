@@ -134,6 +134,18 @@ class SidebarClass : public PowerClass
 		// Shows the strip of the tab given; the other strips keep running out of sight.
 		void Set_Tab(int tab);
 
+		// Records a building that has just finished, for the structure or defense tab that lists it.
+		void Note_Completed_Building(BuildingClass * building);
+
+		// Forgets the building given, if a tab holds it as its completed building.
+		void Forget_Completed_Building(ObjectClass const * building);
+
+		// The completed building the tab holds, or NULL when it holds none that is still waiting to be placed.
+		BuildingClass * Completed_Building(int tab);
+
+		// Starts placing the tab's completed building, as clicking its cameo does.
+		void Place_Completed_Building(int tab);
+
 		// Flags every strip to redraw, for changes that can show on any tab.
 		void Flag_Strips_To_Redraw(void);
 
@@ -477,4 +489,7 @@ class SidebarClass : public PowerClass
 		bool IsRepairActive;
 		bool IsUpgradeActive;
 		bool IsDemolishActive;
+
+		// The completed building each of the structure and defense tabs holds, or NULL.
+		BuildingClass * CompletedBuilding[2];
 };

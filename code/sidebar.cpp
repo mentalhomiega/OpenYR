@@ -335,6 +335,9 @@ SidebarClass::SidebarClass(void) :
 	IsDemolishActive(false),
 	ActiveTab(0)
 {
+	CompletedBuilding[0] = NULL;
+	CompletedBuilding[1] = NULL;
+
 	// Every strip covers the same grid; only the active tab's strip is shown.
 	for (int index = 0; index < COLUMNS; index++) {
 		new (&Column[index]) StripClass(InitClass());
@@ -412,6 +415,8 @@ void SidebarClass::Init_Clear(void)
 		Column[index].Init_Clear();
 	}
 	ActiveTab = 0;
+	CompletedBuilding[0] = NULL;
+	CompletedBuilding[1] = NULL;
 
 	Activate(false);
 }
@@ -2052,6 +2057,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 								break;
 
 							case RTTI_BUILDING:
+								Map.Note_Completed_Building((BuildingClass *)pending);
 								Speak(VOX_CONSTRUCTION);
 								break;
 
@@ -3349,6 +3355,60 @@ void SidebarClass::Set_Tab(int tab)
 	Column[ActiveTab].Flag_To_Redraw();
 	Flag_To_Redraw();
 	Fit_Panel_To_Strip();
+}
+
+
+/// <summary>
+/// Records a building that has just finished production, for the structure or defense tab that
+/// lists it. The tab keeps it until it is placed, or until its factory no longer holds it.
+/// </summary>
+void SidebarClass::Note_Completed_Building(BuildingClass * building)
+{
+	CompletedBuilding[Which_Column(RTTI_BUILDINGTYPE, building->Class->Fetch_Heap_ID())] = building;
+}
+
+
+/// <summary>
+/// Forgets the building given wherever a tab holds it as its completed building.
+/// </summary>
+void SidebarClass::Forget_Completed_Building(ObjectClass const * building)
+{
+	for (int tab = 0; tab < 2; tab++) {
+		if (CompletedBuilding[tab] == building) {
+			CompletedBuilding[tab] = NULL;
+		}
+	}
+}
+
+
+/// <summary>
+/// Returns the tab's completed building if its factory still holds it as a finished product.
+/// </summary>
+BuildingClass * SidebarClass::Completed_Building(int tab)
+{
+	BuildingClass * building = CompletedBuilding[tab];
+	if (building != NULL) {
+		for (int item = 0; item < Column[tab].BuildableCount; item++) {
+			FactoryClass * factory = Column[tab].Buildables[item].Factory;
+			if (factory != NULL && factory->Has_Completed() && factory->Get_Object() == building) {
+				return(building);
+			}
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
+/// Starts placing the tab's completed building through the house, as clicking its cameo does.
+/// Nothing happens when no building is waiting or the house is already placing one.
+/// </summary>
+void SidebarClass::Place_Completed_Building(int tab)
+{
+	BuildingClass * building = Completed_Building(tab);
+	if (building != NULL) {
+		PlayerPtr->Manual_Place(building->Who_Can_Build_Me(false, false), building);
+	}
 }
 
 

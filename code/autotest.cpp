@@ -1086,11 +1086,15 @@ static int Key_Code(std::string const & name)
 }
 
 
-// tab: writes the sidebar tab shown, the items each tab lists, and the object waiting to be placed.
+// tab: writes the sidebar tab shown, the items each tab lists, the completed buildings the structure and defense
+// tabs hold, and the object waiting to be placed.
 static void Tab_Step(void)
 {
-	DebugString("AUTOTEST tab shown %d items %d %d %d %d pending %s\n", Map.ActiveTab, Map.Column[0].BuildableCount,
-		Map.Column[1].BuildableCount, Map.Column[2].BuildableCount, Map.Column[3].BuildableCount,
+	BuildingClass * structure = Map.Completed_Building(0);
+	BuildingClass * defense = Map.Completed_Building(1);
+	DebugString("AUTOTEST tab shown %d items %d %d %d %d completed %s %s pending %s\n", Map.ActiveTab,
+		Map.Column[0].BuildableCount, Map.Column[1].BuildableCount, Map.Column[2].BuildableCount, Map.Column[3].BuildableCount,
+		structure != NULL ? structure->Class->Name() : "none", defense != NULL ? defense->Class->Name() : "none",
 		Map.PendingObject != NULL ? Map.PendingObject->Name() : "none");
 }
 

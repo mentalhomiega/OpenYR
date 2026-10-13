@@ -1,0 +1,19 @@
+; Structure and defense tabs select their completed building. A Power Plant (GAPOWR) finishes on the structure tab; the first
+; Q then starts placing it, E starts nothing, and a second Q leaves the placement as it is. The tab query shows the completed
+; building each tab holds and the object waiting to be placed. Expected: pending none before the first Q, pending GAPOWR after it.
+; Run: scripts/run_autotest.ps1 -Script src-agent/tests/autotest/sidebar-completed-building.txt -Build agent -Filter "AUTOTEST (tab|key|produce)|Exception"
+20 own GACNST 50 30
+21 own GAPOWR 56 40
+22 own GAPILE 56 46
+23 own GAWEAP 62 46
+24 own GAPILL 50 46
+40 produce GAPOWR
+60 tab
+700 tab
+705 key E
+710 tab
+715 key Q
+720 tab
+725 key Q
+730 tab
+800 quit
