@@ -55,6 +55,7 @@
 #include "building.h"
 #include "crc.h"
 #include "dbgprint.h"
+#include "debugmode.h"
 #include "globals.h"
 #include "house.h"
 #include "rules.h"
@@ -156,8 +157,11 @@ FactoryClass::~FactoryClass(void)
 void FactoryClass::AI(void)
 {
 	if (!IsSuspended && (Object != NULL || SpecialItem)) {
-		for (int index = 0; index < 1; index++) {
-			if (!Has_Completed() && Graphic_Logic() ) {
+		// The instant build cheat runs every production step in this call. Each step still pays its cost.
+		bool const instant = Debug_Cheat_Active_For(DebugCheat::INSTANT_BUILD, House);
+		int const passes = instant ? (int)STEP_COUNT : 1;
+		for (int index = 0; index < passes; index++) {
+			if (!Has_Completed() && (instant || Graphic_Logic()) ) {
 				IsDifferent = true;
 
 				int cost = Cost_Per_Tick();
