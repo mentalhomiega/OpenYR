@@ -893,7 +893,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsAttackCursorOnFriendlies = ini.Get_Bool(Name(), "AttackCursorOnFriendlies", IsAttackCursorOnFriendlies);
 		IsDefaultToGuardArea = ini.Get_Bool(Name(), "DefaultToGuardArea", IsDefaultToGuardArea);
 		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
-		BuildTimeMultiplier = ini.Get_Float(Name(), "BuildTimeMultiplier", BuildTimeMultiplier);
+		// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
+		BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
