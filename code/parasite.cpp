@@ -22,6 +22,7 @@
 #include "coord.h"
 #include "face.h"
 #include "foot.h"
+#include "gmmath.h"
 #include "globals.h"
 #include "house.h"
 #include "partsys.h"
@@ -57,8 +58,8 @@ double Squid_Victim_Turn(TechnoClass const * victim)
 /// </summary>
 Coord Squid_Offset(Coord const & where, double turn, double side, double ahead)
 {
-	double const cosine = std::cos(turn);
-	double const sine = std::sin(turn);
+	double const cosine = Gamemd_Cosine(turn);
+	double const sine = Gamemd_Sine(turn);
 	return(Coord(where.X + (int)(side * cosine - ahead * sine), where.Y + (int)(side * sine + ahead * cosine), where.Z));
 }
 
@@ -236,7 +237,7 @@ void ParasiteClass::Update_Squid(void)
 					GrappleAnimFrame = 0;
 					Update_Grapple();
 				}
-				victim->AngleRotatedSideways = (float)(std::sin(GrappleAnimFrame * direction * Squid_Shake_Step) * Squid_Shake_Limit);
+				victim->AngleRotatedSideways = (float)(Gamemd_Sine(GrappleAnimFrame * direction * Squid_Shake_Step) * Squid_Shake_Limit);
 			}
 			break;
 
