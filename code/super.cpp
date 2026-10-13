@@ -306,7 +306,7 @@ void SuperClass::Reset_Recharge_Time(void)
 
 /// <summary>
 /// Sets how charged a present weapon is, as SuperClass::SetCharge (0x6CC1E0) does. At 100 percent
-/// the weapon is ready at once.
+/// one frame is left, so the weapon is ready on the next frame.
 /// </summary>
 /// <param name="percent">How charged the weapon is, from 0 to 100.</param>
 void SuperClass::Set_Charge(int percent)
@@ -316,7 +316,8 @@ void SuperClass::Set_Charge(int percent)
 	}
 
 	int const total = Get_Recharge_Time();
-	int const left = total - total * percent / 100;
+	// The charged share is percent times the float32 0.01 (0x7EAAE0), truncated.
+	int const left = total - static_cast<int>(static_cast<double>(percent) * 0.01f * total);
 	if (left == 0) {
 		IsReady = true;
 	}
