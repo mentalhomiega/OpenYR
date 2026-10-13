@@ -40,6 +40,7 @@
 #include "_keyboar.h"
 #include "_surface.h"
 #include "addon.h"
+#include "autotest.h"
 #include "ccfile.h"
 #include "convert.h"
 #include "dbgprint.h"
@@ -70,6 +71,7 @@ class MapSelect : public MSEngine {
 	public:
 		bool Presentation(ScenarioClass * scenario);
 		bool Advance_Progression(ScenarioClass * scenario, char const * map_name);
+		bool Choose_First_Selection(ScenarioClass * scenario);
 
 	private:
 		bool Init(ScenarioClass * scenario);
@@ -228,6 +230,39 @@ bool MapSelect::Advance_Progression(ScenarioClass * scen, char const * map_name)
 
 
 /// <summary>
+/// Takes the first choice of the scenario's stage without drawing the selection screen.
+/// This is the continuewin path of an unattended run: its screen art may be missing from the
+/// install, and no script step reaches its input loop.
+/// </summary>
+/// <param name="scenario">The scenario to advance. It is updated with the map named.</param>
+/// <returns>bool; Was a choice taken?</returns>
+bool MapSelect::Choose_First_Selection(ScenarioClass * scenario)
+{
+	char const * side_name = Progression_Side_Name(HouseTypes[scenario->PlayerHouse]);
+
+	if ((side_name == NULL) || (Choices.Initialize(side_name) == false)) {
+		Choices.Deinit();
+		return(false);
+	}
+
+	MapStage * stage = Choices.Find_Stage_By_Scenario(scenario->ScenarioName);
+	MapStage * next = NULL;
+
+	if ((stage != NULL) && (stage->Get_Selection_Count() > 0) && (stage->Get_Selection(0) != NULL)) {
+		next = Choices.Find_Stage_By_Name(stage->Get_Selection(0)->Get_Stage_Label());
+	}
+
+	if (next != NULL) {
+		scenario->Set_Scenario_Name(next->Get_Scenario_Name());
+		scenario->Stage = Choices.Get_Stage_ID(next);
+	}
+
+	Choices.Deinit();
+	return(next != NULL);
+}
+
+
+/// <summary>
 /// Runs the map selection screen.
 /// This routine plays the map movie, brings on the overlays and targets, then hands
 /// control to the player to choose where the campaign goes next.
@@ -239,6 +274,10 @@ bool MapSelect::Presentation(ScenarioClass * scenario)
 	const char * selected = NULL;
 
 	Rect rect;
+
+	if (AutoTest_Post_Win()) {
+		return(Choose_First_Selection(scenario));
+	}
 
 	if (Init(scenario) == false) {
 		return(false);

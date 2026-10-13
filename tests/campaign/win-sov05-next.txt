@@ -1,0 +1,24 @@
+; Campaign progression check for Soviet 5: wins SOV05 as win-sov05.txt does, then carries on past the win
+; so the next mission (SOV06LMD.MAP) is read. continuewin keeps the game running past the game over line.
+; Run: scripts/run_autotest.ps1 -Script src-agent8/tests/campaign/win-sov05-next.txt -Build agent8 -Campaign -Map SOV05UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (win|game over)|MapSelect|Reading scenario|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+0 continuewin
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+300 killtag 0ED70D7C
+301 killhouse Yuri2Country 0
+302 killhouse YuriCountry 0
+500 killhouse YuriCountry 0
+501 killhouse Yuri2Country 0
+800 killhouse YuriCountry 0
+801 killhouse Yuri2Country 0
+6000 quit

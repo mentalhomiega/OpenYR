@@ -118,6 +118,10 @@
 **	loadshot <name>			saves what the window shows each time a loading screen is
 **							complete, as <name>-<count>.tga in the screenshots folder; it
 **							applies from the start, whatever the frame
+**	continuewin				a won mission goes on to the next one instead of ending the run; the game over
+**							line still says won. The score screen then ends at once, and the map selection
+**							takes the stage's first choice, since no step runs there. It applies from the start,
+**							whatever the frame
 **	quit					ends the process
 */
 
@@ -266,6 +270,10 @@ std::string FollowType;
 // The name loading screen captures are saved under, or empty when none are taken.
 std::string LoadShotName;
 int LoadShotCount = 0;
+
+// Set by a continuewin step; a won mission then carries on instead of ending the run.
+bool ContinueAfterWin = false;
+bool PostWinContinue = false;
 
 // Frames a wait step waits for its condition when its line gives no timeout.
 int const Wait_Default_Timeout = 3000;
@@ -2578,6 +2586,11 @@ bool AutoTest_Load(char const * filename)
 		if (std::strcmp(command, "loadshot") == 0) {
 			LoadShotName = text;
 		}
+		// continuewin is kept when the script is read, so it needs no step.
+		if (std::strcmp(command, "continuewin") == 0) {
+			ContinueAfterWin = true;
+			continue;
+		}
 		std::string source = line;
 		source.erase(source.find_last_not_of(" \t\r\n") + 1);
 		Steps.push_back(StepType{frame, command, text, x, y, source});
@@ -2676,5 +2689,15 @@ void AutoTest_Game_Over(bool won)
 		return;
 	}
 	DebugString("AUTOTEST game over frame %d: %s\n", Frame, won ? "won" : "lost");
+	if (won && ContinueAfterWin) {
+		PostWinContinue = true;
+		return;
+	}
 	std::exit(0);
+}
+
+
+bool AutoTest_Post_Win(void)
+{
+	return(Active && PostWinContinue);
 }

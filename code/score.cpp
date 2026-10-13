@@ -52,6 +52,7 @@
 #include "_surface.h"
 #include "_timer.h"
 #include "audio/audioengine.h"
+#include "autotest.h"
 #include "conquer.h"
 #include "convert.h"
 #include "data.h"
@@ -556,6 +557,9 @@ void ScoreClass::Cycle_Wait_Click(bool cycle)
 	int minclicks = 20;
 
 	Keyboard->Clear();
+	if (AutoTest_Post_Win()) {
+		return;
+	}
 	while (minclicks || (!Keyboard->Check()) ) {
 
 		Call_Back_Delay(1);
@@ -892,6 +896,10 @@ Rect ScoreClass::Count_Up_Print(Surface * surf, char *str, int percent, int maxv
  *=============================================================================================*/
 void ScoreClass::Input_Name(char str[], int xpos, int ypos)
 {
+	if (AutoTest_Post_Win()) {
+		return;
+	}
+
 	int x = xpos;
 	int key = 0;
 	int index = 0;
