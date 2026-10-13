@@ -153,6 +153,7 @@
 #include "dsurface.h"
 #include "factory.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "goptions.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -8625,7 +8626,7 @@ void HouseClass::Calculate_Defense_Values(BuildingClass const * building, int va
 	for (int y = y_min; y < y_max; ++y) {
 		for (int x = x_min; x < x_max; ++x) {
 			int y_offset = y - center.Y;
-			double distance = std::sqrt((double)((x - center.X) * (x - center.X) + y_offset * y_offset));
+			double distance = Gamemd_Sqrt((double)((x - center.X) * (x - center.X) + y_offset * y_offset));
 			if (distance < 6.0) {
 				double adjusted_distance = distance;
 				int x_offset = x - area.X;
