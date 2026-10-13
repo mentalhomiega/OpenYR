@@ -414,6 +414,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(HeapID);
 	stream.Serialize(House);
+	stream.Serialize(ParentCountry);
 	stream.Serialize(Side);
 	stream.Serialize(Scheme);
 	stream.Serialize(FirepowerBias);

@@ -140,8 +140,8 @@ class HouseTypeClass : public AbstractTypeClass
 		bool IsSmartAI;
 
 		// The country this one is based on, set by ParentCountry= or by a house taking its
-		// Country=, or HOUSE_NONE for a country that stands alone. It is not saved: a house
-		// records the country it acts as in ActLike.
+		// Country=, or HOUSE_NONE for a country that stands alone. Trigger house lookups read
+		// it, so a loaded game must carry it.
 		HousesType ParentCountry;
 
 		// A house of this country makes each new object of a listed type a veteran. The lists
