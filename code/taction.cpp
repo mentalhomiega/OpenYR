@@ -1474,6 +1474,7 @@ bool TActionClass::TAction_BASE_BUILDING(HouseClass * house, ObjectClass * , Tri
 			BuildingClass *building = house->ConYards[0];
 			Cell base_cell = building->Get_Coord().As_Cell();
 			house->Center = Coord(base_cell);
+			house->BaseSpawnCell = base_cell;
 			house->Base.PlacementCenter = base_cell;
 		}
 	} else {
