@@ -600,7 +600,7 @@ AllyParaDropInf=E1,GGI
 AllyParaDropNum=6,2   ; two planes: six GIs and two guardian GIs
 ```
 
-The planes fly in from the firing house's [`Edge`](/keys/edge/), which is north outside a campaign. Within [`ParadropRadius`](/keys/paradropradius/) leptons of the target, measured along the ground, a plane drops a paratrooper every 5 frames while it is over the playable map. Each one lands half a cell to the left or right of the plane's path, alternating sides, and falls under the [`Parachute`](/keys/parachute/) canopy with [`ChuteSound`](/keys/chutesound/). A paratrooper that could not stand where it would land stays aboard.
+The planes fly in from the firing house's [`Edge`](/keys/edge/), which is north outside a campaign. In a campaign, a house that omits `Edge` flies them in from the edge nearest its construction yard. Within [`ParadropRadius`](/keys/paradropradius/) leptons of the target, measured along the ground, a plane drops a paratrooper every 5 frames while it is over the playable map. Each one lands half a cell to the left or right of the plane's path, alternating sides, and falls under the [`Parachute`](/keys/parachute/) canopy with [`ChuteSound`](/keys/chutesound/). A paratrooper that could not stand where it would land stays aboard.
 
 A plane that leaves the radius with paratroopers still aboard turns back for another pass. It gives up after five passes in a row in which nobody could jump. A plane that is empty or has given up flies back to its own edge and leaves the map.
 
@@ -613,7 +613,7 @@ A `Type=SpyPlane` weapon sends planes of the `SPYP` aircraft type from the firin
 While a plane is within its primary weapon's `Range` of the target, it photographs: it maps the ground for its house around the point below it, out to the weapon's `Damage` in cells, at most 10.
 
 - On the way to the target it photographs every [`SpyPlaneCameraFrames`](/keys/spyplanecameraframes/) frames and plays [`SpyPlaneCamera`](/keys/spyplanecamera/) each time.
-- Within three cells of the target it holds its heading and flies on, photographing every 3 frames without the sound. It is removed once it leaves the playfield.
+- Within three cells of the target it holds its heading and flies on toward the edge opposite the one nearest its house's construction yard, photographing every 3 frames without the sound. It is removed once it leaves the playfield.
 
 ```ini title="rulesmd.ini"
 [SPYP]

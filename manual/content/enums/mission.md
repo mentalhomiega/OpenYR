@@ -40,7 +40,7 @@ values:
   - { constant: MISSION_WAIT, value: 28, input: "28", meaning: "Do nothing. No kind of object acts on this mission; it holds the number Yuri's Revenge gives it." }
   - { constant: MISSION_ATTACK_MOVE, value: 29, input: "29", meaning: "Do nothing. No kind of object acts on this mission; it holds the number Yuri's Revenge gives it." }
   - { constant: MISSION_SPYPLANE_APPROACH, value: 30, input: "30", meaning: "Fly an aircraft to its target, mapping the ground below while within its weapon's range, then switch to Spyplane Overfly within three cells of it." }
-  - { constant: MISSION_SPYPLANE_OVERFLY, value: 31, input: "31", meaning: "Fly an aircraft off the map at the edge opposite its owner's, mapping the ground below while within its weapon's range of its target." }
+  - { constant: MISSION_SPYPLANE_OVERFLY, value: 31, input: "31", meaning: "Fly an aircraft off the map at the edge opposite the one nearest its house's construction yard, mapping the ground below while within its weapon's range of its target." }
 ---
 
 These are the missions an object on the map can be in. Team scripts use a separate list of team missions, described under Mapping.
