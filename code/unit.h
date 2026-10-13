@@ -206,6 +206,8 @@ class UnitClass : public FootClass
 		// Does a DisguiseWhenStill vehicle look like terrain to this house (UnitClass::IsDisguisedAs, 0x746750)?
 		bool Is_Disguised_As(HouseClass const * house) const;
 		bool Is_Blinking_Disguise(void) const;
+		// Is this DisguiseWhenStill vehicle drawn as its terrain to the viewer (TechnoClass slot 0x440, 0x70EE30)?
+		bool Is_Shown_As_Terrain_To(HouseClass const * viewer) const;
 
 		/*
 		**	Object entry and exit from the game system.

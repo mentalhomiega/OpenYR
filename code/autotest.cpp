@@ -2309,7 +2309,7 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 			if (techno->RTTI == RTTI_UNIT) {
 				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
-				DebugString("AUTOTEST   mirage look %s blink %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise());
+				DebugString("AUTOTEST   mirage look %s blink %d terrain for player %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr));
 			}
 			if (techno->RTTI == RTTI_AIRCRAFT) {
 				AircraftClass const * plane = static_cast<AircraftClass const *>(techno);

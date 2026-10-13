@@ -3156,10 +3156,31 @@ bool UnitClass::Is_Disguised_As(HouseClass const * house) const
 }
 
 
+/// <summary>
+/// Is this Mirage vehicle drawn as its terrain to the viewer (UnitClass::DrawIt, 0x73CEC0, through
+/// TechnoClass slot 0x440, 0x70EE30)? A computer house's vehicle that has just fired shows its tank
+/// look to every viewer for the length of its fake blink. Otherwise the terrain is shown unless the
+/// viewer is an ally of the owner or a disguise detector of the viewer covers the vehicle's cell.
+/// </summary>
+bool UnitClass::Is_Shown_As_Terrain_To(HouseClass const * viewer) const
+{
+	if (MirageType == NULL || viewer == NULL) {
+		return(false);
+	}
+	if (!House->Is_Player_Control() && Is_Blinking_Disguise()) {
+		return(false);
+	}
+	if (House->Is_Ally(viewer)) {
+		return(false);
+	}
+	return(Map[Get_Cell()].DisguiseSensorCount[viewer] == 0);
+}
+
+
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	// A disguised Mirage looks like its terrain to houses that are not its owner's allies.
-	if (MirageType != NULL && PlayerPtr != NULL && !House->Is_Ally(PlayerPtr) && Map[Get_Cell()].DisguiseSensorCount[PlayerPtr] == 0) {
+	// A disguised Mirage is drawn as its terrain while Is_Shown_As_Terrain_To says the viewer sees it so.
+	if (MirageType != NULL && PlayerPtr != NULL && Is_Shown_As_Terrain_To(PlayerPtr)) {
 		ShapeSet const * shape = (ShapeSet const *)MirageType->Get_Image_Data();
 		CellClass & cellptr = Map[Get_Cell()];
 		if (cellptr.Drawer == NULL) {
