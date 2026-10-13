@@ -497,6 +497,12 @@ void OptionsClass::Load_Settings(void)
 	DebugMode = ConfigINI.Get_Bool("Options", "DebugMode", DebugMode);
 	DebugString("DebugMode is %s\n", DebugMode == true ? "ON" : "OFF");
 
+	// Turns on the per-frame check value log, as -SYNCLOG does; a false or absent value leaves the switch as it was.
+	if (ConfigINI.Get_Bool("Options", "SyncLog", false)) {
+		Debug_SyncLog = true;
+	}
+	DebugString("SyncLog is %s\n", Debug_SyncLog == true ? "ON" : "OFF");
+
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
 	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
 
