@@ -1,0 +1,13 @@
+; A Yuri's death frees the unit it holds, and the unit returns to the house it was taken from. The Gunner
+; is the player's from the capture at about frame 60 until the Yuri is killed at frame 200; where E1 at 260
+; should then show the computer's house again, with a "mind control released E1" line before it.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/mindcontrol/yuri-release.txt -Country 9 -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+40 grantunit YURI 40 90
+50 spawn E1 46 90
+52 strike YURI 46 90
+150 where E1
+200 kill YURI 1
+260 where E1
+260 where YURI
+300 quit

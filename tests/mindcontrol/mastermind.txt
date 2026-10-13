@@ -1,0 +1,25 @@
+; A Mastermind (MultipleMindControlTank: Damage 3, so three links, and InfiniteMindControl) takes four computer
+; Gunners. Each capture is logged. With four held, the overload is above OverloadCount[0] (3), so the Mastermind
+; takes OverloadDamage[1] (50) every OverloadFrames[1] (60) frames. The overload hit is an ordinary one, so armor
+; reduces it: the where MIND lines show a loss of about 46 a tick, not 50. The strength starts at 500; the early
+; drop comes from the Gunners' fire before they were taken.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/mindcontrol/mastermind.txt -Country 9 -Seconds 150 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+40 grantunit MIND 40 90
+50 spawn E1 44 86
+50 spawn E1 44 90
+50 spawn E1 44 92
+50 spawn E1 44 94
+80 strike MIND 44 86
+120 strike MIND 44 90
+160 strike MIND 44 92
+200 strike MIND 44 94
+210 where MIND
+250 where MIND
+310 where MIND
+370 where MIND
+430 where MIND
+490 where MIND
+550 where MIND
+610 where E1
+650 quit

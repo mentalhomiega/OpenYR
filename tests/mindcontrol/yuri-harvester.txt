@@ -1,0 +1,10 @@
+; A computer War Miner (HARV) is ImmuneToPsionics=yes, so a Yuri's strike on it never fires: canfire writes
+; FIRE_ILLEGAL (5) and the miner stays with its house, with no "mind control" line in the log.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/mindcontrol/yuri-harvester.txt -Country 9 -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+40 grantunit YURI 40 90
+50 spawn HARV 46 90
+51 canfire YURI 46 90
+52 strike YURI 46 90
+200 where HARV
+250 quit

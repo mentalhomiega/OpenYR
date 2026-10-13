@@ -1,0 +1,12 @@
+; A civilian hospital (CAHOSP, a neutral structure) and Yuri Prime. The rules entry for CAHOSP has no
+; ImmuneToPsionics line. gamemd's BuildingTypeClass constructor sets the flag to yes before the INI is read
+; (decomp/BuildingTypeClass.c, line 362), so a structure with no key is immune. Expect canfire to write
+; FIRE_ILLEGAL (5), no "mind control CAHOSP" line, and the hospital to stay with Neutral.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/mindcontrol/yuriprime-hospital.txt -Country 9 -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+40 grantunit YURIPR 42 90
+50 neutral CAHOSP 46 90
+51 canfire YURIPR 46 90
+52 strike YURIPR 46 90
+200 where CAHOSP
+250 quit

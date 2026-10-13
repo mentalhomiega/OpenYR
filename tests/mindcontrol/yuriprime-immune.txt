@@ -1,0 +1,14 @@
+; Types with ImmuneToPsionics=yes that a Yuri Prime can reach: a Yuri clone (YURI), a Robot Tank (ROBO). Each
+; canfire writes FIRE_ILLEGAL (5) and neither unit is captured.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/mindcontrol/yuriprime-immune.txt -Country 9 -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+40 grantunit YURIPR 42 90
+50 spawn YURI 46 90
+50 spawn ROBO 46 94
+51 canfire YURIPR 46 90
+52 strike YURIPR 46 90
+60 canfire YURIPR 46 94
+62 strike YURIPR 46 94
+200 where YURI
+200 where ROBO
+250 quit

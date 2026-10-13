@@ -1,0 +1,11 @@
+; A Yuri takes a computer Grizzly tank (MTNK, not ImmuneToPsionics) six cells away for the player.
+; canfire writes FIRE_OK (0) before the strike. The log should have "mind control MTNK taken from ..."
+; and where MTNK should show the player's house. The tank's cannon cannot reach the Yuri at this range.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/mindcontrol/yuri-tank.txt -Country 9 -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+40 grantunit YURI 40 90
+50 spawn MTNK 46 90
+51 canfire YURI 46 90
+52 strike YURI 46 90
+200 where MTNK
+250 quit
