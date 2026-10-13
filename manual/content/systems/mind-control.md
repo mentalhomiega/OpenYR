@@ -59,6 +59,8 @@ When the warhead hits, the target changes owner and takes no damage. It springs 
 
 A structure, aircraft or infantryman that changes owner this way also springs [`Destroyed by anything`](/mapping/events/tevent-destroyed-any/) and then [its no-infiltrate form](/mapping/events/tevent-destroyed-any-x/). Every object that changes owner this way counts as a kill for its new house, and as lost for its old house, unless its type is [`DontScore=yes`](/keys/dontscore/). A structure marked [`Insignificant=yes`](/keys/insignificant/) counts as a kill but not as lost. A `DontScore` type still springs those events.
 
+A structure that changes owner this way also moves its production and its place in its house's lists, as a captured structure does. Its production in progress is abandoned, its construction yard and factory counts move to the new owner, and it takes the new owner's primary flag only when that owner has no primary of its kind. An object docked to it changes owner with it, as on capture.
+
 [`ControlledAnimationType`](/keys/controlledanimationtype/) plays over the object while it is held, [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above its center. Over a structure it plays the art `Height` in cell levels above the center instead. [`YuriMindControlSound`](/keys/yurimindcontrolsound/) plays at the object when the firer's house or the object's former house is the player's.
 
 A line in the firer's house color joins the firer to each object it holds. The line shows while either of them is selected, and for [`MindControlAttackLineFrames`](/keys/mindcontrolattacklineframes/) frames after each capture. It ends [`LeptonMindControlOffset`](/keys/leptonmindcontroloffset/) leptons above the object.
