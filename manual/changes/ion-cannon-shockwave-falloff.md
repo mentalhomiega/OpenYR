@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-The ion cannon shockwave's ripple now falls off more slowly with distance from the blast, as Yuri's Revenge does, so it stands higher farther out. Before, it fell off faster, so the ripple was lower at the same distance.
+The ion cannon shockwave's ripple now keeps more of its amplitude with distance from the blast, as Yuri's Revenge does. Before, the amplitude fell off faster, so at a given distance the ripple was smaller.
