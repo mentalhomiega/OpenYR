@@ -237,7 +237,7 @@ This table gathers every way a flight ends, in the order a turn tests them. The 
 
 The blast does not always go off where the projectile stood. Up to three moves pull it onto the target, applied in this order. None of them applies once the projectile has lost its target.
 
-1. The blast moves onto the target's center when the projectile is not [`Airburst=yes`](/keys/airburst/) and **Any of:**
+1. The blast moves onto the target's center when the projectile is neither [`Airburst=yes`](/keys/airburst/) nor [`Inaccurate=yes`](/keys/inaccurate/), and **Any of:**
    - the fuse tripped within 64 leptons of the point it was set on;
    - a ballistic shot landed and went off because it is not `Bouncy=yes`, or because the cell it was in at the start of the turn held an object that is not friendly. It must also have come down within 384 leptons (a cell and a half) of the target, or within six times its rebound speed if that is farther. Only half the height difference counts toward that distance.
 2. The blast moves onto the target's center when it is within 32 leptons of it. `Airburst=yes` and [`Inaccurate=yes`](/keys/inaccurate/) projectiles skip this move.

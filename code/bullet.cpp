@@ -917,11 +917,11 @@ void BulletClass::AI(void)
 				 * projectile went off close by, so that the explosion is seen
 				 * to strike the victim rather than the air alongside it. A
 				 * collision is judged three times as generously as a mere fuse
-				 * expiry, and an airburst projectile is always left where it
-				 * went off.
+				 * expiry. An airburst or Inaccurate projectile is always left
+				 * where it went off (BulletClass::Update, 0x467CD0 and 0x467CDE).
 				 */
 				if (TarCom != NULL) {
-					if ((fuse == FUSE_EXPLODE_CLOSE || collided) && !Class->IsAirburst) {
+					if ((fuse == FUSE_EXPLODE_CLOSE || collided) && !Class->IsAirburst && !Class->IsInaccurate) {
 						Coord midpoint = coord;
 						Coord target_coord = TarCom->As_Coord();
 						midpoint.Z = (midpoint.Z + target_coord.Z) / 2;
