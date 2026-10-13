@@ -1253,6 +1253,34 @@ double INIClass::Get_Float(char const * section, char const * entry, double defv
 }
 
 
+/// <summary>
+/// Fetches a number at double precision. Get_Float rounds the text to single precision first.
+/// Callers that need gamemd's float32 store apply Truncate_To_Single to this value.
+/// </summary>
+/// <returns>Returns with the entry's value, or defvalue when it is missing or not a number.</returns>
+double INIClass::Get_Double(char const * section, char const * entry, double defvalue) const
+{
+	INIEntry * entryptr = Find_Entry(section, entry);
+	if (entryptr == NULL) {
+		return(defvalue);
+	}
+
+	char const * text = entryptr->Value.c_str();
+	char * end = NULL;
+	double result = strtod(text, &end);
+	if (end == text) {
+		char const * source = Source_Of(*entryptr);
+		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
+		return(defvalue);
+	}
+
+	if (strchr(text, '%') != NULL) {
+		result /= 100.0;
+	}
+	return(result);
+}
+
+
 /***********************************************************************************************
  * INIClass::Put_Float -- Store a floating point number to the database.                       *
  *                                                                                             *
