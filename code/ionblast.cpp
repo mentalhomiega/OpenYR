@@ -169,51 +169,7 @@ void IonBlastClass::AI(void)
 
 						if (*displacement > 0) {
 
-							/*
-							 * Units talking to a weapons factory (i.e. currently driving
-							 * out of one) are not stopped by the blast wave.
-							 */
-							bool stop = true;
-							if (occupier->Contact_With_Whom() != NULL) {
-								if (occupier->Contact_With_Whom()->Fetch_RTTI() == RTTI_BUILDING) {
-									if (((BuildingClass *)occupier->Contact_With_Whom())->Class->IsWeaponsFactory) {
-										stop = false;
-									}
-								}
-							}
-
-							/*
-							 * Likewise, units standing on a weapons factory's exit cells
-							 * are not stopped, so they cannot pile up on the bib.
-							 */
-							bool on_exit_cell = false;
-							BuildingClass * building = Map[occupier->Get_Coord()].Cell_Building();
-							if (building != NULL && building->Class->IsWeaponsFactory) {
-
-								Cell building_cell(building->Get_Coord());
-								Cell occupier_cell(occupier->Get_Coord());
-
-								short cell_dx = occupier_cell.X - building_cell.X;
-								short cell_dy = occupier_cell.Y - building_cell.Y;
-
-								if (cell_dx == 0) {
-									if (cell_dy == 1) {
-										on_exit_cell = true;
-									}
-								} else if (cell_dx == 2) {
-									if (cell_dy == 1) {
-										on_exit_cell = true;
-									}
-								} else if (cell_dx == 3) {
-									if (cell_dy == 1) {
-										on_exit_cell = true;
-									}
-								}
-							}
-
-							if (!on_exit_cell && stop) {
-								occupier->Set_Speed(0.0);
-							}
+							occupier->Set_Speed(0.0);
 
 							int draw_offset = Spiral_Index_To_Point(*displacement).Y;
 							occupier->IonBlastYDrawOffset = 2 * draw_offset;
