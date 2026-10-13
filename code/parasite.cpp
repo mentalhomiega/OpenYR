@@ -195,6 +195,7 @@ void ParasiteClass::Release(bool doomed)
 		Owner->Delete_Me();
 		return;
 	}
+	victim->AngleRotatedSideways = 0.0f;
 
 	Cell cell = victim->Center_Coord().As_Cell();
 	if (Owner->Is_Foot() && ((FootClass *)Owner)->Can_Enter_Cell(&Map[cell]) != MOVE_OK) {
@@ -207,10 +208,10 @@ void ParasiteClass::Release(bool doomed)
 		Owner->Delete_Me();
 		return;
 	}
-	// The parasite itself is paralyzed for one rearm delay after it comes out (ParasiteClass::ExitUnit, 0x62A4A0).
+	// The parasite itself is paralyzed for three rearm delays after it comes out (ParasiteClass::ExitUnit, 0x62A4A0).
 	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
 	if (weapon != nullptr && Owner->Is_Foot()) {
-		((FootClass *)Owner)->ParalysisTimer = weapon->ROF;
+		((FootClass *)Owner)->ParalysisTimer = weapon->ROF * 3;
 	}
 	if (IsReselect && Owner->House->Is_Player_Control()) {
 		Owner->Select();
