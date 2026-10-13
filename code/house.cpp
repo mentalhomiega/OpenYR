@@ -8335,7 +8335,7 @@ int HouseClass::Base_Cell_Weight_By_Defense_Coverage(HouseClass const & house, C
 	if (context != FACING_NONE) {
 		int x = cell.X - house.Base.PlacementCenter.X;
 		int y = cell.Y - house.Base.PlacementCenter.Y;
-		DirType dir = DirType(std::atan2((double)-y, (double)x));
+		DirType dir = DirType(Gamemd_Atan2((double)-y, (double)x));
 		offset = abs(DIR_STEP_8 * context - dir.As_Dir256());
 		if (offset >= DIR_STEP_2) {
 			offset = DIR_MAX - offset;
@@ -8436,7 +8436,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 			/// Face away from the mass of the base, so the structure lands on its outside.
 			int x = -(int)occupied_dir.X;
 			int y = -(int)occupied_dir.Y;
-			double angle = std::atan2((double)-y, (double)x);
+			double angle = Gamemd_Atan2((double)-y, (double)x);
 			DirType dir = DirType(angle);
 			FacingType facing = dir.As_Facing();
 
