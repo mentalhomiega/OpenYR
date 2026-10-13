@@ -3116,12 +3116,9 @@ void HouseClass::AI_Super_Weapon_Defense(SuperClass const * super, Cell const & 
 		return;
 	}
 
-	Cell base = Center != COORD_NONE ? Center.As_Cell() : CELL_NONE;
-	if (base == CELL_NONE) {
-		return;
-	}
-
-	Coord const from = Map[base].Center_Coord();
+	// gamemd 0x4FAF00 measures from the starting cell, or the origin when there is none.
+	Cell const base = Starting_Cell_Or_Default();
+	Coord const from = Starting_Coord_Or_Default();
 	Coord const to = Map[target].Center_Coord();
 	if (Gamemd_Length_3D(from.X - to.X, from.Y - to.Y, from.Z - to.Z) > Rule->AISuperDefenseDistance) {
 		return;
@@ -4470,12 +4467,13 @@ void HouseClass::Recalc_Center(void)
 		*/
 		if (count > 1) {
 			int radius = 0;
+			Coord const start = Starting_Coord_Or_Default();
 
 			for (index = 0; index < Buildings.Count(); index++) {
 				BuildingClass const * b = Buildings[index];
 
 				if (b != NULL && !b->IsInLimbo && (HouseClass *)b->House == this && b->Strength > 0) {
-					radius += Gamemd_Distance(Center, b->Center_Coord());
+					radius += Gamemd_Distance(start, b->Center_Coord());
 				}
 			}
 			Radius = std::max(radius / count, 2 * CELL_LEPTON_W);
@@ -4568,8 +4566,7 @@ int HouseClass::Expert_AI(void)
 	*/
 	if (PickEnemyTimer == 0) {
 		if (Enemy == HOUSE_NONE && Session.Type != GAME_NORMAL && !Class->IsMultiplayPassive) {
-			Coord center = Center;
-			if (center != COORD_NONE) {
+			if (Starting_Cell_Or_Default() != CELL_NONE) {
 				int close = INT_MAX;
 				HouseClass * enemy = NULL;
 
@@ -4577,12 +4574,9 @@ int HouseClass::Expert_AI(void)
 					HouseClass * h = Houses[house];
 					if (h != this && !h->Class->IsMultiplayPassive && !h->IsDefeated && !Is_Ally(h)) {
 
-						/*
-						**	Determine a priority value based on distance to the center of the
-						**	candidate base. The higher the value, the better the candidate house
-						**	is to becoming the preferred enemy for this house.
-						*/
-						int value = (h->Center - center).Gamemd_Length();
+						// gamemd 0x4FD500 reads this house's own starting cell for each candidate
+						// (0x4FD635-0x4FD651), so every value is zero and the first candidate is kept.
+						int const value = 0;
 
 						/*
 						**	Compare the calculated value for this candidate house and if it is
@@ -8411,7 +8405,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	}
 
 	if (Base.PlacementCenter == Cell(0, 0)) {
-		return(Center.As_Cell());
+		return(Starting_Cell_Or_Default());
 	}
 
 	/*
@@ -8420,13 +8414,14 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	IndexClass<int, Cell> ranking;
 	sorted_cells.Clear();
 
+	Coord const start = Starting_Coord_Or_Default();
 	for (i = 0; i < Base.InnerCells.Count(); i++) {
 		Cell cell = Base.InnerCells[i];
 		int score;
 		if (!buildingtype->IsCloakGenerator) {
 			score = func(*this, cell, i, context);
 		} else {
-			score = i + 1000 * (Center - Coord(cell)).Gamemd_Length();
+			score = i + 1000 * (start - Coord(cell)).Gamemd_Length();
 		}
 		ranking.Add_Index(score, cell);
 	}
@@ -9896,13 +9891,13 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 
 /// <summary>
 /// Picks where a computer house drops paratroopers or reveals the map (HouseClass::Fire_ParaDrop).
-/// When the house's preferred target is Anything, the drop lands near the center of its enemy's
-/// base, or of its own base when it has no enemy, on clear ground for a five by five group, two
-/// cells further south-east. Any other preferred quarry is aimed at by Pick_Target_By_Type, and
+/// When the house's preferred target is Anything, the drop lands near the starting cell of its
+/// enemy's base, or of its own base when it has no enemy, on clear ground for a five by five group,
+/// two cells further south-east. Any other preferred quarry is aimed at by Pick_Target_By_Type, and
 /// that cell is used as it is.
 /// </summary>
-/// <returns>Returns with the cell to aim at, or CELL_NONE when that house has no base, or no
-/// target of its quarry.</returns>
+/// <returns>Returns with the cell to aim at, or CELL_NONE when no target of its quarry is found.
+/// A house with no base has the origin as its starting cell, as gamemd's Fire_ParaDrop does.</returns>
 Cell HouseClass::Pick_Drop_Target(void)
 {
 	if (PreferredTarget != QUARRY_ANYTHING) {
@@ -9910,14 +9905,12 @@ Cell HouseClass::Pick_Drop_Target(void)
 	}
 
 	HouseClass * target = Enemy != HOUSE_NONE ? Houses[Enemy] : this;
-	if (target->Center == Coord(0, 0, 0)) {
-		return(CELL_NONE);
-	}
-	Cell cell = Map.Nearby_Location(target->Center.As_Cell(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(5, 5));
+	Cell cell = Map.Nearby_Location(target->Starting_Cell_Or_Default(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(5, 5));
+	cell = cell + Cell(2, 2);
 	if (cell == CELL_NONE) {
 		return(CELL_NONE);
 	}
-	return(cell + Cell(2, 2));
+	return(cell);
 }
 
 
