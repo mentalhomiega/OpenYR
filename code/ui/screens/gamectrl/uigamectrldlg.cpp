@@ -126,6 +126,9 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			// A launch file's interval stays in charge of the games it starts.
 			if (!Spawner_Is_Requested()) {
 				SaveManager.Autosave.Set_Interval(frames);
+				if (GameActive) {
+					SaveManager.Autosave.Schedule(Frame);
+				}
 			}
 		}
 
