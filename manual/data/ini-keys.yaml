@@ -22637,9 +22637,9 @@ MaxLowPowerProductionSpeed:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '.9'
+      default_candidate: null
       declared_in: RulesClass
-      member: MaxLowPowerProductionSpeed
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -23922,9 +23922,9 @@ MultipleFactory:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1'
+      default_candidate: null
       declared_in: RulesClass
-      member: MultipleFactory
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -25469,9 +25469,9 @@ OccupyDamageMultiplier:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: RulesClass
-      member: OccupyDamageMultiplier
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -25521,9 +25521,9 @@ OccupyROFMultiplier:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: RulesClass
-      member: OccupyROFMultiplier
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -25862,9 +25862,9 @@ OpenToppedDamageMultiplier:
     value_type: floating point
     status: generated
     _provenance:
-      default_candidate: '1.0'
+      default_candidate: null
       declared_in: RulesClass
-      member: OpenToppedDamageMultiplier
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass
