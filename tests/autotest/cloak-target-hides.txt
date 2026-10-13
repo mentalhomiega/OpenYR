@@ -1,0 +1,35 @@
+; A Rhino ordered to attack a cloakable Grizzly across the field (run with -Mods E:\Claude ra2 decomp\src-agent6\tests\autotest\cloak-rules).
+; The Rhino starts seven cells off, out of the Grizzly's reach, so the Grizzly is on guard with no target and starts cloaking.
+; The Rhino closes in on the order at frame 430. Once the Grizzly has finished cloaking (cloak 2 in its MTNK line), the Rhino cannot
+; sense it, so the Rhino drops the target: TechnoClass::UpdateCloak (0x6FB740) clears every attacker on the CLOAKED transition and
+; gives the target back only to attackers whose house senses its cell. Expected: the HTNK target reads 63,36 up to the frame the MTNK
+; line shows cloak 2, then -1,-1 on that frame or the next one.
+; Script lines run in file order once their frame is reached, so the where lines below stay in frame order.
+30 command CenterBase
+310 reveal
+300 own HTNK 56 36
+400 spawn MTNK 63 36
+425 where HTNK
+425 where MTNK
+430 strikeobj MTNK 63 36 2
+431 where HTNK
+431 where MTNK
+432 where HTNK
+432 where MTNK
+433 where HTNK
+433 where MTNK
+434 where HTNK
+434 where MTNK
+435 where HTNK
+435 where MTNK
+436 where HTNK
+436 where MTNK
+437 where HTNK
+437 where MTNK
+438 where HTNK
+438 where MTNK
+440 where HTNK
+440 where MTNK
+450 where HTNK
+450 where MTNK
+800 quit
