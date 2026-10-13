@@ -770,18 +770,22 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 				}
 			}
 
+			// The shadow is frame 1 of INFSHDW.SHP on the ground, not a copy of the body (gamemd InfantryClass::DrawIt 0x519552).
 			if (height > 0) {
-				Draw_Shape(
-					*LogicalSurface,
-					*NormalDrawer,
-					shapefile,
-					Shape_Number(),
-					point + Point2D(0, -IonBlastYDrawOffset) + Point2D(0, TacticalMap->Z_Lepton_To_Pixel(height)),
-					cliprect,
-					ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_DARKEN),
-					NULL,
-					-5 - TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z - height)
-				);
+				ShapeSet const * blob = (ShapeSet const *)MFCD::Retrieve("INFSHDW.SHP");
+				if (blob != NULL) {
+					Draw_Shape(
+						*LogicalSurface,
+						*NormalDrawer,
+						blob,
+						1,
+						point + Point2D(0, -IonBlastYDrawOffset) + Point2D(0, TacticalMap->Z_Lepton_To_Pixel(height)),
+						cliprect,
+						ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_DARKEN),
+						NULL,
+						-5 - TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z - height)
+					);
+				}
 			}
 
 			Draw_Object(shapefile, Shape_Number(), point + Point2D(0, -IonBlastYDrawOffset), cliprect, DIR_N, 256, _zadj, ZGRAD_90DEG, false, brightness);
