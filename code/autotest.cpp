@@ -1606,6 +1606,8 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// The commands are split into two chains; one chain of them all nests too deeply for MSVC.
+	bool handled = true;
 	if (step.Command == "command") {
 		Execute_Command(step.Argument.c_str());
 	} else if (step.Command == "select") {
@@ -2151,7 +2153,12 @@ void Run(StepType const & step)
 		if (building != NULL) {
 			DebugString("AUTOTEST   overpower %s chargers %d overpowered %d powered %d\n", building->Class->Name(), building->Overpowerer_Count(), (int)building->IsOverpowered, (int)building->Is_Powered_On());
 		}
-	} else if (step.Command == "ruleanims") {
+	} else {
+		handled = false;
+	}
+	if (handled) return;
+
+	if (step.Command == "ruleanims") {
 		auto name = [](AnimTypeClass const * type) { return type != NULL ? type->Name() : "-"; };
 		DebugString("AUTOTEST   ruleanims MoveFlash %s InfantryExplode %s InfantryNuked %s FlamingInfantry %s IonBlast %s DropZoneAnim %s BarrelExplode %s money %d\n",
 			name(Rule->MoveFlash), name(Rule->InfantryExplode), name(Rule->InfantryNuked), name(Rule->FlamingInfantry), name(Rule->IonBlast), name(Rule->FlareAnim), name(Rule->BarrelExplode), Rule->MPMoney);
