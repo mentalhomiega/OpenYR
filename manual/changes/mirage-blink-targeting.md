@@ -15,4 +15,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A computer house's units now pick a Mirage tank as an automatic target only in the frames after it fires, and only on a roll. Before, they picked it whenever it was in range. The frames come from `DisguiseFakeBlinkTime` on the weapon, and the roll from `DisabledDisguiseDetectionPercent`, which lists one percent per side. A human house's units no longer pick a disguised Mirage tank automatically. The save layout changed, so saves from earlier builds do not load.
+A computer house's units now pick a Mirage tank as an automatic target only in the frames after it fires, and only on a roll. Before, they picked it whenever it was in range. The frames come from `DisguiseFakeBlinkTime` on the weapon, and the roll from `DisabledDisguiseDetectionPercent`, which lists one percent per side. A human house's units no longer pick a disguised Mirage tank automatically. In those frames a computer house's Mirage tank also looks like a tank to every viewer. The save layout changed, so saves from earlier builds do not load.
