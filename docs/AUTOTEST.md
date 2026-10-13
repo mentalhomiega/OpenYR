@@ -71,7 +71,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
-| `log <text>` | Writes the line to the debug log |
+| `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
 | `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
 | `strikeobj <TypeID> x y [radius] [land\|naval\|all]` | The player's armed units and infantry attack the nearest live object of that type within `radius` cells (default 3) of the cell. The target is chosen when the line runs, so a target that has moved is still found; the units keep it until it dies or leaves the map. `land` orders only units that are not ships, `naval` only ships, and `all` (the default) every armed unit |
@@ -198,9 +198,21 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
 
 - `[Settings] BindAddress=127.0.0.1` makes each socket listen on loopback only, so nothing listens on the network.
-- The runner writes `0 log NETSYNC_SIDE_A` (or `_B`) as the first line of each copy's script. The `log` command keeps only one word of its text, so the marker has no spaces, and the runner finds each copy's debug log by it.
+- The runner writes `0 log NETSYNC_SIDE_A` (or `_B`) as the first line of each copy's script, and finds each copy's debug log by that marker.
 - Both copies write to the build's `Debug` folder. Each run deletes the `DEBUG_*.LOG` and `SYNC_*.LOG` files there first, so use `-KeepDir` to keep a run's logs.
 - Runs of one build take turns, as with `run_autotest.ps1`, and the runner holds two of the four game slots.
+
+### Orders in a network game
+
+In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that gives an order queues it as an event, as a player's click does, so the other copy applies it too. Outside a network game, `move`, `attack`, `strike`, `strikeobj`, `rally` and `sell` change the object directly.
+
+| Steps | In a network game |
+| --- | --- |
+| `produce`, `place`, `primary`, `stop`, `order`, `command DeployObject`, `clickcell`, `fire` | Already queue events, as the sidebar and the map clicks do |
+| `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell` | Queue an event: a mission for each object, an archive target or a sale |
+| `planning 1`, `planning 0` | `planning 1` sets this copy's mode only. Orders given while the mode is on are recorded as planned orders, and `planning 0` queues the commit that starts them |
+
+A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
 
 The out-of-sync comparison is positional: it compares line N of one report with line N of the other. One object that appears only on one side shifts every line after it, so read the first difference, not the whole list.
 

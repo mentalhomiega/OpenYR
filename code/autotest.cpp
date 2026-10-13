@@ -373,6 +373,27 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 }
 
 
+// Whether other people's copies of the game take part. Their orders then go through the event queue, as a
+// player's orders do, so every copy applies them. Direct state changes would leave the other copies behind.
+bool Network_Game(void)
+{
+	return(Session.Type == GAME_IPX || Session.Type == GAME_INTERNET);
+}
+
+
+// Gives the player's objects of that type in one list a mission as a queued event, as a click's order is given.
+template<class T>
+void Queue_Player_Missions(DynamicVectorClass<T *> & list, std::string const & name, MissionType mission, AbstractClass * target, AbstractClass * destination)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		if (object != NULL && object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+			object->Player_Assign_Mission(mission, target, destination);
+		}
+	}
+}
+
+
 void Select_Type(std::string const & name)
 {
 	Unselect_All();
@@ -422,6 +443,13 @@ void Move(std::string const & name, int x, int y)
 {
 	Select_Type(name);
 	Cell const cell(x, y);
+	if (Network_Game()) {
+		PlanningRecordScope const recording(Map.IsPlanningMode);
+		Queue_Player_Missions(Units, name, MISSION_MOVE, NULL, &Map[cell]);
+		Queue_Player_Missions(Infantry, name, MISSION_MOVE, NULL, &Map[cell]);
+		Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
+		return;
+	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
 		if (unit->IsSelected) unit->Assign_Destination(&Map[cell]), unit->Assign_Mission(MISSION_MOVE);
@@ -511,6 +539,13 @@ void Attack(std::string const & name)
 	DebugString("AUTOTEST attack %s -> %s at %d,%d\n", name.c_str(), target->Class->Name(), target->Get_Cell().X, target->Get_Cell().Y);
 
 	Select_Type(name);
+	if (Network_Game()) {
+		PlanningRecordScope const recording(Map.IsPlanningMode);
+		Queue_Player_Missions(Units, name, MISSION_ATTACK, target, NULL);
+		Queue_Player_Missions(Infantry, name, MISSION_ATTACK, target, NULL);
+		Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
+		return;
+	}
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
 		if (unit->IsSelected) unit->Assign_Target(target), unit->Assign_Mission(MISSION_ATTACK);
@@ -568,19 +603,29 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 	}
 
 	int orders = 0;
+	bool const network = Network_Game();
+	PlanningRecordScope const recording(Map.IsPlanningMode);
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
 		if (unit->House == PlayerPtr && !unit->IsInLimbo && unit->Is_Weapon_Equipped() && Strike_Side_Allows(unit->TClass->IsNaval, side)) {
-			unit->Assign_Target(target);
-			unit->Assign_Mission(MISSION_ATTACK);
+			if (network) {
+				unit->Player_Assign_Mission(MISSION_ATTACK, target);
+			} else {
+				unit->Assign_Target(target);
+				unit->Assign_Mission(MISSION_ATTACK);
+			}
 			orders++;
 		}
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
 		if (infantry->House == PlayerPtr && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped() && Strike_Side_Allows(infantry->TClass->IsNaval, side)) {
-			infantry->Assign_Target(target);
-			infantry->Assign_Mission(MISSION_ATTACK);
+			if (network) {
+				infantry->Player_Assign_Mission(MISSION_ATTACK, target);
+			} else {
+				infantry->Assign_Target(target);
+				infantry->Assign_Mission(MISSION_ATTACK);
+			}
 			orders++;
 		}
 	}
@@ -1565,7 +1610,11 @@ void Run(StepType const & step)
 		BuildingClass * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
 		DebugString("AUTOTEST sell %s at %d,%d\n", building != NULL ? building->Class->Name() : "(none)", std::atoi(step.Argument.c_str()), step.X);
 		if (building != NULL && building->House == PlayerPtr) {
-			building->Sell_Back(-1);
+			if (Network_Game()) {
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SELL, TargetClass(building)));
+			} else {
+				building->Sell_Back(-1);
+			}
 		}
 		return;
 	}
@@ -1575,7 +1624,11 @@ void Run(StepType const & step)
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * building = Buildings[index];
 			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-				building->Assign_Archive_Target(&Map[Cell(step.X, step.Y)]);
+				if (Network_Game()) {
+					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ARCHIVE, TargetClass(building), TargetClass(&Map[Cell(step.X, step.Y)])));
+				} else {
+					building->Assign_Archive_Target(&Map[Cell(step.X, step.Y)]);
+				}
 				DebugString("AUTOTEST rally %s to %d,%d\n", building->Class->Name(), step.X, step.Y);
 			}
 		}
@@ -1709,11 +1762,16 @@ void Run(StepType const & step)
 		// strike <TypeID> x y: the player's objects of that type attack what stands on that cell.
 		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
 		DebugString("AUTOTEST strike %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+		PlanningRecordScope const recording(Map.IsPlanningMode);
 		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-				techno->Assign_Target(target);
-				techno->Assign_Mission(MISSION_ATTACK);
+				if (Network_Game()) {
+					techno->Player_Assign_Mission(MISSION_ATTACK, target);
+				} else {
+					techno->Assign_Target(target);
+					techno->Assign_Mission(MISSION_ATTACK);
+				}
 			}
 		}
 	} else if (step.Command == "enemies") {
@@ -3017,10 +3075,11 @@ bool AutoTest_Load(char const * filename)
 			continue;
 		}
 		std::string text = argument;
-		// A rules step's path is the rest of the line, so it may hold spaces.
+		// A rules step's path and a log line's text are the rest of the line, so they may hold spaces.
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
 			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
-			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0) {
+			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
+			|| std::strcmp(command, "log") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
