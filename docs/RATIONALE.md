@@ -99,8 +99,8 @@ builds the same values.
   `atan(n * K)` does not match. `Gamemd_Atan2` indexes the table by
   `trunc(y / x / K)`, so angles are quantized in steps of up to `K` near the x
   axis. Facing from coordinates and from velocities uses it, and so do the
-  simulation's shrapnel and fire directions, disk laser ring start, and base
-  placement and defense quadrants.
+  simulation's shrapnel and fire directions, disk laser ring start, base
+  placement and defense quadrants, safe-point search, and infantry scatter.
 
 Helpers the simulation switched to them include the integer and single
 precision length functions used by distance checks, the ballistic offset,
