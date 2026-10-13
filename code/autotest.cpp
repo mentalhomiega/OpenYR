@@ -2310,6 +2310,16 @@ void Run(StepType const & step)
 			if (techno->RTTI == RTTI_AIRCRAFT) {
 				AircraftClass const * plane = static_cast<AircraftClass const *>(techno);
 				DebugString("AUTOTEST   flight %s straight %d loaner %d flyby %d flyback %d entered %d inlocal %d legal %d\n", techno->TClass->Name(), (int)plane->IsLockedStraight, (int)plane->IsALoaner, (int)plane->Class->IsFlyBy, (int)plane->Class->IsFlyBack, (int)plane->IsLocked, (int)Map.In_Local_Radar(plane->PositionCell), (int)Map.In_Radar(plane->PositionCell));
+				Cell yard = CELL_NONE;
+				int yards = 0;
+				for (int index = 0; index < Buildings.Count(); index++) {
+					BuildingClass const * building = Buildings[index];
+					if (building->House == plane->House && building->Class->IsConstructionYard && !building->IsInLimbo) {
+						if (yards == 0) yard = building->Get_Cell();
+						yards++;
+					}
+				}
+				DebugString("AUTOTEST   edges start %d base %d entry %d exit %d yards %d first %d,%d local %d,%d,%d,%d\n", (int)plane->House->Control.Edge, (int)plane->House->Base_Edge, (int)plane->House->Entry_Edge(), (int)plane->House->Opposite_Base_Edge(), yards, (int)yard.X, (int)yard.Y, Map.LocalRect.X, Map.LocalRect.Y, Map.LocalRect.Width, Map.LocalRect.Height);
 			}
 			{
 				bool const firing = techno->Is_Foot() && static_cast<FootClass const *>(techno)->IsFiring;

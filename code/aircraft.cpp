@@ -4312,13 +4312,13 @@ bool AircraftClass::Spy_Plane_Photograph(void)
 
 
 /// <summary>
-/// Aims a spy plane at a cell on the edge opposite its owner's edge. A locked plane keeps its
-/// heading, so it may fly past that cell.
+/// Aims a spy plane at a cell on the edge opposite its owner's base edge
+/// (AircraftClass::Mission_SpyPlaneApproach 0x4155F0, Mission_SpyPlaneOverfly 0x4157C0). A locked
+/// plane keeps its heading, so it may fly past that cell.
 /// </summary>
 void AircraftClass::Spy_Plane_Exit(void)
 {
-	static SourceType const _opposite[4] = {SOURCE_SOUTH, SOURCE_WEST, SOURCE_NORTH, SOURCE_EAST};
-	Cell const exit = Map.Calculated_Cell(_opposite[House->Entry_Edge()], CELL_NONE, CELL_NONE, SPEED_WINGED);
+	Cell const exit = Map.Calculated_Cell(House->Opposite_Base_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
 	if (exit != CELL_NONE) {
 		Assign_Destination(&Map[exit]);
 	}

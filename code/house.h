@@ -126,10 +126,9 @@ class HouseStaticClass {
 		*/
 		int InitialCredits;
 
-		/*
-		**	For generic (unspecified) reinforcements, they arrive by a common method. This
-		**	specifies which method is to be used.
-		*/
+		// The map edge this house's reinforcements and support planes come in from (gamemd
+		// HouseClass::StartingEdge, 0x1E0). SOURCE_NONE when a campaign house record omits Edge.
+		// Planes then use Base_Edge, and ground reinforcements use north.
 		SourceType Edge;
 
 		// Carries the scenario supplied house control to or from a save game.
@@ -713,6 +712,11 @@ class HouseClass : public AbstractClass
 		*/
 		Cell BaseSpawnCell;
 
+		// The edge of the local area that this house's base lies nearest, from its primary
+		// construction yard (gamemd HouseClass::Edge, 0x577C, set by FUN_0050DB00). It is
+		// north until Update_Base_Edge runs. Planes use it when Control.Edge names no edge.
+		SourceType Base_Edge;
+
 		/*
 		**	The structures, vehicles, infantry and aircraft this house had on the map when the scenario
 		**	finished loading, each with its kind, its type's number and the cell it stood on. A trigger
@@ -903,6 +907,9 @@ class HouseClass : public AbstractClass
 		Cell Pick_Strike_Target(void);
 		Cell Pick_Drop_Target(void);
 		SourceType Entry_Edge(void) const;
+		SourceType Opposite_Base_Edge(void) const;
+		SourceType Starting_Edge(void) const;
+		void Update_Base_Edge(BuildingClass const * factory);
 		AircraftClass * Send_Plane(AircraftTypeClass const * type, MissionType mission, Cell const & target, InfantryTypeClass const * infantry = NULL, int count = 0, AbstractClass * target_object = NULL, FootClass * cargo = NULL, Cell const & start = CELL_NONE);
 		Cell Pick_Mutator_Target(void);
 		Cell Pick_Dominator_Target(void);

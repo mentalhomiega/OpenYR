@@ -351,6 +351,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	PreferredDefensiveCellStartTime(-100),
 	CenterOverride(CELL_NONE),
 	BaseSpawnCell(CELL_NONE),
+	Base_Edge(SOURCE_NORTH),
 	Attack(),
 	Enemy(HOUSE_NONE),
 	AngerNodes(),
@@ -6381,7 +6382,9 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	if (iq > Rule->MaxIQ) iq = 1;
 	IQ = Control.IQ = iq;
 
-	Control.Edge = ini.Get_SourceType(hname, "Edge", SOURCE_NORTH);
+	// An omitted Edge is SOURCE_NONE, as gamemd's HouseClass::Read_INI (0x500B40) reads it with a -1
+	// default, so planes take the edge their base lies nearest instead of north.
+	Control.Edge = ini.Get_SourceType(hname, "Edge", SOURCE_NONE);
 	IsPlayerControl = ini.Get_Bool(hname, "PlayerControl", false);
 
 	// Allies are named by house, since a map may list more houses than a bit mask has places.
@@ -6461,7 +6464,9 @@ void HouseClass::Write_INI(CCINIClass & ini)
 	ini.Clear(name);
 
 	ini.Put_Int(name, "Credits", (int)(Control.InitialCredits / 100));
-	ini.Put_SourceType(name, "Edge", Control.Edge);
+	if (Control.Edge != SOURCE_NONE) {
+		ini.Put_SourceType(name, "Edge", Control.Edge);
+	}
 	ini.Put_Int(name, "ActsLike", ActLike);
 	ini.Put_Int(name, "TechLevel", Control.TechLevel);
 	ini.Put_Int(name, "IQ", Control.IQ);
@@ -7526,6 +7531,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(Drain);
 	crc(WhoLastHurtMe);
 	crc(Enemy);
+	crc((int)Base_Edge);
 	Allies.Compute_CRC(crc);
 	Base.Compute_CRC(crc);
 }
@@ -7690,6 +7696,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PreferredDefensiveCellStartTime);
 	stream.Serialize(CenterOverride);
 	stream.Serialize(BaseSpawnCell);
+	stream.Serialize(Base_Edge);
 	stream.Serialize(StartingObjects);
 	stream.Serialize(BQuantity);
 	stream.Serialize(UQuantity);
@@ -9921,15 +9928,119 @@ void HouseClass::AI_Ion_Cannon(SuperClass * super)
 
 
 /// <summary>
-/// Fetches the map edge this house's support planes fly in from: the house's Edge, or north when
-/// it names none.
+/// Fetches the map edge this house's support planes fly in from and its retreating planes head
+/// for (HouseClass::SendParadropPlanes 0x65E660, SendAirstrikePlanes 0x65E850, SendSpyPlanes
+/// 0x65EAB0, and AircraftClass::Mission_Retreat 0x415A50). That is the house's Edge when it names
+/// a compass edge; otherwise it is Base_Edge.
 /// </summary>
 SourceType HouseClass::Entry_Edge(void) const
 {
 	if (Control.Edge >= SOURCE_NORTH && Control.Edge <= SOURCE_WEST) {
 		return(Control.Edge);
 	}
+	if (Base_Edge >= SOURCE_NORTH && Base_Edge <= SOURCE_WEST) {
+		return(Base_Edge);
+	}
 	return(SOURCE_NORTH);
+}
+
+
+/// <summary>
+/// Fetches the edge a spy plane leaves by, which is opposite Base_Edge
+/// (AircraftClass::Mission_SpyPlaneApproach 0x4155F0 and Mission_SpyPlaneOverfly 0x4157C0, through
+/// FUN_0050DAC0). An out-of-range Base_Edge gives north, as FUN_0050DAC0 does.
+/// </summary>
+SourceType HouseClass::Opposite_Base_Edge(void) const
+{
+	static SourceType const _opposite[4] = {SOURCE_SOUTH, SOURCE_WEST, SOURCE_NORTH, SOURCE_EAST};
+	if (Base_Edge >= SOURCE_NORTH && Base_Edge <= SOURCE_WEST) {
+		return(_opposite[Base_Edge]);
+	}
+	return(SOURCE_NORTH);
+}
+
+
+/// <summary>
+/// Fetches the Edge setting for reinforcements and other ground arrivals. SOURCE_NONE reads as
+/// north; any other value is returned unchanged.
+/// </summary>
+SourceType HouseClass::Starting_Edge(void) const
+{
+	if (Control.Edge == SOURCE_NONE) {
+		return(SOURCE_NORTH);
+	}
+	return(Control.Edge);
+}
+
+
+/// <summary>
+/// Recomputes which edge of the local area this house's base lies nearest (HouseClass::Edge,
+/// 0x577C, set by FUN_0050DB00). When factory is the primary factory for buildings, its position is
+/// the base. Otherwise the base is the house's primary construction yard, or else its last
+/// construction yard, or else its first other building. Base_Edge keeps its value when the house has
+/// no building to measure from.
+/// </summary>
+/// <param name="factory">The factory just made primary, or NULL when the house is only refreshed.</param>
+void HouseClass::Update_Base_Edge(BuildingClass const * factory)
+{
+	Coord base(0, 0, 0);
+	bool have_base = false;
+	Coord fallback(0, 0, 0);
+	bool have_fallback = false;
+
+	if (factory != NULL && factory->IsLeader && factory->Class->ToBuild == RTTI_BUILDINGTYPE) {
+		base = factory->Center_Coord();
+		have_base = true;
+	} else {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (building->House != this || building->IsInLimbo) {
+				continue;
+			}
+			if (building->Class->IsConstructionYard) {
+				base = building->Center_Coord();
+				have_base = true;
+				if (building->IsLeader) {
+					break;
+				}
+			} else if (!have_fallback) {
+				fallback = building->Center_Coord();
+				have_fallback = true;
+			}
+		}
+	}
+
+	if (!have_base) {
+		if (!have_fallback) {
+			return;
+		}
+		base = fallback;
+	}
+
+	// The four edge midpoints of the local area, in cell space (FUN_0050DB00's anchors).
+	Cell const cell = base.As_Cell();
+	int const width = Map.LocalRect.Width;
+	int const height = Map.LocalRect.Height;
+	Cell const north = Map.LocalRect_To_Cell(Cell(width / 2, 1));
+	Cell const east = Map.LocalRect_To_Cell(Cell(width, height));
+	Cell const south = Map.LocalRect_To_Cell(Cell(width / 2, height * 2));
+	Cell const west = Map.LocalRect_To_Cell(Cell(0, height));
+
+	int const d_north = Gamemd_Length_2D(cell.X - north.X, cell.Y - north.Y);
+	int const d_east = Gamemd_Length_2D(cell.X - east.X, cell.Y - east.Y);
+	int const d_south = Gamemd_Length_2D(cell.X - south.X, cell.Y - south.Y);
+	int const d_west = Gamemd_Length_2D(cell.X - west.X, cell.Y - west.Y);
+
+	// On a tie, north wins over east, east over south, and south over west.
+	if (d_east < d_north || d_south < d_north || d_west < d_north) {
+		if (d_south < d_east || d_west < d_east) {
+			Base_Edge = (d_west < d_south) ? SOURCE_WEST : SOURCE_SOUTH;
+		} else {
+			Base_Edge = SOURCE_EAST;
+		}
+	} else {
+		Base_Edge = SOURCE_NORTH;
+	}
 }
 
 

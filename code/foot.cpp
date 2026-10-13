@@ -3653,7 +3653,7 @@ int FootClass::Do_MISSION_RETREAT(void)
 				**	entered from.
 				*/
 				if (Team != NULL && Team->Class->Get_Origin() != CELL_NONE) {
-					cell = Map.Calculated_Cell(House->Control.Edge, Team->Class->Get_Origin(), Center_Coord().As_Cell(), TClass->Speed);
+					cell = Map.Calculated_Cell(House->Starting_Edge(), Team->Class->Get_Origin(), Center_Coord().As_Cell(), TClass->Speed);
 				}
 
 				/*
@@ -3661,7 +3661,7 @@ int FootClass::Do_MISSION_RETREAT(void)
 				**	team information.
 				*/
 				if (cell == CELL_NONE) {
-					cell = Map.Calculated_Cell(House->Control.Edge, CELL_NONE, Center_Coord().As_Cell(), TClass->Speed);
+					cell = Map.Calculated_Cell(House->Starting_Edge(), CELL_NONE, Center_Coord().As_Cell(), TClass->Speed);
 				}
 
 				assert(cell == Cell(0,0));		// An edge cell must be found!

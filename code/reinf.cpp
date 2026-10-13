@@ -598,10 +598,7 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 		**	A group with a cell is placed on that cell, facing its house's edge. A group
 		**	with no cell takes an edge cell.
 		*/
-		SourceType source = teamtype->House->Control.Edge;
-		if (source == SOURCE_NONE) {
-			source = SOURCE_NORTH;
-		}
+		SourceType source = teamtype->House->Starting_Edge();
 
 		eface = (FacingType)(source << 1);
 		if (cell == CELL_NONE) {
@@ -797,7 +794,7 @@ bool Create_Special_Reinforcement(HouseClass * house, TechnoTypeClass const * ty
 			*/
 			if (!another && mission == TMISSION_NONE) {
 				mission = TMISSION_MOVECELL;
-				argument = Map.Calculated_Cell(house->Control.Edge);
+				argument = Map.Calculated_Cell(house->Starting_Edge());
 			}
 
 			/*
@@ -893,23 +890,9 @@ int Create_Air_Reinforcement(HouseClass * house, AircraftType air, int number, M
 		*/
 		obj->IsALoaner = true;
 
-		/*
-		**	Find a cell for the object to come in on.  This is stolen from the
-		**	the code that handles a SOURCE_AIR in the normal logic.
-		*/
-		SourceType source = house->Control.Edge;
-		switch (source) {
-			case SOURCE_NORTH:
-			case SOURCE_EAST:
-			case SOURCE_SOUTH:
-			case SOURCE_WEST:
-				break;
-
-			default:
-				source = SOURCE_NORTH;
-				break;
-		}
-		Cell newcell = Map.Calculated_Cell(source, CELL_NONE, CELL_NONE, SPEED_WINGED);
+		// The planes come in from the edge that the house's planes use (gamemd FUN_0065D8E0, the
+		// UseTransportOrigin-off branch, reads StartingEdge and then the base edge).
+		Cell newcell = Map.Calculated_Cell(house->Entry_Edge(), CELL_NONE, CELL_NONE, SPEED_WINGED);
 
 		/*
 		**	Try and place the object onto the map.

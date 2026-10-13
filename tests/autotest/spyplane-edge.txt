@@ -1,7 +1,8 @@
 ; A spy plane flies on past its target and is removed once it leaves the playfield, for targets
 ; near the bottom edge, in the far north-west and at the centre. The plane enters from the north
-; edge (the player's house), so each one exits on the south edge. Each shot is granted fresh
-; (the super weapon is spent when it fires). Map XMP29U2.MAP: Size 0,0,60,60, LocalSize 2,4,56,50.
+; edge (the player's house). The start is an MCV that is never deployed, so the house has no
+; construction yard and keeps the default base edge, north, which puts each exit on the south edge.
+; Each shot is granted fresh (the super weapon is spent when it fires). Map XMP29U2.MAP: Size 0,0,60,60, LocalSize 2,4,56,50.
 30 command CenterBase
 60 grant SpyPlaneSpecial
 80 fire SpyPlaneSpecial 95 65

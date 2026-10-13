@@ -1,0 +1,27 @@
+; A spy plane leaves over the edge opposite the one nearest its house's construction yard, and
+; that edge is set when the yard is placed. The start is an MCV, so it is deployed first; a house
+; with no construction yard keeps the default base edge, north. Map XMP29U2.MAP: Size 0,0,60,60,
+; LocalSize 2,4,56,50. Each "where SPYP" logs the plane's cell and mission, and the "edges" line logs
+; the house's Edge setting, base edge, the edge planes enter from, the edge they leave by, and its
+; construction yards.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+420 grant SpyPlaneSpecial
+440 fire SpyPlaneSpecial 95 65
+500 where SPYP
+700 where SPYP
+900 where SPYP
+920 where SPYP
+940 where SPYP
+960 where SPYP
+980 where SPYP
+1000 where SPYP
+1020 where SPYP
+1040 where SPYP
+1060 where SPYP
+1080 where SPYP
+1100 where SPYP
+1120 where SPYP
+1300 count SPYP
+1400 quit
