@@ -456,6 +456,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	// First, so that everything after it is covered, including the rest of this function.
 	Install_Exception_Handler();
 
+	// Round toward zero for the whole run, as gamemd does (WinMain 0x006BBFC1; _ftol 0x007C5F00
+	// re-asserts it), since _controlfp_s also sets the MXCSR that the SSE2 build uses.
+	unsigned int fp_control = 0;
+	_controlfp_s(&fp_control, _RC_CHOP, _MCW_RC);
+
 	ProgramInstance = instance;
 
 	Debug_Init();
