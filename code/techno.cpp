@@ -4347,6 +4347,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A locomotor warhead, such as the Magnetron's, does not fire at an Organic target, whatever its armor (TechnoClass::GetFireError, 0x6FC0B0).
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsLocomotor && techno->TClass->IsOrganic) {
+		return(FIRE_ILLEGAL);
+	}
+
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
 		goto CANT_FIRE;
 	}
