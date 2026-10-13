@@ -9,6 +9,8 @@ when_omitted:
 
 The projectile carries a flight allowance and detonates wherever it is when the allowance runs out. Each game frame, the distance it moved is taken off the allowance. Homing and ballistic projectiles spend it the same way.
 
+A `Ranged=yes` projectile also checks its fuse every frame, as a steered projectile does. A flak shell therefore bursts near its aim point, at about the height it was aimed at, instead of falling to the ground under it.
+
 The allowance is the firing weapon's [`ProjectileRange`](/keys/projectilerange/), not its [`Range`](/keys/range/). `Range` is how far away the weapon may fire from, and `ProjectileRange` is how far the shot may then travel. A weapon that does not set `ProjectileRange` gives its projectile about 390 cells, so a `Ranged=yes` projectile needs `ProjectileRange` on its weapon to run out in practice.
 
 A bomblet released by a [`Splits=yes`](/keys/splits/) projectile takes its allowance from its [`AirburstWeapon`](/keys/airburstweapon/)'s `Range` instead.

@@ -911,7 +911,9 @@ void BulletClass::AI(void)
 			**	maintenance (usually nothing). Otherwise, explode and then
 			**	delete the bullet.
 			*/
-			FuseResultType fuse = Is_Homing() ? Fuse.Fuse_Checkup(coord) : FUSE_WAIT;
+			// Ranged=yes projectiles (IsFueled) check their fuse as homing ones do, so a flak shell bursts near its aim
+			// point rather than falling to the ground (BulletClass::Update, 0x467C0C).
+			FuseResultType fuse = (Is_Homing() || Class->IsFueled) ? Fuse.Fuse_Checkup(coord) : FUSE_WAIT;
 			if (!forced && (Class->IsDropping || fuse == FUSE_WAIT)) {
 				/*
 				**	Certain projectiles lose strength when they travel.

@@ -113,7 +113,7 @@ A ballistic projectile does not use the weapon's [`Speed=`](/keys/speed/#scope-w
 
 A steered projectile leaves at 1 lepton a frame, whatever the distance, and works up to the weapon's `Speed=` in flight, as [steered flight](#steered-flight) describes.
 
-Only a steered projectile uses a fuse. The fuse is set on the target's position at the moment of launch, not on the predicted aim point. It stays shut for the projectile's [`Arm`](/keys/arm/) delay, except that a shot at an aircraft is armed at once. The `Arm` page covers when the fuse trips.
+A steered projectile and a [`Ranged=yes`](/keys/ranged/) projectile use a fuse. The fuse is set on the target's position at the moment of launch, not on the predicted aim point. It stays shut for the projectile's [`Arm`](/keys/arm/) delay, except that a shot at an aircraft is armed at once. The `Arm` page covers when the fuse trips.
 
 An [`Inviso=yes`](/keys/inviso/) projectile skips the flight. It is placed directly on its target's position as it is launched. If a raised [firestorm wall](/systems/laser-fences/#projectiles) lies on the path, the wall consumes it instead.
 
@@ -140,7 +140,7 @@ Each turn runs these steps in order:
 5. A [`Ranged=yes`](/keys/ranged/) projectile subtracts the distance it just moved from its allowance, and is marked when the allowance runs out.
 6. The projectile takes up its new position. If it now stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through, the wall consumes it and the turn ends.
 7. A projectile not already marked goes through three standing tests: a tall overlay in its cell, ground level, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
-8. A steered projectile checks its fuse.
+8. A steered or `Ranged=yes` projectile checks its fuse.
 9. A projectile that is not marked, and whose fuse has not tripped, keeps flying. A [`Degenerates=yes`](/keys/degenerates/) projectile then loses 1 point of damage, down to a floor of 5. Any other projectile detonates and is removed.
 
 A shot from a weapon with a barrel gets a head start: two of these turns run immediately during firing, so the shot appears past the muzzle, not inside it. [The firing sequence](/systems/firing-geometry/#the-shot-step-by-step) says which shots get the head start. Every other shot takes its first turn later in the same frame, once every object ahead of it in the turn order has moved. A head-start shot takes that turn as well, so it moves three times in the frame it is fired.
@@ -234,7 +234,7 @@ This table gathers every way a flight ends, in the order a turn tests them. The 
 | A [`High=yes`](/keys/high/#scope-overlaytype) overlay stands in its cell, the projectile is less than 100 leptons above the ground, and it is not [`High=yes`](/keys/high/#scope-bullettype) itself | Both | Where it stands |
 | It is below ground level | Both | Where it stands |
 | It is [`AA=yes`](/keys/aa/) and within 128 leptons of the aircraft, or the airborne jumpjet infantry, it is chasing | Both | Where it stands |
-| Its fuse tripped | Steered, but never a `Dropping=yes` projectile | Where it stands. A trip within 64 leptons of the fuse point moves it onto the target, as described below |
+| Its fuse tripped | Steered or `Ranged=yes`, but never a `Dropping=yes` projectile | Where it stands. A trip within 64 leptons of the fuse point moves it onto the target, as described below |
 
 ## Where the blast lands
 
