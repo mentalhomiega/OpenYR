@@ -1,0 +1,15 @@
+; A save made while radiation is active, loaded in the same run, must not crash on the next lighting commit.
+; A nuke is fired from a silo at a cell off the start view, so its radiation reaches cells that have not
+; been drawn. The load at frame 200 restores the save made at frame 150, while the payload is in flight,
+; and the detonation then runs after the load. Run with: scripts/run_autotest.ps1 -Script tests/autotest/radiation-load.txt
+; -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Build <build> -Seconds 120
+; The mission locks input at its start, so trigger action 47 (Unlock input) runs first; quick save
+; and quick load are refused while the lock holds. The run passes when the log has
+; "AUTOTEST frame 1200: quit" and no exception report is written.
+30 trigaction 47 0 0
+32 grant NukeSpecial
+34 grantunit NAMISL 88 146
+60 fire NukeSpecial 25 110
+150 command QuickSave
+200 command QuickLoad
+1200 quit
