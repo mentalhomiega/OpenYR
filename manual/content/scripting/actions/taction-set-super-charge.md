@@ -7,7 +7,7 @@ valid_values:
   - "A super weapon by its place in the `[SuperWeaponTypes]` list of the rules, counted from `0`, in the field after the type. The charge goes in the last field, as a percentage from `0` to `100`."
 caveats:
   - "The house has to hold the super weapon already. A weapon it does not have, a number off the list, or a percentage outside `0` to `100` leaves the action doing nothing, and it fails."
-  - "The weapon takes the charge time it has now, so a time given by Superweapon Set Recharge Time counts. At `100` the weapon is ready at once, with no announcement."
+  - "The weapon takes the charge time it has now, so a time given by Superweapon Set Recharge Time counts. At `100` the weapon has one frame left, so it is ready on the next frame, with no announcement."
   - "A weapon that is already ready stays ready, whatever the percentage."
 related:
   - type: action
