@@ -1,0 +1,17 @@
+; A computer war factory that a mind control capture gives to the player (TechnoClass::Set_Owning_House).
+; The computer's factory count and quantity drop and the player's rise, and the vehicle the player can
+; build (MTNK) appears in the player's build options only after the change. Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn GAWEAP 50 90
+90 houses
+90 census
+90 quantity GAWEAP
+90 factories
+90 canbuild MTNK
+120 transfer GAWEAP
+130 houses
+130 census
+130 quantity GAWEAP
+130 factories
+130 canbuild MTNK
+200 quit

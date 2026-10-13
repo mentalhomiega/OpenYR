@@ -1,0 +1,18 @@
+; An engineer captures a computer war factory (BuildingClass::Captured, through Change_Owner). The factory
+; moves from the computer's factory list to the player's, and the player's build options gain MTNK.
+; Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn GAWEAP 50 90
+90 houses
+90 census
+90 quantity GAWEAP
+90 factories
+90 canbuild MTNK
+120 own ENGINEER 48 88
+150 capture ENGINEER 50 90
+260 houses
+260 census
+260 quantity GAWEAP
+260 factories
+260 canbuild MTNK
+320 quit

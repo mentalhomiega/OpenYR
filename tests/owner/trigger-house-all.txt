@@ -1,0 +1,17 @@
+; A trigger action that hands every object of one house to another (ALL_CHANGE_HOUSE, action 36, run by
+; trigaction against the computer house Africans, to house type 0, the player's Americans): the computer's war
+; factory and power plant move to the player's house, and the build options and the power drain follow them.
+; Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 spawn GAWEAP 50 90
+70 spawn NAPOWR 56 88
+90 houses
+90 census
+90 quantity GAWEAP
+90 canbuild MTNK
+120 trigaction 36@Africans 0 0
+130 houses
+130 census
+130 quantity GAWEAP
+130 canbuild MTNK
+200 quit

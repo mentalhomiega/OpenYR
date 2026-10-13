@@ -1,0 +1,17 @@
+; A trigger action that hands every object of the player's house (Americans) to the computer house Africans
+; (ALL_CHANGE_HOUSE, action 36, run by trigaction with house type 5). The player's war factory leaves with its
+; build options, so the player can no longer build MTNK and the computer's factory count rises. Run with -Map XMP29U2.MAP.
+30 command CenterBase
+60 grantunit GAWEAP 50 90
+90 houses
+90 census
+90 quantity GAWEAP
+90 factories
+90 canbuild MTNK
+120 trigaction 36@Americans 5 0
+130 houses
+130 census
+130 quantity GAWEAP
+130 factories
+130 canbuild MTNK
+200 quit
