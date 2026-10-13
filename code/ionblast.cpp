@@ -289,9 +289,10 @@ void IonBlastClass::One_Time(void)
 		for (int y = BlastSurfaceHeight / 2 - 1; y >= 0; y--) {
 			int y_dist_sq = y * y * 4;
 			for (int x = BlastSurfaceWidth / 2 - 1; x >= 0; x--) {
-				double dist = std::sqrt(x * x + y_dist_sq);
+				// gamemd's surface build (0x53D330) takes this root and sine from the table helpers 0x4CAC40 and 0x4CACB0, so a cell near a whole index can fall on the other side.
+				double dist = Gamemd_Sqrt(x * x + y_dist_sq);
 				if (dist >= min_dist && dist <= max_dist) {
-					double wave_height = (std::sin((dist - frame * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) / (dist / WaveAmplitudeFalloff + 1.0) + 0.5;
+					double wave_height = (Gamemd_Sine((dist - frame * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) / (dist / WaveAmplitudeFalloff + 1.0) + 0.5;
 					char spiral_index = Point_To_Spiral_Index(Point2D(0, wave_height));
 					int row = y * BlastSurfaceWidth;
 					center[row + x] = spiral_index;  /// Quadrant I
