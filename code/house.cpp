@@ -4229,7 +4229,8 @@ double HouseClass::Power_Fraction(void) const
 	if (Power >= Drain || Drain == 0) return(1);
 
 	if (Power) {
-		return((float)Power / (float)Drain);
+		// Divided at double precision, as gamemd does (0x4FCE30); a caller that stores the ratio as float32 truncates it.
+		return(static_cast<double>(Power) / static_cast<double>(Drain));
 	}
 	return(0);
 }
