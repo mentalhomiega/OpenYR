@@ -2624,16 +2624,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	/*
-	**	Special case so that SAM site doesn't fire on aircraft that are landed.
-	*/
-	if (PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiGround){
-		if (((AircraftClass *)object)->Height == 0) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
 	**	If only allowed to attack civilians, then eliminate all other types.
 	*/
 	if (method & THREAT_CIVILIANS) {
@@ -3151,7 +3141,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		**	Scanning by cell is not possible for aircraft since they are not recorded
 		**	at the cell level.
 		*/
-		// Jumpjet infantry and vehicles in the air are air targets too.
+		// An air scan takes In_Air objects, which gamemd's AircraftTrackerClass holds (TechnoClass::GreatestThreat, 0x6F8DF0).
 		if (method & THREAT_AIR) {
 			int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
 			int value;
@@ -3161,8 +3151,8 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 				if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet) || (object->RTTI == RTTI_UNIT && object->In_Air())) {
 					value = 0;
-					if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->IsDown &&
-						object->In_Which_Layer() != LAYER_GROUND && (!onlyenemy || object->House->HeapID == House->Enemy) &&
+					if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
+						(!onlyenemy || object->House->HeapID == House->Enemy) &&
 						Evaluate_Object(method, _mask, range, object, value)) {
 
 						if (value > bestval) {
@@ -3179,8 +3169,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 				if (object->RTTI == RTTI_INFANTRY || (object->RTTI == RTTI_UNIT && object->In_Air())) {
 					value = 0;
 					if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->IsDown &&
-						object->In_Which_Layer() != LAYER_GROUND &&
+						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
 						Evaluate_Object(method, _mask, range, object, value)) {
 
 						if (value > bestval) {
@@ -3210,7 +3199,9 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		TechnoClass const * object;
 		int value;
 
-		for (int radius = 0; radius < crange; radius++) {
+		// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
+		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
+		for (int radius = 0; scan_cells && radius < crange; radius++) {
 
 			/*
 			**	Scan the top and bottom rows of the "box".

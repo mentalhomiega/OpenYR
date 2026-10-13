@@ -1,0 +1,27 @@
+; Air-target scans from a computer AA-only SAM (NASAM, AA=yes AG=no) at 60,22. The player owns a Kirov (ZEP) that stays at
+; 63,22, a Kirov that flies to 58,26, and a Rocketeer (JUMPJET) that jumps to 66,24 and flies, plus an infantryman at 62,24.
+; The frame 52 and 53 scans run while the Rocketeer is still under 208 leptons, so it is not In_Air.
+; Each threatscan line picks one target: flags 4 is a full scan, 5 a range scan, 6 an area scan, 13 a range scan that also
+; counts infantry, and 21 a range scan that also counts vehicles (a landed aircraft is a vehicle).
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-target-scan.txt -Seconds 120
+30 command CenterBase
+35 reveal
+40 spawn NASAM 60 22
+41 grantunit ZEP 63 22
+42 grantunit ZEP 58 22
+43 grantunit JUMPJET 64 24
+44 grantunit E1 62 24
+50 airborne ZEP
+51 airborne JUMPJET
+52 threatscan NASAM 5
+53 threatscan NASAM 4
+60 move ZEP 58 26
+61 move JUMPJET 66 24
+300 airborne ZEP
+301 airborne JUMPJET
+310 threatscan NASAM 4
+311 threatscan NASAM 5
+312 threatscan NASAM 6
+313 threatscan NASAM 13
+314 threatscan NASAM 21
+400 quit
