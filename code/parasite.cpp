@@ -462,4 +462,8 @@ void ParasiteClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DamageFrame);
 	stream.Serialize(SuppressedUntil);
 	stream.Serialize(IsReselect);
+	stream.Serialize(GrappleAnim);
+	stream.Serialize(GrappleState);
+	stream.Serialize(GrappleAnimFrame);
+	stream.Serialize(GrappleAnimDelay);
 }
