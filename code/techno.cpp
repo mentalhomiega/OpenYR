@@ -2567,6 +2567,25 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	/*
+	**	An insignificant unit is no automatic target for any house. An insignificant building of a passive
+	**	house is one only for a computer house's infantry in a multiplayer game that can capture or occupy it
+	**	(TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (object->TClass->IsInsignificant && object->MindControlledBy == NULL
+		&& (object->RTTI != RTTI_BUILDING || object->House->Class->IsMultiplayPassive)) {
+		bool capturable = false;
+		if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL && RTTI == RTTI_INFANTRY && object->RTTI == RTTI_BUILDING) {
+			BuildingClass const * building = static_cast<BuildingClass const *>(object);
+			capturable = (((BuildingTypeClass const *)object->TClass)->IsNeedsEngineer && ((InfantryClass const *)this)->Class->IsEngineer && object->House != House)
+				|| building->Can_Be_Occupied_By((InfantryClass const *)this);
+		}
+		if (!capturable) {
+			BEnd(BENCH_EVAL_OBJECT);
+			return(false);
+		}
+	}
+
+	/*
 	**	Determine if the target is theoretically allowed to be a target. If
 	**	not, then bail.
 	*/
