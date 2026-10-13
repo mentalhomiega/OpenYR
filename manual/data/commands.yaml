@@ -1958,6 +1958,86 @@ registered_commands:
     source: code/init.cpp
     class: DebugRevealMapCommandClass
     guard: null
+- id: DebugFullPower
+  route_id: debugfullpower
+  kind: registered
+  title: Full Power
+  description: Your power never counts as low, so production keeps full speed and structures stay online.
+    Blackouts and drained power plants still apply. Works only with Debug mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugFullPowerCommandClass
+    guard: null
+- id: DebugInvulnerable
+  route_id: debuginvulnerable
+  kind: registered
+  title: Invulnerable Units
+  description: Your units and buildings take no damage; healing still applies. Works only with Debug mode
+    on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugInvulnerableCommandClass
+    guard: null
+- id: DebugWinMission
+  route_id: debugwinmission
+  kind: registered
+  title: Win Mission
+  description: Ends the mission as a win, as a scenario's win action does. Works only with Debug mode
+    on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugWinMissionCommandClass
+    guard: null
+- id: DebugLoseMission
+  route_id: debuglosemission
+  kind: registered
+  title: Lose Mission
+  description: Ends the mission as a loss, as a scenario's lose action does. Works only with Debug mode
+    on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugLoseMissionCommandClass
+    guard: null
+- id: DebugChargeSuperweapons
+  route_id: debugchargesuperweapons
+  kind: registered
+  title: Charge Superweapons
+  description: Makes every superweapon you have ready now. Works only with Debug mode on in single-player
+    games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugChargeSuperweaponsCommandClass
+    guard: null
 fixed_controls:
 - id: fixed:options-menu
   route_id: fixed-options-menu
