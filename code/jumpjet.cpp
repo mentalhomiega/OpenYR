@@ -220,17 +220,9 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 /// </summary>
 void JumpjetLocomotionClass::Stop_Moving(void)
 {
-	// A BalloonHover unit in the air stops where it is and hovers.
+	// A BalloonHover unit in the air glides to the centre of its cell and hovers there, as it never lands (JumpjetLocomotionClass::Stop_Moving, 0x54B4D0).
 	if (IsMoving && Stays_Aloft() && CurrentState != GROUNDED) {
-		if (HeadToCoord != COORD_NONE && IsLanding) {
-			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-			IsLanding = false;
-		}
-		CurrentSpeed = 0;
-		TargetSpeed = 0;
-		HeadToCoord = COORD_NONE;
-		IsMoving = false;
-		CurrentState = HOVERING;
+		Move_To(LinkedTo->PositionCoord);
 		return;
 	}
 	if (IsMoving) {
