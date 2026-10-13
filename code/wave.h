@@ -107,15 +107,17 @@ class WaveClass : public ObjectClass
 
 		/*
 		 * If this wave is still tethered to the object that fired it, then this flag will
-		 * be true. Once the link is broken the wave stops growing, its trailing edge is
-		 * drawn in after the leading one, and the wave expires.
+		 * be true. Once the link is broken the wave stops growing and its trailing edge is
+		 * drawn in after the leading one. A sonic wave also starts its trailing edge while
+		 * the link holds, so it can expire before its countdown runs out.
 		 */
 		bool IsWaveActive;
 
 		/*
-		 * This is the number of game frames the sonic wave has left to live, counting down
-		 * from 100. It doubles as the phase of the ripple, so the distortion appears to
-		 * travel along the wave as the wave ages.
+		 * This is the number of game frames the sonic wave has left before it is removed,
+		 * counting down from 100. A sonic wave normally expires sooner, once its trailing
+		 * edge catches up with its leading edge. It doubles as the phase of the ripple, so
+		 * the distortion appears to travel along the wave as the wave ages.
 		 */
 		int WaveEC;
 
