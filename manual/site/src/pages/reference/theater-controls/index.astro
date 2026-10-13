@@ -10,9 +10,9 @@ import { sectionSelectorKey } from '../../../lib/section-selector.mjs';
 const rows = referenceRowsForFile('theater control file');
 const general = rows.filter((row) => sectionSelectorKey(row.scope.section) === 'literal:General');
 const tileSets = rows.filter((row) => sectionSelectorKey(row.scope.section) === 'identifier:tile-set');
-if (rows.length !== 82 || general.length !== 67 || tileSets.length !== 15) {
+if (rows.length !== 83 || general.length !== 68 || tileSets.length !== 15) {
 	throw new Error(
-		`Theater control reference expected 82 scopes (67 General, 15 TileSet); found ${rows.length} (${general.length} General, ${tileSets.length} TileSet)`,
+		`Theater control reference expected 83 scopes (68 General, 15 TileSet); found ${rows.length} (${general.length} General, ${tileSets.length} TileSet)`,
 	);
 }
 ---
