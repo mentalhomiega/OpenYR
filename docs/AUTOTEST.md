@@ -162,7 +162,7 @@ Each copy starts with `-SYNCLOG`, which writes one line to its debug log for eve
 SYNC frame 400 crc 6134918a
 ```
 
-The value is the frame check value the network already compares. A copy writes it into the frame info it sends, and the other copy checks it. While the copies agree, their logs hold the same value on every frame. The check value covers the position and facing of each infantry, unit and building, the position and type of each map and logic object, and the scenario's random-number state. It does not cover credits or other house state; the `hash` command does.
+The value is the frame check value the network already compares. A copy writes it into the frame info it sends, and the other copy checks it. While the copies agree, their logs hold the same value on every frame. The check value covers the position and facing of each infantry, unit and building, the position and type of each map and logic object, and the scenario's random-number state. It does not cover credits or other house state; the `hash` command does. With `-SYNCLOG`, each copy also writes timing and order lines; [NETCODE.md](NETCODE.md) gives their format.
 
 The runner reports:
 

@@ -17,6 +17,9 @@ The developer guides are split by subject:
   frames, with an optional house-colour mask.
 - [ts-patches in OpenTS](TS-PATCHES.md) — each CnCNet ts-patches patch and
   what OpenTS does in its place.
+- [Network timing](NETCODE.md) — how a network game schedules orders, how the
+  timing policy picks its values, how it compares with gamemd, and measured
+  order delays.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution and review rules.
 Player and modder documentation is under [manual/](../manual/README.md). When a
