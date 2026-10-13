@@ -76,6 +76,31 @@ many modules contain duplicate initializations of the same globals. Each new
 set marks the start of another module's functions and data, allowing code to be
 assigned to modules with high confidence.
 
+## Gamemd-exact distances and trigonometry
+
+Simulation code that must match the original executable uses the helpers in
+`code/gmmath.h`. They reproduce the square root, sine, cosine, and length
+routines of `gamemd.exe` (Yuri's Revenge 1.001) bit for bit. Their tables are
+built at first use from integer and IEEE double arithmetic, so every machine
+builds the same values.
+
+- The square root table is `floor((sqrt(v) - 1) * 2^23)` for the bucket start
+  `v` that a 13-bit mantissa index selects. The result is never above the true
+  root, so an integer length can read one less than the exact value: 1000
+  along one axis reads 999 and 129 along one axis reads 128.
+- The sine table holds the chop of `sin(i * pi / 4096)` for pi as a double.
+  Two quarter-turn entries, at 4096 and 8192, are stored as gamemd has them
+  because no formula found reproduces them. The table is verified against the
+  executable for every entry the game can reach.
+- The arctangent table (`atan2` in gamemd) is not reproduced. Its entries
+  differ from the nearest float32 of `atan(n * K)` by up to about 13 units in
+  the last place near the end of the range, so `Direction` still uses the
+  standard library.
+
+Helpers the simulation switched to them include the integer and single
+precision length functions used by distance checks, the ballistic offset,
+and the coordinate move. Rendering and tool code keep the standard library.
+
 ## Why the binary does not match exactly
 
 The reconstruction was not intended to reproduce the exact 2.03 executable.
