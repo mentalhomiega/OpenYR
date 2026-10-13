@@ -345,7 +345,7 @@ inline DirType Direction(Coord const & coord1, Coord const & coord2)
 	int x1 = coord1.X;
 	int x2 = coord2.X;
 
-	return(std::atan2((double)coord1.Y - (double)coord2.Y, (double)x2 - (double)x1));
+	return(Gamemd_Atan2((double)coord1.Y - (double)coord2.Y, (double)x2 - (double)x1));
 }
 
 
