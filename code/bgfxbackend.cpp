@@ -356,9 +356,13 @@ static bool Upload_Layer(BackendLayer const & layer)
 	}
 
 	if (_FrameIs565) {
-		// The last row is copied only up to the picture's edge, which may be the end of its surface.
+		// The last row is read only up to the picture's edge, which may be the end of its surface,
+		// but the upload is padded to a whole pitch because Vulkan copies every row at full pitch.
 		uint32_t const size = (uint32_t)((layer.Height - 1) * layer.Pitch + layer.Width * 2);
-		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, bgfx::copy(layer.Pixels, size), (uint16_t)layer.Pitch);
+		bgfx::Memory const * memory = bgfx::alloc((uint32_t)(layer.Height * layer.Pitch));
+		std::memcpy(memory->data, layer.Pixels, size);
+		std::memset(memory->data + size, 0, memory->size - size);
+		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, memory, (uint16_t)layer.Pitch);
 	} else {
 		for (int y = 0; y < layer.Height; y++) {
 			unsigned short const * source = (unsigned short const *)((char const *)layer.Pixels + y * layer.Pitch);
