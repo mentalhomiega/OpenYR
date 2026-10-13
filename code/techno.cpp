@@ -968,7 +968,8 @@ int TechnoClass::Time_To_Build(void) const
 	**	scaled by LowPowerPenaltyModifier, sets the speed. The speed is held between the
 	**	minimum and, while the house is short, the maximum (TechnoClass::TimeToBuild, 0x6F47A0).
 	*/
-	double const power = House->Power_Fraction();
+	// gamemd stores the power ratio as a float32 truncated toward zero (TechnoClass::TimeToBuild, 0x6F4808).
+	double const power = Truncate_To_Single(House->Power_Fraction());
 	double speed = 1.0 - (1.0 - power) * Rule->LowPowerPenaltyModifier;
 	speed = std::max(speed, Rule->MinLowPowerProductionSpeed);
 	if (power < 1.0) speed = std::min(speed, Rule->MaxLowPowerProductionSpeed);
