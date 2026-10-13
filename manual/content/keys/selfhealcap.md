@@ -5,7 +5,7 @@ see_also: ["SelfHealingCap", "SelfHealStep", "SelfHealRate", "SelfHealing", "Con
 when_omitted:
   kind: value
   value: "-1"
-  note: Any value below zero leaves the ceiling on `ConditionYellow`, where it was before this key existed.
+  note: Any value below zero lets an object heal to full strength, as in Yuri's Revenge.
 ---
 
 ```ini title="rules.ini"
@@ -13,7 +13,7 @@ when_omitted:
 SelfHealCap=75% ; example value
 ```
 
-`SelfHealCap` sets how far an object can [heal itself](/systems/repair/#self-healing), as a share of its maximum strength. A higher value lets it heal further. A type that sets [`SelfHealingCap`](/keys/selfhealingcap/) uses that value instead.
+`SelfHealCap` sets how far an object can [heal itself](/systems/repair/#self-healing), as a share of its maximum strength. Without it, an object heals to full strength. A type that sets [`SelfHealingCap`](/keys/selfhealingcap/) uses that value instead.
 
 A tick heals only while the object's strength is at or below this share, so healing stops one step past it. `100%` heals an object to maximum strength, and no value heals past it. A percentage and a plain fraction are read the same way, so `75%` equals `.75`.
 
