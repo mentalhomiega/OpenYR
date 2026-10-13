@@ -133,28 +133,34 @@ The carried amount is not used up. Each replay or restart of the mission grants 
 
 ## Choosing the next mission
 
-By default, winning opens the map selection screen, showing the stages the current stage leads to. The player must click one of them; the screen offers no way to leave without choosing. The chosen stage's mission loads next.
+By default, winning opens the map selection screen, showing the stages the current stage leads to. The player must click one of them; the screen offers no way to leave without choosing. When the screen cannot open because its palettes or click map cannot be loaded, the first choice is taken instead, as [Taking the first choice](#taking-the-first-choice) describes. The chosen stage's mission loads next.
 
 With [`SkipMapSelect=yes`](/keys/skipmapselect/), the mission names its successor. The game takes [`NextScenario`](/keys/nextscenario/), or [`AltNextScenario`](/keys/altnextscenario/) when global flag `1` is set. It then compares that name, ignoring case, with the `Scenario=` value of each stage the current stage leads to, and takes the first match. A name that none of those stages lists is not loaded, even when a mission file of that name exists.
 
 ### When the choice fails
 
-When the next mission cannot be chosen, the campaign goes on with a mission the player did not pick. Every case below except the last shows an error box saying that map selection could not be started.
+When the next mission cannot be chosen, the campaign goes on with a mission the player did not pick. The last column says whether the error box appears.
 
-| Failure | Route | What loads next |
-| --- | --- | --- |
-| `NextScenario` or `AltNextScenario` matches none of the stages the current stage leads to | `SkipMapSelect=yes` | The campaign's first mission |
-| The `MAPSELMD.INI` file is missing, or the player's side has no section or no stage list | Either | The mission just won, again |
-| No stage of the player's side has the mission just won as its `Scenario=` | Map screen | The mission just won, again |
-| The stage number is beyond the end of the side's list | `SkipMapSelect=yes` | The mission just won, again |
-| The map screen's palette or click map cannot be loaded | Map screen | The mission just won, again |
-| The current stage has no `MapVQ=`, so the screen is skipped | Map screen | The mission just won, again |
+| Failure | Route | What loads next | Error box |
+| --- | --- | --- | --- |
+| `NextScenario` or `AltNextScenario` matches none of the stages the current stage leads to | `SkipMapSelect=yes` | The campaign's first mission | Yes |
+| The `MAPSELMD.INI` file is missing, or the player's side has no section or no stage list | Either | The mission just won, again | Yes |
+| No stage of the player's side has the mission just won as its `Scenario=` | Map screen | The mission just won, again | Yes |
+| The stage number is beyond the end of the side's list | `SkipMapSelect=yes` | The mission just won, again | Yes |
+| The map screen's palette, overlay palette or click map cannot be loaded | Map screen | The stage's first choice, taken without the screen | Only if the stage has no choice |
+| The current stage has no `MapVQ=`, so the screen is skipped | Map screen | The mission just won, again | No |
 
 In every row, the mission that loads is treated as the next mission: its briefing plays, the level number goes up, and it receives the carry-over from the win. When that mission is the one just won, it starts with the flags as they ended and a share of the money the player finished with. The state it received when it was first reached is not applied again.
 
 :::caution[An unreachable name restarts the campaign]
 A mistyped or out-of-sequence `NextScenario` sends the player back to the campaign's first mission. A failed advance leaves the stage number unchanged, so a `SkipMapSelect=yes` win of that first mission matches its `NextScenario` against the choices of the stage the number still points at.
 :::
+
+### Taking the first choice
+
+A stage with a `MapVQ=` opens the map selection screen, which needs the palettes and the click map. When those cannot be loaded, the screen does not open. The game takes the stage's first choice instead, which is the choice with the lowest key number in the stage's list. The stage's movie, music and voice-overs are not played, and the debug log records the reason.
+
+A stage with no choices, or whose first choice names no stage of the player's side, has nothing to take. The error box appears and the mission just won loads again.
 
 ### Loading the chosen mission
 

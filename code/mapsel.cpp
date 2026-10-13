@@ -76,6 +76,8 @@ class MapSelect : public MSEngine {
 	private:
 		bool Init(ScenarioClass * scenario);
 		void Deinit(void);
+		bool Load_Screen_Art(MapStage const * stage);
+		bool Take_First_Choice(ScenarioClass * scenario, MapStage const * stage);
 
 		void Play_Sound(char const * name);
 		void Queue_Voice(char const * name, int delay);
@@ -231,8 +233,8 @@ bool MapSelect::Advance_Progression(ScenarioClass * scen, char const * map_name)
 
 /// <summary>
 /// Takes the first choice of the scenario's stage without drawing the selection screen.
-/// This is the continuewin path of an unattended run: its screen art may be missing from the
-/// install, and no script step reaches its input loop.
+/// This serves the continuewin shortcut of an unattended run, and the fallback for a screen whose
+/// art cannot be loaded.
 /// </summary>
 /// <param name="scenario">The scenario to advance. It is updated with the map named.</param>
 /// <returns>bool; Was a choice taken?</returns>
@@ -245,7 +247,22 @@ bool MapSelect::Choose_First_Selection(ScenarioClass * scenario)
 		return(false);
 	}
 
-	MapStage * stage = Choices.Find_Stage_By_Scenario(scenario->ScenarioName);
+	bool const taken = Take_First_Choice(scenario, Choices.Find_Stage_By_Scenario(scenario->ScenarioName));
+
+	Choices.Deinit();
+	return(taken);
+}
+
+
+/// <summary>
+/// Sets the scenario to the first choice of a stage.
+/// The choice data must already be loaded, because the choice is looked up in it.
+/// </summary>
+/// <param name="scenario">The scenario to advance. It is updated with the map named.</param>
+/// <param name="stage">The stage whose first choice is taken. A NULL stage, or one with no choices, takes nothing.</param>
+/// <returns>bool; Was a choice taken?</returns>
+bool MapSelect::Take_First_Choice(ScenarioClass * scenario, MapStage const * stage)
+{
 	MapStage * next = NULL;
 
 	if ((stage != NULL) && (stage->Get_Selection_Count() > 0) && (stage->Get_Selection(0) != NULL)) {
@@ -257,25 +274,24 @@ bool MapSelect::Choose_First_Selection(ScenarioClass * scenario)
 		scenario->Stage = Choices.Get_Stage_ID(next);
 	}
 
-	Choices.Deinit();
 	return(next != NULL);
 }
 
 
 /// <summary>
-/// Runs the map selection screen.
-/// This routine plays the map movie, brings on the overlays and targets, then hands
-/// control to the player to choose where the campaign goes next.
+/// Runs the map selection screen, or takes the first choice when the screen cannot start.
+/// The screen runs for a stage with a map movie. When its palettes or click map cannot be
+/// loaded, the first choice is taken without the screen.
 /// </summary>
 /// <param name="scenario">The scenario to advance. It is updated with the map chosen.</param>
-/// <returns>bool; Was the map selection screen displayed?</returns>
+/// <returns>bool; False when the choice data cannot be read, or when the screen cannot start and the stage has no first choice.</returns>
 bool MapSelect::Presentation(ScenarioClass * scenario)
 {
 	const char * selected = NULL;
 
 	Rect rect;
 
-	if (AutoTest_Post_Win()) {
+	if (AutoTest_Skip_Map_Screen()) {
 		return(Choose_First_Selection(scenario));
 	}
 
@@ -288,6 +304,18 @@ bool MapSelect::Presentation(ScenarioClass * scenario)
 	DebugString("MapSelect: Stage: %s\n", map_stage->Get_Stage_Label());
 
 	if (map_stage->Get_Map_VQ_Name() != NULL) {
+
+		// gamemd's SetNextScenario (0x005ae100) loads none of this art and takes the first choice without a screen.
+		if (Load_Screen_Art(map_stage) == false) {
+			bool const taken = Take_First_Choice(scenario, map_stage);
+
+			if (taken) {
+				DebugString("MapSelect: Map selection screen cannot start; taking the first choice %s\n", scenario->ScenarioName);
+			}
+
+			Deinit();
+			return(taken);
+		}
 
 		if (Get_Required_Addon() == ADDON_FIRESTORM) {
 			Theme.Play_Song(Theme.From_Name("FSMAP"));
@@ -392,8 +420,8 @@ bool MapSelect::Presentation(ScenarioClass * scenario)
 
 /// <summary>
 /// Prepares the map selection screen for display.
-/// This routine loads the map choice data for the player's house, creates the drawers,
-/// font and click map that the presentation needs, and centers the artwork on the screen.
+/// This routine loads the map choice data for the player's house, creates the font, and
+/// centers the artwork on the screen. The drawers and click map come from Load_Screen_Art.
 /// A failure tidies up after itself before returning.
 /// </summary>
 /// <returns>bool; Was the map selection screen successfully prepared?</returns>
@@ -437,32 +465,6 @@ bool MapSelect::Init(ScenarioClass * scenario)
 		return(false);
 	}
 
-	AnimDrawer = Create_Drawer(Choices.Get_Anim_Palette_Name());
-
-	if (AnimDrawer == NULL) {
-		DebugString("MapSelect: Unable to create animation drawer!\n");
-		Deinit();
-		return(false);
-	}
-
-	OverlayDrawer = Create_Drawer("MSOVRLY.PAL");
-
-	if (OverlayDrawer == NULL) {
-		DebugString("MapSelect: Unable to create overlay drawer!\n");
-		Deinit();
-		return(false);
-	}
-
-	CCFileClass file(map_stage->Get_Click_Map_Name());
-	ClickMap = Read_PCX_File(file);
-	file.Close();
-
-	if (ClickMap == NULL) {
-		DebugString("MapSelect: Unable to create clickmap!\n");
-		Deinit();
-		return(false);
-	}
-
 	Font = new MSFont();
 
 	if (Font == NULL) {
@@ -489,6 +491,41 @@ bool MapSelect::Init(ScenarioClass * scenario)
 	VoiceName = NULL;
 	VoiceTimer = 0;
 	VoiceHandle.Clear();
+
+	return(true);
+}
+
+
+/// <summary>
+/// Loads the palettes and click map that the map selection screen draws with.
+/// A failure leaves the parts loaded before it in place, for Deinit to free.
+/// </summary>
+/// <param name="stage">The stage whose screen is about to be drawn.</param>
+/// <returns>bool; Were all of the screen's files found?</returns>
+bool MapSelect::Load_Screen_Art(MapStage const * stage)
+{
+	AnimDrawer = Create_Drawer(Choices.Get_Anim_Palette_Name());
+
+	if (AnimDrawer == NULL) {
+		DebugString("MapSelect: Unable to create animation drawer!\n");
+		return(false);
+	}
+
+	OverlayDrawer = Create_Drawer("MSOVRLY.PAL");
+
+	if (OverlayDrawer == NULL) {
+		DebugString("MapSelect: Unable to create overlay drawer!\n");
+		return(false);
+	}
+
+	CCFileClass file(stage->Get_Click_Map_Name());
+	ClickMap = Read_PCX_File(file);
+	file.Close();
+
+	if (ClickMap == NULL) {
+		DebugString("MapSelect: Unable to create clickmap!\n");
+		return(false);
+	}
 
 	return(true);
 }

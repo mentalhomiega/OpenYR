@@ -33,7 +33,7 @@ A stage's position in the list is its stage number. The campaign keeps the numbe
 
 Two further keys name the sections that hold the map selection screen's decoration:
 
-- `Anims=` names the section of animations and the screen's palette. The screen does not open without it.
+- `Anims=` names the section of animations and the screen's palette. The screen does not open without it, and the first choice is taken instead of the screen.
 - `Sounds=` names the section of sound effects.
 
 ## Stage sections
@@ -50,9 +50,9 @@ The other keys build the map selection screen that appears after the stage's own
 
 | Key | Value |
 | --- | --- |
-| `MapVQ=` | The [VQA](/formats/vqa/) movie the screen opens with. A stage without it skips the screen, provided the palette and click map load; if either fails to load, an error box appears. [When the choice fails](/systems/campaign-progression/#when-the-choice-fails) says what loads next in both cases. |
+| `MapVQ=` | The [VQA](/formats/vqa/) movie the screen opens with. A stage without it skips the screen. A stage with it opens the screen only if its palettes and click map load; otherwise the first choice is taken. [When the choice fails](/systems/campaign-progression/#when-the-choice-fails) says what loads next in each case. |
 | `Overlays=` | Up to two comma-separated shape file names, faded in one after the other over the movie's last frame. A third name is ignored. |
-| `ClickMap=` | A 256-color PCX file whose pixel colors mark out the selectable regions. Its top-left pixel is the top-left corner of the 640 by 400 presentation area. The screen does not open without it. |
+| `ClickMap=` | A 256-color PCX file whose pixel colors mark out the selectable regions. Its top-left pixel is the top-left corner of the 640 by 400 presentation area. The screen does not open without it, and the first choice is taken instead. |
 | `Targets=` | `<count>,<x>,<y>,<x>,<y>...`: the number of target markers, then the center of each in the 640 by 400 presentation area. The first marker belongs to the choice with the lowest key number, the second to the next, and so on. Give no more markers than the stage has choices. |
 | `Text1=` to `Text7=` | Captions shown over the movie, each `<x>,<y>,<delay>,<text>`. The delay counts 16-millisecond ticks from the start of the movie, about 60 to the second. The text ends at its first comma. |
 
@@ -103,7 +103,7 @@ ClickMap=GDICLK01.PCX
 
 Both ways of advancing end at a stage of this file, never directly at a mission file.
 
-With the map screen, the stage whose `Scenario=` is the mission just won opens: its movie plays, its overlays and target markers appear, and the player clicks one of the regions its click map colors. The music track `MAPS` plays meanwhile, or `FSMAP` when the game requires Firestorm. The clicked region's entry names the next stage, and that stage's `Scenario=` value is the mission that loads. If no stage of the side has the mission just won as its `Scenario=`, the choice fails and the mission just won loads again.
+With the map screen, the stage whose `Scenario=` is the mission just won opens: its movie plays, its overlays and target markers appear, and the player clicks one of the regions its click map colors. The music track `MAPS` plays meanwhile, or `FSMAP` when the game requires Firestorm. The clicked region's entry names the next stage, and that stage's `Scenario=` value is the mission that loads. If no stage of the side has the mission just won as its `Scenario=`, the choice fails and the mission just won loads again. If the screen's palettes or click map cannot be loaded, the screen does not open, and the stage's first choice is taken as [When the choice fails](/systems/campaign-progression/#when-the-choice-fails) describes.
 
 Without the screen, when the mission sets [`SkipMapSelect=yes`](/keys/skipmapselect/), the name given by [`NextScenario=`](/keys/nextscenario/) or [`AltNextScenario=`](/keys/altnextscenario/) is compared, ignoring case, with the `Scenario=` value of each stage the current stage offers. The stages are tried in order of their key numbers, and the first match is taken. Only stages that the current stage offers can be reached this way.
 
@@ -112,7 +112,7 @@ Without the screen, when the mission sets [`SkipMapSelect=yes`](/keys/skipmapsel
 The section named by `Anims=` sets the screen's text area, its palette and its looping animations:
 
 - `TextRect=` is `<x>,<y>,<width>,<height>`, the area stage descriptions are printed in, relative to the 640 by 400 presentation area. If it is left out, descriptions use the whole area.
-- `Palette=` names the palette the animations and target markers are drawn with. The screen does not open without it.
+- `Palette=` names the palette the animations and target markers are drawn with. The screen does not open without it, and the first choice is taken instead.
 - The numbered keys from `1` upward each hold `<file>,<x>,<y>,<delay>`: a shape file, its position in the presentation area, and the delay between its frames in 16-millisecond ticks. The list ends at the first missing number, and at most 100 are read.
 
 The section named by `Sounds=` assigns a sample to each sound event of the screen. Each key is an event name, and each value is `<file>,<volume>`. The volume is a percentage, limited to the range `0` to `100`. Without a volume the sample plays at full volume, and a volume of `0` leaves the event silent. The events are:

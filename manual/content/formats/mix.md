@@ -72,7 +72,7 @@ For the CD archive, a campaign mission first tries `E<xx>SCD<nn>.MIX` while an e
 A campaign that finds neither CD archive still starts. The stock CD archives hold the score screen's picture and movie and the map selection's artwork, palettes and voice lines, so these must then come from another archive or folder:
 
 - A score picture or score movie that is not found is left out.
-- Map selection between missions cannot open without its artwork and palettes. The game reports "Unable to initiate Map Selection!" and replays the mission just won, unless that mission sets [`SkipMapSelect=yes`](/keys/skipmapselect/).
+- Map selection between missions does not open without its palettes and click map. The game then takes the stage's first choice without the screen, as [When the choice fails](/systems/campaign-progression/#when-the-choice-fails) describes.
 
 Outside a match the game mounts the no-side archives in the same place: `E99SC00.MIX` down to `E00SC00.MIX` and `SIDEC00.MIX`, cached, then `E99SNC00.MIX` down to `E00SNC00.MIX` and `SIDENC00.MIX`, not cached. The expansion copies are mounted only while an expansion is enabled, and every one of these archives is optional. They are mounted at startup, give way to the player's side when a scenario or saved game loads, and are mounted again when a match ends and the menus return. [UI files](/systems/ui-files/#how-a-file-is-found) describes how a mod uses them for side-dependent interface files.
 
