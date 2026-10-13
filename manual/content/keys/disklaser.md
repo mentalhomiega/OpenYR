@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Fired at an object, a weapon with `DiskLaser=yes` fires no projectile. Lasers run around a ring 240 leptons out from the firer's firing point, starting on the side away from the target and drawing one segment along each side every other frame. When the two arcs meet, about 16 frames later, a beam from the ring strikes the target and deals the weapon's `Damage` with its `Warhead` there, and the weapon's `Report` plays.
+Fired at an object, a weapon with `DiskLaser=yes` fires no projectile. Lasers run around a ring 240 leptons out from the firer's firing point, starting on the side away from the target and drawing one segment along each side every other frame. When the two arcs meet, about 16 frames later, a beam from the ring strikes the target and deals the damage a normal shot of the weapon would deal from the firer, with its `Warhead` there. The firer's firepower, veteran, bunker, garrison and transport multipliers all apply. The weapon's `Report` plays.
 
 The ring and beam use the weapon's `LaserInnerColor`, `LaserOuterColor`, `LaserOuterSpread` and `LaserDuration`, or the owner's color with `IsHouseColor=yes`. The shot is abandoned, with no damage, if the target leaves the weapon's `Range` or the firer is destroyed before the ring closes. The range runs from the firer's position to the target's position, less `(Width + Height) * 64` leptons of a building's foundation. While the firer is in the air, its height does not count. A new shot waits until the current ring has closed. At a target that is not an object, such as the ground, the weapon fires its `Projectile` as usual.
 
