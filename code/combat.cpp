@@ -49,6 +49,7 @@
 #include "ccrand.h"
 #include "cell.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -827,14 +828,14 @@ bool Calculate_Projectile_Angle(bool high_arc, int speed, int distance, int heig
 		return(false); /// No valid trajectory
 	}
 
-	double numerator = !high_arc ? base + std::sqrt(value)
-								  : base - std::sqrt(value);
+	double numerator = !high_arc ? base + Gamemd_Sqrt(value)
+								  : base - Gamemd_Sqrt(value);
 
 	value = numerator / denominator;
 
 	if (value >= 0.0) {
 		/// Calculate the angle
-		angle = std::acos(std::sqrt(value) / v);
+		angle = Gamemd_Acos(Gamemd_Sqrt(value) / v);
 		return(true);
 	}
 	return(false);
@@ -851,7 +852,7 @@ bool Calculate_Projectile_Angle(bool high_arc, int speed, int distance, int heig
 /// <returns>Returns with the speed to launch the projectile at.</returns>
 MPHType Calculate_Projectile_Speed(int range, double gravity)
 {
-	return((MPHType)(int)std::sqrt((double)range * gravity * 1.2));
+	return((MPHType)(int)Gamemd_Sqrt((double)range * gravity * 1.2));
 }
 
 
@@ -898,8 +899,8 @@ bool Is_Projectile_Trajectory_Valid(int speed, int distance, int height, double 
 
 	double base = vsq - (dy * gravity);
 
-	if (((base + std::sqrt(discriminant)) / denominator) >= 0.0 ||
-		((base - std::sqrt(discriminant)) / denominator) >= 0.0) {
+	if (((base + Gamemd_Sqrt(discriminant)) / denominator) >= 0.0 ||
+		((base - Gamemd_Sqrt(discriminant)) / denominator) >= 0.0) {
 		return(true); /// Valid trajectory exists
 	}
 	return(false); /// No valid trajectory
