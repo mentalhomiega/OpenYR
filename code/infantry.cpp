@@ -1244,10 +1244,8 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 	/*
 	**	Special flag so that infantry will start heading in the right direction immediately.
-	**	A balloon jump-jet is not stopped for a new destination: its Stop_Moving clears the speed and
-	**	drops it into hover, which gamemd's jump-jet Stop_Moving (0x54B4D0) does not do.
 	*/
-	if (Locomotion->Is_Moving() && target != NULL && !(Class->IsJumpJet && Class->IsBalloonHover) && Map[Center_Coord()].Is_Clear_To_Move(Class->Speed, true, false)) {
+	if (Locomotion->Is_Moving() && target != NULL && Map[Center_Coord()].Is_Clear_To_Move(Class->Speed, true, false)) {
 		if (Class->IsJumpJet || CurrentMission != MISSION_ATTACK || NavCom != target) {
 			Stop_Driver();
 		}

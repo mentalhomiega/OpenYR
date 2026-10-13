@@ -213,16 +213,24 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 
 
 /// <summary>
-/// Halts the jumpjet at the nearest place it can land.
-/// An airborne unit cannot simply stop where it is, so it is redirected to the closest spot
-/// it could put down in. A unit with nowhere at all to land is destroyed rather than left
-/// hanging in the air.
+/// Halts the jumpjet. A unit a locomotor warhead holds stops where it is and hovers. Any other
+/// moving unit is sent to the closest spot it could put down in; a BalloonHover unit instead
+/// hovers at the middle of the nearby cell it is sent to. A unit with nowhere at all to go is
+/// destroyed rather than left hanging in the air.
 /// </summary>
 void JumpjetLocomotionClass::Stop_Moving(void)
 {
-	// A BalloonHover unit in the air glides to the centre of its cell and hovers there, as it never lands (JumpjetLocomotionClass::Stop_Moving, 0x54B4D0).
-	if (IsMoving && Stays_Aloft() && CurrentState != GROUNDED) {
-		Move_To(LinkedTo->PositionCoord);
+	// A unit a locomotor warhead holds stops where it is.
+	if (IsMoving && LinkedTo->IsAttackedByLocomotor && CurrentState != GROUNDED) {
+		if (HeadToCoord != COORD_NONE && IsLanding) {
+			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+			IsLanding = false;
+		}
+		CurrentSpeed = 0;
+		TargetSpeed = 0;
+		HeadToCoord = COORD_NONE;
+		IsMoving = false;
+		CurrentState = HOVERING;
 		return;
 	}
 	if (IsMoving) {
