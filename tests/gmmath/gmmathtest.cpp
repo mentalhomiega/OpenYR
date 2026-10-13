@@ -118,7 +118,7 @@ int main(void)
 		double const exact = std::atan2(y, x);
 		close_to_library = close_to_library && std::fabs(got - exact) < 0.0245;
 		// Quantization moves the angle toward the x axis, so measured from that axis it never grows.
-		// Past the table's last ratio (about 99.98) gamemd returns pi / 2 instead, so those are skipped.
+		// From a ratio of about 100.02 up, gamemd returns pi / 2 instead, so ratios above 99 are skipped.
 		if (std::fabs(y) > 99.0 * std::fabs(x)) {
 			continue;
 		}
