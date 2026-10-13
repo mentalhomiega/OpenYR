@@ -12,7 +12,7 @@ Pavement blends by the rule [`ClearToRoughLat`](/keys/cleartoroughlat/) describe
 
 - one of the fourteen [`MiscPaveTile`](/keys/miscpavetile/) pieces,
 - one of the fourteen [`Medians`](/keys/medians/) pieces,
-- one of the first eight tiles of the [`PavedRoads`](/keys/pavedroads/) set.
+- one of the first twenty-one tiles of the [`PavedRoads`](/keys/pavedroads/) set.
 
 A median or one of those road pieces beside pavement therefore does not cut a blended edge into it.
 

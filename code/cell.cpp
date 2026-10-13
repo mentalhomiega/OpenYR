@@ -896,9 +896,10 @@ bool CellClass::Fixup_LAT(void)
 	if (miscpave1 == ISOTILE_INVALID) {
 		miscpave2 = ISOTILE_INVALID;
 	}
+	// gamemd (0x0047cb3e) counts 21 PavedRoads tiles as pavement, a fixed count rather than the set's size.
 	IsometricTileType pavedroad2 = IsometricTileTypeClass::PavedRoads;
 	IsometricTileType pavedroad1 = pavedroad2;
-	pavedroad2 = IsometricTileType(pavedroad2 + 7);
+	pavedroad2 = IsometricTileType(pavedroad2 + 20);
 	if (pavedroad1 == ISOTILE_INVALID) {
 		pavedroad2 = ISOTILE_INVALID;
 	}
