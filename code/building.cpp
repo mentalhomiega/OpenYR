@@ -4731,6 +4731,7 @@ bool BuildingClass::Toggle_Primary(void)
 /// <summary>
 /// Makes this factory its house's primary of its kind unless another factory of that kind is already
 /// primary. The kind is the ToBuild type and the naval flag, and a structure in limbo does not count.
+/// The claim is the routine at 0x448070, which Unlimbo (0x440580) and SetOwningHouse (0x448260) call.
 /// </summary>
 void BuildingClass::Claim_Vacant_Primary(void)
 {
