@@ -48,6 +48,7 @@ enum {
 	_SINE_TABLE_SIZE = 500,
 	_INTENSITY_TABLE_SIZE = 13,
 	_INTENSITY_TABLE_OFFSET = 110,
+	_WAVE_MIN_DISTANCE = 240,
 };
 
 unsigned short RadiusTable[_RADIUS_TABLE_SIZE][_RADIUS_TABLE_SIZE];
@@ -63,6 +64,14 @@ int const _facing_col_steps[FACING_COUNT] = {0, 1, 1, 1, 0, -1, -1, -1};
 bool _tables_calculated = false;
 
 const float WaveStep = 0.05f;
+
+
+static bool Is_Within_Wave_Minimum(Coord const & source_coord, Coord const & target_coord)
+{
+	int dx = source_coord.X - target_coord.X;
+	int dy = source_coord.Y - target_coord.Y;
+	return(dx * dx + dy * dy < _WAVE_MIN_DISTANCE * _WAVE_MIN_DISTANCE);
+}
 
 
 /// <summary>
@@ -85,6 +94,14 @@ WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, Tec
 	Source(source),
 	AffectedCells(5)
 {
+	// gamemd never places a sonic or magnetron wave fired from under 240 leptons, yet the firer
+	// keeps its Wave pointer until the deferred deletion runs (WaveClass::WaveClass, 0x75EA7E).
+	// Laser waves are exempt because gamemd builds none (TechnoClass::CreateLaser, 0x6FD210).
+	if ((type == WAVE_SONIC || type == WAVE_MAGNETRON) && Is_Within_Wave_Minimum(source_coord, target_coord)) {
+		Delete_Me();
+		return;
+	}
+
 	Create_ID();
 	Waves.Add(this);
 
