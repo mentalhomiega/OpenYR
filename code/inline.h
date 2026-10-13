@@ -246,7 +246,7 @@ inline Coord Coord_Mid(Coord const & coord1, Coord const & coord2)
 inline Coord Move_Coord(Coord const & start, DirType const & dir, int distance)
 {
 	double radians = dir.As_Radian();
-	return(Coord((start.X + std::cos(radians) * distance), (start.Y - std::sin(radians) * distance), start.Z));
+	return(Coord((start.X + double(Gamemd_Cosine(radians)) * distance), (start.Y - double(Gamemd_Sine(radians)) * distance), start.Z));
 }
 
 
