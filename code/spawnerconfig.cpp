@@ -125,6 +125,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 			slot.Name = name.substr(0, UTF8::Boundary_Before(name.c_str(), HOUSE_NAME_MAX - 1));
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
+			slot.IsSpectator = ini.Get_Bool(section.c_str(), "IsSpectator", false);
 			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);
 			slot.Port = ini.Get_Int(section.c_str(), "Port", 0);
 		} else {
@@ -177,7 +178,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		SlotType & slot = Slots[index];
 
 		std::string entry = "Multi" + std::to_string(index + 1);
-		slot.IsSpectator = ini.Get_Bool("IsSpectator", entry.c_str(), false);
+		slot.IsSpectator = slot.IsSpectator || ini.Get_Bool("IsSpectator", entry.c_str(), false);
 		slot.StartingPosition = Read_Slot_Int(ini, "SpawnLocations", index, -1);
 
 		// A start position out of range is left to the game, like no position at all.
@@ -514,6 +515,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	PlayMoviesInMultiplayer = ini.Get_Bool(SETTINGS, "PlayMoviesInMultiplayer", PlayMoviesInMultiplayer);
 	CustomLoadScreen = Read_Text(ini, SETTINGS, "CustomLoadScreen", CustomLoadScreen);
 	DifficultyName = Read_Text(ini, SETTINGS, "DifficultyName", DifficultyName);
+	SyncLog = ini.Get_Bool(SETTINGS, "SyncLog", SyncLog);
 
 	std::string position = Read_Text(ini, SETTINGS, "CustomLoadScreenPos", "");
 	if (!position.empty()) {

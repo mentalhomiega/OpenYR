@@ -27,7 +27,7 @@ class SpawnerConfigClass
 	public:
 
 		// Bump when the game's reading of a launch file changes; it feeds the session identity.
-		static constexpr int SCHEMA_VERSION = 2;
+		static constexpr int SCHEMA_VERSION = 3;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
@@ -131,6 +131,10 @@ class SpawnerConfigClass
 		static constexpr int TIMEOUT_MAX = 36000;
 		int ConnTimeout = 3600;
 		int ReconnectTimeout = 2400;
+
+		// A debugging aid that logs the frame check value each frame. It does not change the match,
+		// so it stays out of the session identity.
+		bool SyncLog = false;
 
 		// What a player is shown.
 		bool QuickMatch = false;

@@ -1187,6 +1187,71 @@ int main(void)
 			"a bind address that is not dotted IPv4 is refused");
 	}
 
+	/*
+	 * The client writes IsSpectator in each person's own section, as well as in [IsSpectator].
+	 * Either one makes that person a watcher.
+	 */
+	{
+		char const own_section[] =
+			"[Settings]\n"
+			"Name=Second\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=50000\n"
+			"IsSpectator=Yes\n"
+			"\n"
+			"[Other1]\n"
+			"Name=First\n"
+			"Side=0\n"
+			"Color=1\n"
+			"Ip=10.0.0.7\n"
+			"Port=50001\n"
+			"IsSpectator=No\n";
+		SpawnerConfigClass own = Read(own_section, sizeof(own_section) - 1);
+		Check(own.LocalSlot == 1 && own.Slots[1].IsSpectator && !own.Slots[0].IsSpectator,
+			"a person's own IsSpectator=yes makes that seat a watcher");
+
+		char const other_watches[] =
+			"[Settings]\n"
+			"Name=Second\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=50000\n"
+			"\n"
+			"[Other1]\n"
+			"Name=First\n"
+			"Side=0\n"
+			"Color=1\n"
+			"Ip=10.0.0.7\n"
+			"Port=50001\n"
+			"IsSpectator=Yes\n";
+		SpawnerConfigClass other = Read(other_watches, sizeof(other_watches) - 1);
+		Check(other.Slots[0].IsSpectator && !other.Slots[1].IsSpectator,
+			"another person's IsSpectator=yes makes that seat a watcher");
+	}
+
+	/*
+	 * SyncLog turns on the per-frame check value log. It is a debugging aid, so it must not
+	 * change the session identity two machines compare.
+	 */
+	{
+		char const unset[] = "[Settings]\n";
+		char const off[] = "[Settings]\nSyncLog=no\n";
+		char const on[] = "[Settings]\nSyncLog=yes\n";
+		char const one[] = "[Settings]\nSyncLog=1\n";
+
+		Check(!Read(unset, sizeof(unset) - 1).SyncLog, "the sync log is off unless the file asks for it");
+		Check(!Read(off, sizeof(off) - 1).SyncLog, "SyncLog=no leaves the sync log off");
+		Check(Read(on, sizeof(on) - 1).SyncLog, "SyncLog=yes turns the sync log on");
+		Check(Read(one, sizeof(one) - 1).SyncLog, "SyncLog=1 turns the sync log on");
+		// Both files name the local player, because a section with any key seats one.
+		char const named[] = "[Settings]\nName=Commander\nSide=0\nColor=0\n";
+		char const named_synced[] = "[Settings]\nName=Commander\nSide=0\nColor=0\nSyncLog=yes\n";
+		Check(Read(named, sizeof(named) - 1).Session_Identity_CRC() ==
+			Read(named_synced, sizeof(named_synced) - 1).Session_Identity_CRC(),
+			"the sync log does not change the session identity");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

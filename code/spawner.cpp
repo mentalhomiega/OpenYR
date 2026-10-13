@@ -551,6 +551,10 @@ bool Spawner_Prepare(bool & gameloaded)
 	Spawner_Bind_Autosave();
 	Spawner_Bind_Presentation();
 
+	if (SpawnConfig.SyncLog) {
+		Debug_SyncLog = true;
+	}
+
 	// Every kind of launch uses this speed, so it is checked first.
 	if (SpawnConfig.GameSpeed < 0 || SpawnConfig.GameSpeed >= OptionsClass::MAX_SPEED_SETTING) {
 		return(Spawner_Refuse("The file asks for game speed %d, and the game has 0 through %d.",
