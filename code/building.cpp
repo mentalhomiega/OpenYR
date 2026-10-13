@@ -9244,8 +9244,9 @@ bool BuildingClass::Blocks_Cell(CellClass const * cell) const
 
 /// <summary>
 /// Tells whether this Bunker=yes structure can take the vehicle in now (TechnoClass::CanBunker,
-/// 0x70FB50): the vehicle must be its owner's, Bunkerable and armed, and the bunker must be
-/// finished and empty. A vehicle under mind control may not enter, as in Yuri's Revenge.
+/// 0x70FB50): the vehicle must be its owner's, Bunkerable, armed and turreted, not a hover vehicle
+/// and not held by a parasite, and the bunker must be finished and empty. A vehicle under mind
+/// control may not enter, as in Yuri's Revenge.
 /// </summary>
 bool BuildingClass::Can_Bunker(FootClass const * object) const
 {
@@ -9255,7 +9256,7 @@ bool BuildingClass::Can_Bunker(FootClass const * object) const
 	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION || BunkerLinkedItem != NULL) {
 		return(false);
 	}
-	if (!object->TClass->IsBunkerable || object->In_Air() || object->Get_Class_Weapon_Data(0)->Weapon == NULL) {
+	if (!object->TClass->IsBunkerable || !object->TClass->IsTurretEquipped || object->TClass->Speed == SPEED_HOVER || object->In_Air() || object->Get_Class_Weapon_Data(0)->Weapon == NULL || object->ParasiteEatingMe != NULL) {
 		return(false);
 	}
 	return(object->Cargo.How_Many() == 0);
