@@ -198,13 +198,6 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 		}
 	}
 
-	bool drop_pod = false;
-	if (teamtype->IsDroppod) {
-		if (teamtype->TaskForce->Has_Only_Infantry()) {
-			drop_pod = true;
-		}
-	}
-
 	/*
 	**	Now that the official source for the reinforcement has been determined, the
 	**	objects themselves must be created.
@@ -283,10 +276,6 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 					temp->Next = transport;
 					transport = temp;
 				} else {
-					if (drop_pod) {
-						temp->Link_DropPod();
-					}
-
 					/*
 					**	Link to the list of normal objects.
 					*/

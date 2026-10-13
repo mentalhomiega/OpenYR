@@ -35,7 +35,7 @@ A reinforcement team with [`Droppod=yes`](/keys/droppod-teamtype/) does not use 
 
 ## Approach and descent
 
-For the fall, each passenger gets a temporary drop-pod locomotor. Its usual locomotor is set aside through [piggybacking](/internals/locomotion/#piggybacking) and restored at touchdown.
+For the fall, each Drop Pods superweapon passenger gets a temporary drop-pod locomotor. Its usual locomotor is set aside through [piggybacking](/internals/locomotion/#piggybacking) and restored at touchdown.
 
 ### Approach selection
 
