@@ -1,0 +1,123 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 550dp;
+	height: 310dp;
+	top: 50%;
+	margin-top: -155dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#title
+{
+	height: 17dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#sides
+{
+	display: flex;
+	margin-top: 9dp;
+}
+
+.side
+{
+	width: 236dp;
+}
+
+.side.soviet
+{
+	margin-left: 12dp;
+}
+
+.side > .caption
+{
+	display: block;
+	height: 16dp;
+	line-height: 16dp;
+}
+
+.side > .list
+{
+	height: 112dp;
+}
+
+/* A mission name is one line; a longer one is cut rather than wrapped into the next row. */
+.side .item
+{
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#mapname
+{
+	margin-top: 6dp;
+	height: 17dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#row-difficulty
+{
+	margin-top: 7dp;
+	height: 25dp;
+}
+
+#row-difficulty > .caption
+{
+	width: 379dp;
+	line-height: 17dp;
+}
+
+#difficulty-name
+{
+	width: 100dp;
+	margin-left: 5dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: right;
+}
+
+#row-slider
+{
+	margin-top: -2dp;
+}
+
+#difficulty
+{
+	width: 484dp;
+	height: 25dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 14dp;
+}
+
+button
+{
+	width: 76dp;
+}
+
+#start
+{
+	width: 96dp;
+	margin-left: 302dp;
+	margin-right: 10dp;
+}
