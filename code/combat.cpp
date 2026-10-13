@@ -57,6 +57,7 @@
 #include "mouse.h"
 #include "overtype.h"
 #include "ovrlight.h"
+#include "particle.h"
 #include "partsys.h"
 #include "psystype.h"
 #include "rules.h"
