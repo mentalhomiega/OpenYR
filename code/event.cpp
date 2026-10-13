@@ -606,6 +606,42 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell cons
 		Type = type;
 		Data.Place.Type = object;
 		Data.Place.Where = cell;
+		Data.Place.ID = -1;
+		Frame = ::Frame;
+	} else {
+		ID = -1;
+		Type = EMPTY;
+		Frame = ::Frame;
+	}
+}
+
+
+/***********************************************************************************************
+ * EventClass::EventClass -- Construct a placement event that names a building type.           *
+ *                                                                                             *
+ *    The building type ID picks the factory the object is taken from, so a structure and a    *
+ *    defense with the same RTTI are told apart.                                               *
+ *                                                                                             *
+ * INPUT:   index  -- The sender's index, or negative for no event.                            *
+ *          type   -- The event type, PLACE.                                                   *
+ *          object -- The RTTI of the object placed.                                           *
+ *          id     -- The building type ID, or -1 for units, aircraft and infantry.            *
+ *          cell   -- The location for this event.                                             *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *=============================================================================================*/
+EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, Cell const & cell)
+{
+	DebugString("Adding event %s\n", EventNames[type]);
+
+	if (index >= 0) {
+		ID = index;
+		Type = type;
+		Data.Place.Type = object;
+		Data.Place.Where = cell;
+		Data.Place.ID = id;
 		Frame = ::Frame;
 	} else {
 		ID = -1;
@@ -903,7 +939,7 @@ void EventClass::Execute(void)
 		**	exact factory and real object pointer to use.
 		*/
 		case PLACE:
-			house->Place_Object(Data.Place.Type, Cell(Data.Place.Where.X, Data.Place.Where.Y));
+			house->Place_Object(Data.Place.Type, Data.Place.ID, Cell(Data.Place.Where.X, Data.Place.Where.Y));
 			break;
 
 		/*
@@ -924,7 +960,7 @@ void EventClass::Execute(void)
 		**	object type, the factory can be inferred.
 		*/
 		case SUSPEND:
-			house->Suspend_Production(Data.Specific.Type);
+			house->Suspend_Production(Data.Specific.Type, Data.Specific.ID);
 			break;
 
 		/*

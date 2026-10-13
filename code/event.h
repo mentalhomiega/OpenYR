@@ -197,6 +197,7 @@ class EventClass
 			struct {
 				RTTIType		Type;
 				xCell			Where;
+				int				ID;		// The building type ID that picks the factory; -1 for other objects.
 			} Place;
 			struct {
 				int			ID;
@@ -271,6 +272,7 @@ class EventClass
 		EventClass(int index, unsigned char type, RTTIType object, int id);
 		EventClass(int index, unsigned char type, RTTIType object, int id, int count);
 		EventClass(int index, unsigned char type, RTTIType object, Cell const & cell);
+		EventClass(int index, unsigned char type, RTTIType object, int id, Cell const & cell);
 		EventClass(int index, unsigned char type, int id, Cell const & cell);
 		EventClass(int index, AnimType anim, HousesType owner, Coord const & coord);
 		EventClass(int index, unsigned char type, void *ptr, unsigned int size);

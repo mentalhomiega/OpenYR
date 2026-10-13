@@ -383,7 +383,7 @@ void Place(std::string const & name)
 				if (!building->Legal_Placement(cell, PlayerPtr)) continue;
 				if (!Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell)) continue;
 				DebugString("AUTOTEST place %s at %d,%d\n", name.c_str(), cell.X, cell.Y);
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, cell));
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
 				return;
 			}
 		}

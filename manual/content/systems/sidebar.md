@@ -102,7 +102,7 @@ When a cameo is removed, the rest of the strip closes up. The topmost cameo that
 
 A cameo is drawn from the art [`Cameo=`](/keys/cameo/) selects, or from the PCX picture [`CameoPCX=`](/keys/cameopcx/) names when that picture can be read. It is darkened when **Any of** these applies:
 
-- it is a structure cameo and the house has any structure order outstanding, which [the queue](/systems/production/#the-queue) covers;
+- it is a structure cameo and the house has an order outstanding in its own slot, which [the queue](/systems/production/#the-queue) covers: the structure slot for a structure, the defense slot for a defense;
 - no switched-on structure could produce the type;
 - the house owns as many of the type as a positive `BuildLimit=` allows, which [build limits](/systems/production/#build-limits) covers.
 
@@ -110,7 +110,7 @@ The cameo of the type in production is never darkened, whether its order is buil
 
 A darkened cameo still answers clicks. What happens depends on why it is dark:
 
-- A structure cameo darkened by an outstanding structure order refuses a left click; see [Clicking a build cameo](#clicking-a-build-cameo).
+- A structure cameo darkened by an outstanding order in its slot refuses a left click; see [Clicking a build cameo](#clicking-a-build-cameo).
 - For the other two causes, a left click behaves as [the table below](#clicking-a-build-cameo) describes, but the order it sends is dropped because no structure can take it. A right click still removes a queued copy.
 
 Those dropped orders do not play [`ScoldSound`](/keys/scoldsound/). That sound plays only when [the queue](/systems/production/#the-queue) refuses an order.
@@ -135,7 +135,7 @@ The tooltip carries the price. It shows the price alone while captions are on, a
 
 Both mouse buttons act when pressed, not when released.
 
-Structures, vehicles, infantry and aircraft each have their own production line. Each row below describes what the clicked cameo's line has on order at the time of the click.
+Structures, defenses, vehicles, infantry and aircraft each have their own production line. Each row below describes what the clicked cameo's line has on order at the time of the click.
 
 | What the cameo's production line holds | Left click | Right click |
 | --- | --- | --- |

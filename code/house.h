@@ -37,6 +37,7 @@
 
 #include "_house.h"
 #include "base.h"
+#include "builtype.h"
 #include "coord.h"
 #include "counter.h"
 #include "credits.h"
@@ -583,11 +584,14 @@ class HouseClass : public AbstractClass
 		/*
 		**	For human controlled houses, only one type of unit can be produced
 		**	at any one instant. These factory objects control this production.
+		**	Structures and defenses (BuildCat=Combat) each have their own factory,
+		**	so one of each can be built at once.
 		*/
 		FactoryClass * AircraftFactory;
 		FactoryClass * InfantryFactory;
 		FactoryClass * UnitFactory;
 		FactoryClass * BuildingFactory;
+		FactoryClass * DefenseFactory;
 
 		/*
 		**	This target value specifies where the flag is located. It might be a cell
@@ -877,9 +881,10 @@ class HouseClass : public AbstractClass
 		ZoneType Which_Zone(Cell const & cell) const;
 		Cell Find_Cell_In_Zone(TechnoClass const * techno, ZoneType zone) const;
 		ProdFailType Begin_Production(RTTIType type, int id, bool resume=false);
-		ProdFailType Suspend_Production(RTTIType type);
+		ProdFailType Suspend_Production(RTTIType type, int id);
 		ProdFailType Abandon_Production(RTTIType type, int id);
-		bool Place_Object(RTTIType type, Cell const & cell);
+		ProdFailType Abandon_Production(RTTIType type, int id, BuildCatType buildcat);
+		bool Place_Object(RTTIType type, int id, Cell const & cell);
 		bool Manual_Place(BuildingClass * builder, BuildingClass * object);
 		void Just_Built(TechnoClass * product);
 		void Special_Weapon_AI(SuperWeaponType id);
@@ -984,8 +989,9 @@ class HouseClass : public AbstractClass
 		bool Can_Add_Waypoint_To_Path(void) const;
 
 		// Factory controls.
-		FactoryClass * Fetch_Factory(RTTIType rtti) const;
-		void Set_Factory(RTTIType rtti, FactoryClass * factory);
+		static BuildCatType Build_Category(RTTIType rtti, int id);
+		FactoryClass * Fetch_Factory(RTTIType rtti, BuildCatType buildcat) const;
+		void Set_Factory(RTTIType rtti, BuildCatType buildcat, FactoryClass * factory);
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
 		bool Is_Reversed(ObjectTypeClass const * type) const;

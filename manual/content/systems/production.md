@@ -62,7 +62,7 @@ related:
 
 Players and computer houses produce objects in two different ways.
 
-A player's house has four production slots: one each for infantry, vehicles, aircraft and structures. Each slot builds one object at a time, with a queue behind it, however many factories the house owns. Six war factories do not build six vehicles at once. They only change how long the one vehicle in the slot takes, as [More than one factory](#more-than-one-factory) explains.
+A player's house has five production slots: one each for infantry, vehicles, aircraft, structures and defenses. A defense is a structure whose [`BuildCat=`](/keys/buildcat--buildingtype/) is `Combat`, and it has a slot of its own, so a defense and another structure can be built at once. Each slot builds one object at a time, with a queue behind it, however many factories the house owns. Six war factories do not build six vehicles at once. They only change how long the one vehicle in the slot takes, as [More than one factory](#more-than-one-factory) explains.
 
 A computer house has no production slots. Each of its factory structures builds an object of its own, so six war factories build six vehicles at a time. Every idle factory takes the type its house currently wants for that category, so factories that start together build the same type. The house chooses again each time an object of that category leaves a factory.
 
@@ -312,7 +312,7 @@ A slot on hold also queues new orders. The exception is the type on hold: orderi
 
 When the object in progress leaves the factory, is canceled, or becomes unbuildable, the first queued type starts as if it had just been ordered.
 
-Structures never queue. The [sidebar](/systems/sidebar/#clicking-a-build-cameo) refuses a second structure order while another is outstanding, whether it is building, on hold, or finished and waiting to be placed. While a structure is on order, every other structure cameo on the sidebar is drawn darkened.
+Structures never queue. The [sidebar](/systems/sidebar/#clicking-a-build-cameo) refuses a second order for a structure while another structure order is outstanding in the same slot, whether it is building, on hold, or finished and waiting to be placed. A defense has its own slot, so a structure order and a defense order do not refuse each other. While a structure is on order, the other structure cameos are drawn darkened; while a defense is on order, the other defense cameos are.
 
 ## Leaving the factory
 

@@ -329,6 +329,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	InfantryFactory(NULL),
 	UnitFactory(NULL),
 	BuildingFactory(NULL),
+	DefenseFactory(NULL),
 	FlagLocation(NULL),
 	FlagHome(0,0),
 	UnitsLost(0),
@@ -2803,7 +2804,8 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 		}
 	}
 
-	fptr = Fetch_Factory(type);
+	BuildCatType const buildcat = Build_Category(type, id);
+	fptr = Fetch_Factory(type, buildcat);
 
 	if (fptr == NULL) {
 		fptr = new FactoryClass;
@@ -2825,7 +2827,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 		}
 	}
 
-	Set_Factory(type, fptr);
+	Set_Factory(type, buildcat, fptr);
 
 	bool has_suspended = false;
 	if (fptr->IsSuspended) {
@@ -2870,7 +2872,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 		DebugString("IsSuspended\t= %d\n", fptr->IsSuspended);
 
 		delete fptr;
-		Set_Factory(type, NULL);
+		Set_Factory(type, buildcat, NULL);
 	}
 
 	return(PROD_CANT);
@@ -2893,9 +2895,9 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
  * HISTORY:                                                                                    *
  *   05/08/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-ProdFailType HouseClass::Suspend_Production(RTTIType type)
+ProdFailType HouseClass::Suspend_Production(RTTIType type, int id)
 {
-	FactoryClass * fptr = Fetch_Factory(type);
+	FactoryClass * fptr = Fetch_Factory(type, Build_Category(type, id));
 
 	/*
 	**	If the house is already busy producing the requested object, then
@@ -2940,7 +2942,27 @@ ProdFailType HouseClass::Suspend_Production(RTTIType type)
  *=============================================================================================*/
 ProdFailType HouseClass::Abandon_Production(RTTIType type, int id)
 {
-	FactoryClass * fptr = Fetch_Factory(type);
+	return(Abandon_Production(type, id, Build_Category(type, id)));
+}
+
+
+/***********************************************************************************************
+ * HouseClass::Abandon_Production -- Abandons production in the factory a BuildCat selects.    *
+ *                                                                                             *
+ *    The two-argument form picks the factory from the type ID. Passing -1 as the ID with the  *
+ *    category of a completed object abandons whatever that factory holds.                     *
+ *                                                                                             *
+ * INPUT:   type     -- The object type that production is being abandoned for.                *
+ *          id       -- The type ID, or -1 to abandon the factory's object regardless of type. *
+ *          buildcat -- The BuildCat from Build_Category, which picks the factory.             *
+ *                                                                                             *
+ * OUTPUT:  Returns the reason why or why not, production was abandoned.                       *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *=============================================================================================*/
+ProdFailType HouseClass::Abandon_Production(RTTIType type, int id, BuildCatType buildcat)
+{
+	FactoryClass * fptr = Fetch_Factory(type, buildcat);
 
 	/*
 	**	If there is no factory to abandon, then return with a failure code.
@@ -2991,7 +3013,7 @@ ProdFailType HouseClass::Abandon_Production(RTTIType type, int id)
 	*/
 	fptr->Abandon();
 	if (fptr->QueuedObjects.Count() == 0) {
-		Set_Factory(type, NULL);
+		Set_Factory(type, buildcat, NULL);
 		delete fptr;
 	} else {
 		fptr->Resume_Queue();
@@ -3121,6 +3143,10 @@ void HouseClass::AI_Super_Weapon_Defense(SuperClass const * super, Cell const & 
  *                                                                                             *
  * INPUT:   type  -- The object type to place. The actual object is lifted from the sidebar.   *
  *                                                                                             *
+ *          id    -- The building type ID, which picks the structure or defense factory. A     *
+ *                   placement whose ID is not the completed object's type is ignored. -1 for  *
+ *                   units, aircraft and infantry.                                             *
+ *                                                                                             *
  *                                                                                             *
  *          cell  -- The location to place the object on the map.                              *
  *                                                                                             *
@@ -3131,11 +3157,12 @@ void HouseClass::AI_Super_Weapon_Defense(SuperClass const * super, Cell const & 
  * HISTORY:                                                                                    *
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
+bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 {
 	bool placed = false;
 	TechnoClass * tech = 0;
-	FactoryClass * factory = Fetch_Factory(type);
+	BuildCatType const buildcat = Build_Category(type, id);
+	FactoryClass * factory = Fetch_Factory(type, buildcat);
 
 	/*
 	**	Only if there is a factory active for this type, can it be "placed".
@@ -3145,7 +3172,7 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 	**	The second placement event should NOT try to place the object that is
 	**	just starting construction.
 	*/
-	if (factory && factory->Has_Completed()) {
+	if (factory && factory->Has_Completed() && (id < 0 || (factory->Get_Object() != NULL && factory->Get_Object()->Class_Of()->Fetch_Heap_ID() == id))) {
 		tech = factory->Get_Object();
 
 		if (cell == CELL_NONE || cell == Cell(-1, -1)) {
@@ -3171,7 +3198,7 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 						**	has been completed.
 						*/
 						factory->Completed();
-						Abandon_Production(type, -1);
+						Abandon_Production(type, -1, buildcat);
 						placed = true;
 					} else {
 						/*
@@ -3180,7 +3207,7 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 						*/
 						if (tech->RTTI != RTTI_BUILDING) {
 							DebugString("Failed to exit object from factory - refunding money\n");
-							Abandon_Production(type, -1);
+							Abandon_Production(type, -1, buildcat);
 						}
 						return(placed);
 					}
@@ -3205,7 +3232,7 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 						}
 						factory->Completed();
 						tech->Transmit_Message(RADIO_COMPLETE, builder);
-						Abandon_Production(type, -1);
+						Abandon_Production(type, -1, buildcat);
 						placed = true;
 
 						if (tech->IsActive && !tech->DiscoveredBy[this]) {
@@ -3439,6 +3466,10 @@ void HouseClass::Detach(AbstractClass const * target, bool all)
 
 	if (BuildingFactory == target) {
 		BuildingFactory = NULL;
+	}
+
+	if (DefenseFactory == target) {
+		DefenseFactory = NULL;
 	}
 }
 
@@ -6001,12 +6032,37 @@ UnitClass * HouseClass::Find_Nearest_Enemy_Unit_In_Spread(Coord const & coord) c
 
 
 /***********************************************************************************************
+ * HouseClass::Build_Category -- Returns the BuildCat that picks an object type's factory.     *
+ *                                                                                             *
+ *    A structure with BuildCat=Combat (a defense) has a factory of its own. Every other       *
+ *    object type, and any ID that is not a building type, returns BUILDCAT_DONTCARE.          *
+ *                                                                                             *
+ * INPUT:   rtti -- The RTTI of the object type.                                               *
+ *          id   -- The type ID, or -1 when there is none.                                     *
+ *                                                                                             *
+ * OUTPUT:  Returns the BuildCat to pass to Fetch_Factory and Set_Factory.                     *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *=============================================================================================*/
+BuildCatType HouseClass::Build_Category(RTTIType rtti, int id)
+{
+	if ((rtti == RTTI_BUILDING || rtti == RTTI_BUILDINGTYPE) && id >= 0 && id < BuildingTypes.Count()) {
+		return(BuildingTypes[id]->BuildCat);
+	}
+	return(BUILDCAT_DONTCARE);
+}
+
+
+/***********************************************************************************************
  * HouseClass::Fetch_Factory -- Finds the factory associated with the object type specified.   *
  *                                                                                             *
  *    This is the counterpart to the Set_Factory function. It will return with a factory       *
- *    pointer that is associated with the object type specified.                               *
+ *    pointer that is associated with the object type specified. A building with               *
+ *    BuildCat=Combat goes to the defense factory; other buildings go to the structure         *
+ *    factory.                                                                                 *
  *                                                                                             *
- * INPUT:   rtti  -- The RTTI of the object type to find the factory for.                      *
+ * INPUT:   rtti     -- The RTTI of the object type to find the factory for.                   *
+ *          buildcat -- The BuildCat from Build_Category.                                      *
  *                                                                                             *
  * OUTPUT:  Returns with a pointer to the factory (if present) that can manufacture the        *
  *          object type specified.                                                             *
@@ -6017,7 +6073,7 @@ UnitClass * HouseClass::Find_Nearest_Enemy_Unit_In_Spread(Coord const & coord) c
  * HISTORY:                                                                                    *
  *   07/09/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti) const
+FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat) const
 {
 	FactoryClass * factory;
 
@@ -6034,7 +6090,7 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti) const
 
 		case RTTI_BUILDING:
 		case RTTI_BUILDINGTYPE:
-			factory = BuildingFactory;
+			factory = (buildcat == BUILDCAT_COMBAT) ? DefenseFactory : BuildingFactory;
 			break;
 
 		case RTTI_AIRCRAFT:
@@ -6057,7 +6113,8 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti) const
  *    house for tracking purposes. The house maintains several factory pointers and this       *
  *    routine will ensure that the factory pointer gets stored correctly.                      *
  *                                                                                             *
- * INPUT:   rtti  -- The RTTI of the object the factory it to manufacture.                     *
+ * INPUT:   rtti     -- The RTTI of the object the factory it to manufacture.                  *
+ *          buildcat -- The BuildCat from Build_Category. Combat selects the defense factory.  *
  *                                                                                             *
  *          factory  -- The factory object pointer.                                            *
  *                                                                                             *
@@ -6068,7 +6125,7 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti) const
  * HISTORY:                                                                                    *
  *   07/09/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-void HouseClass::Set_Factory(RTTIType rtti, FactoryClass * factory)
+void HouseClass::Set_Factory(RTTIType rtti, BuildCatType buildcat, FactoryClass * factory)
 {
 	assert(rtti != RTTI_NONE);
 
@@ -6085,7 +6142,11 @@ void HouseClass::Set_Factory(RTTIType rtti, FactoryClass * factory)
 
 		case RTTI_BUILDING:
 		case RTTI_BUILDINGTYPE:
-			BuildingFactory = factory;
+			if (buildcat == BUILDCAT_COMBAT) {
+				DefenseFactory = factory;
+			} else {
+				BuildingFactory = factory;
+			}
 			break;
 
 		case RTTI_AIRCRAFT:
@@ -7557,6 +7618,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InfantryFactory);
 	stream.Serialize(UnitFactory);
 	stream.Serialize(BuildingFactory);
+	stream.Serialize(DefenseFactory);
 	stream.Serialize(FlagLocation);
 	stream.Serialize(FlagHome);
 	stream.Serialize(UnitsKilled);
@@ -9414,27 +9476,13 @@ void HouseClass::Activate_Threat_Node(void)
 /// <param name="rtti">Which of the house's factories to bring up to date.</param>
 void HouseClass::Update_Factories(RTTIType rtti)
 {
-	FactoryClass * factory = NULL;
+	// A building type has a structure factory and a defense factory; both are brought up to date.
+	int const slots = (rtti == RTTI_BUILDINGTYPE) ? 2 : 1;
 
-	switch (rtti) {
-		case RTTI_BUILDINGTYPE:
-			factory = BuildingFactory;
-			break;
+	for (int slot = 0; slot < slots; slot++) {
+		FactoryClass * factory = Fetch_Factory(rtti, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT);
+		if (factory == NULL) continue;
 
-		case RTTI_UNITTYPE:
-			factory = UnitFactory;
-			break;
-
-		case RTTI_INFANTRYTYPE:
-			factory = InfantryFactory;
-			break;
-
-		case RTTI_AIRCRAFTTYPE:
-			factory = AircraftFactory;
-			break;
-	}
-
-	if (factory != NULL) {
 		for (int i = factory->QueuedObjects.Count() - 1; i >= 0; i--) {
 			TechnoTypeClass const * ttype = factory->QueuedObjects[i];
 			if (ttype->Who_Can_Build_Me(true, false, true, this) == NULL) {
@@ -10566,7 +10614,9 @@ bool HouseClass::Is_Build_Limited(TechnoTypeClass const * type) const
 		return(true);
 	} else {
 		int queued = 0;
-		FactoryClass * factory = Fetch_Factory(type->RTTI);
+		// gamemd's HouseClass::CanBuild (0x50B370) counts queued buildings in the structure factory for every
+		// building type, so a defense in the defense factory is not counted here.
+		FactoryClass * factory = Fetch_Factory(type->RTTI, BUILDCAT_DONTCARE);
 		if (factory != NULL) {
 			queued = factory->Total(type);
 

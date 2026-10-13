@@ -1221,7 +1221,7 @@ void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) 
 		*/
 		FactoryClass * factory = NULL;
 		if (House->Is_Human_Player()) {
-			factory = House->Fetch_Factory(Class->ToBuild);
+			factory = House->Fetch_Factory(Class->ToBuild, BUILDCAT_DONTCARE);
 		} else {
 			factory = Factory;
 		}
@@ -7335,21 +7335,30 @@ void BuildingClass::Detach_All(bool all)
 		**	build that thing; if so, abandon production of it.
 		*/
 		if (House) {
-			FactoryClass * factory = House->Fetch_Factory(Class->ToBuild);
 
 			/*
-			**	If a factory was found, then temporarily disable this building and then
-			**	determine if any object that is being produced can still be produced. If
-			**	not, then the object being produced must be abandoned.
+			**	A structure and a defense are built by separate factories, so both are checked.
+			**	Each object is named by its type ID, since a building type's ID picks its factory.
 			*/
-			if (factory) {
-				TechnoClass * object = factory->Get_Object();
-				bool limbo = IsInLimbo;
-				IsInLimbo = true;
-				if (object && !object->TClass->Who_Can_Build_Me(true, false, false, House)) {
-					House->Abandon_Production(Class->ToBuild, -1);
+			int const slots = (Class->ToBuild == RTTI_BUILDINGTYPE) ? 2 : 1;
+			for (int slot = 0; slot < slots; slot++) {
+				FactoryClass * factory = House->Fetch_Factory(Class->ToBuild, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT);
+
+				/*
+				**	If a factory was found, then temporarily disable this building and then
+				**	determine if any object that is being produced can still be produced. If
+				**	not, then the object being produced must be abandoned.
+				*/
+				if (factory) {
+					TechnoClass * object = factory->Get_Object();
+					bool limbo = IsInLimbo;
+					IsInLimbo = true;
+					if (object && !object->TClass->Who_Can_Build_Me(true, false, false, House)) {
+						int const id = (Class->ToBuild == RTTI_BUILDINGTYPE) ? object->Class_Of()->Fetch_Heap_ID() : -1;
+						House->Abandon_Production(Class->ToBuild, id);
+					}
+					IsInLimbo = limbo;
 				}
-				IsInLimbo = limbo;
 			}
 		}
 	}

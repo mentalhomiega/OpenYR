@@ -2092,7 +2092,7 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 		**	Try to place the pending object onto the map.
 		*/
 		if (ProximityCheck && ShroudCheck) {
-			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, PendingObjectPtr->RTTI, cell + ZoneOffset));
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, PendingObjectPtr->RTTI, PendingObject->Fetch_Heap_ID(), cell + ZoneOffset));
 			Map.Forget_Completed_Building(PendingObjectPtr);
 		} else {
 			Speak(VOX_DEPLOY);

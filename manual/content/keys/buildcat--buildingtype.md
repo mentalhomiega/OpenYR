@@ -9,7 +9,7 @@ when_omitted:
   value: "DontCare"
 ---
 
-`BuildCat` is one of `DontCare`, `Tech`, `Resource`, `Power`, `Infrastructure` or `Combat`, matched without regard to case. A `Combat` structure is listed on the sidebar's defenses tab; every other structure is listed on the buildings tab.
+`BuildCat` is one of `DontCare`, `Tech`, `Resource`, `Power`, `Infrastructure` or `Combat`, matched without regard to case. A `Combat` structure is listed on the sidebar's defenses tab and builds in its own production slot, apart from the other structures; every other structure is listed on the buildings tab. See [production](/systems/production/).
 
 ```ini title="rulesmd.ini"
 [MyTower] ; example BuildingType

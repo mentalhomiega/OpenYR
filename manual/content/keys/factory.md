@@ -14,7 +14,7 @@ Write `UnitType`, `InfantryType`, `AircraftType` or `BuildingType` to make the s
 Factory=UnitType
 ```
 
-A player's house has one production slot for each of these four kinds. All its structures that name the same kind share that slot, so they build one object at a time between them. A second such structure can shorten build times instead, depending on [`MultipleFactory`](/keys/multiplefactory/); see [More than one factory](/systems/production/#more-than-one-factory).
+A player's house has one production slot for each of these four kinds, and a separate slot for defenses: a `BuildingType` whose [`BuildCat=`](/keys/buildcat--buildingtype/) is `Combat`. All its other structures that name the same kind share the structure slot, so they build one object at a time between them. A second such structure can shorten build times instead, depending on [`MultipleFactory`](/keys/multiplefactory/); see [More than one factory](/systems/production/#more-than-one-factory).
 
 A computer house has no shared slot. Each of its factories builds separately, choosing whatever the house wants next of that kind.
 
