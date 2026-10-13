@@ -33,6 +33,7 @@
 #pragma once
 
 #include "coord.h"
+#include "gmmath.h"
 #include "visualc.h"
 
 #include <cmath>
@@ -107,7 +108,7 @@ class DirType
 				Facing = 0;
 			}
 
-			*this = DirType(std::atan2((double)coord1.Y - (double)coord2.Y, (double)coord2.X - (double)coord1.X));
+			*this = DirType(Gamemd_Atan2((double)coord1.Y - (double)coord2.Y, (double)coord2.X - (double)coord1.X));
 
 			return *this;
 		}
@@ -118,7 +119,7 @@ class DirType
 				Facing = 0;
 			}
 
-			*this = DirType(std::atan2((double)cell1.Y - (double)cell2.Y, (double)cell2.X - (double)cell1.X));
+			*this = DirType(Gamemd_Atan2((double)cell1.Y - (double)cell2.Y, (double)cell2.X - (double)cell1.X));
 
 			return *this;
 		}
