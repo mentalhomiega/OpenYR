@@ -5774,6 +5774,7 @@ bool CellClass::Is_Tile_Dirt_Road(void) const
 /// <returns>bool; Is this a paved road tile?</returns>
 bool CellClass::Is_Tile_Paved_Road(void) const
 {
+	// gamemd (0x004866d0) counts only the first 15 PavedRoads tiles as road; the LAT blend counts 21.
 	if (IS_TILE_IN_SET(PavedRoads, PAVED_ROAD_COUNT)) {
 		return(true);
 	}
@@ -5788,6 +5789,7 @@ bool CellClass::Is_Tile_Paved_Road(void) const
 /// <returns>bool; Is this a paved road end tile?</returns>
 bool CellClass::Is_Tile_Paved_Road_End(void) const
 {
+	// gamemd (0x004866f0) counts the first 4 PavedRoadEnds tiles.
 	if (IS_TILE_IN_SET(PavedRoadEnds, PAVED_ROAD_ENDS_COUNT)) {
 		return(true);
 	}
@@ -5803,6 +5805,7 @@ bool CellClass::Is_Tile_Paved_Road_End(void) const
 /// <returns>bool; Is this a paved road slope tile?</returns>
 bool CellClass::Is_Tile_Paved_Road_Slope(void) const
 {
+	// gamemd (0x00486710) counts the first 4 PavedRoadSlopes tiles, but no gamemd code calls it.
 	if (IS_TILE_IN_SET(PavedRoadSlopes, PAVED_ROAD_SLOPES_COUNT)) {
 		return(true);
 	}
