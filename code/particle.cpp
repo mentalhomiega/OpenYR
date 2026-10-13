@@ -324,29 +324,14 @@ void ParticleClass::Gas_Behavior_AI(void)
 			while (occupier) {
 				Coord delta = Get_Coord() - occupier->Get_Coord();
 				ObjectClass * next = occupier->Next;
-				Coord ocoord = occupier->Get_Coord();
-				ResultType result = RESULT_NONE;
 				if (occupier->IsActive) {
 					if (occupier->Strength > 0) {
 						int damage = Class->Damage;
-						result = occupier->Take_Damage(damage, TacticalMap->Z_Lepton_To_Pixel(abs(delta.X) + abs(delta.Y)), Class->Warhead, 0, 0, 0, SourceHouse);
+						// A gas kill leaves no visceroid: gamemd discards this damage result (0x62C303).
+						occupier->Take_Damage(damage, TacticalMap->Z_Lepton_To_Pixel(abs(delta.X) + abs(delta.Y)), Class->Warhead, 0, 0, 0, SourceHouse);
 					}
 				}
 				occupier = next;
-
-				if (result == RESULT_DESTROYED) {
-					if (Scen->IsTiberiumDeathToVisceroid) {
-						UnitClass * visc = new UnitClass(Rule->SmallVisceroid, House_From_HousesType(HouseTypeClass::From_Name("Neutral")));
-						if (visc) {
-							Coord coord = Map[ocoord].Cell_Coord();
-							if (!Map[coord].Flag.Occupy.Vehicle) {
-								ScenarioInit++;
-								visc->Unlimbo(coord, DIR_N);
-								ScenarioInit--;
-							}
-						}
-					}
-				}
 			}
 		}
 	}
