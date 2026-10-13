@@ -1445,6 +1445,28 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "ally") {
+		// ally <TypeID> x y: puts an object of the type, owned by the first house that is an ally of the player, on that cell.
+		HouseClass * owner = NULL;
+		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+			if (Houses[index] != PlayerPtr && PlayerPtr->Is_Ally(Houses[index])) {
+				owner = Houses[index];
+			}
+		}
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL && owner != NULL) {
+			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
+			Cell cell(step.X, step.Y);
+			ScenarioInit++;
+			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+			ScenarioInit--;
+			DebugString("AUTOTEST %s %s at %d,%d owner %s: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, owner->Class->Name(), placed ? "placed" : "failed");
+		} else {
+			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no house allied with the player");
+		}
+		return;
+	}
+
 	if (step.Command == "transfer") {
 		// transfer <TypeID>: gives the first live object of that type that a computer house owns to the
 		// player through TechnoClass::Set_Owning_House, the path a mind control capture takes.
@@ -2309,7 +2331,7 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 			if (techno->RTTI == RTTI_UNIT) {
 				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
-				DebugString("AUTOTEST   mirage look %s blink %d terrain for player %d shimmer %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr), vehicle->Mirage_Shimmer_Flags());
+				DebugString("AUTOTEST   mirage look %s blink %d owner %d ally %d cycle %d terrain for player %d shimmer %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->House->Is_Player_Control(), (int)vehicle->House->Is_Ally(PlayerPtr), vehicle->Mirage_Cycle(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr), vehicle->Mirage_Shimmer_Flags());
 			}
 			if (techno->RTTI == RTTI_AIRCRAFT) {
 				AircraftClass const * plane = static_cast<AircraftClass const *>(techno);
