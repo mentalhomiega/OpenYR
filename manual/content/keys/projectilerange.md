@@ -7,4 +7,4 @@ when_omitted:
   value: "390.625"
 ---
 
-No projectile uses this value. A rules file that sets it still loads, but no shot's flight, detonation or fuse depends on it. To set how far a weapon fires, use [`Range=`](/keys/range--weapontype/). [`Ranged=yes`](/keys/ranged/) affects the fuse, not the distance flown.
+No projectile uses this value. A rules file that sets it still loads, but no shot's flight, detonation or fuse depends on it. To set how far a weapon fires, use [`Range=`](/keys/range/). [`Ranged=yes`](/keys/ranged/) affects the fuse, not the distance flown.

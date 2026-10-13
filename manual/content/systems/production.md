@@ -62,7 +62,7 @@ related:
 
 Players and computer houses produce objects in two different ways.
 
-A player's house has six production slots: one each for infantry, vehicles, ships, aircraft, structures and defenses. A ship is a `Naval=yes` vehicle type, and it has a slot of its own, so a ship and a vehicle can be built at once. A defense is a structure whose [`BuildCat=`](/keys/buildcat--buildingtype/) is `Combat`, and it has a slot of its own too, so a defense and another structure can be built at once. Each slot builds one object at a time, with a queue behind it, however many factories the house owns. Six war factories do not build six vehicles at once. They only change how long the one vehicle in the slot takes, as [More than one factory](#more-than-one-factory) explains.
+A player's house has six production slots: one each for infantry, vehicles, ships, aircraft, structures and defenses. A ship is a `Naval=yes` vehicle type, and it has a slot of its own, so a ship and a vehicle can be built at once. A defense is a structure whose [`BuildCat=`](/keys/buildcat/) is `Combat`, and it has a slot of its own too, so a defense and another structure can be built at once. Each slot builds one object at a time, with a queue behind it, however many factories the house owns. Six war factories do not build six vehicles at once. They only change how long the one vehicle in the slot takes, as [More than one factory](#more-than-one-factory) explains.
 
 A computer house has no production slots. Each of its factory structures builds an object of its own, so six war factories build six vehicles at a time. Every idle factory takes the type its house currently wants for that category, so factories that start together build the same type. The house chooses again each time an object of that category leaves a factory.
 
@@ -135,7 +135,7 @@ With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar swe
 
 ### Country and stolen technology
 
-[`RequiredHouses=`](/keys/requiredhouses/) limits a type to the countries it lists, and [`ForbiddenHouses=`](/keys/forbiddenhouses/) excludes the countries it lists. The test uses the house's own country: the one its house record names with [`Country=`](/keys/country--house-per-scenario/), or, when the record names none, the country its own name gives. An [`ActsLike=`](/keys/actslike/) setting does not change it.
+[`RequiredHouses=`](/keys/requiredhouses/) limits a type to the countries it lists, and [`ForbiddenHouses=`](/keys/forbiddenhouses/) excludes the countries it lists. The test uses the house's own country: the one its house record names with [`Country=`](/keys/country/), or, when the record names none, the country its own name gives. An [`ActsLike=`](/keys/actslike/) setting does not change it.
 
 A type with [`RequiresStolenAlliedTech=yes`](/keys/requiresstolenalliedtech/), [`RequiresStolenSovietTech=yes`](/keys/requiresstolensoviettech/) or [`RequiresStolenThirdTech=yes`](/keys/requiresstolenthirdtech/) needs the house to have stolen the first, second or third side's technology. Nothing steals technology yet, so such a type is never buildable.
 
