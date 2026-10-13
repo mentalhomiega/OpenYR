@@ -83,6 +83,7 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	MovementDirection(target.X - origin.X, target.Y - origin.Y, target.Z - origin.Z),
 	PrecisePosition(origin.X, origin.Y, origin.Z),
 	System(partsys),
+	SourceHouse(NULL),
 	StateAIAdvance(Class->StateAIAdvance),
 	IsFireBelowGround(false),
 	StateAI(Class->StartStateAI),
@@ -171,6 +172,7 @@ ParticleClass::ParticleClass(void) :
 	MovementDirection(0,0,0),
 	PrecisePosition(0,0,0),
 	System(NULL),
+	SourceHouse(NULL),
 	StateAIAdvance(0),
 	IsFireBelowGround(false),
 	StateAI(0),
@@ -227,7 +229,8 @@ inline Vector3 Slope_Vector(Vector3 & vector, Coord const & coord, double length
 /// The cloud wanders sideways and sinks under gravity, glancing off the terrain and
 /// off any bridge, wall, or building that stands in its way. A gas that carries a
 /// warhead also poisons whatever it settles over, and when the scenario allows it,
-/// anything killed that way rises again as a visceroid.
+/// anything killed that way rises again as a visceroid. Those kills are credited to
+/// the particle's source house.
 /// </summary>
 void ParticleClass::Gas_Behavior_AI(void)
 {
@@ -326,7 +329,7 @@ void ParticleClass::Gas_Behavior_AI(void)
 				if (occupier->IsActive) {
 					if (occupier->Strength > 0) {
 						int damage = Class->Damage;
-						result = occupier->Take_Damage(damage, TacticalMap->Z_Lepton_To_Pixel(abs(delta.X) + abs(delta.Y)), Class->Warhead, 0, 0, 0);
+						result = occupier->Take_Damage(damage, TacticalMap->Z_Lepton_To_Pixel(abs(delta.X) + abs(delta.Y)), Class->Warhead, 0, 0, 0, SourceHouse);
 					}
 				}
 				occupier = next;
@@ -850,6 +853,23 @@ bool ParticleClass::Mark(MarkType mark)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Drops any reference this particle holds to the target being detached.
+/// A particle's source house is cleared when that house is deleted, so a later kill
+/// cannot be credited to a dangling house.
+/// </summary>
+/// <param name="target">The object being detached.</param>
+/// <param name="all">Should the detachment also clear the object's list links?</param>
+void ParticleClass::Detach(AbstractClass const * target, bool all)
+{
+	BASECLASS::Detach(target, all);
+
+	if (SourceHouse == target) {
+		SourceHouse = NULL;
+	}
 }
 
 

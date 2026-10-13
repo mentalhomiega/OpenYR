@@ -20,6 +20,7 @@
 
 class ParticleTypeClass;
 class ParticleSystemClass;
+class HouseClass;
 
 
 class ParticleClass : public ObjectClass
@@ -43,6 +44,7 @@ class ParticleClass : public ObjectClass
 		virtual Cell const * Occupy_List(bool placement=false) const override;
 		virtual void Draw_It(Point2D const & point, Rect const & cliprect) const override;
 		virtual bool Mark(MarkType=MARK_CHANGE) override;
+		virtual void Detach(AbstractClass const * target, bool all = true) override;
 
 		virtual int Shape_Number(void) const;
 
@@ -109,6 +111,13 @@ class ParticleClass : public ObjectClass
 		 * The system this particle belongs to.
 		 */
 		ParticleSystemClass * System;
+
+		/*
+		 * The house credited with a kill this particle's damage makes. Gas released by an
+		 * explosion carries the explosion's house, as gamemd's particle system does; it is
+		 * null for particles no house released and is not saved.
+		 */
+		HouseClass * SourceHouse;
 
 		/*
 		 * Existence state machine
