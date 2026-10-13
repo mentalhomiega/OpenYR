@@ -792,6 +792,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Override_Mission(MissionType mission, AbstractClass * tarcom, AbstractClass * navcom) override;
 		virtual bool Restore_Mission(void) override;
 		virtual BulletClass * Fire_At(AbstractClass * target, int which=0);
+		int Fire_Damage(WeaponTypeClass const * weapon) const;
 		virtual int Weapon_Range(int which) const override;
 		virtual bool Captured(HouseClass * newowner);
 		bool Set_Owning_House(HouseClass * newowner);

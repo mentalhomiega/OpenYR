@@ -4637,6 +4637,41 @@ static void Reveal_Firer_On_Fire(TechnoClass * firer, AbstractClass * target, We
 }
 
 
+/// <summary>
+/// Returns the damage one shot of the weapon deals from this object.
+/// The weapon's Damage is scaled by the house and object firepower biases, attached effects,
+/// veterancy, bunker, garrison and transport multipliers. Each step is truncated to an integer (TechnoClass::Fire, 0x6FDD50).
+/// Sonic and fire-particle weapons deal no damage.
+/// </summary>
+/// <param name="weapon">The weapon being fired.</param>
+int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
+{
+	int firepower = weapon->Attack;
+	if (weapon->IsSonic || weapon->UseFireParticles) {
+		firepower = 0;
+	}
+	if (firepower > 0) {
+		firepower = (int)(House->FirepowerBias * FirepowerBias * AttachedEffects.Firepower_Multiplier() * weapon->Attack);
+		if (Has_Ability(ABILITY_FIREPOWER)) {
+			firepower = (int)(Rule->VeteranCombat * firepower);
+		}
+		if (Is_Bunkered()) {
+			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
+		}
+	}
+	BuildingClass const * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass const *>(this) : NULL;
+	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
+	}
+	if (IsInOpenToppedTransport) {
+		// The transport's OpenTopped.DamageMultiplier and the passenger's OpenTransport.DamageMultiplier both apply (Phobos).
+		double const transport = Transporter != NULL ? Transporter->TClass->OpenToppedDamageMultiplier.value_or(Rule->OpenToppedDamageMultiplier) : Rule->OpenToppedDamageMultiplier;
+		firepower = (int)(firepower * transport * TClass->OpenTransportDamageMultiplier.value_or(Rule->OpenTransportDamageMultiplier));
+	}
+	return(firepower);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Fire_At -- Fires projectile at target specified.                               *
  *                                                                                             *
@@ -4745,7 +4780,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	// A DiskLaser weapon draws its ring and strikes when the ring closes (TechnoClass::Fire, 0x6FDD50).
 	if (weapon->IsDiskLaser && target->Is_Techno()) {
 		if (!DiskLaser.Is_Active()) {
-			DiskLaser.Fire(this, (TechnoClass *)target, weapon, int(weapon->Attack * FirepowerBias * AttachedEffects.Firepower_Multiplier()));
+			DiskLaser.Fire(this, (TechnoClass *)target, weapon, Fire_Damage(weapon));
 			LastFireFrame = Frame;
 			Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
 			ChargeTurretDelay = (int)Arm;
@@ -4811,28 +4846,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	**	need to be performed according to the style of projectile
 	**	created.
 	*/
-	int firepower = weapon->Attack;
-	if (weapon->IsSonic || weapon->UseFireParticles) {
-		firepower = 0;
-	}
-	if (firepower > 0) {
-		firepower = (int)(House->FirepowerBias * FirepowerBias * AttachedEffects.Firepower_Multiplier() * weapon->Attack);
-		if (Has_Ability(ABILITY_FIREPOWER)) {
-			firepower = (int)(Rule->VeteranCombat * firepower);
-		}
-		if (Is_Bunkered()) {
-			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
-		}
-	}
+	int const firepower = Fire_Damage(weapon);
 	BuildingClass * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(this) : NULL;
-	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
-		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
-	}
-	if (IsInOpenToppedTransport) {
-		// The transport's OpenTopped.DamageMultiplier and the passenger's OpenTransport.DamageMultiplier both apply (Phobos).
-		double const transport = Transporter != NULL ? Transporter->TClass->OpenToppedDamageMultiplier.value_or(Rule->OpenToppedDamageMultiplier) : Rule->OpenToppedDamageMultiplier;
-		firepower = (int)(firepower * transport * TClass->OpenTransportDamageMultiplier.value_or(Rule->OpenTransportDamageMultiplier));
-	}
 
 	int max_speed = weapon->MaxSpeed;
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->ProjectileRange, weapon->IsBright);
