@@ -3390,13 +3390,15 @@ const char * InfantryClass::Full_Name(void) const
 int InfantryClass::Do_MISSION_ATTACK(void)
 {
 	BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-	if ((Class->IsBomber || Has_Ability(ABILITY_C4)) && building != NULL && building->Class->Can_Plant_C4()) {
+	bool const is_c4 = Class->IsBomber || Has_Ability(ABILITY_C4);
+	if (is_c4 && building != NULL && building->Class->Can_Plant_C4()) {
 		Assign_Destination(TarCom);
 		Assign_Mission(MISSION_SABOTAGE);
 		return(1);
 	}
 
-	if (Class->IsCapture && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
+	// A player's C4 soldier shoots a structure it may not arm instead of walking into it (InfantryClass::Mission_Attack, 0x51F3E0).
+	if (Class->IsCapture && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING && (!is_c4 || !House->Is_Human_Player())) {
 		Assign_Destination(TarCom);
 		Assign_Mission(MISSION_CAPTURE);
 		return(1);
