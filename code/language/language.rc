@@ -1090,6 +1090,18 @@ BEGIN
     TXT_ALL_TO_CHEER_DESC   "Makes all of your idle infantry cheer."
 END
 
+STRINGTABLE DISCARDABLE 
+BEGIN
+    TXT_STRUCTURE_TAB       "Select Structures Tab"
+    TXT_STRUCTURE_TAB_DESC  "Switch the command bar to the Building Tab and select the completed building if any."
+    TXT_DEFENSE_TAB         "Select Defense Tab"
+    TXT_DEFENSE_TAB_DESC    "Switch the command bar to the Defense Tab and select the completed building if any."
+    TXT_INFANTRY_TAB        "Select Infantry Tab"
+    TXT_INFANTRY_TAB_DESC   "Switch the command bar to the Infantry Tab."
+    TXT_UNIT_TAB            "Select Vehicle Tab"
+    TXT_UNIT_TAB_DESC       "Switch the command bar to the Vehicle Tab."
+END
+
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

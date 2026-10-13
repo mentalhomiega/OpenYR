@@ -4175,6 +4175,45 @@ class RSidebarPageDownCommandClass : public CommandClass
 };
 
 
+// Labels of the four sidebar tabs, in tab order: structures, defenses, infantry, vehicles.
+static int const SIDEBAR_TAB_NAME[] = {TXT_STRUCTURE_TAB, TXT_DEFENSE_TAB, TXT_INFANTRY_TAB, TXT_UNIT_TAB};
+static int const SIDEBAR_TAB_DESC[] = {TXT_STRUCTURE_TAB_DESC, TXT_DEFENSE_TAB_DESC, TXT_INFANTRY_TAB_DESC, TXT_UNIT_TAB_DESC};
+static char const * const SIDEBAR_TAB_UNIQUE_NAME[] = {"StructureTab", "DefenseTab", "InfantryTab", "UnitTab"};
+
+
+/// <summary>
+/// Shows one sidebar tab. A tab with nothing in it is left as it is.
+/// </summary>
+/// <remarks>gamemd: SetStructureTab, SetDefenseTab, SetInfantryTab and SetUnitTab Execute, at 0x535d90, 0x535e50, 0x535f10 and 0x535fa0.</remarks>
+class SidebarTabCommandClass : public CommandClass
+{
+	public:
+		SidebarTabCommandClass(int tab) : Tab(tab) {}
+
+		virtual char const * Get_Unique_Name(void) const {
+			return(SIDEBAR_TAB_UNIQUE_NAME[Tab]);
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(SIDEBAR_TAB_NAME[Tab]));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(SIDEBAR_TAB_DESC[Tab]));
+		}
+
+		virtual void Execute(void) const {
+			if (Map.Column[Tab].BuildableCount > 0) {
+				Map.Set_Tab(Tab);
+			}
+		}
+
+	private:
+		int Tab;
+};
+
+
 class OptionsCommandClass : public CommandClass
 {
 	public:
@@ -5686,6 +5725,11 @@ static void Init_Commands(void)
 	AllCommands.Add(new SidebarPageDownCommandClass);
 	AllCommands.Add(new LSidebarPageDownCommandClass);
 	AllCommands.Add(new RSidebarPageDownCommandClass);
+
+	AllCommands.Add(new SidebarTabCommandClass(0));
+	AllCommands.Add(new SidebarTabCommandClass(1));
+	AllCommands.Add(new SidebarTabCommandClass(2));
+	AllCommands.Add(new SidebarTabCommandClass(3));
 
 	AllCommands.Add(new CenterREventCommandClass);
 

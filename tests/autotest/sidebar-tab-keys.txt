@@ -1,0 +1,19 @@
+; Sidebar tab keys: E, R, Q and W show the infantry, vehicle, structure and defense tabs, the keys gamemd binds to
+; InfantryTab, UnitTab, StructureTab and DefenseTab in KEYBOARDMD.INI. The tab query after each key shows the tab
+; that is shown. A tab with nothing to build in it is not shown, so a key for an empty tab leaves the tab as it was.
+; Run: scripts/run_autotest.ps1 -Script src-agent/tests/autotest/sidebar-tab-keys.txt -Build agent -Filter "AUTOTEST (tab|frame \d+: key|own)|Exception"
+20 own GACNST 50 30
+21 own GAPOWR 56 40
+22 own GAPILE 56 46
+23 own GAWEAP 62 46
+24 own GAPILL 50 46
+60 tab
+70 key E
+80 tab
+90 key R
+100 tab
+110 key Q
+120 tab
+130 key W
+140 tab
+300 quit

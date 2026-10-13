@@ -884,6 +884,14 @@
 #define TXT_SAVE_INCOMPATIBLE_TAG       1127
 #define TXT_ALL_TO_CHEER                1129
 #define TXT_ALL_TO_CHEER_DESC           1130
+#define TXT_STRUCTURE_TAB               1131
+#define TXT_STRUCTURE_TAB_DESC          1132
+#define TXT_DEFENSE_TAB                 1133
+#define TXT_DEFENSE_TAB_DESC            1134
+#define TXT_INFANTRY_TAB                1135
+#define TXT_INFANTRY_TAB_DESC           1136
+#define TXT_UNIT_TAB                    1137
+#define TXT_UNIT_TAB_DESC               1138
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046

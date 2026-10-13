@@ -29,6 +29,9 @@
 **	cell x y				writes a cell's shroud state, tile, height and occupier
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
+**	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
+**							is a letter or digit, or a virtual-key code in decimal
+**	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
 **	windowclick x y			moves the pointer to that window pixel and clicks there through the window's event path,
 **							which converts it to the frame
 **	follow <TypeID>			keeps the view centred on one of the player's objects of that type
@@ -1073,6 +1076,25 @@ static void Mod_Signature_Step(StepType const & step)
 }
 
 
+// key <Key>: the virtual-key code of a single letter or digit, or the decimal code given.
+static int Key_Code(std::string const & name)
+{
+	if (name.size() == 1) {
+		return(std::toupper((unsigned char)name[0]));
+	}
+	return(std::atoi(name.c_str()));
+}
+
+
+// tab: writes the sidebar tab shown, the items each tab lists, and the object waiting to be placed.
+static void Tab_Step(void)
+{
+	DebugString("AUTOTEST tab shown %d items %d %d %d %d pending %s\n", Map.ActiveTab, Map.Column[0].BuildableCount,
+		Map.Column[1].BuildableCount, Map.Column[2].BuildableCount, Map.Column[3].BuildableCount,
+		Map.PendingObject != NULL ? Map.PendingObject->Name() : "none");
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -1087,6 +1109,22 @@ void Run(StepType const & step)
 	// chrono <frames>: starts the chronoshift screen effect, as the Chrono Screen Effect trigger action does.
 	if (step.Command == "chrono") {
 		Start_Chrono_Screen_Effect(std::atoi(step.Argument.c_str()));
+		return;
+	}
+
+	// key <Key> and tab sit before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "key") {
+		WindowEvent event;
+		event.VirtualKey = Key_Code(step.Argument);
+		event.Type = WINDOW_EVENT_KEY_DOWN;
+		Keyboard->Handle_Window_Event(event);
+		event.Type = WINDOW_EVENT_KEY_UP;
+		Keyboard->Handle_Window_Event(event);
+		return;
+	}
+
+	if (step.Command == "tab") {
+		Tab_Step();
 		return;
 	}
 
