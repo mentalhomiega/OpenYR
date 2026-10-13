@@ -11,6 +11,7 @@
 
 #include "_ui.h"
 #include "bgfxbackend.h"
+#include "debugmode.h"
 #include "globals.h"
 #include "goptions.h"
 #include "misc.h"
@@ -65,6 +66,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		virtual void Set_Modern_Interface(bool on) override
 		{
 			Options.IsModernInterfaceChosen = on;
+		}
+
+		virtual void Set_Debug_Mode(bool on) override
+		{
+			Debug_Mode_Set(on);
 		}
 
 		virtual void Set_Interface_Scale(float scale) override
@@ -165,6 +171,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
+	state.DebugMode = Options.DebugMode;
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;

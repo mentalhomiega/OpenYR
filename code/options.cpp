@@ -196,6 +196,7 @@ OptionsClass::OptionsClass(void) :
 	IsSidebarOnRight(true),
 	ModernInterface(false),
 	IsModernInterfaceChosen(false),
+	DebugMode(false),
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
@@ -493,6 +494,9 @@ void OptionsClass::Load_Settings(void)
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
 	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
 
+	DebugMode = ConfigINI.Get_Bool("Options", "DebugMode", DebugMode);
+	DebugString("DebugMode is %s\n", DebugMode == true ? "ON" : "OFF");
+
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
 	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
 
@@ -624,6 +628,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
+	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);

@@ -115,6 +115,9 @@ class OptionsClass {
 		// The interface style the settings file holds. A change takes effect when the game next starts.
 		bool IsModernInterfaceChosen;
 
+		// Offers the tester debug cheats in single-player games; see debugmode.h.
+		bool DebugMode;
+
 		/*
 		 * If each sidebar cameo is to be captioned with the name of what it builds, then this
 		 * flag will be true.

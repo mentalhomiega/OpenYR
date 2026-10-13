@@ -110,6 +110,7 @@
 #include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "debugmode.h"
 #include "deploymentconfig.h"
 #include "dialog.h"
 #include "dsurface.h"
@@ -894,6 +895,7 @@ restart:
 	PlayerAborts = false;
 	Session.ObiWan = false;
 	Session.AIOnly = false;
+	Debug_Cheats_Reset();
 #ifdef _DEBUG
 	Debug_Unshroud = false;
 #endif

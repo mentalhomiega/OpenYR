@@ -27,6 +27,7 @@
 			<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch movies to fit resolution</label>
 			<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>Classic Yuri's Revenge menus</label>
 			<label class="check" id="switch-modern-interface"><input type="checkbox" id="modern-interface" data-attrif-checked="moderninterface" data-event-click="queue('moderninterface', moderninterface ? 0 : 1)"/>Modern in-game interface</label>
+			<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>
 		</div>
 		<div id="right">
 			<p class="heading" id="window-label">Window</p>

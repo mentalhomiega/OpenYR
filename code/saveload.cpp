@@ -71,6 +71,7 @@
 #include "classfactory.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "debugmode.h"
 #include "deploymentconfig.h"
 #include "empulse.h"
 #include "enviro.h"
@@ -1284,6 +1285,7 @@ bool Load_Game(const char *file_name)
 
 	LoadedSaveVersion = info.Get_Internal_Version();
 	Session.Type = (GameType)info.Get_Game_Type();
+	Debug_Cheats_Reset();
 
 	Swizzler.Discard();
 

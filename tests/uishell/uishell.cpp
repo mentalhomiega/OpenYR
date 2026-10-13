@@ -919,6 +919,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_System_Cursor(bool on) override { Calls.push_back(on ? "system cursor on" : "system cursor off"); }
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
+		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
@@ -995,6 +996,25 @@ void Test_Display_Presenter(void)
 		Check(presenter.State.ModernInterface && service.Calls.empty(), "the interface style switch is held until the player accepts");
 		Drive(presenter, "ok");
 		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface on" }, "accepting applies the modern interface style");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "debugmode", 1);
+		Check(presenter.State.DebugMode && service.Calls.empty(), "the debug mode switch is held until the player accepts");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "debug mode on" }, "accepting applies the debug mode when it was switched on");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.DebugMode = true;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "debugmode", 0);
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "debug mode off" }, "accepting applies the debug mode when it was switched off");
 	}
 
 	{
@@ -2994,6 +3014,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(context.GetFocusElement() == classic, "the menu style switch follows the movie switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("modern-interface"), "the interface style switch follows the menu style switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("debug-mode"), "the debug mode switch follows the interface style switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);

@@ -1100,6 +1100,18 @@ BEGIN
     TXT_INFANTRY_TAB_DESC   "Switch the command bar to the Infantry Tab."
     TXT_UNIT_TAB            "Select Vehicle Tab"
     TXT_UNIT_TAB_DESC       "Switch the command bar to the Vehicle Tab."
+    TXT_DEBUG_CATEGORY      "Debug"
+    TXT_DEBUG_INFINITE_MONEY "Infinite Money"
+    TXT_DEBUG_INFINITE_MONEY_DESC "Keeps your credits topped up. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_UNLOCK_ALL    "Unlock Everything"
+    TXT_DEBUG_UNLOCK_ALL_DESC "Lets your factories build every type of your side, ignoring prerequisites, tech level and which side built the factory. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_INSTANT_BUILD "Instant Build"
+    TXT_DEBUG_INSTANT_BUILD_DESC "Finishes your production at once. The item still costs its price. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_REVEAL_MAP    "Reveal Map"
+    TXT_DEBUG_REVEAL_MAP_DESC "Removes the shroud and fog from the map for you. Turning it off covers the map again if this cheat revealed it. Works only with Debug mode on in single-player games."
+    TXT_DEBUG_TOGGLE        "Debug: %s %s"
+    TXT_DEBUG_ON            "ON"
+    TXT_DEBUG_OFF           "OFF"
 END
 
 #endif    // English (U.S.) resources
