@@ -215,6 +215,63 @@ double Squared_Sum_3D(double x, double y, double z)
 }
 
 
+namespace {
+
+// Step of the arctangent table's argument. The table's generator adds it up at single precision.
+// No formula was found for the constant, so it is the one value taken from gamemd.
+constexpr float ATAN_STEP = 0.024413354694843292f;
+constexpr int ATAN_TABLE_SIZE = 4097;
+constexpr std::int32_t ATAN_LIMIT = 0x1001;
+
+// Single-precision pi / 2, which gamemd returns at and beyond the end of the table.
+constexpr double HALF_PI_SINGLE = double(float(PI_DOUBLE / 2.0));
+
+
+// Entry i is atan(x_i) rounded toward zero to single precision. The arguments are x_0 = 0 and
+// x_i = x_(i - 1) + step, each rounded toward zero to single precision, so they fall below i * step
+// as i grows: x_4096 is about 99.982 where 4096 * step is 99.997.
+std::array<float, ATAN_TABLE_SIZE> const & Atan_Table(void)
+{
+	static std::array<float, ATAN_TABLE_SIZE> const table = [] {
+		std::array<float, ATAN_TABLE_SIZE> built{};
+		float argument = 0.0f;
+		for (int index = 0; index < ATAN_TABLE_SIZE; index++) {
+			built[index] = Truncate_To_Single(std::atan(double(argument)));
+			argument = Truncate_To_Single(double(argument) + double(ATAN_STEP));
+		}
+		return built;
+	}();
+	return table;
+}
+
+
+// The quotient rounded toward zero to double, as the x87 control word gamemd runs with does.
+double Chop_Quotient(double a, double b)
+{
+	double const quotient = a / b;
+	double const remainder = std::fma(-quotient, b, a);
+	double const excess = (b < 0.0) ? -remainder : remainder;
+	if ((quotient > 0.0 && excess < 0.0) || (quotient < 0.0 && excess > 0.0)) {
+		return std::nextafter(quotient, 0.0);
+	}
+	return quotient;
+}
+
+
+// The low 32 bits of the integer that gamemd's float-to-int helper (0x7C5F00) returns for value,
+// which truncates toward zero. A value beyond 64 bits gives the indefinite integer, whose low word is 0.
+std::int32_t Low_Word_Truncated(double value)
+{
+	if (!(std::fabs(value) < 9223372036854775808.0)) {
+		return 0;
+	}
+	std::int64_t const truncated = std::int64_t(value);
+	return std::int32_t(std::uint32_t(std::uint64_t(truncated) & 0xFFFFFFFFu));
+}
+
+}
+
+
 float Gamemd_Sqrt(double value)
 {
 	if (value == 0.0) {
@@ -277,4 +334,36 @@ float Gamemd_Magnitude_2D(double x, double y)
 float Gamemd_Magnitude_3D(double x, double y, double z)
 {
 	return Gamemd_Sqrt(Squared_Sum_3D(x, y, z));
+}
+
+
+double Gamemd_Atan2(double y, double x)
+{
+	float const y_single = Truncate_To_Single(y);
+	float const x_single = Truncate_To_Single(x);
+	if (x_single == 0.0f) {
+		if (y_single == 0.0f) {
+			return 0.0;
+		}
+		return y_single > 0.0f ? HALF_PI_SINGLE : -HALF_PI_SINGLE;
+	}
+
+	// gamemd divides y by x, divides by the step and truncates. The magnitude of that integer picks the entry.
+	std::int32_t const truncated = Low_Word_Truncated(Chop_Quotient(Chop_Quotient(double(y_single), double(x_single)), double(ATAN_STEP)));
+	std::uint32_t const magnitude = truncated < 0 ? 0u - std::uint32_t(truncated) : std::uint32_t(truncated);
+	std::int32_t const index = std::int32_t(magnitude);
+
+	// A negative index, which only the magnitude of INT_MIN gives, reads before gamemd's table. No
+	// coordinate reaches it, so it is treated like an index past the end.
+	double value = HALF_PI_SINGLE;
+	if (index >= 0 && index < ATAN_LIMIT) {
+		value = double(Atan_Table()[index]);
+	}
+	if (x_single < 0.0f) {
+		value = PI_DOUBLE - value;
+	}
+	if (y_single < 0.0f) {
+		value = -value;
+	}
+	return value;
 }

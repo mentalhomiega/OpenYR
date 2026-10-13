@@ -33,3 +33,10 @@ int Gamemd_Length_3D(int x, int y, int z);
 // truncated to an integer.
 float Gamemd_Magnitude_2D(double x, double y);
 float Gamemd_Magnitude_3D(double x, double y, double z);
+
+// gamemd 0x4CAE30. The angle of (x, y) in radians, read from gamemd's table of arctangents at the
+// index trunc(y / x / K), where K is the table's step. Both arguments are rounded toward zero to
+// single precision first. The steps are coarse near the x axis (about 0.0244 at zero), so the
+// result lies between the true angle and the x axis, and for |y / x| past 99.98 it is single
+// precision pi / 2. The result is exact in double.
+double Gamemd_Atan2(double y, double x);

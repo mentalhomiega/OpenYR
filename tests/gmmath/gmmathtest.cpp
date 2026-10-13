@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include "gmmath.h"
 
@@ -27,6 +28,14 @@ static void Check(bool passed, char const * what)
 static bool Within_Truncation(int length, double exact)
 {
 	return length <= exact && length >= exact * (1.0 - 1.0 / 8192.0) - 1.0;
+}
+
+
+static float Single_From_Bits(std::uint32_t bits)
+{
+	float value = 0.0f;
+	std::memcpy(&value, &bits, sizeof(value));
+	return value;
 }
 
 
@@ -79,6 +88,46 @@ int main(void)
 			&& std::fabs(Gamemd_Cosine(angle) - std::cos(angle)) < two_steps;
 	}
 	Check(close_to_true, "sine and cosine are within two table steps of the library values");
+
+	std::printf("\nArctangent (gamemd 0x4CAE30)\n");
+	Check(Gamemd_Atan2(0.0, 1.0) == 0.0, "the positive x axis is angle 0");
+	Check(Gamemd_Atan2(0.0, -1.0) == 3.141592653589793, "the negative x axis is pi as a double");
+	Check(Gamemd_Atan2(0.0, 0.0) == 0.0, "the origin is angle 0");
+	Check(Gamemd_Atan2(1.0, 0.0) == 1.5707963705062866, "a zero x with positive y is single precision pi / 2");
+	Check(Gamemd_Atan2(-1.0, 0.0) == -1.5707963705062866, "a zero x with negative y is minus that");
+	double const table_step = 0.024413354694843292;
+	Check(Gamemd_Atan2(table_step, 1.0) == Single_From_Bits(0x3CC7F458u), "index 1 gives table entry 1 (y / x = step)");
+	Check(Gamemd_Atan2(2.5 * table_step, 1.0) == Single_From_Bits(0x3D47D5E3u), "index 2 gives table entry 2");
+	Check(Gamemd_Atan2(4096.5 * table_step, 1.0) == Single_From_Bits(0x3FC7C820u), "index 4096 gives the last entry, 1.5607948");
+	Check(Gamemd_Atan2(1.0e6, 1.0) == 1.5707963705062866, "an index past the table gives single precision pi / 2");
+	bool monotone = true;
+	double previous = -1.0;
+	for (int step_index = 0; step_index <= 2000; step_index++) {
+		double const value = Gamemd_Atan2(0.37 * step_index, 1.0);
+		monotone = monotone && value >= previous;
+		previous = value;
+	}
+	Check(monotone, "with x fixed at 1, the angle never decreases as y grows");
+	bool close_to_library = true;
+	bool not_toward_axis = true;
+	for (int angle_index = -310; angle_index <= 310; angle_index++) {
+		double const angle = angle_index * 0.01;
+		double const y = double(float(1.0e5 * std::sin(angle)));
+		double const x = double(float(1.0e5 * std::cos(angle)));
+		double const got = Gamemd_Atan2(y, x);
+		double const exact = std::atan2(y, x);
+		close_to_library = close_to_library && std::fabs(got - exact) < 0.0245;
+		// Quantization moves the angle toward the x axis, so measured from that axis it never grows.
+		// Past the table's last ratio (about 99.98) gamemd returns pi / 2 instead, so those are skipped.
+		if (std::fabs(y) > 99.0 * std::fabs(x)) {
+			continue;
+		}
+		double const got_from_axis = x > 0.0 ? std::fabs(got) : 3.141592653589793 - std::fabs(got);
+		double const exact_from_axis = x > 0.0 ? std::fabs(exact) : 3.141592653589793 - std::fabs(exact);
+		not_toward_axis = not_toward_axis && got_from_axis <= exact_from_axis + 1.0e-6;
+	}
+	Check(close_to_library, "every angle is within one table step (0.0245) of the library value");
+	Check(not_toward_axis, "the table angle lies between the library value and the x axis, to 1e-6");
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Checks FAILED.");
 	return(Failures == 0 ? 0 : 1);
