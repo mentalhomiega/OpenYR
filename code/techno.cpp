@@ -2095,7 +2095,7 @@ int TechnoClass::Elevation_Range_Bonus(AbstractClass const * target, bool withhe
 		return(across);
 	}
 	int down = levels * LEVEL_LEPTON_H;
-	return((int)std::sqrt((double)(across * across + down * down)));
+	return(Gamemd_Length_2D(across, down));
 }
 
 
@@ -3577,7 +3577,7 @@ void TechnoClass::AI(void)
 				gravity = Get_Floater_Gravity();
 			}
 			DirType dir;
-			if (Calculate_Projectile_Pitch(Should_Use_High_Arc(0), weapon->MaxSpeed, std::sqrt(coord.X * coord.X + coord.Y * coord.Y), coord.Z, gravity, dir)) {
+			if (Calculate_Projectile_Pitch(Should_Use_High_Arc(0), weapon->MaxSpeed, Gamemd_Length_2D(coord.X, coord.Y), coord.Z, gravity, dir)) {
 				BarrelPitch.Set_Desired(dir);
 			} else {
 				BarrelPitch.Set_Desired(DirType(DIR_E) - DirType(Dir256(TClass->FireAngle)));
@@ -4603,7 +4603,7 @@ DirType TechnoClass::Barrel_Pitch(AbstractClass * target) const
 		if (bullet != NULL && bullet->IsFloater) {
 			gravity = Get_Floater_Gravity();
 		}
-		if (!Calculate_Projectile_Pitch(Should_Use_High_Arc(0), weapon->MaxSpeed, std::sqrt(pow(coord.X, 2) + pow(coord.Y, 2)), coord.Z, gravity, pitch)) {
+		if (!Calculate_Projectile_Pitch(Should_Use_High_Arc(0), weapon->MaxSpeed, Gamemd_Length_2D(coord.X, coord.Y), coord.Z, gravity, pitch)) {
 			pitch = DIR_NW;
 		}
 	}
@@ -4883,8 +4883,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
 			} else {
 				path = "B";
-				double const squared = (double)displacement.X * displacement.X + (double)displacement.Y * displacement.Y + (double)displacement.Z * displacement.Z;
-				distance = (int)(float)std::sqrt(squared);
+				distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
 				range = Weapon_Range(which);
 				int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
 				spread = range > 0 ? (share * distance) / range : 0;
