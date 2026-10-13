@@ -807,7 +807,7 @@ void AnimClass::AI(void)
 				if (Class->IsTiberium && !bridge) {
 					for (int x = -Class->TiberiumSpreadRadius; x <= Class->TiberiumSpreadRadius; x++) {
 						for (int y = -Class->TiberiumSpreadRadius; y <= Class->TiberiumSpreadRadius; y++) {
-							if ((int)std::sqrt((double)x * (double)x + (double)y * (double)y) <= Class->TiberiumSpreadRadius) {
+							if (Gamemd_Length_2D(x, y) <= Class->TiberiumSpreadRadius) {
 								CellClass * cellptr = &Map[Adjacent_Cell(Cell(coord), FacingType(x))];
 								if (cellptr->Can_Tiberium_Germinate(NULL) && Class->TiberiumSpawnType != NULL) {
 									new OverlayClass(OverlayTypes[Class->TiberiumSpawnType->HeapID + Random_Pick(0, 3)], cellptr->Fetch_CellID());
