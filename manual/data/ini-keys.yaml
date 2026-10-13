@@ -36970,6 +36970,24 @@ SwampTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+SyncLog:
+  key: SyncLog
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 SystemCursor:
   key: SystemCursor
   scopes:

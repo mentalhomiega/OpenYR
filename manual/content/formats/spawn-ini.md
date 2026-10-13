@@ -35,6 +35,7 @@ The `[Settings]` section says what kind of game to start.
 | `IsSinglePlayer` | `yes` plays a campaign mission rather than a match. |
 | `LoadSaveGame`, `SaveGameName` | `LoadSaveGame=yes` resumes the saved game named by `SaveGameName`. |
 | `Host` | `yes` marks this machine as the host of a game against other machines. [The host](#the-host) says what it changes. |
+| `SyncLog` | `yes` writes the frame check value to the debug log on every frame, as `-SYNCLOG` does. It is a debugging aid and does not change the match or the session identity. |
 
 `IsSinglePlayer`, `LoadSaveGame` and `Host` default to `no`. The game starts the first kind of game in this list that the file asks for:
 
@@ -156,6 +157,7 @@ Each person has a section: `[Settings]` for the player at this machine, and `[Ot
 - `Name` is UTF-8 text. A name longer than 63 bytes is shortened.
 - `Side` is the person's country, numbered from `0` in the order of the rules' `[Countries]` list.
 - `Color` is one of the eight player colors, `0` to `7`. In a game against other machines, no two people may share a color.
+- `IsSpectator` is `yes` when the person watches instead of playing. The client writes it here as well as in `[IsSpectator]`; either one makes the seat a watcher.
 
 A person's section must give a valid `Side` and `Color`; it cannot leave them to the game.
 
@@ -252,7 +254,7 @@ Each machine writes its own file, with itself in `[Settings]` and the other peop
 - the same `Scenario`, and the same scenario file on every machine;
 - the same [match options](#the-options-every-house-plays-under) and `AutoSaveGame`;
 - the same people, with the same `Name`, `Side` and `Color`;
-- the same entries in `[HouseColors]`, `[HouseCountries]`, `[HouseHandicaps]`, `[SpawnLocations]`, the `[MultiN_Alliances]` sections and `[IsSpectator]`;
+- the same entries in `[HouseColors]`, `[HouseCountries]`, `[HouseHandicaps]`, `[SpawnLocations]`, the `[MultiN_Alliances]` sections and `[IsSpectator]`, and the same `IsSpectator` in each person's section;
 - the same `[Tunnel]` section, when the match is played through a tunnel.
 
 The keys under [What a player is shown](#what-a-player-is-shown) and the two waits below may differ between machines.
@@ -308,7 +310,7 @@ A game against other machines, new or resumed, is also refused when:
 
 ## What the game does not take from a launch file
 
-The game sets how far ahead the machines run and how often they exchange their orders, and no launch file changes them. `MapHash` is not read either; the machines compare the scenarios they loaded instead.
+The game sets how far ahead the machines run and how often they exchange their orders, and no launch file changes them. `FrameSendRate`, `MaxAhead` and `Protocol` are not read either, though the client writes them. The game takes its timing from its own settings and from the timing messages the machines exchange. `MapHash` is not read either; the machines compare the scenarios they loaded instead.
 
 `AimableSams` is not read: a defense whose weapon reaches only the air can be aimed at a chosen aircraft, which [`SAM`](/keys/sam/) owns.
 

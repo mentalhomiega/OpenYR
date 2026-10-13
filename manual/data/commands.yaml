@@ -2747,6 +2747,19 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:sync-log
+  route_id: sync-log
+  kind: launch
+  title: Sync log
+  description: Writes the frame check value to the debug log on every game frame, so the logs of two copies
+    can be compared frame by frame to find where they first differ. The same setting is read from the
+    SyncLog key in RA2MD.INI and in a launch file.
+  audience: developer
+  availability: *id001
+  syntax: -SYNCLOG
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:seed
   route_id: seed
   kind: launch

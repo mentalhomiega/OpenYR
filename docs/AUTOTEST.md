@@ -185,6 +185,14 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 | `-PortA`, `-PortB` | `24601`, `24602` | The loopback ports the copies listen on |
 | `-KeepDir` | none | A folder that receives both debug logs and any out-of-sync reports |
 | `-ForceDesyncB` | `0` | Corrupts side B's check value at that frame, as `-DESYNCTEST=` does, to test the detection |
+| `-SpawnStyle` | `Runner` | `CnCNet` writes the launch files the way the CnCNet client does, as [CnCNet style and tunnels](#cncnet-style-and-tunnels) describes |
+| `-Tunnel` | off | Routes both copies through a local tunnel, with a bridge for each copy and a relay |
+| `-TunnelIdA`, `-TunnelIdB` | `1001`, `1002` | The copies' tunnel numbers. Each is nonzero, and the two differ in their low 16 bits |
+| `-BridgePortA`, `-BridgePortB`, `-RelayPort` | `24651`, `24652`, `24650` | The loopback ports of the two bridges and of the relay |
+| `-LatencyMs`, `-JitterMs` | `0`, `0` | Delay added to each datagram on the relay hop. Jitter adds a random amount from minus to plus its value, so datagrams can arrive out of order |
+| `-LossPercent` | `0` | Percentage of relay hops dropped |
+| `-RelaySeed` | `1` | Seed for the jitter and the loss |
+| `-RelayBuffer` | `1024` | The largest envelope the relay accepts; see below |
 
 Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
 
@@ -196,3 +204,20 @@ Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, 
 The out-of-sync comparison is positional: it compares line N of one report with line N of the other. One object that appears only on one side shifts every line after it, so read the first difference, not the whole list.
 
 `-ForceDesyncB` is the check that the runner detects a desync. With `-ForceDesyncB 400`, the first mismatching tick is 400 and the runner exits with `3`.
+
+### CnCNet style and tunnels
+
+`-SpawnStyle CnCNet` writes the launch files the way the CnCNet client writes them, for the keys whose values are known. `UIGameMode`, `BroadcastedGameOptionValues` and `GamePackageVersion` are placeholders, `GameID` is a placeholder, and `MapSHA1` is empty. The client copies the map to `spawnmap.ini`; here `Scenario` names the map in the game data instead. Each copy gets `-SPAWN` as the client passes it, plus the harness switches `-DATADIR`, `-USERDIR`, `-WIN`, `-MULTIINSTANCE` and `-AUTOTEST`. The sync log comes from `SyncLog=yes` in `RA2MD.INI`, not from `-SYNCLOG`. A direct copy gets `BindAddress=127.0.0.1`, which the client does not write, so the copy listens on loopback only.
+
+`-Tunnel` starts `scripts/cncnet_tunnel_relay.py` with `python -I`. The script runs one bridge per copy and one relay on 127.0.0.1. A bridge wraps each game datagram in an 8-byte envelope and sends it to the relay. The relay forwards the envelope to the bridge of the peer that the envelope names. The relay stops after `-Seconds` plus three seconds and prints a summary line with its counters, which the runner repeats.
+
+Two results from testing set the limits of a tunnel run:
+
+- In tunnel mode the game's socket binds an ephemeral port on every address. The engine ignores `BindAddress` there, so the runner's listing shows `0.0.0.0`.
+- Every global-channel message is 1076 bytes, because its struct is padded to the scenario layout. The CnCNet server source reads into a 1024-byte buffer and has no size check. A relay with a 1024-byte limit drops those messages, and the match never starts. `-RelayBuffer 2048` lets them through. The tunnel runs use that value. Whether the real server drops or truncates such a datagram is not confirmed.
+
+Check the relay's routing before a match:
+
+```text
+python -I scripts/cncnet_tunnel_relay.py --self-test
+```

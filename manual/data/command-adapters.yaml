@@ -648,6 +648,17 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-DESYNCTEST=' }
+  - id: launch:sync-log
+    title: Sync log
+    syntax: -SYNCLOG
+    description: >-
+      Writes the frame check value to the debug log on every game frame, so the logs of two
+      copies can be compared frame by frame to find where they first differ. The same setting
+      is read from the SyncLog key in RA2MD.INI and in a launch file.
+    audience: developer
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SYNCLOG' }
   - id: launch:seed
     title: Random seed
     syntax: -SEED<number>
