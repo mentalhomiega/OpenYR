@@ -193,8 +193,9 @@ void IonBlastClass::AI(void)
 							Vector3 flat = to_blast;
 
 							double facing_rad = occupier->PrimaryFacing.Current().As_Radian();
-							float facing_sin = (float)std::sin(facing_rad);
-							float facing_cos = (float)std::cos(facing_rad);
+							// gamemd rocks units with its table sine and cosine (0x53CBE0 calls 0x4CACB0 and 0x4CAD00), not std::.
+							float facing_sin = Gamemd_Sine(facing_rad);
+							float facing_cos = Gamemd_Cosine(facing_rad);
 
 							float blast_dist = Gamemd_Magnitude_3D(to_blast.X, to_blast.Y, to_blast.Z);
 
@@ -223,8 +224,8 @@ void IonBlastClass::AI(void)
 								}
 
 								double decay = blast_dist + WaveAmplitudeFalloff;
-								double height = (std::sin((blast_dist - (double)Lifetime * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) * WaveAmplitudeFalloff;
-								double phase_cos = std::cos((blast_dist - (double)Lifetime * WavePhaseSpeed + 38.0) * WaveFrequency);
+								double height = (Gamemd_Sine((blast_dist - (double)Lifetime * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) * WaveAmplitudeFalloff;
+								double phase_cos = Gamemd_Cosine((blast_dist - (double)Lifetime * WavePhaseSpeed + 38.0) * WaveFrequency);
 								double slope = ((phase_cos * WaveFrequency * WaveAmplitudeFalloff * 3.5) * decay - height) / (decay * decay);
 
 								occupier->AngleRotatedSideways = (float)(sideways * slope * WaveRockScale);
