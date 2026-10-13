@@ -1,0 +1,49 @@
+; Debug cheats in a skirmish. Run from the repository root with the setting on, which -Settings adds to RA2MD.INI:
+;   scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-cheats.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 150 -Filter "AUTOTEST|Debug cheat|Exception"
+; Run it again without -Settings: every cheat then does nothing (credits stay 10000, GAWEAP stays can 0, the cells stay
+; unmapped, and the power plant is not completed by frame 300).
+; Expected with the setting on: dump credits 10000 before the money cheat and 100000 after; canbuild GAWEAP can 0 before the
+; unlock cheat and can 1 after it, and the tab item counts rise with it; the cells shown with a tile other than 65535 go
+; from mapped 0 to mapped 1 after the reveal cheat and back to mapped 0 once it is turned off; the tab line shows
+; "completed GAPOWR" within about 20 frames of the produce step.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+120 dump
+125 canbuild GAWEAP
+126 tab
+130 cell 20 20
+131 cell 110 20
+132 cell 20 110
+133 cell 110 110
+134 cell 64 60
+135 cell 64 100
+140 command DebugInfiniteMoney
+141 command DebugUnlockAll
+142 command DebugInstantBuild
+143 command DebugRevealMap
+160 dump
+165 canbuild GAWEAP
+166 tab
+170 cell 20 20
+171 cell 110 20
+172 cell 20 110
+173 cell 110 110
+174 cell 64 60
+175 cell 64 100
+180 produce GAPOWR
+200 dump
+201 tab
+240 tab
+300 dump
+301 tab
+400 command DebugRevealMap
+410 cell 20 20
+411 cell 110 110
+412 cell 64 60
+420 command DebugInfiniteMoney
+421 command DebugUnlockAll
+422 command DebugInstantBuild
+430 canbuild GAWEAP
+431 tab
+440 dump
