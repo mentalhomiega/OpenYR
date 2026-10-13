@@ -10297,6 +10297,7 @@ void HouseClass::AI_Takeover(void)
 
 	Cell center = conyard->PositionCoord.As_Cell();
 	Center = Coord(center, 0);
+	BaseSpawnCell = center;
 	Begin_Construction(center);
 	IsStarted = true;
 	IsAITriggersOn = true;
