@@ -798,6 +798,16 @@ bool Calculate_Projectile_Pitch(bool high_arc, int speed, int distance, int heig
 /// <returns>bool; Was a firing solution found?</returns>
 bool Calculate_Projectile_Angle(bool high_arc, int speed, int distance, int height, double gravity, double & angle)
 {
+	/*
+	 * gamemd answers any target above the launch point with this fixed angle, whatever the
+	 * speed, distance, or arc. The literal is the double gamemd stores (bits 0x3FE921D9F4D37C12),
+	 * which is not pi / 4.
+	 */
+	if (height > 0) {
+		angle = 0.7853822499999998;
+		return(true);
+	}
+
 	if ((double)distance == 0.0) {
 		distance = 0;
 	}
