@@ -195,6 +195,8 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 | `-RelaySeed` | `1` | Seed for the jitter and the loss |
 | `-RelayBuffer` | `1024` | The largest envelope the relay accepts; see below |
 
+`tests/netsync/` holds one script per side for each map the test has been run on (`xmp29u2-side-a.txt` and `xmp29u2-side-b.txt` for `XMP29U2.MAP`, and the `xmp01t4` pair for `XMP01T4.MAP`). Pass them with `-ScriptA` and `-ScriptB`. The `XMP29U2.MAP` pair stayed in sync for about 17,800 ticks in its last run. In its last run the `XMP01T4.MAP` pair desynced at frame 12061, and the cause is not known.
+
 Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
 
 - `[Settings] BindAddress=127.0.0.1` makes each socket listen on loopback only, so nothing listens on the network.
@@ -212,7 +214,7 @@ In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that
 | `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell` | Queue an event: a mission for each object, an archive target or a sale |
 | `planning 1`, `planning 0` | `planning 1` sets this copy's mode only. Orders given while the mode is on are recorded as planned orders, and `planning 0` queues the commit that starts them |
 
-A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
+A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state: with `1000 own E1 60 60` on one side only, the runner reports a desync at frame 1000. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
 
 The out-of-sync comparison is positional: it compares line N of one report with line N of the other. One object that appears only on one side shifts every line after it, so read the first difference, not the whole list.
 

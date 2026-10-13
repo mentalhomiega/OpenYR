@@ -1,0 +1,111 @@
+; Side A (Americans, Side 0) for scripts/run_netsync.ps1 on XMP01T4.MAP. Its MCV starts at cell 57,98.
+; Every order here reaches side B through the event queue, as a player's order does.
+; Side B runs xmp01t4-side-b.txt. The two scripts use the same frames for the same kind of order and
+; different frames for the rest.
+; Timing: a structure is placed by the place lines after its produce line. A place line before the
+; structure is complete does nothing, and one after it places it, so each produce line is followed by
+; place lines over a window that covers its build time. The windows assume about 40 frames a second.
+; Run: scripts/run_netsync.ps1 -Build agent17 -Map XMP01T4.MAP -ScriptA tests/netsync/xmp01t4-side-a.txt -ScriptB tests/netsync/xmp01t4-side-b.txt -Seconds 400
+; No Chronosphere is built in these runs, so the fire at 15000 has no effect.
+1 log netsync side A: base, army, planning, attack and superweapon orders
+40 select AMCV
+60 command DeployObject
+300 produce GAPOWR
+600 place GAPOWR
+700 place GAPOWR
+800 place GAPOWR
+900 place GAPOWR
+1000 place GAPOWR
+1050 produce GAPILE
+1350 place GAPILE
+1450 place GAPILE
+1550 place GAPILE
+1650 place GAPILE
+1700 produce GAREFN
+2800 place GAREFN
+2900 place GAREFN
+3000 place GAREFN
+3100 place GAREFN
+3200 place GAREFN
+3250 produce GAOREP
+3650 place GAOREP
+3750 place GAOREP
+3850 place GAOREP
+3950 place GAOREP
+4050 place GAOREP
+4150 place GAOREP
+4250 place GAOREP
+4350 place GAOREP
+4450 place GAOREP
+4500 produce GAWEAP
+5100 place GAWEAP
+5200 place GAWEAP
+5300 place GAWEAP
+5400 place GAWEAP
+5500 place GAWEAP
+5600 place GAWEAP
+5700 place GAWEAP
+5800 place GAWEAP
+5900 place GAWEAP
+5950 produce E1
+5960 produce MTNK
+6050 place E1
+6100 place MTNK
+6150 place E1
+6200 place MTNK
+6250 place E1
+6300 place MTNK
+6350 place E1
+6400 place MTNK
+6450 place E1
+6500 place MTNK
+6550 place E1
+6600 place MTNK
+6650 place E1
+6700 place MTNK
+6750 place E1
+6800 place MTNK
+6850 place E1
+6900 rally GAWEAP 53 92
+6910 primary GAWEAP
+6920 move E1 53 92
+6950 stop E1
+7000 clickcell E1 50 90
+7050 planning 1
+7070 move E1 50 88
+7090 move MTNK 50 88
+7110 planstate E1
+7150 planning 0
+7200 produce GAPOWR
+7600 place GAPOWR
+7700 place GAPOWR
+7800 place GAPOWR
+7900 place GAPOWR
+8000 produce GATECH
+8500 place GATECH
+8600 place GATECH
+8700 place GATECH
+8800 place GATECH
+8900 place GATECH
+9000 place GATECH
+9100 produce GACSPH
+9500 place GACSPH
+9550 place GACSPH
+9600 place GACSPH
+9650 place GACSPH
+9700 place GACSPH
+9750 place GACSPH
+9800 place GACSPH
+9900 attack MTNK
+9950 strikeobj GAPILE 99 148 10 all
+10000 strike E1 99 148
+10050 rally GAPILE 50 91
+10200 dump
+10300 where MTNK
+10400 supers
+11000 sell 56 95
+11500 attack MTNK
+12000 dump
+13000 supers
+15000 fire ChronoSphereSpecial 99 148
+15500 dump

@@ -1,0 +1,108 @@
+; Side B (Russians, Side 8) for scripts/run_netsync.ps1 on XMP29U2.MAP. Its MCV starts at cell 65,20.
+; Every order here reaches side A through the event queue, as a player's order does.
+; Side A runs xmp29u2-side-a.txt. Frames match side A's for the same kind of order.
+; Timing works as on side A: each produce line is followed by place lines over its build window.
+; Run: scripts/run_netsync.ps1 -Build agent17 -Map XMP29U2.MAP -ScriptA tests/netsync/xmp29u2-side-a.txt -ScriptB tests/netsync/xmp29u2-side-b.txt -Seconds 400
+; The fire at 14000 is the Spy Plane, the one super weapon this side owns in these runs.
+1 log netsync side B: base, army, planning, attack and superweapon orders
+40 select SMCV
+60 command DeployObject
+300 produce NAPOWR
+600 place NAPOWR
+700 place NAPOWR
+800 place NAPOWR
+900 place NAPOWR
+1000 place NAPOWR
+1050 produce NAHAND
+1350 place NAHAND
+1450 place NAHAND
+1550 place NAHAND
+1650 place NAHAND
+1700 produce NAREFN
+2800 place NAREFN
+2900 place NAREFN
+3000 place NAREFN
+3100 place NAREFN
+3200 place NAREFN
+3250 produce NARADR
+3650 place NARADR
+3750 place NARADR
+3850 place NARADR
+3950 place NARADR
+4050 place NARADR
+4150 place NARADR
+4250 place NARADR
+4350 place NARADR
+4450 place NARADR
+4500 produce NAWEAP
+5100 place NAWEAP
+5200 place NAWEAP
+5300 place NAWEAP
+5400 place NAWEAP
+5500 place NAWEAP
+5600 place NAWEAP
+5700 place NAWEAP
+5800 place NAWEAP
+5900 place NAWEAP
+5950 produce E2
+5960 produce HTNK
+6050 place E2
+6100 place HTNK
+6150 place E2
+6200 place HTNK
+6250 place E2
+6300 place HTNK
+6350 place E2
+6400 place HTNK
+6450 place E2
+6500 place HTNK
+6550 place E2
+6600 place HTNK
+6650 place E2
+6700 place HTNK
+6750 place E2
+6800 place HTNK
+6850 place E2
+6900 rally NAWEAP 63 17
+6910 primary NAWEAP
+6920 move E2 63 17
+6950 stop E2
+7000 clickcell E2 61 15
+7050 planning 1
+7070 move E2 61 16
+7090 move HTNK 61 16
+7110 planstate E2
+7150 planning 0
+7200 produce NAPOWR
+7600 place NAPOWR
+7700 place NAPOWR
+7800 place NAPOWR
+7900 place NAPOWR
+8000 produce NATECH
+8500 place NATECH
+8600 place NATECH
+8700 place NATECH
+8800 place NATECH
+8900 place NATECH
+9000 place NATECH
+9100 produce NAIRON
+9500 place NAIRON
+9550 place NAIRON
+9600 place NAIRON
+9650 place NAIRON
+9700 place NAIRON
+9750 place NAIRON
+9800 place NAIRON
+9900 attack HTNK
+9950 strikeobj YACNST 89 41 6 all
+10000 strike E2 89 41
+10050 rally NAHAND 63 14
+10200 dump
+10300 where HTNK
+10400 supers
+11000 sell 65 17
+11500 attack HTNK
+12000 dump
+13000 supers
+14000 fire SpyPlaneSpecial 89 41
+15500 dump
