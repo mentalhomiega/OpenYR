@@ -12147,6 +12147,59 @@ bool MapClass::Damage_Bridge(Cell const & cell)
 }
 
 
+static bool Is_Any_Bridge_Cell(CellClass const * cptr)
+{
+	return(cptr->Is_Overlay_Low_Bridge() || cptr->Is_Overlay_Bridge() || cptr->Is_Overlay_Rail_Bridge() || cptr->Is_Tile_Bridge() || cptr->Is_Tile_Train_Bridge());
+}
+
+
+/// <summary>
+/// Brings down the bridge span beside a bridge repair hut, if a span can be found.
+/// A hut's C4 charge going off (BuildingClass::Update, 0x43FB20) and an Ivan bomb on the hut
+/// (BombClass::Detonate, 0x438720) both call this. It starts from each bridge cell in the 5x5
+/// block around the hut and walks up to 16 cells each way along the east-west and north-south
+/// axes. Each cell it reaches is damaged, and the high and train span routines are tried there.
+/// A routine that reports a span down ends the search. The hut itself is not damaged.
+/// gamemd's DestroyConcreteBridgeAt (0x574000) and DestroyWoodBridgeAt (0x574C20) are the
+/// routines this stands in for; the walk is not a port of their span logic.
+/// </summary>
+/// <param name="cell">The cell the hut stands on.</param>
+/// <returns>bool; Did a span routine report that a span came down? Cells can be damaged with false returned.</returns>
+bool MapClass::Destroy_Bridge_At(Cell const & cell)
+{
+	for (int x = -2; x < 3; x++) {
+		for (int y = -2; y < 3; y++) {
+			Cell const start = cell + Cell(x, y);
+			if (!Is_Valid(start) || !Is_Any_Bridge_Cell(&Map[start])) {
+				continue;
+			}
+			for (FacingType const axis : {FACING_E, FACING_S}) {
+				for (FacingType const dir : {axis, Facing_Sub(axis, FACING_180)}) {
+					CellClass * walk = &Map[start];
+					for (int step = 0; step < 16 && Is_Any_Bridge_Cell(walk); step++) {
+						for (int tries = 0; tries < 4; tries++) {
+							if (Damage_Bridge(walk->CellID)) {
+								return(true);
+							}
+						}
+						if (Destroy_High_Bridge_Span(walk->CellID, axis, NULL)) {
+							Destroy_High_Bridge_Connections(walk->CellID);
+							return(true);
+						}
+						if (Destroy_Train_Bridge_Span(walk->CellID, axis, NULL)) {
+							Destroy_Train_Bridge_Connections(walk->CellID);
+							return(true);
+						}
+						walk = &walk->Adjacent_Cell(dir);
+					}
+				}
+			}
+		}
+	}
+	return(false);
+}
+
+
 /// <summary>
 /// Determines if there is a broken bridge here worth repairing.
 /// This routine is used when something tries to repair a bridge. The search is loose enough

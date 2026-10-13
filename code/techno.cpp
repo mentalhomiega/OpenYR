@@ -8087,6 +8087,14 @@ void TechnoClass::Detonate_Bomb(void)
 		new AnimClass(anim, coord);
 	}
 	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true);
+
+	/*
+	 * A bridge repair hut that carries the bomb also runs the bridge search beside it once the
+	 * bomb has gone off (BombClass::Detonate, 0x438720).
+	 */
+	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut) {
+		Map.Destroy_Bridge_At(Get_Cell());
+	}
 }
 
 

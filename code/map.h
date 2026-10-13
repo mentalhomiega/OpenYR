@@ -165,6 +165,7 @@ class MapClass: public GScreenClass
 		void Repair_Train_Bridge(Cell const & cell);
 		void Repair_Bridge(Cell const & cell);
 		bool Can_Repair_Bridge(Cell const & cell);
+		bool Destroy_Bridge_At(Cell const & cell);
 
 	private:
 

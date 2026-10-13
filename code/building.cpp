@@ -1894,12 +1894,25 @@ void BuildingClass::AI(void)
 	*/
 	if (IsGoingToBlow && CountDown == 0) {
 		TechnoClass *saboteur = (TechnoClass *)(WhomToRepay);
-		int damage = Strength;
-		Take_Damage(damage, 0, Rule->C4Warhead, saboteur, true);
-		if (!IsActive) {
-			return;
+
+		/*
+		 * A bridge repair hut does not explode. Its charge runs the bridge search beside it and is
+		 * then cleared, whether or not a span came down (BuildingClass::Update, 0x43FB20).
+		 */
+		if (Class->IsBridgeRepairHut) {
+			Map.Destroy_Bridge_At(Get_Cell());
+			IsGoingToBlow = false;
+			IsC4Applied = false;
+			WhomToRepay = NULL;
+			Mark(MARK_CHANGE);
+		} else {
+			int damage = Strength;
+			Take_Damage(damage, 0, Rule->C4Warhead, saboteur, true);
+			if (!IsActive) {
+				return;
+			}
+			Mark(MARK_CHANGE);
 		}
-		Mark(MARK_CHANGE);
 	}
 
 	/*
