@@ -12147,56 +12147,627 @@ bool MapClass::Damage_Bridge(Cell const & cell)
 }
 
 
-static bool Is_Any_Bridge_Cell(CellClass const * cptr)
+/*
+ * The cell at this location, or NULL when the map keeps no cell there. The bridge routines
+ * below treat NULL as gamemd's InvalidCell: no flags, no overlay and no tile.
+ */
+static CellClass * Bridge_Cell_At(Cell const & cell)
 {
-	return(cptr->Is_Overlay_Low_Bridge() || cptr->Is_Overlay_Bridge() || cptr->Is_Overlay_Rail_Bridge() || cptr->Is_Tile_Bridge() || cptr->Is_Tile_Train_Bridge());
+	int cellnum = cell.X + cell.Y * MAP_CELL_H;
+	if (cellnum < 0 || cellnum >= MAP_CELL_TOTAL || !Map.Is_Valid(cell)) {
+		return(NULL);
+	}
+	return(&Map[cell]);
+}
+
+
+/*
+ * The 1-based position of a cell's tile within the tile set that starts at set. A NULL cell
+ * gets a position that no set can hold.
+ */
+static int Bridge_Tile_Position(CellClass const * cptr, IsometricTileType set)
+{
+	if (cptr == NULL) {
+		return(-0x7FFFFFFF);
+	}
+	return((int)cptr->ITType - (int)set + 1);
+}
+
+
+/*
+ * Whether the cell is a road or railway bridge tile. OpenTS sets no under-bridge or deck flags on
+ * the tiles of a tile-built span, so for such a cell the tile stands in for those flags.
+ */
+static bool Is_Bridge_Tile(CellClass const * cptr)
+{
+	return(cptr != NULL && (cptr->Is_Tile_Bridge() || cptr->Is_Tile_Train_Bridge()));
+}
+
+
+/*
+ * The position of a bridge tile within the set it belongs to: the railway set for a railway
+ * tile, and the road set for anything else (gamemd's concrete routine uses the road set).
+ */
+static int Bridge_Position(CellClass const * cptr)
+{
+	if (cptr != NULL && !cptr->Is_Tile_Bridge() && cptr->Is_Tile_Train_Bridge()) {
+		return(Bridge_Tile_Position(cptr, IsometricTileTypeClass::TrainBridgeSet));
+	}
+	return(Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet));
+}
+
+
+/*
+ * gamemd's flag 0x100: the cell lies under a bridge deck.
+ */
+static bool Is_Under_Bridge(CellClass const * cptr)
+{
+	return(cptr != NULL && (cptr->IsUnderBridge || Is_Bridge_Tile(cptr)));
+}
+
+
+/*
+ * gamemd's flag 0x80: the cell is itself the bridge deck, not a cell that points at one.
+ */
+static bool Is_Bridge_Deck(CellClass const * cptr)
+{
+	return(cptr != NULL && (cptr->IsBridgeDeck || Is_Bridge_Tile(cptr)));
+}
+
+
+/*
+ * Whether a bridge tile position is an east-west piece: a middle piece of the first set or an
+ * end piece at the top left or bottom right.
+ */
+static bool Is_East_West_Position(int pos)
+{
+	return(pos == IsometricTileTypeClass::BridgeTopLeft1 || pos == IsometricTileTypeClass::BridgeTopLeft2 ||
+		pos == IsometricTileTypeClass::BridgeBottomRight1 || pos == IsometricTileTypeClass::BridgeBottomRight2 ||
+		(pos >= IsometricTileTypeClass::BridgeMiddle1 && pos <= IsometricTileTypeClass::BridgeMiddle1 + 3));
+}
+
+
+/*
+ * Whether a bridge tile position is a north-south piece.
+ */
+static bool Is_North_South_Position(int pos)
+{
+	return(pos == IsometricTileTypeClass::BridgeTopRight1 || pos == IsometricTileTypeClass::BridgeTopRight2 ||
+		pos == IsometricTileTypeClass::BridgeBottomLeft1 || pos == IsometricTileTypeClass::BridgeBottomLeft2 ||
+		(pos >= IsometricTileTypeClass::BridgeMiddle2 && pos <= IsometricTileTypeClass::BridgeMiddle2 + 3));
+}
+
+
+/*
+ * gamemd's flag 0x800: the bridge runs east and west. A tile takes its axis from its position.
+ */
+static bool Is_East_West_Bridge(CellClass const * cptr)
+{
+	if (cptr == NULL) {
+		return(false);
+	}
+	if (Is_Bridge_Tile(cptr)) {
+		int const pos = Bridge_Position(cptr);
+		if (Is_East_West_Position(pos)) {
+			return(true);
+		}
+		if (Is_North_South_Position(pos)) {
+			return(false);
+		}
+	}
+	return(cptr->IsBridgeEastWest);
+}
+
+
+/*
+ * Whether a cell carries the bridge state the destruction walk follows: it lies under a bridge
+ * deck (gamemd flag 0x100) or it is a footprint left by a destroyed span (flag 0x400).
+ */
+static bool Has_Bridge_Mark(CellClass const * cptr)
+{
+	return(cptr != NULL && (Is_Under_Bridge(cptr) || cptr->WasUnderBridge));
+}
+
+
+/*
+ * Whether the cell holds a wood low bridge overlay (OVERLAY_LOWBRIDGE_01..28).
+ */
+static bool Is_Wood_Bridge_Overlay_Cell(Cell const & cell)
+{
+	CellClass const * cptr = Bridge_Cell_At(cell);
+	int overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
+	return(overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_28);
+}
+
+
+/*
+ * gamemd's CellClass::IsBridgeOverlayType (0x5746C0): a span end or middle piece whose sub-tile
+ * matches its place in the set. The line search stops at the first such piece.
+ */
+static bool Is_Bridge_Span_Piece(int pos, CellClass const & cell)
+{
+	if (Is_Bridge_Tile(&cell)) {
+		return(pos >= 1 && pos <= 16);
+	}
+
+	int const sub = cell.SubTile;
+	if (sub == 12 && (pos == IsometricTileTypeClass::BridgeTopRight1 || pos == IsometricTileTypeClass::BridgeTopRight2)) {
+		return(true);
+	}
+	if (sub == 8 && (pos == IsometricTileTypeClass::BridgeTopLeft1 || pos == IsometricTileTypeClass::BridgeTopLeft2)) {
+		return(true);
+	}
+	if (sub == 4 && pos >= IsometricTileTypeClass::BridgeMiddle1 && pos <= IsometricTileTypeClass::BridgeMiddle1 + 3) {
+		return(true);
+	}
+	if (sub == 2 && pos >= IsometricTileTypeClass::BridgeMiddle2 && pos <= IsometricTileTypeClass::BridgeMiddle2 + 3) {
+		return(true);
+	}
+	return(false);
+}
+
+
+/*
+ * gamemd's 0x574600: a span piece met while walking back from the line's start. dir is the walk
+ * direction as gamemd numbers it: FACING_E for an east walk, FACING_S for a south walk.
+ */
+static bool Is_Bridge_Span_Piece_For_Walk(int pos, int dir, CellClass const & cell)
+{
+	if (Is_Bridge_Tile(&cell)) {
+		if (dir == FACING_E) {
+			return(pos == IsometricTileTypeClass::BridgeBottomRight1 || pos == IsometricTileTypeClass::BridgeBottomRight2 ||
+				(pos >= IsometricTileTypeClass::BridgeMiddle1 && pos <= IsometricTileTypeClass::BridgeMiddle1 + 3));
+		}
+		if (dir == FACING_S) {
+			return(pos == IsometricTileTypeClass::BridgeBottomLeft1 || pos == IsometricTileTypeClass::BridgeBottomLeft2 ||
+				(pos >= IsometricTileTypeClass::BridgeMiddle2 && pos <= IsometricTileTypeClass::BridgeMiddle2 + 3));
+		}
+		return(false);
+	}
+
+	int const sub = cell.SubTile;
+	int middle;
+	int expect;
+
+	if (dir == FACING_E) {
+		if (sub == 4 && (pos == IsometricTileTypeClass::BridgeBottomRight1 || pos == IsometricTileTypeClass::BridgeBottomRight2)) {
+			return(true);
+		}
+		middle = IsometricTileTypeClass::BridgeMiddle1;
+		expect = 4;
+	} else if (dir == FACING_S) {
+		if (sub == 2 && (pos == IsometricTileTypeClass::BridgeBottomLeft1 || pos == IsometricTileTypeClass::BridgeBottomLeft2)) {
+			return(true);
+		}
+		middle = IsometricTileTypeClass::BridgeMiddle2;
+		expect = 2;
+	} else {
+		return(false);
+	}
+	return(sub == expect && pos >= middle && pos <= middle + 3);
 }
 
 
 /// <summary>
-/// Brings down the bridge span beside a bridge repair hut, if a span can be found.
-/// A hut's C4 charge going off (BuildingClass::Update, 0x43FB20) and an Ivan bomb on the hut
-/// (BombClass::Detonate, 0x438720) both call this. It starts from each bridge cell in the 5x5
-/// block around the hut and walks up to 16 cells each way along the east-west and north-south
-/// axes. Each cell it reaches is damaged, and the high and train span routines are tried there.
-/// A routine that reports a span down ends the search. The hut itself is not damaged.
-/// gamemd's DestroyConcreteBridgeAt (0x574000) and DestroyWoodBridgeAt (0x574C20) are the
-/// routines this stands in for; the walk is not a port of their span logic.
+/// Destroys the wood bridge beside a bridge repair hut (gamemd DestroyWoodBridgeAt, 0x574C20).
+/// A low bridge overlay in the two-cell block around the hut is taken down along its run
+/// (Destroy_Wood_Bridge_Neighbors). Otherwise the span is found from the hut
+/// (Destroy_Bridge_Span_Near).
 /// </summary>
 /// <param name="cell">The cell the hut stands on.</param>
-/// <returns>bool; Did a span routine report that a span came down? Cells can be damaged with false returned.</returns>
-bool MapClass::Destroy_Bridge_At(Cell const & cell)
+void MapClass::Destroy_Wood_Bridge_At(Cell const & cell)
 {
 	for (int x = -2; x < 3; x++) {
 		for (int y = -2; y < 3; y++) {
-			Cell const start = cell + Cell(x, y);
-			if (!Is_Valid(start) || !Is_Any_Bridge_Cell(&Map[start])) {
-				continue;
+			Cell const probe = cell + Cell(x, y);
+			if (Is_Wood_Bridge_Overlay_Cell(probe)) {
+				Destroy_Wood_Bridge_Neighbors(probe);
+				return;
 			}
-			for (FacingType const axis : {FACING_E, FACING_S}) {
-				for (FacingType const dir : {axis, Facing_Sub(axis, FACING_180)}) {
-					CellClass * walk = &Map[start];
-					for (int step = 0; step < 16 && Is_Any_Bridge_Cell(walk); step++) {
-						for (int tries = 0; tries < 4; tries++) {
-							if (Damage_Bridge(walk->CellID)) {
-								return(true);
-							}
-						}
-						if (Destroy_High_Bridge_Span(walk->CellID, axis, NULL)) {
-							Destroy_High_Bridge_Connections(walk->CellID);
-							return(true);
-						}
-						if (Destroy_Train_Bridge_Span(walk->CellID, axis, NULL)) {
-							Destroy_Train_Bridge_Connections(walk->CellID);
-							return(true);
-						}
-						walk = &walk->Adjacent_Cell(dir);
-					}
+		}
+	}
+	Destroy_Bridge_Span_Near(cell);
+}
+
+
+/// <summary>
+/// Destroys the concrete bridge beside a bridge repair hut (gamemd DestroyConcreteBridgeAt,
+/// 0x574000). A concrete low bridge overlay (205 to 232 in gamemd's numbering) in the
+/// two-cell block ends the search. Its damage is gamemd's wall overlay redirect, which is not
+/// ported, so the bridge stays up. Otherwise the span is found from the hut
+/// (Destroy_Bridge_Span_Near).
+/// </summary>
+/// <param name="cell">The cell the hut stands on.</param>
+void MapClass::Destroy_Concrete_Bridge_At(Cell const & cell)
+{
+	for (int x = -2; x < 3; x++) {
+		for (int y = -2; y < 3; y++) {
+			CellClass const * cptr = Bridge_Cell_At(cell + Cell(x, y));
+			if (cptr != NULL && cptr->Overlay >= 205 && cptr->Overlay <= 232) {
+				return;
+			}
+		}
+	}
+	Destroy_Bridge_Span_Near(cell);
+}
+
+
+/// <summary>
+/// Finds the span that passes a hut and brings it down. This is the phase shared by gamemd's
+/// DestroyWoodBridgeAt and DestroyConcreteBridgeAt (0x574C20 and 0x574000).
+/// The search starts at the hut's cell, or at the first cell under a bridge found by walking up
+/// to three cells in each of the eight directions. The cell's bridge state gives the span's
+/// start. The walk then finds the span's end or middle piece along the bridge's line, and
+/// Damage_Bridge_At_Cell is tried up to three times on it. The walk back from that piece
+/// damages the next piece found, the same way.
+/// </summary>
+/// <param name="cell">The cell the hut stands on.</param>
+void MapClass::Destroy_Bridge_Span_Near(Cell const & cell)
+{
+	CellClass * target = Bridge_Cell_At(cell);
+
+	if (!Has_Bridge_Mark(target)) {
+		bool found = false;
+		for (int dir = 0; dir < FACING_COUNT && !found; dir++) {
+			Cell probe = cell;
+			for (int step = 0; step < 3; step++) {
+				probe = probe + AdjacentCell[dir];
+				target = Bridge_Cell_At(probe);
+				if (Has_Bridge_Mark(target)) {
+					found = true;
+					break;
 				}
 			}
 		}
 	}
-	return(false);
+
+	if (!Has_Bridge_Mark(target)) {
+		return;
+	}
+
+	Cell span = target->CellID;
+
+	/*
+	 * A cell under a destroyed span has no deck. The walk goes across the footprint, away from
+	 * the span's axis, to find the span's start.
+	 */
+	if (!Is_Under_Bridge(target)) {
+		FacingType const walk = Is_East_West_Bridge(target) ? FACING_S : FACING_E;
+		FacingType const opposite = (FacingType)(((int)walk + 4) & 7);
+		Cell cur = target->CellID;
+		for (int steps = 0; ; ) {
+			cur = cur + AdjacentCell[walk];
+			CellClass const * next = Bridge_Cell_At(cur);
+			if (next == NULL || !next->WasUnderBridge) {
+				break;
+			}
+			steps++;
+			if (steps >= 4) {
+				return;
+			}
+		}
+		span = cur + AdjacentCell[opposite] + AdjacentCell[opposite];
+
+	} else if (!Is_Bridge_Deck(target)) {
+		if (target->BridgeDeckCell != NULL) {
+			span = target->BridgeDeckCell->CellID;
+		}
+	}
+
+	FacingType const line = Is_East_West_Bridge(target) ? FACING_W : FACING_N;
+	FacingType const back = (FacingType)(((int)line + 4) & 7);
+
+	auto in_bounds = [this](Cell const & c) {
+		return(c.X >= MapRect.X && c.X <= MapRect.X + MapRect.Width && c.Y >= MapRect.Y && c.Y <= MapRect.Y + MapRect.Height);
+	};
+
+	Cell hit = span;
+	bool found = false;
+	while (in_bounds(hit)) {
+		CellClass const * cptr = Bridge_Cell_At(hit);
+		if (cptr != NULL && Is_Bridge_Span_Piece(Bridge_Position(cptr), *cptr)) {
+			found = true;
+			break;
+		}
+		hit = hit + AdjacentCell[line];
+	}
+
+	if (found) {
+		for (int tries = 0; tries < 3; tries++) {
+			if (Damage_Bridge_At_Cell(hit)) {
+				break;
+			}
+		}
+
+		Cell pos = hit;
+		while (true) {
+			pos = pos + AdjacentCell[back];
+			if (!in_bounds(pos)) {
+				break;
+			}
+			CellClass const * cptr = Bridge_Cell_At(pos);
+			if (cptr == NULL) {
+				continue;
+			}
+			int const tile = Bridge_Position(cptr);
+			if (!Is_Bridge_Span_Piece_For_Walk(tile, (int)back, *cptr)) {
+				continue;
+			}
+			if (tile == -1) {
+				break;
+			}
+			Cell const beyond = pos + AdjacentCell[line];
+			for (int tries = 0; tries < 3; tries++) {
+				if (Damage_Bridge_At_Cell(beyond)) {
+					break;
+				}
+			}
+			break;
+		}
+	}
+
+	Zone_Reset();
+}
+
+
+/// <summary>
+/// Takes down the wood low bridge run beside a bridge repair hut, from a low bridge cell that
+/// the hut's block search found (gamemd 0x574780, the wood counterpart of the concrete neighbor
+/// routine 0x5749C0). The cell's overlay picks the run's axis, and the neighboring cells pick
+/// the cell the run is walked from.
+/// </summary>
+/// <param name="cell">A wood low bridge cell.</param>
+void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
+{
+	CellClass const * cptr = Bridge_Cell_At(cell);
+	int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
+
+	bool const straight = (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09) ||
+		(overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22) ||
+		overlay == OVERLAY_LOWBRIDGE_27;
+
+	if (straight) {
+		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(0, -1))) {
+			Detonate_Wood_Bridge_Run(cell + Cell(0, 1), FACING_E);
+			return;
+		}
+		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(0, -2))) {
+			Detonate_Wood_Bridge_Run(cell, FACING_E);
+			return;
+		}
+		Detonate_Wood_Bridge_Run(cell + Cell(0, -1), FACING_E);
+		return;
+	}
+
+	bool const side = (overlay >= OVERLAY_LOWBRIDGE_10 && overlay <= OVERLAY_LOWBRIDGE_18) ||
+		(overlay >= OVERLAY_LOWBRIDGE_23 && overlay <= OVERLAY_LOWBRIDGE_26) ||
+		overlay == OVERLAY_LOWBRIDGE_28;
+
+	if (side) {
+		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(-1, 0))) {
+			Detonate_Wood_Bridge_Run(cell + Cell(1, 0), FACING_S);
+			return;
+		}
+		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(-2, 0))) {
+			Detonate_Wood_Bridge_Run(cell, FACING_S);
+			return;
+		}
+		Detonate_Wood_Bridge_Run(cell + Cell(-1, 0), FACING_S);
+	}
+}
+
+
+/// <summary>
+/// Walks a run of wood low bridge overlays along one axis, showing explosions over the middle of
+/// it and damaging up to four pieces (gamemd 0x575220 for east and west, 0x575540 for north and
+/// south). The walk ends early at the first cell that is not a wood low bridge.
+/// </summary>
+/// <param name="cell">A cell on the run.</param>
+/// <param name="axis">FACING_E to walk east and west, FACING_S to walk north and south.</param>
+void MapClass::Detonate_Wood_Bridge_Run(Cell const & cell, FacingType axis)
+{
+	bool const east_west = axis == FACING_E;
+	int const ax = east_west ? 1 : 0;
+	int const ay = 1 - ax;
+
+	/*
+	 * Overlay 100 (LOWBRIDGE_27) draws no explosions along an east-west run, and overlay 101
+	 * (LOWBRIDGE_28) draws none along a north-south run.
+	 */
+	int const skip = east_west ? OVERLAY_LOWBRIDGE_27 : OVERLAY_LOWBRIDGE_28;
+
+	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
+
+	/*
+	 * The run is counted in each direction. Each count includes the first cell that is not wood.
+	 * The walk starts at the middle of the run and goes toward the longer side.
+	 */
+	int negative = 0;
+	do {
+		negative++;
+	} while (Is_Wood_Bridge_Overlay_Cell(at(-negative)));
+
+	int positive = 0;
+	do {
+		positive++;
+	} while (Is_Wood_Bridge_Overlay_Cell(at(positive)));
+
+	int const dir = positive < negative ? -1 : 1;
+	int t = -((negative - positive) / 2);
+
+	for (int n = 0; n < 4; n++) {
+		Cell const cur = at(t);
+		CellClass const * cptr = Bridge_Cell_At(cur);
+		int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
+
+		if (overlay != skip) {
+			for (int side = -1; side <= 1; side++) {
+				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
+				Spawn_Bridge_Explosion(spot);
+			}
+		}
+
+		for (int tries = 0; tries < 3; tries++) {
+			if (Damage_Bridge(cur)) {
+				break;
+			}
+		}
+
+		t += dir;
+		if (!Is_Wood_Bridge_Overlay_Cell(at(t))) {
+			break;
+		}
+	}
+
+	Zone_Reset();
+}
+
+
+/// <summary>
+/// Shows one bridge explosion over a cell of a span that is coming down. Nothing is shown when
+/// the rules list no bridge explosions or the map has no cell there.
+/// </summary>
+/// <param name="cell">The cell the explosion lands on.</param>
+void MapClass::Spawn_Bridge_Explosion(Cell const & cell)
+{
+	CellClass const * cptr = Bridge_Cell_At(cell);
+	if (cptr == NULL || Rule->BridgeExplosions.Count() == 0) {
+		return;
+	}
+
+	Coord coord = cell.As_Coord();
+	coord.X += Random_Double(-0.5, 0.5) * 50;
+	coord.Y += Random_Double(-0.5, 0.5) * 50;
+	coord.Z = LEVEL_LEPTON_H * cptr->Height;
+
+	new AnimClass(Rule->BridgeExplosions[Random_Pick(0, Rule->BridgeExplosions.Count() - 1)], coord, Random_Pick(1, 5));
+}
+
+
+/// <summary>
+/// Damages the bridge at one cell and picks the routine that does it (gamemd
+/// MapClass::Damage_Bridge_At_Cell, 0x587180). A wood low bridge overlay is damaged with
+/// Damage_Bridge. A deck cell whose owner carries a road bridge overlay is blown up as a road
+/// span (Blow_Up_High_Bridge_Area). A railway middle piece, or a cell whose owner carries
+/// overlay 237 or 238, is blown up as a railway span (Blow_Up_Train_Bridge_At). A road middle
+/// piece is left alone. A concrete low bridge overlay is not ported (see
+/// Destroy_Concrete_Bridge_At).
+/// </summary>
+/// <param name="cell">The cell to damage.</param>
+/// <returns>bool; Did a span come down?</returns>
+bool MapClass::Damage_Bridge_At_Cell(Cell const & cell)
+{
+	bool result = false;
+	CellClass * cptr = Bridge_Cell_At(cell);
+	int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
+
+	if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_26) {
+		result = Damage_Bridge(cell);
+
+	} else if (overlay < 206 || overlay > 230) {
+		CellClass * owner = NULL;
+		bool handled = false;
+
+		if (Is_Under_Bridge(cptr)) {
+			owner = Is_Bridge_Deck(cptr) ? cptr : cptr->BridgeDeckCell;
+			if (owner != NULL && (owner->Overlay == OVERLAY_BRIDGE1 || owner->Overlay == OVERLAY_BRIDGE2)) {
+				result = Blow_Up_High_Bridge_Area(cell);
+				handled = true;
+			}
+		}
+
+		if (!handled) {
+			int const road = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+			bool const road_middle = (road >= IsometricTileTypeClass::BridgeMiddle1 && road <= IsometricTileTypeClass::BridgeMiddle1 + 3) ||
+				(road >= IsometricTileTypeClass::BridgeMiddle2 && road <= IsometricTileTypeClass::BridgeMiddle2 + 3);
+
+			if (!road_middle) {
+				int const rail = Bridge_Tile_Position(cptr, IsometricTileTypeClass::TrainBridgeSet);
+				bool const rail_middle = (rail >= IsometricTileTypeClass::BridgeMiddle1 && rail <= IsometricTileTypeClass::BridgeMiddle1 + 3) ||
+					(rail >= IsometricTileTypeClass::BridgeMiddle2 && rail <= IsometricTileTypeClass::BridgeMiddle2 + 3);
+				bool const owner_rail = owner != NULL && (owner->Overlay == 237 || owner->Overlay == 238);
+
+				if (rail_middle || owner_rail) {
+					result = Blow_Up_Train_Bridge_At(cell);
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < PendingBridgeCells.Count(); i++) {
+		Map[PendingBridgeCells[i]].On_Bridge_Collapse();
+	}
+	PendingBridgeCells.Clear();
+
+	return(result);
+}
+
+
+/// <summary>
+/// Brings down the road span through a cell (gamemd CellClass::BlowUpBridgeArea, 0x576BA0).
+/// The span follows the cell's bridge axis. It is taken down with Destroy_High_Bridge_Span, and
+/// what is left of it with Destroy_High_Bridge_Connections.
+/// </summary>
+/// <param name="cell">A cell of the span.</param>
+/// <returns>bool; Did the span come down?</returns>
+bool MapClass::Blow_Up_High_Bridge_Area(Cell const & cell)
+{
+	FacingType const dir = Is_East_West_Bridge(Bridge_Cell_At(cell)) ? FACING_E : FACING_S;
+	if (!Destroy_High_Bridge_Span(cell, dir, NULL)) {
+		return(false);
+	}
+	Destroy_High_Bridge_Connections(cell);
+	return(true);
+}
+
+
+/// <summary>
+/// Brings down the railway span through a cell (gamemd CellClass::BlowUpBridgeAt, 0x571490).
+/// The span follows the cell's bridge axis. It is taken down with Destroy_Train_Bridge_Span, and
+/// what is left of it with Destroy_Train_Bridge_Connections.
+/// </summary>
+/// <param name="cell">A cell of the span.</param>
+/// <returns>bool; Did the span come down?</returns>
+bool MapClass::Blow_Up_Train_Bridge_At(Cell const & cell)
+{
+	FacingType const dir = Is_East_West_Bridge(Bridge_Cell_At(cell)) ? FACING_E : FACING_S;
+	if (!Destroy_Train_Bridge_Span(cell, dir, NULL)) {
+		return(false);
+	}
+	Destroy_Train_Bridge_Connections(cell);
+	return(true);
+}
+
+
+/// <summary>
+/// Brings down the bridge beside a bridge repair hut when its C4 charge or Ivan bomb goes off.
+/// A railway tile or a wood low bridge overlay in the two-cell block around the hut selects the
+/// wood routine (Destroy_Wood_Bridge_At). Anything else selects the concrete routine
+/// (Destroy_Concrete_Bridge_At). gamemd makes the same choice in BuildingClass::AI (0x43FB20)
+/// and in BombClass::Detonate (0x438720). The hut itself is not damaged.
+/// </summary>
+/// <param name="cell">The cell the hut stands on.</param>
+void MapClass::Destroy_Bridge_At(Cell const & cell)
+{
+	bool wood = false;
+
+	for (int x = -2; x < 3; x++) {
+		for (int y = -2; y < 3; y++) {
+			CellClass const * cptr = Bridge_Cell_At(cell + Cell(x, y));
+			if (cptr == NULL) {
+				continue;
+			}
+			if (cptr->Is_Tile_Train_Bridge() || (cptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cptr->Overlay <= OVERLAY_LOWBRIDGE_28)) {
+				wood = true;
+			}
+		}
+	}
+
+	if (wood) {
+		Destroy_Wood_Bridge_At(cell);
+	} else {
+		Destroy_Concrete_Bridge_At(cell);
+	}
 }
 
 

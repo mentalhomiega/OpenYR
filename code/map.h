@@ -165,7 +165,7 @@ class MapClass: public GScreenClass
 		void Repair_Train_Bridge(Cell const & cell);
 		void Repair_Bridge(Cell const & cell);
 		bool Can_Repair_Bridge(Cell const & cell);
-		bool Destroy_Bridge_At(Cell const & cell);
+		void Destroy_Bridge_At(Cell const & cell);
 
 	private:
 
@@ -205,6 +205,19 @@ class MapClass: public GScreenClass
 		bool Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty);
 		void Destroy_High_Bridge_Connections(Cell const & cell);
 		void Spring_Bridge_Destruction_Triggers(Cell cell1, Cell cell2);
+
+		/*
+		 * gamemd's DestroyWoodBridgeAt and DestroyConcreteBridgeAt and the routines they call.
+		 */
+		void Destroy_Wood_Bridge_At(Cell const & cell);
+		void Destroy_Concrete_Bridge_At(Cell const & cell);
+		void Destroy_Bridge_Span_Near(Cell const & cell);
+		void Destroy_Wood_Bridge_Neighbors(Cell const & cell);
+		void Detonate_Wood_Bridge_Run(Cell const & cell, FacingType axis);
+		void Spawn_Bridge_Explosion(Cell const & cell);
+		bool Damage_Bridge_At_Cell(Cell const & cell);
+		bool Blow_Up_High_Bridge_Area(Cell const & cell);
+		bool Blow_Up_Train_Bridge_At(Cell const & cell);
 
 		/*
 		 * Train and high bridge span repair walkers
