@@ -1,11 +1,10 @@
 ---
 format_id: mapsel-ini
-title: MAPSEL.INI
-summary: Lists each campaign house's stages in order, and the mission, map-screen presentation and choices each stage sets.
+title: MAPSELMD.INI
+summary: Lists each campaign side's stages in order, and the mission, map-screen presentation and choices each stage sets.
 kind: file
 filenames:
-  - MAPSEL.INI
-  - MAPSEL01.INI
+  - MAPSELMD.INI
 source_files:
   - code/mschoice.cpp
   - code/mapsel.cpp
@@ -22,17 +21,15 @@ When a campaign mission is won and the campaign continues, the next mission come
 
 ## Which file is read
 
-The base game reads `MAPSEL.INI`. After a mission whose [`RequiredAddOn`](/keys/requiredaddon-scenarios/) names an expansion, the game reads `MAPSEL<nn>.INI` instead, where `<nn>` is the expansion's two-digit number. After a Firestorm mission it reads `MAPSEL01.INI`.
-
-The game reads the house section named after the player's house, the house the mission's [`Player=`](/keys/player/#scope-scenarios) sets. A campaign played as GDI never reads the Nod section. A missing file, or a house section with no numbered entries, fails the read; [the win sequence](/systems/campaign-progression/#the-win-sequence) covers what happens then.
+Every campaign mission reads `MAPSELMD.INI`, whichever expansion it belongs to. The game reads the section named after the side of the player's house. The side comes from the house's `Side=` key in the rules, so a GDI house such as Americans reads `[GDI]`, and a Nod house such as Russians reads `[Nod]`. A house on no side, or on a side with no section of its own, such as the third side, fails the read. So does a missing file, or a side section with no numbered entries. [The win sequence](/systems/campaign-progression/#the-win-sequence) covers what happens then.
 
 The file is read again at every advance, so an edit takes effect at the next advance.
 
-## House sections
+## Side sections
 
-A house section lists the stages of that house's campaign in order. Each numbered key from `1` upward names a stage section. The list ends at the first missing number, so number the entries from `1` without gaps. At most 100 stages are read.
+A side section lists the stages of that side's campaign in order. Each numbered key from `1` upward names a stage section. The list ends at the first missing number, so number the entries from `1` without gaps. At most 100 stages are read.
 
-A stage's position in the list is its stage number, which the campaign keeps to find the current stage at the next advance. Inserting, removing or reordering entries changes the stage numbers, so a campaign saved before the edit continues from whichever stage now holds its number.
+A stage's position in the list is its stage number. The campaign keeps the number of the stage the player has reached, and an advance with [`SkipMapSelect=yes`](/keys/skipmapselect/) finds the next stage by that number. Inserting, removing or reordering entries changes the stage numbers, so a campaign saved before the edit continues from whichever stage now holds its number. The map selection screen does not use the number. It opens at the stage whose `Scenario=` is the mission just won.
 
 Two further keys name the sections that hold the map selection screen's decoration:
 
@@ -41,7 +38,7 @@ Two further keys name the sections that hold the map selection screen's decorati
 
 ## Stage sections
 
-Each stage has a section whose name is the label the house list uses. Three of its keys describe the stage as a destination: the mission it plays, and the description and voice-over the map selection screen gives a region that leads to it.
+Each stage has a section whose name is the label the side list uses. Three of its keys describe the stage as a destination: the mission it plays, and the description and voice-over the map selection screen gives a region that leads to it.
 
 | Key | Value |
 | --- | --- |
@@ -65,11 +62,11 @@ Once its delay has run, a caption appears with its first `<delay>` + 1 character
 
 The numbered keys of a stage section are its choices. Each key is a click-map pixel color from `0` to `255`, and its value is the label of the stage that color selects. When the player clicks, the game reads the color under the cursor from the click map and looks it up among these keys. A color with no entry selects nothing. Labels are matched without regard to case. The key numbers are colors, so they need not start at `1` or run without gaps.
 
-List every stage a choice names in the house section. A region whose stage is not listed shows no description while the cursor is over it, and clicking it crashes the game.
+List every stage a choice names in the side section. A region whose stage is not listed shows no description while the cursor is over it, and clicking it crashes the game.
 
-This excerpt shows a house list and two stage sections, and the two shapes a choice list takes:
+This excerpt shows a side list and two stage sections, and the two shapes a choice list takes:
 
-```ini title="MAPSEL.INI"
+```ini title="MAPSELMD.INI"
 [GDI]
 Anims=Anims
 Sounds=GDISFX
@@ -100,13 +97,13 @@ ClickMap=GDICLK01.PCX
 4=GDI05 ;3B
 ```
 
-`[GDI]` lists stages 1 to 4 in the order written. Winning `GDI1A.MAP`, the mission of stage `[GDI01]`, shows one choice: color 2 leads to `[GDI02]`. Winning `GDI2A.MAP` shows two. Color 3 leads to `[GDI04]`, with its marker at 290,88, and color 4 leads to `[GDI05]`, with its marker at 218,108. For the second choice to work, `[GDI]` must also list `GDI05`, which this excerpt leaves out. The excerpt also leaves out the animation and sound sections the house section names; both are described below.
+`[GDI]` lists stages 1 to 4 in the order written. Winning `GDI1A.MAP`, the mission of stage `[GDI01]`, shows one choice: color 2 leads to `[GDI02]`. Winning `GDI2A.MAP` shows two. Color 3 leads to `[GDI04]`, with its marker at 290,88, and color 4 leads to `[GDI05]`, with its marker at 218,108. For the second choice to work, `[GDI]` must also list `GDI05`, which this excerpt leaves out. The excerpt also leaves out the animation and sound sections the side section names; both are described below.
 
 ## How a stage is chosen
 
 Both ways of advancing end at a stage of this file, never directly at a mission file.
 
-With the map screen, the movie of the stage just won plays, its overlays and target markers appear, and the player clicks one of the regions its click map colors. The music track `MAPS` plays meanwhile, or `FSMAP` when the game requires Firestorm. The clicked region's entry names the next stage, and that stage's `Scenario=` value is the mission that loads.
+With the map screen, the stage whose `Scenario=` is the mission just won opens: its movie plays, its overlays and target markers appear, and the player clicks one of the regions its click map colors. The music track `MAPS` plays meanwhile, or `FSMAP` when the game requires Firestorm. The clicked region's entry names the next stage, and that stage's `Scenario=` value is the mission that loads. If no stage of the side has the mission just won as its `Scenario=`, the choice fails and the mission just won loads again.
 
 Without the screen, when the mission sets [`SkipMapSelect=yes`](/keys/skipmapselect/), the name given by [`NextScenario=`](/keys/nextscenario/) or [`AltNextScenario=`](/keys/altnextscenario/) is compared, ignoring case, with the `Scenario=` value of each stage the current stage offers. The stages are tried in order of their key numbers, and the first match is taken. Only stages that the current stage offers can be reached this way.
 

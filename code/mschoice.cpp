@@ -12,7 +12,6 @@
 #include "mschoice.h"
 
 #include "_mixfile.h"
-#include "addon.h"
 #include "ccfile.h"
 #include "ccini.h"
 #include "data.h"
@@ -46,14 +45,14 @@ MapChoice::~MapChoice(void)
 
 
 /// <summary>
-/// Loads the map selection data for the specified house.
-/// This routine reads the map selection control file belonging to whichever addon is
-/// required and builds the stages, background animations and sound effects that the
-/// map selection screen presents. Any previously loaded data is discarded first.
+/// Loads the map selection data for the specified side.
+/// This routine reads MAPSELMD.INI, the progression file the game reads for every campaign,
+/// and builds the stages, background animations and sound effects that the map selection
+/// screen presents. Any previously loaded data is discarded first.
 /// </summary>
-/// <param name="house_name">Name of the house whose campaign is being presented.</param>
+/// <param name="side_name">Name of the side whose section lists the campaign stages, such as GDI or Nod.</param>
 /// <returns>bool; Was the map selection data loaded?</returns>
-bool MapChoice::Initialize(char const * house_name)
+bool MapChoice::Initialize(char const * side_name)
 {
 	char buffer[256];
 	char key[64];
@@ -65,15 +64,10 @@ bool MapChoice::Initialize(char const * house_name)
 
 	Deinit();
 
-	if (Get_Required_Addon() > ADDON_BASE_GAME) {
-		sprintf(buffer, "MAPSEL%02d.INI", Get_Required_Addon());
-		file.Open(buffer);
-	} else {
-		file.Open("MAPSEL.INI");
-	}
+	file.Open("MAPSELMD.INI");
 
 	if (!ini.Load(file)) {
-		DebugString("Failed to load MAPSEL.INI\n");
+		DebugString("Failed to load MAPSELMD.INI\n");
 		return(false);
 	}
 
@@ -81,7 +75,7 @@ bool MapChoice::Initialize(char const * house_name)
 
 		sprintf(key, "%d", index);
 
-		if (!ini.Get_String(house_name, key, NULL, buffer, sizeof(buffer))) {
+		if (!ini.Get_String(side_name, key, NULL, buffer, sizeof(buffer))) {
 			break;
 		}
 
@@ -99,7 +93,7 @@ bool MapChoice::Initialize(char const * house_name)
 		return(false);
 	}
 
-	if (ini.Get_String(house_name, "Anims", NULL, section, sizeof(section)) > 0) {
+	if (ini.Get_String(side_name, "Anims", NULL, section, sizeof(section)) > 0) {
 
 		if (ini.Get_String(section, "TextRect", NULL, buffer, sizeof(buffer)) > 0) {
 
@@ -147,7 +141,7 @@ bool MapChoice::Initialize(char const * house_name)
 	}
 
 	if (AudioEngine.Is_Available()) {
-		if (ini.Get_String(house_name, "Sounds", NULL, section, sizeof(section)) > 0) {
+		if (ini.Get_String(side_name, "Sounds", NULL, section, sizeof(section)) > 0) {
 			for (index = 0; index < ini.Entry_Count(section); index++) {
 				char const * entry = ini.Get_Entry(section, index);
 
@@ -220,6 +214,26 @@ MapStage * MapChoice::Find_Stage_By_Name(char const * name)
 	if (name != NULL) {
 		for (int index = 0; index < Stages.Count(); index++) {
 			if (stricmp(name, Stages[index]->Get_Stage_Label()) == 0) {
+				return(Stages[index]);
+			}
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
+/// Fetches the stage whose scenario is the named map.
+/// The comparison ignores case. The stage a campaign map belongs to is found this way, so
+/// a map started out of order still shows its own stage on the selection screen.
+/// </summary>
+/// <param name="name">File name of the scenario, such as ALL01UMD.MAP.</param>
+/// <returns>Returns with a pointer to the stage. Otherwise, NULL is returned.</returns>
+MapStage * MapChoice::Find_Stage_By_Scenario(char const * name)
+{
+	if (name != NULL) {
+		for (int index = 0; index < Stages.Count(); index++) {
+			if (stricmp(name, Stages[index]->Get_Scenario_Name()) == 0) {
 				return(Stages[index]);
 			}
 		}

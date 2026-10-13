@@ -27,10 +27,11 @@ class MapChoice
 		MapChoice(void);
 		~MapChoice(void);
 
-		bool Initialize(char const * house_name);
+		bool Initialize(char const * side_name);
 		void Deinit(void);
 
 		MapStage * Find_Stage_By_Name(char const * name);
+		MapStage * Find_Stage_By_Scenario(char const * name);
 		MapStage * Find_Stage_By_ID(unsigned short id);
 		short Get_Stage_ID(MapStage * stage);
 
