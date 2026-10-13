@@ -3122,10 +3122,7 @@ void HouseClass::AI_Super_Weapon_Defense(SuperClass const * super, Cell const & 
 
 	Coord const from = Map[base].Center_Coord();
 	Coord const to = Map[target].Center_Coord();
-	double const dx = from.X - to.X;
-	double const dy = from.Y - to.Y;
-	double const dz = from.Z - to.Z;
-	if ((int)std::sqrt(dx * dx + dy * dy + dz * dz) > Rule->AISuperDefenseDistance) {
+	if (Gamemd_Length_3D(from.X - to.X, from.Y - to.Y, from.Z - to.Z) > Rule->AISuperDefenseDistance) {
 		return;
 	}
 
