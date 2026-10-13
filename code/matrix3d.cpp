@@ -49,6 +49,7 @@
 #include "always.h"
 
 #include "matrix3d.h"
+#include "gmmath.h"
 
 
 #include <cstring>
@@ -894,12 +895,12 @@ void Matrix3D::Obj_Look_At(const Vector3 &p, const Vector3 &t, float roll)
 		yaw = 0.0;
 	}
 	else {
-		yaw = std::atan2(d.Y, d.X);
+		yaw = Gamemd_Atan2(d.Y, d.X);
 	}
 
 	float len = std::sqrt(d[1] * d[1] + d[0] * d[0]);
 
-	float pitch = std::atan2(-d.Z, len);
+	float pitch = Gamemd_Atan2(-d.Z, len);
 
 	cosy = std::cos(yaw);
 	siny = std::sin(yaw);
