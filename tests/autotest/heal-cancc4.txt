@@ -1,0 +1,61 @@
+; Healing with negative damage: a structure with CanC4=no (CAMISC06, strength 10), a structure that can be sabotaged (GAPOWR),
+; a forced heal by the base heal crate, an unforced heal by the Heal warhead (Organic), and a soldier that is warping out.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent5 -Script src-agent5/tests/autotest/heal-cancc4.txt -Seconds 150 -Filter "AUTOTEST|Exception"
+; Rule under test (ObjectClass::ReceiveDamage, 0x5F5390): a building whose type has CanC4=no takes at least one
+; point from any hit with a nonzero amount, so a heal hit by a warhead with negative damage costs it one point, even
+; at full strength. The base heal crate adds Health minus MaxStrength, which is zero for a full building, so it leaves
+; one alone. CanC4=yes structures and other objects heal by the full amount, capped at their maximum strength.
+; A warping-out unit takes no unforced damage, healing included (TechnoClass::ReceiveDamage, 0x701900); a forced hit still applies.
+; Expected: CAMISC06 4 after the first crate (it started at 5); GAPOWR 750 after the crate; the heal hits on CAMISC06 cost one
+; point each, including at full strength (10 to 9); the heal hit on GAPOWR gives 425; a second crate leaves the undamaged
+; CAMISC06 at 10; SPY keeps 50 and takes no HE damage while warping, then heals to 100 once the warp ends.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 own GAPOWR 50 36
+101 own CAMISC06 56 40
+102 own E1 60 44
+103 own SPY 60 46
+110 hurt GAPOWR 50
+111 hurt CAMISC06 50
+112 hurt SPY 50
+120 where CAMISC06
+121 where GAPOWR
+122 where SPY
+200 crate heal 56 44
+210 move E1 56 44
+300 waitcell E1 56 44 0 900
+310 where CAMISC06
+311 where GAPOWR
+312 where SPY
+400 hurt CAMISC06 50
+401 hurt GAPOWR 50
+410 where CAMISC06
+411 where GAPOWR
+420 hit CAMISC06:Organic@E1 -50
+421 where CAMISC06
+422 hit GAPOWR:Organic@E1 -50
+423 where GAPOWR
+430 hit GAPOWR:HE 100
+431 where GAPOWR
+432 hit CAMISC06:HE 1
+433 where CAMISC06
+440 hurt CAMISC06 100
+441 where CAMISC06
+450 crate heal 60 50
+455 move E1 60 50
+460 waitcell E1 60 50 0 900
+470 where CAMISC06
+471 where GAPOWR
+480 hit CAMISC06:Organic@E1 -50
+481 where CAMISC06
+490 hurt SPY 50
+500 warpout SPY 1
+501 hit SPY:Organic@E1 -50
+502 hit SPY:HE 30
+503 where SPY
+510 warpout SPY 0
+511 hit SPY:Organic@E1 -50
+512 where SPY
+600 quit

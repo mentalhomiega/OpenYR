@@ -57,6 +57,7 @@
 **	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
 **	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
 **							the Behind animation
@@ -1859,6 +1860,15 @@ void Run(StepType const & step)
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
+			}
+		}
+	} else if (step.Command == "warpout") {
+		// warpout <TypeID> <0|1>: sets or clears the warping-out flag on the player's objects of that type, without a warp effect.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->IsBeingWarpedOut = step.X != 0;
+				DebugString("AUTOTEST   warpout %s at %d,%d: %d strength %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsBeingWarpedOut, (int)techno->Strength);
 			}
 		}
 	} else if (step.Command == "cover") {
