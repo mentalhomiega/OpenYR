@@ -11,6 +11,8 @@ keys:
   - Paralyzes
   - Sonic
   - Culling
+  - Naval
+  - Organic
 related:
   - type: system
     id: temporal-weapons
@@ -41,7 +43,17 @@ A parasite weapon does not fire at a target it could not get into. It never fire
 
 ## Eating the victim
 
-A vehicle or aircraft victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A soldier instead loses all of its remaining strength at its first bite. That bite ignores the soldier's armor and defenses, so an attack dog kills a soldier at once. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time. A giant squid whose warhead has [`Culling=yes`](/keys/culling/) sinks a weak victim at its bite instead.
+A vehicle or aircraft victim takes the parasite's primary weapon `Damage` through its warhead at once and then every `ROF` frames, with the parasite as the attacker. A soldier instead loses all of its remaining strength at its first bite. That bite ignores the soldier's armor and defenses, so an attack dog kills a soldier at once. A victim other than a soldier also throws sparks from [`DefaultSparkSystem`](/keys/defaultsparksystem/) and plays the weapon's [`Anim`](/keys/anim/) each time. A naval organic parasite, such as the giant squid, does not bite this way. It [grapples](#grappling-the-victim) its victim instead.
+
+## Grappling the victim
+
+A parasite whose type is both [`Naval=yes`](/keys/naval/) and [`Organic=yes`](/keys/organic/) runs a grapple on its victim in place of the bites above. The grapple moves through four stages, one step each frame:
+
+- **Grab.** The stock `SQDG` animation plays around the victim, ten frames at three frames each. At its end the squid picks a push direction at random, left or right, and three wakes appear around the victim.
+- **Push.** The victim rocks toward that side and back: ten frames at four frames each, with its sideways angle at sin(frame x 18 degrees) x 45 degrees.
+- **Damage.** On the frame after the push ends, three splashes appear around the victim. A [`Culling=yes`](/keys/culling/) warhead may sink the victim here. Otherwise the victim takes the weapon's `Damage` through its warhead, the squid picks a new push direction at random, and three more wakes appear.
+
+The first bite lands about 70 frames after the grab starts, and a bite lands every 40 frames after that. The victim is held for the warhead's `Paralyzes` frames on every frame of the grapple. If the victim is not on water, the squid comes out at once and is not paralyzed. The grab animation is always `SQDG`; no rules key sets it.
 
 ## Holding the victim
 
@@ -51,10 +63,8 @@ A parasite whose warhead has [`Paralyzes`](/keys/paralyzes/) set paralyzes its v
 
 When the victim dies or leaves the map, the parasite comes back out on the victim's cell, or the nearest cell it can stand on. It guards there, and a [`ReselectIfLimboed=yes`](/keys/reselectiflimboed/) parasite the player had selected when it leapt is selected again. A parasite with no room to come out is lost. The Iron Curtain on a vehicle or aircraft it holds kills the parasite at once instead, and ends the victim's paralysis. A chronosphere warp over its victim kills the parasite the same way. A soldier under the curtain dies, and its parasite comes out as it does for any dead victim.
 
-A parasite that comes out is paralyzed for one `ROF` of its primary weapon. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time.
+A parasite that comes out is paralyzed for three times the `ROF` of its primary weapon. If its type is [`Organic=yes`](/keys/organic/), such as the giant squid, it does not fire during that time.
 
 Heavy damage to the victim can kill the parasite instead. A hit from anyone else above the parasite type's [`SuppressionThreshold`](/keys/suppressionthreshold/) dooms the parasite for twice the damage less the threshold, in frames; if the victim dies or the parasite is driven out in that time, the parasite dies with it. Healing the victim kills the parasite.
 
 A hit from a warhead with [`Sonic=yes`](/keys/sonic/) drives the parasite out of its victim. The parasite comes out unless it is doomed, in which case it dies.
-
-Yuri's Revenge also draws the giant squid wrapped around the ship it holds, and rocks a vehicle each time the parasite bites. Neither is done yet.
