@@ -1,0 +1,33 @@
+; A spy plane flies on past its target and is removed once it leaves the playfield, for targets
+; near the bottom edge, in the far north-west and at the centre. The plane enters from the north
+; edge (the player's house), so each one exits on the south edge. Each shot is granted fresh
+; (the super weapon is spent when it fires). Map XMP29U2.MAP: Size 0,0,60,60, LocalSize 2,4,56,50.
+30 command CenterBase
+60 grant SpyPlaneSpecial
+80 fire SpyPlaneSpecial 95 65
+200 where SPYP
+400 where SPYP
+600 where SPYP
+800 where SPYP
+900 count SPYP
+1000 count SPYP
+1010 grant SpyPlaneSpecial
+1030 fire SpyPlaneSpecial 60 115
+1200 where SPYP
+1400 where SPYP
+1600 count SPYP
+1800 count SPYP
+2000 count SPYP
+2010 grant SpyPlaneSpecial
+2030 fire SpyPlaneSpecial 35 40
+2300 count SPYP
+2600 count SPYP
+2900 count SPYP
+3000 count SPYP
+3010 grant SpyPlaneSpecial
+3030 fire SpyPlaneSpecial 60 60
+3300 count SPYP
+3600 count SPYP
+3900 count SPYP
+4000 count SPYP
+4100 quit

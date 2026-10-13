@@ -571,7 +571,8 @@ void AircraftClass::AI(void)
 		Assign_Mission(MISSION_GUARD);
 	}
 
-	if (CurrentMission != MISSION_ATTACK) {
+	// Only these missions keep the straight-flight lock (AircraftClass::Update, 0x414BD4).
+	if (CurrentMission != MISSION_ATTACK && CurrentMission != MISSION_PARADROP_OVERFLY && CurrentMission != MISSION_SPYPLANE_APPROACH && CurrentMission != MISSION_SPYPLANE_OVERFLY) {
 		IsLockedStraight = false;
 	}
 
@@ -596,7 +597,12 @@ void AircraftClass::AI(void)
 		new AnimClass(Class->Trailer, PositionCoord, 1, 1);
 	}
 
+	// A fly by or fly back aircraft is removed at the playfield edge, not the local view (AircraftClass::Update, 0x414F4D).
 	if (!Class->IsFlyBy && !Class->IsFlyBack && !Map.In_Local_Radar(PositionCell) && Should_Delete_Off_Map()) {
+		Delete_Me();
+		return;
+	}
+	if (!Map.In_Radar(PositionCell) && Should_Delete_Off_Map()) {
 		Delete_Me();
 		return;
 	}
@@ -3999,7 +4005,8 @@ void AircraftClass::Post_Load(void)
 /// <returns>bool; Is the aircraft ready to commence?</returns>
 bool AircraftClass::Ready_To_Commence(void)
 {
-	if (CurrentMission != MISSION_STICKY && CurrentMission != MISSION_RESCUE && !IsLockedStraight) {
+	// A spy plane may leave its approach while locked (AircraftClass::ReadyToNextMission, 0x41B5E0).
+	if (CurrentMission != MISSION_STICKY && CurrentMission != MISSION_RESCUE && (!IsLockedStraight || CurrentMission == MISSION_SPYPLANE_APPROACH)) {
 		if (IsReadyToCommence) {
 			return(true);
 		}
@@ -4158,12 +4165,15 @@ LONG AircraftClass::Is_Locked(void)
 /// <summary>
 /// Starts this aircraft on its assigned mission.
 /// The aircraft is released from any straight and level flight restriction before the
-/// normal commence processing takes over.
+/// normal commence processing takes over, except when it leaves a spy plane approach.
 /// </summary>
 /// <returns>bool; Was the mission commenced?</returns>
 bool AircraftClass::Commence(void)
 {
-	IsLockedStraight = false;
+	// A spy plane keeps its lock as it leaves the approach (AircraftClass::NextMission, 0x41B870).
+	if (CurrentMission != MISSION_SPYPLANE_APPROACH) {
+		IsLockedStraight = false;
+	}
 	return(BASECLASS::Commence());
 }
 
@@ -4276,7 +4286,8 @@ bool AircraftClass::Spy_Plane_Photograph(void)
 
 
 /// <summary>
-/// Sends a spy plane off the map on the edge opposite its owner's edge.
+/// Aims a spy plane at a cell on the edge opposite its owner's edge. A locked plane keeps its
+/// heading, so it may fly past that cell.
 /// </summary>
 void AircraftClass::Spy_Plane_Exit(void)
 {
@@ -4291,7 +4302,7 @@ void AircraftClass::Spy_Plane_Exit(void)
 /// <summary>
 /// Flies a spy plane over its target, photographing the ground with SpyPlaneCamera whenever it
 /// is within its weapon's range (AircraftClass::Mission_SpyPlaneApproach, 0x4155F0). Within
-/// three cells of the target it turns for the far map edge.
+/// three cells of the target it locks its heading and flies on past the target.
 /// </summary>
 int AircraftClass::Do_MISSION_SPYPLANE_APPROACH(void)
 {
@@ -4306,7 +4317,7 @@ int AircraftClass::Do_MISSION_SPYPLANE_APPROACH(void)
 	}
 	if (distance <= 3 * CELL_LEPTON_W) {
 		Assign_Mission(MISSION_SPYPLANE_OVERFLY);
-		IsLocked = true;
+		IsLockedStraight = true;
 		Spy_Plane_Exit();
 	}
 	return(Rule->SpyPlaneCameraFrames);

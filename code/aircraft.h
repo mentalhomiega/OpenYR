@@ -204,9 +204,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		bool field_35B;
 
 		/*
-		 * If this aircraft is committed to a strafing run, then this flag will be true. It
-		 * is reported to the locomotor through Is_Locked so the aircraft will hold its
-		 * heading, and it keeps the aircraft from commencing a new order until the run ends.
+		 * If this aircraft is committed to a strafing run, or a spy plane has reached its target
+		 * and is flying on past it, then this flag will be true. It is reported to the locomotor
+		 * through Is_Locked so the aircraft will hold its heading and not slow down to land.
 		 */
 		bool IsLockedStraight;
 

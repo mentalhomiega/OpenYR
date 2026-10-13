@@ -594,7 +594,9 @@ void FlyLocomotionClass::Movement_AI(void)
 	coord = LinkedTo->Get_Coord();
 	Physics(coord, LinkedTo->PrimaryFacing.Current());
 
-	if (!Map.In_Radar(coord.As_Cell())) {
+	// A leaving aircraft may cross the playfield edge; AircraftClass::Update removes it there (0x414FA1).
+	bool const leaving = LinkedTo->Should_Delete_Off_Map();
+	if (!leaving && !Map.In_Radar(coord.As_Cell())) {
 		Cell edge = Map.Cell_To_LocalRect(coord.As_Cell());
 		if (edge.X < Map.MapRect.Width / 2) {
 			coord.X += CELL_LEPTON_W / 2;
@@ -607,7 +609,7 @@ void FlyLocomotionClass::Movement_AI(void)
 		}
 	}
 
-	if (Map.In_Radar(coord.As_Cell())) {
+	if (leaving || Map.In_Radar(coord.As_Cell())) {
 		LinkedTo->Set_Coord(coord);
 	}
 
