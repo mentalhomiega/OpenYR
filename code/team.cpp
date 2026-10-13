@@ -4257,7 +4257,7 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 				if ((own_only && building->House != member->House) || building->IsInLimbo || !accepts(building, member, sent.contains(building) ? sent[building] : 0)) {
 					continue;
 				}
-				int const distance = member->Distance(building);
+				int const distance = member->Distance(building->Center_Coord());
 				if (distance < best_distance) {
 					best_distance = distance;
 					best = building;
