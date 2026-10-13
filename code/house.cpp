@@ -65,7 +65,7 @@
  *   HouseClass::Find_Build_Location -- Finds a suitable building location.                    *
  *   HouseClass::Find_Building -- Finds a building of specified type.                          *
  *   HouseClass::Find_Cell_In_Zone -- Finds a legal placement cell within the zone.            *
- *   HouseClass::Find_Juicy_Target -- Finds a suitable field target.                           *
+ *   HouseClass::Find_Nearest_Enemy_Unit_In_Spread -- Finds the nearest enemy vehicle.         *
  *   HouseClass::Fire_Sale -- Cause all buildings to be sold.                                  *
  *   HouseClass::Flag_Attach -- Attach flag to specified cell (or thereabouts).                *
  *   HouseClass::Flag_Attach -- Attaches the house flag the specified unit.                    *
@@ -5956,45 +5956,42 @@ Cell HouseClass::Where_To_Go(FootClass const * object) const
 }
 
 
-/***********************************************************************************************
- * HouseClass::Find_Juicy_Target -- Finds a suitable field target.                             *
- *                                                                                             *
- *    This routine is used to find targets out in the field and away from base defense.        *
- *    Typical of this would be the attack helicopters and the roving attack bands of           *
- *    hunter killers.                                                                          *
- *                                                                                             *
- * INPUT:   coord -- The coordinate of the attacker. Closer targets are given preference.      *
- *                                                                                             *
- * OUTPUT:  Returns with a suitable target to attack.                                          *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   10/12/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
-AbstractClass * HouseClass::Find_Juicy_Target(Coord const & coord) const
+/// <summary>
+/// Finds the enemy vehicle that a computer aircraft guarding at the coordinate attacks (gamemd
+/// HouseClass::FindNearestEnemyUnitInSpread, 0x500300). It takes the nearest qualifying vehicle among
+/// the cells within CELL_SPREAD_MAX cells of the coordinate, measured to each vehicle's centre. A
+/// vehicle qualifies when it is not owned by this house or an ally, lies outside its owner's base zone,
+/// is not cloaked and is not more than 20 leptons below the ground. Only vehicles on a bridge deck are
+/// seen, because gamemd reads each cell's bridge list (CellClass::GetUnit(true), 0x47EBA0).
+/// </summary>
+/// <param name="coord">The coordinate of the searching aircraft.</param>
+/// <returns>Returns with the vehicle to attack, or NULL if no vehicle qualifies.</returns>
+UnitClass * HouseClass::Find_Nearest_Enemy_Unit_In_Spread(Coord const & coord) const
 {
-	UnitClass * best = 0;
-	int value = 0;
+	UnitClass * best = NULL;
+	int best_distance = 0;
+	Cell const center = coord.As_Cell();
 
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass * unit = Units[index];
+	for (int index = 0; index < Cell_Spread_Count(CELL_SPREAD_MAX); index++) {
+		Cell const cell = center + Cell_Spread_Offset(index);
+		if (!Map.In_Radar(cell)) continue;
 
-		if (unit && !unit->IsInLimbo && !Is_Ally(unit) && unit->House->Which_Zone(unit) == ZONE_NONE && unit->HeightAGL >= -20 && unit->Cloak != CLOAKED) {
-			int val = coord.Gamemd_Distance_To(unit->Center_Coord());
+		UnitClass * unit = (UnitClass *)Map[cell].Cell_Unit(true);
+		if (unit == NULL || unit->IsInLimbo) continue;
 
-			if (unit->Anti_Air()) val *= 2;
+		HouseClass const * owner = unit->House;
+		if (owner == NULL || Is_Ally(owner)) continue;
+		if (owner->Which_Zone(unit) != ZONE_NONE || unit->HeightAGL < -20 || unit->Cloak == CLOAKED) continue;
 
-			if (value == 0 || val < value) {
-				value = val;
-				best = unit;
-			}
+		int const distance = coord.Gamemd_Distance_To(unit->Center_Coord());
+
+		// gamemd keeps no candidate at distance 0, so the next qualifying vehicle replaces it.
+		if (best_distance == 0 || distance < best_distance) {
+			best_distance = distance;
+			best = unit;
 		}
 	}
-	if (best) {
-		return(best);
-	}
-	return(NULL);
+	return(best);
 }
 
 

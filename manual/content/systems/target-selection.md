@@ -106,7 +106,7 @@ The middle column gives each scan's shape and reach. A *ring* scan walks whole r
 
 | Mission | Scan | Notes |
 | --- | --- | --- |
-| Guard | Ring, guard radius | Not run on an engineer. An aircraft seldom reaches this scan. It attacks a target it already holds, returns to idle handling at cruising height, and does not scan while landed unless it is docked. A human-owned aircraft scans only while airborne. A computer-owned aircraft whose house is not under attack first looks for an enemy vehicle outside that vehicle's base, preferring near ones and ones that cannot fire at aircraft. If it finds one, it attacks it without scanning |
+| Guard | Ring, guard radius | Not run on an engineer. An aircraft seldom reaches this scan. It attacks a target it already holds, returns to idle handling at cruising height, and does not scan while landed unless it is docked. A human-owned aircraft scans only while airborne. A computer-owned aircraft first looks for the nearest enemy vehicle within 11 cells of it that lies outside its owner's base and is not cloaked, and attacks it without scanning. Only vehicles on a bridge deck are found, so a vehicle on the ground is never picked |
 | Guard area | Ring, area radius, from the home position | Runs only while the object has no target |
 | Patrol | Ring, patrol radius, from the object, then re-scanned from the patrol cell | An aircraft on patrol with ammunition left runs only the first scan |
 | Move | Ring, guard radius | Runs only while the object has no target, only for a computer [house](/glossary/#house), never on an aircraft, and never for a member of a [`Suicide=yes`](/keys/suicide/#scope-teamtype) team |

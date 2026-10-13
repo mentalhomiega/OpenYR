@@ -3453,11 +3453,11 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	}
 
 	/*
-	**	Perform a special check to hunt for harvesters that are outside of the protective
-	**	shield of their base.
+	**	A computer aircraft attacks the nearest enemy vehicle around it that is outside its owner's
+	**	base (AircraftClass::Mission_Guard, 0x41A5C0, calls 0x500300).
 	*/
-	if (!House->Is_Human_Player() && House->State != STATE_ATTACKED) {
-		AbstractClass * target = House->Find_Juicy_Target(PositionCoord);
+	if (!House->Is_Human_Player()) {
+		UnitClass * target = House->Find_Nearest_Enemy_Unit_In_Spread(PositionCoord);
 
 		if (target != NULL) {
 			Assign_Target(target);
