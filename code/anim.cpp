@@ -80,6 +80,7 @@
 #include "overlay.h"
 #include "overtype.h"
 #include "particle.h"
+#include "partsys.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -1200,9 +1201,10 @@ void AnimClass::Middle(void)
 		height = shapefile->Get_Rect(Class->Biggest).Height;
 	}
 
-	if (Class->SpawnsParticle != PARTICLE_NONE) {
+	// A particle outside GasSystem is never stepped, so it would never age or poison (gamemd spawns into its global system, AnimClass::Middle 0x424F00).
+	if (Class->SpawnsParticle != PARTICLE_NONE && GasSystem != NULL) {
 		for (int index = 0; index < Class->NumParticles; index++) {
-			new ParticleClass(ParticleTypes[Class->SpawnsParticle], Center_Coord());
+			GasSystem->Spawn_Particle(ParticleTypes[Class->SpawnsParticle], Center_Coord());
 		}
 	}
 
