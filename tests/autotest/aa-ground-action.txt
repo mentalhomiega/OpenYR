@@ -1,0 +1,21 @@
+; Player-owned AA-only defenses (NASAM at 60,22 and NAFLAK at 60,26, slot 0 AA=yes AG=no) beside a computer tank (MTNK at
+; 63,22) and a computer infantryman (E1 at 62,25). A player power plant (GAPOWR at 56,18) keeps them powered, so Can_Fire
+; judges the weapon and not the power. canfire prints the Can_Fire code for the target (0 OK, 3 rearm, 5 illegal, 6 cannot
+; fire), and action prints the cursor action. Expected: action is not Attack on either ground unit.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-ground-action.txt -Seconds 60
+30 command CenterBase
+35 reveal
+36 own GAPOWR 56 18
+40 own NASAM 60 22
+41 own NAFLAK 60 26
+45 spawn MTNK 63 22
+46 spawn E1 62 25
+60 canfire NASAM 63 22
+61 action NASAM 63 22
+62 canfire NASAM 62 25
+63 action NASAM 62 25
+64 canfire NAFLAK 63 22
+65 action NAFLAK 63 22
+66 canfire NAFLAK 62 25
+67 action NAFLAK 62 25
+120 quit

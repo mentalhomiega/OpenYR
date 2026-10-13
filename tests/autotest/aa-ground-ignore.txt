@@ -1,0 +1,50 @@
+; Computer AA-only defenses beside player ground units. A SAM (NASAM) at 60,22 and a flak cannon (NAFLAK) at 60,26 have
+; slot 0 AA=yes AG=no, and a computer power plant (GAPOWR at 56,18) keeps them powered, so they can fire. A player tank
+; (MTNK) at 63,22 and two player infantry (E1) at 62,25 and 58,25 stand on the ground.
+; Frames 60 to 600: the defenses pick no ground target (threatscan prints "picks -", where prints no target), and the
+; ground units keep their strength (the tank has 300, the infantry 125). Frame 620: a player Kirov (ZEP) is granted at
+; 60,19 and climbs by itself; from frame 760 it is In_Air and both defenses must pick it.
+; Expected by gamemd Evaluate_Object (0x6F7CA0) and GreatestThreat (0x6F8DF0): an air-only scan keeps ground objects out by
+; its type mask, and an air scan takes only In_Air objects.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-ground-ignore.txt -Seconds 150
+30 command CenterBase
+35 reveal
+36 spawn GAPOWR 56 18
+40 spawn NASAM 60 22
+41 spawn NAFLAK 60 26
+45 grantunit MTNK 63 22
+46 grantunit E1 62 25
+47 grantunit E1 58 25
+60 threatscan NASAM 4
+61 threatscan NASAM 5
+62 threatscan NASAM 6
+63 threatscan NAFLAK 4
+64 threatscan NAFLAK 5
+65 threatscan NAFLAK 6
+100 where NASAM
+101 where NAFLAK
+102 where MTNK
+103 where E1
+200 threatscan NASAM 4
+201 threatscan NAFLAK 6
+300 where NASAM
+301 where NAFLAK
+302 where MTNK
+303 where E1
+450 threatscan NASAM 6
+451 threatscan NAFLAK 5
+500 where NASAM
+501 where NAFLAK
+502 where MTNK
+503 where E1
+600 where NASAM
+601 where NAFLAK
+602 where MTNK
+603 where E1
+620 grantunit ZEP 60 19
+760 threatscan NASAM 4
+761 threatscan NAFLAK 4
+770 where NASAM
+771 where NAFLAK
+772 where ZEP
+800 quit

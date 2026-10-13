@@ -1,0 +1,35 @@
+; A player Kirov (ZEP) granted at 60,19 starts on the ground (agl 0, layer GROUND, in the cell's ground chain) and climbs.
+; A computer SAM (NASAM at 60,22) and flak cannon (NAFLAK at 60,26), both slot 0 AA=yes AG=no and powered, must pick nothing
+; while the Kirov is not In_Air: range scans (5) and area scans (6), at frames 42 to 47 when the Kirov is at agl 0 to 24. The probes
+; use the airborne command only to report; it does not lift the Kirov, which climbs by itself after the grant.
+; The climb to In_Air (agl 208 and up) and the picks after it are checked by aa-ground-ignore.txt.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-landed-aircraft.txt -Seconds 60
+30 command CenterBase
+35 reveal
+36 spawn GAPOWR 56 18
+40 spawn NASAM 60 22
+41 spawn NAFLAK 60 26
+42 grantunit ZEP 60 19
+42 airborne ZEP
+42 threatscan NAFLAK 6
+42 threatscan NASAM 6
+42 threatscan NAFLAK 5
+42 threatscan NASAM 5
+43 airborne ZEP
+43 threatscan NAFLAK 6
+43 threatscan NASAM 6
+44 airborne ZEP
+44 threatscan NAFLAK 6
+44 threatscan NASAM 6
+45 airborne ZEP
+45 threatscan NAFLAK 6
+45 threatscan NASAM 6
+46 airborne ZEP
+46 threatscan NAFLAK 6
+46 threatscan NASAM 6
+47 airborne ZEP
+47 threatscan NAFLAK 6
+47 threatscan NASAM 6
+50 where NASAM
+51 where NAFLAK
+120 quit
