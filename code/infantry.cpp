@@ -2362,7 +2362,7 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 			coord = Point2D(coord.X & (CELL_LEPTON_W-1), coord.Y & (CELL_LEPTON_H-1));
 
 			if (coord != Point2D(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2)) {
-				toface = ::Direction(Point2D(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2), coord).As_Dir8();
+				toface = DirType(Gamemd_Atan2((double)(CELL_LEPTON_H / 2 - coord.Y), (double)(coord.X - CELL_LEPTON_W / 2))).As_Dir8();
 			} else {
 				toface = PrimaryFacing.Current().As_Dir8();
 			}
