@@ -185,6 +185,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <numeric>
 #include <vector>
 
 
@@ -7140,7 +7141,17 @@ int BuildingClass::Power_Output(void) const
 	}
 
 	if (power > 0 && IsOn) {
-		return(int(power * HealthRatio));
+		// gamemd chops Strength / MaxStrength and then the product (GetPowerOutput, 0x44E7B0), so an
+		// exact whole result comes out one lower unless the ratio is exact in binary.
+		long long const scaled = static_cast<long long>(power) * Strength;
+		int result = static_cast<int>(scaled / Class->MaxStrength);
+		if (scaled % Class->MaxStrength == 0) {
+			int const denominator = Class->MaxStrength / std::gcd(Strength, Class->MaxStrength);
+			if ((denominator & (denominator - 1)) != 0) {
+				result--;
+			}
+		}
+		return(result);
 	}
 	return(0);
 }
