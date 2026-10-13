@@ -71,7 +71,7 @@ The paths share their rules settings, and a setting's name does not say which pa
 | [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules) | The interval between Tiberium healing steps |
 | [`SelfHealRate`](/keys/selfhealrate/) | The interval between self-healing steps, replacing `RepairRate` for self-healing only |
 | [`SelfHealStep`](/keys/selfhealstep/) | The strength one self-healing step restores |
-| [`SelfHealCap`](/keys/selfhealcap/) | The share of maximum strength at which self-healing stops, replacing `ConditionYellow` for self-healing only |
+| [`SelfHealCap`](/keys/selfhealcap/) | The share of maximum strength at which self-healing stops; without it, self-healing continues to full strength |
 
 Each interval setting is a fraction of a minute, which the engine multiplies by 900 frames. The wrench, self-healing and Tiberium healing step on frames that are multiples of the result, truncated to whole frames. The depot, the hospital and the armory count up and act when the count reaches the result, rounded up to a whole number. At the engine defaults, with `SelfHealRate` unset, the paths step at these intervals:
 
@@ -291,9 +291,9 @@ Three settings decide what a tick does:
 | --- | --- | --- | --- |
 | The object's type | [`SelfHealingStep`](/keys/selfhealingstep/) | [`SelfHealingRate`](/keys/selfhealingrate/) | [`SelfHealingCap`](/keys/selfhealingcap/) |
 | The rules | [`SelfHealStep`](/keys/selfhealstep/) | [`SelfHealRate`](/keys/selfhealrate/) | [`SelfHealCap`](/keys/selfhealcap/) |
-| Neither | `1` | [`RepairRate`](/keys/repairrate/) | [`ConditionYellow`](/keys/conditionyellow/) |
+| Neither | `1` | [`RepairRate`](/keys/repairrate/) | Full strength |
 
-Read each column from the top. A value below zero passes to the row beneath. With none of them set, an object heals one point every 14 frames until it passes half strength. `RepairStep` and `IRepairStep` never affect self-healing.
+Read each column from the top. A value below zero passes to the row beneath. With none of them set, an object heals one point every 14 frames until it reaches full strength. `RepairStep` and `IRepairStep` never affect self-healing.
 
 Self-healing steps on frames that are multiples of the interval, so every object on the same interval heals on the same frames. Each tick adds the step and caps the result at maximum strength, so no setting overheals. A step below `1` heals `1` point, and an interval shorter than one frame heals on every frame.
 
@@ -304,7 +304,7 @@ A ceiling of `0` turns self-healing off. A tick needs the object's strength rati
 An object at zero strength never heals. Only an aircraft can be at zero strength and still in play: one killed in the air keeps flying until it lands. Without this rule it could heal in mid-air and fly on.
 
 :::caution[The ceiling is not the damage threshold]
-Healing continues while the strength ratio is at or below the ceiling, so the last tick can carry the object up to one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides when an object counts as damaged, so a ceiling above or below it leaves healing and the damaged state out of step. When self-healing lifts a structure above `ConditionYellow`, its damage smoke stops. Its animations stay in their damaged form until something else refreshes them, such as a hit, a paid repair step, an engineer, an upgrade or the start of a new animation.
+Healing continues while the strength ratio is at or below the ceiling, so the last tick can carry the object up to one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides when an object counts as damaged, so a ceiling below it leaves a healed object damaged. When self-healing lifts a structure above `ConditionYellow`, its damage smoke stops. Its animations stay in their damaged form until something else refreshes them, such as a hit, a paid repair step, an engineer, an upgrade or the start of a new animation.
 :::
 
 Tiberium healing is a separate path. [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) on an infantry, vehicle or aircraft type, or the `TIBERIUM_HEAL` ability, heals the object while its cell contains Tiberium. Height is not checked, so such an aircraft also heals while flying over Tiberium. Structures never heal this way.

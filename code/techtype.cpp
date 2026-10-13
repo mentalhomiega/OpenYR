@@ -645,13 +645,14 @@ double TechnoTypeClass::Self_Heal_Rate(void) const
 /// <summary>
 /// Fetches the health ratio at which an object of this type stops healing itself.
 /// </summary>
-/// <returns>Returns with the type's ceiling, else the game-wide one, else ConditionYellow.</returns>
+/// <returns>Returns with the type's ceiling, else the game-wide one, else full strength.</returns>
 double TechnoTypeClass::Self_Heal_Cap(void) const
 {
 	if (SelfHealingCap >= 0) {
 		return(SelfHealingCap);
 	}
-	return(Rule->SelfHealCap >= 0 ? Rule->SelfHealCap : Rule->ConditionYellow);
+	// TechnoClass::ShouldSelfHealOneStep (0x70BE80) heals up to full strength.
+	return(Rule->SelfHealCap >= 0 ? Rule->SelfHealCap : 1.0);
 }
 
 

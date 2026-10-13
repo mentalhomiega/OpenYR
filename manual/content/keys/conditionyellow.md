@@ -22,7 +22,7 @@ The same threshold changes several behaviors at or below it:
 - A structure switches to its damaged artwork, and each animation it starts uses its damaged form.
 - A driven vehicle moves at three quarters of its speed.
 - An aircraft owned by a computer house breaks off to look for a repair bay, provided the house has at least 100 credits.
-- [Self-healing](/systems/repair/#self-healing) stops once an object passes this fraction, unless [`SelfHealCap`](/keys/selfhealcap/) or a type's [`SelfHealingCap`](/keys/selfhealingcap/) sets another ceiling.
+- A structure that [heals itself](/systems/repair/#self-healing) past this fraction loses its damage smoke.
 - Between this fraction and `ConditionRed`, [`ConditionYellowSparkingProbability`](/keys/conditionyellowsparkingprobability/) sets the chance of damage sparks.
 
 An object's damage smoke goes out once repair or healing takes it above this fraction.
