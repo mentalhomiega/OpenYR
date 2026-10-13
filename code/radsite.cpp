@@ -70,7 +70,7 @@ void RadSiteClass::Irradiate(Coord const & where, int spread, int level)
 double RadSiteClass::Share(Cell const & cell) const
 {
 	Coord const delta = Map[BaseCell].Center_Coord() - Map[cell].Center_Coord();
-	int const distance = (int)std::sqrt((double)delta.X * delta.X + (double)delta.Y * delta.Y + (double)delta.Z * delta.Z);
+	int const distance = delta.Gamemd_Length();
 	if (SpreadInLeptons <= 0 || distance > SpreadInLeptons) {
 		return(0.0);
 	}
