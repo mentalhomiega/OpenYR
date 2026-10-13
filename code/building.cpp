@@ -2484,17 +2484,29 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				case RESULT_DESTROYED:
 
 					/*
-					 * A unit that is in radio contact with this building (e.g., docked
-					 * on it) is destroyed along with it if it is close enough, or at any
-					 * distance when this is a helipad. Otherwise it is told to get out of the way.
+					 * Every object in radio contact (BuildingClass::Destroy, 0x442230) is handled. One
+					 * within a cell of this building, or any one when it is a helipad, takes a C4 blast of
+					 * ten times its maximum strength. Any other is told to leave. The blast removes its
+					 * target from the links, so the list is copied first.
 					 */
-					if (tech != NULL) {
-						if (Class->IsHelipad || Gamemd_Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON) {
-							int strength = tech->Strength;
-							tech->Take_Damage(strength, 0, Rule->C4Warhead, NULL, true, true);
-						} else {
-							Transmit_Message(RADIO_RUN_AWAY, tech);
-							tech->NearbyObject = NULL;
+					{
+						std::vector<TechnoClass *> docked;
+						for (int slot = 0; slot < Link_Count(); slot++) {
+							if (Link(slot) != NULL) {
+								docked.push_back(Link(slot));
+							}
+						}
+						for (TechnoClass * contact : docked) {
+							if (!Contains_Link(contact)) {
+								continue;
+							}
+							if (Class->IsHelipad || Gamemd_Distance(Center_Coord(), contact->Center_Coord()) < CELL_LEPTON) {
+								int damage = contact->TClass->MaxStrength * 10;
+								contact->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+							} else {
+								Transmit_Message(RADIO_RUN_AWAY, contact);
+								contact->NearbyObject = NULL;
+							}
 						}
 					}
 
