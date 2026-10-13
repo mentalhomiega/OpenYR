@@ -31,6 +31,7 @@ class LightSourceClass : public AbstractClass
 
 		static void Reset(void);
 		static void Process_Lighting(int time_budget_ms, bool force = false);
+		static void Discard_Pending(void);
 
 		virtual RTTIType Fetch_RTTI(void) const override;
 		virtual void Compute_CRC(CRCEngine &) const override;

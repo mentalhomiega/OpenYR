@@ -33,6 +33,16 @@ DynamicVectorClass<LightSourceClass::PendingCellClass *> LightSourceClass::Pendi
 
 bool LightSourceClass::Recalc = true;
 
+namespace {
+
+// The cursor Process_Lighting keeps over PendingCells. Discard_Pending resets it with the queue,
+// since a cursor left past the end of a refilled queue would read entries that no longer exist.
+int _pending_index = 0;
+int _pending_remaining = 0;
+bool _commit_ready = false;
+
+}
+
 
 /// <summary>
 /// Creates a light source at the location specified.
@@ -89,7 +99,7 @@ LightSourceClass::~LightSourceClass(void)
 
 
 /// <summary>
-/// Destroys every light source in the game.
+/// Destroys every light source in the game and drops every queued relight.
 /// This routine is used when tearing a scenario down. Cell recalculation is held off
 /// while the lights go away, so the map is not rebuilt once for every light removed.
 /// </summary>
@@ -104,7 +114,27 @@ void LightSourceClass::Reset(void)
 		LightSources.Delete_Index(0);
 	}
 
+	Discard_Pending();
+
 	Recalc = true;
+}
+
+
+/// <summary>
+/// Drops every queued relight and the pick state that goes with it.
+/// The cells that were queued are not relit here. A caller that frees the drawers those
+/// entries hold must reset those cells, as IsometricTileTypeClass::Init_Drawers does.
+/// </summary>
+void LightSourceClass::Discard_Pending(void)
+{
+	for (int i = 0; i < PendingCells.Count(); i++) {
+		delete PendingCells[i];
+	}
+	PendingCells.Clear();
+
+	_pending_index = 0;
+	_pending_remaining = 0;
+	_commit_ready = false;
 }
 
 
@@ -196,9 +226,6 @@ void LightSourceClass::Process_Lighting(int time_budget_ms, bool force)
 
 	static unsigned _update_interval = 50;
 	static unsigned _last_update_frame = 0;
-	static int _pending_index = 0;
-	static int _pending_remaining = 0;
-	static bool _commit_ready = false;
 
 	_update_frames++;
 

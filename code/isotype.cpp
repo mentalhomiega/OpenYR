@@ -36,6 +36,7 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "isotile.h"
+#include "light.h"
 #include "lightcon.h"
 #include "mixfile.h"
 #include "palette.h"
@@ -647,10 +648,14 @@ bool IsometricTileTypeClass::Free_Unused_Drawers(int time_budget_ms, bool force)
 /// Creates the default tile lighting converter.
 /// This routine throws away the converters built for the previous theater and installs a
 /// fresh untinted one in their place. Every cell is told to forget its cached converter
-/// so that it will ask for a new one as it redraws.
+/// so that it will ask for a new one as it redraws, and relights still queued for cells are
+/// dropped for the same reason.
 /// </summary>
 void IsometricTileTypeClass::Init_Drawers(void)
 {
+	// Queued relights may hold the converters deleted below, so the queue goes first.
+	LightSourceClass::Discard_Pending();
+
 	for (int i = 0; i < TileDrawers.Count(); i++) {
 		LightConvertClass *drawer = TileDrawers[i];
 		delete drawer;
