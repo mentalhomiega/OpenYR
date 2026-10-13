@@ -85,6 +85,7 @@
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
 **	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
+**	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
@@ -1467,6 +1468,19 @@ void Run(StepType const & step)
 			if (foot->House == PlayerPtr && stricmp(foot->TClass->Name(), step.Argument.c_str()) == 0) {
 				DebugString("AUTOTEST   planstate %s at %d,%d orders %d running %d mission %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y,
 					foot->PlannedOrders.Count(), foot->IsPlanRunning ? 1 : 0, (int)foot->CurrentMission);
+			}
+		}
+		return;
+	}
+
+	if (step.Command == "primary") {
+		// primary <TypeID>: queues the sidebar's primary command for the player's first building of that type.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRIMARY, TargetClass(building)));
+				DebugString("AUTOTEST primary %s at %d,%d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y);
+				break;
 			}
 		}
 		return;
