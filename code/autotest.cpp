@@ -114,6 +114,7 @@
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
 **							now and every interval frames after when one is given
+**	stop <TypeID>			sends the Stop command's idle event to the player's objects of that type that can move or fire
 **	quantity <TypeID>		writes how many of that type each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
@@ -452,6 +453,23 @@ void Computer_Move(std::string const & name, int x, int y)
 			foot->Assign_Mission(MISSION_MOVE);
 		}
 	}
+}
+
+
+/// <summary>
+/// Queues the Stop command's idle event for the player's objects of that type that can move or fire.
+/// </summary>
+void Stop_Objects(std::string const & name)
+{
+	int sent = 0;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && (techno->Can_Player_Move() || techno->Can_Player_Fire()) && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::IDLE, TargetClass(techno)));
+			sent++;
+		}
+	}
+	DebugString("AUTOTEST stop %s: sent to %d\n", name.c_str(), sent);
 }
 
 
@@ -1297,6 +1315,12 @@ void Run(StepType const & step)
 	// speed <TypeID> [interval]: see Speed_Probe. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "speed") {
 		Speed_Probe(step);
+		return;
+	}
+
+	// stop <TypeID>: see Stop_Objects. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "stop") {
+		Stop_Objects(step.Argument);
 		return;
 	}
 

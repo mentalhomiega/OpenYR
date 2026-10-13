@@ -1,0 +1,12 @@
+; Rocketeer (JUMPJET, BalloonHover=yes) given the Stop command while it is still flying. It is granted at 60,45 and ordered east to
+; 90,45. At frame 150 the stop step sends the Stop command's idle event. The speed probe logs it from frame 140 to 240.
+; Expected, from gamemd's jump-jet Stop_Moving (0x54B4D0): the Rocketeer moves to the middle of a nearby cell and hovers there
+; at its flight height. Its speed is not set to zero by the stop itself.
+30 reveal
+40 grantunit JUMPJET 60 45
+60 order JUMPJET 90 45
+140 speed JUMPJET 6
+150 stop JUMPJET
+240 speed JUMPJET 0
+240 where JUMPJET
+300 quit
