@@ -4893,7 +4893,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				fire_coord = Center_Coord();
 			}
 		} else {
-			dir = std::atan2((double)-displacement.Y, (double)displacement.X);
+			dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
 		}
 
 		if (max_speed > displacement.Gamemd_Length() / 2) {
