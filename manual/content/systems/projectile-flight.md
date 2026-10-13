@@ -87,7 +87,7 @@ A projectile in flight occupies no cell. Nothing collides with it, and nothing t
 
 ## What the shot leaves with
 
-Five things are fixed at launch: the aim point, the direction, the pitch, the speed, and, on a steered projectile, the fuse.
+Five things are fixed at launch: the aim point, the direction, the pitch, the speed, and, on a steered or `Ranged=yes` projectile, the fuse.
 
 The firer aims at its current target's position. When that target is a moving vehicle, the firer aims ahead of it, at where the vehicle will be when a shot at the speed of the firer's primary weapon arrives. On a projectile that is both [`Inaccurate=yes`](/keys/inaccurate/) and [`Arcing=yes`](/keys/arcing/), that aim point is then moved in a random direction by between half and all of [`BallisticScatter`](/keys/ballisticscatter/). The pitch and speed below are worked out for the moved point.
 
