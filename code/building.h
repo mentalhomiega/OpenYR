@@ -606,6 +606,8 @@ class BuildingClass : public TechnoClass
 		void After_Destruction(Cell const & crate_cell);
 		virtual void Do_Destruction(TechnoClass * last_contact, TechnoClass * source, bool forced, Cell const * offset);
 		virtual bool Toggle_Primary(void);
+		virtual bool Set_Owning_House(HouseClass * newowner) override;
+		void Claim_Vacant_Primary(void);
 		virtual unsigned entry_380(void); /// Returns 0. A reserved vtable slot that nothing implements.
 		void Turn_On(void);
 		void Turn_Off(void);

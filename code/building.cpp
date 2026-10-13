@@ -2209,8 +2209,10 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			BuildingLight = new BuildingLightClass(this);
 		}
 
-		if (Class->ToBuild != RTTI_NONE && House->ABQuantity.Value(Class->RTTI) > 1) {
-			IsLeader = true;
+		// A new factory is primary only when its house has no primary of its kind (BuildingClass::Unlimbo, 0x440580).
+		IsLeader = false;
+		if (Class->ToBuild != RTTI_NONE) {
+			Claim_Vacant_Primary();
 		}
 
 		if (Rule->BuildConst.Is_In_List(Class)) {
@@ -4075,7 +4077,8 @@ void BuildingClass::Grand_Opening(bool captured)
 			if (Class->IsDetectDisguise && Is_Powered_On()) {
 				Disguise_Detector(true);
 			}
-			if (Class->IsMobileWar) {
+			// A mobile war factory takes the primary when it opens; a placement that already made it primary keeps it.
+			if (Class->IsMobileWar && !IsLeader) {
 				Toggle_Primary();
 			}
 			IsReadyToCommence = true;
@@ -4707,10 +4710,11 @@ bool BuildingClass::Toggle_Primary(void)
 	if (IsLeader) {
 		IsLeader = false;
 	} else {
+		// One primary per kind: same ToBuild and same naval flag, not in limbo (TogglePrimaryFactory, 0x448160).
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * building = Buildings[index];
 
-			if (!building->IsInLimbo && building->House == House && building->Class->ToBuild == Class->ToBuild) {
+			if (!building->IsInLimbo && building->House == House && building->Class->ToBuild == Class->ToBuild && building->Class->IsNaval == Class->IsNaval) {
 				building->IsLeader = false;
 			}
 		}
@@ -4721,6 +4725,42 @@ bool BuildingClass::Toggle_Primary(void)
 	}
 	Mark(MARK_CHANGE);
 	return(IsLeader);
+}
+
+
+/// <summary>
+/// Makes this factory its house's primary of its kind unless another factory of that kind is already
+/// primary. The kind is the ToBuild type and the naval flag, and a structure in limbo does not count.
+/// </summary>
+void BuildingClass::Claim_Vacant_Primary(void)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		if (building != this && !building->IsInLimbo && building->House == House && building->IsLeader && building->Class->ToBuild == Class->ToBuild && building->Class->IsNaval == Class->IsNaval) {
+			return;
+		}
+	}
+	IsLeader = true;
+}
+
+
+/// <summary>
+/// Hands this structure to another house without the capture steps, as a mind control transfer does.
+/// The factory gives up its primary first, and then claims one for the new owner if it has none.
+/// </summary>
+/// <param name="newowner">The house that takes the structure.</param>
+/// <returns>bool; Was the structure given over? False when the house already owns it.</returns>
+bool BuildingClass::Set_Owning_House(HouseClass * newowner)
+{
+	if (newowner == NULL || newowner == House) {
+		return(BASECLASS::Set_Owning_House(newowner));
+	}
+	IsLeader = false;
+	bool const given = BASECLASS::Set_Owning_House(newowner);
+	if (given && Class->ToBuild != RTTI_NONE) {
+		Claim_Vacant_Primary();
+	}
+	return(given);
 }
 
 
@@ -4776,6 +4816,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			}
 		}
 
+		// SetOwningHouse (0x448260) clears the primary before the owner changes.
 		IsLeader = false;
 
 		if (Class->IsLaserFencePost) {
@@ -4894,7 +4935,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		if (capture) {
 			BASECLASS::Captured(newowner);
 		} else {
-			Set_Owning_House(newowner);
+			// The base call skips the override's claim; the claim below runs once the new owner is set.
+			BASECLASS::Set_Owning_House(newowner);
 		}
 
 		if (detecting) {
@@ -4927,6 +4969,11 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		**	Increment the factory count for the new owner.
 		*/
 		House->Active_Add(this);
+
+		// The new owner's primary of this kind is claimed only when it has none (SetOwningHouse, 0x448260).
+		if (Class->ToBuild != RTTI_NONE) {
+			Claim_Vacant_Primary();
+		}
 
 		IsRepairing = false;
 		Grand_Opening(true);

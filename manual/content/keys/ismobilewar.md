@@ -20,6 +20,6 @@ The flag has these further effects:
 - The structure can be undeployed whether or not the session allows redeploying, and the [Deploy Object](/commands/deployobject/) command accepts it.
 - Drag selection passes it over, as it does a construction yard. The player's other structures that set `UndeploysInto` are picked up.
 - When a vehicle deploys into a mobile war factory, a [`VehicleThief=yes`](/keys/vehiclethief/) infantryman targeting that vehicle drops its target. Every other object targeting the vehicle switches to the new structure.
-- The first time the structure finishes deploying, its [primary factory](/systems/production/#the-primary-factory) status is toggled.
+- The first time the structure finishes deploying, it takes [primary factory](/systems/production/#the-primary-factory) status unless it already has it.
 
 A mobile war factory that sets [`Factory=UnitType`](/keys/factory/) has a [rally point](/systems/production/#rally-points). A plain click on the ground sets the rally point, and a click with the force-move key held packs the structure up and drives it to the clicked point. [`AltToRally=yes`](/keys/alttorally/) swaps the two clicks.

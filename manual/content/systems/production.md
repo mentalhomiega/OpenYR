@@ -105,9 +105,9 @@ Names are matched without regard to case. A name the engine does not recognize l
 
 A player's finished objects leave from the primary factory of their kind whenever it passes the factory search.
 
-Toggling the flag on a structure clears it from every other structure of the house on the map whose `Factory=` names the same kind, then sets it on the chosen one. Toggling the current primary clears its flag and leaves the house with no primary. EVA announces a newly set primary to a player-controlled house.
+Toggling the flag on a structure clears it from every other structure of the house on the map whose `Factory=` names the same kind and whose `Naval=` setting matches, then sets it on the chosen one. A naval yard and a vehicle factory therefore keep separate primaries. Toggling the current primary clears its flag and leaves the house with no primary. EVA announces a newly set primary to a player-controlled house.
 
-A structure loses the flag when it is captured. An [`IsMobileWar=yes`](/keys/ismobilewar/) structure toggles the flag on itself when it opens.
+A structure that changes hands by capture or mind control loses its flag, and its new owner flags it only if that owner has no primary of its kind. Selling or losing the primary flags no other structure: the house has no primary of that kind until a factory of the kind is placed or toggled. An [`IsMobileWar=yes`](/keys/ismobilewar/) structure takes the flag when it first opens, unless it already has it.
 
 The cursor that offers the toggle appears only over a structure that passes all of these, in this order:
 
@@ -120,7 +120,7 @@ The cursor that offers the toggle appears only over a structure that passes all 
 The last test checks only the long name. A second barracks written `Factory=Infantry` counts toward the test above it but not toward this one, so the cursor is not offered.
 
 :::caution[Placing a factory can flag it primary]
-A newly placed factory is flagged primary when its house owns more than one structure of the BuildingType listed eighth in `[BuildingTypes]`, whatever that type is. The number of factories does not matter, and no other structure loses its flag, so a house can end up with several primaries of one kind. Use the toggle above to choose the primary deliberately.
+A newly placed factory is flagged primary only when its house has no primary of its kind. A factory placed while its kind already has a primary is not flagged. Use the toggle above to move the primary to another factory of the same kind.
 :::
 
 ## What a house may build
