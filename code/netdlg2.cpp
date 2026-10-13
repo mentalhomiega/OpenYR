@@ -36,6 +36,7 @@
 #include "mplayer.h"
 #include "msgbox.h"
 #include "netdlg.h"
+#include "netglobal.h"
 #include "netshare.h"
 #include "nettiming.h"
 #include "newmenu.h"
@@ -114,8 +115,11 @@ int Net2_g_Col_House;
 /// </summary>
 int Net2FirstFreeColor(int reqcolor, int index)
 {
+	// Every color can be taken, which would never end the search. The attempts are bounded, and a
+	// search that runs out returns the color it was asked for.
+	int const requested = reqcolor;
 	int color;
-	while (1) {
+	for (int attempt = 0; attempt < 64; attempt++) {
 		int taken = 0;
 		color = reqcolor;
 		for (int i = 0; i < Session.Players.Count(); i++) {
@@ -128,11 +132,11 @@ int Net2FirstFreeColor(int reqcolor, int index)
 			}
 		}
 		if (taken==0) {
-			break;
+			return(color);
 		}
 		reqcolor %= MAX_PLAYERS;
 	}
-	return(color);
+	return(requested);
 }
 
 
@@ -1546,6 +1550,19 @@ static void Get_Join_Responses(void)
 			continue;
 		}
 
+		// A house index must name a house type before anything stores it or looks it up.
+		bool const carries_house = Session.GPacket.Command==NET_QUERY_JOIN || Session.GPacket.Command==NET_CONFIRM_JOIN
+			|| Session.GPacket.Command==NET_ANSWER_PLAYER;
+		if (carries_house && (Session.GPacket.PlayerInfo.House < 0 || Session.GPacket.PlayerInfo.House >= HouseTypes.Count())) {
+			DebugString("Dropped a join packet with house %d; there are %d house types.\n", Session.GPacket.PlayerInfo.House, HouseTypes.Count());
+			continue;
+		}
+
+		if (Session.GPacket.Command==NET_REJECT_JOIN && (Session.GPacket.Reject.Why < 0 || Session.GPacket.Reject.Why > REJECT_MODS)) {
+			DebugString("Dropped a reject packet with reason %d.\n", Session.GPacket.Reject.Why);
+			continue;
+		}
+
 		if (Session.GPacket.Command==NET_PREVIEW_MODE) {
 			if (Net2LobbyPhase == NET2_LOBBY_GUEST) {
 				Receive_Random_Map_Preview();
@@ -1885,6 +1902,21 @@ static void Get_Join_Responses(void)
 
 		if (Session.GPacket.Command==NET_PRIV_GAMEOPT) {
 			char *opts = strdup(Session.GPacket.Options.Buf + 1);
+			if (opts == NULL) {
+				continue;
+			}
+
+			// The house and color index tables, so both are checked before either is applied.
+			char * house_tok = strtok(opts, ",");
+			char * color_tok = strtok(NULL, ",");
+			bool const house_ok = house_tok == NULL || (atol(house_tok) >= 0 && atol(house_tok) < HouseTypes.Count());
+			bool const color_ok = color_tok == NULL || (atol(color_tok) >= 0 && atol(color_tok) < MAX_MPLAYER_COLORS);
+			if (!house_ok || !color_ok) {
+				DebugString("Private game options dropped: house or color out of range\n");
+				free(opts);
+				continue;
+			}
+
 			for (i = 1; i < Session.Players.Count(); i++) {
 				if (!strcmp(Session.Players[i]->Name,Session.GPacket.Name)) {
 
@@ -1893,17 +1925,14 @@ static void Get_Join_Responses(void)
 						int oldcolor = Session.Players[i]->Player.Color;
 						int newcolor = 0;
 						int newhouse = 0;
-						char * tok;
 
-						tok = strtok(opts, ",");
-						if (tok) {
-							newhouse = atol(tok);
+						if (house_tok) {
+							newhouse = atol(house_tok);
 							Session.Players[i]->Player.House = newhouse;
 						}
 
-						tok = strtok(NULL, ",");
-						if (tok) {
-							int reqcolor = atol(tok);
+						if (color_tok) {
+							int reqcolor = atol(color_tok);
 							newcolor = Net2FirstFreeColor(reqcolor, i);
 							if (newcolor != reqcolor) {
 								newcolor = Net2FirstFreeColor(oldcolor, i);
@@ -2068,6 +2097,12 @@ static void Get_Join_Responses(void)
 					Session.FrameSendRate = received.FrameSendRate;
 					Session.MaxAhead = received.MaxAhead;
 				} else {
+					// The largest lead NetSemantic::Timing_Values_Are_Valid accepts.
+					constexpr int LEGACY_MAX_AHEAD_LIMIT = 250;
+					if (Session.GPacket.ResponseTime.OneWay < 0 || Session.GPacket.ResponseTime.OneWay > LEGACY_MAX_AHEAD_LIMIT) {
+						DebugString("Dropped a start packet with a lead of %d frames.\n", Session.GPacket.ResponseTime.OneWay);
+						continue;
+					}
 					Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
 				}
 				Session.HostAddress = Session.GAddress;

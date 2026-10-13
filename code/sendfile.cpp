@@ -45,6 +45,7 @@
 #include "ini.h"
 #include "ipxmgr.h"
 #include "msgloop.h"
+#include "netglobal.h"
 #include "progress.h"
 #include "session.h"
 #include "stimer.h"
@@ -55,6 +56,16 @@ bool Receive_Remote_File ( char *file_name, unsigned int file_length, bool show_
 bool Send_Remote_File ( char const *file_name );
 
 #define RESPONSE_TIMEOUT	TIMER_MINUTE
+
+
+/// <summary>Counts a dropped file-transfer packet and logs the first of each kind.</summary>
+static void Record_Transfer_Drop(NetGlobal::DecodeError error)
+{
+	static NetGlobal::RejectionCounters transfer_drops;
+	if (transfer_drops.Record(error).Count == 1) {
+		DebugString("File transfer packet dropped [%s]\n", NetGlobal::Error_Name(error));
+	}
+}
 
 
 /***********************************************************************************************
@@ -120,8 +131,18 @@ bool Get_File_From_Host(char *return_name, bool show_progress)
 
 			//DebugString ("RA95 - Got packet from host\n");
 			if (net_receive_packet.Command == NET_FILE_INFO && sender_address == Session.HostAddress) {
-				strcpy (return_name, net_receive_packet.ScenarioInfo.ShortFileName);
-				file_length = net_receive_packet.ScenarioInfo.FileLength;
+				// The short name is at most 12 characters plus a terminator, so the copy fits any caller's buffer of 13 bytes or more.
+				char offered_name[13];
+				std::uint32_t offered_length = 0;
+				NetGlobal::DecodeError const offer = NetGlobal::Validate_File_Info(&net_receive_packet, static_cast<std::size_t>(receive_packet_length),
+					offered_name, sizeof(offered_name), offered_length);
+				if (offer != NetGlobal::DecodeError::NONE) {
+					Record_Transfer_Drop(offer);
+					continue;
+				}
+
+				strcpy (return_name, offered_name);
+				file_length = offered_length;
 				DebugString("Host responded with file info\n");
 				DebugString("File name is %s\n", return_name);
 				break;
@@ -223,7 +244,7 @@ bool Receive_Remote_File ( char *file_name, unsigned int file_length, bool show_
 	 * Allocate a buffer big enough to hold the whole file. Blocks are reassembled into this
 	 * buffer and the entire buffer is written to disk once the transfer is complete.
 	 */
-	char *file_buffer = new char [file_length];
+	char *file_buffer = new char [file_length]();
 
 	if (show_progress) {
 		Progress.Initialize(100, 1, true);		// Max is 100%
@@ -245,11 +266,14 @@ bool Receive_Remote_File ( char *file_name, unsigned int file_length, bool show_
 		int receive_packet_length = sizeof (RemoteFileTransferType);
 		if (Ipx.Get_Global_Message (receive_packet, sizeof(*receive_packet), &receive_packet_length, &sender_address, &product_id)) {
 
-			if (receive_packet->Command == NET_FILE_CHUNK && sender_address == Session.HostAddress){
+			// The command is read only once the packet is known to hold it.
+			if (receive_packet_length >= (int)sizeof(NetCommandType) && receive_packet->Command == NET_FILE_CHUNK && sender_address == Session.HostAddress){
 
-				char *flag = &block_received[receive_packet->BlockNumber];
-				if (!block_received[receive_packet->BlockNumber]) {
-					*flag = true;
+				NetGlobal::DecodeError const chunk_error = NetGlobal::Validate_File_Chunk(receive_packet, static_cast<std::size_t>(receive_packet_length), file_length);
+				if (chunk_error != NetGlobal::DecodeError::NONE) {
+					Record_Transfer_Drop(chunk_error);
+				} else if (!block_received[receive_packet->BlockNumber]) {
+					block_received[receive_packet->BlockNumber] = true;
 					received_count++;
 					progress += 100;
 					response_timer = RESPONSE_TIMEOUT/2;

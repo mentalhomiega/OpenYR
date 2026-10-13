@@ -16,6 +16,7 @@
 #include "netsemantic.h"
 #include "autosave.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -23,6 +24,7 @@
 #include <cstring>
 #include <limits>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -979,6 +981,222 @@ void Test_Global_Wire_Lengths(void)
 		"an in-game packet longer than the struct is refused");
 }
 
+// Feeds truncated, unterminated and out-of-range Global Channel packets to the receive checks.
+void Test_Received_Global_Packets(void)
+{
+	constexpr std::size_t HeaderSize = sizeof(NetCommandType) + sizeof(GlobalPacketType::Name) + sizeof(GlobalPacketType::Serial);
+	constexpr std::size_t WholePacket = sizeof(GlobalPacketType);
+
+	GlobalPacketType packet;
+	NetGlobal::Initialize_Packet(packet, NET_QUERY_GAME);
+	std::strcpy(packet.Name, "Alpha");
+	Check(NetGlobal::Validate_Received_Packet(&packet, HeaderSize) == NetGlobal::DecodeError::NONE,
+		"a query carrying exactly its header is accepted");
+	Check(NetGlobal::Validate_Received_Packet(&packet, HeaderSize - 1) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"a query cut inside its header is refused");
+	Check(NetGlobal::Validate_Received_Packet(&packet, 0) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"an empty packet is refused");
+
+	packet.Command = NET_FILE_CHUNK;
+	Check(NetGlobal::Validate_Received_Packet(&packet, sizeof(NetCommandType)) == NetGlobal::DecodeError::NONE,
+		"a file chunk is left to the transfer checks");
+	Check(NetGlobal::Validate_Received_Packet(&packet, sizeof(NetCommandType) - 1) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"a packet too short to name its command is refused");
+
+	NetGlobal::Initialize_Packet(packet, NET_MESSAGE);
+	std::memset(packet.Name, 'A', sizeof(packet.Name));
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::UNTERMINATED_NAME,
+		"a name with no terminator inside its field is refused");
+
+	NetGlobal::Initialize_Packet(packet, NET_MESSAGE);
+	std::strcpy(packet.Name, "Alpha");
+	std::memset(packet.Message.Buf, 'M', sizeof(packet.Message.Buf));
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::UNTERMINATED_MESSAGE,
+		"a chat line with no terminator is refused");
+	std::memset(packet.Message.Buf, 0, sizeof(packet.Message.Buf));
+	std::strcpy(packet.Message.Buf, "hello");
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::NONE,
+		"a terminated chat line is accepted");
+	Check(NetGlobal::Validate_Received_Packet(&packet, HeaderSize + sizeof(GlobalPacketType::Message) - 1) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"a chat line one byte short of its requirement is refused");
+
+	NetGlobal::Initialize_Packet(packet, NET_QUERY_JOIN);
+	std::strcpy(packet.Name, "Alpha");
+	std::memset(packet.Serial, 'S', sizeof(packet.Serial));
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::UNTERMINATED_SERIAL,
+		"a join serial with no terminator is refused");
+	std::memset(packet.Serial, 0, sizeof(packet.Serial));
+	packet.PlayerInfo.Color = MAX_MPLAYER_COLORS;
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::INVALID_COLOR,
+		"a join color one past the last color is refused");
+	packet.PlayerInfo.Color = -1;
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::INVALID_COLOR,
+		"a negative join color is refused");
+	packet.PlayerInfo.Color = MAX_MPLAYER_COLORS - 1;
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::NONE,
+		"the last valid join color is accepted");
+
+	NetGlobal::Initialize_Packet(packet, NET_CHAT_ANNOUNCE);
+	std::strcpy(packet.Name, "Alpha");
+	packet.Chat.Color = MAX_MPLAYER_COLORS;
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::INVALID_COLOR,
+		"a chat announcement with an out-of-range color is refused");
+
+	NetGlobal::Initialize_Packet(packet, NET_PUB_GAMEOPT);
+	std::strcpy(packet.Name, "Alpha");
+	std::memset(packet.Options.Buf, 'O', sizeof(packet.Options.Buf));
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::UNTERMINATED_OPTIONS,
+		"an options text with no terminator in its 900 bytes is refused");
+	std::memset(packet.Options.Buf, 0, sizeof(packet.Options.Buf));
+	std::strcpy(packet.Options.Buf, "1,2,3");
+	std::size_t const options_length = HeaderSize + std::strlen(packet.Options.Buf) + 1 + (sizeof(GlobalPacketType::Options) - MAX_GAMEOPT_LENGTH);
+	Check(NetGlobal::Validate_Received_Packet(&packet, options_length) == NetGlobal::DecodeError::NONE,
+		"an options packet trimmed to its text and tail is accepted");
+	Check(NetGlobal::Validate_Received_Packet(&packet, options_length - 1) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"an options packet one byte short of its color and name CRC is refused");
+	packet.Options.Color = 9;
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::INVALID_COLOR,
+		"an options packet with an out-of-range color is refused");
+}
+
+
+// Checks the game options text the way DecodePubGameopt reads it, for a lobby of four house types.
+void Test_Gameopt_Text(void)
+{
+	constexpr std::size_t Capacity = MAX_GAMEOPT_LENGTH;
+	constexpr int HouseCount = 4;
+	std::vector<char> buffer(Capacity, '\0');
+
+	auto Check_Text = [&](std::string const & text, NetGlobal::DecodeError expected, char const * what) {
+		std::fill(buffer.begin(), buffer.end(), '\0');
+		std::memcpy(buffer.data(), text.data(), std::min(text.size(), Capacity - 1));
+		NetGlobal::DecodeError const got = NetGlobal::Validate_Gameopt_Text(buffer.data(), Capacity, HouseCount);
+		Check(got == expected, what);
+		if (got != expected) {
+			std::printf("    got %s\n", NetGlobal::Error_Name(got));
+		}
+	};
+
+	std::string const valid = "1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2,";
+	Check_Text(valid, NetGlobal::DecodeError::NONE, "a complete options text with one seat is accepted");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,7,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2,",
+		NetGlobal::DecodeError::INVALID_GAMEOPT, "a game speed above six is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,7,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2,",
+		NetGlobal::DecodeError::INVALID_GAMEOPT, "the repeated game speed is checked too");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,3,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2,",
+		NetGlobal::DecodeError::INVALID_GAMEOPT, "a difficulty past the last one is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,9,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2,",
+		NetGlobal::DecodeError::INVALID_GAMEOPT, "more AI players than the seats are refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,4,2,",
+		NetGlobal::DecodeError::INVALID_HOUSE, "a seat with a house past the last house type is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,-1,2,",
+		NetGlobal::DecodeError::INVALID_HOUSE, "a seat with a negative house is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,8,",
+		NetGlobal::DecodeError::INVALID_COLOR, "a seat with a color past the last color is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000," + std::string(260, 'N') + ",ABCDEF:Alpha,1,2,",
+		NetGlobal::DecodeError::INVALID_GAMEOPT, "a scenario name longer than the scenario buffer is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP," + std::string(34, 'D') + ":Alpha,1,2,",
+		NetGlobal::DecodeError::INVALID_GAMEOPT, "a digest longer than its field is refused");
+	Check_Text("A1", NetGlobal::DecodeError::NONE, "an accept status is passed to its own handler");
+	Check_Text("1,2,3", NetGlobal::DecodeError::NONE, "a text that stops early is accepted, as the decoder reads missing fields as absent");
+
+	std::fill(buffer.begin(), buffer.end(), 'x');
+	Check(NetGlobal::Validate_Gameopt_Text(buffer.data(), Capacity, HouseCount) == NetGlobal::DecodeError::UNTERMINATED_OPTIONS,
+		"an options text with no terminator in its buffer is refused");
+}
+
+
+// Checks the file offer and the chunks a client accepts from its host.
+void Test_File_Transfer_Packets(void)
+{
+	GlobalPacketType offer;
+	NetGlobal::Initialize_Packet(offer, NET_FILE_INFO);
+	std::strcpy(offer.ScenarioInfo.ShortFileName, "SCU01EA.MAP");
+	offer.ScenarioInfo.FileLength = 1000;
+
+	char name[13] = {};
+	std::uint32_t length = 0;
+	Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, sizeof(name), length) == NetGlobal::DecodeError::NONE
+		&& std::strcmp(name, "SCU01EA.MAP") == 0 && length == 1000,
+		"a file offer with a short name is accepted and its name copied");
+
+	char const * const unsafe[] = {"..\\SCU01EA.MAP", "../SCU01EA.MAP", "C:SCU01EA", "..", ".", "", "CON\x01"};
+	for (char const * const candidate : unsafe) {
+		std::strcpy(offer.ScenarioInfo.ShortFileName, candidate);
+		Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, sizeof(name), length) == NetGlobal::DecodeError::INVALID_FILE_INFO,
+			"a file offer naming a path, a device or nothing is refused");
+	}
+
+	std::memset(offer.ScenarioInfo.ShortFileName, 'A', sizeof(offer.ScenarioInfo.ShortFileName));
+	Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, sizeof(name), length) == NetGlobal::DecodeError::INVALID_FILE_INFO,
+		"a file name with no terminator in its 13 bytes is refused");
+
+	std::strcpy(offer.ScenarioInfo.ShortFileName, "SCU01EA.MAP");
+	offer.ScenarioInfo.FileLength = 0;
+	Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, sizeof(name), length) == NetGlobal::DecodeError::INVALID_FILE_INFO,
+		"an empty file offer is refused");
+	offer.ScenarioInfo.FileLength = NetGlobal::MAX_TRANSFER_FILE_LENGTH + 1;
+	Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, sizeof(name), length) == NetGlobal::DecodeError::INVALID_FILE_INFO,
+		"a file offer above the transfer limit is refused");
+	offer.ScenarioInfo.FileLength = NetGlobal::MAX_TRANSFER_FILE_LENGTH;
+	Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, sizeof(name), length) == NetGlobal::DecodeError::NONE,
+		"a file offer at the transfer limit is accepted");
+	std::size_t const ShortOffer = sizeof(NetCommandType) + sizeof(GlobalPacketType::Name) + sizeof(GlobalPacketType::Serial)
+		+ sizeof(offer.ScenarioInfo) - 1;
+	Check(NetGlobal::Validate_File_Info(&offer, ShortOffer, name, sizeof(name), length) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"a file offer one byte short of its scenario block is refused");
+	Check(NetGlobal::Validate_File_Info(&offer, sizeof(offer), name, 12, length) == NetGlobal::DecodeError::INVALID_FILE_INFO,
+		"a caller buffer too small for the name is refused");
+
+	// A 500-byte file is three chunks: 192, 192 and 116 bytes.
+	RemoteFileTransferType chunk = {};
+	chunk.Command = NET_FILE_CHUNK;
+	constexpr std::uint32_t Small = 500;
+	constexpr std::size_t ChunkHeader = offsetof(RemoteFileTransferType, RawData);
+
+	chunk.BlockNumber = 0;
+	chunk.BlockLength = 192;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::NONE,
+		"the first full chunk of a 500-byte file is accepted");
+	chunk.BlockNumber = 2;
+	chunk.BlockLength = 116;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::NONE,
+		"the remainder chunk of a 500-byte file is accepted");
+	chunk.BlockLength = 192;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"a last chunk longer than the remainder is refused");
+	chunk.BlockNumber = 3;
+	chunk.BlockLength = 116;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"a chunk index past the last block is refused");
+	chunk.BlockNumber = 0xFFFF;
+	chunk.BlockLength = 192;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"the largest chunk index is refused for a small file");
+	chunk.BlockNumber = 0;
+	chunk.BlockLength = 0;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"an empty chunk is refused");
+	chunk.BlockLength = 0xFFFF;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), Small) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"a chunk longer than the chunk size is refused");
+
+	chunk.BlockLength = 192;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, ChunkHeader + 100, Small) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"a chunk whose bytes are cut short is refused");
+	Check(NetGlobal::Validate_File_Chunk(&chunk, ChunkHeader - 1, Small) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"a chunk cut inside its header is refused");
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), 0) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"a chunk for an empty file is refused");
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), NetGlobal::MAX_TRANSFER_FILE_LENGTH + 1) == NetGlobal::DecodeError::INVALID_FILE_CHUNK,
+		"a chunk for a file above the transfer limit is refused");
+
+	chunk.BlockNumber = 65535;
+	chunk.BlockLength = 192;
+	Check(NetGlobal::Validate_File_Chunk(&chunk, sizeof(chunk), NetGlobal::MAX_TRANSFER_FILE_LENGTH) == NetGlobal::DecodeError::NONE,
+		"the last chunk index of the largest allowed file is accepted");
+}
+
 }	// namespace
 
 
@@ -997,6 +1215,9 @@ int main(void)
 	Test_Connection_Admission();
 	Test_Global_Packets();
 	Test_Global_Wire_Lengths();
+	Test_Received_Global_Packets();
+	Test_Gameopt_Text();
+	Test_File_Transfer_Packets();
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Some checks FAILED.");
 	return(Failures == 0 ? 0 : 1);

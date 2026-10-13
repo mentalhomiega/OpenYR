@@ -27,6 +27,7 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netdlg2.h"
+#include "netglobal.h"
 #include "newmenu.h"
 #include "rules.h"
 #include "scenario.h"
@@ -372,6 +373,8 @@ void SendPrivateGameopts(char const * player, char const * options)
 /// <param name="options">The encoded option string as received.</param>
 /// <param name="name">Name of the player the options came from.</param>
 /// <returns>bool; Did the scenario change?</returns>
+static_assert(DIFF_COUNT == NetGlobal::GAMEOPT_DIFFICULTY_COUNT, "the options text checks the difficulty range the game defines");
+
 bool DecodePubGameopt(char * options, char * name)
 {
 	static int _last_unit_count = -1;
@@ -393,7 +396,20 @@ bool DecodePubGameopt(char * options, char * name)
 
 	bool do_decode = false;
 
+	// Every value is checked before any is applied, so a text that fails changes nothing.
+	NetGlobal::DecodeError const text_error = NetGlobal::Validate_Gameopt_Text(options, MAX_GAMEOPT_LENGTH, HouseTypes.Count());
+	if (text_error != NetGlobal::DecodeError::NONE) {
+		static NetGlobal::RejectionCounters option_drops;
+		if (option_drops.Record(text_error).Count == 1) {
+			DebugString("Game options dropped [%s]\n", NetGlobal::Error_Name(text_error));
+		}
+		return(false);
+	}
+
 	char *string = strdup(options);
+	if (string == NULL) {
+		return(false);
+	}
 	char *token = string;
 	if (token[0] == 'A') {
 		int status = atol(&token[1]);
@@ -524,6 +540,7 @@ bool DecodePubGameopt(char * options, char * name)
 			same_scenario = false;
 		}
 		strncpy(Session.ScenarioDigest, digest, sizeof(Session.ScenarioDigest)-1);
+		Session.ScenarioDigest[sizeof(Session.ScenarioDigest)-1] = '\0';
 	}
 
 	if (!same_scenario || strlen(Session.Options.ScenarioDescription) == 0) {

@@ -816,7 +816,21 @@ int IPXManagerClass::Get_Global_Message(void *buf, int capacity, int *buflen,
 	//------------------------------------------------------------------------
 	if (!Listening) return(0);
 
-	return(GlobalChannel->Get_Packet (buf, capacity, buflen, address, product_id));
+	// Every consumer of the Global Channel reads through here, so a malformed packet is dropped here
+	// and the next one is tried.
+	static NetGlobal::RejectionCounters global_drops;
+	while (GlobalChannel->Get_Packet (buf, capacity, buflen, address, product_id)) {
+		NetGlobal::DecodeError const error = NetGlobal::Validate_Received_Packet(buf, static_cast<std::size_t>(*buflen));
+		if (error == NetGlobal::DecodeError::NONE) {
+			return(1);
+		}
+
+		if (global_drops.Record(error).Count == 1) {
+			DebugString("Global Channel packet dropped [%s]\n", NetGlobal::Error_Name(error));
+		}
+	}
+
+	return(0);
 
 }	/* end of Get_Global_Message */
 

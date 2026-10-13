@@ -406,8 +406,12 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 		NumRecNoAck++;
 
 		NumLost = packet->PacketID - NumRecNoAck + 1;
-		if (packet->PacketID) {
-			PercentLost = 100 - (100 * NumRecNoAck) / (unsigned int)(packet->PacketID + 1);
+
+		// PacketID + 1 wraps to zero at the largest ID, so the divisor is taken in 64 bits.
+		if (packet->PacketID != 0) {
+			std::uint64_t const expected = static_cast<std::uint64_t>(packet->PacketID) + 1;
+			std::uint64_t const percent = (100 * static_cast<std::uint64_t>(NumRecNoAck)) / expected;
+			PercentLost = static_cast<int>(100 - std::min<std::uint64_t>(percent, 100));
 		}
 
 		return(1);
