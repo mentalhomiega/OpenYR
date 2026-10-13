@@ -9,6 +9,8 @@ when_omitted:
 
 A projectile with `SubjectToCliffs=yes` explodes as soon as it enters a cell at least four height levels above the cell it left, if that cell is also higher than the cell it was fired from. A shot fired from the cliff top therefore flies on.
 
+A unit does not fire at a target when the line to it crosses a cell at least four height levels above the unit's own cell. The unit's cell is the reference here, not the cell before the cliff.
+
 ```ini title="rulesmd.ini"
 [Cannon] ; projectile
 SubjectToCliffs=yes

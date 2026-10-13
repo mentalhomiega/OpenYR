@@ -284,6 +284,6 @@ What a vehicle or infantryman reads at a wall or a closed gate depends on what i
 
 A vehicle or infantryman that reads a wall as destroyable, or friendly and destroyable, first looks for a new route. If that route still runs into the wall, it attacks the cell, even when the wall is allied. That is how a unit ordered through a wall ends up shooting it. One that reads the cell as impassable attacks nothing and routes around it. [Target selection](/systems/target-selection/#what-each-kind-of-object-considers) covers the computer's automatic search for walls to shoot and the difficulty setting that turns it off.
 
-Walls also stop shots. A projectile whose type sets [`SubjectToWalls=yes`](/keys/subjecttowalls/) explodes on reaching a wall cell that is not its target's cell, as that key describes.
+Walls also stop shots. A projectile whose type sets [`SubjectToWalls=yes`](/keys/subjecttowalls/) explodes on reaching a wall cell that is not its target's cell, as that key describes. A unit does not fire at a target past such a wall unless its warhead is `Wall=yes` and the wall is one of the connecting walls, as that key describes.
 
 A burning infantryman does not run into a cell whose land type is `Wall` or that holds any wall overlay.

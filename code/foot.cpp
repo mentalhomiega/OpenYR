@@ -1210,7 +1210,8 @@ void FootClass::Approach_Target(void)
 		**	If the target is too far away then head toward it.
 		*/
 		int maxrange = Weapon_Range(primary);
-		bool inrange = In_Range(TarCom, primary);
+		// The approach ends only when the shot can also reach the target past any wall or cliff (FootClass::ApproachTarget, 0x4D5690).
+		bool inrange = Is_Close_Enough(TarCom, primary);
 
 		// The approach reach is 128 leptons shorter than the weapon range from 512 leptons up (FootClass::ApproachTarget, 0x4D56E6).
 		if (maxrange > 0x1FF) {
@@ -1437,7 +1438,8 @@ void FootClass::Approach_Target(void)
 					}
 
 					// A CloseRange object also takes a spot within 1.2 cells of the target, whatever its weapon's reach.
-					bool reaches = TClass->In_Range(trycoord, TarCom, Get_Class_Weapon_Data(primary)->Weapon);
+					WeaponTypeClass * approach_weapon = Get_Class_Weapon_Data(primary)->Weapon;
+					bool reaches = TClass->In_Range(trycoord, TarCom, approach_weapon) && Clear_Line_Of_Fire(trycoord, TarCom, approach_weapon);
 					if (!reaches && TClass->IsCloseRange) {
 						Coord const at = TarCom->Center_Coord();
 						reaches = Gamemd_Length_2D(trycoord.X - at.X, trycoord.Y - at.Y) < 307.2;

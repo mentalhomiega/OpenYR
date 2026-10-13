@@ -1,0 +1,17 @@
+; A Rhino (Cannon projectile, SubjectToWalls=yes) fires at the player's tank across a row of the
+; player's walls; its shells strike the walls instead of the tank.
+30 command CenterBase
+300 wall GAWALL 63 38
+301 wall GAWALL 63 39
+302 wall GAWALL 63 40
+303 wall GAWALL 63 41
+304 wall GAWALL 63 42
+310 own MTNK 61 40
+311 spawn HTNK 65 40
+312 reveal
+313 view 63 40
+320 cell 63 40
+500 dump
+501 cell 63 40
+502 enemies
+510 quit

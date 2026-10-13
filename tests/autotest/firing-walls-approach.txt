@@ -1,0 +1,46 @@
+; Line of fire past walls (TechnoClass::IsCloseEnough, 0x6F77B0, and TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
+; canfire prints the Can_Fire result for the first player unit of the type. 8 (FIRE_RANGE) means a wall stopped the shot.
+; 2 (FIRE_FACING) means the line is clear and the unit has not turned yet, so the wall test passed. 0 means it may fire.
+; Read the canfire lines at frames 320 to 325, before the units have fired. Each row uses its own unit type.
+;   row 40: an E1 rifle (InvisibleLow, SubjectToWalls, warhead SA with no Wall) is stopped by GAWALL at 62 40.
+;   row 44: the same test without a wall, as the control: an E2 rifle fires.
+;   row 50: a Rhino 120mm (Cannon, warhead AP with Wall=yes) passes the connecting wall GAWALL.
+;   row 60: a Grizzly 105mm passes GAFWLL, the overlay at index 243 of [OverlayTypes].
+;   row 70: a Ballistic howitzer (SubjectToWalls=no) fires over GAWALL.
+;   row 91: a Lasher ATGUN (Cannon, warhead AP with Wall=yes) is stopped by GASAND, which is not a connecting wall.
+; At frame 340 every armed unit is ordered onto the MTNK at 63 40, so E1 has to find a cell with a clear line.
+30 command CenterBase
+300 own E1 60 40
+301 own E2 60 44
+302 own HTNK 58 50
+303 own MTNK 58 60
+304 own HOWI 58 70
+305 own LTNK 59 91
+306 spawn MTNK 63 40
+307 spawn MTNK 63 44
+308 spawn MTNK 63 50
+309 spawn MTNK 62 60
+310 spawn MTNK 66 70
+311 spawn MTNK 63 91
+312 wall GAWALL 62 40
+313 wall GAWALL 61 50
+314 wall GAFWLL 60 60
+315 wall GAWALL 61 70
+316 wall GASAND 61 91
+317 reveal
+320 canfire E1 63 40
+321 canfire E2 63 44
+322 canfire HTNK 63 50
+323 canfire MTNK 62 60
+324 canfire HOWI 66 70
+325 canfire LTNK 63 91
+330 dump
+340 strikeobj MTNK 63 40 2 land
+341 dump
+343 dump
+346 dump
+350 dump
+356 dump
+362 canfire E1 63 40
+365 dump
+700 quit

@@ -2129,17 +2129,7 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		return(true);
 	}
 
-	// A CellRangefinding weapon measures from the center of the firer's cell (TechnoClass::IsCloseEnough, 0x6F77B0).
-	Coord coord = Center_Coord();
-	if (weapon != NULL && weapon->IsCellRangefinding) {
-		coord = Map[Get_Cell()].Center_Coord();
-		if (IsOnBridge) {
-			coord.Z += BRIDGE_LEPTON_HEIGHT;
-		}
-	}
-	if (In_Air()) {
-		coord.Z = target->Center_Coord().Z;
-	}
+	Coord coord = Fire_Origin(target, weapon);
 
 	// A bunkered vehicle and a passenger of an open-topped transport reach farther (TechnoClass::InRange, 0x6F72A2).
 	int bonus = 0;
@@ -2157,6 +2147,99 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		bonus += Elevation_Range_Bonus(target, !weapon->Bullet->IsArcing);
 	}
 	return(TClass->In_Range(coord, target, weapon, bonus));
+}
+
+
+// The coordinate a shot at the target starts from: the range and the line of fire both measure from it.
+Coord TechnoClass::Fire_Origin(AbstractClass const * target, WeaponTypeClass const * weapon) const
+{
+	Coord coord = Center_Coord();
+	if (weapon != NULL && weapon->IsCellRangefinding) {
+		coord = Map[Get_Cell()].Center_Coord();
+		if (IsOnBridge) {
+			coord.Z += BRIDGE_LEPTON_HEIGHT;
+		}
+	}
+	if (In_Air()) {
+		coord.Z = target->Center_Coord().Z;
+	}
+	return(coord);
+}
+
+
+// Finds the first cell on the line that stops the projectile, in the order gamemd samples it (TrajectoryHelper::FindFirstObstacle, 0x4CC100).
+// The line is sampled once per cell step from the source. A SubjectToCliffs projectile stops four levels above the source cell or higher;
+// a SubjectToWalls one stops at a wall cell that is not the target's, unless the source is higher than the target or the wall belongs to an ally
+// of the owner under AlliedWallTransparency (TrajectoryHelper::GetObstacle, 0x4CC360).
+static CellClass * Find_Projectile_Obstacle(Coord const & source, Coord const & target, BulletTypeClass const * bullet, HouseClass const * owner)
+{
+	if (!bullet->IsSubjectToCliffs && !bullet->IsSubjectToWalls) {
+		return(NULL);
+	}
+
+	Cell const sourcecell = source.As_Cell();
+	Cell const targetcell = target.As_Cell();
+	int const steps = std::max(abs(sourcecell.X - targetcell.X), abs(sourcecell.Y - targetcell.Y));
+	if (steps <= 0) {
+		return(NULL);
+	}
+
+	CellClass const * const from = &Map[sourcecell];
+	CellClass const * const to = &Map[targetcell];
+	int const dx = (target.X - source.X) / steps;
+	int const dy = (target.Y - source.Y) / steps;
+	int const dz = (target.Z - source.Z) / steps;
+
+	for (int index = 0; index < steps; index++) {
+		Coord const at(source.X + index * dx, source.Y + index * dy, source.Z + index * dz);
+		CellClass * cell = &Map[at];
+
+		if (bullet->IsSubjectToCliffs && cell->Height - from->Height >= 4) {
+			return(cell);
+		}
+		if (!bullet->IsSubjectToWalls || cell == to || cell->Overlay == OVERLAY_NONE || !OverlayTypes[cell->Overlay]->IsWall) {
+			continue;
+		}
+		if (from->Height > to->Height) {
+			continue;
+		}
+		if (Rule->IsAlliedWallTransparency && cell->Owner != HOUSE_NONE && cell->Owner < Houses.Count() && owner->Is_Ally(Houses[cell->Owner])) {
+			continue;
+		}
+		return(cell);
+	}
+	return(NULL);
+}
+
+
+// Range plus line of fire: the test a weapon makes before firing or approaching (TechnoClass::IsCloseEnough, 0x6F77B0).
+// A wall or cliff on the line stops a shot only when its projectile is SubjectToWalls or SubjectToCliffs.
+bool TechnoClass::Is_Close_Enough(AbstractClass * target, int which) const
+{
+	if (!In_Range(target, which)) {
+		return(false);
+	}
+	if (target == NULL) {
+		return(true);
+	}
+	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(which)->Weapon;
+	return(Clear_Line_Of_Fire(Fire_Origin(target, weapon), target, weapon));
+}
+
+
+// Tests the line from the source to the target's center for walls and cliffs (FUN_006F7220, 0x6F7220; TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
+// A wall at a connecting-wall index does not block a warhead that destroys walls (Wall=yes). A weapon with Range=-2 has no line test.
+bool TechnoClass::Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const
+{
+	if (target == NULL || weapon == NULL || weapon->Bullet == NULL || weapon->Range == -2 * CELL_LEPTON_W) {
+		return(true);
+	}
+
+	CellClass * obstacle = Find_Projectile_Obstacle(source, target->Center_Coord(), weapon->Bullet, House);
+	if (obstacle == NULL) {
+		return(true);
+	}
+	return(obstacle->Has_Wall_Or_Gate() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsWallDestroyer);
 }
 
 
@@ -4285,9 +4368,9 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	if (weapon->IsSonic && Wave) return(FIRE_REARM);
 
 	/*
-	**	The target must be within range in order to allow firing.
+	**	The target must be within range, and no wall or cliff may stop the shot, in order to allow firing.
 	*/
-	if (!In_Range(target, which)) {
+	if (!Is_Close_Enough(target, which)) {
 		return(FIRE_RANGE);
 	}
 
