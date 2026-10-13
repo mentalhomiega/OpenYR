@@ -369,7 +369,7 @@ inline DirType Direction(Coord const & coord1, Coord const & coord2)
  *=============================================================================================*/
 inline DirType Direction(Cell const & cell1, Cell const & cell2)
 {
-	return(std::atan2((double)(int)cell1.Y - (double)(int)cell2.Y, (double)(int)cell2.X - (double)(int)cell1.X));
+	return(Gamemd_Atan2((double)(int)cell1.Y - (double)(int)cell2.Y, (double)(int)cell2.X - (double)(int)cell1.X));
 }
 
 
