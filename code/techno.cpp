@@ -6331,6 +6331,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).
+	if (IsBeingWarpedOut && !forced) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
 	// A CausesDelayKill warhead sets a fuse on an EligibleForDelayKill structure, later the farther it is from the blast (TechnoClass::ReceiveDamage, 0x701E92).
 	if (warhead != NULL && warhead->IsCausesDelayKill && !negative && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsEligibleForDelayKill) {
 		BuildingClass * building = (BuildingClass *)this;

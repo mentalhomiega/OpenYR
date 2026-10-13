@@ -34,7 +34,7 @@ Temporal=yes
 
 ## Freezing the target
 
-When the shot hits, the target lets go of every object it holds by [mind control](/systems/mind-control/#letting-go), and is then frozen for as long as the warp lasts. A frozen object cannot move, fire or carry out orders, drops its target and destination, and lets go of any target it was itself warping. It is drawn half see-through, with [`ChronoSparkle1`](/keys/chronosparkle1/) playing beside it every 24 frames. Weapons other than temporal ones cannot fire at it.
+When the shot hits, the target lets go of every object it holds by [mind control](/systems/mind-control/#letting-go), and is then frozen for as long as the warp lasts. A frozen object cannot move, fire or carry out orders, drops its target and destination, and lets go of any target it was itself warping. It is drawn half see-through, with [`ChronoSparkle1`](/keys/chronosparkle1/) playing beside it every 24 frames. Weapons other than temporal ones cannot fire at it. It also takes no damage from an ordinary hit, healing included; a forced hit, such as the base heal crate's, still applies.
 
 A shot freezes nothing of a [`Warpable=no`](/keys/warpable/) type, under the Iron Curtain or a force shield, or a vehicle still standing in the weapons factory it is in contact with, though it still frees what that object holds by mind control. A firer that is itself being warped cannot start a warp.
 
