@@ -1159,9 +1159,10 @@ void WaveClass::Build_Wave_Shape(Coord const & source_coord, Coord const & targe
 /// Handles the per frame update of the wave geometry.
 /// This routine keeps the wave anchored to the object that fired it and to the object it
 /// was aimed at. While that link holds, the shape is rebuilt and its leading edge is drawn
-/// further out until the wave has reached its full length. Once the link is broken the
-/// trailing edge is drawn in after it, and the wave removes itself when nothing of it is
-/// left. The list of cells the wave covers is refreshed before returning.
+/// further out until the wave has reached its full length. Once the link is broken, or a
+/// sonic wave's leading edge is 0.1 ahead of its trailing edge, the trailing edge is drawn
+/// in after it, and the wave removes itself when nothing of it is left. The list of cells
+/// the wave covers is refreshed before returning.
 /// </summary>
 void WaveClass::Wave_Shape_AI(void)
 {
@@ -1187,6 +1188,13 @@ void WaveClass::Wave_Shape_AI(void)
 		}
 	}
 
+	// A sonic wave's trailing edge starts once its leading edge is more than 0.1 ahead, even while
+	// tethered (WaveClass::Update_Wave, 0x762AFF). FadeProgress stays above zero from then on, which latches it.
+	bool trailing = !IsWaveActive;
+	if (Type == WAVE_SONIC && (FadeProgress > 0.0 || WaveProgress - FadeProgress > 0.1)) {
+		trailing = true;
+	}
+
 	if (WaveProgress < 1.0 && IsWaveActive) {
 		WaveProgress += WaveStep;
 		if (WaveProgress > 0.98) {
@@ -1195,7 +1203,9 @@ void WaveClass::Wave_Shape_AI(void)
 		WaveShape.Vertices[PolygonShapeStruct::END_LEFT] = Lerp(WaveStartLeft, WaveEndLeft, WaveProgress);
 		WaveShape.Vertices[PolygonShapeStruct::END_MIDDLE] = Lerp(WaveStartMiddle, WaveEndMiddle, WaveProgress);
 		WaveShape.Vertices[PolygonShapeStruct::END_RIGHT] = Lerp(WaveStartRight, WaveEndRight, WaveProgress);
-	} else if (!IsWaveActive) {
+	}
+
+	if (trailing) {
 		if (WaveStep * 0.5 + WaveProgress >= FadeProgress) {
 			FadeProgress += WaveStep;
 			if (WaveProgress <= FadeProgress) {

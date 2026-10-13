@@ -16,4 +16,4 @@ These hits roll for a collapse:
 - an `IsRailgun=yes` beam fired at a cell, at that cell, when the beam reaches it;
 - an [`IsSonic=yes`](/keys/issonic/) wave, at every cell it currently covers, once per frame for as long as the wave lasts.
 
-Because a sonic wave rolls again on every frame, even a low value is likely to bring down a cliff that stays under the wave for long. At `1`, a cliff under a wave for 100 frames comes down about 63 times in 100.
+Because a sonic wave rolls again on every frame, even a low value is likely to bring down a cliff that stays under the wave for long. At `1`, a cliff under a wave for 20 frames comes down about 18 times in 100.
