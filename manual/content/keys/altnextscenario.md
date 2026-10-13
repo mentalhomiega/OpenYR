@@ -20,6 +20,6 @@ The campaign advances to this mission in place of [`NextScenario`](/keys/nextsce
 Global flags [carry over](/systems/campaign-progression/#what-survives-the-boundary) from one campaign mission to the next, so flag `1` set in an earlier mission still redirects the advance. [Clear it](/mapping/actions/taction-clear-global/) before the win in any mission that should advance to `NextScenario`. Otherwise the campaign advances to this key's mission, or, when this mission omits the key, to the name an earlier mission set, which may be empty.
 :::
 
-The key applies only where [`NextScenario`](/keys/nextscenario/) does, after a won mission that sets [`SkipMapSelect`](/keys/skipmapselect/). A mission that shows the map selection screen ignores both keys.
+The key applies only where [`NextScenario`](/keys/nextscenario/) does, after a won mission that sets [`SkipMapSelect`](/keys/skipmapselect/). A mission without `SkipMapSelect=yes` ignores both keys.
 
 [`NextScenario`](/keys/nextscenario/) covers how the name is resolved against the campaign's progression data and what happens when it matches nothing.

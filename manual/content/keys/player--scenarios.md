@@ -13,7 +13,7 @@ when_omitted:
 Player=GDI
 ```
 
-`Player` names the house the player controls in a campaign mission. The name is a house name from `[Houses]`, ignoring case. A country's section name or `Name=` also works when it names a house of the mission, and then picks the first house that plays that country. The player commands that house's units and structures, spends its credits, and builds from its build options. The map selection screen after the mission reads its campaign progression from the same house.
+`Player` names the house the player controls in a campaign mission. The name is a house name from `[Houses]`, ignoring case. A country's section name or `Name=` also works when it names a house of the mission, and then picks the first house that plays that country. The player commands that house's units and structures, spends its credits, and builds from its build options. The choice of the next mission after the mission reads its campaign progression from the same house.
 
 In a multiplayer or skirmish game, the lobby or the launch file assigns houses and this key is ignored.
 

@@ -69,10 +69,11 @@ Each time a scenario or saved game loads, the game drops the previous side's arc
 
 For the CD archive, a campaign mission first tries `E<xx>SCD<nn>.MIX` while an expansion is enabled, where `<xx>` is the mission's [`RequiredAddOn`](/keys/requiredaddon-scenarios/) number: a Firestorm mission tries `E01SCD01.MIX` or `E01SCD02.MIX`. Without that archive it mounts `SIDECD<nn>.MIX`, so an installation that keeps the expansion's members in the base archive still plays the expansion's campaign.
 
-A campaign that finds neither CD archive still starts. The stock CD archives hold the score screen's picture and movie and the map selection's artwork, palettes and voice lines, so these must then come from another archive or folder:
+A campaign that finds neither CD archive still starts. The stock CD archives hold the score screen's picture and movie, so these must then come from another archive or folder:
 
 - A score picture or score movie that is not found is left out.
-- Map selection between missions does not open without its palettes and click map. The game then takes the stage's first choice without the screen, as [When the choice fails](/systems/campaign-progression/#when-the-choice-fails) describes.
+
+Map selection between missions needs no artwork. It takes the next mission from `MAPSELMD.INI`, as [When the choice fails](/systems/campaign-progression/#when-the-choice-fails) describes.
 
 Outside a match the game mounts the no-side archives in the same place: `E99SC00.MIX` down to `E00SC00.MIX` and `SIDEC00.MIX`, cached, then `E99SNC00.MIX` down to `E00SNC00.MIX` and `SIDENC00.MIX`, not cached. The expansion copies are mounted only while an expansion is enabled, and every one of these archives is optional. They are mounted at startup, give way to the player's side when a scenario or saved game loads, and are mounted again when a match ends and the menus return. [UI files](/systems/ui-files/#how-a-file-is-found) describes how a mod uses them for side-dependent interface files.
 

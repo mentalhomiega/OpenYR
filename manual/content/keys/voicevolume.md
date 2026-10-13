@@ -7,7 +7,7 @@ when_omitted:
   value: "1"
 ---
 
-`VoiceVolume` sets the level of EVA announcements, multiplayer taunts and the voice on the campaign map selection screen. A change also applies to the line already speaking. Unit responses are sound effects and follow [`SoundVolume`](/keys/soundvolume/) instead.
+`VoiceVolume` sets the level of EVA announcements and multiplayer taunts. A change also applies to the line already speaking. Unit responses are sound effects and follow [`SoundVolume`](/keys/soundvolume/) instead.
 
 Below 1/255, which includes `0` and every negative value, speech is refused: nothing is queued and nothing is spoken.
 

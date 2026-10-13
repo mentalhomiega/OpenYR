@@ -40,7 +40,6 @@
 #include "_keyboar.h"
 #include "_surface.h"
 #include "addon.h"
-#include "autotest.h"
 #include "ccfile.h"
 #include "convert.h"
 #include "dbgprint.h"
@@ -69,9 +68,9 @@
 
 class MapSelect : public MSEngine {
 	public:
+		bool Set_Next_Scenario(ScenarioClass * scenario);
 		bool Presentation(ScenarioClass * scenario);
 		bool Advance_Progression(ScenarioClass * scenario, char const * map_name);
-		bool Choose_First_Selection(ScenarioClass * scenario);
 
 	private:
 		bool Init(ScenarioClass * scenario);
@@ -121,7 +120,7 @@ class MapSelect : public MSEngine {
  *=============================================================================================*/
 const char * Map_Selection(ScenarioClass * scen)
 {
-	if (MapSelect().Presentation(scen) == false) {
+	if (MapSelect().Set_Next_Scenario(scen) == false) {
 		WWMessageBox().Process("Unable to initiate Map Selection!\n", TXT_OK);
 		return(NULL);
 	}
@@ -232,31 +231,61 @@ bool MapSelect::Advance_Progression(ScenarioClass * scen, char const * map_name)
 
 
 /// <summary>
-/// Takes the first choice of the scenario's stage without drawing the selection screen.
-/// This serves the continuewin shortcut of an unattended run, and the fallback for a screen whose
-/// art cannot be loaded.
+/// Sets the scenario to the mission that follows the one just won, and draws no screen.
+/// A stage with a MapVQ= plays the LOADING track, when the game has it, and takes its first choice.
+/// A stage without one leaves the scenario as it is, so the mission just won loads again. This
+/// follows gamemd's SetNextScenario (0x005ae100).
 /// </summary>
-/// <param name="scenario">The scenario to advance. It is updated with the map named.</param>
-/// <returns>bool; Was a choice taken?</returns>
-bool MapSelect::Choose_First_Selection(ScenarioClass * scenario)
+/// <param name="scenario">The scenario to advance. It is updated with the mission chosen.</param>
+/// <returns>bool; False when the choice data cannot be read, or when the mission just won is in no stage of the player's side.</returns>
+bool MapSelect::Set_Next_Scenario(ScenarioClass * scenario)
 {
-	char const * side_name = Progression_Side_Name(HouseTypes[scenario->PlayerHouse]);
-
-	if ((side_name == NULL) || (Choices.Initialize(side_name) == false)) {
-		Choices.Deinit();
+	if (scenario == NULL) {
+		DebugString("MapSelect: Invalid Scenario pointer!\n");
 		return(false);
 	}
 
-	bool const taken = Take_First_Choice(scenario, Choices.Find_Stage_By_Scenario(scenario->ScenarioName));
+	char const * side_name = Progression_Side_Name(HouseTypes[scenario->PlayerHouse]);
+	if (side_name == NULL) {
+		DebugString("MapSelect: Invalid side!\n");
+		return(false);
+	}
+
+	if (Choices.Initialize(side_name) == false) {
+		Choices.Deinit();
+		DebugString("MapSelect: Unable to initialize choices!\n");
+		return(false);
+	}
+
+	MapStage * map_stage = Choices.Find_Stage_By_Scenario(scenario->ScenarioName);
+	if (map_stage == NULL) {
+		Choices.Deinit();
+		DebugString("MapSelect: Invalid stage!\n");
+		return(false);
+	}
+
+	DebugString("MapSelect: Stage: %s\n", map_stage->Get_Stage_Label());
+
+	if (map_stage->Get_Map_VQ_Name() != NULL) {
+		ThemeType const loading = Theme.From_Name("LOADING");
+		if (loading != THEME_NONE) {
+			Theme.Play_Song(loading);
+		}
+
+		if (Take_First_Choice(scenario, map_stage) == false) {
+			DebugString("MapSelect: The first choice names no mission; %s loads again\n", scenario->ScenarioName);
+		}
+	}
 
 	Choices.Deinit();
-	return(taken);
+	return(true);
 }
 
 
 /// <summary>
 /// Sets the scenario to the first choice of a stage.
-/// The choice data must already be loaded, because the choice is looked up in it.
+/// The choice data must already be loaded, because the choice is looked up in it. A choice
+/// whose stage has no mission leaves the scenario unchanged.
 /// </summary>
 /// <param name="scenario">The scenario to advance. It is updated with the map named.</param>
 /// <param name="stage">The stage whose first choice is taken. A NULL stage, or one with no choices, takes nothing.</param>
@@ -269,31 +298,28 @@ bool MapSelect::Take_First_Choice(ScenarioClass * scenario, MapStage const * sta
 		next = Choices.Find_Stage_By_Name(stage->Get_Selection(0)->Get_Stage_Label());
 	}
 
-	if (next != NULL) {
-		scenario->Set_Scenario_Name(next->Get_Scenario_Name());
-		scenario->Stage = Choices.Get_Stage_ID(next);
+	if ((next == NULL) || (next->Get_Scenario_Name() == NULL) || (next->Get_Scenario_Name()[0] == '\0')) {
+		return(false);
 	}
 
-	return(next != NULL);
+	scenario->Set_Scenario_Name(next->Get_Scenario_Name());
+	scenario->Stage = Choices.Get_Stage_ID(next);
+	return(true);
 }
 
 
 /// <summary>
-/// Runs the map selection screen, or takes the first choice when the screen cannot start.
-/// The screen runs for a stage with a map movie. When its palettes or click map cannot be
-/// loaded, the first choice is taken without the screen.
+/// Runs the map selection screen. Nothing calls this routine now.
+/// The post-win path chooses the next mission in Set_Next_Scenario, which draws no screen, as
+/// gamemd's SetNextScenario (0x005ae100) does. The screen code is kept unused.
 /// </summary>
 /// <param name="scenario">The scenario to advance. It is updated with the map chosen.</param>
-/// <returns>bool; False when the choice data cannot be read, or when the screen cannot start and the stage has no first choice.</returns>
+/// <returns>bool; Was the screen prepared and run?</returns>
 bool MapSelect::Presentation(ScenarioClass * scenario)
 {
 	const char * selected = NULL;
 
 	Rect rect;
-
-	if (AutoTest_Skip_Map_Screen()) {
-		return(Choose_First_Selection(scenario));
-	}
 
 	if (Init(scenario) == false) {
 		return(false);

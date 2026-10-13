@@ -58,11 +58,11 @@ The route from one mission to the next is not in `battle.ini`. It is in `MAPSELM
 
 The campaign records its progress as a **stage number**: the current stage's position in the side's list. No mission file sets it. Each advance sets the number to the stage chosen, and a replay, a restart or a loaded save keeps the number the mission had.
 
-Every other mission load starts at the first stage in the list. That includes a new campaign and a campaign mission that a launch file starts partway through a chain. On the map screen, though, the choices come from the stage whose `Scenario=` is the mission just won, so a launched mission offers its own stage's choices. With `SkipMapSelect=yes`, the stage number decides instead: the advance matches its `NextScenario` against the choices of that stage, and unless one of them names it, the choice fails as [When the choice fails](#when-the-choice-fails) describes.
+Every other mission load starts at the first stage in the list. That includes a new campaign and a campaign mission that a launch file starts partway through a chain. After a win without `SkipMapSelect=yes`, though, the choice comes from the stage whose `Scenario=` is the mission just won, so a launched mission follows its own stage's first choice. With `SkipMapSelect=yes`, the stage number decides instead: the advance matches its `NextScenario` against the choices of that stage, and unless one of them names it, the choice fails as [When the choice fails](#when-the-choice-fails) describes.
 
 Two rules follow from this:
 
-- A mission can lead only to a stage that the current stage lists as a choice.
+- A mission can lead only to a stage that the current stage lists as a choice. Without `SkipMapSelect=yes`, the first such choice is the one taken.
 - The side of the mission's [`Player=`](/keys/player/#scope-scenarios) house selects the list. A GDI house reads the `[GDI]` stages and a Nod house reads the `[Nod]` stages.
 
 ## The win sequence
@@ -78,7 +78,7 @@ Once the win takes effect, these steps run in order:
 3. The [`PostScore`](/keys/postscore/) movie plays, then the [`PreMapSelect`](/keys/premapselect/) movie.
 4. With [`OneTimeOnly=yes`](/keys/onetimeonly/), the game ends here.
 5. With [`EndOfGame=yes`](/keys/endofgame/), the campaign's [`FinalMovie`](/keys/finalmovie/) plays, the credits roll and the game ends.
-6. The next mission is chosen, on the map selection screen or, with [`SkipMapSelect=yes`](/keys/skipmapselect/), by the mission itself.
+6. The next mission is chosen: the stage's first choice, or with [`SkipMapSelect=yes`](/keys/skipmapselect/), the successor the mission names.
 7. The carry-over state is copied from the won mission.
 8. The [campaign level number](#the-campaign-level-number) goes up by one.
 9. The next mission loads. Its [`Intro`](/keys/intro/), [`Brief`](/keys/brief/) and [`Action`](/keys/action/#scope-scenarios) movies play, and its [`Theme`](/keys/theme/) music starts.
@@ -133,7 +133,7 @@ The carried amount is not used up. Each replay or restart of the mission grants 
 
 ## Choosing the next mission
 
-By default, winning opens the map selection screen, showing the stages the current stage leads to. The player must click one of them; the screen offers no way to leave without choosing. When the screen cannot open because its palettes or click map cannot be loaded, the first choice is taken instead, as [Taking the first choice](#taking-the-first-choice) describes. The chosen stage's mission loads next.
+By default, winning takes the first choice of the won mission's stage: the choice with the lowest key number in the stage's list, as [Taking the first choice](#taking-the-first-choice) describes. No screen opens, so the player does not pick the next mission. The chosen stage's mission loads next. A stage with no `MapVQ=` takes no choice, and the mission just won loads again.
 
 With [`SkipMapSelect=yes`](/keys/skipmapselect/), the mission names its successor. The game takes [`NextScenario`](/keys/nextscenario/), or [`AltNextScenario`](/keys/altnextscenario/) when global flag `1` is set. It then compares that name, ignoring case, with the `Scenario=` value of each stage the current stage leads to, and takes the first match. A name that none of those stages lists is not loaded, even when a mission file of that name exists.
 
@@ -145,10 +145,10 @@ When the next mission cannot be chosen, the campaign goes on with a mission the 
 | --- | --- | --- | --- |
 | `NextScenario` or `AltNextScenario` matches none of the stages the current stage leads to | `SkipMapSelect=yes` | The campaign's first mission | Yes |
 | The `MAPSELMD.INI` file is missing, or the player's side has no section or no stage list | Either | The mission just won, again | Yes |
-| No stage of the player's side has the mission just won as its `Scenario=` | Map screen | The mission just won, again | Yes |
+| No stage of the player's side has the mission just won as its `Scenario=` | Without `SkipMapSelect=yes` | The mission just won, again | Yes |
 | The stage number is beyond the end of the side's list | `SkipMapSelect=yes` | The mission just won, again | Yes |
-| The map screen's palette, overlay palette or click map cannot be loaded | Map screen | The stage's first choice, taken without the screen | Only if the stage has no choice |
-| The current stage has no `MapVQ=`, so the screen is skipped | Map screen | The mission just won, again | No |
+| The first choice names no stage of the player's side, names a stage with no `Scenario=`, or the stage has no choices | Without `SkipMapSelect=yes` | The mission just won, again | No |
+| The current stage has no `MapVQ=` | Without `SkipMapSelect=yes` | The mission just won, again | No |
 
 In every row, the mission that loads is treated as the next mission: its briefing plays, the level number goes up, and it receives the carry-over from the win. When that mission is the one just won, it starts with the flags as they ended and a share of the money the player finished with. The state it received when it was first reached is not applied again.
 
@@ -158,9 +158,9 @@ A mistyped or out-of-sequence `NextScenario` sends the player back to the campai
 
 ### Taking the first choice
 
-A stage with a `MapVQ=` opens the map selection screen, which needs the palettes and the click map. When those cannot be loaded, the screen does not open. The game takes the stage's first choice instead, which is the choice with the lowest key number in the stage's list. The stage's movie, music and voice-overs are not played, and the debug log records the reason.
+After a win, a stage with a `MapVQ=` takes its first choice: the choice with the lowest key number in the stage's list. The game plays the `LOADING` track when it has that track. No screen opens, and the stage's movie is not played. The chosen stage's mission loads next.
 
-A stage with no choices, or whose first choice names no stage of the player's side, has nothing to take. The error box appears and the mission just won loads again.
+A stage with no `MapVQ=` takes no choice. A stage with a `MapVQ=` takes none either when it has no choices, or when its first choice names no stage of the player's side or a stage with no `Scenario=`. In each of those cases the mission just won loads again, with no error box.
 
 ### Loading the chosen mission
 

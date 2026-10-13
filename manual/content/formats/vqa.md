@@ -25,7 +25,7 @@ A `.VQA` file holds vector-quantized video and, optionally, a sound track, store
 
 - Full screen. The mission waits until the movie ends.
 - In the radar pane. The mission goes on while the movie plays.
-- In a graphical menu or the campaign map-selection screen.
+- In a graphical menu.
 
 ## Registering a movie
 
@@ -54,7 +54,7 @@ These movies are named by file name, so `[Movies]` has no effect on them:
 - The score screen movie.
 - The main menu's intro movies.
 - A campaign's [introduction movie](/systems/campaign-progression/#the-campaign-level-number), which plays before its first mission's briefing.
-- The movies of the graphical menus and the map-selection screen.
+- The movies of the graphical menus.
 
 :::danger[Keep movie names to 15 characters]
 The game builds a registered movie's file name in a 20-byte buffer that holds the name, `.VQA` and a terminating byte. A name of 16 or more characters writes past the end of that buffer, by up to 16 bytes for a 31-character name, and overwrites the memory that follows it. The names the game ships with are eight characters or fewer.
@@ -79,7 +79,7 @@ A full-screen movie plays only when all of these hold, tested in this order:
 3. The movie opens. It must be an archive member, except `SIZZLE1.VQA`. Its chunks and header must be accepted as described below, and when the game has an audio device, its sound track must meet the limits in [Sound and picture](#sound-and-picture).
 4. Its frame is at least 320 pixels wide or at least 200 pixels tall. A movie smaller than 320 by 200 in both directions is opened and then discarded.
 
-A movie in the radar pane must pass the first three tests but not the size test. A movie shown by a graphical menu or the campaign map-selection screen needs to pass only the second and third.
+A movie in the radar pane must pass the first three tests but not the size test. A movie shown by a graphical menu needs to pass only the second and third.
 
 A full-screen movie plays at its own size, centered on the screen, unless [`StretchMovies`](/keys/stretchmovies/) scales it to fit. The score screen movie always plays at its own size. A radar-pane movie is drawn from the pane's top-left corner.
 

@@ -1,6 +1,6 @@
 ---
 key: SkipMapSelect
-summary: Whether the campaign advances straight to a named mission instead of offering the map screen.
+summary: Whether the campaign advances straight to a named mission instead of taking the stage's first choice.
 see_also: [NextScenario, AltNextScenario, OneTimeOnly, EndOfGame]
 when_omitted:
   kind: value
@@ -14,7 +14,7 @@ NextScenario=Maps/Missions/GDI2A.MAP
 AltNextScenario=Maps/Missions/GDI9C.MAP
 ```
 
-With `SkipMapSelect=yes`, winning the mission skips the map selection screen. The campaign advances to [`NextScenario`](/keys/nextscenario/), or to [`AltNextScenario`](/keys/altnextscenario/) when global variable 1 is set. At the default, the map selection screen opens and the player chooses the next mission.
+With `SkipMapSelect=yes`, the mission names its successor. The campaign advances to [`NextScenario`](/keys/nextscenario/), or to [`AltNextScenario`](/keys/altnextscenario/) when global variable 1 is set. At the default, the campaign advances to the first choice of the mission's stage, and the two names are not used.
 
 The named map must be one of the next missions the campaign's map selection data offers from the current stage, and the campaign moves to that stage. [`NextScenario`](/keys/nextscenario/) covers what happens when the name is not among them.
 

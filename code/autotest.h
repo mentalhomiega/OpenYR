@@ -32,10 +32,6 @@ void AutoTest_Game_Over(bool won);
 // it shows.
 bool AutoTest_Post_Win(void);
 
-// True when the map selection takes its first choice without its screen: a continuewin run whose
-// line does not say "screen".
-bool AutoTest_Skip_Map_Screen(void);
-
 void AutoTest_Loading_Screen_Shown(void);
 
 class HouseClass;
