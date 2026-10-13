@@ -29,6 +29,10 @@ While the firer keeps targeting the object, the wave damages every cell it has p
 The leading edge keeps growing only while the firer still targets the same object and the two are no more than 2172 leptons apart, a little under 8.5 cells. When that stops being true, the leading edge stops and the wave fades early from its trailing edge. A wave fired from beyond that distance is removed as soon as it appears and damages nothing, so a sonic weapon whose [`Range=`](/keys/range/#scope-weapontype) reaches further deals no damage at its longest shots.
 :::
 
+:::caution[A wave fired from under 240 leptons is never shown]
+A wave whose muzzle is less than 240 leptons from its target, measured on the ground and ignoring height, is not placed on the map. It neither shows nor damages anything. The weapon still fires: it spends its [`Ammo`](/keys/ammo/) and starts its reload as usual.
+:::
+
 ## Firing rate
 
 While a wave is alive, neither of the object's weapons can fire. The reload delay after a sonic shot is exactly [`ROF`](/keys/rof/#scope-weapontype), with no house rate-of-fire bias, burst delay, random extra frames or veteran bonus. The next shot waits until both `ROF` has passed and the wave is gone. A structure with more than one round of [`Ammo`](/keys/ammo/) left waits only for the wave. [The reload delay](/systems/firing-geometry/#the-reload-delay) gives the full rules.
