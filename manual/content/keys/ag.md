@@ -13,7 +13,7 @@ An ordered attack on an object does not check `AG`. The weapon slot is chosen as
 
 A structure's attack cursor reads its first weapon slot. When that slot's projectile is `AG=no`, the player cannot order the structure to attack a map cell, or any object unless the object is airborne and the projectile is [`AA=yes`](/keys/aa/).
 
-With `AA=no` beside it, which is the default, the weapon is ground-only. `AA=yes` with `AG=no` makes the air-only mirror.
+With `AA=no` beside it, which is the default, the weapon is ground-only. `AA=yes` with `AG=no` is the mirror: the automatic scan picks aircraft for the weapon and no object on the ground.
 
 Automatic target scans also read this setting. A weapon slot whose projectile is `AG=yes` adds infantry, vehicles and buildings to the kinds of target the object looks for, unless [`AV=yes`](/keys/av/) on the same projectile limits the slot to vehicles. [What each kind of object considers](/systems/target-selection/#what-each-kind-of-object-considers) says when an object's weapons fill that list.
 
