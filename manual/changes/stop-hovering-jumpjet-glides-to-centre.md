@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A jumpjet unit that never lands, such as the Rocketeer, given Stop in the air now glides to the centre of its cell and hovers there. Before, it halted at once where it was, partway across the cell. It still does not land.
+A jumpjet unit that never lands, such as the Rocketeer, given Stop while moving now glides to the middle of a nearby free cell and hovers there, as in Yuri's Revenge. Before, it halted at once where it was, partway across a cell. It still does not land.
