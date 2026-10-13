@@ -91,6 +91,14 @@ namespace NetGlobal
 	};
 
 
+	// Bytes the command reads, counted from the packet's first byte. Only the first `available`
+	// bytes are meaningful; a command with no known layout needs the whole packet.
+	std::size_t Required_Length(void const * packet, std::size_t available) noexcept;
+
+	// Bytes to send for a Global Channel packet of `length` bytes: the command's requirement,
+	// never more than the caller's length.
+	std::size_t Send_Length(void const * packet, std::size_t length) noexcept;
+
 	void Initialize_Packet(GlobalPacketType & packet, NetCommandType command) noexcept;
 	EndpointResolution Resolve_Sender(Endpoint const & sender, std::span<Endpoint const> roster) noexcept;
 	DecodeError Validate_In_Game_Packet(GlobalPacketType const & packet, std::size_t packet_length, ValidationContext const & context);

@@ -313,6 +313,49 @@ void Test_Broadcast_Addresses(void)
 	Check(blind.Transport.Get_Num_Local_Addresses() == 0, "a socket naming no interface reports none");
 }
 
+
+/// The payload carries a 4-byte CRC on the wire, so a payload of 1012 bytes makes a 1016-byte
+/// datagram. A datagram one byte larger is refused and never reaches the socket.
+void Test_Datagram_Limit(void)
+{
+	Harness plain;
+	Check(plain.Send(std::string(1012, 'p'), Peer(0x0100007f, 7000)).size() == 1016,
+		"a 1016-byte datagram is handed to the socket");
+	plain.Socket->Clear_Sent();
+	std::string const too_big(1013, 'p');
+	IPXAddressClass const to = Peer(0x0100007f, 7000);
+	plain.Transport.WriteTo(const_cast<char *>(too_big.data()), static_cast<int>(too_big.size()), const_cast<IPXAddressClass *>(&to), sizeof(to));
+	plain.Transport.Service();
+	Check(plain.Socket->Sent().empty(), "a 1017-byte datagram is refused and does not reach the socket");
+
+	Harness tunnelled;
+	tunnelled.Transport.Configure_Tunnel(7, 0x0100007f, Socket_Network_Port(50000));
+	IPXAddressClass const peer(0, 9);
+	Check(tunnelled.Send(std::string(1008, 't'), peer).size() == 1016,
+		"a tunnelled 1016-byte datagram, tunnel header included, is handed to the socket");
+	tunnelled.Socket->Clear_Sent();
+	std::string const tunnel_too_big(1009, 't');
+	tunnelled.Transport.WriteTo(const_cast<char *>(tunnel_too_big.data()), static_cast<int>(tunnel_too_big.size()), const_cast<IPXAddressClass *>(&peer), sizeof(peer));
+	tunnelled.Transport.Service();
+	Check(tunnelled.Socket->Sent().empty(), "a tunnelled datagram over the limit is refused");
+}
+
+
+/// A refused datagram is dropped from the queue, so the datagrams queued after it still go out.
+void Test_Refused_Datagram_Does_Not_Block(void)
+{
+	Harness harness;
+	IPXAddressClass const to = Peer(0x0100007f, 7000);
+	std::string const too_big(1013, 'x');
+	std::string const after("after");
+	harness.Socket->Clear_Sent();
+	harness.Transport.WriteTo(const_cast<char *>(too_big.data()), static_cast<int>(too_big.size()), const_cast<IPXAddressClass *>(&to), sizeof(to));
+	harness.Transport.WriteTo(const_cast<char *>(after.data()), static_cast<int>(after.size()), const_cast<IPXAddressClass *>(&to), sizeof(to));
+	harness.Transport.Service();
+	bool const sent_after = harness.Socket->Sent().size() == 1 && harness.Socket->Sent().back().Bytes.size() == 4 + after.size();
+	Check(sent_after, "a datagram queued behind a refused one still goes out");
+}
+
 }
 
 
@@ -326,6 +369,8 @@ int main(void)
 	Test_Malformed_Is_Rejected();
 	Test_Tunnel_Framing();
 	Test_Broadcast_Addresses();
+	Test_Datagram_Limit();
+	Test_Refused_Datagram_Does_Not_Block();
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Some checks FAILED.");
 	return(Failures == 0 ? 0 : 1);

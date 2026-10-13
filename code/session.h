@@ -272,8 +272,10 @@ struct RemoteFileTransferType {
 
 
 // The encoded game options carry the settings, the scenario description, name and digest,
-// and a name, house and color for every player.
-#define MAX_GAMEOPT_LENGTH	(MAX_PLAYERS * (MPLAYER_NAME_MAX + 8) + 384)
+// and a name, house and color for every player. The text buffer is 900 bytes, terminator
+// included, so the largest Global Channel packet fits UDP_DATAGRAM_LIMIT once the CRC and the
+// tunnel header are counted. The old sizing reached 960 bytes with 8 players and 64-byte names.
+#define MAX_GAMEOPT_LENGTH	900
 
 // The room a packet gives to a mod signature, terminating zero included (ModSync::CAPACITY).
 #define MOD_SIGNATURE_MAX	384

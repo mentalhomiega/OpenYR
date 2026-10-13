@@ -776,8 +776,8 @@ void Test_Global_Packets(void)
 		"multiple zero-port candidates on one IP are rejected as ambiguous");
 	Check(NetGlobal::Resolve_Sender({0x05060708, 1000}, endpoints).Error == NetGlobal::DecodeError::SENDER_NOT_MEMBER,
 		"an unknown endpoint remains outside the session roster");
-	Check_Global_Error(packet, packet_size - 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
-		"a short global packet is rejected before dispatch");
+	Check_Global_Error(packet, NetGlobal::Required_Length(&packet, packet_size) - 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
+		"a global packet one byte short of its command's requirement is rejected before dispatch");
 	Check_Global_Error(packet, packet_size + 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
 		"an oversized global packet is rejected before dispatch");
 	Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::NONE,
@@ -847,7 +847,7 @@ void Test_Global_Packets(void)
 	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_KICK_PLAYER,
 		"a kick target must be a current session member");
 
-	Check(sizeof(GlobalPacketType) == 1059, "the global packet keeps its wire size");
+	Check(sizeof(GlobalPacketType) == 999, "the largest global packet fills the tunnel datagram limit");
 	Check(offsetof(GlobalPacketType, PlayerInfo.Mods) == offsetof(GlobalPacketType, PlayerInfo.BuildNumber) + sizeof(unsigned int),
 		"a join request carries its mods right after the build number");
 	Check(offsetof(GlobalPacketType, Reject.Mods) == offsetof(GlobalPacketType, Reject.Why) + sizeof(int),
@@ -905,6 +905,80 @@ void Test_Global_Packets(void)
 		"successful packets do not enter rejection counters");
 }
 
+
+// A Global Channel datagram carries the CRC (4 bytes), the Global Channel header (9) and, in
+// tunnel mode, the tunnel header (4) around the packet. The tunnel server reads at most 1016
+// bytes of what the game sends (its 1024-byte buffer less the bridge's 8-byte envelope).
+void Test_Global_Wire_Lengths(void)
+{
+	constexpr std::size_t DATAGRAM_LIMIT = 1016;
+	constexpr std::size_t FRAMING = 4 + 9 + 4;
+	constexpr std::size_t HEADER = 4 + 64 + 23;
+
+	Check(sizeof(GlobalPacketType) + FRAMING <= DATAGRAM_LIMIT,
+		"the largest Global Channel packet fits the tunnel datagram limit");
+
+	GlobalPacketType packet;
+	auto required = [&packet](NetCommandType command) {
+		std::memset(&packet, 0, sizeof(packet));
+		packet.Command = command;
+		return(NetGlobal::Required_Length(&packet, sizeof(packet)));
+	};
+
+	Check(required(NET_QUERY_GAME) == HEADER, "a header-only command needs the command header");
+	Check(required(NET_ANSWER_GAME) == HEADER + sizeof(GlobalPacketType::GameInfo),
+		"NET_ANSWER_GAME needs its game info after the header");
+	Check(required(NET_ANSWER_PLAYER) == HEADER + sizeof(GlobalPacketType::PlayerInfo),
+		"NET_ANSWER_PLAYER needs the player info arm");
+	Check(required(NET_CHAT_ANNOUNCE) == HEADER + sizeof(GlobalPacketType::Chat),
+		"NET_CHAT_ANNOUNCE needs its chat arm");
+	Check(required(NET_MESSAGE) == HEADER + sizeof(GlobalPacketType::Message),
+		"NET_MESSAGE needs the message arm");
+	Check(required(NET_FILE_CHUNK) == sizeof(GlobalPacketType),
+		"a file chunk keeps its whole buffer, since it has its own layout");
+
+	// The options text runs through its terminator; the colour and name CRC follow it.
+	std::memset(&packet, 0, sizeof(packet));
+	packet.Command = NET_PUB_GAMEOPT;
+	std::strcpy(packet.Options.Buf, "abc");
+	std::size_t const short_options = HEADER + 4 + 8;
+	Check(NetGlobal::Required_Length(&packet, sizeof(packet)) == short_options,
+		"options need the text through its terminator and then the colour and CRC");
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == short_options,
+		"options are sent only as far as those fields");
+
+	std::memset(packet.Options.Buf, 'x', sizeof(packet.Options.Buf));
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == sizeof(packet),
+		"options text with no terminator is sent whole");
+
+	std::memset(&packet, 0, sizeof(packet));
+	packet.Command = NET_PRIV_GAMEOPT;
+	std::memset(packet.Options.Buf, 'x', MAX_GAMEOPT_LENGTH - 1);
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == sizeof(packet),
+		"options text of the largest size needs the whole packet");
+
+	// A caller that asks for less than the requirement keeps what it asked for.
+	std::memset(&packet, 0, sizeof(packet));
+	packet.Command = NET_QUERY_GAME;
+	Check(NetGlobal::Send_Length(&packet, 455) == HEADER,
+		"a header-only command is trimmed from the 455 bytes the older call sites passed");
+	Check(NetGlobal::Send_Length(&packet, 40) == 40,
+		"a buffer shorter than the requirement is sent as it is");
+
+	// The in-game receiver accepts any length from the requirement up to the whole packet.
+	NetGlobal::ValidationContext context;
+	packet.Command = NET_MESSAGE;
+	std::size_t const message = HEADER + sizeof(GlobalPacketType::Message);
+	Check(NetGlobal::Validate_In_Game_Packet(packet, message - 1, context) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"an in-game message one byte short of its requirement is refused");
+	Check(NetGlobal::Validate_In_Game_Packet(packet, message, context) != NetGlobal::DecodeError::INVALID_LENGTH,
+		"an in-game message of exactly its requirement is accepted for length");
+	Check(NetGlobal::Validate_In_Game_Packet(packet, sizeof(packet), context) != NetGlobal::DecodeError::INVALID_LENGTH,
+		"an in-game message of the whole packet is accepted for length");
+	Check(NetGlobal::Validate_In_Game_Packet(packet, sizeof(packet) + 1, context) == NetGlobal::DecodeError::INVALID_LENGTH,
+		"an in-game packet longer than the struct is refused");
+}
+
 }	// namespace
 
 
@@ -922,6 +996,7 @@ int main(void)
 	Test_Datagram_Admission();
 	Test_Connection_Admission();
 	Test_Global_Packets();
+	Test_Global_Wire_Lengths();
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Some checks FAILED.");
 	return(Failures == 0 ? 0 : 1);

@@ -34,6 +34,14 @@
 #include "wsproto.h"
 
 
+// The CnCNet tunnel server reads each datagram into a 1024-byte buffer, and its bridge adds an
+// 8-byte envelope to what the game sends. A datagram the game sends, counting the 4-byte
+// tunnel header and the 4-byte CRC, therefore stays within 1016 bytes.
+constexpr int UDP_DATAGRAM_LIMIT = 1016;
+constexpr int UDP_TUNNEL_HEADER_SIZE = 4;
+constexpr int UDP_CRC_SIZE = sizeof(unsigned int);
+
+
 /*
 **	Class to allow access to UDP specific portions of the Winsock interface.
 **

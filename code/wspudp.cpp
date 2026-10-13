@@ -49,13 +49,13 @@
 
 #include <cstdio>
 #include <cstring>
+#include <set>
 
 
 extern int WestwoodOnline_PortNumber;
 
 // A tunnelled datagram leads with the sender's and the recipient's tunnel IDs, which is
 // all the tunnel server reads in order to forward it.
-#define TUNNEL_HEADER_SIZE 4
 
 /***********************************************************************************************
  * UDPInterfaceClass::UDPInterfaceClass -- Class constructor.                                  *
@@ -149,30 +149,51 @@ void UDPInterfaceClass::Configure_Tunnel(unsigned short local_id, unsigned long 
 /// <param name="to">Where the packet is bound. In tunnel mode the port carries the
 /// recipient's tunnel ID rather than a real port.</param>
 /// <returns>The socket's answer, counting only the payload.</returns>
+/// <summary>
+/// Reports whether the tunnel server can receive a datagram of this size, logging each refused
+/// size once.
+/// </summary>
+/// <param name="datagram_length">Bytes the datagram occupies on the wire the game sends to.</param>
+static bool Datagram_Fits(int datagram_length)
+{
+	static std::set<int> refused;
+
+	if (datagram_length <= UDP_DATAGRAM_LIMIT) return(true);
+	if (refused.insert(datagram_length).second) {
+		DebugString("UDP datagram of %d bytes refused; the limit is %d bytes.\n", datagram_length, UDP_DATAGRAM_LIMIT);
+	}
+	return(false);
+}
+
+
 TransferResult UDPInterfaceClass::Send_To(void const * buffer, int length, IPXAddressClass const & to)
 {
 	if (Socket == nullptr) return(TransferResult{SocketError::OTHER, 0});
 
 	if (TunnelPort == 0) {
+		if (!Datagram_Fits(length)) return(TransferResult{SocketError::MESSAGE_SIZE, 0});
 		return(Socket->Send_To(buffer, length, to));
 	}
 
 	// The tunnel server routes on the header alone, so it has to lead the datagram,
 	// outside the packet's own framing.
-	char tunnelled[TUNNEL_HEADER_SIZE + WS_RECEIVE_BUFFER_LEN];
-	if (length > (int)sizeof(tunnelled) - TUNNEL_HEADER_SIZE) {
+	char tunnelled[UDP_TUNNEL_HEADER_SIZE + WS_RECEIVE_BUFFER_LEN];
+	if (length > (int)sizeof(tunnelled) - UDP_TUNNEL_HEADER_SIZE) {
+		return(TransferResult{SocketError::MESSAGE_SIZE, 0});
+	}
+	if (!Datagram_Fits(length + UDP_TUNNEL_HEADER_SIZE)) {
 		return(TransferResult{SocketError::MESSAGE_SIZE, 0});
 	}
 
 	unsigned short header[] = { TunnelID, to.Get_Port() };
 	std::memcpy(tunnelled, header, sizeof(header));
-	std::memcpy(tunnelled + TUNNEL_HEADER_SIZE, buffer, length);
+	std::memcpy(tunnelled + UDP_TUNNEL_HEADER_SIZE, buffer, length);
 
 	IPXAddressClass const server(TunnelIP, TunnelPort);
-	TransferResult result = Socket->Send_To(tunnelled, length + TUNNEL_HEADER_SIZE, server);
+	TransferResult result = Socket->Send_To(tunnelled, length + UDP_TUNNEL_HEADER_SIZE, server);
 
 	if (result.Error == SocketError::NONE && result.Length > 0) {
-		result.Length -= TUNNEL_HEADER_SIZE;
+		result.Length -= UDP_TUNNEL_HEADER_SIZE;
 	}
 
 	return(result);
@@ -194,7 +215,7 @@ TransferResult UDPInterfaceClass::Receive_From(void * buffer, int length, IPXAdd
 		return(Socket->Receive_From(buffer, length, from));
 	}
 
-	char tunnelled[TUNNEL_HEADER_SIZE + WS_RECEIVE_BUFFER_LEN];
+	char tunnelled[UDP_TUNNEL_HEADER_SIZE + WS_RECEIVE_BUFFER_LEN];
 	TransferResult const result = Socket->Receive_From(tunnelled, sizeof(tunnelled), from);
 
 	if (result.Error != SocketError::NONE) return(result);
@@ -203,15 +224,15 @@ TransferResult UDPInterfaceClass::Receive_From(void * buffer, int length, IPXAdd
 
 	// Anything too short to carry a header, or addressed to somebody else, is not ours.
 	unsigned short header[2];
-	if (rc <= TUNNEL_HEADER_SIZE) return(TransferResult{SocketError::NONE, 0});
+	if (rc <= UDP_TUNNEL_HEADER_SIZE) return(TransferResult{SocketError::NONE, 0});
 	std::memcpy(header, tunnelled, sizeof(header));
 
 	if (header[1] != TunnelID) return(TransferResult{SocketError::NONE, 0});
 
-	rc -= TUNNEL_HEADER_SIZE;
+	rc -= UDP_TUNNEL_HEADER_SIZE;
 	if (rc > length) return(TransferResult{SocketError::NONE, 0});
 
-	std::memcpy(buffer, tunnelled + TUNNEL_HEADER_SIZE, rc);
+	std::memcpy(buffer, tunnelled + UDP_TUNNEL_HEADER_SIZE, rc);
 
 	// The server is the only endpoint we see, so the sender is named by tunnel ID.
 	from.Set_Address(0, header[0]);
@@ -548,7 +569,10 @@ void UDPInterfaceClass::Send_Pending(void)
 
 		TransferResult const sent = Send_To ( ((char const *)packet->Buffer) - sizeof(packet->CRC), packet->BufferLen + sizeof(packet->CRC), destination );
 
-		if (sent.Error != SocketError::NONE) {
+		// A datagram refused for its size never fits, so it is dropped. Left queued, it would hold up every packet behind it.
+		if (sent.Error == SocketError::MESSAGE_SIZE) {
+			Record_Packet_Drop(WS_DROP_SEND_LENGTH);
+		} else if (sent.Error != SocketError::NONE) {
 			if (sent.Error != SocketError::WOULD_BLOCK) {
 				Clear_Error();
 			}

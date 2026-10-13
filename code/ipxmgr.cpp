@@ -71,6 +71,7 @@
 #include "dialog.h"
 #include "globals.h"
 #include "house.h"
+#include "netglobal.h"
 #include "queue.h"
 #include "scheme.h"
 #include "session.h"
@@ -82,6 +83,11 @@
 #include "wspudp.h"
 
 #include <algorithm>
+
+
+// The largest Global Channel packet, with its header, the UDP CRC and the tunnel header, fits one datagram.
+static_assert(sizeof(GlobalPacketType) + sizeof(GlobalHeaderType) + UDP_CRC_SIZE + UDP_TUNNEL_HEADER_SIZE <= UDP_DATAGRAM_LIMIT,
+	"a Global Channel packet no longer fits the tunnel's datagram limit");
 
 
 /***************************************************************************
@@ -766,6 +772,11 @@ int IPXManagerClass::Send_Global_Message(void *buf, int buflen,
 
 	if (ack_req != 0 && (address == NULL || address->Is_Broadcast())) {
 		ack_req = 0;
+	}
+
+	// Only the bytes the packet's command reads go out; the receiver zeroes the rest.
+	if (buf != NULL && buflen > 0) {
+		buflen = static_cast<int>(NetGlobal::Send_Length(buf, static_cast<std::size_t>(buflen)));
 	}
 
 	rc = GlobalChannel->Send_Packet (buf, buflen, address, ack_req);

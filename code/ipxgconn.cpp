@@ -449,6 +449,8 @@ int IPXGlobalConnClass::Get_Packet (void * buf, int capacity, int *buflen,
 			return(0);
 		}
 		memcpy(buf, admission.Payload.data(), admission.Payload.size());
+		// A packet shorter than the caller's buffer leaves the rest zeroed, not holding an earlier packet.
+		memset(static_cast<char *>(buf) + admission.Payload.size(), 0, static_cast<std::size_t>(capacity) - admission.Payload.size());
 		(*buflen) = static_cast<int>(admission.Payload.size());
 		memcpy(product_id, entry_bytes.data() + offsetof(GlobalHeaderType, ProductID), sizeof(*product_id));
 		memcpy(address, rec_entry->ExtraBuffer, sizeof(*address));

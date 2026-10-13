@@ -13,6 +13,7 @@
 
 #include "mpload.h"
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <type_traits>
@@ -24,6 +25,15 @@ namespace NetGlobal
 
 		static_assert(std::is_trivially_copyable_v<GlobalPacketType>);
 		constexpr std::size_t PACKET_SIZE = sizeof(GlobalPacketType);
+
+		// Command, Name and Serial, which every command carries.
+		constexpr std::size_t HEADER_SIZE = sizeof(NetCommandType) + sizeof(GlobalPacketType::Name) + sizeof(GlobalPacketType::Serial);
+
+		// The options text comes first in its arm; the colour and name CRC follow it.
+		constexpr std::size_t OPTIONS_TAIL_SIZE = sizeof(GlobalPacketType::Options) - MAX_GAMEOPT_LENGTH;
+
+		// The options arm is the widest, so a packet with it ends where the struct ends.
+		static_assert(HEADER_SIZE + sizeof(GlobalPacketType::Options) == PACKET_SIZE);
 
 
 		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
@@ -46,6 +56,22 @@ namespace NetGlobal
 			return(context.SenderPlayerID >= 0 && context.SenderPlayerID == context.MasterPlayerID);
 		}
 
+
+		/// <summary>Counts an options packet through its text terminator and the fields after it.</summary>
+		std::size_t Options_Length(void const * packet, std::size_t available)
+		{
+			if (available <= HEADER_SIZE) {
+				return(available);
+			}
+			char const * text = static_cast<char const *>(packet) + HEADER_SIZE;
+			std::size_t const room = std::min<std::size_t>(available - HEADER_SIZE, MAX_GAMEOPT_LENGTH);
+			char const * terminator = static_cast<char const *>(std::memchr(text, '\0', room));
+			if (terminator == nullptr) {
+				return(available);
+			}
+			return(HEADER_SIZE + static_cast<std::size_t>(terminator - text) + 1 + OPTIONS_TAIL_SIZE);
+		}
+
 	}	// namespace
 
 
@@ -54,6 +80,100 @@ namespace NetGlobal
 	{
 		std::memset(&packet, 0, sizeof(packet));
 		packet.Command = command;
+	}
+
+
+	/// <summary>
+	/// Counts the bytes a command reads from its packet, starting at the packet's first byte.
+	/// </summary>
+	/// <param name="packet">The packet, with at least `available` bytes readable.</param>
+	/// <param name="available">Bytes of the packet that hold data; the rest may be stale.</param>
+	/// <returns>The requirement. A packet shorter than this lacks a field its command reads.</returns>
+	std::size_t Required_Length(void const * packet, std::size_t available) noexcept
+	{
+		if (available < sizeof(NetCommandType)) {
+			return(available);
+		}
+
+		NetCommandType command;
+		std::memcpy(&command, packet, sizeof(command));
+
+		switch (command) {
+			case NET_QUERY_GAME:
+			case NET_QUERY_PLAYER:
+			case NET_CHAT_REQUEST:
+			case NET_SIGN_OFF:
+			case NET_PING:
+			case NET_GAME_OPTIONS:
+			case NET_REQ_SCENARIO:
+			case NET_NO_SCENARIO:
+			case NET_READY_TO_GO:
+			case NET_FILE_INFO_ACK:
+			case NET_PREVIEW_MODE:
+			case NET_PREVIEW_ACK:
+			case NET_REQ_PREVIEW:
+			case NET_HOST_ANNOUNCE:
+			case NET_DESYNC_HEARTBEAT:
+			case NET_DESYNC_CONTINUE:
+				return(HEADER_SIZE);
+
+			case NET_ANSWER_GAME:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::GameInfo));
+
+			case NET_ANSWER_PLAYER:
+			case NET_QUERY_JOIN:
+			case NET_CONFIRM_JOIN:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::PlayerInfo));
+
+			case NET_CHAT_ANNOUNCE:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::Chat));
+
+			case NET_REJECT_JOIN:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::Reject));
+
+			case NET_MESSAGE:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::Message));
+
+			case NET_GO:
+			case NET_LOADGAME:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::ResponseTime));
+
+			case NET_PROGRESS_REPORT:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::Progress));
+
+			case NET_FILE_INFO:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::ScenarioInfo));
+
+			case NET_PUB_GAMEOPT:
+			case NET_PRIV_GAMEOPT:
+				return(Options_Length(packet, available));
+
+			case NET_PROPOSE_KICK:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::Kick));
+
+			case NET_MOVIE_SKIP:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::MovieSkip));
+
+			case NET_LOAD_GAME:
+				return(HEADER_SIZE + sizeof(GlobalPacketType::LoadGame));
+
+			default:
+				// File chunks use their own layout, and an unknown command is not trimmed.
+				return(PACKET_SIZE);
+		}
+	}
+
+
+	/// <summary>
+	/// Returns how many leading bytes of a Global Channel packet to send.
+	/// </summary>
+	/// <param name="packet">The packet to send.</param>
+	/// <param name="length">The length the caller asked to send.</param>
+	/// <returns>The smaller of `length` and the command's requirement. A receiver accepts any
+	/// length from the requirement up.</returns>
+	std::size_t Send_Length(void const * packet, std::size_t length) noexcept
+	{
+		return(std::min(length, Required_Length(packet, length)));
 	}
 
 
@@ -121,7 +241,7 @@ namespace NetGlobal
 	/// <summary>Validates an in-game global packet before dispatch.</summary>
 	DecodeError Validate_In_Game_Packet(GlobalPacketType const & packet, std::size_t packet_length, ValidationContext const & context)
 	{
-		if (packet_length != PACKET_SIZE) {
+		if (packet_length > PACKET_SIZE || packet_length < Required_Length(&packet, PACKET_SIZE)) {
 			return(DecodeError::INVALID_LENGTH);
 		}
 

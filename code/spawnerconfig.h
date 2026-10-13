@@ -26,8 +26,8 @@ class SpawnerConfigClass
 {
 	public:
 
-		// Bump when the game's reading of a launch file changes; it feeds the session identity.
-		static constexpr int SCHEMA_VERSION = 3;
+		// Bump when the game's reading of a launch file or the wire format of a network packet changes; it feeds the session identity.
+		static constexpr int SCHEMA_VERSION = 4;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
