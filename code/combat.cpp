@@ -129,7 +129,8 @@ int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor,
 	**	against the armor (MapClass::GetTotalDamage, 0x489180).
 	*/
 	float const full = (float)damage;
-	float const edge = full * warhead->PercentAtMax;
+	// gamemd's fstp dword truncates the edge to single precision (0x489180, 0x4891C6-0x4891D4).
+	float const edge = Truncate_To_Single((double)full * (double)warhead->PercentAtMax);
 	int const spread = (int)(warhead->CellSpread * 256.0f);
 	if (edge != full && spread != 0) {
 		// Double precision matches gamemd's x87 steps; in float a distance-0 hit can lose a point.
