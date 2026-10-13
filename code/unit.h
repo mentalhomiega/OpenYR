@@ -206,11 +206,13 @@ class UnitClass : public FootClass
 		bool Is_Route_Broken(Cell const & from, Cell const & to) const;
 		AbstractClass * Plan_Route(AbstractClass const & object) const;
 
-		// Does a DisguiseWhenStill vehicle look like terrain to this house (UnitClass::IsDisguisedAs, 0x746750)?
+		// Does a DisguiseWhenStill vehicle look like terrain to this house when it picks targets (UnitClass::IsDisguisedAs, 0x746750)?
 		bool Is_Disguised_As(HouseClass const * house) const;
 		bool Is_Blinking_Disguise(void) const;
 		// Is this DisguiseWhenStill vehicle drawn as its terrain to the viewer (TechnoClass slot 0x440, 0x70EE30)?
 		bool Is_Shown_As_Terrain_To(HouseClass const * viewer) const;
+		// The current frame's position in the 256-frame cycle that the owner's terrain window and shimmer follow (0x70ED80, 0x70EE30).
+		int Mirage_Cycle(void) const;
 		// The translucency the owner sees on a disguised vehicle now (TechnoClass slot 0x43C, 0x70ED80), or 0.
 		int Mirage_Shimmer_Flags(void) const;
 

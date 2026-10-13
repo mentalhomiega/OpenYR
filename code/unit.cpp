@@ -3146,8 +3146,9 @@ bool UnitClass::Can_Crush(ObjectClass const * object) const
 
 
 /// <summary>
-/// Does a disguised Mirage vehicle look like terrain to the house. Allies of its owner always
-/// see it as it is, and so does a house with a detector in the vehicle's cell.
+/// Does a disguised Mirage vehicle look like terrain to the house when the house picks a target
+/// (UnitClass::IsDisguisedAs, 0x746750)? Allies of its owner see it as it is, and so does a house
+/// with a detector in the vehicle's cell. The drawn look has its own rule, Is_Shown_As_Terrain_To.
 /// </summary>
 bool UnitClass::Is_Disguised_As(HouseClass const * house) const
 {
@@ -3159,23 +3160,35 @@ bool UnitClass::Is_Disguised_As(HouseClass const * house) const
 
 
 /// <summary>
-/// Is this Mirage vehicle drawn as its terrain to the viewer (UnitClass::DrawIt, 0x73CEC0, through
-/// TechnoClass slot 0x440, 0x70EE30)? A computer house's vehicle that has just fired shows its tank
-/// look to every viewer for the length of its fake blink. Otherwise the terrain is shown unless the
-/// viewer is an ally of the owner or a disguise detector of the viewer covers the vehicle's cell.
+/// Is this Mirage vehicle drawn as its terrain to the viewer (UnitClass::DrawAsSHP and DrawAsVXL,
+/// through TechnoClass slot 0x440, 0x70EE30)? A vehicle that the local player controls looks like
+/// terrain to every viewer in frames 8 to 55 of each 256-frame cycle. Any other vehicle looks like a
+/// tank to every viewer while it blinks after a shot. Otherwise it looks like terrain unless a disguise
+/// detector of the viewer covers its cell, and an ally of the owner gets no exception.
 /// </summary>
 bool UnitClass::Is_Shown_As_Terrain_To(HouseClass const * viewer) const
 {
-	if (MirageType == NULL || viewer == NULL) {
+	if (MirageType == NULL) {
 		return(false);
 	}
-	if (!House->Is_Player_Control() && Is_Blinking_Disguise()) {
+	if (House->Is_Player_Control()) {
+		int const cycle = Mirage_Cycle();
+		return(cycle >= 0x48 && cycle <= 0x77);
+	}
+	if (Is_Blinking_Disguise()) {
 		return(false);
 	}
-	if (House->Is_Ally(viewer)) {
-		return(false);
-	}
-	return(Map[Get_Cell()].DisguiseSensorCount[viewer] == 0);
+	return(viewer == NULL || Map[Get_Cell()].DisguiseSensorCount[viewer] == 0);
+}
+
+
+/// <summary>
+/// The position of the current frame in the 256-frame cycle that the owner's terrain window and
+/// shimmer follow. Cycle 0x40 is the frame the current look was picked.
+/// </summary>
+int UnitClass::Mirage_Cycle(void) const
+{
+	return((Frame - MirageCreationFrame + 0x40) & 0xFF);
 }
 
 
@@ -3190,7 +3203,7 @@ int UnitClass::Mirage_Shimmer_Flags(void) const
 	if (MirageType == NULL || !House->Is_Player_Control()) {
 		return(0);
 	}
-	int const cycle = (Frame - MirageCreationFrame + 0x40) & 0xFF;
+	int const cycle = Mirage_Cycle();
 	if ((cycle >= 0x40 && cycle < 0x44) || (cycle >= 0x4C && cycle < 0x50) || (cycle >= 0x70 && cycle < 0x74) || (cycle >= 0x7C && cycle < 0x80)) {
 		return(SHAPE_TRANSLUCENT25);
 	}
@@ -3213,7 +3226,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		if (shape != NULL && cellptr.Drawer != NULL) {
 			Point2D drawpoint = point;
 			drawpoint.Y += MirageType->YDrawFudge;
-			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, 0, drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -12, ZGRAD_90DEG, cellptr.TileBrightness);
+			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, 0, drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|Mirage_Shimmer_Flags()), NULL, -12, ZGRAD_90DEG, cellptr.TileBrightness);
 		}
 		return;
 	}
