@@ -1162,6 +1162,12 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 		**	spread takes a share of twice BallisticScatter that grows with the distance from the
 		**	launch point to the target, over the range of the bullet's weapon.
 		*/
+		if (AutoTest_Active() && TarCom != NULL && Class->FlakScatter) {
+			ObjectClass const * victim = dynamic_cast<ObjectClass const *>(TarCom);
+			if (victim != NULL) {
+				DebugString("AUTOTEST flak aimed at %s height %d down %d in air %d on ground %d coord %d,%d,%d\n", victim->Class_Of()->Name(), victim->HeightAGL, (int)victim->IsDown, (int)victim->In_Air(), (int)victim->On_Ground(), tcoord.X, tcoord.Y, tcoord.Z);
+			}
+		}
 		if (Class->FlakScatter && Class->IsInvisible) {
 			int const distance = Gamemd_Distance(coord, tcoord);
 			int const range = Weapon != NULL ? Weapon->Range : 0;
@@ -1410,7 +1416,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 void BulletClass::Detonate(Coord const & coord)
 {
 	if (AutoTest_Active() && Class->FlakScatter) {
-		DebugString("AUTOTEST flak impact %s at %d,%d\n", Class->Name(), coord.X, coord.Y);
+		DebugString("AUTOTEST flak impact %s at %d,%d,%d\n", Class->Name(), coord.X, coord.Y, coord.Z);
 	}
 
 	WarheadTypeClass * warhead = Warhead;

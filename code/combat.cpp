@@ -44,10 +44,12 @@
 #include "_tactica.h"
 #include "aircraft.h"
 #include "anim.h"
+#include "autotest.h"
 #include "building.h"
 #include "builtype.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "dbgprint.h"
 #include "globals.h"
 #include "gmmath.h"
 #include "incdec.h"
@@ -403,6 +405,9 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		if (object->Strength > 0 && object->IsDown && !object->IsInLimbo && distance <= range) {
 			int damage = strength;
 			if (warhead != Rule->IonStormWarhead || !object->Is_Foot() || ((FootClass *)object)->Team == NULL || !((FootClass *)object)->Team->Class->IsIonImmune) {
+				if (AutoTest_Active()) {
+					DebugString("AUTOTEST blast %s at %d,%d,%d hits %s at %d,%d,%d in air %d distance %d range %d\n", warhead->Name(), coord.X, coord.Y, coord.Z, object->Class_Of()->Name(), object->Center_Coord().X, object->Center_Coord().Y, object->Center_Coord().Z, (int)object->In_Air(), distance, range);
+				}
 				object->Take_Damage(damage, distance, warhead, source, false, false, sourcehouse);
 			}
 		}

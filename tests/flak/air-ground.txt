@@ -1,0 +1,22 @@
+; AA flak over ground infantry. A computer Flak Track at 74,20 fires its AA gun (FlakProj) at the player's Hind flying
+; 66,22 -> 84,22. Infantry of both sides stand on cells 76-81, 23-26, under where the Hind hovers. The AA shells must
+; burst at the Hind's height: "AUTOTEST blast FlakWH" lines name only victims with "in air 1". Ground victims appear
+; there when the shells fall to the ground. The ground gun's "blast FlakTWH" lines still name ground victims.
+; Run: scripts/run_autotest.ps1 -Build agent9 -Script tests/flak/air-ground.txt -Map XMP29U2.MAP -Seconds 150
+30 dump
+35 reveal
+40 spawn HTK 74 20
+41 grantunit E1 77 24
+42 grantunit E1 78 24
+43 grantunit E1 79 24
+44 grantunit E1 77 26
+45 grantunit E1 78 26
+46 grantunit E1 79 26
+47 spawn E1 80 24
+48 spawn E1 80 26
+49 spawn E1 81 25
+50 spawn E1 78 23
+51 spawn E1 79 25
+52 grantunit HIND 66 22
+53 move HIND 84 22
+600 quit
