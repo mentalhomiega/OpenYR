@@ -8729,7 +8729,7 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 	if (cells != NULL) {
 		for (i = 0; i < cells->Count(); i++) {
 			Cell offset = (*cells)[i] - Base.PlacementCenter;
-			DirType dir = DirType(std::atan2((double)-offset.Y, (double)offset.X));
+			DirType dir = DirType(Gamemd_Atan2((double)-offset.Y, (double)offset.X));
 			cells2[dir.As_Dir4()].Add((*cells)[i]);
 		}
 	}
@@ -8743,7 +8743,7 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 		if (building->House == this) {
 			Cell offset = building->PositionCell - Base.PlacementCenter;
 			if (offset.X != 0 || offset.Y != 0) {
-				DirType dir = DirType(std::atan2((double)-offset.Y, (double)offset.X));
+				DirType dir = DirType(Gamemd_Atan2((double)-offset.Y, (double)offset.X));
 				int quadrant = dir.As_Dir4();
 				int air = building->Anti_Air_Defense_Value();
 				int armor = building->Anti_Armor_Defense_Value();
