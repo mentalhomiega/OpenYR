@@ -320,7 +320,8 @@ void SpawnManagerClass::AI(void)
 				NewTarget = NULL;
 			}
 			if (Target != NULL) {
-				if (!Owner->In_Range(Target, 0)) {
+				// The range is that of the weapon the owner selects for the target (IsCloseEnoughToAttack, 0x6F7780).
+				if (!Owner->In_Range(Target, Owner->What_Weapon_Should_I_Use(Target))) {
 					Target = NULL;
 					break;
 				}

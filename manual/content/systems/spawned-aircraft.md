@@ -34,7 +34,7 @@ Range=18
 
 ## Launching
 
-The carried aircraft are checked every 10 frames. While the object has a target in range of its primary weapon, its docked aircraft leave one at a time: missiles 9 frames apart, and other aircraft 20 frames apart. A missile does not leave while its launcher is moving. Each leaves from the primary weapon's firing point, or every second one from [`SecondSpawnOffset`](/keys/secondspawnoffset/#scope-aircrafttype) when that is set. Aircraft wait beside the object until all of them are out, and then attack the target together.
+The carried aircraft are checked every 10 frames. While the object has a target in range of the weapon it selects for that target, its docked aircraft leave one at a time: missiles 9 frames apart, and other aircraft 20 frames apart. That is the primary weapon for most targets. Against an `Underwater=yes` target, a [`NavalTargeting=1`](/keys/navaltargeting/) object selects its secondary weapon, so the secondary's `Range` applies there. A missile does not leave while its launcher is moving. Each leaves from the primary weapon's firing point, or every second one from [`SecondSpawnOffset`](/keys/secondspawnoffset/#scope-aircrafttype) when that is set. Aircraft wait beside the object until all of them are out, and then attack the target together.
 
 A target that goes out of range before the launch is dropped. A new target given during an attack replaces the old one for the aircraft still attacking.
 
