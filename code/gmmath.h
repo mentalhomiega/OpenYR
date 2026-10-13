@@ -24,6 +24,11 @@ float Gamemd_Sqrt(double value);
 float Gamemd_Sine(double radians);
 float Gamemd_Cosine(double radians);
 
+// gamemd 0x4CADB0 (arccosine). Returns pi / 2 minus the arcsine table entry at trunc((value + 1) * 2048),
+// so the angle moves in steps of about 1 / 2048 of the value. Values outside [-1, 1] use the entry
+// at the nearest end, where gamemd would read past the table.
+double Gamemd_Acos(double value);
+
 // gamemd 0x4C1B50 (2D) and 0x41C380 (3D). The squares are summed with gamemd's rounding, which is
 // exact for components below 2^26. The root is the table value, truncated toward zero.
 int Gamemd_Length_2D(int x, int y);
