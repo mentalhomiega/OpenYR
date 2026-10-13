@@ -287,6 +287,22 @@ static int LastExecutedFrame = -1;
 constexpr int ROUND_TRIP_PROBE_FRAMES = 32;
 static int LastRoundTripProbeFrame = -ROUND_TRIP_PROBE_FRAMES;
 
+// Frame-sync, timing and report events are not player orders, so the -SYNCLOG order lines skip them.
+static bool Is_Sync_Logged_Order(unsigned char type)
+{
+	switch (type) {
+		case EventClass::FRAMEINFO:
+		case EventClass::FRAMESYNC:
+		case EventClass::RESPONSE_TIME:
+		case EventClass::PROCESS_TIME:
+		case EventClass::TIMING:
+		case EventClass::NETWORK_REPORT:
+			return(false);
+		default:
+			return(true);
+	}
+}
+
 static std::array<unsigned int, static_cast<std::size_t>(NetPacket::DecodeError::COUNT)>
 	NetworkPacketDrops = {};
 static constexpr std::uint32_t MAXIMUM_REPORTED_FRAME_LEAD = 250;
@@ -1568,6 +1584,12 @@ static void Generate_Real_Timing_Event(void)
 			census.RequiresConservativeTiming ? " (never measured)" : census.RoundTripComplete ? "" : " (incomplete)",
 			(unsigned int)census.WorstStallMilliseconds, desired_frame_rate, evaluation.Changed ? "change to" : "keep",
 			evaluation.Settings.FrameSendRate, evaluation.Settings.MaxAhead);
+		if (Debug_SyncLog) {
+			DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
+				frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
+				(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, evaluation.Settings.FrameSendRate,
+				evaluation.Settings.MaxAhead, (int)evaluation.Changed);
+		}
 	}
 	// Comparing against the staged target avoids resending a change that has not activated yet.
 	if (!evaluation.Evaluated || (evaluation.Settings == Session.Network_Timing_Target()
@@ -3030,6 +3052,8 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 		if ( (size + storedsize) > bufsize )
 			break;
 
+		int const issued_frame = OutList.front().Frame;
+
 		//.....................................................................
 		// Set the event's frame delay (this is protocol-dependent)
 		//.....................................................................
@@ -3046,6 +3070,12 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 		// Set the event's ID
 		//.....................................................................
 		OutList.front().ID = PlayerPtr->HeapID;
+
+		if (Debug_SyncLog && Is_Sync_Logged_Order(OutList.front().Type)) {
+			DebugString("SYNC order issued %d sent %d executes %d delay %d type %d house %d\n",
+				issued_frame, Frame, OutList.front().Frame, OutList.front().Frame - issued_frame,
+				(int)OutList.front().Type, (int)OutList.front().ID);
+		}
 
 		//.....................................................................
 		// Transfer the event in OutList to DoList, un-queue the OutList event.
@@ -3481,6 +3511,11 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 				else {
 					Sync_Record_Event(DoList[j], SYNC_EVENT_EXECUTED);
 					DoList[j].Execute();
+				}
+
+				if (Debug_SyncLog && Is_Sync_Logged_Order(DoList[j].Type)) {
+					DebugString("SYNC order executed frame %d scheduled %d type %d house %d\n",
+						Frame, DoList[j].Frame, (int)DoList[j].Type, (int)DoList[j].ID);
 				}
 
 				//...............................................................
