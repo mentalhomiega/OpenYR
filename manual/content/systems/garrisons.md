@@ -46,7 +46,7 @@ A structure can take a soldier with `Occupier=yes` when all of these hold. A sol
 - the structure is not being built up or sold;
 - the structure belongs to the soldier's house, or to a house whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/).
 
-A player who points such a soldier at a structure that can take it gets the enter cursor. The soldier walks to the structure and goes inside when it reaches the structure. If the structure can no longer take it by then, the soldier steps aside. If the structure stops being able to take it while the soldier is still on the way, the soldier stops where it is.
+A player who points such a soldier at a structure that can take it gets the enter cursor, unless the force-attack key (Left Ctrl by default) is held; then the cursor is the attack cursor. The soldier walks to the structure and goes inside when it reaches the structure. If the structure can no longer take it by then, the soldier steps aside. If the structure stops being able to take it while the soldier is still on the way, the soldier stops where it is.
 
 An occupant is off the map while it is inside. It cannot be selected, attacked or healed.
 

@@ -3026,6 +3026,19 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 }
 
 
+// A click on a structure that this soldier can garrison is a Capture order (InfantryClass::MouseOverObject,
+// 0x51E3B0). A held force-attack key stops that order unless the caller disallows force, so the click takes
+// the other actions instead.
+static bool Is_Garrison_Click(InfantryClass const * infantry, ObjectClass const * object, bool disallow_force)
+{
+	if (object->RTTI != RTTI_BUILDING || !infantry->House->Is_Player_Control()) {
+		return(false);
+	}
+	bool const forcefire = !disallow_force && (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2));
+	return(!forcefire && ((BuildingClass const *)object)->Can_Be_Occupied_By(infantry));
+}
+
+
 /***********************************************************************************************
  * InfantryClass::What_Action -- Infantry units might be able to capture -- check.             *
  *                                                                                             *
@@ -3053,8 +3066,8 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 		return(ACTION_DISARM_BOMB);
 	}
 
-	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Can_Be_Occupied_By(this)) {
-		return(ACTION_ENTER);
+	if (Is_Garrison_Click(this, object, disallow_force)) {
+		return(ACTION_CAPTURE);
 	}
 
 	if (object->RTTI == RTTI_BUILDING && House->Is_Player_Control() && ((BuildingClass const *)object)->Class->IsGrinding && ((BuildingClass const *)object)->House == House) {
@@ -3308,8 +3321,12 @@ bool InfantryClass::Active_Click_With(ActionType action, ObjectClass * object, b
 			action = Combat_Damage() < 0 ? ACTION_ATTACK : ACTION_CAPTURE;
 			break;
 
-		case ACTION_DAMAGE:
+		// A garrison Capture is carried out as an Enter order, which walks the soldier into the structure.
 		case ACTION_CAPTURE:
+			action = Is_Garrison_Click(this, object, is_waypoint) ? ACTION_ENTER : ACTION_CAPTURE;
+			break;
+
+		case ACTION_DAMAGE:
 			action = ACTION_CAPTURE;
 			break;
 
