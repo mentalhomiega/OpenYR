@@ -5783,6 +5783,94 @@ class DeleteWaypointCommandClass : public CommandClass
 };
 
 
+class DebugInfiniteMoneyCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugInfiniteMoney");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_INFINITE_MONEY));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_INFINITE_MONEY_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::INFINITE_MONEY);
+		}
+};
+
+
+class DebugUnlockAllCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugUnlockAll");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_UNLOCK_ALL));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_UNLOCK_ALL_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::UNLOCK_ALL);
+		}
+};
+
+
+class DebugInstantBuildCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugInstantBuild");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_INSTANT_BUILD));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_INSTANT_BUILD_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::INSTANT_BUILD);
+		}
+};
+
+
+class DebugRevealMapCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DebugRevealMap");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEBUG_REVEAL_MAP));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEBUG_REVEAL_MAP_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Debug_Cheat_Toggle(DebugCheat::REVEAL_MAP);
+		}
+};
+
+
 /// <summary>
 /// Gives a command a key when the keyboard file bound neither the command nor the key.
 /// </summary>
@@ -5977,6 +6065,15 @@ static void Init_Commands(void)
 
 	AllCommands.Add(new PlanningModeCommandClass);
 
+	CommandClass * debugmoneycmd = new DebugInfiniteMoneyCommandClass;
+	AllCommands.Add(debugmoneycmd);
+	CommandClass * debugunlockcmd = new DebugUnlockAllCommandClass;
+	AllCommands.Add(debugunlockcmd);
+	CommandClass * debuginstantcmd = new DebugInstantBuildCommandClass;
+	AllCommands.Add(debuginstantcmd);
+	CommandClass * debugrevealcmd = new DebugRevealMapCommandClass;
+	AllCommands.Add(debugrevealcmd);
+
 	Init_Hotkeys();
 
 	if (HotkeyCommands.Is_Present(KN_DELETE)) {
@@ -5993,6 +6090,12 @@ static void Init_Commands(void)
 	Claim_Free_Key((KeyNumType)(KN_R | KN_CTRL_BIT | KN_SHIFT_BIT), reloadcmd);
 	Claim_Free_Key(KN_BACKSPACE, chatteamcmd);
 	Claim_Free_Key((KeyNumType)(KN_C | KN_CTRL_BIT), cheercmd);
+
+	// The debug cheats do nothing unless the Debug mode setting is on, so their keys are harmless otherwise.
+	Claim_Free_Key((KeyNumType)(KN_I | KN_CTRL_BIT | KN_SHIFT_BIT), debugmoneycmd);
+	Claim_Free_Key((KeyNumType)(KN_U | KN_CTRL_BIT | KN_SHIFT_BIT), debugunlockcmd);
+	Claim_Free_Key((KeyNumType)(KN_B | KN_CTRL_BIT | KN_SHIFT_BIT), debuginstantcmd);
+	Claim_Free_Key((KeyNumType)(KN_V | KN_CTRL_BIT | KN_SHIFT_BIT), debugrevealcmd);
 }
 
 

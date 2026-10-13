@@ -1895,6 +1895,69 @@ registered_commands:
     source: code/init.cpp
     class: PlanningModeCommandClass
     guard: null
+- id: DebugInfiniteMoney
+  route_id: debuginfinitemoney
+  kind: registered
+  title: Infinite Money
+  description: Keeps your credits topped up. Works only with Debug mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugInfiniteMoneyCommandClass
+    guard: null
+- id: DebugUnlockAll
+  route_id: debugunlockall
+  kind: registered
+  title: Unlock Everything
+  description: Lets your factories build every type of your side, ignoring prerequisites, tech level and
+    which side built the factory. Works only with Debug mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugUnlockAllCommandClass
+    guard: null
+- id: DebugInstantBuild
+  route_id: debuginstantbuild
+  kind: registered
+  title: Instant Build
+  description: Finishes your production at once. The item still costs its price. Works only with Debug
+    mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugInstantBuildCommandClass
+    guard: null
+- id: DebugRevealMap
+  route_id: debugrevealmap
+  kind: registered
+  title: Reveal Map
+  description: Removes the shroud and fog from the map for you. Turning it off covers the map again if
+    this cheat revealed it. Works only with Debug mode on in single-player games.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DebugRevealMapCommandClass
+    guard: null
 fixed_controls:
 - id: fixed:options-menu
   route_id: fixed-options-menu
