@@ -1,7 +1,7 @@
 ---
 key: SmallVisceroid
 scope: global-rules
-label: Spawned visceroid type
+label: Named visceroid type
 see_also: ["TiberiumDeathToVisceroid", "LargeVisceroid", "system:tiberium"]
 when_omitted:
   kind: value
