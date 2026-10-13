@@ -1,7 +1,7 @@
 ; Defense tab: a combat structure (GAPILL) that finishes is listed under the defense tab, and W starts placing it. E shows
 ; the infantry tab, which places nothing, and the first W then shows the defense tab with GAPILL pending. Expected: completed
 ; GAPILL on the defense tab (second field) and pending GAPILL after W; the structure tab holds nothing completed.
-; Run: scripts/run_autotest.ps1 -Script src-agent/tests/autotest/sidebar-completed-defense.txt -Build agent -Filter "AUTOTEST (tab|produce)|Exception"
+; Run: scripts/run_autotest.ps1 -Script src-agent/tests/autotest/sidebar-completed-defense.txt -Build agent -Filter "AUTOTEST +(tab|produce)|Exception"
 20 own GACNST 50 30
 21 own GAPOWR 56 40
 22 own GAPILE 56 46
