@@ -2107,6 +2107,12 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 		}
 	}
 
+	// The base checks come first, as InfantryClass::GetFireError (0x51C8B0) does, so a cloaked soldier that moves gets FIRE_CLOAKED.
+	FireErrorType const base = BASECLASS::Can_Fire(target, which);
+	if (base != FIRE_OK) {
+		return(base);
+	}
+
 	/*
 	**	If this unit cannot fire while moving, then bail.
 	*/
@@ -2124,7 +2130,7 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 		return(error);
 	}
 
-	return(BASECLASS::Can_Fire(target, which));
+	return(FIRE_OK);
 }
 
 
@@ -3974,6 +3980,7 @@ void InfantryClass::Firing_AI(void)
 					}
 					break;
 
+				// An infantryman decloaks at any range, as the infantry firing update (0x5206B0) does on fire error 9.
 				case FIRE_CLOAKED:
 					Do_Uncloak();
 					break;

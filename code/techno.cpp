@@ -4378,13 +4378,6 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	if (weapon->IsSonic && Wave) return(FIRE_REARM);
 
 	/*
-	**	The target must be within range, and no wall or cliff may stop the shot, in order to allow firing.
-	*/
-	if (!Is_Close_Enough(target, which)) {
-		return(FIRE_RANGE);
-	}
-
-	/*
 	**	If there is no ammo left, then it can't fire.
 	*/
 	if (!Ammo) {
@@ -4392,12 +4385,20 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	/*
-	**	If cloaked, then firing is disabled, unless the weapon fires from cloak.
+	**	If cloaked, then firing is disabled, unless the weapon fires from cloak. This is checked
+	**	before the range, as GetFireError (0x6FC0B0) does, so a cloaked object out of range gets FIRE_CLOAKED.
 	*/
 	if (Cloak != UNCLOAKED && weapon->IsDecloakToFire) {
 		if (RTTI != RTTI_AIRCRAFT || Cloak == CLOAKED) {
 			return(FIRE_CLOAKED);
 		}
+	}
+
+	/*
+	**	The target must be within range, and no wall or cliff may stop the shot, in order to allow firing.
+	*/
+	if (!Is_Close_Enough(target, which)) {
+		return(FIRE_RANGE);
 	}
 
 	if (TClass->IsHunterSeeker) {

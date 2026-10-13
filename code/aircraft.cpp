@@ -3575,7 +3575,12 @@ FireErrorType AircraftClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_FACING);
 	}
 
-	return(BASECLASS::Can_Fire(target, which));
+	// An aircraft out of range stays FIRE_RANGE when cloaked, because its strafing runs approach on that result.
+	FireErrorType const fire = BASECLASS::Can_Fire(target, which);
+	if (fire == FIRE_CLOAKED && !In_Range(target, which)) {
+		return(FIRE_RANGE);
+	}
+	return(fire);
 }
 
 

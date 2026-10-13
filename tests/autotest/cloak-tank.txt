@@ -1,0 +1,25 @@
+; A cloaked Grizzly tank with an enemy Grizzly six cells off, out of its 105mm range of five
+; cells (run with -Mods E:\Claude ra2 decomp\src-agent6\tests\autotest\cloak-rules). The player's tank is
+; ordered to attack the enemy from there. In gamemd, UnitClass::UpdateFiring decloaks a unit on fire
+; error 9 only when TechnoClass::IsCloseEnough holds (0x736DF0, case 9), so the tank should stay
+; cloaked on the way in and decloak once it is in range and fires. The cloak line gives cloak 0
+; once it has decloaked.
+30 command CenterBase
+310 reveal
+300 own MTNK 60 36
+330 where MTNK
+400 spawn MTNK 66 36
+430 strikeobj MTNK 66 36 2
+431 where MTNK
+440 where MTNK
+450 where MTNK
+460 where MTNK
+470 where MTNK
+480 where MTNK
+490 where MTNK
+500 where MTNK
+520 where MTNK
+560 where MTNK
+600 where MTNK
+700 where MTNK
+800 quit

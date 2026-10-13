@@ -941,8 +941,11 @@ void UnitClass::Firing_AI(void)
 				break;
 
 			case FIRE_CLOAKED:
+				// A unit decloaks only when its target is close enough, as UnitClass::UpdateFiring (0x736DF0, case 9) does.
 				IsFiring = false;
-				Do_Uncloak();
+				if (In_Range(TarCom, primary)) {
+					Do_Uncloak();
+				}
 				break;
 
 			case FIRE_RANGE:

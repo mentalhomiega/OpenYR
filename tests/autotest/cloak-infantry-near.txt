@@ -1,0 +1,23 @@
+; A cloaked soldier with an enemy soldier three cells off, inside its M60 range of four cells (run with
+; -Mods E:\Claude ra2 decomp\src-agent6\tests\autotest\cloak-rules). The player's soldier is ordered to attack the
+; enemy from there. In range, the soldier's firing update uncloaks it on fire error 9 (InfantryClass, 0x5206B0), and
+; the where and cloak lines should show cloak 3 (decloaking) on the first frames after the order, then fire.
+30 command CenterBase
+310 reveal
+300 own E1 60 36
+330 where E1
+400 spawn E1 63 36
+430 strikeobj E1 63 36 2
+431 where E1
+440 where E1
+450 where E1
+460 where E1
+470 where E1
+480 where E1
+490 where E1
+500 where E1
+520 where E1
+560 where E1
+600 where E1
+700 where E1
+800 quit
