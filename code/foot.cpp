@@ -646,10 +646,7 @@ int FootClass::Do_MISSION_MOVE(void)
 		return(1);
 	}
 
-	if (TarCom == NULL && !House->Is_Human_Player() && (Team == NULL || !Team->Class->IsSuicide) && TClass->IsCanPassiveAquire) {
-		Target_Something_Nearby(Get_Coord(), THREAT_RANGE);
-	}
-
+	// A move order scans for no target. Opportunity fire scans on the move in TechnoClass::AI (0x6F9E50).
 	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 }
 

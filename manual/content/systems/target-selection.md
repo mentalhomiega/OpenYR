@@ -109,7 +109,7 @@ The middle column gives each scan's shape and reach. A *ring* scan walks whole r
 | Guard | Ring, guard radius | Not run on an engineer. An aircraft seldom reaches this scan. It attacks a target it already holds, returns to idle handling at cruising height, and does not scan while landed unless it is docked. A human-owned aircraft scans only while airborne. A computer-owned aircraft first looks for the nearest enemy vehicle within 11 cells of it that lies outside its owner's base and is not cloaked, and attacks it without scanning. Only vehicles on a bridge deck are found, so a vehicle on the ground is never picked |
 | Guard area | Ring, area radius, from the home position | Runs only while the object has no target |
 | Patrol | Ring, patrol radius, from the object, then re-scanned from the patrol cell | An aircraft on patrol with ammunition left runs only the first scan |
-| Move | Ring, guard radius | Runs only while the object has no target, only for a computer [house](/glossary/#house), never on an aircraft, and never for a member of a [`Suicide=yes`](/keys/suicide/#scope-teamtype) team |
+| Move | Ring, weapon range, only as the opportunity scan below the table | A move order has no scan of its own. An object scans on the move only when the opportunity scan admits it, by its type or as a member of an aggressive team |
 | Hunt | Whole map | Outside campaigns, an aircraft first scans for Tiberium processors alone (objects whose type sets a nonzero [`Storage`](/keys/storage/)), then scans again without that restriction |
 | Rescue | Whole map | The result is kept only when it lies within 1.5 times the area radius of the spot where the mission began |
 | Guard, on an armed building | Ring, guard radius | Runs only while the building has no target. Not run on an EM pulse cannon, or on a building that holds a chemical missile |
@@ -120,7 +120,9 @@ In Guard, an infantry or vehicle that is not an engineer checks its current targ
 
 An armed vehicle, infantryman or aircraft whose type sets [`OpportunityFire=yes`](/keys/opportunityfire/) also scans while it is on a Move or Harvest mission, whoever owns it. Every [`NormalTargetingDelay`](/keys/normaltargetingdelay/) frames it drops a target that has left its weapon's range and takes the best target in range, so it fires on the move without leaving its route.
 
-A type with [`CanPassiveAquire=no`](/keys/canpassiveaquire/) never runs the Guard, Guard area or Move scans of a vehicle, infantryman or aircraft, whoever owns it. It still attacks targets it is given, and the Hunt and team scans still run.
+A computer's armed object on a Move mission scans the same way while it holds no target, if it is a member of an [aggressive](/keys/aggressive/) team that is not a [`Suicide=yes`](/keys/suicide/#scope-teamtype) team. Its type's `OpportunityFire` setting does not matter for this scan. A move order gives no other scan: an object that is not on this list never scans on the move.
+
+A type with [`CanPassiveAquire=no`](/keys/canpassiveaquire/) never runs the Guard, Guard area or opportunity scans of a vehicle, infantryman or aircraft, whoever owns it. The aggressive team scan above still runs for such a type. It still attacks targets it is given, and the Hunt and team scans still run.
 
 Three more conditions stop a scan before it starts. **Any of** them is enough, and each applies only to a human-owned object:
 
@@ -323,7 +325,7 @@ The primary slot does not always hold [`Primary`](/keys/primary/). An elite obje
 ## Picking the winner
 
 :::caution[A ring scan does not rank ground candidates]
-A ring scan does not keep the highest score among ground candidates. Each ground candidate that passes replaces the one before it, so the scan returns the last one it reached, not the best one. Every Guard, Area Guard, Patrol, Move and building scan is a ring scan. On a ring scan, the coefficients matter in three places:
+A ring scan does not keep the highest score among ground candidates. Each ground candidate that passes replaces the one before it, so the scan returns the last one it reached, not the best one. Every Guard, Area Guard, Patrol, opportunity and building scan is a ring scan. On a ring scan, the coefficients matter in three places:
 
 - they rank the aircraft, airborne infantry and airborne vehicles found by the flying-object passes below;
 - a ground candidate must outscore the best of those to replace it;

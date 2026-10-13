@@ -1,0 +1,29 @@
+; Computer soldiers and Rhino tanks given a move order (cmove step) past the player's harvesters. The
+; harvesters are unarmed, so they cannot draw fire, and nothing the computer units do is a reply.
+; Soldiers have no OpportunityFire and should march on with no target. Rhinos have OpportunityFire=yes
+; and may hold a harvester in range while they keep their route. Run with -AIPlayers 1 (default).
+; The where lines show each unit's mission, navigation cell and target. The cloak line shows its
+; firing flag and fire error, which are not used here.
+300 own HARV 60 36
+301 own HARV 60 38
+310 spawn E1 72 38
+311 spawn E1 73 38
+312 spawn HTNK 72 36
+313 spawn HTNK 73 36
+400 cmove E1 40 38
+401 cmove HTNK 40 36
+420 where E1
+421 where HTNK
+460 where E1
+461 where HTNK
+520 where E1
+521 where HTNK
+600 where E1
+601 where HTNK
+700 where E1
+701 where HTNK
+800 where E1
+801 where HTNK
+900 where E1
+901 where HTNK
+1000 quit

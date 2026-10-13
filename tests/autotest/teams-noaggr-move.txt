@@ -1,0 +1,25 @@
+; Non-aggressive computer team of two soldiers moves past the player's harvesters (run with -AICountries 1).
+; The player has no base here, so nothing shoots at the team. Its members have no OpportunityFire and the
+; team is not aggressive, so CanOpportunityFire is false for them on a move order (0x709290). The where lines
+; should show no target while mission is Move and navigation cell is 40,36. The harvesters are at 60,36 and
+; 60,38, on the route.
+1 teamtrace 1
+300 own HARV 60 36
+301 own HARV 60 38
+310 spawn E1 72 38
+311 spawn E1 73 38
+320 teamini E:\Claude ra2 decomp\src-agent6\tests\autotest\teams-noaggr-move.ini
+330 team TSTNAGT
+420 where E1
+500 where E1
+540 where E1
+560 where E1
+580 where E1
+600 where E1
+620 where E1
+640 where E1
+660 where E1
+700 where E1
+800 where E1
+900 where E1
+1000 quit

@@ -3422,6 +3422,14 @@ bool TechnoClass::Is_Voxel_Loaded(void) const
 }
 
 
+// A member of an aggressive team that is not a suicide team keeps scanning on a move order (CanOpportunityFire, 0x709290).
+static bool Is_Aggressive_Team_Member(TechnoClass const * techno)
+{
+	FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
+	return(foot != NULL && foot->Team != NULL && foot->Team->Class->IsAggressive && !foot->Team->Class->IsSuicide);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::AI -- Handles AI processing for techno object.                                 *
  *                                                                                             *
@@ -3453,10 +3461,12 @@ void TechnoClass::AI(void)
 	/*
 	 * Every NormalTargetingDelay frames, an OpportunityFire object that is moving or harvesting
 	 * drops a target out of range and takes the best one in range, firing on the move
-	 * (TechnoClass::Update, 0x6F9E50, and CanOpportunityFire, 0x709290).
+	 * (TechnoClass::Update, 0x6F9E50, and CanOpportunityFire, 0x709290). A computer's member of an
+	 * aggressive, non-suicide team scans on a move order without the type flag, if it holds no target.
 	 */
-	if ((Mission == MISSION_MOVE || Mission == MISSION_HARVEST) && TClass->IsOpportunityFire && TClass->IsCanPassiveAquire
-		&& Is_Weapon_Equipped() && Frame - OpportunityScanFrame >= Rule->NormalTargetingDelay) {
+	bool const opportunity = (Mission == MISSION_MOVE || Mission == MISSION_HARVEST) && TClass->IsOpportunityFire && TClass->IsCanPassiveAquire;
+	bool const aggressive = Mission == MISSION_MOVE && TarCom == NULL && !House->Is_Human_Player() && Is_Aggressive_Team_Member(this);
+	if ((opportunity || aggressive) && Is_Weapon_Equipped() && Frame - OpportunityScanFrame >= Rule->NormalTargetingDelay) {
 		OpportunityScanFrame = Frame;
 		Target_Something_Nearby(PositionCoord, THREAT_RANGE);
 	}

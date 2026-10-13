@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-An armed object of an `OpportunityFire=yes` type [looks for targets in range](/systems/target-selection/#mission-entry-points) while it moves or harvests, and fires at them without leaving its route. A type with [`CanPassiveAquire=no`](/keys/canpassiveaquire/) does not.
+An armed object of an `OpportunityFire=yes` type [looks for targets in range](/systems/target-selection/#mission-entry-points) while it moves or harvests, and fires at them without leaving its route. A type with [`CanPassiveAquire=no`](/keys/canpassiveaquire/) does not. A computer's member of an [aggressive](/keys/aggressive/) team looks on a move order without this flag.
 
 ```ini title="rulesmd.ini"
 [MYTANK] ; example VehicleType
