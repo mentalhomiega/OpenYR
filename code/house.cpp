@@ -1280,34 +1280,12 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 			}
 		}
 
-		if (type->RTTI == RTTI_BUILDINGTYPE) {
-
-			/*
-			**	Special hack to get certain objects to exist for both sides in the game.
-			*/
-			int own = type->Get_Ownable();
-
-			/*
-			**	Check to see if this owner can build the object type specified.
-			*/
-			if (own == 0) {
-				return(0);
-			}
-
-			// The gate Who_Can_Build_Me applies, so the sidebar never offers a cameo the factory
-			// search then refuses.
-			bool found = Rule->IsMultiMCV;
-			for (int i = 0; i < ConYards.Count() && !found; i++) {
-				BuildingClass * conyard = ConYards[i];
-				if (!conyard->IsInLimbo && conyard->IsOn) {
-					if (conyard->Mission != MISSION_DECONSTRUCTION && conyard->MissionQueue != MISSION_DECONSTRUCTION) {
-						if (conyard->ActLike != HOUSE_NONE && ((1 << conyard->ActLike) & own) != 0) {
-							found = true;
-						}
-					}
-				}
-			}
-			if (!found) return(0);
+		/*
+		**	A structure that no side owns is never buildable. Which factory builds it is decided by
+		**	Who_Can_Build_Me, so a captured yard need not act for the country the structure lists.
+		*/
+		if (type->RTTI == RTTI_BUILDINGTYPE && type->Get_Ownable() == 0) {
+			return(0);
 		}
 	}
 

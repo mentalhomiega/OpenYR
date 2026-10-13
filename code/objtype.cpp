@@ -318,11 +318,12 @@ bool ObjectTypeClass::Can_Be_Built_At(BuildingClass const * building, bool needs
 		return(true);
 	}
 
+	// The factory's side comes from its type's Owner list, not from the country it acts as (gamemd 0x5F7900).
 	int const ownable = Get_Ownable();
 	if ((building->Class->Get_Ownable() & ownable) == 0) {
 		return(false);
 	}
-	return(!Rule->BuildConst.Is_In_List(building->Class) || Rule->IsMultiMCV || (building->ActLike != HOUSE_NONE && ((1L << building->ActLike) & ownable) != 0));
+	return(true);
 }
 
 

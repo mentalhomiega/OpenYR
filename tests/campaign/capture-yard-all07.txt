@@ -1,0 +1,16 @@
+; Captured Soviet yard on Allied 7: an engineer captures the Special house's construction yard (NACNST),
+; then the build list is probed. A captured yard builds the structures its own type's Owner= lists, so
+; NAPOWR (prerequisite NACNST) becomes buildable; the structures with unmet prerequisites stay at 0.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/capture-yard-all07.txt -Campaign -Map ALL07SMD.MAP -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   (canbuild|where|count)"
+; Add -ShotDir <folder> and "command ScreenCapture" at frame 60 to see the sidebar.
+20 own ENGINEER 85 126
+30 capture ENGINEER 82 123
+40 waitowns Americans NACNST 1 900
+60 where NACNST
+61 count NACNST
+62 canbuild NACNST
+63 canbuild NAPOWR
+64 canbuild NAHAND
+65 canbuild NAREFN
+66 canbuild GAPOWR
+90 quit

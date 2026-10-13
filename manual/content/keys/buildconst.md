@@ -9,7 +9,7 @@ when_omitted:
 
 Structures of the listed types are a house's construction yards for structure production and for every effect below. [`ConstructionYard=yes`](/keys/constructionyard/) on an unlisted type gives only the behaviors that page lists.
 
-A house can build structures only while it owns a listed yard that acts for a country in the structure's [`Owner`](/keys/owner/) list, as [Ownership](/systems/production/#ownership) describes. A listed yard also produces only for the country it [acts as](/keys/actslike/), and it keeps that country when captured, so a captured yard goes on building its original owner's structures. [`MultiMCV=yes`](/keys/multimcv/) removes both restrictions.
+A house builds a structure only from a construction yard it owns whose type's [`Owner`](/keys/owner/) list shares a country with the structure's list, as [the factory search](/systems/production/#what-counts-as-a-factory) describes. The country a yard acts as does not limit what it builds, so a captured yard builds the structures its own type allows.
 
 A computer house starts structures from its base plan only while it owns a listed yard. The list also shapes [a generated plan](/systems/ai-base-building/#building-the-plan):
 

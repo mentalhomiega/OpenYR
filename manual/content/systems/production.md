@@ -87,13 +87,9 @@ When a player orders an object, the house looks for a structure that passes all 
 - it is switched on;
 - it is neither being sold nor queued to be sold;
 - the product has not reached its [build limit](#build-limits);
-- the factory type's [`Owner=`](/keys/owner/) shares at least one country with the product's `Owner=`;
-- **Any of:**
-  - the factory's type is not listed in [`BuildConst`](/keys/buildconst/);
-  - [`MultiMCV=yes`](/keys/multimcv/) is set;
-  - the structure acts for a country that is one of the product's owners.
+- the factory type's [`Owner=`](/keys/owner/) shares at least one country with the product's `Owner=`.
 
-A structure keeps the country it acts for when it changes hands, so the last test lets a captured construction yard keep building its original owner's structures.
+The country a structure acts for plays no part in this test. A captured construction yard therefore builds the structures whose `Owner=` shares a country with its own type's `Owner=`, and its prerequisites still apply.
 
 The search takes the first [primary factory](#the-primary-factory) it finds that passes. Without one, it takes the last passing structure. For an aircraft, a pad already in radio contact with an aircraft, such as one parked on it, is used only when no free pad passes.
 
@@ -166,14 +162,7 @@ When a prerequisite names an upgrade (a type with [`PowersUpBuilding=`](/keys/po
 
 ### Ownership
 
-This gate applies only to structures. A BuildingType passes when both of these hold:
-
-- its `Owner=` list is not empty;
-- the house owns a construction yard that is on the map, switched on, not being sold, and acting for one of the countries in that list.
-
-[`MultiMCV=yes`](/keys/multimcv/) removes the construction-yard requirement, both here and in the factory search. [`DoubleOwned=yes`](/keys/doubleowned/) opens the type to every country, but only outside campaign games.
-
-Vehicles, infantry and aircraft skip this gate. The factory search enforces their ownership instead, by requiring the factory's `Owner=` to share a country with the product's, except for a [reverse engineered](#reverse-engineering) type.
+This gate applies only to structures. A BuildingType passes when its `Owner=` list is not empty. Whether a construction yard can build it is then decided by the factory search, which requires the factory's `Owner=` to share a country with the product's, for every kind of object, except for a [reverse engineered](#reverse-engineering) type. [`DoubleOwned=yes`](/keys/doubleowned/) opens the type to every country, but only outside campaign games.
 
 ### Build-limit gate
 

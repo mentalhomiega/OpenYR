@@ -16,7 +16,7 @@ Owner=GDI,Nod
 
 The list decides these things:
 
-- **Production.** A BuildingType with an empty list cannot be built, except under [`DoubleOwned=yes`](/keys/doubleowned/) outside campaign games. Otherwise the house also needs a construction yard that [acts as](/keys/actslike/) one of the listed countries, unless [`MultiMCV=yes`](/keys/multimcv/) is set. For every kind of object, the factory that builds it must share at least one country with it, so a factory and a product with no country in common never pair up. [Ownership](/systems/production/#ownership) gives the full test.
+- **Production.** A BuildingType with an empty list cannot be built, except under [`DoubleOwned=yes`](/keys/doubleowned/) outside campaign games. For every kind of object, the factory that builds it must share at least one country with it, so a factory and a product with no country in common never pair up. The country a factory acts as does not count. [Ownership](/systems/production/#ownership) gives the full test.
 - **Computer base planning.** [Base planning](/systems/ai-base-building/) and the role lists it uses consider only types whose list includes the country the house acts as.
 - **Multiplayer starting units.** A house receives a starting vehicle or infantry type only if the type lists the house's country. [`AllowedToStartInMultiplayer`](/keys/allowedtostartinmultiplayer/) must also be set.
 - **Dropship loadout.** The [loadout screen](/keys/allowableunits/) offers only types that list the player's country.

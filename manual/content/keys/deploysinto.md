@@ -23,7 +23,7 @@ If the structure cannot be placed there, the vehicle does not deploy. The local 
 
 If the structure can be placed, the vehicle first turns to the structure's deploy facing. It then disappears, and the structure appears in its place and plays its buildup.
 
-The structure belongs to the vehicle's house and takes over the vehicle's selection group, experience, current target, any limpet drone attached to it, and the country the vehicle was built for. With [`MultiMCV=no`](/keys/multimcv/), that country decides what a deployed construction yard can build.
+The structure belongs to the vehicle's house and takes over the vehicle's selection group, experience, current target, any limpet drone attached to it, and the country the vehicle was built for. That country does not limit what a deployed construction yard can build.
 
 Objects that were attacking the vehicle attack the structure instead. The exception is a [`VehicleThief=`](/keys/vehiclethief/) infantryman: when the structure is a construction yard or has [`IsMobileWar=yes`](/keys/ismobilewar/), it drops its target.
 
