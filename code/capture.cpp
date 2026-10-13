@@ -18,6 +18,7 @@
 #include "builtype.h"
 #include "ccrand.h"
 #include "foot.h"
+#include "gmmath.h"
 #include "globals.h"
 #include "house.h"
 #include "partsys.h"
@@ -231,75 +232,10 @@ bool CaptureManagerClass::Is_Link_Shown(int index) const
 }
 
 
-static unsigned long long Integer_Sqrt(unsigned long long value)
-{
-	unsigned long long root = static_cast<unsigned long long>(std::sqrt(static_cast<double>(value)));
-	while (root * root > value) {
-		root--;
-	}
-	while ((root + 1) * (root + 1) <= value) {
-		root++;
-	}
-	return(root);
-}
-
-
-/// <summary>
-/// Returns the table value of gamemd's fast square root (FUN_004CAC40, 0x4CAC40) for the mantissa
-/// index. The table holds floor((sqrt(m) - 1) * 2^23), where m runs from 1 to 2 for the lower
-/// half of the indices and from 2 to 4 for the upper half.
-/// </summary>
-static unsigned int Fast_Sqrt_Table(unsigned int index)
-{
-	unsigned long long root;
-	if (index < 8192) {
-		root = Integer_Sqrt((8192ull + index) << 33);
-	} else {
-		root = Integer_Sqrt(static_cast<unsigned long long>(index) << 34);
-	}
-	return(static_cast<unsigned int>(root - (1ull << 23)));
-}
-
-
-/// <summary>
-/// Returns the whole-lepton distance that gamemd ranks by. It takes gamemd's fast square root of
-/// the squared distance (FUN_004CAC40) and truncates it (FUN_007C5F00). That root differs from the
-/// exact one by a lepton on some distances, so the result is not always the exact floor.
-/// </summary>
-static int Fast_Sqrt_Trunc(unsigned long long squared)
-{
-	if (squared == 0) {
-		return(0);
-	}
-
-	float value = Truncate_To_Single(static_cast<double>(squared));
-	unsigned int bits;
-	std::memcpy(&bits, &value, sizeof(bits));
-
-	unsigned int mantissa = bits & 0x7FFFFF;
-	int exponent = static_cast<int>(bits >> 23) - 127;
-	if (exponent & 1) {
-		mantissa |= 0x800000;
-	}
-	int half = static_cast<short>(exponent) >> 1;
-
-	unsigned int result = Fast_Sqrt_Table(mantissa >> 10) + (static_cast<unsigned int>(half + 127) << 23);
-	float root;
-	std::memcpy(&root, &result, sizeof(root));
-	return(static_cast<int>(root));
-}
-
-
-/// <summary>
-/// Measures the distance between two coordinates in the three axes, as gamemd's grinder and
-/// bio reactor ranking does (FootClass::EnterGrinder, 0x4DFA70).
-/// </summary>
+// gamemd ranks by its table square root of the 3D distance, truncated (FootClass::EnterGrinder, 0x4DFA70).
 static int Ranking_Distance(Coord const & from, Coord const & to)
 {
-	long long const dx = static_cast<long long>(from.X) - to.X;
-	long long const dy = static_cast<long long>(from.Y) - to.Y;
-	long long const dz = static_cast<long long>(from.Z) - to.Z;
-	return(Fast_Sqrt_Trunc(static_cast<unsigned long long>(dx * dx + dy * dy + dz * dz)));
+	return(Gamemd_Length_3D(from.X - to.X, from.Y - to.Y, from.Z - to.Z));
 }
 
 
