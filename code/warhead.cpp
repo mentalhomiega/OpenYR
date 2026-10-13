@@ -46,6 +46,7 @@
 #include "ccini.h"
 #include "findmake.h"
 #include "globals.h"
+#include "numparse.h"
 #include "partsys.h"
 #include "psystype.h"
 #include "savestream.h"
@@ -69,7 +70,7 @@ float _Parse_Percentage(const char * string)
 		return((double)atoi(string) / 100);
 	}
 
-	return(atof(string));
+	return(Parse_Nearest_Double(string, nullptr));
 }
 
 

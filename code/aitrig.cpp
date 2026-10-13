@@ -21,6 +21,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "infatype.h"
+#include "numparse.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -979,17 +980,17 @@ bool AITriggerTypeClass::Read_INI(CCINIClass const & ini)
 
 		tok = strtok(NULL, ",");
 		if (tok != NULL) {
-			CurWeight = (unsigned int)atof(tok);
+			CurWeight = (unsigned int)Parse_Nearest_Double(tok, nullptr);
 		}
 
 		tok = strtok(NULL, ",");
 		if (tok != NULL) {
-			MinWeight = (unsigned int)atof(tok);
+			MinWeight = (unsigned int)Parse_Nearest_Double(tok, nullptr);
 		}
 
 		tok = strtok(NULL, ",");
 		if (tok != NULL) {
-			MaxWeight = (unsigned int)atof(tok);
+			MaxWeight = (unsigned int)Parse_Nearest_Double(tok, nullptr);
 		}
 
 		tok = strtok(NULL, ",");

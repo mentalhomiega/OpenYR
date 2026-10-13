@@ -14,6 +14,7 @@
 #include "ccini.h"
 #include "dbgprint.h"
 #include "globals.h"
+#include "numparse.h"
 
 #include <cctype>
 #include <cstdlib>
@@ -88,7 +89,7 @@ void Read_Armor_Types(CCINIClass const & ini)
 		if (strchr(value, '%') != NULL) {
 			declared.Fraction = atoi(value) / 100.0;
 		} else if (value[0] != '\0' && (isdigit((unsigned char)value[0]) || value[0] == '.')) {
-			declared.Fraction = atof(value);
+			declared.Fraction = Parse_Nearest_Double(value, nullptr);
 		} else {
 			bool found = false;
 			for (int armor = ARMOR_FIRST; armor < Armor_Type_Count(); armor++) {
