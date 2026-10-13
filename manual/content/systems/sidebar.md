@@ -42,7 +42,7 @@ Each type goes to one tab:
 | First | Structures, except those with [`BuildCat=Combat`](/keys/buildcat/) |
 | Second | Structures with `BuildCat=Combat`, and [superweapon cameos](/systems/superweapons/#the-sidebar-cameo) |
 | Third | Infantry |
-| Fourth | Vehicles and aircraft |
+| Fourth | Vehicles, ships and aircraft |
 
 ### The order of the strips
 
@@ -135,7 +135,7 @@ The tooltip carries the price. It shows the price alone while captions are on, a
 
 Both mouse buttons act when pressed, not when released.
 
-Structures, defenses, vehicles, infantry and aircraft each have their own production line. Each row below describes what the clicked cameo's line has on order at the time of the click.
+Structures, defenses, vehicles, ships, infantry and aircraft each have their own production line. Each row below describes what the clicked cameo's line has on order at the time of the click.
 
 | What the cameo's production line holds | Left click | Right click |
 | --- | --- | --- |
@@ -143,7 +143,7 @@ Structures, defenses, vehicles, infantry and aircraft each have their own produc
 | Another type on order (building, on hold, finished or queued) | Queues it, silently | Removes one queued copy of this type, if it has one |
 | This type building | Queues another, silently | Puts the build on hold, announced |
 | This type on hold | Resumes it, announced | Removes a queued copy first if one exists, otherwise cancels and refunds it; announced either way |
-| This type finished (vehicle, infantry or aircraft) | Asks the factory to let it out | Removes a queued copy first if one exists, otherwise cancels and refunds it; announced either way |
+| This type finished (vehicle, ship, infantry or aircraft) | Asks the factory to let it out | Removes a queued copy first if one exists, otherwise cancels and refunds it; announced either way |
 | This type finished (structure) | Enters placement mode | Cancels and refunds it, announced, and leaves placement mode |
 | This type finished, no factory left to build it | Removes a queued copy first if one exists, otherwise cancels and refunds it; announces that there is no factory either way | Removes a queued copy first if one exists, otherwise cancels and refunds it; announced either way |
 

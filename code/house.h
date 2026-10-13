@@ -591,14 +591,16 @@ class HouseClass : public AbstractClass
 		/*
 		**	For human controlled houses, only one type of unit can be produced
 		**	at any one instant. These factory objects control this production.
-		**	Structures and defenses (BuildCat=Combat) each have their own factory,
-		**	so one of each can be built at once.
+		**	Structures, defenses (BuildCat=Combat), vehicles and ships each have their own
+		**	factory, so one of each kind can be built at once. UnitFactory holds vehicles and
+		**	ShipFactory holds naval unit types (Naval=yes).
 		*/
 		FactoryClass * AircraftFactory;
 		FactoryClass * InfantryFactory;
 		FactoryClass * UnitFactory;
 		FactoryClass * BuildingFactory;
 		FactoryClass * DefenseFactory;
+		FactoryClass * ShipFactory;
 
 		/*
 		**	This target value specifies where the flag is located. It might be a cell
@@ -890,7 +892,7 @@ class HouseClass : public AbstractClass
 		ProdFailType Begin_Production(RTTIType type, int id, bool resume=false);
 		ProdFailType Suspend_Production(RTTIType type, int id);
 		ProdFailType Abandon_Production(RTTIType type, int id);
-		ProdFailType Abandon_Production(RTTIType type, int id, BuildCatType buildcat);
+		ProdFailType Abandon_Production(RTTIType type, int id, BuildCatType buildcat, bool naval);
 		bool Place_Object(RTTIType type, int id, Cell const & cell);
 		bool Manual_Place(BuildingClass * builder, BuildingClass * object);
 		void Just_Built(TechnoClass * product);
@@ -998,8 +1000,9 @@ class HouseClass : public AbstractClass
 
 		// Factory controls.
 		static BuildCatType Build_Category(RTTIType rtti, int id);
-		FactoryClass * Fetch_Factory(RTTIType rtti, BuildCatType buildcat) const;
-		void Set_Factory(RTTIType rtti, BuildCatType buildcat, FactoryClass * factory);
+		static bool Is_Naval_Type(RTTIType rtti, int id);
+		FactoryClass * Fetch_Factory(RTTIType rtti, BuildCatType buildcat, bool naval) const;
+		void Set_Factory(RTTIType rtti, BuildCatType buildcat, bool naval, FactoryClass * factory);
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
 		bool Is_Reversed(ObjectTypeClass const * type) const;
@@ -1033,7 +1036,7 @@ class HouseClass : public AbstractClass
 		void Adjust_Drain(int adjust);
 		void Update_Spied_Radar(HouseClass * house);
 		void Update_Spied_Power_Plants(void);
-		void Update_Factories(RTTIType rtti);
+		void Update_Factories(RTTIType rtti, bool naval);
 		double Power_Fraction(void) const;
 		bool Is_Being_Drained(void) const;
 		bool Is_Power_Blackout(void) const {return IsPowerBlackout && PowerBlackout > 0;}

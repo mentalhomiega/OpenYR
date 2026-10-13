@@ -62,7 +62,7 @@ related:
 
 Players and computer houses produce objects in two different ways.
 
-A player's house has five production slots: one each for infantry, vehicles, aircraft, structures and defenses. A defense is a structure whose [`BuildCat=`](/keys/buildcat--buildingtype/) is `Combat`, and it has a slot of its own, so a defense and another structure can be built at once. Each slot builds one object at a time, with a queue behind it, however many factories the house owns. Six war factories do not build six vehicles at once. They only change how long the one vehicle in the slot takes, as [More than one factory](#more-than-one-factory) explains.
+A player's house has six production slots: one each for infantry, vehicles, ships, aircraft, structures and defenses. A ship is a `Naval=yes` vehicle type, and it has a slot of its own, so a ship and a vehicle can be built at once. A defense is a structure whose [`BuildCat=`](/keys/buildcat--buildingtype/) is `Combat`, and it has a slot of its own too, so a defense and another structure can be built at once. Each slot builds one object at a time, with a queue behind it, however many factories the house owns. Six war factories do not build six vehicles at once. They only change how long the one vehicle in the slot takes, as [More than one factory](#more-than-one-factory) explains.
 
 A computer house has no production slots. Each of its factory structures builds an object of its own, so six war factories build six vehicles at a time. Every idle factory takes the type its house currently wants for that category, so factories that start together build the same type. The house chooses again each time an object of that category leaves a factory.
 
@@ -389,7 +389,7 @@ Destroying a computer house's factory cancels and refunds whatever that factory 
 
 Capturing a factory cancels whatever it was building for a computer house before the transfer. The factory then moves from one house's factory count to the other's.
 
-A house re-examines its production slot for a category when a factory of that category is placed, leaves the map, is captured, or is switched on or off. A capture makes both houses re-examine the slot. Only a player's production slots are re-examined, and these rules apply in order:
+A house re-examines its production slot for a category when a factory of that category is placed, leaves the map, is captured, or is switched on or off. A unit factory belongs to the ship slot when its `Naval=` flag is set, and to the vehicle slot otherwise, so a naval yard re-examines the ship slot. A capture makes both houses re-examine the slot. Only a player's production slots are re-examined, and these rules apply in order:
 
 1. Queued types that nothing the house owns could build, even in theory, are dropped from the queue.
 2. An object in progress that nothing could build any more is canceled and refunded, and the queue advances.

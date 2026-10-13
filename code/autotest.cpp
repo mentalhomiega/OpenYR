@@ -369,7 +369,7 @@ void Place(std::string const & name)
 		// A finished vehicle, aircraft or infantry leaves its factory on the sidebar's no-cell placement.
 		RTTIType const kind = type->Fetch_RTTI() == RTTI_UNITTYPE ? RTTI_UNIT : type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE ? RTTI_AIRCRAFT : RTTI_INFANTRY;
 		DebugString("AUTOTEST place %s: leaves its factory\n", name.c_str());
-		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, kind, CELL_NONE));
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, kind, type->Fetch_Heap_ID(), CELL_NONE));
 		return;
 	}
 	if (type == NULL || type->Fetch_RTTI() != RTTI_BUILDINGTYPE || PlayerPtr->ConYards.Count() == 0) {

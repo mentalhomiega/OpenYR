@@ -197,7 +197,7 @@ class EventClass
 			struct {
 				RTTIType		Type;
 				xCell			Where;
-				int				ID;		// The building type ID that picks the factory; -1 for other objects.
+				int				ID;		// The type ID that picks the factory; -1 when the event names none.
 			} Place;
 			struct {
 				int			ID;

@@ -2052,7 +2052,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 						switch ((RTTIType)pending->RTTI) {
 							case RTTI_UNIT:
 							case RTTI_AIRCRAFT:
-								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, CELL_NONE));
+								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, pending->Class_Of()->Fetch_Heap_ID(), CELL_NONE));
 								Speak(VOX_UNIT_READY);
 								break;
 
@@ -2062,7 +2062,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 								break;
 
 							case RTTI_INFANTRY:
-								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, CELL_NONE));
+								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, pending->Class_Of()->Fetch_Heap_ID(), CELL_NONE));
 								Speak(VOX_UNIT_READY);
 								break;
 						}
@@ -2219,7 +2219,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 						*/
 						bool isbusy = false;
 						if (obj->RTTI == RTTI_BUILDINGTYPE) {
-							isbusy = (PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, HouseClass::Build_Category(Buildables[index].BuildableType, Buildables[index].BuildableID)) != NULL);
+							isbusy = (PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, HouseClass::Build_Category(Buildables[index].BuildableType, Buildables[index].BuildableID), HouseClass::Is_Naval_Type(Buildables[index].BuildableType, Buildables[index].BuildableID)) != NULL);
 						}
 
 						if (obj->Who_Can_Build_Me(true, true, true, PlayerPtr) == NULL) {
@@ -2332,7 +2332,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 
 			bool hasqueuecount = false;
 			if (obj != NULL) {
-				FactoryClass * factory = PlayerPtr->Fetch_Factory(obj->RTTI, HouseClass::Build_Category(obj->RTTI, obj->Fetch_Heap_ID()));
+				FactoryClass * factory = PlayerPtr->Fetch_Factory(obj->RTTI, HouseClass::Build_Category(obj->RTTI, obj->Fetch_Heap_ID()), HouseClass::Is_Naval_Type(obj->RTTI, obj->Fetch_Heap_ID()));
 
 				if (factory != NULL) {
 					int total = factory->Total(obj);
@@ -2454,7 +2454,7 @@ bool SidebarClass::StripClass::Recalc(void)
 		if (!ok) {
 			// This sweep runs for the local player alone, so the abandon travels as an event.
 			if (Rule->IsRecheckPrerequisites && tech != NULL) {
-				FactoryClass * fptr = PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, HouseClass::Build_Category(Buildables[index].BuildableType, Buildables[index].BuildableID));
+				FactoryClass * fptr = PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, HouseClass::Build_Category(Buildables[index].BuildableType, Buildables[index].BuildableID), HouseClass::Is_Naval_Type(Buildables[index].BuildableType, Buildables[index].BuildableID));
 				int pending = (fptr != NULL) ? fptr->Total(tech) : 0;
 				if (pending > 0) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT,
@@ -2752,7 +2752,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					/*
 					 * Cancel a queued production.
 					 */
-					FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid));
+					FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid), HouseClass::Is_Naval_Type(otype, oid));
 					if (fptr != NULL && fptr->Is_Queued(choice)) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
 					}
@@ -2796,7 +2796,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 									**	power, queue this event and process through normal house
 									**	production channels.
 									*/
-									OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, otype, CELL_NONE));
+									OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, otype, oid, CELL_NONE));
 								}
 							}
 						}
@@ -2821,7 +2821,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					**	on the icon that has the attached factory, then say that the factory is busy and
 					**	ignore the click.
 					*/
-					factory = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid));
+					factory = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid), HouseClass::Is_Naval_Type(otype, oid));
 					bool produce = false;
 					if (factory != NULL && (factory->Is_Building() || factory->Has_Production_Target())) {
 						if (otype == RTTI_BUILDINGTYPE) {

@@ -330,6 +330,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	UnitFactory(NULL),
 	BuildingFactory(NULL),
 	DefenseFactory(NULL),
+	ShipFactory(NULL),
 	FlagLocation(NULL),
 	FlagHome(0,0),
 	UnitsLost(0),
@@ -2807,7 +2808,8 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 	}
 
 	BuildCatType const buildcat = Build_Category(type, id);
-	fptr = Fetch_Factory(type, buildcat);
+	bool const naval = Is_Naval_Type(type, id);
+	fptr = Fetch_Factory(type, buildcat, naval);
 
 	if (fptr == NULL) {
 		fptr = new FactoryClass;
@@ -2829,7 +2831,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 		}
 	}
 
-	Set_Factory(type, buildcat, fptr);
+	Set_Factory(type, buildcat, naval, fptr);
 
 	bool has_suspended = false;
 	if (fptr->IsSuspended) {
@@ -2874,7 +2876,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 		DebugString("IsSuspended\t= %d\n", fptr->IsSuspended);
 
 		delete fptr;
-		Set_Factory(type, buildcat, NULL);
+		Set_Factory(type, buildcat, naval, NULL);
 	}
 
 	return(PROD_CANT);
@@ -2899,7 +2901,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
  *=============================================================================================*/
 ProdFailType HouseClass::Suspend_Production(RTTIType type, int id)
 {
-	FactoryClass * fptr = Fetch_Factory(type, Build_Category(type, id));
+	FactoryClass * fptr = Fetch_Factory(type, Build_Category(type, id), Is_Naval_Type(type, id));
 
 	/*
 	**	If the house is already busy producing the requested object, then
@@ -2944,7 +2946,7 @@ ProdFailType HouseClass::Suspend_Production(RTTIType type, int id)
  *=============================================================================================*/
 ProdFailType HouseClass::Abandon_Production(RTTIType type, int id)
 {
-	return(Abandon_Production(type, id, Build_Category(type, id)));
+	return(Abandon_Production(type, id, Build_Category(type, id), Is_Naval_Type(type, id)));
 }
 
 
@@ -2957,14 +2959,15 @@ ProdFailType HouseClass::Abandon_Production(RTTIType type, int id)
  * INPUT:   type     -- The object type that production is being abandoned for.                *
  *          id       -- The type ID, or -1 to abandon the factory's object regardless of type. *
  *          buildcat -- The BuildCat from Build_Category, which picks the factory.             *
+ *          naval    -- Whether the type is a naval unit type, which picks the ship factory.   *
  *                                                                                             *
  * OUTPUT:  Returns the reason why or why not, production was abandoned.                       *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
  *=============================================================================================*/
-ProdFailType HouseClass::Abandon_Production(RTTIType type, int id, BuildCatType buildcat)
+ProdFailType HouseClass::Abandon_Production(RTTIType type, int id, BuildCatType buildcat, bool naval)
 {
-	FactoryClass * fptr = Fetch_Factory(type, buildcat);
+	FactoryClass * fptr = Fetch_Factory(type, buildcat, naval);
 
 	/*
 	**	If there is no factory to abandon, then return with a failure code.
@@ -3015,7 +3018,7 @@ ProdFailType HouseClass::Abandon_Production(RTTIType type, int id, BuildCatType 
 	*/
 	fptr->Abandon();
 	if (fptr->QueuedObjects.Count() == 0) {
-		Set_Factory(type, buildcat, NULL);
+		Set_Factory(type, buildcat, naval, NULL);
 		delete fptr;
 	} else {
 		fptr->Resume_Queue();
@@ -3145,9 +3148,9 @@ void HouseClass::AI_Super_Weapon_Defense(SuperClass const * super, Cell const & 
  *                                                                                             *
  * INPUT:   type  -- The object type to place. The actual object is lifted from the sidebar.   *
  *                                                                                             *
- *          id    -- The building type ID, which picks the structure or defense factory. A     *
- *                   placement whose ID is not the completed object's type is ignored. -1 for  *
- *                   units, aircraft and infantry.                                             *
+ *          id    -- The type ID, which picks the factory (structure, defense, vehicle, ship,  *
+ *                   infantry or aircraft). A placement whose ID is not the completed object's *
+ *                   type is ignored. -1 accepts the completed object whatever its type.       *
  *                                                                                             *
  *                                                                                             *
  *          cell  -- The location to place the object on the map.                              *
@@ -3164,7 +3167,8 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 	bool placed = false;
 	TechnoClass * tech = 0;
 	BuildCatType const buildcat = Build_Category(type, id);
-	FactoryClass * factory = Fetch_Factory(type, buildcat);
+	bool const naval = Is_Naval_Type(type, id);
+	FactoryClass * factory = Fetch_Factory(type, buildcat, naval);
 
 	/*
 	**	Only if there is a factory active for this type, can it be "placed".
@@ -3200,7 +3204,7 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						**	has been completed.
 						*/
 						factory->Completed();
-						Abandon_Production(type, -1, buildcat);
+						Abandon_Production(type, -1, buildcat, naval);
 						placed = true;
 					} else {
 						/*
@@ -3209,7 +3213,7 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						*/
 						if (tech->RTTI != RTTI_BUILDING) {
 							DebugString("Failed to exit object from factory - refunding money\n");
-							Abandon_Production(type, -1, buildcat);
+							Abandon_Production(type, -1, buildcat, naval);
 						}
 						return(placed);
 					}
@@ -3234,7 +3238,7 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						}
 						factory->Completed();
 						tech->Transmit_Message(RADIO_COMPLETE, builder);
-						Abandon_Production(type, -1, buildcat);
+						Abandon_Production(type, -1, buildcat, naval);
 						placed = true;
 
 						if (tech->IsActive && !tech->DiscoveredBy[this]) {
@@ -3472,6 +3476,10 @@ void HouseClass::Detach(AbstractClass const * target, bool all)
 
 	if (DefenseFactory == target) {
 		DefenseFactory = NULL;
+	}
+
+	if (ShipFactory == target) {
+		ShipFactory = NULL;
 	}
 }
 
@@ -6056,15 +6064,42 @@ BuildCatType HouseClass::Build_Category(RTTIType rtti, int id)
 
 
 /***********************************************************************************************
+ * HouseClass::Is_Naval_Type -- Tells whether a type is a naval unit with a ship factory.      *
+ *                                                                                             *
+ *    A unit type with Naval=yes is a ship. Its factory is separate from the vehicle           *
+ *    factory, as gamemd's HouseClass::GetPrimaryFactory (0x500510) keeps them apart.          *
+ *    Every other type returns false.                                                          *
+ *                                                                                             *
+ * INPUT:   rtti -- The RTTI of the object type.                                               *
+ *          id   -- The type ID, or -1 when there is none.                                     *
+ *                                                                                             *
+ * OUTPUT:  Returns true for a unit type with Naval=yes, and false for any other type.         *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *=============================================================================================*/
+bool HouseClass::Is_Naval_Type(RTTIType rtti, int id)
+{
+	if (rtti != RTTI_UNIT && rtti != RTTI_UNITTYPE) {
+		return(false);
+	}
+
+	TechnoTypeClass const * tech = Fetch_Techno_Type(rtti, id);
+	return(tech != NULL && tech->IsNaval);
+}
+
+
+/***********************************************************************************************
  * HouseClass::Fetch_Factory -- Finds the factory associated with the object type specified.   *
  *                                                                                             *
  *    This is the counterpart to the Set_Factory function. It will return with a factory       *
  *    pointer that is associated with the object type specified. A building with               *
  *    BuildCat=Combat goes to the defense factory; other buildings go to the structure         *
- *    factory.                                                                                 *
+ *    factory. A naval unit type goes to the ship factory, and other unit types go to the      *
+ *    vehicle factory.                                                                         *
  *                                                                                             *
  * INPUT:   rtti     -- The RTTI of the object type to find the factory for.                   *
  *          buildcat -- The BuildCat from Build_Category.                                      *
+ *          naval    -- True for a naval unit type, which picks the ship factory.              *
  *                                                                                             *
  * OUTPUT:  Returns with a pointer to the factory (if present) that can manufacture the        *
  *          object type specified.                                                             *
@@ -6075,7 +6110,7 @@ BuildCatType HouseClass::Build_Category(RTTIType rtti, int id)
  * HISTORY:                                                                                    *
  *   07/09/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat) const
+FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat, bool naval) const
 {
 	FactoryClass * factory;
 
@@ -6087,7 +6122,8 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat) c
 
 		case RTTI_UNIT:
 		case RTTI_UNITTYPE:
-			factory = UnitFactory;
+			// A naval unit type builds in the ship factory (gamemd HouseClass::GetPrimaryFactory, 0x500510).
+			factory = naval ? ShipFactory : UnitFactory;
 			break;
 
 		case RTTI_BUILDING:
@@ -6117,6 +6153,7 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat) c
  *                                                                                             *
  * INPUT:   rtti     -- The RTTI of the object the factory it to manufacture.                  *
  *          buildcat -- The BuildCat from Build_Category. Combat selects the defense factory.  *
+ *          naval    -- True for a naval unit type, which selects the ship factory.            *
  *                                                                                             *
  *          factory  -- The factory object pointer.                                            *
  *                                                                                             *
@@ -6127,14 +6164,18 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat) c
  * HISTORY:                                                                                    *
  *   07/09/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-void HouseClass::Set_Factory(RTTIType rtti, BuildCatType buildcat, FactoryClass * factory)
+void HouseClass::Set_Factory(RTTIType rtti, BuildCatType buildcat, bool naval, FactoryClass * factory)
 {
 	assert(rtti != RTTI_NONE);
 
 	switch (rtti) {
 		case RTTI_UNIT:
 		case RTTI_UNITTYPE:
-			UnitFactory = factory;
+			if (naval) {
+				ShipFactory = factory;
+			} else {
+				UnitFactory = factory;
+			}
 			break;
 
 		case RTTI_INFANTRY:
@@ -7626,6 +7667,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnitFactory);
 	stream.Serialize(BuildingFactory);
 	stream.Serialize(DefenseFactory);
+	stream.Serialize(ShipFactory);
 	stream.Serialize(FlagLocation);
 	stream.Serialize(FlagHome);
 	stream.Serialize(UnitsKilled);
@@ -9497,13 +9539,14 @@ void HouseClass::Activate_Threat_Node(void)
 /// is suspended until it may proceed again.
 /// </summary>
 /// <param name="rtti">Which of the house's factories to bring up to date.</param>
-void HouseClass::Update_Factories(RTTIType rtti)
+/// <param name="naval">Whether the unit type's factory is the ship factory rather than the vehicle factory.</param>
+void HouseClass::Update_Factories(RTTIType rtti, bool naval)
 {
 	// A building type has a structure factory and a defense factory; both are brought up to date.
 	int const slots = (rtti == RTTI_BUILDINGTYPE) ? 2 : 1;
 
 	for (int slot = 0; slot < slots; slot++) {
-		FactoryClass * factory = Fetch_Factory(rtti, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT);
+		FactoryClass * factory = Fetch_Factory(rtti, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT, naval);
 		if (factory == NULL) continue;
 
 		for (int i = factory->QueuedObjects.Count() - 1; i >= 0; i--) {
@@ -10639,7 +10682,8 @@ bool HouseClass::Is_Build_Limited(TechnoTypeClass const * type) const
 		int queued = 0;
 		// gamemd's HouseClass::CanBuild (0x50B370) counts queued buildings in the structure factory for every
 		// building type, so a defense in the defense factory is not counted here.
-		FactoryClass * factory = Fetch_Factory(type->RTTI, BUILDCAT_DONTCARE);
+		// A naval unit type counts the ship factory, as CanBuild does (0x50B370 reads Naval for a unit).
+		FactoryClass * factory = Fetch_Factory(type->RTTI, BUILDCAT_DONTCARE, type->IsNaval);
 		if (factory != NULL) {
 			queued = factory->Total(type);
 

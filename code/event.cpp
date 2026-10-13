@@ -625,7 +625,7 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell cons
  * INPUT:   index  -- The sender's index, or negative for no event.                            *
  *          type   -- The event type, PLACE.                                                   *
  *          object -- The RTTI of the object placed.                                           *
- *          id     -- The building type ID, or -1 for units, aircraft and infantry.            *
+ *          id     -- The type ID that picks the factory, or -1 when there is none.            *
  *          cell   -- The location for this event.                                             *
  *                                                                                             *
  * OUTPUT:  none                                                                               *

@@ -1221,7 +1221,7 @@ void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) 
 		*/
 		FactoryClass * factory = NULL;
 		if (House->Is_Human_Player()) {
-			factory = House->Fetch_Factory(Class->ToBuild, BUILDCAT_DONTCARE);
+			factory = House->Fetch_Factory(Class->ToBuild, BUILDCAT_DONTCARE, Class->IsNaval);
 		} else {
 			factory = Factory;
 		}
@@ -2221,7 +2221,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 		}
 
 		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild);
+			House->Update_Factories(Class->ToBuild, Class->IsNaval);
 		}
 
 		// Another house's RevealToAll structure shows the player its surroundings (BuildingClass::Place, 0x445F80).
@@ -3804,7 +3804,7 @@ bool BuildingClass::Limbo(void)
 		}
 
 		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild);
+			House->Update_Factories(Class->ToBuild, Class->IsNaval);
 		}
 
 		if (Class == Rule->GDIFirestormGenerator) {
@@ -4962,8 +4962,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		}
 
 		if (Class->ToBuild != RTTI_NONE) {
-			oldowner->Update_Factories(Class->ToBuild);
-			newowner->Update_Factories(Class->ToBuild);
+			oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+			newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
 		}
 
 		for (CapturedDocker const & docker : captured_dockers) {
@@ -7337,11 +7337,13 @@ void BuildingClass::Detach_All(bool all)
 
 			/*
 			**	A structure and a defense are built by separate factories, so both are checked.
-			**	Each object is named by its type ID, since a building type's ID picks its factory.
+			**	Each object is named by its type ID, since a building type's ID picks its factory. A unit
+			**	factory is the ship factory when this building is Naval, as BuildingClass::Disappear
+			**	does (0x44EBF0).
 			*/
 			int const slots = (Class->ToBuild == RTTI_BUILDINGTYPE) ? 2 : 1;
 			for (int slot = 0; slot < slots; slot++) {
-				FactoryClass * factory = House->Fetch_Factory(Class->ToBuild, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT);
+				FactoryClass * factory = House->Fetch_Factory(Class->ToBuild, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT, Class->IsNaval);
 
 				/*
 				**	If a factory was found, then temporarily disable this building and then
@@ -7354,7 +7356,7 @@ void BuildingClass::Detach_All(bool all)
 					IsInLimbo = true;
 					if (object && !object->TClass->Who_Can_Build_Me(true, false, false, House)) {
 						int const id = (Class->ToBuild == RTTI_BUILDINGTYPE) ? object->Class_Of()->Fetch_Heap_ID() : -1;
-						House->Abandon_Production(Class->ToBuild, id);
+						House->Abandon_Production(Class->ToBuild, id, slot == 0 ? BUILDCAT_DONTCARE : BUILDCAT_COMBAT, Class->IsNaval);
 					}
 					IsInLimbo = limbo;
 				}
@@ -9099,7 +9101,7 @@ void BuildingClass::Turn_On(void)
 		Power_On();
 
 		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild);
+			House->Update_Factories(Class->ToBuild, Class->IsNaval);
 		}
 
 		if (House->Is_Player_Control()) {
@@ -9130,7 +9132,7 @@ void BuildingClass::Turn_Off(void)
 		}
 
 		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild);
+			House->Update_Factories(Class->ToBuild, Class->IsNaval);
 		}
 
 		if (Class == Rule->GDIFirestormGenerator) {

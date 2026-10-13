@@ -5340,9 +5340,9 @@ class ManualPlaceCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			// The structure factory is tried first; the defense factory may hold the finished building instead.
-			FactoryClass * factory = PlayerPtr->Fetch_Factory(RTTI_BUILDING, BUILDCAT_DONTCARE);
+			FactoryClass * factory = PlayerPtr->Fetch_Factory(RTTI_BUILDING, BUILDCAT_DONTCARE, false);
 			if (factory == NULL || !factory->Has_Completed()) {
-				factory = PlayerPtr->Fetch_Factory(RTTI_BUILDING, BUILDCAT_COMBAT);
+				factory = PlayerPtr->Fetch_Factory(RTTI_BUILDING, BUILDCAT_COMBAT, false);
 			}
 			if (factory == NULL || !factory->Has_Completed()) {
 				return;
@@ -5381,7 +5381,7 @@ static void Repeat_Last_Production(RTTIType type, int id)
 	}
 
 	if (type == RTTI_BUILDINGTYPE) {
-		FactoryClass * factory = PlayerPtr->Fetch_Factory(type, HouseClass::Build_Category(type, id));
+		FactoryClass * factory = PlayerPtr->Fetch_Factory(type, HouseClass::Build_Category(type, id), HouseClass::Is_Naval_Type(type, id));
 		if (factory != NULL && factory->Get_Object() != NULL) {
 			if (factory->Is_Building() || factory->Has_Production_Target()) {
 				Speak(VOX_NO_FACTORY);
