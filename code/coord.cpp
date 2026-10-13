@@ -126,26 +126,6 @@ Coord Coord_Scatter(Coord const & coord, int distance, bool lock)
 
 
 /// <summary>
-/// Gives the sine table gamemd reads for its trigonometry, the table at 0x84F084 in gamemd.exe.
-/// Entry k is sin(2 pi k / 8192) for k from 0 to 10240, so entry k + 2048 is the cosine of the
-/// same angle. Some entries differ from the correctly rounded float by one unit in the last place.
-/// </summary>
-static float const * Ballistic_Sine_Table(void)
-{
-	static float table[10241];
-	static bool filled = false;
-
-	if (!filled) {
-		for (int index = 0; index < 10241; index++) {
-			table[index] = (float)sin(2.0 * M_PI * index / 8192.0);
-		}
-		filled = true;
-	}
-	return(table);
-}
-
-
-/// <summary>
 /// Moves an aim point by a random amount, as gamemd moves the aim of an inaccurate ballistic or
 /// flak projectile (BulletClass::MoveTo at 0x468670 and TechnoClass::Fire at 0x6FDD50).
 /// The draw picks the direction and the spread gives the distance in leptons. X moves by the
@@ -167,27 +147,9 @@ Coord Ballistic_Offset(Coord const & point, int spread, int draw)
 	int const direction = (low >= 0x8000 ? low - 0x10000 : low) - 0x3FFF;
 	double const radians = (double)direction * -9.587672516830327e-05;
 
-	/*
-	**	The index counts half steps of pi / 8192, halved again to a table entry. An odd half step
-	**	moves the entry up by one, except at the top of the table.
-	*/
-	int const index = (int)(radians * 2607.594482421875);
-	int const base = ((index / 2) % 8192 + 8192) % 8192;
-	bool const odd = (index & 1) != 0;
-
-	int sine_index = base;
-	if (odd && sine_index < 0x1FFF) {
-		sine_index++;
-	}
-	int cosine_index = base + 2048;
-	if (odd && cosine_index < 0x27FF) {
-		cosine_index++;
-	}
-
-	float const * table = Ballistic_Sine_Table();
 	Coord moved(point);
-	moved.X = (int)(point.X + spread * (double)table[cosine_index]);
-	moved.Y = (int)(point.Y - spread * (double)table[sine_index]);
+	moved.X = (int)(point.X + spread * (double)Gamemd_Cosine(radians));
+	moved.Y = (int)(point.Y - spread * (double)Gamemd_Sine(radians));
 	return(moved);
 }
 
