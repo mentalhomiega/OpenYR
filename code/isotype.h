@@ -458,6 +458,12 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		static IsometricTileType ShorePieces;
 
 		/*
+		 * This is the first of the water bridge tiles. Green ground treats it as matching when
+		 * it picks its transition tile, as ShorePieces is.
+		 */
+		static IsometricTileType WaterBridge;
+
+		/*
 		 * This is the first of the fourteen open water tiles, and what a map is filled with
 		 * when it asks for water rather than clear ground.
 		 */

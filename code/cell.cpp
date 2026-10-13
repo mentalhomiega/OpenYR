@@ -942,6 +942,17 @@ bool CellClass::Fixup_LAT(void)
 		mold2 = ISOTILE_INVALID;
 	}
 
+	IsometricTileType shore1 = IsometricTileTypeClass::ShorePieces;
+	IsometricTileType shore2 = IsometricTileType(shore1 + SHORE_PIECES_COUNT - 1);
+	if (shore1 == ISOTILE_INVALID) {
+		shore2 = ISOTILE_INVALID;
+	}
+	IsometricTileType waterbridge1 = IsometricTileTypeClass::WaterBridge;
+	IsometricTileType waterbridge2 = IsometricTileType(waterbridge1 + 1);
+	if (waterbridge1 == ISOTILE_INVALID) {
+		waterbridge2 = ISOTILE_INVALID;
+	}
+
 	IsometricTileType old_ittype = ITType;
 
 	/*
@@ -1001,7 +1012,10 @@ bool CellClass::Fixup_LAT(void)
 			for (int i = 0; i < FACING_COUNT / 2; i++) {
 				CellClass const & cptr = Adjacent_Cell((FacingType)facing);
 				IsometricTileType ittype = cptr.ITType;
-				if (ittype != IsometricTileTypeClass::GreenTile && (ittype < cleartogreen1 || ittype > cleartogreen2)) {
+				if (ittype != IsometricTileTypeClass::GreenTile
+				&& (ittype < cleartogreen1 || ittype > cleartogreen2)
+				&& (ittype < shore1 || ittype > shore2)
+				&& (ittype < waterbridge1 || ittype > waterbridge2)) {
 					offset |= 1 << i;
 				}
 				facing = Facing_Add(facing, FACING_90);

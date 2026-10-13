@@ -18,6 +18,8 @@ The families blend one after another on each cell, in the order rough, sand, gre
 
 For rough ground, the only tiles that count as rough are the plain [`RoughTile`](/keys/roughtile/) tile and the sixteen tiles here. Rough ground therefore blends against pavement, water and cliffs alike.
 
+For green ground, the forty-two [`ShorePieces`](/keys/shorepieces/) tiles and the first two tiles of the `WaterBridge` set do not count as foreign. A green cell whose only foreign neighbor is shore keeps the plain green tile on that edge, so the shore art meets the green ground directly.
+
 :::caution[Resolve the LAT set whenever its plain ground tile resolves]
 Sand, green and pavement are not blended when their LAT set is unresolved. Rough, crystal, swamp and blue mold still blend a cell that holds their plain ground tile. Such a cell gets the theater's tile at the total minus one, counting every tile the theater loaded from 0. That is one of the theater's first fifteen tiles, not blend art.
 :::

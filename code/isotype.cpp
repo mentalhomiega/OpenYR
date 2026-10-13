@@ -211,6 +211,7 @@ IsometricTileType IsometricTileTypeClass::BridgeSet;
 IsometricTileType IsometricTileTypeClass::TrainBridgeSet;
 IsometricTileType IsometricTileTypeClass::CliffSet;
 IsometricTileType IsometricTileTypeClass::ShorePieces;
+IsometricTileType IsometricTileTypeClass::WaterBridge;
 IsometricTileType IsometricTileTypeClass::WaterSet;
 IsometricTileType IsometricTileTypeClass::Ice1Set;
 IsometricTileType IsometricTileTypeClass::Ice2Set;
@@ -792,6 +793,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 	IsometricTileType _TrainBridgeSet = (IsometricTileType)ini.Get_Int("General", "TrainBridgeSet", ISOTILE_INVALID);
 	IsometricTileType _CliffSet = (IsometricTileType)ini.Get_Int("General", "CliffSet", ISOTILE_INVALID);
 	IsometricTileType _ShorePieces = (IsometricTileType)ini.Get_Int("General", "ShorePieces", ISOTILE_INVALID);
+	IsometricTileType _WaterBridge = (IsometricTileType)ini.Get_Int("General", "WaterBridge", ISOTILE_INVALID);
 	IsometricTileType _WaterSet = (IsometricTileType)ini.Get_Int("General", "WaterSet", ISOTILE_INVALID);
 	IsometricTileType _Ice1Set = (IsometricTileType)ini.Get_Int("General", "Ice1Set", ISOTILE_INVALID);
 	IsometricTileType _Ice2Set = (IsometricTileType)ini.Get_Int("General", "Ice2Set", ISOTILE_INVALID);
@@ -849,6 +851,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 	TrainBridgeSet = ISOTILE_INVALID;
 	CliffSet = ISOTILE_INVALID;
 	ShorePieces = ISOTILE_INVALID;
+	WaterBridge = ISOTILE_INVALID;
 	WaterSet = ISOTILE_INVALID;
 	Ice1Set = ISOTILE_INVALID;
 	Ice2Set = ISOTILE_INVALID;
@@ -945,6 +948,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 		if (setid == _TrainBridgeSet) TrainBridgeSet = (IsometricTileType)heapid;
 		if (setid == _CliffSet) CliffSet = (IsometricTileType)heapid;
 		if (setid == _ShorePieces) ShorePieces = (IsometricTileType)heapid;
+		if (setid == _WaterBridge) WaterBridge = (IsometricTileType)heapid;
 		if (setid == _WaterSet) WaterSet = (IsometricTileType)heapid;
 		if (setid == _Ice1Set) Ice1Set = (IsometricTileType)heapid;
 		if (setid == _Ice2Set) Ice2Set = (IsometricTileType)heapid;
