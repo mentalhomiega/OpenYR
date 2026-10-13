@@ -2786,6 +2786,33 @@ Dir256 BuildingTypeClass::Deploy_Facing(void) const
 
 
 /// <summary>
+/// Fetches the radius of the range ring this type shows while it is placed or stands nearby.
+/// A psychic detector uses its detection radius, a gap generator its uncharged gap radius,
+/// and a sensor array or cloak generator its cloak radius. Any other type uses the range of
+/// its primary weapon, rounded down to whole cells.
+/// </summary>
+/// <returns>Returns with the radius in cells, or 0 when this type shows no ring.</returns>
+int BuildingTypeClass::Radial_Indicator_Range(void) const
+{
+	if (PsychicDetectionRadius > 0) {
+		return(PsychicDetectionRadius);
+	}
+	if (IsGapGenerator) {
+		return(GapRadiusInCells);
+	}
+	if (IsSensorArray || IsCloakGenerator) {
+		return(CloakRadiusInCells);
+	}
+
+	WeaponDataStruct const * weapon = Get_Weapon(0);
+	if (weapon != NULL && weapon->Weapon != NULL && weapon->Weapon->Range > 0) {
+		return(weapon->Weapon->Range / CELL_LEPTON);
+	}
+	return(0);
+}
+
+
+/// <summary>
 /// Fetches the RTTI type of this object.
 /// </summary>
 /// <returns>Returns with RTTI_BUILDINGTYPE.</returns>

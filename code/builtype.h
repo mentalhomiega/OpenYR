@@ -1117,6 +1117,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		virtual bool Is_Immune_To_EMP(void) const override;
 		Dir256 Deploy_Facing(void) const;
 
+		// Radius in cells of this type's range ring while placed or nearby; 0 when it has none (BuildingClass::GetRadialIndicatorRange, 0x4566B0).
+		int Radial_Indicator_Range(void) const;
+
 	public:
 
 		/*

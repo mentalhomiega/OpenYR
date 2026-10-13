@@ -12,3 +12,5 @@ when_omitted:
 The lines do not stay up all the time even when the setting is on. [Action lines](/systems/action-lines/) covers when they appear and how `UI.INI` styles them.
 
 The game controls dialog has the same switch. Accepting the dialog applies the change on the next frame and saves it to `RA2MD.INI`.
+
+The setting also controls the range ring that a structure shows while it is being placed. See [the placement range ring](/systems/action-lines/#the-placement-range-ring).

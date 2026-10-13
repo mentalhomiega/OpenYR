@@ -1333,6 +1333,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Waypoints(true);
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
+		Draw_Placement_Range();
 		Draw_Super_Timers();
 		Draw_Chrono_Screen_Effect();
 		Draw_Flying_Texts();
@@ -1501,6 +1502,116 @@ void Tactical::Draw_Placement(bool drawtrans)
 			Draw_Firestorm_Wall_Placement(drawtrans, Cell(start.X, start.Y) + Map.ZoneCell + Map.ZoneOffset);
 		} else if (bptr->Class->ToOverlay != NULL && bptr->Class->ToOverlay->IsWall) {
 			Draw_Wall_Placement(drawtrans, Cell(start.X, start.Y) + Map.ZoneCell + Map.ZoneOffset);
+		}
+	}
+}
+
+
+/// <summary>
+/// Fetches the horizontal radius, in pixels, of a range ring that spans a number of cells.
+/// The vertical radius is half of it. The projection makes a sensor array's ring and a placement
+/// ring of the same radius the same size.
+/// </summary>
+/// <param name="cells">The radius in cells.</param>
+/// <returns>Returns with the radius in pixels, which is 0 or less for a radius under one cell.</returns>
+int Tactical::Radial_Ring_Radius(int cells)
+{
+	static const int _iso_tile_edge = 34;
+
+	/*
+	 * Project the radius onto the isometric axes and express it in pixels. The
+	 * 16/17 factor is cos(atan(1/4)) squared, so the spans are the radius resolved
+	 * along the view axes, and 0.265625 is 34/128 -- one isometric tile edge per
+	 * half cell. The final tile edge comes back off to cancel the half cell that
+	 * was added to the radius.
+	 */
+	double leptons = (double)cells * CELL_LEPTON + CELL_LEPTON / 2;
+	double xspan = std::sqrt(leptons * leptons * (16.0 / 17.0));
+	double yspan = xspan * 0.25;
+	double spansq = 0.25 * (4.0 * yspan * yspan + xspan * xspan);
+	return((int)(std::sqrt(spansq) * 0.265625 - _iso_tile_edge));
+}
+
+
+/// <summary>
+/// Draws the outline of a range ring centred on a world coordinate.
+/// Nothing is drawn for a ring under one cell, or one that lies wholly outside the tactical view.
+/// </summary>
+/// <param name="center">The world coordinate at the centre of the ring.</param>
+/// <param name="cells">The radius of the ring, in cells.</param>
+/// <param name="color">The colour of the outline.</param>
+void Tactical::Draw_Range_Ring(Coord const & center, int cells, RGBClass const & color)
+{
+	int radius = Radial_Ring_Radius(cells);
+	if (cells < 1 || radius < 1) {
+		return;
+	}
+
+	Point2D point;
+	Coord_To_Pixel(center, point);
+	point += TacticalRect.TopLeft;
+
+	Rect bounds = Rect(Point2D(point.X - radius, point.Y - radius / 2), 2 * radius, radius);
+	if (Intersect(bounds, TacticalRect).Is_Valid()) {
+		LogicalSurface->Draw_Ellipse(point, radius, radius / 2, TacticalRect, DSurface::Build_Hicolor_Pixel(color.Get_Red(), color.Get_Green(), color.Get_Blue()));
+	}
+}
+
+
+/// <summary>
+/// Draws the range ring of the structure being placed, and the rings of the player's nearest
+/// structures of the same type.
+/// Nothing is drawn unless unit action lines are on. A nearby structure gets a ring only when it
+/// lies within twice the range of the cursor cell, and only the nearest ones of that distance do.
+/// </summary>
+void Tactical::Draw_Placement_Range(void)
+{
+	if (!TechnoClass::ActionLines || Map.PendingObject == NULL || Map.PendingObject->Fetch_RTTI() != RTTI_BUILDINGTYPE) {
+		return;
+	}
+
+	Point2D mouse = MouseCursor->Get_Mouse_Point();
+	if (!TacticalRect.Is_Point_Within(mouse) || !Map.In_Radar(Map.ZoneCell)) {
+		return;
+	}
+
+	BuildingTypeClass const * type = (BuildingTypeClass const *)Map.PendingObject;
+	int range = type->Radial_Indicator_Range();
+	if (range < 1) {
+		return;
+	}
+
+	Draw_Range_Ring(Map[Map.ZoneCell].Center_Coord(), range, PlayerPtr->RemapColorRGB);
+
+	Cell cursor = Map.ZoneCell;
+	auto is_same_type = [&](BuildingClass * building) {
+		return building->House == PlayerPtr && building->Class == type && !building->IsInLimbo && building->IsActive;
+	};
+	auto distance_to = [&](BuildingClass * building) {
+		Cell cell = Cell(building->Center_Coord());
+		int dx = cell.X - cursor.X;
+		int dy = cell.Y - cursor.Y;
+		return((int)std::sqrt((double)(dx * dx + dy * dy)));
+	};
+
+	int nearest = -1;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		if (is_same_type(building)) {
+			int distance = distance_to(building);
+			if (distance <= 2 * range && (nearest < 0 || distance < nearest)) {
+				nearest = distance;
+			}
+		}
+	}
+	if (nearest < 0) {
+		return;
+	}
+
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass * building = Buildings[index];
+		if (is_same_type(building) && distance_to(building) == nearest && building->Is_Powered_On() && building->House->Is_Player_Control()) {
+			Draw_Range_Ring(building->Center_Coord(), range, building->House->RemapColorRGB);
 		}
 	}
 }

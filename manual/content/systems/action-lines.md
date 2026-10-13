@@ -105,3 +105,13 @@ Only shots fired while the vehicle's house is under the player's control start t
 The laser is drawn with the vehicle, not over the whole map, so objects drawn after the vehicle can cover it.
 
 Its end squares are two pixels wide, or four when thick (three when thick and drop-shadowed). Its dashes are one pixel on and one off, and they swap places every game frame.
+
+## The placement range ring
+
+A structure waiting to be placed draws its range as a ring around the cursor cell, while [`UnitActionLines`](/keys/unitactionlines/) is `yes` and the cursor is over the tactical view. The ring is the range of the structure's primary weapon in whole cells. A structure with a psychic detection radius, a gap generator, a sensor array or a cloak generator uses that radius instead. A structure with none of these shows no ring.
+
+The ring takes the owner's color and is drawn as a single outline. It is sized from the cell count with the same projection as the sensor and cloak rings.
+
+The player's own structures of the same type also get a ring. Only the nearest ones draw one, and only when they lie within twice the range of the cursor cell. Ties at the nearest distance draw together. A structure without power draws none.
+
+The ring appears only while a structure is pending placement. [`HasRadialIndicator`](/keys/hasradialindicator/) does not control it.

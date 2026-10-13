@@ -25,6 +25,7 @@ template<class T> class DynamicVectorClass;
 class CellClass;
 class Cell;
 class HouseClass;
+class RGBClass;
 class ShadowControlClass;
 class Surface;
 
@@ -224,6 +225,9 @@ class Tactical : public AbstractClass
 		 * Placement previews.
 		 */
 		void Draw_Placement(bool drawtrans);
+		void Draw_Placement_Range(void);
+		void Draw_Range_Ring(Coord const & center, int cells, RGBClass const & color);
+		static int Radial_Ring_Radius(int cells);
 		void Draw_Fence_Placement(bool drawtrans, Cell cell);
 		void Draw_Firestorm_Wall_Placement(bool drawtrans, Cell cell);
 		void Draw_Wall_Placement(bool drawtrans, Cell cell);

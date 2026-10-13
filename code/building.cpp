@@ -11624,22 +11624,9 @@ void BuildingClass::Plot_On_Radar(void) const
 /// </summary>
 void BuildingClass::Draw_Radial_Indicator(void) const
 {
-	static const int _iso_tile_edge = 34;
-
 	if (Class->IsSensorArray || Class->IsCloakGenerator) {
 
-		/*
-		 * Project the radius onto the isometric axes and express it in pixels. The
-		 * 16/17 factor is cos(atan(1/4)) squared, so the spans are the radius resolved
-		 * along the view axes, and 0.265625 is 34/128 -- one isometric tile edge per
-		 * half cell. The final tile edge comes back off to cancel the half cell that
-		 * was added to the radius.
-		 */
-		int leptons = Class->CloakRadiusInCells * CELL_LEPTON + CELL_LEPTON / 2;
-		double xspan = std::sqrt((double)(leptons * leptons) * (16.0 / 17.0));
-		double yspan = xspan * 0.25;
-		double spansq = 0.25 * (4.0 * yspan * yspan + xspan * xspan);
-		int radius = (int)(std::sqrt(spansq) * 0.265625 - _iso_tile_edge);
+		int radius = Tactical::Radial_Ring_Radius(Class->CloakRadiusInCells);
 
 		if (radius != 0) {
 			if (IsOn && House->Is_Player_Control()) {
