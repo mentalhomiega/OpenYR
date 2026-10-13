@@ -91,6 +91,11 @@ site_exclusions:
     keys: [Anims, Palette, Sounds, TextRect]
     classification: excluded
     reason: These fields configure the legacy campaign-selection UI resource, not scenario gameplay data.
+  - path: code/ui/screens/missionsel/uimissionseldlg.cpp
+    function: Mission_Name
+    keys: [UIName]
+    classification: excluded
+    reason: The Mission Select screen reads MISSIONMD.INI labels to name its list entries; the file is menu text, not game or mod data.
   - path: code/wdtcampaign.cpp
     function: Campaign::Campaign
     keys: [CampaignID, PlayerFaction, Previous]
