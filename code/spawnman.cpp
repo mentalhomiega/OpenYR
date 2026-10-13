@@ -239,7 +239,11 @@ void SpawnManagerClass::AI(void)
 	}
 	NextUpdateFrame = Frame + 10;
 
-	bool const owner_moving = Owner->Is_Foot() && ((FootClass *)Owner)->Locomotion->Is_Moving();
+	// gamemd's SpawnManagerClass::Update (0x6B7230) holds a missile while the owner's locomotor reports
+	// motion (ILocomotion slots 0x10 and 0x80), and holds every spawn while a locomotor attack has the
+	// owner (FootClass byte +0x6AD).
+	bool const owner_moving = Owner->Is_Foot() && (((FootClass *)Owner)->Locomotion->Is_Moving() || ((FootClass *)Owner)->Locomotion->Is_Moving_Now());
+	bool const owner_attacked = Owner->IsAttackedByLocomotor;
 
 	for (int index = 0; index < (int)Nodes.size(); index++) {
 		NodeType & node = Nodes[index];
@@ -250,7 +254,7 @@ void SpawnManagerClass::AI(void)
 				if (Target == NULL || Frame < NextSpawnFrame || Status == STATUS_COOLDOWN || unit == NULL) {
 					break;
 				}
-				if (node.IsMissile && owner_moving) {
+				if (owner_attacked || (node.IsMissile && owner_moving)) {
 					break;
 				}
 				NextSpawnFrame = Frame + (SpawnType->IsMissileSpawn ? 9 : 20);
