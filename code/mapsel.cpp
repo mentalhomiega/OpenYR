@@ -54,6 +54,7 @@
 #include "msgbox.h"
 #include "pcx.h"
 #include "scenario.h"
+#include "side.h"
 #include "stimer.h"
 #include "surface.h"
 #include "theme.h"
@@ -128,6 +129,22 @@ const char * Map_Selection(ScenarioClass * scen)
 
 
 /// <summary>
+/// Fetches the side name that names a house's section in the progression file.
+/// The progression file keys its sections by side, so a house is looked up under its side,
+/// not under its own name.
+/// </summary>
+/// <param name="htype">The house type whose side is wanted.</param>
+/// <returns>Returns with the side name. Otherwise, NULL is returned when the house is in no side of the [Sides] list.</returns>
+static char const * Progression_Side_Name(HouseTypeClass const * htype)
+{
+	if (htype == NULL || htype->Side == SIDE_NONE || htype->Side >= Sides.Count()) {
+		return(NULL);
+	}
+	return((char const *)Sides[htype->Side]->IniName);
+}
+
+
+/// <summary>
 /// Advances the campaign to a specific map.
 /// This is the way into the map selection system when the next map is already known, such
 /// as when a mission hands directly off to another. An error box is displayed if the map
@@ -167,9 +184,15 @@ bool MapSelect::Advance_Progression(ScenarioClass * scen, char const * map_name)
 		return(false);
 	}
 
-	DebugString("MapSelect: House %s\n", (const char*)house->IniName);
+	char const * side_name = Progression_Side_Name(house);
+	if (side_name == NULL) {
+		DebugString("MapSelect: Invalid side!\n");
+		return(false);
+	}
 
-	if (Choices.Initialize((const char*)house->IniName) == false) {
+	DebugString("MapSelect: Side %s\n", side_name);
+
+	if (Choices.Initialize(side_name) == false) {
 		Choices.Deinit();
 		DebugString("MapSelect: Unable to initialize choices!\n");
 		return(false);
@@ -221,7 +244,7 @@ bool MapSelect::Presentation(ScenarioClass * scenario)
 		return(false);
 	}
 
-	MapStage * map_stage = Choices.Find_Stage_By_ID(scenario->Stage);
+	MapStage * map_stage = Choices.Find_Stage_By_Scenario(scenario->ScenarioName);
 
 	DebugString("MapSelect: Stage: %s\n", map_stage->Get_Stage_Label());
 
@@ -353,15 +376,21 @@ bool MapSelect::Init(ScenarioClass * scenario)
 		return(false);
 	}
 
-	DebugString("MapSelect: House %s\n", (const char*)htype->IniName);
+	char const * side_name = Progression_Side_Name(htype);
+	if (side_name == NULL) {
+		DebugString("MapSelect: Invalid side!\n");
+		return(false);
+	}
 
-	if (Choices.Initialize((const char*)htype->IniName) == false) {
+	DebugString("MapSelect: Side %s\n", side_name);
+
+	if (Choices.Initialize(side_name) == false) {
 		Choices.Deinit();
 		DebugString("MapSelect: Unable to initialize choices!\n");
 		return(false);
 	}
 
-	MapStage * map_stage = Choices.Find_Stage_By_ID(scenario->Stage);
+	MapStage * map_stage = Choices.Find_Stage_By_Scenario(scenario->ScenarioName);
 
 	if (map_stage == NULL) {
 		DebugString("MapSelect: Invalid stage!\n");

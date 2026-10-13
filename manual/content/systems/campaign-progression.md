@@ -54,16 +54,16 @@ Skirmish and multiplayer games never advance to another mission. Winning or losi
 
 A **campaign** is one entry in the `[Battles]` list of `battle.ini`. It supplies three things the progression uses: the [`Scenario`](/keys/scenario/#scope-campaign) its first mission loads from, the [`FinalMovie`](/keys/finalmovie/) played after its last mission, and a [`CD`](/keys/cd/) number that picks its [introduction movie](#the-campaign-level-number).
 
-The route from one mission to the next is not in `battle.ini`. It is in `MAPSEL.INI`, or `MAPSEL01.INI` for Firestorm missions, which gives each campaign house an ordered list of **stages**. Each stage names the mission it plays in its `Scenario=` key and lists the stages it can lead to. [MAPSEL.INI](/formats/mapsel-ini/) documents the file.
+The route from one mission to the next is not in `battle.ini`. It is in `MAPSELMD.INI`, which gives each campaign side an ordered list of **stages**. Each stage names the mission it plays in its `Scenario=` key and lists the stages it can lead to. [MAPSELMD.INI](/formats/mapsel-ini/) documents the file.
 
-The campaign records its progress as a **stage number**: the current stage's position in the house's list. No mission file sets it. Each advance sets the number to the stage chosen, and a replay, a restart or a loaded save keeps the number the mission had.
+The campaign records its progress as a **stage number**: the current stage's position in the side's list. No mission file sets it. Each advance sets the number to the stage chosen, and a replay, a restart or a loaded save keeps the number the mission had.
 
-Every other mission load starts at the first stage in the list. That includes a new campaign and a campaign mission that a launch file starts partway through a chain. Winning such a mission offers the first stage's choices. With `SkipMapSelect=yes`, its `NextScenario` is matched against those choices, and unless one of them names it, the choice fails as [When the choice fails](#when-the-choice-fails) describes.
+Every other mission load starts at the first stage in the list. That includes a new campaign and a campaign mission that a launch file starts partway through a chain. On the map screen, though, the choices come from the stage whose `Scenario=` is the mission just won, so a launched mission offers its own stage's choices. With `SkipMapSelect=yes`, the stage number decides instead: the advance matches its `NextScenario` against the choices of that stage, and unless one of them names it, the choice fails as [When the choice fails](#when-the-choice-fails) describes.
 
 Two rules follow from this:
 
 - A mission can lead only to a stage that the current stage lists as a choice.
-- The mission's [`Player=`](/keys/player/#scope-scenarios) house selects the list, so the house a mission is played as decides which progression it belongs to.
+- The side of the mission's [`Player=`](/keys/player/#scope-scenarios) house selects the list. A GDI house reads the `[GDI]` stages and a Nod house reads the `[Nod]` stages.
 
 ## The win sequence
 
@@ -144,15 +144,16 @@ When the next mission cannot be chosen, the campaign goes on with a mission the 
 | Failure | Route | What loads next |
 | --- | --- | --- |
 | `NextScenario` or `AltNextScenario` matches none of the stages the current stage leads to | `SkipMapSelect=yes` | The campaign's first mission |
-| The `MAPSEL` file is missing or has no stage list for the player's house | Either | The mission just won, again |
-| The stage number is beyond the end of the house's list | Either | The mission just won, again |
+| The `MAPSELMD.INI` file is missing, or the player's side has no section or no stage list | Either | The mission just won, again |
+| No stage of the player's side has the mission just won as its `Scenario=` | Map screen | The mission just won, again |
+| The stage number is beyond the end of the side's list | `SkipMapSelect=yes` | The mission just won, again |
 | The map screen's palette or click map cannot be loaded | Map screen | The mission just won, again |
 | The current stage has no `MapVQ=`, so the screen is skipped | Map screen | The mission just won, again |
 
 In every row, the mission that loads is treated as the next mission: its briefing plays, the level number goes up, and it receives the carry-over from the win. When that mission is the one just won, it starts with the flags as they ended and a share of the money the player finished with. The state it received when it was first reached is not applied again.
 
 :::caution[An unreachable name restarts the campaign]
-A mistyped or out-of-sequence `NextScenario` sends the player back to the campaign's first mission. The stage number still points at the stage of the mission just won, so winning that first mission again offers the later stage's choices.
+A mistyped or out-of-sequence `NextScenario` sends the player back to the campaign's first mission. A failed advance leaves the stage number unchanged, so a `SkipMapSelect=yes` win of that first mission matches its `NextScenario` against the choices of the stage the number still points at.
 :::
 
 ### Loading the chosen mission
