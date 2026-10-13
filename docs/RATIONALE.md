@@ -92,10 +92,13 @@ builds the same values.
   Two quarter-turn entries, at 4096 and 8192, are stored as gamemd has them
   because no formula found reproduces them. The table is verified against the
   executable for every entry the game can reach.
-- The arctangent table (`atan2` in gamemd) is not reproduced. Its entries
-  differ from the nearest float32 of `atan(n * K)` by up to about 13 units in
-  the last place near the end of the range, so `Direction` still uses the
-  standard library.
+- The arctangent table (`atan2` in gamemd) is generated the way the original
+  was. Its argument starts at 0 and each step adds `K`, about 0.0244, with both
+  rounded toward zero to single precision. Entry `i` is the single precision
+  arctangent of the `i`-th argument, which is why nearest rounding of
+  `atan(n * K)` does not match. `Gamemd_Atan2` indexes the table by
+  `trunc(y / x / K)`, so angles are quantized in steps of up to `K` near the x
+  axis. Facing from coordinates and from velocities uses it.
 
 Helpers the simulation switched to them include the integer and single
 precision length functions used by distance checks, the ballistic offset,
