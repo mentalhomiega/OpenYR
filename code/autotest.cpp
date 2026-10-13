@@ -20,6 +20,7 @@
 **	move <TypeID> <x> <y>	orders the player's objects of that type to a cell
 **	order <TypeID> <x> <y>	gives the player's objects of that type the move order a click gives, through the mission event,
 **							which drops their target as a player's order does
+**	cmove <TypeID> <x> <y>	gives the computer's foot objects of that type a move to a cell, keeping any target they hold
 **	attack <TypeID>			orders the player's objects of that type to attack the nearest
 **							structure of an enemy that has a base
 **	enemies					writes the structures of other houses and the count of their units
@@ -107,7 +108,8 @@
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
-**	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target
+**	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
+**							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
 **	quantity <TypeID>		writes how many of that type each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
@@ -420,6 +422,20 @@ void Order(std::string const & name, int x, int y)
 		TechnoClass * techno = Technos[index];
 		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
 			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
+		}
+	}
+}
+
+
+void Computer_Move(std::string const & name, int x, int y)
+{
+	Cell const cell(x, y);
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->Is_Foot() && techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+			FootClass * foot = static_cast<FootClass *>(techno);
+			foot->Assign_Destination(&Map[cell]);
+			foot->Assign_Mission(MISSION_MOVE);
 		}
 	}
 }
@@ -1473,11 +1489,13 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "place") {
 		Place(step.Argument);
-	} else if (step.Command == "move" || step.Command == "order") {
+	} else if (step.Command == "move" || step.Command == "order" || step.Command == "cmove") {
 		if (step.Command == "move") {
 			Move(step.Argument, step.X, step.Y);
-		} else {
+		} else if (step.Command == "order") {
 			Order(step.Argument, step.X, step.Y);
+		} else {
+			Computer_Move(step.Argument, step.X, step.Y);
 		}
 	} else if (step.Command == "attack") {
 		Attack(step.Argument);
@@ -2268,6 +2286,13 @@ void Run(StepType const & step)
 			if (techno->RTTI == RTTI_AIRCRAFT) {
 				AircraftClass const * plane = static_cast<AircraftClass const *>(techno);
 				DebugString("AUTOTEST   flight %s straight %d loaner %d flyby %d flyback %d entered %d inlocal %d legal %d\n", techno->TClass->Name(), (int)plane->IsLockedStraight, (int)plane->IsALoaner, (int)plane->Class->IsFlyBy, (int)plane->Class->IsFlyBack, (int)plane->IsLocked, (int)Map.In_Local_Radar(plane->PositionCell), (int)Map.In_Radar(plane->PositionCell));
+			}
+			{
+				bool const firing = techno->Is_Foot() && static_cast<FootClass const *>(techno)->IsFiring;
+				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
+				bool const inrange = techno->TarCom != NULL && techno->In_Range(techno->TarCom, which);
+				int const fire = techno->TarCom != NULL ? (int)techno->Can_Fire(techno->TarCom, which) : -1;
+				DebugString("AUTOTEST   cloak %s cloak %d firing %d inrange %d fire %d\n", techno->TClass->Name(), (int)techno->Cloak, (int)firing, (int)inrange, fire);
 			}
 			if (techno->ParasiteImUsing) {
 				ParasiteClass const & parasite = *techno->ParasiteImUsing;
