@@ -128,6 +128,7 @@
 #include "globals.h"
 #include "houstype.h"
 #include "incdec.h"
+#include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
 #include "intro.h"
@@ -3494,6 +3495,16 @@ class StopCommandClass : public CommandClass
 };
 
 
+// Returns the soldier when it has Deployer=yes, the only soldiers the deploy command's mixed-selection check counts.
+static InfantryClass const * Deployer_Soldier(ObjectClass const * obj)
+{
+	if (obj != NULL && obj->Is_Infantry() && static_cast<InfantryClass const *>(obj)->Class->IsDeployer) {
+		return(static_cast<InfantryClass const *>(obj));
+	}
+	return(NULL);
+}
+
+
 class DeployCommandClass : public CommandClass
 {
 	public:
@@ -3512,6 +3523,19 @@ class DeployCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
+				// Matches the mixed-selection test in gamemd's deploy command (FUN_00730AF0, 0x730AF0): with
+				// dug-in and not-dug-in deployer soldiers selected, the dug-in ones get no deploy event.
+				bool dug_in = false;
+				bool not_dug_in = false;
+				for (int index = 0; index < CurrentObject.Count(); index++) {
+					InfantryClass const * soldier = Deployer_Soldier(CurrentObject[index]);
+					if (soldier != NULL) {
+						dug_in = dug_in || soldier->Is_Deployed();
+						not_dug_in = not_dug_in || !soldier->Is_Deployed();
+					}
+				}
+				bool const mixed = dug_in && not_dug_in;
+
 				bool done = false;
 				AllowVoice = true;
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -3520,6 +3544,10 @@ class DeployCommandClass : public CommandClass
 					bool evacuate = garrison != NULL && garrison->House->Is_Player_Control() && (garrison->Occupants.Count() > 0
 						|| ((garrison->Class->IsInfantryAbsorb || garrison->Class->IsUnitAbsorb) && garrison->Cargo.How_Many() > 0));
 					if (obj != NULL && (obj->Can_Player_Move() || obj->Can_Player_Fire() || evacuate)) {
+						InfantryClass const * soldier = Deployer_Soldier(obj);
+						if (mixed && soldier != NULL && soldier->Is_Deployed()) {
+							continue;
+						}
 						TechnoClass * tech = dynamic_cast<TechnoClass *>(obj);
 						if (tech == NULL || (tech->Can_Attack_Now() && tech->Can_Deploy_Now())) {
 							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::DEPLOY, TargetClass(obj)));
