@@ -43221,6 +43221,24 @@ Wood:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+WoodBridgeSet:
+  key: WoodBridgeSet
+  scopes:
+  - applies_to:
+    - tile controls
+    file: theater control file
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: IsometricTileTypeClass
+      member: _WoodBridgeSet
+      source: code/isotype.cpp
+      guard: null
+    level: IsometricTileTypeClass
 WoodCrate:
   key: WoodCrate
   scopes:
