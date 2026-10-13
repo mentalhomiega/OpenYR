@@ -11,10 +11,16 @@
 
 #include "parasite.h"
 
+#include <cmath>
+
 #include "_map.h"
 #include "_rules.h"
 #include "anim.h"
+#include "animtype.h"
 #include "cell.h"
+#include "ccrand.h"
+#include "coord.h"
+#include "face.h"
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
@@ -27,12 +33,48 @@
 #include "weapon.h"
 
 
+namespace {
+
+// The grapple's constants as gamemd.exe holds them (ParasiteClass::UpdateSquid, 0x6297F0).
+constexpr double Squid_Turn_Per_Facing = 9.587672516830327e-05;
+constexpr double Squid_Shake_Step = 0.3141592653589793;
+constexpr double Squid_Shake_Limit = 0.7853981852531433;
+constexpr double Squid_Splash_Spread = 128.0;
+constexpr double Squid_Splash_Reach = 64.0;
+
+
+/// <summary>
+/// Returns the victim's turn in radians from facing 0x3FFF, the angle the grapple's splashes and wakes rotate by.
+/// </summary>
+double Squid_Victim_Turn(TechnoClass const * victim)
+{
+	return((victim->PrimaryFacing.Current().Facing - 0x3FFF) * Squid_Turn_Per_Facing);
+}
+
+
+/// <summary>
+/// Returns the point side leptons across and ahead leptons forward of where, turned by turn radians. Each axis truncates as the engine does.
+/// </summary>
+Coord Squid_Offset(Coord const & where, double turn, double side, double ahead)
+{
+	double const cosine = std::cos(turn);
+	double const sine = std::sin(turn);
+	return(Coord(where.X + (int)(side * cosine - ahead * sine), where.Y + (int)(side * sine + ahead * cosine), where.Z));
+}
+
+}
+
+
 ParasiteClass::ParasiteClass(TechnoClass * owner) :
 	Owner(owner),
 	Victim(nullptr),
 	DamageFrame(0),
 	SuppressedUntil(0),
-	IsReselect(false)
+	IsReselect(false),
+	GrappleAnim(nullptr),
+	GrappleState(GrappleStage::Start),
+	GrappleAnimFrame(0),
+	GrappleAnimDelay(0)
 {
 }
 
@@ -64,6 +106,7 @@ bool ParasiteClass::Can_Infect(TechnoClass const * target) const
 void ParasiteClass::Try_Infect(TechnoClass * target)
 {
 	DamageFrame = Frame;
+	Reset_Grapple();
 	if (!Can_Infect(target)) {
 		Coord const from = Owner->PositionCoord;
 		ScenarioInit++;
@@ -84,15 +127,23 @@ void ParasiteClass::Try_Infect(TechnoClass * target)
 
 
 /// <summary>
-/// Hurts the victim, which calls this each frame (ParasiteClass::Update, 0x629FD0). Every ROF
-/// frames of the owner's primary weapon, the victim takes that weapon's Damage through its
-/// warhead. An infantry victim instead takes its whole remaining strength, ignoring its
-/// defenses, so a soldier dies at the first bite. A victim that is not infantry also throws
-/// sparks and plays the weapon's Anim.
+/// Hurts the victim, which calls this each frame (ParasiteClass::Update, 0x629FD0). A naval
+/// organic owner runs the giant squid's grapple instead. Otherwise, every ROF frames of the
+/// owner's primary weapon, the victim takes that weapon's Damage through its warhead. An
+/// infantry victim instead takes its whole remaining strength, ignoring its defenses, so a
+/// soldier dies at the first bite. A victim that is not infantry also throws sparks and plays
+/// the weapon's Anim.
 /// </summary>
 void ParasiteClass::Update(void)
 {
-	if (Victim == nullptr || Frame < DamageFrame) {
+	if (Victim == nullptr || Owner == nullptr) {
+		return;
+	}
+	if (Owner->TClass->IsNaval && Owner->TClass->IsOrganic) {
+		Update_Squid();
+		return;
+	}
+	if (Frame < DamageFrame) {
 		return;
 	}
 	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
@@ -120,31 +171,192 @@ void ParasiteClass::Update(void)
 		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0;
 	}
 
-	// A giant squid, a Naval Organic owner, runs the grapple that reads Culling (ParasiteClass::UpdateSquid, 0x6297F0).
-	// A Culling warhead sinks a red victim at once, and a yellow one when the squid is elite.
-	if (weapon->WarheadPtr != nullptr && weapon->WarheadPtr->IsCulling && Owner->TClass->IsNaval && Owner->TClass->IsOrganic) {
-		bool const red = victim->Strength > 0 && victim->HealthRatio <= Rule->ConditionRed;
-		bool const yellow = victim->HealthRatio > Rule->ConditionRed && victim->HealthRatio <= Rule->ConditionYellow;
-		if (red || (yellow && Owner->Veterancy.Is_Elite())) {
-			TechnoClass * const squid = Owner;
-			if (squid->TClass->IsTrainable) {
-				squid->Veterancy.Made_A_Kill(squid->TClass->Cost_Of(squid->House), victim->TClass->Cost_Of(victim->House));
-			}
-			Exit_Unit();
-			victim->IsSinking = true;
-			if (victim->Is_Foot()) {
-				((FootClass *)victim)->Death_Announcement(squid);
-			}
-			victim->Stun();
-			if (squid->IsActive && squid->Is_Foot()) {
-				((FootClass *)squid)->ParalysisTimer = 0;
-			}
-			return;
-		}
-	}
-
 	int damage = infantry ? victim->Strength : weapon->Attack;
 	victim->Take_Damage(damage, 0, weapon->WarheadPtr, Owner, infantry, true);
+}
+
+
+/// <summary>
+/// Runs one frame of the giant squid's grapple on its victim (ParasiteClass::UpdateSquid, 0x6297F0).
+/// The victim is held while it is on water or off the map. A victim on land is let go at once.
+/// </summary>
+void ParasiteClass::Update_Squid(void)
+{
+	TechnoClass * const victim = Victim;
+	WeaponTypeClass const * const weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
+	if (weapon == nullptr || weapon->WarheadPtr == nullptr) {
+		return;
+	}
+	WarheadTypeClass const * const warhead = weapon->WarheadPtr;
+	Coord const where = victim->PositionCoord;
+	CellClass * const cell = victim->IsInLimbo ? nullptr : &Map[victim->Center_Coord()];
+
+	if (cell != nullptr && cell->Land_Type() != LAND_WATER) {
+		Exit_Unit();
+		if (Owner != nullptr && Owner->Is_Foot()) {
+			((FootClass *)Owner)->ParalysisTimer = 0;
+		}
+		return;
+	}
+
+	((FootClass *)victim)->ParalysisTimer = warhead->Paralyzes;
+
+	switch (GrappleState) {
+		case GrappleStage::Start:
+			victim->AngleRotatedSideways = 0.0f;
+			{
+				AnimType const type = AnimTypeClass::From_Name("SQDG");
+				if (type != ANIM_NONE && AnimTypes[type] != nullptr) {
+					GrappleAnim = new AnimClass(AnimTypes[type], where);
+				}
+			}
+			GrappleState = GrappleStage::Grab;
+			GrappleAnimDelay = 0;
+			GrappleAnimFrame = 0;
+			Update_Grapple();
+			break;
+
+		case GrappleStage::Grab:
+			if (Update_Grapple()) {
+				GrappleState = Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right;
+				GrappleAnimDelay = 0;
+				GrappleAnimFrame = 0;
+				Update_Grapple();
+				Create_Wakes(where);
+			}
+			break;
+
+		case GrappleStage::Push_Left:
+		case GrappleStage::Push_Right:
+			{
+				double const direction = GrappleState == GrappleStage::Push_Left ? -1.0 : 1.0;
+				if (Update_Grapple()) {
+					GrappleState = GrappleStage::Damage;
+					GrappleAnimDelay = 0;
+					GrappleAnimFrame = 0;
+					Update_Grapple();
+				}
+				victim->AngleRotatedSideways = (float)(std::sin(GrappleAnimFrame * direction * Squid_Shake_Step) * Squid_Shake_Limit);
+			}
+			break;
+
+		case GrappleStage::Damage:
+			{
+				victim->AngleRotatedSideways = 0.0f;
+				int const splashes = Rule->SplashList.Count();
+				double const turn = Squid_Victim_Turn(victim);
+				for (int i = 0; i < 3; i++) {
+					double const ahead = Random_Pick(0, 1) == 0 ? Squid_Splash_Reach : -Squid_Splash_Reach;
+					Coord const at = Squid_Offset(where, turn, (i - 1) * Squid_Splash_Spread, ahead);
+					if (splashes > 0) {
+						new AnimClass(Rule->SplashList[Random_Pick(0, splashes - 1)], at, 2, 1, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL), -10);
+					}
+				}
+
+				// A Culling warhead sinks a red victim, or a yellow one when the squid is elite, instead of damaging it.
+				if (warhead->IsCulling) {
+					bool const red = victim->Strength > 0 && victim->HealthRatio <= Rule->ConditionRed;
+					bool const yellow = victim->HealthRatio > Rule->ConditionRed && victim->HealthRatio <= Rule->ConditionYellow;
+					if (red || (yellow && Owner->Veterancy.Is_Elite())) {
+						if (Owner->TClass->IsTrainable) {
+							Owner->Veterancy.Made_A_Kill(Owner->TClass->Cost_Of(Owner->House), victim->TClass->Cost_Of(victim->House));
+						}
+						Exit_Unit();
+						victim->IsSinking = true;
+						((FootClass *)victim)->Death_Announcement(Owner);
+						victim->Stun();
+						Reset_Grapple();
+						if (Owner != nullptr && Owner->Is_Foot()) {
+							((FootClass *)Owner)->ParalysisTimer = 0;
+						}
+						return;
+					}
+				}
+
+				int damage = weapon->Attack;
+				victim->Take_Damage(damage, 0, warhead, Owner, false, true);
+				if (Victim == nullptr) {
+					Reset_Grapple();
+					break;
+				}
+				GrappleState = Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right;
+				GrappleAnimDelay = 0;
+				GrappleAnimFrame = 0;
+				Update_Grapple();
+				Create_Wakes(where);
+			}
+			break;
+	}
+
+	if (GrappleAnim != nullptr && Owner != nullptr && Victim != nullptr && Victim != GrappleAnim->xObject) {
+		GrappleAnim->Attach_To(Victim);
+	}
+}
+
+
+/// <summary>
+/// Advances the grapple one animation tick (ParasiteClass::UpdateGrapple, 0x629720). Returns true
+/// on the tick that finishes the ten frames of the stage, when the frame is set no further.
+/// </summary>
+bool ParasiteClass::Update_Grapple(void)
+{
+	int base = 160;
+	int delay = 4;
+	if (GrappleState == GrappleStage::Start || GrappleState == GrappleStage::Grab) {
+		base = 0;
+		delay = 3;
+	} else if (GrappleState == GrappleStage::Push_Left) {
+		base = 80;
+	}
+
+	GrappleAnimDelay++;
+	if (GrappleAnimDelay < delay) {
+		return(false);
+	}
+	GrappleAnimDelay = 0;
+	GrappleAnimFrame++;
+	if (GrappleAnimFrame > 9) {
+		return(true);
+	}
+	if (GrappleAnim != nullptr) {
+		int const direction = Shape_Facing_Index(Victim->PrimaryFacing.Current(), 8);
+		GrappleAnim->Set_Rate(0x80);
+		GrappleAnim->Set_Stage(GrappleAnimFrame + direction * 10 + base);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Spawns three wakes around the victim's position at where, scattered across and along its
+/// heading (FootClass::CreateWakes, 0x629E90, as the grapple calls it).
+/// </summary>
+void ParasiteClass::Create_Wakes(Coord const & where)
+{
+	double const turn = Squid_Victim_Turn(Victim);
+	for (int i = 0; i < 3; i++) {
+		int const side = Random_Pick(-180, 180);
+		int const ahead = Random_Pick(-64, 64);
+		if (Rule->Wake != nullptr) {
+			new AnimClass(Rule->Wake, Squid_Offset(where, turn, side, ahead));
+		}
+	}
+}
+
+
+/// <summary>
+/// Ends the grapple stage and removes its animation, so the next grab starts from the first frame.
+/// </summary>
+void ParasiteClass::Reset_Grapple(void)
+{
+	GrappleAnimFrame = 0;
+	GrappleAnimDelay = 0;
+	GrappleState = GrappleStage::Start;
+	AnimClass * const anim = GrappleAnim;
+	GrappleAnim = nullptr;
+	if (anim != nullptr) {
+		anim->Delete_Me();
+	}
 }
 
 
@@ -175,11 +387,11 @@ void ParasiteClass::Victim_Hit(int damage, TechnoClass const * source)
 /// </summary>
 void ParasiteClass::Exit_Unit(void)
 {
-	Release(Frame < SuppressedUntil);
+	Release(Frame < SuppressedUntil, true);
 }
 
 
-void ParasiteClass::Release(bool doomed)
+void ParasiteClass::Release(bool doomed, bool from_exit)
 {
 	TechnoClass * victim = Victim;
 	if (victim == nullptr) {
@@ -208,6 +420,9 @@ void ParasiteClass::Release(bool doomed)
 		Owner->Delete_Me();
 		return;
 	}
+	if (from_exit) {
+		Reset_Grapple();
+	}
 	// The parasite itself is paralyzed for three rearm delays after it comes out (ParasiteClass::ExitUnit, 0x62A4A0).
 	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
 	if (weapon != nullptr && Owner->Is_Foot()) {
@@ -229,9 +444,13 @@ void ParasiteClass::Detach(AbstractClass const * target)
 		Owner = nullptr;
 		return;
 	}
+	if (target == GrappleAnim) {
+		GrappleAnim = nullptr;
+		return;
+	}
 	// A victim leaving the map or dying lets the parasite out where it stood (ParasiteClass::PointerExpired, 0x62A260).
 	if (target == Victim && Owner != nullptr) {
-		Release(Frame < SuppressedUntil);
+		Release(Frame < SuppressedUntil, false);
 	}
 }
 

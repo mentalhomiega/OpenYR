@@ -9,15 +9,31 @@
 #pragma once
 
 class AbstractClass;
+class AnimClass;
+class Coord;
 class FootClass;
 class SaveStreamClass;
 class TechnoClass;
 
 
 /*
+ * The stages of a giant squid's grapple, numbered as ParasiteState is in gamemd.exe.
+ */
+enum class GrappleStage : int
+{
+	Start,
+	Grab,
+	Push_Left,
+	Push_Right,
+	Damage,
+};
+
+
+/*
  * A parasite riding inside its victim, as the terror drone does: the owner waits off the
  * map while the victim takes the owner's weapon damage every ROF frames, and comes back out
- * when the victim dies, unless heavy damage to the victim kills it first.
+ * when the victim dies, unless heavy damage to the victim kills it first. A naval organic
+ * parasite, the giant squid, grabs its victim instead and rocks it through the grapple stages.
  */
 class ParasiteClass
 {
@@ -42,6 +58,16 @@ class ParasiteClass
 		// Should the owner be selected again when it comes back out?
 		bool IsReselect;
 
+		// The grapple animation drawn around a giant squid's victim, and the stage, frame and delay of the grapple.
+		AnimClass * GrappleAnim;
+		GrappleStage GrappleState;
+		int GrappleAnimFrame;
+		int GrappleAnimDelay;
+
 	private:
-		void Release(bool doomed);
+		void Release(bool doomed, bool from_exit);
+		void Update_Squid(void);
+		bool Update_Grapple(void);
+		void Create_Wakes(Coord const & where);
+		void Reset_Grapple(void);
 };
