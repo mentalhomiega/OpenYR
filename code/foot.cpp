@@ -857,7 +857,7 @@ int FootClass::Do_MISSION_CAPTURE(void)
 
 	if (Mission == MISSION_SABOTAGE) {
 		BuildingClass * building = dynamic_cast<BuildingClass *>(NavCom);
-		if (building != NULL && !building->Class->IsRepairable) {
+		if (building != NULL && !building->Class->Can_Plant_C4()) {
 			Assign_Target(NULL);
 			Assign_Destination(NULL);
 			Enter_Idle_Mode();
@@ -979,7 +979,7 @@ int FootClass::Do_MISSION_GUARD(void)
 		*/
 		if (!House->Is_Human_Player() && (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4)) && Mission != MISSION_SABOTAGE) {
 			BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-			if (building != NULL && building->Class->IsRepairable) {
+			if (building != NULL && building->Class->Can_Plant_C4()) {
 				Assign_Mission(MISSION_SABOTAGE);
 			}
 		}
@@ -1019,7 +1019,7 @@ int FootClass::Do_MISSION_HUNT(void)
 			}
 		} else {
 			BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-			if (infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && building != NULL && building->Class->IsRepairable) {
+			if (infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && building != NULL && building->Class->Can_Plant_C4()) {
 				Assign_Destination(TarCom);
 				Assign_Mission(MISSION_SABOTAGE);
 				if (Ready_To_Commence()) {
@@ -1580,7 +1580,7 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 	*/
 	InfantryClass * infantry = As_InfantryClass();
 	BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-	if (!House->Is_Human_Player() && infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && Mission != MISSION_SABOTAGE && building != NULL && building->Class->IsRepairable) {
+	if (!House->Is_Human_Player() && infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && Mission != MISSION_SABOTAGE && building != NULL && building->Class->Can_Plant_C4()) {
 		Assign_Mission(MISSION_SABOTAGE);
 		return(1);
 	}
@@ -1835,7 +1835,7 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
 				if (((RTTI == RTTI_INFANTRY &&
 						((InfantryClass *)this)->Class->IsBomber) || Has_Ability(ABILITY_C4)) &&
 						object->RTTI == RTTI_BUILDING &&
-						((BuildingClass *)object)->Class->IsRepairable &&
+						((BuildingClass *)object)->Class->Can_Plant_C4() &&
 						!House->Is_Ally(object)) {
 
 					Player_Assign_Mission(MISSION_SABOTAGE, NULL, object);
@@ -1872,7 +1872,7 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
 			break;
 
 		case ACTION_SABOTAGE:
-			if (Can_Player_Move() && object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsRepairable) {
+			if (Can_Player_Move() && object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->Can_Plant_C4()) {
 				Player_Assign_Mission(MISSION_SABOTAGE, NULL, object);
 				return(true);
 			}
