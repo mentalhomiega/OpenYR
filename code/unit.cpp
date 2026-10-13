@@ -5912,11 +5912,21 @@ AbstractClass * UnitClass::Greatest_Threat(ThreatType threat, Coord const & coor
 		return(NULL);
 	}
 	if (!(threat & (THREAT_INFANTRY|THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_TIBERIUM|THREAT_CIVILIANS|THREAT_POWER|THREAT_FACTORIES|THREAT_BASE_DEFENSE|THREAT_OCCUPIABLE|THREAT_TECH))) {
-		if (PrimaryWeapon != NULL) {
-			threat = ThreatType(threat | PrimaryWeapon->Allowed_Threats());
-		}
-		if (SecondaryWeapon != NULL) {
-			threat = ThreatType(threat | SecondaryWeapon->Allowed_Threats());
+		// A multi-turret, non-gattling unit scans with the weapon of the turret it aims with
+		// (UnitClass::GreatestThreat, 0x743190); any other unit scans with primary and secondary.
+		if (Class->Has_Multiple_Turrets() && !Class->IsGattling) {
+			int const turret = (CurrentTurretNumber >= 0 && CurrentTurretNumber < TechnoTypeClass::WEAPON_SLOT_COUNT) ? CurrentTurretNumber : 0;
+			WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(turret)->Weapon;
+			if (turret_weapon != NULL) {
+				threat = ThreatType(threat | turret_weapon->Allowed_Threats());
+			}
+		} else {
+			if (PrimaryWeapon != NULL) {
+				threat = ThreatType(threat | PrimaryWeapon->Allowed_Threats());
+			}
+			if (SecondaryWeapon != NULL) {
+				threat = ThreatType(threat | SecondaryWeapon->Allowed_Threats());
+			}
 		}
 	}
 

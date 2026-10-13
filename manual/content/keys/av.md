@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-When an object scans for a target, its primary and secondary weapons can add the kinds of target their projectiles are able to attack. A weapon whose projectile is `AV=yes` adds vehicles only. [`AA`](/keys/aa/) and [`AG`](/keys/ag/) on that projectile then add nothing to the scan.
+When an object scans for a target, its primary and secondary weapons can add the kinds of target their projectiles are able to attack. A vehicle with a [`TurretCount`](/keys/turretcount/) that is not a gattling type adds only the weapon of its current turret. A weapon whose projectile is `AV=yes` adds vehicles only. [`AA`](/keys/aa/) and [`AG`](/keys/ag/) on that projectile then add nothing to the scan.
 
 Infantry and vehicles add their weapons' kinds only when the scan names no kind. Structures always add them, and aircraft never do. [What each kind of object considers](/systems/target-selection/#what-each-kind-of-object-considers) gives the full rules.
 
