@@ -1,0 +1,13 @@
+; Options > Display with the Debug mode switch. Run with the menus and the modern menu style; the picture is
+; written as debug-mode-display.tga in the autotest Screenshots folder.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-display.txt -Menus -MenuStyle Modern -Width 1024 -Height 768 -Seconds 90
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-display
+ui wait 1500
+ui ids
+ui shot debug-mode-display
+ui quit

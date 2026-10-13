@@ -6,6 +6,11 @@
 ; unlock cheat and can 1 after it, and the tab item counts rise with it; the cells shown with a tile other than 65535 go
 ; from mapped 0 to mapped 1 after the reveal cheat and back to mapped 0 once it is turned off; the tab line shows
 ; "completed GAPOWR" within about 20 frames of the produce step.
+; Full power, invulnerable units and charge superweapons (frames 445 to 620): the unlock and instant build cheats
+; are on again so a war factory (GAWEAP) gives the house a power drain. The blackout then holds the player's power at
+; zero, so "houses" shows fraction 0.00 until the full power cheat is on (fraction 1.00). "damage GACNST" leaves the
+; construction yard's strength unchanged while the invulnerable cheat is on and lowers it once the cheat is off. The
+; first "supers" line shows ready 0 for the super weapon that trigaction 34 grants, and ready 1 after the charge cheat.
 30 command CenterBase
 40 select AMCV
 45 command DeployObject
@@ -47,3 +52,23 @@
 430 canbuild GAWEAP
 431 tab
 440 dump
+445 command DebugUnlockAll
+446 command DebugInstantBuild
+450 produce GAWEAP
+460 place GAWEAP
+470 houses
+480 blackout 100000
+490 houses
+500 command DebugFullPower
+510 houses
+520 command DebugFullPower
+530 houses
+540 command DebugInvulnerable
+550 damage GACNST 300
+560 command DebugInvulnerable
+570 damage GACNST 300
+590 trigaction 34 0 0
+600 supers
+610 command DebugChargeSuperweapons
+620 supers
+700 quit

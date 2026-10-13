@@ -1,0 +1,14 @@
+; Cheats reset on a quick load. The invulnerable cheat is on at frame 120, a quick save is written at 130, and the
+; quick load at 150 returns the game to that save. After the load the construction yard takes damage again, so the
+; cheat is off. Expects "took 0" on the first damage line and a lower strength on the last one.
+; Run from the repository root with the setting on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-save.txt -Seconds 150 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST|Debug cheat|Exception|quick|Quick|save|Save"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+120 command DebugInvulnerable
+125 damage GACNST 300
+130 command QuickSave
+150 command QuickLoad
+300 damage GACNST 300
+400 quit

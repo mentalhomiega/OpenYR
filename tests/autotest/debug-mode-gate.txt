@@ -1,0 +1,16 @@
+; Debug cheats in a network session. The lansession step turns the skirmish into a network game, where the
+; cheats must do nothing: no credits top-up, no "Debug cheat used" line, and no game over.
+; Run from the repository root with the setting on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-gate.txt -Seconds 120 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST|Debug cheat|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+60 lansession
+100 command DebugInfiniteMoney
+105 command DebugFullPower
+110 command DebugInvulnerable
+115 command DebugWinMission
+120 command DebugLoseMission
+125 command DebugChargeSuperweapons
+150 houses
+400 quit

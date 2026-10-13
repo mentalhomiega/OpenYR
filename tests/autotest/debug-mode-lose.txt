@@ -1,0 +1,5 @@
+; Lose Mission cheat in a skirmish. Expects "AUTOTEST game over frame N: lost" and then the game ends.
+; Run from the repository root with the setting on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/debug-mode-lose.txt -Seconds 120 -Settings "[Options]`r`nDebugMode=yes" -Filter "AUTOTEST game over|Debug cheat|Exception"
+60 command DebugLoseMission
+1500 quit
