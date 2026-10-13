@@ -1475,6 +1475,20 @@ int BuildingClass::Shape_Number(void) const
 			return(0);
 		}
 
+	} else if (Class->IsCanBeOccupied) {
+
+		/*
+		**	A garrisonable structure ignores its animation stage. Occupants add 2 to the frame and
+		**	damage adds 1; a civilian structure (TechLevel -1) shows frame 1 when both apply. Damage
+		**	starts at ConditionRed, or at ConditionYellow when TechLevel is above 0 (BuildingClass::
+		**	GetCurrentFrame, 0x43EF90).
+		*/
+		bool const damaged = HealthRatio <= Rule->ConditionRed || (Class->Level > 0 && HealthRatio <= Rule->ConditionYellow);
+		shapenum = (Occupants.Count() > 0 ? 2 : 0) + (damaged ? 1 : 0);
+		if (Class->Level == -1 && shapenum == 3) {
+			shapenum = 1;
+		}
+
 	} else {
 
 		/*
@@ -9207,6 +9221,7 @@ void BuildingClass::Occupy(InfantryClass * infantry)
 	Occupants.Add(infantry);
 	Update_Threat_In_Cell();
 	Mark(MARK_CHANGE);
+	IsToDisplay = true;
 
 	// The player's first soldier inside is announced (0x5229C1).
 	if (Occupants.Count() == 1 && infantry->House->Is_Player_Control()) {
@@ -9563,6 +9578,7 @@ void BuildingClass::Set_Garrison_House(HouseClass * newowner)
 	IsReadyToCommence = true;
 	Radar_Untrack();
 	Radar_Track();
+	IsToDisplay = true;
 }
 
 

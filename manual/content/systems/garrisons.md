@@ -68,6 +68,10 @@ The player hears [`BuildingGarrisonedSound`](/keys/buildinggarrisonedsound/) at 
 
 A structure that can be built, such as the Battle Bunker, keeps its owner whether or not anyone is inside, and so does every structure when no house is on the `Civilian` side.
 
+## Appearance
+
+A structure with occupants draws frame 2 of its art instead of the frame for its animation stage. Damage adds 1 to the frame, so an occupied, damaged structure draws frame 3, or frame 1 when its `TechLevel` is `-1`. A structure is damaged at [`ConditionRed`](/keys/conditionred/) health, or at [`ConditionYellow`](/keys/conditionyellow/) health when its `TechLevel` is above 0.
+
 ## Firing
 
 A `CanOccupyFire=yes` structure with at least one occupant searches for targets and fires like a defense. Its owner can also order it to attack a target within range.
