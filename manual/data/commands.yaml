@@ -526,6 +526,66 @@ registered_commands:
     source: code/init.cpp
     class: RSidebarPageDownCommandClass
     guard: null
+- id: StructureTab
+  route_id: structuretab
+  kind: registered
+  title: Select Structures Tab
+  description: Switch the command bar to the Building Tab and select the completed building if any.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: StructureTabCommandClass
+    guard: null
+- id: DefenseTab
+  route_id: defensetab
+  kind: registered
+  title: Select Defense Tab
+  description: Switch the command bar to the Defense Tab and select the completed building if any.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: DefenseTabCommandClass
+    guard: null
+- id: InfantryTab
+  route_id: infantrytab
+  kind: registered
+  title: Select Infantry Tab
+  description: Switch the command bar to the Infantry Tab.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: InfantryTabCommandClass
+    guard: null
+- id: UnitTab
+  route_id: unittab
+  kind: registered
+  title: Select Vehicle Tab
+  description: Switch the command bar to the Vehicle Tab.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: UnitTabCommandClass
+    guard: null
 - id: CenterOnRadarEvent
   route_id: centeronradarevent
   kind: registered
@@ -1820,6 +1880,21 @@ registered_commands:
     class: DeleteWaypointCommandClass
     guard: null
   forced_binding: Delete
+- id: PlanningMode
+  route_id: planningmode
+  kind: registered
+  title: Planning Mode
+  description: Hold to plan orders for the selected units, then release to carry them out.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: PlanningModeCommandClass
+    guard: null
 fixed_controls:
 - id: fixed:options-menu
   route_id: fixed-options-menu

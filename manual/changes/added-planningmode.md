@@ -1,0 +1,12 @@
+---
+title: Queue orders in planning mode
+category: feature
+release: 0.2.0
+targets:
+- type: command
+  id: PlanningMode
+  effect: added
+credit: [MentalHomiega]
+---
+
+The PlanningMode command turns on planning mode while its key is held, and the sidebar's planning button toggles it. While planning mode is on, each order given to the player's selected units is queued instead of carried out. Releasing the key, or pressing the button again, starts the queues, and each unit carries out its orders one after another. A unit holds at most `MaxWaypointPathLength` queued orders (15 by default), and at most 128 of a player's units can hold a plan. A new order outside planning mode, or the Stop command, clears that unit's plan.

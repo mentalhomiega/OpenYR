@@ -41839,6 +41839,24 @@ WaterBound:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
+WaterBridge:
+  key: WaterBridge
+  scopes:
+  - applies_to:
+    - tile controls
+    file: theater control file
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: IsometricTileTypeClass
+      member: _WaterBridge
+      source: code/isotype.cpp
+      guard: null
+    level: IsometricTileTypeClass
 WaterCaves:
   key: WaterCaves
   scopes:
