@@ -135,7 +135,7 @@ With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar swe
 
 ### Country and stolen technology
 
-[`RequiredHouses=`](/keys/requiredhouses/) limits a type to the countries it lists, and [`ForbiddenHouses=`](/keys/forbiddenhouses/) excludes the countries it lists. The test uses the country the house acts as.
+[`RequiredHouses=`](/keys/requiredhouses/) limits a type to the countries it lists, and [`ForbiddenHouses=`](/keys/forbiddenhouses/) excludes the countries it lists. The test uses the house's own country: the one its house record names with [`Country=`](/keys/country--house-per-scenario/), or, when the record names none, the country its own name gives. An [`ActsLike=`](/keys/actslike/) setting does not change it.
 
 A type with [`RequiresStolenAlliedTech=yes`](/keys/requiresstolenalliedtech/), [`RequiresStolenSovietTech=yes`](/keys/requiresstolensoviettech/) or [`RequiresStolenThirdTech=yes`](/keys/requiresstolenthirdtech/) needs the house to have stolen the first, second or third side's technology. Nothing steals technology yet, so such a type is never buildable.
 

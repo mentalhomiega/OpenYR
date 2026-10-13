@@ -137,11 +137,11 @@ A house that passes to the computer also has its new plan fitted to the base it 
 
 These steps generate a plan for a house that has none. They never change a list the scenario supplied.
 
-Several steps take "the first entry the country may own" from a rules list. That is the first type whose [`Owner`](/keys/owner/) includes the country the house acts as, whose [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow that country, and whose [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side.
+Several steps take "the first entry the country may own" from a rules list. That is the first type whose [`Owner`](/keys/owner/) includes the country the house acts as, whose [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow the house's own country, and whose [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side.
 
 1. **Candidates.** A BuildingType is a candidate when all of these hold:
    - its [`Owner`](/keys/owner/) includes the country this house [acts as](/keys/actslike/);
-   - its [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side, and its [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow the country;
+   - its [`AIBasePlanningSide`](/keys/aibaseplanningside/) is `-1` or the house's own side, and its [`RequiredHouses`](/keys/requiredhouses/) and [`ForbiddenHouses`](/keys/forbiddenhouses/) allow the house's own country;
    - it is [`AIBuildThis=yes`](/keys/aibuildthis/);
    - its [`TechLevel`](/keys/techlevel/) is within the house's tech level;
    - it is not [`Weeder=yes`](/keys/weeder/), unless the map has a veinhole monster;

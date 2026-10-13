@@ -472,6 +472,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	if (Class != NULL && !Class->IsMultiplayPassive) {
 		ActLike = Class->House;
 	}
+	OwnCountry = Class != NULL ? Class->House : HOUSE_NONE;
 }
 
 
@@ -1116,10 +1117,11 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		*/
 		if (((TechnoTypeClass const *)type)->Level == -1) return(0);
 
+		// gamemd HouseClass::CanBuild (0x4F7870) tests the house's own country bit here, not the acted one.
 		int const required = ((TechnoTypeClass const *)type)->RequiredHouses;
 		int const forbidden = ((TechnoTypeClass const *)type)->ForbiddenHouses;
-		if (required != -1 && (required & Acted_Mask()) == 0) return(0);
-		if (forbidden != -1 && (forbidden & Acted_Mask()) != 0) return(0);
+		if (required != -1 && (required & Own_Mask()) == 0) return(0);
+		if (forbidden != -1 && (forbidden & Own_Mask()) != 0) return(0);
 
 		TechnoTypeClass const * techno = (TechnoTypeClass const *)type;
 		if (techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
@@ -6317,11 +6319,15 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	RatioTeamUnits = ini.Get_Int(hname, "RatioTeamUnits", 75);
 
 	// A house plays the tech tree of the country it names, which for a country based on another is the one it stands on.
+	// The own country is the named one, not its root: gamemd builds the house on the country its Country= names (0x5009B0).
 	std::string country = ini.Get_String(hname, "Country");
-	if (!country.empty() && ActLike != HOUSE_NONE) {
+	if (!country.empty()) {
 		HousesType countrytype = HouseTypeClass::From_Name(country.c_str());
 		if (countrytype != HOUSE_NONE) {
-			ActLike = HouseTypes[countrytype]->Root_Country();
+			OwnCountry = countrytype;
+			if (ActLike != HOUSE_NONE) {
+				ActLike = HouseTypes[countrytype]->Root_Country();
+			}
 		}
 	}
 
@@ -7528,6 +7534,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Control);
 	stream.Serialize(ProductionMode);
 	stream.Serialize(ActLike);
+	stream.Serialize(OwnCountry);
 	stream.Serialize(IsHuman);
 	stream.Serialize(IsPlayerControl);
 	stream.Serialize(IsStarted);
@@ -7930,6 +7937,21 @@ int HouseClass::Acted_Mask(void) const
 
 
 /// <summary>
+/// Fetches the bit of the country this house is, which RequiredHouses and ForbiddenHouses test.
+/// It does not follow ActLike, so a house acting as another country still tests its own.
+/// </summary>
+/// <returns>Returns with the bit for the country, or 0 for a house with no country.</returns>
+int HouseClass::Own_Mask(void) const
+{
+	if (OwnCountry < HOUSE_FIRST || OwnCountry >= HouseTypes.Count()) {
+		return(0);
+	}
+	// gamemd shifts by the index modulo 32 (0x4F7870 uses 1 << (ArrayIndex2 & 0x1F)).
+	return(1 << (OwnCountry & 31));
+}
+
+
+/// <summary>
 /// Fetches the side of the country this house acts as, whose base building it follows.
 /// </summary>
 /// <returns>Returns with that side, or NULL for a house acting for no country or for a
@@ -8149,6 +8171,7 @@ void HouseClass::Make_Base_Nodes(void)
 	}
 
 	int ownable = Acted_Mask();
+	int own = Own_Mask();
 
 	DynamicVectorClass<BuildingTypeClass const *> buildables;
 	DynamicVectorClass<bool> isadded;
@@ -8157,8 +8180,8 @@ void HouseClass::Make_Base_Nodes(void)
 		BuildingTypeClass const * builtype = BuildingTypes[index];
 		if (ownable & builtype->Ownable &&
 			(builtype->AIBasePlanningSide == -1 || builtype->AIBasePlanningSide == Planning_Side()) &&
-			(builtype->RequiredHouses == -1 || (builtype->RequiredHouses & ownable) != 0) &&
-			(builtype->ForbiddenHouses == -1 || (builtype->ForbiddenHouses & ownable) == 0) &&
+			(builtype->RequiredHouses == -1 || (builtype->RequiredHouses & own) != 0) &&
+			(builtype->ForbiddenHouses == -1 || (builtype->ForbiddenHouses & own) == 0) &&
 			builtype->CanAIBuildThis &&
 			builtype->Level <= Control.TechLevel &&
 			(!builtype->IsWeeder || VeinholeMonsterClass::VeinholeMonsters.Count() > 0) &&

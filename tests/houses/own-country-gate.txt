@@ -1,0 +1,11 @@
+; RequiredHouses and ForbiddenHouses test a house's own country, the one its record names with Country=, not the
+; country it acts as. SOV03's Allies house plays AlliesCountry, which ParentCountry= bases on Americans, so it acts as
+; Americans. DOG forbids Americans, so Allies and BadGuy1 (AlliesCountry, BadGuy1Country) may build it: their own gate
+; passes and their acted gate fails. AMRADR requires Americans, so Allies fails it on its own country (own gate no)
+; though it acts as Americans. The "gate" columns check each list against the own and the acted country; "can" is
+; Can_Build, where prerequisites still apply (AMRADR also needs a GACNST, and this map has none at frame 30).
+; gamemd: HouseClass::CanBuild (0x4F7870) tests 1 << Type->ArrayIndex2 for both lists, and Type is the country the record names.
+; Run: scripts/run_autotest.ps1 -Script tests/houses/own-country-gate.txt -Campaign -Map SOV03UMD.MAP -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   canbuild|Exception"
+30 canbuild DOG
+30 canbuild AMRADR
+60 quit

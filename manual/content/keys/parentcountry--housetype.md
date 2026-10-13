@@ -22,6 +22,6 @@ Color=DarkRed
 Side=Nod
 ```
 
-A country of a map's `[Countries]` is the usual place for this key. Houses that play such a country build from the tech tree of the country at the end of the `ParentCountry` chain, since the rules name only their own countries in `Owner=` lists.
+A country of a map's `[Countries]` is the usual place for this key. Houses that play such a country build from the tech tree of the country at the end of the `ParentCountry` chain, since the rules name only their own countries in `Owner=` lists. [`RequiredHouses=`](/keys/requiredhouses/) and [`ForbiddenHouses=`](/keys/forbiddenhouses/) do not follow the chain. They test the country itself: a `RequiredHouses=` list that names only the parent leaves the country out, and a `ForbiddenHouses=` list that names only the parent does not forbid it.
 
 The country does not take the parent's [`Multiplay=`](/keys/multiplay/), so a map country is not offered in the skirmish lobby unless it sets `Multiplay=yes` itself.

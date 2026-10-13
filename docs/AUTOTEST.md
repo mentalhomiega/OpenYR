@@ -31,6 +31,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `enemies` | Writes the other houses' structures and their unit and infantry counts to the debug log |
 | `iq` | Writes each house's base IQ (the map's `IQ=`, 0 for a skirmish computer), its effective IQ, and whether each [IQ] gate is open for it |
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
+| `canbuild <TypeID>` | Writes each house's own and acted country, the type's `RequiredHouses` and `ForbiddenHouses`, and whether `Can_Build` allows the type for that house now |
 | `anims` | Writes the first entries of the animation list to the debug log |
 | `truecolour <NAME.SHP>` | Writes whether a PNG replaces that shape (see [TRUECOLOUR.md](TRUECOLOUR.md)), whether the shape is an SHP (`shp`) or was made from a sheet that has none (`png-only`), with the shape's frame count and size, the sheet's size, the frames it covers, whether it has a house-colour mask, whether the shadows come from the PNG or the SHP, and the centre pixel of its first frame |
 | `truecolourdir <path>` | Adds a directory to the places the game looks for files, so a test can supply PNG sprites without copying them into the game directory; a PNG not found before is looked for again |

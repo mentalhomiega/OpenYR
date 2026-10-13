@@ -21,7 +21,7 @@ Credits=25
 PlayerControl=yes
 ```
 
-The house starts with the country's color, side, price and strength factors, and the house record's own [`Color=`](/keys/color/#scope-house-per-scenario) replaces the color. The house builds from the tech tree of the country it names, or, for a map country with [`ParentCountry=`](/keys/parentcountry/), of the rules country at the end of that chain. [`ActsLike=`](/keys/actslike/) in the same record replaces that tech tree.
+The house starts with the country's color, side, price and strength factors, and the house record's own [`Color=`](/keys/color/#scope-house-per-scenario) replaces the color. The house builds from the tech tree of the country it names, or, for a map country with [`ParentCountry=`](/keys/parentcountry/), of the rules country at the end of that chain. [`ActsLike=`](/keys/actslike/) in the same record replaces that tech tree. [`RequiredHouses=`](/keys/requiredhouses/) and [`ForbiddenHouses=`](/keys/forbiddenhouses/) test the country it names, not the end of the chain.
 
 A house record that names no `Country=` is a Tiberian Sun house, and the house's own name is its country. A house whose name is that of a rules country or a map country is that country's own house, whatever `Country=` says. A `Country=` that names no country is ignored and written to the debug log.
 

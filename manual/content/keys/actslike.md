@@ -22,3 +22,5 @@ The country chosen here affects four things:
 - **Unit crates.** When one of the house's objects collects a unit crate, a randomly chosen reward vehicle is drawn only from types this country may own.
 - **Hunter-seekers.** A hunter-seeker launched by the house is the [`HunterSeeker`](/keys/hunterseeker/#scope-side) of this country's side.
 - **Side-restricted AI triggers.** An AI trigger restricted to one side runs for the house only when this country belongs to that side.
+
+It does not change which country a [`RequiredHouses`](/keys/requiredhouses/) or [`ForbiddenHouses`](/keys/forbiddenhouses/) list tests. Those lists test the house's own country: the one its record names with [`Country=`](/keys/country--house-per-scenario/), or, when the record names none, the country its own name gives.

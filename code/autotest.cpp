@@ -27,6 +27,7 @@
 **							live object of that type within radius cells (default 3) of the cell, looked up when the line runs;
 **							land or naval limits the orders to units that are not, or are, ships (default all)
 **	owners <TypeID>			writes the type's owner bits and each house's country bit
+**	canbuild <TypeID>		writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses, and whether the house can build it now
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
 **	click x y				queues a left click at that screen position
@@ -1182,6 +1183,32 @@ static void Cursor_Probe(std::string const & type_name, int x, int y)
 }
 
 
+// canbuild <TypeID>: writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses,
+// whether the country lists pass with the own country (gate own) and with the acted one (gate acted), and what
+// Can_Build says for that house now.
+static void Can_Build_Step(StepType const & step)
+{
+	TechnoTypeClass const * type = Find_Type(step.Argument);
+	if (type == NULL) {
+		return;
+	}
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		int const required = type->RequiredHouses;
+		int const forbidden = type->ForbiddenHouses;
+		int const own = house->Own_Mask();
+		int const acted = house->Acted_Mask();
+		bool const own_gate = (required == -1 || (required & own) != 0) && (forbidden == -1 || (forbidden & own) == 0);
+		bool const acted_gate = (required == -1 || (required & acted) != 0) && (forbidden == -1 || (forbidden & acted) == 0);
+		DebugString("AUTOTEST   canbuild %s house %s own %s acted %s required %08X forbidden %08X gate own %d acted %d level %d tech %d can %d\n",
+			type->Name(), house->Class->Name(),
+			house->OwnCountry != HOUSE_NONE ? HouseTypes[house->OwnCountry]->Name() : "<none>",
+			house->ActLike != HOUSE_NONE ? HouseTypes[house->ActLike]->Name() : "<none>",
+			required, forbidden, (int)own_gate, (int)acted_gate, type->Level, house->Control.TechLevel, house->Can_Build(type, false, false));
+	}
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -1202,6 +1229,12 @@ void Run(StepType const & step)
 	if (step.Command == "strikeobj") {
 		std::vector<std::string> const words = Line_Words(step.Line);
 		Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6));
+		return;
+	}
+
+	// canbuild <TypeID>: see Can_Build_Step. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "canbuild") {
+		Can_Build_Step(step);
 		return;
 	}
 
@@ -1483,7 +1516,7 @@ void Run(StepType const & step)
 		}
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];
-			DebugString("AUTOTEST   house %s ActLike %d mask %08X conyards %d\n", house->Class->Name(), (int)house->ActLike, house->Acted_Mask(), house->ConYards.Count());
+			DebugString("AUTOTEST   house %s ActLike %d mask %08X own %d ownmask %08X conyards %d\n", house->Class->Name(), (int)house->ActLike, house->Acted_Mask(), (int)house->OwnCountry, house->Own_Mask(), house->ConYards.Count());
 		}
 	} else if (step.Command == "view") {
 		FollowType.clear();
@@ -2470,7 +2503,7 @@ void Run(StepType const & step)
 				team->Team_Members(missing);
 				std::string names;
 				for (int m = 0; m < missing.Count(); m++) {
-					names += std::string(" ") + missing[m]->Name() + (team->House->Can_Build(missing[m], false, false) == 0 ? ("(cannot lvl" + std::to_string(missing[m]->Level) + " req" + std::to_string(missing[m]->RequiredHouses) + " forb" + std::to_string(missing[m]->ForbiddenHouses) + " unb" + std::to_string((int)missing[m]->IsUnbuildable) + " own" + std::to_string(missing[m]->Ownable) + " mask" + std::to_string(team->House->Acted_Mask()) + ")") : std::string(""));
+					names += std::string(" ") + missing[m]->Name() + (team->House->Can_Build(missing[m], false, false) == 0 ? ("(cannot lvl" + std::to_string(missing[m]->Level) + " req" + std::to_string(missing[m]->RequiredHouses) + " forb" + std::to_string(missing[m]->ForbiddenHouses) + " unb" + std::to_string((int)missing[m]->IsUnbuildable) + " own" + std::to_string(missing[m]->Ownable) + " mask" + std::to_string(team->House->Own_Mask()) + ")") : std::string(""));
 				}
 				DebugString("AUTOTEST     team %s missing%s\n", team->Class->Name(), names.c_str());
 			}

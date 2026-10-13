@@ -224,6 +224,13 @@ class HouseClass : public AbstractClass
 		HousesType ActLike;
 
 		/*
+		**	The country this house is, which RequiredHouses and ForbiddenHouses test. It is the
+		**	country its record names with Country=, or the house's own country when none is named,
+		**	so ActLike does not change it.
+		*/
+		HousesType OwnCountry;
+
+		/*
 		**	If this house is controlled by the player, then this flag will be true. The
 		**	computer controls all other active houses.
 		*/
@@ -938,6 +945,7 @@ class HouseClass : public AbstractClass
 		void Begin_Construction(void);
 		void Begin_Construction(Cell const & center);
 		int Acted_Mask(void) const;
+		int Own_Mask(void) const;
 		SideClass const * Acted_Side(void) const;
 		bool Is_Acted_Tower(BuildingTypeClass const * type) const;
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
@@ -1307,11 +1315,12 @@ template<typename T>
 inline T const * HouseClass::Get_First_Acted(DynamicVectorClass<T const *> const & list) const
 {
 	int mask = Acted_Mask();
+	int own = Own_Mask();
 	for (int index = 0; index < list.Count(); index++) {
 		T const * type = list[index];
 		if ((mask & type->Ownable) == 0) continue;
-		if (type->RequiredHouses != -1 && (type->RequiredHouses & mask) == 0) continue;
-		if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & mask) != 0) continue;
+		if (type->RequiredHouses != -1 && (type->RequiredHouses & own) == 0) continue;
+		if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & own) != 0) continue;
 		if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) continue;
 		return(type);
 	}
