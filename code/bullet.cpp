@@ -1418,6 +1418,11 @@ void BulletClass::Detonate(Coord const & coord)
 	if (AutoTest_Active() && Class->FlakScatter) {
 		DebugString("AUTOTEST flak impact %s at %d,%d,%d\n", Class->Name(), coord.X, coord.Y, coord.Z);
 	}
+	if (AutoTest_Active()) {
+		Coord const aim = Fuse.Fuse_Target();
+		int const from_target = TarCom != NULL ? coord.Gamemd_Distance_To(TarCom->Center_Coord()) : -1;
+		DebugString("AUTOTEST detonate frame %d %s at %d,%d,%d aim %d,%d,%d target %d\n", Frame, Class->Name(), coord.X, coord.Y, coord.Z, aim.X, aim.Y, aim.Z, from_target);
+	}
 
 	WarheadTypeClass * warhead = Warhead;
 	bool nullified = false;
