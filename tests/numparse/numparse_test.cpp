@@ -105,6 +105,17 @@ int main()
 	Expect("no number value", Bits(Parse_Nearest_Double(bad, &end)), Bits(0.0));
 	Expect("no number end", end == bad ? 1u : 0u, 1u);
 
+	// A value written with Snprintf_Nearest reads back as the float that was written.
+	char const * const settings[] = {"0.9", "1.1", "0.3", "0.25", "0.75", "1.5", "0.6", "12.345", "0.001", "0.05"};
+	for (char const * text : settings) {
+		volatile double parsed = Parse(text);
+		float const stored = static_cast<float>(parsed);
+		char written[64];
+		Snprintf_Nearest(written, sizeof(written), "%f", static_cast<double>(stored));
+		volatile double reread = Parse(written);
+		Expect(text, Bits(static_cast<float>(reread)), Bits(stored));
+	}
+
 	_controlfp_s(&previous, _RC_NEAR, _MCW_RC);
 	if (failures == 0) {
 		std::printf("numparse: all checks passed\n");

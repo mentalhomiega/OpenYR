@@ -642,7 +642,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
 	if (InterfaceScale > 0.0f) {
 		char scaletext[32];
-		snprintf(scaletext, sizeof(scaletext), "%g", InterfaceScale);
+		Snprintf_Nearest(scaletext, sizeof(scaletext), "%g", InterfaceScale);
 		ConfigINI.Put_String("Video", "InterfaceScale", scaletext);
 	} else {
 		ConfigINI.Put_String("Video", "InterfaceScale", "Auto");

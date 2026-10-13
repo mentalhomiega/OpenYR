@@ -12,6 +12,7 @@
 #include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
+#include "numparse.h"
 #include "options.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
@@ -100,7 +101,7 @@ void UI_Display_State(UIDisplayState & state)
 		scale.Value = step;
 		if (step > 0.0f) {
 			char buffer[32];
-			std::snprintf(buffer, sizeof(buffer), "%g", step);
+			Snprintf_Nearest(buffer, sizeof(buffer), "%g", step);
 			scale.Label = buffer;
 		} else {
 			scale.Label = "Auto";
@@ -111,7 +112,7 @@ void UI_Display_State(UIDisplayState & state)
 		UIDisplayScale scale;
 		scale.Value = current;
 		char buffer[32];
-		std::snprintf(buffer, sizeof(buffer), "%g", current);
+		Snprintf_Nearest(buffer, sizeof(buffer), "%g", current);
 		scale.Label = buffer;
 		state.Scale = (int)state.Scales.size();
 		state.Scales.push_back(scale);
