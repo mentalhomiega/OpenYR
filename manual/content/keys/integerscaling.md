@@ -19,3 +19,5 @@ The cost is unused space around the picture, and it can be large. For a 640 by 4
 A window smaller than the rendering resolution shrinks the picture as usual, because rounding the enlargement down would leave nothing to show.
 
 [`ScaleMode`](/keys/scalemode/) chooses how the picture is filtered. Its `PixelArt` setting already keeps pixels sharp at fractional sizes, so this setting is needed only when exactly equal pixels matter more than window space.
+
+The **Scale by whole steps only** switch on the Display page of the settings changes it, during a game too, from the next picture shown.

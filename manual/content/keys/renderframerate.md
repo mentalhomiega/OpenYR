@@ -12,7 +12,7 @@ Values below `0` are read as `0` and values above `1000` as `1000`. The setting 
 
 Set it to the refresh rate of the display, such as `60`. The game shows at most about one picture per display refresh (see [`VSync`](/keys/vsync/)), so a higher value draws pictures that are never shown.
 
-The game reads this setting at launch and does not write it back to `RA2MD.INI`.
+The **Smooth motion** list on the Display page of the settings offers Off and 30, 60, 120, 144 and 240 pictures a second, and lists any other value the file holds. A change applies from the next game frame, and the game writes the value back to `RA2MD.INI` with the other options.
 
 ```ini title="RA2MD.INI"
 [Video]

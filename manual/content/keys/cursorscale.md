@@ -14,3 +14,5 @@ At `0`, the game takes the smaller of the picture's horizontal and vertical enla
 The same size applies to the arrow shown over the game's menus and dialogs, unless [`SystemCursor`](/keys/systemcursor/) replaces that arrow with the Windows pointer, which keeps the size set in Windows.
 
 Windows draws the pointer over the picture, so it does not grow when the picture is enlarged. This keeps it moving smoothly while the game is busy.
+
+The **Pointer size** list on the Display page of the settings offers Auto (`0`) and 1x to 4x, and resizes the pointer at once. It shows a negative value as 1x, which draws the pointer at the same size.

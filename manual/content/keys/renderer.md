@@ -23,4 +23,4 @@ The [debug log](/using/debug-logging/) names the interface that started. Check i
 
 If the game cannot start drawing, it reports that it is unable to set the video mode and closes. Set `Renderer` back to `0` in the settings file to undo a value that causes this.
 
-A change takes effect at the next launch.
+The **Graphics API** list on the Display page of the settings stores a new value for the next launch; the game keeps the interface it started with.

@@ -12,4 +12,4 @@ The wait adds delay between an input, such as a scroll, and seeing its result, b
 
 Whatever this setting says, the game presents at most about once per display refresh. It uses the refresh rate Windows reports for the display, or 60 Hz when none is reported, and skips a present that would come too early. The next present then shows the newest picture.
 
-A change takes effect at the next launch.
+The **Wait for vertical sync** switch on the Display page of the settings changes it at once, during a game too.

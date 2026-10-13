@@ -9,6 +9,6 @@ when_omitted:
 
 With sorting on, each strip is kept in the order that [the sidebar page](/systems/sidebar/#the-order-of-the-strips) describes. With `SidebarSorting=no`, each new cameo goes to the end of its strip, so the order depends on when each type was offered.
 
-The game reads the setting once at startup, and no dialog changes it.
+The **Sort Sidebar** switch on the Game page of the settings changes it, during a game too. Turning it off leaves each strip in its current order and adds later cameos at the end; turning it on sorts each strip the next time a cameo is added to it.
 
 A saved game loaded with sorting off keeps the order its strips had when it was saved, because the order in which the cameos arrived is not recorded.

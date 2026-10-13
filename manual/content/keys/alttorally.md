@@ -13,4 +13,4 @@ A structure whose [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or 
 
 The setting does not affect a structure without a rally point. If such a structure can undeploy, as a deployed artillery piece can, a plain click gives it the move order at either setting.
 
-The game reads the setting only at startup. It affects only the player who sets it, so players in one match can use different settings.
+The **Rally With Force-Move** switch on the Game page of the settings changes it, during a game too, from the next click. It affects only the player who sets it, so players in one match can use different settings.

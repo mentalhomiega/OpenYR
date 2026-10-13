@@ -13,4 +13,4 @@ A game running without the focus plays no sound, takes no input and does not red
 
 The setting does not affect network games, which always keep running without the focus.
 
-The game reads the setting only at startup.
+The **Play In Background** switch on the Game page of the settings changes it, during a game too, from the next time the window loses the focus.
