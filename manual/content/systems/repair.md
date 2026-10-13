@@ -200,9 +200,9 @@ A depot accepts a [docking request](/internals/radio/) only from an allied vehic
 - it is already in contact with another object;
 - the requesting object is already standing on it.
 
-When the object arrives, the depot starts its service mission and the object goes to sleep. Once the object is within 150 leptons of the depot's center, the depot switches off the object's locomotor and clears its destination. This holds the object still on the pad.
+When the object arrives, the depot starts its service mission and the object goes to sleep. Once the object is within 200 leptons of its dock's spot, the depot switches off the object's locomotor when the object has stopped. An object whose locomotor is already off has its destination cleared instead. This holds the object still on the pad.
 
-The docking point is the depot's center plus the `DockingOffset0=` of its art section. A depot without an offset docks at its center. A naval yard's offset places its dock beside its footprint, so a ship docks there. That point lies more than 150 leptons from the center, so the depot does not switch off the ship's locomotor.
+The docking point is the depot's center plus the `DockingOffset0=` of its art section. A depot without an offset docks at its center. A naval yard's offset places its dock beside its footprint, so a ship docks there. The depot checks a ship against that point within 200 leptons, and switches off its locomotor once it stops there.
 
 A vehicle that is stopped or given another order while it drives onto the pad is released by the depot. When it reaches the pad cell it was heading for, it moves to the nearest free cell. It stays on the pad if no cell is free or if it is still turning.
 
@@ -224,7 +224,7 @@ The depot acts on the object's answer to each request:
 - **Unaffordable.** The depot announces insufficient funds and stops the cycle. The object stays parked, and the depot asks again at each mission update as it does for the first step.
 - **Anything else.** This covers a step that finishes the repair, an object that needs nothing, and an object that has been given a destination. The depot announces that the unit is repaired and releases the object. A computer-owned object with a remembered position returns there, as a computer vehicle does after [reaching the pad](#reaching-the-pad) on its own. Every other object moves to an exit cell beside the depot.
 
-A depot with several [docks](/keys/numberofdocks/) runs the same cycle for the object on each dock. Each object pays for its own steps, and the depot releases each one when it is repaired. With one dock, which is the default, the depot serves one object at a time.
+A depot with several [docks](/keys/numberofdocks/) runs the cycle only for the object on its first dock. The objects on later docks are not repaired. The object on the first dock pays for its own steps, and the depot releases it when it is repaired. With one dock, which is the default, the depot serves one object at a time.
 
 ### What a depot does for free
 

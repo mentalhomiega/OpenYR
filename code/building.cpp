@@ -6155,6 +6155,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 			IDLE,
 			DURING
 		};
+		// Mission_Repair serves only the first contact (BuildingClass::Mission_Repair, 0x44B780).
+		int const repair_slots = std::min(Link_Count(), 1);
 		switch (Status) {
 			case INITIAL:
 				{
@@ -6168,12 +6170,12 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					}
 					IsReadyToCommence = false;
 					bool ready = false;
-					for (int slot = 0; slot < Link_Count(); slot++) {
+					for (int slot = 0; slot < repair_slots; slot++) {
 						FootClass * tech = (FootClass *)Link(slot);
 						if (tech == NULL) {
 							continue;
 						}
-						int distance = CELL_LEPTON / 4;
+						int distance = 100;
 
 						/*
 						**	BG: If the unit to repair is an aircraft, and the aircraft is
@@ -6182,9 +6184,9 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						**	their landings.
 						*/
 						ClassID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
-						bool hover = (clsid == ClassID_HoverLocomotion) != 0;
-						if (hover) {
-							distance = 0x96;
+						bool wide_reach = clsid == ClassID_HoverLocomotion || clsid == ClassID_ShipLocomotion;
+						if (wide_reach) {
+							distance = 200;
 						}
 						// A dock is not always at the structure's center; the Soviet depot's is half a cell off.
 						if (Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && Gamemd_Distance(Docking_Coord_For(tech), tech->Center_Coord()) < distance) {
@@ -6206,14 +6208,14 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				{
 					bool any_docked = false;
 					bool quick = false;
-					for (int slot = 0; slot < Link_Count(); slot++) {
+					for (int slot = 0; slot < repair_slots; slot++) {
 						FootClass * radio = (FootClass *)Link(slot);
 						if (radio == NULL) {
 							continue;
 						}
 						any_docked = true;
 
-						if (Distance(radio->Center_Coord()) < 150) {
+						if (Gamemd_Distance(Docking_Coord_For(radio), radio->Center_Coord()) < 200) {
 							if (radio->Locomotion->Is_Powered()) {
 								if (!radio->Locomotion->Is_Moving()) {
 									radio->Locomotion->Power_Off();
@@ -6316,7 +6318,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				*/
 				if (BuildingStage.Fetch_Stage() >= (Rule->URepairRate * TICKS_PER_MINUTE)) {
 					bool stepped = false;
-					for (int slot = 0; slot < Link_Count(); slot++) {
+					for (int slot = 0; slot < repair_slots; slot++) {
 						TechnoClass * docked = Link(slot);
 						if (docked == NULL || Transmit_Message(RADIO_NEED_TO_MOVE, docked) != RADIO_ROGER) {
 							continue;
