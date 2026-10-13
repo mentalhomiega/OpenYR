@@ -106,9 +106,8 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsProximityArmed;
 
 		/*
-		**	Should fuel consumption be tracked for this projectile?  Rockets are the primary
-		**	projectile with this characteristic, but even for bullets it should be checked so that
-		**	bullets don't travel too far.
+		**	Does this projectile check its fuse every frame, as a steered one does? This is the
+		**	Ranged key. Flak shells use it, as well as rockets.
 		*/
 		bool IsFueled;
 

@@ -170,7 +170,7 @@ Several parts of a shot take their settings from the first slot, not from the sl
 
 | Part of the shot | Appears at | Settings from |
 | --- | --- | --- |
-| The projectile, its damage, warhead and [projectile range](/keys/projectilerange/) | The mounting | The firing slot |
+| The projectile, its damage and warhead | The mounting | The firing slot |
 | The report sound | The mounting | The firing slot |
 | The firing animation | The muzzle | The firing slot |
 | The fire and spark particle systems | The muzzle | The firing slot |

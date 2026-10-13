@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-A missile silo launching a repeating `Type=MultiMissile` or `Type=ChemMissile` superweapon takes the missile's projectile, warhead, maximum speed and projectile range from the WeaponType this key names, in the section the caution below identifies. It ignores that WeaponType's `Damage=` and gives the missile [a fixed strength of 200](/systems/superweapons/#multi-missile-and-chem-missile).
+A missile silo launching a repeating `Type=MultiMissile` or `Type=ChemMissile` superweapon takes the missile's projectile, warhead and maximum speed from the WeaponType this key names, in the section the caution below identifies. It ignores that WeaponType's `Damage=` and gives the missile [a fixed strength of 200](/systems/superweapons/#multi-missile-and-chem-missile).
 
 No other use of a superweapon reads this key. A one-time missile, granted by a trigger action or a crate, is built from the hard-coded weapons `MultiLauncher` and `ChemLauncher` instead.
 

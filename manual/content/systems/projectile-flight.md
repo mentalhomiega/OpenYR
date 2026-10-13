@@ -57,7 +57,7 @@ related:
     id: target-selection
 ---
 
-A projectile carries figures from the weapon that fired it. The weapon supplies the damage, the warhead, the launch speed, the flight allowance, and the object credited with any kill. The projectile type decides how the shot travels, what ends its flight, and how many blasts it delivers.
+A projectile carries figures from the weapon that fired it. The weapon supplies the damage, the warhead, the launch speed, and the object credited with any kill. The projectile type decides how the shot travels, what ends its flight, and how many blasts it delivers.
 
 [`ROT`](/keys/rot/#scope-bullettype) chooses between two flight models. A projectile with `ROT` above zero is steered: the missile autopilot turns it toward its target each frame and lifts it over the ground in the way. A projectile with `ROT=0` is ballistic: it follows the arc it was launched along, falls under gravity, and bounces off whatever it lands on. Most settings on this page affect only one of the two models.
 
@@ -75,12 +75,11 @@ Projectile=MYROCKET
 Warhead=AP         ; a WarheadType registered in [Warheads]
 Damage=60
 Range=7
-ProjectileRange=9
 
 [MYROCKET]         ; a BulletType, registered by the weapon above naming it
 Image=MISSILE      ; the art section its flight imagery is read from
 ROT=5              ; above zero, so the missile autopilot flies it
-Ranged=yes         ; spends the weapon's ProjectileRange as fuel
+Ranged=yes         ; checks its fuse every frame, as a steered projectile does
 AA=yes
 ```
 
@@ -137,11 +136,10 @@ Each turn runs these steps in order:
 2. When [`AnimLow`](/keys/animlow/) or [`AnimHigh`](/keys/animhigh/) is not zero, the flight animation counts down toward its next frame.
 3. On every third frame of the game clock, a [`Trailer`](/keys/trailer/) puff is left at the position the projectile is about to leave.
 4. One of the two flight models moves the projectile, and may mark it to detonate.
-5. A [`Ranged=yes`](/keys/ranged/) projectile subtracts the distance it just moved from its allowance, and is marked when the allowance runs out.
-6. The projectile takes up its new position. If it now stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through, the wall consumes it and the turn ends.
-7. A projectile not already marked goes through three standing tests: a tall overlay in its cell, ground level, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
-8. A steered or `Ranged=yes` projectile checks its fuse.
-9. A projectile that is not marked, and whose fuse has not tripped, keeps flying. A [`Degenerates=yes`](/keys/degenerates/) projectile then loses 1 point of damage, down to a floor of 5. Any other projectile detonates and is removed.
+5. The projectile takes up its new position. If it now stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through, the wall consumes it and the turn ends.
+6. A projectile not already marked goes through three standing tests: a tall overlay in its cell, ground level, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
+7. A steered or `Ranged=yes` projectile checks its fuse.
+8. A projectile that is not marked, and whose fuse has not tripped, keeps flying. A [`Degenerates=yes`](/keys/degenerates/) projectile then loses 1 point of damage, down to a floor of 5. Any other projectile detonates and is removed.
 
 A shot from a weapon with a barrel gets a head start: two of these turns run immediately during firing, so the shot appears past the muzzle, not inside it. [The firing sequence](/systems/firing-geometry/#the-shot-step-by-step) says which shots get the head start. Every other shot takes its first turn later in the same frame, once every object ahead of it in the turn order has moved. A head-start shot takes that turn as well, so it moves three times in the frame it is fired.
 
@@ -229,7 +227,6 @@ This table gathers every way a flight ends, in the order a turn tests them. The 
 | It came within 128 leptons of an object that is not friendly, in the cell it just entered | Ballistic | On that object |
 | It left the playfield | Ballistic | Nowhere. It is removed without a blast |
 | It is moving slower than 10 leptons a frame and lies within 10 leptons of the ground | Ballistic | Where it lies |
-| A [`Ranged=yes`](/keys/ranged/) projectile has used up its allowance | Both | Where it stands |
 | It stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through | Both | Nowhere. The wall consumes it without a blast |
 | A [`High=yes`](/keys/high/#scope-overlaytype) overlay stands in its cell, the projectile is less than 100 leptons above the ground, and it is not [`High=yes`](/keys/high/#scope-bullettype) itself | Both | Where it stands |
 | It is below ground level | Both | Where it stands |

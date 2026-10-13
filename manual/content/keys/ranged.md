@@ -1,28 +1,21 @@
 ---
 key: Ranged
-summary: Gives the projectile a fuel supply, detonating it once it has flown the firing weapon's projectile range.
-see_also: [ProjectileRange, Range, Arm]
+summary: Makes the projectile check its fuse every frame, as a steered projectile does.
+see_also: [Arm, ROT]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-The projectile carries a flight allowance and detonates wherever it is when the allowance runs out. Each game frame, the distance it moved is taken off the allowance. Homing and ballistic projectiles spend it the same way.
+A `Ranged=yes` projectile checks its fuse every frame, whatever its [`ROT`](/keys/rot/#scope-bullettype). A projectile with `ROT=0` that is not `Ranged=yes` does not check its fuse at all.
 
-A `Ranged=yes` projectile also checks its fuse every frame, as a steered projectile does. A flak shell therefore bursts near its aim point, at about the height it was aimed at, instead of falling to the ground under it.
+A flak shell is the usual case. It bursts near its aim point, at about the height it was aimed at, instead of falling to the ground under that point.
 
-The allowance is the firing weapon's [`ProjectileRange`](/keys/projectilerange/), not its [`Range`](/keys/range/). `Range` is how far away the weapon may fire from, and `ProjectileRange` is how far the shot may then travel. A weapon that does not set `ProjectileRange` gives its projectile about 390 cells, so a `Ranged=yes` projectile needs `ProjectileRange` on its weapon to run out in practice.
-
-A bomblet released by a [`Splits=yes`](/keys/splits/) projectile takes its allowance from its [`AirburstWeapon`](/keys/airburstweapon/)'s `Range` instead.
+The fuse works as it does on a steered projectile: [`Arm`](/keys/arm/) holds it shut for a delay, and once armed it trips within 64 leptons of the fuse point. Nothing else limits how far a `Ranged=yes` projectile flies. Its flight ends by the rules in [what ends a flight](/systems/projectile-flight/#what-ends-a-flight).
 
 ```ini title="rules.ini"
 [MYROCKET] ; a BulletType, registered by a weapon naming it as its Projectile
 Image=MISSILE
 ROT=5
 Ranged=yes
-
-[MyRocketLauncher] ; a WeaponType, registered by an object naming it as its Primary
-Projectile=MYROCKET
-Range=7
-ProjectileRange=9 ; the rocket may fly 9 cells, 2 more than the firing range
 ```

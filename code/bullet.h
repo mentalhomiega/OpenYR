@@ -90,7 +90,7 @@ class BulletClass : public ObjectClass
 		*/
 		virtual RTTIType Fetch_RTTI(void) const override;
 
-		void Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright);
+		void Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright);
 		bool Is_Forced_To_Explode(Coord & coord) const;
 		void Bullet_Explodes(bool forced);
 		virtual int Shape_Number(void) const;
@@ -213,15 +213,9 @@ class BulletClass : public ObjectClass
 		 */
 		unsigned char AnimRate;
 
-		/*
-		 * This is how much farther the projectile may travel, expressed in leptons. It only
-		 * applies to a fueled projectile, which is forced to detonate when it runs out.
-		 */
-		int Range;
-
 	public:
-		friend BulletClass *Create_Bullet(BulletTypeClass const *type, TechnoClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright);
+		friend BulletClass *Create_Bullet(BulletTypeClass const *type, TechnoClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright);
 };
 
 
-BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright);
+BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright);

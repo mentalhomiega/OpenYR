@@ -164,7 +164,7 @@ BulletClass::BulletClass(void) :
 /// <param name="payback">The object that fired the shot. It receives credit for any kill.</param>
 /// <param name="strength">The damage the projectile will inflict when it detonates.</param>
 /// <param name="bright">Should the impact throw off a lighting flash?</param>
-void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright)
+void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright)
 {
 	Class = (BulletTypeClass *)type;
 	Payback = payback;
@@ -173,7 +173,6 @@ void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *ta
 	Warhead = (WarheadTypeClass *)warhead;
 	IsBright = bright;
 	Strength = strength;
-	Range = range;
 	AnimFrame = 0;
 	AnimRate = Class->AnimRate;
 }
@@ -867,16 +866,6 @@ void BulletClass::AI(void)
 		case IMPACT_NORMAL: {
 			Mark();
 
-			/*
-			 * A fueled projectile carries only so much range with it. Once the
-			 * fuel is spent, it detonates wherever it happens to be.
-			 */
-			if (Class->IsFueled) {
-				Range -= coord.Gamemd_Distance_To(PositionCoord);
-				if (Range <= 0) {
-					forced = true;
-				}
-			}
 			PositionCoord = coord;
 
 			/*
@@ -1701,7 +1690,7 @@ void BulletClass::Detonate(Coord const & coord)
 			if (target != NULL) {
 				WeaponTypeClass * weapon = Class->AirburstWeapon;
 				const BulletTypeClass * btype = weapon->Bullet;
-				BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), weapon->Range, false);
+				BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
 				if (bullet != NULL) {
 					/*
 					 * Send the bomblet straight down (pitch DIR_S) with a dash of
@@ -1746,7 +1735,6 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Warhead);
 	stream.Serialize(AnimFrame);
 	stream.Serialize(AnimRate);
-	stream.Serialize(Range);
 }
 
 
@@ -1774,10 +1762,10 @@ bool BulletClass::Is_Homing(void) const
 /// <param name="bright">Should the impact throw off a lighting flash?</param>
 /// <returns>Returns with a pointer to the projectile created, or NULL if one could not be
 /// made.</returns>
-BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright)
+BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright)
 {
 	BulletClass * bullet = new BulletClass;
-	bullet->Set_Bullet_Data(type, target, payback, strength, warhead, max_speed, range, bright);
+	bullet->Set_Bullet_Data(type, target, payback, strength, warhead, max_speed, bright);
 	return(bullet);
 }
 
@@ -1899,7 +1887,7 @@ void BulletClass::Nuke_Maker(void)
 	Coord coord = Map[TarCom->Center_Coord()].Center_Coord();
 	coord.Z += Class->DetonationAltitude;
 
-	BulletClass * bullet = Create_Bullet(weapon->Bullet, TarCom, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->ProjectileRange, true);
+	BulletClass * bullet = Create_Bullet(weapon->Bullet, TarCom, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, true);
 	if (bullet != NULL) {
 		// The payload keeps its weapon, so its blast leaves the weapon's RadLevel behind (0x46B310).
 		bullet->Weapon = weapon;
@@ -1954,7 +1942,7 @@ void BulletClass::Shrapnel(void)
 	 * private members of an electric bolt.
 	 */
 	auto throw_piece = [this, weapon, from](AbstractClass * target, Coord const & to) {
-		BulletClass * piece = Create_Bullet(weapon->Bullet, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->ProjectileRange, weapon->IsBright);
+		BulletClass * piece = Create_Bullet(weapon->Bullet, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);
 		if (piece == NULL) return;
 		piece->Weapon = weapon;
 		TVelocity3D<double> velocity;

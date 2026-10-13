@@ -1381,7 +1381,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 					}
 
 					BulletTypeClass const * btype = wtype->Bullet;
-					BulletClass * bullet = Create_Bullet(btype, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, 100000, false);
+					BulletClass * bullet = Create_Bullet(btype, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, false);
 
 					if (bullet) {
 						TVelocity3D<double> velocity = TVelocity3D<double>(DIR_E, DIR_N, 100);

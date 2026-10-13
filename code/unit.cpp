@@ -7023,7 +7023,7 @@ void UnitClass::EMPulse_Blast(void)
 		WeaponTypeClass const * weapon = WeaponTypeClass::Find_Or_Make("MobileEMPulseWeapon");
 		if (weapon != NULL && weapon->Bullet != NULL && weapon->WarheadPtr != NULL) {
 			CellClass * cptr = &Map[Center_Coord().As_Cell()];
-			BulletClass * bullet = Create_Bullet(weapon->Bullet, cptr, this, weapon->Attack, weapon->WarheadPtr, 1234, weapon->ProjectileRange, weapon->IsBright);
+			BulletClass * bullet = Create_Bullet(weapon->Bullet, cptr, this, weapon->Attack, weapon->WarheadPtr, 1234, weapon->IsBright);
 			if (bullet != NULL) {
 				bullet->Set_Coord(PositionCoord);
 				bullet->Bullet_Explodes(true);

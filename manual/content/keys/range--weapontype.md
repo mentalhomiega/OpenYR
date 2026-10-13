@@ -36,7 +36,6 @@ When the weapon's [`Projectile=`](/keys/projectile/) has [`Arcing=yes`](/keys/ar
 - An object whose [`GuardRange`](/keys/guardrange/) is zero takes its scan radius from its weapons' range, and the threat score measures distance against the range; [target selection](/systems/target-selection/#scan-radius) covers both.
 - When a house rates its base defenses against armor and infantry, the range counts for at most four cells.
 - An EM pulse cannon can be aimed only at cells within its weapon's range, rounded down to whole cells.
-- A weapon named as a projectile's [`AirburstWeapon=`](/keys/airburstweapon/) gives its range to each bomblet as fuel. It is not a firing distance there.
 
 `-1` counts as not set, so it keeps whatever an earlier rules file set.
 

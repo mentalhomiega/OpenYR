@@ -4948,7 +4948,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	BuildingClass * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass *>(this) : NULL;
 
 	int max_speed = weapon->MaxSpeed;
-	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->ProjectileRange, weapon->IsBright);
+	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->IsBright);
 	if (bullet != NULL) {
 		bullet->Weapon = weapon;
 	}
@@ -11319,7 +11319,7 @@ void TechnoClass::Fire_Death_Weapon(void)
 	}
 
 	DebugString("Death weapon: %s sets off %s for %d at %d,%d\n", TClass->Name(), weapon->Name(), damage, Get_Cell().X, Get_Cell().Y);
-	BulletClass * bullet = Create_Bullet(weapon->Bullet, this, this, damage, weapon->WarheadPtr, 0, 0, weapon->IsBright);
+	BulletClass * bullet = Create_Bullet(weapon->Bullet, this, this, damage, weapon->WarheadPtr, 0, weapon->IsBright);
 	if (bullet != NULL) {
 		bullet->Weapon = weapon;
 		bullet->Detonate(Center_Coord());

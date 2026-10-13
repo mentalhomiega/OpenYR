@@ -6519,8 +6519,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					WeaponTypeClass const * weap = SuperWeaponTypes[LastSuperWeaponIndex]->Weapon;
 					BulletTypeClass const * bullet_type = weap->Bullet;
 					WarheadTypeClass const * warhead = weap->WarheadPtr;
-					LEPTON range = weap->ProjectileRange;
-					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, range, true);
+					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, true);
 					if (bullet) {
 						bullet->Limbo();
 						Coord launch = Move_Coord(Center_Coord(), DIR_N, 5 * CELL_LEPTON / 8);
@@ -6615,7 +6614,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						DirType yaw = ::Direction(fire, House->EMPDest.As_Coord());
 						MPHType speed = Calculate_Projectile_Speed(Distance(targ), Rule->Gravity);
 
-						BulletClass * bullet = Create_Bullet(weap->Bullet, targ, this, weap->Attack, weap->WarheadPtr, 3 * speed / 4, weap->ProjectileRange, weap->IsBright);
+						BulletClass * bullet = Create_Bullet(weap->Bullet, targ, this, weap->Attack, weap->WarheadPtr, 3 * speed / 4, weap->IsBright);
 
 						TVelocity3D<double> velocity;
 						velocity.Set(0, 0, 0);
