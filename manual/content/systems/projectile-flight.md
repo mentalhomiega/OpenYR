@@ -104,7 +104,7 @@ A lepton is the engine's distance unit. A cell is 256 leptons across and a terra
 
 The pitch comes from the first of these rules that applies:
 
-1. An [`Arcing=yes`](/keys/arcing/) projectile gets a ballistic arc to the aim point. The high arc is used when the weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. Otherwise the flat arc is used. When no arc at the launch speed reaches the aim point, the weapon does not fire.
+1. An [`Arcing=yes`](/keys/arcing/) projectile gets a ballistic arc to the aim point. The high arc is used when the weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. Otherwise the flat arc is used. An aim point higher than the firing point always gets a pitch of 45 degrees, whichever arc is used, and the weapon fires. At or below the firing point, the weapon does not fire when no arc at the launch speed reaches the aim point.
 2. A [`Voxel=yes`](/keys/voxel/) projectile leaves pointing straight up.
 3. Any other projectile leaves almost level, about 1.4 degrees up, unless the aim point is more than 200 leptons above or below the weapon's mounting. Then it is pitched at the aim point, with the height difference reduced by 20 leptons first.
    - When that happens and the firer's target is a structure, the aim height becomes 200 leptons for each point of the structure's [`Height`](/keys/height/#scope-buildingtype). That height is counted from the map's zero height, not from the ground the structure stands on.
