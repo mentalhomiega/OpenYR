@@ -684,7 +684,8 @@ int FootClass::Do_MISSION_PATROL(void)
 			ObjectClass * optr = target->As_ObjectClass();
 			int primary = What_Weapon_Should_I_Use(optr);
 
-			if (optr != NULL && (In_Range(optr, primary) || Search.Test_Cell_Walk(Cell(Destination_Coord()), Cell(optr->Destination_Coord()), this, Is_Moving_Onto_Bridge(), optr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
+			// A threat is taken when IsCloseEnough reaches it with a clear line, or it can walk within the patrol distance (FootClass::Mission_Patrol, 0x4D4280).
+			if (optr != NULL && (Is_Close_Enough(optr, primary) || Search.Test_Cell_Walk(Cell(Destination_Coord()), Cell(optr->Destination_Coord()), this, Is_Moving_Onto_Bridge(), optr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
 
 				/*
 				 * Take up patrol at the cell the target occupies. If that cell is
@@ -737,7 +738,7 @@ int FootClass::Do_MISSION_PATROL(void)
 			 */
 			if (Is_Renovator() && optr != NULL && optr->RTTI == RTTI_BUILDING && House->Is_Ally(((TechnoClass *)optr)->House) && optr->HealthRatio > Rule->ConditionRed) {
 				Assign_Target(NULL);
-			} else if (optr != NULL && (In_Range(optr, primary) || Search.Test_Cell_Walk(PatrolCell->CellID, Cell(optr->Destination_Coord()), this, PatrolCell->IsUnderBridge, optr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
+			} else if (optr != NULL && (Is_Close_Enough(optr, primary) || Search.Test_Cell_Walk(PatrolCell->CellID, Cell(optr->Destination_Coord()), this, PatrolCell->IsUnderBridge, optr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
 				Approach_Target();
 				if (TarCom != NULL) {
 					break;
@@ -757,7 +758,7 @@ int FootClass::Do_MISSION_PATROL(void)
 				AbstractClass * target = Greatest_Threat(THREAT_AREA, PatrolCell->Center_Coord(), false);
 				ObjectClass * scanptr = target->As_ObjectClass();
 				int scanweapon = What_Weapon_Should_I_Use(scanptr);
-				if (scanptr != NULL && (In_Range(scanptr, scanweapon) || Search.Test_Cell_Walk(PatrolCell->CellID, Cell(scanptr->Destination_Coord()), this, PatrolCell->IsUnderBridge, scanptr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
+				if (scanptr != NULL && (Is_Close_Enough(scanptr, scanweapon) || Search.Test_Cell_Walk(PatrolCell->CellID, Cell(scanptr->Destination_Coord()), this, PatrolCell->IsUnderBridge, scanptr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
 					Assign_Target(target);
 					Assign_Destination(NULL);
 					return(1);
@@ -793,7 +794,7 @@ int FootClass::Do_MISSION_PATROL(void)
 			ObjectClass * optr = target->As_ObjectClass();
 			int primary = What_Weapon_Should_I_Use(optr);
 
-			if (optr != NULL && (In_Range(optr, primary) || Search.Test_Cell_Walk(PatrolCell->CellID, Cell(optr->Destination_Coord()), this, PatrolCell->IsUnderBridge, optr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
+			if (optr != NULL && (Is_Close_Enough(optr, primary) || Search.Test_Cell_Walk(PatrolCell->CellID, Cell(optr->Destination_Coord()), this, PatrolCell->IsUnderBridge, optr->Is_Moving_Onto_Bridge(), MZONE_NONE) < dist)) {
 				Assign_Target(target);
 				Assign_Destination(NULL);
 				Status = PATROL_ENGAGE_TARGET;

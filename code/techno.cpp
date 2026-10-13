@@ -3800,8 +3800,9 @@ void TechnoClass::AI(void)
 					foot->Approach_Target();
 				}
 				if (foot == NULL || foot->NavCom == NULL) {
+					// The target is dropped unless its weapon reaches it with a clear line (TechnoClass::Update, 0x6F9E50, IsCloseEnough).
 					int primary = What_Weapon_Should_I_Use(TarCom);
-					if (!In_Range(TarCom, primary)) {
+					if (!Is_Close_Enough(TarCom, primary)) {
 						Assign_Target(NULL);
 					}
 				}

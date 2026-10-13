@@ -1918,7 +1918,8 @@ void BuildingClass::AI(void)
 		}
 	}
 
-	if (TarCom != NULL && !In_Range(TarCom) && (TarCom->RTTI != RTTI_AIRCRAFT || TarCom->On_Ground())) {
+	// A target the structure's weapon cannot reach with a clear line is dropped (BuildingClass::Update, 0x43FB20, IsCloseEnoughToAttack).
+	if (TarCom != NULL && !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom)) && (TarCom->RTTI != RTTI_AIRCRAFT || TarCom->On_Ground())) {
 		Assign_Target(NULL);
 	}
 }
@@ -2651,11 +2652,12 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	When certain buildings are hit, they "snap out of it" and
 			**	return fire if they are able and allowed.
 			*/
+			// The attacker replaces a current target the weapon cannot reach with a clear line (BuildingClass::ReceiveDamage, 0x442230, IsCloseEnoughToAttack).
 			if (CurrentMission != MISSION_DECONSTRUCTION &&
 				!House->Is_Ally(source) &&
 				PrimaryWeapon != NULL &&
 				!PrimaryWeapon->Bullet->IsAntiAircraft &&
-				(TarCom == NULL || !In_Range(TarCom))) {
+				(TarCom == NULL || !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom)))) {
 
 				if (source->RTTI != RTTI_AIRCRAFT && (!House->Is_Human_Player() || Rule->IsSmartDefense)) {
 					Assign_Target(source);
@@ -3007,7 +3009,8 @@ void BuildingClass::Assign_Target(AbstractClass * target)
 			target = NULL;
 		}
 	} else {
-		if (target != NULL && PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiAircraft && !In_Range(target)) {
+		// A target the weapon cannot reach with a clear line is refused (BuildingClass::SetTarget, 0x443B90, IsCloseEnoughToAttack).
+		if (target != NULL && PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiAircraft && !Is_Close_Enough(target, What_Weapon_Should_I_Use(target))) {
 			target = NULL;
 			BASECLASS::Assign_Target(target);
 			if (Class->IsTickTank || Class->IsArtillary || Class->IsJuggernaut) {
@@ -4358,12 +4361,12 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 		}
 	}
 
-	// Offer the attack only where the weapon could take the shot, CTRL key or not.
+	// Offer the attack only where the weapon could take the shot, CTRL key or not (TechnoClass::MouseOverObject, 0x6FFEC0, IsCloseEnough).
 	if (action == ACTION_ATTACK && PrimaryWeapon != NULL) {
 		bool engageable = PrimaryWeapon->Bullet->IsAntiGround
 			|| (object->In_Air() && PrimaryWeapon->Bullet->IsAntiAircraft);
 
-		if (!In_Range((ObjectClass *)object, 0) || !engageable) {
+		if (!Is_Close_Enough((ObjectClass *)object, What_Weapon_Should_I_Use((ObjectClass *)object)) || !engageable) {
 			action = ACTION_NONE;
 		} else if (Class->IsEMPulseCannon || Class->IsLimpetMine) {
 			action = ACTION_NONE;

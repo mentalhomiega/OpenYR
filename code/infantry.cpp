@@ -3220,7 +3220,8 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 		if (action == ACTION_MOVE) {
 			return(ACTION_NOMOVE);
 		}
-		if (action == ACTION_ATTACK && (!Class->IsDeployFire || !In_Range((AbstractClass *)object, Class->DeployFireWeapon))) {
+		// A dug-in soldier attacks only what its deploy weapon reaches with a clear line (InfantryClass::MouseOverObject, 0x51E3B0, IsCloseEnough).
+		if (action == ACTION_ATTACK && (!Class->IsDeployFire || !Is_Close_Enough((AbstractClass *)object, Class->DeployFireWeapon))) {
 			return(ACTION_NOMOVE);
 		}
 	}
@@ -4773,7 +4774,7 @@ void InfantryClass::Approach_Target(void)
 {
 	// A dug-in soldier holds its ground. A computer's soldier packs up when its target is out of the reach of its deploy weapon (InfantryClass::ApproachTarget, 0x522340).
 	if (Is_Deployed()) {
-		if (TarCom != NULL && !House->Is_Human_Player() && Class->IsDeployFire && !Is_Area_Fire_Deployer() && Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon != NULL && !In_Range(TarCom, Class->DeployFireWeapon)) {
+		if (TarCom != NULL && !House->Is_Human_Player() && Class->IsDeployFire && !Is_Area_Fire_Deployer() && Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon != NULL && !Is_Close_Enough(TarCom, Class->DeployFireWeapon)) {
 			Do_Action(DO_UNDEPLOY, true);
 		}
 		return;
@@ -4919,13 +4920,13 @@ int InfantryClass::Do_Guard_Deploy(void)
 
 
 /// <summary>
-/// Keeps a dug-in soldier's target while it is in range of its deploy weapon. Otherwise the soldier takes
-/// the greatest threat within that range, or no target if there is none (InfantryClass::vt_entry_428, 0x51F330).
+/// Keeps a dug-in soldier's target while its deploy weapon reaches it with a clear line. Otherwise the soldier takes
+/// the greatest threat within range, or no target if there is none (InfantryClass::vt_entry_428, 0x51F330).
 /// </summary>
 void InfantryClass::Refresh_Deployed_Target(void)
 {
 	int const which = What_Weapon_Should_I_Use(NULL);
-	if (TarCom != NULL && In_Range(TarCom, which)) {
+	if (TarCom != NULL && Is_Close_Enough(TarCom, which)) {
 		return;
 	}
 
