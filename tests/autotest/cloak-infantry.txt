@@ -1,15 +1,17 @@
-; A cloaked soldier with an enemy soldier six cells off, out of its M60 range of four cells
+; A cloaked soldier with an enemy E2 rifleman six cells off, out of its M60 range of four cells
 ; (run with -Mods E:\Claude ra2 decomp\src-agent6\tests\autotest\cloak-rules). The player's soldier
 ; is ordered to attack the enemy from there. In gamemd, InfantryClass's firing update (0x5206B0)
 ; uncloaks an infantryman on fire error 9, which GetFireError returns before its range test, so
 ; the soldier should decloak at once, before it is in range. The cloak line gives cloak 0 once it
-; has decloaked. Ours should keep it cloaked until it closes to four cells.
+; has decloaked. Ours decloaks it at once, as that rule says, and the soldier fires once it is in range.
+; The enemy is not a GI, because the mod makes the GI cloakable, and a cloakable enemy with no target
+; cloaks and drops out of the soldier's sight (see cloak-tank.txt).
 30 command CenterBase
 310 reveal
 300 own E1 60 36
 330 where E1
-400 spawn E1 66 36
-430 strikeobj E1 66 36 2
+400 spawn E2 66 36
+430 strikeobj E2 66 36 2
 431 where E1
 440 where E1
 450 where E1
