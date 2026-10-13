@@ -2062,6 +2062,11 @@ void Run(StepType const & step)
 			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1);
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
+			if (techno->ParasiteImUsing) {
+				ParasiteClass const & parasite = *techno->ParasiteImUsing;
+				DebugString("AUTOTEST   grapple stage %d frame %d delay %d anim %d victim %s angle %.4f\n", (int)parasite.GrappleState, parasite.GrappleAnimFrame, parasite.GrappleAnimDelay, parasite.GrappleAnim != NULL ? 1 : 0,
+					parasite.Victim != NULL ? parasite.Victim->TClass->Name() : "-", parasite.Victim != NULL ? (double)parasite.Victim->AngleRotatedSideways : 0.0);
+			}
 			if (techno->RTTI == RTTI_INFANTRY) {
 				InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
 				DebugString("AUTOTEST   soldier %s do %d deployed %d\n", soldier->Class->Name(), (int)soldier->Doing, (int)soldier->Is_Deployed());
