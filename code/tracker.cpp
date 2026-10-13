@@ -35,6 +35,7 @@
 
 #include "tracker.h"
 
+#include "_kamikaze.h"
 #include "_logic.h"
 #include "_map.h"
 #include "_rules.h"
@@ -148,6 +149,7 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 			TacticalMap->Detach(target, true);
 		}
 		Logic.Detach(target, all);
+		Kamikaze.Detach(target);
 		/*
 		 * nothing else needs to be done
 		 */

@@ -47,6 +47,7 @@
 #include "saveload.h"
 
 #include "_deploymentconfig.h"
+#include "_kamikaze.h"
 #include "_logic.h"
 #include "_map.h"
 #include "_rect.h"
@@ -1376,6 +1377,7 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	LightningStormClass::Serialize(stream);
 	PsychicDominatorClass::Serialize(stream);
 	RadSiteClass::Serialize_All(stream);
+	Kamikaze.Serialize(stream);
 
 	stream.Serialize(LogicTags);
 	stream.Serialize(MapTags);

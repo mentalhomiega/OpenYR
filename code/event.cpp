@@ -1221,6 +1221,11 @@ void EventClass::Execute(void)
 				techno->Transmit_Message(RADIO_OVER_OUT);
 				techno->Assign_Destination(NULL);
 				techno->Assign_Target(NULL);
+
+				// A spawner's missiles still on the pad are released (EventClass::Execute, 0x4C6CB0).
+				if (techno->SpawnManager) {
+					techno->SpawnManager->Reset_Target();
+				}
 				if (techno->RTTI != RTTI_AIRCRAFT) {
 					techno->Assign_Mission(MISSION_GUARD);
 					techno->Commence();

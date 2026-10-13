@@ -29,6 +29,7 @@ class SpawnManagerClass
 
 		void AI(void);
 		void Set_Target(AbstractClass * target);
+		void Reset_Target(void);
 		void Kill_Nodes(void);
 		void Detach(AbstractClass const * target);
 		int Docked_Count(void) const;
@@ -67,7 +68,7 @@ class SpawnManagerClass
 
 		AircraftClass * Create_Spawn(NodeType & node) const;
 		void Launch(NodeType & node, int index);
-		void Unlink(AircraftClass const * unit);
+		void Unlink_Pointer(AbstractClass const * target);
 		void Send_Home(AircraftClass * unit) const;
 
 		TechnoClass * Owner = nullptr;

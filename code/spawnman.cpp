@@ -11,6 +11,7 @@
 
 #include "spawnman.h"
 
+#include "_kamikaze.h"
 #include "_map.h"
 #include "_rules.h"
 #include "aircraft.h"
@@ -99,16 +100,12 @@ AircraftClass * SpawnManagerClass::Create_Spawn(NodeType & node) const
 
 
 /// <summary>
-/// Aims the spawns at the target; the next launch goes there once the owner is in range.
+/// Queues the target for the spawns; the AI pass makes it the current target. A NULL target
+/// cancels a queued one (SpawnManagerClass::SetTarget, 0x6B7B90).
 /// </summary>
 void SpawnManagerClass::Set_Target(AbstractClass * target)
 {
-	if (target == NULL) {
-		return;
-	}
-	if (Target == NULL) {
-		Target = target;
-	} else if (target != Target) {
+	if (target != Target) {
 		NewTarget = target;
 	}
 }
@@ -142,44 +139,74 @@ int SpawnManagerClass::Docked_Count(void) const
 }
 
 
-void SpawnManagerClass::Unlink(AircraftClass const * unit)
-{
-	for (NodeType & node : Nodes) {
-		if (node.Unit == unit && unit != NULL) {
-			node.Unit = NULL;
-			node.Status = NODE_DEAD;
-			node.Start_Timer(RegenRate);
-		}
-	}
-}
-
-
 /// <summary>
 /// Forgets a spawn or target that is leaving the game. A lost spawn is replaced after the
 /// regeneration delay.
 /// </summary>
 void SpawnManagerClass::Detach(AbstractClass const * target)
 {
-	if (Target == target) {
+	Unlink_Pointer(target);
+}
+
+
+/// <summary>
+/// Forgets a target or a spawn that is leaving the game (SpawnManagerClass::UnlinkPointer, 0x6B7C60).
+/// Losing the target resets the spawns, so a missile still on the pad goes to the kamikaze list.
+/// A living aircraft that is only limboed, as one docking is, keeps its node.
+/// </summary>
+void SpawnManagerClass::Unlink_Pointer(AbstractClass const * target)
+{
+	if (target == Target) {
 		Target = NULL;
+		if (NewTarget == NULL) {
+			Reset_Target();
+		}
+		return;
 	}
-	if (NewTarget == target) {
+	if (target == NewTarget) {
 		NewTarget = NULL;
+		return;
 	}
 
-	// A living aircraft that is only limboed, as one docking is, keeps its node. gamemd's
-	// SpawnManagerClass::UnlinkPointer (0x6B7C60) does the same; a dead, kamikaze or missile spawn is released.
-	for (NodeType & node : Nodes) {
-		if (node.Unit == NULL || node.Unit != target) {
+	for (int index = (int)Nodes.size() - 1; index >= 0; index--) {
+		NodeType & node = Nodes[index];
+		if (node.Unit == NULL || (AbstractClass const *)node.Unit != target) {
 			continue;
 		}
 		if (node.Unit->Strength > 0 && !node.Unit->IsKamikaze && !node.IsMissile) {
-			continue;
+			return;
 		}
 		node.Unit = NULL;
 		node.Status = NODE_DEAD;
 		node.Start_Timer(RegenRate);
+		return;
 	}
+
+	if (target == (AbstractClass const *)Owner) {
+		Kill_Nodes();
+		Reset_Target();
+	}
+}
+
+
+/// <summary>
+/// Stops the spawns' attack. A missile still on the pad is released to the kamikaze list, which
+/// flies it at the target's cell, or at the cell in front of it when there is no target. The
+/// spawner forgets its target and goes idle (SpawnManagerClass::ResetTarget, 0x6B7BB0).
+/// </summary>
+void SpawnManagerClass::Reset_Target(void)
+{
+	for (NodeType & node : Nodes) {
+		if (node.Status != NODE_PREPARING || node.Unit == NULL || !node.Unit->Class->IsMissileSpawn) {
+			continue;
+		}
+		Kamikaze.Add(node.Unit, Target);
+		Kamikaze.Restart_Timer(2);
+		Unlink_Pointer(node.Unit);
+	}
+	Status = STATUS_IDLE;
+	NewTarget = NULL;
+	Target = NULL;
 }
 
 
@@ -262,8 +289,8 @@ void SpawnManagerClass::AI(void)
 				break;
 
 			case NODE_TAKEOFF:
-				if (node.Is_Timer_Expired()) {
-					Unlink(unit);
+				if (node.Is_Timer_Expired() && unit != NULL) {
+					Unlink_Pointer(unit);
 				}
 				break;
 
@@ -342,7 +369,7 @@ void SpawnManagerClass::AI(void)
 			if (Target != NULL) {
 				// The range is that of the weapon the owner selects for the target (IsCloseEnoughToAttack, 0x6F7780).
 				if (!Owner->In_Range(Target, Owner->What_Weapon_Should_I_Use(Target))) {
-					Target = NULL;
+					Reset_Target();
 					break;
 				}
 				Status = STATUS_LAUNCHING;
@@ -351,7 +378,7 @@ void SpawnManagerClass::AI(void)
 
 		case STATUS_LAUNCHING: {
 			if (Target == NULL) {
-				Status = STATUS_IDLE;
+				Reset_Target();
 				break;
 			}
 			for (NodeType const & node : Nodes) {
@@ -364,20 +391,29 @@ void SpawnManagerClass::AI(void)
 				if (node.Status != NODE_PREPARING || node.Unit == NULL) {
 					continue;
 				}
-				if (node.IsMissile) {
-					missile = true;
-					RulesClass::RocketTypeStruct const * rocket = Rule->Rocket_Of(SpawnType);
-					node.Status = NODE_TAKEOFF;
-					node.Start_Timer(rocket->TiltFrames + rocket->PauseFrames);
-				} else {
+				if (!node.Unit->Class->IsMissileSpawn) {
 					node.Status = NODE_ATTACKING;
 					node.Unit->Assign_Target(Target);
 					node.Unit->Assign_Mission(MISSION_ATTACK);
+					continue;
+				}
+
+				// A missile joins the kamikaze list aimed at the target, then a rocket takes off and any
+				// other missile is released (SpawnManagerClass::Update, 0x6B7230).
+				missile = true;
+				Kamikaze.Add(node.Unit, Target);
+				Kamikaze.Restart_Timer(2);
+				if (node.IsMissile) {
+					// gamemd takes the V3's takeoff times for the V3 and the Dreadnought missile's for every other rocket (0x6B7230).
+					RulesClass::RocketTypeStruct const & rocket = SpawnType == Rule->V3Rocket.Type ? Rule->V3Rocket : Rule->DMisl;
+					node.Status = NODE_TAKEOFF;
+					node.Start_Timer(rocket.TiltFrames + rocket.PauseFrames);
+				} else {
+					Unlink_Pointer(node.Unit);
 				}
 			}
 			if (missile) {
-				Target = NULL;
-				NewTarget = NULL;
+				Reset_Target();
 			}
 			Status = STATUS_COOLDOWN;
 			break;
@@ -396,36 +432,39 @@ void SpawnManagerClass::AI(void)
 
 
 /// <summary>
-/// Disposes of the spawns when the owner is destroyed or removed: docked spawns and missiles
-/// still on the pad are removed, and aircraft in flight crash.
+/// Disposes of the spawns when the owner is destroyed, removed or changes hands. A docked or
+/// reloading spawn and a missile still taking off are removed. Any other spawn goes to the
+/// kamikaze list: a missile flies on, and an aircraft in flight crashes. The replacement timer
+/// is the regeneration delay when the owner is dead, and zero when it is alive (SpawnManagerClass::KillNodes,
+/// 0x6B7100).
 /// </summary>
 void SpawnManagerClass::Kill_Nodes(void)
 {
-	for (NodeType & node : Nodes) {
+	int const delay = (Owner->Strength < 1 || !Owner->IsActive) ? RegenRate : 0;
+	for (int index = (int)Nodes.size() - 1; index >= 0; index--) {
+		NodeType & node = Nodes[index];
 		AircraftClass * unit = node.Unit;
 		int const status = node.Status;
+		if (status == NODE_DEAD) {
+			continue;
+		}
 		node.Unit = NULL;
 		node.Status = NODE_DEAD;
-		node.Start_Timer(RegenRate);
+		node.Start_Timer(delay);
 		if (unit == NULL || !unit->IsActive) {
 			continue;
 		}
 		unit->SpawnOwner = NULL;
 
-		// A spawn that is docked, reloading or taking off is removed without damage, and one in flight
-		// crashes (gamemd's SpawnManagerClass::KillNodes, 0x6B7100). A missile still moving flies on.
-		if (status == NODE_IDLE || status == NODE_RELOADING || status == NODE_TAKEOFF || unit->IsInLimbo) {
+		if (status == NODE_IDLE || status == NODE_RELOADING || unit->IsInLimbo) {
 			unit->Delete_Me();
-		} else if (node.IsMissile) {
-			if (!unit->Locomotion->Is_Moving()) {
-				unit->Delete_Me();
-			}
-		} else if (!unit->Crash(NULL)) {
+		} else if (status == NODE_TAKEOFF) {
+			Kamikaze.Detach(unit);
 			unit->Delete_Me();
+		} else {
+			Kamikaze.Add(unit, Target);
 		}
 	}
-	Target = NULL;
-	NewTarget = NULL;
 }
 
 

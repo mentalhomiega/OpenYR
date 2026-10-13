@@ -4522,6 +4522,11 @@ void TechnoClass::Assign_Target(AbstractClass * target)
 	*/
 	TarCom = target;
 
+	// Losing the target cancels a queued spawn target (TechnoClass::SetTarget, 0x6FCDB0).
+	if (target == NULL && SpawnManager) {
+		SpawnManager->Set_Target(NULL);
+	}
+
 	if (target != NULL) {
 		IsBurstResetPending = false;
 		BurstResetTimer = 0;

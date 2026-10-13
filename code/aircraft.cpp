@@ -1074,6 +1074,11 @@ BulletClass * AircraftClass::Fire_At(AbstractClass * target, int which)
 			}
 		}
 	}
+
+	// A kamikaze missile is spent once it has fired (AircraftClass::Fire, 0x415EE0). The deletion is queued, so the caller may still use it.
+	if (IsKamikaze) {
+		Delete_Me();
+	}
 	return(bullet);
 }
 

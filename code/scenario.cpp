@@ -65,6 +65,7 @@
 #include "_bench.h"
 #include "_deploymentconfig.h"
 #include "_keyboar.h"
+#include "_kamikaze.h"
 #include "_logic.h"
 #include "_map.h"
 #include "_palette.h"
@@ -1214,6 +1215,7 @@ void Clear_Scenario(void)
 	PsychicDominatorClass::Clear();
 	IonStormClass::Clear_Special_Lighting();
 	RadSiteClass::Clear_All();
+	Kamikaze.Clear();
 	EMPulseClass::Reset();
 	VeinholeMonsterClass::Reset();
 
