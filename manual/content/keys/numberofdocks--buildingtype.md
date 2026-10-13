@@ -8,7 +8,7 @@ when_omitted:
   value: "1"
 ---
 
-A structure keeps one radio contact per dock, so that many objects can dock with it at once. A value below `1` still gives the structure one contact. A [`UnitReload=yes`](/keys/unitreload/) pad rearms and repairs every docked aircraft in turn. A [`UnitRepair=yes`](/keys/unitrepair/) structure repairs every docked object, each paying for its own steps. The stock Air Force Command sets `NumberOfDocks=4` and rearms four Harriers together.
+A structure keeps one radio contact per dock, so that many objects can dock with it at once. A value below `1` still gives the structure one contact. A [`UnitReload=yes`](/keys/unitreload/) pad rearms and repairs every docked aircraft in turn. A [`UnitRepair=yes`](/keys/unitrepair/) structure repairs only the object on its first dock. The stock Air Force Command sets `NumberOfDocks=4` and rearms four Harriers together.
 
 On a [`Helipad=yes`](/keys/helipad/) or [`UnitRepair=yes`](/keys/unitrepair/) structure, each dock has its own landing spot: the structure's center plus that dock's `DockingOffsetN=` from the structure's art section, where `N` counts from `0`. An offset is three numbers in leptons (X, Y, height), and an offset the art does not set is `0,0,0`. With one dock, every visitor uses `DockingOffset0=`. With several, an object takes the first free dock when it makes contact and keeps it until contact ends; an object that holds no dock is sent to the center. With `NumberOfDocks=0`, visitors use the center.
 
@@ -18,7 +18,7 @@ When infantry asks to dock at a [`Hospital=yes`](/keys/hospital/) or [`Armory=ye
 
 When a structure with several docks is [captured](/systems/capture/), every object on a dock is judged on its own: one standing within a quarter of a cell of its dock's spot changes owner with the structure, and any other is sent away.
 
-A `UnitRepair=yes` structure starts repairing an object only when it stands within a quarter of a cell of the structure's center, or 150 leptons for a hovercraft. Keep every `DockingOffsetN=` within that distance on such a structure; otherwise the object on that dock is never repaired.
+A `UnitRepair=yes` structure takes on the object on its first dock only when that object stands within a quarter of a cell of the structure's center. It starts repairing that object once the object has stopped within 100 leptons of the dock's spot, or within 200 leptons for a hovercraft or ship. An object on a later dock is never repaired. Keep the first `DockingOffset0=` within a quarter of a cell of the center; otherwise the object is never taken on.
 
 A free aircraft that a pad hands out with [`FreeUnit=`](/keys/freeunit/) or [`PadAircraft=`](/keys/padaircraft/) appears on its dock when the pad has several docks, and at the center when it has one. An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.
 
