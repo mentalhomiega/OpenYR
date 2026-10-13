@@ -162,6 +162,10 @@ void FactoryClass::AI(void)
 		int const passes = instant ? (int)STEP_COUNT : 1;
 		for (int index = 0; index < passes; index++) {
 			if (!Has_Completed() && (instant || Graphic_Logic()) ) {
+				// Graphic_Logic moves the stage on each timer tick, so the instant build takes that step here.
+				if (instant) {
+					Set_Stage(Fetch_Stage() + Fetch_Step());
+				}
 				IsDifferent = true;
 
 				int cost = Cost_Per_Tick();
