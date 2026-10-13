@@ -1369,13 +1369,15 @@ void BulletClass::Bullet_Explodes(bool forced)
 				coord = Fuse.Fuse_Target();
 			}
 
-			if (target != NULL && target->In_Which_Layer() != LAYER_GROUND) {
-				if (Distance(TarCom) < CELL_LEPTON / 2) {
-					coord = target->Target_Coord();
-				}
-			} else {
-				if (TarCom != NULL && Distance(TarCom) < 42) {
-					coord = TarCom->As_Coord();
+			if (!Class->IsInaccurate) {
+				if (target != NULL && target->In_Which_Layer() != LAYER_GROUND) {
+					if (Distance(TarCom) < CELL_LEPTON / 2) {
+						coord = target->Target_Coord();
+					}
+				} else {
+					if (TarCom != NULL && Distance(TarCom) < 42) {
+						coord = TarCom->As_Coord();
+					}
 				}
 			}
 		}

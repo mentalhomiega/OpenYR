@@ -24,7 +24,7 @@ Inaccurate=yes
 
 Two smaller effects apply with or without `Arcing`:
 
-- **The 32-lepton move is skipped.** A projectile that goes off within 32 leptons of its target's center is normally moved onto it, and an inaccurate one is not. Another move onto a target within 42 leptons, or 128 leptons for a target in the air, usually lands the blast on the target anyway. That later move does not apply with an [`EMEffect=yes`](/keys/emeffect/) warhead or a [`Splits=yes`](/keys/splits/) projectile, so only those two show the skip.
+- **The moves onto a target are skipped.** A projectile that goes off within 32 leptons of its target's center is normally moved onto it. So is one that goes off within 42 leptons of a target on the ground, or within 128 leptons of an airborne one, unless its warhead is [`EMEffect=yes`](/keys/emeffect/) or it is [`Splits=yes`](/keys/splits/). An inaccurate projectile is moved onto none of them, so its blast stays where it goes off.
 - **A computer player may keep the firer in the middle of its base.** When a computer player sends a vehicle, infantry soldier or aircraft to wait in its base, such as one it has just produced, it sends it either to the middle of the base or near an edge. It chooses the middle only when that object has no anti-air, anti-armor or anti-infantry value. An object whose primary weapon fires this projectile has half the anti-armor and anti-infantry value, so a weak weapon can round down to zero.
 
 Firing on the move does not make a shot inaccurate. Only this setting does.
