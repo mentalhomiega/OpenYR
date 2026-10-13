@@ -1299,9 +1299,28 @@ static void Can_Build_Step(StepType const & step)
 }
 
 
+/// <summary>
+/// Logs the bridge state of one cell, for a test that checks whether a span came down.
+/// </summary>
+/// <param name="step">A step whose argument is the cell's X and whose X field is its Y.</param>
+static void Bridge_Cell_Step(StepType const & step)
+{
+	CellClass const & c = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
+	DebugString("AUTOTEST   bridge %d,%d tile %d sub %d height %d overlay %d od %d deck %d under %d was %d ew %d rail %d road %d\n",
+		(int)c.CellID.X, (int)c.CellID.Y, (int)c.ITType, (int)c.SubTile, (int)c.Height, (int)c.Overlay, (int)c.OverlayData,
+		(int)c.IsBridgeDeck, (int)c.IsUnderBridge, (int)c.WasUnderBridge, (int)c.IsBridgeEastWest, (int)c.Is_Tile_Train_Bridge(), (int)c.Is_Tile_Bridge());
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
+
+	// bridge x y: see Bridge_Cell_Step. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "bridge") {
+		Bridge_Cell_Step(step);
+		return;
+	}
 
 	// weapons and airborne: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "weapons" || step.Command == "airborne") {
