@@ -18,8 +18,27 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	State(std::move(state)),
 	Service(service),
 	Initial(State.Selected),
-	InitialScale(State.Scale)
+	InitialScale(State.Scale),
+	InitialFullscreen(State.Fullscreen),
+	InitialVSync(State.VSync),
+	InitialIntegerScaling(State.IntegerScaling),
+	InitialFilter(State.Filter),
+	InitialFrameRate(State.FrameRate),
+	InitialCursorScale(State.CursorScale),
+	InitialRenderer(State.Renderer)
 {
+}
+
+
+static int Pick_Choice(std::vector<UIDisplayChoice> const & choices, int index, int fallback)
+{
+	return((index >= 0 && index < (int)choices.size()) ? index : fallback);
+}
+
+
+static bool Choice_Changed(std::vector<UIDisplayChoice> const & choices, int index, int initial)
+{
+	return(index != initial && index >= 0 && index < (int)choices.size());
 }
 
 
@@ -43,11 +62,53 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
 
+	} else if (intent.Name == "fullscreen") {
+		State.Fullscreen = (intent.Value != 0);
+
+	} else if (intent.Name == "vsync") {
+		State.VSync = (intent.Value != 0);
+
+	} else if (intent.Name == "integerscaling") {
+		State.IntegerScaling = (intent.Value != 0);
+
+	} else if (intent.Name == "filter") {
+		State.Filter = Pick_Choice(State.Filters, intent.Value, InitialFilter);
+
+	} else if (intent.Name == "framerate") {
+		State.FrameRate = Pick_Choice(State.FrameRates, intent.Value, InitialFrameRate);
+
+	} else if (intent.Name == "cursorscale") {
+		State.CursorScale = Pick_Choice(State.CursorScales, intent.Value, InitialCursorScale);
+
+	} else if (intent.Name == "renderer") {
+		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
+
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
 		Service.Set_Classic_Menus(State.ClassicMenus);
 		Service.Set_Modern_Interface(State.ModernInterface);
+		if (State.Fullscreen != InitialFullscreen) {
+			Service.Set_Fullscreen(State.Fullscreen);
+		}
+		if (State.VSync != InitialVSync) {
+			Service.Set_VSync(State.VSync);
+		}
+		if (State.IntegerScaling != InitialIntegerScaling) {
+			Service.Set_Integer_Scaling(State.IntegerScaling);
+		}
+		if (Choice_Changed(State.Filters, State.Filter, InitialFilter)) {
+			Service.Set_Filter(State.Filters[State.Filter].Value);
+		}
+		if (Choice_Changed(State.FrameRates, State.FrameRate, InitialFrameRate)) {
+			Service.Set_Frame_Rate(State.FrameRates[State.FrameRate].Value);
+		}
+		if (Choice_Changed(State.CursorScales, State.CursorScale, InitialCursorScale)) {
+			Service.Set_Cursor_Scale(State.CursorScales[State.CursorScale].Value);
+		}
+		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
+			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
+		}
 		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
 			Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
 			ScaleChanged = true;
@@ -123,6 +184,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("classicmenus");
 			Model.DirtyVariable("moderninterface");
 			Model.DirtyVariable("scale");
+			Model.DirtyVariable("fullscreen");
+			Model.DirtyVariable("vsync");
+			Model.DirtyVariable("integerscaling");
+			Model.DirtyVariable("filter");
+			Model.DirtyVariable("framerate");
+			Model.DirtyVariable("cursorscale");
+			Model.DirtyVariable("renderer");
 		}
 
 	protected:
@@ -142,9 +210,16 @@ class UIDisplayViewClass : public UIRmlViewClass
 			}
 			scale.RegisterMember("label", &UIDisplayScale::Label);
 
+			Rml::StructHandle<UIDisplayChoice> choice = model.RegisterStruct<UIDisplayChoice>();
+			if (!choice) {
+				return(false);
+			}
+			choice.RegisterMember("label", &UIDisplayChoice::Label);
+
 			UIDisplayState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIDisplayMode>>()
 				&& model.RegisterArray<std::vector<UIDisplayScale>>()
+				&& model.RegisterArray<std::vector<UIDisplayChoice>>()
 				&& model.Bind("scales", &state.Scales)
 				&& model.Bind("scale", &state.Scale)
 				&& model.Bind("modes", &state.Modes)
@@ -152,7 +227,18 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("stretch", &state.StretchMovies)
 				&& model.Bind("systemcursor", &state.SystemCursor)
 				&& model.Bind("classicmenus", &state.ClassicMenus)
-				&& model.Bind("moderninterface", &state.ModernInterface));
+				&& model.Bind("moderninterface", &state.ModernInterface)
+				&& model.Bind("fullscreen", &state.Fullscreen)
+				&& model.Bind("vsync", &state.VSync)
+				&& model.Bind("integerscaling", &state.IntegerScaling)
+				&& model.Bind("filters", &state.Filters)
+				&& model.Bind("filter", &state.Filter)
+				&& model.Bind("framerates", &state.FrameRates)
+				&& model.Bind("framerate", &state.FrameRate)
+				&& model.Bind("cursorscales", &state.CursorScales)
+				&& model.Bind("cursorscale", &state.CursorScale)
+				&& model.Bind("renderers", &state.Renderers)
+				&& model.Bind("renderer", &state.Renderer));
 		}
 
 	private:

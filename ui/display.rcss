@@ -10,7 +10,7 @@
 
 #reveal
 {
-	width: 344dp;
+	width: 600dp;
 	height: 424dp;
 	top: 50%;
 	margin-top: -212dp;
@@ -33,9 +33,26 @@
 	height: 15dp;
 }
 
-#modes-label
+#columns
 {
+	display: flex;
 	margin-top: 7dp;
+	height: 329dp;
+}
+
+#left
+{
+	width: 278dp;
+}
+
+#right
+{
+	width: 232dp;
+	margin-left: 24dp;
+}
+
+#modes-label, #window-label
+{
 	height: 17dp;
 }
 
@@ -45,17 +62,32 @@
 	height: 179dp;
 }
 
-#scale-row
+.row
 {
 	display: flex;
-	margin-top: 8dp;
+	margin-top: 5dp;
 	height: 24dp;
 }
 
-#scale-label
+#scale-row
+{
+	margin-top: 8dp;
+}
+
+.caption
+{
+	width: 132dp;
+	line-height: 24dp;
+}
+
+#scale-row .caption
 {
 	width: 150dp;
-	line-height: 24dp;
+}
+
+select
+{
+	width: 100dp;
 }
 
 #scale
@@ -63,14 +95,32 @@
 	width: 95dp;
 }
 
-#switch-stretch
+.check
+{
+	display: block;
+	margin-top: 3dp;
+}
+
+#switch-stretch, #switch-fullscreen
 {
 	margin-top: 8dp;
 }
 
-#switch-system-cursor, #switch-classic-menus, #switch-modern-interface
+#pointer-label, #renderer-label
+{
+	margin-top: 10dp;
+	height: 17dp;
+}
+
+#switch-system-cursor
+{
+	margin-top: 4dp;
+}
+
+#renderer-note
 {
 	margin-top: 3dp;
+	line-height: 17dp;
 }
 
 #buttons
@@ -84,12 +134,17 @@ button
 	width: 94dp;
 }
 
-#cancel
+#ok
 {
-	margin-left: 90dp;
+	margin-left: 137dp;
 }
 
-#scale selectbox
+#cancel
+{
+	margin-left: 46dp;
+}
+
+selectbox
 {
 	background-color: #0a0615;
 }

@@ -637,6 +637,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "WindowHeight", WindowHeight);
 	ConfigINI.Put_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode));
 	ConfigINI.Put_Bool("Video", "IntegerScaling", IntegerScaling);
+	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);

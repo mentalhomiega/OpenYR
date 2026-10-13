@@ -34,6 +34,14 @@ struct UIDisplayScale
 };
 
 
+// One entry of a list of settings values, such as a frame rate or a filter.
+struct UIDisplayChoice
+{
+	int Value = 0;
+	std::string Label;
+};
+
+
 class UIDisplayServiceClass
 {
 	public:
@@ -43,6 +51,13 @@ class UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) = 0;
 		virtual void Set_Modern_Interface(bool on) = 0;
 		virtual void Set_Interface_Scale(float scale) = 0;
+		virtual void Set_Fullscreen(bool on) = 0;
+		virtual void Set_VSync(bool on) = 0;
+		virtual void Set_Integer_Scaling(bool on) = 0;
+		virtual void Set_Filter(int mode) = 0;
+		virtual void Set_Frame_Rate(int rate) = 0;
+		virtual void Set_Cursor_Scale(int scale) = 0;
+		virtual void Set_Renderer(int renderer) = 0;
 };
 
 
@@ -56,6 +71,17 @@ struct UIDisplayState
 	bool ModernInterface = false;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
+	bool Fullscreen = false;
+	bool VSync = false;
+	bool IntegerScaling = false;
+	std::vector<UIDisplayChoice> Filters;
+	int Filter = 0;
+	std::vector<UIDisplayChoice> FrameRates;
+	int FrameRate = 0;
+	std::vector<UIDisplayChoice> CursorScales;
+	int CursorScale = 0;
+	std::vector<UIDisplayChoice> Renderers;
+	int Renderer = 0;
 };
 
 
@@ -74,6 +100,13 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		UIDisplayServiceClass & Service;
 		int Initial;
 		int InitialScale;
+		bool InitialFullscreen;
+		bool InitialVSync;
+		bool InitialIntegerScaling;
+		int InitialFilter;
+		int InitialFrameRate;
+		int InitialCursorScale;
+		int InitialRenderer;
 };
 
 

@@ -34,6 +34,10 @@ bool Main_Window_Client_Rect(int & x, int & y, int & width, int & height);
 // middle and keeping it inside the usable area of its display.
 void Main_Window_Resize(int width, int height);
 
+// Makes the window cover its display without changing the display's mode, or makes it a resizable
+// window with a client area of the size in pixels, kept inside the usable area of its display.
+void Main_Window_Set_Fullscreen(bool fullscreen, int width, int height);
+
 // Returns the refresh rate of the display showing the main window in hertz, or 0 when unknown.
 int Main_Window_Refresh_Rate(void);
 

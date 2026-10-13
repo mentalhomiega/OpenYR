@@ -10,8 +10,10 @@
 #include "always.h"
 
 #include "_ui.h"
+#include "bgfxbackend.h"
 #include "globals.h"
 #include "goptions.h"
+#include "misc.h"
 #include "numparse.h"
 #include "options.h"
 #include "ui/screens/display/uidisplay.h"
@@ -19,10 +21,12 @@
 #include "ui/uishell.h"
 #include "ui/uisettings.h"
 #include "ui/uiview.h"
+#include "sdl/sdlwindow.h"
 #include "video.h"
 #include "wwmouse.h"
 
 #include <cstdio>
+#include <initializer_list>
 
 
 namespace
@@ -68,7 +72,80 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			// The caller resets the display, which settles the frame size from this.
 			Options.InterfaceScale = scale;
 		}
+
+		virtual void Set_Fullscreen(bool on) override
+		{
+			if (WindowedMode == !on) {
+				return;
+			}
+
+			Options.Fullscreen = on;
+			WindowedMode = !on;
+			int const width = (Options.WindowWidth > 0) ? Options.WindowWidth : Options.ScreenWidth;
+			int const height = (Options.WindowHeight > 0) ? Options.WindowHeight : Options.ScreenHeight;
+			Main_Window_Set_Fullscreen(on, width, height);
+			Main_Window_Confine_Cursor(on);
+		}
+
+		virtual void Set_VSync(bool on) override
+		{
+			Options.VSync = on;
+			Backend_Set_VSync(on);
+		}
+
+		virtual void Set_Integer_Scaling(bool on) override
+		{
+			Options.IntegerScaling = on;
+			Video_Refresh_Scaling();
+		}
+
+		virtual void Set_Filter(int mode) override
+		{
+			Options.ScaleMode = mode;
+			Video_Refresh_Scaling();
+		}
+
+		virtual void Set_Frame_Rate(int rate) override
+		{
+			Options.RenderFrameRate = rate;
+		}
+
+		virtual void Set_Cursor_Scale(int scale) override
+		{
+			Options.CursorScale = scale;
+			Video_Refresh_Scaling();
+		}
+
+		virtual void Set_Renderer(int renderer) override
+		{
+			// The renderer is chosen when the game starts.
+			Options.Renderer = renderer;
+		}
 };
+
+
+// Adds the choices to the list and returns the index of the one with the current value, adding
+// the current value under its own label when the list does not have it.
+int Fill_Choices(std::vector<UIDisplayChoice> & list, std::initializer_list<UIDisplayChoice> choices, int current, char const * format)
+{
+	int picked = -1;
+	for (UIDisplayChoice const & choice : choices) {
+		if (choice.Value == current) {
+			picked = (int)list.size();
+		}
+		list.push_back(choice);
+	}
+	if (picked < 0) {
+		UIDisplayChoice choice;
+		choice.Value = current;
+		char buffer[32];
+		std::snprintf(buffer, sizeof(buffer), format, current);
+		choice.Label = buffer;
+		picked = (int)list.size();
+		list.push_back(choice);
+	}
+	return(picked);
+}
 
 UIDisplayEngineServiceClass _Service;
 
@@ -88,6 +165,37 @@ void UI_Display_State(UIDisplayState & state)
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
+	state.Fullscreen = !WindowedMode;
+	state.VSync = Options.VSync;
+	state.IntegerScaling = Options.IntegerScaling;
+
+	state.Filter = Fill_Choices(state.Filters, {
+		{VIDEO_SCALE_PIXELART, "Pixel art"},
+		{VIDEO_SCALE_NEAREST, "Sharp"},
+		{VIDEO_SCALE_LINEAR, "Smooth"}
+	}, Options.ScaleMode, "%d");
+	state.FrameRate = Fill_Choices(state.FrameRates, {
+		{0, "Off"},
+		{30, "30"},
+		{60, "60"},
+		{120, "120"},
+		{144, "144"},
+		{240, "240"}
+	}, Options.RenderFrameRate, "%d");
+	state.CursorScale = Fill_Choices(state.CursorScales, {
+		{0, "Auto"},
+		{1, "1x"},
+		{2, "2x"},
+		{3, "3x"},
+		{4, "4x"}
+	}, (Options.CursorScale < 0) ? 1 : Options.CursorScale, "%dx");
+	state.Renderer = Fill_Choices(state.Renderers, {
+		{BACKEND_RENDERER_AUTO, "Auto"},
+		{BACKEND_RENDERER_D3D11, "Direct3D 11"},
+		{BACKEND_RENDERER_D3D12, "Direct3D 12"},
+		{BACKEND_RENDERER_VULKAN, "Vulkan"},
+		{BACKEND_RENDERER_OPENGL, "OpenGL"}
+	}, Options.Renderer, "%d");
 
 	// Automatic, the usual steps, and whatever else the settings file has asked for.
 	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};

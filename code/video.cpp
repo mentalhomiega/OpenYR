@@ -281,6 +281,20 @@ void Video_On_Resize(int drawablewidth, int drawableheight)
 }
 
 
+void Video_Refresh_Scaling(void)
+{
+	if (!_Initialized) {
+		return;
+	}
+
+	Update_Scale_Info();
+	Refresh_Mouse_Pointer();
+	UIShell.On_Video_Change();
+	_Dirty.Invalidate_Frame();
+	Video_Mark_Overlay_Dirty();
+}
+
+
 /// <summary>
 /// Sets the refresh rate used to pace presentation.
 /// </summary>

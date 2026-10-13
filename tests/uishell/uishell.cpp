@@ -919,6 +919,13 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
+		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
+		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
+		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
+		virtual void Set_Filter(int mode) override { Calls.push_back("filter " + std::to_string(mode)); }
+		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
+		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
+		virtual void Set_Renderer(int renderer) override { Calls.push_back("renderer " + std::to_string(renderer)); }
 };
 
 
@@ -938,6 +945,11 @@ UIDisplayState Display_Fixture(void)
 	state.Selected = 1;
 	state.Scales = { { 0.0f, "Auto" }, { 1.0f, "1" }, { 1.5f, "1.5" }, { 2.0f, "2" }, { 2.5f, "2.5" }, { 3.0f, "3" } };
 	state.Scale = 0;
+	state.Fullscreen = true;
+	state.Filters = { { 2, "Pixel art" }, { 0, "Sharp" }, { 1, "Smooth" } };
+	state.FrameRates = { { 0, "Off" }, { 60, "60" }, { 144, "144" } };
+	state.CursorScales = { { 0, "Auto" }, { 1, "1x" }, { 2, "2x" } };
+	state.Renderers = { { 0, "Auto" }, { 1, "Direct3D 11" } };
 	return(state);
 }
 
@@ -991,6 +1003,32 @@ void Test_Display_Presenter(void)
 		Check(presenter.State.Scale == 3 && service.Calls.empty(), "the interface scale is held until the player accepts");
 		Drive(presenter, "ok");
 		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "scale 20" } && presenter.ScaleChanged && !presenter.Picked.has_value(), "accepting applies the interface scale and flags it for a reset");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "fullscreen", 0);
+		Drive(presenter, "vsync", 1);
+		Drive(presenter, "integerscaling", 1);
+		Drive(presenter, "filter", 2);
+		Drive(presenter, "framerate", 2);
+		Drive(presenter, "cursorscale", 2);
+		Drive(presenter, "renderer", 1);
+		Check(!presenter.State.Fullscreen && presenter.State.VSync && presenter.State.IntegerScaling && presenter.State.Filter == 2 && presenter.State.FrameRate == 2 && presenter.State.CursorScale == 2 && presenter.State.Renderer == 1 && service.Calls.empty(), "the window and renderer settings are held until the player accepts");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "fullscreen off", "vsync on", "integer scaling on", "filter 1", "frame rate 144", "cursor scale 2", "renderer 1" } && !presenter.Picked.has_value() && !presenter.ScaleChanged, "accepting applies each changed window and renderer setting by value");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "filter", 9);
+		Drive(presenter, "framerate", -1);
+		Drive(presenter, "fullscreen", 0);
+		Drive(presenter, "fullscreen", 1);
+		Drive(presenter, "ok");
+		Check(presenter.State.Filter == 0 && presenter.State.FrameRate == 0 && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off" }, "an out-of-range choice keeps the starting one and unchanged settings are not applied");
 	}
 
 	{
@@ -2868,14 +2906,34 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		context.Update();
 		Check(presenter.State.StretchMovies && stretch->HasAttribute("checked"), "a space on the switch turns it on");
 
+		auto focused = [&](char const * id) {
+			Rml::Element * element = document->GetElementById(id);
+			Rml::Element * focus = context.GetFocusElement();
+			return(focus != nullptr && (focus == element || focus->GetParentNode() == element));
+		};
+
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == cursor, "the pointer switch follows the movie switch");
+		Check(context.GetFocusElement() == classic, "the menu style switch follows the movie switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == classic, "the menu style switch follows the pointer switch");
+		Check(focused("modern-interface"), "the interface style switch follows the menu style switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == document->GetElementById("modern-interface"), "the interface style switch follows the menu style switch");
+		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == ok, "OK follows the switches");
+		Check(focused("vsync"), "the vertical sync switch follows full screen");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("integer-scaling"), "the whole step switch follows vertical sync");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("filter"), "the scaling filter follows the whole step switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("framerate"), "smooth motion follows the scaling filter");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == cursor, "the pointer switch follows smooth motion");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("renderer"), "the graphics interface follows the pointer size");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == ok, "OK follows the settings");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == cancel, "and Cancel follows OK");
 

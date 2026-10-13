@@ -625,8 +625,8 @@ body.lobby #ok, body.lobby #cancel
 
 .settings.tab-display #content
 {
-	padding-left: 141dp;
-	padding-right: 141dp;
+	padding-left: 13dp;
+	padding-right: 13dp;
 }
 
 .settings.tab-audio #content

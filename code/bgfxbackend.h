@@ -34,6 +34,7 @@ void Backend_Shutdown(void);
 
 bool Backend_Set_Frame_Size(int width, int height);
 void Backend_On_Resize(int drawablewidth, int drawableheight);
+void Backend_Set_VSync(bool vsync);
 
 // The frame's pixels of this 565 colour are see-through while a layer is drawn under the frame.
 unsigned short const BACKEND_LAYER_KEY = 0xF81F;

@@ -473,6 +473,26 @@ void Main_Window_Resize(int width, int height)
 }
 
 
+void Main_Window_Set_Fullscreen(bool fullscreen, int width, int height)
+{
+	if (_Window == nullptr) {
+		return;
+	}
+
+	if (fullscreen) {
+		SDL_SetWindowFullscreen(_Window, true);
+		SDL_SyncWindow(_Window);
+		return;
+	}
+
+	SDL_SetWindowFullscreen(_Window, false);
+	SDL_SyncWindow(_Window);
+	SDL_SetWindowResizable(_Window, true);
+	Main_Window_Resize(width, height);
+	SDL_SyncWindow(_Window);
+}
+
+
 int Main_Window_Refresh_Rate(void)
 {
 	if (_Window == nullptr) {

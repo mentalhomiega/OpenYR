@@ -596,6 +596,20 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 }
 
 
+void Backend_Set_VSync(bool vsync)
+{
+	unsigned int const flags = BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+	if (flags == _ResetFlags) {
+		return;
+	}
+
+	_ResetFlags = flags;
+	if (_Initialized) {
+		bgfx::reset((uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, _ResetFlags);
+	}
+}
+
+
 /// <summary>
 /// Submits the layer and then the frame over it, with the frame's key pixels see-through. False
 /// means nothing was submitted and the frame should be presented without the layer.
