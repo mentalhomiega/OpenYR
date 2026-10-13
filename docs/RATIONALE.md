@@ -98,11 +98,15 @@ builds the same values.
   arctangent of the `i`-th argument, which is why nearest rounding of
   `atan(n * K)` does not match. `Gamemd_Atan2` indexes the table by
   `trunc(y / x / K)`, so angles are quantized in steps of up to `K` near the x
-  axis. Facing from coordinates and from velocities uses it.
+  axis. Facing from coordinates and from velocities uses it, and so do the
+  simulation's shrapnel and fire directions, disk laser ring start, and base
+  placement and defense quadrants.
 
 Helpers the simulation switched to them include the integer and single
 precision length functions used by distance checks, the ballistic offset,
-and the coordinate move. Rendering and tool code keep the standard library.
+and the coordinate move. Rendering and tool code keep the standard library,
+except that the coordinate `Direction` helper, which some drawing code calls,
+uses `Gamemd_Atan2` too.
 
 ## Why the binary does not match exactly
 
