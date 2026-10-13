@@ -90,10 +90,7 @@ bool TeleportLocomotionClass::Is_Warping(void) const
 int TeleportLocomotionClass::Warp_Distance(Coord const & to) const
 {
 	Coord const from = LinkedTo->PositionCoord;
-	double const dx = double(from.X - to.X);
-	double const dy = double(from.Y - to.Y);
-	double const dz = double(from.Z - to.Z);
-	return(int(std::sqrt(dx * dx + dy * dy + dz * dz)));
+	return(Gamemd_Distance(from, to));
 }
 
 
