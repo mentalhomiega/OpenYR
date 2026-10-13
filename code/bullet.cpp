@@ -1906,7 +1906,7 @@ void BulletClass::Shrapnel(void)
 		Coord const to = target->Center_Coord();
 		TVelocity3D<double> velocity;
 		velocity.Set(0.0, 0.0, 0.0);
-		velocity.Set_Yaw(DirType(std::atan2((double)-(to.Y - from.Y), (double)(to.X - from.X))));
+		velocity.Set_Yaw(DirType(Gamemd_Atan2((double)-(to.Y - from.Y), (double)(to.X - from.X))));
 		velocity.Set_Speed((double)std::max<int>(weapon->MaxSpeed, 1));
 		velocity.Set_Pitch(DirType(0.785398));
 		if (!piece->Unlimbo(from, velocity)) {
