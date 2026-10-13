@@ -1126,12 +1126,16 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (required != -1 && (required & Own_Mask()) == 0) return(0);
 		if (forbidden != -1 && (forbidden & Own_Mask()) != 0) return(0);
 
+		// The unlock cheat skips the stolen tech, prerequisite and tech level gates.
+		bool const unlocked = Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, this);
+
 		TechnoTypeClass const * techno = (TechnoTypeClass const *)type;
-		if (techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
-		if (techno->IsRequiresStolenSovietTech && !IsSide1TechStolen) return(0);
-		if (techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
+		if (!unlocked && techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
+		if (!unlocked && techno->IsRequiresStolenSovietTech && !IsSide1TechStolen) return(0);
+		if (!unlocked && techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
 
 		TypeList<int> pre = ((TechnoTypeClass const *)type)->Prerequisite;
+		if (unlocked) pre.Clear();
 
 		int level = Control.TechLevel;
 #ifdef _DEBUG
@@ -1141,7 +1145,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		}
 #endif
 
-		if (((TechnoTypeClass const *)type)->Level > level) return(0);
+		if (!unlocked && ((TechnoTypeClass const *)type)->Level > level) return(0);
 
 		/*
 		**	The computer can always build everything.

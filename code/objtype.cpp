@@ -25,6 +25,7 @@
 #include "builtype.h"
 #include "ccfile.h"
 #include "coord.h"
+#include "debugmode.h"
 #include "globals.h"
 #include "house.h"
 #include "mixfile.h"
@@ -320,7 +321,7 @@ bool ObjectTypeClass::Can_Be_Built_At(BuildingClass const * building, bool needs
 
 	// The factory's side comes from its type's Owner list, not from the country it acts as (gamemd 0x5F7900).
 	int const ownable = Get_Ownable();
-	if ((building->Class->Get_Ownable() & ownable) == 0) {
+	if (!Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, house) && (building->Class->Get_Ownable() & ownable) == 0) {
 		return(false);
 	}
 	return(true);
