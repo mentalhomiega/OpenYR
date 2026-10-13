@@ -61,9 +61,11 @@ void DiskLaserClass::Fire(TechnoClass * owner, TechnoClass * target, WeaponTypeC
 
 	Coord const from = owner->Center_Coord();
 	Coord const to = target->Center_Coord();
-	double const degrees = std::atan2(double(to.Y - from.Y), double(to.X - from.X)) * 57.29577951308232;
-	int const nearest = (int)std::lround((degrees - 270.0) / 22.5);
-	StartPoint = (((nearest + RING_POINTS / 2) % RING_POINTS) + RING_POINTS) % RING_POINTS;
+	// DiskLaserClass::Fire (0x4A71A0) rounds the angle to a 16-bit facing of 65534 units per turn.
+	double const radians = Gamemd_Atan2(double(from.Y - to.Y), double(to.X - from.X));
+	int const facing = (int)(std::lround((radians - M_PI / 2) * (-65534.0 / (2.0 * M_PI))) & 0xFFFF);
+	int const ring = (((facing >> 11) + 1) >> 1) + RING_POINTS / 2;
+	StartPoint = ring & (RING_POINTS - 1);
 	DebugString("Disk laser: %s charges at %s\n", owner->TClass->Name(), target->TClass->Name());
 	Step = 0;
 	Delay = 0;
