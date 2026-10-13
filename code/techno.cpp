@@ -5365,8 +5365,10 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 					((InfantryTypeClass const *)ttype)->IsCapture)
 					)) {
 
+				// The attack cursor needs a weapon that can fire at the object, range aside, unless the force-fire key is held (TechnoClass::MouseOverObject, 0x700542).
 				int primary = What_Weapon_Should_I_Use((ObjectClass *)object);
-				if (Can_Player_Move() || In_Range((ObjectClass *)object, primary)) {
+				bool const can_fire = ctrldown || Can_Fire((ObjectClass *)object, primary) != FIRE_ILLEGAL;
+				if (can_fire && (Can_Player_Move() || In_Range((ObjectClass *)object, primary))) {
 					if (In_Range((ObjectClass *)object, primary) || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING
 						&& (((InfantryClass *)this)->Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable))) {
 						return(ACTION_ATTACK);
