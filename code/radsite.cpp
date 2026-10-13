@@ -215,6 +215,12 @@ void RadSiteClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadTimeLeft);
 	stream.Serialize(LevelTimer);
 	stream.Serialize(LightTimer);
+	// The saved timers are read but not used. gamemd's RadSiteClass::Load restarts both,
+	// so a loaded site fades one step on its first update.
+	if (stream.Is_Loading()) {
+		LevelTimer = 0;
+		LightTimer = 0;
+	}
 	stream.Serialize(Light);
 }
 
