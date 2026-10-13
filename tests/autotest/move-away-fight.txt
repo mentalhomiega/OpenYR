@@ -1,0 +1,43 @@
+; Move away from a fight (order step). Player tanks and infantry fight computer tanks and infantry,
+; then get the player's move order to a cell away from them (the order step gives the move order a
+; click gives, so the target is dropped as for a player).
+; Expected: the tanks and soldiers stay on Move while they are shot at, reach 50,36 and 50,38, and
+; then sit on Guard there. No unit's destination jumps back toward the enemy. Idle units at the
+; destination fire back at what comes into range. The where lines show mission, nav and target.
+30 command CenterBase
+300 own HTNK 60 36
+301 own HTNK 61 36
+302 own E1 60 38
+303 own E1 61 38
+310 spawn HTNK 66 36
+311 spawn HTNK 67 36
+312 spawn E1 66 38
+313 spawn E1 67 38
+400 strikeobj HTNK 66 36 3 land
+420 where HTNK
+421 where E1
+450 order HTNK 50 36
+451 order E1 50 38
+455 where HTNK
+456 where E1
+465 where HTNK
+466 where E1
+475 where HTNK
+476 where E1
+490 where HTNK
+491 where E1
+510 where HTNK
+511 where E1
+530 where HTNK
+531 where E1
+560 where HTNK
+561 where E1
+600 where HTNK
+601 where E1
+700 where HTNK
+701 where E1
+800 where HTNK
+801 where E1
+900 where HTNK
+901 where E1
+1000 quit

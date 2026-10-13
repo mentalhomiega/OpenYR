@@ -18,6 +18,8 @@
 **	place <TypeID>			places a finished structure at the first legal cell near the
 **							player's construction yard
 **	move <TypeID> <x> <y>	orders the player's objects of that type to a cell
+**	order <TypeID> <x> <y>	gives the player's objects of that type the move order a click gives, through the mission event,
+**							which drops their target as a player's order does
 **	attack <TypeID>			orders the player's objects of that type to attack the nearest
 **							structure of an enemy that has a base
 **	enemies					writes the structures of other houses and the count of their units
@@ -405,6 +407,18 @@ void Move(std::string const & name, int x, int y)
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
 		if (infantry->IsSelected) infantry->Assign_Destination(&Map[cell]), infantry->Assign_Mission(MISSION_MOVE);
+	}
+}
+
+
+void Order(std::string const & name, int x, int y)
+{
+	Cell const cell(x, y);
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
+		}
 	}
 }
 
@@ -1330,8 +1344,12 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "place") {
 		Place(step.Argument);
-	} else if (step.Command == "move") {
-		Move(step.Argument, step.X, step.Y);
+	} else if (step.Command == "move" || step.Command == "order") {
+		if (step.Command == "move") {
+			Move(step.Argument, step.X, step.Y);
+		} else {
+			Order(step.Argument, step.X, step.Y);
+		}
 	} else if (step.Command == "attack") {
 		Attack(step.Argument);
 	} else if (step.Command == "strike") {
