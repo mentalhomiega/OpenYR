@@ -839,8 +839,8 @@ test('A house counts every listed construction yard type towards its own', () =>
 	}
 	assert.match(
 		functionBody(source('code/objtype.cpp'), 'bool ObjectTypeClass::Can_Be_Built_At(BuildingClass const * building, bool needsnopower, bool legal, HouseClass const * house) const'),
-		/Rule->BuildConst\.Is_In_List\(building->Class\)/,
-		'every listed yard produces only for the country its record names',
+		/building->Class->Get_Ownable\(\) & ownable/,
+		'a factory produces a type when its own Owner list shares a country with the type\'s',
 	);
 });
 
@@ -879,7 +879,8 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 8, 'the availability test, the buildable scan, the harvester scan (Country_Unit) and the three defense scans ask the seam');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 6, 'the Owner tests of the availability test, the buildable scan, the harvester scan (Country_Unit) and the three defense scans ask the seam');
+	assert.match(house, /required & Own_Mask\(\)/, 'RequiredHouses and ForbiddenHouses test the house\'s own country');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 

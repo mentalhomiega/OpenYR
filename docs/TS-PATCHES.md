@@ -127,7 +127,7 @@ A row's link goes to the change record, or where there is none, to the manual pa
 | `buildconst_harvesterunit_baseunit.asm` | Chose each house's harvester, refinery and war factory by its country, and replaced `BaseUnit` with the house's first `Harvester=no` entry of `HarvesterUnit`. | Reworked: `BaseUnit` is its own list, and every such list is read for the country a house acts as. [base-unit-per-country], [role-lists-per-country], [house-acts-for-itself] |
 | `buildconst_harvesterunit_baseunit.asm` | Made Center Base find a yard built from any base unit. | Reworked: Center Base finds any `BuildConst` building, preferring the primary one. [center-base-buildconst] |
 | `sideindex_improvements_v2.asm` | Gave every country its own `ActsLike` index, except `Neutral` and `Special`. | Reworked: a house acts for its own country, and `[Sides]` declares every side. [house-acts-for-itself], [sides-declared-in-side-list], [side-base-building], [side-factory-prerequisite-planning], [lobby-side-entries-by-country], [ai-player-country-from-roster] |
-| `sideindex_improvements_v2.asm` | Required a construction yard of one of a structure's `Owner=` countries, even when the list names several. | Reworked: `MultiMCV` lets any yard build for its owner. [sidebar-gated-by-yard-country], [multi-mcv-option] |
+| `sideindex_improvements_v2.asm` | Required a construction yard of one of a structure's `Owner=` countries, even when the list names several. | Reworked: as in gamemd, a construction yard builds the structures whose `Owner=` list shares a country with its own type's. [captured-yard-builds-its-types-owners] |
 | `sideindex_improvements_v2.asm` | Made an AI trigger's side field `N` match a house whose `ActsLike` is `N−1`, with 0 matching all. | Reworked: the field is a position in `[Sides]`. [ai-trigger-side-by-position] |
 | Every product's `*_hacks.asm`, `spawner/spawner.asm` | Kept the player's country, not only GDI or Nod, when loading sidebar and speech archives. `SidebarHack` in the launch file did the same for the client's side value. | Reworked: the player's side comes from their country. [player-side-from-country], [side-roster-before-a-game] |
 | `savegame.asm` | Kept the player's GDI or Nod presentation across a save and load. | Reworked: the save records the player's country and its side. [player-side-from-country] |
@@ -444,7 +444,6 @@ yet.
 [move-to-cell-encoding]: ../manual/changes/move-to-cell-encoding.md
 [movie-aspect-fitting]: ../manual/changes/movie-aspect-fitting.md
 [multi-engineer-neutral-capture]: ../manual/changes/multi-engineer-neutral-capture.md
-[multi-mcv-option]: ../manual/changes/multi-mcv-option.md
 [multiplayer-movies]: ../manual/changes/multiplayer-movies.md
 [multiplayer-player-structures]: ../manual/changes/multiplayer-player-structures.md
 [multiplayer-save-frame-boundary]: ../manual/changes/multiplayer-save-frame-boundary.md
@@ -489,7 +488,7 @@ yet.
 [side-factory-prerequisite-planning]: ../manual/changes/side-factory-prerequisite-planning.md
 [side-roster-before-a-game]: ../manual/changes/side-roster-before-a-game.md
 [sidebar-cameo-ordering]: ../manual/changes/sidebar-cameo-ordering.md
-[sidebar-gated-by-yard-country]: ../manual/changes/sidebar-gated-by-yard-country.md
+[captured-yard-builds-its-types-owners]: ../manual/changes/captured-yard-builds-its-types-owners.md
 [sidebar-slot-ceiling]: ../manual/changes/sidebar-slot-ceiling.md
 [sidebar-strip-capacity]: ../manual/changes/sidebar-strip-capacity.md
 [sides-declared-in-side-list]: ../manual/changes/sides-declared-in-side-list.md
