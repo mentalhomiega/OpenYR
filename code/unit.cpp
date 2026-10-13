@@ -3888,7 +3888,7 @@ int UnitClass::Do_MISSION_HARVEST(void)
 					Status = HEADINGHOME;
 				} else if (anybay != NULL && (Class->IsTeleporter || Straight_Line_Leptons(Get_Coord(), anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
 					Cell cell = Cell(anybay->Get_Coord()) + Cell(anybay->Class->QueueingCell.X, anybay->Class->QueueingCell.Y);
-					Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, Map.Get_Cell_Zone(cell, Class->MZone), Class->MZone, false, Point2D(1, 1), false, true, false, false);
+					Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, -1, MZONE_NORMAL, false, Point2D(1, 1), false, false, false, true);
 					if (nearby != CELL_NONE) {
 						Assign_Destination(&Map[nearby]);
 					} else {
