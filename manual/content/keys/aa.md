@@ -15,6 +15,6 @@ An object does not return fire at an aircraft that damaged it unless the weapon 
 
 An `AA=yes` projectile detonates as soon as it comes within half a cell of its target when that target is an aircraft, landed or not, or a `JumpJet=yes` infantry in flight.
 
-With [`AG=no`](/keys/ag/) beside it, the weapon is air-only: it fires at no object on the ground. `AG` says when such a weapon can still be ordered to fire at a map cell. The default pairing, `AA=no` with `AG=yes`, is the ground-only mirror.
+With [`AG=no`](/keys/ag/) beside it, the automatic scan never picks an object on the ground for the weapon, and it cannot fire at a map cell. An order against an object on the ground is not refused because of `AG`. The default pairing, `AA=no` with `AG=yes`, is the ground-only mirror.
 
 Automatic target scans also read this setting. A weapon slot whose projectile is `AA=yes` adds aircraft to the kinds of target the object looks for, unless [`AV=yes`](/keys/av/) on the same projectile limits the slot to vehicles. [What each kind of object considers](/systems/target-selection/#what-each-kind-of-object-considers) says when an object's weapons fill that list. `AV` has no effect on the firing test.

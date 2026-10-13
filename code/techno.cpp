@@ -4245,11 +4245,10 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(LocomotorTarget == target ? FIRE_REARM : FIRE_ILLEGAL);
 	}
 
-	/*
-	**	If the object is on the ground, then don't allow firing if it can't fire upon ground objects.
-	*/
-	if (target->On_Ground() && !weapon->Bullet->IsAntiGround) {
-		goto CANT_FIRE;
+	// Only a map cell needs an anti-ground projectile (TechnoClass::GetFireError, 0x6FC7EB); an object is judged by
+	// NavalTargeting and LandTargeting, so an AG=no projectile such as ASWVirt still fires at a submarine on water.
+	if (techno == NULL && !target->In_Air() && !weapon->Bullet->IsAntiGround) {
+		return(FIRE_ILLEGAL);
 	}
 
 	check_rearm = true;

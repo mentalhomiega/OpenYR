@@ -7,9 +7,9 @@ when_omitted:
   value: "yes"
 ---
 
-A weapon whose projectile is not anti-ground cannot fire at an object on the ground. An object is on the ground when it is placed on the map and less than one terrain level above the ground beneath it; a placed hover vehicle always counts. This is how an anti-air weapon is kept from shooting at a landed aircraft. The test covers objects only, so it does not stop a weapon firing at a map cell.
+A weapon whose projectile is not anti-ground cannot fire at a map cell. The test does not apply to an object. A weapon fires at an object on the ground or on water as [`NavalTargeting`](/keys/navaltargeting/) and [`LandTargeting`](/keys/landtargeting/) allow, whatever its projectile's `AG`. An anti-air weapon can therefore be ordered to fire at a landed aircraft.
 
-A target the player orders goes through the same test as one the object picks for itself. An ordered attack uses a weapon slot that passes the test when the object has one. The exception is a second slot whose warhead does no damage to the target's armor: the first slot is then chosen, and the attack cannot fire.
+An ordered attack on an object does not check `AG`. The weapon slot is chosen as for any other target, and a slot whose warhead does no damage to the target's armor is passed over.
 
 A structure's attack cursor reads its first weapon slot. When that slot's projectile is `AG=no`, the player cannot order the structure to attack a map cell, or any object unless the object is airborne and the projectile is [`AA=yes`](/keys/aa/).
 
