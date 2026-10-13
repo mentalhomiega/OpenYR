@@ -143,7 +143,7 @@ void TemporalClass::Update(void)
 {
 	if (Owner->IsInOpenToppedTransport && Target != nullptr) {
 		Coord const delta = Owner->Center_Coord() - Target->Center_Coord();
-		double const distance = std::sqrt((double)delta.X * delta.X + (double)delta.Y * delta.Y + (double)delta.Z * delta.Z);
+		int const distance = delta.Gamemd_Length();
 		int const warp = Owner->Transporter != NULL ? Owner->Transporter->TClass->OpenToppedWarpDistance.value_or(Rule->OpenToppedWarpDistance) : Rule->OpenToppedWarpDistance;
 		if (distance > warp * CELL_LEPTON_W) {
 			Let_Go();
