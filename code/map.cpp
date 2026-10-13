@@ -5003,8 +5003,9 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 			Cell middle_cell = bridge_deck_cell->CellID;
 			int walk_steps = 0;
 			while (subtile != 2) {
-				// gamemd's walk (0x5715bb) has no step limit, so a walk that leaves the span would never end.
-				if (++walk_steps > 16) {
+				// Gives up after one full 16-bit wrap of the cell coordinates (gamemd 0x5715bb), since a walk that
+				// gets this far never meets a piece.
+				if (++walk_steps > 0x10000) {
 					return(false);
 				}
 				if (subtile < 2) {
@@ -5090,8 +5091,9 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 		Cell middle_cell = bridge_deck_cell->CellID;
 		int walk_steps = 0;
 		while (subtile != 4) {
-			// gamemd's walk (0x571aee) has no step limit, so a walk that leaves the span would never end.
-			if (++walk_steps > 16) {
+			// Gives up after one full 16-bit wrap of the cell coordinates (gamemd 0x571aee), since a walk that
+			// gets this far never meets a piece.
+			if (++walk_steps > 0x10000) {
 				return(false);
 			}
 			if (subtile < 4) {
