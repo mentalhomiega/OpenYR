@@ -51,7 +51,7 @@ BSurface * BlastSurfaces[80];
 const double WaveStartDistance = 0.0;
 const double WaveBandWidth = 57.0;
 const double WaveFrequency = 0.11;
-const double WaveAmplitudeFalloff = 25.0;
+const double WaveAmplitudeFalloff = 51.0;
 const double WaveRockScale = DEG_TO_RAD(360);
 const double WaveSpeedScale = 0.0125;
 
