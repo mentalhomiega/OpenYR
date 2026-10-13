@@ -1175,20 +1175,8 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 			if (tiberium != TIBERIUM_NONE) {
 				int damage = Tiberiums[tiberium]->Power / 10;
 				if (damage <= 1) damage = 1;
-				Coord coord = Get_Coord();
-				if (Take_Damage(damage, 0, Rule->C4Warhead, NULL, true) == RESULT_DESTROYED) {
-					if (Scen->IsTiberiumDeathToVisceroid) {
-						UnitClass * visceroid = new UnitClass(Rule->SmallVisceroid, House_From_HousesType(HouseTypeClass::From_Name("Neutral")));
-						if (visceroid) {
-							Coord cell_coord = Map[coord].Cell_Coord();
-							if ((Map[cell_coord].Flag.Composite & 0x020) == 0) {
-								ScenarioInit++;
-								visceroid->Unlimbo(coord);
-								ScenarioInit--;
-							}
-						}
-					}
-				}
+				// A tiberium death leaves no visceroid: gamemd never reads TiberiumDeathToVisceroid (ScenarioClass+0x34B3).
+				Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 			}
 		}
 	}
