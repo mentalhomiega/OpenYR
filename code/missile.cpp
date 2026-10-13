@@ -36,17 +36,19 @@
 /// <param name="airburst">Should the projectile detonate in the air rather than stoop?</param>
 /// <param name="veryhigh">Should the projectile cruise at extra altitude?</param>
 /// <returns>Returns with the distance still to be covered, with the vertical component
-/// discounted. A projectile with nothing to home on returns a nominal short distance.</returns>
+/// discounted. A projectile with nothing to home on turns toward a 45-degree climb, flies one
+/// frame, and returns its speed in whole leptons, truncated.</returns>
 int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const & target_coord, DirType const & rot, bool aircraft, bool airburst, bool veryhigh)
 {
 	if (target_coord == COORD_NONE) {
 		/*
-		 * Nothing to home on -- just level out (0x4200 is the level-out pitch).
+		 * Nothing to home on: turn toward a 45-degree climb, as the no-target branch of 0x5B20F0 does.
 		 */
 		DirType pitch = velocity.Get_Pitch();
-		pitch.Turn(DirType(Dir256(DIR_E + DIR_STEP_128)), rot);
+		pitch.Turn(DirType(DIR_NE), rot);
 		velocity.Set_Pitch(pitch);
-		return(1);
+		coord = coord + Point3D(velocity.X, velocity.Y, velocity.Z);
+		return(static_cast<int>(velocity.Speed()));
 	}
 
 	TVelocity3D<double> frame_velocity(velocity);

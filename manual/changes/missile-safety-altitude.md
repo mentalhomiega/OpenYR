@@ -1,5 +1,5 @@
 ---
-title: Detonate a targetless missile where it is
+title: Climb a targetless missile before it detonates
 category: fix
 release: 0.2.0
 targets:
@@ -13,4 +13,4 @@ credit:
 - MentalHomiega
 ---
 
-A homing projectile whose target is gone now detonates where it is, as Yuri's Revenge does, instead of at the corner of the map. A slow one detonates once it is `MissileSafetyAltitude` above the ground, set in `[General]` of `rulesmd.ini`.
+A homing projectile whose target is gone now climbs at 45 degrees and detonates once it is `MissileSafetyAltitude` above the ground, instead of at the corner of the map. A projectile slower than one lepton a frame detonates where it is. `MissileSafetyAltitude` is set in `[General]` of `rulesmd.ini`.

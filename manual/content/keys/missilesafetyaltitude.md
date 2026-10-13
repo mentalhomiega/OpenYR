@@ -12,4 +12,4 @@ when_omitted:
 MissileSafetyAltitude=750
 ```
 
-A [homing](/keys/rot/#scope-bullettype) projectile that has lost its target detonates once it is at least this many leptons above the ground. A projectile moving at 2 leptons a frame or more [already goes off at once](/systems/projectile-flight/#steered-flight) where it is, so the value matters only to a slower one.
+A [homing](/keys/rot/#scope-bullettype) projectile that has lost its target detonates once it is at least this many leptons above the ground. A projectile slower than 1 lepton a frame [goes off at once](/systems/projectile-flight/#steered-flight) where it is instead, so this value does not apply to it.

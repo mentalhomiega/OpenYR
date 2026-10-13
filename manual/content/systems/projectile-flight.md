@@ -177,8 +177,8 @@ A steered projectile that stops gaining on its target detonates instead of circl
 
 A steered projectile that crosses the height of a bridge deck over a bridge cell, from above or below, ends its flight at deck height.
 
-:::note[A homing shot that loses its target detonates where it is]
-A steered projectile loses its target when that target is destroyed, captured, enters a transport or a structure, or starts to cloak. With nothing to home on, the projectile stops moving and counts as arrived once its speed is 2 leptons a frame or more. It goes off where it is, in the air or on the ground. A slower projectile goes off only once it is at least [`MissileSafetyAltitude`](/keys/missilesafetyaltitude/) leptons above the ground.
+:::note[A homing shot that loses its target climbs away]
+A steered projectile loses its target when that target is destroyed, captured, enters a transport or a structure, or starts to cloak. With nothing to home on, the projectile turns toward a 45-degree climb at its turn allowance and keeps flying at its speed. It goes off once it is at least [`MissileSafetyAltitude`](/keys/missilesafetyaltitude/) leptons above the ground, or when it reaches the ground. A projectile slower than 1 lepton a frame counts as arrived and goes off where it is.
 :::
 
 ## Ballistic flight
