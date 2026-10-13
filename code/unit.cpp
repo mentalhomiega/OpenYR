@@ -4101,7 +4101,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			}
 		}
 		if (cellptr->Land_Type() != Class->MovementRestrictedTo && cellptr->Land_Type() != LAND_TUNNEL) {
-			if (cellptr->Overlay < OVERLAY_RAIL_BRIDGE1 || cellptr->Overlay > OVERLAY_RAIL_BRIDGE2 || cell_height == cellptr->Height) {
+			if (cellptr->Overlay < OVERLAY_RAILWAY_BRIDGE1 || cellptr->Overlay > OVERLAY_RAILWAY_BRIDGE2 || cell_height == cellptr->Height) {
 				return(MOVE_NO);
 			}
 		}

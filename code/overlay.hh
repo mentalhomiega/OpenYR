@@ -19,6 +19,10 @@
 **	The overlays are enumerated here. An overlay functions similarly to
 **	a transparent icon. It is placed over the terrain but usually falls
 **	"under" buildings, trees, and units.
+**
+**	Each value is a position in the rules' [OverlayTypes] list (0-based, in file order). Map files
+**	store that position, and gamemd tests it the same way. The names are older TS names; several
+**	positions hold other art in Yuri's Revenge (OVERLAY_GOLD1 is DUMMY there, for example).
 */
 enum OverlayType {
 	OVERLAY_NONE=-1,
@@ -93,6 +97,8 @@ enum OverlayType {
 	OVERLAY_TRAIN_TUNNEL_03,
 	OVERLAY_TRAIN_TUNNEL_04,
 
+	// RAILBRDG1 and RAILBRDG2 (YR index 59 and 60). Not bridge decks: gamemd never tests these
+	// indices. The railway deck is OVERLAY_RAILWAY_BRIDGE1/2. The entries stay so later values hold.
 	OVERLAY_RAIL_BRIDGE1,
 	OVERLAY_RAIL_BRIDGE2,
 
@@ -246,6 +252,14 @@ enum OverlayType {
 
 	OVERLAY_LOWBRIDGE_FIRST = OVERLAY_LOWBRIDGE_01,
 	OVERLAY_LOWBRIDGE_LAST = OVERLAY_LOWBRIDGE_28,
+
+	/*
+	 * Railway deck overlays in the Yuri's Revenge [OverlayTypes] list (BRIDGEB1 and BRIDGEB2,
+	 * whose rules name is "Wood Bridge"). gamemd lays railway spans with these and reads them as
+	 * the railway deck. RAILBRDG1 and RAILBRDG2 (OVERLAY_RAIL_BRIDGE1/2) are not bridge decks there.
+	 */
+	OVERLAY_RAILWAY_BRIDGE1 = 237,
+	OVERLAY_RAILWAY_BRIDGE2 = 238,
 };
 
 

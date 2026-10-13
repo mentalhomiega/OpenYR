@@ -1755,9 +1755,9 @@ void MapClass::Repair_Train_Bridge_Span(CellClass * cptr, FacingType dir, Rect *
 			int ittype = cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
 			if ((ittype != IsometricTileTypeClass::BridgeMiddle1 || (cellptr->SubTile & 1) != 0) && (ittype != IsometricTileTypeClass::BridgeMiddle2 || (unsigned char)cellptr->SubTile >= 5)) {
 				if (dir == FACING_E) {
-					new OverlayClass(OverlayTypes[OVERLAY_RAIL_BRIDGE1], cellptr->Fetch_CellID(), HOUSE_NONE);
+					new OverlayClass(OverlayTypes[OVERLAY_RAILWAY_BRIDGE1], cellptr->Fetch_CellID(), HOUSE_NONE);
 				} else {
-					new OverlayClass(OverlayTypes[OVERLAY_RAIL_BRIDGE2], cellptr->Fetch_CellID(), HOUSE_NONE);
+					new OverlayClass(OverlayTypes[OVERLAY_RAILWAY_BRIDGE2], cellptr->Fetch_CellID(), HOUSE_NONE);
 				}
 			}
 
@@ -12121,7 +12121,7 @@ bool MapClass::Damage_Bridge(Cell const & cell)
 		} else {
 			ittype = IsometricTileType(cptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
 			if (
-				(bcptr != NULL && (bcptr->Overlay == OVERLAY_RAIL_BRIDGE1 || bcptr->Overlay == OVERLAY_RAIL_BRIDGE2)) ||
+				(bcptr != NULL && (bcptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || bcptr->Overlay == OVERLAY_RAILWAY_BRIDGE2)) ||
 				(
 					ittype == IsometricTileTypeClass::BridgeMiddle1 + 0 ||
 					ittype == IsometricTileTypeClass::BridgeMiddle1 + 1 ||
@@ -12660,7 +12660,7 @@ void MapClass::Spawn_Bridge_Explosion(Cell const & cell)
 /// under-bridge path of BlowUpBridgeAt does. A railway middle piece, or a cell whose owner
 /// carries overlay 237 or 238 without a bridge flag, is blown up as a railway span
 /// (Blow_Up_Train_Bridge_At). A road middle piece is left alone. A concrete low bridge overlay
-/// is not ported (see Destroy_Concrete_Bridge_At).
+/// (205 to 230) is not ported and takes no action here (see Destroy_Concrete_Bridge_At).
 /// </summary>
 /// <param name="cell">The cell to damage.</param>
 /// <returns>bool; Did a span come down?</returns>
@@ -12673,7 +12673,7 @@ bool MapClass::Damage_Bridge_At_Cell(Cell const & cell)
 	if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_26) {
 		result = Damage_Bridge(cell);
 
-	} else if (overlay < 206 || overlay > 230) {
+	} else if (overlay < 205 || overlay > 230) {
 		CellClass * owner = NULL;
 		bool handled = false;
 
@@ -12694,7 +12694,7 @@ bool MapClass::Damage_Bridge_At_Cell(Cell const & cell)
 				int const rail = Bridge_Tile_Position(cptr, IsometricTileTypeClass::TrainBridgeSet);
 				bool const rail_middle = (rail >= IsometricTileTypeClass::BridgeMiddle1 && rail <= IsometricTileTypeClass::BridgeMiddle1 + 3) ||
 					(rail >= IsometricTileTypeClass::BridgeMiddle2 && rail <= IsometricTileTypeClass::BridgeMiddle2 + 3);
-				bool const owner_rail = owner != NULL && (owner->Overlay == 237 || owner->Overlay == 238);
+				bool const owner_rail = owner != NULL && (owner->Overlay == OVERLAY_RAILWAY_BRIDGE1 || owner->Overlay == OVERLAY_RAILWAY_BRIDGE2);
 
 				if (owner_rail && Is_Under_Bridge(cptr)) {
 					result = Damage_Train_Bridge(cell);

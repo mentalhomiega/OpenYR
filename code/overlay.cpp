@@ -166,6 +166,8 @@ bool OverlayClass::Mark(MarkType mark)
 				return(false);
 			}
 
+			// Overlays 24, 25, 237 and 238 flag their deck footprint, as gamemd's OverlayClass::Mark does.
+			// RAILBRDG (59 and 60) carries no flags there, so it carries none here.
 			if (type == OVERLAY_BRIDGE1 || type == OVERLAY_BRIDGE2) {
 				if (type == OVERLAY_BRIDGE1) {
 					cellptr->Set_Under_Bridge(FACING_N);
@@ -174,8 +176,8 @@ bool OverlayClass::Mark(MarkType mark)
 				}
 			}
 
-			if (type == OVERLAY_RAIL_BRIDGE1 || type == OVERLAY_RAIL_BRIDGE2) {
-				if (type == OVERLAY_RAIL_BRIDGE1) {
+			if (type == OVERLAY_RAILWAY_BRIDGE1 || type == OVERLAY_RAILWAY_BRIDGE2) {
+				if (type == OVERLAY_RAILWAY_BRIDGE1) {
 					cellptr->Set_Under_Rail_Bridge(FACING_N);
 				} else {
 					cellptr->Set_Under_Rail_Bridge(FACING_W);
@@ -306,7 +308,7 @@ bool OverlayClass::Mark(MarkType mark)
 						clear = cellptr->Is_Clear_To_Move(SPEED_TRACK, false, false);
 					} else {
 						if (Class->HeapID == OVERLAY_BRIDGE1 || Class->HeapID == OVERLAY_BRIDGE2 ||
-								Class->HeapID == OVERLAY_RAIL_BRIDGE1 || Class->HeapID == OVERLAY_RAIL_BRIDGE2) {
+								Class->HeapID == OVERLAY_RAILWAY_BRIDGE1 || Class->HeapID == OVERLAY_RAILWAY_BRIDGE2) {
 							clear = true;
 						} else {
 							if (Class->HeapID == OVERLAY_TIBERIUM01) {
@@ -324,7 +326,7 @@ bool OverlayClass::Mark(MarkType mark)
 				if ((ScenarioInit || cellptr->Overlay == OVERLAY_NONE || !OverlayTypes[cellptr->Overlay]->IsOverrides) && clear) {
 
 					cellptr->Overlay = Class->HeapID;
-					if (type != OVERLAY_BRIDGE1 && type != OVERLAY_BRIDGE2 && type != OVERLAY_RAIL_BRIDGE1 && type != OVERLAY_RAIL_BRIDGE2) {
+					if (type != OVERLAY_BRIDGE1 && type != OVERLAY_BRIDGE2 && type != OVERLAY_RAILWAY_BRIDGE1 && type != OVERLAY_RAILWAY_BRIDGE2) {
 						cellptr->OverlayData = 0;
 					}
 
@@ -426,7 +428,7 @@ void OverlayClass::Read_INI(CCINIClass const & ini)
 							new OverlayClass(OverlayTypes[classid], cell);
 
 							if ((int)classid == OVERLAY_BRIDGE1 || (int)classid == OVERLAY_BRIDGE2 ||
-								(int)classid == OVERLAY_RAIL_BRIDGE1 || (int)classid == OVERLAY_RAIL_BRIDGE2) {
+								(int)classid == OVERLAY_RAILWAY_BRIDGE1 || (int)classid == OVERLAY_RAILWAY_BRIDGE2) {
 								(&Map[cell])->OverlayData = old_overlay_data;
 							}
 						}
