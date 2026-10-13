@@ -4,15 +4,22 @@ This page sets up a CnCNet client for testing an OpenYR build. It covers only ou
 
 ## Set up a separate client folder
 
-Keep a second copy of the Yuri's Revenge client for OpenYR, in its own folder, so your normal install stays as it is.
+The CnCNet client for Yuri's Revenge is installed into a Yuri's Revenge game folder. Copy that whole folder, game and client together, to a new folder for OpenYR, so your normal install stays as it is.
 
-Unpack the OpenYR build for the test into that folder. The build contains `Game.exe`, `Language.dll` and the `ui` folder.
+Unpack the OpenYR build for the test into the copy. The build contains `Game.exe`, `Language.dll` and the `ui` folder; the game's own files come from the folder you copied.
 
 Everyone in a match must run the same OpenYR build. A build that differs from the others can stop a join or cause a desync.
 
 ## Point the client at our executable
 
-The client starts the file named by the first entry of `GameExecutableNames`, in the `[Settings]` section of `ClientDefinitions.ini`. The default is `Game.exe`, which is our executable's name, so the entry only needs changing if you rename the file.
+The client starts the file named by the first entry of `GameExecutableNames`, in the `[Settings]` section of `ClientDefinitions.ini` (in the client's `Resources` folder). The Yuri's Revenge client names CnCNet's own launcher there, so change the entry to our executable:
+
+```ini title="ClientDefinitions.ini"
+[Settings]
+GameExecutableNames=Game.exe
+```
+
+We have not yet checked this against a running client. If the client refuses to start the game, or warns that game files are modified, tell us what it says.
 
 Pass extra launch options with `ExtraCommandLineParams`, in the same section. The client adds them to the command line after `-SPAWN`.
 
@@ -42,7 +49,7 @@ The game writes its logs to a `Debug` folder beside `Game.exe`:
 - `DEBUG_<date>_<time>.LOG` is the debug log of one game.
 - `SYNC_H<heap>_<date>_<time>_F<frame>.LOG` is the out-of-sync report, written when a game goes out of sync.
 
-The game deletes older `DEBUG_` and `SYNC_` files when a new game starts, so send the files soon after a test.
+The game deletes debug logs older than 14 days when it starts, so send the files soon after a test.
 
 ## After a desync
 
