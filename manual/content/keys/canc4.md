@@ -13,6 +13,8 @@ A player's soldier with [`C4=yes`](/keys/c4/) or the `C4` ability does not plant
 
 A structure with `CanC4=no` also takes at least one point from each hit, even one that its armor and the warhead's [`Verses`](/keys/verses/) reduce to nothing. A structure with the default `CanC4=yes` takes no damage from such a hit.
 
+A healing hit, one with negative `Damage` such as the medic's Heal weapon, also costs it one point, even when it is undamaged. The base heal crate costs one point only when the structure is damaged.
+
 ```ini title="rulesmd.ini"
 [MYBUNKER] ; example BuildingType
 CanC4=no
