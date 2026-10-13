@@ -5033,8 +5033,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				if (a == NULL && IsInOpenToppedTransport) {
 					a = weapon->OpenToppedAnim;
 				}
+				// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
 				bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
-				if (garrison_fire && weapon->OccupantAnim != NULL) {
+				if (garrison_fire) {
 					a = weapon->OccupantAnim;
 				}
 
@@ -5055,6 +5056,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					if (RTTI == RTTI_BUILDING) {
 						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
 						anim->ZAdjust = std::min(zadjust, 0);
+						// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
+						if (garrison->Occupants.Count() > 0) {
+							anim->ZAdjust = -200;
+						}
 					}
 					if (anim != NULL && RTTI != RTTI_BUILDING) {
 						anim->Attach_To(this);
