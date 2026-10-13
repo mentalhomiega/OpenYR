@@ -973,7 +973,8 @@ int TechnoClass::Time_To_Build(void) const
 	double speed = 1.0 - (1.0 - power) * Rule->LowPowerPenaltyModifier;
 	speed = std::max(speed, Rule->MinLowPowerProductionSpeed);
 	if (power < 1.0) speed = std::min(speed, Rule->MaxLowPowerProductionSpeed);
-	if (speed == 0.0) speed = 0.01;
+	// The floor is gamemd's float32 0.01 (TechnoClass::TimeToBuild, 0x7F4E34), not the double.
+	if (speed == 0.0) speed = 0.01f;
 	val /= speed;
 
 	int extra = House->Factory_Count(RTTI) - 1;
