@@ -147,3 +147,52 @@ strength, mission, limbo state and owner, each house's credits, and the scenario
 state. Logging it does not change the game. Run the same script, map and seed in two builds; the
 first frame whose hash differs is where their gameplay diverged. A script that starts with
 `1 hash 60` logs once a second at 60 game frames a second.
+
+## Two-copy sync test
+
+`scripts/run_netsync.ps1`, in the workspace that hosts this repository, runs two copies of one build as a two-player match over 127.0.0.1. It then reports whether the copies stayed in step. Both copies run hidden and muted, as in `run_autotest.ps1`.
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_netsync.ps1 -Build agent17 -Seconds 400
+```
+
+Each copy starts with `-SYNCLOG`, which writes one line to its debug log for every game frame:
+
+```text
+SYNC frame 400 crc 6134918a
+```
+
+The value is the frame check value the network already compares. A copy writes it into the frame info it sends, and the other copy checks it. While the copies agree, their logs hold the same value on every frame. The check value covers the position and facing of each infantry, unit and building, the position and type of each map and logic object, and the scenario's random-number state. It does not cover credits or other house state; the `hash` command does.
+
+The runner reports:
+
+- the ticks each copy played, with its first and last frame;
+- whether either copy reported an out-of-sync game, and the report files it wrote;
+- the first frame whose check values differ;
+- when a desync was reported, the first differing lines of the two out-of-sync reports, from the houses section on.
+
+The exit code is `0` when the copies agree on every common frame, `3` when they disagree or a desync was reported, and `4` when the copies share no frame.
+
+| Parameter | Default | Effect |
+| --- | --- | --- |
+| `-Build` | `src` | The build to run, named as in `run_autotest.ps1` |
+| `-Map` | `XMP29U2.MAP` | The skirmish map |
+| `-Seconds` | `120` | How long both copies run before the runner stops them |
+| `-AI` | `2` | Computer players, seated the same way on both copies |
+| `-AICountries` | the game's choice | Countries for the computer players in seat order, such as `5,6` |
+| `-ScriptA`, `-ScriptB` | none | An autotest script for one copy |
+| `-Seed` | `1` | The match seed, the same on both copies |
+| `-PortA`, `-PortB` | `24601`, `24602` | The loopback ports the copies listen on |
+| `-KeepDir` | none | A folder that receives both debug logs and any out-of-sync reports |
+| `-ForceDesyncB` | `0` | Corrupts side B's check value at that frame, as `-DESYNCTEST=` does, to test the detection |
+
+Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
+
+- `[Settings] BindAddress=127.0.0.1` makes each socket listen on loopback only, so nothing listens on the network.
+- The runner writes `0 log NETSYNC_SIDE_A` (or `_B`) as the first line of each copy's script. The `log` command keeps only one word of its text, so the marker has no spaces, and the runner finds each copy's debug log by it.
+- Both copies write to the build's `Debug` folder. Each run deletes the `DEBUG_*.LOG` and `SYNC_*.LOG` files there first, so use `-KeepDir` to keep a run's logs.
+- Runs of one build take turns, as with `run_autotest.ps1`, and the runner holds two of the four game slots.
+
+The out-of-sync comparison is positional: it compares line N of one report with line N of the other. One object that appears only on one side shifts every line after it, so read the first difference, not the whole list.
+
+`-ForceDesyncB` is the check that the runner detects a desync. With `-ForceDesyncB 400`, the first mismatching tick is 400 and the runner exits with `3`.
