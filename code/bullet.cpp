@@ -679,9 +679,9 @@ void BulletClass::AI(void)
 
 		/*
 		 * Otherwise see if the projectile ran into a wall or a building on the
-		 * way. The firer's own building, a dormant laser fence, a vehicle that
-		 * happens to be deployed, and anything belonging to an ally are all
-		 * passed through harmlessly.
+		 * way. The firer's own building, a dormant laser fence, a one-cell building
+		 * that undeploys into a vehicle (BuildingClass::IsStrange, 0x457620), and
+		 * anything belonging to an ally are all passed through harmlessly.
 		 */
 		bool hit_obstacle = false;
 		if (!fell_through_bridge && !rose_through_bridge) {
@@ -693,7 +693,7 @@ void BulletClass::AI(void)
 						if (building == payback || building->Class->IsLaserFence && building->LaserFenceFrame >= 8) {
 							hit_obstacle = false;
 						}
-						if (building->Considered_Vehicle()) {
+						if (building->Class->Is_Single_Cell_Vehicle()) {
 							hit_obstacle = false;
 						}
 						if (payback != NULL && payback->House->Is_Ally(building)) {

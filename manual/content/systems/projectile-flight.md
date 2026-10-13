@@ -195,7 +195,7 @@ An obstacle is a structure or a wall in the cell, and it counts only while the p
 
 - the structure that fired it;
 - a [slack laser fence segment](/systems/laser-fences/#what-a-live-run-stops);
-- a structure that counts as a deployed vehicle;
+- a one-cell structure whose type names an [`UndeploysInto`](/keys/undeploysinto/) vehicle;
 - a friendly structure.
 
 Walls have no exemptions, so a wall also stops ballistic fire from its owner's house and allies. Only two overlays count as walls in this test: the ones at positions 2 and 26 of the `[OverlayTypes]` list, counting from 0. The stock list puts `GAWALL` and `NAWALL` there.
