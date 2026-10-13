@@ -4228,10 +4228,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 
 	/*
 	**	Can only fire anti-aircraft weapons against aircraft unless the aircraft is
-	**	sitting on the ground.
+	**	sitting on the ground. The refusal is FIRE_ILLEGAL, except that this object's locomotor
+	**	target gets FIRE_REARM (TechnoClass::GetFireError, 0x6FC716).
 	*/
 	if (target->In_Air() && !weapon->Bullet->IsAntiAircraft) {
-		goto CANT_FIRE;
+		return(LocomotorTarget == target ? FIRE_REARM : FIRE_ILLEGAL);
 	}
 
 	/*
