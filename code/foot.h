@@ -152,6 +152,13 @@ class FootClass : public TechnoClass
 		DynamicVectorClass<PlannedOrderClass> PlannedOrders;
 
 		/*
+		 * The place the unit is heading for under the planned order it is carrying out, or an
+		 * invalid target when no planned order is in progress. The overlay draws it as the leg
+		 * in progress. Like PlannedOrders, it is not saved.
+		 */
+		xTargetClass PlannedLeg;
+
+		/*
 		**
 		**	This is the desired destination of the unit. The unit will attempt to head
 		**	toward this target (avoiding intervening obstacles).

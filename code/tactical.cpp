@@ -46,6 +46,7 @@
 #include "radbeam.h"
 #include "fog.h"
 #include "font.h"
+#include "foot.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -1303,6 +1304,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Surface * savedlogical = LogicalSurface;
 		LogicalSurface = composite;
 		Draw_Waypoints(false);
+		Draw_Planned_Orders(false);
 		Draw_Rally_Points(false);
 		Draw_Placement(false);
 
@@ -1331,6 +1333,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 
 		Draw_Rubber_Band();
 		Draw_Waypoints(true);
+		Draw_Planned_Orders(true);
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
 		Draw_Placement_Range();
@@ -3625,6 +3628,37 @@ static bool Draw_WaypointPoint_Line_Style[8] = {
 };
 
 
+/*
+ * The animated dashed-line drawer cycles a few entries near the start of the mouse drawer's
+ * translation table to make the line "march". The guard keeps those entries as they were before
+ * the overlay and restores them when it goes out of scope, so the mouse cursor is drawn unchanged.
+ */
+class Dash_Table_Restore
+{
+	public:
+		Dash_Table_Restore(void) : Table((int *)((unsigned short *)MouseDrawer->Get_Translate_Table() + 1))
+		{
+			for (int i = 0; i < 4; i++) {
+				Saved[i] = Table[i];
+			}
+		}
+
+		~Dash_Table_Restore(void)
+		{
+			for (int i = 0; i < 4; i++) {
+				Table[i] = Saved[i];
+			}
+		}
+
+		Dash_Table_Restore(Dash_Table_Restore const &) = delete;
+		Dash_Table_Restore & operator = (Dash_Table_Restore const &) = delete;
+
+	private:
+		int * Table;
+		int Saved[4];
+};
+
+
 /// <summary>
 /// Draws the local player's waypoint paths over the tactical view.
 /// Each waypoint on screen is marked with the waypoint cursor and its number within the
@@ -3642,16 +3676,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 		return;
 	}
 
-	/*
-	 * The animated dashed-line drawer cycles a few entries near the start of the mouse
-	 * drawer's translation table to make the line "march". Preserve those entries up front
-	 * and restore them once every path has been drawn.
-	 */
-	int * dashtable = (int *)((unsigned short *)MouseDrawer->Get_Translate_Table() + 1);
-	int dashsave0 = dashtable[0];
-	int dashsave1 = dashtable[1];
-	int dashsave2 = dashtable[2];
-	int dashsave3 = dashtable[3];
+	Dash_Table_Restore const dashtable;
 
 	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHP");
 	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
@@ -3715,13 +3740,115 @@ void Tactical::Draw_Waypoints(bool inshroud)
 		}
 	}
 
+}
+
+
+// Returns false when the target names neither a live object nor a cell. A cell's ground height is
+// used, lifted onto a bridge deck, so the marker sits on the drawn surface.
+static bool Planned_Leg_Coord(xTargetClass const & leg, Coord & coord)
+{
+	AbstractClass * abstract = leg.As_Abstract();
+	if (abstract == NULL) {
+		return(false);
+	}
+
+	coord = abstract->Center_Coord();
+	if (leg.As_Cell() != NULL) {
+		coord.Z = Map.Get_Height_GL(coord);
+		if (Map[coord].IsUnderBridge) {
+			coord.Z += BRIDGE_LEPTON_HEIGHT;
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Draws the planned orders of the local player's units over the tactical view.
+/// Each plan runs from its unit through the destination of each leg still to run. The leg in
+/// progress is drawn unnumbered, and each queued order is marked with the waypoint cursor and
+/// its index in the queue. Every leg is an animated dashed line.
+/// </summary>
+/// <param name="inshroud">Draw the plans under shroud rather than the visible ones?</param>
+void Tactical::Draw_Planned_Orders(bool inshroud)
+{
+	if (Debug_Map) {
+		return;
+	}
+
+	Dash_Table_Restore const dashtable;
+
+	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
+	int frame = Map.Get_Mouse_Start_Frame(MOUSE_WAYPOINT);
+	frame += WaypointAnimCounter % Map.Get_Mouse_Frame_Count(MOUSE_WAYPOINT);
+
+	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHP");
+	unsigned color = MouseDrawer->Convert_Pixel(3);
+	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
+
+	auto draw_leg = [&](Coord const & from, Coord const & to) {
+		Point2D start;
+		Point2D end;
+		Coord_To_Pixel(from, start);
+		Coord_To_Pixel(to, end);
+		start.Y += TacticalRect.Y;
+		end.Y += TacticalRect.Y;
+
+		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
+			phase = LogicalSurface->Draw_Masked_Dashed_Line(start, end, color, Draw_WaypointPoint_Line_Style, phase, inshroud);
+		}
+	};
+
 	/*
-	 * Restore the translation table entries the dashed-line drawer animated.
+	 * The marker is drawn only when the place lies within the padded view and on the requested
+	 * side of the shroud. A negative index leaves the marker unnumbered.
 	 */
-	dashtable[0] = dashsave0;
-	dashtable[1] = dashsave1;
-	dashtable[2] = dashsave2;
-	dashtable[3] = dashsave3;
+	auto draw_marker = [&](Coord const & at, int index) {
+		Point2D pixel;
+		bool onscreen = Coord_To_Pixel(at, pixel) && (Map.Is_Shrouded(at) == inshroud);
+		pixel.Y += TacticalRect.Y;
+		if (!onscreen) {
+			return;
+		}
+
+		Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
+		Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
+
+		if (index >= 0) {
+			char buffer[8];
+			sprintf(buffer, "%d", index);
+			Point2D label(pixel.X - 1, pixel.Y - (TacticalRect.Y + 1) - 25);
+			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, label, ColorSchemes[coloridx], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
+		}
+	};
+
+	for (int footindex = 0; footindex < Feet.Count(); footindex++) {
+		FootClass * foot = Feet[footindex];
+		if (foot->House != PlayerPtr || !foot->IsActive || foot->IsInLimbo) {
+			continue;
+		}
+		if (!foot->PlannedLeg.Is_Valid() && foot->PlannedOrders.Count() == 0) {
+			continue;
+		}
+
+		Coord from = foot->Center_Coord();
+		Coord to;
+		if (Planned_Leg_Coord(foot->PlannedLeg, to)) {
+			draw_leg(from, to);
+			draw_marker(to, -1);
+			from = to;
+		}
+
+		for (int index = 0; index < foot->PlannedOrders.Count(); index++) {
+			PlannedOrderClass const & order = foot->PlannedOrders[index];
+			xTargetClass const & place = order.Destination.Is_Valid() ? order.Destination : order.Target;
+			if (Planned_Leg_Coord(place, to)) {
+				draw_leg(from, to);
+				draw_marker(to, index);
+				from = to;
+			}
+		}
+	}
 }
 
 

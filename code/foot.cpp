@@ -215,6 +215,7 @@ FootClass::FootClass(HouseClass * house) :
 	NextWaypoint(0)
 {
 	std::fill(std::begin(Path), std::end(Path), FACING_NONE);
+	PlannedLeg.Invalidate();
 	Feet.Add(this);
 	TeamPtrTracker.Add(this);
 }
@@ -2235,6 +2236,7 @@ bool FootClass::Advance_Planned_Order(void)
 	}
 	if (PlannedOrders.Count() == 0) {
 		IsPlanRunning = false;
+		PlannedLeg.Invalidate();
 		return(false);
 	}
 
@@ -2246,6 +2248,7 @@ bool FootClass::Advance_Planned_Order(void)
 		return(false);
 	}
 
+	PlannedLeg = order.Destination.Is_Valid() ? order.Destination : order.Target;
 	EventClass leg(House->HeapID, EventClass::MEGAMISSION, TargetClass(this), order.Mission, order.Target, order.Destination);
 	leg.Execute_Planned_Leg();
 	return(true);
@@ -2259,6 +2262,7 @@ void FootClass::Clear_Planned_Orders(void)
 {
 	PlannedOrders.Clear();
 	IsPlanRunning = false;
+	PlannedLeg.Invalidate();
 }
 
 

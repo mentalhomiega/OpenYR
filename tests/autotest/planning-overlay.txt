@@ -1,0 +1,35 @@
+; Planned-order overlay: each planned leg is drawn from its unit through the destinations queued after it.
+; A queued destination carries the waypoint cursor and its index in the queue, from 0. The leg in progress
+; is drawn with no index. Run in a skirmish on the default map, as planning-legs.txt does. The screenshots
+; come from ScreenCapture, so the runner copies them with -ShotDir.
+; Expected:
+;   frame 340: planning is on; three queued legs, indexes 0, 1 and 2 (planstate: orders 3 running 0).
+;   frame 352: the first leg is in progress; indexes 0 and 1 are queued (planstate: orders 2 running 1).
+;   frame 700: the second leg is in progress; index 0 is queued (planstate: orders 1 running 1).
+;   frame 1412: planning is on again with the second batch of legs queued behind the running leg.
+;   frame 1502: a normal order cleared the plan, so no legs are drawn for E1.
+30 command CenterBase
+300 grantunit E1 60 63
+305 reveal
+306 view 65 65
+320 planning 1
+330 clickcell E1 70 63
+331 clickcell E1 70 68
+332 clickcell E1 66 68
+340 planstate E1
+341 command ScreenCapture
+350 planning 0
+351 planstate E1
+352 command ScreenCapture
+700 planstate E1
+701 command ScreenCapture
+1400 planning 1
+1410 clickcell E1 62 72
+1411 clickcell E1 58 72
+1412 command ScreenCapture
+1420 planning 0
+1421 planstate E1
+1500 clickcell E1 56 56
+1501 planstate E1
+1502 command ScreenCapture
+2000 quit
