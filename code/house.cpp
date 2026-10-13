@@ -347,6 +347,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	PreferredDefensiveCell2(CELL_NONE),
 	PreferredDefensiveCellStartTime(-100),
 	CenterOverride(CELL_NONE),
+	BaseSpawnCell(CELL_NONE),
 	Attack(),
 	Enemy(HOUSE_NONE),
 	AngerNodes(),
@@ -4509,6 +4510,34 @@ void HouseClass::Recalc_Center(void)
 }
 
 
+/// <summary>
+/// Returns the cell gamemd's GetStartingCellOrDefault gives for this house's base.
+/// </summary>
+/// <returns>CenterOverride when a trigger action set it, otherwise BaseSpawnCell; CELL_NONE when neither is set.</returns>
+/// <remarks>gamemd FUN_0050def0 returns +0x5494 unless it equals (0,0), then +0x5490.</remarks>
+Cell HouseClass::Starting_Cell_Or_Default(void) const
+{
+	if (CenterOverride != CELL_NONE) {
+		return(CenterOverride);
+	}
+	return(BaseSpawnCell);
+}
+
+
+/// <summary>
+/// Returns the coordinates of Starting_Cell_Or_Default, or the origin when that cell is CELL_NONE.
+/// </summary>
+/// <remarks>gamemd FUN_0050df30 uses the origin default for an unset pick.</remarks>
+Coord HouseClass::Starting_Coord_Or_Default(void) const
+{
+	Cell const cell = Starting_Cell_Or_Default();
+	if (cell == CELL_NONE) {
+		return(COORD_NONE);
+	}
+	return(Map[cell].Center_Coord());
+}
+
+
 /***********************************************************************************************
  * HouseClass::Expert_AI -- Handles expert AI processing.                                      *
  *                                                                                             *
@@ -7570,6 +7599,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PreferredDefensiveCell2);
 	stream.Serialize(PreferredDefensiveCellStartTime);
 	stream.Serialize(CenterOverride);
+	stream.Serialize(BaseSpawnCell);
 	stream.Serialize(StartingObjects);
 	stream.Serialize(BQuantity);
 	stream.Serialize(UQuantity);

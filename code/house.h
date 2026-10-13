@@ -693,6 +693,14 @@ class HouseClass : public AbstractClass
 		Cell CenterOverride;
 
 		/*
+		**	The cell gamemd keeps at HouseClass +0x5490 (BaseSpawnCell). Recalc_Center sets it to
+		**	the average of the house's buildings, snapped to a free cell; start positions, MCV
+		**	deploys and auto-base building set it as well. CELL_NONE until one does. It is the
+		**	fallback for Starting_Cell_Or_Default when CenterOverride is not set.
+		*/
+		Cell BaseSpawnCell;
+
+		/*
 		**	The structures, vehicles, infantry and aircraft this house had on the map when the scenario
 		**	finished loading, each with its kind, its type's number and the cell it stood on. A trigger
 		**	action can have them put back.
@@ -991,6 +999,8 @@ class HouseClass : public AbstractClass
 		TechnoTypeClass const * Suggest_New_Object(RTTIType objectype, bool kennel=false) const;
 		BuildingTypeClass const * Suggest_New_Building(void) const;
 		void Recalc_Center(void);
+		Cell Starting_Cell_Or_Default(void) const;
+		Coord Starting_Coord_Or_Default(void) const;
 		bool Does_Enemy_Building_Exist(StructType) const;
 		void Harvested(int tiberium, TiberiumType slot);
 		void Purified(int tiberium, TiberiumType slot);
