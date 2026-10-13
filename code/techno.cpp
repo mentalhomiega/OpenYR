@@ -691,7 +691,8 @@ int TechnoClass::How_Many_Survivors(void) const
  *    damage it could inflict -- best case.                                                    *
  *                                                                                             *
  * INPUT:   which -- Which weapon to consider. If -1 is specified, then the average of both    *
- *                   weapon types (if present) is returned.                                    *
+ *                   weapon types (if present) is returned, or for a turreted object that is   *
+ *                   not a gattling, the damage of its current turret weapon.                  *
  *                                                                                             *
  * OUTPUT:  Returns with the combat damage that could be inflicted by the specified weapon.    *
  *                                                                                             *
@@ -704,6 +705,13 @@ int TechnoClass::Combat_Damage(int which) const
 {
 	int divisor = 0;
 	int value = 0;
+
+	// A turreted object that is not a gattling reports its turret weapon alone, so a healing secondary weapon
+	// does not pull the average below zero (TechnoClass::CombatDamage, 0x6F3970).
+	if (which == -1 && TClass->Has_Multiple_Turrets() && !TClass->IsGattling) {
+		WeaponTypeClass const * current = Get_Class_Weapon_Data(std::max(CurrentWeaponNumber, 0))->Weapon;
+		return(current != NULL ? current->Attack + current->AmbientDamage : 0);
+	}
 
 	if (which == 0 || which == -1) {
 		if (PrimaryWeapon != NULL) {

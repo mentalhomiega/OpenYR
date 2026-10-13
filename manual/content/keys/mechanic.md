@@ -12,7 +12,7 @@ when_omitted:
 Mechanic=yes
 ```
 
-The key changes which patients a healer takes; it does not make an object a healer. An object is a healer when the [`Damage`](/keys/damage/#scope-weapontype) plus [`AmbientDamage`](/keys/ambientdamage/) of its primary and secondary weapons averages below zero. On any other object the key does nothing.
+The key changes which patients a healer takes; it does not make an object a healer. An object is a healer when the [`Damage`](/keys/damage/#scope-weapontype) plus [`AmbientDamage`](/keys/ambientdamage/) of its primary and secondary weapons averages below zero. For a type with [`TurretCount`](/keys/turretcount/) above `0` that is not a gattling type, the test reads only the current turret weapon. On any other object the key does nothing.
 
 A healer takes these patients:
 

@@ -1,0 +1,14 @@
+; Rocketeer (JUMPJET) with an AA weapon beside a computer Kirov that is in the air, and beside a computer tank on the ground.
+30 command CenterBase
+35 reveal
+40 own JUMPJET 60 20
+50 spawn ZEP 62 22
+51 spawn MTNK 60 24
+150 airborne ZEP
+151 weapons JUMPJET
+152 canfire JUMPJET 62 22
+153 action JUMPJET 62 22
+154 canfire JUMPJET 60 24
+155 action JUMPJET 60 24
+156 threat JUMPJET
+200 quit

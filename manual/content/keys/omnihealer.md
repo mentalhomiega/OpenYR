@@ -12,7 +12,7 @@ when_omitted:
 OmniHealer=yes
 ```
 
-`OmniHealer=yes` lets a healer mend both infantry and vehicles. A healer is an object whose weapon [`Damage`](/keys/damage/#scope-weapontype) plus [`AmbientDamage`](/keys/ambientdamage/) averages below zero across its weapon slots. On any other object the key does nothing.
+`OmniHealer=yes` lets a healer mend both infantry and vehicles. A healer is an object whose weapon [`Damage`](/keys/damage/#scope-weapontype) plus [`AmbientDamage`](/keys/ambientdamage/) averages below zero across its weapon slots, or, for a type with [`TurretCount`](/keys/turretcount/) above `0` that is not a gattling type, is below zero on its current turret weapon. On any other object the key does nothing.
 
 [`Mechanic=yes`](/keys/mechanic/) switches an infantry healer from infantry to vehicles. This key keeps infantry and adds the vehicles, landed aircraft and deployed buildings that `Mechanic` covers. Setting both has the same effect as setting `OmniHealer` alone.
 

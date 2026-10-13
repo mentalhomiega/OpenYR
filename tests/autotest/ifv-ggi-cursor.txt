@@ -1,0 +1,20 @@
+; A Guardian GI enters the player's IFV, so the IFV fires its GGI weapon position. A computer tank stands on the
+; ground and an airborne Kirov flies over (frame 150 and later). The dump at frame 250 shows the passenger and the weapon.
+; Expected: the IFV fires weapon 16 (CRMissileLauncher, AA and AG); canfire 3 (rearming) and action "Attack" on both.
+; Before the fix both canfire lines read 5 and the action read "Attack Support".
+30 command CenterBase
+35 reveal
+40 own FV 60 20
+41 own GGI 56 20
+45 enter GGI 60 20
+60 spawn MTNK 62 22
+61 spawn ZEP 66 22
+250 dump
+260 weapons GGI
+280 airborne ZEP
+281 canfire FV 62 22
+282 action FV 62 22
+283 canfire FV 66 22
+284 action FV 66 22
+285 threat FV
+300 quit

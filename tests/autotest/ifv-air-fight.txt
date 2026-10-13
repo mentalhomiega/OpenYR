@@ -1,0 +1,16 @@
+; An empty IFV (FV, HoverMissile AA) fights a computer Kirov that climbs into the air beside it. "where" lines show
+; each unit's target and strength; the Kirov's strength should fall while the IFV fires at it.
+30 command CenterBase
+35 reveal
+40 own FV 60 20
+50 spawn ZEP 63 22
+150 airborne ZEP
+155 where ZEP
+165 where FV
+190 where ZEP
+215 where FV
+240 where ZEP
+270 where FV
+300 where ZEP
+330 count ZEP
+400 quit

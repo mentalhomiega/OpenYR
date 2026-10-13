@@ -1,0 +1,16 @@
+; An empty IFV (FV, slot 0 HoverMissile AA=yes AG=yes) beside a computer tank on the ground and a computer Kirov that climbs
+; into the air. The probes run once the Kirov is in the air (frame 150 and later). Before the fix, Combat_Damage averaged in the
+; IFV's healing RepairBullet and both checks refused (canfire 5, action "Attack Support"). Expected now: canfire 3 (rearming
+; after the spawn, not illegal) and action "Attack" on both the tank and the Kirov.
+30 command CenterBase
+35 reveal
+40 own FV 60 20
+50 spawn MTNK 62 22
+51 spawn ZEP 66 22
+150 airborne ZEP
+151 canfire FV 62 22
+152 action FV 62 22
+153 canfire FV 66 22
+154 action FV 66 22
+155 threat FV
+200 quit
