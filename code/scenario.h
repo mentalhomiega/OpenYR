@@ -458,8 +458,8 @@ class ScenarioClass {
 		bool IsMoneyTiberium;
 
 		/*
-		 * If infantry killed by tiberium poisoning are to leave a visceroid behind, then
-		 * this flag will be set to true.
+		 * The [Basic] TiberiumDeathToVisceroid value, kept for map compatibility. No death reads it,
+		 * as in gamemd, so it leaves no visceroid behind.
 		 */
 		bool IsTiberiumDeathToVisceroid;
 

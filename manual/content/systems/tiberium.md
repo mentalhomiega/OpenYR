@@ -258,7 +258,7 @@ A building with [`SiloDamage=yes`](/keys/silodamage/) shows how full it is with 
 
 Infantry take damage each time they finish moving into a Tiberium cell. The damage is the Tiberium type's [`Power`](/keys/power/#scope-tiberium) divided by ten, rounded down, and at least 1. Armor, veterancy and other damage reductions do not lower it.
 
-Infantry whose type sets [`TiberiumProof=yes`](/keys/tiberiumproof/), or that have the [`TIBERIUM_PROOF`](/systems/veterancy/#abilities) veteran ability, take none. When the scenario sets [`TiberiumDeathToVisceroid=yes`](/keys/tiberiumdeathtovisceroid/), infantry killed this way leave a small visceroid owned by the Neutral house, unless a vehicle stands in the cell.
+Infantry whose type sets [`TiberiumProof=yes`](/keys/tiberiumproof/), or that have the [`TIBERIUM_PROOF`](/systems/veterancy/#abilities) veteran ability, take none. Infantry killed this way leave no visceroid, whatever [`TiberiumDeathToVisceroid`](/keys/tiberiumdeathtovisceroid/) is set to.
 
 A sonic wave passing over a cell does not set off the Tiberium in it, whatever the overlay's [`ChainReaction`](/keys/chainreaction/) setting.
 
