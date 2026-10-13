@@ -1276,7 +1276,7 @@ bool INIClass::Put_Float(char const * section, char const * entry, double number
 {
 	char buffer[MAX_LINE_LENGTH];
 
-	sprintf(buffer, "%f", (float)number);
+	Snprintf_Nearest(buffer, sizeof(buffer), "%f", (float)number);
 	return(Put_String(section, entry, buffer));
 }
 
@@ -1623,7 +1623,7 @@ TPoint3D<int> const INIClass::Get_Point(char const * section, char const * entry
 bool INIClass::Put_Point(char const * section, char const * entry, TPoint3D<float> const & value)
 {
 	char buffer[64];
-	sprintf(buffer, "%f,%f,%f", (float)value.X, (float)value.Y, (float)value.Z);
+	Snprintf_Nearest(buffer, sizeof(buffer), "%f,%f,%f", (float)value.X, (float)value.Y, (float)value.Z);
 	return(Put_String(section, entry, buffer));
 }
 

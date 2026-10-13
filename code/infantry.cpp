@@ -401,11 +401,11 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 	ResultType res = RESULT_NONE;
 
 	/*
-	**	A prone soldier takes the warhead's ProneDamage share of the damage, rounded to the nearest
-	**	point, but never less than one point.
+	**	A prone soldier takes the warhead's ProneDamage share of the damage, truncated to whole
+	**	points as gamemd's float-to-int helper does (_ftol, 0x007C5F00), but never less than one point.
 	*/
 	if (warhead != NULL && IsProne && damage > 0 && !forced) {
-		damage = (int)std::nearbyint(damage * warhead->ProneDamage);
+		damage = (int)(damage * warhead->ProneDamage);
 
 		if (damage < 1) {
 			damage = 1;

@@ -11,6 +11,9 @@
 
 #include <cctype>
 #include <charconv>
+#include <cstdarg>
+#include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <float.h>
@@ -95,4 +98,20 @@ inline double Parse_Nearest_Double(char const * text, char ** end)
 		*end = const_cast<char *>(result.ptr);
 	}
 	return(value);
+}
+
+
+/// <summary>
+/// Formats like snprintf, but rounds the printed digits to nearest whatever mode is in force, so
+/// that a value written to a settings file reads back as the value that was written.
+/// </summary>
+/// <returns>The length the full text would have, as snprintf returns.</returns>
+inline int Snprintf_Nearest(char * buffer, std::size_t size, char const * format, ...)
+{
+	numparse_detail::Nearest_Rounding_Scope const nearest;
+	va_list args;
+	va_start(args, format);
+	int const length = std::vsnprintf(buffer, size, format, args);
+	va_end(args);
+	return(length);
 }
