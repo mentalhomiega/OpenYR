@@ -78,6 +78,7 @@
 #include "mission.h"
 #include "mods.h"
 #include "movie.h"
+#include "numparse.h"
 #include "overtype.h"
 #include "psystype.h"
 #include "ptype.h"
@@ -2525,10 +2526,10 @@ bool RulesClass::Powerups(CCINIClass const & ini)
 				token = strtok(NULL, ",");
 				if (token != NULL) {
 					if (strchr(token, '%') != NULL) {
-						CrateData[crate] = atof(token) / 100;
+						CrateData[crate] = Parse_Nearest_Double(token, nullptr) / 100;
 					} else {
 						strtrim(token);
-						CrateData[crate] = atof(token);
+						CrateData[crate] = Parse_Nearest_Double(token, nullptr);
 					}
 				}
 			}

@@ -74,6 +74,7 @@
 #include "b64straw.h"
 #include "cstraw.h"
 #include "dbgprint.h"
+#include "numparse.h"
 #include "pk.h"
 #include "rect.h"
 #include "trim.h"
@@ -1237,14 +1238,14 @@ double INIClass::Get_Float(char const * section, char const * entry, double defv
 
 	char const * text = entryptr->Value.c_str();
 	char * end = NULL;
-	float const val = strtof(text, &end);
+	// The nearest double, as gamemd keeps it; a caller that stores a float rounds in the mode in force.
+	double result = Parse_Nearest_Double(text, &end);
 	if (end == text) {
 		char const * source = Source_Of(*entryptr);
 		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
 		return(defvalue);
 	}
 
-	double result = val;
 	if (strchr(text, '%') != NULL) {
 		result /= 100.0;
 	}
@@ -1950,7 +1951,7 @@ static int Parse_Numbers(char const * text, T * values, int count, Convert conve
 
 	for (int index = 0; index < count; index++) {
 		char * end = NULL;
-		T const number = convert(cursor, &end);
+		T const number = static_cast<T>(convert(cursor, &end));
 		if (end == cursor) {
 			return(index);
 		}
@@ -2009,7 +2010,7 @@ INIClass::INIReadResult INIClass::Read_Numbers(char const * section, char const 
 	}
 
 	char const * text = entryptr->Value.c_str();
-	if (Parse_Numbers(text, values, count, [](char const * cursor, char ** end) {return(strtof(cursor, end));}) == count) {
+	if (Parse_Numbers(text, values, count, [](char const * cursor, char ** end) {return(Parse_Nearest_Double(cursor, end));}) == count) {
 		return(INIReadResult::Parsed);
 	}
 

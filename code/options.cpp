@@ -78,6 +78,7 @@
 #include "language/language.h"
 #include "mouse.h"
 #include "msgbox.h"
+#include "numparse.h"
 #include "rules.h"
 #include "session.h"
 #include "techno.h"
@@ -578,7 +579,7 @@ void OptionsClass::Load_Interface_Scale(void)
 	char text[32];
 	ConfigINI.Get_String("Video", "InterfaceScale", "Auto", text, sizeof(text));
 
-	float value = (float)atof(text);
+	float value = (float)Parse_Nearest_Double(text, nullptr);
 	InterfaceScale = (value > 0.0f) ? std::min(value, 8.0f) : 0.0f;
 	DebugString("InterfaceScale is %s\n", InterfaceScale > 0.0f ? text : "automatic");
 }

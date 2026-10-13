@@ -15,6 +15,7 @@
 
 #include "dbgprint.h"
 #include "ini.h"
+#include "numparse.h"
 
 #include <algorithm>
 #include <cmath>
@@ -147,8 +148,8 @@ bool Parse_Pair(char const * text, int & low, int & high, bool & single, bool & 
 		return(false);
 	}
 	seconds = tokens[0].find('.') != std::string::npos || (tokens.size() > 1 && tokens[1].find('.') != std::string::npos);
-	double first = std::atof(tokens[0].c_str());
-	double second = tokens.size() > 1 ? std::atof(tokens[1].c_str()) : first;
+	double first = Parse_Nearest_Double(tokens[0].c_str(), nullptr);
+	double second = tokens.size() > 1 ? Parse_Nearest_Double(tokens[1].c_str(), nullptr) : first;
 	if (seconds) {
 		first *= 1000.0;
 		second *= 1000.0;
@@ -278,7 +279,7 @@ float Sound_Parse_Volume(char const * text, float fallback)
 	if (tokens.empty() || !Is_Number(tokens[0].c_str())) {
 		return(fallback);
 	}
-	double value = std::atof(tokens[0].c_str());
+	double value = Parse_Nearest_Double(tokens[0].c_str(), nullptr);
 	if (value > 1.0) {
 		// Percent, as Yuri's Revenge writes it.
 		value /= 100.0;
