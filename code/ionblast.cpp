@@ -64,7 +64,8 @@ const int BlastSurfaceWidth = 512;
 const int BlastSurfaceHeight = 256;
 const double WaveReach = 256.0;
 
-double WaveSpeed = ((256.0 - WaveStartDistance) + WaveBandWidth) * WaveSpeedScale;
+// The speed follows gamemd's 512-pixel constant at 0x53CA30.
+double WaveSpeed = ((512.0 - WaveStartDistance) + WaveBandWidth) * WaveSpeedScale;
 double WavePhaseSpeed = WaveSpeed;
 
 DynamicVectorClass<IonBlastClass *> IonBlastClass::IonBlasts;
