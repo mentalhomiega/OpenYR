@@ -1562,7 +1562,7 @@ void AnimClass::Flaming_Guy_AI(void)
 		coord.Z = 0;
 		Coord target = FlamingGuyCoords;
 		target.Z = 0;
-		if (coord.Distance_To(target) <= _max_distance) {
+		if (coord.Gamemd_Distance_To(target) <= _max_distance) {
 			if (!IsFalling) {
 				Coord nextcoord = Next_Flaming_Guy_Coord();
 				bool sink = Map[FlamingGuyCoords].Land_Type() == LAND_WATER && HeightAGL <= LEVEL_LEPTON_H;
@@ -1658,7 +1658,7 @@ Coord AnimClass::Next_Flaming_Guy_Coord(void)
 			if (Map.In_Local_Radar(Cell(x, y))) {
 				CellClass * cellptr = &Map[Cell(x, y)];
 				if (cellptr->Land_Type() == LAND_WATER && !cellptr->IsUnderBridge && !cellptr->Adjacent_Cell(FACING_W).IsUnderBridge && !cellptr->Adjacent_Cell(FACING_N).IsUnderBridge) {
-					int dist = cellptr->CellID != cell ? Point2D(x - cell.X, y - cell.Y).Length() : 0;
+					int dist = cellptr->CellID != cell ? Point2D(x - cell.X, y - cell.Y).Gamemd_Length() : 0;
 					if (x > cell.X || y > cell.Y) {
 						dist -= 3;
 					}

@@ -151,7 +151,7 @@ void EMPulseClass::Create(TechnoClass * source)
 		for (int i = 0; i < Aircraft.Count(); i++) {
 			AircraftClass * aircraft = Aircraft[i];
 			if (aircraft->IsDown && !aircraft->IsInLimbo && !aircraft->In_Air() && aircraft->Strength > 0) {
-				if (aircraft->Center_Coord().Distance_To(CellID.As_Coord()) < Spread * CELL_LEPTON) {
+				if (aircraft->Center_Coord().Gamemd_Distance_To(CellID.As_Coord()) < Spread * CELL_LEPTON) {
 					aircraft->Spring_Tag(TEVENT_PARALYZED, aircraft, CELL_NONE, false, source);
 					if (!aircraft->Is_Immune_To_EMP() && !aircraft->Crash(source) && !aircraft->Class->IsCrashable) {
 						int damage = aircraft->Class->MaxStrength;

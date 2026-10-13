@@ -259,7 +259,7 @@ void BuildingLightClass::AI(void)
 					ObjectClass * occupier = Map[cell + Cell(x, y)].Cell_Occupier();
 					while (occupier != NULL) {
 						if ((occupier->RTTI == RTTI_INFANTRY || occupier->RTTI == RTTI_UNIT) && !house->Is_Ally(occupier)) {
-							int dist = occupier->Center_Coord().Distance_To(Get_Coord());
+							int dist = occupier->Center_Coord().Gamemd_Distance_To(Get_Coord());
 							if (dist < detection) {
 								found = true;
 							}
@@ -383,7 +383,7 @@ void BuildingLightClass::Set_Behavior_Type(LightBehaviorType type)
 				ObjectClass * occupier = Map[cell + Cell(x, y)].Cell_Occupier();
 				while (occupier != NULL) {
 					if ((occupier->RTTI == RTTI_INFANTRY || occupier->RTTI == RTTI_UNIT) && !house->Is_Ally(occupier)) {
-						int dist = occupier->Center_Coord().Distance_To(Get_Coord());
+						int dist = occupier->Center_Coord().Gamemd_Distance_To(Get_Coord());
 						if (dist < mindist) {
 							closest = occupier;
 							mindist = dist;
@@ -429,7 +429,7 @@ int BuildingLightClass::Detection_Radius(void) const
 /// to home.</returns>
 int BuildingLightClass::Sweep_Stage(void) const
 {
-	int dist = Center_Coord().Distance_To(Owner->Center_Coord());
+	int dist = Center_Coord().Gamemd_Distance_To(Owner->Center_Coord());
 	int radius = Rule->SpotlightLocationRadius;
 	if (dist < radius) {
 		return(0);

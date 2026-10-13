@@ -157,7 +157,7 @@ inline static int Explosion_Distance(Coord const & coord1, Coord const & coord2)
 	if (abs(z2 - z1) < LEVEL_LEPTON_H) {
 		z2 = coord1.Z;
 	}
-	return(Coord(coord1.X - coord2.X, coord1.Y - coord2.Y, z1 - z2).Length());
+	return(Coord(coord1.X - coord2.X, coord1.Y - coord2.Y, z1 - z2).Gamemd_Length());
 }
 
 
@@ -303,7 +303,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		for (int index = 0; index < flyers.Count(); index++) {
 			FootClass * flyer = flyers[index];
 			if (flyer->IsActive && flyer->IsDown && flyer->Strength > 0 && flyer->In_Air()) {
-				distance = (coord - flyer->PositionCoord).Length();
+				distance = (coord - flyer->PositionCoord).Gamemd_Length();
 				if (distance <= range) {
 					if (pinpoint && distance < 85 && flyer->Is_Iron_Curtained() && !flyer->IsForceShielded) {
 						curtain_hit = true;
@@ -359,14 +359,14 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 			if (object->RTTI == RTTI_BUILDING) {
 				if (index != 0) {
-					distance = (cell_coord - coord).Length();
+					distance = (cell_coord - coord).Gamemd_Length();
 				} else if (coord.Z - cell_coord.Z > 2 * LEVEL_LEPTON_H) {
-					distance = (cell_coord - coord).Length() - 2 * LEVEL_LEPTON_H;
+					distance = (cell_coord - coord).Gamemd_Length() - 2 * LEVEL_LEPTON_H;
 				} else {
 					distance = 0;
 				}
 			} else {
-				distance = (object->Target_Coord() - coord).Length();
+				distance = (object->Target_Coord() - coord).Gamemd_Length();
 			}
 
 			if (pinpoint && index == 0 && object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained() && !((TechnoClass *)object)->IsForceShielded && distance < 85) {
@@ -378,7 +378,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		if (cptr->Overlay != OVERLAY_NONE && OverlayTypes[cptr->Overlay]->IsVeinholeMonster) {
 			VeinholeMonsterClass * veinhole = VeinholeMonsterClass::Get_Monster_At(where);
 			if (veinhole != NULL) {
-				hits.push_back({veinhole, (veinhole->Target_Coord() - coord).Length()});
+				hits.push_back({veinhole, (veinhole->Target_Coord() - coord).Gamemd_Length()});
 			}
 		}
 	}
@@ -717,7 +717,7 @@ void Wide_Area_Damage(Coord const & coord, LEPTON radius, int rawdamage, TechnoC
 			Cell tcell = Cell(xpos, ypos);
 			if (!Map.In_Radar(tcell)) continue;
 
-			int dist_from_center = Distance(Coord(x+cell_radius, y+cell_radius), Coord(cell_radius, cell_radius));
+			int dist_from_center = Gamemd_Distance(Coord(x+cell_radius, y+cell_radius), Coord(cell_radius, cell_radius));
 			double damagemod = 1;
 			if (dist_from_center > 0) {
 				damagemod = 1.0 / ((double)cell_radius / dist_from_center);

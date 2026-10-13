@@ -195,7 +195,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 
 					if (LinkedTo->Is_In_Same_Zone(DestinationCoord)) {
 
-						int dist = Distance(LinkedTo->Center_Coord(), DestinationCoord);
+						int dist = Gamemd_Distance(LinkedTo->Center_Coord(), DestinationCoord);
 
 						if (dist < (int)Rule->CloseEnoughDistance && !LinkedTo->IsTethered) {
 							LinkedTo->Assign_Destination(NULL);
@@ -481,7 +481,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 		}
 	} else {
 
-		if (Distance(Point2D(LinkedTo->Center_Coord()), Point2D(HeadToCoord)) < 16) {
+		if (Gamemd_Distance(Point2D(LinkedTo->Center_Coord()), Point2D(HeadToCoord)) < 16) {
 
 			LinkedTo->Mark(MARK_UP);
 

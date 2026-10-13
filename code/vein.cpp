@@ -762,7 +762,7 @@ void VeinholeMonsterClass::Build_Shrinking_Queue(void)
 			int index = Map_Cell_Index(iter->CellID);
 			if (index >= 0 && index < Map_Cell_Count() && GrowthState[index]) {
 				if (GrowthCount < Rule->MaxVeinholeGrowth) {
-					float score = 1000 - Point2D(iter->CellID.X, iter->CellID.Y).Distance_To(Point2D(CellID.X, CellID.Y));
+					float score = 1000 - Point2D(iter->CellID.X, iter->CellID.Y).Gamemd_Distance_To(Point2D(CellID.X, CellID.Y));
 					GrowthQueue.Insert(CellNode(iter->CellID, score));
 					GrowthCount++;
 					VeinCount++;

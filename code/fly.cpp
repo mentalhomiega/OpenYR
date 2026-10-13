@@ -620,7 +620,7 @@ void FlyLocomotionClass::Movement_AI(void)
 
 	Coord dest = DestinationCoord;
 	Coord cur = LinkedTo->Get_Coord();
-	int dist = Distance(Point2D(dest), Point2D(cur));
+	int dist = Gamemd_Distance(Point2D(dest), Point2D(cur));
 
 	if (current_height < FlightLevel && LinkedTo->Strength > 0) {
 		bool is_loaded = false;
@@ -1119,7 +1119,7 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 	LinkedTo->Get_Height();
 
 	Point2D diff = Point2D(LinkedTo->Center_Coord()) - Point2D(aim);
-	int dist = diff.Length();
+	int dist = diff.Gamemd_Length();
 
 	/*
 	 * Turn the body of the aircraft to face the destination coordinate.
@@ -1130,7 +1130,7 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 		bool turn = true;
 		if (flyctrl != NULL && flyctrl->Is_Strafe()) {
 			Coord here = LinkedTo->Center_Coord();
-			if (!(Point2D(here).Distance_To(Coord(coord)) > CELL_LEPTON * 3 ||
+			if (!(Point2D(here).Gamemd_Distance_To(Coord(coord)) > CELL_LEPTON * 3 ||
 				dir.Is_Complete_Turn(LinkedTo->PrimaryFacing.Current(), DIR_STEP_8))) {
 				turn = false;
 			}
@@ -1180,7 +1180,7 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 		AbstractClass * tarcom = LinkedTo->TarCom;
 		Coord here = LinkedTo->Get_Coord();
 		Coord dst = DestinationCoord;
-		int proximity = (Point2D(here) - Point2D(dst)).Length();
+		int proximity = (Point2D(here) - Point2D(dst)).Gamemd_Length();
 
 		if (proximity < Rule->HunterSeekerDetonateProximity) {
 
@@ -1390,7 +1390,7 @@ Matrix3D FlyLocomotionClass::Draw_Matrix(int * key)
 			if (key) {
 				*key = -1;
 			}
-			int dist = (Point2D(LinkedTo->PositionCoord) - Point2D(DestinationCoord)).Length();
+			int dist = (Point2D(LinkedTo->PositionCoord) - Point2D(DestinationCoord)).Gamemd_Length();
 			if (dist < LinkedTo->TClass->SlowdownDistance && !IsTakingOff && LinkedTo->Mission != MISSION_RETREAT) {
 				mtx.Rotate_Y(-LinkedTo->PitchAngle);
 			}

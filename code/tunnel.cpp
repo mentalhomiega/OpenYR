@@ -140,7 +140,7 @@ void TunnelLocomotionClass::Stop_Moving(void)
 
 		case STATE_TUNNELING: {
 			Coord pos = LinkedTo->PositionCoord;
-			if (Point2D(pos - Point2D(DestinationCoord)).Length() > CELL_LEPTON_DIAG) {
+			if (Point2D(pos - Point2D(DestinationCoord)).Gamemd_Length() > CELL_LEPTON_DIAG) {
 
 				Cell cell = LinkedTo->PositionCell;
 				Cell nearby = Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(cell), MZONE_NORMAL, false, Point2D(1, 1), false, false, true);
@@ -357,7 +357,7 @@ void TunnelLocomotionClass::Process_Tunneling(void)
 {
 	Coord coord = LinkedTo->PositionCoord;
 
-	if (Point2D(DestinationCoord).Distance_To(coord) < 20) {
+	if (Point2D(DestinationCoord).Gamemd_Distance_To(coord) < 20) {
 
 		coord = DestinationCoord;
 		coord.Z = -CELL_LEPTON;

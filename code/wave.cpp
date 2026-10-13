@@ -1078,7 +1078,7 @@ void WaveClass::Build_Wave_Shape(Coord const & source_coord, Coord const & targe
 
 	start_coord = Lerp(target_coord, start_coord, WaveLengthFactor[Type]);
 
-	int distance2d = ((TPoint2D<int> &)start_coord - (TPoint2D<int> &)end_coord).Length(); /// 2D distance (X,Y only)
+	int distance2d = ((TPoint2D<int> &)start_coord - (TPoint2D<int> &)end_coord).Gamemd_Length(); /// 2D distance (X,Y only)
 
 	/// Set initial coordinates
 	StartCoord = start_coord;
@@ -1171,7 +1171,7 @@ void WaveClass::Wave_Shape_AI(void)
 	}
 
 	if (Target != NULL && Source != NULL && WaveEC != (int)(1.0 / WaveStep) && Source->TarCom == Target) {
-		if (Type != WAVE_MAGNETRON && (Source->PositionCoord - Target->As_Coord()).Length() > CELL_LEPTON_DIAG * 6.0) {
+		if (Type != WAVE_MAGNETRON && (Source->PositionCoord - Target->As_Coord()).Gamemd_Length() > CELL_LEPTON_DIAG * 6.0) {
 			IsWaveActive = false;
 		}
 	} else {

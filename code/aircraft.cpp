@@ -1239,7 +1239,7 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 				if (NavCom != NULL) {
 					Coord tar_coord = NavCom->Center_Coord();
 					Coord here_coord = PositionCoord;
-					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
+					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
 				} else {
 					proceed_to_wp = true;
 				}
@@ -1566,7 +1566,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 				if (NavCom != NULL) {
 					Coord tar_coord = NavCom->Center_Coord();
 					Coord here_coord = PositionCoord;
-					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
+					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
 				} else {
 					proceed_to_wp = true;
 				}
@@ -2909,9 +2909,9 @@ AbstractClass * AircraftClass::Good_Fire_Location(AbstractClass * target) const
 				if (Map.In_Local_Radar(newcell) && (Session.Type != GAME_NORMAL || Map[newcell].IsVisible[PlayerPtr]) && Cell_Seems_Ok(newcell, true)) {
 					int dist;
 					if (altcoord != COORD_NONE) {
-						dist = Point2D(newcoord).Distance_To(Point2D(altcoord));
+						dist = Point2D(newcoord).Gamemd_Distance_To(Point2D(altcoord));
 					} else {
-						dist = Point2D(Center_Coord()).Distance_To(Point2D(newcoord));
+						dist = Point2D(Center_Coord()).Gamemd_Distance_To(Point2D(newcoord));
 					}
 					if (bestval == -1 || dist < bestval) {
 						best2val = bestval;

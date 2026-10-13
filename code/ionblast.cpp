@@ -151,7 +151,7 @@ void IonBlastClass::AI(void)
 					TacticalMap->Coord_To_Pixel(occupier->Get_Coord(), occupier_point);
 
 					Point2D diff = occupier_point - point;
-					int screen_dist = diff.Length() + 8;
+					int screen_dist = diff.Gamemd_Length() + 8;
 
 					if (screen_dist < 128) {
 

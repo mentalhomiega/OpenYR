@@ -561,7 +561,7 @@ TechnoClass * CellClass::Cell_Techno(Point2D const & xy, bool bridge, TechnoClas
 		while (object != NULL) {
 			if (object->Is_Techno() && object != (ObjectClass *) notthis) {
 				Coord coord = object->Center_Coord();
-				int dist = Point2D(Coord_Fraction(coord) - click).Length();
+				int dist = Point2D(Coord_Fraction(coord) - click).Gamemd_Length();
 				if (!close || dist < distance) {
 					close = (TechnoClass *)object;
 					distance = dist;
@@ -3088,7 +3088,7 @@ int CellClass::Spot_Index(Coord const & coord)
 	**	If the coordinate is close enough to the center of the cell, then return
 	**	the center position index.
 	*/
-	if (Distance(rel, Point2D(CELL_LEPTON/2,CELL_LEPTON/2)) < 60) {
+	if (Gamemd_Distance(rel, Point2D(CELL_LEPTON/2,CELL_LEPTON/2)) < 60) {
 		return(0);
 	}
 
@@ -3969,7 +3969,7 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj != NULL && obj->IsDown && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
+					if (obj != NULL && obj->IsDown && obj->Is_Techno() && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
 						((TechnoClass *)obj)->IsCloakable = true;
 					}
 				}
@@ -3985,7 +3985,7 @@ crate_money:
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
 					if (obj != NULL && obj->IsDown && obj->Is_Techno() &&
-						((TechnoClass *)obj)->TClass->IsTrainable && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
+						((TechnoClass *)obj)->TClass->IsTrainable && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
 						for (int count = 0; count < data; count++) {
 							VeterancyClass * vet = &((TechnoClass *)obj)->Veterancy;
 							if (vet->Is_Veteran()) vet->Set_Elite(true);
@@ -4036,7 +4036,7 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj != NULL && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && (Rule->IsArmorCrateStacking || ((TechnoClass *)obj)->ArmorBias == 1)) {
+					if (obj != NULL && obj->Is_Techno() && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && (Rule->IsArmorCrateStacking || ((TechnoClass *)obj)->ArmorBias == 1)) {
 						double val = ((TechnoClass *)obj)->ArmorBias * data;
 						((TechnoClass *)obj)->ArmorBias = val;
 						if (obj->Owner_HouseClass()->Is_Player_Control()) tospeak = true;
@@ -4051,7 +4051,7 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj && obj->Is_Foot() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && ((FootClass *)obj)->SpeedBias == 1 && obj->RTTI != RTTI_AIRCRAFT) {
+					if (obj && obj->Is_Foot() && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && ((FootClass *)obj)->SpeedBias == 1 && obj->RTTI != RTTI_AIRCRAFT) {
 						double val = ((FootClass *)obj)->SpeedBias * data;
 						((FootClass *)obj)->SpeedBias = val;
 						if (((FootClass *)obj)->IsOwnedByPlayer) tospeak = true;
@@ -4066,7 +4066,7 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && (Rule->IsFirepowerCrateStacking || ((TechnoClass *)obj)->FirepowerBias == 1)) {
+					if (obj && obj->Is_Techno() && Gamemd_Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && (Rule->IsFirepowerCrateStacking || ((TechnoClass *)obj)->FirepowerBias == 1)) {
 
 						double val = ((TechnoClass *)obj)->FirepowerBias * data;
 						((TechnoClass *)obj)->FirepowerBias = val;
@@ -4894,7 +4894,7 @@ void CellClass::Init_Light(int & intensity, int & ambient, int & brightness, int
 				if (dx * dx + dy * dy <= visibility * visibility) {
 					dx = cc.X - ((Coord)light->Position).X;
 					dy = cc.Y - ((Coord)light->Position).Y;
-					unsigned int dist = Point2D(dx, dy).Length();
+					unsigned int dist = Point2D(dx, dy).Gamemd_Length();
 					if (dist <= visibility) {
 						int num = (NORMAL_LIGHT * visibility - NORMAL_LIGHT * dist) / visibility;
 						ambient += (num * light->Intensity) / NORMAL_LIGHT;

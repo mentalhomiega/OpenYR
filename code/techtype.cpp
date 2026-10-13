@@ -1367,12 +1367,12 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 		Coord tcoord = target->Center_Coord();
 		int minrange = weapon->MinimumRange;
 
-		if (minrange && (coord - tcoord).Length() < minrange) {
+		if (minrange && (coord - tcoord).Gamemd_Length() < minrange) {
 			return(false);
 		}
 
 		if (weapon->Bullet->IsArcing) {
-			int dist = (Point2D(coord) - Point2D(tcoord)).Length();
+			int dist = (Point2D(coord) - Point2D(tcoord)).Gamemd_Length();
 			if (dist > range) {
 				return(false);
 			}
@@ -1382,7 +1382,7 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 				return(false);
 			}
 			Coord dist2d = Coord(coord.X - tcoord.X, coord.Y - tcoord.Y, 0);
-			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Length();
+			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Gamemd_Length();
 		} else {
 
 			BuildingClass const * building = target->As_BuildingClass();
@@ -1392,9 +1392,9 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 
 			int cdist;
 			if (RTTI != RTTI_AIRCRAFTTYPE) {
-				cdist = (coord - tcoord).Length();
+				cdist = (coord - tcoord).Gamemd_Length();
 			} else {
-				cdist = (Coord(Point2D(coord) - Point2D(tcoord), 0)).Length();
+				cdist = (Coord(Point2D(coord) - Point2D(tcoord), 0)).Gamemd_Length();
 			}
 
 			if (cdist > range) {
@@ -1416,13 +1416,13 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 			Coord coord2 = tcoord;
 			if (!weapon->Bullet->IsAntiAircraft) {
 				Point2D dist2d = Point2D(coord1 - coord2);
-				if (tcoord.Z - coord.Z >= dist2d.Length()) {
+				if (tcoord.Z - coord.Z >= dist2d.Gamemd_Length()) {
 					return(false);
 				}
 			}
 
 			Point2D dist2d = Point2D(coord1 - coord2);
-			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Length();
+			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Gamemd_Length();
 		}
 
 		if (!is_within_ground_firing_angle) {

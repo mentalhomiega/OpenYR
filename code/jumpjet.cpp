@@ -490,7 +490,7 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 	Coord position = LinkedTo->PositionCoord;
 	Facing.Set_Desired(DirType().Direction(position, HeadToCoord));
 
-	int distance = Point2D(position).Distance_To(Point2D(HeadToCoord));
+	int distance = Point2D(position).Gamemd_Distance_To(Point2D(HeadToCoord));
 	if (distance < 20) {
 		CurrentSpeed = 0;
 		TargetSpeed = 0;

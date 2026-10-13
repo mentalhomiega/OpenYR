@@ -1123,7 +1123,7 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 		xdiff = newcell.X - xx;
 		xdiff = abs(xdiff);
 		if (xdiff > sightrange) continue;
-		if (Distance(newcell, cell) > sightrange) continue;
+		if (Gamemd_Distance(newcell, cell) > sightrange) continue;
 
 		/*
 		**	Map the cell. For incremental scans, then update
@@ -2873,10 +2873,10 @@ ObjectClass * MapClass::Close_Object(Coord const & coord) const
 				if (!t || t->IsOwnedByPlayer || t->Cloak != CLOAKED) {
 					int d=-1;
 					if (o->RTTI == RTTI_BUILDING) {
-						d = Distance(coord, (Coord)newcell);
+						d = Gamemd_Distance(coord, (Coord)newcell);
 						if (d > 0x00B5) d = -1;
 					} else {
-						d = Distance(coord, o->Center_Coord());
+						d = Gamemd_Distance(coord, o->Center_Coord());
 					}
 					if (d >= 0 && (!object || d < distance)) {
 						distance = d;
@@ -8956,7 +8956,7 @@ void MapClass::Area_Reduce_Tiberium(Cell const & cell)
 		for (int y = -5; y <= 5; y++) {
 			Cell c1 = Cell(cell + Cell(x,y));
 			Cell c2 = (cell - c1);
-			if (c2.Length() <= 5) {
+			if (c2.Gamemd_Length() <= 5) {
 				CellClass * cellptr = &Map[cell];
 				if (cellptr != NULL) {
 					cellptr->Reduce_Tiberium(1);
@@ -10569,7 +10569,7 @@ Cell MapClass::Get_Bridge_Zone_Connection_Cell(CellClass * cptr, bool isbridge)
 		}
 
 		if (zcon->IsPassable) {
-			if ((zcon->From + ncell - cptr->CellID).Length() < (zcon->To + ncell - cptr->CellID).Length()) {
+			if ((zcon->From + ncell - cptr->CellID).Gamemd_Length() < (zcon->To + ncell - cptr->CellID).Gamemd_Length()) {
 				return(zcon->From + ncell);
 			} else {
 				return(zcon->To + ncell);
@@ -10610,7 +10610,7 @@ Cell MapClass::Get_Zone_Connection_Destination(Cell const & cell, Cell const & r
 		ZoneConnectionClass *zcon = &Map.ZoneConnections[cidx];
 
 		if (zcon->IsPassable) {
-			if ((reference - zcon->From).Length() < (reference - zcon->To).Length()) {
+			if ((reference - zcon->From).Gamemd_Length() < (reference - zcon->To).Gamemd_Length()) {
 				return(zcon->From);
 			} else {
 				return(zcon->To);
@@ -10700,8 +10700,8 @@ Cell MapClass::Find_Bridge_Span_End_Cell(Cell const & cell, Cell const & referen
 
 	if (Map.In_Local_Radar(bresult, true)) {
 		if (result != CELL_NONE) {
-			short bdist = bresult.Distance_To(reference);
-			short fdist = fresult.Distance_To(reference);
+			short bdist = bresult.Gamemd_Distance_To(reference);
+			short fdist = fresult.Gamemd_Distance_To(reference);
 			if (bdist < fdist) {
 				result = bresult;
 			}

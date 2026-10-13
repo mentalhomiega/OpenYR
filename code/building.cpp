@@ -1294,7 +1294,7 @@ DirType BuildingClass::Barrel_Pitch(AbstractClass * target) const
 
 			d = fire.X * fire.X + fire.Y * fire.Y;
 			dr = std::sqrt(d);
-			d = fire.Length();
+			d = fire.Gamemd_Length();
 			dr = dr / d;
 			if (dr > 1) {
 				dr = 1;
@@ -11291,7 +11291,7 @@ BuildingClass * Find_Unit_Repair_Facility(HouseClass * house, TechnoClass * obj)
 
 	for (int i = 0; i < UnitRepairFacilities.Count(); i++) {
 		if (UnitRepairFacilities[i]->House == house && obj->Transmit_Message(RADIO_CAN_LOAD, UnitRepairFacilities[i]) != RADIO_STATIC) {
-			int dist = (UnitRepairFacilities[i]->Get_Coord() - obj->Get_Coord()).Length();
+			int dist = (UnitRepairFacilities[i]->Get_Coord() - obj->Get_Coord()).Gamemd_Length();
 			if (dist < best_dist && dist < max_dist) {
 				best_dist = dist;
 				best_bld = UnitRepairFacilities[i];

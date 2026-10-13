@@ -177,7 +177,7 @@ bool HoverLocomotionClass::Process(void)
 			speed = LinkedTo->Current_Speed() * Acceleration;
 		}
 
-		if (speed >= Point2D(LinkedTo->PositionCoord).Distance_To(HeadToCoord)) {
+		if (speed >= Point2D(LinkedTo->PositionCoord).Gamemd_Distance_To(HeadToCoord)) {
 			LinkedTo->IsOccupyingCell = true;
 			LinkedTo->IsToPathAroundBlockage = false;
 			WasPushed = false;
@@ -489,7 +489,7 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 				Start_Of_Move(0);
 				ok = While_Moving(false);
 			} else {
-				if (LinkedTo->Center_Coord().Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
+				if (LinkedTo->Center_Coord().Gamemd_Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
 					Stop_Moving();
 					LinkedTo->Assign_Destination(NULL);
 					return(MOVE_NO);
@@ -620,8 +620,8 @@ void HoverLocomotionClass::Motion_AI(void)
 		}
 
 		if (Is_Powered() && Facing.Current().Is_Complete_Turn(newdir, DIR_STEP_8 << 8) || WasPushed) {
-			if ((DestinationCoord == COORD_NONE && LinkedTo->Center_Coord().Distance_To(HeadToCoord) < CELL_LEPTON) ||
-				 DestinationCoord != COORD_NONE && LinkedTo->Center_Coord().Distance_To(DestinationCoord) < CELL_LEPTON) {
+			if ((DestinationCoord == COORD_NONE && LinkedTo->Center_Coord().Gamemd_Distance_To(HeadToCoord) < CELL_LEPTON) ||
+				 DestinationCoord != COORD_NONE && LinkedTo->Center_Coord().Gamemd_Distance_To(DestinationCoord) < CELL_LEPTON) {
 
 				Height = 0.5;
 			} else {
@@ -890,7 +890,7 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 					**	to do so if we aren't very close to the target and this
 					**	object can just say "good enough" and stop here.
 					*/
-					if (LinkedTo->Center_Coord().Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact() &&
+					if (LinkedTo->Center_Coord().Gamemd_Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact() &&
 						abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
 
 						Stop_Moving();
