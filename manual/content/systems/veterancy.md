@@ -174,7 +174,7 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `RADAR_INVISIBLE` | The object is kept off the local player's radar unless a sensor contact picks it up. |
 | `SENSORS` | An adjacent enemy cloaked object shimmers, as with [`Sensors=yes`](/keys/sensors/). |
 | `FEARLESS` | Infantry accumulate no fear, as with [`Fearless=yes`](/keys/fearless/). |
-| `C4` | Infantry attack buildings by sabotage, as with [`C4=yes`](/keys/c4/). |
+| `C4` | Infantry sabotage a structure that [`CanC4`](/keys/canc4/) allows, as with [`C4=yes`](/keys/c4/), and attack the others. |
 | `TIBERIUM_HEAL` | Standing in Tiberium repairs the object, as with [`TiberiumHeal=yes`](/keys/tiberiumheal/). |
 | `GUARD_AREA` | An idle armed vehicle, and an idle human-owned infantry, takes the Guard Area mission instead of Guard. A member of a team is unaffected, and so is a computer-owned infantry, whose idle handling never reads the ability. |
 | `CRUSHER` | A vehicle crushes crushable objects and overlays, as with [`Crusher=yes`](/keys/crusher/). |
