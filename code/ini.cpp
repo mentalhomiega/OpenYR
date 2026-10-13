@@ -1238,8 +1238,8 @@ double INIClass::Get_Float(char const * section, char const * entry, double defv
 
 	char const * text = entryptr->Value.c_str();
 	char * end = NULL;
-	// The nearest double, as gamemd keeps it; a caller that stores a float rounds in the mode in force.
-	double result = Parse_Nearest_Double(text, &end);
+	// gamemd reads the text with sscanf "%f", so the value is the nearest float widened to double.
+	double result = Parse_Nearest_Single(text, &end);
 	if (end == text) {
 		char const * source = Source_Of(*entryptr);
 		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
@@ -1247,7 +1247,7 @@ double INIClass::Get_Float(char const * section, char const * entry, double defv
 	}
 
 	if (strchr(text, '%') != NULL) {
-		result /= 100.0;
+		result *= 0.01;
 	}
 	return(result);
 }

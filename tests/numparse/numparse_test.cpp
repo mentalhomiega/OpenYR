@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // Pins the decimal parse that INI and rules values use. Under round toward zero (the mode
-// WinMain sets, as gamemd does at 0x006BBFC1), a parsed value must still be the nearest double,
-// and a float store must truncate. No engine code or game data is needed.
+// WinMain sets, as gamemd does at 0x006BBFC1), a parsed value must still be the nearest double or
+// float, and a float store of a double must truncate. No engine code or game data is needed.
 
 #include <cfloat>
 #include <cmath>
@@ -44,6 +44,12 @@ double Parse(char const * text)
 {
 	char const * volatile source = text;
 	return(Parse_Nearest_Double(source, nullptr));
+}
+
+float Parse_Single(char const * text)
+{
+	char const * volatile source = text;
+	return(Parse_Nearest_Single(source, nullptr));
 }
 
 void Expect(char const * what, std::uint64_t got, std::uint64_t want)
@@ -83,8 +89,16 @@ int main()
 	source = Parse("1.5");
 	Expect("float 1.5 chop", Bits(static_cast<float>(source)), 0x3fc00000u);
 
-	// SavourDelay of 0.1 gives 90 ticks: 900 times the double is exactly 90 under chop.
-	volatile double savour = Parse("0.1");
+	// Get_Float reads the nearest float, as gamemd's sscanf "%f" does, so 1.1 is not truncated.
+	Expect("single 1.1", Bits(Parse_Single("1.1")), 0x3f8ccccdu);
+	Expect("single 0.9", Bits(Parse_Single("0.9")), 0x3f666666u);
+	Expect("single 0.3", Bits(Parse_Single("0.3")), 0x3e99999au);
+	Expect("single 0.1", Bits(Parse_Single("0.1")), 0x3dcccccdu);
+	Expect("single hexadecimal", Bits(Parse_Single("0x10")), Bits(16.0f));
+	Expect("single overflow", Bits(Parse_Single("1e39")), Bits(HUGE_VALF));
+
+	// SavourDelay of 0.1 gives 90 ticks: 900 times the widened float is just over 90 under chop.
+	volatile double savour = Parse_Single("0.1");
 	double const ticks = 900.0 * savour;
 	Expect("savour ticks", static_cast<std::uint64_t>(static_cast<int>(ticks)), 90u);
 

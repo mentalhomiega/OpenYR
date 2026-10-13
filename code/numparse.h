@@ -102,6 +102,53 @@ inline double Parse_Nearest_Double(char const * text, char ** end)
 
 
 /// <summary>
+/// Reads a decimal number as gamemd's sscanf "%f" does: the nearest float, whatever rounding mode is
+/// in force. Hexadecimal and out-of-range text read as Parse_Nearest_Double does.
+/// </summary>
+/// <param name="text">The text to read. Leading white space and a plus sign are skipped.</param>
+/// <param name="end">Receives the first character after the number, or text when no number is read.
+/// May be null.</param>
+/// <returns>The value read, or 0.0f when no number is read.</returns>
+inline float Parse_Nearest_Single(char const * text, char ** end)
+{
+	char const * cursor = text;
+	while (std::isspace(static_cast<unsigned char>(*cursor))) {
+		cursor++;
+	}
+	if (*cursor == '+') {
+		cursor++;
+	}
+
+	bool const hexadecimal = cursor[0] == '0' && (cursor[1] == 'x' || cursor[1] == 'X');
+	float value = 0.0f;
+	std::from_chars_result result{cursor, std::errc::invalid_argument};
+	if (!hexadecimal) {
+		result = std::from_chars(cursor, cursor + std::strlen(cursor), value);
+	}
+	if (hexadecimal || result.ec == std::errc::result_out_of_range) {
+		numparse_detail::Nearest_Rounding_Scope const nearest;
+		char * tail = NULL;
+		value = std::strtof(text, &tail);
+		if (end != nullptr) {
+			*end = tail;
+		}
+		return(value);
+	}
+
+	if (result.ec != std::errc()) {
+		if (end != nullptr) {
+			*end = const_cast<char *>(text);
+		}
+		return(0.0f);
+	}
+	if (end != nullptr) {
+		*end = const_cast<char *>(result.ptr);
+	}
+	return(value);
+}
+
+
+/// <summary>
 /// Formats like snprintf, but rounds the printed digits to nearest whatever mode is in force, so
 /// that a value written to a settings file reads back as the value that was written.
 /// </summary>
