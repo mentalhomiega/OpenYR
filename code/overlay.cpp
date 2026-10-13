@@ -569,6 +569,9 @@ void OverlayClass::Editor_Draw_It(Point2D const & point, Rect const & cliprect) 
 		} else {
 			cellptr = &Map[Cell(1, Map.PlayRect.Width)];
 		}
+		if (cellptr->Drawer == NULL) {
+			cellptr->Init_Drawer();
+		}
 		Draw_Shape(*LogicalSurface, *(ConvertClass *)(cellptr->Drawer), shapefile, 0, drawpoint, cliprect, (ShapeFlags_Type)(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -2-yadjust, ZGRAD_GROUND, cellptr->TileBrightness);
 	}
 }
