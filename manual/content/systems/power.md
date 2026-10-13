@@ -78,7 +78,7 @@ LowPowerPenaltyModifier=1       ; scales the shortfall before it sets the speed
 
 ### What each structure contributes
 
-A structure's output is its type's positive [`Power=`](/keys/power/#scope-buildingtype) plus the positive `Power=` of every plug installed in it, plus [`ExtraPower`](/keys/extrapower/) for each object inside an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). The sum is multiplied by the structure's current strength as a fraction of its maximum and rounded down.
+A structure's output is its type's positive [`Power=`](/keys/power/#scope-buildingtype) plus the positive `Power=` of every plug installed in it, plus [`ExtraPower`](/keys/extrapower/) for each object inside an [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/) structure. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). The sum is multiplied by the structure's current strength as a fraction of its maximum and rounded down. If that product is a whole number and the fraction does not reduce to a denominator that is a power of two, the output is one lower: a `Power=200` plant at 15 of 750 strength supplies 3, not 4, and at 300 of 750 it supplies 79, not 80.
 
 A structure's drain is the size of its type's negative `Power=`, plus the drain of its plugs, plus the size of a negative [`ExtraPower`](/keys/extrapower/) while it is a charged gap generator. Damage does not change it.
 
