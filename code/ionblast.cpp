@@ -230,13 +230,13 @@ void IonBlastClass::AI(void)
 							float facing_sin = (float)std::sin(facing_rad);
 							float facing_cos = (float)std::cos(facing_rad);
 
-							float blast_dist = to_blast.Length();
+							float blast_dist = Gamemd_Magnitude_3D(to_blast.X, to_blast.Y, to_blast.Z);
 
 							if (fabs(blast_dist) > 0.00002) {
 
 								flat.Z = 0.0;
 
-								double flat_len = std::sqrt(flat.Y * flat.Y + flat.X * flat.X);
+								double flat_len = Gamemd_Magnitude_2D(flat.X, flat.Y);
 
 								Vector3 normal;
 								if (flat_len != 0.0) {
@@ -249,7 +249,7 @@ void IonBlastClass::AI(void)
 								float sideways_zsin = -(normal.Z * facing_sin);
 								double sideways_zcos = normal.Z * facing_cos;
 								double sideways_y = normal.X * facing_sin - normal.Y * facing_cos;
-								float sideways = (float)std::sqrt(sideways_zsin * sideways_zsin + sideways_zcos * sideways_zcos + sideways_y * sideways_y);
+								float sideways = Gamemd_Magnitude_3D(sideways_zsin, sideways_zcos, sideways_y);
 
 								if (fabs(facing_cos * forwards - facing_sin * sideways - normal.X) > 0.0002
 									|| fabs(facing_cos * sideways + facing_sin * forwards - normal.Y) > 0.0002) {
