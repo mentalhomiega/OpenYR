@@ -97,7 +97,7 @@ void DiskLaserClass::AI(void)
 	if (Owner->In_Air()) {
 		from.Z = to.Z;
 	}
-	int distance = ::Distance(from, to);
+	int distance = Gamemd_Distance(from, to);
 	if (Target->RTTI == RTTI_BUILDING) {
 		BuildingTypeClass const * type = ((BuildingClass *)Target)->Class;
 		distance = std::max(0, distance - (type->Width() + type->Height()) * 64);
