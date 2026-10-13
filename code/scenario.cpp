@@ -2974,6 +2974,17 @@ static void Assign_Start_Positions(bool official)
 		held[best] = true;
 		DebugString("House %s starts at waypoint %d\n", (char const *)housep->IniName, best);
 	}
+
+	/*
+	 * Each house's starting cell is its waypoint cell, as gamemd's start-position assignment
+	 * (FUN_005EE9D0) stores it through FUN_0050E000.
+	 */
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * housep = Houses[index];
+		if (housep->SpawnWaypoint >= 0) {
+			housep->BaseSpawnCell = Scen->Get_Waypoint_Cell(housep->SpawnWaypoint);
+		}
+	}
 }
 
 
