@@ -316,6 +316,14 @@ class WarheadTypeClass : public AbstractTypeClass
 		bool IsRocker;
 
 		/*
+		 * If this warhead rocks a unit it strikes instead of blasting it, then this flag will be
+		 * true. Against a unit the blast deals no damage and throws no shrapnel; the rocking
+		 * force is the damage scaled by [AudioVisual] DirectRockingCoefficient. Any other target
+		 * takes the warhead's normal effect.
+		 */
+		bool IsDirectRocker;
+
+		/*
 		 * If this warhead lights up the terrain around the blast, then this flag will be
 		 * true. The explosion drops a spotlight whose size grows with the damage.
 		 */

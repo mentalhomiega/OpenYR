@@ -142,6 +142,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsFire(false),
 	IsConventional(false),
 	IsRocker(false),
+	IsDirectRocker(false),
 	IsBright(false),
 	IsCLDisableRed(false),
 	IsCLDisableGreen(false),
@@ -200,6 +201,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsSparky = ini.Get_Bool(Name(), "Sparky", IsSparky);
 		IsSonic = ini.Get_Bool(Name(), "Sonic", IsSonic);
 		IsRocker = ini.Get_Bool(Name(), "Rocker", IsRocker);
+		IsDirectRocker = ini.Get_Bool(Name(), "DirectRocker", IsDirectRocker);
 		IsFire = ini.Get_Bool(Name(), "Fire", IsFire);
 		IsBright = ini.Get_Bool(Name(), "Bright", IsBright);
 		IsCLDisableRed = ini.Get_Bool(Name(), "CLDisableRed", IsCLDisableRed);
@@ -330,6 +332,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsFire);
 	crc(IsConventional);
 	crc(IsRocker);
+	crc(IsDirectRocker);
 	crc(IsBright);
 	crc(IsCLDisableRed);
 	crc(IsCLDisableGreen);
@@ -484,6 +487,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsFire);
 	stream.Serialize(IsConventional);
 	stream.Serialize(IsRocker);
+	stream.Serialize(IsDirectRocker);
 	stream.Serialize(IsBright);
 	stream.Serialize(IsCLDisableRed);
 	stream.Serialize(IsCLDisableGreen);

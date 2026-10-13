@@ -601,6 +601,7 @@ RulesClass::RulesClass(void) :
 	DropPodSpeed(40),
 	DropPodAngle(M_PI/2), /// 90 deg
 	ScrollMultiplier(1),
+	DirectRockingCoefficient(1),
 	CrewEscape(.5),
 	ThreatPerOccupant(5),
 	ShakeScreen(400),
@@ -1144,6 +1145,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		GateDownSound = ini.Get_VocType(AUDIOVISUAL, "GateDown", GateDownSound);
 		IsShroudGrow = ini.Get_Bool(AUDIOVISUAL, "ShroudGrow", IsShroudGrow);
 		ScrollMultiplier = ini.Get_Float(AUDIOVISUAL, "ScrollMultiplier", ScrollMultiplier);
+		DirectRockingCoefficient = ini.Get_Float(AUDIOVISUAL, "DirectRockingCoefficient", DirectRockingCoefficient);
 		ShakeScreen = ini.Get_Int(AUDIOVISUAL, "ShakeScreen", ShakeScreen);
 		CloakSound = ini.Get_VocType(AUDIOVISUAL, "CloakSound", CloakSound);
 		SellSound = ini.Get_VocType(AUDIOVISUAL, "SellSound", SellSound);
@@ -2995,6 +2997,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DropPodSpeed);
 	stream.Serialize(DropPodAngle);
 	stream.Serialize(ScrollMultiplier);
+	stream.Serialize(DirectRockingCoefficient);
 	stream.Serialize(CrewEscape);
 	stream.Serialize(ThreatPerOccupant);
 	stream.Serialize(ShakeScreen);

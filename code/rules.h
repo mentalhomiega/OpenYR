@@ -914,6 +914,12 @@ class RulesClass
 		double ScrollMultiplier;
 
 		/*
+		 * This scales the rocking that a DirectRocker warhead gives the unit it strikes. The
+		 * rocking force is the damage times this, divided by 100 and capped at 4.
+		 */
+		double DirectRockingCoefficient;
+
+		/*
 		 * This is the chance that the crew of a destroyed vehicle bails out as an
 		 * infantry survivor rather than dying with it.
 		 */
