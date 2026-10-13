@@ -55,6 +55,15 @@ const double WaveAmplitudeFalloff = 25.0;
 const double WaveRockScale = DEG_TO_RAD(360);
 const double WaveSpeedScale = 0.0125;
 
+/*
+ * The displacement surfaces hold the blast center at their middle. The band's outer edge
+ * stops advancing within one WaveSpeed of WaveReach, so the surfaces must extend WaveReach
+ * pixels from the center to hold it.
+ */
+const int BlastSurfaceWidth = 512;
+const int BlastSurfaceHeight = 256;
+const double WaveReach = 256.0;
+
 double WaveSpeed = ((256.0 - WaveStartDistance) + WaveBandWidth) * WaveSpeedScale;
 double WavePhaseSpeed = WaveSpeed;
 
@@ -153,9 +162,9 @@ void IonBlastClass::AI(void)
 					Point2D diff = occupier_point - point;
 					int screen_dist = diff.Gamemd_Length() + 8;
 
-					if (screen_dist < 128) {
+					if (screen_dist < 256) {
 
-						char * displacement = (char *)BlastSurfaces[Lifetime]->Lock(Point2D(screen_dist + 128, 64));
+						char * displacement = (char *)BlastSurfaces[Lifetime]->Lock(Point2D(screen_dist + BlastSurfaceWidth / 2, BlastSurfaceHeight / 2));
 
 						if (*displacement > 0) {
 
@@ -309,25 +318,25 @@ void IonBlastClass::One_Time(void)
 	double max_dist = WaveStartDistance;
 
 	for (int frame = 0; frame < ARRAY_SIZE(BlastSurfaces); frame++) {
-		BlastSurfaces[frame] = new BSurface(256, 128, 1);
+		BlastSurfaces[frame] = new BSurface(BlastSurfaceWidth, BlastSurfaceHeight, 1);
 		BlastSurfaces[frame]->Fill(-1);
 
 		/*
 		 * Rasterize this frame's ripple band into the displacement surface.
-		 * The surface is 256x128 with the blast center in the middle; only one
+		 * The surface is 512x256 with the blast center in the middle; only one
 		 * quadrant is computed and the result is mirrored into the other three.
 		 * The vertical axis counts double toward the distance because the
 		 * shockwave ellipse is half as tall as it is wide.
 		 */
-		char * center = (char *)BlastSurfaces[frame]->Lock() + 0x4080;
-		for (int y = 63; y >= 0; y--) {
+		char * center = (char *)BlastSurfaces[frame]->Lock() + (BlastSurfaceHeight / 2) * BlastSurfaceWidth + BlastSurfaceWidth / 2;
+		for (int y = BlastSurfaceHeight / 2 - 1; y >= 0; y--) {
 			int y_dist_sq = y * y * 4;
-			for (int x = 127; x >= 0; x--) {
+			for (int x = BlastSurfaceWidth / 2 - 1; x >= 0; x--) {
 				double dist = std::sqrt(x * x + y_dist_sq);
 				if (dist >= min_dist && dist <= max_dist) {
 					double wave_height = (std::sin((dist - frame * WavePhaseSpeed + 38.0) * WaveFrequency) * 3.5 + 3.0) / (dist / WaveAmplitudeFalloff + 1.0) + 0.5;
 					char spiral_index = Point_To_Spiral_Index(Point2D(0, wave_height));
-					int row = y << 8;
+					int row = y * BlastSurfaceWidth;
 					center[row + x] = spiral_index;  /// Quadrant I
 					center[row - x] = spiral_index;  /// Quadrant II
 					char * mirror = center - row;
@@ -337,7 +346,7 @@ void IonBlastClass::One_Time(void)
 			}
 		}
 
-		if (128.0 - WaveSpeed > max_dist) {
+		if (WaveReach - WaveSpeed > max_dist) {
 			max_dist += WaveSpeed;
 		}
 
@@ -402,9 +411,9 @@ void IonBlastClass::Draw_It(void)
 		Rect dcliprect = TacticalRect;
 		Surface * source_surface = BlastSurfaces[Lifetime];
 		int stride = LogicalSurface->Stride();
-		Rect srect(0, 0, 256, 128);
-		Rect drect(point.X - 128, point.Y - 64, 256, 128);
-		Rect scliprect(0, 0, 256, 128);
+		Rect srect(0, 0, BlastSurfaceWidth, BlastSurfaceHeight);
+		Rect drect(point.X - BlastSurfaceWidth / 2, point.Y - BlastSurfaceHeight / 2, BlastSurfaceWidth, BlastSurfaceHeight);
+		Rect scliprect(0, 0, BlastSurfaceWidth, BlastSurfaceHeight);
 		bool overlapped = false;
 		short * dbuffer;
 		char * sbuffer;
@@ -437,7 +446,7 @@ void IonBlastClass::Draw_It(void)
 						zptr++;
 					}
 					dest_row = (short *)((char *)dest_row + stride);
-					source_row += 256;
+					source_row += BlastSurfaceWidth;
 					draw_z--;
 					sptr = source_row;
 					zptr += buffer_width - x;
@@ -453,7 +462,7 @@ void IonBlastClass::Draw_It(void)
 						dptr++;
 					}
 					dest_row = (short *)((char *)dest_row + stride);
-					source_row += 256;
+					source_row += BlastSurfaceWidth;
 					draw_z--;
 					sptr = source_row;
 				}
