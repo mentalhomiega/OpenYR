@@ -51,6 +51,7 @@
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
 static bool Try_Display_Mode(UIDisplayMode const & picked, float scale);
+static void Draw_Display_Backdrop(void);
 static bool Classic_Options_Page(void);
 
 
@@ -273,14 +274,14 @@ bool Test_Display_Mode_Dialog(int width, int height)
 	HiddenSurface->Fill(TBLACK);
 	Update_Visible_Surface();
 	Show_Mouse();
-	Draw_Menu_Background();
+	Draw_Display_Backdrop();
 
 	if (!UI_Confirm_Mode_Dialog()) {
 		DebugString("Resetting display mode @ %dx%d\n", Options.ScreenWidth, Options.ScreenHeight);
 		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
 		LogicalSurface = HiddenSurface;
 
-		Draw_Menu_Background();
+		Draw_Display_Backdrop();
 		return(false);
 	}
 
@@ -344,7 +345,22 @@ static bool Try_Display_Mode(UIDisplayMode const & picked, float scale)
 	if (rescaled) {
 		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
 		LogicalSurface = HiddenSurface;
-		Draw_Menu_Background();
+		Draw_Display_Backdrop();
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Redraws what the display options sit on after the mode changed: the battlefield while a game
+/// is running, otherwise the menu backdrop.
+/// </summary>
+static void Draw_Display_Backdrop(void)
+{
+	if (GameActive) {
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		Map.Render();
+		return;
+	}
+	Draw_Menu_Background();
 }

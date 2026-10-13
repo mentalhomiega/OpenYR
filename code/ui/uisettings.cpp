@@ -70,12 +70,13 @@ void UI_Settings_Run(UISettingsTab first)
 {
 	bool const ingame = GameActive;
 
-	unsigned offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_KEYBOARD);
+	unsigned offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_KEYBOARD);
 	if (AudioEngine.Is_Available()) {
 		offered |= (1u << UI_TAB_AUDIO);
 	}
+	// The mods are mounted when the game starts, so they can only be changed from the main menu.
 	if (!ingame) {
-		offered |= (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_MODS);
+		offered |= (1u << UI_TAB_MODS);
 	}
 
 	Offered = offered;
