@@ -38,7 +38,7 @@ A type with `TurretCount` above `0` ignores `Primary`, `Secondary`, `ElitePrimar
 
 An elite object fires the normal weapon in any position with no elite weapon. An elite firing offset defaults to the normal offset of the same position. The list's weapons fire with no barrel length or thickness.
 
-Positions 1 and 2 stand in for the primary and secondary weapon wherever the game looks those up, such as in range and threat checks. A type that is not a gattling type fires position 1, unless a passenger of a [gunner vehicle](/systems/gunner-vehicles/) chooses another.
+Positions 1 and 2 stand in for the primary and secondary weapon wherever the game looks those up, such as in range checks. A vehicle's threat check uses both positions, except that a vehicle with a `TurretCount` that is not a gattling type uses only the weapon of its current turret. A type that is not a gattling type fires position 1, unless a passenger of a [gunner vehicle](/systems/gunner-vehicles/) chooses another.
 
 ```ini title="rulesmd.ini"
 [MYTANK] ; example VehicleType

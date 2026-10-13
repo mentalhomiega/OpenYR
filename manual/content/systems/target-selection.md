@@ -164,7 +164,7 @@ An idle object settles into either Guard or Area Guard, and Area Guard is the mi
 
 Before the scan runs, the kind of object doing the looking rewrites the list of wanted target kinds.
 
-When the mission asks for no particular kind, an infantry or a vehicle fills the list from its weapons, one weapon slot at a time.
+When the mission asks for no particular kind, an infantry or a vehicle fills the list from its weapons, one weapon slot at a time. A vehicle with a [`TurretCount`](/keys/turretcount/) that is not a gattling type fills the list from its current turret's weapon alone.
 
 | Projectile setting | Target kinds added |
 | --- | --- |
