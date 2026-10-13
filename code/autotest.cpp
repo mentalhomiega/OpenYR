@@ -1159,6 +1159,29 @@ static void Air_Probe_Step(StepType const & step)
 	}
 }
 
+
+// cursor <TypeID> x y: writes the action and the mouse shape (its MouseCursorType number) that hovering
+// over the object on that cell shows for the player's first object of that type.
+static void Cursor_Probe(std::string const & type_name, int x, int y)
+{
+	Cell const cell(x, y);
+	ObjectClass * target = Map[cell].Cell_Occupier();
+	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), type_name.c_str()) == 0) {
+			// The probed object is the only selection, so the action is the one its cursor shows.
+			Unselect_All();
+			techno->Select();
+			ActionType const action = techno->What_Action(target, false);
+			Map.Mouse_Left_Up(cell, false, target, action, false);
+			DebugString("AUTOTEST   cursor %s on %s: action %s mouse %d\n", techno->TClass->Name(), target->Class_Of()->Name(), ActionName[action], (int)Map.Get_Mouse_Shape());
+			Unselect_All();
+			return;
+		}
+	}
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -1166,6 +1189,12 @@ void Run(StepType const & step)
 	// weapons and airborne: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "weapons" || step.Command == "airborne") {
 		Air_Probe_Step(step);
+		return;
+	}
+
+	// cursor <TypeID> x y: see Cursor_Probe. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "cursor") {
+		Cursor_Probe(step.Argument, step.X, step.Y);
 		return;
 	}
 

@@ -151,6 +151,7 @@ class DisplayClass: public MapClass
 		virtual bool Fog_Map_Cell(Cell const & cell, HouseClass * house);
 		virtual bool Shadow_Map_Cell(Cell const & cell, HouseClass * house);
 		virtual MouseType Get_Mouse_Shape(void) const = 0;
+		virtual void Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * object, ActionType action, bool wsmall = false);
 		virtual bool Scroll_Map(FacingType facing, int & distance, bool really);
 		virtual void Set_View_Dimensions(Rect const & dimensions);
 
@@ -199,7 +200,6 @@ class DisplayClass: public MapClass
 	protected:
 		virtual void Mouse_Right_Press(Point2D const & point = Point2D());
 		virtual void Mouse_Left_Press(Point2D const & point);
-		virtual void Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * object, ActionType action, bool wsmall = false);
 		virtual void Mouse_Left_Held(Point2D const & point);
 		virtual void Mouse_Left_Release(Coord const & coord, Cell const & cell, ObjectClass * object, ActionType action, bool wsmall = false);
 		virtual void Mouse_Right_Release(Point2D const & point = Point2D());

@@ -1,0 +1,48 @@
+; Garrison cursors on the skirmish map. Each "cursor" line writes the action and the mouse shape that
+; hovering over the structure gives the player's first soldier of that type. The mouse shape is the
+; MouseCursorType number: 25 enter, 27 deploy, 20 stay attack, 21 attack, 17 select.
+; Expected in gamemd (InfantryClass::MouseOverObject 0x51E3B0, DisplayClass::ConvertAction 0x4AAE90):
+;   neutral empty structure (CANEWY12), and own partly filled one (NABNKR): Capture, enter cursor 25
+;   own full structure (NABNKR, 5 inside): Select, 17
+;   enemy structure in range (NABNKR, Africans): Attack, stay attack 20
+;   selected own structure with occupants (CATEXS06): Self_Deploy, deploy cursor 27
+; The clicks still send the soldiers in, and the selected occupied structure lets its occupant out.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 reveal
+310 own NABNKR 58 44
+311 own NABNKR 64 36
+320 own E1 52 40
+321 own E1 52 41
+322 own E1 52 42
+323 own E1 52 43
+324 own E1 52 44
+325 own E1 52 45
+326 own E1 52 46
+330 occupy E1 58 44
+331 occupy E1 64 36
+332 occupy E1 64 36
+333 occupy E1 64 36
+334 occupy E1 64 36
+335 occupy E1 64 36
+336 occupy E1 70 42
+340 own E1 66 48
+341 own E1 66 47
+342 spawn NABNKR 66 50
+350 garrisons
+360 cursor E1 82 36
+361 cursor E1 58 44
+362 cursor E1 64 36
+363 cursor E1 66 50
+364 cursor CATEXS06 70 42
+370 clickon E1 82 36
+1500 garrisons
+1510 cursor E1 58 44
+1520 clickon E1 58 44
+2400 garrisons
+2410 select CATEXS06
+2420 clickon CATEXS06 70 42
+2600 garrisons
+2610 cursor CATEXS06 70 42
+2700 quit
