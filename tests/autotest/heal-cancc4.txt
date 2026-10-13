@@ -4,12 +4,14 @@
 ;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent5 -Script src-agent5/tests/autotest/heal-cancc4.txt -Seconds 150 -Filter "AUTOTEST|Exception"
 ; Rule under test (ObjectClass::ReceiveDamage, 0x5F5390): a building whose type has CanC4=no takes at least one
 ; point from any hit with a nonzero amount, so a heal hit by a warhead with negative damage costs it one point, even
-; at full strength. The base heal crate adds Health minus MaxStrength, which is zero for a full building, so it leaves
-; one alone. CanC4=yes structures and other objects heal by the full amount, capped at their maximum strength.
+; at full strength. The base heal crate sends a hit of Health minus MaxStrength, which is zero for a full building, so it
+; leaves one alone. CanC4=yes structures and other objects heal by the full amount, capped at their maximum strength.
 ; A warping-out unit takes no unforced damage, healing included (TechnoClass::ReceiveDamage, 0x701900); a forced hit still applies.
 ; Expected: CAMISC06 4 after the first crate (it started at 5); GAPOWR 750 after the crate; the heal hits on CAMISC06 cost one
 ; point each, including at full strength (10 to 9); the heal hit on GAPOWR gives 425; a second crate leaves the undamaged
-; CAMISC06 at 10; SPY keeps 50 and takes no HE damage while warping, then heals to 100 once the warp ends.
+; CAMISC06 at 10. While SPY warps, a forced crate heals it from 50 to 100; after it is hurt back to 50, neither the heal hit nor
+; the HE hit changes it, and it heals to 100 once the warp ends. The third crate (at 66,52) costs the damaged CAMISC06 one
+; point (9 to 8), as the rule says.
 30 command CenterBase
 40 select AMCV
 45 command DeployObject
@@ -52,10 +54,16 @@
 481 where CAMISC06
 490 hurt SPY 50
 500 warpout SPY 1
-501 hit SPY:Organic@E1 -50
-502 hit SPY:HE 30
-503 where SPY
-510 warpout SPY 0
-511 hit SPY:Organic@E1 -50
-512 where SPY
+501 crate heal 66 52
+505 move E1 66 52
+510 waitcell E1 66 52 0 900
+520 where SPY
+521 where CAMISC06
+530 hurt SPY 50
+531 hit SPY:Organic@E1 -50
+532 hit SPY:HE 30
+533 where SPY
+540 warpout SPY 0
+541 hit SPY:Organic@E1 -50
+542 where SPY
 600 quit
