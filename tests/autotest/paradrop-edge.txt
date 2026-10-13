@@ -1,0 +1,50 @@
+; Paradrop planes dropped at cells in the local view, in the margin outside it, and near the edges of
+; XMP29U2.MAP (Size 0,0,60,60, LocalSize 2,4,56,50). A cell must satisfy x+y > 60 to lie on the playfield.
+; Each shot is granted fresh (the super weapon is spent when it fires).
+30 command CenterBase
+100 grant AmericanParaDropSpecial
+120 fire AmericanParaDropSpecial 60 60
+370 where PDPLANE
+620 where PDPLANE
+870 where PDPLANE
+1120 where PDPLANE
+1370 where PDPLANE
+1620 where PDPLANE
+1800 count PDPLANE
+1900 grant AmericanParaDropSpecial
+1920 fire AmericanParaDropSpecial 34 34
+2170 where PDPLANE
+2420 where PDPLANE
+2670 where PDPLANE
+2920 where PDPLANE
+3170 where PDPLANE
+3420 where PDPLANE
+3600 count PDPLANE
+3700 grant AmericanParaDropSpecial
+3720 fire AmericanParaDropSpecial 90 90
+3970 where PDPLANE
+4220 where PDPLANE
+4470 where PDPLANE
+4720 where PDPLANE
+4970 where PDPLANE
+5220 where PDPLANE
+5400 count PDPLANE
+5500 grant AmericanParaDropSpecial
+5520 fire AmericanParaDropSpecial 50 15
+5770 where PDPLANE
+6020 where PDPLANE
+6270 where PDPLANE
+6520 where PDPLANE
+6770 where PDPLANE
+7020 where PDPLANE
+7200 count PDPLANE
+7300 grant AmericanParaDropSpecial
+7320 fire AmericanParaDropSpecial 15 50
+7570 where PDPLANE
+7820 where PDPLANE
+8070 where PDPLANE
+8320 where PDPLANE
+8570 where PDPLANE
+8820 where PDPLANE
+9000 count PDPLANE
+9100 quit
