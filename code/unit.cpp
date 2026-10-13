@@ -217,6 +217,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	GunnerPassengers(0),
 	MirageType(NULL),
 	MirageBlockedUntil(0),
+	MirageCreationFrame(0),
 	MirageBlinkUntil(0),
 	Reload(0),
 	FiringSyncDelay(-1),
@@ -2605,7 +2606,7 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 		break;
 
 	default:
-		blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD));
+		blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
 		break;
 	}
 
@@ -3093,6 +3094,7 @@ void UnitClass::Mirage_AI(void)
 	}
 	if (MirageType == NULL && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
 		MirageType = Rule->DefaultMirageDisguises[Sim_Random_Pick(0, Rule->DefaultMirageDisguises.Count() - 1)];
+		MirageCreationFrame = Frame;
 		Mark(MARK_CHANGE);
 	}
 }
@@ -3174,6 +3176,28 @@ bool UnitClass::Is_Shown_As_Terrain_To(HouseClass const * viewer) const
 		return(false);
 	}
 	return(Map[Get_Cell()].DisguiseSensorCount[viewer] == 0);
+}
+
+
+/// <summary>
+/// The translucency the owner of a disguised Mirage vehicle sees on it (UnitClass::DrawObject, 0x73B140,
+/// through TechnoClass slot 0x43C, 0x70ED80). The owner's cycle is 256 frames long and starts 64 frames
+/// before the current look was taken. It is 25% or 50% in short bursts of that cycle and none otherwise.
+/// Other viewers see no shimmer.
+/// </summary>
+int UnitClass::Mirage_Shimmer_Flags(void) const
+{
+	if (MirageType == NULL || !House->Is_Player_Control()) {
+		return(0);
+	}
+	int const cycle = (Frame - MirageCreationFrame + 0x40) & 0xFF;
+	if ((cycle >= 0x40 && cycle < 0x44) || (cycle >= 0x4C && cycle < 0x50) || (cycle >= 0x70 && cycle < 0x74) || (cycle >= 0x7C && cycle < 0x80)) {
+		return(SHAPE_TRANSLUCENT25);
+	}
+	if ((cycle >= 0x44 && cycle < 0x4C) || (cycle >= 0x74 && cycle < 0x7C)) {
+		return(SHAPE_TRANSLUCENT50);
+	}
+	return(0);
 }
 
 

@@ -113,6 +113,9 @@ class UnitClass : public FootClass
 		TerrainTypeClass const * MirageType;
 		int MirageBlockedUntil;
 
+		// The frame the current look was taken on. It is not saved, so after a load the owner's cycle counts from frame 0 until the next look.
+		int MirageCreationFrame;
+
 		// The frame until which a DisguiseWhenStill vehicle that has just fired is open to computer targeting.
 		int MirageBlinkUntil;
 
@@ -208,6 +211,8 @@ class UnitClass : public FootClass
 		bool Is_Blinking_Disguise(void) const;
 		// Is this DisguiseWhenStill vehicle drawn as its terrain to the viewer (TechnoClass slot 0x440, 0x70EE30)?
 		bool Is_Shown_As_Terrain_To(HouseClass const * viewer) const;
+		// The translucency the owner sees on a disguised vehicle now (TechnoClass slot 0x43C, 0x70ED80), or 0.
+		int Mirage_Shimmer_Flags(void) const;
 
 		/*
 		**	Object entry and exit from the game system.
