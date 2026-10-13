@@ -7844,6 +7844,9 @@ void TechnoClass::Delete_Me(void)
 	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
 		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
 	}
+	if (ParasiteImUsing) {
+		ParasiteImUsing->Reset_Grapple();
+	}
 	if (ParasiteImUsing && ParasiteImUsing->Victim != NULL) {
 		ParasiteImUsing->Victim->ParasiteEatingMe = NULL;
 		ParasiteImUsing->Victim = NULL;

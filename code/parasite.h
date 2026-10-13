@@ -64,10 +64,12 @@ class ParasiteClass
 		int GrappleAnimFrame;
 		int GrappleAnimDelay;
 
+		// Ends the grapple and removes its animation; the parasite's owner calls this when it is deleted.
+		void Reset_Grapple(void);
+
 	private:
 		void Release(bool doomed, bool from_exit);
 		void Update_Squid(void);
 		bool Update_Grapple(void);
 		void Create_Wakes(Coord const & where);
-		void Reset_Grapple(void);
 };
