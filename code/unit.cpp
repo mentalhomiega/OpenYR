@@ -947,8 +947,9 @@ void UnitClass::Firing_AI(void)
 
 			case FIRE_RANGE:
 			case FIRE_MUST_DEPLOY:
+				// Out of range, firing sets no course toward the target. Only a mission that approaches
+				// its target does (UnitClass::UpdateFiring, 0x736DF0).
 				IsFiring = false;
-				Approach_Target();
 				break;
 		}
 
