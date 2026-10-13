@@ -12851,7 +12851,7 @@ Edge:
     value_type: sourcetype
     status: generated
     _provenance:
-      default_candidate: North
+      default_candidate: none
       declared_in: HouseClass
       member: Control
       source: code/house.cpp
