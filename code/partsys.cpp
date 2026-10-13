@@ -313,6 +313,7 @@ void ParticleSystemClass::Gas_AI(void)
 					SystemParticles.Add(npart);
 					npart->Speed = spart->Speed;
 					npart->GasDrift = spart->GasDrift;
+					npart->SourceHouse = spart->SourceHouse;
 				}
 			}
 			spart->Delete_Me();
@@ -724,6 +725,7 @@ void ParticleSystemClass::Web_AI(void)
 					SystemParticles.Add(npart);
 					npart->Speed = spart->Speed;
 					npart->GasDrift = spart->GasDrift;
+					npart->SourceHouse = spart->SourceHouse;
 				}
 			}
 			spart->Delete_Me();

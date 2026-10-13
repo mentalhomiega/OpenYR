@@ -563,7 +563,10 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		} else {
 			psys = new ParticleSystemClass(warhead->Particle, coord);
 		}
-		psys->Spawn_Held_Particle(coord, coord);
+		ParticleClass * particle = psys->Spawn_Held_Particle(coord, coord);
+		if (particle != NULL) {
+			particle->SourceHouse = sourcehouse;
+		}
 	}
 
 	if ((warhead->IsWallDestroyer || warhead->IsFire) && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
