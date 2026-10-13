@@ -2489,7 +2489,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					 * distance when this is a helipad. Otherwise it is told to get out of the way.
 					 */
 					if (tech != NULL) {
-						if (Class->IsHelipad || ::Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON) {
+						if (Class->IsHelipad || Gamemd_Distance(Center_Coord(), tech->Center_Coord()) < CELL_LEPTON) {
 							int strength = tech->Strength;
 							tech->Take_Damage(strength, 0, Rule->C4Warhead, NULL, true, true);
 						} else {
@@ -4804,7 +4804,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			if (!Contains_Link(docker)) {
 				continue;
 			}
-			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || ::Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
+			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || Gamemd_Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
 				bool const tethered = docker->IsTethered;
 				if (capture) {
 					docker->Captured(newowner);
@@ -6187,7 +6187,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 							distance = 0x96;
 						}
 						// A dock is not always at the structure's center; the Soviet depot's is half a cell off.
-						if (Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && ::Distance(Docking_Coord_For(tech), tech->Center_Coord()) < distance) {
+						if (Transmit_Message(RADIO_NEED_TO_MOVE, tech) == RADIO_ROGER && Gamemd_Distance(Docking_Coord_For(tech), tech->Center_Coord()) < distance) {
 							ready = true;
 							continue;
 						}
