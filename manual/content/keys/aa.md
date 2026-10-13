@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A weapon whose projectile is not anti-aircraft cannot fire at anything in the air. The test is on the target's height, not its kind: an object is in the air once it is placed on the map and at least one terrain level above the ground beneath it. An aircraft in flight, a [`JumpJet=yes`](/keys/jumpjet/) infantry in flight and a vehicle lifted by a flying locomotor are all refused. A hover vehicle never counts as airborne.
+A weapon whose projectile is not anti-aircraft cannot fire at anything in the air. The test is on the target's height, not its kind: an object is in the air once it is placed on the map and at least two terrain levels, 208 leptons, above the ground beneath it. An aircraft in flight, a [`JumpJet=yes`](/keys/jumpjet/) infantry in flight and a vehicle lifted by a flying locomotor are all refused. A hover vehicle counts as airborne only at that height, which the stock [`HoverHeight`](/keys/hoverheight/) never reaches.
 
 The same projectile also limits how steeply the weapon can fire upward. When the firer is not itself airborne and the projectile is not [`Arcing=yes`](/keys/arcing/), a target is out of range if it is at least as high above the firer as it is away horizontally. `AA=yes` removes that limit.
 

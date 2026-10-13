@@ -453,8 +453,6 @@ class FootClass : public TechnoClass
 		**	Coordinate inquiry functions. These are used for both display and
 		**	combat purposes.
 		*/
-		virtual bool On_Ground(void) const override;
-		virtual bool In_Air(void) const override;
 		virtual Coord Likely_Coord(void) const;
 		virtual bool Is_In_Same_Zone_As(ObjectClass const * object) const override;
 		virtual bool Is_In_Same_Zone(Coord const & coord) const override;

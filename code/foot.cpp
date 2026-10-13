@@ -5149,41 +5149,6 @@ void FootClass::Delete_Me(void)
 
 
 /// <summary>
-/// Determines if this object is airborne.
-/// A hover driven object is never considered to be in the air, even though it rides above
-/// the terrain rather than on it.
-/// </summary>
-/// <returns>bool; Is the object in the air?</returns>
-bool FootClass::In_Air(void) const
-{
-	ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
-
-	if (clsid == ClassID_HoverLocomotion) {
-		return(false);
-	}
-
-	return(BASECLASS::In_Air());
-}
-
-
-/// <summary>
-/// Determines if this object is resting on the ground.
-/// A hover driven object floats a short distance above the terrain, but as long as it is
-/// placed down on the map it still counts as being on the ground.
-/// </summary>
-/// <returns>bool; Is the object on the ground?</returns>
-bool FootClass::On_Ground(void) const
-{
-	if (BASECLASS::On_Ground()) {
-		return(true);
-	}
-	ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
-
-	return(IsDown && clsid == ClassID_HoverLocomotion);
-}
-
-
-/// <summary>
 /// An organic vehicle dies under the Iron Curtain; anything else is protected, as
 /// FootClass::IronCurtain (0x4DEAE0) does.
 /// </summary>

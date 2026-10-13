@@ -2714,7 +2714,8 @@ bool ObjectClass::On_Ground(void) const
 {
 	assert(this != NULL);
 
-	if (IsDown && HeightAGL < LEVEL_LEPTON_H) {
+	// gamemd's ObjectClass::IsOnFloor (0x005F6B60) is the complement of IsInAir: below two levels.
+	if (IsDown && HeightAGL < 2 * LEVEL_LEPTON_H) {
 		return(true);
 	}
 	return(false);
@@ -2732,7 +2733,8 @@ bool ObjectClass::In_Air(void) const
 {
 	assert(this != NULL);
 
-	if (IsDown && HeightAGL >= LEVEL_LEPTON_H) {
+	// gamemd's ObjectClass::IsInAir (0x005F6B90) starts at two levels, not one (DAT_00AC13C8 is LEVEL_LEPTON_H).
+	if (IsDown && HeightAGL >= 2 * LEVEL_LEPTON_H) {
 		return(true);
 	}
 	return(false);
