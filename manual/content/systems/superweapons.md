@@ -613,7 +613,7 @@ A `Type=SpyPlane` weapon sends planes of the `SPYP` aircraft type from the firin
 While a plane is within its primary weapon's `Range` of the target, it photographs: it maps the ground for its house around the point below it, out to the weapon's `Damage` in cells, at most 10.
 
 - On the way to the target it photographs every [`SpyPlaneCameraFrames`](/keys/spyplanecameraframes/) frames and plays [`SpyPlaneCamera`](/keys/spyplanecamera/) each time.
-- Within three cells of the target it turns for the map edge opposite its house's edge, photographing every 3 frames without the sound, and is removed once it leaves the map.
+- Within three cells of the target it holds its heading and flies on, photographing every 3 frames without the sound. It is removed once it leaves the playfield.
 
 ```ini title="rulesmd.ini"
 [SPYP]
