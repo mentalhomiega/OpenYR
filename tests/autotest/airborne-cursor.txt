@@ -1,0 +1,18 @@
+; Attack cursor and fire check on an airborne Kirov (enemy, computer-owned) beside the player's Grizzly (no AA weapon) and
+; Flak Track (AA secondary). The Kirov climbs from the ground; the probes run once it is in the air (frames 150 and later).
+; Expected at frame 150 or later: "airborne ZEP ... in_air 1"; "canfire MTNK at ZEP: 5 ... weapon 0 fire 5" (illegal);
+; "action MTNK on ZEP: NoMove" (not Attack); "canfire HTK at ZEP: 5 ... weapon 1 fire 3" (the AA secondary is chosen and
+; is rearming); "action HTK on ZEP: Attack".
+30 command CenterBase
+35 reveal
+40 own MTNK 60 20
+41 own HTK 60 26
+50 spawn ZEP 62 22
+150 airborne ZEP
+151 canfire MTNK 62 22
+152 canfire HTK 62 22
+153 action MTNK 62 22
+154 action HTK 62 22
+155 threat MTNK
+156 threat HTK
+200 quit

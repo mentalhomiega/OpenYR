@@ -71,6 +71,9 @@
 **	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
 **							weapon at the object on that cell now, and why not, then the
 **							weapon it would choose and whether that one could fire
+**	weapons <TypeID>		writes each weapon slot of the type with its bullet's AA and AG flags and range
+**	airborne <TypeID>		writes each object of the type with its height above ground, whether it is in the air,
+**							its render layer, and whether the ground or bridge occupier chain of its cell holds it
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
@@ -148,6 +151,7 @@
 #include "factory.h"
 #include "ccfile.h"
 #include "builtype.h"
+#include "bullettype.h"
 #include "cell.h"
 #include "conquer.h"
 #include "crate.hh"
@@ -1113,9 +1117,57 @@ static void Tab_Step(void)
 }
 
 
+// The techno on a cell for the probes: the ground occupier if there is one, else a flying object over the cell.
+static TechnoClass * Techno_Over_Cell(Cell const & cell)
+{
+	TechnoClass * target = Map[cell].Cell_Techno();
+	for (int index = 0; target == NULL && index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->IsDown && !techno->IsInLimbo && techno->Get_Cell().X == cell.X && techno->Get_Cell().Y == cell.Y) {
+			target = techno;
+		}
+	}
+	return(target);
+}
+
+static void Air_Probe_Step(StepType const & step)
+{
+	if (step.Command == "weapons") {
+		// weapons <TypeID>: each weapon slot of the type with its bullet's AA and AG flags and its range in leptons.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		for (int slot = 0; type != NULL && slot < TechnoTypeClass::WEAPON_SLOT_COUNT; slot++) {
+			WeaponTypeClass const * weapon = type->Weapons[slot].Weapon;
+			if (weapon != NULL) {
+				DebugString("AUTOTEST   weapon %s slot %d %s AA %d AG %d range %d\n", type->Name(), slot, weapon->Name(), (int)weapon->Bullet->IsAntiAircraft, (int)weapon->Bullet->IsAntiGround, (int)weapon->Range);
+			}
+		}
+	} else if (step.Command == "airborne") {
+		// airborne <TypeID>: each object of the type with its height above ground, whether it is in the air, its render layer,
+		// and whether the ground or bridge occupier chain of its cell holds it.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const cell = techno->Get_Cell();
+			bool ground_chain = false;
+			for (ObjectClass const * link = Map[cell].Cell_Occupier(false); link != NULL && !ground_chain; link = link->Next) ground_chain = link == techno;
+			bool bridge_chain = false;
+			for (ObjectClass const * link = Map[cell].Cell_Occupier(true); link != NULL && !bridge_chain; link = link->Next) bridge_chain = link == techno;
+			DebugString("AUTOTEST   airborne %s of %s cell %d,%d agl %d in_air %d layer %d obj_layer %d on_bridge %d down %d ground_chain %d bridge_chain %d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), cell.X, cell.Y, (int)techno->HeightAGL, (int)techno->In_Air(), (int)techno->In_Which_Layer(), (int)techno->Layer,
+				(int)techno->IsOnBridge, (int)techno->IsDown, (int)ground_chain, (int)bridge_chain);
+		}
+	}
+}
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
+
+	// weapons and airborne: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "weapons" || step.Command == "airborne") {
+		Air_Probe_Step(step);
+		return;
+	}
 
 	// strikeobj <TypeID> x y [radius]: see Strike_Object. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "strikeobj") {
@@ -1784,7 +1836,7 @@ void Run(StepType const & step)
 		}
 		DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
 	} else if (step.Command == "action" || step.Command == "clickon") {
-		ObjectClass * target = Map[Cell(step.X, step.Y)].Cell_Occupier();
+		ObjectClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
@@ -1869,7 +1921,7 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   ruleanims MoveFlash %s InfantryExplode %s InfantryNuked %s FlamingInfantry %s IonBlast %s DropZoneAnim %s BarrelExplode %s money %d\n",
 			name(Rule->MoveFlash), name(Rule->InfantryExplode), name(Rule->InfantryNuked), name(Rule->FlamingInfantry), name(Rule->IonBlast), name(Rule->FlareAnim), name(Rule->BarrelExplode), Rule->MPMoney);
 	} else if (step.Command == "canfire") {
-		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+		TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {

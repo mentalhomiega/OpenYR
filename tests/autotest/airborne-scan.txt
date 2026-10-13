@@ -1,0 +1,16 @@
+; Range scan asking for air (flags 5 = THREAT_RANGE and THREAT_AIR) from a computer Grizzly with no AA weapon and a computer Flak
+; Track with an AA secondary. The player's Kirov is the only candidate: its MCV and infantry are destroyed first.
+; Expected at frame 121: "threatscan MTNK of Africans picks - at -1,-1" (the Grizzly's scan refuses the airborne Kirov) and
+; "threatscan HTK of Africans picks ZEP at 62,22" (the Flak Track's AA secondary takes it).
+; Run: scripts/run_autotest.ps1 -Build agent2 -Script tests/autotest/airborne-scan.txt -Map XMP29U2.MAP -Seconds 120
+30 command CenterBase
+35 reveal
+40 own ZEP 62 22
+50 spawn MTNK 60 20
+51 spawn HTK 60 23
+60 kill AMCV 1
+61 kill E1 1
+120 airborne ZEP
+121 threatscan MTNK 5
+122 threatscan HTK 5
+200 quit
