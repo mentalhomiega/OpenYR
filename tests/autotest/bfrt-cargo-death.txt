@@ -1,0 +1,20 @@
+; Battle Fortress (BFRT, OpenTopped) killed with two conscripts aboard. An open-topped passenger stays in the
+; logic list while aboard (TechnoClass::EnteredOpenTopped, 0x710470). Killing the transport deleted the passengers
+; without taking them off that list, so the next LogicClass::AI called a freed object.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/bfrt-cargo-death.txt -Country 8 -Seconds 150 -Filter "AUTOTEST   kill|AUTOTEST frame 4[23]|AUTOTEST frame 900|Exception"
+; A passing run exits 0 and logs "AUTOTEST frame 430: where E1" and "AUTOTEST frame 900: quit". A build without
+; the fix exits 1 after "AUTOTEST   kill BFRT at 62,24" and writes an exception report under Exceptions\.
+; On SOV02SMD.MAP, add -Campaign -Map SOV02SMD.MAP -Width 800 -Height 600 and grant the units at 104 20 (BFRT)
+; and 100 18, 100 19, 101 18, 101 19 (E1), with the enter at 104 20 and the kill at the same cell.
+10 command CenterBase
+30 grantunit BFRT 62 24
+40 grantunit E1 60 22
+40 grantunit E1 60 23
+40 grantunit E1 60 24
+40 grantunit E1 59 23
+120 enter E1 62 24
+400 where BFRT
+400 where E1
+420 kill BFRT 1
+430 where E1
+900 quit
