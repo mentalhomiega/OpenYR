@@ -4611,6 +4611,32 @@ DirType TechnoClass::Barrel_Pitch(AbstractClass * target) const
 }
 
 
+/// <summary>
+/// Reveals the ground within three cells of a firer that is hidden from the owner of its target.
+/// </summary>
+/// <remarks>
+/// Applies to RevealOnFire weapons whose target is an object of a human player. The firer is
+/// revealed when it belongs to another house and is undiscovered by that player, or when it
+/// stands on shroud or fog for that player and is not one of that player's aircraft.
+/// </remarks>
+static void Reveal_Firer_On_Fire(TechnoClass * firer, AbstractClass * target, WeaponTypeClass const * weapon)
+{
+	ObjectClass * obj = target->As_ObjectClass();
+	HouseClass * tgt_owner = (obj != NULL) ? obj->Owner_HouseClass() : NULL;
+	HouseClass * viewer = (tgt_owner != NULL) ? tgt_owner->Player_View() : NULL;
+	if (viewer == NULL || !weapon->IsRevealOnFire) {
+		return;
+	}
+
+	Coord coord = firer->Center_Coord();
+	bool owned = (firer->House == viewer);
+	bool hidden = Map.Is_Shrouded(coord, viewer) || Map.Is_Fogged(coord, viewer);
+	if ((!owned && !firer->DiscoveredBy[viewer]) || (hidden && (firer->RTTI != RTTI_AIRCRAFT || !owned))) {
+		Map.Sight_From(coord, 3, tgt_owner);
+	}
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Fire_At -- Fires projectile at target specified.                               *
  *                                                                                             *
@@ -4732,6 +4758,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		if (SpawnManager) {
 			SpawnManager->Set_Target(target);
 		}
+		Reveal_Firer_On_Fire(this, target, weapon);
 		return(NULL);
 	}
 
@@ -5092,16 +5119,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				**	reveal that unit and a little area around it.
 				**	Only reveal the unit if the target belongs to a human player.
 				*/
-				ObjectClass * obj = target->As_ObjectClass();
-				HouseClass * tgt_owner = (obj != NULL) ? obj->Owner_HouseClass() : NULL;
-				HouseClass * viewer = (tgt_owner != NULL) ? tgt_owner->Player_View() : NULL;
-				if (viewer != NULL && weapon->IsRevealOnFire) {
-					bool owned = (House == viewer);
-					bool hidden = Map.Is_Shrouded(Center_Coord(), viewer) || Map.Is_Fogged(Center_Coord(), viewer);
-					if ((!owned && !DiscoveredBy[viewer]) || (hidden && (RTTI != RTTI_AIRCRAFT || !owned))) {
-						Map.Sight_From(Center_Coord(), 2, tgt_owner);
-					}
-				}
+				Reveal_Firer_On_Fire(this, target, weapon);
 			}
 		} else {
 			delete bullet;
