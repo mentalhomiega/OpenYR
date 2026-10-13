@@ -9202,14 +9202,14 @@ void BuildingClass::Power_Off(void)
 /// (0x457CE0) does. An Occupier needs room in a structure above red health that belongs to its
 /// house or to a passive house. A soldier that is not an Occupier but is an Assaulter may enter a
 /// structure with occupants that are not allied with it, to kill them. Neither may enter a
-/// structure that is being built or sold.
+/// structure that is being built, sold or warped out.
 /// </summary>
 bool BuildingClass::Can_Be_Occupied_By(InfantryClass const * infantry) const
 {
 	if (infantry == NULL || !Class->IsCanBeOccupied) {
 		return(false);
 	}
-	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION) {
+	if (CurrentMission == MISSION_CONSTRUCTION || CurrentMission == MISSION_DECONSTRUCTION || IsBeingWarpedOut) {
 		return(false);
 	}
 	if (!infantry->Class->IsOccupier) {

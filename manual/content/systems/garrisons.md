@@ -43,7 +43,7 @@ A structure can take a soldier with `Occupier=yes` when all of these hold. A sol
 - the soldier is not under [mind control](/systems/mind-control/#going-into-transports-and-structures);
 - fewer than `MaxNumberOccupants` soldiers are inside;
 - the structure is above the [`ConditionRed`](/keys/conditionred/) health ratio;
-- the structure is not being built up or sold;
+- the structure is not being built up, sold or warped out;
 - the structure belongs to the soldier's house, or to a house whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/).
 
 A player who points such a soldier at a structure that can take it gets the enter cursor, unless the force-attack key (Left Ctrl by default) is held; then the cursor is the attack cursor. The soldier walks to the structure and goes inside when it reaches the structure. If the structure can no longer take it by then, the soldier steps aside. If the structure stops being able to take it while the soldier is still on the way, the soldier stops where it is.
@@ -56,7 +56,7 @@ A soldier with `Assaulter=yes` and no `Occupier=yes` enters a structure when all
 
 - the structure has at least one occupant;
 - the structure's house is not allied with the soldier's house, and the same house counts as allied;
-- the structure is not being built up or sold.
+- the structure is not being built up, sold or warped out.
 
 Free room, red health and a passive house do not matter here. The soldier then kills every occupant at once and gets their kills. Each death plays the soldier's primary weapon's [`AssaultAnim`](/keys/assaultanim/#scope-weapontype) at that occupant's muzzle point. The soldier does not stay inside; it steps aside and remains on the map.
 
