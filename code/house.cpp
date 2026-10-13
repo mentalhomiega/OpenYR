@@ -4988,7 +4988,7 @@ bool HouseClass::Can_Replace_Node(int index) const
 	}
 
 	BaseNodeClass const & node = Base.Nodes[index];
-	if (node.Type < STRUCT_FIRST || node.CellID == Cell(0, 0) || node.CellID == CELL_NONE || !node.Placed) {
+	if (node.Type < STRUCT_FIRST || node.CellID == CELL_NONE || !node.Placed) {
 		return(true);
 	}
 
