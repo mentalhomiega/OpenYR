@@ -5621,10 +5621,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 	/*
 	**	A teleporter drives, carrying its own locomotor, unless it is being sent onto a free dock
-	**	cell of the refinery it is talking to; then it goes back to its own locomotor and enters
-	**	(UnitClass::SetDestination, 0x741970 in gamemd).
+	**	cell of the refinery it is talking to; then it goes back to its own locomotor and enters.
+	**	A held or immobilized teleporter keeps its current locomotor, so the switch is skipped
+	**	(UnitClass::SetDestination, 0x741970 in gamemd: !IsImmobilized, LocomotorSource and !IsAttackedByLocomotor).
 	*/
-	if (Class->IsTeleporter && target != NULL) {
+	if (Class->IsTeleporter && target != NULL && !Is_Immobilized() && LocomotorSource == NULL) {
 		ClassID const current = Locomotion_Class_ID(Locomotion.get());
 		BuildingClass const * refinery = In_Radio_Contact() ? dynamic_cast<BuildingClass const *>(Contact_With_Whom()) : NULL;
 		CellClass const * dock = dynamic_cast<CellClass const *>(target);

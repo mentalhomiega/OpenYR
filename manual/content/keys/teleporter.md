@@ -9,7 +9,7 @@ when_omitted:
 
 A `Teleporter=yes` type is moved by the [chronosphere](/systems/superweapons/#chronosphere) even when it is [`Organic=yes`](/keys/organic/), as infantry are by default. Any other organic unit the chronosphere picks up is destroyed instead.
 
-A `Teleporter=yes` VehicleType also keeps the [`Locomotor`](/keys/locomotor/) its type names, but drives every ordinary move: when it is sent somewhere, it switches to driving and carries its own locomotor along. It switches back only when it is sent onto a free docking cell of the refinery it is in radio contact with, and then it moves there with its own locomotor and enters the refinery.
+A `Teleporter=yes` VehicleType also keeps the [`Locomotor`](/keys/locomotor/) its type names, but drives every ordinary move: when it is sent somewhere, it switches to driving and carries its own locomotor along. It switches back only when it is sent onto a free docking cell of the refinery it is in radio contact with, and then it moves there with its own locomotor and enters the refinery. A teleporter that a Magnetron has lifted, or that is otherwise immobilized, keeps the locomotor it has and does not switch.
 
 ```ini title="rulesmd.ini"
 [MyMiner] ; example VehicleType
