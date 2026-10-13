@@ -584,7 +584,7 @@ void BulletClass::AI(void)
 		 * forever. Airburst and very high projectiles are exempt, since they
 		 * come down on their targets from above.
 		 */
-		int delta = ::Distance(old_coord, target_coord) - ::Distance(coord, target_coord);
+		int delta = Gamemd_Distance(old_coord, target_coord) - Gamemd_Distance(coord, target_coord);
 
 		if (!IsLaunching) {
 			if (ClosureSamples < _limit) {
@@ -1161,8 +1161,7 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 		**	launch point to the target, over the range of the bullet's weapon.
 		*/
 		if (Class->FlakScatter && Class->IsInvisible) {
-			double const squared = (double)(coord.X - tcoord.X) * (coord.X - tcoord.X) + (double)(coord.Y - tcoord.Y) * (coord.Y - tcoord.Y) + (double)(coord.Z - tcoord.Z) * (coord.Z - tcoord.Z);
-			int const distance = (int)(float)std::sqrt(squared);
+			int const distance = Gamemd_Distance(coord, tcoord);
 			int const range = Weapon != NULL ? Weapon->Range : 0;
 			int const share = Scen->RandomNumber(0, Rule->BallisticScatter << 1);
 			int const spread = range > 0 ? (share * distance) / range : 0;
