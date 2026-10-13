@@ -48,6 +48,9 @@ void UICampaignPresenterClass::Execute(UIIntent const & intent)
 			Picked = State.Entries[State.Selected];
 		}
 		Result = UI_RESULT_ACCEPTED;
+	} else if (intent.Name == "missions") {
+		MissionSelectRequested = true;
+		Result = UI_RESULT_ACCEPTED;
 	} else if (intent.Name == "cancel") {
 		Result = UI_RESULT_CANCELLED;
 	}

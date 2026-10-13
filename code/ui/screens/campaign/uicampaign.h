@@ -47,6 +47,9 @@ class UICampaignPresenterClass : public UIPresenterClass
 		UICampaignState State;
 		std::optional<UICampaignEntry> Picked;
 
+		// Set when the player asks for Mission Select. The screen then closes as accepted, so the caller opens that screen.
+		bool MissionSelectRequested = false;
+
 	private:
 		void Name_Difficulty(void);
 };

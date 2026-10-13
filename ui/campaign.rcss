@@ -78,8 +78,13 @@ button
 	width: 76dp;
 }
 
+#missions
+{
+	width: 124dp;
+}
+
 #ok
 {
-	margin-left: 148dp;
+	margin-left: 24dp;
 	margin-right: 10dp;
 }

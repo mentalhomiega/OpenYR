@@ -1,0 +1,40 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Mission Select</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="missionsel.rcss"/>
+</head>
+<body template="dialog" data-model="missionsel">
+	<p id="title">{{title}}</p>
+	<div id="sides">
+		<div class="side">
+			<span class="caption">Allied</span>
+			<div id="allied" class="list"><div class="rows">
+				<div class="item" data-for="row : allied" data-class-selected="row.index == selected" data-event-click="queue('select', row.index)">{{row.name}}</div>
+			</div></div>
+		</div>
+		<div class="side soviet">
+			<span class="caption">Soviet</span>
+			<div id="soviet" class="list"><div class="rows">
+				<div class="item" data-for="row : soviet" data-class-selected="row.index == selected" data-event-click="queue('select', row.index)">{{row.name}}</div>
+			</div></div>
+		</div>
+	</div>
+	<p id="mapname">{{mapname}}</p>
+	<div id="row-difficulty"><span class="caption">Difficulty</span><span class="value" id="difficulty-name">{{difficultyname}}</span></div>
+	<div id="row-slider"><input type="range" id="difficulty" min="0" max="2" step="1" data-attr-value="difficulty" data-event-change="queue('difficulty', ev.value)"/></div>
+	<div id="buttons">
+		<button id="start" data-class-disabled="selected &lt; 0" data-event-click="queue('ok')">Start</button>
+		<button id="back" data-event-click="queue('cancel')">Back</button>
+	</div>
+</body>
+</rml>

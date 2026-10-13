@@ -20,6 +20,7 @@
 #include "options.h"
 #include "surface.h"
 #include "ui/screens/campaign/uicampaign.h"
+#include "ui/screens/missionsel/uimissionsel.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
@@ -64,13 +65,28 @@ std::optional<UICampaignEntry> UI_Campaign_Dialog(void)
 	UICampaignState state;
 	UI_Campaign_State(state);
 
-	UICampaignPresenterClass presenter(std::move(state));
-	std::unique_ptr<UIViewClass> view = UI_Campaign_View(presenter);
+	while (true) {
+		UICampaignPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Campaign_View(presenter);
 
-	if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED) {
-		return(std::nullopt);
+		if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED) {
+			return(std::nullopt);
+		}
+
+		// Backing out of Mission Select returns here with the list's selection and difficulty kept.
+		state = presenter.State;
+		if (presenter.MissionSelectRequested) {
+			std::optional<UIMissionEntry> mission = UI_Mission_Select_Dialog(state.Difficulty);
+			if (mission.has_value()) {
+				UICampaignEntry entry;
+				entry.Description = mission->Name;
+				entry.Campaign = mission->Campaign;
+				return(entry);
+			}
+			continue;
+		}
+
+		Options.Difficulty = presenter.State.Difficulty;
+		return(presenter.Picked);
 	}
-
-	Options.Difficulty = presenter.State.Difficulty;
-	return(presenter.Picked);
 }

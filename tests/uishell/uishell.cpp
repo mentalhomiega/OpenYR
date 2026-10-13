@@ -24,6 +24,7 @@
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mapgen/uimapgen.h"
+#include "ui/screens/missionsel/uimissionsel.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/mods/uimods.h"
 #include "ui/screens/movies/uimovies.h"
@@ -1655,6 +1656,47 @@ void Test_Map_Generator_Presenter(void)
 
 	Check(UI_Map_Gen_Option_Value(biomes, 2) == 2, "a setting the generator holds is kept through the sort");
 	Check(UI_Map_Gen_Option_Value(biomes, 9) == 3, "and one it does not falls back to the first option shown");
+}
+
+
+void Test_Mission_Select_Presenter(void)
+{
+	UIMissionSelState state;
+	state.Missions = {
+		UIMissionEntry{ "Operation: Time Lapse", "ALL01UMD.MAP", 3, true },
+		UIMissionEntry{ "SOV03UMD.MAP", "SOV03UMD.MAP", 9, false },
+	};
+	state.AlliedRows = { UIMissionRow{ "Operation: Time Lapse", 0 } };
+	state.SovietRows = { UIMissionRow{ "SOV03UMD.MAP", 1 } };
+	state.DifficultyNames = { "Hard", "Medium", "Easy" };
+	state.Difficulty = 1;
+
+	UIMissionSelPresenterClass presenter(state);
+	Check(presenter.State.DifficultyName == "Medium" && presenter.State.Selected == -1, "the screen opens with no mission selected at the difficulty it was given");
+
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value() && !presenter.Picked.has_value(), "Start does nothing until a mission is picked");
+
+	Drive(presenter, "select", 7);
+	Check(presenter.State.Selected == -1 && presenter.State.MapName.empty(), "a row outside the list selects nothing");
+
+	Drive(presenter, "select", 1);
+	Check(presenter.State.Selected == 1 && presenter.State.MapName == "SOV03UMD.MAP", "a picked row selects its mission and shows its map");
+
+	Drive(presenter, "difficulty", 5);
+	Check(presenter.State.Difficulty == 1, "a difficulty outside the list is refused");
+
+	Drive(presenter, "difficulty", 0);
+	Check(presenter.State.Difficulty == 0 && presenter.State.DifficultyName == "Hard", "the difficulty follows the slider");
+
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Picked.has_value() && presenter.Picked->Campaign == 9,
+		"Start accepts the mission picked");
+
+	UIMissionSelPresenterClass cancelled(state);
+	Drive(cancelled, "select", 0);
+	Drive(cancelled, "cancel");
+	Check(cancelled.Result.has_value() && *cancelled.Result == UI_RESULT_CANCELLED && !cancelled.Picked.has_value(), "Back cancels without picking a mission");
 }
 
 
@@ -6740,6 +6782,7 @@ int main(void)
 	Test_Classic_Options_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();
+	Test_Mission_Select_Presenter();
 	Test_Reconnect_Presenter();
 	Test_Restate_Presenter();
 	Test_Strings();
