@@ -114,6 +114,22 @@ void SpawnManagerClass::Set_Target(AbstractClass * target)
 }
 
 
+/// <summary>
+/// Counts the spawns that have not been destroyed. A docked, launched or rearming spawn counts;
+/// a lost one does not until it is replaced.
+/// </summary>
+int SpawnManagerClass::Alive_Count(void) const
+{
+	int count = 0;
+	for (NodeType const & node : Nodes) {
+		if (node.Status != NODE_DEAD) {
+			count++;
+		}
+	}
+	return(count);
+}
+
+
 int SpawnManagerClass::Docked_Count(void) const
 {
 	int count = 0;

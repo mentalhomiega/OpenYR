@@ -32,6 +32,7 @@ class SpawnManagerClass
 		void Kill_Nodes(void);
 		void Detach(AbstractClass const * target);
 		int Docked_Count(void) const;
+		int Alive_Count(void) const;
 		void Serialize(SaveStreamClass & stream);
 
 	private:

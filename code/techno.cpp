@@ -4203,6 +4203,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		}
 	}
 
+	// A Spawner weapon waits while every carried craft is destroyed (TechnoClass::GetFireError, 0x6FC0B0).
+	if (weapon->IsSpawner && SpawnManager && SpawnManager->Alive_Count() == 0) {
+		return(FIRE_REARM);
+	}
+
 	// A mind control weapon fires only at what it can take over (TechnoClass::GetFireError, 0x6FC0B0).
 	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsMindControl && (!CaptureManager || !CaptureManager->Can_Capture(techno))) {
 		return(FIRE_ILLEGAL);
