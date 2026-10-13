@@ -86,6 +86,7 @@
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
 **	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
 **	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
+**	factories				writes each factory structure, whoever owns it, with what it builds, its naval, primary and limbo flags
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
@@ -1482,6 +1483,20 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST primary %s at %d,%d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y);
 				break;
 			}
+		}
+		return;
+	}
+
+	// factories: each structure that builds something, whoever owns it, with what it builds, whether it is naval,
+	// whether it is its house's primary factory and whether it is in limbo.
+	if (step.Command == "factories") {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->Class->ToBuild == RTTI_NONE) continue;
+			RTTIType const builds = building->Class->ToBuild;
+			DebugString("AUTOTEST   factory %s of %s cell %d,%d builds %s naval %d primary %d limbo %d\n", building->Class->Name(), building->House->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+				builds == RTTI_UNITTYPE ? "vehicle" : builds == RTTI_INFANTRYTYPE ? "infantry" : builds == RTTI_AIRCRAFTTYPE ? "aircraft" : builds == RTTI_BUILDINGTYPE ? "structure" : "other",
+				(int)building->Class->IsNaval, (int)building->IsLeader, (int)building->IsInLimbo);
 		}
 		return;
 	}

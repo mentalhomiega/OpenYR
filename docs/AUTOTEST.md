@@ -46,6 +46,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
+| `primary <TypeID>` | Toggles the primary flag of the player's first structure of that type, as the structure's self action does when the house has more than one factory of its kind |
+| `factories` | Writes each structure that builds something, whoever owns it, with what it builds (`vehicle`, `infantry`, `aircraft` or `structure`), whether it is naval, whether it is its house's primary factory and whether it is in limbo |
 | `kill <TypeID> [1]` | Destroys every computer object of the type with no attacker, the C4 warhead forced; with a `1`, every player object of the type instead |
 | `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
 | `dumpfile <name>` | Copies the file the game finds under that name, from a MIX or the game folder, to `dump-<name>` in the working directory, and logs its size |
