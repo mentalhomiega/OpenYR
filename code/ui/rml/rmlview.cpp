@@ -7,6 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "numparse.h"
 #include "ui/rml/rmlview.h"
 
 #include "ui/uishell.h"
@@ -49,6 +50,7 @@ UIRmlViewClass::~UIRmlViewClass(void)
 
 bool UIRmlViewClass::Prepare(Rml::Context & context)
 {
+	numparse_detail::Nearest_Rounding_Scope const nearest;
 	Release();
 	Host = &context;
 	Types = Rml::MakeUnique<Rml::DataTypeRegister>();

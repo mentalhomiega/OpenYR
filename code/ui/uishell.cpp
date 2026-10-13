@@ -9,6 +9,7 @@
 
 #include "ui/uishell.h"
 
+#include "numparse.h"
 #include "ui/dev/uidev.h"
 #include "ui/rml/rmlfont.h"
 #include "ui/rml/rmlkeys.h"
@@ -816,6 +817,7 @@ void UIShellClass::Tick(void)
 
 		{
 			UIReentryGuardClass updating(InContext);
+			numparse_detail::Nearest_Rounding_Scope const nearest;
 			Context->Update();
 			UIDev_Tick();
 		}
@@ -830,6 +832,7 @@ void UIShellClass::Tick(void)
 		// Positions a view sets while placed are laid out before this pass is drawn.
 		{
 			UIReentryGuardClass updating(InContext);
+			numparse_detail::Nearest_Rounding_Scope const nearest;
 			Context->Update();
 		}
 
@@ -866,6 +869,7 @@ void UIShellClass::Render_Overlay(void)
 
 	if (documents) {
 		UIReentryGuardClass rendering(InContext);
+		numparse_detail::Nearest_Rounding_Scope const nearest;
 		Context->Render();
 	}
 
@@ -1212,6 +1216,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 
 	if (Ready) {
 		UIReentryGuardClass updating(InContext);
+		numparse_detail::Nearest_Rounding_Scope const nearest;
 		Context->Update();
 	}
 
@@ -1311,6 +1316,7 @@ void UIShellClass::Hide_Modeless(UIViewClass & view)
 	if (Ready && !InContext) {
 		{
 			UIReentryGuardClass updating(InContext);
+			numparse_detail::Nearest_Rounding_Scope const nearest;
 			Context->Update();
 		}
 		Host.Mark_Overlay_Dirty();
