@@ -4867,8 +4867,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			dir = std::atan2((double)-displacement.Y, (double)displacement.X);
 		}
 
-		if (max_speed > displacement.Length() / 2) {
-			max_speed = displacement.Length() / 2;
+		if (max_speed > displacement.Gamemd_Length() / 2) {
+			max_speed = displacement.Gamemd_Length() / 2;
 		}
 
 		// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
@@ -4907,7 +4907,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				gravity = Get_Floater_Gravity();
 			}
 
-			int planar = Point2D(displacement).Length();
+			int planar = Point2D(displacement).Gamemd_Length();
 			valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
 		} else if (bullet->Class->IsVoxel) {
 			// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
@@ -4925,7 +4925,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					}
 				}
 
-				double planar = Point2D(displacement).Length();
+				double planar = Point2D(displacement).Gamemd_Length();
 				if (planar < 0.05) {
 					planar = 0.05;
 				}
@@ -10446,9 +10446,9 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 
 	int dist;
 	if (firing_coord != COORD_NONE) {
-		dist = firing_coord.Distance_To(target->Center_Coord());
+		dist = firing_coord.Gamemd_Distance_To(target->Center_Coord());
 	} else {
-		dist = Center_Coord().Distance_To(target->Center_Coord()) / CELL_LEPTON;
+		dist = Center_Coord().Gamemd_Distance_To(target->Center_Coord()) / CELL_LEPTON;
 	}
 
 	threat += std::max(0, dist - range) * target_distance_coefficient;
@@ -10866,7 +10866,7 @@ bool TechnoClass::Should_Use_High_Arc(int which) const
 		if (TarCom != NULL) {
 			int dz = TarCom->Center_Coord().Z - Get_Coord().Z;
 			if (dz > 0) {
-				if (Point2D(Get_Coord()).Distance_To(Point2D(TarCom->Center_Coord())) < dz) {
+				if (Point2D(Get_Coord()).Gamemd_Distance_To(Point2D(TarCom->Center_Coord())) < dz) {
 					result = true;
 				}
 			}

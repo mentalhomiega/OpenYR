@@ -120,7 +120,7 @@ double BounceClass::Get_Remaining_Motion(void) const
 	if (Map[coord].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
 		height -= BRIDGE_LEPTON_HEIGHT;
 	}
-	return(Point3D(Velocity.X, Velocity.Y, height * Gravity + Velocity.Z).Length());
+	return(Point3D(Velocity.X, Velocity.Y, height * Gravity + Velocity.Z).Gamemd_Length());
 }
 
 

@@ -1559,7 +1559,7 @@ void TeamClass::Calc_Center(AbstractClass *& center, AbstractClass *& close_memb
 			if (_Is_It_Breathing(trial_unit) && House != trial_unit->House && trial_unit->House->Is_Ally(House) && this != trial_unit->Team) {
 				//int trial_distance = team_member->Distance(trial_unit);
 				Coord crd = team_member->Center_Coord() - trial_unit->Center_Coord();
-				int trial_distance = (crd).Length();
+				int trial_distance = (crd).Gamemd_Length();
 
 				if (distance == -1 || trial_distance < distance) {
 					distance = trial_distance;
@@ -3954,11 +3954,11 @@ BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *
 					break;
 
 				case TPROPERTY_NEAREST:
-					dist = INT_MAX - ptr->Get_Coord().Distance_To(unit->Get_Coord());
+					dist = INT_MAX - ptr->Get_Coord().Gamemd_Distance_To(unit->Get_Coord());
 					break;
 
 				case TPROPERTY_FARTHEST:
-					dist = ptr->Get_Coord().Distance_To(unit->Get_Coord());
+					dist = ptr->Get_Coord().Gamemd_Distance_To(unit->Get_Coord());
 					break;
 
 			}

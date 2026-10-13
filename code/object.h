@@ -252,7 +252,7 @@ class ObjectClass : public AbstractClass
 		virtual bool Occupies_Cells(void) const {return(true);}
 
 		int Distance(AbstractClass const * target) const;
-		int Distance(Coord const & coord) const {return(Center_Coord().Distance_To(coord));}
+		int Distance(Coord const & coord) const {return(Center_Coord().Gamemd_Distance_To(coord));}
 		int Distance_To(AbstractClass const * obj) const {return(Distance(obj->Center_Coord()));}
 		int Planar_Distance(AbstractClass const * target) const;
 		int Relative_Distance(AbstractClass const * target) const;

@@ -51,8 +51,8 @@ int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const
 
 	TVelocity3D<double> frame_velocity(velocity);
 	coord = coord + Point3D(frame_velocity.X, frame_velocity.Y, frame_velocity.Z);
-	int target_distance = coord.Distance_To(target_coord);
-	int horizontal_distance = Point2D(coord).Distance_To(Point2D(target_coord));
+	int target_distance = coord.Gamemd_Distance_To(target_coord);
+	int horizontal_distance = Point2D(coord).Gamemd_Distance_To(Point2D(target_coord));
 
 	Coord delta = target_coord - coord;
 
@@ -114,5 +114,5 @@ int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const
 		delta.Z /= 4;
 	}
 
-	return(delta.Length());
+	return(delta.Gamemd_Length());
 }

@@ -3678,7 +3678,7 @@ static int Straight_Line_Leptons(Coord const & from, Coord const & to)
 	double const dx = double(from.X - to.X);
 	double const dy = double(from.Y - to.Y);
 	double const dz = double(from.Z - to.Z);
-	return(int(std::sqrt(dx * dx + dy * dy + dz * dz)));
+	return(int(Gamemd_Magnitude_3D(dx, dy, dz)));
 }
 
 
@@ -5708,7 +5708,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 						if (!Map.ZoneConnections[z1].IsPassable) {
 							Cell d1 = Map.Get_Zone_Connection_Destination(from, from);
 							Cell d2 = Map.Get_Zone_Connection_Destination(to, to);
-							if (d1.Distance_To(d2) <= 2) {
+							if (d1.Gamemd_Distance_To(d2) <= 2) {
 								needsswap = true;
 							}
 						} else {

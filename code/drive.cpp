@@ -876,7 +876,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 		if (TrackNumber < BACKUP_INTO_REFINERY && not_passive) {
 			Coord dest_coord = DestinationCoord;
 			dest_coord.Z = Map.Get_Height_GL(dest_coord) + (Map[dest_coord].IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
-			int distance = (LinkedTo->PositionCoord - dest_coord).Length();//LinkedTo->PositionCoord.Distance_To(dest_coord);
+			int distance = (LinkedTo->PositionCoord - dest_coord).Gamemd_Length();//LinkedTo->PositionCoord.Gamemd_Distance_To(dest_coord);
 
 			bool forced_speed = false;
 			double speed = LinkedTo->Speed;
@@ -1608,7 +1608,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 						return(Start_Of_Move(stop_processing, false, false));
 					}
 					Coord diff = LinkedTo->Center_Coord() - DestinationCoord;
-					int dist = diff.Length();
+					int dist = diff.Gamemd_Length();
 					if (dist >= Rule->CloseEnoughDistance
 						|| abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) >= 2 * LEVEL_LEPTON_H
 						|| Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() == LAND_TUNNEL) {

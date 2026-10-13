@@ -32,6 +32,9 @@
 #pragma once
 
 #include <cmath>
+#include <type_traits>
+
+#include "gmmath.h"
 
 
 template<class T> class TRect;
@@ -86,6 +89,16 @@ class TPoint2D {
 		// Find distance between points.
 		T Distance_To(TPoint2D<T> const & point) const {return((*this - point).Length());}
 
+		// Length and distance as gamemd computes them, for simulation code that must match it.
+		[[nodiscard]] T Gamemd_Length(void) const {
+			if constexpr (std::is_integral_v<T>) {
+				return(T(Gamemd_Length_2D(int(X), int(Y))));
+			} else {
+				return(T(Gamemd_Magnitude_2D(double(X), double(Y))));
+			}
+		}
+		T Gamemd_Distance_To(TPoint2D<T> const & point) const {return((*this - point).Gamemd_Length());}
+
 		// Carries the point to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
@@ -121,6 +134,13 @@ template<class T>
 T Distance(TPoint2D<T> const & point1, TPoint2D<T> const & point2)
 {
 	return((point1 - point2).Length());
+}
+
+
+template<class T>
+T Gamemd_Distance(TPoint2D<T> const & point1, TPoint2D<T> const & point2)
+{
+	return((point1 - point2).Gamemd_Length());
 }
 
 
@@ -188,6 +208,17 @@ class TPoint3D : public TPoint2D<T> {
 		T Distance_To(TPoint3D<T> const & point) const {return((*this - point).Length());}
 		T Distance_To(TPoint2D<T> const & point) const {return(BASECLASS::Distance_To(point));}
 
+		// Length and distance as gamemd computes them, for simulation code that must match it.
+		[[nodiscard]] T Gamemd_Length(void) const {
+			if constexpr (std::is_integral_v<T>) {
+				return(T(Gamemd_Length_3D(int(this->X), int(this->Y), int(Z))));
+			} else {
+				return(T(Gamemd_Magnitude_3D(double(this->X), double(this->Y), double(Z))));
+			}
+		}
+		T Gamemd_Distance_To(TPoint3D<T> const & point) const {return((*this - point).Gamemd_Length());}
+		T Gamemd_Distance_To(TPoint2D<T> const & point) const {return(TPoint2D<T>(this->X, this->Y).Gamemd_Distance_To(point));}
+
 	public:
 
 		// Carries the point to or from a save game.
@@ -203,6 +234,13 @@ class TPoint3D : public TPoint2D<T> {
 		*/
 		T Z = T(0);
 };
+
+
+template<class T>
+T Gamemd_Distance(TPoint3D<T> const & point1, TPoint3D<T> const & point2)
+{
+	return((point1 - point2).Gamemd_Length());
+}
 
 
 /***********************************************************************************************

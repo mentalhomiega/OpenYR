@@ -873,7 +873,7 @@ void SuperClass::Force_Shield(Cell const & cell)
 
 	for (int index = Buildings.Count() - 1; index >= 0; index--) {
 		BuildingClass * building = Buildings[index];
-		if (House->Is_Ally(building) && (building->Center_Coord() - coord).Length() < Rule->ForceShieldRadius * CELL_LEPTON_W) {
+		if (House->Is_Ally(building) && (building->Center_Coord() - coord).Gamemd_Length() < Rule->ForceShieldRadius * CELL_LEPTON_W) {
 			building->Iron_Curtain(Rule->ForceShieldDuration, House, true);
 		}
 	}
@@ -1197,7 +1197,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				for (int dy = -radius; dy <= radius; dy++) {
 					for (int dx = -radius; dx <= radius; dx++) {
 						Cell const where = cell + Cell(dx, dy);
-						if (Map.In_Radar(where) && Distance(where, cell) <= radius) {
+						if (Map.In_Radar(where) && Gamemd_Distance(where, cell) <= radius) {
 							Map.Map_Cell(where, House);
 							Map.Fog_Map_Cell(where, House);
 						}

@@ -13,6 +13,8 @@
 
 #include <cmath>
 
+#include "gmmath.h"
+
 
 template <typename T>
 class TVelocity2D
@@ -27,7 +29,7 @@ class TVelocity2D
 
 		T Speed(void) const
 		{
-			return(std::sqrt(X * X + Y * Y));
+			return(T(Gamemd_Magnitude_2D(double(X), double(Y))));
 		}
 
 		/*
@@ -110,9 +112,9 @@ class TVelocity3D : public TVelocity2D<T>
 			Z = z;
 		}
 
-		T Horizontal_Speed(void) const { return(std::sqrt(X * X + Y * Y)); }
+		T Horizontal_Speed(void) const { return(T(Gamemd_Magnitude_2D(double(X), double(Y)))); }
 
-		T Speed(void) const { return(std::sqrt(X * X + Y * Y + Z * Z)); }
+		T Speed(void) const { return(T(Gamemd_Magnitude_3D(double(X), double(Y), double(Z)))); }
 
 		/*
 		 * Repoints the velocity to the given pitch, preserving the total speed

@@ -354,7 +354,7 @@ void LevitateLocomotionClass::Process_Recentering(void)
 
 	Point2D pt(home.X, home.Y);
 	Point2D p(LinkedTo->Center_Coord());
-	if (pt.Distance_To(p) < 5) {
+	if (pt.Gamemd_Distance_To(p) < 5) {
 		Coord center;
 		if (Validate_TarCom()) {
 			center = LinkedTo->TarCom->Center_Coord();
@@ -555,7 +555,7 @@ bool LevitateLocomotionClass::Is_In_Proximity(Coord const & coord)
 {
 	Point2D pt(coord.X, coord.Y);
 	Point2D p(LinkedTo->Center_Coord());
-	return(pt.Distance_To(p) < GlobalControls.ProximityDistance * CELL_LEPTON);
+	return(pt.Gamemd_Distance_To(p) < GlobalControls.ProximityDistance * CELL_LEPTON);
 }
 
 
@@ -569,7 +569,7 @@ bool LevitateLocomotionClass::Has_Arrived(Coord const & coord)
 {
 	Point2D pt(coord.X, coord.Y);
 	Point2D p(LinkedTo->Center_Coord());
-	return(pt.Distance_To(p) < CELL_LEPTON / 2);
+	return(pt.Gamemd_Distance_To(p) < CELL_LEPTON / 2);
 }
 
 

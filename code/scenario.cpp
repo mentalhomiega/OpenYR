@@ -2937,7 +2937,7 @@ static void Assign_Start_Positions(bool official)
 				int score = 0;
 				for (int other = 0; other < MAX_PLAYERS; other++) {
 					if (held[other]) {
-						score += Distance(Scen->Get_Waypoint_Cell(spot), Scen->Get_Waypoint_Cell(other));
+						score += Gamemd_Distance(Scen->Get_Waypoint_Cell(spot), Scen->Get_Waypoint_Cell(other));
 					}
 				}
 				if (best == -1 || score > bestvalue) {

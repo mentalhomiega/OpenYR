@@ -2365,7 +2365,7 @@ int ObjectClass::Planar_Distance(AbstractClass const * target) const
 		return(0);
 	}
 	BuildingClass * obj;
-	int dist = Point2D(Center_Coord()).Distance_To(Point2D(target->Center_Coord()));
+	int dist = Point2D(Center_Coord()).Gamemd_Distance_To(Point2D(target->Center_Coord()));
 
 	/*
 	**	If the object is a building the adjust it by the average radius
@@ -2568,9 +2568,9 @@ ObjectClass * Vector_Closest_Object(DynamicVectorClass<ObjectClass *> const & li
 	for (int i = list.Count() - 1; i >= 0; i--) {
 		if (closest == NULL) {
 			closest = list[i];
-			mindist = coord.Distance_To(closest->PositionCoord);
+			mindist = coord.Gamemd_Distance_To(closest->PositionCoord);
 		} else {
-			int dist = Distance(coord, list[i]->PositionCoord);
+			int dist = Gamemd_Distance(coord, list[i]->PositionCoord);
 			if (dist < mindist) {
 				closest = list[i];
 				mindist = dist;

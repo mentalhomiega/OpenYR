@@ -52,7 +52,7 @@ bool Submit_Radar_Event(RadarEventType event, Cell cell)
 	if (Can_Suppress_Radar_Event(event)) {
 		for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
 			if (RadarEventClass::RadarEvents[index]->Type == event) {
-				if (cell.Distance_To(RadarEventClass::RadarEvents[index]->Location) < RadarEventClass::RadarEvents[index]->Get_Suppression_Distance()) {
+				if (cell.Gamemd_Distance_To(RadarEventClass::RadarEvents[index]->Location) < RadarEventClass::RadarEvents[index]->Get_Suppression_Distance()) {
 					return(false);
 				}
 			}
@@ -279,7 +279,7 @@ bool Try_Suppress_Radar_Event(RadarEventType event, int, Cell cell)
 	if (Can_Suppress_Radar_Event(event)) {
 		for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
 			if (RadarEventClass::RadarEvents[index]->Type == event) {
-				if (cell.Distance_To(RadarEventClass::RadarEvents[index]->Location) < RadarEventClass::RadarEvents[index]->Get_Suppression_Distance()) {
+				if (cell.Gamemd_Distance_To(RadarEventClass::RadarEvents[index]->Location) < RadarEventClass::RadarEvents[index]->Get_Suppression_Distance()) {
 					return(true);
 				}
 			}

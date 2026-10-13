@@ -530,7 +530,7 @@ void BulletClass::AI(void)
 		 * Allow a sharper turn over the last cell of the approach so that the
 		 * projectile can still catch a target that dodges at the last moment.
 		 */
-		if (Center_Coord().Distance_To(target_coord) < CELL_LEPTON) {
+		if (Center_Coord().Gamemd_Distance_To(target_coord) < CELL_LEPTON) {
 			rot *= 1.5;
 		}
 
@@ -813,7 +813,7 @@ void BulletClass::AI(void)
 			TechnoClass * techno = Map[coord].Cell_Techno();
 			if (Payback == NULL || techno != Payback) {
 				if (techno != NULL && (Payback == NULL || !Payback->House->Is_Ally(techno))) {
-					if (coord.Distance_To(techno->PositionCoord) < CELL_LEPTON / 2) {
+					if (coord.Gamemd_Distance_To(techno->PositionCoord) < CELL_LEPTON / 2) {
 						forced = true;
 						impact = IMPACT_NORMAL;
 						coord = techno->PositionCoord;
@@ -872,7 +872,7 @@ void BulletClass::AI(void)
 			 * fuel is spent, it detonates wherever it happens to be.
 			 */
 			if (Class->IsFueled) {
-				Range -= coord.Distance_To(PositionCoord);
+				Range -= coord.Gamemd_Distance_To(PositionCoord);
 				if (Range <= 0) {
 					forced = true;
 				}
@@ -934,7 +934,7 @@ void BulletClass::AI(void)
 						Coord midpoint = coord;
 						Coord target_coord = TarCom->As_Coord();
 						midpoint.Z = (midpoint.Z + target_coord.Z) / 2;
-						int target_distance = midpoint.Distance_To(target_coord);
+						int target_distance = midpoint.Gamemd_Distance_To(target_coord);
 						if (collided) {
 							target_distance /= 3;
 						}
@@ -1356,7 +1356,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 	if (TarCom != NULL) {
 		//if (::Distance(coord, TarCom->Center_Coord()) < 32) {
 		Coord c = coord - TarCom->Center_Coord();
-		if (c.Length() < 32) {
+		if (c.Gamemd_Length() < 32) {
 			if (!Class->IsAirburst && !Class->IsInaccurate) {
 				coord = TarCom->Center_Coord();
 			}
@@ -1631,7 +1631,7 @@ void BulletClass::Detonate(Coord const & coord)
 		for (i = 0; i < Technos.Count(); i++) {
 			TechnoClass * tptr = Technos[i];
 			if (tptr->IsLocked && tptr->IsDown && tptr->Strength > 0) {
-				if (split_coord.Distance_To(tptr->PositionCoord) < CELL_LEPTON * 5) {
+				if (split_coord.Gamemd_Distance_To(tptr->PositionCoord) < CELL_LEPTON * 5) {
 					targets.Add(tptr);
 				}
 			}

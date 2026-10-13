@@ -227,7 +227,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 					if (LinkedTo->Is_In_Same_Zone(DestinationCoord)) {
 						LinkedTo->On_Movement_Blocked();
 
-						if (Distance(LinkedTo->Center_Coord(), DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->IsTethered) {
+						if (Gamemd_Distance(LinkedTo->Center_Coord(), DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->IsTethered) {
 							LinkedTo->Assign_Destination(NULL);
 						} else {
 							if (LinkedTo->TryTryAgain) {
@@ -331,7 +331,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 						LinkedTo->PathDelay = 0;
 						Movement_AI(false);
 					} else {
-						int dist = LinkedTo->Center_Coord().Distance_To(DestinationCoord);
+						int dist = LinkedTo->Center_Coord().Gamemd_Distance_To(DestinationCoord);
 						if (dist < Rule->CloseEnoughDistance &&
 							!LinkedTo->In_Radio_Contact() &&
 							abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) < 2 * LEVEL_LEPTON_H &&
@@ -451,7 +451,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 
 		IsReallyMoving = true;
 
-		if (Distance(Point2D(LinkedTo->Center_Coord()), Point2D(HeadToCoord)) < 17) {
+		if (Gamemd_Distance(Point2D(LinkedTo->Center_Coord()), Point2D(HeadToCoord)) < 17) {
 			LinkedTo->Mark(MARK_UP);
 
 			if (LinkedTo->Path[0] == FACING_NONE) {

@@ -4473,7 +4473,7 @@ void HouseClass::Recalc_Center(void)
 				BuildingClass const * b = Buildings[index];
 
 				if (b != NULL && !b->IsInLimbo && (HouseClass *)b->House == this && b->Strength > 0) {
-					radius += Distance(Center, b->Center_Coord());
+					radius += Gamemd_Distance(Center, b->Center_Coord());
 				}
 			}
 			Radius = std::max(radius / count, 2 * CELL_LEPTON_W);
@@ -4552,7 +4552,7 @@ int HouseClass::Expert_AI(void)
 						**	candidate base. The higher the value, the better the candidate house
 						**	is to becoming the preferred enemy for this house.
 						*/
-						int value = (h->Center - center).Length();
+						int value = (h->Center - center).Gamemd_Length();
 
 						/*
 						**	Compare the calculated value for this candidate house and if it is
@@ -5821,7 +5821,7 @@ ZoneType HouseClass::Which_Zone(Coord const & coord) const
 {
 	if (coord == COORD_NONE) return(ZONE_NONE);
 
-	int distance = Distance(Center, coord);
+	int distance = Gamemd_Distance(Center, coord);
 	if (distance <= Radius) return(ZONE_CORE);
 	if (distance > Radius*4) return(ZONE_NONE);
 
@@ -5979,7 +5979,7 @@ AbstractClass * HouseClass::Find_Juicy_Target(Coord const & coord) const
 		UnitClass * unit = Units[index];
 
 		if (unit && !unit->IsInLimbo && !Is_Ally(unit) && unit->House->Which_Zone(unit) == ZONE_NONE && unit->HeightAGL >= -20 && unit->Cloak != CLOAKED) {
-			int val = coord.Distance_To(unit->Center_Coord());
+			int val = coord.Gamemd_Distance_To(unit->Center_Coord());
 
 			if (unit->Anti_Air()) val *= 2;
 
@@ -8376,7 +8376,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 		if (site == Cell(0, 0)) {
 			return(Cell(0, 0));
 		}
-		if (ConYards.Count() > 0 && (ConYards[0]->Center_Coord() - Coord(site)).Length() > Rule->AINavalYardAdjacency * CELL_LEPTON_W) {
+		if (ConYards.Count() > 0 && (ConYards[0]->Center_Coord() - Coord(site)).Gamemd_Length() > Rule->AINavalYardAdjacency * CELL_LEPTON_W) {
 			return(Cell(0, 0));
 		}
 		return(site);
@@ -8398,7 +8398,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 		if (!buildingtype->IsCloakGenerator) {
 			score = func(*this, cell, i, context);
 		} else {
-			score = i + 1000 * (Center - Coord(cell)).Length();
+			score = i + 1000 * (Center - Coord(cell)).Gamemd_Length();
 		}
 		ranking.Add_Index(score, cell);
 	}

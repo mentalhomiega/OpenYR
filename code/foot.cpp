@@ -1241,7 +1241,7 @@ void FootClass::Approach_Target(void)
 			if (reach > 0x1FF) {
 				reach -= 0x80;
 			}
-			if (Rule->ApproachTargetResetMultiplier * reach < (TarCom->Center_Coord() - NavCom->Center_Coord()).Length()) {
+			if (Rule->ApproachTargetResetMultiplier * reach < (TarCom->Center_Coord() - NavCom->Center_Coord()).Gamemd_Length()) {
 				NavCom = NULL;
 			}
 		}
@@ -4025,8 +4025,8 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(ThreatAvoidanceCoefficient);
-	crc(LastPathingCell.Length());
-	crc(LastTubeCoord.Length());
+	crc(LastPathingCell.Gamemd_Length());
+	crc(LastTubeCoord.Gamemd_Length());
 	crc(Speed);
 	crc(SpeedBias);
 	if (NavCom != NULL) crc(NavCom->Fetch_ID());
@@ -4036,7 +4036,7 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)PathDelay);
 	crc(TryTryAgain);
 	crc((int)BaseAttackTimer);
-	crc(HeadToCoord.Length());
+	crc(HeadToCoord.Gamemd_Length());
 	crc(CurrentTube);
 	crc(CurrentTubeDir);
 	crc(IsScanLimited);

@@ -96,7 +96,7 @@ void FuseClass::Arm_Fuse(Coord const & location, Coord const & target, int armin
 	Timer = timeto;
 	Arming = arming;
 	HeadTo = target;
-	Proximity = location.Distance_To(target);
+	Proximity = location.Gamemd_Distance_To(target);
 }
 
 
@@ -137,7 +137,7 @@ FuseResultType FuseClass::Fuse_Checkup(Coord const & newlocation)
 		*/
 		//if (!Timer) return(true);
 
-		proximity = newlocation.Distance_To(HeadTo) / 2;
+		proximity = newlocation.Gamemd_Distance_To(HeadTo) / 2;
 		if (proximity < 0x0010*2) return(FUSE_EXPLODE_CLOSE);
 
 		if (proximity < CELL_LEPTON_W && proximity > Proximity) {
