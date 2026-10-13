@@ -245,7 +245,7 @@ The base center is a cell set by one of three events:
 - a house passes to the computer, which sets it to the cell of a construction yard it owns;
 - the [Auto Base Building](/mapping/actions/taction-base-building/) trigger action turns base building on, which sets it to the house's first construction yard.
 
-A house with no base center skips the search and all of its tests. Its structure targets the center of the house's structures, averaged with more weight on expensive ones. The defense quadrants and the wall height reference are then measured from cell `0,0`. A campaign plan with `0,0` cells or `-1` placeholders therefore needs the Auto Base Building action.
+A house with no base center skips the search and all of its tests. Its structure goes to its starting cell. A [Center Base Cell Set](/mapping/actions/taction-center-base-cell-set/) waypoint is the starting cell while that action's cell stays set. Otherwise the starting cell is the house's start position, if it has one, until a structure is created or destroyed. From then on it is the average of the house's structures, snapped to a nearby cell and weighted toward expensive ones, or unset when none remain. An unset starting cell puts the structure on cell `0,0`. The defense quadrants and the wall height reference are measured from cell `0,0` in every case. A campaign plan with `0,0` cells or `-1` placeholders therefore needs the Auto Base Building action.
 
 From each edge cell the search looks outward, away from the reserved area, and tries up to three positions in a line. A position is accepted when all of these hold:
 
