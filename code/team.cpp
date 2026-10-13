@@ -4327,11 +4327,13 @@ void TeamClass::TMission_GARRISON_STRUCTURE(TeamMissionClass *, bool)
 
 /// <summary>
 /// Sends each occupier soldier into its owner's nearest structure it can garrison, such as a Battle
-/// Bunker (FootClass::GoBattleBunker, 0x4DFCB0).
+/// Bunker (FootClass::GoBattleBunker, 0x4DFCB0). Only structures with a TechLevel of 0 or more are
+/// offered, because the owner's list of occupiable structures holds only those (BuildingClass::Unlimbo,
+/// 0x440580).
 /// </summary>
 void TeamClass::TMission_ENTER_BATTLE_BUNKER(TeamMissionClass *, bool)
 {
 	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
-		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
+		return(member->RTTI == RTTI_INFANTRY && building->Class->Level >= 0 && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
 	});
 }
