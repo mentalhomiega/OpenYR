@@ -242,7 +242,7 @@ Each unit of Tiberium a harvester unloads adds five points to the score of the h
 
 Ore purifiers raise that payment. For every [`OrePurifier=yes`](/keys/orepurifier/) structure that house has on the map, each unit unloaded pays an extra [`PurifierBonus`](/keys/purifierbonus/) share of its price and score. When that house is a computer house outside a campaign, it also counts its [`AIVirtualPurifiers`](/keys/aivirtualpurifiers/) entry as purifiers. The extra credits and points are each rounded down for every pass, which pays one type.
 
-Buildings that declare [`Storage`](/keys/storage/) can still hold units put there in other ways. Stored units become credits only when the house spends. Spending uses loose credits first, then stored units one at a time. Each building gives up its units lowest slot first, before the next building is used. Each unit is priced at its type's `Value` when it is spent, not when it is harvested.
+Buildings that declare [`Storage`](/keys/storage/) can still hold units put there in other ways. Stored units become credits only when the house spends. Spending uses loose credits first, then stored units one at a time. Each building gives up its units lowest slot first, before the next building is used. Each unit is priced at its type's `Value` times the house's `IncomeMult`, rounded down per unit, when it is spent, not when it is harvested.
 
 A captured building keeps its contents. They move from the old house's total to the new house's total, along with the building's capacity.
 

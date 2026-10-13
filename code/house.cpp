@@ -2273,7 +2273,8 @@ void HouseClass::Spend_Money(int money)
 							}
 							int amount = b->Storage.Decrease_Amount(1, slot);
 							Tiberium.Decrease_Amount(amount, slot);
-							int value = amount * Tiberiums[slot]->CreditValue;
+							// gamemd applies the house's IncomeMult to ore sold for a shortfall (HouseClass::TakeMoney, 0x4F9790).
+							int value = static_cast<int>(Tiberiums[slot]->CreditValue * Class->IncomeMult * amount);
 							deficit -= value;
 							money += value;
 							if (deficit < 0) {
