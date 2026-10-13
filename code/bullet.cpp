@@ -1418,7 +1418,11 @@ void BulletClass::Detonate(Coord const & coord)
 		DebugString("AUTOTEST nuke detonates at frame %d at %d,%d,%d\n", Frame, coord.X, coord.Y, coord.Z);
 	}
 
-	if (Class->ShrapnelWeapon != NULL) {
+	// The warheads that gamemd tests before its damage step throw no shrapnel (BulletClass::Detonate, 0x469210).
+	bool const throws_shrapnel = !warhead->IsNukeMaker && !warhead->IsMindControl && !warhead->IsMakesDisguise
+		&& !warhead->IsIvanBomb && !warhead->IsElectricAssault && !warhead->IsLocomotor && !warhead->IsBombDisarm
+		&& !warhead->IsParasite && !warhead->IsTemporal && !warhead->IsAirstrike;
+	if (Class->ShrapnelWeapon != NULL && throws_shrapnel) {
 		Shrapnel();
 	}
 
@@ -1876,36 +1880,47 @@ void BulletClass::Nuke_Maker(void)
 /// <summary>
 /// Throws this projectile's ShrapnelWeapon from where it hits (BulletClass::Shrapnel, 0x46A310).
 /// Nothing is thrown unless something other than a structure stands in the cell it hits. The cells
-/// around that cell are searched in CellSpreadTable order, from ring 1 out to the shrapnel weapon's
-/// range (the cell it hits is not searched). The weapon fires at the techno in each searched cell
-/// that is neither the firer nor an ally of the firer's house, up to ShrapnelCount objects. A laser
-/// or electric bolt shrapnel weapon also draws its beam.
+/// around the impact cell are searched in CellSpreadTable order, from ring 1 out to the shrapnel weapon's
+/// range (the impact cell is not searched), and each techno found that is neither the firer nor an ally of
+/// the firer's house takes a piece. A piece the search does not place lands on a random cell within two
+/// cells of the impact cell; a random cell off the map gets none. A ShrapnelCount of zero sends a piece at
+/// every such techno in range and no random pieces. A negative ShrapnelCount gives |ShrapnelCount| minus the
+/// firer's distance from the impact in whole cells, or three pieces when there is no firer, and throws
+/// nothing when that is below one.
 /// </summary>
 void BulletClass::Shrapnel(void)
 {
 	WeaponTypeClass * weapon = Class->ShrapnelWeapon;
-	if (weapon == NULL || weapon->Bullet == NULL || Payback == NULL || Class->ShrapnelCount <= 0) {
+	if (weapon == NULL || weapon->Bullet == NULL) {
 		return;
 	}
+
+	Coord const from = Center_Coord();
+	int count = Class->ShrapnelCount;
+	if (count < 0) {
+		count = 3;
+		if (Payback != NULL) {
+			count = -Class->ShrapnelCount - (Payback->Get_Coord() - from).Gamemd_Length() / CELL_LEPTON;
+		}
+		if (count < 1) {
+			return;
+		}
+	}
+
 	Cell const center = Get_Cell();
 	ObjectClass const * occupier = Map[center].Cell_Occupier();
 	if (occupier == NULL || occupier->RTTI == RTTI_BUILDING) {
 		return;
 	}
 
-	Coord const from = Center_Coord();
-	int const range = weapon->Range / CELL_LEPTON;
-	int fired = 0;
-	for (int index = Cell_Spread_Count(0); index < Cell_Spread_Count(range) && fired < Class->ShrapnelCount; index++) {
-		Cell const cell = center + Cell_Spread_Offset(index);
-		if (!Map.In_Radar(cell)) continue;
-		TechnoClass * target = Map[cell].Cell_Techno();
-		if (target == NULL || target == Payback || Payback->House->Is_Ally(target->House)) continue;
-
+	/*
+	 * A lambda rather than a free function, so that it keeps this class's access to the
+	 * private members of an electric bolt.
+	 */
+	auto throw_piece = [this, weapon, from](AbstractClass * target, Coord const & to) {
 		BulletClass * piece = Create_Bullet(weapon->Bullet, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->ProjectileRange, weapon->IsBright);
-		if (piece == NULL) continue;
+		if (piece == NULL) return;
 		piece->Weapon = weapon;
-		Coord const to = target->Center_Coord();
 		TVelocity3D<double> velocity;
 		velocity.Set(0.0, 0.0, 0.0);
 		velocity.Set_Yaw(DirType(Gamemd_Atan2((double)-(to.Y - from.Y), (double)(to.X - from.X))));
@@ -1913,17 +1928,39 @@ void BulletClass::Shrapnel(void)
 		velocity.Set_Pitch(DirType(0.785398));
 		if (!piece->Unlimbo(from, velocity)) {
 			delete piece;
-			continue;
+			return;
 		}
-		if (weapon->IsElectricBolt) {
+		if (Payback != NULL && weapon->IsElectricBolt) {
 			EBoltClass * bolt = new EBoltClass;
 			bolt->IsAlternateColor = weapon->IsAlternateColor;
 			bolt->Fire(from, to, 0);
 		}
-		if (weapon->IsLaser) {
+		if (Payback != NULL && weapon->IsLaser) {
 			new LaserDrawClass(from, to, 0, true, weapon->LaserInnerColor, weapon->LaserOuterColor, weapon->LaserOuterSpread, weapon->LaserDuration, false, false, 1.0, 0.0);
 		}
-		DebugString("Shrapnel: %s throws %s at %s on %d,%d\n", Class->Name(), weapon->Name(), target->TClass->Name(), cell.X, cell.Y);
-		fired++;
+	};
+
+	int const range = weapon->Range / CELL_LEPTON;
+	int fired = 0;
+	if (Payback != NULL) {
+		for (int index = Cell_Spread_Count(0); index < Cell_Spread_Count(range) && (count == 0 || fired < count); index++) {
+			Cell const cell = center + Cell_Spread_Offset(index);
+			if (!Map.In_Radar(cell)) continue;
+			TechnoClass * target = Map[cell].Cell_Techno();
+			if (target == NULL || target == Payback || Payback->House->Is_Ally(target->House)) continue;
+
+			DebugString("Shrapnel: %s throws %s at %s on %d,%d\n", Class->Name(), weapon->Name(), target->TClass->Name(), cell.X, cell.Y);
+			throw_piece(target, target->Center_Coord());
+			fired++;
+		}
+	}
+
+	for (; fired < count; fired++) {
+		int const dx = Random_Pick(-2, 2);
+		int const dy = Random_Pick(-2, 2);
+		Cell const cell = center + Cell(dx, dy);
+		if (Map.In_Radar(cell)) {
+			throw_piece(&Map[cell], Map[cell].Center_Coord());
+		}
 	}
 }
