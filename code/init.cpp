@@ -4175,49 +4175,110 @@ class RSidebarPageDownCommandClass : public CommandClass
 };
 
 
-// Labels of the four sidebar tabs, in tab order: structures, defenses, infantry, vehicles.
-static int const SIDEBAR_TAB_NAME[] = {TXT_STRUCTURE_TAB, TXT_DEFENSE_TAB, TXT_INFANTRY_TAB, TXT_UNIT_TAB};
-static int const SIDEBAR_TAB_DESC[] = {TXT_STRUCTURE_TAB_DESC, TXT_DEFENSE_TAB_DESC, TXT_INFANTRY_TAB_DESC, TXT_UNIT_TAB_DESC};
-static char const * const SIDEBAR_TAB_UNIQUE_NAME[] = {"StructureTab", "DefenseTab", "InfantryTab", "UnitTab"};
-
-
 /// <summary>
-/// Shows one sidebar tab. A tab with nothing in it is left as it is.
+/// Shows one sidebar tab, in tab order: structures, defenses, infantry, vehicles. A tab with nothing in it
+/// is left as it is.
 /// </summary>
 /// <remarks>gamemd: SetStructureTab, SetDefenseTab, SetInfantryTab and SetUnitTab Execute, at 0x535d90, 0x535e50, 0x535f10 and 0x535fa0.</remarks>
-class SidebarTabCommandClass : public CommandClass
+static void Show_Sidebar_Tab(int tab)
+{
+	if (Map.Column[tab].BuildableCount > 0) {
+		Map.Set_Tab(tab);
+
+		// Only the structure and defense tabs hold a completed building to place.
+		if (tab < 2) {
+			Map.Place_Completed_Building(tab);
+		}
+	}
+}
+
+
+class StructureTabCommandClass : public CommandClass
 {
 	public:
-		SidebarTabCommandClass(int tab) : Tab(tab) {}
-
 		virtual char const * Get_Unique_Name(void) const {
-			return(SIDEBAR_TAB_UNIQUE_NAME[Tab]);
+			return("StructureTab");
 		}
 		virtual char const * Get_Display_Name(void) const {
-			return(Fetch_String(SIDEBAR_TAB_NAME[Tab]));
+			return(Fetch_String(TXT_STRUCTURE_TAB));
 		}
 		virtual char const * Get_Category(void) const {
-			return(Fetch_String((TXT_INTERFACE)));
+			return(Fetch_String(TXT_INTERFACE));
 		}
 		virtual char const * Get_Description(void) const {
-			return(Fetch_String(SIDEBAR_TAB_DESC[Tab]));
+			return(Fetch_String(TXT_STRUCTURE_TAB_DESC));
 		}
 
 		virtual void Execute(void) const {
-			if (Map.Column[Tab].BuildableCount > 0) {
-				Map.Set_Tab(Tab);
-
-				// Only the structure and defense tabs hold a completed building to place.
-				if (Tab < 2) {
-					Map.Place_Completed_Building(Tab);
-				}
-			}
+			Show_Sidebar_Tab(0);
 		}
-
-	private:
-		int Tab;
 };
 
+
+class DefenseTabCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("DefenseTab");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_DEFENSE_TAB));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_DEFENSE_TAB_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Show_Sidebar_Tab(1);
+		}
+};
+
+
+class InfantryTabCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("InfantryTab");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_INFANTRY_TAB));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_INFANTRY_TAB_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Show_Sidebar_Tab(2);
+		}
+};
+
+
+class UnitTabCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("UnitTab");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Fetch_String(TXT_UNIT_TAB));
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Fetch_String(TXT_UNIT_TAB_DESC));
+		}
+
+		virtual void Execute(void) const {
+			Show_Sidebar_Tab(3);
+		}
+};
 
 class OptionsCommandClass : public CommandClass
 {
@@ -5766,10 +5827,10 @@ static void Init_Commands(void)
 	AllCommands.Add(new LSidebarPageDownCommandClass);
 	AllCommands.Add(new RSidebarPageDownCommandClass);
 
-	AllCommands.Add(new SidebarTabCommandClass(0));
-	AllCommands.Add(new SidebarTabCommandClass(1));
-	AllCommands.Add(new SidebarTabCommandClass(2));
-	AllCommands.Add(new SidebarTabCommandClass(3));
+	AllCommands.Add(new StructureTabCommandClass);
+	AllCommands.Add(new DefenseTabCommandClass);
+	AllCommands.Add(new InfantryTabCommandClass);
+	AllCommands.Add(new UnitTabCommandClass);
 
 	AllCommands.Add(new CenterREventCommandClass);
 
