@@ -31,6 +31,8 @@
 **	canbuild <TypeID>		writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses, and whether the house can build it now
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
+**	bridge x y				writes a cell's bridge tile, overlay, deck and under-bridge flags
+**	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
 **	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
@@ -1312,13 +1314,52 @@ static void Bridge_Cell_Step(StepType const & step)
 }
 
 
+/// <summary>
+/// Logs each bridge deck overlay on the map with whether its footprint is flagged, then the counts.
+/// </summary>
+/// <param name="step">The step, which takes no argument.</param>
+static void Bridge_Census_Step(StepType const & step)
+{
+	(void)step;
+	int high = 0;
+	int high_flagged = 0;
+	int railway = 0;
+	int railway_flagged = 0;
+
+	Map.Reset_Iterator();
+	for (CellClass * cptr = Map.Iterate(); cptr != NULL; cptr = Map.Iterate()) {
+		bool const is_high = cptr->Overlay == OVERLAY_BRIDGE1 || cptr->Overlay == OVERLAY_BRIDGE2;
+		bool const is_railway = cptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || cptr->Overlay == OVERLAY_RAILWAY_BRIDGE2;
+		if (!is_high && !is_railway) {
+			continue;
+		}
+		bool const flagged = cptr->IsBridgeDeck && cptr->IsUnderBridge;
+		if (is_high) {
+			high++;
+			high_flagged += flagged ? 1 : 0;
+		} else {
+			railway++;
+			railway_flagged += flagged ? 1 : 0;
+		}
+		DebugString("AUTOTEST   bridgedeck %d,%d overlay %d od %d deck %d under %d was %d\n",
+			(int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->Overlay, (int)cptr->OverlayData,
+			(int)cptr->IsBridgeDeck, (int)cptr->IsUnderBridge, (int)cptr->WasUnderBridge);
+	}
+	DebugString("AUTOTEST bridgecensus high %d flagged %d railway %d flagged %d\n", high, high_flagged, railway, railway_flagged);
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
-	// bridge x y: see Bridge_Cell_Step. It sits before the chain below, which is nested too deeply to take another branch.
+	// bridge x y and bridgecensus: see Bridge_Cell_Step and Bridge_Census_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "bridge") {
 		Bridge_Cell_Step(step);
+		return;
+	}
+	if (step.Command == "bridgecensus") {
+		Bridge_Census_Step(step);
 		return;
 	}
 
