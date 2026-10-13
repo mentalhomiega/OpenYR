@@ -7,4 +7,4 @@ when_omitted:
   note: The animation IdleAnim names.
 ---
 
-`IdleAnimGarrisoned=` names the animation the idle slot is meant to run in place of [`IdleAnim`](/keys/idleanim/) while infantry occupy the structure. No structure can be occupied yet, so the value is read but never used. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
+`IdleAnimGarrisoned=` names the animation the idle slot runs in place of [`IdleAnim`](/keys/idleanim/) while infantry occupy the structure and its health is above `ConditionYellow`. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.

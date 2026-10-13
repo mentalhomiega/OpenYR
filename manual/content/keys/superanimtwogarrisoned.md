@@ -7,4 +7,4 @@ when_omitted:
   note: The animation SuperAnimTwo names.
 ---
 
-`SuperAnimTwoGarrisoned=` names the animation super slot two is meant to run in place of [`SuperAnimTwo`](/keys/superanimtwo/) while infantry occupy the structure. No structure can be occupied yet, so the value is read but never used. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
+`SuperAnimTwoGarrisoned=` names the animation super slot two is meant to run in place of [`SuperAnimTwo`](/keys/superanimtwo/) while infantry occupy the structure. OpenTS reads the value but does not play it. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.

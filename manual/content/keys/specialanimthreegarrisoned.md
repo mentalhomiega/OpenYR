@@ -7,4 +7,4 @@ when_omitted:
   note: The animation SpecialAnimThree names.
 ---
 
-`SpecialAnimThreeGarrisoned=` names the animation special slot three is meant to run in place of [`SpecialAnimThree`](/keys/specialanimthree/) while infantry occupy the structure. No structure can be occupied yet, so the value is read but never used. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
+`SpecialAnimThreeGarrisoned=` names the animation special slot three is meant to run in place of [`SpecialAnimThree`](/keys/specialanimthree/) while infantry occupy the structure. OpenTS reads the value but does not play it. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.

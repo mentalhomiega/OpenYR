@@ -191,7 +191,7 @@ Each slot has a healthy name and a damaged name. Most fills use the damaged name
 
 A slot that names only a healthy form uses that name in both states.
 
-Each slot also has a garrisoned name, written with the `…Garrisoned` suffix, for a structure that infantry occupy. When it is omitted, the slot uses its healthy name. No structure can be occupied yet, so the garrisoned name is read but never used. The upgrade slots are the exception: an upgrade slot without `PowerUp<n>DamagedAnim=` keeps running its healthy animation while the structure is damaged.
+Each slot also has a garrisoned name, written with the `…Garrisoned` suffix, for a structure that infantry occupy. When it is omitted, the slot uses its healthy name. While infantry occupy the structure and its health is above `ConditionYellow`, the idle, active one to four, and super one and three slots play their garrisoned name. OpenTS reads the other slots' garrisoned names and does not play them. The upgrade slots are the exception: an upgrade slot without `PowerUp<n>DamagedAnim=` keeps running its healthy animation while the structure is damaged.
 
 A slot that names only a damaged form starts only when it is filled in the damaged form. It does not start while the structure is healthy, and it never starts from the fills listed below that always use the healthy name. If it starts while the structure is damaged, repairing the structure leaves that animation running.
 

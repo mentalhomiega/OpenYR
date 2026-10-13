@@ -629,6 +629,7 @@ class BuildingClass : public TechnoClass
 		void Bunker_Down(void);
 		void Garrison_AI(void);
 		void Set_Garrison_House(HouseClass * newowner);
+		void Refresh_Garrison_Anims(void);
 		void Power_Anims_Off(void);
 		bool Open_Gate(void);
 		bool Is_Gate_Open(void) const;

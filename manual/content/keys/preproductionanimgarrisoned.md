@@ -7,4 +7,4 @@ when_omitted:
   note: The animation PreProductionAnim names.
 ---
 
-`PreProductionAnimGarrisoned=` names the animation the pre-production slot is meant to run in place of [`PreProductionAnim`](/keys/preproductionanim/) while infantry occupy the structure. No structure can be occupied yet, so the value is read but never used. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
+`PreProductionAnimGarrisoned=` names the animation the pre-production slot is meant to run in place of [`PreProductionAnim`](/keys/preproductionanim/) while infantry occupy the structure. OpenTS reads the value but does not play it. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.

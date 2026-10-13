@@ -7,4 +7,4 @@ when_omitted:
   note: The animation ActiveAnim names.
 ---
 
-`ActiveAnimGarrisoned=` names the animation active slot one is meant to run in place of [`ActiveAnim`](/keys/activeanim/) while infantry occupy the structure. No structure can be occupied yet, so the value is read but never used. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
+`ActiveAnimGarrisoned=` names the animation active slot one runs in place of [`ActiveAnim`](/keys/activeanim/) while infantry occupy the structure and its health is above `ConditionYellow`. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.

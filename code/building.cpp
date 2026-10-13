@@ -8634,6 +8634,14 @@ bool BuildingClass::Remove_Upgrade(void)
 }
 
 
+// Only the idle and first four active slots, and super slots one and three, take a garrisoned name
+// (BuildingClass::UpdateAnims 0x458330, BeginMode 0x447780, Place 0x445F80); other slots never do.
+static bool Has_Garrisoned_Anim(BAnimType anim)
+{
+	return(anim == BANIM_IDLE || (anim >= BANIM_ACTIVE_ONE && anim <= BANIM_ACTIVE_FOUR) || anim == BANIM_SUPER_ONE || anim == BANIM_SUPER_THREE);
+}
+
+
 /// <summary>
 /// Starts one of this building's attached animations.
 /// This routine is used when the building enters a state that its type provides an
@@ -8648,6 +8656,8 @@ void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay)
 	char const * name = NULL;
 	if (damaged) {
 		name = Class->AnimData[anim].AnimDamaged ;
+	} else if (Occupants.Count() > 0 && Has_Garrisoned_Anim(anim)) {
+		name = Class->AnimData[anim].AnimGarrisoned;
 	} else {
 		name = Class->AnimData[anim].Anim;
 	}
@@ -9578,7 +9588,24 @@ void BuildingClass::Set_Garrison_House(HouseClass * newowner)
 	IsReadyToCommence = true;
 	Radar_Untrack();
 	Radar_Track();
+	Refresh_Garrison_Anims();
 	IsToDisplay = true;
+}
+
+
+/// <summary>
+/// Restarts the idle and active animations that are playing, so each takes the damaged, garrisoned or
+/// healthy form that the current health and occupants call for. Call this when the owner changes
+/// with the occupants; gamemd's FUN_00458200 replays them through BuildingClass::UpdateAnims (0x458330).
+/// </summary>
+void BuildingClass::Refresh_Garrison_Anims(void)
+{
+	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	for (BAnimType anim : {BANIM_IDLE, BANIM_ACTIVE_ONE, BANIM_ACTIVE_TWO, BANIM_ACTIVE_THREE, BANIM_ACTIVE_FOUR}) {
+		if (Anims[anim] != NULL) {
+			Begin_Anim(anim, damaged);
+		}
+	}
 }
 
 

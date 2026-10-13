@@ -72,6 +72,8 @@ A structure that can be built, such as the Battle Bunker, keeps its owner whethe
 
 A structure with occupants draws frame 2 of its art instead of the frame for its animation stage. Damage adds 1 to the frame, so an occupied, damaged structure draws frame 3, or frame 1 when its `TechLevel` is `-1`. A structure is damaged at [`ConditionRed`](/keys/conditionred/) health, or at [`ConditionYellow`](/keys/conditionyellow/) health when its `TechLevel` is above 0.
 
+While it has occupants and its health is above `ConditionYellow`, the idle and active animations run their [garrisoned names](/keys/idleanimgarrisoned/). A damaged structure runs the damaged names instead.
+
 ## Firing
 
 A `CanOccupyFire=yes` structure with at least one occupant searches for targets and fires like a defense. Its owner can also order it to attack a target within range.

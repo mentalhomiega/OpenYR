@@ -7,4 +7,4 @@ when_omitted:
   note: The animation SuperAnimThree names.
 ---
 
-`SuperAnimThreeGarrisoned=` names the animation super slot three is meant to run in place of [`SuperAnimThree`](/keys/superanimthree/) while infantry occupy the structure. No structure can be occupied yet, so the value is read but never used. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
+`SuperAnimThreeGarrisoned=` names the animation super slot three runs in place of [`SuperAnimThree`](/keys/superanimthree/) while infantry occupy the structure and its health is above `ConditionYellow`. [The damaged form](/systems/building-animations/#the-damaged-form) covers the slot's three names.
