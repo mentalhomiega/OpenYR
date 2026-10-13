@@ -1957,9 +1957,17 @@ bool ObjectClass::Paradrop(Coord const & coord)
 
 		PositionCoord = coord;
 
+		/*
+		**	A parachute canopy starts 75 leptons above the object, as gamemd's ObjectClass::SpawnParachuted
+		**	(0x5F5940) places it. A dropped bomb's chute starts at the bomb itself.
+		*/
 		AnimTypeClass const * chute = RTTI == RTTI_BULLET ? Rule->BombParachute : Rule->Parachute;
 		if (chute != NULL) {
-			anim = new AnimClass(chute, coord);
+			Coord canopy = coord;
+			if (RTTI != RTTI_BULLET) {
+				canopy.Z += 75;
+			}
+			anim = new AnimClass(chute, canopy);
 		}
 
 		/*
