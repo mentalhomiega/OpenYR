@@ -220,7 +220,7 @@ OptionsClass::OptionsClass(void) :
 	ScaleMode(VIDEO_SCALE_PIXELART),
 	IntegerScaling(false),
 	RenderFrameRate(0),
-	VSync(false),
+	VSync(true),
 	Renderer(0),
 	CursorScale(0),
 	InterfaceScale(0.0f),
