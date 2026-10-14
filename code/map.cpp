@@ -12207,11 +12207,12 @@ static bool Is_Under_Bridge(CellClass const * cptr)
 
 
 /*
- * gamemd's flag 0x80: the cell is itself the bridge deck, not a cell that points at one.
+ * gamemd's flag 0x80: the cell is itself the bridge deck, not a cell that points at one. A bridge
+ * tile with a linked deck cell is under that deck, so it is not a deck itself; its owner is the deck.
  */
 static bool Is_Bridge_Deck(CellClass const * cptr)
 {
-	return(cptr != NULL && (cptr->IsBridgeDeck || Is_Bridge_Tile(cptr)));
+	return(cptr != NULL && (cptr->IsBridgeDeck || (Is_Bridge_Tile(cptr) && cptr->BridgeDeckCell == NULL)));
 }
 
 
@@ -12715,19 +12716,348 @@ bool MapClass::Damage_Bridge_At_Cell(Cell const & cell)
 
 
 /// <summary>
-/// Brings down the road span through a cell (gamemd CellClass::BlowUpBridgeArea, 0x576BA0).
-/// The span follows the cell's bridge axis. It is taken down with Destroy_High_Bridge_Span, and
-/// what is left of it with Destroy_High_Bridge_Connections.
+/// Sets the bridge tile for a position within the road bridge set (gamemd's tile arguments
+/// to SetIsoTileTypeAndPropagate are the set base plus a position, one past the stored index).
 /// </summary>
-/// <param name="cell">A cell of the span.</param>
+static IsometricTileType Bridge_Set_Tile(int position)
+{
+	return(IsometricTileType(IsometricTileTypeClass::BridgeSet + position - 1));
+}
+
+
+/// <summary>
+/// Blows up whatever stands on a cell of a span, through CellClass::Destroy_Bridge (gamemd
+/// CellClass::BlowUpBridge, 0x47DD70). Nothing happens for a cell that does not exist.
+/// </summary>
+static void Blow_Bridge_Cell(Cell const & cell)
+{
+	CellClass * cptr = Bridge_Cell_At(cell);
+	if (cptr != NULL) {
+		cptr->Destroy_Bridge();
+	}
+}
+
+
+/// <summary>
+/// Turns the deck at a cell off and clears its overlay (gamemd CellClass::SetBridgeOverlay with
+/// a zero flag, 0x47E040, followed by the overlay reset in BlowUpBridgeArea). The east-west
+/// axis is lowered with the north facing and the north-south axis with the west facing.
+/// </summary>
+void MapClass::Lower_Bridge_Deck(Cell const & cell, bool east_west)
+{
+	CellClass * cptr = &Map[cell];
+	cptr->Set_Under_Bridge(east_west ? FACING_N : FACING_W, false);
+	cptr->OverlayData = 0;
+	cptr->Overlay = OVERLAY_NONE;
+	Map.Radar_Background(cptr->CellID);
+}
+
+
+/// <summary>
+/// Marks the screen area around a cell for redraw after its span changes (gamemd
+/// MapClass::RefreshBridgeDirtyArea, 0x576770).
+/// </summary>
+void MapClass::Register_Bridge_Dirty_Area(Cell const & cell)
+{
+	CellClass const * cptr = Bridge_Cell_At(cell);
+	if (cptr == NULL) {
+		return;
+	}
+	Point2D point;
+	TacticalMap->Coord_To_Pixel((Coord)cell, point);
+	point.Y -= LEVEL_PIXEL_H * cptr->Height;
+	TacticalMap->Register_Dirty_Area(Rect(point - Point2D(128, 128), 256, 256));
+}
+
+
+/// <summary>
+/// Weakens the deck and the span piece just east of a deck cell (gamemd 0x572230, the first
+/// step of an east-west span's damage).
+/// </summary>
+void MapClass::Weaken_Deck_East(Cell const & cell)
+{
+	Cell const next = cell + AdjacentCell[FACING_E];
+	CellClass * cptr = Bridge_Cell_At(next);
+	if (cptr == NULL) {
+		return;
+	}
+	if (cptr->IsBridgeDeck) {
+		if (cptr->OverlayData < 4) {
+			cptr->OverlayData = 4;
+		} else if (cptr->OverlayData == 5) {
+			cptr->OverlayData = 6;
+		}
+	}
+	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+	if (pos == IsometricTileTypeClass::BridgeBottomRight1 || pos == IsometricTileTypeClass::BridgeBottomRight2) {
+		Set_Bridge_End_State(next, true, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle1) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 1), ISOTILE_INVALID, -1, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle1 + 2) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 3), ISOTILE_INVALID, -1, false);
+	}
+}
+
+
+/// <summary>
+/// Weakens the deck and the span piece just west of a deck cell (gamemd 0x572330).
+/// </summary>
+void MapClass::Weaken_Deck_West(Cell const & cell)
+{
+	Cell const next = cell + AdjacentCell[FACING_W];
+	CellClass * cptr = Bridge_Cell_At(next);
+	if (cptr == NULL) {
+		return;
+	}
+	if (cptr->IsBridgeDeck) {
+		if (cptr->OverlayData < 4) {
+			cptr->OverlayData = 5;
+		} else if (cptr->OverlayData == 4) {
+			cptr->OverlayData = 6;
+		}
+	}
+	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+	if (pos == IsometricTileTypeClass::BridgeTopLeft1 || pos == IsometricTileTypeClass::BridgeTopLeft2) {
+		Set_Bridge_End_State(next, true, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle1) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 2), ISOTILE_INVALID, -1, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle1 + 1) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 3), ISOTILE_INVALID, -1, false);
+	}
+}
+
+
+/// <summary>
+/// Weakens the deck and the span piece just south of a deck cell on a north-south span
+/// (gamemd 0x572B80).
+/// </summary>
+void MapClass::Weaken_Deck_South(Cell const & cell)
+{
+	Cell const next = cell + AdjacentCell[FACING_S];
+	CellClass * cptr = Bridge_Cell_At(next);
+	if (cptr == NULL) {
+		return;
+	}
+	if (cptr->IsBridgeDeck && cptr->OverlayData > 8) {
+		if (cptr->OverlayData < 13) {
+			cptr->OverlayData = 14;
+		} else if (cptr->OverlayData == 13) {
+			cptr->OverlayData = 15;
+		}
+	}
+	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+	if (pos == IsometricTileTypeClass::BridgeBottomLeft1 || pos == IsometricTileTypeClass::BridgeBottomLeft2) {
+		Set_Bridge_End_State(next, true, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle2) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 1), ISOTILE_INVALID, -1, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle2 + 2) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 3), ISOTILE_INVALID, -1, false);
+	}
+}
+
+
+/// <summary>
+/// Weakens the deck and the span piece just north of a deck cell on a north-south span
+/// (gamemd 0x572C90).
+/// </summary>
+void MapClass::Weaken_Deck_North(Cell const & cell)
+{
+	Cell const next = cell + AdjacentCell[FACING_N];
+	CellClass * cptr = Bridge_Cell_At(next);
+	if (cptr == NULL) {
+		return;
+	}
+	if (cptr->IsBridgeDeck && cptr->OverlayData > 8) {
+		if (cptr->OverlayData < 13) {
+			cptr->OverlayData = 13;
+		} else if (cptr->OverlayData == 14) {
+			cptr->OverlayData = 15;
+		}
+	}
+	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+	if (pos == IsometricTileTypeClass::BridgeTopRight1 || pos == IsometricTileTypeClass::BridgeTopRight2) {
+		Set_Bridge_End_State(next, true, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle2) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 2), ISOTILE_INVALID, -1, false);
+	} else if (pos == IsometricTileTypeClass::BridgeMiddle2 + 1) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 3), ISOTILE_INVALID, -1, false);
+	}
+}
+
+
+/// <summary>
+/// Blows up the middle section of a span at a cell that holds its last middle piece (gamemd 0x572440
+/// and 0x5727E0 for an east-west span, 0x572DA0 and 0x573170 for a north-south span). The cells
+/// across the span are blown up, and the piece takes its destroyed tile.
+/// </summary>
+/// <param name="cell">The middle piece.</param>
+/// <param name="east_west">Is the span east-west?</param>
+void MapClass::Collapse_Deck_Section(Cell const & cell, bool east_west)
+{
+	CellClass const * level = Bridge_Cell_At(cell);
+	if (level == NULL) {
+		return;
+	}
+
+	if (east_west) {
+		if ((level->Height & 1) == 0) {
+			Blow_Bridge_Cell(cell);
+			Blow_Bridge_Cell(cell + AdjacentCell[FACING_N]);
+			Blow_Bridge_Cell(cell + AdjacentCell[FACING_S]);
+		} else {
+			Cell const west = cell + AdjacentCell[FACING_W];
+			Blow_Bridge_Cell(west);
+			Blow_Bridge_Cell(west + AdjacentCell[FACING_NW]);
+			Blow_Bridge_Cell(west + AdjacentCell[FACING_SW]);
+			level = Bridge_Cell_At(west);
+		}
+		Set_Bridge_Middle_State(cell, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 4), ISOTILE_INVALID, level->Height - 4, false);
+
+	} else {
+		if (level->Height < 5) {
+			Blow_Bridge_Cell(cell + AdjacentCell[FACING_W]);
+			Blow_Bridge_Cell(cell);
+			Blow_Bridge_Cell(cell + AdjacentCell[FACING_E]);
+		} else {
+			Cell const north = cell + AdjacentCell[FACING_N];
+			Blow_Bridge_Cell(cell + AdjacentCell[FACING_NW]);
+			Blow_Bridge_Cell(north);
+			Blow_Bridge_Cell(cell + AdjacentCell[FACING_NE]);
+			level = Bridge_Cell_At(north);
+		}
+		Set_Bridge_Middle_State(cell, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 4), ISOTILE_INVALID, level->Height - 4, false);
+	}
+}
+
+
+/// <summary>
+/// Takes one step of a span's collapse toward a direction, and the far span end or the near span end
+/// (gamemd 0x572440 and 0x572DA0 walk to the far end; 0x5727E0 and 0x573170 walk to the near end).
+/// A deck cell advances its damage stage, and a stage that the step has already reached takes the deck
+/// down and continues the walk. A span piece at the end stops the walk; a middle piece is set to its
+/// damaged variant.
+/// </summary>
+/// <param name="cell">The deck or span cell the step starts from.</param>
+/// <param name="dir">FACING_E or FACING_S for the far walk, FACING_W or FACING_N for the near walk.</param>
+/// <param name="east_west">Is the span east-west?</param>
+/// <param name="far">Does the walk go to the far end?</param>
+void MapClass::Collapse_Deck_Step(Cell const & cell, FacingType dir, bool east_west, bool towards_far)
+{
+	Cell const next = cell + AdjacentCell[dir];
+	CellClass * cptr = Bridge_Cell_At(next);
+	if (cptr == NULL) {
+		return;
+	}
+
+	int const target = east_west ? (towards_far ? 7 : 8) : (towards_far ? 17 : 16);
+	int const again = east_west ? (towards_far ? 8 : 7) : (towards_far ? 16 : 17);
+	bool const deck_stage = east_west || cptr->OverlayData > 8;
+
+	if (cptr->IsBridgeDeck && deck_stage) {
+		if (cptr->OverlayData < target) {
+			cptr->OverlayData = target;
+		} else if (cptr->OverlayData == again) {
+			Collapse_Deck_Step(next, dir, east_west, towards_far);
+			Lower_Bridge_Deck(next, east_west);
+		}
+	}
+
+	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+	int const base = east_west ? IsometricTileTypeClass::BridgeMiddle1 : IsometricTileTypeClass::BridgeMiddle2;
+	bool const end_piece = east_west
+		? (towards_far ? (pos == IsometricTileTypeClass::BridgeBottomRight1 || pos == IsometricTileTypeClass::BridgeBottomRight2)
+			: (pos == IsometricTileTypeClass::BridgeTopLeft1 || pos == IsometricTileTypeClass::BridgeTopLeft2))
+		: (towards_far ? (pos == IsometricTileTypeClass::BridgeBottomLeft1 || pos == IsometricTileTypeClass::BridgeBottomLeft2)
+			: (pos == IsometricTileTypeClass::BridgeTopRight1 || pos == IsometricTileTypeClass::BridgeTopRight2));
+
+	if (end_piece) {
+		Set_Bridge_End_State(next, true, false);
+		return;
+	}
+
+	int const second = towards_far ? 2 : 1;
+	if (pos == base || pos == base + second) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(base + 3), ISOTILE_INVALID, -1, false);
+		return;
+	}
+
+	if (pos == base + 3) {
+		Collapse_Deck_Step(next, dir, east_west, towards_far);
+		Collapse_Deck_Section(next, east_west);
+	}
+}
+
+
+/// <summary>
+/// Brings down the bridge span under a deck cell (gamemd CellClass::BlowUpBridgeArea, 0x576BA0, the
+/// under-deck branch). The deck is the cell's owner, the cell itself or its BridgeOwnerCell. Its
+/// overlay stage picks the step: stages 0 to 8 are an east-west span and 9 to 17 a north-south one.
+/// The first hit on an intact deck only weakens it and returns false; a later hit takes the deck down
+/// and returns true. The span walk is the one gamemd makes from the deck, not a search for span ends.
+/// </summary>
+/// <param name="cell">A cell under the span.</param>
 /// <returns>bool; Did the span come down?</returns>
 bool MapClass::Blow_Up_High_Bridge_Area(Cell const & cell)
 {
-	FacingType const dir = Is_East_West_Bridge(Bridge_Cell_At(cell)) ? FACING_E : FACING_S;
-	if (!Destroy_High_Bridge_Span(cell, dir, NULL)) {
+	CellClass * cptr = Bridge_Cell_At(cell);
+	if (cptr == NULL || !cptr->IsUnderBridge) {
 		return(false);
 	}
-	Destroy_High_Bridge_Connections(cell);
+
+	CellClass * deck = cptr->IsBridgeDeck ? cptr : cptr->BridgeDeckCell;
+	if (deck == NULL) {
+		return(false);
+	}
+
+	Cell const deck_cell = deck->CellID;
+	int const stage = deck->OverlayData;
+	bool down = false;
+
+	if (stage <= 8) {
+		if (stage <= 5) {
+			deck->OverlayData = 6;
+			Weaken_Deck_East(deck_cell);
+			Weaken_Deck_West(deck_cell);
+			return(false);
+		}
+		if (stage == 6) {
+			Collapse_Deck_Step(deck_cell, FACING_E, true, true);
+			Collapse_Deck_Step(deck_cell, FACING_W, true, false);
+		} else if (stage == 7) {
+			Collapse_Deck_Step(deck_cell, FACING_E, true, true);
+		} else {
+			Collapse_Deck_Step(deck_cell, FACING_W, true, false);
+		}
+		down = true;
+		Lower_Bridge_Deck(deck_cell, true);
+
+	} else if (stage <= 14) {
+		deck->OverlayData = 15;
+		Weaken_Deck_South(deck_cell);
+		Weaken_Deck_North(deck_cell);
+		return(false);
+
+	} else if (stage <= 17) {
+		if (stage == 15) {
+			Collapse_Deck_Step(deck_cell, FACING_S, false, true);
+			Collapse_Deck_Step(deck_cell, FACING_N, false, false);
+		} else if (stage == 16) {
+			Collapse_Deck_Step(deck_cell, FACING_N, false, false);
+		} else {
+			Collapse_Deck_Step(deck_cell, FACING_S, false, true);
+		}
+		down = true;
+		Lower_Bridge_Deck(deck_cell, false);
+	}
+
+	if (!down) {
+		return(false);
+	}
+
+	Register_Bridge_Dirty_Area(cell);
+	if (Unregister_Subzone_Connections(deck_cell)) {
+		Zone_Reset();
+	}
 	return(true);
 }
 
