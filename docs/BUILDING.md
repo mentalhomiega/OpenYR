@@ -141,7 +141,9 @@ the executable's own directory, so a build writes beside itself unless
 
 The `OpenYRSetup` target builds `OpenYR-Setup.exe` into `<build directory>/bin/<configuration>/`, beside `Game.exe`. Its logic is in `tools/setup/`, and the `setup` ctest drives that logic against temporary folders only.
 
-The executable carries no game data. `scripts/package_modern.ps1 -Build <name>` builds a package from `build-<name>` and `src-<name>`. It appends the package's files, stored without compression, and a 24-byte trailer to a copy of the executable, and writes `build/packages/OpenYR-Setup-<version>.exe`. The zip the script already wrote stays as the fallback. The script stops when `OpenYR-Setup.exe` has not been built in that build directory.
+The executable carries no game data. `scripts/package_modern.ps1 -Build <name>` builds a package from `build-<name>` and `src-<name>`. It appends the package's files, stored without compression, and a 24-byte trailer to a copy of the executable, and writes `build/packages/OpenYR-<version>-Setup.exe`. The zip the script already wrote stays as the fallback. The script stops when `OpenYR-Setup.exe` has not been built in that build directory.
+
+The `OpenYRLauncher` target builds `OpenYR.exe`, the launcher that starts the game and offers beta updates. The setup installs it beside `Game.exe`. See [The launcher and beta updates](LAUNCHER.md).
 
 Without switches the setup shows a wizard. These switches run it silently:
 
@@ -151,6 +153,8 @@ Without switches the setup shows a wizard. These switches run it silently:
 | `/YR=<folder>` | The Yuri's Revenge folder. Without it, the first install found is used. |
 | `/DIR=<folder>` | The OpenYR folder. The default is `%LOCALAPPDATA%\Programs\OpenYR`. |
 | `/DESKTOP=0` | No desktop shortcut. The default is to make one. |
+| `/DESKTOP=keep` | Refresh the desktop shortcut only when this install already has one. The launcher's update uses it. |
+| `/NOSHORTCUTS` | Write no Start Menu, desktop or Apps & Features entry. The tests use it. |
 | `/RUN` | Start OpenYR when a silent install ends. |
 | `/UNINSTALL` | Remove OpenYR from `/DIR`, or from the folder the setup runs in. |
 | `/DELETEDATA` | With `/UNINSTALL`, also delete the settings, saves and Debug log. |
@@ -162,13 +166,13 @@ An install writes to the OpenYR folder, the player's Start Menu and desktop, and
 
 | File or folder | Contents |
 | --- | --- |
-| `Game.exe`, `Language.dll`, `ui\`, `licenses\`, `LICENSE.md`, `TESTERS.md`, `CnCNet setup.bat` | The program files. The launchers and `README.txt` are not installed; the zip carries them. |
-| `OPENTS.INI` | `[Paths] DataDirectory=` names the Yuri's Revenge folder and `UserDirectory=user` names the folder for the player's files, so the game reads its data from there and keeps its own files in `user\`. |
+| `OpenYR.exe`, `Game.exe`, `Language.dll`, `ui\`, `licenses\`, `LICENSE.md`, `TESTERS.md`, `CnCNet setup.bat` | The program files. The launcher is `OpenYR.exe`. The Play scripts and `README.txt` are not installed; the zip carries them. |
+| `OPENTS.INI` | `[Paths] DataDirectory=` names the Yuri's Revenge folder and `UserDirectory=user` names the folder for the player's files, so the game reads its data from there and keeps its own files in `user\`. Each install and update rewrites only those two keys; other lines, such as `[Update]`, are kept. |
 | `openyr-install.ini` | The build, the commit, the Yuri's Revenge folder and the program files written. Updates and uninstall read it. |
 | `Uninstall OpenYR.exe` | A copy of the setup without its package. |
 | `user\` | `RA2MD.INI` and `SPAWN.INI`, copied only when missing. The game's settings, saves and screenshots also go here. |
 
-The shortcuts are `OpenYR.lnk` on the desktop, when asked for, and `OpenYR.lnk` and `Uninstall OpenYR.lnk` in `Start Menu\Programs\OpenYR`. The Apps & Features entry is `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenYR`.
+The shortcuts are `OpenYR.lnk` on the desktop, when asked for, and `OpenYR.lnk` and `Uninstall OpenYR.lnk` in `Start Menu\Programs\OpenYR`. The `OpenYR.lnk` files start `OpenYR.exe`. A package without the launcher starts `Game.exe` instead. The Apps & Features entry is `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenYR`.
 
 An install over an existing one replaces the program files, removes the program files the earlier build wrote that the new one does not ship, and leaves `user\` as it is. Uninstall removes what `openyr-install.ini` lists, the shortcuts and the registry entry. `user\` and `Debug\` stay unless `/DELETEDATA` is given.
 
