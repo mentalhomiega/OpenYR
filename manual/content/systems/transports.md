@@ -101,15 +101,15 @@ Yuri's Revenge also gives each passenger its own firing position on the transpor
 
 ## Losing the transport
 
-When a vehicle transport is destroyed, each passenger gets out onto the transport's cell if it could enter that cell. Passengers that cannot are killed with it, so a transport destroyed over water kills every passenger that cannot enter water.
+When a vehicle transport is destroyed, each passenger gets out onto the transport's cell if it could enter that cell. Passengers that cannot are killed with it, so a transport destroyed over water kills every passenger that cannot enter water. A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team when it has one.
 
-Every passenger is killed when the killing damage was forced or the vehicle fell from a height. Forced damage ignores armor and [`Immune=yes`](/keys/immune/). [Destruction and debris](/systems/destruction-and-debris/#a-vehicle) gives the full order of what a destroyed vehicle does.
+Every passenger is killed, and none gets out, when the destroying damage was forced, when the vehicle was falling (for example when a bridge collapsed under it), when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). Forced damage ignores armor and [`Immune=yes`](/keys/immune/). [Destruction and debris](/systems/destruction-and-debris/#a-vehicle) gives the full order of what a destroyed vehicle does.
 
-An aircraft transport's passengers always die with it.
+An aircraft transport's passengers always die with it, whether it falls or is removed where it stands.
 
-Each passenger killed with a vehicle transport, or with an aircraft transport shot down in the air, counts as a kill for the attacker and can earn it [experience](/systems/veterancy/#earning-experience).
+A passenger killed with a vehicle transport, or with an aircraft transport shot down in the air, counts as a kill for the attacker and can earn it [experience](/systems/veterancy/#earning-experience). A passenger of a `Crashable=yes` vehicle that was not above 208 leptons, or of an aircraft removed on the ground, is killed with no attacker credited.
 
-A vehicle whose artwork sets [`DeathFrames`](/keys/deathframes/) becomes a wreck when it is destroyed, and releases no passengers. Passengers still aboard when the wreck is removed are removed with it.
+A vehicle whose artwork sets [`DeathFrames`](/keys/deathframes/) becomes a wreck when it is destroyed, and releases no passengers. Passengers still aboard when the wreck is removed die with it.
 
 Any vehicle with `Passengers` above zero produces no escaping crew when it is destroyed, whether or not it carries anyone. [`CrewEscape`](/keys/crewescape/) covers that exclusion. A transport taken by a vehicle thief still [releases the thief](/systems/capture/#stealing-a-vehicle).
 

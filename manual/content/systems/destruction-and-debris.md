@@ -118,7 +118,7 @@ Three deaths are not announced, and they leave the Goto Radar Event cell where i
 
 ## A vehicle
 
-A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives the destroying hit as a wreck. It is put back to one point of strength and stays where it is, unable to move, while it plays its wreck animation. When its counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/), it plays its death explosion, picked the same way as for an outright death below, and it is taken off the map. The wreck path releases no passengers, no crew and no truck crate. [`CrewEscape`](/keys/crewescape/) covers the crew roll that it skips.
+A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives the destroying hit as a wreck. It is put back to one point of strength and stays where it is, unable to move, while it plays its wreck animation. When its counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/), it plays its death explosion, picked the same way as for an outright death below, and it is taken off the map. Passengers still aboard die with it. The wreck path releases no passengers, no crew and no truck crate. [`CrewEscape`](/keys/crewescape/) covers the crew roll that it skips.
 
 :::caution[Hits on a wreck count as new kills]
 Nothing records that a wreck has already died. It stays on the map and holds its cell, and any hit that takes its last point of strength destroys it again and puts it back to one point. Each such hit:
@@ -127,6 +127,8 @@ Nothing records that a wreck has already died. It stays on the map and holds its
 - runs the whole shared step again, so the wreck throws a fresh batch of wreckage, and an `Explodes=yes` vehicle sets off its death weapon again;
 - offers the destruction events to the wreck's tag again. [Destroyed by any house](/mapping/events/tevent-destroyed/) needs an attacker, and [Destroyed by anything](/mapping/events/tevent-destroyed-any/) does not. [Trigger persistence](/systems/trigger-springing/) decides whether a tag is still there to take them.
 :::
+
+A naval vehicle that is neither underwater nor organic, and weighs at least [`ShipSinkingWeight`](/keys/shipsinkingweight/), sinks instead of vanishing when it is destroyed on open water, unless it is on a bridge or warping out. It then sinks out of view with no death explosion, and its passengers are settled at once, as step 3 below describes.
 
 A vehicle without `DeathFrames` is finished outright. Its death animation is the first of these that applies:
 
@@ -138,7 +140,7 @@ The rest follows in this order:
 
 1. A train car is uncoupled, and the cars behind it stop.
 2. The vehicle is lifted off its cells.
-3. Each passenger gets out if it can enter the vehicle's cell, and the rest are killed. Every passenger is killed when the damage was forced or the vehicle fell from a height.
+3. Each passenger gets out onto the vehicle's cell if it can enter that cell, and the rest are killed. Every passenger is killed when the damage was forced, when the vehicle was falling, when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team.
 4. One crew member may escape; [`CrewEscape`](/keys/crewescape/) owns that roll. A vehicle taken by a hijacker skips the roll, and [the hijacker steps back out](/systems/capture/#stealing-a-vehicle) instead.
 5. A crate-carrying truck may drop a wooden crate on a nearby cell, when the scenario enables [truck crates](/keys/truckcrate/) or, for a train, [train crates](/keys/traincrate/).
 6. The vehicle is taken off the map.
@@ -194,7 +196,7 @@ A forced kill of a [`Cyborg=yes`](/keys/cyborg/) soldier always removes it, what
 
 The soldier stays on the map to play three of those deaths: the gun death, the explosion death, and the burning death of a `Doggie=yes` type. When a gun or explosion death finishes, the soldier leaves a corpse from its type's own [`DeadBodies`](/keys/deadbodies/#scope-infantrytype), or from the shared list unless its type sets [`NotHuman=yes`](/keys/nothuman/). Every other death removes the soldier at once and leaves an animation in its place, or nothing.
 
-An aircraft plays one entry of its [`Explosion`](/keys/explosion/) list where it was hit, or of its `ScrapExplosion` list with `ScrapMetal` on. A kill by the firestorm warhead plays seven to nine firestorm particle systems instead. An aircraft on the ground is then removed at once.
+An aircraft plays one entry of its [`Explosion`](/keys/explosion/) list where it was hit, or of its `ScrapExplosion` list with `ScrapMetal` on. A kill by the firestorm warhead plays seven to nine firestorm particle systems instead. An aircraft on the ground is then removed at once, and its passengers die with it.
 
 An aircraft in the air falls instead, unless its type sets [`Crashable=no`](/keys/crashable/), which removes it at once as on the ground. Its passengers are killed, and it falls faster and faster until it reaches the ground. There it explodes with a fixed 1000 points of area damage through [`C4Warhead`](/keys/c4warhead/), credited to no one. The crash plays a combat explosion animation sized to that figure, with a lighting flash when `C4Warhead` is `Bright=yes`, and the aircraft is removed. Its wreckage and its `Explosion` entry appear where it was hit, not where it crashes.
 

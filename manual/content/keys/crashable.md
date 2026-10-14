@@ -1,19 +1,16 @@
 ---
 key: Crashable
-summary: Whether an aircraft of this type falls and crashes when it is destroyed in the air.
-see_also: [CrashingSound, "system:emp-pulse", "system:destruction-and-debris"]
-when_omitted:
-  kind: value
-  value: "yes"
+summary: Whether a destroyed object of this type falls, or what happens to its passengers when it is destroyed.
+see_also: [CrashingSound, "system:emp-pulse", "system:destruction-and-debris", "system:transports"]
 ---
 
-With `Crashable=no`, an aircraft destroyed in the air does not fall. It is destroyed where it flies, as an aircraft on the ground is, and does not play its [`CrashingSound`](/keys/crashingsound/).
+On an aircraft type, `Crashable` decides whether the aircraft falls when it is destroyed in the air. The [aircraft page](/keys/crashable/#scope-aircrafttype) gives its default and details.
 
-An [EMP pulse](/systems/emp-pulse/#aircraft) that catches the aircraft destroys it with damage equal to its full strength from [`C4Warhead`](/keys/c4warhead/), unless its type is immune. A type with `Crashable=yes` crashes instead, or is only stunned when it stands on the ground. An ion storm does not crash the aircraft.
+On a vehicle type, `Crashable` decides what happens to the vehicle's passengers. Omitted or `no`, each passenger that can enter the vehicle's cell gets out, as [transports](/systems/transports/#losing-the-transport) describes. With `Crashable=yes`, the passengers die with the vehicle, and the vehicle is taken off the map where it dies. A vehicle destroyed more than 208 leptons above the ground credits its attacker with those kills, and a lower one credits no attacker.
 
-Only an AircraftType uses the key; the other object types read it and ignore it.
+An infantry or structure type reads the key and ignores it.
 
 ```ini title="rulesmd.ini"
-[ORCA] ; example AircraftType that is destroyed in place
-Crashable=no
+[MYJUMPJET] ; example UnitType with a jumpjet locomotor
+Crashable=yes
 ```
