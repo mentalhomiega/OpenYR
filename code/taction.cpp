@@ -2266,6 +2266,7 @@ bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClas
 	Map.Sell_Mode_Control(0);
 	Map.Power_Mode_Control(0);
 	Map.Waypoint_Mode_Control(0);
+	Map.Place_Beacon_Mode_Control(0);
 
 	Lock_Scenario_Input();
 

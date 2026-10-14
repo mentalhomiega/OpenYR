@@ -14,8 +14,8 @@ At 1920x1080:
   (blue for the Allies, red for the Soviets, purple for Yuri). From the top:
   - a row of buttons: place beacon, sell, power down and repair, then the options button. Place
     beacon toggles beacon placement, as the `PlaceBeacon` command does; in a single-player or
-    skirmish game it does nothing, as in gamemd. Power down shows "Coming soon" and does nothing
-    yet. There is no diplomacy button;
+    skirmish game it does nothing, as in gamemd. Power down toggles power-down mode, as the
+    `TogglePower` command does. There is no diplomacy button;
   - the radar, whose map picture fills its box as far as the map's shape allows;
   - the credits on the left and the power used and the power made on the right, each after a small
     symbol: a gold dollar sign, and a lightning bolt that turns from green to red when the base uses

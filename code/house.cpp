@@ -3373,6 +3373,7 @@ bool HouseClass::Manual_Place(BuildingClass * builder,  BuildingClass * object)
 
 		Map.Repair_Mode_Control(0);
 		Map.Sell_Mode_Control(0);
+		Map.Place_Beacon_Mode_Control(0);
 
 		Map.PendingObject = object->Class;
 		Map.PendingObjectPtr = object;
@@ -3824,6 +3825,7 @@ void HouseClass::MPlayer_Defeated(void)
 	}
 
 	if (PlayerPtr == this) {
+		Map.Place_Beacon_Mode_Control(0);
 		if (!Session.Options.CoachMode) {
 			Become_ObiWan();
 		}

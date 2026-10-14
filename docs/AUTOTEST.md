@@ -75,6 +75,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |
 | `beacon list` | Writes each beacon with its house, slot, cell, whether the player sees it, whether it is selected and its text |
 | `beacontext <text>` | Queues the text for the player's selected beacon, as a message typed on a selected beacon does |
+| `modes` | Writes the repair, sell, power, waypoint and beacon placement flags and the targeting flag as 0 or 1, then the object pending placement |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |

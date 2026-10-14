@@ -44,6 +44,7 @@
 **	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
 **							is a letter or digit, or a virtual-key code in decimal
 **	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
+**	modes				writes which special mode is on (repair, sell, power, waypoint, beacon, and targeting) and the object pending placement
 **	windowclick x y			moves the pointer to that window pixel and clicks there through the window's event path,
 **							which converts it to the frame
 **	follow <TypeID>			keeps the view centred on one of the player's objects of that type
@@ -1276,6 +1277,16 @@ static void Tab_Step(void)
 }
 
 
+// Writes which special cursor mode the player is in, so a script can check that one mode ended when another began.
+static void Modes_Step(void)
+{
+	DebugString("AUTOTEST modes repair %d sell %d power %d waypoint %d beacon %d targeting %d pending %s\n",
+		(int)Map.IsRepairMode, (int)Map.IsSellMode, (int)Map.IsPowerMode, (int)Map.IsWaypointMode,
+		(int)Map.IsPlaceBeaconMode, Map.IsTargettingMode != SUPER_NONE ? 1 : 0,
+		Map.PendingObject != NULL ? Map.PendingObject->Name() : "none");
+}
+
+
 // The techno on a cell for the probes: the ground occupier if there is one, else a flying object over the cell.
 static TechnoClass * Techno_Over_Cell(Cell const & cell)
 {
@@ -1633,6 +1644,11 @@ void Run(StepType const & step)
 
 	if (step.Command == "tab") {
 		Tab_Step();
+		return;
+	}
+
+	if (step.Command == "modes") {
+		Modes_Step();
 		return;
 	}
 

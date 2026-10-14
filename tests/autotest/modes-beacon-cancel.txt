@@ -1,0 +1,37 @@
+; Beacon placement and the other special modes. In gamemd, starting repair, sell, power or waypoint mode ends beacon
+; placement (MapClass::SetRepairMode, SetSellMode, SetTogglePowerMode and SetWaypointMode at 0x4AC8C0, 0x4AC660, 0x4AC820
+; and 0x4AC700). Starting beacon placement ends those modes (MapClass::SetPlaceBeaconMode at 0x4AC960).
+; The modes step writes each flag. After each PlaceBeacon line only the beacon flag is 1; after each other mode line
+; only that mode's flag is 1.
+; Beacon placement needs a multiplayer game, so run it as both sides of the netsync harness with this same script. The
+; two own lines add the same building on each side, so the sides stay in step:
+;   scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/autotest/modes-beacon-cancel.txt -ScriptB tests/autotest/modes-beacon-cancel.txt -Seconds 90 -PortA 24693 -PortB 24694 -KeepDir <folder>
+; In a skirmish game beacon placement never starts (BeaconManagerClass::Is_Available), so the PlaceBeacon lines change
+; nothing and the other modes still run. For the modern panel shots, run it in skirmish with
+; -Settings "[Options]`r`nInterfaceStyle=Modern"; the ScreenCapture lines write the shots.
+20 own GACNST 50 30
+21 own GAPOWR 56 40
+40 modes
+50 command ToggleRepair
+60 modes
+70 command PlaceBeacon
+80 modes
+90 command ToggleSell
+100 modes
+110 command PlaceBeacon
+120 modes
+130 command TogglePower
+135 command ScreenCapture
+140 modes
+150 command PlaceBeacon
+155 command ScreenCapture
+160 modes
+170 command WaypointMode
+180 modes
+190 command PlaceBeacon
+200 modes
+210 command ToggleRepair
+220 modes
+230 command ToggleRepair
+240 modes
+260 quit

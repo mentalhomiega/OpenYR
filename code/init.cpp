@@ -3290,6 +3290,7 @@ class SelectTeamCommandClass : public CommandClass
 			Map.Waypoint_Mode_Control(0);
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
+			Map.Place_Beacon_Mode_Control(0);
 
 			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
@@ -3348,6 +3349,7 @@ class AddTeamCommandClass : public CommandClass
 			Map.Waypoint_Mode_Control(0);
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
+			Map.Place_Beacon_Mode_Control(0);
 
 			Select_Team_Members(Team);
 		}
@@ -3384,6 +3386,7 @@ class AddToTeamCommandClass : public CommandClass
 			Map.Waypoint_Mode_Control(0);
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
+			Map.Place_Beacon_Mode_Control(0);
 
 			// The team joins the selection first, or the assignment would drop its existing members.
 			Select_Team_Members(Team);
@@ -3422,6 +3425,7 @@ class CenterTeamCommandClass : public CommandClass
 			Map.Waypoint_Mode_Control(0);
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
+			Map.Place_Beacon_Mode_Control(0);
 
 			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
 				Unselect_All();

@@ -1334,14 +1334,6 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 			Place_Beacon_Mode_Control(-1);
 		}
 
-		// The modern panel shows the power button before it does anything.
-		if (Modern_Interface() && input == (BUTTON_POWER|KN_BUTTON)) {
-			Power.IsPressed = false;
-			Power.Turn_Off();
-			Power.Flag_To_Redraw();
-			input = KN_NONE;
-		}
-
 		if (input == (BUTTON_POWER|KN_BUTTON)) {
 			Power_Mode_Control(-1);
 		}
@@ -1374,30 +1366,21 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 		}
 	}
 
-	if ((!IsRepairMode) && Repair.IsOn) {
-		Repair.Turn_Off();
-	}
-
-	if ((!IsSellMode) && Upgrade.IsOn) {
-		Upgrade.Turn_Off();
-	}
-
-	if ((!IsPowerMode) && Power.IsOn) {
-		Power.Turn_Off();
-	}
-
-	if ((!IsWaypointMode) && Waypoint.IsOn) {
-		Waypoint.Turn_Off();
-	}
-
-	// The beacon button stays lit only while beacon placement mode is on.
-	if (BeaconButton.IsOn != IsPlaceBeaconMode) {
-		if (IsPlaceBeaconMode) {
-			BeaconButton.Turn_On();
-		} else {
-			BeaconButton.Turn_Off();
+	// Each mode button is lit while its mode is on, however the mode was started.
+	auto light = [](ShapeButtonClass & button, bool lit) {
+		if (button.IsOn != lit) {
+			if (lit) {
+				button.Turn_On();
+			} else {
+				button.Turn_Off();
+			}
 		}
-	}
+	};
+	light(Repair, IsRepairMode);
+	light(Upgrade, IsSellMode);
+	light(Power, IsPowerMode);
+	light(Waypoint, IsWaypointMode);
+	light(BeaconButton, IsPlaceBeaconMode);
 
 	BASECLASS::AI(input, xy);
 }
@@ -2714,6 +2697,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					if (PlayerPtr->SuperWeapon[spc]->Class->Action == ACTION_NONE) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, PlayerPtr->SuperWeapon[spc]->Class->HeapID, Cell(0, 0)));
 					} else {
+						Map.Place_Beacon_Mode_Control(0);
 						Map.IsTargettingMode = spc;
 						Unselect_All();
 						Speak(VOX_SELECT_TARGET);
@@ -3505,7 +3489,7 @@ const char * SidebarClass::Help_Text(int id)
 		static std::string _text;
 		switch (id) {
 			case BUTTON_POWER:
-				_text = Panel_Text("GUI:PowerDown", "Power down") + "\n" + Panel_Text("GUI:ComingSoon", "Coming soon");
+				_text = Panel_Text("GUI:PowerDown", "Power down");
 				return(_text.c_str());
 			case BUTTON_BEACON:
 				_text = Panel_Text("GUI:PlaceBeacon", "Place beacon");

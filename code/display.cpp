@@ -2518,6 +2518,7 @@ void DisplayClass::Sell_Mode_Control(int control)
 		IsRepairMode = false;
 		IsPowerMode = false;
 		IsWaypointMode = false;
+		IsPlaceBeaconMode = false;
 		if (mode && PlayerPtr->CurBuildings > 0) {
 			IsSellMode = true;
 			Unselect_All();
@@ -2560,6 +2561,7 @@ void DisplayClass::Waypoint_Mode_Control(int control, bool edit_selected_path)
 		IsRepairMode = false;
 		IsSellMode = false;
 		IsPowerMode = false;
+		IsPlaceBeaconMode = false;
 		PathType path = PlayerPtr->New_Waypoint_Path();
 		if (mode) {
 			if (path == PATH_NONE && (!edit_selected_path || PlayerPtr->SelectedPath == PATH_NONE)) {
@@ -2749,6 +2751,7 @@ void DisplayClass::Power_Mode_Control(int control)
 		IsRepairMode = false;
 		IsSellMode = false;
 		IsWaypointMode = false;
+		IsPlaceBeaconMode = false;
 		if (mode && PlayerPtr->CurBuildings > 0) {
 			IsPowerMode = true;
 			Unselect_All();
@@ -2798,6 +2801,7 @@ void DisplayClass::Repair_Mode_Control(int control)
 		IsSellMode = false;
 		IsPowerMode = false;
 		IsWaypointMode = false;
+		IsPlaceBeaconMode = false;
 		Set_Default_Mouse(MOUSE_NORMAL, false);
 		if (mode && PlayerPtr->CurBuildings > 0) {
 			IsRepairMode = true;
