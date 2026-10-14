@@ -628,6 +628,8 @@ void SidebarClass::Use_Hud_Icons(void)
 	BeaconButton.ID = BUTTON_BEACON;
 	BeaconButton.DrawOnSidebar = true;
 	BeaconButton.ShapeDrawer = SidebarDrawer;
+	BeaconButton.IsToggleType = true;
+	BeaconButton.ReflectButtonState = true;
 	use(BeaconButton, "BC");
 	if (use(OptionsButton, "OP")) {
 		OptionsButton.Label.clear();
@@ -1325,13 +1327,18 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 			Repair_Mode_Control(-1);
 		}
 
-		// The modern panel shows the power and beacon buttons before they do anything.
-		if (Modern_Interface() && (input == (BUTTON_POWER|KN_BUTTON) || input == (BUTTON_BEACON|KN_BUTTON))) {
-			for (ShapeButtonClass * button : {&Power, &BeaconButton}) {
-				button->IsPressed = false;
-				button->Turn_Off();
-				button->Flag_To_Redraw();
-			}
+		// Toggles beacon placement, as the PlaceBeacon command does.
+		if (input == (BUTTON_BEACON|KN_BUTTON)) {
+			BeaconButton.IsPressed = false;
+			input = KN_NONE;
+			Place_Beacon_Mode_Control(-1);
+		}
+
+		// The modern panel shows the power button before it does anything.
+		if (Modern_Interface() && input == (BUTTON_POWER|KN_BUTTON)) {
+			Power.IsPressed = false;
+			Power.Turn_Off();
+			Power.Flag_To_Redraw();
 			input = KN_NONE;
 		}
 
@@ -1381,6 +1388,15 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	if ((!IsWaypointMode) && Waypoint.IsOn) {
 		Waypoint.Turn_Off();
+	}
+
+	// The beacon button stays lit only while beacon placement mode is on.
+	if (BeaconButton.IsOn != IsPlaceBeaconMode) {
+		if (IsPlaceBeaconMode) {
+			BeaconButton.Turn_On();
+		} else {
+			BeaconButton.Turn_Off();
+		}
 	}
 
 	BASECLASS::AI(input, xy);
@@ -3492,7 +3508,7 @@ const char * SidebarClass::Help_Text(int id)
 				_text = Panel_Text("GUI:PowerDown", "Power down") + "\n" + Panel_Text("GUI:ComingSoon", "Coming soon");
 				return(_text.c_str());
 			case BUTTON_BEACON:
-				_text = Panel_Text("GUI:PlaceBeacon", "Place beacon") + "\n" + Panel_Text("GUI:ComingSoon", "Coming soon");
+				_text = Panel_Text("GUI:PlaceBeacon", "Place beacon");
 				return(_text.c_str());
 			case BUTTON_OPTIONS:
 				_text = Panel_Text("GUI:Options", "Options");
