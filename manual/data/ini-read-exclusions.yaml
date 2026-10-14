@@ -15,6 +15,12 @@ reader_exclusions:
     reason: The overlay pack fields are compressed scenario payloads, not authored scalar settings.
 
 site_exclusions:
+  - path: code/init.cpp
+    function: Init_Hotkeys
+    keys: [Version]
+    classification: excluded
+    reason: The keyboard file's [Defaults] Version is written by the game to mark which default key table the file was saved against; players and modders do not set it.
+
   - path: code/loadscreen.cpp
     function: Campaign_Is_Allied
     keys: [Player]

@@ -1652,6 +1652,220 @@ registered_commands:
     source: code/init.cpp
     class: SelectSameTypeCommandClass
     guard: null
+- id: TypeSelect
+  route_id: typeselect
+  kind: registered
+  title: Select Type On Screen
+  description: Tap to select the units on screen whose types match the selection. Holding the key does
+    nothing.
+  category: Selection
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TypeSelectCommandClass
+    guard: null
+- id: CombatantSelect
+  route_id: combatantselect
+  kind: registered
+  title: Select Combatants
+  description: Selects the combatants on screen. When they are all selected already, selects every combatant
+    on the map.
+  category: Selection
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: CombatantSelectCommandClass
+    guard: null
+- id: HealthNav
+  route_id: healthnav
+  kind: registered
+  title: Select By Health
+  description: 'Selects the units in the next health band: red, then yellow, then green. Bands with no
+    unit are skipped.'
+  category: Selection
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: HealthNavCommandClass
+    guard: null
+- id: VeterancyNav
+  route_id: veterancynav
+  kind: registered
+  title: Select By Veterancy
+  description: 'Selects the units in the next rank: elite, then veteran, then green. Ranks with no unit
+    are skipped.'
+  category: Selection
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: VeterancyNavCommandClass
+    guard: null
+- id: Taunt_1
+  route_id: taunt-1
+  kind: registered
+  title: Taunt 1
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_2
+  route_id: taunt-2
+  kind: registered
+  title: Taunt 2
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_3
+  route_id: taunt-3
+  kind: registered
+  title: Taunt 3
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_4
+  route_id: taunt-4
+  kind: registered
+  title: Taunt 4
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_5
+  route_id: taunt-5
+  kind: registered
+  title: Taunt 5
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_6
+  route_id: taunt-6
+  kind: registered
+  title: Taunt 6
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_7
+  route_id: taunt-7
+  kind: registered
+  title: Taunt 7
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: Taunt_8
+  route_id: taunt-8
+  kind: registered
+  title: Taunt 8
+  description: Plays this taunt in a multiplayer game. Not available in this build yet.
+  category: Chat
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: TauntCommandClass
+    guard: null
+- id: PlaceBeacon
+  route_id: placebeacon
+  kind: registered
+  title: Place Beacon
+  description: Places a beacon in a multiplayer game. Not available in this build yet.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: PlaceBeaconCommandClass
+    guard: null
+- id: Delete
+  route_id: delete
+  kind: registered
+  title: Delete Beacon
+  description: Deletes your beacon in a multiplayer game. Not available in this build yet.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: BeaconDeleteCommandClass
+    guard: null
 - id: VeterancyFilter
   route_id: veterancyfilter
   kind: registered

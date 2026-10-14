@@ -6340,13 +6340,13 @@ class TypeSelectCommandClass : public CommandClass
 class TauntCommandClass : public CommandClass
 {
 	public:
-		explicit TauntCommandClass(int taunt) : Name("Taunt_" + std::to_string(taunt)), Display("Taunt " + std::to_string(taunt)) {}
+		explicit TauntCommandClass(int taunt) : Team(taunt) {}
 
 		virtual char const * Get_Unique_Name(void) const {
-			return(Name.c_str());
+			return(Team_Command_String(UniqueName, "Taunt_%d", Team));
 		}
 		virtual char const * Get_Display_Name(void) const {
-			return(Display.c_str());
+			return(Team_Command_String(DisplayName, "Taunt %d", Team));
 		}
 		virtual char const * Get_Category(void) const {
 			return(Fetch_String(TXT_CHAT));
@@ -6362,8 +6362,9 @@ class TauntCommandClass : public CommandClass
 		}
 
 	private:
-		std::string Name;
-		std::string Display;
+		int Team;
+		mutable std::string UniqueName;
+		mutable std::string DisplayName;
 };
 
 
@@ -6594,9 +6595,14 @@ static void Init_Commands(void)
 	AllCommands.Add(new CombatantSelectCommandClass);
 	AllCommands.Add(new HealthNavCommandClass);
 	AllCommands.Add(new VeterancyNavCommandClass);
-	for (int taunt = 1; taunt <= 8; taunt++) {
-		AllCommands.Add(new TauntCommandClass(taunt));
-	}
+	AllCommands.Add(new TauntCommandClass(1));
+	AllCommands.Add(new TauntCommandClass(2));
+	AllCommands.Add(new TauntCommandClass(3));
+	AllCommands.Add(new TauntCommandClass(4));
+	AllCommands.Add(new TauntCommandClass(5));
+	AllCommands.Add(new TauntCommandClass(6));
+	AllCommands.Add(new TauntCommandClass(7));
+	AllCommands.Add(new TauntCommandClass(8));
 	AllCommands.Add(new PlaceBeaconCommandClass);
 	AllCommands.Add(new BeaconDeleteCommandClass);
 
