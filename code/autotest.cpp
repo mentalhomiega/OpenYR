@@ -1114,20 +1114,27 @@ HouseClass * Wait_House(std::string name)
 }
 
 
-// How many of the type the house owns, counted as the quantity step counts it.
-int Owned_Count(HouseClass const * house, TechnoTypeClass const * type)
+// How many objects of the type the house has on the map, not counting those in limbo.
+template<typename T>
+int Placed_Count_In(DynamicVectorClass<T *> & list, HouseClass const * house, TechnoTypeClass const * type)
 {
-	int const id = type->Fetch_Heap_ID();
-	if (dynamic_cast<BuildingTypeClass const *>(type) != NULL) {
-		return(house->BQuantity.Value(id));
+	int count = 0;
+	for (int index = 0; index < list.Count(); index++) {
+		T const * object = list[index];
+		if (object != NULL && !object->IsInLimbo && object->House == house && object->TClass == type) {
+			count++;
+		}
 	}
-	if (dynamic_cast<AircraftTypeClass const *>(type) != NULL) {
-		return(house->AQuantity.Value(id));
-	}
-	if (dynamic_cast<InfantryTypeClass const *>(type) != NULL) {
-		return(house->IQuantity.Value(id));
-	}
-	return(house->UQuantity.Value(id));
+	return(count);
+}
+
+
+// How many of the type the house owns and has placed. A structure still in production is in the
+// house's quantity but not on the map, so it is not counted.
+int Placed_Count(HouseClass const * house, TechnoTypeClass const * type)
+{
+	return(Placed_Count_In(Buildings, house, type) + Placed_Count_In(Units, house, type)
+		+ Placed_Count_In(Infantry, house, type) + Placed_Count_In(Aircraft, house, type));
 }
 
 
@@ -1182,7 +1189,7 @@ bool Wait_Met(std::vector<std::string> const & words)
 	if (command == "waitowns") {
 		HouseClass * house = Wait_House(Word(words, 2));
 		TechnoTypeClass const * type = Find_Type(Word(words, 3));
-		return(house != NULL && type != NULL && Owned_Count(house, type) >= Number(words, 4, 0));
+		return(house != NULL && type != NULL && Placed_Count(house, type) >= Number(words, 4, 0));
 	}
 	if (command == "waitlocal") {
 		bool value = false;
