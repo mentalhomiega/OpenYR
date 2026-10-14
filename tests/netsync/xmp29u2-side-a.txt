@@ -7,6 +7,7 @@
 ; place lines over a window that covers its build time. The windows assume about 40 frames a second.
 ; Run: scripts/run_netsync.ps1 -Build agent17 -Map XMP29U2.MAP -ScriptA tests/netsync/xmp29u2-side-a.txt -ScriptB tests/netsync/xmp29u2-side-b.txt -Seconds 400
 ; No Chronosphere is built in these runs, so the fire at 15000 has no effect.
+; GAAIRC is the Allied radar ID, but the Americans (this side's country) may not build it: the rules forbid it to them, so its produce step is refused and GATECH and GACSPH stay unbuilt. The runner seats side A as Americans.
 1 log netsync side A: base, army, planning, attack and superweapon orders
 40 select AMCV
 60 command DeployObject
@@ -27,16 +28,16 @@
 3000 place GAREFN
 3100 place GAREFN
 3200 place GAREFN
-3250 produce GAOREP
-3650 place GAOREP
-3750 place GAOREP
-3850 place GAOREP
-3950 place GAOREP
-4050 place GAOREP
-4150 place GAOREP
-4250 place GAOREP
-4350 place GAOREP
-4450 place GAOREP
+3250 produce GAAIRC
+3650 place GAAIRC
+3750 place GAAIRC
+3850 place GAAIRC
+3950 place GAAIRC
+4050 place GAAIRC
+4150 place GAAIRC
+4250 place GAAIRC
+4350 place GAAIRC
+4450 place GAAIRC
 4500 produce GAWEAP
 5100 place GAWEAP
 5200 place GAWEAP
