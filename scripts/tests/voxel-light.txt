@@ -1,0 +1,43 @@
+; Voxel lighting: a Grizzly (MTNK) row and a Rhino (HTNK) row, each unit at one of eight headings.
+; Grizzly k sits at x = 52 + 3k, y = 30; Rhino k at the same x, y = 40. Headings run 0, 32, ... 224 (0 is north).
+; "voxelshade" writes the shade table of each normal table, for the diffuse term and for the highlight.
+30 command CenterBase
+50 reveal
+60 view 62 35
+70 own MTNK 52 30
+71 own MTNK 55 30
+72 own MTNK 58 30
+73 own MTNK 61 30
+74 own MTNK 64 30
+75 own MTNK 67 30
+76 own MTNK 70 30
+77 own MTNK 73 30
+80 own HTNK 52 40
+81 own HTNK 55 40
+82 own HTNK 58 40
+83 own HTNK 61 40
+84 own HTNK 64 40
+85 own HTNK 67 40
+86 own HTNK 70 40
+87 own HTNK 73 40
+120 face 0 52 30
+121 face 32 55 30
+122 face 64 58 30
+123 face 96 61 30
+124 face 128 64 30
+125 face 160 67 30
+126 face 192 70 30
+127 face 224 73 30
+130 face 0 52 40
+131 face 32 55 40
+132 face 64 58 40
+133 face 96 61 40
+134 face 128 64 40
+135 face 160 67 40
+136 face 192 70 40
+137 face 224 73 40
+200 voxelshade 2
+201 voxelshade 3
+202 voxelshade 4
+300 command ScreenCapture
+320 quit

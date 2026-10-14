@@ -64,6 +64,8 @@
 **	spawn <TypeID> x y		puts an object owned by the first computer house with a
 **							construction yard on that cell
 **	own <TypeID> x y		puts an object owned by the player on that cell
+**	face <dir256> x y		turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north)
+**	voxelshade <type>		writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight
 **	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
 **	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened;
 **							actions that look at attached objects see the map's trigger of that type
@@ -271,6 +273,10 @@
 #include "gamedirs.h"
 #include "_rect.h"
 #include "vox.h"
+#include "_voxel.h"
+#include "voxlib.h"
+
+extern int VoxelNormalTableEntryCount[];
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
@@ -2480,6 +2486,51 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
 			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no civilian house");
+		}
+	} else if (step.Command == "face") {
+		// face <dir256> x y: turns the body and turret of the player's objects on that cell to that facing.
+		Cell const cell(step.X, step.Y);
+		Dir256 const facing = static_cast<Dir256>(std::atoi(step.Argument.c_str()) & 255);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Cell() == cell) {
+				techno->PrimaryFacing.Set(DirType(facing));
+				techno->SecondaryFacing.Set(DirType(facing));
+				DebugString("AUTOTEST   face %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)facing);
+			}
+		}
+	} else if (step.Command == "voxelshade") {
+		// voxelshade <type>: shade index of each normal in that table under VoxelLightSource, for the diffuse term alone and for the highlight at strength 3 seen straight on.
+		int const normal_type = std::atoi(step.Argument.c_str());
+		if (normal_type < 1 || normal_type > 4) {
+			DebugString("AUTOTEST voxelshade: type %d is not a normal table\n", normal_type);
+		} else {
+			int const count = VoxelNormalTableEntryCount[normal_type];
+			std::vector<int> diffuse(count);
+			std::vector<int> specular(count);
+			Precalculate_Normal_Lookup(VoxelLightSource, normal_type);
+			for (int index = 0; index < count; index++) {
+				diffuse[index] = VoxelNormalTranslateTable[index];
+			}
+			Precalculate_Normal_Lookup(VoxelLightSource, Vector3(0, 0, 1), 3.0f, normal_type);
+			for (int index = 0; index < count; index++) {
+				specular[index] = VoxelNormalTranslateTable[index];
+			}
+			DebugString("AUTOTEST voxelshade type %d normals %d light %.4f %.4f %.4f\n", normal_type, count, VoxelLightSource.X, VoxelLightSource.Y, VoxelLightSource.Z);
+			for (int index = 0; index < count; index++) {
+				DebugString("AUTOTEST   normal %d diffuse %d specular %d\n", index, diffuse[index], specular[index]);
+			}
+			int diffuse_hist[256] = { 0 };
+			int specular_hist[256] = { 0 };
+			for (int index = 0; index < count; index++) {
+				diffuse_hist[diffuse[index] & 255]++;
+				specular_hist[specular[index] & 255]++;
+			}
+			for (int shade = 0; shade < 256; shade++) {
+				if (diffuse_hist[shade] != 0 || specular_hist[shade] != 0) {
+					DebugString("AUTOTEST   shade %d diffuse %d specular %d\n", shade, diffuse_hist[shade], specular_hist[shade]);
+				}
+			}
 		}
 	} else if (step.Command == "hurt") {
 		// hurt <TypeID> <percent>: sets the strength of the player's objects of that type to that share.
