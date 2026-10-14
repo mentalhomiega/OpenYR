@@ -127,7 +127,7 @@ A newly placed factory is flagged primary only when its house has no primary of 
 
 Five gates decide whether a house may build an object type, and a type must pass all five unless the house has [reverse engineered](#reverse-engineering) it or owns a [tech secret lab](#tech-secret-labs) that offers it.
 
-With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all five gates again and cancels production of any type that fails.
+By default ([`RecheckPrerequisites=yes`](/keys/recheckprerequisites/)), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all five gates again and cancels production of any type that fails.
 
 ### Tech level
 
@@ -195,7 +195,7 @@ A computer house faces only the tech-level gate and the country and stolen-techn
 
 A BuildingType with [`SecretLab=yes`](/keys/secretlab/) is a tech secret lab. While a lab is on the map under a house's control, the house may build the lab's item without meeting the item's tech level, country, stolen-technology or prerequisite gates. [`TechLevel=-1`](/keys/techlevel/#scope-aircrafttype) does not block the item. The [build limit](#build-limits) and [the factory search](#what-counts-as-a-factory) still apply, so the house also needs a factory that passes the search for the item.
 
-A lab offers its item whether or not it has power, and the offer ends when the lab is taken off the map. Capturing a lab moves the item to the new owner, and the previous owner loses it. Losing a lab is handled as the sidebar handles a lost prerequisite: the item's cameo stays unless [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) removes it at the next check, as [what removes a cameo](/systems/sidebar/#what-removes-a-cameo) describes.
+A lab offers its item whether or not it has power, and the offer ends when the lab is taken off the map. Capturing a lab moves the item to the new owner, and the previous owner loses it. Losing a lab is handled as the sidebar handles a lost prerequisite: the item's cameo is removed at the next check, as [what removes a cameo](/systems/sidebar/#what-removes-a-cameo) describes, unless [`RecheckPrerequisites=no`](/keys/recheckprerequisites/) keeps it.
 
 ### What a lab offers
 

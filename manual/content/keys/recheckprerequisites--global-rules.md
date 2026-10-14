@@ -6,7 +6,7 @@ summary: Removes a type's sidebar cameo and cancels its production once the hous
 see_also: [Prerequisite, BuildLimit, "system:sidebar", "system:production"]
 when_omitted:
   kind: value
-  value: "no"
+  value: "yes"
 ---
 
 ```ini title="rules.ini"
@@ -14,10 +14,12 @@ when_omitted:
 RecheckPrerequisites=yes
 ```
 
-With `RecheckPrerequisites=yes`, [the sidebar check](/systems/sidebar/#what-removes-a-cameo) also removes a cameo whose type fails the tech-level, prerequisite or ownership gate of [what a house may build](/systems/production/#what-a-house-may-build). Selling or losing a structure named in the type's [`Prerequisite=`](/keys/prerequisite/) therefore removes the cameo, and the cameo returns once the house can build the type again. With `no`, the check ignores those gates, so the cameo stays and can still start production. Computer houses have no sidebar and are not affected.
+By default, [the sidebar check](/systems/sidebar/#what-removes-a-cameo) also removes a cameo whose type fails the tech-level, prerequisite or ownership gate of [what a house may build](/systems/production/#what-a-house-may-build). Selling or losing a structure named in the type's [`Prerequisite=`](/keys/prerequisite/) therefore removes the cameo, and the cameo returns once the house can build the type again. With `RecheckPrerequisites=no`, the check ignores those gates, so the cameo stays and can still start production. Computer houses have no sidebar and are not affected.
 
-With `RecheckPrerequisites=yes`, removing a cameo also cancels that type's production. The item under construction and every queued copy are canceled, the credits spent so far are refunded, and a finished structure waiting to be placed is taken off the cursor.
+While the key is `yes`, removing a cameo also cancels that type's production. The item under construction and every queued copy are canceled, the credits spent so far are refunded, and a finished structure waiting to be placed is taken off the cursor.
 
-For a structure type, the factory search needs a construction yard that is switched on. With `RecheckPrerequisites=yes`, switching off every construction yard therefore removes all structure cameos and cancels structure production. Only a construction yard whose type drains power or sets [`Powered=yes`](/keys/powered/) can be [switched off](/systems/power/#switching-a-structure-off). Low power does not switch a structure off.
+For a structure type, the factory search needs a construction yard that is switched on. With the default `yes`, switching off every construction yard therefore removes all structure cameos and cancels structure production. Only a construction yard whose type drains power or sets [`Powered=yes`](/keys/powered/) can be [switched off](/systems/power/#switching-a-structure-off). Low power does not switch a structure off.
 
-Vinifera reads the same key with the same meaning and default.
+Yuri's Revenge has no such key. Its sidebar always applies these gates, so `no` is not stock behavior.
+
+Vinifera reads the same key with the same meaning.

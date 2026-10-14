@@ -86,7 +86,7 @@ Each strip holds up to 75 cameos and shows at most 60 at a time. [`LargeSidebarS
 
 ### What removes a cameo
 
-The strips are checked again after events that can change what the player may build, and a cameo is removed if its type fails the check. This check is looser than the one that added the cameo. Of the five gates in [what a house may build](/systems/production/#what-a-house-may-build), it applies only the build limit, unless [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) makes it apply all five.
+The strips are checked again after events that can change what the player may build, and a cameo is removed if its type fails the check. Of the five gates in [what a house may build](/systems/production/#what-a-house-may-build), it applies all five by default, as the check that added the cameo does. With [`RecheckPrerequisites=no`](/keys/recheckprerequisites/), it applies only the build limit, so it is looser than that check.
 
 A cameo is removed when **Any of** these is true:
 
@@ -96,16 +96,16 @@ A cameo is removed when **Any of** these is true:
   - its [`Factory=`](/keys/factory/) names the type's kind;
   - its [`Owner=`](/keys/owner/) overlaps the type's.
 - The type's [`BuildLimit=`](/keys/buildlimit/) is zero or below and has been used up.
-- With `RecheckPrerequisites=yes`, the house may no longer build the type.
+- With `RecheckPrerequisites=yes` (the default), the house may no longer build the type.
 
 The factory test is [the factory search](/systems/production/#what-counts-as-a-factory) without its switched-on requirement; the construction-yard clause still applies. Switching off every factory of a category therefore darkens those cameos but does not remove them. The test fails once the house has no such structure left, for example after the last one is destroyed or captured.
 
 A superweapon cameo is removed when no structure the house owns supplies that superweapon any more.
 
-:::caution[Losing a prerequisite leaves the cameo in place]
-With `RecheckPrerequisites` off, selling or losing a structure named in a type's [`Prerequisite=`](/keys/prerequisite/) does not remove, darken or disable that type's cameo. A click on it still starts production, because the check made when production starts also skips prerequisites. A house can keep building a type whose prerequisite is gone.
+:::caution[With `RecheckPrerequisites=no`, a lost prerequisite leaves the cameo in place]
+With `RecheckPrerequisites=no`, selling or losing a structure named in a type's [`Prerequisite=`](/keys/prerequisite/) does not remove, darken or disable that type's cameo. A click on it still starts production, because the check made when production starts also skips prerequisites. A house can keep building a type whose prerequisite is gone.
 
-With [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/), the cameo is removed at the next check. Every copy of that type the factory holds, queued or in production, is canceled with it.
+By default ([`RecheckPrerequisites=yes`](/keys/recheckprerequisites/)), the cameo is removed at the next check. Every copy of that type the factory holds, queued or in production, is canceled with it.
 :::
 
 When a cameo is removed, the rest of the strip closes up. The topmost cameo that was visible before the removal and is still on the strip stays on the row it occupied, as far as the strip's length allows. If none of the visible cameos is left, the strip returns to its top.

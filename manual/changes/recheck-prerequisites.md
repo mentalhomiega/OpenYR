@@ -12,4 +12,4 @@ targets:
 credit: [ZivDero]
 ---
 
-`RecheckPrerequisites=yes` in `[General]` of `rules.ini` removes a cameo from the sidebar when the player stops meeting its tech level, prerequisites or, for a structure, ownership rules. This happens, for example, when a prerequisite structure is destroyed. The item's production is canceled: the item being built, every queued copy, and a structure waiting to be placed. Without the key, losing a prerequisite leaves a cameo on the sidebar.
+`RecheckPrerequisites` in `[General]` of `rules.ini` sets whether the sidebar removes a cameo when the player stops meeting its tech level, prerequisites or, for a structure, ownership rules. The default is `yes`, which also cancels the item being built, every queued copy, and a structure waiting to be placed. With `no`, such a cameo stays and can still start production.
