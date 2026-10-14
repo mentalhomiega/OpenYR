@@ -1000,8 +1000,8 @@ void MapClass::Fresh_Map(void)
 /// <summary>
 /// Sets the local view rectangle of the map.
 /// The requested rectangle is trimmed to fit inside the playfield. Any object that finds
-/// itself within the new local area is locked to it and takes a fresh look around, so that
-/// the ground it can see is revealed the moment the area opens up.
+/// itself within the new local area is locked to it. A newly locked object of a player-controlled
+/// house takes a fresh look around, so that the ground it can see is revealed the moment the area opens up.
 /// </summary>
 /// <param name="size">The desired local view rectangle; it is clipped to the playfield.</param>
 void MapClass::Set_Local_Dimensions(Rect const & size)
@@ -1017,7 +1017,8 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
 		TechnoClass * t = Technos[i];
 		bool was = t->IsLocked;
 		t->IsLocked = In_Local_Radar(t->PositionCell);
-		if (!was && t->IsLocked && (Session.Type != GAME_NORMAL || t->House->Is_Player_Control()) && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
+		// As MapClass::SetVisibleRect (0x567230): only a player-controlled house's object takes a fresh look.
+		if (!was && t->IsLocked && t->House->Is_Player_Control() && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
 			t->Look();
 		}
 	}

@@ -144,7 +144,7 @@ A look reaches at most ten cells, whatever `Sight=`, the height bonus and the ve
 
 ### The scan
 
-A look is centered on the cell the looker is drawn over, not the cell it occupies. If that cell lies outside the playfield, the look reveals nothing. Otherwise it covers a disc: every playfield cell whose straight-line distance from the center is within the sight range. The test uses the playfield, not the smaller playable area, so a look can reveal cells in the map border.
+A look is centered on the cell the looker is drawn over, not the cell it occupies. If that cell lies outside the playfield, the look reveals nothing. Otherwise it covers a disc: every playfield cell whose straight-line distance from the center is within the sight range. The test uses the playfield, not the smaller playable area, so a look can reveal cells in the map border. An object that has not entered the playable area takes no look at all. When the local area widens, an object that becomes part of it takes a fresh look only if its house is player-controlled.
 
 With [`RevealByHeight=yes`](/keys/revealbyheight/), high ground can block a cell in the disc. For each cell, the game checks the ground height of one probe cell. The cell is revealed only if the probe's ground is no more than three height levels above the looker. To find the probe, take the cell's position relative to the cell the looker stands on, move two cells down the screen, then one cell toward the looker.
 
