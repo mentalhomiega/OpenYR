@@ -147,7 +147,7 @@ Without switches the setup shows a wizard. These switches run it silently:
 
 | Switch | Effect |
 | --- | --- |
-| `/S` | No window. The exit code is 0 on success, 1 on failure, 2 when the OpenYR folder cannot be used, 3 when the wizard is cancelled, and 4 when no Yuri's Revenge install was found or the one given is not one. |
+| `/S` | No window. The exit code is 0 on success, 1 on failure, 2 when the OpenYR folder cannot be used, and 4 when no Yuri's Revenge install was found or the one given is not one. The wizard exits with 3 when it is cancelled. |
 | `/YR=<folder>` | The Yuri's Revenge folder. Without it, the first install found is used. |
 | `/DIR=<folder>` | The OpenYR folder. The default is `%LOCALAPPDATA%\Programs\OpenYR`. |
 | `/DESKTOP=0` | No desktop shortcut. The default is to make one. |
