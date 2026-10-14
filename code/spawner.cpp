@@ -15,6 +15,7 @@
 #include "spawnerconfig.h"
 
 #include "addon.h"
+#include "autotest.h"
 #include "savemgr.h"
 #include "campaign.h"
 #include "ccfile.h"
@@ -68,7 +69,10 @@ static bool Spawner_Refuse(char const * fault, ...)
 	va_end(args);
 
 	DebugString("[Spawner] Refusing to launch: %s\n", buffer);
-	WWMessageBox().Process(buffer, TXT_OK);
+	// An unattended test run has nobody to press OK, so the log line is the report there.
+	if (!AutoTest_Active()) {
+		WWMessageBox().Process(buffer, TXT_OK);
+	}
 
 	return(false);
 }

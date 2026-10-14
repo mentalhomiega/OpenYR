@@ -281,7 +281,7 @@ Each machine applies its own waits, so files that differ do not put the match ou
 
 ## When something is wrong
 
-The game refuses a launch it cannot play. It shows the reason, writes it to the log, and exits instead of falling back to its menu.
+The game refuses a launch it cannot play. It shows the reason, writes it to the log, and exits instead of falling back to its menu. A launch with `-AUTOTEST` writes the reason to the log only, because no one is there to dismiss the box.
 
 Any launch is refused when `SPAWN.INI` is missing or `GameSpeed` is outside `0` to `6`.
 

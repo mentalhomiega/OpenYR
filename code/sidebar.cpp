@@ -1315,7 +1315,7 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 		**	If there are any buildings in the payer's inventory, then allow the repair
 		**	option.
 		*/
-		if (PlayerPtr->CurBuildings > 0) {
+		if (PlayerPtr != NULL && PlayerPtr->CurBuildings > 0) {
 			Activate_Repair(true);
 		} else {
 			Activate_Repair(false);

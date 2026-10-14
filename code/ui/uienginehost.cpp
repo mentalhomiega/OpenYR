@@ -266,7 +266,8 @@ bool UI_Service_Game(void)
 
 	Windows_Message_Handler();
 
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.NetOpen && !Session.Suspended) {
+	// Main_Loop needs the local house, which a launch that was refused before its match started never sets.
+	if (PlayerPtr != NULL && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.NetOpen && !Session.Suspended) {
 		if (!inmainloop) {
 			inmainloop = true;
 			bool ended = Main_Loop();
