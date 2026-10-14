@@ -254,8 +254,9 @@ The local player's radar asks these questions in order and uses the first answer
 1. Is it `Invisible=yes`, sinking, no longer alive, or in limbo? Then it is never plotted, for any house.
 2. Is it [`RadarVisible=yes`](/keys/radarvisible/)? Then it is always plotted.
 3. Does it belong to a house under the local player's control? Then it is plotted once the player has discovered it.
-4. Is it in plain view? It is plotted when all of these hold: it is not fogged, not hidden, not under shroud, not more than 20 leptons below ground level, and it does not hold the `RADAR_INVISIBLE` [veteran ability](/systems/veterancy/#abilities).
-5. Otherwise, it is plotted only while the player senses its cell.
+4. Is the cell under its centre outside the playable area that [`LocalSize`](/keys/localsize/) declares? Then it is not plotted.
+5. Is it in plain view? It is plotted when all of these hold: it is not fogged, not hidden, not under shroud, not more than 20 leptons below ground level, and it does not hold the `RADAR_INVISIBLE` [veteran ability](/systems/veterancy/#abilities).
+6. Otherwise, it is plotted only while the player senses its cell.
 
 When an object reaches the last step and the player does not consider its house allied, it counts as a detection, unless any of these is true of it:
 

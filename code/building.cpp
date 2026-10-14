@@ -11819,6 +11819,11 @@ bool BuildingClass::Is_Radar_Visible(DetectedType & detected) const
 			return(DiscoveredBy[PlayerPtr]);
 		}
 
+		// Gamemd's BuildingClass::IsRadarVisible (0x457020) rejects a centre cell outside the usable area (0x578460) here.
+		if (!Map.In_Local_Radar(Center_Coord())) {
+			return(false);
+		}
+
 		int height = Class->Height() * CELL_LEPTON_H - CELL_LEPTON;
 		int width = Class->Width() * CELL_LEPTON_W - CELL_LEPTON;
 		bool shrouded = Map.Is_Shrouded(PositionCoord) && Map.Is_Shrouded(PositionCoord + Coord(width, height)) && MainWindow;

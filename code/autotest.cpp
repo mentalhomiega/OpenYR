@@ -136,6 +136,7 @@
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
 **	radar <TypeID>			writes each player object of that type with its limbo, radar tracking, discovery and whether Is_Radar_Visible plots it
+**	radarall <TypeID>		writes each object of that type whoever owns it, with its owner and whether Is_Radar_Visible plots it
 **	stripfill <column> <count>	offers building types 0 to count-1 to that sidebar strip and writes how many it took
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
@@ -2209,6 +2210,17 @@ void Run(StepType const & step)
 				bool const visible = techno->Is_Radar_Visible(detected);
 				DebugString("AUTOTEST   radar %s at %d,%d limbo %d tracked %d discovered %d pos %d,%d visible %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
 					techno->IsInLimbo ? 1 : 0, techno->IsRadarTracked ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, techno->RadarPos.X, techno->RadarPos.Y, visible ? 1 : 0);
+			}
+		}
+	} else if (step.Command == "radarall") {
+		// radarall <TypeID>: each object of that type whoever owns it, with its owner, its cell and whether Is_Radar_Visible plots it.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DetectedType detected = DETECTED_NONE;
+				bool const visible = techno->Is_Radar_Visible(detected);
+				DebugString("AUTOTEST   radarall %s house %s at %d,%d limbo %d discovered %d visible %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+					techno->IsInLimbo ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, visible ? 1 : 0);
 			}
 		}
 	} else if (step.Command == "stripfill") {

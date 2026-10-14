@@ -11001,6 +11001,11 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 			return(DiscoveredBy[PlayerPtr]);
 		}
 
+		// Gamemd's IsRadarVisible (0x70D1D0) rejects a centre cell outside the usable area (0x578460) here; In_Local_Radar is that test, with PlayRect as MapRect and LocalRect as VisibleRect.
+		if (!Map.In_Local_Radar(Center_Coord())) {
+			return(false);
+		}
+
 		int height = HeightAGL;
 		bool ability_radar_invisible = Has_Ability(ABILITY_RADAR_INVISIBLE);
 		bool is_shrouded = Map.Is_Shrouded(Get_Coord()) && MainWindow;
