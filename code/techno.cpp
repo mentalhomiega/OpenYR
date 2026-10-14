@@ -3220,6 +3220,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
 							if (bestval < value) {
 								bestobject = object;
+								bestval = value;
 							}
 						}
 					}
@@ -3239,6 +3240,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
 							if (bestval < value) {
 								bestobject = object;
+								bestval = value;
 							}
 						}
 					}
@@ -3264,6 +3266,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
 							if (bestval < value) {
 								bestobject = object;
+								bestval = value;
 							}
 						}
 					}
@@ -3283,6 +3286,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
 							if (bestval < value) {
 								bestobject = object;
+								bestval = value;
 							}
 						}
 					}
