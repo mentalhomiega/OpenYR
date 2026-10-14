@@ -4,6 +4,8 @@ The developer guides are split by subject:
 
 - [Building OpenTS](BUILDING.md) — supported toolchain, commands, outputs,
   build identity, and continuous integration.
+- [The launcher and beta updates](LAUNCHER.md) — `OpenYR.exe`, its update
+  check, the `OPENTS.INI` keys and switches it reads, and the release assets.
 - [Style](STYLE.md) — source formatting, naming, C++ use, and comments.
 - [History](HISTORY.md) — source lineage and reconstruction history.
 - [Rationale](RATIONALE.md) — reconstruction tools, recovered structure, and

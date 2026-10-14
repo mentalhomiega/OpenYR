@@ -16,6 +16,8 @@
  *   /YR=<folder>       the Yuri's Revenge folder to use; the first one found when omitted
  *   /DIR=<folder>      the OpenYR folder; %LOCALAPPDATA%\Programs\OpenYR when omitted
  *   /DESKTOP=0         no desktop shortcut (default: one)
+ *   /DESKTOP=keep      refresh the desktop shortcut only if this install already has one
+ *   /NOSHORTCUTS       no Start Menu, desktop or Apps & Features entries (for tests)
  *   /RUN               start OpenYR when a silent install ends
  *   /UNINSTALL         remove OpenYR from /DIR, or from the folder this file is in
  *   /DELETEDATA        with /UNINSTALL, also delete the settings, saves and Debug log
@@ -72,8 +74,11 @@ AppOptionsType Parse_Command_Line(int argc, wchar_t ** argv)
 			options.Run = true;
 		} else if (_wcsicmp(arg.c_str(), L"DELETEDATA") == 0) {
 			options.DeleteData = true;
+		} else if (_wcsicmp(arg.c_str(), L"NOSHORTCUTS") == 0) {
+			options.Shortcuts = false;
 		} else if (Switch_Value(arg, L"DESKTOP=", value)) {
 			options.Desktop = value != L"0";
+			options.DesktopKeep = _wcsicmp(value.c_str(), L"keep") == 0;
 		} else if (Switch_Value(arg, L"YR=", value)) {
 			options.Yuri = value;
 		} else if (Switch_Value(arg, L"DIR=", value)) {
@@ -139,6 +144,7 @@ int Run_Silent_Uninstall(AppOptionsType & options)
 	setup::UninstallType request;
 	request.Folder = options.Folder.empty() ? options.SelfFolder : setup::Normalize_Path(options.Folder);
 	request.DeleteData = options.DeleteData;
+	request.Shortcuts = options.Shortcuts;
 
 	bool const from_install = setup::Is_Inside(options.Self, request.Folder);
 	std::wstring error;
@@ -199,6 +205,8 @@ int Run_Silent_Install(AppOptionsType & options)
 	request.Yuri = yuri;
 	request.Folder = folder;
 	request.Desktop = options.Desktop;
+	request.KeepDesktop = options.DesktopKeep;
+	request.Shortcuts = options.Shortcuts;
 	request.UninstallerSource = options.Self;
 	request.UninstallerBytes = options.StubBytes;
 

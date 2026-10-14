@@ -14,6 +14,7 @@
 #include <shlobj.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cwctype>
 #include <cwchar>
 #include <string>
@@ -23,6 +24,7 @@ namespace setup {
 namespace {
 
 wchar_t const * const GameName = L"Game.exe";
+wchar_t const * const LauncherName = L"OpenYR.exe";
 wchar_t const * const UninstallerName = L"Uninstall OpenYR.exe";
 wchar_t const * const ConfigName = L"OPENTS.INI";
 wchar_t const * const RecordName = L"openyr-install.ini";
@@ -43,14 +45,16 @@ enum class KindType
 };
 
 /*
- * The files of a package that an install copies: the engine, its interface, the licences and the
- * notes, and the CnCNet setup script. The launchers and README are left out, because they assume
- * the package sits next to Yuri's Revenge. Settings under user\ are copied only when missing.
+ * The files of a package that an install copies: the engine and its launcher, its interface, the
+ * licences and the notes, and the CnCNet setup script. The Play scripts and README are left out,
+ * because they assume the package sits next to Yuri's Revenge. Settings under user\ are copied
+ * only when missing.
  */
 KindType Classify(std::wstring const & name)
 {
 	static wchar_t const * const Programs[] = {
 		L"Game.exe",
+		L"OpenYR.exe",
 		L"Language.dll",
 		L"LICENSE.md",
 		L"TESTERS.md",
@@ -199,14 +203,34 @@ std::wstring Uninstall_Key(LocationType const & where)
 }
 
 
-/*
- * Removes the shortcut only when it still starts this install's Game.exe, so a shortcut the player
- * made under the same name is left alone.
- */
-void Remove_Own_Shortcut(std::wstring const & link, std::wstring const & game)
+bool Shortcut_Starts(std::wstring const & link, std::wstring const & target)
 {
-	std::wstring target;
-	if (Is_File(link) && Shortcut_Target(link, target) && Same_Path(target, game)) {
+	std::wstring found;
+	return(Is_File(link) && Shortcut_Target(link, found) && Same_Path(found, target));
+}
+
+
+/*
+ * True when the shortcut starts this install's launcher or Game.exe. A shortcut the player made under
+ * the same name does not count. Shortcuts from earlier builds start Game.exe.
+ */
+bool Own_Shortcut(std::wstring const & link, std::wstring const & folder)
+{
+	return(Shortcut_Starts(link, Join(folder, LauncherName)) || Shortcut_Starts(link, Join(folder, GameName)));
+}
+
+
+void Remove_Shortcut_To(std::wstring const & link, std::wstring const & target)
+{
+	if (Shortcut_Starts(link, target)) {
+		Delete_File_Forced(link);
+	}
+}
+
+
+void Remove_Own_Shortcut(std::wstring const & link, std::wstring const & folder)
+{
+	if (Own_Shortcut(link, folder)) {
 		Delete_File_Forced(link);
 	}
 }
@@ -244,6 +268,113 @@ std::uint64_t Estimated_Kilobytes(std::vector<PayloadFileType const *> const & f
 		total += file->Data.size();
 	}
 	return((total + 1023) / 1024);
+}
+
+
+std::string Trim_Ascii(std::string const & text)
+{
+	std::string::size_type first = text.find_first_not_of(" \t");
+	if (first == std::string::npos) {
+		return(std::string());
+	}
+	std::string::size_type last = text.find_last_not_of(" \t");
+	return(text.substr(first, last - first + 1));
+}
+
+
+std::string Lower_Ascii(std::string text)
+{
+	for (char & character : text) {
+		character = static_cast<char>(std::tolower(static_cast<unsigned char>(character)));
+	}
+	return(text);
+}
+
+
+/*
+ * The lines of an OPENTS.INI the setup does not own: its header comment, and the DataDirectory and
+ * UserDirectory keys under [Paths], are left out. Every other line is kept as it was written.
+ */
+std::vector<std::string> Player_Config_Lines(std::string const & existing)
+{
+	std::vector<std::string> kept;
+	std::string section;
+
+	std::string::size_type start = 0;
+	while (start < existing.size()) {
+		std::string::size_type end = existing.find('\n', start);
+		if (end == std::string::npos) {
+			end = existing.size();
+		}
+
+		std::string line = existing.substr(start, end - start);
+		if (!line.empty() && line.back() == '\r') {
+			line.pop_back();
+		}
+		start = end + 1;
+
+		std::string const text = Trim_Ascii(line);
+		if (text.rfind("; Written by the OpenYR setup.", 0) == 0) {
+			continue;
+		}
+
+		if (!text.empty() && text[0] == '[') {
+			std::string::size_type close = text.find(']');
+			section = Lower_Ascii(text.substr(1, close == std::string::npos ? std::string::npos : close - 1));
+		} else if (section == "paths") {
+			std::string::size_type equals = text.find('=');
+			if (equals != std::string::npos) {
+				std::string const key = Lower_Ascii(Trim_Ascii(text.substr(0, equals)));
+				if (key == "datadirectory" || key == "userdirectory") {
+					continue;
+				}
+			}
+		}
+
+		kept.push_back(line);
+	}
+
+	return(kept);
+}
+
+
+// True when some line holds a key, so a file of comments and empty sections counts as holding nothing.
+bool Has_Key_Line(std::vector<std::string> const & lines)
+{
+	for (std::string const & line : lines) {
+		std::string const text = Trim_Ascii(line);
+		if (!text.empty() && text[0] != ';' && text[0] != '[' && text.find('=') != std::string::npos) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/*
+ * The OPENTS.INI an install writes. The setup's [Paths] keys are set, and the player's own lines are
+ * kept, so a key the player added under another section survives an install or an update.
+ */
+std::string Merged_Config(std::string const & existing, std::string const & yuri_ansi)
+{
+	std::string const data_line = std::string("DataDirectory=") + yuri_ansi + "\r\n";
+	std::string const user_line = "UserDirectory=user\r\n";
+
+	std::string body;
+	bool placed = false;
+	for (std::string const & line : Player_Config_Lines(existing)) {
+		body += line + "\r\n";
+		if (!placed && Lower_Ascii(Trim_Ascii(line)) == "[paths]") {
+			body += data_line + user_line;
+			placed = true;
+		}
+	}
+
+	std::string config = "; Written by the OpenYR setup. Each install and update sets DataDirectory and UserDirectory in its Paths section; other lines are kept.\r\n";
+	if (!placed) {
+		config += "[Paths]\r\n" + data_line + user_line;
+	}
+	return(config + body);
 }
 
 }
@@ -409,6 +540,22 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 		return(false);
 	}
 
+	// The game reads these two values from OPENTS.INI. The ANSI check refuses a path it cannot hold.
+	// The file is read before anything is written, so a file that cannot be read stops the install.
+	std::string yuri_ansi;
+	if (!To_Ansi(yuri, yuri_ansi)) {
+		error = L"The Yuri's Revenge folder name has characters that OpenYR cannot read yet.";
+		return(false);
+	}
+
+	std::wstring const config_path = Join(folder, ConfigName);
+	std::string existing;
+	if (Is_File(config_path) && !Read_File_Bytes(config_path, existing)) {
+		error = L"Could not read " + config_path + L". Close anything using it, then run this setup again.";
+		return(false);
+	}
+	std::string const config = Merged_Config(existing, yuri_ansi);
+
 	BuildType const build = Package_Build(files);
 	InstalledType const previous = Read_Installed(folder);
 
@@ -496,20 +643,8 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 		written.push_back(UninstallerName);
 	}
 
-	// The game reads these two values from OPENTS.INI. The ANSI check above refuses a path it cannot hold.
-	std::string yuri_ansi;
-	if (!To_Ansi(yuri, yuri_ansi)) {
-		error = L"The Yuri's Revenge folder name has characters that OpenYR cannot read yet.";
-		return(false);
-	}
-
-	std::string const config = std::string(
-		"; Written by the OpenYR setup. Each install and update rewrites it, and uninstall removes it.\r\n"
-		"[Paths]\r\n"
-		"DataDirectory=") + yuri_ansi + "\r\n"
-		"UserDirectory=user\r\n";
 	Say(report, 90, L"Writing " + std::wstring(ConfigName));
-	if (!Write_File_Replacing(Join(folder, ConfigName), config.data(), config.size(), error)) {
+	if (!Write_File_Replacing(config_path, config.data(), config.size(), error)) {
 		return(false);
 	}
 
@@ -518,54 +653,62 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 		return(false);
 	}
 
-	// Shortcuts and the Apps & Features entry. A shortcut that cannot be made is reported, not fatal.
+	// Shortcuts start the launcher, which checks for updates first. A package without one starts Game.exe.
+	// A shortcut or entry that cannot be made is reported, not fatal.
 	std::wstring const game = Join(folder, GameName);
+	std::wstring const start = Is_File(Join(folder, LauncherName)) ? Join(folder, LauncherName) : game;
 	LocationType const where = request.Where;
 	std::wstring const start_folder = Program_Shortcut_Folder(where);
+	std::wstring const desktop_link = Desktop_Folder(where) + L"\\" + ShortcutName;
 	std::wstring shortcut_error;
 
-	Say(report, 94, L"Adding the Start Menu entry");
-	if (Make_Folders(start_folder)) {
-		if (!Create_Shortcut(start_folder + L"\\" + ShortcutName, game, folder, game, 0, L"OpenYR", shortcut_error)) {
-			Say(report, -1, shortcut_error);
+	if (request.Shortcuts) {
+		Say(report, 94, L"Adding the Start Menu entry");
+		if (Make_Folders(start_folder)) {
+			if (!Create_Shortcut(start_folder + L"\\" + ShortcutName, start, folder, start, 0, L"OpenYR", shortcut_error)) {
+				Say(report, -1, shortcut_error);
+			}
+			if (!Create_Shortcut(start_folder + L"\\" + UninstallShortcutName, uninstaller, folder, uninstaller, 0, L"Uninstall OpenYR", shortcut_error)) {
+				Say(report, -1, shortcut_error);
+			}
+		} else {
+			Say(report, -1, L"Could not create the Start Menu folder " + start_folder + L".");
 		}
-		if (!Create_Shortcut(start_folder + L"\\" + UninstallShortcutName, uninstaller, folder, uninstaller, 0, L"Uninstall OpenYR", shortcut_error)) {
-			Say(report, -1, shortcut_error);
+
+		// KeepDesktop refreshes a shortcut this install already has and never adds one.
+		bool const desktop_wanted = request.KeepDesktop ? Own_Shortcut(desktop_link, folder) : request.Desktop;
+		if (desktop_wanted) {
+			if (!Create_Shortcut(desktop_link, start, folder, start, 0, L"OpenYR", shortcut_error)) {
+				Say(report, -1, shortcut_error);
+			}
+		} else {
+			Remove_Own_Shortcut(desktop_link, folder);
 		}
-	} else {
-		Say(report, -1, L"Could not create the Start Menu folder " + start_folder + L".");
 	}
 
-	std::wstring const desktop_link = Desktop_Folder(where) + L"\\" + ShortcutName;
-	if (request.Desktop) {
-		if (!Create_Shortcut(desktop_link, game, folder, game, 0, L"OpenYR", shortcut_error)) {
-			Say(report, -1, shortcut_error);
+	if (request.Shortcuts) {
+		std::wstring const key = Uninstall_Key(where);
+		SYSTEMTIME now{};
+		GetLocalTime(&now);
+		wchar_t date[16] = {};
+		swprintf(date, 16, L"%04u%02u%02u", static_cast<unsigned>(now.wYear), static_cast<unsigned>(now.wMonth), static_cast<unsigned>(now.wDay));
+
+		bool registered = true;
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayName", L"OpenYR");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayVersion", Build_Text(build.Build));
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"Publisher", L"OpenYR");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallLocation", folder);
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayIcon", game + L",0");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"UninstallString", L"\"" + uninstaller + L"\" /UNINSTALL");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"QuietUninstallString", L"\"" + uninstaller + L"\" /UNINSTALL /S");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"URLInfoAbout", HelpUrl);
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallDate", date);
+		registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"EstimatedSize", static_cast<DWORD>(Estimated_Kilobytes(programs)));
+		registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoModify", 1);
+		registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoRepair", 1);
+		if (!registered) {
+			Say(report, -1, L"Could not write the Apps & Features entry.");
 		}
-	} else {
-		Remove_Own_Shortcut(desktop_link, game);
-	}
-
-	std::wstring const key = Uninstall_Key(where);
-	SYSTEMTIME now{};
-	GetLocalTime(&now);
-	wchar_t date[16] = {};
-	swprintf(date, 16, L"%04u%02u%02u", static_cast<unsigned>(now.wYear), static_cast<unsigned>(now.wMonth), static_cast<unsigned>(now.wDay));
-
-	bool registered = true;
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayName", L"OpenYR");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayVersion", Build_Text(build.Build));
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"Publisher", L"OpenYR");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallLocation", folder);
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayIcon", game + L",0");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"UninstallString", L"\"" + uninstaller + L"\" /UNINSTALL");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"QuietUninstallString", L"\"" + uninstaller + L"\" /UNINSTALL /S");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"URLInfoAbout", HelpUrl);
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallDate", date);
-	registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"EstimatedSize", static_cast<DWORD>(Estimated_Kilobytes(programs)));
-	registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoModify", 1);
-	registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoRepair", 1);
-	if (!registered) {
-		Say(report, -1, L"Could not write the Apps & Features entry.");
 	}
 
 	Say(report, 100, previous.Present ? L"OpenYR was updated" : L"OpenYR was installed");
@@ -582,15 +725,16 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 		return(false);
 	}
 
-	std::wstring const game = Join(folder, GameName);
 	LocationType const where = request.Where;
 	std::wstring const start_folder = Program_Shortcut_Folder(where);
 
-	Say(report, 2, L"Removing the shortcuts");
-	Remove_Own_Shortcut(Desktop_Folder(where) + L"\\" + ShortcutName, game);
-	Remove_Own_Shortcut(start_folder + L"\\" + ShortcutName, game);
-	Remove_Own_Shortcut(start_folder + L"\\" + UninstallShortcutName, Join(folder, UninstallerName));
-	Remove_Folder_If_Empty(start_folder);
+	if (request.Shortcuts) {
+		Say(report, 2, L"Removing the shortcuts");
+		Remove_Own_Shortcut(Desktop_Folder(where) + L"\\" + ShortcutName, folder);
+		Remove_Own_Shortcut(start_folder + L"\\" + ShortcutName, folder);
+		Remove_Shortcut_To(start_folder + L"\\" + UninstallShortcutName, Join(folder, UninstallerName));
+		Remove_Folder_If_Empty(start_folder);
+	}
 
 	std::size_t index = 0;
 	for (std::wstring const & name : info.Files) {
@@ -602,10 +746,33 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 		index++;
 	}
 
-	for (std::wstring const & name : {std::wstring(ConfigName), std::wstring(RecordName)}) {
-		if (!Delete_File_Forced(Join(folder, name)) && Is_File(Join(folder, name))) {
-			left.push_back(name);
+	// OPENTS.INI keeps the player's own keys unless DeleteData is set. It is rewritten without the setup's
+	// [Paths] keys, and removed only when no other key is left in it.
+	std::wstring const config_path = Join(folder, ConfigName);
+	bool config_kept = false;
+	if (!request.DeleteData && Is_File(config_path)) {
+		std::string bytes;
+		if (!Read_File_Bytes(config_path, bytes)) {
+			config_kept = true;
+		} else {
+			std::vector<std::string> const kept = Player_Config_Lines(bytes);
+			if (Has_Key_Line(kept)) {
+				config_kept = true;
+				std::string text;
+				for (std::string const & line : kept) {
+					text += line + "\r\n";
+				}
+				std::wstring problem;
+				Write_File_Replacing(config_path, text.data(), text.size(), problem);
+			}
 		}
+	}
+	if (!config_kept && !Delete_File_Forced(config_path) && Is_File(config_path)) {
+		left.push_back(ConfigName);
+	}
+
+	if (!Delete_File_Forced(Join(folder, RecordName)) && Is_File(Join(folder, RecordName))) {
+		left.push_back(RecordName);
 	}
 
 	// The player's own files stay unless asked for. Debug holds the game's log, which goes with them.
@@ -637,8 +804,10 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 	}
 	Remove_Folder_If_Empty(folder);
 
-	Say(report, 96, L"Removing the Apps & Features entry");
-	Registry_Delete_Tree(HKEY_CURRENT_USER, Uninstall_Key(where).c_str());
+	if (request.Shortcuts) {
+		Say(report, 96, L"Removing the Apps & Features entry");
+		Registry_Delete_Tree(HKEY_CURRENT_USER, Uninstall_Key(where).c_str());
+	}
 
 	Say(report, 100, L"OpenYR was removed");
 	return(left.empty() && error.empty());
@@ -647,10 +816,11 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 
 bool Launch_Game(std::wstring const & folder, std::wstring & error)
 {
-	std::wstring const game = Join(folder, GameName);
-	HINSTANCE const result = ShellExecuteW(nullptr, L"open", game.c_str(), nullptr, Normalize_Path(folder).c_str(), SW_SHOWNORMAL);
+	std::wstring const launcher = Join(folder, LauncherName);
+	std::wstring const target = Is_File(launcher) ? launcher : Join(folder, GameName);
+	HINSTANCE const result = ShellExecuteW(nullptr, L"open", target.c_str(), nullptr, Normalize_Path(folder).c_str(), SW_SHOWNORMAL);
 	if (reinterpret_cast<INT_PTR>(result) <= 32) {
-		error = L"Could not start " + game + L".";
+		error = L"Could not start " + target + L".";
 		return(false);
 	}
 	return(true);

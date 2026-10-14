@@ -231,6 +231,7 @@ std::vector<PayloadFileType> Package(char const * engine, char const * build, bo
 	};
 
 	add("Game.exe", engine);
+	add("OpenYR.exe", "launcher");
 	add("Language.dll", "language");
 	add("LICENSE.md", "licence");
 	add("TESTERS.md", "testers");
@@ -458,10 +459,12 @@ void Test_Install_And_Uninstall(void)
 
 	setup::InstalledType record = setup::Read_Installed(folder);
 	Check(record.Present && record.Build == L"2026-10-14i" && record.Commit == L"abc1234", "the record holds the build and commit");
-	Check(record.Files.size() == 8, "the record lists the seven program files and the uninstaller");
+	Check(record.Files.size() == 9, "the record lists the eight program files and the uninstaller");
+	Check(Exists(Path_Of(folder, L"OpenYR.exe")), "the launcher is installed beside Game.exe");
 
 	std::wstring target;
-	Check(setup::Shortcut_Target(Path_Of(Programs, L"OpenYR\\OpenYR.lnk"), target) && setup::Same_Path(target, Path_Of(folder, L"Game.exe")), "the Start Menu entry starts Game.exe");
+	Check(setup::Shortcut_Target(Path_Of(Programs, L"OpenYR\\OpenYR.lnk"), target) && setup::Same_Path(target, Path_Of(folder, L"OpenYR.exe")), "the Start Menu entry starts the launcher");
+	Check(setup::Shortcut_Target(Path_Of(Desktop, L"OpenYR.lnk"), target) && setup::Same_Path(target, Path_Of(folder, L"OpenYR.exe")), "the desktop shortcut starts the launcher");
 	Check(Read_Text(Path_Of(folder, L"Uninstall OpenYR.exe")).size() == 4096, "the uninstaller is the stub's bytes, without a package");
 	Check(Exists(Path_Of(Desktop, L"OpenYR.lnk")), "the desktop shortcut is made when asked for");
 
@@ -516,6 +519,116 @@ void Test_Install_And_Uninstall(void)
 	// The Yuri's Revenge folder is never written to.
 	Check(Snapshot(Yuri) == yuri_before, "the Yuri's Revenge folder is unchanged after every step");
 	Check(Read_Text(Path_Of(Yuri, L"RA2MD.INI")) == yuri_ini_before, "its own settings file is unchanged");
+}
+
+
+void Test_Config_File(void)
+{
+	std::wstring error;
+	std::wstring const folder = Installs + L"\\Config";
+	std::wstring const config = Path_Of(folder, L"OPENTS.INI");
+
+	// The player's keys survive an install over the file, and only the setup's own [Paths] keys change.
+	Make_File(config, "; my note\r\n[Paths]\r\nDataDirectory=C:\\old\r\nMods=Mods\\extra\r\n\r\n[Update]\r\nCheck=no\r\nFeedURL=https://example.test/feed\r\n");
+	Check(Install(folder, Package("engine", "beta22", false, false), false, error), "an install over an existing OPENTS.INI succeeds");
+	std::string text = Read_Text(config);
+	Check(text.find("DataDirectory=" + Narrow(Yuri) + "\r\n") != std::string::npos && text.find("C:\\old") == std::string::npos, "the setup replaces DataDirectory and nothing else under [Paths]");
+	Check(text.find("Mods=Mods\\extra\r\n") != std::string::npos, "a key the player set under [Paths] is kept");
+	Check(text.find("[Update]\r\nCheck=no\r\nFeedURL=https://example.test/feed\r\n") != std::string::npos, "a section the setup does not own is kept as it was");
+	Check(text.find("; my note\r\n") != std::string::npos, "a comment the player wrote is kept");
+	Check(text.find("[Paths]") == text.rfind("[Paths]") && text.find("UserDirectory=user\r\n") == text.rfind("UserDirectory=user\r\n"), "the file has one [Paths] section and one of each key");
+
+	// A second install does not add lines; it keeps the file the first one left.
+	Check(Install(folder, Package("engine", "beta23", false, false), false, error), "an update over the merged file succeeds");
+	Check(Read_Text(config) == text, "an update that changes nothing in the file leaves its text as it was");
+
+	// Uninstall keeps the player's keys, and removes the setup's own lines from the file.
+	setup::UninstallType request;
+	request.Folder = folder;
+	request.DeleteData = false;
+	request.Where = Where();
+	std::vector<std::wstring> left;
+	Check(setup::Uninstall_Package(request, nullptr, error, left), "uninstall keeping the data succeeds over the merged file");
+	std::string kept = Read_Text(config);
+	Check(Exists(config) && kept.find("DataDirectory") == std::string::npos && kept.find("[Update]\r\nCheck=no") != std::string::npos, "uninstall keeps the player's keys and drops the setup's paths");
+
+	// A reinstall merges into the kept keys again, and deleting the data removes the file with them.
+	Check(Install(folder, Package("engine", "beta23", false, false), false, error), "a reinstall over the kept keys succeeds");
+	Check(Read_Text(config).find("Check=no") != std::string::npos, "the reinstall keeps the player's keys");
+	left.clear();
+	request.DeleteData = true;
+	Check(setup::Uninstall_Package(request, nullptr, error, left), "uninstall deleting the data succeeds");
+	Check(!Exists(config), "deleting the data removes OPENTS.INI with the player's keys");
+	setup::Remove_Tree(folder, error);
+}
+
+
+// An install with the launcher left out, or with KeepDesktop set, as the launcher's update sends it.
+bool Install_Keeping_Desktop(std::wstring const & folder, std::vector<PayloadFileType> const & files, bool keep_desktop, std::wstring & error)
+{
+	setup::InstallType request = Request(folder, true);
+	request.KeepDesktop = keep_desktop;
+	request.UninstallerSource = Path_Of(Root, L"stub.exe");
+	request.UninstallerBytes = 4096;
+	return(setup::Install_Package(request, files, nullptr, error));
+}
+
+
+void Test_Shortcuts(void)
+{
+	std::wstring error;
+	std::wstring const folder = Installs + L"\\Shortcuts";
+	std::wstring const desktop_link = Path_Of(Desktop, L"OpenYR.lnk");
+	std::wstring const launcher = Path_Of(folder, L"OpenYR.exe");
+	std::wstring const game = Path_Of(folder, L"Game.exe");
+	std::wstring target;
+
+	std::vector<PayloadFileType> no_launcher;
+	for (PayloadFileType const & file : Package("engine", "beta22", false, false)) {
+		if (file.Name != L"OpenYR.exe") {
+			no_launcher.push_back(file);
+		}
+	}
+
+	setup::Delete_File_Forced(desktop_link);
+	Check(Install_Keeping_Desktop(folder, no_launcher, false, error), "a package without the launcher installs");
+	Check(setup::Shortcut_Target(desktop_link, target) && setup::Same_Path(target, game), "without a launcher the shortcut starts Game.exe");
+
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), true, error), "an update that keeps the desktop shortcut succeeds");
+	Check(setup::Shortcut_Target(desktop_link, target) && setup::Same_Path(target, launcher), "the kept shortcut is refreshed to start the launcher");
+
+	setup::Delete_File_Forced(desktop_link);
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), true, error), "an update with no desktop shortcut succeeds");
+	Check(!Exists(desktop_link), "an update that keeps the desktop shortcut adds none when there was none");
+
+	Check(setup::Create_Shortcut(desktop_link, Path_Of(Root, L"stub.exe"), Root, Path_Of(Root, L"stub.exe"), 0, L"player", error), "a shortcut the player made is in place");
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), true, error), "an update over a player's shortcut succeeds");
+	Check(setup::Shortcut_Target(desktop_link, target) && setup::Same_Path(target, Path_Of(Root, L"stub.exe")), "and leaves a shortcut that does not start this install alone");
+
+	setup::Delete_File_Forced(desktop_link);
+	setup::Remove_Tree(folder, error);
+
+	setup::Delete_File_Forced(Path_Of(Programs, L"OpenYR\\OpenYR.lnk"));
+	setup::InstallType quiet = Request(folder, true);
+	quiet.Shortcuts = false;
+	quiet.UninstallerSource = Path_Of(Root, L"stub.exe");
+	quiet.UninstallerBytes = 4096;
+	Check(setup::Install_Package(quiet, Package("engine", "beta23", false, false), nullptr, error), "an install with no shortcuts succeeds");
+	Check(!Exists(Path_Of(Programs, L"OpenYR\\OpenYR.lnk")) && !Exists(desktop_link), "and it writes no Start Menu or desktop entry");
+	setup::Remove_Tree(folder, error);
+
+	// An uninstall with no shortcuts leaves the shortcuts and the Apps & Features key as they are.
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), false, error), "an install with shortcuts succeeds before the quiet uninstall");
+	setup::UninstallType quiet_uninstall;
+	quiet_uninstall.Folder = folder;
+	quiet_uninstall.Where = Where();
+	quiet_uninstall.Shortcuts = false;
+	std::vector<std::wstring> left;
+	Check(setup::Uninstall_Package(quiet_uninstall, nullptr, error, left), "an uninstall with no shortcuts succeeds");
+	std::wstring version;
+	Check(Exists(desktop_link) && setup::Registry_String(HKEY_CURRENT_USER, 0, TestKey, L"DisplayName", version), "and it leaves the desktop shortcut and the Apps & Features entry in place");
+	setup::Delete_File_Forced(desktop_link);
+	setup::Remove_Tree(folder, error);
 }
 
 
@@ -580,6 +693,8 @@ int main()
 	Test_Find();
 	Test_Check_Folder();
 	Test_Install_And_Uninstall();
+	Test_Shortcuts();
+	Test_Config_File();
 	Test_Refusals();
 
 	Remove_Test_Keys();

@@ -112,6 +112,12 @@ struct InstallType
 	std::wstring Folder;
 	bool Desktop = true;
 
+	// Set by the launcher's update: a desktop shortcut this install already has is refreshed, and none is added.
+	bool KeepDesktop = false;
+
+	// False writes no shortcut and no Apps & Features entry. The tests use it to stay off the player's desktop.
+	bool Shortcuts = true;
+
 	// The setup executable's own bytes, without its package, copied as the uninstaller. Empty skips the copy.
 	std::wstring UninstallerSource;
 	std::uint64_t UninstallerBytes = 0;
@@ -119,7 +125,8 @@ struct InstallType
 	LocationType Where;
 };
 
-// Installs or updates OpenYR. Settings and saves under user\ are kept on an update.
+// Installs or updates OpenYR. Settings and saves under user\ are kept on an update, and so are the keys
+// OPENTS.INI holds outside [Paths], which the setup rewrites.
 bool Install_Package(InstallType const & request, std::vector<PayloadFileType> const & files, ReportType const & report, std::wstring & error);
 
 struct UninstallType
@@ -127,14 +134,18 @@ struct UninstallType
 	std::wstring Folder;
 	bool DeleteData = false;
 	LocationType Where;
+
+	// False leaves the shortcuts and the Apps & Features entry alone. The tests use it, as the install does.
+	bool Shortcuts = true;
 };
 
 // Removes what the install record names, its shortcuts and its Apps & Features entry. Settings and
-// saves are removed only when DeleteData is set. A file that could not be removed is added to left;
+// saves are removed only when DeleteData is set. OPENTS.INI keeps the player's own keys unless it is set.
+// A file that could not be removed is added to left;
 // the uninstaller running from the folder is one of them.
 bool Uninstall_Package(UninstallType const & request, ReportType const & report, std::wstring & error, std::vector<std::wstring> & left);
 
-// Starts Game.exe in the folder with the folder as its working directory. False when it cannot start.
+// Starts the launcher in the folder, or Game.exe when the install has none, with the folder as its working directory. False when it cannot start.
 bool Launch_Game(std::wstring const & folder, std::wstring & error);
 
 // The text of a path or name that a setup run prints or stores; false when it has characters
