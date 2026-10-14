@@ -2323,6 +2323,8 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   action %s on %s: %s (bomb planted at %d)\n", techno->TClass->Name(), target != NULL ? target->Class_Of()->Name() : "-", ActionName[action],
 					victim != NULL && victim->BombDetonateFrame != -1 ? victim->BombPlantFrame : -1);
 				if (step.Command == "clickon" && target != NULL) {
+					// Test hook: a click in planning mode is recorded as a planned order, as the real click path does.
+					PlanningRecordScope const recording(Map.IsPlanningMode);
 					techno->Active_Click_With(action, target, false);
 				}
 				break;

@@ -1,0 +1,28 @@
+; Planned-leg skip: a leg whose object target is gone when the plan starts is dropped, and the legs after it still run.
+; The first leg attacks a computer infantry unit; that unit is killed while planning is still on, so the commit
+; finds the leg's target gone. The two move legs after it must run as planned. Run in a skirmish on the default map,
+; as planning-legs.txt does.
+; Expected AUTOTEST lines:
+;   frame 340: planstate E1 orders 3 running 0 (the attack and the two moves recorded, none run).
+;   frame 341: kill E1 at 72,63 (the computer's unit is gone before the commit).
+;   frame 342: planstate E1 orders 3 running 0 (the kill leaves the queue as it was).
+;   frame 351: planstate E1 orders 1 running 1 (the attack leg is dropped, the move to 70,68 runs, 66,68 stays queued).
+;   frame 1000: planstate E1 orders 0 running 0 (both moves done; the unit is idle and its plan has ended).
+30 command CenterBase
+300 grantunit E1 60 63
+300 spawn E1 72 63
+305 reveal
+320 planning 1
+330 clickon E1 72 63
+331 clickcell E1 70 68
+332 clickcell E1 66 68
+340 planstate E1
+341 kill E1
+342 planstate E1
+350 planning 0
+351 planstate E1
+400 where E1
+700 planstate E1
+1000 planstate E1
+1000 where E1
+1100 quit

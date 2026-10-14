@@ -2159,15 +2159,19 @@ namespace {
 	}
 
 
-	/// <summary>
-	/// Checks that a planned order can still run: its unit, target and destination are alive, as
-	/// EventClass::Execute requires for a mega mission.
-	/// </summary>
-	bool Planned_Order_Is_Runnable(FootClass const & foot, PlannedOrderClass const & order)
+	/// <summary>Checks that the unit is active, outside limbo and alive, so it can carry out a plan.</summary>
+	bool Planned_Unit_Can_Run(FootClass const & foot)
 	{
-		if (!foot.IsActive || foot.IsInLimbo || foot.Strength <= 0) {
-			return(false);
-		}
+		return(foot.IsActive && !foot.IsInLimbo && foot.Strength > 0);
+	}
+
+
+	/// <summary>
+	/// Checks that the object target and the object destination of a planned order are still alive,
+	/// as EventClass::Execute requires for a mega mission. A cell is always valid.
+	/// </summary>
+	bool Planned_Order_Objects_Live(PlannedOrderClass const & order)
+	{
 		xTargetClass const * targets[] = {&order.Target, &order.Destination};
 		for (xTargetClass const * target : targets) {
 			if (target->Is_Valid()) {
@@ -2227,31 +2231,36 @@ void FootClass::Start_Planned_Orders(void)
 /// <summary>
 /// Issues the next planned order of a running plan.
 /// </summary>
-/// <returns>bool; Was an order issued? False when the plan is not running, has no orders left, or
-/// the next order cannot run. An order that cannot run clears the rest of the plan.</returns>
+/// <returns>bool; Was an order issued? False when the plan is not running, or when no order is left
+/// to issue. A unit that is inactive, in limbo or dead clears the plan. An order whose object target
+/// or object destination is gone (dead, inactive or in limbo) is dropped and the next order is tried,
+/// so the rest of the plan still runs (PlanningNodeClass::ProcessPendingPlans, 0x637270).</returns>
 bool FootClass::Advance_Planned_Order(void)
 {
 	if (!IsPlanRunning) {
 		return(false);
 	}
-	if (PlannedOrders.Count() == 0) {
-		IsPlanRunning = false;
-		PlannedLeg.Invalidate();
-		return(false);
-	}
-
-	PlannedOrderClass const order = PlannedOrders[0];
-	PlannedOrders.Delete_Index(0);
-
-	if (!Planned_Order_Is_Runnable(*this, order)) {
+	if (!Planned_Unit_Can_Run(*this)) {
 		Clear_Planned_Orders();
 		return(false);
 	}
 
-	PlannedLeg = order.Destination.Is_Valid() ? order.Destination : order.Target;
-	EventClass leg(House->HeapID, EventClass::MEGAMISSION, TargetClass(this), order.Mission, order.Target, order.Destination);
-	leg.Execute_Planned_Leg();
-	return(true);
+	while (PlannedOrders.Count() > 0) {
+		PlannedOrderClass const order = PlannedOrders[0];
+		PlannedOrders.Delete_Index(0);
+		if (!Planned_Order_Objects_Live(order)) {
+			continue;
+		}
+
+		PlannedLeg = order.Destination.Is_Valid() ? order.Destination : order.Target;
+		EventClass leg(House->HeapID, EventClass::MEGAMISSION, TargetClass(this), order.Mission, order.Target, order.Destination);
+		leg.Execute_Planned_Leg();
+		return(true);
+	}
+
+	IsPlanRunning = false;
+	PlannedLeg.Invalidate();
+	return(false);
 }
 
 
