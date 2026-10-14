@@ -16,7 +16,6 @@
 #include "goptions.h"
 #include "hud.h"
 #include "misc.h"
-#include "numparse.h"
 #include "options.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
@@ -319,8 +318,8 @@ void UI_Display_State(UIDisplayState & state)
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},
-		{VIDEO_SCALE_NEAREST, "Sharp"},
-		{VIDEO_SCALE_LINEAR, "Smooth"}
+		{VIDEO_SCALE_NEAREST, "Nearest"},
+		{VIDEO_SCALE_LINEAR, "Linear"}
 	}, Options.ScaleMode, "%d");
 	state.FrameRate = Fill_Choices(state.FrameRates, {
 		{0, "Off"},
@@ -376,7 +375,7 @@ void UI_Display_State(UIDisplayState & state)
 		scale.Value = step;
 		if (step > 0.0f) {
 			char buffer[32];
-			Snprintf_Nearest(buffer, sizeof(buffer), "%g", step);
+			std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(step * 100.0f));
 			scale.Label = buffer;
 		} else {
 			scale.Label = "Auto";
@@ -387,7 +386,7 @@ void UI_Display_State(UIDisplayState & state)
 		UIDisplayScale scale;
 		scale.Value = current;
 		char buffer[32];
-		Snprintf_Nearest(buffer, sizeof(buffer), "%g", current);
+		std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(current * 100.0f));
 		scale.Label = buffer;
 		state.Scale = (int)state.Scales.size();
 		state.Scales.push_back(scale);
