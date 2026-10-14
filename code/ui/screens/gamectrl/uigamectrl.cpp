@@ -41,7 +41,9 @@ UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsService
 	InitialAltToRally(State.AltToRally),
 	InitialSimulateUnfocused(State.SimulateUnfocused),
 	InitialSidebarSorting(State.SidebarSorting),
-	InitialAutosave(State.Autosave)
+	InitialAutosave(State.Autosave),
+	InitialDebugMode(State.DebugMode),
+	InitialScreenShake(State.ScreenShake)
 {
 	Update_Names();
 }
@@ -75,6 +77,10 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.SimulateUnfocused = (intent.Value != 0);
 	} else if (intent.Name == "sorting") {
 		State.SidebarSorting = (intent.Value != 0);
+	} else if (intent.Name == "debugmode") {
+		State.DebugMode = (intent.Value != 0);
+	} else if (intent.Name == "screenshake") {
+		State.ScreenShake = (intent.Value != 0);
 	} else if (intent.Name == "autosave") {
 		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : InitialAutosave;
 	} else if (intent.Name == "ok") {
@@ -130,6 +136,12 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.SidebarSorting != InitialSidebarSorting) {
 		Service.Set_Sidebar_Sorting(State.SidebarSorting);
 	}
+	if (State.DebugMode != InitialDebugMode) {
+		Service.Set_Debug_Mode(State.DebugMode);
+	}
+	if (State.ScreenShake != InitialScreenShake) {
+		Service.Set_Screen_Shake(State.ScreenShake);
+	}
 	if (State.Autosave != InitialAutosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
 		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
 	}
@@ -177,6 +189,8 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("rally");
 			Model.DirtyVariable("background");
 			Model.DirtyVariable("sorting");
+			Model.DirtyVariable("debugmode");
+			Model.DirtyVariable("screenshake");
 			Model.DirtyVariable("autosave");
 		}
 
@@ -214,6 +228,8 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("rally", &state.AltToRally)
 				&& model.Bind("background", &state.SimulateUnfocused)
 				&& model.Bind("sorting", &state.SidebarSorting)
+				&& model.Bind("debugmode", &state.DebugMode)
+				&& model.Bind("screenshake", &state.ScreenShake)
 				&& model.Bind("autosaves", &state.Autosaves)
 				&& model.Bind("autosave", &state.Autosave));
 		}

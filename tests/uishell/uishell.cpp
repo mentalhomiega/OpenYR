@@ -920,7 +920,6 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Sidebar_Rows(int rows) override { Calls.push_back("sidebar rows " + std::to_string(rows)); }
-		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
 		virtual void Set_Bitmap_System_Font(bool on) override { Calls.push_back(on ? "bitmap font on" : "bitmap font off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
@@ -1016,25 +1015,6 @@ void Test_Display_Presenter(void)
 		Check(presenter.State.ModernInterface && service.Calls.empty(), "the interface style switch is held until the player accepts");
 		Drive(presenter, "ok");
 		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface on" }, "accepting applies the modern interface style");
-	}
-
-	{
-		RecordingDisplayServiceClass service;
-		UIDisplayPresenterClass presenter(service, Display_Fixture());
-		Drive(presenter, "debugmode", 1);
-		Check(presenter.State.DebugMode && service.Calls.empty(), "the debug mode switch is held until the player accepts");
-		Drive(presenter, "ok");
-		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "debug mode on" }, "accepting applies the debug mode when it was switched on");
-	}
-
-	{
-		RecordingDisplayServiceClass service;
-		UIDisplayState state = Display_Fixture();
-		state.DebugMode = true;
-		UIDisplayPresenterClass presenter(service, state);
-		Drive(presenter, "debugmode", 0);
-		Drive(presenter, "ok");
-		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "debug mode off" }, "accepting applies the debug mode when it was switched off");
 	}
 
 	{
@@ -1530,6 +1510,8 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Simulate_Unfocused(bool on) override { Calls.push_back(on ? "background on" : "background off"); }
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
+		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
+		virtual void Set_Screen_Shake(bool on) override { Calls.push_back(on ? "shake on" : "shake off"); }
 		virtual void Save(void) override { Calls.push_back("save"); }
 
 		std::string Joined(void) const
@@ -1628,6 +1610,17 @@ void Test_Game_Controls_Presenter(void)
 		Drive(presenter, "ok");
 		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; rally on; background on; sorting on; autosave 0; save",
 			"accepting applies the changed rally, background, sorting and autosave settings");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "debugmode", 1);
+		Drive(presenter, "screenshake", 0);
+		Check(presenter.State.DebugMode && !presenter.State.ScreenShake && service.Calls.empty(), "the debug mode and screen shake switches are held until the player accepts");
+		Drive(presenter, "ok");
+		Check(service.Joined().find("debug mode on; shake off; save") != std::string::npos, "accepting applies the debug mode and screen shake switches");
 	}
 
 	{
@@ -3260,7 +3253,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("sidebar-rows"), "the sidebar rows drop-down follows the interface style switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("debug-mode"), "the debug mode switch follows the sidebar rows drop-down");
+		Check(focused("bitmap-font"), "the pixel-perfect UI font switch follows the sidebar rows drop-down");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);

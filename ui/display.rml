@@ -33,7 +33,6 @@
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-bitmap-font"><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/>Pixel-perfect UI font</label>
-			<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>
 		</div>
 		<div id="right">
 			<p class="heading" id="window-label">Window</p>

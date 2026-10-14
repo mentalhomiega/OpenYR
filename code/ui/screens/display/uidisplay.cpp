@@ -31,7 +31,6 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
-	InitialDebugMode(State.DebugMode),
 	InitialBitmapSystemFont(State.BitmapSystemFont)
 {
 	ShownRowIndex = State.RowCount;
@@ -156,9 +155,6 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "moderninterface") {
 		State.ModernInterface = (intent.Value != 0);
 
-	} else if (intent.Name == "debugmode") {
-		State.DebugMode = (intent.Value != 0);
-
 	} else if (intent.Name == "bitmapfont") {
 		State.BitmapSystemFont = (intent.Value != 0);
 
@@ -207,9 +203,6 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_System_Cursor(State.SystemCursor);
 		Service.Set_Classic_Menus(State.ClassicMenus);
 		Service.Set_Modern_Interface(State.ModernInterface);
-		if (State.DebugMode != InitialDebugMode) {
-			Service.Set_Debug_Mode(State.DebugMode);
-		}
 		if (State.BitmapSystemFont != InitialBitmapSystemFont) {
 			Service.Set_Bitmap_System_Font(State.BitmapSystemFont);
 		}
@@ -312,7 +305,6 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("systemcursor");
 			Model.DirtyVariable("classicmenus");
 			Model.DirtyVariable("moderninterface");
-			Model.DirtyVariable("debugmode");
 			Model.DirtyVariable("bitmapfont");
 			Model.DirtyVariable("scale");
 			Model.DirtyVariable("fullscreen");
@@ -368,7 +360,6 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("systemcursor", &state.SystemCursor)
 				&& model.Bind("classicmenus", &state.ClassicMenus)
 				&& model.Bind("moderninterface", &state.ModernInterface)
-				&& model.Bind("debugmode", &state.DebugMode)
 				&& model.Bind("bitmapfont", &state.BitmapSystemFont)
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)

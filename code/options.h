@@ -144,6 +144,9 @@ class OptionsClass {
 		// If the marker over an object hidden behind a building is to be shown, then this flag will be true.
 		bool ShowHidden;
 
+		// If warhead and ion blast shakes move the view, then this flag will be true. The simulation never reads it.
+		bool ScreenShake;
+
 		// The look of the menus: false for Yuri's Revenge art in a modern layout, true for
 		// Yuri's Revenge's own screens (MenuStyle=Modern or Classic in the settings).
 		bool IsClassicMenus;

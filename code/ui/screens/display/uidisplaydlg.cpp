@@ -11,7 +11,6 @@
 
 #include "_ui.h"
 #include "bgfxbackend.h"
-#include "debugmode.h"
 #include "globals.h"
 #include "goptions.h"
 #include "hud.h"
@@ -79,11 +78,6 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.SidebarRows = rows;
 			Hud_Rows_Preview(0);
 			Modern_Panel_Rows_Changed();
-		}
-
-		virtual void Set_Debug_Mode(bool on) override
-		{
-			Debug_Mode_Set(on);
 		}
 
 		virtual void Set_Bitmap_System_Font(bool on) override
@@ -316,7 +310,6 @@ void UI_Display_State(UIDisplayState & state)
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
-	state.DebugMode = Options.DebugMode;
 	state.BitmapSystemFont = Options.BitmapSystemFont;
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;

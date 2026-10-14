@@ -203,6 +203,7 @@ OptionsClass::OptionsClass(void) :
 	SidebarSorting(true),
 	ActionLines(true),
 	ShowHidden(false),
+	ScreenShake(true),
 	IsClassicMenus(false),
 	ToolTips(true),
 	AltToRally(false),
@@ -489,6 +490,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("ActionLines are %s\n", ActionLines == true ? "ON" : "OFF");
 
 	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
+	ScreenShake = ConfigINI.Get_Bool("Options", "ScreenShake", ScreenShake);
 	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
 
 	Load_Menu_Style();
@@ -635,6 +637,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
+	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
