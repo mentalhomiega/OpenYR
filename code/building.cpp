@@ -12378,7 +12378,8 @@ void BuildingClass::Prism_AI(void)
 		}
 		SupportingPrisms = 0;
 	} else if (stage == PRISM_SLAVE) {
-		new LaserDrawClass(Turret_Coord(0), PrismTargetCoord, 0, true, House->RemapColorRGB, RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, true, 1.0f, 0.0f);
+		// The support beam takes the house's laser color, as BuildingClass::FireLaser (0x44ABD0) does.
+		new LaserDrawClass(Turret_Coord(0), PrismTargetCoord, 0, true, House->Laser_Color(), RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, true, 1.0f, 0.0f);
 		Arm = Rule->PrismSupportDelay;
 		SupportingPrisms = 0;
 	}

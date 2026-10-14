@@ -4769,14 +4769,13 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		((BuildingClass *)this)->IsCharging = false;
 	}
 
-	// An IsHouseColor laser uses the house color inside and half of it outside (TechnoClass::CreateLaser, 0x6FD210).
+	// An IsHouseColor laser uses the house's laser color inside and half of it outside. Its spread is the weapon's, as in TechnoClass::CreateLaser (0x6FD210).
 	RGBClass inner = weapon->LaserInnerColor;
 	RGBClass outer = weapon->LaserOuterColor;
-	RGBClass spread = weapon->LaserOuterSpread;
+	RGBClass const spread = weapon->LaserOuterSpread;
 	if (weapon->IsHouseColor) {
-		inner = House->RemapColorRGB;
+		inner = House->Laser_Color();
 		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
-		spread = RGBClass(0, 0, 0);
 	}
 	new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, false, 1.0, 0.0);
 	new WaveClass(source, dest, this, weapon->IsBigLaser ? WAVE_BIG_LASER : WAVE_LASER, (TechnoClass *)target);

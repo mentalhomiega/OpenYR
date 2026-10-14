@@ -1125,6 +1125,7 @@ class HouseClass : public AbstractClass
 		 */
 		RGBClass RemapColorRGB;
 		void Initialize_Radar_Color(void);
+		RGBClass Laser_Color(void) const;
 
 		/*
 		 * This is the base plan for this house -- the structures the computer means to have

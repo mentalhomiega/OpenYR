@@ -28,7 +28,7 @@ PrismSupportDuration=15     ; frames the support beam shows
 
 ## Recruiting support
 
-While fewer than [`PrismSupportMax`](/keys/prismsupportmax/) towers support it, a tower that could fire instead recruits one more: the nearest tower of its owner's that is the same type, within the range of the firing tower's `Secondary` weapon, ready to fire, not charging, not attacking anything itself, not stunned and [operational](/systems/power/#defenses). It recruits one tower per attack update. A recruited tower charges for its art's [`DelayedFireDelay`](/keys/delayedfiredelay/) frames and then draws a beam to the firing tower in its owner's color, shown for [`PrismSupportDuration`](/keys/prismsupportduration/) frames and fading from full intensity to none over them. It then rests for [`PrismSupportDelay`](/keys/prismsupportdelay/) frames before it can fire or support again.
+While fewer than [`PrismSupportMax`](/keys/prismsupportmax/) towers support it, a tower that could fire instead recruits one more: the nearest tower of its owner's that is the same type, within the range of the firing tower's `Secondary` weapon, ready to fire, not charging, not attacking anything itself, not stunned and [operational](/systems/power/#defenses). It recruits one tower per attack update. A recruited tower charges for its art's [`DelayedFireDelay`](/keys/delayedfiredelay/) frames and then draws a beam to the firing tower in its owner's house laser color, shown for [`PrismSupportDuration`](/keys/prismsupportduration/) frames and fading from full intensity to none over them. It then rests for [`PrismSupportDelay`](/keys/prismsupportdelay/) frames before it can fire or support again.
 
 ## The shot
 

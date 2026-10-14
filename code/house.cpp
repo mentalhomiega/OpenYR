@@ -11006,6 +11006,47 @@ void HouseClass::Initialize_Radar_Color(void)
 
 
 /// <summary>
+/// Fetches the color that this house's house-colored lasers are drawn in.
+/// Each channel of the remap color is scaled so the color has a magnitude of 240, capped at
+/// 255. Channels below 96 are then set to zero, and the result is scaled to magnitude 240
+/// again. A remap color of black therefore yields a gray of 138 on each channel.
+/// </summary>
+/// <returns>Returns with the laser color (HouseClass::Laser_Color, gamemd 0x50BA00).</returns>
+RGBClass HouseClass::Laser_Color(void) const
+{
+	// Summed in the order gamemd uses, so the scaled channels round the same way.
+	double const red = RemapColorRGB.Get_Red();
+	double const green = RemapColorRGB.Get_Green();
+	double const blue = RemapColorRGB.Get_Blue();
+
+	double first_red = 255.0;
+	double first_green = 255.0;
+	double first_blue = 255.0;
+	double const first_norm = std::sqrt(((blue * blue) + (green * green)) + (red * red));
+	if (first_norm != 0.0) {
+		first_red = std::min(255.0, red * 240.0 / first_norm);
+		first_green = std::min(255.0, green * 240.0 / first_norm);
+		first_blue = std::min(255.0, blue * 240.0 / first_norm);
+		if (first_red < 96.0) first_red = 0.0;
+		if (first_green < 96.0) first_green = 0.0;
+		if (first_blue < 96.0) first_blue = 0.0;
+	}
+
+	double second_red = 255.0;
+	double second_green = 255.0;
+	double second_blue = 255.0;
+	double const second_norm = std::sqrt(((first_blue * first_blue) + (first_green * first_green)) + (first_red * first_red));
+	if (second_norm != 0.0) {
+		second_red = std::min(255.0, first_red * 240.0 / second_norm);
+		second_green = std::min(255.0, first_green * 240.0 / second_norm);
+		second_blue = std::min(255.0, first_blue * 240.0 / second_norm);
+	}
+
+	return(RGBClass(int(second_red), int(second_green), int(second_blue)));
+}
+
+
+/// <summary>
 /// Handles the computer's use of the drop pod super weapon.
 /// This routine picks a landing site out along a randomly chosen edge of the map and
 /// fires the super weapon at it, provided the house has an enemy worth harassing.

@@ -109,11 +109,10 @@ void DiskLaserClass::AI(void)
 
 	RGBClass inner = Weapon->LaserInnerColor;
 	RGBClass outer = Weapon->LaserOuterColor;
-	RGBClass spread = Weapon->LaserOuterSpread;
+	RGBClass const spread = Weapon->LaserOuterSpread;
 	if (Weapon->IsHouseColor) {
-		inner = Owner->House->RemapColorRGB;
+		inner = Owner->House->Laser_Color();
 		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
-		spread = RGBClass(0, 0, 0);
 	}
 
 	Coord const center = Owner->Turret_Coord(0);
