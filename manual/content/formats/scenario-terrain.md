@@ -53,9 +53,9 @@ The later revisions store a list of cell records, only for the cells they set. E
 | Height | 1 byte, signed |
 | Ice-growth flag | 1 byte, `[IsoMapPack5]` only |
 
-The list ends with an X and Y of 0 and no further fields, so cell 0,0 cannot have a record. A record for a cell outside the map is skipped.
+The list ends with an X and Y of 0 and no further fields, so cell 0,0 cannot have a record. A record for a cell outside the map is skipped. A `[IsoMapPack4]` or `[IsoMapPack5]` list that ends cleanly between records loads in full even without the 0,0 terminator.
 
-Section size limits count decoded bytes: a section's bytes after Base64 decoding and before decompression. `[IsoMapPack5]` accepts up to 5,784,964 decoded bytes, enough for a record for every cell of the 512 by 512 grid written in 8 KiB blocks. A larger section is damaged. The other four sections are read up to 512,000 decoded bytes, and anything past that is dropped. An `[IsoMapPack4]` section cut before its terminator this way is damaged.
+Section size limits count decoded bytes: a section's bytes after Base64 decoding and before decompression. `[IsoMapPack5]` accepts up to 5,784,964 decoded bytes, enough for a record for every cell of the 512 by 512 grid written in 8 KiB blocks. A larger section is damaged. The other four sections are read up to 512,000 decoded bytes, and anything past that is dropped. A section cut short by this limit is damaged when the cut falls inside a record or a block.
 
 `[IsoMapPack4]` and `[IsoMapPack5]` compress the record list with LZO in blocks. Each block starts with two 16-bit counts, the compressed size and then the uncompressed size, followed by the compressed bytes. Write blocks of at most 8 KiB of records. The size limit above assumes that block size, and a block that expands past 16 KiB is damaged.
 
@@ -63,7 +63,7 @@ An LZO section is damaged when any of these holds:
 
 - A block does not decompress, or expands to a size other than its header states.
 - The section ends partway through a block header or a block's compressed bytes.
-- The records end before the 0,0 terminator, even when every block present decompresses.
+- The records end inside a record, even when every block present decompresses.
 
 `[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes.
 

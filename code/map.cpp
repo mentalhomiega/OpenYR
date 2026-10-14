@@ -74,6 +74,7 @@
 #include "builtype.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "cellrecords.h"
 #include "conquer.h"
 #include "dbgprint.h"
 #include "foot.h"
@@ -2411,37 +2412,29 @@ bool MapClass::Read_Binary_3(Straw & straw)
 /// Cells the map no longer has room for are read past and thrown away.
 /// </summary>
 /// <param name="straw">The straw supplying the compressed map data.</param>
-/// <returns>bool; Was the map read? False if the data was damaged or ended before its
-/// terminator, in which case the cells read before that point are still in place.</returns>
+/// <returns>bool; Was the map read? False if the data was damaged or a record was cut off, in
+/// which case the cells read before that point are still in place.</returns>
 bool MapClass::Read_Binary_4(Straw & straw)
 {
+	static_assert(sizeof(BlubCell.ITType) + sizeof(BlubCell.SubTile) + sizeof(BlubCell.Height) == 6,
+		"a version 4 cell record holds a tile type, a sub-tile and a height");
+
 	LZOStraw decomp(LZOStraw::DECOMPRESS);
 	decomp.Get_From(&straw);
 
-	// A pack that runs out before its CELL_NONE terminator was cut short, even when every
-	// block it did carry decompressed.
-	bool terminated = false;
-	Cell cell;
-
-	while (decomp.Get(&cell, sizeof(cell)) == sizeof(cell)) {
-		if (cell == CELL_NONE) {
-			terminated = true;
-			break;
-		}
-		CellClass * cellptr = &(*this)[cell];
-		if (cellptr != NULL && cellptr != &BlubCell) {
-			cellptr->ITType = ISOTILE_NONE;
-			decomp.Get(&cellptr->ITType, sizeof(cellptr->ITType));
-			cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
-			decomp.Get(&cellptr->SubTile, sizeof(cellptr->SubTile));
-			decomp.Get(&cellptr->Height, sizeof(cellptr->Height));
-		} else {
-			char tmp[sizeof(cellptr->ITType) + sizeof(cellptr->SubTile) + sizeof(cellptr->Height)];
-			decomp.Get(&tmp, sizeof(tmp));
-		}
-	}
+	bool const whole = Read_Cell_Records<6>(decomp, CELL_NONE.X, CELL_NONE.Y,
+		[this](std::int16_t x, std::int16_t y, unsigned char const * body) {
+			CellClass * cellptr = &(*this)[Cell(x, y)];
+			if (cellptr != NULL && cellptr != &BlubCell) {
+				cellptr->ITType = ISOTILE_NONE;
+				body = Take_Cell_Field(body, cellptr->ITType);
+				cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
+				body = Take_Cell_Field(body, cellptr->SubTile);
+				Take_Cell_Field(body, cellptr->Height);
+			}
+		});
 	new (&BlubCell) CellClass;
-	return(terminated && !decomp.Is_Damaged());
+	return(whole && !decomp.Is_Damaged());
 }
 
 
@@ -2452,38 +2445,30 @@ bool MapClass::Read_Binary_4(Straw & straw)
 /// thrown away.
 /// </summary>
 /// <param name="straw">The straw supplying the compressed map data.</param>
-/// <returns>bool; Was the map read? False if the data was damaged or ended before its
-/// terminator, in which case the cells read before that point are still in place.</returns>
+/// <returns>bool; Was the map read? False if the data was damaged or a record was cut off, in
+/// which case the cells read before that point are still in place.</returns>
 bool MapClass::Read_Binary_5(Straw & straw)
 {
+	static_assert(sizeof(BlubCell.ITType) + sizeof(BlubCell.SubTile) + sizeof(BlubCell.Height) + sizeof(BlubCell.IsIceGrowthAllowed) == 7,
+		"a version 5 cell record holds a tile type, a sub-tile, a height and the ice growth flag");
+
 	LZOStraw decomp(LZOStraw::DECOMPRESS);
 	decomp.Get_From(&straw);
 
-	// A pack that runs out before its CELL_NONE terminator was cut short, even when every
-	// block it did carry decompressed.
-	bool terminated = false;
-	Cell cell;
-
-	while (decomp.Get(&cell, sizeof(cell)) == sizeof(cell)) {
-		if (cell == CELL_NONE) {
-			terminated = true;
-			break;
-		}
-		CellClass * cellptr = &(*this)[cell];
-		if (cellptr != NULL && cellptr != &BlubCell) {
-			cellptr->ITType = ISOTILE_NONE;
-			decomp.Get(&cellptr->ITType, sizeof(cellptr->ITType));
-			cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
-			decomp.Get(&cellptr->SubTile, sizeof(cellptr->SubTile));
-			decomp.Get(&cellptr->Height, sizeof(cellptr->Height));
-			decomp.Get(&cellptr->IsIceGrowthAllowed, sizeof(cellptr->IsIceGrowthAllowed));
-		} else {
-			char tmp[sizeof(cellptr->ITType) + sizeof(cellptr->SubTile) + sizeof(cellptr->Height) + sizeof(cellptr->IsIceGrowthAllowed)];
-			decomp.Get(&tmp, sizeof(tmp));
-		}
-	}
+	bool const whole = Read_Cell_Records<7>(decomp, CELL_NONE.X, CELL_NONE.Y,
+		[this](std::int16_t x, std::int16_t y, unsigned char const * body) {
+			CellClass * cellptr = &(*this)[Cell(x, y)];
+			if (cellptr != NULL && cellptr != &BlubCell) {
+				cellptr->ITType = ISOTILE_NONE;
+				body = Take_Cell_Field(body, cellptr->ITType);
+				cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
+				body = Take_Cell_Field(body, cellptr->SubTile);
+				body = Take_Cell_Field(body, cellptr->Height);
+				Take_Cell_Field(body, cellptr->IsIceGrowthAllowed);
+			}
+		});
 	new (&BlubCell) CellClass;
-	return(terminated && !decomp.Is_Damaged());
+	return(whole && !decomp.Is_Damaged());
 }
 
 
