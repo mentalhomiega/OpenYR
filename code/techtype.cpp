@@ -209,7 +209,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	InsigniaShowEnemy(-1),
 	IsVehicleThiefAllowed(true),
 	BuildTimeMultipleFactory(-1.0),
-	IsCrashable(true),
+	IsCrashable(false),
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
 	IsHealthBarHidden(false),

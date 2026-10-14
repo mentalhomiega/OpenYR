@@ -102,6 +102,7 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 
 	IsMoveToShroud = false;
 	Rotation = 32;
+	IsCrashable = true;
 }
 
 

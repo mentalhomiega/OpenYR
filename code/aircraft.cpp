@@ -1152,7 +1152,8 @@ ResultType AircraftClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			}
 #endif
 
-			if (!Crash(source)){
+			if (!Crash(source)) {
+				Kill_Cargo(HeightAGL > 0 ? source : NULL);
 				Delete_Me();
 			}
 

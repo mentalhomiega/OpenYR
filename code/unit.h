@@ -306,6 +306,7 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		void Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select);
 
 		/*
 		 * This is the list of animation stages to use when a visceroid attacks, indexed by

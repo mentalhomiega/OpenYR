@@ -497,6 +497,7 @@ void UnitClass::AI(void)
 		if (DeathCounter++ >= Class->MaxDeathCounter) {
 			Explode();
 			Mark(MARK_UP);
+			Kill_Cargo(NULL);
 			Delete_Me();
 			return;
 		}
@@ -1421,6 +1422,90 @@ bool UnitClass::Unlimbo(Coord const & coord, Dir256 dir)
 }
 
 
+/// <summary>
+/// Settles the passengers of a vehicle that has just been destroyed and lifted off its cells.
+/// A vehicle with Crashable=yes kills them all. Above 208 leptons they die credited to the
+/// source. Otherwise each one leaves onto the vehicle's cell if it can enter that cell, unless
+/// the damage was forced or the vehicle was a bomb. A passenger that cannot leave is killed
+/// credited to the source, so none stays aboard.
+/// </summary>
+/// <param name="source">The object credited with the kill, or NULL.</param>
+/// <param name="forced">Was the destroying damage forced?</param>
+/// <param name="select">Does a passenger that leaves inherit the vehicle's selection?</param>
+void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select)
+{
+	/*
+	**	A passenger of an open-topped vehicle is no longer riding in the open.
+	*/
+	if (Class->IsOpenTopped) {
+		for (FootClass * passenger = (FootClass *)Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
+			passenger->IsInOpenToppedTransport = false;
+		}
+	}
+
+	if (HeightAGL > 208) {
+		Kill_Cargo(source);
+	}
+
+	if (Class->IsCrashable) {
+		Kill_Cargo(NULL);
+		return;
+	}
+
+	while (Cargo.Is_Something_Attached()) {
+		FootClass * object = Cargo.Detach_Object();
+
+		if (object == NULL) break;
+
+		/*
+		**	The last passenger out of a gunner returns the vehicle's temporal and rearm state, as
+		**	gamemd's UnitClass::Destroy (0x737C90) does through FootClass::RemoveFirstPassenger (0x4DE710).
+		*/
+		if (Class->IsGunner && Cargo.How_Many() == 0) {
+			Remove_Gunner(object);
+		}
+
+		ScenarioInit++;
+
+		/*
+		**	The cell test runs before the passenger takes the vehicle's OnBridge state, as gamemd does.
+		**	Only a clear cell, or one blocked for a moment, lets the passenger out.
+		*/
+		MoveType const reach = (forced || IsToExplode) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
+		object->IsOnBridge = IsOnBridge;
+
+		bool placed = false;
+		if (reach == MOVE_OK || reach == MOVE_MOVING_BLOCK) {
+			Coord const where = IsOnBridge ? Center_Coord() : Map[Get_Coord()].Center_Coord();
+			placed = object->Unlimbo(where, PrimaryFacing.Current().As_Dir256());
+		}
+
+		if (placed) {
+			object->Transporter = NULL;
+			if (Class->IsOpenTopped && House != object->House) {
+				object->Assign_Target(NULL);
+			}
+			object->Scatter(COORD_NONE, true);
+
+			if (!object->House->Is_Human_Player()) {
+				if (Team == NULL) {
+					object->Assign_Mission(MISSION_HUNT);
+				} else {
+					Team->Add(object);
+				}
+			}
+			if (select) object->Select();
+
+		} else {
+			object->Record_The_Kill(source);
+			object->Delete_Me();
+		}
+
+		ScenarioInit--;
+	}
+}
+
+
 /***********************************************************************************************
  * UnitClass::Take_Damage -- Inflicts damage points on a unit.                                 *
  *                                                                                             *
@@ -1495,7 +1580,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			Strength = 1;
 			IsActive = true;
 		} else if (Class->IsNaval && !Class->IsUnderwater && !Class->IsOrganic && Class->Weight >= Rule->ShipSinkingWeight
-			&& !IsOnBridge && Map[Get_Coord()].Land_Type() == LAND_WATER) {
+			&& !IsOnBridge && !IsBeingWarpedOut && Map[Get_Coord()].Land_Type() == LAND_WATER) {
 
 			// A heavy ship on open water sinks instead of vanishing (UnitClass::ReceiveDamage, 0x737D80).
 			Death_Announcement(source);
@@ -1504,6 +1589,9 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			IsSinking = true;
 			IsSinkingWreck = true;
 			Stun();
+
+			Mark(MARK_UP);
+			Resolve_Passengers_On_Death(source, forced, select);
 		} else {
 			Death_Announcement(source);
 			if (warhead == Rule->FirestormWarhead) {
@@ -1544,37 +1632,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			}
 
 			Mark(MARK_UP);
-
-			while (Cargo.Is_Something_Attached()) {
-				FootClass * object = Cargo.Detach_Object();
-
-				if (object == NULL) break;		// How can this happen?
-
-				/*
-				**	The last passenger out of a gunner returns the vehicle's temporal and rearm state, as
-				**	gamemd's UnitClass::Destroy (0x737C90) does through FootClass::RemoveFirstPassenger (0x4DE710).
-				*/
-				if (Class->IsGunner && Cargo.How_Many() == 0) {
-					Remove_Gunner(object);
-				}
-
-				ScenarioInit++;
-				object->IsOnBridge = IsOnBridge;
-
-				/*
-				**	A passenger can run from a destroyed vehicle, if the ground it stood on
-				**	will take it. Even then, it is not a sure thing.
-				*/
-				if (!forced && !IsToExplode && object->Can_Enter_Cell(&Map[Get_Coord()]) == MOVE_OK && object->Unlimbo(PositionCoord, DIR_N)) {
-					object->Scatter(COORD_NONE, true);
-					if (select) object->Select();
-				} else {
-					object->Record_The_Kill(source);
-					delete object;
-				}
-
-				ScenarioInit--;
-			}
+			Resolve_Passengers_On_Death(source, forced, select);
 
 			/*
 			**	Possibly have the crew member run away.

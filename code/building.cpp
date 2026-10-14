@@ -9487,9 +9487,31 @@ void BuildingClass::Grind(FootClass * object)
 		Sound_Effect((VocType)object->TClass->DieSound.Pick(NonCriticalRandomNumber()), object->Get_Coord());
 	}
 
+	/*
+	**	Every passenger, and every passenger of a passenger, is ground up with the vehicle. Each is
+	**	refunded to the grinder's owner and removed, with no kill credited, as gamemd's grinder entry
+	**	(0x739EC0) does through FootClass::RemoveFirstPassenger and UnInit.
+	*/
 	int refund = object->Refund_Amount();
-	for (FootClass * passenger = (FootClass *)object->Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
+	while (object->Cargo.Is_Something_Attached()) {
+		FootClass * passenger = object->Cargo.Detach_Object();
+		if (passenger == NULL) break;
+		if (object->TClass->IsGunner && object->Cargo.How_Many() == 0) {
+			object->Remove_Gunner(passenger);
+		}
+
+		while (passenger->Cargo.Is_Something_Attached()) {
+			FootClass * inner = passenger->Cargo.Detach_Object();
+			if (inner == NULL) break;
+			if (passenger->TClass->IsGunner && passenger->Cargo.How_Many() == 0) {
+				passenger->Remove_Gunner(inner);
+			}
+			refund += inner->Refund_Amount();
+			inner->Delete_Me();
+		}
+
 		refund += passenger->Refund_Amount();
+		passenger->Delete_Me();
 	}
 	House->Refund_Money(refund);
 

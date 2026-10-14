@@ -8541,8 +8541,9 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 		Cargo.Attached_Object()->Remove_From_Team();
 		FootClass * foot = Cargo.Detach_Object();
 		if (foot != NULL) {
+			foot->Kill_Cargo(foot);
 			foot->Record_The_Kill(source);
-			delete foot;
+			foot->Delete_Me();
 		}
 	}
 }
