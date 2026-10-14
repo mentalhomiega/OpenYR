@@ -1,0 +1,101 @@
+; Firing turn of a garrison. A Battle Bunker (NABNKR) at 58,44 holds three of the player's soldiers and fires at enemy
+; soldiers placed near 63,44. Each shot moves FiringOccupantIndex on to the next occupant, modulo the occupant count
+; (TechnoClass::Fire, 0x6FDD50, after the bullet is moved).
+; Expected: while enemies live, the garrison lines show occupants 3/5, and the firing value changes by one on each shot,
+; cycling 0, 1, 2. It holds on every frame without a shot.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script E:\Claude ra2 decomp\src-agent17\tests\autotest\garrison-firing-turn.txt -Map XMP08T2.MAP -Seconds 150 -Filter "AUTOTEST   garrison|Exception"
+30 reveal
+40 own NABNKR 58 44
+50 own E1 52 40
+51 own E1 52 41
+52 own E1 52 42
+60 occupy E1 58 44
+61 occupy E1 58 44
+62 occupy E1 58 44
+80 spawn E1 63 44
+81 spawn E1 63 45
+82 spawn E1 63 43
+83 spawn E1 64 44
+84 spawn E1 64 45
+150 garrisons
+151 garrisons
+152 garrisons
+153 garrisons
+154 garrisons
+155 garrisons
+156 garrisons
+157 garrisons
+158 garrisons
+159 garrisons
+160 garrisons
+161 garrisons
+162 garrisons
+163 garrisons
+164 garrisons
+165 garrisons
+166 garrisons
+167 garrisons
+168 garrisons
+169 garrisons
+170 garrisons
+171 garrisons
+172 garrisons
+173 garrisons
+174 garrisons
+175 garrisons
+176 garrisons
+177 garrisons
+178 garrisons
+179 garrisons
+180 garrisons
+181 garrisons
+182 garrisons
+183 garrisons
+184 garrisons
+185 garrisons
+186 garrisons
+187 garrisons
+188 garrisons
+189 garrisons
+190 garrisons
+191 garrisons
+192 garrisons
+193 garrisons
+194 garrisons
+195 garrisons
+196 garrisons
+197 garrisons
+198 garrisons
+199 garrisons
+200 garrisons
+201 garrisons
+202 garrisons
+203 garrisons
+204 garrisons
+205 garrisons
+206 garrisons
+207 garrisons
+208 garrisons
+209 garrisons
+210 garrisons
+211 garrisons
+212 garrisons
+213 garrisons
+214 garrisons
+215 garrisons
+216 garrisons
+217 garrisons
+218 garrisons
+219 garrisons
+220 garrisons
+221 garrisons
+222 garrisons
+223 garrisons
+224 garrisons
+225 garrisons
+226 garrisons
+227 garrisons
+228 garrisons
+229 garrisons
+230 garrisons
+400 quit

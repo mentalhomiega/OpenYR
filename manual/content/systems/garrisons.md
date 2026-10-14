@@ -80,6 +80,8 @@ A `CanOccupyFire=yes` structure with at least one occupant searches for targets 
 
 Occupants take turns firing, in the order they moved in. Each shot uses the current occupant's [`OccupyWeapon`](/keys/occupyweapon/), or its [`EliteOccupyWeapon`](/keys/eliteoccupyweapon/) when that soldier is elite. An occupant whose type leaves that weapon unset fires its own primary weapon instead. The weapon's [`Range`](/keys/range/#scope-weapontype) limits how far the shot reaches.
 
+An occupant removed from the list leaves the turn where it was. If the turn then points past the last occupant, the next shot fires the structure's own weapon, and the turn then moves on as usual.
+
 Three `[CombatDamage]` settings change a garrison's fire:
 
 - [`OccupyDamageMultiplier`](/keys/occupydamagemultiplier/) multiplies the damage of every shot.

@@ -7316,9 +7316,6 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
 			lost_occupant = true;
 		}
 	}
-	if (FiringOccupantIndex >= Occupants.Count()) {
-		FiringOccupantIndex = 0;
-	}
 	if (lost_occupant) {
 		Update_Threat_In_Cell();
 	}
