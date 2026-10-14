@@ -29,6 +29,9 @@
 #include <cmath>
 #include <cstring>
 
+#include "emissive.h"
+#include "emissive_surface.h"
+
 
 DynamicVectorClass<EBoltClass *> EBoltClass::Bolts;
 
@@ -41,7 +44,8 @@ EBoltClass::EBoltClass(void) :
 	Owner(NULL),
 	WeaponSlot(0),
 	Lifetime(0x10000),
-	IsAlternateColor(false)
+	IsAlternateColor(false),
+	EmissiveStrength(EmissiveDefaults[EMISSIVE_ELECTRIC_BOLT].Strength)
 {
 }
 
@@ -264,6 +268,9 @@ void EBoltClass::Draw_It(void) const
 			int za = from_z - Tactical::Z_Lepton_To_Pixel(a.Z) - 2;
 			int zb = to_z - Tactical::Z_Lepton_To_Pixel(b.Z) - 2;
 			LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, pa, pb, strand == 2 ? core_color : outer_color, za, zb);
+			if (Emissive_Is_Enabled() && EmissiveStrength != 0) {
+				Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, pa, pb, EmissiveStrength);
+			}
 		}
 
 		if (--depth < 0) {

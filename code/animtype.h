@@ -399,6 +399,13 @@ class AnimTypeClass : public ObjectTypeClass
 		bool IsTranslucent;
 
 		/*
+		 * How strongly this animation's picture is boosted in the emissive mask, from 0 for none to
+		 * 255 for the peak. Set from the Emissive= key or the defaults in emissive.cpp. It is not
+		 * saved or part of the rules checksum, because it only changes how the picture is shown.
+		 */
+		unsigned char EmissiveStrength;
+
+		/*
 		**	Some animations leave a scorch mark behind. Napalm and other flame
 		**	type explosions are typical of this type.
 		*/

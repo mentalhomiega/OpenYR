@@ -334,6 +334,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// An electric bolt is drawn from the muzzle to the target, in the alternate color when set.
 		bool IsElectricBolt;
 
+		// Mask strength of the laser beam or electric bolt this weapon draws, from 0 (none) to 255. Not saved.
+		unsigned char EmissiveStrength;
+
 		// Firing hands the target to the firer's spawned aircraft or missiles instead of launching a projectile.
 		bool IsSpawner;
 

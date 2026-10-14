@@ -53,6 +53,9 @@ class EBoltClass
 
 		bool IsAlternateColor;
 
+		// Mask strength of the bolt's strands; set by the weapon that fired it. Not saved.
+		unsigned char EmissiveStrength;
+
 	public:
 		static DynamicVectorClass<EBoltClass *> Bolts;
 

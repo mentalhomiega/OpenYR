@@ -49,6 +49,9 @@ class LaserDrawClass : public StageClass
 		/// Unused
 		bool UnusedBool1;
 
+		// Mask strength of the beam's core line; set by the weapon that fired it. Not saved.
+		unsigned char EmissiveStrength;
+
 		/*
 		 * This is the color of the beam's thin core, drawn as a single line from one end to
 		 * the other.

@@ -58,6 +58,7 @@
 #include "sun.h"
 #include "swizzle.h"
 #include "tracker.h"
+#include "emissive.h"
 #include "warhead.h"
 
 #include <cstring>
@@ -96,6 +97,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsElectric(false),
 	IsLaser(false),
 	IsElectricBolt(false),
+	EmissiveStrength(0),
 	IsSpawner(false),
 	IsSuicide(false),
 	IsDiskLaser(false),
@@ -238,6 +240,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
+		EmissiveStrength = Emissive_Parse_Strength(ini.Get_String(IniName, "Emissive", "").c_str(), IsLaser ? EmissiveDefaults[EMISSIVE_LASER].Strength : (IsElectricBolt ? EmissiveDefaults[EMISSIVE_ELECTRIC_BOLT].Strength : 0));
 		IsSpawner = ini.Get_Bool(IniName, "Spawner", IsSpawner);
 		IsSuicide = ini.Get_Bool(IniName, "Suicide", IsSuicide);
 		IsDiskLaser = ini.Get_Bool(IniName, "DiskLaser", IsDiskLaser);
