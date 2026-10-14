@@ -920,6 +920,27 @@ class RulesClass
 		double DirectRockingCoefficient;
 
 		/*
+		 * This is the strength of the highlight that a vehicle, infantry or building voxel
+		 * takes from the viewer's direction. Zero or less turns the highlight off, and bullets
+		 * and voxel animations never have one.
+		 */
+		double VoxelSpecularStrength;
+
+		/*
+		 * This is the number of palette rows per unit of a voxel's diffuse and highlight
+		 * brightness. A face the light meets head-on reaches row VoxelShadeScale, and the
+		 * highlight can take it past that. Rows above 31 clamp to 31, and a value at or below
+		 * zero leaves every lit face at row 0.
+		 */
+		double VoxelShadeScale;
+
+		/*
+		 * When true, the highlight's viewer direction comes from the isometric view matrix on its
+		 * own, instead of the matrix the voxel is drawn with. The light direction is unchanged.
+		 */
+		bool VoxelSpecularFromView;
+
+		/*
 		 * This is the chance that the crew of a destroyed vehicle bails out as an
 		 * infantry survivor rather than dying with it.
 		 */

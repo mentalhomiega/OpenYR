@@ -130,8 +130,8 @@ class VoxelLibrary
 		unsigned char * Data;			/// Section body data.
 };
 
-void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type);
-void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, float specular_strength, int normal_type);
+void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type, float shade_scale);
+void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, float specular_strength, int normal_type, float shade_scale);
 int Find_Closest_Normal(Vector3 const & surface_normal, int normal_type);
 void Init_Normal_Lookup(void);
 

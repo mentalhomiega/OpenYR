@@ -51,8 +51,8 @@ namespace VoxelDrawSystem
 	unsigned char * Get_Surface_Buffer(void);
 	Surface * Get_Surface(void);
 
-	void Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, const Matrix3D & light_transform, Vector3 const & light);
-	void Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, const Matrix3D & light_transform, Matrix3D const & view_transform, Vector3 const & light, float specular_strength);
+	void Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, const Matrix3D & light_transform, Vector3 const & light, float shade_scale);
+	void Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, const Matrix3D & light_transform, Matrix3D const & view_transform, Vector3 const & light, float specular_strength, float shade_scale);
 
 	void Reset(void);
 

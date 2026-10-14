@@ -137,12 +137,12 @@ Surface * VoxelDrawSystem::Get_Surface(void)
 /// <param name="light_transform">The transform the light direction is expressed in.</param>
 /// <remarks>Call this routine before preparing the objects; every object drawn in the frame
 /// shades through the one table it builds.</remarks>
-void VoxelDrawSystem::Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & light_transform, Vector3 const & light)
+void VoxelDrawSystem::Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & light_transform, Vector3 const & light, float shade_scale)
 {
 	Matrix3D light_transform_inv = Matrix3D::Orthogonal_Inverse(light_transform);
 	Vector3 light_tr = light_transform_inv.Rotate_Vector(light);
 	int normal_type = voxlib->Get_Layer_Info(layer, info).NormalType;
-	Precalculate_Normal_Lookup(light_tr, normal_type);
+	Precalculate_Normal_Lookup(light_tr, normal_type, shade_scale);
 }
 
 
@@ -158,14 +158,14 @@ void VoxelDrawSystem::Precalculate_Light(VoxelLibrary * voxlib, int layer, int i
 /// <param name="specular_strength">How hot the specular highlight should burn.</param>
 /// <remarks>Call this routine before preparing the objects; every object drawn in the frame
 /// shades through the one table it builds.</remarks>
-void VoxelDrawSystem::Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & light_transform, Matrix3D const & view_transform, Vector3 const & light, float specular_strength)
+void VoxelDrawSystem::Precalculate_Light(VoxelLibrary * voxlib, int layer, int info, Matrix3D const & light_transform, Matrix3D const & view_transform, Vector3 const & light, float specular_strength, float shade_scale)
 {
 	Matrix3D light_transform_inv = Matrix3D::Orthogonal_Inverse(light_transform);
 	Matrix3D view_transform_inv = Matrix3D::Orthogonal_Inverse(view_transform);
 	Vector3 light_tr = light_transform_inv.Rotate_Vector(light);
 	Vector3 viewer_tr = view_transform_inv.Rotate_Vector(Vector3(0, 0, 1));
 	int normal_type = voxlib->Get_Layer_Info(layer, info).NormalType;
-	Precalculate_Normal_Lookup(light_tr, viewer_tr, specular_strength, normal_type);
+	Precalculate_Normal_Lookup(light_tr, viewer_tr, specular_strength, normal_type, shade_scale);
 }
 
 

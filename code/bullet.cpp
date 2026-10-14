@@ -1797,7 +1797,7 @@ void BulletClass::Draw_Voxel(VoxelDataStruct const & voxeldata, Matrix3D const &
 	VoxelLibrary * voxlib = voxeldata.VoxLib;
 	MotionLibrary * motlib = voxeldata.MotLib;
 
-	VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, transform, VoxelLightSource);
+	VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, transform, VoxelLightSource, (float)Rule->VoxelShadeScale);
 	VoxelDrawSystem::Reset();
 
 	for (unsigned int i = 0; i < voxlib->Get_Layer_Count(); i++) {

@@ -41641,6 +41641,60 @@ VoxelIndex:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+VoxelShadeScale:
+  key: VoxelShadeScale
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '16'
+      declared_in: RulesClass
+      member: VoxelShadeScale
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+VoxelSpecularFromView:
+  key: VoxelSpecularFromView
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: VoxelSpecularFromView
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+VoxelSpecularStrength:
+  key: VoxelSpecularStrength
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '3'
+      declared_in: RulesClass
+      member: VoxelSpecularStrength
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Wake:
   key: Wake
   scopes:
