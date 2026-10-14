@@ -2900,7 +2900,11 @@ void Run(StepType const & step)
 			FootClass * foot = static_cast<FootClass *>(techno);
 			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 			bool const tarcell = techno->TarCom != NULL && tarobject == NULL;
+			// A scan clears IsScanLimited when it finds nothing. Restoring the flag keeps the dump from changing the unit's
+			// state or the scan that follows.
+			bool const scan_limited = foot->IsScanLimited;
 			AbstractClass * scan = techno->Greatest_Threat(THREAT_RANGE, techno->Center_Coord(), false);
+			foot->IsScanLimited = scan_limited;
 			ObjectClass const * scanobject = dynamic_cast<ObjectClass const *>(scan);
 			Cell const scancell = scan != NULL ? scan->Center_Coord().As_Cell() : Cell(-1, -1);
 			TechnoClass * nearest = NULL;
@@ -2928,6 +2932,7 @@ void Run(StepType const & step)
 			AbstractClass * home = techno->ArchiveTarget;
 			Coord const home_coord = home != NULL ? home->Center_Coord() : techno->Center_Coord();
 			AbstractClass * area = techno->Greatest_Threat(THREAT_AREA, home_coord, false);
+			foot->IsScanLimited = scan_limited;
 			ObjectClass const * areaobject = dynamic_cast<ObjectClass const *>(area);
 			Cell const areacell = area != NULL ? area->Center_Coord().As_Cell() : Cell(-1, -1);
 			Cell const homecell = home != NULL ? home->Center_Coord().As_Cell() : Cell(-1, -1);
