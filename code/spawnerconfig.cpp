@@ -467,6 +467,8 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	// Saves are opened by name in the saved-games folder, so a path is cut to its last part.
 	SaveGameName = std::filesystem::path(Read_Text(ini, SETTINGS, "SaveGameName", SaveGameName)).filename().string();
 
+	// AutoSaveGame wins when a file writes both keys; the CnCNet client writes AutoSaveInterval.
+	AutoSaveInterval = ini.Get_Int(SETTINGS, "AutoSaveInterval", AutoSaveInterval);
 	AutoSaveInterval = ini.Get_Int(SETTINGS, "AutoSaveGame", AutoSaveInterval);
 
 	// The client counts automatic saves from one; the game counts from zero.

@@ -143,7 +143,7 @@ The lobby's own team defaults are not established. Slot 12 returns 3 when `Allie
 
 - `code/mpmodeparse.cpp` parses `MPModesMD.ini` and an overrides file's `[MultiplayerDialogSettings]`. `tests/mpmode` covers it with written text.
 - `code/mpmode.cpp` loads the table from the game's data and holds the running match's mode.
-- `code/spawnerconfig.*` reads `GameMode` (default 1) and includes it in the session identity. `SCHEMA_VERSION` is 6.
+- `code/spawnerconfig.*` reads `GameMode` (default 1) and includes it in the session identity. `SCHEMA_VERSION` is 7.
 - `code/spawner.cpp` plays Battle, with one debug line, when `MPModesMD.ini` cannot be read or the index is not listed. It never refuses a launch for the mode. It clears `AlliesAllowed` when the mode forbids alliances, and turns `Bases` on for Unholy. A resumed game takes the mode from the file, because a save does not record one.
 - `code/scenario.cpp` `Create_Units` places every base unit for Unholy.
 - `code/house.cpp` `MPlayer_Defeated` applies the Cooperative winner choice.

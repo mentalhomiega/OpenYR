@@ -1,37 +1,213 @@
 # Testing OpenYR with the CnCNet client
 
-This page sets up a CnCNet client for testing an OpenYR build. It covers only our side of the setup; the client itself is documented by the CnCNet project.
+This page covers how the CnCNet client starts OpenYR's `Game.exe`, what our build does with the launch file, and which lobby options and game modes testers can use. The findings come from the client's config files and log, the copied lobby files, and our own code. We have not run the client against this build.
 
-## Set up a separate client folder
+## Summary
 
-The CnCNet client for Yuri's Revenge is installed into a Yuri's Revenge game folder. Copy that whole folder, game and client together, to a new folder for OpenYR, so your normal install stays as it is.
+- The client starts the executable named by `GameExecutableNames` with `-SPAWN`, followed by `ExtraCommandLineParams`. Our `Game.exe` reads the `SPAWN.INI` the client writes and plays the match it describes.
+- Our build needs no injected DLL. Ares, Phobos and the CnCNet spawner DLL are not needed for the options and modes below. [What Ares and Phobos give the setup](#what-ares-and-phobos-give-the-setup) lists each thing they provide.
+- Some lobby options and modes do not work in our build. Testers avoid them; see [Lobby options](#lobby-options) and [Game modes](#game-modes).
+- `scripts/cncnet_tester_setup.ps1` makes a separate copy of the client folder with the edits below. Testers do not edit INI files by hand.
 
-Unpack the OpenYR build for the test into the copy. The build contains `Game.exe`, `Language.dll` and the `ui` folder; the game's own files come from the folder you copied.
+## Status
 
-Everyone in a match must run the same OpenYR build. A build that differs from the others can stop a join or cause a desync.
+| Item | Status |
+| --- | --- |
+| Launch file reader (`SPAWN.INI`: seats, tunnel, mode index) | Built into `Game.exe`; `spawncontract` in ctest |
+| Unknown command-line switches | Ignored by the parser. Not seen in a running game |
+| The exact command line the client builds | Not verified. `client.log` does not record it |
+| The client starts `Game.exe` from the copy | Not verified |
+| The updater leaves the copy's edits alone | Not verified |
+| The public CnCNet tunnel accepts OpenYR packets | Not verified. We have only our local relay, `scripts/cncnet_tunnel_relay.py` |
+| Lobby options and map code | Checked against our key catalog; see the tables |
+| Map files | Not checked. The copied client folder has no `.map` files |
 
-## Point the client at our executable
+## How the client starts the game
 
-The client starts the file named by the first entry of `GameExecutableNames`, in the `[Settings]` section of `ClientDefinitions.ini` (in the client's `Resources` folder). The Yuri's Revenge client names CnCNet's own launcher there, so change the entry to our executable:
+The client builds the command line in its own code, so the copied files do not show the final string. From `Resources\ClientDefinitions.ini` we expect:
 
-```ini title="ClientDefinitions.ini"
-[Settings]
-GameExecutableNames=Game.exe
+```text
+Game.exe -SPAWN -SYNCLOG
 ```
 
-We have not yet checked this against a running client. If the client refuses to start the game, or warns that game files are modified, tell us what it says.
+- `GameExecutableNames` names the program. Only its first entry is used.
+- `ExtraCommandLineParams` follows `-SPAWN`, as its comment says.
+- `GameLauncherExecutableName` is commented out, so no launcher runs first.
+- `UnixGameExecutableName` applies only on Linux and macOS.
 
-Pass extra launch options with `ExtraCommandLineParams`, in the same section. The client adds them to the command line after `-SPAWN`.
+The stock config passes Syringe's `-i=` DLL options and `gamemd-spawn.exe --args="..."` through the same parameter. The `-SPAWN` inside `--args` is the switch the stock game reads. We can confirm that the client adds `-SPAWN` itself only by running it. If the game opens its main menu instead of a match, the client did not pass `-SPAWN`. If the game shows a refusal box that says `SPAWN.INI` is missing, the switch arrived and the file was not found beside the game.
 
-## Which games to play
+### Switches the stock config passes
 
-- Start with a LAN lobby, with everyone on the same network. Move to an online lobby once a LAN match runs.
-- Play only in custom lobbies that have a password.
-- Do not play ranked games or Quick Match. We cannot choose the players in those, so we cannot make sure everyone runs this build.
+| Switch | Game.exe | Needed for OpenYR |
+| --- | --- | --- |
+| `-LOG` | Ignored | No. Use `-SYNCLOG` for the per-frame log |
+| `-CD` | Ignored. We found no disc check in the code to switch off | No |
+| `-Include`, `-Inheritance` | Ignored | No. No lobby file uses the include or inherit syntax |
+| `-RA2ModeSaveID=` | Ignored | No. It names the saves of the stock RA2 mode |
+
+Command-line switches are matched exactly, or by a fixed prefix, in `Parse_Command_Line` (`code/init.cpp`). A switch that matches nothing is skipped without an error. The substring checks, such as `-MPDEBUG`, do not match these strings.
+
+### Compatibility check
+
+The client compares `CnCNetYRLauncher.exe`, `gamemd.exe` and `gamemd-spawn.exe`. Its log also lists `Resources\clientdx.exe`. `Game.exe` is not in the stock list, so two testers on different OpenYR builds would not be refused. The setup script adds `Game.exe` to `CompatibilityCheckExecutables`. Whether the client then refuses a mismatched join is not verified.
+
+Both testers still run the same build, as the tester guide says.
+
+## Setting up a separate copy
+
+Run `scripts/cncnet_tester_setup.ps1` with the path of the CnCNet folder. It copies the folder and makes every change in the copy. The original install is not touched.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File cncnet_tester_setup.ps1 -InstallPath "C:\Games\Command & Conquer Red Alert II"
+```
+
+Run it from the unpacked OpenYR folder, which holds `Game.exe` and `Language.dll`. The copy goes to a new folder next to the install, named with ` - OpenYR` added. Pass `-Destination` to choose another empty folder.
+
+The script prints each change as it makes it:
+
+| File in the copy | Change | Why |
+| --- | --- | --- |
+| `game.exe` | Replaced by `Game.exe`; the stock file is kept as `game.exe.cncnet-orig` | The client starts the game from `GameExecutableNames` |
+| `Language.dll`, `ui\` | Added from the build | The engine needs them |
+| `Resources\ClientDefinitions.ini` | `GameExecutableNames=Game.exe`, `ExtraCommandLineParams=-SYNCLOG`, `Game.exe` added to `CompatibilityCheckExecutables`; the original is kept | Starts OpenYR and adds it to the compatibility check |
+| `OPENTS.INI` | New file: `[Files]` `Settings=OPENYR.INI` | Keeps our settings out of `RA2MD.INI`, which the client also uses |
+| `updateconfig.ini`, `Resources\Config\UpdaterConfig_*.ini` | Update mirror set to `https://127.0.0.1:9/`; originals kept | See [Updater](#updater) |
+| `Resources\ClientDefinitions.ini` | Made read-only | See [Updater](#updater) |
+| `OPENYR-TESTER-COPY.txt` | New file listing every change | Undo and reports |
+
+Options:
+
+- `-KeepUpdater` leaves the update mirrors and the read-only flag alone.
+- `-SkipCompatibilityEntry` leaves `CompatibilityCheckExecutables` alone.
+
+To undo, run the script with `-Remove -Destination "<the new folder>"`. It deletes only a folder that holds `OPENYR-TESTER-COPY.txt`, and nothing else.
+
+The script refuses to run when the destination exists and is not empty, when it is inside the install, or when the install lacks `CnCNetYRLauncher.exe`, `ra2md.mix` or `Resources\ClientDefinitions.ini`.
+
+We tested the script against a scratch copy with the text files of the client folder and zero-byte stand-ins for three binaries. The install's 302 file hashes matched before and after every run. We have not run it against the full 2.5 GB install, and we have not started the client from its output.
+
+## Updater
+
+The client checks its installed files at start. The `version` file lists each installed file with a hash, including `Resources/ClientDefinitions.ini`, `INI/MPMaps.ini` and the lobby configs. An edited `ClientDefinitions.ini` no longer matches its entry, so an update would write the stock copy back. `Game.exe` is not in the list.
+
+The update channel decides which mirror the client uses. `Resources\OptionsWindow.ini` maps each channel to a file in `Resources\Config\`, and the client copies that file over `updateconfig.ini` (`OverwriteOnMismatch`). The setup script therefore changes all four channel files and `updateconfig.ini`, and marks `ClientDefinitions.ini` read-only.
+
+We did not find an update-off setting in the copied config files.
+
+Tester advice: after the first start, and after any client update, check that `ClientDefinitions.ini` still has the three edited lines. If it does not, run the setup script again in a new folder. If the client reports an update error at start, send us the message and the `OPENYR-TESTER-COPY.txt` file.
+
+## Lobby options
+
+The lobby writes spawn keys through `SpawnIniOption` in `Resources\GameLobbyBase.ini`, and merges map code through `CustomIniPath` or `DataWriteMode=MapCode`. "Read" below means our spawner or rules loader has a reader for the key. For merged files, "catalogued" means every key in the file has a reader in our key catalog (`manual/data/ini-keys.yaml`).
+
+| Option | Written as | Status | Advice |
+| --- | --- | --- | --- |
+| Short Game | `ShortGame` | Read | Either |
+| MCV Repacks | `MCVRedeploy` | Read | Either |
+| Multi Engineer | `MultiEngineer` | Read | Either |
+| Ingame Allying | `AlliesAllowed` | Read | Either |
+| Destroyable Bridges | `BridgeDestroy` | Read | Either |
+| Build By Ally | `BuildOffAlly` | Read | Either |
+| Starting Credits | `Credits` | Read | Either |
+| Starting Units | `UnitCount` | Read | Either |
+| Game Speed | `GameSpeed` (index) | Read | Either |
+| Crates Appear | `Crates` | Read | Either |
+| Auto Save | `AutoSaveInterval`, 7200 or 0 | Read from this build on | Either. 7200 frames is two minutes at 60 FPS |
+| Red Alert 2 | `Ra2Mode` | Not read | Leave off. The match plays YR rules |
+| Lock Game Speed | `DisableGameSpeed` | Not read | Leave off. Players can still change speed |
+| Blind Start | Blanks `[Header]` keys in the map | Not read; no effect | Either |
+| YR Rebalance | Merges `Yuri Rebalance Patch.ini` | Catalogued except `FallingDamageMultiplier` | Leave off until checked |
+| No Yuri, No France, No Spy, No Stolen Tech, Engi Dog Immune | Merges a rules file | Catalogued | Either |
+| Super weapons: All, Strategic, Tactical, None | Merges `SuperWeapons\*.ini` | Catalogued | Either. See the forced keys below |
+| Crate Frequency: Minimal, Increased, Extreme | Merges `Crates\*.ini` | Catalogued | Either, with Crates on |
+| Crate Frequency: Normal (the default) | `Crates\Normal.ini` | The file is not in the install | Leave Crates off |
+| AI Modifier: Vanilla | `AI\No Change.ini`, empty | Read | Use |
+| AI Modifier: Brutal | `AI\Brutal AI.ini` | Catalogued | Use |
+| AI Modifier: Extreme AI, Nightmare AI (Beta) | Ares-era files | 289 and 324 key names not read | Avoid. Their headers say "Ares and Phobos" |
+
+### Forced keys
+
+The lobby writes these keys for every match. They come from `Resources\GameOptions.ini`, `ForcedSpawnIniOptions`, and from each mode's forced options in `INI\MPMapsBase.ini`.
+
+| Key | Written | Status |
+| --- | --- | --- |
+| `Bases` | `Yes` | Read |
+| `FogOfWar` | `No` | Read |
+| `ReconnectTimeout` | `1400` | Read |
+| `GameMode` | `1` to `9`, by mode | Read. See [Game modes](#game-modes) |
+| `Superweapons` | `False` | Not read. We read `SuperWeapons`, and our reader matches keys case-sensitively |
+| `AINamesByDifficulty` | `Yes` | Not read. We read `DifficultyBasedAINames`, so computer players keep the name `Computer` |
+| `SidebarHack` | `Yes` | Not read |
+| `Protocol`, `FrameSendRate` | `0`, `2` | Not read, by design. See [the launch file page](../manual/content/formats/spawn-ini.md) |
+| `Observer.ShowAIOnSidebar`, `SpecialHouseIsAlly`, `DefeatedBecomesObserver` | `Yes`, `No`, `Yes` | Not read. Their effect in the client is not known to us |
+
+The `Superweapons=False` key needs a decision. If the client means it to switch off the superweapons our build can disable, our build plays with them on, as the default is. The superweapons menu option decides which ones stay in the match, through the merged files. Check one test game with superweapons before a longer session.
+
+## Game modes
+
+The lobby's `GameMode` value is the mode's index in `MPModesMD.ini`. The table gives the stock index names from [Multiplayer game modes](MULTIPLAYER_MODES.md).
+
+| Lobby mode | `GameMode` | Map code | Status | Advice |
+| --- | --- | --- | --- | --- |
+| Battle | 1 | `Standard.ini` (empty) | Plays as Battle | Use |
+| Free For All | 2 | `Free For All.ini` (empty) | Forbids alliances. The start-spot renumbering is not ported | Use with care |
+| Cooperative | 3 | `Cooperative.ini` (empty) | Allies win together. The hostile-pair check is not ported | Use with care |
+| Unholy Alliance | 4 | `Unholy Alliance.ini` | Turns bases on and gives each house every base unit. Whether computer houses start allied is not established | Use with care |
+| Megawealth | 5 | `Megawealth.ini` | Plays as a ManBattle mode | Use |
+| Land Rush | 6 | `Land Rush.ini` | Index 6 is Duel in our table, so the game plays Duel | Avoid until the index is settled |
+| Meat Grinder | 7 | `Meat Grinder.ini` | Plays as a ManBattle mode | Use |
+| Naval War | 8 | `Naval War.ini` | Plays as a ManBattle mode | Use |
+| Team Alliance | 9 | `Team Alliance.ini` | Plays as TeamGame. `MustAlly` is not ported | Use with care |
+| Blitz, Blitz 2v2 | 1 | `Blitz_2v2.ini` | Four keys are not read: `UnitCostBonus`, `UnitCrateVehicleCap`, `ImmuneToRadBeam`, `AmbientSound` | Avoid |
+| Mod Maps | 1 | `Standard.ini` | Map sets added by mods; not checked | Avoid |
+| RA2 Ladder, RA2 Pro 2v2, YR Ladder | 1 | Ladder files | RA2 mode and ladder rules | Avoid |
+| Oil In Centre | 1 | `Standard.ini` | A map variant with one option forced | Use with stock maps |
+| Survival | not written | `Survival.ini` (empty) | No section in `MPMaps.ini` or `MPMapsBase.ini` | Avoid |
+
+The `Team Alliance` map code also writes `[Settings] GameMode=4` into the map. Our loader does not read that key from the map, so the lobby's `GameMode=9` decides the mode.
+
+## Maps
+
+The copied client folder has no `.map` files, so we have not checked any map. Testers pick maps from the lobby's Battle list. Avoid Blitz maps, mod maps and ladder maps. CnCNet's additions in `Maps\Yuri's Revenge\` are not checked either.
+
+## What Ares and Phobos give the setup
+
+Each row says whether `Game.exe` already does the job, could do it natively, or does not need it. "Size" is our rough estimate of the native work.
+
+| Feature | Provided by | Used by the lobby options above | Game.exe | Native size |
+| --- | --- | --- | --- | --- |
+| Starting the game through a loader (`-i=` DLL options, `gamemd-spawn.exe --args=`) | Syringe, `gamemd-spawn.exe` | Yes, in the stock config | Not needed. `Game.exe` is the executable | None |
+| The `-SPAWN` start | `gamemd-spawn.exe` | Yes | Native: `Spawner_Request` in `code/init.cpp` | None |
+| Launch file reader: seats, options, GameMode, saves, waits | `CnCNet-Spawner.dll` | Yes | Native: `code/spawnerconfig.cpp` and `code/spawner.cpp` | None for the keys above |
+| Tunnel: `[Tunnel]`, tunnel numbers | `CnCNet-Spawner.dll` and the CnCNet tunnel servers | Online lobbies | Client side is native (`Ipx.Configure_Tunnel`). The wire format against the public servers is not verified | Verification first. Protocol work if it differs |
+| Direct peers: `Ip`, `Port`, LAN | `CnCNet-Spawner.dll` | LAN lobbies | Native | None |
+| Mode table: `GameMode` to `MPModesMD.ini` | The game | Yes | Native: `code/mpmode.cpp` | None, apart from Land Rush and the gaps in the table |
+| INI `#include` and `$Inherits` | Ares, switched on by `-Include` and `-Inheritance` | No copied lobby file uses the syntax | Not native. The names suggest these switches enable include and inherit | Medium: the INI reader and its tests. Not needed for this setup |
+| Ares-era AI modifiers | Ares and Phobos AI keys | Only the two Extreme AI options | Not native. 289 and 324 key names not read | Large. Not needed if testers avoid those options |
+| RA2 mode (`Ra2Mode`, RA2 ladder maps, `RA2ModeSaveID`) | Ares and the client | Red Alert 2 option and RA2 ladder maps | Not native | Large. Not needed |
+| Phobos rule key `FallingDamageMultiplier` | Phobos | YR Rebalance option | Not read | Small: one damage multiplier |
+| Blitz keys (`UnitCostBonus`, `UnitCrateVehicleCap`, `ImmuneToRadBeam`, `AmbientSound`) | Ares and Phobos | Blitz maps | Not read | Small to medium per key. Not needed |
+| `SFJ.ini` keys (79 names) | Ares and Phobos | No lobby mode in our copy refers to `SFJ.ini` | Not read | Medium to large. Not needed |
+| `-LOG`, `-CD`, `-RA2ModeSaveID` | Ares, `gamemd-spawn.exe` | Launch line only | Ignored | None |
+| `ddraw.dll` wrapper in the folder | The client (cnc-ddraw) | Launch line only | Our build uses DirectDraw surfaces (`code/dsurface.cpp`), so the wrapper sits in front of it | None. Compare the picture with the stock install |
+| Phobos and Ares links and version labels | The client's lobby | Lobby buttons | Not needed | None |
+
+## Upstream route
+
+If the CnCNet client were to run OpenYR as its own game type, it would need these changes. We describe them here only. Any contact with the CnCNet maintainers is a decision for us to make first.
+
+- A `ClientGameType` for OpenYR, alongside `Ares`. The type would select its own option list, with the RA2 mode, Ares-era AI and ladder maps left out.
+- `GameExecutableNames=Game.exe` and `Game.exe` in `CompatibilityCheckExecutables` as stock entries, so two builds are compared by the client itself.
+- Its own update channel, so an OpenYR install is not overwritten by the YR channel.
+- Its own presence identifier in place of `CnCNetLiveStatusIdentifier=cncnet5_yr`, so OpenYR lobbies are not listed with stock YR games.
+- Tunnel acceptance for the OpenYR packets, which needs a test with the CnCNet side.
+
+Our `SPAWN.INI` reader already reads the file the client writes for a stock match, so the launch path needs no change on our side.
 
 ## Turn on the sync log
 
-Add `-SYNCLOG` to `ExtraCommandLineParams` on every machine in the match:
+Add `-SYNCLOG` to `ExtraCommandLineParams` on every machine in the match, as the setup script does:
 
 ```ini title="ClientDefinitions.ini"
 [Settings]
@@ -58,4 +234,13 @@ Send us, from every machine in the match:
 - the `DEBUG_` and `SYNC_` files from the `Debug` folder for that session;
 - the time the desync happened, the map name and the number of computer players.
 
-The logs contain player names. Remove any file you do not want to share before you send it.
+## Open questions
+
+- Does the client always add `-SPAWN`? The first game answers it.
+- Does the client's `Superweapons=False` mean the superweapons our build can disable are off?
+- Should Land Rush stay on index 6, or does the client need a separate mode?
+- Does the public CnCNet tunnel accept our packets?
+- Does the client start cleanly with the update mirrors and the read-only file in place?
+- Does the client refuse a join with a different `Game.exe`, now that it is in the compatibility list?
+- What do `SpecialHouseIsAlly`, `DefeatedBecomesObserver` and `Observer.ShowAIOnSidebar` change in the client?
+- Which maps are safe? The copied client folder has no `.map` files, so the map check is still open.

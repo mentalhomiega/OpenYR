@@ -161,7 +161,7 @@ Battle, Megawealth, Duel, MeatGrinder, NavalWar and TeamGame add none of these c
 
 ## Automatic saves
 
-`AutoSaveGame` is the number of frames between automatic saves. `0`, the default, or a negative number turns them off. The file's value replaces the player's own [`AutoSaveInterval`](/keys/autosaveinterval/) in every kind of game the file starts, resumed games included. In a game against other machines, write the same interval in every file so that every machine saves at the same frame. [Save games](/formats/save-games/#automatic-saves) owns what is written, under which names, and when.
+`AutoSaveGame` is the number of frames between automatic saves. The CnCNet client writes the same number as `AutoSaveInterval`, 7200 when its Auto Save box is checked and 0 when it is not; the game reads that key too, and `AutoSaveGame` wins when a file writes both. `0`, the default, or a negative number turns them off. The file's value replaces the player's own [`AutoSaveInterval`](/keys/autosaveinterval/) in every kind of game the file starts, resumed games included. In a game against other machines, write the same interval in every file so that every machine saves at the same frame. [Save games](/formats/save-games/#automatic-saves) owns what is written, under which names, and when.
 
 `NextSPAutoSaveId` sets the next slot of the campaign's rotating automatic saves, and `NextSkirmishAutoSaveId` the next slot of the skirmish's, each from `1` to `5`. An omitted key, or any other value such as `-1`, starts that rotation at slot `1`. A resumed game continues from the slots its save holds instead.
 
@@ -267,7 +267,7 @@ A saved game keeps the picture and the bar position. The first restart after the
 Each machine writes its own file, with itself in `[Settings]` and the other people in the `[OtherN]` sections. Write the other people in consecutive sections from `[Other1]`, so the computer players take the same file positions in every file. Apart from where each person is written, `Host`, `BindAddress`, and the `Ip` and `Port` entries of `[Settings]` and `[OtherN]`, every file must describe the same match:
 
 - the same `Scenario`, and the same scenario file on every machine;
-- the same [match options](#the-options-every-house-plays-under) and `AutoSaveGame`;
+- the same [match options](#the-options-every-house-plays-under) and `AutoSaveGame` (or `AutoSaveInterval`);
 - the same people, with the same `Name`, `Side` and `Color`;
 - the same entries in `[HouseColors]`, `[HouseCountries]`, `[HouseHandicaps]`, `[SpawnLocations]`, the `[MultiN_Alliances]` sections and `[IsSpectator]`, and the same `IsSpectator` in each person's section;
 - the same `[Tunnel]` section, when the match is played through a tunnel.
@@ -276,7 +276,7 @@ The keys under [What a player is shown](#what-a-player-is-shown) and the two wai
 
 Before play begins, the machines compare the scenarios they loaded. If they differ, the match stops with the message `Scenarios don't match.`
 
-The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, `BindAddress`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) do not change it.
+The `Session identity:` line in an [out-of-sync report](/using/out-of-sync-reports/) differs between machines whose files disagree on anything in the list above, except `Name`, `AutoSaveGame`, `AutoSaveInterval` and the `[Tunnel]` section. Scenario files that differ under the same name give the same identity. `Host`, `BindAddress`, the `Ip` and `Port` entries, the waits and the keys under [What a player is shown](#what-a-player-is-shown) do not change it.
 
 Without a tunnel, each `[OtherN]` section also gives `Ip`, the address that machine answers on, and `Port`, the port it listens on. `[Settings] Port` is the port this machine listens on, `1234` by default. Write each address as a dotted IPv4 address such as `203.0.113.7`; a host name is refused.
 

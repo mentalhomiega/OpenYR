@@ -206,6 +206,21 @@ int main(void)
 		config = Read(on, sizeof(on) - 1);
 
 		Check(config.AutoSaveInterval == 10800, "the interval is read in frames as written");
+
+		char const client[] =
+			"[Settings]\n"
+			"AutoSaveInterval=7200\n";
+		config = Read(client, sizeof(client) - 1);
+
+		Check(config.AutoSaveInterval == 7200, "the client's AutoSaveInterval is read as the interval");
+
+		char const both[] =
+			"[Settings]\n"
+			"AutoSaveInterval=7200\n"
+			"AutoSaveGame=10800\n";
+		config = Read(both, sizeof(both) - 1);
+
+		Check(config.AutoSaveInterval == 10800, "AutoSaveGame wins when both keys are written");
 	}
 
 	/*
