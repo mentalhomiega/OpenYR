@@ -1,0 +1,115 @@
+; Defence art survey (generated): each defence is placed alone at a centre cell and turned to enemy targets
+; on a radius-4 ring; ScreenCapture after each facing, then a damaged shot. turretcoord lines log facings.
+60 view 62 62
+62 zoom 2.5
+70 reveal
+80 windowmove 795 595
+90 own GAPOWR 50 50
+100 view 62 62
+105 own GAPILL 62 62
+125 turretcoord GAPILL
+130 spawn HARV 66 62
+140 turretcoord GAPILL
+250 turretcoord GAPILL
+260 command ScreenCapture
+270 turretcoord GAPILL
+275 kill HARV
+280 spawn HARV 62 66
+290 turretcoord GAPILL
+400 turretcoord GAPILL
+410 command ScreenCapture
+420 turretcoord GAPILL
+425 kill HARV
+430 spawn HARV 58 62
+440 turretcoord GAPILL
+550 turretcoord GAPILL
+560 command ScreenCapture
+570 turretcoord GAPILL
+575 kill HARV
+580 spawn HARV 62 58
+590 turretcoord GAPILL
+700 turretcoord GAPILL
+710 command ScreenCapture
+720 turretcoord GAPILL
+725 kill HARV
+730 damage GAPILL 700
+750 turretcoord GAPILL
+760 command ScreenCapture
+770 kill GAPILL 1
+800 view 74 62
+805 own ATESLA 74 62
+825 turretcoord ATESLA
+830 spawn HARV 78 62
+840 turretcoord ATESLA
+950 turretcoord ATESLA
+960 command ScreenCapture
+970 turretcoord ATESLA
+975 kill HARV
+980 spawn HARV 74 66
+990 turretcoord ATESLA
+1100 turretcoord ATESLA
+1110 command ScreenCapture
+1120 turretcoord ATESLA
+1125 kill HARV
+1130 spawn HARV 70 62
+1140 turretcoord ATESLA
+1250 turretcoord ATESLA
+1260 command ScreenCapture
+1270 turretcoord ATESLA
+1275 kill HARV
+1280 spawn HARV 74 58
+1290 turretcoord ATESLA
+1400 turretcoord ATESLA
+1410 command ScreenCapture
+1420 turretcoord ATESLA
+1425 kill HARV
+1430 kill ATESLA 1
+1460 view 62 74
+1465 own TESLA 62 74
+1485 turretcoord TESLA
+1490 spawn HARV 66 74
+1500 turretcoord TESLA
+1610 turretcoord TESLA
+1620 command ScreenCapture
+1630 turretcoord TESLA
+1635 kill HARV
+1640 spawn HARV 62 78
+1650 turretcoord TESLA
+1760 turretcoord TESLA
+1770 command ScreenCapture
+1780 turretcoord TESLA
+1785 kill HARV
+1790 spawn HARV 58 74
+1800 turretcoord TESLA
+1910 turretcoord TESLA
+1920 command ScreenCapture
+1930 turretcoord TESLA
+1935 kill HARV
+1940 spawn HARV 62 70
+1950 turretcoord TESLA
+2060 turretcoord TESLA
+2070 command ScreenCapture
+2080 turretcoord TESLA
+2085 kill HARV
+2090 kill TESLA 1
+2120 view 74 74
+2125 own NAPSIS 74 74
+2150 turretcoord NAPSIS
+2160 command ScreenCapture
+2170 kill NAPSIS 1
+2200 view 86 74
+2205 own YAPSYT 86 74
+2230 turretcoord YAPSYT
+2240 command ScreenCapture
+2250 kill YAPSYT 1
+2280 view 86 62
+2285 own NABNKR 86 62
+2310 turretcoord NABNKR
+2320 command ScreenCapture
+2330 kill NABNKR 1
+2360 view 86 86
+2365 own NATBNK 86 86
+2390 turretcoord NATBNK
+2400 command ScreenCapture
+2410 kill NATBNK 1
+2460 quit
