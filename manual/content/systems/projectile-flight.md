@@ -141,7 +141,7 @@ Each turn runs these steps in order:
 7. A steered or `Ranged=yes` projectile checks its fuse.
 8. A projectile that is not marked, and whose fuse has not tripped, keeps flying. A [`Degenerates=yes`](/keys/degenerates/) projectile then loses 1 point of damage, down to a floor of 5. Any other projectile detonates and is removed.
 
-A shot from a weapon with a barrel gets a head start: two of these turns run immediately during firing, so the shot appears past the muzzle, not inside it. [The firing sequence](/systems/firing-geometry/#the-shot-step-by-step) says which shots get the head start. Every other shot takes its first turn later in the same frame, once every object ahead of it in the turn order has moved. A head-start shot takes that turn as well, so it moves three times in the frame it is fired.
+A shot takes its first turn later in the frame it is fired, once every object ahead of it in the turn order has moved. A barrel does not change this: a shot from a weapon with a barrel takes that one turn, like any other shot.
 
 ## Steered flight
 

@@ -12,8 +12,6 @@ The projectile drops one copy of the animation at its current position on every 
 
 The frames are counted on the game clock, not from the projectile's launch, so every trailing projectile in a match drops its puffs on the same frames.
 
-A shot with a [head start](/systems/firing-geometry/#the-shot-step-by-step) moves three times in the frame it is fired. If that frame is one of the trail frames, the shot leaves three puffs a step apart, the first at the point it was fired from.
-
 A [`Voxel=yes`](/keys/voxel/) projectile leaves a trail just as a shape-drawn one does.
 
 An [`Inviso=yes`](/keys/inviso/) projectile is placed on its target when it is fired, so any puff it leaves appears on the target.

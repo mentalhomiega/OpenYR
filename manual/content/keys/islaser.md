@@ -32,6 +32,6 @@ Whichever slot fired, the beam's colors, spread, duration and glow width come fr
 
 ## Effects on the shot
 
-When the firing slot has a barrel length above `0`, most projectiles take two flight turns as they launch, so they appear past the muzzle. A laser weapon's projectile skips those turns and starts at the barrel mounting. [The shot, step by step](/systems/firing-geometry/#the-shot-step-by-step) lists the firing order.
+A laser weapon's projectile starts at the barrel mounting and takes its first flight turn later in the frame it is fired, as any other projectile does. A barrel length does not change this. [The shot, step by step](/systems/firing-geometry/#the-shot-step-by-step) lists the firing order.
 
 On a structure, each laser shot resets the turret's charge animation to its first frame. The structure also loses its turret charge, unless it has more than one round of [`Ammo`](/keys/ammo/) left. [`Charges`](/keys/charges/) covers what that means for a charging weapon.

@@ -5161,15 +5161,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					IsInRecoilState = true;
 				}
 
-				if (Get_Class_Weapon_Data(which)->BarrelLength > 0 && !weapon->IsLaser) {
-					if (weapon->Bullet == NULL || !weapon->Bullet->IsInvisible) {
-						bullet->AI();
-						if (bullet->IsActive) {
-							bullet->AI();
-						}
-					}
-				}
-
+				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
 				if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
 					ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, Fire_Coord(which), target, this);
 				}
