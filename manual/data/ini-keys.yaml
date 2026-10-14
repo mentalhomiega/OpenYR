@@ -16060,6 +16060,42 @@ GDIWallDefenseCoefficient:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GUIMainButtonSound:
+  key: GUIMainButtonSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: GUIMainButtonSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+GUITabSound:
+  key: GUITabSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: GUITabSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 GameClosed:
   key: GameClosed
   scopes:
