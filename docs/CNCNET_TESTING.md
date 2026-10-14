@@ -7,13 +7,16 @@ This page covers how the CnCNet client starts OpenYR's `Game.exe`, what our buil
 - The client starts the executable named by `GameExecutableNames` with `-SPAWN`, followed by `ExtraCommandLineParams`. Our `Game.exe` reads the `SPAWN.INI` the client writes and plays the match it describes.
 - Our build needs no injected DLL. Ares, Phobos and the CnCNet spawner DLL are not needed for the options and modes below. [What Ares and Phobos give the setup](#what-ares-and-phobos-give-the-setup) lists each thing they provide.
 - Some lobby options and modes do not work in our build. Testers avoid them; see [Lobby options](#lobby-options) and [Game modes](#game-modes).
-- `scripts/cncnet_tester_setup.ps1` makes a separate copy of the client folder with the edits below. Testers do not edit INI files by hand.
+- The main path is the CnCNet page in our main menu. It makes a separate copy of the client folder with the edits below, keeps the copy up to date, and can start the client from it. Testers do not edit INI files by hand.
+- `scripts/cncnet_tester_setup.ps1` makes the same copy from a script. It is the fallback when the page cannot be used.
 
 ## Status
 
 | Item | Status |
 | --- | --- |
 | Launch file reader (`SPAWN.INI`: seats, tunnel, mode index) | Built into `Game.exe`; `spawncontract` in ctest |
+| CnCNet page: copy, edits, marker, update, removal, start | Built into `Game.exe`; `cncnetcopy` in ctest and the page screenshots. Not run with the client |
+| Superweapons key | Read case-insensitively from this build on. A client's forced `Superweapons=False` now turns superweapons off. See [Lobby options](#lobby-options) |
 | Unknown command-line switches | Ignored by the parser. Not seen in a running game |
 | The exact command line the client builds | Not verified. `client.log` does not record it |
 | The client starts `Game.exe` from the copy | Not verified |
@@ -56,7 +59,25 @@ Both testers still run the same build, as the tester guide says.
 
 ## Setting up a separate copy
 
-Run `scripts/cncnet_tester_setup.ps1` with the path of the CnCNet folder. It copies the folder and makes every change in the copy. The original install is not touched.
+### The CnCNet page
+
+Open the main menu and choose CnCNet. The page looks for the install in this order: the `installpath` value under `HKLM\SOFTWARE\Westwood\Yuri's Revenge`, which the stock installer writes; the folder that holds the running `Game.exe`; and that folder's parent. A folder counts as an install when it holds `Resources\ClientDefinitions.ini` and `CnCNetYRLauncher.exe`. When none is found, or another one is wanted, Choose folder... asks for it.
+
+Before it changes anything, the page lists the copy's folder, every file it replaces or adds, and each edit. Create copy starts the copy on a worker thread, so the menus keep drawing. The progress bar counts bytes. Cancel copy stops the copy and removes the files that run created. The install is only read. If the folder beside the install already exists and is not an OpenYR copy, the page refuses and names the folder.
+
+The page reports three things about the copy:
+
+- whether the copy exists and where it is;
+- whether its edited files still hold the values the copy needs;
+- whether its `Game.exe` is the same file as this build's.
+
+When the client update has undone the edits, the button reads Repair copy. Repair and Update copy run the same job: they copy `Game.exe`, `Language.dll` and the `ui` folder again and make the edits again. They do not copy the install again.
+
+Remove OpenYR copy asks for confirmation. It deletes only a folder that holds the marker file. Start CnCNet runs `CnCNetYRLauncher.exe` from the copy and then ends this game, as Exit Game does.
+
+### The script
+
+Run `scripts/cncnet_tester_setup.ps1` with the path of the CnCNet folder. It copies the folder and makes every change in the copy. The original install is not touched. The page makes the same changes and writes the same marker file.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File cncnet_tester_setup.ps1 -InstallPath "C:\Games\Command & Conquer Red Alert II"
@@ -95,7 +116,7 @@ The update channel decides which mirror the client uses. `Resources\OptionsWindo
 
 We did not find an update-off setting in the copied config files.
 
-Tester advice: after the first start, and after any client update, check that `ClientDefinitions.ini` still has the three edited lines. If it does not, run the setup script again in a new folder. If the client reports an update error at start, send us the message and the `OPENYR-TESTER-COPY.txt` file.
+Tester advice: after the first start, and after any client update, check that `ClientDefinitions.ini` still has the three edited lines. If it does not, open the CnCNet page and choose Repair copy. The script can also make a new folder. If the client reports an update error at start, send us the message and the `OPENYR-TESTER-COPY.txt` file.
 
 ## Lobby options
 
@@ -136,13 +157,13 @@ The lobby writes these keys for every match. They come from `Resources\GameOptio
 | `FogOfWar` | `No` | Read |
 | `ReconnectTimeout` | `1400` | Read |
 | `GameMode` | `1` to `9`, by mode | Read. See [Game modes](#game-modes) |
-| `Superweapons` | `False` | Not read. We read `SuperWeapons`, and our reader matches keys case-sensitively |
+| `Superweapons` | `False` | Read as `SuperWeapons`. The spawner matches keys without regard to case, as gamemd does, so the value is read. See the paragraph below |
 | `AINamesByDifficulty` | `Yes` | Not read. We read `DifficultyBasedAINames`, so computer players keep the name `Computer` |
 | `SidebarHack` | `Yes` | Not read |
 | `Protocol`, `FrameSendRate` | `0`, `2` | Not read, by design. See [the launch file page](../manual/content/formats/spawn-ini.md) |
 | `Observer.ShowAIOnSidebar`, `SpecialHouseIsAlly`, `DefeatedBecomesObserver` | `Yes`, `No`, `Yes` | Not read. Their effect in the client is not known to us |
 
-The `Superweapons=False` key needs a decision. If the client means it to switch off the superweapons our build can disable, our build plays with them on, as the default is. The superweapons menu option decides which ones stay in the match, through the merged files. Check one test game with superweapons before a longer session.
+The client forces `Superweapons=False` into every match. This build reads it as `SuperWeapons=False`, so the superweapons the shell can disable (those whose type has `IsDisableableFromShell`) are withheld for the whole match. Before this change the spawner matched the key case-sensitively, so those superweapons stayed on. The stock client's Super weapons option writes merged files; whether the forced key is meant to override it is not verified. Until it is, a CnCNet match with superweapons may have none of the shell-disableable ones, which differs from the tester guide's advice to leave Super weapons on All. Check one test game with that advice before a longer session.
 
 ## Game modes
 
@@ -155,7 +176,7 @@ The lobby's `GameMode` value is the mode's index in `MPModesMD.ini`. The table g
 | Cooperative | 3 | `Cooperative.ini` (empty) | Allies win together. The hostile-pair check is not ported | Use with care |
 | Unholy Alliance | 4 | `Unholy Alliance.ini` | Turns bases on and gives each house every base unit. Whether computer houses start allied is not established | Use with care |
 | Megawealth | 5 | `Megawealth.ini` | Plays as a ManBattle mode | Use |
-| Land Rush | 6 | `Land Rush.ini` | Index 6 is Duel in our table, so the game plays Duel | Avoid until the index is settled |
+| Land Rush | 6 | `Land Rush.ini` | The client's `MPMaps.ini` forces `GameMode=6` for Land Rush. The stock table names index 6 Duel, so the port plays that slot (ManBattle, `MPDuelMD.ini` overrides). `Land Rush.ini` lists which units may start in multiplayer. Not played with this build yet | Avoid until one test game plays as expected |
 | Meat Grinder | 7 | `Meat Grinder.ini` | Plays as a ManBattle mode | Use |
 | Naval War | 8 | `Naval War.ini` | Plays as a ManBattle mode | Use |
 | Team Alliance | 9 | `Team Alliance.ini` | Plays as TeamGame. `MustAlly` is not ported | Use with care |
@@ -237,8 +258,8 @@ Send us, from every machine in the match:
 ## Open questions
 
 - Does the client always add `-SPAWN`? The first game answers it.
-- Does the client's `Superweapons=False` mean the superweapons our build can disable are off?
-- Should Land Rush stay on index 6, or does the client need a separate mode?
+- Does the client's forced `Superweapons=False` mean the superweapons our build can disable are off? This build now reads it that way.
+- Does a Land Rush match on index 6 play as the client's Land Rush? The index is the one the client sends; the rules behind it are not checked.
 - Does the public CnCNet tunnel accept our packets?
 - Does the client start cleanly with the update mirrors and the read-only file in place?
 - Does the client refuse a join with a different `Game.exe`, now that it is in the compatibility list?
