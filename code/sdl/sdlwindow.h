@@ -22,6 +22,9 @@ struct SDL_Cursor;
 
 void Main_Window_Destroy(void);
 
+// Starts SDL as Main_Window_Create does, without a window. Returns false when SDL cannot start.
+bool Main_Window_Start(void);
+
 bool Main_Window_Create(bool windowed, int width, int height);
 NativeWindow Main_Window_Native(void);
 bool Main_Window_Drawable_Size(int & width, int & height);
@@ -43,6 +46,10 @@ int Main_Window_Refresh_Rate(void);
 
 // The primary display's mode sizes in pixels, sorted and without repeats.
 std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void);
+
+// The primary display's desktop size in pixels. Returns false and leaves the sizes unchanged when
+// SDL has not started or the desktop mode cannot be read.
+bool Main_Window_Desktop_Size(int & width, int & height);
 
 void Main_Window_Pump_Events(void);
 
