@@ -32,6 +32,13 @@ enum OverlayType {
 	OVERLAY_BRICK_WALL,			// Solid concrete wall.
 	OVERLAY_BARBWIRE_WALL,		// Barbed-wire wall.
 	OVERLAY_WOOD_WALL,			// Wooden fence.
+
+	/*
+	 * TS leftovers. In Yuri's Revenge the positions of OVERLAY_GOLD1 to OVERLAY_GOLD4, OVERLAY_GEMS1
+	 * to OVERLAY_GEMS4, OVERLAY_V12 to OVERLAY_V15, OVERLAY_WOOD_CRATE and OVERLAY_STEEL_CRATE hold
+	 * DUMMY entries. Nothing in the engine uses these names; they stay so that later values keep
+	 * their positions.
+	 */
 	OVERLAY_GOLD1,
 	OVERLAY_GOLD2,
 	OVERLAY_GOLD3,
@@ -51,7 +58,7 @@ enum OverlayType {
 	OVERLAY_WOOD_CRATE,			// Wooden goodie crate.
 	OVERLAY_STEEL_CRATE,		// Steel goodie crate.
 	OVERLAY_FENCE,				// New fangled fence.
-	OVERLAY_WATER_CRATE,		// Water goodie crate.
+	OVERLAY_DUMMY15,			// DUMMY15 in Yuri's Revenge. The water crate is OVERLAY_WATER_CRATE, below.
 
 	/*
 	 * TS additions here.
@@ -244,6 +251,8 @@ enum OverlayType {
 	*/
 	OVERLAY_GDI_WALL = OVERLAY_BRICK_WALL,
 
+	// WCRATE in Yuri's Revenge. CrateRules WaterCrateImg names this type, and gamemd compares the type (CellClass.c:3395), not the index.
+	OVERLAY_WATER_CRATE = 242,
 	// Index 243 of [OverlayTypes] (GAFWLL in the stock rules), past the built-in list.
 	OVERLAY_WALL_INDEX_243 = 243,
 
@@ -252,6 +261,16 @@ enum OverlayType {
 
 	OVERLAY_LOWBRIDGE_FIRST = OVERLAY_LOWBRIDGE_01,
 	OVERLAY_LOWBRIDGE_LAST = OVERLAY_LOWBRIDGE_28,
+
+	/*
+	 * Concrete bridge overlays. gamemd's MapClass::IsLinkedBridgeDestroyed (0x587410) tests the
+	 * range 0xCD-0xE8 and treats overlays 0xE7 and 0xE8 as the ends of a fallen concrete span.
+	 * The range holds 28 concrete low-bridge overlays, and the two ends are its last two.
+	 */
+	OVERLAY_CONCRETE_BRIDGE_FIRST = 205,
+	OVERLAY_CONCRETE_BRIDGE_LAST = 232,
+	OVERLAY_CONCRETE_BRIDGE_END1 = 231,
+	OVERLAY_CONCRETE_BRIDGE_END2 = 232,
 
 	/*
 	 * Railway deck overlays in the Yuri's Revenge [OverlayTypes] list (BRIDGEB1 and BRIDGEB2,
