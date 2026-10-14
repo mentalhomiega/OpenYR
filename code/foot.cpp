@@ -405,7 +405,13 @@ bool FootClass::Is_In_Same_Zone(Coord const & coord) const
 		return(false);
 	}
 
-	Cell cell2 = Destination_Coord().As_Cell();
+	/*
+	**	The zone is compared with the ultimate destination of this foot, or with its own position when it has
+	**	none. That is the locomotor's destination, not the step it is heading to (gamemd's
+	**	FootClass::IsInSameZoneAsCoords, 0x4D3810, through FootClass::GetDestination, 0x4DBDF0).
+	*/
+	Coord const dest = Locomotion->Destination();
+	Cell cell2 = (dest != COORD_NONE ? dest : Center_Coord()).As_Cell();
 
 	return(Map.Is_Same_Cell_Zone(cell2, cell1, zone, ((ObjectClass *)this)->Is_Moving_Onto_Bridge(), Map[cell1].IsUnderBridge, Is_Allowed_To_Leave_Map()));
 	return(0);

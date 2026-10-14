@@ -1,0 +1,36 @@
+; Neutral bridge repair hut regression on SOV04DMD: a Civilian (neutral) repair hut stands at 99,44, on ground an
+; engineer can enter, beside the north-south concrete span at 95-97, 46-56. The span is broken by three concrete hits on
+; the piece at 96,50 (concretehit, as a weapon impact makes). A player's engineer then clicks the hut through the object
+; path a real click takes (hutclick). It walks to the hut and repairs the span through it. The span is logged before the
+; hits, after them, and after the repair.
+; Expected: before the hits the piece at 96,50 is overlay 217 and passable. After the hits it is overlay 232 and not
+; passable on foot, the hut reads GRepair for the engineer, and repairbridge at 99,44 reads 1. The engineer is seen on
+; 99,45 on its way in. After the repair the pieces at 96,50, 96,52 and 96,54 are overlays 214 to 217 and passable, and
+; repairbridge at 99,44 reads 0. The piece each repair picks is random, so only the range is checked.
+; The hut at 99,47 is not used: that cell is land type 6, which gives infantry no way in, as gamemd's CanReach does too.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/concrete-bridge-neutral-hut-sov04.txt -Build agent16 -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST neutral|AUTOTEST   bridge|AUTOTEST   passable|AUTOTEST   repairbridge|AUTOTEST   hutaction|AUTOTEST   hutclick|AUTOTEST   where|AUTOTEST   concretehit|Exception"
+30 neutral CABHUT 99 44
+31 grantunit ENGINEER 98 46
+100 bridge 96 50
+101 passable 96 50
+102 concretehit 96 50
+103 concretehit 96 50
+104 concretehit 96 50
+110 bridge 96 50
+111 bridge 96 52
+112 passable 96 50
+113 repairbridge 99 44
+114 hutaction ENGINEER 99 44
+115 where ENGINEER
+120 hutclick ENGINEER 99 44
+150 where ENGINEER
+250 where ENGINEER
+400 where ENGINEER
+500 bridge 96 50
+501 bridge 96 52
+502 bridge 96 54
+503 passable 96 50
+504 passable 96 52
+505 repairbridge 99 44
+600 where ENGINEER
+700 quit
