@@ -61,6 +61,17 @@ void Video_Set_Refresh_Rate(int refreshrate);
 // Takes up a change to the filter, integer scaling or pointer size settings from the next present.
 void Video_Refresh_Scaling(void);
 
+// The paper white and peak brightness, in nits, that HDR10 output uses now. Each follows its setting when set,
+// and the display otherwise.
+int Video_HDR_Paper_White(void);
+int Video_HDR_Peak(void);
+
+// Hands the HDR brightness settings to the renderer and presents them.
+void Video_Refresh_HDR_Levels(void);
+
+// Sets the colour adjustment for the presented frame, as Backend_Set_Colour_Adjust does, and presents it.
+void Video_Set_Colour_Adjust(float const * matrix, float brightness, float gamma);
+
 void Video_Mark_Dirty(void);
 void Video_Mark_Overlay_Dirty(void);
 void Video_Present(void);

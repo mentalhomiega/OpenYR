@@ -16,6 +16,7 @@
 #include "except.h"
 
 #include "bgfxviews.hh"
+#include "hdrcolour.h"
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
@@ -24,14 +25,31 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <vector>
 #include <fs_ocornut_imgui.bin.h>
 #include <malloc.h>
 #include <vs_ocornut_imgui.bin.h>
+#include "shaders/fs_composite.bin.h"
 
 
 static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 	BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
 	BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
+	BGFX_EMBEDDED_SHADER_END()
+};
+
+
+// The composite shader ships for Direct3D 11 only. Other renderers get no program, so HDR output
+// falls back to SDR and the colour adjustment has no effect.
+static const bgfx::EmbeddedShader _CompositeShaders[] = {
+	{
+		"fs_composite",
+		{
+			{ bgfx::RendererType::Direct3D11, fs_composite_dxbc, sizeof(fs_composite_dxbc) },
+			{ bgfx::RendererType::Count, NULL, 0 },
+		}
+	},
 	BGFX_EMBEDDED_SHADER_END()
 };
 
@@ -73,6 +91,27 @@ static bool _KeyedFrameUploaded = false;
 static unsigned int * _LayerConvertBuffer = NULL;
 static bgfx::TextureHandle _KeyedFrameTexture = BGFX_INVALID_HANDLE;
 static unsigned int * _KeyedFrameBuffer = NULL;
+
+// HDR output and the colour adjustment. Frames are routed through the scene target when HDR10 output
+// is on or the colour adjustment is not the identity; the composite pass then draws them to the window.
+static bool _HdrActive = false;
+static bool _Routed = false;
+static bool _ShotRequested = false;
+static bgfx::TextureHandle _ReadbackTexture = BGFX_INVALID_HANDLE;
+static std::vector<unsigned char> _ReadbackPixels;
+static std::string _ReadbackPath;
+static bool _ReadbackPending = false;
+static uint32_t _ReadbackFrame = 0;
+static uint32_t _LastFrame = 0;
+static bgfx::FrameBufferHandle _SceneTarget = BGFX_INVALID_HANDLE;
+static bgfx::FrameBufferHandle _ShotTarget = BGFX_INVALID_HANDLE;
+static bgfx::ProgramHandle _CompositeProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _CompositeLevels = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _ColourMatrix = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _ColourTone = BGFX_INVALID_HANDLE;
+static float _PaperWhiteNits = (float)HDR_PAPER_WHITE_DEFAULT;
+static float _PeakNits = (float)HDR_PEAK_FALLBACK_NITS;
+static HDRColourAdjust _ColourAdjust = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}, 1.0f, 1.0f};
 
 
 struct BackendVertex
@@ -193,7 +232,7 @@ static void Build_Convert_Table(void)
 /// Submits one textured rectangle covering the given destination. False means the
 /// transient vertex memory ran out and nothing was submitted.
 /// </summary>
-static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false)
+static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, bgfx::ProgramHandle program = BGFX_INVALID_HANDLE)
 {
 	bgfx::TransientVertexBuffer buffer;
 
@@ -219,7 +258,7 @@ static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 	bgfx::setVertexBuffer(0, &buffer);
 	bgfx::setTexture(0, _TextureSampler, texture, samplerflags);
 	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | (blend ? BGFX_STATE_BLEND_ALPHA : 0));
-	bgfx::submit(view, _Program);
+	bgfx::submit(view, bgfx::isValid(program) ? program : _Program);
 	return(true);
 }
 
@@ -409,25 +448,213 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 
 
 /// <summary>
-/// Starts the renderer on an existing window.
+/// Reports whether the renderer can present an HDR10 back buffer.
 /// </summary>
-/// <param name="window">The window the frame is presented into.</param>
-/// <param name="drawablewidth">The drawable area's width in physical pixels.</param>
-/// <param name="drawableheight">The drawable area's height in physical pixels.</param>
-/// <param name="renderer">Which graphics API to ask for, or auto to let bgfx decide.</param>
-/// <param name="vsync">Should presents wait for the display's refresh?</param>
-/// <returns>bool; Did the renderer start?</returns>
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync)
+/// <returns>bool; Can the renderer present RGB10A2 with HDR10 metadata?</returns>
+static bool HDR_Caps_Available(void)
 {
-	if (_Initialized) {
-		return(true);
+	bgfx::Caps const * caps = bgfx::getCaps();
+	if ((caps->supported & BGFX_CAPS_HDR10) == 0) {
+		DebugString("HDR: the renderer reports no HDR10 support\n");
+		return(false);
 	}
+	if ((caps->formats[bgfx::TextureFormat::RGB10A2] & BGFX_CAPS_FORMAT_TEXTURE_BACKBUFFER) == 0) {
+		DebugString("HDR: RGB10A2 is not a back buffer format on this renderer\n");
+		return(false);
+	}
+	return(true);
+}
 
-	bgfx::renderFrame();
 
-	_DrawableWidth = drawablewidth;
-	_DrawableHeight = drawableheight;
-	_ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+/// <summary>
+/// Builds the reset flags, which carry HDR10 when the back buffer is HDR10.
+/// </summary>
+static unsigned int Reset_Flags(bool vsync, bool hdr)
+{
+	return(BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE) | (hdr ? BGFX_RESET_HDR10 : BGFX_RESET_NONE));
+}
+
+
+/// <summary>
+/// Frees the scene and shot targets. The next Ensure_Targets makes them again at the current size. A
+/// capture still being read keeps its readback texture until it is written.
+/// </summary>
+static void Destroy_Targets(void)
+{
+	if (bgfx::isValid(_SceneTarget)) {
+		bgfx::destroy(_SceneTarget);
+		_SceneTarget = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_ShotTarget)) {
+		bgfx::destroy(_ShotTarget);
+		_ShotTarget = BGFX_INVALID_HANDLE;
+	}
+	if (!_ReadbackPending && bgfx::isValid(_ReadbackTexture)) {
+		bgfx::destroy(_ReadbackTexture);
+		_ReadbackTexture = BGFX_INVALID_HANDLE;
+		_ReadbackPixels.clear();
+	}
+}
+
+
+/// <summary>
+/// Makes the targets the current routing needs, at the drawable size.
+/// </summary>
+/// <returns>bool; Does every target the routing needs exist?</returns>
+static bool Ensure_Targets(void)
+{
+	if (_Routed && !bgfx::isValid(_SceneTarget)) {
+		_SceneTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+		if (!bgfx::isValid(_SceneTarget)) {
+			DebugString("Video: could not create the scene target at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+	}
+	if (_HdrActive && !bgfx::isValid(_ShotTarget)) {
+		_ShotTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+		if (!bgfx::isValid(_ShotTarget)) {
+			DebugString("Video: could not create the screenshot target at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+	}
+	if (_HdrActive && !bgfx::isValid(_ReadbackTexture)) {
+		uint64_t const flags = BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+		_ReadbackTexture = bgfx::createTexture2D((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, false, 1, bgfx::TextureFormat::BGRA8, flags);
+		if (!bgfx::isValid(_ReadbackTexture)) {
+			DebugString("Video: could not create the screenshot readback at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+		_ReadbackPixels.assign((size_t)_DrawableWidth * (size_t)_DrawableHeight * 4, 0);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Decides whether frames reach the window through the scene target. They do under HDR10 output and
+/// whenever the colour adjustment is not the identity.
+/// </summary>
+static void Update_Routing(void)
+{
+	_Routed = _Initialized && bgfx::isValid(_CompositeProgram) && (_HdrActive || !HDR_Colour_Adjust_Is_Identity(_ColourAdjust));
+}
+
+
+/// <summary>
+/// Returns the target the frame is drawn into: the scene target when frames are routed, else the window.
+/// </summary>
+static bgfx::FrameBufferHandle Frame_Target(void)
+{
+	bgfx::FrameBufferHandle const window = BGFX_INVALID_HANDLE;
+	if (_Routed) {
+		return(_SceneTarget);
+	}
+	return(window);
+}
+
+
+/// <summary>
+/// Draws the scene target into a target through the composite shader, applying the colour adjustment.
+/// </summary>
+/// <param name="view">The view to draw with.</param>
+/// <param name="target">The target to draw into; the window when invalid.</param>
+/// <param name="hdr">True to encode ST.2084 with Rec.2020 primaries; false to encode sRGB.</param>
+static void Submit_Composite(bgfx::ViewId view, bgfx::FrameBufferHandle target, bool hdr)
+{
+	bgfx::setViewFrameBuffer(view, target);
+	bgfx::setViewClear(view, BGFX_CLEAR_COLOR, 0x000000FF);
+	Set_View_Transform(view, _DrawableWidth, _DrawableHeight);
+
+	float const levels[4] = {
+		_PaperWhiteNits / HDR_PQ_PEAK_NITS,
+		_PeakNits / HDR_PQ_PEAK_NITS,
+		hdr ? 1.0f : 0.0f,
+		HDR_Colour_Adjust_Is_Identity(_ColourAdjust) ? 0.0f : 1.0f,
+	};
+	bgfx::setUniform(_CompositeLevels, levels);
+
+	float rows[12];
+	for (int row = 0; row < 3; row++) {
+		for (int column = 0; column < 3; column++) {
+			rows[row * 4 + column] = _ColourAdjust.Matrix[row * 3 + column];
+		}
+		rows[row * 4 + 3] = 0.0f;
+	}
+	bgfx::setUniform(_ColourMatrix, rows, 3);
+
+	float const tone[4] = {_ColourAdjust.Brightness, _ColourAdjust.Gamma, 0.0f, 0.0f};
+	bgfx::setUniform(_ColourTone, tone);
+
+	unsigned int const sampler = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT;
+	Submit_Quad(view, bgfx::getTexture(_SceneTarget), 0.0f, 0.0f, (float)_DrawableWidth, (float)_DrawableHeight, sampler, false, false, _CompositeProgram);
+}
+
+
+/// <summary>
+/// Writes the capture that the readback has finished, as a 32-bit TGA of the drawable area.
+/// </summary>
+static void Write_Capture(void)
+{
+	_ReadbackPending = false;
+	FILE * file = std::fopen(_ReadbackPath.c_str(), "wb");
+	if (file == NULL) {
+		return;
+	}
+	unsigned char header[18] = {};
+	header[2] = 2;
+	header[12] = (unsigned char)(_DrawableWidth & 0xFF);
+	header[13] = (unsigned char)((_DrawableWidth >> 8) & 0xFF);
+	header[14] = (unsigned char)(_DrawableHeight & 0xFF);
+	header[15] = (unsigned char)((_DrawableHeight >> 8) & 0xFF);
+	header[16] = 32;
+	header[17] = 0x28;
+	std::fwrite(header, 1, sizeof(header), file);
+	std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
+	std::fclose(file);
+}
+
+
+/// <summary>
+/// Copies the SDR picture of the frame into the readback texture and starts reading it back. The picture is
+/// the scene target, or a composite of it when a colour adjustment applies.
+/// </summary>
+static void Start_Capture(void)
+{
+	bgfx::TextureHandle source = bgfx::getTexture(_SceneTarget);
+	if (!HDR_Colour_Adjust_Is_Identity(_ColourAdjust)) {
+		Submit_Composite(VIEW_SHOT, _ShotTarget, false);
+		source = bgfx::getTexture(_ShotTarget);
+	}
+	bgfx::blit(VIEW_READBACK, _ReadbackTexture, 0, 0, source);
+	_ReadbackFrame = bgfx::readTexture(_ReadbackTexture, _ReadbackPixels.data());
+	_ReadbackPending = true;
+	_ShotRequested = false;
+}
+
+
+/// <summary>
+/// Waits for a pending capture to finish reading and writes it, so its buffer is free before the targets change size.
+/// </summary>
+static void Finish_Capture(void)
+{
+	for (int attempt = 0; attempt < 4 && _ReadbackPending; attempt++) {
+		_LastFrame = bgfx::frame();
+		if (_LastFrame >= _ReadbackFrame) {
+			Write_Capture();
+		}
+	}
+}
+
+
+/// <summary>
+/// Starts the renderer on the window, with an HDR10 back buffer when hdr is set.
+/// </summary>
+/// <returns>bool; Did the renderer start with the back buffer asked for? Nothing is left running on false.</returns>
+static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+{
+	_HdrActive = false;
+	_Routed = false;
+	_ResetFlags = Reset_Flags(vsync, hdr);
 
 	bgfx::Init init;
 	init.platformData.ndt = window.Display;
@@ -438,6 +665,9 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 	init.resolution.width = (uint32_t)drawablewidth;
 	init.resolution.height = (uint32_t)drawableheight;
 	init.resolution.reset = _ResetFlags;
+	if (hdr) {
+		init.resolution.formatColor = bgfx::TextureFormat::RGB10A2;
+	}
 	init.callback = &_Callback;
 	init.allocator = &_Allocator;
 
@@ -464,6 +694,14 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 	}
 
 	if (!bgfx::init(init)) {
+		if (hdr) {
+			DebugString("HDR: the renderer did not start with an RGB10A2 back buffer\n");
+		}
+		return(false);
+	}
+
+	if (hdr && !HDR_Caps_Available()) {
+		bgfx::shutdown();
 		return(false);
 	}
 
@@ -490,8 +728,62 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 		return(false);
 	}
 
+	// The composite pass draws the scene target to the window. Renderers without its shader keep the direct path.
+	bgfx::ShaderHandle compositevs = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "vs_ocornut_imgui");
+	bgfx::ShaderHandle compositefs = bgfx::createEmbeddedShader(_CompositeShaders, type, "fs_composite");
+	if (bgfx::isValid(compositevs) && bgfx::isValid(compositefs)) {
+		_CompositeProgram = bgfx::createProgram(compositevs, compositefs, true);
+	}
+	_CompositeLevels = bgfx::createUniform("u_compositeLevels", bgfx::UniformType::Vec4);
+	_ColourMatrix = bgfx::createUniform("u_colourMatrix", bgfx::UniformType::Vec4, 3);
+	_ColourTone = bgfx::createUniform("u_colourTone", bgfx::UniformType::Vec4);
+
+	if (hdr && !bgfx::isValid(_CompositeProgram)) {
+		DebugString("HDR: the composite shader is not available for this renderer\n");
+		bgfx::shutdown();
+		return(false);
+	}
+
 	_Initialized = true;
+	_HdrActive = hdr;
+	Update_Routing();
+	if (!Ensure_Targets()) {
+		Backend_Shutdown();
+		return(false);
+	}
 	return(true);
+}
+
+
+/// <summary>
+/// Starts the renderer on an existing window. An HDR10 request that the renderer cannot honour starts
+/// the SDR back buffer instead.
+/// </summary>
+/// <param name="window">The window the frame is presented into.</param>
+/// <param name="drawablewidth">The drawable area's width in physical pixels.</param>
+/// <param name="drawableheight">The drawable area's height in physical pixels.</param>
+/// <param name="renderer">Which graphics API to ask for, or auto to let bgfx decide.</param>
+/// <param name="vsync">Should presents wait for the display's refresh?</param>
+/// <param name="hdr">Should the back buffer be HDR10?</param>
+/// <returns>bool; Did the renderer start?</returns>
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+{
+	if (_Initialized) {
+		return(true);
+	}
+
+	bgfx::renderFrame();
+
+	_DrawableWidth = drawablewidth;
+	_DrawableHeight = drawableheight;
+
+	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true)) {
+		return(true);
+	}
+	if (hdr) {
+		DebugString("HDR: starting the SDR back buffer instead\n");
+	}
+	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false));
 }
 
 
@@ -506,6 +798,7 @@ void Backend_Shutdown(void)
 
 	Destroy_Prescale_Target();
 	Destroy_Layer();
+	Destroy_Targets();
 
 	if (bgfx::isValid(_FrameTexture)) {
 		bgfx::destroy(_FrameTexture);
@@ -519,6 +812,22 @@ void Backend_Shutdown(void)
 		bgfx::destroy(_Program);
 		_Program = BGFX_INVALID_HANDLE;
 	}
+	if (bgfx::isValid(_CompositeProgram)) {
+		bgfx::destroy(_CompositeProgram);
+		_CompositeProgram = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_CompositeLevels)) {
+		bgfx::destroy(_CompositeLevels);
+		_CompositeLevels = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_ColourMatrix)) {
+		bgfx::destroy(_ColourMatrix);
+		_ColourMatrix = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_ColourTone)) {
+		bgfx::destroy(_ColourTone);
+		_ColourTone = BGFX_INVALID_HANDLE;
+	}
 
 	delete [] _ConvertBuffer;
 	_ConvertBuffer = NULL;
@@ -529,6 +838,10 @@ void Backend_Shutdown(void)
 	_FrameHeight = 0;
 	_FrameUploaded = false;
 	_FramePending = false;
+	_HdrActive = false;
+	_Routed = false;
+	_ShotRequested = false;
+	_ReadbackPending = false;
 	_Initialized = false;
 }
 
@@ -596,13 +909,18 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 
 	_DrawableWidth = drawablewidth;
 	_DrawableHeight = drawableheight;
+	Finish_Capture();
 	bgfx::reset((uint32_t)drawablewidth, (uint32_t)drawableheight, _ResetFlags);
+
+	// The targets are sized to the drawable area, so they are made again at the new size.
+	Destroy_Targets();
+	Ensure_Targets();
 }
 
 
 void Backend_Set_VSync(bool vsync)
 {
-	unsigned int const flags = BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+	unsigned int const flags = Reset_Flags(vsync, _HdrActive);
 	if (flags == _ResetFlags) {
 		return;
 	}
@@ -639,7 +957,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		return(false);
 	}
 
-	bgfx::setViewFrameBuffer(VIEW_PRESENT, BGFX_INVALID_HANDLE);
+	bgfx::setViewFrameBuffer(VIEW_PRESENT, Frame_Target());
 	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
 	bgfx::setViewMode(VIEW_PRESENT, bgfx::ViewMode::Sequential);
 	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
@@ -689,6 +1007,10 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	// A minimized window has no client area to present into.
 	if (_DrawableWidth <= 0 || _DrawableHeight <= 0) {
+		return(false);
+	}
+
+	if (!Ensure_Targets()) {
 		return(false);
 	}
 
@@ -755,7 +1077,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	// Clearing the whole window is what paints the bars beside a frame that does not
 	// share the window's shape.
-	bgfx::setViewFrameBuffer(VIEW_PRESENT, BGFX_INVALID_HANDLE);
+	bgfx::setViewFrameBuffer(VIEW_PRESENT, Frame_Target());
 	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
 	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
 
@@ -779,15 +1101,68 @@ void Backend_End_Frame(void)
 	}
 
 	_FramePending = false;
-	bgfx::frame();
+
+	if (_ReadbackPending && _LastFrame >= _ReadbackFrame) {
+		Write_Capture();
+	}
+	if (_Routed) {
+		Submit_Composite(VIEW_COMPOSITE, BGFX_INVALID_HANDLE, _HdrActive);
+	}
+	if (_ShotRequested && !_ReadbackPending) {
+		Start_Capture();
+	}
+	_LastFrame = bgfx::frame();
+}
+
+
+bool Backend_HDR_Active(void)
+{
+	return(_HdrActive);
+}
+
+
+void Backend_Set_HDR_Levels(float paperwhite, float peak)
+{
+	_PaperWhiteNits = paperwhite;
+	_PeakNits = peak;
+}
+
+
+void Backend_Set_Colour_Adjust(float const * matrix, float brightness, float gamma)
+{
+	for (int index = 0; index < 9; index++) {
+		_ColourAdjust.Matrix[index] = matrix[index];
+	}
+	_ColourAdjust.Brightness = brightness;
+	_ColourAdjust.Gamma = gamma;
+
+	if (!_Initialized) {
+		return;
+	}
+	Update_Routing();
+	Ensure_Targets();
+}
+
+
+void Backend_Set_View_Target(unsigned short view)
+{
+	bgfx::setViewFrameBuffer((bgfx::ViewId)view, Frame_Target());
 }
 
 
 void Backend_Request_Window_Capture(char const * filepath)
 {
-	if (_Initialized) {
-		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
+	if (!_Initialized) {
+		return;
 	}
+
+	// Under HDR10 the window holds PQ values, so the capture reads the SDR picture back instead of the window.
+	if (!_HdrActive) {
+		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
+		return;
+	}
+	_ReadbackPath = filepath;
+	_ShotRequested = true;
 }
 
 

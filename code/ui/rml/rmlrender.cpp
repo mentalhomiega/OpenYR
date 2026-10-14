@@ -239,7 +239,7 @@ void UIRmlBgfxRenderClass::Set_View(unsigned short view, int x, int y, int width
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, width, height);
 
-	bgfx::setViewFrameBuffer(view, BGFX_INVALID_HANDLE);
+	Backend_Set_View_Target((unsigned short)view);
 	bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
 	bgfx::setViewRect(view, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height);
 	bgfx::setViewTransform(view, NULL, projection);
