@@ -5253,6 +5253,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 				if (Is_Turret_Equipped()) {
 					IsInRecoilState = true;
+					if (RTTI == RTTI_BUILDING) {
+						((BuildingClass *)this)->Start_Turret_Recoil();
+					}
 				}
 
 				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.

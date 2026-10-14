@@ -159,6 +159,7 @@
 **	turretcoord <TypeID>	writes each object of that type, whoever owns it, with its body and turret facings in 256 directions, its
 **							TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point,
 **							with the body's draw matrix rows
+**	recoil <TypeID>			writes the recoil phase, frames left and travel of the turret body and barrel of each building of that type
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
 **							now and every interval frames after when one is given
 **	stop <TypeID>			sends the Stop command's idle event to the player's objects of that type that can move or fire
@@ -3223,6 +3224,15 @@ void Run(StepType const & step)
 				Matrix3D const draw = foot->Locomotion->Draw_Matrix(NULL);
 				DebugString("AUTOTEST   turretcoord draw %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n", (double)draw[0].X, (double)draw[0].Y, (double)draw[0].Z, (double)draw[0].W, (double)draw[1].X, (double)draw[1].Y, (double)draw[1].Z, (double)draw[1].W, (double)draw[2].X, (double)draw[2].Y, (double)draw[2].Z, (double)draw[2].W);
 			}
+		}
+	} else if (step.Command == "recoil") {
+		// recoil <TypeID>: the recoil phase, frames left and travel of the turret body and barrel of each building of that type.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   recoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+				(int)building->TurretRecoil.CurrentPhase, building->TurretRecoil.FramesLeft, (double)building->TurretRecoil.TravelSoFar,
+				(int)building->BarrelRecoil.CurrentPhase, building->BarrelRecoil.FramesLeft, (double)building->BarrelRecoil.TravelSoFar);
 		}
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.

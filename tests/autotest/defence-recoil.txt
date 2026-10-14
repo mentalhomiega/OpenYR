@@ -1,0 +1,98 @@
+; Building recoil: a Grand Cannon (GTGCAN, TurretRecoil=yes, TurretTravel=0, BarrelTravel=8) and a Sentry Gun
+; (NALASR, no TurretRecoil) each fire at a computer HARV. The recoil lines give each building's turret body and barrel
+; recoil phase (0 idle, 1 compressing, 2 holding, 3 recovering), frames left in that phase and the travel so far.
+; Expected: the Grand Cannon's barrel compresses to 8 leptons and recovers over about 40 frames, its turret body never moves,
+; and the Sentry Gun shows no recoil at all, since its type does not set TurretRecoil.
+; Run: scripts/run_autotest.ps1 -Script src-agent15/tests/autotest/defence-recoil.txt -Build agent15 -Width 800 -Height 600 -Seconds 120 -ShotDir <dir> -Filter "AUTOTEST   recoil|AUTOTEST   fire|Exception"
+60 view 62 62
+62 zoom 2.5
+70 reveal
+80 windowmove 795 595
+90 own GAPOWR 50 50
+100 own GTGCAN 62 62
+102 own NALASR 62 74
+120 spawn HARV 66 62
+121 spawn HARV 66 74
+130 recoil GTGCAN
+130 recoil NALASR
+135 recoil GTGCAN
+135 recoil NALASR
+140 recoil GTGCAN
+140 recoil NALASR
+145 recoil GTGCAN
+145 recoil NALASR
+146 command ScreenCapture
+150 recoil GTGCAN
+150 recoil NALASR
+155 recoil GTGCAN
+155 recoil NALASR
+160 recoil GTGCAN
+160 recoil NALASR
+165 recoil GTGCAN
+165 recoil NALASR
+170 recoil GTGCAN
+170 recoil NALASR
+175 recoil GTGCAN
+175 recoil NALASR
+180 recoil GTGCAN
+180 recoil NALASR
+185 recoil GTGCAN
+185 recoil NALASR
+190 recoil GTGCAN
+190 recoil NALASR
+195 recoil GTGCAN
+195 recoil NALASR
+200 recoil GTGCAN
+200 recoil NALASR
+205 recoil GTGCAN
+205 recoil NALASR
+210 recoil GTGCAN
+210 recoil NALASR
+215 recoil GTGCAN
+215 recoil NALASR
+220 recoil GTGCAN
+220 recoil NALASR
+225 recoil GTGCAN
+225 recoil NALASR
+230 recoil GTGCAN
+230 recoil NALASR
+235 recoil GTGCAN
+235 recoil NALASR
+240 recoil GTGCAN
+240 recoil NALASR
+245 recoil GTGCAN
+245 recoil NALASR
+250 recoil GTGCAN
+250 recoil NALASR
+255 recoil GTGCAN
+255 recoil NALASR
+260 recoil GTGCAN
+260 recoil NALASR
+265 recoil GTGCAN
+265 recoil NALASR
+270 recoil GTGCAN
+270 recoil NALASR
+275 recoil GTGCAN
+275 recoil NALASR
+280 recoil GTGCAN
+280 recoil NALASR
+285 recoil GTGCAN
+285 recoil NALASR
+290 recoil GTGCAN
+290 recoil NALASR
+295 recoil GTGCAN
+295 recoil NALASR
+300 recoil GTGCAN
+300 recoil NALASR
+305 recoil GTGCAN
+305 recoil NALASR
+310 recoil GTGCAN
+310 recoil NALASR
+315 recoil GTGCAN
+315 recoil NALASR
+320 recoil GTGCAN
+320 recoil NALASR
+325 recoil GTGCAN
+325 recoil NALASR
+330 kill HARV
+340 quit
