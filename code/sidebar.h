@@ -234,7 +234,8 @@ class SidebarClass : public PowerClass
 					BUTTON_UP=200,
 					BUTTON_DOWN=210,
 					BUTTON_SELECT=220,
-					MAX_BUILDABLES=225,
+					MAX_BUILDABLES=225,				// Cameos a strip can hold when LargeSidebarStrips is set; also the array size.
+					STRIP_CAMEO_CAPACITY=75,		// Cameos a strip holds by default, as gamemd's per-tab array does.
 					CAMEO_FLASH_RATE=6,				/// Frames between one beat of a flashing cameo and the next.				// Maximum number of object types in sidebar.
 					OBJECT_HEIGHT=50,				// Pixel height of each row of cameos.
 					SLOT_COLUMNS=2,					// Cameos side by side in each row.

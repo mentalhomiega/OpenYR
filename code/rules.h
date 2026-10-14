@@ -2679,6 +2679,12 @@ class RulesClass
 		bool IsRecheckPrerequisites;
 
 		/*
+		 * If true, each sidebar strip holds 225 cameos. Otherwise it holds 75, the capacity of the
+		 * array gamemd keeps per tab; a strip refuses a cameo once it is full.
+		 */
+		bool IsLargeSidebarStrips;
+
+		/*
 		 * If the fog is to be blended evenly into the terrain beneath it, then this flag
 		 * will be true. Otherwise the fog is dithered on, covering every other pixel in a
 		 * checkerboard so that half the terrain still shows through.

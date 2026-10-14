@@ -245,6 +245,7 @@ RulesClass::RulesClass(void) :
 	IsCurleyShuffle(false),
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(false),
+	IsLargeSidebarStrips(false),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
 	IsFineDifficulty(false),
@@ -1719,6 +1720,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsCurleyShuffle = ini.Get_Bool(GENERAL, "CurleyShuffle", IsCurleyShuffle);
 		IsMultiMCV = ini.Get_Bool(GENERAL, "MultiMCV", IsMultiMCV);
 		IsRecheckPrerequisites = ini.Get_Bool(GENERAL, "RecheckPrerequisites", IsRecheckPrerequisites);
+		IsLargeSidebarStrips = ini.Get_Bool(GENERAL, "LargeSidebarStrips", IsLargeSidebarStrips);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
@@ -3460,6 +3462,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCurleyShuffle);
 	stream.Serialize(IsMultiMCV);
 	stream.Serialize(IsRecheckPrerequisites);
+	stream.Serialize(IsLargeSidebarStrips);
 	stream.Serialize(IsBlendedFog);
 	stream.Serialize(IsCompEasyBonus);
 	stream.Serialize(IsFineDifficulty);

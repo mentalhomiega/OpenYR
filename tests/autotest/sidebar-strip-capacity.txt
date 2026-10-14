@@ -1,0 +1,12 @@
+; Sidebar strip capacity. stripfill offers the building types 0 to count-1 to one strip and writes how many the strip took,
+; and the strip's count before and after. Column 1 is checked with the default rules: a strip holds 75 cameos and refuses the
+; rest. At frame 40 sidebar-strip-large.ini sets LargeSidebarStrips=yes, and column 2 then holds past 75.
+; Expected: frame 30 (default rules) column 1 takes 75 and refuses the other 15, count 75.
+; Frame 50 (LargeSidebarStrips=yes from frame 40) column 2 takes all 90, count 90.
+; Frame 60 column 1 takes its 15 new offers too, since the key applies to every strip, and refuses the 75 repeats; count 90.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script E:\Claude ra2 decomp\src-agent17\tests\autotest\sidebar-strip-capacity.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   stripfill|AUTOTEST   rules|Exception"
+30 stripfill 1 90
+40 rules E:/Claude ra2 decomp/src-agent17/tests/autotest/sidebar-strip-large.ini
+50 stripfill 2 90
+60 stripfill 1 90
+70 quit

@@ -36,7 +36,7 @@ A row's link goes to the change record, or where there is none, to the manual pa
 | --- | --- | --- |
 | `buildingtype_initialization.asm` | Cleared building animation and voxel pivot fields before the sync checksum read them. | Ported. [building-animation-initialization] |
 | `buildlimit_fix.asm` | Stopped counting an object in production twice toward a positive `BuildLimit`, so the full limit could be queued. | Ported. [build-limit-queue-count] |
-| `whiteboy_cameo_bugfix.asm` | Refused a 76th sidebar cameo instead of writing past the end of the strip. | Reworked: a strip holds 225 cameos and refuses any past that. [sidebar-strip-capacity] |
+| `whiteboy_cameo_bugfix.asm` | Refused a 76th sidebar cameo instead of writing past the end of the strip. | Reworked: a strip holds 75 cameos and refuses the 76th; `LargeSidebarStrips=yes` raises it to 225. [sidebar-strip-default-capacity] |
 | `high_res_crash.asm` | Limited the sidebar to 19 cameo rows at high resolutions to prevent a crash. | Reworked: each strip has 60 slots and lays out no more rows than that. [sidebar-slot-ceiling] |
 | `isomappack5_limit_extend.asm` | Enlarged the map terrain decoding buffer from 640×400 to 1024×768. | Reworked: the buffer is sized from the map's own terrain data. [isomappack5-decoding-capacity] |
 | `tileset255_bridgerepairfix.asm` | Stopped tile set 255 and later sets from corrupting bridge data, which left some broken bridges unrepairable. | Reworked: the lookup has an entry for every tile set. [tileset-lookup-capacity] |
@@ -490,7 +490,7 @@ yet.
 [sidebar-cameo-ordering]: ../manual/changes/sidebar-cameo-ordering.md
 [captured-yard-builds-its-types-owners]: ../manual/changes/captured-yard-builds-its-types-owners.md
 [sidebar-slot-ceiling]: ../manual/changes/sidebar-slot-ceiling.md
-[sidebar-strip-capacity]: ../manual/changes/sidebar-strip-capacity.md
+[sidebar-strip-default-capacity]: ../manual/changes/sidebar-strip-default-capacity.md
 [sides-declared-in-side-list]: ../manual/changes/sides-declared-in-side-list.md
 [simulate-while-unfocused]: ../manual/changes/simulate-while-unfocused.md
 [skirmish-ends-past-passive-houses]: ../manual/changes/skirmish-ends-past-passive-houses.md

@@ -136,6 +136,7 @@
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
 **	radar <TypeID>			writes each player object of that type with its limbo, radar tracking, discovery and whether Is_Radar_Visible plots it
+**	stripfill <column> <count>	offers building types 0 to count-1 to that sidebar strip and writes how many it took
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
@@ -2210,6 +2211,24 @@ void Run(StepType const & step)
 					techno->IsInLimbo ? 1 : 0, techno->IsRadarTracked ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, techno->RadarPos.X, techno->RadarPos.Y, visible ? 1 : 0);
 			}
 		}
+	} else if (step.Command == "stripfill") {
+		// stripfill <column> <count>: offers the sidebar strip of that column the building types 0 to count-1, as the sidebar
+		// does for each type that comes to it, and writes how many were taken and how many the strip holds.
+		int const column = std::atoi(step.Argument.c_str());
+		bool const valid = column >= 0 && column < SidebarClass::COLUMNS;
+		int const before = valid ? Map.Column[column].BuildableCount : -1;
+		int taken = 0;
+		int refused = 0;
+		if (valid) {
+			for (int id = 0; id < step.X && id < BuildingTypes.Count(); id++) {
+				if (Map.Column[column].Add(RTTI_BUILDINGTYPE, id)) {
+					taken++;
+				} else {
+					refused++;
+				}
+			}
+		}
+		DebugString("AUTOTEST   stripfill column %d before %d taken %d refused %d count %d\n", column, before, taken, refused, valid ? Map.Column[column].BuildableCount : -1);
 	} else if (step.Command == "spawn" || step.Command == "grantunit") {
 		// spawn <TypeID> x y: puts an object of the type, owned by the first computer house, on that cell.
 		// grantunit <TypeID> x y: the same, owned by the player.

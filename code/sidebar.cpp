@@ -1849,7 +1849,8 @@ void SidebarClass::StripClass::Deactivate(void)
  *=============================================================================================*/
 bool SidebarClass::StripClass::Add(RTTIType type, int id)
 {
-	if (BuildableCount < MAX_BUILDABLES) {
+	int const capacity = Rule->IsLargeSidebarStrips ? MAX_BUILDABLES : STRIP_CAMEO_CAPACITY;
+	if (BuildableCount < capacity) {
 		for (int index = 0; index < BuildableCount; index++) {
 			if (Buildables[index].BuildableType == type && Buildables[index].BuildableID == id) {
 				return(false);

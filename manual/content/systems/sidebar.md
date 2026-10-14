@@ -8,6 +8,7 @@ keys:
   - CameoPCX
   - CameoSortOrder
   - CreditTicks
+  - LargeSidebarStrips
   - MaximumQueuedObjects
   - RecheckPrerequisites
   - ScoldSound
@@ -81,7 +82,7 @@ A strip is sorted again whenever a cameo is added to it, and after a saved game 
 
 Adding a cameo plays the new-construction-options announcement. Superweapon cameos are added without it, and so is every cameo added while a scenario is still being set up.
 
-Each strip holds up to 225 cameos and shows at most 60 at a time. The arrows below the cameos scroll through the rest. A type offered to a full strip is left off it, whatever its place in the order.
+Each strip holds up to 75 cameos and shows at most 60 at a time. [`LargeSidebarStrips=yes`](/keys/largesidebarstrips/) raises the capacity to 225. The arrows below the cameos scroll through the rest. A type offered to a full strip is left off it, whatever its place in the order.
 
 ### What removes a cameo
 
@@ -251,7 +252,7 @@ UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist/): the `[Advance
 
 ## What is fixed in the engine
 
-No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos, the size of a cameo slot and the 225-entry capacity are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row step of the Sidebar Up and Sidebar Down commands, the timing of the power bar's blink, and the timing of the radar animation.
+No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos and the size of a cameo slot are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row step of the Sidebar Up and Sidebar Down commands, the timing of the power bar's blink, and the timing of the radar animation.
 
 The panel always sits on the right edge of the screen. Neither `RA2MD.INI` nor the rules can move it.
 

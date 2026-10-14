@@ -21055,6 +21055,24 @@ LargeFire:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+LargeSidebarStrips:
+  key: LargeSidebarStrips
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsLargeSidebarStrips
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LargeVisceroid:
   key: LargeVisceroid
   scopes:
