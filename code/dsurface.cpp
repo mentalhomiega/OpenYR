@@ -51,6 +51,8 @@
 
 #include "blit.h"
 #include "dbgprint.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "misc.h"
 #include "video.h"
 
@@ -512,6 +514,11 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 
 	GdiFlush();
 
+	// A stretched picture has no mask of its own, so the area it covers reads as ordinary.
+	if (result && Emissive_Is_Enabled()) {
+		Emissive_After_Fill(*this, drect);
+	}
+
 	if (result && IsPrimary) {
 		Video_Mark_Dirty();
 	}
@@ -569,6 +576,10 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 	if (GDIBuffer == NULL || !fillrect.Is_Valid()) return(false);
 
 	bool result = BASECLASS::Fill_Rect(cliprect, fillrect, color);
+
+	if (result && Emissive_Is_Enabled()) {
+		Emissive_After_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())));
+	}
 
 	if (result && IsPrimary) {
 		Video_Mark_Dirty();

@@ -42,6 +42,8 @@
 
 #include "_alpha.h"
 #include "_zbuffer.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "bsurface.h"
 #include "rect.h"
 
@@ -223,6 +225,10 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	*/
 	if (!XSurface::Prep_For_Blit(dest, dcliprect, drect, source, scliprect, srect, overlapped, dbuffer, sbuffer)) {
 		return(false);
+	}
+
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
 	}
 
 	/*
@@ -575,6 +581,15 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	int dstride = dest.Stride();
 	int height = std::min(srect.Height, drect.Height);
 
+	unsigned char * emissive = NULL;
+	int emissive_pitch = 0;
+	if (Emissive_Is_Enabled()) {
+		if (EmissivePlane * plane = Emissive_Plane_For(&dest)) {
+			emissive = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
+			emissive_pitch = plane->Pitch;
+		}
+	}
+
 	/*
 	**
 	*/
@@ -587,6 +602,10 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		/*
 		**	Blit the correct sub-portion to the destination surface.
 		*/
+		if (emissive != NULL) {
+			Emissive_RLE_Row(emissive, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, Emissive_Draw_Strength, DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z);
+			emissive += emissive_pitch;
+		}
 		blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock);
 
 		/*
