@@ -1282,6 +1282,20 @@ int main(void)
 			"a different mode is a different session identity");
 	}
 
+	/*
+	 * The client writes Superweapons=False, while the spawner's key is SuperWeapons. gamemd
+	 * matches the key without regard to case, so the flag is off.
+	 */
+	{
+		char const lower[] = "[Settings]\nSuperweapons=False\n";
+		char const upper[] = "[Settings]\nSUPERWEAPONS=no\n";
+		char const absent[] = "[Settings]\n";
+
+		Check(!Read(lower, sizeof(lower) - 1).SuperWeapons, "Superweapons=False switches the superweapons off");
+		Check(!Read(upper, sizeof(upper) - 1).SuperWeapons, "the key and the value match without regard to case");
+		Check(Read(absent, sizeof(absent) - 1).SuperWeapons, "superweapons stay on when the file does not name them");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

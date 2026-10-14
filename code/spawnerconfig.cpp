@@ -85,6 +85,28 @@ static bool Is_Tunnel_Number(int value)
 
 
 /// <summary>
+/// Reads a bool the way gamemd's launch-file reader does: the key matches without regard to
+/// case, so "Superweapons" and "SuperWeapons" are the same key. INIClass looks names up exactly,
+/// so the entries are scanned for the first one whose name matches.
+/// </summary>
+/// <param name="ini">The launch file.</param>
+/// <param name="section">The section to read from.</param>
+/// <param name="key">The key the spawner knows the value by.</param>
+/// <param name="defvalue">The value when no entry of that name holds a boolean.</param>
+static bool Spawn_Bool(INIClass const & ini, char const * section, char const * key, bool defvalue)
+{
+	int const count = ini.Entry_Count(section);
+	for (int index = 0; index < count; index++) {
+		char const * entry = ini.Get_Entry(section, index);
+		if (entry != NULL && _stricmp(entry, key) == 0) {
+			return(ini.Get_Bool(section, entry, defvalue));
+		}
+	}
+	return(defvalue);
+}
+
+
+/// <summary>
 /// Names the fault that refuses a launch.
 /// </summary>
 /// <param name="format">A printf style description of the fault.</param>
@@ -125,7 +147,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 			slot.Name = name.substr(0, UTF8::Boundary_Before(name.c_str(), HOUSE_NAME_MAX - 1));
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
-			slot.IsSpectator = ini.Get_Bool(section.c_str(), "IsSpectator", false);
+			slot.IsSpectator = Spawn_Bool(ini, section.c_str(), "IsSpectator", false);
 			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);
 			slot.Port = ini.Get_Int(section.c_str(), "Port", 0);
 		} else {
@@ -178,7 +200,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		SlotType & slot = Slots[index];
 
 		std::string entry = "Multi" + std::to_string(index + 1);
-		slot.IsSpectator = slot.IsSpectator || ini.Get_Bool("IsSpectator", entry.c_str(), false);
+		slot.IsSpectator = slot.IsSpectator || Spawn_Bool(ini, "IsSpectator", entry.c_str(), false);
 		slot.StartingPosition = Read_Slot_Int(ini, "SpawnLocations", index, -1);
 
 		// A start position out of range is left to the game, like no position at all.
@@ -455,14 +477,14 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 /// </summary>
 void SpawnerConfigClass::Read_INI(INIClass const & ini)
 {
-	IsCampaign = ini.Get_Bool(SETTINGS, "IsSinglePlayer", IsCampaign);
-	IsHost = ini.Get_Bool(SETTINGS, "Host", IsHost);
+	IsCampaign = Spawn_Bool(ini, SETTINGS, "IsSinglePlayer", IsCampaign);
+	IsHost = Spawn_Bool(ini, SETTINGS, "Host", IsHost);
 	CampaignID = ini.Get_Int(SETTINGS, "CampaignID", CampaignID);
 
 	ScenarioName = Read_Text(ini, SETTINGS, "Scenario", ScenarioName);
 	MapName = Read_Text(ini, SETTINGS, "UIMapName", MapName);
 
-	LoadSaveGame = ini.Get_Bool(SETTINGS, "LoadSaveGame", LoadSaveGame);
+	LoadSaveGame = Spawn_Bool(ini, SETTINGS, "LoadSaveGame", LoadSaveGame);
 
 	// Saves are opened by name in the saved-games folder, so a path is cut to its last part.
 	SaveGameName = std::filesystem::path(Read_Text(ini, SETTINGS, "SaveGameName", SaveGameName)).filename().string();
@@ -475,27 +497,27 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	NextCampaignAutoSave = ini.Get_Int(SETTINGS, "NextSPAutoSaveId", 1) - 1;
 	NextSkirmishAutoSave = ini.Get_Int(SETTINGS, "NextSkirmishAutoSaveId", 1) - 1;
 
-	Bases = ini.Get_Bool(SETTINGS, "Bases", Bases);
+	Bases = Spawn_Bool(ini, SETTINGS, "Bases", Bases);
 	Credits = ini.Get_Int(SETTINGS, "Credits", Credits);
-	BridgeDestroy = ini.Get_Bool(SETTINGS, "BridgeDestroy", BridgeDestroy);
-	Crates = ini.Get_Bool(SETTINGS, "Crates", Crates);
-	ShortGame = ini.Get_Bool(SETTINGS, "ShortGame", ShortGame);
-	BuildOffAlly = ini.Get_Bool(SETTINGS, "BuildOffAlly", BuildOffAlly);
-	SuperWeapons = ini.Get_Bool(SETTINGS, "SuperWeapons", SuperWeapons);
+	BridgeDestroy = Spawn_Bool(ini, SETTINGS, "BridgeDestroy", BridgeDestroy);
+	Crates = Spawn_Bool(ini, SETTINGS, "Crates", Crates);
+	ShortGame = Spawn_Bool(ini, SETTINGS, "ShortGame", ShortGame);
+	BuildOffAlly = Spawn_Bool(ini, SETTINGS, "BuildOffAlly", BuildOffAlly);
+	SuperWeapons = Spawn_Bool(ini, SETTINGS, "SuperWeapons", SuperWeapons);
 	GameSpeed = ini.Get_Int(SETTINGS, "GameSpeed", GameSpeed);
-	MultiEngineer = ini.Get_Bool(SETTINGS, "MultiEngineer", MultiEngineer);
+	MultiEngineer = Spawn_Bool(ini, SETTINGS, "MultiEngineer", MultiEngineer);
 	UnitCount = ini.Get_Int(SETTINGS, "UnitCount", UnitCount);
 	AIPlayers = ini.Get_Int(SETTINGS, "AIPlayers", AIPlayers);
 	AIDifficulty = ini.Get_Int(SETTINGS, "AIDifficulty", AIDifficulty);
-	AlliesAllowed = ini.Get_Bool(SETTINGS, "AlliesAllowed", AlliesAllowed);
+	AlliesAllowed = Spawn_Bool(ini, SETTINGS, "AlliesAllowed", AlliesAllowed);
 	GameMode = ini.Get_Int(SETTINGS, "GameMode", GameMode);
-	HarvesterTruce = ini.Get_Bool(SETTINGS, "HarvesterTruce", HarvesterTruce);
-	FogOfWar = ini.Get_Bool(SETTINGS, "FogOfWar", FogOfWar);
-	MCVRedeploy = ini.Get_Bool(SETTINGS, "MCVRedeploy", MCVRedeploy);
-	AutoDeployMCV = ini.Get_Bool(SETTINGS, "AutoDeployMCV", AutoDeployMCV);
+	HarvesterTruce = Spawn_Bool(ini, SETTINGS, "HarvesterTruce", HarvesterTruce);
+	FogOfWar = Spawn_Bool(ini, SETTINGS, "FogOfWar", FogOfWar);
+	MCVRedeploy = Spawn_Bool(ini, SETTINGS, "MCVRedeploy", MCVRedeploy);
+	AutoDeployMCV = Spawn_Bool(ini, SETTINGS, "AutoDeployMCV", AutoDeployMCV);
 	Seed = ini.Get_Int(SETTINGS, "Seed", Seed);
 	TechLevel = ini.Get_Int(SETTINGS, "TechLevel", TechLevel);
-	Firestorm = ini.Get_Bool(SETTINGS, "Firestorm", Firestorm);
+	Firestorm = Spawn_Bool(ini, SETTINGS, "Firestorm", Firestorm);
 	CampaignDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeHuman", CampaignDifficulty);
 	CampaignCDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeComputer", CampaignCDifficulty);
 
@@ -509,17 +531,17 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	ConnTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ConnTimeout", ConnTimeout));
 	ReconnectTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout));
 
-	QuickMatch = ini.Get_Bool(SETTINGS, "QuickMatch", QuickMatch);
-	SkipScoreScreen = ini.Get_Bool(SETTINGS, "SkipScoreScreen", SkipScoreScreen);
-	AINamesByDifficulty = ini.Get_Bool(SETTINGS, "DifficultyBasedAINames", AINamesByDifficulty);
-	CoachMode = ini.Get_Bool(SETTINGS, "CoachMode", CoachMode);
-	AutoSurrender = ini.Get_Bool(SETTINGS, "AutoSurrender", AutoSurrender);
-	AttackNeutralUnits = ini.Get_Bool(SETTINGS, "AttackNeutralUnits", AttackNeutralUnits);
-	ScrapMetal = ini.Get_Bool(SETTINGS, "ScrapMetal", ScrapMetal);
-	PlayMoviesInMultiplayer = ini.Get_Bool(SETTINGS, "PlayMoviesInMultiplayer", PlayMoviesInMultiplayer);
+	QuickMatch = Spawn_Bool(ini, SETTINGS, "QuickMatch", QuickMatch);
+	SkipScoreScreen = Spawn_Bool(ini, SETTINGS, "SkipScoreScreen", SkipScoreScreen);
+	AINamesByDifficulty = Spawn_Bool(ini, SETTINGS, "DifficultyBasedAINames", AINamesByDifficulty);
+	CoachMode = Spawn_Bool(ini, SETTINGS, "CoachMode", CoachMode);
+	AutoSurrender = Spawn_Bool(ini, SETTINGS, "AutoSurrender", AutoSurrender);
+	AttackNeutralUnits = Spawn_Bool(ini, SETTINGS, "AttackNeutralUnits", AttackNeutralUnits);
+	ScrapMetal = Spawn_Bool(ini, SETTINGS, "ScrapMetal", ScrapMetal);
+	PlayMoviesInMultiplayer = Spawn_Bool(ini, SETTINGS, "PlayMoviesInMultiplayer", PlayMoviesInMultiplayer);
 	CustomLoadScreen = Read_Text(ini, SETTINGS, "CustomLoadScreen", CustomLoadScreen);
 	DifficultyName = Read_Text(ini, SETTINGS, "DifficultyName", DifficultyName);
-	SyncLog = ini.Get_Bool(SETTINGS, "SyncLog", SyncLog);
+	SyncLog = Spawn_Bool(ini, SETTINGS, "SyncLog", SyncLog);
 
 	std::string position = Read_Text(ini, SETTINGS, "CustomLoadScreenPos", "");
 	if (!position.empty()) {
@@ -533,7 +555,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 
 	for (int index = 0; index < GLOBAL_FLAG_COUNT; index++) {
 		std::string entry = "GlobalFlag" + std::to_string(index);
-		GlobalFlags[index] = ini.Get_Bool("GlobalFlags", entry.c_str(), false);
+		GlobalFlags[index] = Spawn_Bool(ini, "GlobalFlags", entry.c_str(), false);
 	}
 
 	Read_Slots(ini);
