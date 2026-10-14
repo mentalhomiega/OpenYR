@@ -16,7 +16,7 @@ This page covers how the CnCNet client starts OpenYR's `Game.exe`, what our buil
 | --- | --- |
 | Launch file reader (`SPAWN.INI`: seats, tunnel, mode index) | Built into `Game.exe`; `spawncontract` in ctest |
 | CnCNet page: copy, edits, marker, update, removal, start | Built into `Game.exe`; `cncnetcopy` in ctest and the page screenshots. Not run with the client |
-| Superweapons key | Read case-insensitively from this build on. A client's forced `Superweapons=False` now turns superweapons off. See [Lobby options](#lobby-options) |
+| Superweapons key | Read case-insensitively from this build on, as gamemd does. See [Lobby options](#lobby-options) |
 | Unknown command-line switches | Ignored by the parser. Not seen in a running game |
 | The exact command line the client builds | Not verified. `client.log` does not record it |
 | The client starts `Game.exe` from the copy | Not verified |
@@ -163,7 +163,7 @@ The lobby writes these keys for every match. They come from `Resources\GameOptio
 | `Protocol`, `FrameSendRate` | `0`, `2` | Not read, by design. See [the launch file page](../manual/content/formats/spawn-ini.md) |
 | `Observer.ShowAIOnSidebar`, `SpecialHouseIsAlly`, `DefeatedBecomesObserver` | `Yes`, `No`, `Yes` | Not read. Their effect in the client is not known to us |
 
-The client forces `Superweapons=False` into every match. This build reads it as `SuperWeapons=False`, so the superweapons the shell can disable (those whose type has `IsDisableableFromShell`) are withheld for the whole match. Before this change the spawner matched the key case-sensitively, so those superweapons stayed on. The stock client's Super weapons option writes merged files; whether the forced key is meant to override it is not verified. Until it is, a CnCNet match with superweapons may have none of the shell-disableable ones, which differs from the tester guide's advice to leave Super weapons on All. Check one test game with that advice before a longer session.
+The client forces `Superweapons=False` into every match (`[ForcedSpawnIniOptions]` in `Resources/GameOptions.ini`). That is by design: the key withholds only superweapons whose type has `DisableableFromShell=yes`, and the lobby's Super weapons drop-down merges one of `INI/Game Options/SuperWeapons/*.ini` into the map, All, Offensive and Defensive set `DisableableFromShell=no` on the superweapons they keep, so those stay available; Disabled instead makes the superweapon buildings unbuildable. Before this change our spawner matched the key case-sensitively and ignored it, so superweapons left at their rules default of `DisableableFromShell=yes` stayed on when the lobby meant them off.
 
 ## Game modes
 
@@ -258,7 +258,7 @@ Send us, from every machine in the match:
 ## Open questions
 
 - Does the client always add `-SPAWN`? The first game answers it.
-- Does the client's forced `Superweapons=False` mean the superweapons our build can disable are off? This build now reads it that way.
+- Check in one test match that the Super weapons drop-down's All and Disabled choices behave as described above.
 - Does a Land Rush match on index 6 play as the client's Land Rush? The index is the one the client sends; the rules behind it are not checked.
 - Does the public CnCNet tunnel accept our packets?
 - Does the client start cleanly with the update mirrors and the read-only file in place?
