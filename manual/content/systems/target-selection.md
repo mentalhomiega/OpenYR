@@ -174,13 +174,13 @@ When the mission asks for no particular kind, an infantry or a vehicle fills the
 | [`AA=yes`](/keys/aa/) | Aircraft |
 | [`AG=yes`](/keys/ag/) | Infantry, vehicles and buildings |
 
-An aircraft does not fill the list from its weapons. It takes the ground fill in the next table instead, so the kinds its projectile would add never reach its scans.
+An aircraft does not fill the list from its weapons, so the kinds its projectile would add never reach its scans. A scan that names no kind finds nothing for an aircraft.
 
 Each kind of object then changes the list further. The row that applies is the one for the object doing the looking, not the one being looked at.
 
 | Object | Changes |
 | --- | --- |
-| Anything that moves | A list that names no infantry, vehicle or building kind gains all three |
+| Anything that moves | Adds no kind beyond its weapons' kinds. A list that names no kind and gets none from the weapons stays empty, so the scan finds nothing. A vehicle whose only weapon is anti-air therefore scans for aircraft alone |
 | Anything that moves, under a scan restriction | An area scan becomes a range scan. The restriction starts when the object stops because its path is completely blocked while its target is out of range. In a team, every member gets it. It lifts as soon as a scan finds nothing |
 | Infantry | See below |
 | Vehicle | A human-owned `DeployToFire=yes` vehicle finds nothing. Otherwise only the weapon fill applies |
