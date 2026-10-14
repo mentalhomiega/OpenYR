@@ -1,5 +1,5 @@
 ---
-title: Read the default mission record for an object with no mission
+title: Give an object with no mission the settings gamemd gives it
 category: fix
 release: 0.2.0
 targets:
@@ -11,6 +11,6 @@ credit:
 - MentalHomiega
 ---
 
-An object with no mission took its threat flag from memory outside the mission table. A target scan reads that flag, so the same object could be a target on one machine of a network game and not on the other. Such an object now takes the default mission record, where the flag is off, so a defensive structure can choose it as a target.
+An object with no mission took its mission settings from memory outside the mission table, so a target scan could read a different threat flag on each machine of a network game. Such an object now takes the settings gamemd gives it. A target scan no longer skips it for its threat flag, which is off. Its delay between mission passes is zero, where the default gave a delay.
 
-In the traced test runs the old read gave a nonzero flag every time, so those objects were not targets. The fix changes that for every object with no mission.
+In a normal game, such an object is also no longer pulled off to defend a base, because gamemd does not recruit it for that. It still retaliates and scatters, and it is not a zombie or paralyzed.
