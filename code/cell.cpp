@@ -3722,7 +3722,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 			**	Special override for water crates so that illegal goodies items
 			**	won't appear.
 			*/
-			if (Overlay == OVERLAY_WATER_CRATE) {
+			if (OverlayTypes[Overlay] == Rule->WaterCrateImg) {
 				switch (powerup) {
 					case CRATE_UNIT:
 					case CRATE_SQUAD:
