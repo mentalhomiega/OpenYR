@@ -21,7 +21,7 @@ enum RadarEventType {
 	RADAREVENT_DROPZONE,			// 2
 	RADAREVENT_BASE_ATTACKED,		// 3
 	RADAREVENT_HARVESTER_ATTACKED,	// 4
-	RADAREVENT_ENEMY_SENSED,		// 5
+	RADAREVENT_ENEMY_SENSED,		// 5, call at 0x70DAD7 in TechnoClass::RadarTrackingUpdate
 	RADAREVENT_FACTORY_OUTPUT,		// 6, call at 0x4FB631 in HouseClass::Place_Object
 	RADAREVENT_UNIT_LOST,			// 7, call at 0x4D98FE in FootClass::Destroyed
 	RADAREVENT_REPAIR,				// 8, call at 0x44B960 in BuildingClass::Mission_Repair
@@ -31,7 +31,7 @@ enum RadarEventType {
 	RADAREVENT_BUILDING_PLACED,		// 12, call at 0x4468A8 in BuildingClass::Place
 	RADAREVENT_SUPERWEAPON,			// 13, calls in SuperClass::Launch (0x6CC4BE), LightningStorm::Start (0x539F89) and BulletClass::Update (0x467EA7)
 	RADAREVENT_FACTORY_FOUND,		// 14, call at 0x519BB6 in InfantryClass::FindFactory
-	RADAREVENT_MIND_CONTROL,		// 15, call at 0x4582C5 in BuildingClass::Check_Mind_Control_Status
+	RADAREVENT_MIND_CONTROL,		// 15, call at 0x4582C5 in FUN_00458200 (BuildingClass::Garrison_AI), a player's structure left empty
 	RADAREVENT_ALLY_ATTACKED,		// 16, call at 0x4F95A0 in HouseClass::BuildingUnderAttack, ally branch
 
 	RADAREVENT_COUNT,

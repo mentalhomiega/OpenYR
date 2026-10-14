@@ -11253,6 +11253,7 @@ void TechnoClass::Update_Radar_Position(bool force_update)
 	Rect radar_rect = Map.RadarSurface->Get_Rect();
 
 	if (detected != DETECTED_NONE) {
+		// Gamemd raises this for any sensed object, whoever owns it; only a foot object inside a tube is skipped.
 		if (visible && (!Is_Foot() || ((FootClass *)this)->CurrentTube < TUBE_FIRST)) {
 			if (Submit_Radar_Event(RADAREVENT_ENEMY_SENSED, Get_Coord().As_Cell())) {
 				if (detected == DETECTED_CLOAKED) {

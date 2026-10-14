@@ -24,7 +24,7 @@ values:
   - { constant: RADAREVENT_BUILDING_PLACED, value: 12, input: "12", meaning: "Building placed. Yellow." }
   - { constant: RADAREVENT_SUPERWEAPON, value: 13, input: "13", meaning: "Superweapon event. Not drawn." }
   - { constant: RADAREVENT_FACTORY_FOUND, value: 14, input: "14", meaning: "Factory found. Not drawn." }
-  - { constant: RADAREVENT_MIND_CONTROL, value: 15, input: "15", meaning: "Mind control event. Not drawn." }
+  - { constant: RADAREVENT_MIND_CONTROL, value: 15, input: "15", meaning: "Structure-abandoned event. Raised when the last occupant leaves a garrisonable structure the player owns. Not drawn." }
   - { constant: RADAREVENT_ALLY_ATTACKED, value: 16, input: "16", meaning: "Ally-under-attack event. Not drawn." }
 ---
 
@@ -49,11 +49,11 @@ Each kind has a fixed suppression distance, visibility, duration and suppression
 | 12 Building placed | no | 8 | 200 | 400 |
 | 13 Superweapon | no | 8 | 0 | 5 |
 | 14 Factory found | yes | 8 | 0 | 200 |
-| 15 Mind control | yes | 8 | 0 | 400 |
+| 15 Structure abandoned | yes | 8 | 0 | 400 |
 | 16 Ally attacked | yes | 8 | 200 | 600 |
 
 A suppressible kind is refused when an event of the same kind, still in play, lies closer than its suppression distance in cells measured in a straight line. Events of any owner count. The refused call returns false, and the EVA line that depends on it does not play. A marker is the box's drawn outline after it settles, and it is drawn only for a kind with a colour. Events leave the list when their duration runs out, and the newest one sets the cell for the space-bar jump.
 
 The kind sets the box's colors. Kinds 0, 3 and 4 pulse between magenta and purple, kinds 1, 2, 11 and 12 between yellow and olive, and kind 5 between cyan and teal. A kind with no colour is never drawn, but it still suppresses and still counts for the space-bar jump.
 
-A map can raise any kind with the [Create Radar Event](/mapping/actions/taction-radar-event/) trigger action. Kinds 0, 1 and 2 come only from trigger actions. OpenYR raises base attacked, harvester attacked, enemy sensed, unit lost, beacon and ally attacked events. Kinds 6, 8 to 10, 12 to 15 are raised by Yuri's Revenge's own code and OpenYR does not raise them yet.
+A map can raise any kind with the [Create Radar Event](/mapping/actions/taction-radar-event/) trigger action. Kinds 0, 1 and 2 come only from trigger actions. The engine raises kinds 3 to 16 at the points where Yuri's Revenge raises them.

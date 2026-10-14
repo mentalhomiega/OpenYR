@@ -81,6 +81,7 @@ void Test_Colors(void)
 	Check(RadarEventKinds[RADAREVENT_ENEMY_SENSED].ColorGroup == RADAREVENT_GROUP_CYAN, "enemy sensed is cyan");
 	Check(RadarEventKinds[RADAREVENT_ALLY_ATTACKED].ColorGroup == RADAREVENT_GROUP_NONE, "ally attacked has no colour, so it is never drawn");
 	Check(RadarEventKinds[RADAREVENT_SUPERWEAPON].ColorGroup == RADAREVENT_GROUP_NONE, "superweapon has no colour");
+	Check(RadarEventKinds[RADAREVENT_MIND_CONTROL].ColorGroup == RADAREVENT_GROUP_NONE, "structure abandoned (15) has no colour");
 }
 
 
@@ -95,6 +96,9 @@ void Test_Suppression(void)
 	Check(!Radar_Event_Suppresses(RADAREVENT_NONCOMBAT, Cell(10,10), RADAREVENT_NONCOMBAT, Cell(10,10)), "noncombat is not suppressible");
 	Check(Radar_Event_Suppresses(RADAREVENT_ENEMY_SENSED, Cell(10,10), RADAREVENT_ENEMY_SENSED, Cell(15,10)), "enemy sensed suppresses at 5 cells");
 	Check(!Radar_Event_Suppresses(RADAREVENT_ENEMY_SENSED, Cell(10,10), RADAREVENT_ENEMY_SENSED, Cell(16,10)), "enemy sensed does not suppress at its 6-cell limit");
+	Check(Radar_Event_Suppresses(RADAREVENT_MIND_CONTROL, Cell(10,10), RADAREVENT_MIND_CONTROL, Cell(17,10)), "structure abandoned suppresses at 7 cells");
+	Check(!Radar_Event_Suppresses(RADAREVENT_MIND_CONTROL, Cell(10,10), RADAREVENT_MIND_CONTROL, Cell(18,10)), "structure abandoned does not suppress at its 8-cell limit");
+	Check(!Radar_Event_Suppresses(RADAREVENT_MIND_CONTROL, Cell(10,10), RADAREVENT_ALLY_ATTACKED, Cell(10,10)), "a structure abandoned is not suppressed by another kind");
 	Check(Radar_Event_Suppresses(RADAREVENT_COMBAT, Cell(10,10), RADAREVENT_COMBAT, Cell(13,14)), "the distance is Euclidean: (3,4) is 5 cells");
 	Check(!Radar_Event_Suppresses(RADAREVENT_COMBAT, Cell(10,10), RADAREVENT_COMBAT, Cell(16,16)), "the distance is Euclidean: (6,6) is about 8.48 cells");
 }

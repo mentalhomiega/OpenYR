@@ -9611,6 +9611,7 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 /// does every frame: an empty one belongs to the Civilian side's house and an occupied one to
 /// its first occupant's house. A structure at red health throws its occupants out. A structure
 /// that can be built (TechLevel other than -1), such as the Battle Bunker, is left alone.
+/// The structure-abandoned line for the player's own structure plays only if its radar event is created.
 /// </summary>
 void BuildingClass::Garrison_AI(void)
 {
@@ -9637,7 +9638,9 @@ void BuildingClass::Garrison_AI(void)
 	if (Occupants.Count() == 0 && House != civilians) {
 		if (House->Is_Player_Control()) {
 			Sound_Effect(Rule->BuildingAbandonedSound);
-			Speak_Eva("EVA_StructureAbandoned");
+			if (Submit_Radar_Event(RADAREVENT_MIND_CONTROL, Get_Coord().As_Cell())) {
+				Speak_Eva("EVA_StructureAbandoned");
+			}
 		}
 		Set_Garrison_House(civilians);
 	} else if (Occupants.Count() > 0 && House == civilians) {
