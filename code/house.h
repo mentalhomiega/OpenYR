@@ -1258,6 +1258,12 @@ class HouseClass : public AbstractClass
 		*/
 		int Scheme;
 
+		/*
+		**	The packed free color this house is drawn in, or zero when it is drawn in the stock scheme of
+		**	Scheme. Drawing only: the simulation never reads it.
+		*/
+		unsigned int CustomColor;
+
 		int QuantityB(int index) {return(BQuantity.Value(index));}
 		int QuantityU(int index) {return(UQuantity.Value(index));}
 		int QuantityI(int index) {return(IQuantity.Value(index));}

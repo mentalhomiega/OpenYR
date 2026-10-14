@@ -384,6 +384,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	SpeakMaxedDelay(1),
 	IniName(NULL),
 	Scheme(0),
+	CustomColor(0),
 	BaseAreaMap(0),
 	field_10E20(0),
 	field_10E28(1.0),
@@ -7614,7 +7615,17 @@ bool HouseClass::Load(SaveStreamClass & stream)
 		SuperWeapon.Delete_Index(0);
 	}
 
-	return(Load_Members(stream));
+	if (!Load_Members(stream)) {
+		return(false);
+	}
+
+	// The scheme index belongs to the session that wrote the save, so a custom color is looked up again here.
+	if (CustomColor != 0) {
+		Scheme = Custom_Color_Scheme_Index(CustomColor);
+		Initialize_Radar_Color();
+	}
+
+	return(true);
 }
 
 
@@ -7810,6 +7821,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Regions);
 	stream.Serialize(IniName);
 	stream.Serialize(Scheme);
+	stream.Serialize(CustomColor);
 	// BaseAreaMap -- points at a defense grid that only exists while a base defense is being
 	// placed.
 	stream.Serialize(field_10E20);
