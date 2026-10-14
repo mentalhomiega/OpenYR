@@ -29,6 +29,9 @@
 **							land or naval limits the orders to units that are not, or are, ships (default all)
 **	owners <TypeID>			writes the type's owner bits and each house's country bit
 **	canbuild <TypeID>		writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses, and whether the house can build it now
+**	cameos					writes each sidebar strip's cameos in order, with the type and whether the player can build it now
+**	clickcameo <TypeID>		starts production of the type, as a click on its cameo does, when a strip still offers the cameo
+**	prereqs <TypeID>		writes the prerequisites the type lists, then each type whose Prerequisite list names it
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
 **	bridge x y				writes a cell's bridge tile, overlay, deck and under-bridge flags
@@ -1291,6 +1294,17 @@ static void Tab_Step(void)
 }
 
 
+// Writes the type when its Prerequisite list names the structure with heap ID id, for the prereqs step.
+static void Note_If_Gated(TechnoTypeClass const * other, int id, char const * target)
+{
+	for (int pre = 0; pre < other->Prerequisite.Count(); pre++) {
+		if (other->Prerequisite[pre] == id) {
+			DebugString("AUTOTEST   gated %s by %s\n", other->Name(), target);
+		}
+	}
+}
+
+
 // Writes which special cursor mode the player is in, so a script can check that one mode ended when another began.
 static void Modes_Step(void)
 {
@@ -1989,6 +2003,13 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   factory %s of %s cell %d,%d builds %s naval %d primary %d limbo %d\n", building->Class->Name(), building->House->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 				builds == RTTI_UNITTYPE ? "vehicle" : builds == RTTI_INFANTRYTYPE ? "infantry" : builds == RTTI_AIRCRAFTTYPE ? "aircraft" : builds == RTTI_BUILDINGTYPE ? "structure" : "other",
 				(int)building->Class->IsNaval, (int)building->IsLeader, (int)building->IsInLimbo);
+		}
+		// Each live production, with the object on its line and how many copies of that type the factory holds.
+		for (int index = 0; index < Factories.Count(); index++) {
+			FactoryClass * factory = Factories[index];
+			TechnoClass const * object = factory->Get_Object();
+			DebugString("AUTOTEST   production of %s object %s held %d\n", factory->Get_House()->Class->Name(),
+				object != NULL ? object->TClass->Name() : "none", object != NULL ? factory->Total(object->TClass) : 0);
 		}
 		return;
 	}
@@ -3226,6 +3247,47 @@ void Run(StepType const & step)
 	} else if (step.Command == "emp") {
 		// emp <duration> x y: an EM pulse of radius 2 and that duration on the cell, from no source.
 		new EMPulseClass(Cell(step.X, step.Y), 2, std::atoi(step.Argument.c_str()), NULL);
+	} else if (step.Command == "cameos") {
+		// cameos: each sidebar strip's cameos in display order, with the type and whether the player may build it now.
+		for (int column = 0; column < SidebarClass::COLUMNS; column++) {
+			for (int index = 0; index < Map.Column[column].BuildableCount; index++) {
+				SidebarClass::StripClass::BuildType const & entry = Map.Column[column].Buildables[index];
+				TechnoTypeClass const * tech = Fetch_Techno_Type(entry.BuildableType, entry.BuildableID);
+				DebugString("AUTOTEST   cameo column %d slot %d %s id %d can %d\n", column, index, tech != NULL ? tech->Name() : "(superweapon)",
+					entry.BuildableID, tech != NULL ? PlayerPtr->Can_Build(tech, false, true) : -2);
+			}
+		}
+	} else if (step.Command == "clickcameo") {
+		// clickcameo <TypeID>: starts production of the type, as a click on its cameo does, when a sidebar strip still offers the cameo.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		bool offered = false;
+		for (int column = 0; type != NULL && column < SidebarClass::COLUMNS; column++) {
+			for (int index = 0; index < Map.Column[column].BuildableCount; index++) {
+				SidebarClass::StripClass::BuildType const & entry = Map.Column[column].Buildables[index];
+				offered = offered || Fetch_Techno_Type(entry.BuildableType, entry.BuildableID) == type;
+			}
+		}
+		if (type != NULL && offered) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
+		}
+		DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
+	} else if (step.Command == "prereqs") {
+		// prereqs <TypeID>: the prerequisites the type lists, then each type of any kind whose Prerequisite list names it.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			for (int index = 0; index < type->Prerequisite.Count(); index++) {
+				int const pre = type->Prerequisite[index];
+				DebugString("AUTOTEST   prereq of %s: %d %s\n", type->Name(), pre, pre >= 0 && pre < BuildingTypes.Count() ? BuildingTypes[pre]->Name() : "(group)");
+			}
+			// Prerequisite entries name structures by heap ID, so only a structure can be named by another type.
+			if (dynamic_cast<BuildingTypeClass const *>(type) != NULL) {
+				int const id = type->Fetch_Heap_ID();
+				for (int index = 0; index < BuildingTypes.Count(); index++) Note_If_Gated(BuildingTypes[index], id, type->Name());
+				for (int index = 0; index < UnitTypes.Count(); index++) Note_If_Gated(UnitTypes[index], id, type->Name());
+				for (int index = 0; index < InfantryTypes.Count(); index++) Note_If_Gated(InfantryTypes[index], id, type->Name());
+				for (int index = 0; index < AircraftTypes.Count(); index++) Note_If_Gated(AircraftTypes[index], id, type->Name());
+			}
+		}
 	} else if (step.Command == "canbuild") {
 		// canbuild <TypeID>: whether the player may build the type and which factory would.
 		TechnoTypeClass const * type = Find_Type(step.Argument);
