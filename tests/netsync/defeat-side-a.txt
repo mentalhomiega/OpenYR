@@ -1,0 +1,22 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP, with the default two computer players. The Americans, side A's
+; house, are defeated at frame 300 on both copies, so the match goes on with the Russians and the computer players.
+; Side A then watches. Its beacon, planning and selection-cycle input is refused, and the observer lines show it
+; watching with nothing owned and nothing selected.
+; Side B runs defeat-side-b.txt, which has the same defeat line and the same observer lines.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/defeat-side-a.txt -ScriptB tests/netsync/defeat-side-b.txt -Seconds 120 -PortA 24731 -PortB 24732
+1 log netsync side A: defeat the Americans, then the observer checks
+40 select AMCV
+60 command DeployObject
+200 observer
+300 defeat Americans
+301 observer
+310 command PlaceBeacon
+320 modes
+330 command PlanningMode
+340 observer
+350 command CombatantSelect
+360 command NextObject
+370 command AllToCheer
+380 observer
+390 modes
+500 observer

@@ -56,6 +56,10 @@ An observer is given the whole map, and so is a defeated player in a match witho
 
 An observer owns nothing, and a defeated player's forces are destroyed at defeat. Clicking an object therefore only selects it for viewing and gives no order.
 
+## Commands
+
+A watcher cannot use the `PlaceBeacon`, `NextObject`, `PreviousObject`, `CombatantSelect`, `HealthFilter`, `VeterancyFilter`, `TypeSelect` and `AllToCheer` commands, and planning mode does not start. In a network match, a watcher's game speed change is not sent to the other players. Coach mode leaves these to a defeated player.
+
 ## What an observer hears
 
 EVA speaks most lines only to the house they concern: money, silos, power, a lost unit or structure, a harvester or base under attack, a superweapon, the sidebar, and the house's own defeat or victory. An observer owns nothing and is never given a verdict, so it hears none of these lines.

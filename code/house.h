@@ -939,6 +939,7 @@ class HouseClass : public AbstractClass
 		bool Is_Ally(AbstractClass const * target) const;
 		bool Shares_View_With(HouseClass const * house) const;
 		bool Sees_Whole_Map(void) const;
+		bool Is_Watching(void) const;
 		HouseClass * Player_View(void) const;
 		bool Is_Player_View(void) const;
 		bool Has_Powered_Unit_Source(TechnoTypeClass const * type) const;

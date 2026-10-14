@@ -126,7 +126,7 @@ UIGameOptionsChoice UI_Game_Options_Dialog(void)
 
 	if (state.Internet && presenter.SpeedChanged) {
 		int const speed = (OptionsClass::MAX_SPEED_SETTING - 1) - presenter.State.Speed;
-		if (Options.GameSpeed != speed) {
+		if (Options.GameSpeed != speed && !PlayerPtr->Is_Watching()) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
 		}
 	}

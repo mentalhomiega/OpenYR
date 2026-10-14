@@ -1,0 +1,10 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP, with the default two computer players. It runs the same defeat
+; of the Americans at frame 300 as side A, where the Americans are a remote player, then reads the observer lines.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/defeat-side-a.txt -ScriptB tests/netsync/defeat-side-b.txt -Seconds 120 -PortA 24731 -PortB 24732
+1 log netsync side B: defeat the Americans, a remote player to this copy
+40 select SMCV
+60 command DeployObject
+200 observer
+300 defeat Americans
+301 observer
+500 observer

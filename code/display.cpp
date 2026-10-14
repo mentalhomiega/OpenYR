@@ -2115,7 +2115,7 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 
 		// A click in beacon placement mode places a beacon on the clicked cell and ends the mode.
 		if (IsPlaceBeaconMode) {
-			if (!PlayerPtr->IsObserver && Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
+			if (!PlayerPtr->Is_Watching() && Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
 				xCoord where;
 				where = cell.As_Coord();
 				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::BEACON_PLACE, where));
@@ -2605,8 +2605,8 @@ namespace {
 /// </summary>
 /// <param name="control">The mode to set. Zero turns planning mode off, one turns it on, and -1 toggles it.</param>
 /// <param name="hold_key">The virtual key that started the mode, or -1 when a button started it.</param>
-/// <remarks>Turning the mode on has no effect while a placement is pending or for a multiplayer
-/// observer.</remarks>
+/// <remarks>Turning the mode on has no effect while a placement is pending or for a watching house
+/// (see HouseClass::Is_Watching).</remarks>
 void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 {
 	bool mode = IsPlanningMode;
@@ -2641,7 +2641,7 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 		return;
 	}
 
-	if (PendingObject || PlayerPtr->IsObserver) {
+	if (PendingObject || PlayerPtr->Is_Watching()) {
 		return;
 	}
 	IsRepairMode = false;
@@ -2697,7 +2697,7 @@ void DisplayClass::Reset_Planning_Mode(void)
 /// Turns beacon placement mode on or off.
 /// Turning it on cancels the repair, sell, power and waypoint modes and clears the selection.
 /// It does nothing in a single-player or skirmish game, while a placement is pending, when no
-/// slot is free, or for a multiplayer observer.
+/// slot is free, or for a watching house (see HouseClass::Is_Watching).
 /// </summary>
 /// <param name="control">The mode to set. Zero turns the mode off, one turns it on, and -1 toggles it.</param>
 void DisplayClass::Place_Beacon_Mode_Control(int control)
@@ -2727,7 +2727,7 @@ void DisplayClass::Place_Beacon_Mode_Control(int control)
 		return;
 	}
 
-	if (PendingObject || !Beacons.Is_Available() || PlayerPtr->IsObserver || !Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
+	if (PendingObject || !Beacons.Is_Available() || PlayerPtr->Is_Watching() || !Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
 		return;
 	}
 	IsRepairMode = false;

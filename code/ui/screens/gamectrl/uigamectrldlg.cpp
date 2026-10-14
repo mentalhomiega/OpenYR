@@ -42,7 +42,10 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 		{
 			if (Options.GameSpeed != speed) {
 				if (GameActive == true && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
+					// A watching house cannot change a network match's speed; gamemd hides the slider from it.
+					if (!PlayerPtr->Is_Watching()) {
+						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
+					}
 				} else {
 					Options.GameSpeed = speed;
 				}
@@ -173,7 +176,8 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.EdgeScroll = Options.AutoScroll;
 	state.ShowHidden = Options.ShowHidden;
 	state.InGame = GameActive;
-	state.HasSpeed = !(GameActive && Session.Type == GAME_INTERNET);
+	// A watching house has no speed to set; gamemd hides the speed slider from its observer.
+	state.HasSpeed = !(GameActive && (Session.Type == GAME_INTERNET || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
 	state.HasDifficulty = !GameActive;
 	state.SoundEnabled = AudioEngine.Is_Available();
 

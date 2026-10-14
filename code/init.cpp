@@ -3474,7 +3474,7 @@ class PrevObjectCommandClass : public CommandClass
 
 			ObjectClass * obj = Map.Prev_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
-			if (obj != NULL) {
+			if (obj != NULL && !PlayerPtr->Is_Watching()) {
 				Unselect_All();
 				obj->Select();
 				Map.Center_Map();
@@ -3611,8 +3611,11 @@ class AllToCheerCommandClass : public CommandClass
 			return(Fetch_String(TXT_ALL_TO_CHEER_DESC));
 		}
 
-		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together.</summary>
+		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together. A watching house sends nothing.</summary>
 		virtual void Execute(void) const {
+			if (PlayerPtr->Is_Watching()) {
+				return;
+			}
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALL_CHEER));
 		}
 };
@@ -4927,7 +4930,7 @@ class NextObjectCommandClass : public CommandClass
 
 			ObjectClass * obj = Map.Next_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
-			if (obj != NULL) {
+			if (obj != NULL && !PlayerPtr->Is_Watching()) {
 				Unselect_All();
 				obj->Select();
 				Map.Center_Map();
@@ -6140,7 +6143,7 @@ class CombatantSelectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			if (PlayerPtr->IsObserver) {
+			if (PlayerPtr->Is_Watching()) {
 				return;
 			}
 
@@ -6204,7 +6207,7 @@ class TierNavigationClass
 
 		void Select_Next_Tier(void)
 		{
-			if (PlayerPtr->IsObserver) {
+			if (PlayerPtr->Is_Watching()) {
 				return;
 			}
 
@@ -6346,7 +6349,7 @@ class TypeSelectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			if (!PlayerPtr->IsObserver) {
+			if (!PlayerPtr->Is_Watching()) {
 				int now = TickCount;
 				Pressed_At = now;
 			}
@@ -6359,7 +6362,7 @@ class TypeSelectCommandClass : public CommandClass
 			int now = TickCount;
 			bool const tap = (now - Pressed_At) < TIMER_SECOND / 2;
 			Pressed_At = -1;
-			if (tap && !PlayerPtr->IsObserver) {
+			if (tap && !PlayerPtr->Is_Watching()) {
 				SelectSameTypeCommandClass::Select_Same_Types(false);
 			}
 		}

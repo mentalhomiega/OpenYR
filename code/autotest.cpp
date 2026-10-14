@@ -121,6 +121,10 @@
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
 **	houses					writes each house's money, power, spy effects, resource gatherers and powered unit centres
+**	defeat <house>			runs the defeat a house gets once it has nothing left, on that house: its forces are destroyed,
+**							then MPlayer_Defeated runs. The house is named as the waits name one; "player" is the local player
+**	observer				writes the local player's defeat, watching, whole-map and Session.ObiWan state, its owned objects,
+**							the houses still playing, its selection and the beacon and planning modes
 **	statics					writes how many sounds that Play Sound Effect At started are still going
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
@@ -3142,6 +3146,38 @@ void Run(StepType const & step)
 			types += CurrentObject[index]->Class_Of()->Name();
 		}
 		DebugString("AUTOTEST   selected %d:%s\n", CurrentObject.Count(), types.c_str());
+	} else if (step.Command == "defeat") {
+		// defeat <house>: runs the defeat HouseClass::AI runs once a house has nothing left, on the named
+		// house ("player" or a house name as the waits name one). Every copy of a network game must run it on the same frame.
+		HouseClass * house = Wait_House(step.Argument);
+		if (house == NULL || house->IsDefeated) {
+			DebugString("AUTOTEST defeat %s: %s\n", step.Argument.c_str(), house == NULL ? "no such house" : "already defeated");
+		} else {
+			house->Blowup_All();
+			house->MPlayer_Defeated();
+			DebugString("AUTOTEST defeat %s: defeated frame %d, local %d\n", house->Class->Name(), Frame, (int)(house == PlayerPtr));
+		}
+	} else if (step.Command == "observer") {
+		// observer: the local player's defeat and observer state, what it owns and selects, and its beacon mode.
+		int owned = 0;
+		if (PlayerPtr != NULL) {
+			for (int object = 0; object < Technos.Count(); object++) {
+				if (Technos[object]->House == PlayerPtr && !Technos[object]->IsInLimbo) {
+					owned++;
+				}
+			}
+		}
+		int alive = 0;
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index] != NULL && !Houses[index]->IsDefeated && !Houses[index]->Class->IsMultiplayPassive) {
+				alive++;
+			}
+		}
+		DebugString("AUTOTEST observer frame %d player %s defeated %d observer %d watching %d whole %d obiwan %d owned %d alive %d selected %d beacon %d planning %d\n",
+			Frame, PlayerPtr != NULL ? PlayerPtr->Class->Name() : "none", PlayerPtr != NULL ? (int)PlayerPtr->IsDefeated : 0,
+			PlayerPtr != NULL ? (int)PlayerPtr->IsObserver : 0, PlayerPtr != NULL ? (int)PlayerPtr->Is_Watching() : 0,
+			PlayerPtr != NULL ? (int)PlayerPtr->Sees_Whole_Map() : 0, (int)Session.ObiWan, owned, alive, CurrentObject.Count(),
+			(int)Map.IsPlaceBeaconMode, (int)Map.IsPlanningMode);
 	} else if (step.Command == "fullname") {
 		// fullname <TypeID>: the name players see for the type, and the string label it comes from.
 		TechnoTypeClass const * type = Find_Type(step.Argument);

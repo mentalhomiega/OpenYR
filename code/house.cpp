@@ -2458,6 +2458,18 @@ bool HouseClass::Sees_Whole_Map(void) const
 
 
 /// <summary>
+/// Does this house only watch the match? A spectator seat does, and so does a defeated player
+/// without coach mode. Input that acts for the house, such as beacons, planning, selection
+/// cycles and the cheer, is refused to a watcher, as gamemd refuses it to the local observer
+/// (MultiplayerObserver, set by HouseClass::AcceptDefeat at 0x4FC0B0).
+/// </summary>
+bool HouseClass::Is_Watching(void) const
+{
+	return(Sees_Whole_Map());
+}
+
+
+/// <summary>
 /// Fetches the house whose view a person sees for this one: the player's house for every house
 /// the player controls in a campaign, the house itself for a human seat outside one, and NULL
 /// for a house no person plays.
@@ -3829,6 +3841,8 @@ void HouseClass::MPlayer_Defeated(void)
 	}
 
 	if (PlayerPtr == this) {
+		// Ending planning queues its commit, as PlanningNodeClass::ExitPlanningMode (0x637A10) does.
+		Map.Planning_Mode_Control(0, -1);
 		Map.Place_Beacon_Mode_Control(0);
 		if (!Session.Options.CoachMode) {
 			Become_ObiWan();
