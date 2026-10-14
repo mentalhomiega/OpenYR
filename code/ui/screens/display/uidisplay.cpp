@@ -31,6 +31,7 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
+	InitialHighlights(State.Highlights),
 	InitialDebugMode(State.DebugMode)
 {
 	ShownRowIndex = State.RowCount;
@@ -183,6 +184,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "renderer") {
 		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
 
+	} else if (intent.Name == "highlights") {
+		State.Highlights = std::clamp(intent.Value, 0, 1);
+
 	} else if (intent.Name == "sidebarrows") {
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
@@ -226,6 +230,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
 			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
+		}
+		if (State.Highlights != InitialHighlights) {
+			Service.Set_HDR_Highlights(State.Highlights);
 		}
 		if (PickedRows >= 0) {
 			Service.Set_Sidebar_Rows(PickedRows);
@@ -314,6 +321,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
 			Model.DirtyVariable("renderer");
+			Model.DirtyVariable("hdroutput");
+			Model.DirtyVariable("highlights");
 			Model.DirtyVariable("rowcount");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
@@ -372,6 +381,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("cursorscale", &state.CursorScale)
 				&& model.Bind("renderers", &state.Renderers)
 				&& model.Bind("renderer", &state.Renderer)
+				&& model.Bind("hdroutput", &state.HDROutput)
+				&& model.Bind("highlights", &state.Highlights)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
 				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));

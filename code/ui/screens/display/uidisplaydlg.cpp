@@ -142,6 +142,12 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.Renderer = renderer;
 		}
 
+		virtual void Set_HDR_Highlights(int highlights) override
+		{
+			Options.HDRHighlights = (highlights == 1) ? HDR_HIGHLIGHTS_ENHANCED : HDR_HIGHLIGHTS_CLASSIC;
+			Apply_HDR_Highlights();
+		}
+
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
 		{
 			Interface_Frame_For(width, height, scale, frame_width, frame_height);
@@ -316,6 +322,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
+	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},

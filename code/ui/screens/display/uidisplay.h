@@ -61,6 +61,7 @@ class UIDisplayServiceClass
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
 		virtual void Set_Renderer(int renderer) = 0;
+		virtual void Set_HDR_Highlights(int highlights) = 0;
 
 		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
 		// scale given (zero is automatic).
@@ -93,6 +94,9 @@ struct UIDisplayState
 	int CursorScale = 0;
 	std::vector<UIDisplayChoice> Renderers;
 	int Renderer = 0;
+	// Nothing sets this yet, so the Highlights row stays disabled.
+	bool HDROutput = false;
+	int Highlights = 0;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
 	// The screen the page starts on, used for the preview when no resolution is picked.
@@ -132,6 +136,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialFrameRate;
 		int InitialCursorScale;
 		int InitialRenderer;
+		int InitialHighlights;
 		// The rows the player last picked on this page, or -1 for none. Only a pick is saved on OK.
 		int PickedRows = -1;
 		// The index of the row the drop-down shows, as the presenter last set it.
