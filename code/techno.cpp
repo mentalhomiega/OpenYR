@@ -4689,8 +4689,8 @@ int TechnoClass::Rearm_Delay(int which) const
 
 
 /// <summary>
-/// Draws an electric bolt from the weapon's muzzle to the target, as gamemd's FUN_006FD460 and
-/// FUN_006FD570 do. A vehicle's first bolt follows its muzzle while the bolt lasts.
+/// Draws an electric bolt from the weapon's mounting to the target, as gamemd's FUN_006FD460 and
+/// FUN_006FD570 do (GetFLH). A vehicle's first bolt follows its mounting while the bolt lasts.
 /// </summary>
 void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClass const * weapon)
 {
@@ -4698,9 +4698,9 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 		return;
 	}
 
-	Coord source = Fire_Coord(which);
+	Coord source = Turret_Coord(which);
 
-	// A structure's bolt sorts with the height its muzzle is drawn above the structure.
+	// A structure's bolt sorts with the height its mounting is drawn above the structure.
 	int zadjust = 0;
 	if (RTTI == RTTI_BUILDING) {
 		Point2D muzzle;
@@ -5296,7 +5296,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				**	now.
 				*/
 				if (a != NULL) {
-					Coord anim_coord = Fire_Coord(which);
+					// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
+					Coord anim_coord = fire_coord;
 					AnimClass * anim = new AnimClass(a, anim_coord);
 					if (RTTI == RTTI_BUILDING) {
 						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;

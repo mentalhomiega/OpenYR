@@ -25,7 +25,7 @@ The direction used is the one the weapon is aiming in:
 - Infantry and aircraft use the direction they face.
 - A structure with a turret uses the turret's facing. A structure with no turret, or whose turret animation is a voxel, uses the direction to its target.
 
-The animation appears at the weapon's muzzle. On a vehicle, infantry or aircraft it is attached to the firing object and moves with it. On a structure it stays where it appeared. On a burst weapon it can appear at the opposite muzzle from the projectile, as [Firing geometry](/systems/firing-geometry/#how-a-burst-alternates-muzzles) describes.
+The animation appears at the weapon's mounting, or at the firer's center for a [`Dropping=yes`](/keys/dropping/) weapon. On a vehicle, infantry or aircraft it is attached to the firing object and moves with it. On a structure it stays where it appeared. On a burst weapon it can appear at the opposite muzzle from the projectile, as [Firing geometry](/systems/firing-geometry/#how-a-burst-alternates-muzzles) describes.
 
 `Anim=none` empties the list, and the weapon plays no firing animation. A `none` entry inside a longer list is dropped, which shortens the list and can change how entries are chosen. An empty value after the `=` keeps whatever an earlier rules file set. A name the game does not already know is registered as a new animation type, so a misspelled entry is not rejected and still takes its place in the list.
 

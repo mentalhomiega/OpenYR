@@ -24,8 +24,8 @@ The gun's heading depends on the kind of object. [Firing geometry](/systems/firi
 
 The offset places two points, and [Firing geometry](/systems/firing-geometry/#what-each-part-of-a-shot-reads) lists which part of a shot uses each:
 
-- The **mounting** is where the projectile is created and where its aim is measured from. It is this offset with [`TurretOffset`](/keys/turretoffset/) added to `X`. It stays in place as the barrel elevates. On a vehicle or aircraft it also tilts with the body on slopes and in flight.
-- The **muzzle** is where the firing animation, laser beam, sonic wave and attached particle systems appear. It starts from the same offset but does not tilt with the body. It rises by [`PBarrelThickness`](/keys/pbarrelthickness/), then extends [`PBarrelLength`](/keys/pbarrellength/) along the elevated barrel.
+- The **mounting** is where the projectile is created, where its aim is measured from, and where the firing animation and an electric bolt start. It is this offset with [`TurretOffset`](/keys/turretoffset/) added to `X`. It stays in place as the barrel elevates. On a vehicle or aircraft it also tilts with the body on slopes and in flight.
+- The **muzzle** is where the laser beam, sonic wave and attached particle systems appear. It starts from the same offset but does not tilt with the body. It rises by [`PBarrelThickness`](/keys/pbarrelthickness/), then extends [`PBarrelLength`](/keys/pbarrellength/) along the elevated barrel.
 
 An infantry type has no separate mounting: its projectile starts at the muzzle, so [`PBarrelThickness`](/keys/pbarrelthickness/) and [`PBarrelLength`](/keys/pbarrellength/) move its projectile as well as its effects.
 

@@ -106,7 +106,7 @@ One shot runs the steps below in order. A step that ends the shot skips every la
 9. A `UseFireParticles=yes`, [`UseSparkParticles=yes`](/keys/usesparkparticles/) or [`IsRailgun=yes`](/keys/israilgun/) weapon starts its effect at the muzzle. The railgun beam deals its damage now, before any later step; `IsRailgun` covers what it hits.
 10. The burst counter advances, the reload delay is set from the advanced counter, and the counter returns to `0` after the last round of the burst.
 11. The weapon's [`Report`](/keys/report/) sound plays at the mounting. When the projectile is [`Dropping=yes`](/keys/dropping/), it plays at the firer's center.
-12. The firing animation from the weapon's [`Anim`](/keys/anim/) list appears at the muzzle. It is attached to a firing vehicle, infantry or aircraft and moves with it. On a structure it stays where it appeared and is drawn with a depth adjustment.
+12. The firing animation from the weapon's [`Anim`](/keys/anim/) list appears at the mounting, or at the firer's center for a [`Dropping=yes`](/keys/dropping/) weapon. It is attached to a firing vehicle, infantry or aircraft and moves with it. On a structure it stays where it appeared and is drawn with a depth adjustment.
 13. An `IsSonic=yes` weapon creates its sonic wave, from the muzzle to the target.
 14. An `IsLaser=yes` weapon draws its beam, from the muzzle to the target. On a structure, the beam also resets the turret's charge animation to its first frame. The structure then discharges its turret unless it has more than one round of [`Ammo`](/keys/ammo/) left, so every structure with the default unlimited `Ammo` discharges. [`Charges`](/keys/charges/) covers what that means for a charging weapon.
 15. A round of ammunition is spent.
@@ -122,7 +122,7 @@ Every shot uses two points on the firer, and they move differently as the gun ai
 
 The **mounting** is where the projectile is created and the point its aim is calculated from. It is the firing slot's offset turned to the gun heading, with [`TurretOffset`](/keys/turretoffset/) added to the forward distance. It ignores the barrel, so it stays in place while the gun elevates.
 
-The **muzzle** is where the firing animation, the laser beam, the sonic wave and the weapon particle effects appear. It starts from the same offset, rises by the slot's barrel thickness, then extends by the barrel length along the elevated barrel.
+The **muzzle** is where the laser beam, the sonic wave and the weapon particle effects appear. It starts from the same offset, rises by the slot's barrel thickness, then extends by the barrel length along the elevated barrel. The firing animation and an electric bolt start at the mounting, so the barrel length does not move them.
 
 The gun heading, and whether the points tilt with the body, depend on the kind of firer:
 
@@ -154,8 +154,8 @@ The burst counter runs from `0` up to one less than the weapon's [`Burst`](/keys
 :::caution[A burst weapon's beam and its shell leave from opposite muzzles]
 Step 10 advances the burst counter partway through the shot, so the parts of one shot are placed with two different counter values:
 
-- **This shot's counter:** the projectile, the report sound, and the fire, spark and railgun effects.
-- **The next shot's counter:** the firing animation, the sonic wave and the laser beam.
+- **This shot's counter:** the projectile, the report sound, the firing animation, and the fire, spark and railgun effects.
+- **The next shot's counter:** the sonic wave, the laser beam and the electric bolt.
 
 The two groups appear on opposite sides of the gun when one counter value is odd and the other even. With an even `Burst` that is every shot. With an odd `Burst` it is every shot except the last of each burst.
 
@@ -172,7 +172,8 @@ Several parts of a shot take their settings from the first slot, not from the sl
 | --- | --- | --- |
 | The projectile, its damage and warhead | The mounting | The firing slot |
 | The report sound | The mounting | The firing slot |
-| The firing animation | The muzzle | The firing slot |
+| The firing animation | The mounting | The firing slot |
+| The electric bolt, including the start of a vehicle's first bolt while it lasts | The mounting | The firing slot |
 | The fire and spark particle systems | The muzzle | The firing slot |
 | The railgun beam, its [`AmbientDamage`](/keys/ambientdamage/), warhead and [`AttachedParticleSystem`](/keys/attachedparticlesystem/) | The muzzle | The firing slot |
 | The sonic wave's `AmbientDamage` and warhead | The firing slot's muzzle when created, then the first slot's muzzle | The first slot |

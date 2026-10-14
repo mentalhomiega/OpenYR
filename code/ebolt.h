@@ -16,8 +16,8 @@ class TechnoClass;
 
 /*
  * An electric bolt, as Yuri's Revenge draws for an IsElectricBolt=yes weapon: three jagged
- * strands between the muzzle and the target, redrawn with fresh jitter every frame for 17
- * frames. A bolt fired by a vehicle follows the vehicle's muzzle while it lasts.
+ * strands between the mounting and the target, redrawn with fresh jitter every frame for 17
+ * frames. A bolt fired by a vehicle follows the vehicle's mounting while it lasts.
  */
 class EBoltClass
 {

@@ -71,7 +71,7 @@ void EBoltClass::Fire(Coord const & start, Coord const & end, int zadjust)
 
 
 /// <summary>
-/// Makes the bolt's start follow a vehicle's muzzle for the given weapon while the bolt lasts.
+/// Makes the bolt's start follow a vehicle's mounting for the given weapon while the bolt lasts.
 /// Other owners are ignored, as EBolt::SetOwner (0x4C2BD0) does.
 /// </summary>
 void EBoltClass::Set_Owner(TechnoClass * owner, int weapon)
@@ -114,7 +114,7 @@ void EBoltClass::Update_All(void)
 		EBoltClass * bolt = Bolts[index];
 
 		if (bolt->Owner != NULL) {
-			bolt->Start = bolt->Owner->Fire_Coord(bolt->WeaponSlot);
+			bolt->Start = bolt->Owner->Turret_Coord(bolt->WeaponSlot);
 		}
 		bolt->Sway++;
 
