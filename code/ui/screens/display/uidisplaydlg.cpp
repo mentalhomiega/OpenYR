@@ -136,6 +136,24 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
+		virtual void Set_HDR_Output(int mode) override
+		{
+			// The output is decided when the renderer starts.
+			Options.HDROutput = mode;
+		}
+
+		virtual void Set_HDR_Paper_White(int nits) override
+		{
+			Options.HDRPaperWhite = nits;
+			Video_Refresh_HDR_Levels();
+		}
+
+		virtual void Set_HDR_Peak_Brightness(int nits) override
+		{
+			Options.HDRPeakBrightness = nits;
+			Video_Refresh_HDR_Levels();
+		}
+
 		virtual void Set_Renderer(int renderer) override
 		{
 			// The renderer is chosen when the game starts.
@@ -344,6 +362,15 @@ void UI_Display_State(UIDisplayState & state)
 		{BACKEND_RENDERER_VULKAN, "Vulkan"},
 		{BACKEND_RENDERER_OPENGL, "OpenGL"}
 	}, Options.Renderer, "%d");
+
+	// HDR output is a choice of mode; the brightness sliders show the levels in use, whether set or automatic.
+	state.HDROutput = Fill_Choices(state.HDROutputs, {
+		{VIDEO_HDR_AUTOMATIC, "Automatic"},
+		{VIDEO_HDR_OFF, "Off"},
+		{VIDEO_HDR_ON, "On (testing)"}
+	}, Options.HDROutput, "%d");
+	state.PaperWhite = Video_HDR_Paper_White();
+	state.PeakBrightness = Video_HDR_Peak();
 
 	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
 	// the frame allows when the saved count is more.

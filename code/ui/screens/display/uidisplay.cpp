@@ -9,6 +9,7 @@
 
 #include "ui/screens/display/uidisplay.h"
 
+#include "hdrcolour.h"
 #include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uisettingpreview.h"
@@ -31,7 +32,10 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
-	InitialDebugMode(State.DebugMode)
+	InitialDebugMode(State.DebugMode),
+	InitialHDROutput(State.HDROutput),
+	InitialPaperWhite(State.PaperWhite),
+	InitialPeakBrightness(State.PeakBrightness)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -183,6 +187,16 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "renderer") {
 		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
 
+	} else if (intent.Name == "hdroutput") {
+		State.HDROutput = Pick_Choice(State.HDROutputs, intent.Value, InitialHDROutput);
+
+	} else if (intent.Name == "paperwhite") {
+		State.PaperWhite = std::clamp(intent.Value, HDR_PAPER_WHITE_MIN, HDR_PAPER_WHITE_MAX);
+		State.PeakBrightness = std::max(State.PeakBrightness, State.PaperWhite);
+
+	} else if (intent.Name == "peak") {
+		State.PeakBrightness = std::clamp(intent.Value, State.PaperWhite, (int)HDR_PQ_PEAK_NITS);
+
 	} else if (intent.Name == "sidebarrows") {
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
@@ -226,6 +240,15 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
 			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
+		}
+		if (Choice_Changed(State.HDROutputs, State.HDROutput, InitialHDROutput)) {
+			Service.Set_HDR_Output(State.HDROutputs[State.HDROutput].Value);
+		}
+		if (State.PaperWhite != InitialPaperWhite) {
+			Service.Set_HDR_Paper_White(State.PaperWhite);
+		}
+		if (State.PeakBrightness != InitialPeakBrightness) {
+			Service.Set_HDR_Peak_Brightness(State.PeakBrightness);
 		}
 		if (PickedRows >= 0) {
 			Service.Set_Sidebar_Rows(PickedRows);
@@ -314,6 +337,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
 			Model.DirtyVariable("renderer");
+			Model.DirtyVariable("hdroutput");
+			Model.DirtyVariable("paperwhite");
+			Model.DirtyVariable("peakbrightness");
 			Model.DirtyVariable("rowcount");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
@@ -372,6 +398,10 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("cursorscale", &state.CursorScale)
 				&& model.Bind("renderers", &state.Renderers)
 				&& model.Bind("renderer", &state.Renderer)
+				&& model.Bind("hdroutputs", &state.HDROutputs)
+				&& model.Bind("hdroutput", &state.HDROutput)
+				&& model.Bind("paperwhite", &state.PaperWhite)
+				&& model.Bind("peakbrightness", &state.PeakBrightness)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
 				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));

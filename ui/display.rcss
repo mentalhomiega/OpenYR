@@ -72,13 +72,13 @@
 .row
 {
 	display: flex;
-	margin-top: 5dp;
+	margin-top: 3dp;
 	height: 24dp;
 }
 
 #scale-row
 {
-	margin-top: 8dp;
+	margin-top: 4dp;
 }
 
 .caption
@@ -110,7 +110,7 @@ select
 
 #switch-stretch, #switch-fullscreen
 {
-	margin-top: 8dp;
+	margin-top: 4dp;
 }
 
 #pointer-label, #renderer-label
@@ -130,10 +130,35 @@ select
 	color: #6a6388;
 }
 
-#renderer-note
+#renderer-note, #hdr-note
 {
 	margin-top: 3dp;
 	line-height: 17dp;
+}
+
+/* A brightness row holds its caption, slider and readout in one line of the right column. */
+.slider-row
+{
+	margin-top: 2dp;
+}
+
+.slider-row .caption
+{
+	width: 112dp;
+}
+
+.slider-row > input[type='range']
+{
+	width: 72dp;
+	height: 25dp;
+	margin-top: 1dp;
+}
+
+.slider-row > .value
+{
+	width: 48dp;
+	line-height: 24dp;
+	text-align: right;
 }
 
 /* The mock screen stands beside the resolution list; its frame is set by setting-preview.rcss. */

@@ -33,6 +33,9 @@
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>
+			<div class="row" id="hdr-row"><span class="caption">HDR output:</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
+				<option data-for="entry : hdroutputs" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
 		</div>
 		<div id="right">
 			<p class="heading" id="window-label">Window</p>
@@ -54,7 +57,8 @@
 			<div class="row"><span class="caption">Graphics API:</span><select id="renderer" data-value="renderer" data-event-change="queue('renderer', ev.value)">
 				<option data-for="entry : renderers" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<p id="renderer-note">Applies when the game next starts.</p>
+			<div class="row slider-row" id="paper-row"><span class="caption">Paper white</span><input type="range" id="paper-white" min="80" max="480" step="10" data-attr-value="paperwhite" data-event-change="queue('paperwhite', ev.value)"/><span class="value" id="paper-value">{{paperwhite}} nits</span></div>
+			<div class="row slider-row" id="peak-row"><span class="caption">Peak brightness</span><input type="range" id="peak-brightness" min="80" max="10000" step="10" data-attr-value="peakbrightness" data-event-change="queue('peak', ev.value)"/><span class="value" id="peak-value">{{peakbrightness}} nits</span></div>
 		</div>
 	</div>
 	<div id="buttons">
