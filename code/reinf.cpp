@@ -504,7 +504,7 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 		AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
 		Cell const start = (teamtype->UseTransportOrigin && teamtype->TransportWaypoint != -1) ? Scen->Get_Waypoint_Cell(teamtype->TransportWaypoint) : CELL_NONE;
 		if (plane != AIRCRAFT_NONE && teamtype->House->Send_Plane(AircraftTypes[plane], MISSION_PARADROP_APPROACH, origin, NULL, 0, NULL, object, start) != NULL && teamtype->House->Is_Ally(PlayerPtr)) {
-			LastRadarEventCell = origin;
+			Push_Radar_Event_Cell(origin);
 			Speak(VOX_REINFORCEMENTS);
 		}
 		return(true);
@@ -536,7 +536,7 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 	**	Announce when the reinforcements have arrived.
 	*/
 	if (Create_Reinforcement(teamtype, object, origin, atwaypoint) && teamtype->House->Is_Ally(PlayerPtr)) {
-		LastRadarEventCell = origin;
+		Push_Radar_Event_Cell(origin);
 		Speak(VOX_REINFORCEMENTS);
 	}
 

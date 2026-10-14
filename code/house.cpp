@@ -1990,12 +1990,16 @@ void HouseClass::Attacked(BuildingClass * source)
 	if (source != NULL && source->Considered_Vehicle()) return;
 
 	if (SpeakAttackDelay == 0) {
+		// Gamemd (HouseClass::BuildingUnderAttack, 0x4F93E0) plays the line only when its radar event is created.
 		if (Is_Player_Control()) {
-			Submit_Radar_Event(RADAREVENT_BASE_ATTACKED, source->Center_Coord().As_Cell());
-			Speak(VOX_BASE_UNDER_ATTACK);
+			if (Submit_Radar_Event(RADAREVENT_BASE_ATTACKED, source->Center_Coord().As_Cell())) {
+				Speak(VOX_BASE_UNDER_ATTACK);
+			}
 			SpeakAttackDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 		} else if (Is_Ally(PlayerPtr) && (Session.Type == GAME_NORMAL || !source->House->Class->IsMultiplayPassive)) {
-			Speak(VOX_ALLY_ATTACK);
+			if (Submit_Radar_Event(RADAREVENT_ALLY_ATTACKED, source->Center_Coord().As_Cell())) {
+				Speak(VOX_ALLY_ATTACK);
+			}
 			SpeakAttackDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 		}
 	}

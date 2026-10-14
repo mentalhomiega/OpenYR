@@ -6876,7 +6876,7 @@ int BuildingClass::Pip_Count(void) const
 void BuildingClass::Death_Announcement(TechnoClass const * source) const
 {
 	if (source != NULL && House->Is_Player_Control()) {
-		LastRadarEventCell = Destination_Coord().As_Cell();
+		Push_Radar_Event_Cell(Destination_Coord().As_Cell());
 		Speak(VOX_STRUCTURE_DESTROYED);
 	}
 }

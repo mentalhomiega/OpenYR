@@ -3918,7 +3918,7 @@ class CenterREventCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cell cell = LastRadarEventCell;
+			Cell cell = Next_Radar_Event_Jump_Cell(timeGetTime());
 
 			if (cell != Cell(0,0)) {
 				Coord coord = cell;

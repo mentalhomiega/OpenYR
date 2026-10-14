@@ -267,7 +267,7 @@ void BeaconManagerClass::Announce(int house, BeaconClass const & beacon)
 		return;
 	}
 
-	if (Visible_To_Player(&beacon) && Submit_Radar_Event(RADAREVENT_NONCOMBAT, beacon.Where.As_Cell())) {
+	if (Visible_To_Player(&beacon) && Submit_Radar_Event(RADAREVENT_BEACON, beacon.Where.As_Cell())) {
 		Speak_Eva("EVA_BeaconDetected");
 	}
 }

@@ -135,4 +135,7 @@ bool Can_Suppress_Radar_Event(RadarEventType event);
 bool Try_Suppress_Radar_Event(RadarEventType event, int, Cell cell);
 bool No_Radar_Events_Submitted(void);
 
+void Push_Radar_Event_Cell(Cell cell);
+Cell Next_Radar_Event_Jump_Cell(unsigned long now);
+
 extern Cell LastRadarEventCell;

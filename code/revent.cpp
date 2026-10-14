@@ -28,38 +28,82 @@ DynamicVectorClass<RadarEventClass *> RadarEventClass::RadarEvents;
 
 Cell LastRadarEventCell(0,0);
 
+static RadarEventRecentCells RecentRadarEventCells;
+static unsigned long LastRadarEventJumpTime = 0;
+
 const char * RadarEventNames[RADAREVENT_COUNT] = {
 	"Combat Event",
 	"Noncombat Event",
 	"DropZone Event",
 	"Base Attacked Event",
 	"Harvester Attacked Event",
-	"Enemy Sensed Event"
+	"Enemy Sensed Event",
+	"Factory Output Event",
+	"Unit Lost Event",
+	"Repair Event",
+	"Infiltration Event",
+	"Owner Changed Event",
+	"Beacon Event",
+	"Building Placed Event",
+	"Superweapon Event",
+	"Factory Found Event",
+	"Mind Control Event",
+	"Ally Attacked Event"
 };
 
 
 /// <summary>
 /// Raises a radar event at the specified cell.
 /// This is the routine the game logic calls to draw the player's eye to something
-/// worth looking at. An event of a suppressible kind is quietly dropped when one of
-/// the same kind is already showing nearby.
+/// worth looking at. A new event is refused when an event of the same kind is in play
+/// within the kind's suppression distance, and the caller must then skip its EVA line.
+/// A created event also becomes the newest cell for the space-bar jump.
 /// </summary>
 /// <param name="event">The kind of event to raise.</param>
 /// <param name="cell">The cell that the event should draw attention to.</param>
 /// <returns>bool; Was an event actually created?</returns>
 bool Submit_Radar_Event(RadarEventType event, Cell cell)
 {
-	if (Can_Suppress_Radar_Event(event)) {
-		for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
-			if (RadarEventClass::RadarEvents[index]->Type == event) {
-				if (cell.Gamemd_Distance_To(RadarEventClass::RadarEvents[index]->Location) < RadarEventClass::RadarEvents[index]->Get_Suppression_Distance()) {
-					return(false);
-				}
-			}
+	if (!Radar_Event_Is_Valid(event)) {
+		return(false);
+	}
+	for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
+		RadarEventClass const * existing = RadarEventClass::RadarEvents[index];
+		if (Radar_Event_Suppresses(event, cell, existing->Type, existing->Location)) {
+			return(false);
 		}
 	}
 	new RadarEventClass(event, cell);
+	Push_Radar_Event_Cell(cell);
 	return(true);
+}
+
+
+/// <summary>
+/// Records a cell as the newest event location without raising an event.
+/// Gamemd's team, ally and building-destroyed paths record a location this way, so the
+/// space-bar jump reaches it even though no radar box is drawn.
+/// </summary>
+/// <param name="cell">The cell to record.</param>
+void Push_Radar_Event_Cell(Cell cell)
+{
+	RecentRadarEventCells.Push(cell);
+	LastRadarEventCell = cell;
+}
+
+
+/// <summary>
+/// Chooses the cell the space-bar jump centers on.
+/// A press within the repeat window after the previous one steps back to an older recent
+/// cell. Any other press returns the newest cell.
+/// </summary>
+/// <param name="now">The current time in milliseconds.</param>
+/// <returns>Cell; The cell to center on, or (0,0) when no event has been recorded.</returns>
+Cell Next_Radar_Event_Jump_Cell(unsigned long now)
+{
+	bool const repeat = Radar_Event_Jump_Repeats(now, LastRadarEventJumpTime);
+	LastRadarEventJumpTime = now;
+	return(repeat ? RecentRadarEventCells.Step_Back() : RecentRadarEventCells.Newest());
 }
 
 
@@ -77,19 +121,12 @@ void Plot_Radar_Event_Point(Point2D const & point)
 
 /// <summary>
 /// Can this kind of radar event be suppressed?
-/// The noisier kinds are allowed to swallow their own nearby duplicates so that a running
-/// battle does not litter the radar. Anything the player must not miss is always shown.
+/// The flag comes from the kind's row in RadarEventKinds, which mirrors gamemd.
 /// </summary>
 /// <returns>bool; May a nearby event of this kind be discarded?</returns>
 bool Can_Suppress_Radar_Event(RadarEventType event)
 {
-	switch (event) {
-		case RADAREVENT_COMBAT:
-		case RADAREVENT_HARVESTER_ATTACKED:
-		case RADAREVENT_ENEMY_SENSED:
-			return(true);
-	}
-	return(false);
+	return(Radar_Event_Is_Valid(event) && RadarEventKinds[event].Suppressible);
 }
 
 
@@ -115,7 +152,6 @@ RadarEventClass::RadarEventClass(RadarEventType type, Cell cell):
 {
 	Offset = Map.Cell_To_Radar_Pixel(cell).TopLeft - Map.RadarRect.TopLeft;
 	Radius = std::max(Offset.X, std::max(Offset.Y, std::max(Map.RadarRect.Width - Offset.X, Map.RadarRect.Height - Offset.Y)));
-	LastRadarEventCell = cell;
 	RadarEvents.Add(this);
 }
 
@@ -219,6 +255,10 @@ void RadarEventClass::Draw(void)
 	Point2D event_rect[4];
 	int i;
 
+	if (!Radar_Event_Is_Valid(Type) || RadarEventKinds[Type].ColorGroup == RADAREVENT_GROUP_NONE) {
+		return;
+	}
+
 	Get_Event_Rect(event_rect);
 
 	for (i = 0; i < ARRAY_SIZE(event_rect); i++) {
@@ -276,13 +316,10 @@ void RadarEventClass::Remove_Finished(void)
 /// <returns>bool; Should the proposed event be thrown away?</returns>
 bool Try_Suppress_Radar_Event(RadarEventType event, int, Cell cell)
 {
-	if (Can_Suppress_Radar_Event(event)) {
-		for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
-			if (RadarEventClass::RadarEvents[index]->Type == event) {
-				if (cell.Gamemd_Distance_To(RadarEventClass::RadarEvents[index]->Location) < RadarEventClass::RadarEvents[index]->Get_Suppression_Distance()) {
-					return(true);
-				}
-			}
+	for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
+		RadarEventClass const * existing = RadarEventClass::RadarEvents[index];
+		if (Radar_Event_Suppresses(event, cell, existing->Type, existing->Location)) {
+			return(true);
 		}
 	}
 	return(false);
@@ -410,6 +447,11 @@ bool RadarEventClass::Load(SaveStreamClass & stream)
 
 	stream.Serialize(LastRadarEventCell);
 
+	RecentRadarEventCells.Clear();
+	if (LastRadarEventCell != Cell(0,0)) {
+		RecentRadarEventCells.Push(LastRadarEventCell);
+	}
+
 	return(!stream.Was_Error());
 }
 
@@ -439,48 +481,47 @@ void RadarEventClass::Serialize(SaveStreamClass & stream)
 
 /// <summary>
 /// Fetches the bright end of this event's color cycle.
-/// The event pulses between this color and the one Get_Min_Color returns, so that
-/// hostile events read as orange and friendly ones as green.
+/// The event pulses between this color and the one Get_Min_Color returns. Gamemd
+/// draws magenta for kinds 0, 3 and 4, yellow for 1, 2, 11 and 12, and cyan for 5.
 /// </summary>
 /// <returns>Returns with the brightest color this event will be drawn in.</returns>
 RGBClass RadarEventClass::Get_Max_Color(void) const
 {
-	switch (Type) {
-		case RADAREVENT_COMBAT:
-		case RADAREVENT_BASE_ATTACKED:
-		case RADAREVENT_HARVESTER_ATTACKED:
-			return(RGBClass(255,128,0));
+	switch (Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].ColorGroup : RADAREVENT_GROUP_NONE) {
+		case RADAREVENT_GROUP_MAGENTA:
+			return(RGBClass(255,0,255));
 
-		case RADAREVENT_NONCOMBAT:
-		case RADAREVENT_DROPZONE:
-			return(RGBClass(0,255,0));
+		case RADAREVENT_GROUP_YELLOW:
+			return(RGBClass(255,255,0));
+
+		case RADAREVENT_GROUP_CYAN:
+			return(RGBClass(0,255,255));
 
 		default:
-			return(RGBClass(255,255,0));
+			return(RGBClass(0,0,0));
 	}
 }
 
 
 /// <summary>
 /// Fetches the dark end of this event's color cycle.
-/// The event pulses between this color and the one Get_Max_Color returns, so that
-/// hostile events read as red and friendly ones as green.
+/// The event pulses between this color and the one Get_Max_Color returns.
 /// </summary>
 /// <returns>Returns with the darkest color this event will be drawn in.</returns>
 RGBClass RadarEventClass::Get_Min_Color(void) const
 {
-	switch (Type) {
-		case RADAREVENT_COMBAT:
-		case RADAREVENT_BASE_ATTACKED:
-		case RADAREVENT_HARVESTER_ATTACKED:
-			return(RGBClass(128,0,0));
+	switch (Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].ColorGroup : RADAREVENT_GROUP_NONE) {
+		case RADAREVENT_GROUP_MAGENTA:
+			return(RGBClass(128,0,128));
 
-		case RADAREVENT_NONCOMBAT:
-		case RADAREVENT_DROPZONE:
-			return(RGBClass(0,128,0));
+		case RADAREVENT_GROUP_YELLOW:
+			return(RGBClass(128,128,0));
+
+		case RADAREVENT_GROUP_CYAN:
+			return(RGBClass(0,128,128));
 
 		default:
-			return(RGBClass(128,128,0));
+			return(RGBClass(0,0,0));
 	}
 }
 
@@ -493,19 +534,19 @@ RGBClass RadarEventClass::Get_Min_Color(void) const
 /// <returns>Returns with the number of game frames the settled event remains drawn.</returns>
 int RadarEventClass::Get_Visibility_Duration(void)
 {
-	return(Rule->RadarEventVisibilityDurations[Type]);
+	return(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].VisibilityFrames : 0);
 }
 
 
 /// <summary>
 /// Fetches the lifetime of this radar event.
-/// The rules control this per event kind, so a combat ping can linger longer than a
-/// dropzone marker.
+/// The event leaves the list this many frames after it settles, unless it is still
+/// closing in.
 /// </summary>
 /// <returns>Returns with the number of game frames this event should survive.</returns>
 int RadarEventClass::Get_Duration(void)
 {
-	return(Rule->RadarEventDurations[Type]);
+	return(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].DurationFrames : 0);
 }
 
 
@@ -517,7 +558,7 @@ int RadarEventClass::Get_Duration(void)
 /// <returns>Returns with the suppression distance, in cells.</returns>
 int RadarEventClass::Get_Suppression_Distance(void)
 {
-	return(Rule->RadarEventSuppressionDistances[Type]);
+	return(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].SuppressionDistance : 0);
 }
 
 
@@ -531,4 +572,7 @@ void RadarEventClass::Clear(void)
 	for (int i = RadarEvents.Count() - 1; i >= 0; i--) {
 		delete RadarEvents[i];
 	}
+
+	RecentRadarEventCells.Clear();
+	LastRadarEventCell = Cell(0,0);
 }
