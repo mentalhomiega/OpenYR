@@ -96,7 +96,7 @@ A garrisonable structure under the mouse, or selected, shows a row of figures wi
 
 The owner empties a garrison with the Deploy command while the structure is selected, or by clicking the structure while it is the only object selected.
 
-Occupants also leave when the structure is destroyed. In a `TechLevel=-1` structure they also leave when it falls to the `ConditionRed` health ratio or below.
+Occupants also leave when the structure is destroyed. In a `TechLevel=-1` structure they also leave when it falls to the `ConditionRed` health ratio or below. While it stays at that ratio, its firing turn goes back to the first occupant on every frame, even when the structure is empty.
 
 Each occupant leaving is placed on the nearest cell next to the structure that it could walk into, and stands guard there. An occupant with no such cell is removed from the game.
 

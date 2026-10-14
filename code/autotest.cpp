@@ -2191,8 +2191,17 @@ void Run(StepType const & step)
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * building = Buildings[index];
 			if (building->Class->IsCanBeOccupied && (building->Occupants.Count() > 0 || building->Class->MaxNumberOccupants > 0)) {
-				DebugString("AUTOTEST   garrison %s cell %d,%d house %s occupants %d/%d strength %d fire %d tar %d arm %d mission %d queue %d ready %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
-					building->House->Class->Name(), building->Occupants.Count(), building->Class->MaxNumberOccupants, building->Strength, (int)building->Can_Occupy_Fire(), (int)(building->TarCom != NULL), (int)building->Arm, (int)building->Mission, (int)building->MissionQueue, (int)building->IsReadyToCommence);
+				DebugString("AUTOTEST   garrison %s cell %d,%d house %s occupants %d/%d strength %d fire %d tar %d arm %d mission %d queue %d ready %d firing %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+					building->House->Class->Name(), building->Occupants.Count(), building->Class->MaxNumberOccupants, building->Strength, (int)building->Can_Occupy_Fire(), (int)(building->TarCom != NULL), (int)building->Arm, (int)building->Mission, (int)building->MissionQueue, (int)building->IsReadyToCommence, building->FiringOccupantIndex);
+			}
+		}
+	} else if (step.Command == "radar") {
+		// radar <TypeID>: each player object of that type, with whether it is in limbo, tracked on the radar and discovered.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   radar %s at %d,%d limbo %d tracked %d discovered %d pos %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+					techno->IsInLimbo ? 1 : 0, techno->IsRadarTracked ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, techno->RadarPos.X, techno->RadarPos.Y);
 			}
 		}
 	} else if (step.Command == "spawn" || step.Command == "grantunit") {

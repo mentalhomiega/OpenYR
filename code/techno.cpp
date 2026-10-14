@@ -10983,6 +10983,10 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 {
 	TechnoTypeClass const * ttype = TClass;
 	if (!ttype->IsInvisible) {
+		// Gamemd's IsRadarVisible (0x70D1D0) refuses an object in limbo before its visibility tests.
+		if (IsInLimbo) {
+			return(false);
+		}
 		if (ttype->IsRadarVisible) {
 			return(true);
 		}
@@ -11223,20 +11227,15 @@ void TechnoClass::Scatter_Incoming_Infantry(void) const
 /// <summary>
 /// Keeps this object's blip in the right place on the radar.
 /// This routine is called as the object moves about. It works out where the object now
-/// belongs on the radar and moves its tracking entry to suit, announcing the first
-/// sighting of a cloaked or subterranean enemy as it does so. An object that has come
-/// out from under the shroud is marked as discovered while it is at it.
+/// belongs on the radar and moves its tracking entry to suit, raising an enemy-sensed radar
+/// event for a cloaked or subterranean object the player detects. An object that has come out from
+/// under the shroud is marked as discovered while it is at it. An object in limbo is never
+/// plotted, but its radar position is still updated and it is marked as discovered when its
+/// position is unshrouded.
 /// </summary>
 /// <param name="force_update">Should the radar position be recomputed even for a building?</param>
 void TechnoClass::Update_Radar_Position(bool force_update)
 {
-	if (IsInLimbo) {
-		if (IsRadarTracked) {
-			Radar_Untrack();
-		}
-		return;
-	}
-
 	if (!DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && !Map.Is_Shrouded(Center_Coord())) {
 		DiscoveredBy.Set(PlayerPtr);
 	}
@@ -11254,14 +11253,9 @@ void TechnoClass::Update_Radar_Position(bool force_update)
 
 	if (detected != DETECTED_NONE) {
 		// Gamemd raises this for any sensed object, whoever owns it; only a foot object inside a tube is skipped.
+		// Gamemd plays no announcer line for a detection (TechnoClass::RadarTrackingUpdate, 0x70DAD7).
 		if (visible && (!Is_Foot() || ((FootClass *)this)->CurrentTube < TUBE_FIRST)) {
-			if (Submit_Radar_Event(RADAREVENT_ENEMY_SENSED, Get_Coord().As_Cell())) {
-				if (detected == DETECTED_CLOAKED) {
-					Speak(VOX_CLOAKED_DETECTED);
-				} else if (detected == DETECTED_SUBTERRANEAN) {
-					Speak(VOX_SUBTERRANEAN_DETECTED);
-				}
-			}
+			Submit_Radar_Event(RADAREVENT_ENEMY_SENSED, Get_Coord().As_Cell());
 		}
 	}
 

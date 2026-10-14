@@ -9609,8 +9609,10 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 /// <summary>
 /// Keeps a garrisonable structure's owner in step with its occupants, as gamemd's FUN_00458200
 /// does every frame: an empty one belongs to the Civilian side's house and an occupied one to
-/// its first occupant's house. A structure at red health throws its occupants out. A structure
-/// that can be built (TechLevel other than -1), such as the Battle Bunker, is left alone.
+/// its first occupant's house. A structure at red health throws its occupants out. The eject
+/// also runs when the structure is empty, where it only resets the firing occupant index, as
+/// gamemd's FUN_00458200 and FUN_00457DE0 do. A structure that can be built (TechLevel other
+/// than -1), such as the Battle Bunker, is left alone.
 /// The structure-abandoned line for the player's own structure plays only if its radar event is created.
 /// </summary>
 void BuildingClass::Garrison_AI(void)
@@ -9619,7 +9621,7 @@ void BuildingClass::Garrison_AI(void)
 		return;
 	}
 
-	if (Occupants.Count() > 0 && HealthRatio <= Rule->ConditionRed) {
+	if (HealthRatio <= Rule->ConditionRed) {
 		Eject_Occupants();
 	}
 
@@ -11809,6 +11811,10 @@ int BuildingClass::Apparent_Brightness(int brightness) const
 bool BuildingClass::Is_Radar_Visible(DetectedType & detected) const
 {
 	if (!Class->IsInvisible) {
+		// Gamemd's BuildingClass::IsRadarVisible (0x457020) refuses an object in limbo before its visibility tests.
+		if (IsInLimbo) {
+			return(false);
+		}
 		if (Class->IsRadarVisible) {
 			return(true);
 		}

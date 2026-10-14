@@ -1,0 +1,17 @@
+; Radar state of a player's soldier while it is inside a structure (in limbo). A TechLevel=-1 garrisonable structure
+; (CANEWY12) is placed for the player at 58,44. occupy moves the first player E1 that is not in limbo into it; on
+; ALL01UMD that is a campaign rifleman, not the E1 placed at 56,44 for the test.
+; gamemd's IsRadarVisible (TechnoClass 0x70D1D0, BuildingClass 0x457020) refuses an object in limbo before its
+; visibility tests, so an occupant is never plotted, even though its owner is the player. Ours now checks limbo in
+; Is_Radar_Visible in the same place, and Update_Radar_Position runs for limbo objects as gamemd's RadarTrackingUpdate
+; (0x70D990) does. Without that check the own soldier would be tracked as soon as the limbo early return went.
+; Expected: at frame 40 the E1 shows limbo 1 and tracked 0. After unload at 58,44, at frame 80 it shows limbo 0 and
+; tracked 1, once it is out on the map.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script E:\Claude ra2 decomp\src-agent17\tests\autotest\radar-limbo-untracked.txt -Map ALL01UMD.MAP -Campaign -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   radar|AUTOTEST grantunit|AUTOTEST   occupy|Exception"
+30 grantunit CANEWY12 58 44
+31 grantunit E1 56 44
+32 occupy E1 58 44
+40 radar E1
+50 unload 58 44
+80 radar E1
+90 quit
