@@ -115,6 +115,35 @@ int main(void)
 		Check(mode.AlliesAllowed && !mode.MustAlly, "a file without the section keeps the defaults");
 	}
 
+	/*
+	 * A launch file's index picks its mode from the table. An index the table does not list, and an
+	 * empty table from an unreadable file, pick Battle, which allows alliances and is no Unholy or
+	 * Cooperative match. Nothing is refused.
+	 */
+	{
+		INIClass ini;
+		Load(ini,
+			"[Battle]\n"
+			"1=Beta, TipB, RulesB.ini, filterB, true\n"
+			"[Unholy]\n"
+			"4=Gamma, TipC, RulesC.ini, filterC, false\n"
+			"[Cooperative]\n"
+			"3=Delta, TipD, RulesD.ini, filterD, false\n");
+		std::vector<MPModeType> modes = MPMode_Parse(ini);
+
+		bool found = false;
+		MPModeType unholy = MPMode_Pick(modes, 4, found);
+		Check(found && unholy.Kind == MPModeKind::Unholy, "a listed index picks its own mode");
+
+		MPModeType unlisted = MPMode_Pick(modes, 99, found);
+		Check(!found && unlisted.Kind == MPModeKind::Battle && unlisted.AlliesAllowed && !unlisted.MustAlly,
+			"an index the table does not list picks Battle with alliances allowed");
+
+		MPModeType empty = MPMode_Pick(std::vector<MPModeType>(), 4, found);
+		Check(!found && empty.Kind == MPModeKind::Battle && empty.AlliesAllowed,
+			"an empty table picks Battle, as an unreadable MPModesMD.ini does");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

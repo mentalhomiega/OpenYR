@@ -54,6 +54,9 @@ static bool SpawnRequested = false;
 static bool SpawnConsumed = false;
 static SpawnerConfigClass SpawnConfig;
 
+// The mode this launch resolved to, set before the session is assembled.
+static MPModeType SpawnMode;
+
 
 /// <summary>
 /// Refuses the launch, telling the player why and leaving the reason in the log.
@@ -253,20 +256,37 @@ static void Spawner_Bind_Options(void)
 
 
 /// <summary>
-/// Plays the multiplayer mode the launch file names. The caller has checked that the mode exists.
-/// The mode can clear the file's AlliesAllowed and can turn Bases on, and it changes nothing else.
+/// Loads the mode table and resolves the launch file's GameMode. A table that cannot be read, or an
+/// index it does not list, runs the game as Battle, and one debug line says so. Nothing is refused.
+/// </summary>
+/// <param name="playing">What runs as Battle, for the debug line.</param>
+static MPModeType Spawner_Resolve_Mode(char const * playing)
+{
+	bool loaded = MPMode_Load();
+	bool found = false;
+	MPModeType mode = MPMode_Resolve(SpawnConfig.GameMode, found);
+
+	if (!loaded) {
+		DebugString("[Spawner] MPModesMD.ini cannot be read; %s runs as Battle.\n", playing);
+	} else if (!found) {
+		DebugString("[Spawner] GameMode %d is not listed in MPModesMD.ini; %s runs as Battle.\n",
+			SpawnConfig.GameMode, playing);
+	}
+
+	return(mode);
+}
+
+
+/// <summary>
+/// Plays the multiplayer mode this launch resolved to. The mode can clear the file's AlliesAllowed
+/// and can turn Bases on, and it changes nothing else.
 /// </summary>
 static void Spawner_Bind_Mode(void)
 {
-	MPModeType const * mode = MPMode_Find(SpawnConfig.GameMode);
-	if (mode == NULL) {
-		return;
-	}
+	MPMode_Set_Current(SpawnMode);
+	Session.Options.AlliesAllowed = Session.Options.AlliesAllowed && SpawnMode.AlliesAllowed;
 
-	MPMode_Set_Current(*mode);
-	Session.Options.AlliesAllowed = Session.Options.AlliesAllowed && mode->AlliesAllowed;
-
-	if (mode->Kind == MPModeKind::Unholy) {
+	if (SpawnMode.Kind == MPModeKind::Unholy) {
 		Session.Options.Bases = true;
 	}
 }
@@ -417,13 +437,8 @@ static bool Spawner_Resume(bool & gameloaded)
 	}
 
 	// A save does not record the mode, so the file's GameMode names it again. The save's options
-	// stay as they are, and a file that names no loaded mode leaves the game without one.
-	if (MPMode_Load()) {
-		MPModeType const * mode = MPMode_Find(SpawnConfig.GameMode);
-		if (mode != NULL) {
-			MPMode_Set_Current(*mode);
-		}
-	}
+	// stay as they are; an unreadable table or an unlisted index plays Battle.
+	MPMode_Set_Current(Spawner_Resolve_Mode("the saved game"));
 
 	if (type == GAME_INTERNET && !Reconcile_Players()) {
 		return(Spawner_Refuse("The saved game and the file do not agree on who is playing."));
@@ -616,14 +631,7 @@ bool Spawner_Prepare(bool & gameloaded)
 			return(false);
 		}
 	} else {
-		if (!MPMode_Load()) {
-			return(Spawner_Refuse("MPModesMD.ini could not be read, so no multiplayer mode can be chosen."));
-		}
-
-		if (MPMode_Find(SpawnConfig.GameMode) == NULL) {
-			return(Spawner_Refuse("The file names game mode %d, which MPModesMD.ini does not list.",
-				SpawnConfig.GameMode));
-		}
+		SpawnMode = Spawner_Resolve_Mode("the match");
 
 		std::string fault;
 		if (!SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)) {

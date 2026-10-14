@@ -57,8 +57,11 @@ void MPMode_Read_Dialog_Settings(MPModeType & mode, INIClass const & rules);
 // Loads MPModesMD.ini and the overrides files it names; false when MPModesMD.ini cannot be read.
 bool MPMode_Load(void);
 
-// The loaded mode with this index, or NULL when the table has none.
-MPModeType const * MPMode_Find(int index);
+// Picks the mode with this index from a list; an unlisted index picks Battle and sets found to false.
+MPModeType MPMode_Pick(std::vector<MPModeType> const & modes, int index, bool & found);
+
+// Resolves a launch file's index against the loaded table, falling back to Battle as MPMode_Pick does.
+MPModeType MPMode_Resolve(int index, bool & found);
 
 // Makes a mode the one the running match plays.
 void MPMode_Set_Current(MPModeType const & mode);

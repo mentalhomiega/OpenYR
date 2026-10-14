@@ -137,14 +137,14 @@ The lobby's own team defaults are not established. Slot 12 returns 3 when `Allie
 - **The lobby.** Selecting a mode in the lobby's combo box sets `SessionClass::Config.MPModeIndex` and `MPGameMode` (`0x5E7160`). The map selection sets `Config.ScenarioIndex`.
 - **The player's last choice.** The options file keeps a `GameMode` key per connection type, in sections `[Skirmish]`, `[LAN]` and `[WonlinePref]`. The reader (`0x697F10`) uses the first mode's index as the default. The startup code reads `GameMode` from `[MultiPlayer]` (`0x698413`), looks that index up, and falls back to the first mode when the index is unknown.
 - **Launch files.** gamemd.exe has no reader for launch-file keys. Strings such as `IsSinglePlayer`, `UIMapName`, `HouseAllyOne` and `Multi1` are absent from the binary. The `-SPAWN` path is in the port, and the spawner that writes the file is outside this repository.
-- **The CnCNet client.** The client's source is not in this repository, and it was not downloaded. `scripts/run_netsync.ps1` writes `UIGameMode=Standard` as a placeholder for the client's line, but the key the client uses for the mode is not verified.
+- **The CnCNet client and spawner.** Their source was read through the GitHub web pages, not cloned. The `yrpp-spawner` file `src/Spawner/Spawner.Config.cpp` reads `GameMode` from `[Settings]` into a field named `MPModeIndex`, with no range check. The key and its integer meaning therefore match this port. The client's `WriteSpawnIni` writes `UIGameMode`, a display name, and no `GameMode` line itself. Its per-mode forced options come through `GameMode.ApplySpawnIniCode` from the client's configuration, so a `GameMode` line could still arrive that way; the Yuri's Revenge entries were not in the readable repositories. Alliances come from team ids in `AllianceHolder.WriteInfoToSpawnIni`: a computer house is allied only when its team id is above zero.
 
 ## What the port does
 
 - `code/mpmodeparse.cpp` parses `MPModesMD.ini` and an overrides file's `[MultiplayerDialogSettings]`. `tests/mpmode` covers it with written text.
 - `code/mpmode.cpp` loads the table from the game's data and holds the running match's mode.
 - `code/spawnerconfig.*` reads `GameMode` (default 1) and includes it in the session identity. `SCHEMA_VERSION` is 6.
-- `code/spawner.cpp` refuses a new launch when `MPModesMD.ini` cannot be read or the index is not listed. It clears `AlliesAllowed` when the mode forbids alliances, and turns `Bases` on for Unholy. A resumed game takes the mode from the file, because a save does not record one.
+- `code/spawner.cpp` plays Battle, with one debug line, when `MPModesMD.ini` cannot be read or the index is not listed. It never refuses a launch for the mode. It clears `AlliesAllowed` when the mode forbids alliances, and turns `Bases` on for Unholy. A resumed game takes the mode from the file, because a save does not record one.
 - `code/scenario.cpp` `Create_Units` places every base unit for Unholy.
 - `code/house.cpp` `MPlayer_Defeated` applies the Cooperative winner choice.
 
@@ -159,5 +159,5 @@ The lobby's own team defaults are not established. Slot 12 returns 3 when `Allie
 - Cooperative's game-over hostile-pair test (in `AcceptDefeat` before the allies tail) is not ported.
 - The meaning of slots 16, 38 and 47 is not identified.
 - `AllyChangeAllowed` is in the Team Game file. The constructor does not read it, and its reader was not located.
-- The CnCNet client's mode key and its values are not verified, so the `GameMode` key may not match what the client writes.
+- The per-mode options the client sends for Unholy Alliance and Free For All are not established. The Yuri's Revenge entries of its configuration were not in the readable repositories. The `GameMode` key and its meaning match the CnCNet spawner's reader.
 - Whether a computer house starts allied in Unholy Alliance under the lobby's team defaults is not established. The port does not ally computer houses.

@@ -149,7 +149,7 @@ A nonzero `Seed` makes a launch repeatable: launching the same file again places
 
 ## The multiplayer mode
 
-`GameMode` names a multiplayer mode by its index in the game's `MPModesMD.ini`. A skirmish and a game against other machines take a mode; a campaign mission does not. A resumed game takes the mode from the file, because the save does not record one.
+`GameMode` names a multiplayer mode by its index in the game's `MPModesMD.ini`. A skirmish and a game against other machines take a mode; a campaign mission does not. A resumed game takes the mode from the file, because the save does not record one. A file whose index the game does not list, and a game that cannot read `MPModesMD.ini`, plays as Battle. The game writes one debug line and does not refuse the launch.
 
 The mode changes these parts of the match:
 
@@ -322,8 +322,6 @@ A game against other machines, new or resumed, is also refused when:
 - through a tunnel, `[Tunnel] Port` is negative or above `65535`, or `[Tunnel] Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;
 - the network cannot be opened.
-
-A new skirmish or game against other machines is also refused when `MPModesMD.ini` cannot be read, or when `GameMode` names no mode in it.
 
 ## What the game does not take from a launch file
 

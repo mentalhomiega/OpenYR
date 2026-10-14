@@ -58,18 +58,12 @@ bool MPMode_Load(void)
 
 
 /// <summary>
-/// Finds the loaded mode with this index.
+/// Resolves a launch file's index against the loaded table. An unreadable table lists nothing, so
+/// every index resolves to Battle.
 /// </summary>
-/// <returns>The mode, or NULL when the table has no such index.</returns>
-MPModeType const * MPMode_Find(int index)
+MPModeType MPMode_Resolve(int index, bool & found)
 {
-	for (MPModeType const & mode : Loaded) {
-		if (mode.Index == index) {
-			return(&mode);
-		}
-	}
-
-	return(NULL);
+	return(MPMode_Pick(Loaded, index, found));
 }
 
 

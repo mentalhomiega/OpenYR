@@ -112,6 +112,28 @@ std::vector<MPModeType> MPMode_Parse(INIClass const & modes)
 
 
 /// <summary>
+/// Picks the mode a launch file's index names. An index the list does not hold picks Battle, the
+/// built-in mode a launch falls back to, and leaves found false.
+/// </summary>
+MPModeType MPMode_Pick(std::vector<MPModeType> const & modes, int index, bool & found)
+{
+	for (MPModeType const & mode : modes) {
+		if (mode.Index == index) {
+			found = true;
+			return(mode);
+		}
+	}
+
+	found = false;
+	MPModeType battle;
+	battle.Index = 1;
+	battle.Kind = MPModeKind::Battle;
+	battle.Name = "Battle";
+	return(battle);
+}
+
+
+/// <summary>
 /// Sets the alliance flags from a mode's overrides file. The defaults stay when the section is
 /// absent, and MustAlly is cleared when alliances are not allowed.
 /// </summary>
