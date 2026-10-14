@@ -1273,9 +1273,11 @@ restart:
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
+		// A launched game whose scenario cannot be read has shown its error, and ends here rather
+		// than starting from the menu, so no match begins on an empty map.
 		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play || Spawner_Is_Active()) {
 			if (!Start_Scenario(Scen->ScenarioName, true, Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
-				if (Debug_Map) {
+				if (Debug_Map || Spawner_Is_Active()) {
 					return(false);
 				} else {
 					goto restart;
@@ -1283,7 +1285,7 @@ restart:
 			}
 		} else {
 			if (!Start_Scenario(Campaigns[Scen->Campaign]->ScenarioName, true, Scen->Campaign)) {
-				if (Debug_Map) {
+				if (Debug_Map || Spawner_Is_Active()) {
 					return(false);
 				} else {
 					goto restart;
