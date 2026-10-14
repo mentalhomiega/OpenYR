@@ -292,6 +292,8 @@ Through a tunnel, each `Port` entry of `[Settings]` and `[OtherN]` holds a tunne
 
 `ReconnectTimeout`, 2400 ticks (about 38 seconds) by default, is how long a machine may go quiet during play. The [reconnect dialog](/systems/reconnect-dialog/) counts it down.
 
+`TimingPolicy=Adaptive` makes this machine's timing master use the [adaptive table](/systems/network-synchronization/#adaptive-policy). Any other value, or no key, plays the [default timing](/systems/network-synchronization/#timing-policy). Only the master's choice matters, because the master sends the timing that every machine applies.
+
 Each machine applies its own waits, so files that differ do not put the match out of step. Writing the same values everywhere is still the better choice, since the machine with the shortest wait is the first to drop a slow machine.
 
 ## When something is wrong
@@ -325,7 +327,7 @@ A game against other machines, new or resumed, is also refused when:
 
 ## What the game does not take from a launch file
 
-The game sets how far ahead the machines run and how often they exchange their orders, and no launch file changes them. `FrameSendRate`, `MaxAhead` and `Protocol` are not read either, though the client writes them. The game takes its timing from its own settings and from the timing messages the machines exchange. `MapHash` is not read either; the machines compare the scenarios they loaded instead.
+The game sets how far ahead the machines run and how often they exchange their orders. `TimingPolicy` chooses between its two policies, and no other launch-file key changes these. `FrameSendRate`, `MaxAhead` and `Protocol` are not read either, though the client writes them. The game takes its timing from its own settings and from the timing messages the machines exchange. `MapHash` is not read either; the machines compare the scenarios they loaded instead.
 
 `AimableSams` is not read: a defense whose weapon reaches only the air can be aimed at a chosen aircraft, which [`SAM`](/keys/sam/) owns.
 

@@ -1,54 +1,102 @@
 # Network timing and order delay
 
-An order in a network game runs `Session.MaxAhead` (MA) frames after the next send frame. A send
-frame is a frame that is a multiple of `Session.FrameSendRate` (FSR). FSR and MA come from a timing
-policy that runs on one player's machine. Every machine applies the policy's result on the same
-frame, so all machines execute each order on the same frame.
+An order issued on frame F executes on frame E = B + MA. MA is the look-ahead in frames, and B is the first send frame at or after F. A send frame is a multiple of the send period, FSR. A master machine sets FSR and MA with a timing event, and every machine applies the event on the same frame. All machines therefore execute each order on the same frame.
 
-On a two-copy loopback match the policy settles on FSR 1 and MA 4 after frame 76, which gives a
-4-frame order delay (89 ms at 45 fps). Loopback has no network delay, so these numbers show the
-policy's floor only. The table under [Policy output from the formulas](#policy-output-from-the-formulas)
-gives the choice at other round trips.
+Two policies pick FSR and MA:
 
-This page covers protocol 2 (`COMM_PROTOCOL_MULTI_E_COMP`). Every assignment to
-`Session.CommProtocol` in this build uses it, so the protocol 0 and 1 branches do not run in a
-network game.
+- **gamemd timing** is the default. It follows gamemd's online timing. The game speed sets the start values, and the master re-sets the look-ahead every 256 frames from the worst round trip. Online games (the spawner's game mode 4 here, `Session.Type == GAME_INTERNET`) and LAN games (mode 3, `GAME_IPX`) both use it.
+- **The adaptive table** is OpenYR's own policy. It is selected with `TimingPolicy=Adaptive` in a spawner launch file. See [Adaptive policy](#adaptive-policy).
+
+The timing event is the same for both. Only the master evaluates, so a machine's own choice of policy decides the events only while that machine is the master.
+
+This page covers protocol 2 (`COMM_PROTOCOL_MULTI_E_COMP`). Every assignment to `Session.CommProtocol` in this build uses it, so the protocol 0 and 1 branches do not run in a network game.
+
+## Master
+
+The master is the host's seat once the host announces itself. Before the first frame, the announced seat replaces the lowest seat that connection setup chose, so every machine names the same master. Only the machine that names itself master sends timing events. If the machines name different masters, none sends them and the rate stays at its start value.
 
 ## Order delay
 
-An order issued on frame F executes on frame E = B + MA, where B is the first send frame at or after
-F. The delay E − F is MA plus between 0 and FSR − 1 frames. MA is a multiple of FSR in every valid
-setting, so E is a send frame too.
+An order issued on frame F executes on frame E = B + MA, where B is the first send frame at or after F. The delay E − F is MA plus between 0 and FSR − 1 frames. MA is a multiple of FSR in every valid setting, so E is a send frame too.
 
-- The order enters `OutList` with the frame it was created in. `EventClass` constructors set
-  `Frame` to `::Frame`.
-- Every frame runs the network step. It returns early on frames that are not send frames
-  (`Process_Send_Period`). Game logic runs on every frame.
-- On a send frame, `Add_Compressed_Events` sets each queued order's frame to E, moves it to
-  `DoList`, and sends it.
+- The order enters `OutList` with the frame it was created in. `EventClass` constructors set `Frame` to `::Frame`.
+- Every frame runs the network step. It returns early on frames that are not send frames (`Process_Send_Period`). Game logic runs on every frame.
+- On a send frame, `Add_Compressed_Events` sets each queued order's frame to E, moves it to `DoList`, and sends it.
 - Each machine runs `Execute_DoList` for E.
 
-An order created before the network step of frame F can go out in frame F. The 120-second run
-below shows this: an order created on frame 120 went out on frame 120.
+An order created before the network step of frame F can go out in frame F. The 120-second run below shows this: an order created on frame 120 went out on frame 120.
 
 ### Frame advance
 
 A machine moves past a send frame when both of these hold (`Can_Advance`):
 
-- Its frame is below the oldest peer frame plus MA. A peer's frame is its `FRAMEINFO` frame minus
-  its `Delay` field, which is the peer's frame at its last send.
+- Its frame is below the oldest peer frame plus MA. A peer's frame is its `FRAMEINFO` frame minus its `Delay` field, which is the peer's frame at its last send.
 - It has received every order that each peer reports as sent.
 
-When either check fails, `Wait_For_Players` services the connections and resends the frame-sync
-packet about once a second (`TIMER_SECOND`, 60 ticks). It also draws the stall marker. If the wait
-passes `ReconnectTimeout`, `Handle_Timeout` runs. If that does not clear the stall, the game reports
-the player as not responding.
+When either check fails, `Wait_For_Players` services the connections and resends the frame-sync packet about once a second (`TIMER_SECOND`, 60 ticks). It also draws the stall marker. If the wait passes `ReconnectTimeout`, `Handle_Timeout` runs. If that does not clear the stall, the game reports the player as not responding.
 
-## Timing values
+## gamemd timing
 
-### Master
+We read these functions in the decompiled `gamemd.exe` (YR 1.001) in `decomp/`:
 
-The master is the host's seat once the host announces itself. Before the first frame, the announced seat replaces the lowest seat that connection setup chose, so every machine names the same master. Only the machine that names itself master sends timing events. If the machines name different masters, none sends them and the rate stays at its start value.
+- `Queue_AI_Multiplayer` (`_global.c`, from line 13451): the master's evaluation, the TIMING event, the response-time term.
+- `Game::MainLoop` (`Game.c`, from line 591): the frame wait and the online pacing waits.
+- `CChatEventSink::OnGameStart` (`CChatEventSink.c`, from line 3): the start values and the start ping.
+- `EventClass` TIMING handler (`EventClass.c`, line 907): how a machine applies an event.
+
+The menu sets game mode 3 for the UDP network game and mode 4 for the online game (`_global.c` 6398 and 6682). Modes 0 and 5 do not run this timing.
+
+### Start values
+
+When a game starts, gamemd sets the send period and look-ahead from the game speed (`OnGameStart`). The frame rate starts at the rate for the speed.
+
+| `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Frame rate | 60 | 45 | 30 | 20 | 15 | 12 | 10 |
+| Send period | 10 | 10 | 5 | 5 | 5 | 5 | 5 |
+| Look-ahead | 40 | 40 | 30 | 20 | 20 | 20 | 10 |
+
+A match through a tunnel adds 20 frames to the look-ahead. gamemd tests `unknown_2854[0x20f]` for this, and that flag comes from the lobby data. We take the spawner's `[Tunnel]` section as the same condition, which is an inference.
+
+gamemd also sends the start frame rate and look-ahead in a precalculated timing event at frame 0. The decompile does not show that path's look-ahead in every case, so we set the table's look-ahead on each machine at start and send no start event.
+
+Each machine sets these values before its first frame, from `GameSpeed` and the tunnel flag. A launch file refuses a `GameSpeed` outside 0 to 6, so the table covers every game the spawner starts.
+
+### Evaluation
+
+The master evaluates when the frame is a multiple of 256 (`(char)CurrentFrame == 0`). Frame 0 is not an evaluation, because no player has reported a process time yet. gamemd makes no evaluation while any seated player's process time is missing. We also make none while a report is older than 512 frames, where gamemd keeps the last value. The rules that follow are the ones an evaluation applies.
+
+1. **Frame rate.** F is the lower of the speed's rate and 1000 divided by the worst process time among seated players, in milliseconds, rounded down. A worst process time of 0 gives 60. Each player's process time is the average from its last report.
+2. **Send period.** FSR is 10 when F is 31 or more, and 5 otherwise (`_global.c` 13766 to 13770). gamemd applies this to online games. For LAN games it keeps the send period it started with, which is the same at speeds 0 to 2. We apply the online rule to both (see open questions).
+3. **Response time.** R is the worst connection's average response time, in ticks of 1/60 second (`IPXManagerClass::ResponseTime`, `IPXManagerClass.c` 585). We convert each player's smoothed round trip to ticks: R = floor(round trip in ms × 60 / 1000).
+4. **Latency stage.** The stage is 1. gamemd sets 1 for a start ping up to 1000 ms and 2 above that, and the lobby's latency setting can change it. We always use 1.
+5. **Scaled response and add-on.** With stage 1, R' = R + R/2 and the add-on is 10 frames. Stage 2 gives R' = 2R and 20 frames, and stage 3 gives R' = 3R and 30 frames. When R is 0, nothing is scaled and the add-on is 0.
+6. **Target.** T = floor(R' × F / 120) + add-on. This is the one-way trip in frames plus the add-on.
+7. **Rise limit.** If T is above the current look-ahead and at least one send period above it, T is the current look-ahead plus FSR. A fall is not limited.
+8. **Alignment.** MA = ceil(T / FSR) × FSR.
+9. **Floor.** MA is at least 3 × FSR.
+10. **Ceiling.** MA is at most ceil(250 / FSR) × FSR. That is 250 at FSR 5 or 10.
+11. **Event.** The master sends TIMING with F, MA and FSR. gamemd sends this at every evaluation. We send it only when the values differ from the current target. The values that every machine applies are the same either way.
+
+Special flags: gamemd adds 10 to MA in the event when the scenario's special-flags bit 0x1000 is set, and the TIMING handler subtracts the same 10. OpenYR does not read that bit, so it never adds 10.
+
+### Applying a timing event
+
+The TIMING handler (`EventClass.c` 907) sets the frame rate, the look-ahead (less 10 when bit 0x1000 is set) and the send period when the event executes. A rise also sets a window end (`DAT_00a8b1dc`) from the event frame. We did not trace how the order code uses it. gamemd applies a fall at once. OpenYR stages a fall, as described under [Applying a change](#applying-a-change).
+
+### Frame wait
+
+`Game::MainLoop` arms each network frame for 1000 / F whole milliseconds, counted from the start of the frame (`DAT_00887330`, `DAT_00887328`). The fraction is dropped, so a frame at 45 FPS waits 22 ms (45.5 FPS at most) and a frame at 60 FPS waits 16 ms (62.5 FPS at most). Solo games use a different rule (see [Frame rate and game speed](#frame-rate-and-game-speed)).
+
+In an online game (mode 4) with look-ahead MA of at least 31, each of floor(MA/4), floor(MA/2) and floor(3MA/4) adds 10 ms to the frame's wait when the largest per-connection value is at least that many frames. The waits apply only when the largest value is nonzero. The table holding the per-connection values has no writer that we identified, so OpenYR uses the frames the most-behind connected peer trails this machine (see open questions).
+
+### Tunnelled response term (not reproduced)
+
+In an online game through the packet router (`unknown_2854[0x20f]`), gamemd sets `unknown_2854[0x45]` (`SessionClass.c` 327). With that flag, R is the global connection's average response plus the largest per-connection value, which defaults to 20 ticks (`_global.c` 13766 to 13771). We do not reproduce this term. A tunnelled match here therefore keeps a shorter look-ahead than gamemd would choose in steady state.
+
+## Adaptive policy
+
+This section describes the adaptive table. It runs only when the spawner's launch file sets `TimingPolicy=Adaptive`. The default policy is [gamemd timing](#gamemd-timing). The master, the reports and the events below apply to both policies, except where a section says otherwise.
 
 ### Rungs
 
@@ -95,7 +143,7 @@ its longest wait. The master takes the worst value of each across seated players
 
 At 43 fps, the first drop needs about three evaluations, roughly 18 seconds.
 
-### How a change takes effect
+### Applying a change
 
 The master sends the new FSR, MA and frame rate in a `TIMING` event. Each machine applies it on the
 event's frame.
@@ -113,61 +161,99 @@ and MA went from 6 to 4 at once.
 
 ## Frame rate and game speed
 
-In a network game, the desired frame rate F is the smaller of the game-speed rate and 1000 divided by
-the longest average process time among seated players. Process time runs from the start of
-`Main_Loop` to the end of AI logic. It includes the map render and excludes the network wait. An
-average of 0 ms gives 60 fps. While a seated player's process report is missing or stale, F keeps its
-synchronised value.
+Solo games (`GAME_NORMAL`, `GAME_SKIRMISH`) pace each frame at the rate in the table below. A solo rate of 0 means no limit, and fast-forward removes the limit.
 
 | `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Frame rate | 60 | 45 | 30 | 20 | 15 | 12 | 10 |
+| Solo frame rate | no limit | 60 | 45 | 30 | 20 | 15 | 10 |
 
-Other values give 60 fps. Each frame waits 1000 / F ms. `FramePacer` spreads the remainder, so the
-average rate is exact. The game starts at 30 fps until the first `TIMING` event.
+In a network game, the desired frame rate F is the lower of the game-speed rate and 1000 divided by the longest process time among seated players. Process time runs from the start of `Main_Loop` to the end of AI logic. It includes the map render and excludes the network wait. A process time of 0 ms gives 60 fps. While a seated player's process report is missing or stale, F keeps its synchronized value.
 
-MA counts frames, so its time depends on F. The rung-1 delay of 4 frames is 133 ms at 30 fps, 89 ms
-at 45 fps and 67 ms at 60 fps. A slow machine lowers F for every player, so the same MA takes longer
-in milliseconds.
+| `GameSpeed` | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Network frame rate | 60 | 45 | 30 | 20 | 15 | 12 | 10 |
+
+Values above 6 give 60 fps here. gamemd gives 60 divided by the speed for speeds 2 and up. The launch file refuses a value above 6.
+
+A network frame waits as described under [Frame wait](#frame-wait) (gamemd's rule). The adaptive policy keeps the `FramePacer` wait, which spreads the remainder so the average rate is exact. It applies only with `TimingPolicy=Adaptive`.
+
+MA counts frames, so its time depends on F. A look-ahead of 30 frames is 500 ms at 60 fps and 667 ms at 45 fps. A slow machine lowers F for every player, so the same look-ahead takes longer in milliseconds.
+
+The game starts with the rate and look-ahead in [Start values](#start-values). Before the change, a network game started at 30 fps and waited for the first timing event.
 
 ## Launch file keys
 
 | Key (`[Settings]`) | Effect |
 | --- | --- |
-| `GameSpeed` | Sets the frame-rate cap in the table above. |
+| `GameSpeed` | Sets the frame-rate cap and the start look-ahead in the tables above. |
+| `TimingPolicy` | `Adaptive` selects the [adaptive table](#adaptive-policy). Any other value, or no key, plays gamemd's timing. Each machine reads its own value, so the key is left out of the session identity. |
 | `ReconnectTimeout` | Longest frame stall, in ticks, before the game gives up. Default 2400 (40 s). The value is clamped to 60 through 36000. |
 | `ConnTimeout` | Longest wait for loading progress. Default 3600 (60 s). It does not apply to frame stalls. |
 | `Protocol`, `FrameSendRate`, `MaxAhead`, `PreCalcMaxAhead` | Not read. `tests/spawner/spawncontract.cpp` checks that they do not change the match identity. |
 
 ## Comparison with gamemd
 
-The reference is the decomp in `E:\Claude ra2 decomp\decomp`. We traced the protocol 2 path, not
-every call site.
+The reference is the decomp in `E:\Claude ra2 decomp\decomp`. We traced the protocol 2 path for the timing generator, the frame wait and the TIMING handler. The other call sites are noted where they matter.
 
-| Area | gamemd | OpenYR |
-| --- | --- | --- |
-| Start | FSR 5. MA is the response time divided by 8, rounded up to a multiple of 5, or 10 when that value is below 11 (`Net2Remote_Connect`). | FSR 2, MA 6 until the first evaluation (rung 2). |
-| Order frame | Ceiling of (frame + MA) to a multiple of FSR. | Same. |
-| Frame advance | MA is compared with peer frames in `Wait_For_Players`. Not traced line by line. | `Can_Advance` checks the same two conditions. |
-| Evaluation | Every 256 frames (frame number low byte 0), and when a precalculated value is pending. | Every 256 frames after bootstrap. |
-| Target | One-way frames = response time × F / 120. An escalation stage of 0 to 3 scales the response time by 1, 1.5, 2 or 3 and adds 0, 10, 20 or 30 frames. MA rises at most one FSR per evaluation. Minimum 3 FSR. | Rung table from R in ms, with hysteresis and staged drops. MA can jump several rungs at once. |
-| Timing event | Sets F, MA (plus 10 when special-flags bit 0x1000 is set) and FSR. | Sets F, MA and FSR. No +10 adjustment. |
-| Frame rate | min(1000 / largest process ms, game-speed rate). | Same. |
-| Frame timer | 1000 / F ms, truncated to whole milliseconds. | `FramePacer`, exact average. |
-| Local pacing | In game mode 4 with MA of at least 31, adds 10 ms to a frame's wait for each of MA/4, MA/2 and 3MA/4 that a per-player value reaches. | None. |
-| Fixed table | `CChatEventSink::OnGameStart` sets MA by game speed (40, 40, 30, 20, 20, 20, 10) and F by speed (60, 45, 30, 20, 15, 12, 10). FSR is 10 for speeds 0 and 1, else 5. | No fixed table. |
+| Area | gamemd | OpenYR, default | OpenYR, `TimingPolicy=Adaptive` |
+| --- | --- | --- | --- |
+| Start | Speed table, and +20 look-ahead when tunnelled (`OnGameStart`). | Same. | Rung 2 (2/6). |
+| Evaluation | Every 256 frames, skipped while a process time is missing. | Same, and also skipped after 512 frames without a report. | Bootstrap at 64 and 128, then every 256. |
+| Frame rate | Lower of speed and 1000 / worst process ms. | Same. | Same. |
+| Send period | 10 at 31 fps and up, else 5 (online). | Same rule for online and LAN. | Rung table. |
+| Look-ahead | One-way ticks times F / 120, plus the stage add-on, rise limited to one send period, rounded up, floor 3 send periods, ceiling 250. | Same. | Rung table from the round trip, with hysteresis and staged drops. |
+| Stage | 1 by default. | 1. | Not used. |
+| Fall of the look-ahead | Applied on execution. | Staged until the old horizon drains. | Staged. |
+| TIMING event | F, MA (plus 10 for bit 0x1000), FSR. | Same format. The +10 is not read. | Same format. |
+| Frame wait | 1000 / F whole ms, from frame start. | Same. | `FramePacer` exact average. |
+| Online pacing (mode 4, MA ≥ 31) | +10 ms per threshold reached by the per-connection lag. | Same, with the peer frame lag. | None. |
+| Tunnelled response term | Adds the largest per-connection value (default 20 ticks). | Not reproduced. | None. |
 
-The order stamp and the execution frame match gamemd's protocol 2 path. Our frame-advance check uses
-the two conditions listed above. We did not trace gamemd's check line by line. The timing differs:
-gamemd derives MA from the response time with an escalation schedule and a per-evaluation growth
-limit. We pick from a rung table and add hysteresis and staged drops.
+## Stall analysis
 
-Protocol 0 is not reached in this build, so its timing code has no effect on network games. Gamemd's
-protocol 0 branch uses FSR 5. Our `netdlg2.cpp` branch for the same case uses FSR 3.
+We read the two tester logs from `tester-inbox\files\mp-host-1014` and `mp-thunder-1014`. Both are from build `9737a743`, which predates the master fix. That build started at 30 fps and sent no timing event, so both copies ran with look-ahead 6 and send period 2 for the whole match. The order-delay lines show delays of 6 and 7 frames.
+
+**What a stall line shows.** A `Network report` line carries the longest wait the copy spent in `Wait_For_Players` for another copy's frame, in the 128 frames since its last report. The host's report at frame 134 gives 783 ms, and thunder's gives 416 ms. A dialog that opens while the game waits counts toward that wait.
+
+**The host's frame gaps are its own dialogs.** The host's gap of 637 ms between frames 118 and 119 contains a load of `gameopt.rml`, which the log reports as "opened over 3090 passes in 1109 ms". Its gap of 875 ms between frames 164 and 165 ends as `display.rml` opens. Thunder kept its frames at about 30 ms during those gaps, so it waited for the host's frame data. The `Demand loading` lines in both logs do not fall inside the stall windows.
+
+**Two of thunder's gaps have no local cause.** Thunder's gaps of 754 ms (frame 124 to 125) and 936 ms (frame 170 to 171) have no dialog or load line in its log. The host ran about 190 ms per frame over frames 123 to 125, so both copies were waiting on each other's send-period packets within a 200 ms horizon. The logs do not record packets, retransmissions or their timing, so we cannot say why the packets were late.
+
+**Would the change remove them?** Only partly, and we have not measured it on a real link. The new policy at speed 0 with an 83 ms round trip starts at 60 frames (1 s, through a tunnel) and drops to 30 frames (500 ms at 60 fps) at frame 256. The old look-ahead was 6 frames (200 ms at 30 fps). A copy's pause shorter than its look-ahead no longer stalls the other copy. A longer pause stalls the other copy only for the excess. On that estimate the host's 637 ms and 875 ms pauses would stall thunder for about 140 ms and 375 ms, where the old look-ahead would have given about 440 ms and 675 ms. These figures come from the horizon arithmetic. The loopback runs below contain no pause, so they do not test this case. With ±30 ms of jitter, the longest report wait fell from 50 ms to 0 ms, but the jitter is not the real link's, and one run each does not establish it.
 
 ## Measurements
 
-### Setup
+### Latency runs
+
+These runs used `scripts/run_netsync.ps1 -Tunnel -LatencyMs 50 -RelayBuffer 2048 -Seconds 150` with the XMP29U2 map and the autotest order scripts. The relay adds 50 ms in each direction, so each round trip was about 122 to 130 ms, with no jitter. FPS is the frame count over the logged frame lines. The steady gap is the longest gap between consecutive frames after frame 1, so the start is left out. Each row is one run.
+
+| Run | Game speed | Host side | Common frames | FPS (A / B) | Steady gap (A / B) | Longest report wait | Look-ahead |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Before | 1 | 0 | 6579 | 44.8 / 44.7 | 35 ms / not kept | 33 ms | 6 (rung 2) |
+| After | 1 | 0 | 6655 | 45.4 / 45.4 | 34 ms / 33 ms | 16 ms | 60 to frame 255, then 30 |
+| Before | 0 | 8 | 8725 | 59.5 / 59.5 | 36 ms / 36 ms | 16 ms | 9 (rung 3) |
+| After | 0 | 8 | 9216 | 62.4 / 62.4 | 26 ms / 26 ms | 0 ms | 60 to frame 255, then 30 |
+
+"Before" is the build at the base commit, `fc9c7cec`, which has the master fix and the adaptive table. Every run printed `IN SYNC`. An earlier run of the changed build at speed 0 with the same settings reported a 16 ms longest wait. That build did not yet compute the peer lag that the pacing reads.
+
+The rates sit a little above the speed's target. gamemd's whole-millisecond wait allows 62.5 fps at 60 and 45.5 fps at 45, and the runs follow that wait. The start gap from frame 0 to 1 was 35 to 124 ms before, and 52 to 169 ms after.
+
+With a fixed delay and no pauses, neither policy stalls. The longest report wait was 0 to 16 ms in every run after the change. The new look-ahead of 30 frames is 500 ms at 60 fps, against 150 ms before at speed 0. Jitter and a local pause are the cases where the difference would show, and the jittered runs below test that.
+
+### Jittered runs
+
+These runs add `-JitterMs 30` to the same relay, so each datagram is delayed by 50 ms plus or minus 30 ms in each direction. Both ran at game speed 0 with the host in seat 8, which is the owner's case. Both copies run the pacing in the changed build, but the logs do not record when the pacing waits fired.
+
+| Run | Common frames | FPS (A / B) | Steady gap (A / B) | Longest report wait | Look-ahead | Datagrams the relay forwarded |
+| --- | --- | --- | --- | --- | --- | --- |
+| Before | 8719 | 59.5 / 59.4 | 35 ms / 47 ms | 50 ms | 9 (rung 3) | 6113 |
+| After | 9219 | 62.4 / 62.4 | 28 ms / 38 ms | 0 ms | 60 to frame 255, then 30 | 2123 |
+
+Both runs printed `IN SYNC`. The start gap from frame 0 to 1 was 142 and 177 ms before, and 134 and 169 ms after. The after run sends fewer datagrams, because at speed 0 it sends every 10 frames where the rung-3 policy sent every 3. Both runs use relay seed 1, but they send different numbers of datagrams, so they draw different delays. Each is a single run. An earlier run of the changed build with the same settings had a 16 ms longest report wait.
+
+### Loopback runs, adaptive policy
+
+#### Setup
 
 `scripts/run_netsync.ps1 -Build agent18`, map XMP29U2, seed 1, two human seats that send no input,
 two computer players, loopback (`127.0.0.1`), `GameSpeed=1` (45 fps cap).
@@ -176,7 +262,7 @@ Orders come from autotest `order` steps, which queue networked mission events. T
 assigns the mission on the local objects only. It is not networked, so it cannot drive a two-copy
 test.
 
-### Results
+#### Results
 
 | Run | Length | Orders | Order delay (frames) | Wall-clock issue to execution | Result |
 | --- | --- | --- | --- | --- | --- |
@@ -204,7 +290,7 @@ Run 2 shows the send-frame wait at FSR 2 and the drop to FSR 1:
 
 Every execution in run 2 ran on its scheduled frame.
 
-### Policy output from the formulas
+#### Policy output from the formulas
 
 These values come from calling `Select_Timing_Settings` in `code/nettiming.cpp` with the same
 inputs. Each cell is the rung chosen when the round trip rises, as FSR/MA, then the minimum delay
@@ -237,7 +323,7 @@ Under `-SYNCLOG`, the copies write three kinds of line to their debug logs:
 All three need `-SYNCLOG`. The order lines skip frame-sync, frame-info, response-time, process-time,
 timing and network-report events.
 
-## Proposal: order delay that follows measured ping
+## Proposal: adaptive policy, order delay that follows measured ping
 
 This is a plan. Nothing here is implemented.
 
@@ -303,12 +389,12 @@ with the same frame model and values that every machine agrees on.
 
 ## Open questions
 
-- Which gamemd path runs for a LAN game and for an Internet game: `Net2Remote_Connect` (FSR 5 and an
-  RTT-based MA) or `CChatEventSink::OnGameStart` (the fixed table). Neither call site is traced yet.
-- What raises gamemd's stage counter (0 to 3), which adds 0, 10, 20 or 30 to the target.
-- What writes the per-player values at `unknown_2854[0x3c]` that gamemd's local 10 ms waits read.
-- What sets special-flags bit 0x1000. Gamemd adds 10 to the MA in the timing event when it is set.
-- Whether the delay follows the table above at FSR above 2 on a real link. Loopback reached FSR 2
-  only in the first 76 frames.
-- Whether the 183 ms wait on loopback is host scheduling alone. The run did not record CPU load.
-- The jitter that real links show. The testers' `-SYNCLOG` files can provide it.
+- **LAN send period.** gamemd's LAN games keep the send period they started with, which is 10 at speeds 0 and 1 and 5 otherwise. We apply the online rule to LAN games too, so the two differ only when the process time pulls F below 31 at speed 0 or 1. We have not traced the LAN start path (`Net2Remote_Connect` may set 5), so we do not know which start value a LAN game gets.
+- **Tunnelled response term.** The per-connection values that gamemd adds in a tunnelled game (`0x45`) default to 20 ticks, and their writer is not identified. The table holds them at `DAT_00afa368` with stride 24 bytes, and the lobby's `unknown_8AA[0x41]` gives the packet-router flag (`0x20f`). We take the spawner's `[Tunnel]` section as that flag. Until the writer is found, tunnelled games keep a shorter look-ahead than gamemd's.
+- **Per-connection pacing values.** The 10 ms waits read `unknown_2854[0x3c + i]`, and nothing in the decompile that we read writes that array. We use the frames the most-behind connected peer trails this machine instead.
+- **Start look-ahead on the precalculated path.** gamemd sends a precalculated timing event at frame 0. `PrecalcMaxAhead` is set on the ping-unknown path, and inside a latency branch of the chat sink. We did not find the assignment for a normal start, so we use the speed table.
+- **Latency stage.** gamemd's stage 2 applies when the start ping is above 1000 ms, and the lobby's latency event can change it. Neither is ported. The stage is 1.
+- **Process-time guard.** gamemd computes the frame rate's process term only when `DAT_00afa400 & 0xffff` is above 4. Otherwise the decompile leaves the frame rate unset. We did not resolve what gamemd uses in that case.
+- **Packet timing in the tester logs.** The 754 ms and 936 ms gaps on thunder, and the host's ~190 ms frames around frame 124, have no recorded cause. A log of packet arrival times would show whether they are losses, retransmissions or a late send.
+- **Fall of the look-ahead.** gamemd applies a fall on execution. We stage it, and the staged horizon is shorter than gamemd's during the drain. Whether an immediate fall is safe on a real link is untested.
+- **Real links.** Every run here used loopback with a fixed 50 ms delay each way. We have not run jitter, loss or a real internet route under the new policy.

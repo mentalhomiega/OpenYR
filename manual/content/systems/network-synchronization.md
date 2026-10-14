@@ -9,9 +9,29 @@ A network game tags every command with the frame on which every machine executes
 
 [Network packet validation](/systems/network-packet-validation/) owns what a packet must satisfy. [Network transport timing](/systems/network-transport-timing/) owns how each link measures its round trip and retries lost packets.
 
+## Timing policy
+
+By default, online and LAN games use gamemd's timing. The game speed sets the frame rate and the starting look-ahead. The master then sets the look-ahead again every 256 frames, from the worst round trip and the frame rate, and sends each change as a timing event.
+
+At the start, the send period and the look-ahead come from the game speed:
+
+| Game speed | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Frame rate | 60 | 45 | 30 | 20 | 15 | 12 | 10 |
+| Send period | 10 | 10 | 5 | 5 | 5 | 5 | 5 |
+| Look-ahead | 40 | 40 | 30 | 20 | 20 | 20 | 10 |
+
+A game through a tunnel adds 20 frames to the look-ahead.
+
+From frame 256 on, the look-ahead is the round trip, in sixtieths of a second, times 1.5, times the frame rate, divided by 120, plus 10 frames. The result is rounded up to a whole number of send periods. The send period is 10 at 31 frames per second and up, and 5 otherwise. The look-ahead is at least three send periods and at most 250 frames. A rise is limited to one send period per evaluation. A fall waits as described under [Applying a change](#applying-a-change). A round trip of 100 ms at 60 frames per second gives a look-ahead of 30 frames.
+
+Under the default timing, each frame lasts 1000 divided by the frame rate in whole milliseconds, rounded down. An online game also adds 10 ms to a frame for each quarter, half and three quarters of the look-ahead that the slowest peer lags behind. This starts at a look-ahead of 31.
+
+The [adaptive table](#adaptive-policy) is the other option.
+
 ## Adaptive policy
 
-A compressed game packs a run of frames into one packet. It starts at `2/6` and then adjusts both settings during play. Every player reports its measurements, and one player, the [master](/systems/out-of-sync-recovery/#the-master), evaluates the reports and sends each new timing to everyone.
+This section describes the adaptive table. It runs only when the [launch file](/formats/spawn-ini/#a-game-against-other-machines) sets `TimingPolicy=Adaptive`. Under the adaptive table, a compressed game packs a run of frames into one packet. It starts at `2/6` and then adjusts both settings during play. Every player reports its measurements, and one player, the [master](/systems/out-of-sync-recovery/#the-master), evaluates the reports and sends each new timing to everyone.
 
 ### Timing rungs
 
@@ -76,7 +96,7 @@ If the master picks another target before a staged decrease finishes, the new ta
 
 ### Frame rate
 
-Each timing event also carries the frame rate every machine runs at. The master sets it to the lower of the rate the game speed allows and the rate the slowest player's processing time allows. While any player lacks a fresh report, the master keeps the current frame rate. Each machine paces its frames to this rate. The rate applies when the timing event executes. For a decrease, it applies when the decrease activates.
+Each timing event also carries the frame rate every machine runs at. The master sets it to the lower of the rate the game speed allows and the rate the slowest player's processing time allows. While any player lacks a fresh report, the master keeps the current frame rate. Each machine paces its frames to this rate. Under the default timing, a frame waits 1000 divided by the rate in whole milliseconds, plus the pacing waits in [Timing policy](#timing-policy). The rate applies when the timing event executes. For a decrease, it applies when the decrease activates.
 
 ### Starting master
 
@@ -88,7 +108,7 @@ Only an executed removal event changes the master. A machine that loses its conn
 
 ## Player feedback
 
-When the options dialog opens in an internet game, a disabled Connection slider shows the rung in force. The slider is mirrored, so rung 1 sits at its right end. The label beside it names the tier and the rung, such as `Fast (rung 2)`.
+When the options dialog opens in an internet game, a disabled Connection slider shows the rung that the adaptive table would choose for the worst measured round trip and the desired frame rate. The slider reports the link. It does not show the timing in force, which under the default timing is not from that table. The slider is mirrored, so rung 1 sits at its right end. The label beside it names the tier and the rung, such as `Fast (rung 2)`.
 
 | Rungs | Tier |
 | --- | --- |
@@ -99,7 +119,7 @@ When the options dialog opens in an internet game, a disabled Connection slider 
 
 A look-ahead longer than its rung normally uses also reads as Bad. This happens at rung 10 with an extended look-ahead, and briefly while a decrease from it steps the look-ahead down.
 
-When a timing event executes with a target in a different tier from the previous target, the message list shows "Connection quality target:" followed by the new tier. For a decrease, the message appears before the staged change takes effect.
+With the adaptive table, when a timing event executes with a target in a different tier from the previous target, the message list shows "Connection quality target:" followed by the new tier. For a decrease, the message appears before the staged change takes effect.
 
 The Speed slider in the same dialog sets the game speed, which caps the [frame rate](#frame-rate).
 
