@@ -1,17 +1,11 @@
 ---
 key: EliteSBarrelLength
-summary: The barrel length of an object's `EliteSecondary` slot, in its art section.
+summary: Parsed barrel length of an object's `EliteSecondary` slot. No firing point or effect uses it.
+no_effect: true
 see_also: [SBarrelLength, EliteSecondary, "system:firing-geometry"]
 when_omitted:
   kind: inherited
   note: The same section's SBarrelLength= value.
 ---
 
-`EliteSBarrelLength=` sets the barrel length the [`EliteSecondary`](/keys/elitesecondary/) slot fires with. It works as [`SBarrelLength`](/keys/sbarrellength/) does for the normal slot and is read from the same art section. An object uses the elite slot only at elite rank and only when `EliteSecondary=` names a weapon; otherwise the normal slot and its `SBarrelLength` apply.
-
-```ini title="artmd.ini"
-[MYTANK] ; example image section
-EliteSBarrelLength=64
-```
-
-A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.
+`EliteSBarrelLength=` is read into the elite secondary slot and stored. No firing point or effect reads it, so an elite object's second-slot shots stay where [`EliteSecondaryFireFLH`](/keys/elitesecondaryfireflh/) and [`TurretOffset`](/keys/turretoffset/) put them.

@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Each shot spawns one system of the type named in [`AttachedParticleSystem=`](/keys/attachedparticlesystem/) at the muzzle, aimed at the target as the shot leaves. The projectile keeps its damage: [`Damage=`](/keys/damage/#scope-weapontype) is delivered on impact as usual, and the spray adds its own effect on top.
+Each shot spawns one system of the type named in [`AttachedParticleSystem=`](/keys/attachedparticlesystem/) at the mounting, aimed at the target as the shot leaves. The projectile keeps its damage: [`Damage=`](/keys/damage/#scope-weapontype) is delivered on impact as usual, and the spray adds its own effect on top.
 
 ```ini title="rules.ini"
 [MySparkGun] ; example WeaponType

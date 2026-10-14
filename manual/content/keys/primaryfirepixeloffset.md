@@ -9,13 +9,12 @@ when_omitted:
 
 Two whole numbers, `X,Y`, in screen pixels from the point the building's artwork is drawn at. A positive `X` moves right and a positive `Y` moves down.
 
-Any pair other than `65535,65535` places three points of the building at that offset:
+Any pair other than `65535,65535` places two points of the building at that offset:
 
-- the mounting, where the projectile is created and the firing solution is measured from;
-- the muzzle, where the fire animation and beam appear;
+- the mounting, where the projectile is created, the firing solution is measured from, and the fire animation and beams start;
 - the point the building aims from when it turns to face a target, which is measured from the building's center instead of its draw point.
 
-The offset applies to every weapon the building fires, not only the first. [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/) changes the muzzle to the firing offset plus this offset.
+The offset applies to every weapon the building fires, not only the first. [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/) changes the mounting to the firing offset plus this offset.
 
 ```ini title="art.ini"
 [MYOBELISK] ; the Image ID of a BuildingType

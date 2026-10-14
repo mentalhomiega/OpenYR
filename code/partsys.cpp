@@ -662,7 +662,7 @@ void ParticleSystemClass::Fire_AI(void)
 				Coord delta = cc - source->Get_Coord();
 				int dist = (int)std::sqrt((double)delta.X * (double)delta.X + (double)delta.Y * (double)delta.Y + (double)delta.Z * (double)delta.Z);
 				SpawnCoord = Move_Coord(source->Get_Coord(), source->PrimaryFacing.Current(), dist);
-				Set_Coord(source->Fire_Coord(0));
+				Set_Coord(source->Turret_Coord(0));
 				reaimed = true;
 			}
 		}

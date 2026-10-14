@@ -1,13 +1,13 @@
 ---
 key: IsSonic
-summary: Sends a visible wave rolling from the muzzle to the target, damaging everything it crosses on the way.
+summary: Sends a visible wave rolling from the mounting to the target, damaging everything it crosses on the way.
 see_also: ["AmbientDamage", "ROF", "Range", "Warhead"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-`IsSonic=yes` makes the weapon fire a wave that rolls from the muzzle to the target and damages the objects under it. All of the weapon's damage comes from the wave's [`AmbientDamage`](/keys/ambientdamage/). The weapon still fires its projectile, but the projectile carries no damage, so [`Damage=`](/keys/damage/#scope-weapontype) adds nothing to the shot.
+`IsSonic=yes` makes the weapon fire a wave that rolls from the mounting to the target and damages the objects under it. All of the weapon's damage comes from the wave's [`AmbientDamage`](/keys/ambientdamage/). The weapon still fires its projectile, but the projectile carries no damage, so [`Damage=`](/keys/damage/#scope-weapontype) adds nothing to the shot.
 
 ```ini title="rules.ini"
 [MySonicGun] ; example WeaponType
@@ -21,16 +21,16 @@ ROF=120
 
 ## How long the wave lasts
 
-The wave grows from the muzzle by a twentieth of the distance each frame and reaches the target after 20 frames. Its trailing edge starts to follow on the second frame, once the leading edge is more than a tenth ahead, and moves at the same speed. The wave is removed on the 21st frame after it is fired.
+The wave grows from the mounting by a twentieth of the distance each frame and reaches the target after 20 frames. Its trailing edge starts to follow on the second frame, once the leading edge is more than a tenth ahead, and moves at the same speed. The wave is removed on the 21st frame after it is fired.
 
-While the firer keeps targeting the object, the wave damages every cell it has passed beyond the muzzle's cell, up to its leading edge, on each frame. A cell near the firer is hit on about 20 frames, and the target's cell only on the last few, because the leading edge reaches it late. Once the link breaks, the wave damages only the cells between its trailing and leading edges. Even a small `AmbientDamage` adds up. If the firer is destroyed, the wave deals no more damage and fades. [`AmbientDamage`](/keys/ambientdamage/) covers the damage each hit deals, and its effect on walls. On every frame, a destroyable cliff under the wave may also collapse, at the chance [`[CombatDamage] CollapseChance`](/keys/collapsechance/) sets.
+While the firer keeps targeting the object, the wave damages every cell it has passed beyond the cell the wave starts from, up to its leading edge, on each frame. A cell near the firer is hit on about 20 frames, and the target's cell only on the last few, because the leading edge reaches it late. Once the link breaks, the wave damages only the cells between its trailing and leading edges. Even a small `AmbientDamage` adds up. If the firer is destroyed, the wave deals no more damage and fades. [`AmbientDamage`](/keys/ambientdamage/) covers the damage each hit deals, and its effect on walls. On every frame, a destroyable cliff under the wave may also collapse, at the chance [`[CombatDamage] CollapseChance`](/keys/collapsechance/) sets.
 
 :::caution[A wave fired beyond about 8.5 cells dies at once]
 The leading edge keeps growing only while the firer still targets the same object and the two are no more than 2172 leptons apart, a little under 8.5 cells. When that stops being true, the leading edge stops and the wave fades early from its trailing edge. A wave fired from beyond that distance is removed as soon as it appears and damages nothing, so a sonic weapon whose [`Range=`](/keys/range/#scope-weapontype) reaches further deals no damage at its longest shots.
 :::
 
 :::caution[A wave fired from under 240 leptons is never shown]
-A wave whose muzzle is less than 240 leptons from its target, measured on the ground and ignoring height, is not placed on the map. It neither shows nor damages anything. The weapon still fires: it spends its [`Ammo`](/keys/ammo/) and starts its reload as usual.
+A wave whose mounting is less than 240 leptons from its target, measured on the ground and ignoring height, is not placed on the map. It neither shows nor damages anything. The weapon still fires: it spends its [`Ammo`](/keys/ammo/) and starts its reload as usual.
 :::
 
 ## Firing rate
@@ -38,5 +38,5 @@ A wave whose muzzle is less than 240 leptons from its target, measured on the gr
 While a wave is alive, neither of the object's weapons can fire. The reload delay after a sonic shot is exactly [`ROF`](/keys/rof/#scope-weapontype), with no house rate-of-fire bias, burst delay, random extra frames or veteran bonus. The next shot waits until both `ROF` has passed and the wave is gone. A structure with more than one round of [`Ammo`](/keys/ammo/) left waits only for the wave. [The reload delay](/systems/firing-geometry/#the-reload-delay) gives the full rules.
 
 :::caution[The wave uses the first weapon slot's settings]
-The wave's damage and warhead come from the weapon in the object's first slot, whichever slot fired. The wave is also drawn from the first slot's muzzle. A sonic weapon in the second slot therefore rolls out a wave with the first weapon's `AmbientDamage` and warhead.
+The wave's damage and warhead come from the weapon in the object's first slot, whichever slot fired. The wave is also drawn from the first slot's mounting. A sonic weapon in the second slot therefore rolls out a wave with the first weapon's `AmbientDamage` and warhead.
 :::

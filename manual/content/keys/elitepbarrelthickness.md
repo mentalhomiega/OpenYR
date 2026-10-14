@@ -1,17 +1,11 @@
 ---
 key: ElitePBarrelThickness
-summary: The barrel thickness of an object's `ElitePrimary` slot, in its art section.
+summary: Parsed barrel thickness of an object's `ElitePrimary` slot. No firing point or effect uses it.
+no_effect: true
 see_also: [PBarrelThickness, ElitePrimary, "system:firing-geometry"]
 when_omitted:
   kind: inherited
   note: The same section's PBarrelThickness= value.
 ---
 
-`ElitePBarrelThickness=` sets the barrel thickness the [`ElitePrimary`](/keys/eliteprimary/) slot fires with. It works as [`PBarrelThickness`](/keys/pbarrelthickness/) does for the normal slot and is read from the same art section. An object uses the elite slot only at elite rank and only when `ElitePrimary=` names a weapon; otherwise the normal slot and its `PBarrelThickness` apply.
-
-```ini title="artmd.ini"
-[MYTANK] ; example image section
-ElitePBarrelThickness=6
-```
-
-A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.
+`ElitePBarrelThickness=` is read into the elite primary slot and stored. No firing point or effect reads it, so an elite object's shots stay where [`ElitePrimaryFireFLH`](/keys/eliteprimaryfireflh/) and [`TurretOffset`](/keys/turretoffset/) put them.

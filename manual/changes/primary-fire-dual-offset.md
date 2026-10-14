@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-`PrimaryFireDualOffset=yes` in `art.ini` makes a building's muzzle effects start at its `PrimaryFireFLH` position plus its `PrimaryFirePixelOffset`, as the stock Prism Tower and Pillbox do. Their firing animation and beams now start at that point instead of at the pixel offset alone.
+`PrimaryFireDualOffset=yes` in `art.ini` makes a building's firing point the `PrimaryFireFLH` position plus its `PrimaryFirePixelOffset`, as the stock Prism Tower and Pillbox do. Their projectiles, firing animations and beams now start at that point instead of at the pixel offset alone.

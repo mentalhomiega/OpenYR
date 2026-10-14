@@ -780,64 +780,60 @@ bool TechnoClass::Can_Heal(ObjectClass const * object) const
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Fire_Coord -- Determine the coordinate where bullets appear.                   *
- *                                                                                             *
- *    This routine will determine the coordinate to use when this object fires. The coordinate *
- *    is the location where bullets appear (or fire effects appear) when the object fires      *
- *    its weapon.                                                                              *
- *                                                                                             *
- * INPUT:   which -- Which weapon is the coordinate to be calculated for? 0 means primary      *
- *                   weapon, 1 means secondary weapon.                                         *
- *                                                                                             *
- * OUTPUT:  Returns with the coordinate that any bullets fired from the specified weapon       *
- *          should appear.                                                                     *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/29/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
-Coord TechnoClass::Fire_Coord(int which) const
+/// <summary>
+/// Fetches the point a weapon is mounted at, or a passenger seat of an open-topped transport when the index is negative.
+/// Index -1 to -5 is seat 1 to 5 (AlternateFLH1 to AlternateFLH5). Any other negative index is zero.
+/// </summary>
+/// <param name="which">The weapon slot, or a negative seat index.</param>
+/// <returns>The offset from the object's center in the turret frame, before the body and turret rotation apply.</returns>
+TPoint3D<int> TechnoClass::Weapon_FLH(int which) const
 {
-	TechnoTypeClass const * tclass = TClass;
-	WeaponDataStruct const * weapon = Get_Class_Weapon_Data(which);
-
-	int flhx = weapon->FireFLH.X;
-	int flhy = weapon->FireFLH.Y;
-	int flhz = weapon->FireFLH.Z;
-
-	Matrix3D matrix;
-	matrix.Make_Identity();
-	matrix.Rotate_Z(Turret_Facing().As_Radian32());
-	matrix.Translate(flhx + tclass->TurretOffset, flhy * (BurstIndex % 2 != 0 ? -1 : 1), flhz + weapon->BarrelThickness);
-	matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
-	matrix.Translate(weapon->BarrelLength, 0, 0);
-
-	Vector3 firevec = matrix * Vector3(0, 0, 0);
-	Coord coord(firevec.X, -firevec.Y, firevec.Z);
-
-	return(coord + Render_Coord());
+	if (which < 0) {
+		int const seat = -which - 1;
+		if (seat < 5) {
+			return(TClass->AlternativeFLH[seat]);
+		}
+		return(TPoint3D<int>(0, 0, 0));
+	}
+	return(Get_Class_Weapon_Data(which)->FireFLH);
 }
 
 
 /// <summary>
-/// Fetches the coordinate that a weapon is mounted at.
-/// This is where a projectile is created, and where a firing solution is measured from. The
-/// barrel is deliberately not accounted for, so the coordinate holds still as the weapon
-/// elevates -- unlike Fire_Coord, which follows the muzzle. A burst weapon alternates between
-/// its left and right mounting on successive shots.
+/// Returns the seat a passenger holds in this open-topped transport. Seat 1 is the passenger that boarded last.
 /// </summary>
-/// <param name="which">Which of the object's weapons to fetch the mounting for.</param>
+/// <param name="passenger">The object to look for.</param>
+/// <returns>The seat number, or 0 when the object is not aboard.</returns>
+int TechnoClass::Passenger_Seat(FootClass const * passenger) const
+{
+	int seat = 0;
+	ObjectClass const * object = Cargo.Attached_Object();
+	while (object != NULL) {
+		seat++;
+		if (object == passenger) {
+			return(seat);
+		}
+		object = object->Next;
+		if (object != NULL && !object->Is_Foot()) {
+			break;
+		}
+	}
+	return(0);
+}
+
+
+/// <summary>
+/// Fetches the point a weapon is mounted at, as gamemd's TechnoClass::GetFLH (0x6F3AD0) does.
+/// The projectile is created here and its aim is measured from here. The barrel is not part of
+/// the point, so it holds still as the weapon elevates. A burst weapon alternates between its
+/// left and right mounting on successive shots.
+/// </summary>
+/// <param name="which">The weapon slot, or a negative passenger seat (see Weapon_FLH).</param>
 /// <returns>Returns with the coordinate the projectile should be created at.</returns>
 Coord TechnoClass::Turret_Coord(int which) const
 {
 	TechnoTypeClass const * tclass = TClass;
-	WeaponDataStruct const * weapon = Get_Class_Weapon_Data(which);
-
-	int flhx = weapon->FireFLH.X;
-	int flhy = weapon->FireFLH.Y;
-	int flhz = weapon->FireFLH.Z;
+	TPoint3D<int> flh = Weapon_FLH(which);
 
 	Matrix3D matrix;
 	double angle = 0;
@@ -851,7 +847,7 @@ Coord TechnoClass::Turret_Coord(int which) const
 	}
 
 	matrix.Rotate_Z(Turret_Facing().As_Radian32() - angle);
-	matrix.Translate(flhx + tclass->TurretOffset, flhy * (BurstIndex % 2 != 0 ? -1 : 1), flhz);
+	matrix.Translate(flh.X + tclass->TurretOffset, flh.Y * (BurstIndex % 2 != 0 ? -1 : 1), flh.Z);
 
 	Vector3 firevec = matrix * Vector3(0, 0, 0);
 	Coord coord(firevec.X, -firevec.Y, firevec.Z);
@@ -4752,7 +4748,7 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 	if (source_coord != COORD_NONE) {
 		source = source_coord;
 	} else {
-		source = Fire_Coord(which);
+		source = Turret_Coord(which);
 		if (source.Y != Render_Coord().Y) {
 			Point2D p1 = TacticalMap->Coord_To_Pixel_Absolute(source);
 			Point2D p2 = TacticalMap->Coord_To_Pixel_Absolute(Render_Coord());
@@ -5251,14 +5247,15 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 
 				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
+				// The effects below start at fire_coord, which gamemd keeps in CStack_74 (TechnoClass::Fire, 0x6FDD50).
 				if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
-					ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, Fire_Coord(which), target, this);
+					ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
 				}
 				if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
-					ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, Fire_Coord(which), target, this);
+					ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
 				}
 				if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) {
-					Coord start = Fire_Coord(which);
+					Coord start = fire_coord;
 					Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
 					ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
 				}
@@ -5329,12 +5326,12 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 
 				if (weapon->IsSonic) {
-					Wave = new WaveClass(Fire_Coord(which), target_coord, this, WAVE_SONIC, (TechnoClass *)target);
+					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, (TechnoClass *)target);
 				}
 
 				// A magnetron beam is drawn while none is showing (TechnoClass::Fire, 0x6FDD50).
 				if (weapon->IsMagBeam && Wave == NULL && target->Is_Techno()) {
-					Wave = new WaveClass(Fire_Coord(which), target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
+					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
 				}
 
 				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
@@ -5348,7 +5345,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
 				if (weapon->IsRadBeam) {
 					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Fire_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
 				}
 
 				/*

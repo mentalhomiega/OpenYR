@@ -4618,15 +4618,21 @@ void InfantryClass::Compute_CRC(CRCEngine & crc) const
 
 
 /// <summary>
-/// Fetches the coordinate that this infantry's weapon is mounted at.
-/// Infantry carry their weapon rather than mount it, so this routine just hands back the
-/// same spot the weapon is fired from.
+/// Fetches the point this infantry fires from, as gamemd's InfantryClass::GetFLH (0x523250) does.
+/// A passenger of an open-topped transport fires from its seat on that transport. Any other
+/// infantry fires from the mounting of its own weapon.
 /// </summary>
 /// <param name="which">The weapon slot to fetch the mounting for.</param>
-/// <returns>Returns with the coordinate the projectile should first appear at.</returns>
+/// <returns>Returns with the coordinate the projectile should be created at.</returns>
 Coord InfantryClass::Turret_Coord(int which) const
 {
-	return(Fire_Coord(which));
+	if (IsInOpenToppedTransport && Transporter != NULL) {
+		int const seat = Transporter->Passenger_Seat(this);
+		if (seat != 0) {
+			return(Transporter->Turret_Coord(-seat));
+		}
+	}
+	return(TechnoClass::Turret_Coord(which));
 }
 
 

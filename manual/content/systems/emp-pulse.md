@@ -70,7 +70,7 @@ While the player aims an EM pulse superweapon, the cursor shows the in-range for
 
 A click on the out-of-range cursor fires the first superweapon that declares `Action=EMPulseRange`, and launches nothing if none does. The launch has no range limit of its own, so an EM pulse superweapon declared `Action=EMPulseRange` fires at any distance.
 
-The chosen cannon turns toward the target and creates the hard-coded animation `PULSBALL` at its muzzle. Thirty-two frames later it fires its primary weapon at the target, and the pulse comes from that weapon's warhead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in `[SpecialWeapons]` have no effect.
+The chosen cannon turns toward the target and creates the hard-coded animation `PULSBALL` at its mounting. Thirty-two frames later it fires its primary weapon at the target, and the pulse comes from that weapon's warhead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in `[SpecialWeapons]` have no effect.
 
 ### Mobile EMP vehicle
 

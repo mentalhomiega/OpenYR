@@ -1,23 +1,13 @@
 ---
 key: PBarrelThickness
-summary: Raises the point the first weapon's barrel pivots about.
+summary: Parsed lift of the first weapon's barrel pivot. No firing point or effect uses it.
+no_effect: true
 see_also: ["PrimaryFireFLH", "PBarrelLength", "ElitePBarrelThickness", "SBarrelThickness"]
 when_omitted:
   kind: value
   value: "0"
 ---
 
-The barrel pivots this many leptons, 256 to a cell, above the mounting point that [`PrimaryFireFLH`](/keys/primaryfireflh/) sets. The pivot is raised before the barrel is pitched, so the muzzle rises by the same amount at every elevation. [`PBarrelLength`](/keys/pbarrellength/) then measures along the barrel from the raised pivot.
+The value is read into the first weapon slot and stored. No firing point or effect reads it, so the mounting that [`PrimaryFireFLH`](/keys/primaryfireflh/) sets stays where it is.
 
-```ini title="art.ini"
-[MYTANK] ; the Image ID of a UnitType
-PrimaryFireFLH=100,0,60
-PBarrelLength=80
-PBarrelThickness=12 ; lifts the muzzle onto the barrel's centerline
-```
-
-The weapon's fire animation, laser beam, sonic wave and attached particle systems start at the muzzle. A structure that sets [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) or [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) takes its firing point from that setting instead, and ignores this one, unless it also sets [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/). The projectile starts at the muzzle only for infantry. An aircraft, structure or vehicle creates it at the mounting point, which this setting does not raise.
-
-The elite primary slot uses [`ElitePBarrelThickness`](/keys/elitepbarrelthickness/), which defaults to this value.
-
-A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.
+The elite primary slot's [`ElitePBarrelThickness`](/keys/elitepbarrelthickness/) defaults to this value. It has no effect either.

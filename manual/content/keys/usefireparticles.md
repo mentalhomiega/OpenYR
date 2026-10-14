@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Whatever damage the weapon deals comes from the particle system named in [`AttachedParticleSystem=`](/keys/attachedparticlesystem/). The system is spawned at the muzzle and aimed at the target as the shot leaves. The projectile is still created and still flies, but it carries no damage, so [`Damage=`](/keys/damage/#scope-weapontype) is never delivered.
+Whatever damage the weapon deals comes from the particle system named in [`AttachedParticleSystem=`](/keys/attachedparticlesystem/). The system is spawned at the mounting and aimed at the target as the shot leaves. The projectile is still created and still flies, but it carries no damage, so [`Damage=`](/keys/damage/#scope-weapontype) is never delivered.
 
 ```ini title="rules.ini"
 [MyFlamer] ; example WeaponType

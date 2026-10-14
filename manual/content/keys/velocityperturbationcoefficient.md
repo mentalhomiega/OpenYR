@@ -17,7 +17,7 @@ MovementPerturbationCoefficient=.3
 VelocityPerturbationCoefficient=.6 ; speeds vary by at most about .21 either way
 ```
 
-The trace lays its particles from the muzzle outward, and each offset builds on the one before:
+The trace lays its particles from the mounting outward, and each offset builds on the one before:
 
 1. Start from the previous particle's offset, or from zero for the first particle.
 2. Add a random amount between `-0.5` and `0.5`.

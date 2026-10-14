@@ -383,6 +383,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 		TurretWeapon[i] = -1;
 	}
 
+	for (int seat = 0; seat < 5; seat++) {
+		AlternativeFLH[seat] = TPoint3D<int>(0, 0, 0);
+	}
+
 	AbstractTypePtrTracker.Add(this);
 	TechnoTypes.Add(this);
 }
@@ -1238,6 +1242,13 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 				sprintf(buf, "EliteWeapon%dFLH", i + 1);
 				EliteWeapons[i].FireFLH = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[i].FireFLH);
 			}
+		}
+
+		// Each passenger seat of an open-topped transport has its own mounting. A seat with no entry uses the primary mounting.
+		for (int seat = 0; seat < 5; seat++) {
+			char buf[32];
+			sprintf(buf, "AlternateFLH%d", seat + 1);
+			AlternativeFLH[seat] = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[0].FireFLH);
 		}
 
 		TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);

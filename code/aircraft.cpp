@@ -2284,7 +2284,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 						Assign_Destination(NULL);
 					}
 				} else {
-					SecondaryFacing.Set_Desired(DirType().Direction(Fire_Coord(0), NavCom->Center_Coord()));
+					SecondaryFacing.Set_Desired(DirType().Direction(Turret_Coord(0), NavCom->Center_Coord()));
 					return(1);
 				}
 			} else {

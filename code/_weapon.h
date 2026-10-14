@@ -30,17 +30,11 @@ struct WeaponDataStruct {
 	 */
 	TPoint3D<int> FireFLH;
 
-	/*
-	 * This is how far out along the barrel the muzzle sits, expressed in leptons. It is
-	 * measured after the barrel has been pitched, so the muzzle rides up with an elevated
-	 * barrel.
-	 */
+	// Read from PBarrelLength and its variants, as gamemd does. No firing point or effect reads it:
+	// gamemd's TechnoClass::GetFLH (0x6F3AD0) has no barrel term.
 	int BarrelLength;
 
-	/*
-	 * This raises the point the barrel pivots about, expressed in leptons, so that the shot
-	 * lines up with the middle of the barrel artwork rather than with its base.
-	 */
+	// Read from PBarrelThickness and its variants. Like BarrelLength, no firing point or effect reads it.
 	int BarrelThickness;
 
 	// Carries the weapon slot to or from a save game.

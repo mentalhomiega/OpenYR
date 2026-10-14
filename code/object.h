@@ -254,7 +254,6 @@ class ObjectClass : public AbstractClass
 		// Where the object was drawn at the start of the current game frame, or COORD_NONE.
 		Coord RenderPrevCoord;
 		Point2D Render_Blend_Offset(void) const;
-		virtual Coord Fire_Coord(int which) const {return(Center_Coord() + Coord(0, 0, 50));}
 		virtual Coord Exit_Coord(void) const {return(Center_Coord());}
 		virtual int Sort_Y(void) const;
 		virtual bool On_Ground(void) const override;

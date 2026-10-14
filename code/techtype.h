@@ -884,6 +884,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		WeaponDataStruct Weapons[WEAPON_SLOT_COUNT];
 		WeaponDataStruct EliteWeapons[WEAPON_SLOT_COUNT];
 
+		// The passenger seats of an open-topped transport, AlternateFLH1 to AlternateFLH5. Weapon index
+		// -1 to -5 reads seat 1 to 5 in TechnoClass::Weapon_FLH.
+		TPoint3D<int> AlternativeFLH[5];
+
 		/*
 		 * If this object cannot be harmed by another object of its own type and house, then
 		 * this flag will be true. It stops a mass of identical units from destroying itself

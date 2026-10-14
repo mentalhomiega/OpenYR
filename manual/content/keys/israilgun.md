@@ -1,13 +1,13 @@
 ---
 key: IsRailgun
-summary: Fires a beam that damages objects along the line from the muzzle to the target as the weapon fires.
+summary: Fires a beam that damages objects along the line from the mounting to the target as the weapon fires.
 see_also: ["AmbientDamage", "AttachedParticleSystem", "ROF", "Warhead"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-`IsRailgun=yes` fires a beam from the muzzle to the target's center at the moment the weapon fires, after the projectile has been launched. The beam damages objects along its line once each, dealing the weapon's [`AmbientDamage`](/keys/ambientdamage/) through its [`Warhead=`](/keys/warhead/#scope-weapontype). The weapon's [`AttachedParticleSystem=`](/keys/attachedparticlesystem/) is drawn along the beam.
+`IsRailgun=yes` fires a beam from the mounting to the target's center at the moment the weapon fires, after the projectile has been launched. The beam damages objects along its line once each, dealing the weapon's [`AmbientDamage`](/keys/ambientdamage/) through its [`Warhead=`](/keys/warhead/#scope-weapontype). The weapon's [`AttachedParticleSystem=`](/keys/attachedparticlesystem/) is drawn along the beam.
 
 ```ini title="rules.ini"
 [MyRailgun] ; example WeaponType

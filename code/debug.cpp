@@ -354,7 +354,7 @@ void Debug_Key(unsigned input)
 					if (ttype->Weapons[0].Weapon != NULL) weapon = ttype->Weapons[0].Weapon->Range;
 //					Set_Logic_Page(SeenBuff);
 					Coord center = CurrentObject[0]->Center_Coord();
-					Coord center2 = CurrentObject[0]->Fire_Coord(0);
+					Coord center2 = static_cast<TechnoClass *>(CurrentObject[0])->Turret_Coord(0);
 
 					int white_color = ((DSurface *)LogicalSurface)->Build_Hicolor_Pixel(0xFF,0xFF,0xFF);
 					int red_color = ((DSurface *)LogicalSurface)->Build_Hicolor_Pixel(0xFF,0,0);

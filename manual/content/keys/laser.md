@@ -17,7 +17,7 @@ Laser=yes
 LaserColor=25,20,255
 ```
 
-The beam appears on the frame the trace is laid and runs its full length. For an [`IsRailgun=yes`](/keys/israilgun/) weapon, that is from the firer's muzzle to the center of the target, or to the first ground that rises above the line of fire if that comes sooner.
+The beam appears on the frame the trace is laid and runs its full length. For an [`IsRailgun=yes`](/keys/israilgun/) weapon, that is from the firer's mounting to the center of the target, or to the first ground that rises above the line of fire if that comes sooner.
 
 The beam is a single line with no outer glow, and it lasts ten frames. Above the lowest detail setting, it fades from half intensity to nothing over those frames. At the lowest detail setting, it does not fade.
 

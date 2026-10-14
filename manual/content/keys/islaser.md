@@ -1,13 +1,13 @@
 ---
 key: IsLaser
-summary: Draws a beam from the muzzle to the target as the weapon fires.
+summary: Draws a beam from the mounting to the target as the weapon fires.
 see_also: ["LaserInnerColor", "LaserOuterColor", "LaserOuterSpread", "LaserDuration", "IsBigLaser", "Charges"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-`IsLaser=yes` draws a beam from the muzzle to the target each time the weapon fires. The beam is only a visual effect. The weapon still fires its projectile, and the projectile deals all the damage when it detonates.
+`IsLaser=yes` draws a beam from the mounting to the target each time the weapon fires. The beam is only a visual effect. The weapon still fires its projectile, and the projectile deals all the damage when it detonates.
 
 ```ini title="rules.ini"
 [MyObeliskRay] ; example WeaponType
@@ -21,7 +21,7 @@ Projectile=LLine ; a BulletType, registered by a weapon naming it as its Project
 
 ## What is drawn
 
-A laser shot draws two effects along the line from the muzzle to the target's aim point:
+A laser shot draws two effects along the line from the mounting to the target's aim point:
 
 - The beam: a thin core line in [`LaserInnerColor`](/keys/laserinnercolor/), with two glow lines beside it in [`LaserOuterColor`](/keys/laseroutercolor/). [`LaserOuterSpread`](/keys/laserouterspread/) varies the glow color each frame, and the beam lasts [`LaserDuration`](/keys/laserduration/) frames.
 - A screen glow along the same line, drawn only at the high [detail level](/keys/detaillevel/#scope-client-settings). It brightens only the red of whatever lies beneath it, whatever colors the beam uses, and fades out over about 22 frames. [`IsBigLaser=yes`](/keys/isbiglaser/) widens it.
@@ -32,6 +32,6 @@ Whichever slot fired, the beam's colors, spread, duration and glow width come fr
 
 ## Effects on the shot
 
-A laser weapon's projectile starts at the barrel mounting and takes its first flight turn later in the frame it is fired, as any other projectile does. A barrel length does not change this. [The shot, step by step](/systems/firing-geometry/#the-shot-step-by-step) lists the firing order.
+A laser weapon's projectile starts at the mounting and takes its first flight turn later in the frame it is fired, as any other projectile does. [The shot, step by step](/systems/firing-geometry/#the-shot-step-by-step) lists the firing order.
 
 On a structure, each laser shot resets the turret's charge animation to its first frame. The structure also loses its turret charge, unless it has more than one round of [`Ammo`](/keys/ammo/) left. [`Charges`](/keys/charges/) covers what that means for a charging weapon.

@@ -1199,9 +1199,9 @@ void WaveClass::Wave_Shape_AI(void)
 	if (IsWaveActive) {
 		// A magnetron beam on a vehicle runs from the vehicle back to the firer.
 		if (Type == WAVE_MAGNETRON && Target->RTTI == RTTI_UNIT) {
-			Build_Wave_Shape(Target->Center_Coord(), Source->Fire_Coord(0));
+			Build_Wave_Shape(Target->Center_Coord(), Source->Turret_Coord(0));
 		} else {
-			Build_Wave_Shape(Source->Fire_Coord(0), Target->As_Coord());
+			Build_Wave_Shape(Source->Turret_Coord(0), Target->As_Coord());
 		}
 	}
 

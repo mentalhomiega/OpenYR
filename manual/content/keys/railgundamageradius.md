@@ -7,7 +7,7 @@ when_omitted:
   value: "128"
 ---
 
-A railgun beam damages an object when the object's center is closer to the beam than this distance. The distance is in leptons, 256 to a cell, and is measured straight out from the line between the muzzle and the target's center.
+A railgun beam damages an object when the object's center is closer to the beam than this distance. The distance is in leptons, 256 to a cell, and is measured straight out from the line between the mounting and the target's center.
 
 ```ini title="rules.ini"
 [CombatDamage]

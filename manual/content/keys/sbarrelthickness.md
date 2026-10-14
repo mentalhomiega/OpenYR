@@ -1,26 +1,13 @@
 ---
 key: SBarrelThickness
-summary: Raises the point the second weapon's barrel pivots about.
+summary: Parsed lift of the second weapon's barrel pivot. No firing point or effect uses it.
+no_effect: true
 see_also: ["SecondaryFireFLH", "SBarrelLength", "PBarrelThickness"]
 when_omitted:
   kind: value
   value: "0"
 ---
 
-The value is in leptons, 256 to a cell. It is added to the `Z` component of [`SecondaryFireFLH`](/keys/secondaryfireflh/) before the barrel is pitched, so the barrel pivots from a higher point and the muzzle rises with it. Use it to put the pivot in the middle of the barrel artwork instead of at its base. Only the second weapon slot uses it.
+The value is read into the second weapon slot and stored. No firing point or effect reads it, so the mounting that [`SecondaryFireFLH`](/keys/secondaryfireflh/) sets stays where it is.
 
-```ini title="art.ini"
-[MYTANK] ; the Image ID of a UnitType
-SecondaryFireFLH=100,0,20
-SBarrelLength=40
-SBarrelThickness=8
-```
-
-The muzzle places the firing animation, a laser beam, and the start of a sonic wave or an attached particle system. Where the projectile is created depends on the object:
-
-- An AircraftType, BuildingType or UnitType creates it at the mounting point that `SecondaryFireFLH` and [`TurretOffset`](/keys/turretoffset/) fix, which this key does not move.
-- An InfantryType creates it at the muzzle, so this key moves the projectile too.
-
-A structure that takes its firing points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/) or [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) ignores this key, as the [`SecondaryFireFLH`](/keys/secondaryfireflh/) page describes.
-
-A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key. The weapons of its [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) fire with no barrel length or thickness.
+The elite secondary slot's [`EliteSBarrelThickness`](/keys/elitesbarrelthickness/) defaults to this value. It has no effect either.

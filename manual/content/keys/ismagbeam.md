@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A weapon with `IsMagBeam=yes` draws a band of rippling violet light between the firer and the object it fires at, when the firer is not already showing one. The beam lasts while the firer keeps attacking that target and then fades. On a vehicle the beam runs from the vehicle back to the firer. It has no effect on the damage. A beam whose muzzle is less than 240 leptons from its target, measured on the ground, is not drawn.
+A weapon with `IsMagBeam=yes` draws a band of rippling violet light between the firer and the object it fires at, when the firer is not already showing one. The beam lasts while the firer keeps attacking that target and then fades. On a vehicle the beam runs from the vehicle back to the firer. It has no effect on the damage. A beam whose mounting is less than 240 leptons from its target, measured on the ground, is not drawn.
 
 ```ini title="rulesmd.ini"
 [MyMagnet] ; example Weapon

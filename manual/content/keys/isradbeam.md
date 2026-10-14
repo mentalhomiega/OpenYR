@@ -1,6 +1,6 @@
 ---
 key: IsRadBeam
-summary: "Makes a weapon draw a wavy beam from its muzzle to its target as it fires."
+summary: "Makes a weapon draw a wavy beam from its mounting to its target as it fires."
 see_also: [RadColor, ChronoBeamColor, Temporal]
 when_omitted:
   kind: value

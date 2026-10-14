@@ -14,7 +14,7 @@ The distance is in leptons, 256 to a cell. A positive value moves the turret tow
 TurretOffset=-40 ; the turret sits behind the middle of the hull
 ```
 
-The offset moves where shots come from. It is added to the forward (`X`) component of every weapon slot's firing offset, so neither [`PrimaryFireFLH`](/keys/primaryfireflh/) nor [`SecondaryFireFLH`](/keys/secondaryfireflh/) has to repeat it. Both the point a projectile starts from and the muzzle move.
+The offset moves where shots come from. It is added to the forward (`X`) component of every weapon slot's firing offset, so neither [`PrimaryFireFLH`](/keys/primaryfireflh/) nor [`SecondaryFireFLH`](/keys/secondaryfireflh/) has to repeat it. The mounting that every shot and effect starts from moves with it.
 
 The offset also moves the drawn turret:
 

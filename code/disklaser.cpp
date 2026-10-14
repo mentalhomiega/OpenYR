@@ -116,7 +116,7 @@ void DiskLaserClass::AI(void)
 		spread = RGBClass(0, 0, 0);
 	}
 
-	Coord const center = Owner->Fire_Coord(0);
+	Coord const center = Owner->Turret_Coord(0);
 	int const clockwise = StartPoint + Step;
 	int const anticlockwise = StartPoint - Step;
 

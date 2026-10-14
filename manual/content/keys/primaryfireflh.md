@@ -18,22 +18,19 @@ The value is three whole numbers, `X,Y,Z`, in leptons (256 to a cell). The offse
 PrimaryFireFLH=100,0,60 ; a bit under half a cell forward, 60 leptons up
 ```
 
-The gun's heading depends on the kind of object. [Firing geometry](/systems/firing-geometry/#the-mounting-and-the-muzzle) lists it for each.
+The gun's heading depends on the kind of object. [Firing geometry](/systems/firing-geometry/#the-mounting) lists it for each.
 
-## The mounting and the muzzle
+## The mounting
 
-The offset places two points, and [Firing geometry](/systems/firing-geometry/#what-each-part-of-a-shot-reads) lists which part of a shot uses each:
+The offset places one point, the mounting. It is where the projectile is created and where its aim is measured from. Most parts of a shot start there too, as [Firing geometry](/systems/firing-geometry/#what-each-part-of-a-shot-reads) lists. It is this offset with [`TurretOffset`](/keys/turretoffset/) added to `X`. It stays in place as the barrel elevates. On a vehicle or aircraft it also tilts with the body on slopes and in flight.
 
-- The **mounting** is where the projectile is created, where its aim is measured from, and where the firing animation and an electric bolt start. It is this offset with [`TurretOffset`](/keys/turretoffset/) added to `X`. It stays in place as the barrel elevates. On a vehicle or aircraft it also tilts with the body on slopes and in flight.
-- The **muzzle** is where the laser beam, sonic wave and attached particle systems appear. It starts from the same offset but does not tilt with the body. It rises by [`PBarrelThickness`](/keys/pbarrelthickness/), then extends [`PBarrelLength`](/keys/pbarrellength/) along the elevated barrel.
-
-An infantry type has no separate mounting: its projectile starts at the muzzle, so [`PBarrelThickness`](/keys/pbarrelthickness/) and [`PBarrelLength`](/keys/pbarrellength/) move its projectile as well as its effects.
+An infantry type fires from the same point. A passenger of an open-topped transport fires from its seat on the transport instead.
 
 `X` and `Z` also position a drawn voxel barrel, including the point it pivots around as it elevates. Changing this offset can therefore move the barrel artwork as well as the shot.
 
 ## Burst weapons
 
-`Y` is reversed on every second shot of a [`Burst`](/keys/burst/) weapon. A nonzero `Y` therefore gives a burst weapon two mountings, one on each side of the centerline. [How a burst alternates muzzles](/systems/firing-geometry/#how-a-burst-alternates-muzzles) covers the order and its exceptions.
+`Y` is reversed on every second shot of a [`Burst`](/keys/burst/) weapon. A nonzero `Y` therefore gives a burst weapon two mountings, one on each side of the centerline. [How a burst alternates sides](/systems/firing-geometry/#how-a-burst-alternates-sides) covers the order and its exceptions.
 
 ## Other slots and overrides
 
@@ -41,9 +38,9 @@ The elite primary slot reads its own offset from [`ElitePrimaryFireFLH`](/keys/e
 
 Two structure settings replace this offset for every weapon slot. If both are set, the first one listed applies:
 
-- A [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` pins both points to that screen offset. With [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/) the muzzle uses this offset with the pixel offset added.
-- A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure takes both points from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/).
+- A [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` pins the mounting to that screen offset. With [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/) the mounting is this offset with the pixel offset added.
+- A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure takes the mounting from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/).
 
-Otherwise, a structure whose turret is a voxel adds the turret animation's screen offset to both points.
+Otherwise, a structure whose turret is a voxel adds the turret animation's screen offset to the mounting.
 
 A type with [`TurretCount`](/keys/turretcount/) above `0` ignores this key and reads its weapons from a [numbered list](/systems/gattling-weapons/#numbered-weapon-lists) instead.

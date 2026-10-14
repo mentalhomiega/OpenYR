@@ -146,7 +146,7 @@ The system decides whether an expiring particle gets a successor, but the settin
 Only smoke and fire systems move:
 
 - A smoke system follows the object it is attached to, unless that object is a structure. It creates no particles while that object is traveling through a map tunnel.
-- A fire system moves to the muzzle of its firer's first weapon slot and re-aims along the firer's body facing. It does so only on frames when the firer has a target and is still turning.
+- A fire system moves to the mounting of its firer's first weapon slot and re-aims along the firer's body facing. It does so only on frames when the firer has a target and is still turning.
 
 Spark, railgun, gas, weak gas and web systems stay where they were created, however far the object they belong to travels.
 

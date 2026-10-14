@@ -97,7 +97,7 @@ Ordering the transport to attack gives every passenger aboard the same target, a
 
 A passenger that gets out behaves as any other object again. A [gunner vehicle](/systems/gunner-vehicles/) works differently: it fires a weapon its first passenger chooses, and the passenger does not fire.
 
-Yuri's Revenge also gives each passenger after the first its own firing position on the transport from the art's `AlternateFLH` keys. Every passenger here fires from the transport's position, offset by its own firing offset.
+Yuri's Revenge also gives each passenger its own firing position on the transport, from the art's `AlternateFLH1` to `AlternateFLH5` keys. Seat 1 is the passenger that boarded last. A seat without its own key uses the transport's [`PrimaryFireFLH`](/keys/primaryfireflh/). A passenger in seat 6 or later has no seat offset and fires from the transport's position, moved only by its [`TurretOffset`](/keys/turretoffset/).
 
 ## Losing the transport
 

@@ -20,12 +20,12 @@ The gap after each shot but the last comes from the weapon's [`BurstDelay0`](/ke
 
 Two cases never use the short gap:
 
-- A weapon with [`IsSonic=yes`](/keys/issonic/), [`IsRailgun=yes`](/keys/israilgun/), [`UseFireParticles=yes`](/keys/usefireparticles/) or [`UseSparkParticles=yes`](/keys/usesparkparticles/) waits its bare [`ROF`](/keys/rof/#scope-weapontype) after every shot, without that page's adjustments. A burst on such a weapon still alternates muzzles, but its shots are never grouped.
+- A weapon with [`IsSonic=yes`](/keys/issonic/), [`IsRailgun=yes`](/keys/israilgun/), [`UseFireParticles=yes`](/keys/usefireparticles/) or [`UseSparkParticles=yes`](/keys/usesparkparticles/) waits its bare [`ROF`](/keys/rof/#scope-weapontype) after every shot, without that page's adjustments. A burst on such a weapon still alternates sides, but its shots are never grouped.
 - A structure that had more than one round of [`Ammo`](/keys/ammo/) when it fired waits a single frame, whatever `Burst`, the `BurstDelay` entries and `ROF` say. A structure with `Ammo` left unset uses the normal delays.
 
 If the object loses its target partway through a burst, it keeps its place in the burst and starts a timer as long as the wait after a burst's last shot. If the timer runs out while the object still has no target, the next shot starts a new burst. If the object gets a new target first, it continues the unfinished burst. Clearing a target and immediately giving a new one therefore does not restart the burst.
 
-The side of the gun each shot leaves from also alternates. The lateral part of the firing offset ([`PrimaryFireFLH`](/keys/primaryfireflh/) or its secondary counterpart) is reversed on every second shot, so a weapon mounted off the centerline fires from two muzzles in turn. A structure with a voxel barrel does the same with [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/), and fires its third and later shots from the center. [Firing geometry](/systems/firing-geometry/#how-a-burst-alternates-muzzles) covers which parts of a shot use which muzzle.
+The side of the gun each shot leaves from also alternates. The lateral part of the firing offset ([`PrimaryFireFLH`](/keys/primaryfireflh/) or its secondary counterpart) is reversed on every second shot, so a weapon mounted off the centerline fires from two sides in turn. A structure with a voxel barrel does the same with [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/), and fires its third and later shots from the center. [Firing geometry](/systems/firing-geometry/#how-a-burst-alternates-sides) covers which parts of a shot use which side.
 
 A computer house rates an object as twice as strong a defender when its type has a first-slot weapon and either names the same weapon in both slots or has a burst above one on either weapon.
 

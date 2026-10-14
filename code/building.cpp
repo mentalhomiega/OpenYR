@@ -1317,7 +1317,7 @@ DirType BuildingClass::Barrel_Pitch(AbstractClass * target) const
 		int z = Map.Get_Height_GL(target->Center_Coord());
 
 		Point2D tcoord = target->Center_Coord();
-		Coord fcoord = Fire_Coord(0);
+		Coord fcoord = Turret_Coord(0);
 		DirType dir = ::Direction(fcoord, tcoord);
 		int max_speed = Calculate_Projectile_Speed(Distance(target), Rule->Gravity);
 
@@ -6671,7 +6671,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 				return(1);
 
 			case EM_PULSE:
-				new AnimClass(AnimTypes[Anim_From_Name("PULSBALL")], Fire_Coord(0));
+				new AnimClass(AnimTypes[Anim_From_Name("PULSBALL")], Turret_Coord(0));
 				Status = FIRE;
 				return(32);
 
@@ -6683,7 +6683,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					if (!Debug_Map && House->EMPDest != CELL_NONE) {
 						BarrelPitch.Set_Desired(Barrel_Pitch(targ));
 
-						Coord fire = Fire_Coord(0);
+						Coord fire = Turret_Coord(0);
 						Map.Get_Height_GL(House->EMPDest); /// result discarded
 						DirType yaw = ::Direction(fire, House->EMPDest.As_Coord());
 						MPHType speed = Calculate_Projectile_Speed(Distance(targ), Rule->Gravity);
@@ -6716,7 +6716,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 							if (Is_Turret_Equipped()) {
 								IsInRecoilState = true;
 							}
-							Sound_Effect((VocType)weap->Sound.Pick(NonCriticalRandomNumber), Fire_Coord(0));
+							Sound_Effect((VocType)weap->Sound.Pick(NonCriticalRandomNumber), Turret_Coord(0));
 							Status = DONE;
 							return(1);
 						} else {
@@ -10393,14 +10393,14 @@ void BuildingClass::Toggle_Laser_Fence_Post(bool force)
 
 
 /// <summary>
-/// Fetches the coordinate that this building fires from.
-/// The building type may pin the muzzle to an explicit offset; failing that, the
-/// position of the turret or the voxel barrel is taken into account so that the shot
-/// leaves the weapon rather than the middle of the building.
+/// Fetches the point this building fires from, as gamemd's BuildingClass::GetFLH (0x453840) does.
+/// An occupied garrison fires from its muzzle flash. A type with an explicit primary fire offset
+/// uses that offset, added to the weapon's mounting when the offset is dual. Otherwise a voxel
+/// barrel or a voxel turret moves the point from the mounting.
 /// </summary>
-/// <param name="slot">The weapon slot that is doing the firing.</param>
-/// <returns>Returns with the coordinate that the projectile should appear at.</returns>
-Coord BuildingClass::Fire_Coord(int slot) const
+/// <param name="slot">The weapon slot to fetch the mounting for.</param>
+/// <returns>Returns with the coordinate the projectile should be created at.</returns>
+Coord BuildingClass::Turret_Coord(int slot) const
 {
 	if (Class->IsCanBeOccupied && Occupants.Count() > 0) {
 		int index = std::min<int>(FiringOccupantIndex, BuildingTypeClass::MUZZLE_FLASH_COUNT - 1);
@@ -10409,42 +10409,12 @@ Coord BuildingClass::Fire_Coord(int slot) const
 	if (Class->PrimaryFirePixelOffset != Point2D(0xFFFF, 0xFFFF)) {
 		Coord pt(TacticalMap->Pixel_To_Lepton(Class->PrimaryFirePixelOffset), 0);
 		if (Class->IsPrimaryFireDualOffset) {
-			return(BASECLASS::Fire_Coord(slot) + pt);
+			return(BASECLASS::Turret_Coord(slot) + pt);
 		}
 		return(Render_Coord() + pt);
 	}
 	if (Class->IsBarrelAnimAVoxel) {
 		return(Voxel_Fire_Coord(slot, true));
-	}
-
-	Coord coord = BASECLASS::Fire_Coord(slot);
-	if (Class->IsTurretAnimAVoxel) {
-		Point2D pt(Class->AnimData[BANIM_TURRET].Location.X, Class->AnimData[BANIM_TURRET].Location.Y);
-		coord += TacticalMap->Pixel_To_Lepton(pt);
-	}
-	return(coord);
-}
-
-
-/// <summary>
-/// Fetches the coordinate that this building's weapon is mounted at.
-/// The building type may pin the mounting to an explicit offset; failing that, the position
-/// of the turret or the voxel barrel is taken into account, so that the shot originates from
-/// the weapon rather than from the middle of the building.
-/// </summary>
-/// <param name="slot">The weapon slot to fetch the mounting for.</param>
-/// <returns>Returns with the coordinate that the projectile should appear at.</returns>
-Coord BuildingClass::Turret_Coord(int slot) const
-{
-	if (Class->IsCanBeOccupied && Occupants.Count() > 0) {
-		return(Fire_Coord(slot));
-	}
-	if (Class->PrimaryFirePixelOffset != Point2D(0xFFFF, 0xFFFF)) {
-		Coord pt(TacticalMap->Pixel_To_Lepton(Class->PrimaryFirePixelOffset), 0);
-		return(Render_Coord() + pt);
-	}
-	if (Class->IsBarrelAnimAVoxel) {
-		return(Voxel_Fire_Coord(slot, false));
 	}
 
 	Coord coord = BASECLASS::Turret_Coord(slot);
@@ -12369,7 +12339,7 @@ bool BuildingClass::Prism_Charge(int weapon)
 		}
 		if (best != NULL) {
 			SupportingPrisms++;
-			best->PrismTargetCoord = Fire_Coord(0);
+			best->PrismTargetCoord = Turret_Coord(0);
 			best->Start_Delayed_Fire(PRISM_SLAVE);
 			DebugString("Prism: tower at %d,%d supports the one at %d,%d (%d supporting)\n", best->Get_Cell().X, best->Get_Cell().Y, Get_Cell().X, Get_Cell().Y, SupportingPrisms);
 			return(true);
@@ -12409,7 +12379,7 @@ void BuildingClass::Prism_AI(void)
 		}
 		SupportingPrisms = 0;
 	} else if (stage == PRISM_SLAVE) {
-		new LaserDrawClass(Fire_Coord(0), PrismTargetCoord, 0, true, House->RemapColorRGB, RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, false, 1.0f, 0.0f);
+		new LaserDrawClass(Turret_Coord(0), PrismTargetCoord, 0, true, House->RemapColorRGB, RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, false, 1.0f, 0.0f);
 		Arm = Rule->PrismSupportDelay;
 		SupportingPrisms = 0;
 	}

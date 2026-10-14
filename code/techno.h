@@ -719,6 +719,8 @@ class TechnoClass :	public RadioClass,
 		BuildingClass * Find_Docking_Bay(TypeList<BuildingTypeClass const *> const & list, bool friendly = false, bool unoccupied = false, long long * distance = NULL) const;
 		virtual Cell Find_Exit_Cell(TechnoClass const * techno) const;
 		virtual Coord Turret_Coord(int which=0) const;
+		TPoint3D<int> Weapon_FLH(int which) const;
+		int Passenger_Seat(FootClass const * passenger) const;
 		virtual FacingType Desired_Load_Dir(ObjectClass * , Cell & moveto) const;
 		virtual DirType Fire_Direction(void) const;
 		virtual InfantryTypeClass const * Crew_Type(void) const;
@@ -751,7 +753,6 @@ class TechnoClass :	public RadioClass,
 		int Time_To_Build(void) const;
 		virtual ActionType What_Action(ObjectClass const *, bool disallow_force = false) const override;
 		virtual ActionType What_Action(Cell const &, bool check_fog = false, bool disallow_force = false) const override;
-		virtual Coord Fire_Coord(int which) const override;
 
 		virtual HousesType Owner(void) const override;
 		virtual HouseClass * Owner_HouseClass(void) const override;
