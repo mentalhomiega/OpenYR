@@ -125,7 +125,8 @@ struct InstallType
 	LocationType Where;
 };
 
-// Installs or updates OpenYR. Settings and saves under user\ are kept on an update.
+// Installs or updates OpenYR. Settings and saves under user\ are kept on an update, and so are the keys
+// OPENTS.INI holds outside [Paths], which the setup rewrites.
 bool Install_Package(InstallType const & request, std::vector<PayloadFileType> const & files, ReportType const & report, std::wstring & error);
 
 struct UninstallType
@@ -136,7 +137,8 @@ struct UninstallType
 };
 
 // Removes what the install record names, its shortcuts and its Apps & Features entry. Settings and
-// saves are removed only when DeleteData is set. A file that could not be removed is added to left;
+// saves are removed only when DeleteData is set. OPENTS.INI keeps the player's own keys unless it is set.
+// A file that could not be removed is added to left;
 // the uninstaller running from the folder is one of them.
 bool Uninstall_Package(UninstallType const & request, ReportType const & report, std::wstring & error, std::vector<std::wstring> & left);
 

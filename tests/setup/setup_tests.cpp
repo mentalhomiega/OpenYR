@@ -522,6 +522,47 @@ void Test_Install_And_Uninstall(void)
 }
 
 
+void Test_Config_File(void)
+{
+	std::wstring error;
+	std::wstring const folder = Installs + L"\\Config";
+	std::wstring const config = Path_Of(folder, L"OPENTS.INI");
+
+	// The player's keys survive an install over the file, and only the setup's own [Paths] keys change.
+	Make_File(config, "; my note\r\n[Paths]\r\nDataDirectory=C:\\old\r\nMods=Mods\\extra\r\n\r\n[Update]\r\nCheck=no\r\nFeedURL=https://example.test/feed\r\n");
+	Check(Install(folder, Package("engine", "beta22", false, false), false, error), "an install over an existing OPENTS.INI succeeds");
+	std::string text = Read_Text(config);
+	Check(text.find("DataDirectory=" + Narrow(Yuri) + "\r\n") != std::string::npos && text.find("C:\\old") == std::string::npos, "the setup replaces DataDirectory and nothing else under [Paths]");
+	Check(text.find("Mods=Mods\\extra\r\n") != std::string::npos, "a key the player set under [Paths] is kept");
+	Check(text.find("[Update]\r\nCheck=no\r\nFeedURL=https://example.test/feed\r\n") != std::string::npos, "a section the setup does not own is kept as it was");
+	Check(text.find("; my note\r\n") != std::string::npos, "a comment the player wrote is kept");
+	Check(text.find("[Paths]") == text.rfind("[Paths]") && text.find("UserDirectory=user\r\n") == text.rfind("UserDirectory=user\r\n"), "the file has one [Paths] section and one of each key");
+
+	// A second install does not add lines; it keeps the file the first one left.
+	Check(Install(folder, Package("engine", "beta23", false, false), false, error), "an update over the merged file succeeds");
+	Check(Read_Text(config) == text, "an update that changes nothing in the file leaves its text as it was");
+
+	// Uninstall keeps the player's keys, and removes the setup's own lines from the file.
+	setup::UninstallType request;
+	request.Folder = folder;
+	request.DeleteData = false;
+	request.Where = Where();
+	std::vector<std::wstring> left;
+	Check(setup::Uninstall_Package(request, nullptr, error, left), "uninstall keeping the data succeeds over the merged file");
+	std::string kept = Read_Text(config);
+	Check(Exists(config) && kept.find("DataDirectory") == std::string::npos && kept.find("[Update]\r\nCheck=no") != std::string::npos, "uninstall keeps the player's keys and drops the setup's paths");
+
+	// A reinstall merges into the kept keys again, and deleting the data removes the file with them.
+	Check(Install(folder, Package("engine", "beta23", false, false), false, error), "a reinstall over the kept keys succeeds");
+	Check(Read_Text(config).find("Check=no") != std::string::npos, "the reinstall keeps the player's keys");
+	left.clear();
+	request.DeleteData = true;
+	Check(setup::Uninstall_Package(request, nullptr, error, left), "uninstall deleting the data succeeds");
+	Check(!Exists(config), "deleting the data removes OPENTS.INI with the player's keys");
+	setup::Remove_Tree(folder, error);
+}
+
+
 // An install with the launcher left out, or with KeepDesktop set, as the launcher's update sends it.
 bool Install_Keeping_Desktop(std::wstring const & folder, std::vector<PayloadFileType> const & files, bool keep_desktop, std::wstring & error)
 {
@@ -640,6 +681,7 @@ int main()
 	Test_Check_Folder();
 	Test_Install_And_Uninstall();
 	Test_Shortcuts();
+	Test_Config_File();
 	Test_Refusals();
 
 	Remove_Test_Keys();
