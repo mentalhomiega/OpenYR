@@ -661,6 +661,8 @@ RulesClass::RulesClass(void) :
 	TeslaZap(VOC_NONE),
 	GenericClick(VOC_NONE),
 	GenericBeep(VOC_NONE),
+	StartPlanningModeSound(VOC_NONE),
+	EndPlanningModeSound(VOC_NONE),
 	BlowupSound(VOC_NONE),
 	HealCrateSound(VOC_NONE),
 	ChuteSound(VOC_NONE),
@@ -1178,6 +1180,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		ChuteSound = ini.Get_VocType(AUDIOVISUAL, "ChuteSound", ChuteSound);
 		GenericClick = ini.Get_VocType(AUDIOVISUAL, "GenericClick", GenericClick);
 		GenericBeep = ini.Get_VocType(AUDIOVISUAL, "GenericBeep", GenericBeep);
+		StartPlanningModeSound = ini.Get_VocType(AUDIOVISUAL, "StartPlanningModeSound", StartPlanningModeSound);
+		EndPlanningModeSound = ini.Get_VocType(AUDIOVISUAL, "EndPlanningModeSound", EndPlanningModeSound);
 		BuildingDrop = ini.Get_VocType(AUDIOVISUAL, "BuildingDrop", BuildingDrop);
 		BunkerWallsUpSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsUpSound", BunkerWallsUpSound);
 		BunkerWallsDownSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsDownSound", BunkerWallsDownSound);
@@ -3072,6 +3076,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TeslaZap);
 	stream.Serialize(GenericClick);
 	stream.Serialize(GenericBeep);
+	stream.Serialize(StartPlanningModeSound);
+	stream.Serialize(EndPlanningModeSound);
 	stream.Serialize(BlowupSound);
 	stream.Serialize(HealCrateSound);
 	stream.Serialize(ChuteSound);

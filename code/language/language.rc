@@ -1130,6 +1130,8 @@ BEGIN
     TXT_DEBUG_DESTROY_SELECTED "Destroy Selected"
     TXT_DEBUG_DESTROY_SELECTED_DESC "Destroys your selected units and buildings through the normal death path, with their explosions and triggers. Works even while Invulnerable Units is on. Works only with Debug mode on in single-player games."
     TXT_DEBUG_FAST_FORWARD  "Fast-Forward"
+    TXT_PLANNING_MODE_ON    "Planning mode on. Orders you give now are queued."
+    TXT_PLANNING_MODE_OFF   "Planning mode off. Queued orders start now."
     TXT_DEBUG_FAST_FORWARD_DESC "Runs the game without the frame limit that the game speed sets, so it runs much faster. Each tick does the same work as usual. Works only with Debug mode on in single-player games."
 END
 

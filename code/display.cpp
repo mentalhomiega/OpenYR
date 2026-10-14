@@ -148,6 +148,7 @@
 #include "vein.h"
 #include "vector3.h"
 #include "viewzoom.h"
+#include "voc.h"
 #include "vox.h"
 #include "waypoint.h"
 #include "xpipe.h"
@@ -2562,6 +2563,8 @@ void DisplayClass::Waypoint_Mode_Control(int control, bool edit_selected_path)
 /// Turns planning mode on or off.
 /// Turning it on cancels the repair, sell, power and waypoint modes and keeps the selection.
 /// Turning it off queues the commit that starts every unit's planned orders.
+/// Each change plays its sound and shows its message, as PlanningNodeClass::EnterPlanningMode
+/// and ExitPlanningMode do (0x6379C0 and 0x637A10).
 /// </summary>
 /// <param name="control">The mode to set. Zero turns planning mode off, one turns it on, and -1 toggles it.</param>
 /// <param name="hold_key">The virtual key that started the mode, or -1 when a button started it.</param>
@@ -2593,6 +2596,9 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 		PlanningHoldKey = -1;
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLAN_COMMIT));
 		Revert_Mouse_Shape();
+		Sound_Effect(Rule->EndPlanningModeSound);
+		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_PLANNING_MODE_OFF), PlayerPtr->Scheme,
+			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
 		return;
 	}
 
@@ -2608,6 +2614,9 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 	IsPlanningMode = true;
 	PlanningHoldKey = hold_key;
 	Revert_Mouse_Shape();
+	Sound_Effect(Rule->StartPlanningModeSound);
+	Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_PLANNING_MODE_ON), PlayerPtr->Scheme,
+		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
 }
 
 

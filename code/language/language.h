@@ -923,6 +923,8 @@
 #define TXT_DEBUG_DESTROY_SELECTED_DESC 1173
 #define TXT_DEBUG_FAST_FORWARD          1174
 #define TXT_DEBUG_FAST_FORWARD_DESC     1175
+#define TXT_PLANNING_MODE_ON            4551
+#define TXT_PLANNING_MODE_OFF           4552
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046

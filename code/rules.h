@@ -1182,6 +1182,13 @@ class RulesClass
 		VocType GenericBeep;
 
 		/*
+		 * The sounds played when planning mode starts and when it ends. Ending it commits
+		 * the queued plans.
+		 */
+		VocType StartPlanningModeSound;
+		VocType EndPlanningModeSound;
+
+		/*
 		 * This is the sound effect played when a building takes a hit heavy enough to
 		 * knock it down to half strength, and again when it takes a major one.
 		 */
