@@ -21,6 +21,4 @@ Several kinds of destruction leave no crew, whatever this setting says. They inc
 
 A vehicle taken by a hijacker skips the roll. [The hijacker steps back out](/systems/capture/#stealing-a-vehicle) in the crew's place, whatever this setting, `Crewed=` or the cause of destruction.
 
-:::caution[A death animation removes the crew]
-A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives the killing hit at one point of strength, plays its death animation, and is then exploded and removed. That path skips the crew roll, so such a vehicle never produces a crew or a hijacker, and never drops a crate it carries.
-:::
+A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) makes this roll once, when it becomes a wreck. Its wreck's final explosion makes no second roll.

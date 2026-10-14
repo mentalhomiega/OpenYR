@@ -16,4 +16,4 @@ With neither scenario flag set, the type's flag has no visible consequence.
 
 [Crates dropped by destroyed vehicles](/systems/crates/#crates-dropped-by-destroyed-vehicles) covers where the crate lands, what happens when no cell nearby is free, how long the crate lasts, and the trigger action that changes `TrainCrate` during a mission.
 
-A type with [`DeathFrames`](/keys/deathframes/) above `0` never drops the crate, because its destroyed vehicle stays on the map as a wreck and the wreck's final explosion skips the drop.
+A type with [`DeathFrames`](/keys/deathframes/) above `0` drops the crate when it becomes a wreck, under the same scenario rules. The wreck's final explosion drops nothing more.

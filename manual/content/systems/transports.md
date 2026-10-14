@@ -109,7 +109,7 @@ An aircraft transport's passengers always die with it, whether it falls or is re
 
 A passenger killed with a vehicle transport, or with an aircraft transport shot down in the air, counts as a kill for the attacker and can earn it [experience](/systems/veterancy/#earning-experience). A passenger of a `Crashable=yes` vehicle that was not above 208 leptons, or of an aircraft removed on the ground, is killed with no attacker credited.
 
-A vehicle whose artwork sets [`DeathFrames`](/keys/deathframes/) becomes a wreck when it is destroyed, and releases no passengers. Passengers still aboard when the wreck is removed die with it.
+A vehicle whose artwork sets [`DeathFrames`](/keys/deathframes/) becomes a wreck when it is destroyed. It settles its passengers at that moment, as an outright death does, unless its type sets [`WreckReleasesPassengers=no`](/keys/wreckreleasespassengers/#scope-unittype). With that setting, passengers still aboard when the wreck explodes die with it.
 
 Any vehicle with `Passengers` above zero produces no escaping crew when it is destroyed, whether or not it carries anyone. [`CrewEscape`](/keys/crewescape/) covers that exclusion. A transport taken by a vehicle thief still [releases the thief](/systems/capture/#stealing-a-vehicle).
 

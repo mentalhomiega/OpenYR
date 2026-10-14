@@ -43488,6 +43488,23 @@ WorstLowPowerBuildRateCoefficient:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+WreckReleasesPassengers:
+  key: WreckReleasesPassengers
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: UnitTypeClass
+      member: WreckReleasesPassengers
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 XVelocity:
   key: XVelocity
   scopes:

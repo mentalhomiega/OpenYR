@@ -39,6 +39,7 @@ keys:
   - TiberiumExplosive
   - TiberiumHeal
   - Wake
+  - WreckReleasesPassengers
 related:
   - type: system
     id: projectile-flight
@@ -118,7 +119,7 @@ Three deaths are not announced, and they leave the Goto Radar Event cell where i
 
 ## A vehicle
 
-A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives the destroying hit as a wreck. It is put back to one point of strength and stays where it is, unable to move, while it plays its wreck animation. When its counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/), it plays its death explosion, picked the same way as for an outright death below, and it is taken off the map. Passengers still aboard die with it. The wreck path releases no passengers, no crew and no truck crate. [`CrewEscape`](/keys/crewescape/) covers the crew roll that it skips.
+A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives the destroying hit as a wreck. It is put back to one point of strength and stays where it is, unable to move, while it plays its wreck animation. When its counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/), it plays its death explosion, picked the same way as for an outright death below, and it is taken off the map. As it becomes a wreck, it settles its passengers, the crew roll and the truck crate, as the outright death below does for steps 3 to 5. [`WreckReleasesPassengers`](/keys/wreckreleasespassengers/#scope-unittype) decides whether the passengers get out or stay aboard. Passengers still aboard when the wreck explodes die with it. A hit that destroys the wreck again settles none of this again.
 
 :::caution[Hits on a wreck count as new kills]
 Nothing records that a wreck has already died. It stays on the map and holds its cell, and any hit that takes its last point of strength destroys it again and puts it back to one point. Each such hit:
@@ -215,7 +216,7 @@ The table lists what can remain after each kind of object dies, besides the Tibe
 | Marks laid by the object itself | No | The central mark on a structure at least 2×2, and footprint marks on a delayed removal | No | No |
 | Fire animations | Only from a `Flamer=yes` or `Scorch=yes` animation | Up to two per footprint cell | Only from a `Flamer=yes` or `Scorch=yes` animation | Only from a `Flamer=yes` or `Scorch=yes` animation |
 | A corpse | No | No | After a gun or explosion death, except on a `NotHuman=yes` type with no corpses of its own | No |
-| Soldiers who walk away | Passengers who can get out, and one crew member on the crew roll or the hijacker who stole it; none from a wreck | Up to five, twice that on a delayed removal | No | No |
+| Soldiers who walk away | Passengers who can get out, and one crew member on the crew roll or the hijacker who stole it. A wreck settles these when it is created; its passengers stay aboard when `WreckReleasesPassengers` is `no` | Up to five, twice that on a delayed removal | No | No |
 | Tiberium | A harvester's load, when it is `Explodes=yes` or has the explodes ability | Whatever it was storing | No | No |
 
 A terrain object, such as a tree, leaves nothing standing. When one is destroyed, it starts to crumble and is removed from the map in the same step, so the crumble is never seen. A [`SpawnsTiberium=yes`](/keys/spawnstiberium/) tree skips the crumble. It explodes with 100 points of damage through `C4Warhead` and can set off [the Tiberium in its cell](/systems/tiberium/#damage).
