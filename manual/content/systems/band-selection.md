@@ -29,6 +29,8 @@ Releasing the button clears the current selection, unless left Shift is held.
 
 An object's drawing position is the single point on screen where it is drawn, not the cells it covers. An object whose art overlaps the box is not selected unless that point lies inside it.
 
+The clickable list holds at most 500 objects. In a frame with more than 500 objects drawn, the box and clicks in that frame cannot select the objects drawn after the first 500.
+
 The box then selects each object whose drawing position lies inside it and that meets **all of**:
 
 - the player owns it;
