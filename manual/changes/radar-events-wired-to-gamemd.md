@@ -14,6 +14,6 @@ Radar events now come from the places Yuri's Revenge raises them, for more of th
 
 A player's harvester that a temporal weapon starts to warp now raises its ping and the ore miner line. A gatherer building that undeploys, when attacked, raises the same ping and line instead of the base attack line. A destroyed harvester raises only the unit-lost event.
 
-Creating an event no longer moves the space-bar jump. The jump moves only where the game records a cell: a building destroyed by the player's own kill, and reinforcements from an allied house.
+The space-bar jump also reaches two places that raise no radar event: a building destroyed by the player's own kill, and reinforcements from an allied house.
 
 Two gaps remain. The enemy-sensed event keeps its earlier gate, and mind control has no port, so it raises no event.
