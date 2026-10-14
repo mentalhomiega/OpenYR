@@ -1578,10 +1578,11 @@ test('A game played alone is paced by its own speed table', () => {
 test('An insignificant unit dies without announcing it', () => {
 	assert.equal(
 		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const')
+			.replace(/\/\/[^\n]*/g, '')
 			.replace(/[\s]+/g, ' ')
 			.trim(),
-		'if (IsOwnedByPlayer && !TClass->IsInsignificant) { LastRadarEventCell = Destination_Coord().As_Cell(); Speak(VOX_UNIT_LOST); }',
-		'the voice and the remembered cell are refused together',
+		'if (IsOwnedByPlayer && !TClass->IsInsignificant) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Destination_Coord().As_Cell())) { Speak(VOX_UNIT_LOST); } }',
+		'the voice and the radar event are refused together',
 	);
 
 	assert.equal(
