@@ -45,6 +45,8 @@
 **	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
 **	hutclick <TypeID> x y	clicks the building on that cell with the player's object of that type, through the object path a real click takes
 **	hutc4 x y				writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength
+**	c4watch <frames> x y	follows the building on that cell for that many frames: writes its charge's placement, countdown and strength
+**							changes, and its destruction with the saboteur's experience and the player's money and points
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
 **	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
@@ -1601,6 +1603,114 @@ static void Hut_C4_Step(StepType const & step)
 }
 
 
+// The building a c4watch step follows, the frame the watch ends at, and the charge state the log has seen.
+static BuildingClass * C4WatchBuilding = NULL;
+static int C4WatchEnd = 0;
+static bool C4WatchPlaced = false;
+static int C4WatchPlacedFrame = 0;
+static int C4WatchCountdown = -1;
+static int C4WatchStrength = -1;
+static TechnoClass * C4WatchSaboteur = NULL;
+static double C4WatchExperience = 0.0;
+static int C4WatchMoney = 0;
+static int C4WatchPoints = 0;
+
+
+// The list is searched rather than the pointer read, since a destroyed building may already be freed.
+static bool C4_Watch_Still_Built(BuildingClass const * building)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		if (Buildings[index] == building) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+static bool C4_Watch_Still_Live(TechnoClass const * techno)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		if (Technos[index] == techno) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+// Returns -1 once the saboteur is no longer on the techno list, so its fields are not read.
+static double C4_Watch_Experience(void)
+{
+	return(C4_Watch_Still_Live(C4WatchSaboteur) ? C4WatchSaboteur->Veterancy.Experience : -1.0);
+}
+
+
+/// <summary>
+/// Starts following the building on a cell for a number of frames. The log writes a line when the charge is
+/// placed, when the countdown or strength changes, and when the building is destroyed. The placement line gives
+/// the saboteur's experience and the player's money; the destruction line gives both again with the player's points.
+/// </summary>
+/// <param name="step">The frame count in the argument, and the building's cell in X and Y.</param>
+static void C4_Watch_Start(StepType const & step)
+{
+	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+	if (building == NULL) {
+		DebugString("AUTOTEST   c4watch %d,%d no building\n", step.X, step.Y);
+		return;
+	}
+	C4WatchBuilding = building;
+	C4WatchEnd = Frame + std::atoi(step.Argument.c_str());
+	C4WatchPlaced = false;
+	C4WatchPlacedFrame = 0;
+	C4WatchCountdown = -1;
+	C4WatchStrength = -1;
+	C4WatchSaboteur = NULL;
+	DebugString("AUTOTEST   c4watch %s %d,%d from frame %d to %d\n", building->Class->Name(), step.X, step.Y, Frame, C4WatchEnd);
+}
+
+
+// Advances the c4watch log by one frame; the building is read only while it is on the building list.
+static void C4_Watch_Frame(void)
+{
+	if (C4WatchBuilding == NULL) {
+		return;
+	}
+	if (!C4_Watch_Still_Built(C4WatchBuilding)) {
+		double const after = C4_Watch_Experience();
+		DebugString("AUTOTEST   c4 destroyed frame %d: %d frames after placement at %d; money %d -> %d; points %d -> %d; saboteur experience %.2f -> %.2f\n",
+			Frame, C4WatchPlaced ? Frame - C4WatchPlacedFrame : -1, C4WatchPlacedFrame, C4WatchMoney, PlayerPtr->Available_Money(), C4WatchPoints, PlayerPtr->PointTotal, C4WatchExperience, after);
+		C4WatchBuilding = NULL;
+		return;
+	}
+
+	BuildingClass const * building = C4WatchBuilding;
+	if (!C4WatchPlaced && building->IsC4Applied) {
+		C4WatchPlaced = true;
+		C4WatchPlacedFrame = Frame;
+		C4WatchSaboteur = static_cast<TechnoClass *>(building->WhomToRepay);
+		C4WatchExperience = C4_Watch_Experience();
+		C4WatchMoney = PlayerPtr->Available_Money();
+		C4WatchPoints = PlayerPtr->PointTotal;
+		DebugString("AUTOTEST   c4 placed frame %d: %s countdown %d going_to_blow %d strength %d saboteur %s experience %.2f money %d points %d\n",
+			Frame, building->Class->Name(), building->CountDown.Value(), (int)building->IsGoingToBlow, (int)building->Strength,
+			C4WatchSaboteur != NULL && C4_Watch_Still_Live(C4WatchSaboteur) ? C4WatchSaboteur->TClass->Name() : "(none)", C4WatchExperience, C4WatchMoney, C4WatchPoints);
+	}
+	if (C4WatchPlaced && building->CountDown.Value() != C4WatchCountdown) {
+		C4WatchCountdown = building->CountDown.Value();
+		DebugString("AUTOTEST   c4 countdown frame %d: %d\n", Frame, C4WatchCountdown);
+	}
+	if ((int)building->Strength != C4WatchStrength) {
+		C4WatchStrength = (int)building->Strength;
+		DebugString("AUTOTEST   c4 strength frame %d: %d\n", Frame, C4WatchStrength);
+	}
+	if (Frame >= C4WatchEnd) {
+		DebugString("AUTOTEST   c4watch ended frame %d; the building still stands\n", Frame);
+		C4WatchBuilding = NULL;
+	}
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -1644,6 +1754,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "hutc4") {
 		Hut_C4_Step(step);
+		return;
+	}
+	if (step.Command == "c4watch") {
+		C4_Watch_Start(step);
 		return;
 	}
 
@@ -3681,6 +3795,8 @@ void AutoTest_Frame(void)
 		}
 		Next++;
 	}
+
+	C4_Watch_Frame();
 
 	if (!FollowType.empty() && (Frame % 15) == 0) {
 		for (int index = 0; index < Infantry.Count(); index++) {

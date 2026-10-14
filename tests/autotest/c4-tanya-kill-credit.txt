@@ -1,0 +1,19 @@
+; C4 time to detonation and kill credit: TANY is ordered onto a computer power plant (GAPOWR) through the real click path,
+; plants C4, and the charge goes off after its countdown. The c4watch log writes the placement frame, each countdown and
+; strength change, and the destruction frame, with the saboteur's experience and the player's money and points at placement
+; and at destruction. The C4 delay comes from the rules (C4Delay, default 0.03 minutes, 27 frames at 15 frames a second).
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Map XMP29U2.MAP -Script src-agent17/tests/autotest/c4-tanya-kill-credit.txt -Seconds 150 -Filter "AUTOTEST   c4|AUTOTEST   hut|AUTOTEST   where|AUTOTEST frame 950|AUTOTEST frame 1000|Exception"
+; Expected: TANY is the saboteur on the placement line. The destruction line reads 27 frames after the placement line,
+; which is the C4Delay of 0.03 minutes (27 frames), since both lines are written on the first frame the state shows.
+; The destruction line gives the player's points a rise from 0 to the building's cost and the saboteur's experience a rise
+; (Record_The_Kill credits the saboteur). In the recorded run the money did not change.
+30 spawn GAPOWR 60 40
+31 grantunit TANY 58 42
+35 where TANY
+36 where GAPOWR
+40 hutaction TANY 60 40
+50 hutclick TANY 60 40
+51 c4watch 800 60 40
+950 hutc4 x 60 40
+1000 quit
