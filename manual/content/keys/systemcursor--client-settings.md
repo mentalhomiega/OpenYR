@@ -1,7 +1,7 @@
 ---
 key: SystemCursor
 scope: client-settings
-label: System mouse pointer
+label: Use the Windows pointer
 when_omitted:
   kind: value
   value: "no"

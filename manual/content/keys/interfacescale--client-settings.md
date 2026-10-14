@@ -1,7 +1,7 @@
 ---
 key: InterfaceScale
 scope: client-settings
-label: Interface scale
+label: UI scale
 see_also: [ScreenWidth, ScreenHeight, CursorScale, ScaleMode]
 when_omitted:
   kind: value
@@ -19,4 +19,4 @@ The map's zoom is measured from the screen's own pixels: at a zoom of 1, one map
 
 Screenshots taken with the screenshot command are the size of the interface area, not of the screen, with the map scaled down into them.
 
-The setting is read when the game starts. The display options screen has an Interface scale drop-down with `Auto`, 1, 1.5, 2, 2.5 and 3, below the list of resolutions. Accepting the screen applies the choice the way a new resolution is applied, as a trial the player confirms or lets time out, and writes `Auto` or the number back to `RA2MD.INI` with the other video settings. A value in the file that is not one of the choices, such as 4, is added to the drop-down so it is not lost.
+The setting is read when the game starts. The display options screen has a UI scale drop-down with `Auto`, 100%, 150%, 200%, 250% and 300%, below the list of resolutions. Accepting the screen applies the choice the way a new resolution is applied, as a trial the player confirms or lets time out, and writes `Auto` or the number back to `RA2MD.INI` with the other video settings. A value in the file that is not one of the choices, such as 4, is added to the drop-down as 400%, so it is not lost.

@@ -22,4 +22,4 @@ A name the game does not recognize is read as `PixelArt`, and the setting is wri
 
 To keep the picture at whole multiples and accept unused space around it, set [`IntegerScaling`](/keys/integerscaling/).
 
-The **Scaling filter** list on the Display page of the settings offers the three filters as Pixel art (`PixelArt`), Sharp (`Nearest`) and Smooth (`Linear`). A change applies to the next picture shown, during a game too.
+The **Scaling filter** list on the Display page of the settings offers the three filters as Pixel art (`PixelArt`), Nearest (`Nearest`) and Linear (`Linear`). A change applies to the next picture shown, during a game too.
