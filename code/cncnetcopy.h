@@ -80,13 +80,20 @@ std::string CNCNet_Registry_Install_Folder(void);
 
 bool CNCNet_Is_Install(std::string const & folder);
 bool CNCNet_Is_Marked_Copy(std::string const & folder);
-std::string CNCNet_Copy_Folder_For(std::string const & install);
 
 // The valid installs among the registry folder, the build's own folder and its parent, in that order.
 std::vector<std::string> CNCNet_Find_Installs(std::string const & build);
 
-CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & build);
-CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & build);
+// The copy folder a new copy goes to when the player has not chosen one. It is the build's own folder
+// when that is a copy, a CnCNet folder beside the build when the build's folder can be written, and
+// otherwise a CnCNet folder under documents, which the player can write to.
+std::string CNCNet_Default_Destination(std::string const & build, std::string const & documents);
+
+// True when a file can be created in the folder, or in the nearest folder above it that exists.
+bool CNCNet_Writable(std::string const & folder);
+
+CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & destination, std::string const & build);
+CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & destination, std::string const & build);
 
 // Starts CnCNetYRLauncher.exe in the copy folder. False when it cannot be started.
 bool CNCNet_Launch(std::string const & copy, std::string & error);

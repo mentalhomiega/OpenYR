@@ -23,21 +23,33 @@ enum UICNCNetChoice
 {
 	UI_CNCNET_LEAVE,
 	UI_CNCNET_CHOOSE,
+	UI_CNCNET_DESTINATION,
 	UI_CNCNET_START,
 };
 
 
-// The install, the copy and the copy's job, which live for as long as the page is open.
+// The install, the copy's folder and the copy's job, which live for as long as the page is open.
 class UICNCNetSessionClass
 {
 	public:
-		explicit UICNCNetSessionClass(std::string const & build);
+		// documents is the player's Documents folder, the copy's fallback when the build's folder cannot be written.
+		UICNCNetSessionClass(std::string const & build, std::string const & documents);
+
+		// Uses the install and the copy folder the player chose last time. An install that is no longer
+		// there is searched for again, as Find_Install does.
+		void Restore_Choices(void);
 
 		// Looks for an install in the registry, beside this build and in its parent folder.
 		void Find_Install(void);
 
-		// Uses a folder the player picked, when it is an install.
+		// Uses a folder the player picked, when it is an install. The choice is remembered.
 		void Choose_Install(std::string const & folder);
+
+		// Uses a folder the player picked for the copy. The choice is remembered.
+		void Choose_Destination(std::string const & folder);
+
+		// Writes the install and the copy folder to the settings file.
+		void Remember_Choices(void);
 
 		// Reads the copy and the plan again. Do not call it while a job runs.
 		void Refresh(void);
@@ -53,7 +65,9 @@ class UICNCNetSessionClass
 		bool Busy(void) const;
 
 		std::string Build;
+		std::string Documents;
 		std::string Install;
+		std::string Destination;
 		CNCNetStatusType Status;
 		CNCNetPlanType Plan;
 		CNCNetJobClass Job;

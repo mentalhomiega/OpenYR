@@ -9,15 +9,40 @@
 
 #include "ui/screens/cncnet/uicncnet.h"
 
+#include "_deploymentconfig.h"
+#include "_rules.h"
+#include "ccfile.h"
+#include "ccini.h"
+#include "deploymentconfig.h"
 #include "ui/rml/rmlview.h"
 
 #include <algorithm>
-#include <cstdio>
 #include <utility>
 
 
 namespace
 {
+
+// The page's two choices are kept in their own section of the settings file.
+char const * const CHOICE_SECTION = "CnCNet";
+
+
+std::string Remembered(char const * key)
+{
+	return(ConfigINI.Get_String(CHOICE_SECTION, key, ""));
+}
+
+
+// Writes the install and the copy folder to the settings file. A failed write leaves the choice
+// in effect for this open of the page only.
+void Remember(std::string const & install, std::string const & destination)
+{
+	ConfigINI.Put_String(CHOICE_SECTION, "Install", install.c_str());
+	ConfigINI.Put_String(CHOICE_SECTION, "Destination", destination.c_str());
+	CCFileClass file(DeploymentConfig.SettingsFile.c_str());
+	ConfigINI.Save(file, false);
+}
+
 
 std::string Megabytes(std::uint64_t bytes)
 {
@@ -25,19 +50,30 @@ std::string Megabytes(std::uint64_t bytes)
 }
 
 
-std::string Hash_Text(std::uint64_t hash)
-{
-	char text[24];
-	std::snprintf(text, sizeof(text), "%016llx", static_cast<unsigned long long>(hash));
-	return(std::string(text));
-}
-
 }
 
 
-UICNCNetSessionClass::UICNCNetSessionClass(std::string const & build) :
-	Build(build)
+UICNCNetSessionClass::UICNCNetSessionClass(std::string const & build, std::string const & documents) :
+	Build(build),
+	Documents(documents)
 {
+}
+
+
+void UICNCNetSessionClass::Restore_Choices(void)
+{
+	std::string const destination = Remembered("Destination");
+	Destination = destination.empty() ? CNCNet_Default_Destination(Build, Documents) : destination;
+
+	std::string const install = Remembered("Install");
+	if (CNCNet_Is_Install(install)) {
+		Install = install;
+		Message.clear();
+		Problem = false;
+		Refresh();
+	} else {
+		Find_Install();
+	}
 }
 
 
@@ -46,11 +82,11 @@ void UICNCNetSessionClass::Find_Install(void)
 	std::vector<std::string> const installs = CNCNet_Find_Installs(Build);
 	if (installs.empty()) {
 		Install.clear();
-		Message = "No CnCNet install was found in the registry, beside this build or in its parent folder. Choose its folder.";
+		Message = "No CnCNet install was found in the registry, beside this build or in its parent folder.";
 		Problem = true;
 	} else {
 		Install = installs.front();
-		Message = "Found the CnCNet install at " + Install + ".";
+		Message.clear();
 		Problem = false;
 	}
 	Refresh();
@@ -65,16 +101,33 @@ void UICNCNetSessionClass::Choose_Install(std::string const & folder)
 		return;
 	}
 	Install = folder;
-	Message = "Using the CnCNet install at " + Install + ".";
+	Message.clear();
 	Problem = false;
+	Remember_Choices();
 	Refresh();
+}
+
+
+void UICNCNetSessionClass::Choose_Destination(std::string const & folder)
+{
+	Destination = folder;
+	Message.clear();
+	Problem = false;
+	Remember_Choices();
+	Refresh();
+}
+
+
+void UICNCNetSessionClass::Remember_Choices(void)
+{
+	Remember(Install, Destination);
 }
 
 
 void UICNCNetSessionClass::Refresh(void)
 {
-	Status = CNCNet_Status(Install, Build);
-	Plan = Install.empty() ? CNCNetPlanType() : CNCNet_Plan(Install, Build);
+	Status = CNCNet_Status(Install, Destination, Build);
+	Plan = Install.empty() ? CNCNetPlanType() : CNCNet_Plan(Install, Destination, Build);
 }
 
 
@@ -98,6 +151,7 @@ bool UICNCNetSessionClass::Start_Copy(void)
 	Confirming = false;
 	Message = Plan.Update ? "Updating the copy in place." : "Copying the install. Cancel stops the copy and removes what it made.";
 	Problem = false;
+	Remember_Choices();
 	return(true);
 }
 
@@ -169,11 +223,20 @@ void UICNCNetPresenterClass::Execute(UIIntent const & intent)
 	if (intent.Name == "find") {
 		if (!busy) {
 			Session.Find_Install();
+			if (!Session.Install.empty()) {
+				Session.Remember_Choices();
+			}
 		}
 
 	} else if (intent.Name == "choose") {
 		if (!busy) {
 			Choice = UI_CNCNET_CHOOSE;
+			Result = UI_RESULT_ACCEPTED;
+		}
+
+	} else if (intent.Name == "destination") {
+		if (!busy) {
+			Choice = UI_CNCNET_DESTINATION;
 			Result = UI_RESULT_ACCEPTED;
 		}
 
@@ -233,17 +296,17 @@ void UICNCNetPresenterClass::Show(void)
 	bool const busy = Session.Busy();
 
 	if (Session.Install.empty()) {
-		State.InstallText = "No CnCNet install is chosen. Find install looks in the registry, beside this build and in its parent folder.";
+		State.InstallText = "CnCNet install: none chosen.";
 	} else {
 		State.InstallText = "CnCNet install: " + Session.Install;
 	}
 
 	if (status.Copy_Present) {
 		State.CopyText = "OpenYR copy: " + status.Copy_Folder;
-	} else if (!Session.Install.empty()) {
-		State.CopyText = "OpenYR copy: none yet. It will be made at " + CNCNet_Copy_Folder_For(Session.Install) + ".";
+	} else if (Session.Destination.empty()) {
+		State.CopyText = "OpenYR copy: none. Choose where it goes with Change destination.";
 	} else {
-		State.CopyText = "OpenYR copy: none found.";
+		State.CopyText = "OpenYR copy: none yet. It will be made at " + Session.Destination + ".";
 	}
 
 	State.EditText.clear();
@@ -253,11 +316,11 @@ void UICNCNetPresenterClass::Show(void)
 			? std::string("Client edits: intact.")
 			: std::string("Client edits: missing or changed, for example after a client update. Repair puts them back.");
 		if (!status.Copy_Game_Present) {
-			State.VersionText = "Game.exe: the copy has none. Repair restores it.";
+			State.VersionText = "Game.exe: the copy has none. Repair copy restores it.";
 		} else if (status.Engine_Matches) {
-			State.VersionText = "Game.exe: the copy's is this build's (" + std::to_string(status.Build_Game_Size) + " bytes, hash " + Hash_Text(status.Build_Game_Hash) + ").";
+			State.VersionText = "Game.exe: the same as this build's.";
 		} else {
-			State.VersionText = "Game.exe: the copy's differs from this build's (" + std::to_string(status.Copy_Game_Size) + " bytes against " + std::to_string(status.Build_Game_Size) + "). Update the copy to match.";
+			State.VersionText = "Game.exe: differs from this build's. Update copy replaces it.";
 		}
 	}
 

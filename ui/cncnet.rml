@@ -24,6 +24,7 @@
 	<div id="actions" class="row">
 		<button id="find" data-class-disabled="busy" data-event-click="queue('find')">Find install</button>
 		<button id="choose" data-class-disabled="busy" data-event-click="queue('choose')">Choose folder...</button>
+		<button id="destination" data-class-disabled="busy" data-event-click="queue('destination')">Change destination...</button>
 		<button id="create" data-class-disabled="!cancreate" data-event-click="queue('create')">{{createcaption}}</button>
 		<button id="cancelcopy" data-if="cancancel" data-event-click="queue('cancelcopy')">Cancel copy</button>
 	</div>

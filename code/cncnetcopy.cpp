@@ -25,7 +25,6 @@ namespace
 
 namespace fs = std::filesystem;
 
-char const * const COPY_SUFFIX = " - OpenYR";
 char const * const BACKUP_SUFFIX = ".cncnet-orig";
 char const * const DEFINITIONS = "Resources\\ClientDefinitions.ini";
 char const * const UPDATER_FILE = "updateconfig.ini";
@@ -788,14 +787,37 @@ bool Write_Marker(RunType & run, std::string const & install, std::string const 
 }
 
 
-std::uint64_t Free_Bytes(std::string const & folder)
+// False when the drive's free space cannot be read, for example for a path without a drive.
+bool Free_Bytes(std::string const & folder, std::uint64_t & free)
 {
 	ULARGE_INTEGER available {};
 	std::wstring const root = Path(folder).root_path().wstring();
 	if (!GetDiskFreeSpaceExW(root.c_str(), &available, nullptr, nullptr)) {
-		return(0);
+		return(false);
 	}
-	return(static_cast<std::uint64_t>(available.QuadPart));
+	free = static_cast<std::uint64_t>(available.QuadPart);
+	return(true);
+}
+
+
+// True when the path is the folder or lies inside it. Both paths are compared by their parts, without regard to case.
+bool Is_Inside(std::string const & path, std::string const & folder)
+{
+	fs::path const inside = Path(path).lexically_normal();
+	fs::path const outer = Path(folder).lexically_normal();
+	auto part = inside.begin();
+	for (auto outer_part = outer.begin(); outer_part != outer.end(); ++outer_part, ++part) {
+		if (part == inside.end() || !Same_Text(part->string(), outer_part->string())) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+std::string Megabytes_Text(std::uint64_t bytes)
+{
+	return(std::to_string((bytes + 1024ull * 1024ull - 1) / (1024ull * 1024ull)) + " MB");
 }
 
 }
@@ -856,9 +878,42 @@ bool CNCNet_Is_Marked_Copy(std::string const & folder)
 }
 
 
-std::string CNCNet_Copy_Folder_For(std::string const & install)
+bool CNCNet_Writable(std::string const & folder)
 {
-	return(install + COPY_SUFFIX);
+	if (folder.empty()) {
+		return(false);
+	}
+
+	std::error_code ec;
+	fs::path probe = Path(folder);
+	while (!fs::is_directory(probe, ec)) {
+		if (fs::exists(probe, ec) || probe == probe.parent_path()) {
+			return(false);
+		}
+		probe = probe.parent_path();
+	}
+
+	// FILE_FLAG_DELETE_ON_CLOSE removes the probe when it is closed, so nothing is left behind.
+	fs::path const name = probe / ("openyr-write-test-" + std::to_string(GetCurrentProcessId()) + ".tmp");
+	HANDLE const handle = CreateFileW(name.wstring().c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+		FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return(false);
+	}
+	CloseHandle(handle);
+	return(true);
+}
+
+
+std::string CNCNet_Default_Destination(std::string const & build, std::string const & documents)
+{
+	if (CNCNet_Is_Marked_Copy(build)) {
+		return(build);
+	}
+	if (CNCNet_Writable(build)) {
+		return(Under(build, "CnCNet"));
+	}
+	return(Under(Under(documents, "OpenYR"), "CnCNet"));
 }
 
 
@@ -887,19 +942,12 @@ std::vector<std::string> CNCNet_Find_Installs(std::string const & build)
 }
 
 
-CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & build)
+CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & destination, std::string const & build)
 {
 	CNCNetStatusType status;
 	status.Install_Valid = CNCNet_Is_Install(install);
 
-	std::string const for_install = install.empty() ? std::string() : CNCNet_Copy_Folder_For(install);
-	if (!for_install.empty() && CNCNet_Is_Marked_Copy(for_install)) {
-		status.Copy_Folder = for_install;
-	} else if (CNCNet_Is_Marked_Copy(build)) {
-		status.Copy_Folder = build;
-	} else {
-		status.Copy_Folder = for_install;
-	}
+	status.Copy_Folder = destination;
 	status.Copy_Present = CNCNet_Is_Marked_Copy(status.Copy_Folder);
 	status.Marker_Install = status.Copy_Present ? Marker_Install(status.Copy_Folder) : std::string();
 
@@ -938,10 +986,11 @@ CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & 
 }
 
 
-CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & build)
+CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & destination, std::string const & build)
 {
 	CNCNetPlanType plan;
 	plan.Install = install;
+	plan.Destination = destination;
 
 	if (!CNCNet_Is_Install(install)) {
 		plan.Problem = "That folder is not a CnCNet Yuri's Revenge install. It needs Resources\\ClientDefinitions.ini and CnCNetYRLauncher.exe.";
@@ -951,13 +1000,31 @@ CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & buil
 		plan.Problem = "This build's folder needs Game.exe, Language.dll and a ui folder beside it.";
 		return(plan);
 	}
+	if (destination.empty()) {
+		plan.Problem = "Choose the folder for the copy with Change destination.";
+		return(plan);
+	}
+	if (Is_Inside(destination, install)) {
+		plan.Problem = "The copy cannot be made inside the install folder. Choose another folder with Change destination.";
+		return(plan);
+	}
 
-	plan.Destination = CNCNet_Copy_Folder_For(install);
 	std::error_code ec;
-	if (CNCNet_Is_Marked_Copy(plan.Destination)) {
+	if (CNCNet_Is_Marked_Copy(destination)) {
+		// An update in place keeps the install's files, so the copy must come from this install.
+		std::string const owner = Marker_Install(destination);
+		if (owner.empty() || !Same_Folder(owner, install)) {
+			plan.Problem = "The OpenYR copy at " + destination + " was made from another install. Choose another folder with Change destination.";
+			return(plan);
+		}
 		plan.Update = true;
-	} else if (fs::exists(Path(plan.Destination), ec) && !fs::is_empty(Path(plan.Destination), ec)) {
-		plan.Problem = "The folder " + plan.Destination + " exists and is not an OpenYR copy, so it will not be used. Move it aside and try again.";
+	} else if (fs::exists(Path(destination), ec) && !fs::is_empty(Path(destination), ec)) {
+		plan.Problem = "The folder " + destination + " exists and is not an OpenYR copy, so it will not be used. Choose another folder with Change destination.";
+		return(plan);
+	}
+
+	if (!CNCNet_Writable(destination)) {
+		plan.Problem = "The folder " + destination + " cannot be written. Choose a folder you can write to with Change destination.";
 		return(plan);
 	}
 
@@ -966,12 +1033,17 @@ CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & buil
 	if (!plan.Update) {
 		install_bytes = Folder_Bytes(install, files);
 		plan.Install_Bytes = install_bytes;
-		std::uint64_t const free = Free_Bytes(plan.Destination);
-		if (free < install_bytes + FREE_SPACE_RESERVE) {
-			plan.Problem = "There is not enough free space for the copy. It needs about " + std::to_string(install_bytes / (1024ull * 1024ull * 1024ull)) + " GB and 1 GB more.";
+		std::uint64_t free = 0;
+		if (!Free_Bytes(destination, free)) {
+			plan.Problem = "The free space on the drive of " + destination + " cannot be read, so the copy will not start.";
 			return(plan);
 		}
-		plan.Lines.push_back("Copy the install folder to " + plan.Destination + " (" + std::to_string(install_bytes / (1024ull * 1024ull)) + " MB, " + std::to_string(files) + " files). The install is only read.");
+		if (free < install_bytes + FREE_SPACE_RESERVE) {
+			plan.Problem = "Not enough free space on the drive of " + destination + ". The copy needs " + Megabytes_Text(install_bytes) +
+				" and 1 GB is kept free, but only " + Megabytes_Text(free) + " is free.";
+			return(plan);
+		}
+		plan.Lines.push_back("Copy the install folder to " + plan.Destination + " (" + Megabytes_Text(install_bytes) + ", " + std::to_string(files) + " files). The install is only read.");
 	} else {
 		plan.Lines.push_back("Update the copy at " + plan.Destination + " in place. Its install files are not copied again.");
 	}
@@ -1144,7 +1216,7 @@ void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 	{
 		std::lock_guard<std::mutex> guard(Lock);
 		if (ok) {
-			Text = plan.Update ? "The copy was updated in place." : "The copy is ready at " + plan.Destination + ".";
+			Text = plan.Update ? "The copy was updated in place." : "The copy is ready.";
 		} else {
 			Text = error;
 		}

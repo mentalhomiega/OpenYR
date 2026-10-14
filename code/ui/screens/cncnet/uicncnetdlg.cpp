@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 
+#include <knownfolders.h>
 #include <objbase.h>
 #include <shlobj.h>
 
@@ -48,8 +49,21 @@ std::string Build_Folder(void)
 }
 
 
+// The player's Documents folder, or an empty string when Windows does not name one.
+std::string Documents_Folder(void)
+{
+	PWSTR path = nullptr;
+	std::string folder;
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &path)) && path != nullptr) {
+		folder = To_Narrow(path);
+	}
+	CoTaskMemFree(path);
+	return(folder);
+}
+
+
 // Asks for a folder with the system dialog. False when the player cancels.
-bool Browse_For_Folder(std::string & folder)
+bool Browse_For_Folder(std::string & folder, wchar_t const * title)
 {
 	HRESULT const init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
@@ -57,7 +71,7 @@ bool Browse_For_Folder(std::string & folder)
 	BROWSEINFOW info {};
 	info.hwndOwner = MainWindow;
 	info.pszDisplayName = name;
-	info.lpszTitle = L"Choose the CnCNet Yuri's Revenge folder, the one with CnCNetYRLauncher.exe in it.";
+	info.lpszTitle = title;
 	info.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
 
 	bool picked = false;
@@ -82,8 +96,8 @@ bool Browse_For_Folder(std::string & folder)
 
 bool UI_CNCNet_Dialog(void)
 {
-	UICNCNetSessionClass session(Build_Folder());
-	session.Find_Install();
+	UICNCNetSessionClass session(Build_Folder(), Documents_Folder());
+	session.Restore_Choices();
 
 	while (true) {
 		UICNCNetPresenterClass presenter(session);
@@ -92,8 +106,16 @@ bool UI_CNCNet_Dialog(void)
 
 		if (presenter.Choice == UI_CNCNET_CHOOSE) {
 			std::string folder;
-			if (Browse_For_Folder(folder)) {
+			if (Browse_For_Folder(folder, L"Choose the CnCNet Yuri's Revenge folder, the one with CnCNetYRLauncher.exe in it.")) {
 				session.Choose_Install(folder);
+			}
+			continue;
+		}
+
+		if (presenter.Choice == UI_CNCNET_DESTINATION) {
+			std::string folder;
+			if (Browse_For_Folder(folder, L"Choose the folder the OpenYR copy is made in. It must be empty, or hold an OpenYR copy of this install.")) {
+				session.Choose_Destination(folder);
 			}
 			continue;
 		}

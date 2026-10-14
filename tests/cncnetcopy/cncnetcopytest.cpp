@@ -13,6 +13,7 @@
 // dummylauncher.cpp, which writes a file when it runs.
 
 #include <windows.h>
+#include <winioctl.h>
 
 #include <chrono>
 #include <cstdio>
@@ -68,6 +69,36 @@ bool Read_Only(std::string const & path)
 {
 	DWORD const attributes = GetFileAttributesW(fs::path(path).wstring().c_str());
 	return(attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_READONLY) != 0);
+}
+
+
+// Counts the entries directly inside the folder.
+int Count_Entries(std::string const & folder)
+{
+	int count = 0;
+	std::error_code ec;
+	for (fs::directory_iterator it(fs::path(folder), ec), end; !ec && it != end; it.increment(ec)) {
+		count++;
+	}
+	return(count);
+}
+
+
+// Makes a file that reports the given size without writing its bytes, so a copy can be refused for space.
+void Make_Sparse_File(std::string const & path, std::uint64_t size)
+{
+	fs::create_directories(fs::path(path).parent_path());
+	HANDLE const handle = CreateFileW(fs::path(path).wstring().c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return;
+	}
+	DWORD returned = 0;
+	DeviceIoControl(handle, FSCTL_SET_SPARSE, nullptr, 0, nullptr, 0, &returned, nullptr);
+	LARGE_INTEGER end {};
+	end.QuadPart = static_cast<LONGLONG>(size);
+	SetFilePointerEx(handle, end, nullptr, FILE_BEGIN);
+	SetEndOfFile(handle);
+	CloseHandle(handle);
 }
 
 
@@ -178,7 +209,22 @@ int main(void)
 	Check(CNCNet_Is_Install(install), "a folder with ClientDefinitions.ini and CnCNetYRLauncher.exe is an install");
 	Check(!CNCNet_Is_Install(build), "a build folder without those files is not an install");
 	Check(!CNCNet_Is_Install(copy), "a folder that does not exist is not an install");
-	Check(CNCNet_Copy_Folder_For(install) == copy, "the copy goes beside the install with ' - OpenYR' added");
+	// The default copy folder is a CnCNet folder beside a build that can be written. A build under a file
+	// cannot be written, so the default moves to CnCNet under Documents. A marked copy is its own default.
+	std::string const documents = Join(root, "Documents");
+	Write_Text(Join(root, "blocker.txt"), "a file, not a folder");
+	Check(CNCNet_Default_Destination(build, documents) == Join(build, "CnCNet"), "the default copy folder is CnCNet beside a build that can be written");
+	Check(CNCNet_Default_Destination(Join(Join(root, "blocker.txt"), "build"), documents) == Join(Join(documents, "OpenYR"), "CnCNet"),
+		"a build that cannot be written gets CnCNet under Documents");
+
+	// Writability: an existing folder or a missing folder beneath one can be written; a path under a file cannot.
+	// The check leaves no probe file behind.
+	int const entries_before = Count_Entries(root);
+	Check(CNCNet_Writable(root), "a folder that exists can be written");
+	Check(CNCNet_Writable(Join(root, "missing\\deeper")), "a missing folder beneath a writable folder can be written");
+	Check(!Exists(Join(root, "missing")), "the writability check makes no folder");
+	Check(!CNCNet_Writable(Join(Join(root, "blocker.txt"), "build")), "a path beneath a file cannot be written");
+	Check(Count_Entries(root) == entries_before, "the writability check leaves no probe file");
 
 	// Detection from the build's own folder: its parent is the install.
 	std::string const nested = Join(install, "bin");
@@ -189,7 +235,7 @@ int main(void)
 	fs::remove_all(nested, nested_ec);
 
 	// The plan lists the changes before anything is made, and refuses a bad build folder.
-	CNCNetPlanType plan = CNCNet_Plan(install, build);
+	CNCNetPlanType plan = CNCNet_Plan(install, copy, build);
 	Check(plan.Problem.empty() && !plan.Update && plan.Destination == copy, "a plan for a new copy has no problem");
 	Check(plan.Lines.size() >= 8, "the plan lists every change");
 	Check(plan.Install_Bytes > 0, "the plan reports the size of the install");
@@ -197,8 +243,13 @@ int main(void)
 
 	std::string const bad_build = Join(root, "bad-build");
 	Write_Text(Join(bad_build, "Game.exe"), "x");
-	Check(!CNCNet_Plan(install, bad_build).Problem.empty(), "a build without Language.dll and ui is refused");
-	Check(!CNCNet_Plan(build, build).Problem.empty(), "a folder that is not an install is refused");
+	Check(!CNCNet_Plan(install, copy, bad_build).Problem.empty(), "a build without Language.dll and ui is refused");
+	Check(!CNCNet_Plan(build, copy, build).Problem.empty(), "a folder that is not an install is refused");
+	Check(CNCNet_Plan(install, "", build).Problem.find("Choose the folder") != std::string::npos, "an empty copy folder is refused");
+	Check(CNCNet_Plan(install, Join(install, "inside"), build).Problem.find("inside the install") != std::string::npos,
+		"a copy folder inside the install is refused");
+	Check(CNCNet_Plan(install, Join(Join(root, "blocker.txt"), "CnCNet"), build).Problem.find("cannot be written") != std::string::npos,
+		"a copy folder that cannot be written is refused before anything is copied");
 
 	// A copy: every file is in place, the edits hold, and the install is not changed.
 	{
@@ -246,14 +297,21 @@ int main(void)
 	Check(Read_Text(Join(install, "game.exe")) == stock_game, "the install's game.exe is unchanged");
 	Check(!Exists(Join(install, "OPENTS.INI")) && !Exists(Join(install, CNCNET_MARKER_FILE)), "the install gains no OpenYR files");
 
-	CNCNetStatusType status = CNCNet_Status(install, build);
+	CNCNetStatusType status = CNCNet_Status(install, copy, build);
 	Check(status.Copy_Present && status.Edits_Intact && status.Engine_Matches, "the status reads a finished copy as intact and current");
 	Check(status.Build_Game_Size == status.Copy_Game_Size, "the status reports the copy's Game.exe size");
-	Check(CNCNet_Status(install, Join(root, "nothing-here")).Copy_Present, "a status from another folder still finds the copy beside the install");
+	Check(CNCNet_Status(install, copy, Join(root, "nothing-here")).Copy_Present, "a status from another build folder still finds the copy at its destination");
+	Check(!CNCNet_Status(install, Join(root, "no-copy-here"), build).Copy_Present, "a folder without the marker is not reported as a copy");
+	Check(CNCNet_Default_Destination(copy, documents) == copy, "a build that is a copy defaults to its own folder");
+
+	// A marked copy made from another install is not updated in place, since its install files would be wrong.
+	std::string const other = Join(root, "Other Install");
+	Make_Install(other);
+	Check(CNCNet_Plan(other, copy, build).Problem.find("another install") != std::string::npos, "a marked copy made from another install is refused");
 
 	// Running again updates the marked copy in place and does not copy the install again.
 	Make_Build(build, "openyr-engine-v2");
-	CNCNetPlanType again = CNCNet_Plan(install, build);
+	CNCNetPlanType again = CNCNet_Plan(install, copy, build);
 	Check(again.Update && again.Problem.empty(), "a second run plans an update in place");
 	{
 		CNCNetJobClass job;
@@ -273,14 +331,14 @@ int main(void)
 	broken.replace(broken.find("GameExecutableNames=Game.exe"), 28, "GameExecutableNames=Syringe.exe");
 	fs::permissions(fs::path(Join(copy, "Resources\\ClientDefinitions.ini")), fs::perms::owner_write, fs::perm_options::add);
 	Write_Text(Join(copy, "Resources\\ClientDefinitions.ini"), broken);
-	Check(!CNCNet_Status(install, build).Edits_Intact, "a changed edit makes the status report that the edits are not intact");
+	Check(!CNCNet_Status(install, copy, build).Edits_Intact, "a changed edit makes the status report that the edits are not intact");
 	{
 		CNCNetJobClass job;
-		Check(job.Start_Copy(CNCNet_Plan(install, build), build), "the repair starts");
+		Check(job.Start_Copy(CNCNet_Plan(install, copy, build), build), "the repair starts");
 		Finish(job);
 		Check(job.State() == CNCNetJobStateType::Done, "the repair finishes");
 	}
-	Check(CNCNet_Status(install, build).Edits_Intact, "the repair restores the edits");
+	Check(CNCNet_Status(install, copy, build).Edits_Intact, "the repair restores the edits");
 
 	// The stub launcher at the copy's path is started from the copy folder, and it writes a file there.
 	std::string const stub = Join(Own_Folder(), "cncnetdummylauncher.exe");
@@ -311,8 +369,24 @@ int main(void)
 		}
 	}
 	std::string const big_copy = big_install + " - OpenYR";
+
+	// An install larger than the drive's free space is refused before anything is made. The file is sparse,
+	// so its size is reported without its bytes being written.
+	// The file is one gigabyte larger than the free space of the drive the test uses, and NTFS limits a file to
+	// 16 TB on a 4 KB cluster volume, so the test needs less than that free.
+	std::string const huge_install = Join(root, "Huge Install");
+	Make_Install(huge_install);
+	ULARGE_INTEGER free_now {};
+	GetDiskFreeSpaceExW(fs::path(root).root_path().wstring().c_str(), &free_now, nullptr, nullptr);
+	Make_Sparse_File(Join(huge_install, "Maps\\huge.bin"), free_now.QuadPart + (1ull << 30));
+	std::string const huge_copy = Join(root, "Huge Install - OpenYR");
+	CNCNetPlanType huge_plan = CNCNet_Plan(huge_install, huge_copy, build);
+	Check(huge_plan.Problem.find("Not enough free space") != std::string::npos, "an install larger than the free space is refused");
+	Check(!huge_plan.Update && huge_plan.Lines.empty(), "a refused plan lists no changes");
+	Check(!Exists(huge_copy), "a refused copy makes no folder");
+
 	CNCNetJobClass cancel_job;
-	Check(cancel_job.Start_Copy(CNCNet_Plan(big_install, build), build), "a copy of the large install starts");
+	Check(cancel_job.Start_Copy(CNCNet_Plan(big_install, big_copy, build), build), "a copy of the large install starts");
 	for (int waited = 0; waited < 15000 && cancel_job.Done() == 0 && cancel_job.State() == CNCNetJobStateType::Running; waited += 1) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
