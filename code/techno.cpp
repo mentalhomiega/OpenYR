@@ -2003,9 +2003,10 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 	IsInOpenToppedTransport = false;
 	Transporter = NULL;
 
-	IsLocked = Map.In_Local_Radar(coord.As_Cell());
-
 	if (BASECLASS::Unlimbo(coord, dir)) {
+
+		// As TechnoClass::Unlimbo (0x6F6CA0), the lock is set only once the object is placed.
+		IsLocked = Map.In_Local_Radar(coord.As_Cell());
 
 		if (!IsActive) {
 			return(true);
@@ -4222,6 +4223,11 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 bool TechnoClass::Select(void)
 {
 	if (!DiscoveredBy[PlayerPtr] && !House->Is_Player_Control() && MainWindow) {
+		return(false);
+	}
+
+	// As TechnoClass::IsSelectable (0x6F32D0): an object that has not entered the playable area cannot be selected.
+	if (!IsLocked) {
 		return(false);
 	}
 
