@@ -1,0 +1,20 @@
+; A second Battle Lab (GATECH) keeps the lab-gated cameos. Americans on the skirmish map. Two labs stand at 56,100 and 60,100,
+; and the sale at frame 500 takes the one at 56,100. The count is the house's active labs, which is what the gate reads.
+; Expected: quantity GATECH shows 2 at frame 400 and 1 at frame 700. The cameos at frame 710 are the same as at frame 410:
+; GACSPH, GAWEAT, GASPYSAT, GAGAP, SREF, MGTK and BFRT, each reading "can 1", and clickcameo SREF reports "offered".
+; Run: scripts/run_autotest.ps1 -Script src-agent12\tests\autotest\prereq-loss-spare-lab.txt -Build agent12 -Filter "AUTOTEST +(cameo|clickcameo|quantity|sell|canbuild SREF|own )|Exception"
+1 log prereq-loss spare lab: two labs, sell one
+30 own GACNST 50 96
+40 own GAPOWR 46 92
+45 own GAWEAP 44 98
+50 own AMRADR 40 96
+60 own GATECH 56 100
+65 own GATECH 60 100
+400 quantity GATECH
+410 cameos
+500 sell 56 100
+700 quantity GATECH
+710 cameos
+720 canbuild SREF
+730 clickcameo SREF
+800 quit

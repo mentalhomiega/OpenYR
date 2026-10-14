@@ -1,0 +1,19 @@
+; RecheckPrerequisites=no keeps the cameos of a lost prerequisite, as the older sidebar check did. Americans on the skirmish
+; map. prereq-loss-optout.ini sets the key at frame 1, so this is the same run as prereq-loss-cameo.txt with the key off.
+; Expected: after the kill at frame 500 the lab-gated cameos GACSPH, GAWEAT, GASPYSAT, GAGAP, SREF, MGTK and BFRT stay
+; on the strips, reading "can 0" for those the house may no longer build, and clickcameo SREF reports "offered".
+; Run: scripts/run_autotest.ps1 -Script src-agent12\tests\autotest\prereq-loss-optout.txt -Build agent12 -Filter "AUTOTEST +(cameo|clickcameo|quantity|kill|production|canbuild SREF|rules )|Exception"
+1 rules E:/Claude ra2 decomp/src-agent12/tests/autotest/prereq-loss-optout.ini
+30 own GACNST 50 96
+40 own GAPOWR 46 92
+45 own GAWEAP 44 98
+50 own AMRADR 40 96
+60 own GATECH 56 100
+400 cameos
+410 quantity GATECH
+500 kill GATECH 1
+510 quantity GATECH
+520 cameos
+530 canbuild SREF
+540 clickcameo SREF
+600 quit

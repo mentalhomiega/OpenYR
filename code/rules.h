@@ -2673,8 +2673,10 @@ class RulesClass
 		bool IsMultiMCV;
 
 		/*
-		 * If true, the sidebar also rechecks prerequisites and tech level, cancelling production
-		 * of anything that fails.
+		 * If true, the sidebar sweep applies every gate of what a house may build, so a cameo whose
+		 * prerequisites, tech level or ownership fail is removed and its production cancelled.
+		 * gamemd's strip sweep (0x6AA600) always does this. If false, the sweep checks only the
+		 * build limit and keeps such cameos.
 		 */
 		bool IsRecheckPrerequisites;
 

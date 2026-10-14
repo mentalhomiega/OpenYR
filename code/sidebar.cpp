@@ -2542,6 +2542,7 @@ bool SidebarClass::StripClass::Recalc(void)
 		TechnoTypeClass const * tech = Fetch_Techno_Type(Buildables[index].BuildableType, Buildables[index].BuildableID);
 		if (tech != NULL) {
 			BuildingClass const * who = tech->Who_Can_Build_Me(true, false, false, PlayerPtr);
+			// gamemd's sweep (0x6AA600) always applies every gate; RecheckPrerequisites=no skips the gates.
 			ok = who != NULL && who->House->Can_Build(tech, !Rule->IsRecheckPrerequisites, true);
 		} else {
 			if ((unsigned)Buildables[index].BuildableID < (unsigned)PlayerPtr->SuperWeapon.Count()) {

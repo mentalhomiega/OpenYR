@@ -244,7 +244,7 @@ RulesClass::RulesClass(void) :
 	AlliesAllowed(false),
 	IsCurleyShuffle(false),
 	IsMultiMCV(false),
-	IsRecheckPrerequisites(false),
+	IsRecheckPrerequisites(true),
 	IsLargeSidebarStrips(false),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
