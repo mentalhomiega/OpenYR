@@ -224,7 +224,7 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 				}
 
 				matrix = BounceClass::Get_Matrix();
-				VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, matrix, VoxelLightSource);
+				VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, matrix, VoxelLightSource, (float)Rule->VoxelShadeScale);
 				VoxelDrawSystem::Reset();
 				VoxelDrawSystem::Prep_For_Object(voxlib, Class->VoxelIndex, 0, VoxelCameraMatrix * matrix);
 

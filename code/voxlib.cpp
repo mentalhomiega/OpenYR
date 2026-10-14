@@ -2307,7 +2307,8 @@ void __cdecl Draw_Voxel_Reverse_ZBuffer(VoxelFuncArgumentStruct * state)
 /// </summary>
 /// <param name="light">The direction the light arrives from.</param>
 /// <param name="normal_type">The voxel normal table the lookup is being built for.</param>
-void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type)
+/// <param name="shade_scale">Palette rows per unit of brightness, from the mod's VoxelShadeScale.</param>
+void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type, float shade_scale)
 {
 	Vector3 const * normal_table = VoxelNormalTables[normal_type];
 	int count = VoxelNormalTableEntryCount[normal_type];
@@ -2322,12 +2323,14 @@ void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type)
 		float diffuse = normal * light;
 
 		/*
-		 * Convert to palette index range [0, VOXEL_PALETTE_LOOKUP_NEUTRAL]
+		 * Scale to a palette row and truncate; the row is clamped before the cast so a
+		 * negative or oversized scale cannot index outside the lookup.
 		 */
 		if (diffuse < 0.0) {
 			VoxelNormalTranslateTable[i] = 0;
 		} else {
-			VoxelNormalTranslateTable[i] = (unsigned char)((double)diffuse * VOXEL_PALETTE_LOOKUP_NEUTRAL);
+			double row = std::clamp((double)diffuse * shade_scale, 0.0, (double)(MAX_PALETTE_LOOKUP_ENTRIES - 1));
+			VoxelNormalTranslateTable[i] = (unsigned char)row;
 		}
 	}
 
@@ -2346,9 +2349,10 @@ void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type)
 /// </summary>
 /// <param name="light">The direction the light arrives from.</param>
 /// <param name="viewer">The direction the object is being viewed from.</param>
-/// <param name="specular_strength">Tightness of the specular highlight.</param>
+/// <param name="specular_strength">Tightness of the specular highlight; zero or less turns the highlight off.</param>
+/// <param name="shade_scale">Palette rows per unit of brightness, from the mod's VoxelShadeScale.</param>
 /// <param name="normal_type">The voxel normal table the lookup is being built for.</param>
-void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, float specular_strength, int normal_type)
+void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, float specular_strength, int normal_type, float shade_scale)
 {
 	Vector3 const * normal_table = VoxelNormalTables[normal_type];
 
@@ -2374,7 +2378,10 @@ void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, f
 		/*
 		 * Specular boost (empirical) - the formula adjusts how specular highlights behave
 		 */
-		float specular = halfway_dot / (specular_strength - halfway_dot * specular_strength + halfway_dot);
+		float specular = 0.0f;
+		if (specular_strength > 0.0f) {
+			specular = halfway_dot / (specular_strength - halfway_dot * specular_strength + halfway_dot);
+		}
 
 		/*
 		 * Clamp both values to [0, inf)
@@ -2393,8 +2400,8 @@ void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, f
 		 * load-bearing: specular has no natural bound, and the drawers index
 		 * this row unchecked.
 		 */
-		int row = (int)((double)brightness * VOXEL_PALETTE_LOOKUP_NEUTRAL);
-		VoxelNormalTranslateTable[i] = (unsigned char)std::clamp(row, 0, MAX_PALETTE_LOOKUP_ENTRIES - 1);
+		double row = std::clamp((double)brightness * shade_scale, 0.0, (double)(MAX_PALETTE_LOOKUP_ENTRIES - 1));
+		VoxelNormalTranslateTable[i] = (unsigned char)row;
 	}
 
 	VoxelNormalTranslateTable[VOXEL_PALETTE_SIZE - 1] = VOXEL_PALETTE_LOOKUP_NEUTRAL;

@@ -611,6 +611,9 @@ RulesClass::RulesClass(void) :
 	DropPodAngle(M_PI/2), /// 90 deg
 	ScrollMultiplier(1),
 	DirectRockingCoefficient(1),
+	VoxelSpecularStrength(3),
+	VoxelShadeScale(16),
+	VoxelSpecularFromView(false),
 	CrewEscape(.5),
 	ThreatPerOccupant(5),
 	ShakeScreen(400),
@@ -1162,6 +1165,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		IsShroudGrow = ini.Get_Bool(AUDIOVISUAL, "ShroudGrow", IsShroudGrow);
 		ScrollMultiplier = ini.Get_Float(AUDIOVISUAL, "ScrollMultiplier", ScrollMultiplier);
 		DirectRockingCoefficient = ini.Get_Float(AUDIOVISUAL, "DirectRockingCoefficient", DirectRockingCoefficient);
+		VoxelSpecularStrength = ini.Get_Float(AUDIOVISUAL, "VoxelSpecularStrength", VoxelSpecularStrength);
+		VoxelShadeScale = ini.Get_Float(AUDIOVISUAL, "VoxelShadeScale", VoxelShadeScale);
+		VoxelSpecularFromView = ini.Get_Bool(AUDIOVISUAL, "VoxelSpecularFromView", VoxelSpecularFromView);
 		ShakeScreen = ini.Get_Int(AUDIOVISUAL, "ShakeScreen", ShakeScreen);
 		CloakSound = ini.Get_VocType(AUDIOVISUAL, "CloakSound", CloakSound);
 		SellSound = ini.Get_VocType(AUDIOVISUAL, "SellSound", SellSound);

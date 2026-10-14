@@ -2500,7 +2500,7 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "voxelshade") {
-		// voxelshade <type>: shade index of each normal in that table under VoxelLightSource, for the diffuse term alone and for the highlight at strength 3 seen straight on.
+		// voxelshade <type>: shade index of each normal in that table under VoxelLightSource, for the diffuse term alone and for the highlight at the rules' strength seen straight on.
 		int const normal_type = std::atoi(step.Argument.c_str());
 		if (normal_type < 1 || normal_type > 4) {
 			DebugString("AUTOTEST voxelshade: type %d is not a normal table\n", normal_type);
@@ -2508,11 +2508,12 @@ void Run(StepType const & step)
 			int const count = VoxelNormalTableEntryCount[normal_type];
 			std::vector<int> diffuse(count);
 			std::vector<int> specular(count);
-			Precalculate_Normal_Lookup(VoxelLightSource, normal_type);
+			float const scale = (float)Rule->VoxelShadeScale;
+			Precalculate_Normal_Lookup(VoxelLightSource, normal_type, scale);
 			for (int index = 0; index < count; index++) {
 				diffuse[index] = VoxelNormalTranslateTable[index];
 			}
-			Precalculate_Normal_Lookup(VoxelLightSource, Vector3(0, 0, 1), 3.0f, normal_type);
+			Precalculate_Normal_Lookup(VoxelLightSource, Vector3(0, 0, 1), (float)Rule->VoxelSpecularStrength, normal_type, scale);
 			for (int index = 0; index < count; index++) {
 				specular[index] = VoxelNormalTranslateTable[index];
 			}
