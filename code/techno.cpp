@@ -10983,7 +10983,13 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 {
 	TechnoTypeClass const * ttype = TClass;
 	if (!ttype->IsInvisible) {
-		// Gamemd's IsRadarVisible (0x70D1D0) refuses an object in limbo before its visibility tests.
+		// Gamemd's IsRadarVisible (0x70D1D0) refuses a sinking object and one no longer alive (IsActive) before the limbo test.
+		if (IsSinking) {
+			return(false);
+		}
+		if (!IsActive) {
+			return(false);
+		}
 		if (IsInLimbo) {
 			return(false);
 		}
@@ -11008,7 +11014,7 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 			return(false);
 		}
 
-		if (!PlayerPtr->Shares_View_With(House) && !ability_radar_invisible && !is_fogged && !is_shrouded && !IsSinking) {
+		if (!PlayerPtr->Shares_View_With(House) && !ability_radar_invisible && !is_fogged && !is_shrouded) {
 			detected = (height < -20) ? DETECTED_SUBTERRANEAN : DETECTED_CLOAKED;
 		}
 		return(true);

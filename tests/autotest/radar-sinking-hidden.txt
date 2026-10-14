@@ -1,0 +1,12 @@
+; Radar plot of a player's destroyer that is sinking. gamemd's IsRadarVisible (TechnoClass 0x70D1D0) refuses a sinking
+; object before its visibility tests, so the destroyer leaves the radar as it goes down, even though its owner is the player.
+; The radar line reports Is_Radar_Visible as visible, after the kill at frame 45 has sunk it.
+; Expected: at frame 40 the destroyer shows visible 1 while it floats; at frames 50 and 70, while it still exists, visible 0.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script E:\Claude ra2 decomp\src-agent17\tests\autotest\radar-sinking-hidden.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   radar|AUTOTEST   where|Exception"
+30 own DEST 86 70
+40 radar DEST
+45 kill DEST 1
+50 radar DEST
+70 radar DEST
+80 where DEST
+200 quit

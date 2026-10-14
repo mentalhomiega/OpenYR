@@ -135,6 +135,7 @@
 **	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
 **							left, charge time and whether it is ready
 **	garrisons				writes every structure that can be garrisoned
+**	radar <TypeID>			writes each player object of that type with its limbo, radar tracking, discovery and whether Is_Radar_Visible plots it
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
@@ -2198,12 +2199,15 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "radar") {
-		// radar <TypeID>: each player object of that type, with whether it is in limbo, tracked on the radar and discovered.
+		// radar <TypeID>: each player object of that type, with whether it is in limbo, tracked on the radar and discovered,
+		// and whether Is_Radar_Visible plots it.
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-				DebugString("AUTOTEST   radar %s at %d,%d limbo %d tracked %d discovered %d pos %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
-					techno->IsInLimbo ? 1 : 0, techno->IsRadarTracked ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, techno->RadarPos.X, techno->RadarPos.Y);
+				DetectedType detected = DETECTED_NONE;
+				bool const visible = techno->Is_Radar_Visible(detected);
+				DebugString("AUTOTEST   radar %s at %d,%d limbo %d tracked %d discovered %d pos %d,%d visible %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+					techno->IsInLimbo ? 1 : 0, techno->IsRadarTracked ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, techno->RadarPos.X, techno->RadarPos.Y, visible ? 1 : 0);
 			}
 		}
 	} else if (step.Command == "spawn" || step.Command == "grantunit") {
