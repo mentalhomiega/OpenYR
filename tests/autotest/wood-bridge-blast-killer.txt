@@ -1,0 +1,14 @@
+; Wood low bridge hit regression on KILLER: a weapon impact on a wood low bridge damages the span once. The span on rows
+; 66 to 68 is hit by one ion cannon impact (blast ion, which explodes the warhead on the cell as a weapon impact does)
+; at 66,67, and then by a second. gamemd's wood gate (0x48A214) calls MapClass::Damage_Bridge once per impact, so each
+; impact moves the span one stage. The two cells are logged before the first impact, after it, and after the second.
+; Expected: before the first impact 66,67 is overlay 76 and 67,67 is overlay 77. After one impact 66,67 is overlay 80
+; and 67,67 is overlay 78. After the second, 66,67 is overlay 100 (the broken end) and 67,67 is overlay 81. When the
+; wood gate called the damage twice, one impact took 66,67 straight from 76 to 100.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/wood-bridge-blast-killer.txt -Build agent16 -Map Killer.mmx -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   blast|AUTOTEST   bridgearea 6[67],67|Exception"
+100 bridgearea 66 67
+200 blast ion 66 67
+210 bridgearea 66 67
+220 blast ion 66 67
+230 bridgearea 66 67
+300 quit

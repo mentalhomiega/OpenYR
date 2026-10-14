@@ -511,8 +511,8 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 		if (cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_26) {
 			if (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength) {
-				bool destroyed = Map.Damage_Low_Bridge(cell);
-				Map.Damage_Low_Bridge(cell);
+				// gamemd's wood gate (0x48A214) calls MapClass::Damage_Bridge once per impact (0x48A25A).
+				bool destroyed = Map.Damage_Bridge(cell);
 				if (destroyed) {
 					TechnoClass::Remove_Target(cellptr);
 				}

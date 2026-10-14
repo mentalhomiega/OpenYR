@@ -36,6 +36,7 @@
 **	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
 **	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
 **	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
+**	blast <Warhead|ion> x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit
 **	concretehit x y			damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down
 **	passable x y			writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell
 **	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
@@ -169,6 +170,7 @@
 #include "always.h"
 
 #include "autotest.h"
+#include "combat.h"
 #include "session.h"
 #include "rulesreload.h"
 
@@ -2574,6 +2576,16 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   canfire %s at %s: %d facing %d weapon %d fire %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing(), which, (int)techno->Can_Fire(target, which));
 				break;
 			}
+		}
+	} else if (step.Command == "blast") {
+		// blast <Warhead|ion> x y: explodes that warhead (ion is the ion cannon warhead) on the centre of the cell, as a weapon impact does (Explosion_Damage,
+		// the call a wood low bridge takes its hit in). Strength is high enough that the bridge roll always passes.
+		WarheadTypeClass const * warhead = stricmp(step.Argument.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(step.Argument.c_str());
+		if (warhead != NULL) {
+			DebugString("AUTOTEST   blast %s at %d,%d\n", warhead->Name(), step.X, step.Y);
+			Explosion_Damage(Map[Cell(step.X, step.Y)].Center_Coord(), 1000, NULL, warhead, false, NULL);
+		} else {
+			DebugString("AUTOTEST   blast %s: no such warhead\n", step.Argument.c_str());
 		}
 	} else if (step.Command == "shake") {
 		WarheadTypeClass const * warhead = WarheadTypeClass::From_Name(step.Argument.c_str());
