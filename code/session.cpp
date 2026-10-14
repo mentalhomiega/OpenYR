@@ -68,11 +68,13 @@
 #include "mixfile.h"
 #include "msgloop.h"
 #include "netglobal.h"
+#include "playercolor.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "scheme.h"
 #include "spawner.h"
 #include "spawnhouse.h"
 #include "special.h"
@@ -193,7 +195,9 @@ SessionClass::SessionClass(void)
 
 	Handle[0] = 0;
 	PrefColor = 0;
+	PrefCustomColor = 0;
 	ColorIdx = 0;
+	CustomColor = 0;
 	House = HOUSE_FIRST;
 
 	ObiWan = 0;
@@ -773,6 +777,10 @@ void SessionClass::Read_MultiPlayer_Settings(void)
 	// Get the player's last-used Color
 	PrefColor = ConfigINI.Get_Int("MultiPlayer", "Color", 0);
 
+	// A saved free color is kept only if it still carries the custom flag, and is then clamped as a packed color is.
+	unsigned int const saved_custom = (unsigned int)ConfigINI.Get_Int("MultiPlayer", "CustomColor", 0);
+	PrefCustomColor = Player_Color_Is_Custom(saved_custom) ? Player_Color_Pack(Player_Color_Unpack(saved_custom)) : 0;
+
 	if (!Session.IsWDT) {
 		int previous = House;
 		House = (int)ConfigINI.Get_HousesType("MultiPlayer", "Side", (HousesType)House);
@@ -856,6 +864,8 @@ bool SessionClass::Log_To_File(FILE *out)
 	fprintf(out,"LoadGame = %d\n", LoadGame);
 	fprintf(out,"PrefColor = %d\n", PrefColor);
 	fprintf(out,"ColorIdx = %d\n", ColorIdx);
+	fprintf(out,"PrefCustomColor = %08X\n", PrefCustomColor);
+	fprintf(out,"CustomColor = %08X\n", CustomColor);
 	fprintf(out,"House = %d\n", House);
 	fprintf(out,"NumPlayers = %d\n", NumPlayers);
 	fprintf(out,"Options.Bases = %d\n", Options.Bases);
@@ -908,6 +918,7 @@ void SessionClass::Write_MultiPlayer_Settings(void)
 	{
 		// Save the player's last-used Handle & Color
 		ConfigINI.Put_Int("MultiPlayer", "Color", (int)PrefColor);
+		ConfigINI.Put_Int("MultiPlayer", "CustomColor", (int)PrefCustomColor);
 		ConfigINI.Put_HousesType("MultiPlayer", "Side", (HousesType)House);
 		ConfigINI.Put_String("MultiPlayer", "Handle", Handle);
 
@@ -1299,6 +1310,22 @@ int SessionClass::Color_Index_To_Scheme(int id)
 		return(_table[id]);
 	}
 	return(id);
+}
+
+
+/// <summary>
+/// Finds the color scheme a player is drawn in.
+/// A custom color has a scheme of its own, and any other player is drawn in the stock scheme of their color index.
+/// </summary>
+/// <param name="color">The color index of the player.</param>
+/// <param name="custom">The packed custom color, or zero for a stock color.</param>
+/// <returns>Returns with the index into the color scheme list.</returns>
+int SessionClass::Scheme_For_Color(int color, unsigned int custom)
+{
+	if (Player_Color_Is_Custom(custom)) {
+		return(Custom_Color_Scheme_Index(custom));
+	}
+	return(Color_Index_To_Scheme(color));
 }
 
 

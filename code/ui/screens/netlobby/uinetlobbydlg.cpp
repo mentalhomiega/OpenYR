@@ -249,7 +249,7 @@ void UINetLobbyEngineServiceClass::Set_Side(int index)
 		PumpGameopts(1, 0);
 	} else {
 		Session.House = country;
-		Net2Request_House_And_Color(country, Session.ColorIdx);
+		Net2Request_House_And_Color(country, Session.ColorIdx, Session.CustomColor);
 	}
 }
 
@@ -261,10 +261,10 @@ void UINetLobbyEngineServiceClass::Set_Color(int index)
 	}
 
 	if (Net2LobbyPhase == NET2_LOBBY_HOST) {
-		Net2Host_Take_Color(index);
+		Net2Host_Take_Color(index, 0);
 	} else {
 		Session.PrefColor = index;
-		Net2Request_House_And_Color(Session.House, index);
+		Net2Request_House_And_Color(Session.House, index, 0);
 	}
 }
 

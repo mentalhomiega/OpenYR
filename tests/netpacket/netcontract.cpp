@@ -14,6 +14,8 @@
 #include "netreader.h"
 #include "netglobal.h"
 #include "netsemantic.h"
+#include "hsv.h"
+#include "playercolor.h"
 #include "autosave.h"
 
 #include <algorithm>
@@ -1086,6 +1088,13 @@ void Test_Received_Global_Packets(void)
 	packet.PlayerInfo.Color = MAX_MPLAYER_COLORS - 1;
 	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::NONE,
 		"the last valid join color is accepted");
+	packet.PlayerInfo.CustomColor = Player_Color_Pack(HSVClass(40, 180, 200));
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::NONE,
+		"a join with a free color is accepted");
+	packet.PlayerInfo.CustomColor = 0x00123456;
+	Check(NetGlobal::Validate_Received_Packet(&packet, WholePacket) == NetGlobal::DecodeError::INVALID_COLOR,
+		"a join free color without the custom flag is refused");
+	packet.PlayerInfo.CustomColor = 0;
 
 	NetGlobal::Initialize_Packet(packet, NET_CHAT_ANNOUNCE);
 	std::strcpy(packet.Name, "Alpha");
@@ -1148,6 +1157,12 @@ void Test_Gameopt_Text(void)
 		NetGlobal::DecodeError::INVALID_GAMEOPT, "a scenario name longer than the scenario buffer is refused");
 	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP," + std::string(34, 'D') + ":Alpha,1,2,",
 		NetGlobal::DecodeError::INVALID_GAMEOPT, "a digest longer than its field is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2x4D82C9,",
+		NetGlobal::DecodeError::NONE, "a seat with a free color is accepted");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,2x4D82C9Z,",
+		NetGlobal::DecodeError::INVALID_COLOR, "a free color with trailing text is refused");
+	Check_Text("1,2,3,0,0,1,0,1,0,1,0,7,6,2,1,0,0,6,Desc,0,1000,SCU01EA.MAP,ABCDEF:Alpha,1,8x4D82C9,",
+		NetGlobal::DecodeError::INVALID_COLOR, "a free color on a seat past the last color is refused");
 	Check_Text("A1", NetGlobal::DecodeError::NONE, "an accept status is passed to its own handler");
 	Check_Text("1,2,3", NetGlobal::DecodeError::NONE, "a text that stops early is accepted, as the decoder reads missing fields as absent");
 

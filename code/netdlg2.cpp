@@ -38,6 +38,7 @@
 #include "netdlg.h"
 #include "netglobal.h"
 #include "netshare.h"
+#include "playercolor.h"
 #include "nettiming.h"
 #include "newmenu.h"
 #include "rules.h"
@@ -140,6 +141,40 @@ int Net2FirstFreeColor(int reqcolor, int index)
 }
 
 
+/// <summary>Returns the stock lobby color for a color index, as the lobby draws it.</summary>
+static RGBClass Net2_Stock_RGB(int color)
+{
+	COLORREF const value = PlayerColorTable[color];
+	return(RGBClass((unsigned char)(value & 0xFF), (unsigned char)((value >> 8) & 0xFF), (unsigned char)((value >> 16) & 0xFF)));
+}
+
+/// <summary>
+/// Tells whether a color would be too close to the color of any player other than the one at index.
+/// Only a free color is measured: two stock colors are told apart by their indexes, as they always were.
+/// Pass -1 to compare against every player.
+/// </summary>
+static bool Net2_Color_Clashes(int color, unsigned int custom, int index)
+{
+	bool const mine_custom = Player_Color_Is_Custom(custom);
+	RGBClass const mine = mine_custom ? Player_Color_Preview(custom) : Net2_Stock_RGB(color);
+	for (int i = 0; i < Session.Players.Count(); i++) {
+		if (i == index) {
+			continue;
+		}
+		NodeNameType const * other = Session.Players[i];
+		bool const theirs_custom = Player_Color_Is_Custom(other->Player.CustomColor);
+		if (!mine_custom && !theirs_custom) {
+			continue;
+		}
+		RGBClass const theirs = theirs_custom ? Player_Color_Preview(other->Player.CustomColor) : Net2_Stock_RGB(other->Player.Color);
+		if (Player_Color_Too_Close(mine, theirs)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 UINetChoice Net2Response(void)
 {
 	return(_netresponse);
@@ -229,22 +264,27 @@ void Net2Select_Game(int index)
 }
 
 
-void Net2Host_Take_Color(int color)
+void Net2Host_Take_Color(int color, unsigned int custom)
 {
 	int old_color = Session.ColorIdx;
+	unsigned int old_custom = Session.CustomColor;
 
 	Session.ColorIdx = color;
 	Session.PrefColor = color;
+	Session.PrefCustomColor = custom;
 
 	int resolved = Net2FirstFreeColor(color, 0);
-	if (resolved != color) {
+	if (resolved != color || Net2_Color_Clashes(color, custom, 0)) {
 		PMessagePrintf(ColorSystem, Fetch_String(TXT_COLOR_IN_USE));
 		resolved = Net2FirstFreeColor(old_color, 0);
+		custom = old_custom;
 	}
 
 	Session.ColorIdx = resolved;
+	Session.CustomColor = custom;
 	if (Session.Players.Count() > 0) {
 		Session.Players[0]->Player.Color = resolved;
+		Session.Players[0]->Player.CustomColor = custom;
 	}
 
 	PumpGameopts(1, 0);
@@ -255,12 +295,16 @@ void Net2Host_Take_Color(int color)
 /// Asks the host for a country and a color. The host keeps the player's current color when the
 /// requested one is taken, and sends any change to every player.
 /// </summary>
-void Net2Request_House_And_Color(int house, int color)
+void Net2Request_House_And_Color(int house, int color, unsigned int custom)
 {
 	Session.PrefColor = color;
+	Session.PrefCustomColor = custom;
+
+	char colortext[32];
+	Player_Color_Text(colortext, sizeof(colortext), color, custom);
 
 	char options[64];
-	sprintf(options, "R%d,%d", house, color);
+	sprintf(options, "R%d,%s", house, colortext);
 	SendPrivateGameopts(Session.GameName, options);
 }
 
@@ -374,6 +418,7 @@ void Net2Host_Game(void)
 		strcpy(who->Player.Serial, SerialNumber);
 		who->Player.House = Session.House;
 		who->Player.Color = Session.ColorIdx;
+		who->Player.CustomColor = Session.CustomColor;
 		Session.Players.Add(who);
 
 		JoinState = JOIN_CONFIRMED;
@@ -457,6 +502,7 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 			Net2IsGameListActive = 1;
 			Session.Options.ScenarioDescription[0] = '\0';
 			Session.ColorIdx = Session.PrefColor;
+			Session.CustomColor = Session.PrefCustomColor;
 
 			Clear_Vector(&Session.Games);
 			Clear_Vector(&Session.Players);
@@ -493,7 +539,7 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 				Session.Players[0]->Player.House = Session.House;
 			}
 			PumpGameopts(1, 0);
-			Net2Host_Take_Color(Session.ColorIdx);
+			Net2Host_Take_Color(Session.ColorIdx, Session.CustomColor);
 			break;
 
 		case NET2_LOBBY_GUEST: {
@@ -657,8 +703,10 @@ void Net2EncodeGameopt(char *out, int size)
 	}
 
 	for (int i = 0; i < Session.Players.Count(); i++) {
-		int written = snprintf(out + length, size - length, "%s,%d,%d,", Session.Players[i]->Name, Session.Players[i]->Player.House,
-				Session.Players[i]->Player.Color);
+		char colortext[32];
+		Player_Color_Text(colortext, sizeof(colortext), Session.Players[i]->Player.Color, Session.Players[i]->Player.CustomColor);
+		int written = snprintf(out + length, size - length, "%s,%d,%s,", Session.Players[i]->Name, Session.Players[i]->Player.House,
+				colortext);
 		if (written < 0 || written >= size - length) {
 			DebugString("Game options do not fit the packet for player %d\n", i);
 			out[length] = '\0';
@@ -733,7 +781,7 @@ int Net2GetAccept(char * who)
 /// </summary>
 /// <param name="who">The name of the player to adjust.</param>
 /// <returns>Returns with TRUE if the player's house actually changed.</returns>
-int Net2SetHouseAndColor(char *who, int house, int color)
+int Net2SetHouseAndColor(char *who, int house, int color, unsigned int custom)
 {
 	int offset = -1;
 	int retval = 0;
@@ -751,11 +799,14 @@ int Net2SetHouseAndColor(char *who, int house, int color)
 
 		Session.Players[offset]->Player.House = house;
 		Session.Players[offset]->Player.Color = color;
+		Session.Players[offset]->Player.CustomColor = custom;
 		}
 
 	if (offset == 0) {
 		Session.PrefColor = color;
+		Session.PrefCustomColor = custom;
 		Session.ColorIdx=color;
+		Session.CustomColor = custom;
 		Session.House=house;
 	}
 
@@ -1172,6 +1223,7 @@ static int Request_To_Join(int join_index)
 	strcpy (Session.GPacket.Serial, SerialNumber);
 	Session.GPacket.PlayerInfo.House = Session.House;
 	Session.GPacket.PlayerInfo.Color = Session.ColorIdx;
+	Session.GPacket.PlayerInfo.CustomColor = Session.CustomColor;
 	Session.GPacket.PlayerInfo.MinVersion = VerNum.Min_Version();
 	Session.GPacket.PlayerInfo.MaxVersion = VerNum.Max_Version();
 	Session.GPacket.PlayerInfo.CheatCheck = RulesID;
@@ -1472,6 +1524,7 @@ bool Process_Global_Packet(GlobalPacketType *packet, IPXAddressClass *address)
 		strcpy(mypacket.Serial, SerialNumber);
 		mypacket.PlayerInfo.House = Session.House;
 		mypacket.PlayerInfo.Color = Session.ColorIdx;
+		mypacket.PlayerInfo.CustomColor = Session.CustomColor;
 		mypacket.PlayerInfo.NameCRC = Compute_Name_CRC(Session.GameName);
 
 		Ipx.Send_Global_Message (&mypacket, sizeof(GlobalPacketType), 1, address);
@@ -1722,6 +1775,7 @@ static void Get_Join_Responses(void)
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
 				who->Player.Color = Session.GPacket.PlayerInfo.Color;
+				who->Player.CustomColor = Session.GPacket.PlayerInfo.CustomColor;
 				Session.Players.Add (who);
 
 				//..................................................................
@@ -1774,6 +1828,7 @@ static void Get_Join_Responses(void)
 				strcpy(who->Name, Session.Handle);
 				who->Player.House = Session.House;
 				who->Player.Color = Session.ColorIdx;
+				who->Player.CustomColor = Session.CustomColor;
 				Session.Players.Add (who);
 
 				Net2IsGameListActive = false;
@@ -1909,8 +1964,10 @@ static void Get_Join_Responses(void)
 			// The house and color index tables, so both are checked before either is applied.
 			char * house_tok = strtok(opts, ",");
 			char * color_tok = strtok(NULL, ",");
+			int reqcolor = 0;
+			unsigned int reqcustom = 0;
 			bool const house_ok = house_tok == NULL || (atol(house_tok) >= 0 && atol(house_tok) < HouseTypes.Count());
-			bool const color_ok = color_tok == NULL || (atol(color_tok) >= 0 && atol(color_tok) < MAX_MPLAYER_COLORS);
+			bool const color_ok = color_tok == NULL || (Player_Color_Parse(color_tok, reqcolor, reqcustom) && reqcolor >= 0 && reqcolor < MAX_MPLAYER_COLORS);
 			if (!house_ok || !color_ok) {
 				DebugString("Private game options dropped: house or color out of range\n");
 				free(opts);
@@ -1923,7 +1980,9 @@ static void Get_Join_Responses(void)
 					if (i != -1 && Net2GameStarted != 1) {
 						int oldhouse = Session.Players[i]->Player.House;
 						int oldcolor = Session.Players[i]->Player.Color;
+						unsigned int oldcustom = Session.Players[i]->Player.CustomColor;
 						int newcolor = 0;
+						unsigned int newcustom = oldcustom;
 						int newhouse = 0;
 
 						if (house_tok) {
@@ -1932,14 +1991,16 @@ static void Get_Join_Responses(void)
 						}
 
 						if (color_tok) {
-							int reqcolor = atol(color_tok);
 							newcolor = Net2FirstFreeColor(reqcolor, i);
-							if (newcolor != reqcolor) {
+							newcustom = reqcustom;
+							if (newcolor != reqcolor || Net2_Color_Clashes(newcolor, newcustom, i)) {
 								newcolor = Net2FirstFreeColor(oldcolor, i);
+								newcustom = oldcustom;
 							}
 							Session.Players[i]->Player.Color = newcolor;
+							Session.Players[i]->Player.CustomColor = newcustom;
 						}
-						if (oldcolor != newcolor || oldhouse != newhouse) {
+						if (oldcolor != newcolor || oldhouse != newhouse || oldcustom != newcustom) {
 							PumpGameopts(true, 0);
 						}
 					}
@@ -2415,6 +2476,7 @@ static void Get_Join_Responses(void)
 					newcolor = Net2FirstFreeColor(oldcolor, -1);
 				}
 				who->Player.Color = newcolor;
+				who->Player.CustomColor = Net2_Color_Clashes(newcolor, Session.GPacket.PlayerInfo.CustomColor, -1) ? 0 : Session.GPacket.PlayerInfo.CustomColor;
 				Session.Players.Add (who);
 
 				for (i = 0; i < Session.Players.Count(); i++) {
@@ -2432,6 +2494,7 @@ static void Get_Join_Responses(void)
 				strcpy(packet.Name,Session.Handle);
 				packet.PlayerInfo.House = who->Player.House;
 				packet.PlayerInfo.Color = who->Player.Color;
+				packet.PlayerInfo.CustomColor = who->Player.CustomColor;
 
 				Ipx.Send_Global_Message (&packet, sizeof (GlobalPacketType),
 					1, &Session.GAddress);

@@ -44,6 +44,8 @@ struct PlayerColorPreset
 
 
 bool Player_Color_Is_Custom(unsigned int packed);
+int Player_Color_Text(char * out, int size, int seat, unsigned int custom);
+bool Player_Color_Parse(char const * text, int & seat, unsigned int & custom);
 unsigned int Player_Color_Pack(HSVClass const & hsv);
 unsigned int Player_Color_From_RGB(RGBClass const & rgb);
 HSVClass Player_Color_Unpack(unsigned int packed);

@@ -17,6 +17,8 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 namespace {
 
@@ -132,6 +134,36 @@ void Test_Distance(void)
 	Check(Player_Color_Too_Close(red, green), "red and green are too close for a color-blind viewer");
 }
 
+void Test_Text_Round_Trip(void)
+{
+	char text[32];
+
+	int const stock = Player_Color_Text(text, sizeof(text), 5, 0);
+	Check(stock == 1 && std::strcmp(text, "5") == 0, "a stock choice is written as its index alone");
+	int seat = -1;
+	unsigned int custom = 1;
+	Check(Player_Color_Parse(text, seat, custom) && seat == 5 && custom == 0, "a stock index reads back with no custom color");
+
+	unsigned int const picked = Player_Color_Pack(HSVClass(77, 130, 201));
+	Player_Color_Text(text, sizeof(text), 3, picked);
+	Check(std::strcmp(text, "3x4D82C9") == 0, "a custom choice is written as index x hex");
+	Check(Player_Color_Parse(text, seat, custom) && seat == 3 && custom == picked, "a custom choice reads back unchanged");
+
+	// The index part alone still reads for a reader that ignores the custom part.
+	Check(std::atol(text) == 3, "the index comes first, so an older reader takes it");
+
+	unsigned int dark = 0;
+	Check(Player_Color_Parse("2x000000", seat, dark) && seat == 2 && dark == Player_Color_Pack(HSVClass(0, 0, PLAYER_COLOR_MIN_VALUE)), "a dark custom value is raised on read");
+
+	custom = 99;
+	Check(!Player_Color_Parse("", seat, custom), "an empty color text is refused");
+	Check(!Player_Color_Parse("x4", seat, custom), "a color text with no index is refused");
+	Check(!Player_Color_Parse("3y123456", seat, custom), "an unknown suffix is refused");
+	Check(Player_Color_Parse("3x012345", seat, custom) && custom == Player_Color_Pack(HSVClass(0x01, 0x23, PLAYER_COLOR_MIN_VALUE)),
+		"a hex part reads as hue, saturation and value, with the value raised");
+	Check(!Player_Color_Parse("3x1234567", seat, custom), "a long hex part is refused");
+}
+
 void Test_Presets(void)
 {
 	int const count = Player_Color_Preset_Count();
@@ -170,6 +202,7 @@ int main(void)
 	Test_Ramp_Is_Sensible();
 	Test_Packing();
 	Test_Distance();
+	Test_Text_Round_Trip();
 	Test_Presets();
 
 	std::printf("playercolor: %d checks, %d failures\n", Checked, Failures);

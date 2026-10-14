@@ -12,6 +12,9 @@ opents_add_test(NetContract
         netpacket.cpp
         netreader.cpp
         netsemantic.cpp
+        playercolor.cpp
+        hsv.cpp
+        rgb.cpp
     INCLUDES ${OPENTS_GENERATED_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     STAMP

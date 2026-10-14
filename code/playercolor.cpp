@@ -15,6 +15,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 
 namespace
@@ -101,6 +103,61 @@ void To_Lab(RGBClass const & rgb, Matrix3 const & view, double lab[3])
 bool Player_Color_Is_Custom(unsigned int packed)
 {
 	return((packed & PLAYER_COLOR_CUSTOM_FLAG) != 0);
+}
+
+
+/// <summary>
+/// Writes a player's color choice as the text the game options carry.
+/// A stock choice is its color index alone. A custom choice is the index, an x, and the packed
+/// color's 24 bits in hex, so an older reader still takes the index.
+/// </summary>
+/// <param name="out">Receives the text, terminated.</param>
+/// <param name="size">The size of out.</param>
+/// <param name="seat">The color index the player holds.</param>
+/// <param name="custom">The packed custom color, or zero for a stock choice.</param>
+/// <returns>Returns with the number of characters written, or a negative value if out is too small.</returns>
+int Player_Color_Text(char * out, int size, int seat, unsigned int custom)
+{
+	if (!Player_Color_Is_Custom(custom)) {
+		return(std::snprintf(out, size, "%d", seat));
+	}
+	return(std::snprintf(out, size, "%dx%06X", seat, custom & 0xFFFFFF));
+}
+
+
+/// <summary>
+/// Reads the text Player_Color_Text wrote.
+/// A custom value is raised to the minimum value in the same way Player_Color_Pack raises it,
+/// so every machine reads the same color from the same text.
+/// </summary>
+/// <param name="text">The text to read.</param>
+/// <param name="seat">Receives the color index.</param>
+/// <param name="custom">Receives the packed custom color, or zero for a stock choice.</param>
+/// <returns>bool; Was the text a color index with an optional custom part?</returns>
+bool Player_Color_Parse(char const * text, int & seat, unsigned int & custom)
+{
+	custom = 0;
+	char * end = NULL;
+	long const index = std::strtol(text, &end, 10);
+	if (end == text || index < 0 || index > 255) {
+		return(false);
+	}
+	seat = (int)index;
+
+	if (*end == '\0') {
+		return(true);
+	}
+	if (*end != 'x' && *end != 'X') {
+		return(false);
+	}
+
+	char * hex_end = NULL;
+	unsigned long const bits = std::strtoul(end + 1, &hex_end, 16);
+	if (hex_end == end + 1 || *hex_end != '\0' || bits > 0xFFFFFF) {
+		return(false);
+	}
+	custom = Player_Color_Pack(Player_Color_Unpack(PLAYER_COLOR_CUSTOM_FLAG | (unsigned int)bits));
+	return(true);
 }
 
 
