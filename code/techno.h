@@ -687,6 +687,8 @@ class TechnoClass :	public RadioClass,
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
 		int Naval_Weapon(TechnoClass const * target) const;
 		void Set_Turret_Weapon(int position);
+		void Receive_Gunner(FootClass * gunner);
+		void Remove_Gunner(FootClass * gunner);
 		bool Temporal_AI(void);
 
 		/*

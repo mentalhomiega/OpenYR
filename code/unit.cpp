@@ -2294,6 +2294,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			if (techno->Can_Fit_Passenger(this) && Transmit_Message(RADIO_IM_IN, techno) == RADIO_ATTACH) {
 				Limbo();
 				techno->Cargo.Attach(this);
+				if (techno->TClass->IsGunner && techno->Cargo.How_Many() == 1) {
+					techno->Receive_Gunner(this);
+				}
 				techno->Play_Transport_Sound(true);
 				Hidden();
 			}
@@ -3472,6 +3475,9 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 			case UNLOADING:
 				if (Cargo.How_Many()) {
 					FootClass * passenger = Cargo.Detach_Object();
+					if (passenger != NULL && Class->IsGunner && Cargo.How_Many() == 0) {
+						Remove_Gunner(passenger);
+					}
 
 					if (passenger != NULL) {
 						Play_Transport_Sound(false);

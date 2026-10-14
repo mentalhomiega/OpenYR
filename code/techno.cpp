@@ -8261,6 +8261,56 @@ void TechnoClass::Set_Turret_Weapon(int position)
 
 
 /// <summary>
+/// Hands a boarding gunner's temporal and rearm state to this vehicle (TechnoClass::ReceiveGunner,
+/// 0x746420). A temporal the gunner holds moves here. A gunner still rearming restarts this
+/// vehicle's rearm on weapon 7 and counts one more burst.
+/// </summary>
+/// <param name="gunner">The passenger that became this vehicle's first passenger.</param>
+void TechnoClass::Receive_Gunner(FootClass * gunner)
+{
+	if (gunner->TemporalImUsing.has_value()) {
+		bool rearming = gunner->Arm.Value() != 0;
+		TemporalImUsing = std::move(gunner->TemporalImUsing);
+		TemporalImUsing->Owner = this;
+		gunner->TemporalImUsing.reset();
+
+		Set_Turret_Weapon(7);
+		if (rearming) {
+			BurstIndex++;
+			Arm = Rearm_Delay(7);
+		}
+	}
+	Set_Turret_Weapon(gunner->TClass->IFVMode);
+}
+
+
+/// <summary>
+/// Returns this vehicle's temporal and rearm state to a gunner that leaves it as the last
+/// passenger (TechnoClass::RemoveGunner, 0x7464E0). A temporal that holds a target lets go of
+/// it on the way out. A vehicle still rearming restarts the gunner's rearm on weapon 0.
+/// </summary>
+/// <param name="gunner">The passenger that just left this vehicle.</param>
+void TechnoClass::Remove_Gunner(FootClass * gunner)
+{
+	if (gunner != NULL && TemporalImUsing.has_value()) {
+		bool rearming = Arm.Value() != 0;
+		gunner->TemporalImUsing = std::move(TemporalImUsing);
+		gunner->TemporalImUsing->Owner = gunner;
+		TemporalImUsing.reset();
+
+		if (gunner->TemporalImUsing->Target != NULL) {
+			gunner->TemporalImUsing->Let_Go();
+		}
+		if (rearming) {
+			gunner->BurstIndex++;
+			gunner->Arm = gunner->Rearm_Delay(0);
+		}
+	}
+	Set_Turret_Weapon(0);
+}
+
+
+/// <summary>
 /// Spins a gattling weapon up for the frames given (TechnoClass::GattlingRateUp, 0x70DE70).
 /// The spin grows by RateUp a frame until it reaches the last stage's threshold, and the
 /// weapon moves up a stage when the spin it had before the call reaches the current stage's

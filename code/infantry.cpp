@@ -1064,6 +1064,9 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						ArchiveTarget = NULL;
 						Limbo();
 						techno->Cargo.Attach(this);
+						if (techno->TClass->IsGunner && techno->Cargo.How_Many() == 1) {
+							techno->Receive_Gunner(this);
+						}
 						techno->Play_Transport_Sound(true);
 						Hidden();
 					} else {

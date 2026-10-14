@@ -55,6 +55,13 @@ Weapons are counted from `0` here, so weapon `0` is [`Weapon1`](/keys/weapon1/) 
 - Passengers who board after the first, and passengers who leave while others stay aboard, change nothing.
 - Once the last passenger leaves or dies, the vehicle returns to weapon `0`.
 
+## Temporal and rearm
+
+A temporal weapon that the first passenger holds moves to the vehicle when that passenger boards. When the last passenger leaves by unloading, the temporal moves to that passenger, and if it holds a target, the temporal lets go of it. A rearm restarts only when a temporal moves with it.
+
+- A passenger that boards while its rearm is still running restarts the vehicle's rearm on weapon `7` and adds one to the vehicle's burst count.
+- A vehicle whose rearm is still running when its last passenger leaves restarts that passenger's rearm on weapon `0` and adds one to the passenger's burst count.
+
 ```ini title="rulesmd.ini"
 [MYIFV] ; example VehicleType
 Gunner=yes
