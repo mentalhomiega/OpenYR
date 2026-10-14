@@ -64,7 +64,7 @@ A watcher cannot use the `PlaceBeacon`, `NextObject`, `PreviousObject`, `Combata
 
 ## What an observer hears
 
-EVA speaks most lines only to the house they concern: money, silos, power, a lost unit or structure, a harvester or base under attack, a superweapon, the sidebar, and the house's own defeat or victory. An observer owns nothing and is never given a verdict, so it hears none of these lines.
+EVA speaks most lines only to the house they concern: money, silos, power, a lost unit or structure, a harvester or base under attack, a superweapon, the sidebar, and the house's own defeat or victory. An observer owns nothing and is never given a win, so it hears none of these lines. When the match ends for it, the loss caption appears without the defeat voice line.
 
 Lines spoken to everyone still reach an observer. These include another player's defeat, a missile launch, an approaching ion storm, and anything a scenario scripts. The text messages that announce a defeat or a departure appear as they do for every player.
 
@@ -91,13 +91,20 @@ With or without coach mode, a defeated player keeps their row on the score scree
 
 ## When the match ends
 
-A match with at least one person playing ends when only one side is left, or when no person is left playing. A house whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), such as `Neutral`, does not count as a side.
+The game checks whether the match is over each time a house is defeated. A scripted [Destroy all of...](/mapping/actions/taction-house-destroy-all/) action runs the same check. A house whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), such as `Neutral`, is not counted.
 
-A match in which every person watches ends only when an enemy of a surviving house is defeated and only one side is left. Losing an allied house to a scripted event does not end the match, and a match whose houses are all on one side from the start never ends. An observer leaves such a match through the menu.
+After a defeat, the match ends when either of these holds for the houses still alive:
+
+- They are one side, meaning every pair of them is allied in both directions.
+- No person is among them. An observer's house starts defeated, so it never counts.
+
+Otherwise the match goes on: some two houses still alive are not allied in both directions, and a person is still alive. When the match ends, each person's house wins if it is still alive and loses if it was defeated.
+
+A match in which every person watches has no person alive from the start, so the first defeat of any house ends it. A match whose houses all start on one side ends at the first defeat, because its survivors are one side.
 
 ## Seating
 
-Any number of people may watch, as long as somebody plays; a computer player counts. The game refuses a launch file in which every person watches and no computer plays.
+Any number of people may watch. The game refuses a launch file in which every person watches and no computer plays. In a match where every person watches, the first defeat ends the match.
 
 One person may play alone beside observers. With no opponent, that match ends when the player is defeated.
 

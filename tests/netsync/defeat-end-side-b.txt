@@ -1,0 +1,19 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP, with the default two computer players, as defeat-end-side-a.txt.
+; The computer players fall at frames 300 and 320, and the Russians, this copy's own house, fall at frame 400.
+; This copy then logs "game over ... lost" and side A logs "game over ... won".
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/defeat-end-side-a.txt -ScriptB tests/netsync/defeat-end-side-b.txt -Seconds 120 -PortA 24743 -PortB 24744
+1 log netsync side B: the computer players fall, then this copy's own house, which ends the match
+40 select SMCV
+60 command DeployObject
+200 observer
+299 houseobjects French
+300 defeat French
+301 observer
+320 defeat YuriCountry
+321 observer
+341 houseobjects French
+342 houseobjects YuriCountry
+399 observer
+400 defeat Russians
+401 observer
+410 houseobjects Russians

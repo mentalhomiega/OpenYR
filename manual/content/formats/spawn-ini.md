@@ -314,7 +314,7 @@ The game sets how far ahead the machines run and how often they exchange their o
 
 `AimableSams` is not read: a defense whose weapon reaches only the air can be aimed at a chosen aircraft, which [`SAM`](/keys/sam/) owns.
 
-`ContinueWithoutHumans` is not read. A match ends once no person is left playing it, except a match in which every person is [watching](/systems/observers/), which runs on until one side remains.
+`ContinueWithoutHumans` is not read. A match ends once no person is left playing it. A match in which every person is [watching](/systems/observers/) has no person playing from the start, so its first defeat ends it.
 
 `ReadMissionSection` and `CustomMissionID` are not read, and neither is the mission section a client writes for a custom mission. A custom mission's loading picture reaches this game through `CustomLoadScreen`.
 

@@ -200,8 +200,9 @@ static void Finish_Decided_Game(void)
 		Send_Statistics_Packet();
 	}
 
-	// A loss set in the same frame as a win decides the game.
-	bool const won = PlayerWins && !PlayerLoses;
+	// In a campaign a loss set in the same frame as a win decides the game. gamemd's
+	// ProcessPendingGameEnd (0x55CFD0) takes the win in every mode, so a network game does too.
+	bool const won = PlayerWins && (!PlayerLoses || Session.Type != GAME_NORMAL);
 	PlayerWins = false;
 	PlayerLoses = false;
 	PlayerRestarts = false;

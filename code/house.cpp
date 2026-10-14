@@ -3890,7 +3890,6 @@ void HouseClass::MPlayer_Defeated(void)
 	int num_alive;
 	int num_humans;
 	bool all_allies;
-	bool foe_fell;
 
 	/*
 	**	Set the defeat flag for this house
@@ -3983,15 +3982,11 @@ void HouseClass::MPlayer_Defeated(void)
 	*/
 	num_alive = 0;
 	num_humans = 0;
-	foe_fell = false;
 	for (i = 0; i < Houses.Count(); i++) {
 		hptr = Houses[i];
 		if (hptr && !hptr->IsDefeated && !hptr->Class->IsMultiplayPassive) {
 			if (hptr->Is_Human_Player()) {
 				num_humans++;
-			}
-			if (!Is_Ally(hptr) || !hptr->Is_Ally(this)) {
-				foe_fell = true;
 			}
 			num_alive++;
 		}
@@ -4043,15 +4038,12 @@ void HouseClass::MPlayer_Defeated(void)
 	}
 
 	/*
-	**	If there's only one human player left or no humans left, the game is over.
-	**	With nobody but the computer playing, only the fall of the survivors' last
-	**	enemy ends it, so a match that only ever had one side never ends. Then:
-	**	- Determine whether this player wins or loses, based on the state of the
-	**	player's IsDefeated flag
-	**	- Find all players' indices in the Session.Score array
-	**	- Tally up scores for this game
+	**	The match goes on only while a hostile pair of houses is alive and a person is alive.
+	**	gamemd's HouseClass::AcceptDefeat (0x4FC0B0) returns early in exactly that case. With no
+	**	hostile pair the survivors count as one side (num_alive is 1 above), and with no person
+	**	alive the first defeat ends the match, watchers and computer players alone included.
 	*/
-	bool game_over = Session.AIOnly ? (num_alive == 1 && foe_fell) : (num_alive == 1 || num_humans == 0);
+	bool game_over = (num_alive == 1 || num_humans == 0);
 	if (game_over) {
 		IsToDie = false;
 
@@ -4210,9 +4202,12 @@ bool HouseClass::Flag_To_Lose(bool silent)
 			TacticalMap->Set_Caption_Text(TXT_SCENARIO_LOST);
 			Speak(VOX_FAIL);
 			Map.Flag_To_Redraw();
-		} else if (Is_Player_Control() && !IsObserver) {
+		} else if (Is_Player_Control()) {
+			// A watcher gets the caption but no voice, as gamemd's Lose (0x4FCBD0) gives its local observer.
 			TacticalMap->Set_Caption_Text(TXT_LOST);
-			Speak(VOX_YOU_HAVE_LOST);
+			if (!IsObserver) {
+				Speak(VOX_YOU_HAVE_LOST);
+			}
 			Map.Flag_To_Redraw();
 		}
 	}

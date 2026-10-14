@@ -1,0 +1,21 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP, with the default two computer players, French and YuriCountry.
+; The computer players fall at frames 300 and 320 while both people still play, so the match goes on and no
+; game over line is written. The Russians fall at frame 400, which leaves the Americans as the last house
+; playing. Side A then logs "game over ... won" and side B, whose house is the Russians, logs "game over ... lost".
+; Side B runs defeat-end-side-b.txt, which has the same lines.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/defeat-end-side-a.txt -ScriptB tests/netsync/defeat-end-side-b.txt -Seconds 120 -PortA 24743 -PortB 24744
+1 log netsync side A: the computer players fall, then the Russians, which ends the match
+40 select AMCV
+60 command DeployObject
+200 observer
+299 houseobjects French
+300 defeat French
+301 observer
+320 defeat YuriCountry
+321 observer
+341 houseobjects French
+342 houseobjects YuriCountry
+399 observer
+400 defeat Russians
+401 observer
+410 houseobjects Russians

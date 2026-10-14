@@ -48,7 +48,7 @@ A destroyed base leaves its house with nothing, so that house is defeated as soo
 
 The match ends when no person is left playing it, meaning every player has left or been defeated. The game checks this each time a house is defeated. When the last person still playing leaves and the computer takes over their base, no house is defeated, so the match continues until one is.
 
-A match in which every seat is an [observer](/systems/observers/) never has a person playing, so that rule does not apply. It continues until only one side remains.
+A match in which every seat is an [observer](/systems/observers/) has no person playing from the start, so its first defeat ends it.
 
 ## The close button
 
