@@ -1,0 +1,21 @@
+; A transport wreck with passengers, under the overlay in wreck-passengers-off.ini. An IFV (FV) with an E1 soldier aboard
+; takes a non-forced hit of 5000 points from AP. The FV becomes a wreck (DeathFrames) and the wreck keeps the soldier
+; with WreckReleasesPassengers=no.
+; Expected: at frame 150 the boarded E1 shows limbo 1. At frame 170 that soldier still shows limbo 1 and the FV is
+; still listed as a wreck with strength 1. At frame 600 the wreck has exploded, the FV is not listed, and the E1 is
+; not listed either, because the wreck's explosion kills the passengers still aboard.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Map XMP29U2.MAP -Script src-agent17/tests/autotest/wreck-passengers-off.txt -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+30 reveal
+40 own FV 60 20
+41 own E1 59 20
+42 own E1 59 21
+50 enter E1 60 20
+60 art E:\Claude ra2 decomp\src-agent17\tests\autotest\wreck-passengers-off.ini
+150 where E1
+160 hit FV:AP 5000
+170 where E1
+170 where FV
+600 where E1
+600 where FV
+610 quit
