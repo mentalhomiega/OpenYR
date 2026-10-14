@@ -55,6 +55,30 @@ void UI_Setting_Preview_Show(std::string const & name, int value)
 }
 
 
+void UI_Setting_Preview_Pad(UISettingPreviewScreen & screen, std::size_t shapes)
+{
+	while (screen.Shapes.size() < shapes) {
+		UISettingPreviewShape hidden;
+		hidden.Classes = "setting-preview-shape setting-preview-hidden";
+		hidden.Left = "0dp";
+		hidden.Top = "0dp";
+		hidden.Width = "0dp";
+		hidden.Height = "0dp";
+		screen.Shapes.push_back(hidden);
+	}
+}
+
+
+std::optional<UISettingPreviewScreen> UI_Setting_Preview_Screen(std::string const & name, int value, int frame_width, int frame_height)
+{
+	std::map<std::string, UISettingPreview>::const_iterator found = Registered().find(name);
+	if (found == Registered().end() || !found->second.Screen) {
+		return(std::nullopt);
+	}
+	return(found->second.Screen(value, frame_width, frame_height));
+}
+
+
 void UI_Setting_Preview_Revert(void)
 {
 	std::vector<std::string> shown;

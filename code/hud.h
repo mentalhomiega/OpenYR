@@ -72,6 +72,9 @@ enum HudEnums {
 // scroll arrows, at least HUD_MIN_ROWS and at most the grid's slots allow.
 int Hud_Max_Rows(void);
 
+// The same limit for a frame of the given height, which may be one the screen is not showing yet.
+int Hud_Max_Rows_For_Frame(int frame_height);
+
 // The cameo rows the build panel shows: the Sidebar rows setting, or the value being previewed, held
 // within Hud_Max_Rows.
 int Hud_Rows(void);
@@ -83,6 +86,10 @@ void Hud_Rows_Preview(int rows);
 // The build panel laid out for the given number of cameo rows, held within Hud_Max_Rows. Everything
 // that follows the row count is computed here, so a change of rows needs no other constants.
 HudLayout Hud_Layout_For_Rows(int rows);
+
+// The same layout for a frame of the given size, with the panel on its right edge. The rectangles
+// other than Panel are in the panel's own coordinates, as for Hud_Layout_For_Rows.
+HudLayout Hud_Layout_For_Frame(int rows, int frame_width, int frame_height);
 
 // The build panel laid out for the rows the screen shows now.
 HudLayout Hud_Layout(void);

@@ -1,0 +1,47 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+/* A mock that a setting draws beside its control. The markup writes a caption at the top and puts one
+   element per shape in the mock's area. The page's stylesheet colours the shapes by their classes, and
+   this file only places them. */
+
+.setting-preview
+{
+	position: relative;
+	width: 136dp;
+	height: 150dp;
+}
+
+.setting-preview-shape
+{
+	position: absolute;
+}
+
+.setting-preview-hidden
+{
+	display: none;
+}
+
+.setting-preview-caption
+{
+	position: absolute;
+	left: 0dp;
+	top: 0dp;
+	width: 136dp;
+	margin: 0dp;
+	line-height: 14dp;
+	text-align: center;
+}
+
+/* A setting that cannot be changed right now shows its mock faded. */
+.setting-preview.disabled
+{
+	opacity: 0.35;
+}

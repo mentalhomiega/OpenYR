@@ -929,6 +929,24 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
 		virtual void Set_Renderer(int renderer) override { Calls.push_back("renderer " + std::to_string(renderer)); }
+
+		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
+		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
+		{
+			int const factor = (scale >= 1.0f) ? (int)scale : 1;
+			frame_width = width / factor;
+			frame_height = height / factor;
+		}
+
+		// Ten rows at most, and one more for every hundred lines of frame.
+		virtual std::vector<int> Sidebar_Row_Counts(int frame_height) override
+		{
+			std::vector<int> counts;
+			for (int rows = 1; rows <= 10 && rows <= frame_height / 100; rows++) {
+				counts.push_back(rows);
+			}
+			return(counts);
+		}
 };
 
 
@@ -2640,6 +2658,119 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 }
 
 
+// The frame the last stand-in mock was drawn on.
+int Test_Sidebar_Rows_Frame_Width = 0;
+int Test_Sidebar_Rows_Frame_Height = 0;
+
+
+// A stand-in for the build panel's mock: one shape per row, and a box for the screen.
+void Register_Test_Sidebar_Rows_Mock(void)
+{
+	UISettingPreview rows;
+	rows.Screen = [](int value, int width, int height) {
+		Test_Sidebar_Rows_Frame_Width = width;
+		Test_Sidebar_Rows_Frame_Height = height;
+		UISettingPreviewScreen screen;
+		UISettingPreviewShape box;
+		box.Classes = "setting-preview-shape mock-screen";
+		box.Left = "0dp";
+		box.Top = "0dp";
+		box.Width = "136dp";
+		box.Height = "100dp";
+		screen.Shapes.push_back(box);
+		for (int index = 0; index < value; index++) {
+			UISettingPreviewShape shape;
+			shape.Classes = "setting-preview-shape mock-cell";
+			shape.Left = "0dp";
+			shape.Top = "0dp";
+			shape.Width = "1dp";
+			shape.Height = "1dp";
+			screen.Shapes.push_back(shape);
+		}
+		return(screen);
+	};
+	UI_Setting_Preview_Register("sidebar-rows", rows);
+}
+
+
+void Test_Sidebar_Rows_Presenter(void)
+{
+	Register_Test_Sidebar_Rows_Mock();
+	std::vector<UIDisplayChoice> const few = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts = few;
+		state.RowCount = 2;
+		UIDisplayPresenterClass presenter(service, state);
+		Check(presenter.State.Preview.Shapes.size() == 5 && Test_Sidebar_Rows_Frame_Width == 1280 && Test_Sidebar_Rows_Frame_Height == 800 && presenter.State.Preview.Caption == "1280 x 800, 4 rows", "the mock starts on the chosen resolution and the saved rows");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts = few;
+		state.RowCount = 2;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "select", 2);
+		Check(presenter.State.RowCounts.size() == 10 && presenter.State.RowCounts[presenter.State.RowCount].Value == 4, "a larger screen offers more rows and keeps the rows picked when they still fit");
+		Check(Test_Sidebar_Rows_Frame_Width == 1920 && presenter.State.Preview.Caption == "1920 x 1080, 4 rows" && presenter.PreviewChanged, "a new resolution redraws the mock on the new screen");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts.clear();
+		for (int rows = 1; rows <= 10; rows++) {
+			state.RowCounts.push_back({ rows, std::to_string(rows) });
+		}
+		state.RowCount = 9;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "select", 0);
+		Check(presenter.State.RowCounts.size() == 4 && presenter.State.RowCounts[presenter.State.RowCount].Value == 4, "a smaller screen offers fewer rows and holds the rows picked at the most it allows");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off" }, "a row count the screen could not show is not saved on its own");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts = few;
+		state.RowCount = 2;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "select", 2);
+		Drive(presenter, "scale", 3);
+		Check(presenter.State.RowCounts.size() == 5 && presenter.State.RowCounts[presenter.State.RowCount].Value == 4 && Test_Sidebar_Rows_Frame_Width == 960, "an interface scale of two halves the frame, so the rows it fits halve too");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts = few;
+		state.RowCount = 2;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "sidebarrows", 0);
+		Check(presenter.State.RowCount == 0 && presenter.State.Preview.Caption == "1280 x 800, 1 row" && service.Calls.empty(), "picking rows redraws the mock and applies nothing until OK");
+		Drive(presenter, "ok");
+		Check(service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "classic menus off", "modern interface off", "sidebar rows 1" }, "OK saves the rows the player picked");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts = few;
+		state.RowCount = 2;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "sidebarrows", 0);
+		Drive(presenter, "cancel");
+		Check(service.Calls.empty() && presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "cancelling after picking rows saves nothing");
+	}
+
+	UI_Setting_Preview_Revert();
+}
+
+
 void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -2746,6 +2877,114 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		context.Update();
 		presenter.Drain();
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value(), "Escape leaves the display options with nothing applied");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.RowCounts = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
+		state.RowCount = 2;
+		state.ModernInterface = true;
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for a picked row");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::ElementFormControlSelect * rows_select = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("sidebar-rows"));
+		Rml::Element * caption = document->QuerySelector(".setting-preview-caption");
+		if (rows_select != nullptr) {
+			rows_select->SetSelection(0);
+		}
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Check(presenter.State.RowCount == 0 && presenter.State.Preview.Caption == "1280 x 800, 1 row", "a picked row redraws the mock caption");
+		Check(caption != nullptr && caption->GetInnerRML() == "1280 x 800, 1 row", "the caption in the document shows the picked row");
+
+		int const grown = system.Problems;
+		if (rows_select != nullptr) {
+			rows_select->SetSelection(2);
+		}
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Check(presenter.State.RowCount == 2 && presenter.State.Preview.Shapes.size() == 5 && system.Problems == grown, "a larger row count grows the mock without an RmlUi warning");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.Selected = 2;
+		state.RowCounts.clear();
+		for (int rows = 1; rows <= 10; rows++) {
+			state.RowCounts.push_back({ rows, std::to_string(rows) });
+		}
+		state.RowCount = 9;
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for a change of resolution");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		int const before = system.Problems;
+		std::vector<Rml::Element *> modes = Visible_Rows(Rml(*view).Document(), "modes");
+		if (modes.size() == 3) {
+			Click(context, modes[0]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(presenter.State.RowCounts.size() == 4 && presenter.State.RowCounts[presenter.State.RowCount].Value == 4, "a smaller resolution shows the rows it fits");
+		Check(system.Problems == before, "a smaller resolution redraws the mock with fewer shapes and no RmlUi warning");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for the sidebar rows drop-down");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * modern = document->GetElementById("modern-interface");
+		Rml::Element * rows = document->GetElementById("sidebar-rows");
+		Rml::Element * row = document->GetElementById("rows-row");
+		Rml::Element * preview = document->GetElementById("panel-preview");
+		Check(rows != nullptr && row != nullptr && preview != nullptr && rows->HasAttribute("disabled") && row->IsClassSet("disabled") && preview->IsClassSet("disabled"), "the sidebar rows drop-down and its mock are greyed while the modern interface is off");
+
+		if (modern != nullptr) {
+			Click(context, modern);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(presenter.State.ModernInterface && rows != nullptr && !rows->HasAttribute("disabled") && row != nullptr && !row->IsClassSet("disabled") && preview != nullptr && !preview->IsClassSet("disabled"), "ticking the modern interface enables the drop-down and its mock live");
+
+		if (modern != nullptr) {
+			Click(context, modern);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(!presenter.State.ModernInterface && rows != nullptr && rows->HasAttribute("disabled") && preview != nullptr && preview->IsClassSet("disabled"), "unticking the modern interface greys them again");
 
 		view->Release();
 		context.Update();
@@ -2969,7 +3208,9 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 	{
 		RecordingDisplayServiceClass service;
-		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		UIDisplayState state = Display_Fixture();
+		state.ModernInterface = true;
+		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 		Check(Rml(*view).Prepare(context), "the display view prepares for the tab order");
@@ -6799,6 +7040,7 @@ int main(void)
 	Test_ImGui();
 	Test_Coordinates();
 	Test_Display_Presenter();
+	Test_Sidebar_Rows_Presenter();
 	Test_Game_Controls_Presenter();
 	Test_Keys();
 	Test_Keyboard_Presenter();

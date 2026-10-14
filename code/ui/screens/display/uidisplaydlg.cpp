@@ -25,6 +25,7 @@
 #include "ui/uisettingpreview.h"
 #include "ui/uiview.h"
 #include "sdl/sdlwindow.h"
+#include "vidscale.h"
 #include "video.h"
 #include "wwmouse.h"
 
@@ -32,6 +33,7 @@
 #include <cstdio>
 #include <initializer_list>
 #include <string>
+#include <vector>
 
 
 namespace
@@ -139,6 +141,20 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			// The renderer is chosen when the game starts.
 			Options.Renderer = renderer;
 		}
+
+		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
+		{
+			Interface_Frame_For(width, height, scale, frame_width, frame_height);
+		}
+
+		virtual std::vector<int> Sidebar_Row_Counts(int frame_height) override
+		{
+			std::vector<int> counts;
+			for (int rows = HUD_MIN_ROWS; rows <= Hud_Max_Rows_For_Frame(frame_height); rows++) {
+				counts.push_back(rows);
+			}
+			return(counts);
+		}
 };
 
 
@@ -167,8 +183,102 @@ int Fill_Choices(std::vector<UIDisplayChoice> & list, std::initializer_list<UIDi
 
 UIDisplayEngineServiceClass _Service;
 
+// The mock screen beside the resolution list is this wide in dp. The panel in it is never narrower
+// than PANEL_PREVIEW_MIN_WIDTH dp, so its cameo cells stay readable; on a large screen it is then drawn
+// larger than its true size, and the caption gives the screen size.
+float const PANEL_PREVIEW_WIDTH = 136.0f;
+float const PANEL_PREVIEW_MIN_WIDTH = 36.0f;
+
+// The caption above the mock takes this much height in dp.
+float const PANEL_PREVIEW_CAPTION_HEIGHT = 18.0f;
+
+// The smallest width or height in dp of a mock shape, which keeps the power bar and arrows visible.
+float const PANEL_PREVIEW_MIN_SHAPE = 3.0f;
+
+// The category tabs the modern panel stacks beside the cameo grid.
+int const PANEL_PREVIEW_TABS = 4;
+
+std::string Dp_Text(float value)
+{
+	char buffer[32];
+	std::snprintf(buffer, sizeof(buffer), "%.2fdp", value);
+	return(buffer);
+}
+
+
+// The mock of the modern build panel with the rows given, drawn on a frame of the size given. Its shapes
+// follow Hud_Layout_For_Frame, scaled to the mock and set against its right edge below the caption.
+UISettingPreviewScreen Panel_Preview(int rows, int frame_width, int frame_height)
+{
+	UISettingPreviewScreen screen;
+	if (frame_width <= 0 || frame_height <= 0) {
+		return(screen);
+	}
+
+	HudLayout const layout = Hud_Layout_For_Frame(rows, frame_width, frame_height);
+	float const box_width = PANEL_PREVIEW_WIDTH;
+	float const box_height = box_width * frame_height / frame_width;
+	float const scale = std::min(std::max(box_width / frame_width, PANEL_PREVIEW_MIN_WIDTH / static_cast<float>(HUD_PANEL_WIDTH)), box_height / layout.Panel.Height);
+	float const origin = box_width - static_cast<float>(HUD_PANEL_WIDTH) * scale;
+
+	auto place = [&](char const * kind, float left, float top, float width, float height) {
+		UISettingPreviewShape shape;
+		shape.Classes = std::string("setting-preview-shape ") + kind;
+		shape.Left = Dp_Text(left);
+		shape.Top = Dp_Text(PANEL_PREVIEW_CAPTION_HEIGHT + top);
+		shape.Width = Dp_Text(width);
+		shape.Height = Dp_Text(height);
+		screen.Shapes.push_back(shape);
+	};
+
+	// Places a rectangle given in the panel's own coordinates.
+	auto at = [&](char const * kind, float x, float y, float width, float height) {
+		place(kind, origin + x * scale, y * scale, width * scale, height * scale);
+	};
+
+	place("mock-screen", 0.0f, 0.0f, box_width, box_height);
+	at("mock-panel", 0.0f, 0.0f, static_cast<float>(HUD_PANEL_WIDTH), static_cast<float>(layout.Panel.Height));
+	at("mock-top", HUD_MARGIN, HUD_MARGIN, HUD_PANEL_WIDTH - HUD_MARGIN * 2, static_cast<float>(layout.Readouts.Y + layout.Readouts.Height - HUD_MARGIN * 2));
+	// The power bar and the arrows keep a few dp each on a small mock, so they stay visible. The fill rises
+	// from the bottom of the bar to 60 per cent of its height.
+	float const well_left = origin + layout.Power.X * scale;
+	float const well_top = layout.Power.Y * scale;
+	float const well_width = std::max(PANEL_PREVIEW_MIN_SHAPE, layout.Power.Width * scale);
+	float const well_height = layout.Power.Height * scale;
+	place("mock-well", well_left, well_top, well_width, well_height);
+	place("mock-fill", well_left + 1.0f, well_top + well_height * 0.4f, std::max(1.0f, well_width - 2.0f), well_height * 0.6f - 1.0f);
+
+	// The tabs keep a gap of at least a dp between them, however small the mock is drawn.
+	float const tab_gap = 1.0f;
+	float const tab_height = (layout.Tabs.Height * scale - tab_gap * (PANEL_PREVIEW_TABS - 1)) / static_cast<float>(PANEL_PREVIEW_TABS);
+	for (int tab = 0; tab < PANEL_PREVIEW_TABS; tab++) {
+		place("mock-tab", origin + (layout.Tabs.X + 2) * scale, layout.Tabs.Y * scale + tab * (tab_height + tab_gap), (layout.Tabs.Width - 4) * scale, tab_height);
+	}
+
+	float const column_width = layout.Grid.Width / static_cast<float>(HUD_GRID_COLUMNS);
+	float const row_height = layout.Grid.Height / static_cast<float>(layout.Rows);
+	for (int row = 0; row < layout.Rows; row++) {
+		for (int column = 0; column < HUD_GRID_COLUMNS; column++) {
+			// Each cell is inset half a dp on every side, so neighbouring cells stay apart on a small mock.
+			float const left = origin + (layout.Grid.X + column * column_width) * scale;
+			float const top = (layout.Grid.Y + row * row_height) * scale;
+			place("mock-cell", left + 0.5f, top + 0.5f, column_width * scale - 1.0f, row_height * scale - 1.0f);
+		}
+	}
+
+	float const arrow_width = std::max(PANEL_PREVIEW_MIN_SHAPE, 10.0f * scale);
+	float const arrow_height = std::max(PANEL_PREVIEW_MIN_SHAPE, 12.0f * scale);
+	float const centre = origin + (layout.Arrows.X + layout.Arrows.Width / 2.0f) * scale;
+	float const arrow_top = (layout.Arrows.Y + layout.Arrows.Height / 2.0f) * scale - arrow_height / 2.0f;
+	place("mock-arrow", centre - 4.0f * scale - arrow_width, arrow_top, arrow_width, arrow_height);
+	place("mock-arrow", centre + 4.0f * scale, arrow_top, arrow_width, arrow_height);
+
+	return(screen);
+}
+
+
 // Shows a Sidebar rows value in the modern build panel while the Display page has it picked. Reverting
-// shows the saved rows again.
+// shows the saved rows again. The mock beside the list draws the same rows on the frame that is picked.
 void Register_Setting_Previews(void)
 {
 	UISettingPreview rows;
@@ -179,6 +289,9 @@ void Register_Setting_Previews(void)
 	rows.Revert = []() {
 		Hud_Rows_Preview(0);
 		Modern_Panel_Rows_Changed();
+	};
+	rows.Screen = [](int value, int frame_width, int frame_height) {
+		return(Panel_Preview(value, frame_width, frame_height));
 	};
 	UI_Setting_Preview_Register("sidebar-rows", rows);
 }
@@ -232,16 +345,24 @@ void UI_Display_State(UIDisplayState & state)
 		{BACKEND_RENDERER_OPENGL, "OpenGL"}
 	}, Options.Renderer, "%d");
 
-	// The rows the screen fits, from one up. The panel holds the saved count within them.
-	int const most = Hud_Max_Rows();
-	for (int rows = HUD_MIN_ROWS; rows <= most; rows++) {
+	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
+	// the frame allows when the saved count is more.
+	state.ScreenWidth = Options.ScreenWidth;
+	state.ScreenHeight = Options.ScreenHeight;
+	int frame_width = 0;
+	int frame_height = 0;
+	_Service.Frame_Size(Options.ScreenWidth, Options.ScreenHeight, Options.InterfaceScale, frame_width, frame_height);
+	// The fewest rows when the saved count is below every choice.
+	state.RowCount = 0;
+	for (int value : _Service.Sidebar_Row_Counts(frame_height)) {
 		UIDisplayChoice choice;
-		choice.Value = rows;
-		choice.Label = std::to_string(rows);
+		choice.Value = value;
+		choice.Label = std::to_string(value);
+		if (value <= Options.SidebarRows) {
+			state.RowCount = (int)state.RowCounts.size();
+		}
 		state.RowCounts.push_back(choice);
 	}
-	state.RowCount = std::clamp(Hud_Rows(), int(HUD_MIN_ROWS), most) - HUD_MIN_ROWS;
-	state.PreviewRows = UI_Display_Preview_Rows(state.RowCounts[state.RowCount].Value);
 
 	// Automatic, the usual steps, and whatever else the settings file has asked for.
 	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};

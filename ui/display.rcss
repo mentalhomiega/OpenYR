@@ -65,7 +65,7 @@
 
 #modes
 {
-	width: 172dp;
+	width: 130dp;
 	height: 150dp;
 }
 
@@ -124,74 +124,63 @@ select
 	margin-top: 4dp;
 }
 
+/* The Sidebar rows drop-down is disabled, and its label greyed, while the modern interface is off. */
+#rows-row.disabled .caption
+{
+	color: #6a6388;
+}
+
 #renderer-note
 {
 	margin-top: 3dp;
 	line-height: 17dp;
 }
 
-/* The preview stands beside the resolution list, as tall as the list. */
+/* The mock screen stands beside the resolution list; its frame is set by setting-preview.rcss. */
 #panel-preview
 {
-	display: flex;
-	margin-left: 12dp;
-	height: 150dp;
+	margin-left: 10dp;
 }
 
-#preview-tabs
+/* The pieces of the build panel mock, placed by the markup in display.rml. */
+.mock-screen
 {
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	width: 12dp;
-	height: 100%;
-	margin-right: 6dp;
+	background-color: #342d63;
 }
 
-.preview-tab
+.mock-panel
 {
-	display: block;
-	width: 12dp;
-	height: 10dp;
-	background-color: #2a2148;
+	background-color: #0b0816;
 }
 
-#preview-body
+.mock-top
 {
-	height: 100%;
-	padding: 4dp;
-	background-color: #120d24;
+	background-color: #4a3f86;
 }
 
-.preview-row
+.mock-well
 {
-	display: flex;
-	margin-bottom: 2dp;
+	background-color: #140f28;
 }
 
-.preview-cell
+.mock-fill
 {
-	display: block;
-	width: 20dp;
-	height: 100%;
-	margin-right: 2dp;
-	background-color: #06040e;
+	background-color: #9d8ae6;
 }
 
-#preview-arrows
+.mock-tab
 {
-	display: flex;
-	margin-top: 2dp;
-	height: 10dp;
+	background-color: #6e5fb0;
 }
 
-.preview-arrow
+.mock-cell
 {
-	display: block;
-	width: 20dp;
-	height: 10dp;
-	margin-right: 2dp;
-	background-color: #3c2f66;
+	background-color: #a897e8;
+}
+
+.mock-arrow
+{
+	background-color: #d6ccff;
 }
 
 #buttons

@@ -26,6 +26,10 @@ extern double InterfaceScale;
 // interface in, which is the screen divided by that scale and never smaller than 640 by 480.
 double Resolve_Interface_Scale(int screenwidth, int screenheight, int & framewidth, int & frameheight);
 
+// The same scale and frame for a requested interface scale (zero is automatic), without storing
+// anything. The menus use it to show a screen's frame before the player applies it.
+double Interface_Frame_For(int screenwidth, int screenheight, double requested, int & framewidth, int & frameheight);
+
 void Window_Point_To_Game(Point2D & point);
 void Game_Point_To_Window(Point2D & point);
 

@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-The modern build panel used to run down the whole screen height. It now shows four rows of cameos by default, as OpenRA's sidebar does, and ends under its scroll arrows, so the map shows below it. [`SidebarRows`](/keys/sidebarrows/) sets the number of rows, and the Display page previews a new number in a game before OK. Each scroll arrow now moves the panel by a screenful of rows, as the classic arrows do.
+The modern build panel used to run down the whole screen height. It now shows four rows of cameos by default, as OpenRA's sidebar does, and ends under its scroll arrows, so the map shows below it. [`SidebarRows`](/keys/sidebarrows/) sets the number of rows, and the Display page previews a new number in a game before OK. The page draws the picked rows on a mock screen beside the resolution list and greys the drop-down while the modern in-game interface is off. Each scroll arrow now moves the panel by a screenful of rows, as the classic arrows do.

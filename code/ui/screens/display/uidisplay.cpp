@@ -9,11 +9,13 @@
 
 #include "ui/screens/display/uidisplay.h"
 
+#include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uisettingpreview.h"
 
 #include <algorithm>
 #include <cstdio>
+#include <string>
 #include <utility>
 
 
@@ -29,26 +31,97 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
-	InitialRowCount(State.RowCount),
 	InitialDebugMode(State.DebugMode)
 {
+	ShownRowIndex = State.RowCount;
+	Refresh_Preview();
 }
 
 
-std::vector<UIDisplayRow> UI_Display_Preview_Rows(int rows)
+void UIDisplayPresenterClass::Chosen_Frame(int & width, int & height)
 {
-	// The rows and the gaps between them fill the height of the resolution list, so a tall count is drawn in thinner rows.
-	int const gap = 2;
-	int const height = std::clamp(130 / std::max(rows, 1) - gap, 2, 16);
-	std::vector<UIDisplayRow> list;
-	for (int row = 0; row < rows; row++) {
-		UIDisplayRow entry;
-		char buffer[16];
-		std::snprintf(buffer, sizeof(buffer), "%ddp", height);
-		entry.Height = buffer;
-		list.push_back(entry);
+	int screen_width = State.ScreenWidth;
+	int screen_height = State.ScreenHeight;
+	if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+		screen_width = State.Modes[State.Selected].Width;
+		screen_height = State.Modes[State.Selected].Height;
 	}
-	return(list);
+	float const scale = (State.Scale >= 0 && State.Scale < (int)State.Scales.size()) ? State.Scales[State.Scale].Value : 0.0f;
+
+	width = 0;
+	height = 0;
+	if (screen_width > 0 && screen_height > 0) {
+		Service.Frame_Size(screen_width, screen_height, scale, width, height);
+	}
+}
+
+
+int UIDisplayPresenterClass::Chosen_Rows(void) const
+{
+	return((ShownRowIndex >= 0 && ShownRowIndex < (int)State.RowCounts.size()) ? State.RowCounts[ShownRowIndex].Value : -1);
+}
+
+
+void UIDisplayPresenterClass::Refresh_Rows(void)
+{
+	int const previous = Chosen_Rows();
+	int width = 0;
+	int height = 0;
+	Chosen_Frame(width, height);
+
+	// The rows the new frame allows. The row count stays the largest one that does not exceed the rows before.
+	std::vector<UIDisplayChoice> const before = State.RowCounts;
+	State.RowCounts.clear();
+	State.RowCount = -1;
+	if (height > 0) {
+		for (int value : Service.Sidebar_Row_Counts(height)) {
+			UIDisplayChoice choice;
+			choice.Value = value;
+			choice.Label = std::to_string(value);
+			if (value <= previous) {
+				State.RowCount = (int)State.RowCounts.size();
+			}
+			State.RowCounts.push_back(choice);
+		}
+		if (State.RowCount < 0 && !State.RowCounts.empty()) {
+			State.RowCount = 0;
+		}
+	}
+	ShownRowIndex = State.RowCount;
+	bool const same = before.size() == State.RowCounts.size() && std::equal(before.begin(), before.end(), State.RowCounts.begin(),
+		[](UIDisplayChoice const & a, UIDisplayChoice const & b) { return(a.Value == b.Value); });
+	RowCountsChanged = RowCountsChanged || !same;
+	Refresh_Preview();
+}
+
+
+void UIDisplayPresenterClass::Refresh_Preview(void)
+{
+	int width = 0;
+	int height = 0;
+	Chosen_Frame(width, height);
+	int const rows = Chosen_Rows();
+
+	std::size_t const bound = State.Preview.Shapes.size();
+	State.Preview = UISettingPreviewScreen();
+	if (rows > 0 && width > 0 && height > 0) {
+		std::optional<UISettingPreviewScreen> screen = UI_Setting_Preview_Screen("sidebar-rows", rows, width, height);
+		if (screen.has_value()) {
+			State.Preview = *screen;
+
+			std::string label;
+			if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+				label = State.Modes[State.Selected].Label;
+			} else {
+				char buffer[64];
+				std::snprintf(buffer, sizeof(buffer), "%d x %d", State.ScreenWidth, State.ScreenHeight);
+				label = buffer;
+			}
+			State.Preview.Caption = label + ", " + std::to_string(rows) + (rows == 1 ? " row" : " rows");
+		}
+	}
+	UI_Setting_Preview_Pad(State.Preview, bound);
+	PreviewChanged = true;
 }
 
 
@@ -68,6 +141,7 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "select") {
 		State.Selected = (intent.Value >= 0 && intent.Value < (int)State.Modes.size()) ? intent.Value : -1;
+		Refresh_Rows();
 
 	} else if (intent.Name == "stretch") {
 		State.StretchMovies = (intent.Value != 0);
@@ -86,6 +160,7 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
+		Refresh_Rows();
 
 	} else if (intent.Name == "fullscreen") {
 		State.Fullscreen = (intent.Value != 0);
@@ -109,11 +184,18 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
 
 	} else if (intent.Name == "sidebarrows") {
-		State.RowCount = Pick_Choice(State.RowCounts, intent.Value, InitialRowCount);
-		if (State.RowCount >= 0 && State.RowCount < (int)State.RowCounts.size()) {
-			UI_Setting_Preview_Show("sidebar-rows", State.RowCounts[State.RowCount].Value);
-			State.PreviewRows = UI_Display_Preview_Rows(State.RowCounts[State.RowCount].Value);
-			PreviewChanged = true;
+		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
+		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
+		int const index = Pick_Choice(State.RowCounts, intent.Value, ShownRowIndex);
+		if (index != ShownRowIndex && index >= 0 && index < (int)State.RowCounts.size()) {
+			ShownRowIndex = index;
+			State.RowCount = index;
+			PickedRows = State.RowCounts[State.RowCount].Value;
+			UI_Setting_Preview_Show("sidebar-rows", PickedRows);
+			Refresh_Preview();
+		} else {
+			// Not a pick: the drop-down shows the row it showed before, so its bound value goes back to that row.
+			State.RowCount = ShownRowIndex;
 		}
 
 	} else if (intent.Name == "ok") {
@@ -145,8 +227,8 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
 			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
 		}
-		if (State.RowCount >= 0 && State.RowCount < (int)State.RowCounts.size()) {
-			Service.Set_Sidebar_Rows(State.RowCounts[State.RowCount].Value);
+		if (PickedRows >= 0) {
+			Service.Set_Sidebar_Rows(PickedRows);
 		}
 		UI_Setting_Preview_Commit();
 		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
@@ -235,7 +317,11 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("rowcount");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
-				Model.DirtyVariable("previewrows");
+				Model.DirtyVariable("preview");
+				if (Data.RowCountsChanged) {
+					Data.RowCountsChanged = false;
+					Model.DirtyVariable("rowcounts");
+				}
 			}
 		}
 
@@ -255,12 +341,6 @@ class UIDisplayViewClass : public UIRmlViewClass
 				return(false);
 			}
 			scale.RegisterMember("label", &UIDisplayScale::Label);
-
-			Rml::StructHandle<UIDisplayRow> row = model.RegisterStruct<UIDisplayRow>();
-			if (!row) {
-				return(false);
-			}
-			row.RegisterMember("height", &UIDisplayRow::Height);
 
 			Rml::StructHandle<UIDisplayChoice> choice = model.RegisterStruct<UIDisplayChoice>();
 			if (!choice) {
@@ -294,8 +374,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("renderer", &state.Renderer)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
-				&& model.RegisterArray<std::vector<UIDisplayRow>>()
-				&& model.Bind("previewrows", &state.PreviewRows));
+				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));
 		}
 
 	private:

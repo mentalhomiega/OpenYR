@@ -10,6 +10,7 @@
 #pragma once
 
 #include "ui/uiscreen.h"
+#include "ui/uisettingpreview.h"
 
 #include <memory>
 #include <optional>
@@ -42,13 +43,6 @@ struct UIDisplayChoice
 };
 
 
-// One row of the build panel preview, with the height it is drawn at, in dp.
-struct UIDisplayRow
-{
-	std::string Height;
-};
-
-
 class UIDisplayServiceClass
 {
 	public:
@@ -67,6 +61,13 @@ class UIDisplayServiceClass
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
 		virtual void Set_Renderer(int renderer) = 0;
+
+		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
+		// scale given (zero is automatic).
+		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) = 0;
+
+		// The Sidebar rows values a frame of this height can show, in ascending order.
+		virtual std::vector<int> Sidebar_Row_Counts(int frame_height) = 0;
 };
 
 
@@ -94,7 +95,10 @@ struct UIDisplayState
 	int Renderer = 0;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
-	std::vector<UIDisplayRow> PreviewRows;
+	// The screen the page starts on, used for the preview when no resolution is picked.
+	int ScreenWidth = 0;
+	int ScreenHeight = 0;
+	UISettingPreviewScreen Preview;
 };
 
 
@@ -109,8 +113,15 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		std::optional<UIDisplayMode> Picked;
 		bool ScaleChanged = false;
 		bool PreviewChanged = false;
+		bool RowCountsChanged = false;
 
 	private:
+		// The row choices follow the frame that the picked resolution and interface scale give.
+		void Refresh_Rows(void);
+		void Refresh_Preview(void);
+		void Chosen_Frame(int & width, int & height);
+		int Chosen_Rows(void) const;
+
 		UIDisplayServiceClass & Service;
 		int Initial;
 		int InitialScale;
@@ -121,7 +132,10 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialFrameRate;
 		int InitialCursorScale;
 		int InitialRenderer;
-		int InitialRowCount;
+		// The rows the player last picked on this page, or -1 for none. Only a pick is saved on OK.
+		int PickedRows = -1;
+		// The index of the row the drop-down shows, as the presenter last set it.
+		int ShownRowIndex = -1;
 		bool InitialDebugMode;
 };
 
@@ -146,9 +160,6 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 		std::optional<int> Deadline;
 };
 
-
-// The rows the build panel preview draws for a row count, each sized to keep the preview a fixed height.
-std::vector<UIDisplayRow> UI_Display_Preview_Rows(int rows);
 
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);

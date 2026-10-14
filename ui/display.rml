@@ -12,6 +12,7 @@
 	<title>Display options</title>
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="display.rcss"/>
+	<link type="text/rcss" href="setting-preview.rcss"/>
 </head>
 <body template="dialog" data-model="display">
 	<p class="heading" id="title">Display Options:</p>
@@ -21,14 +22,14 @@
 			<div id="modes-row"><div id="modes" class="list"><div class="rows">
 				<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
 			</div></div>
-				<div id="panel-preview"><div id="preview-tabs"><span class="preview-tab"></span><span class="preview-tab"></span><span class="preview-tab"></span><span class="preview-tab"></span></div><div id="preview-body"><div class="preview-row" data-for="row : previewrows" data-style-height="row.height"><span class="preview-cell"></span><span class="preview-cell"></span><span class="preview-cell"></span></div><div id="preview-arrows"><span class="preview-arrow"></span><span class="preview-arrow"></span></div></div></div></div>
+				<div id="panel-preview" class="setting-preview" data-class-disabled="!moderninterface"><p class="setting-preview-caption">{{preview.caption}}</p><div data-for="shape : preview.shapes" data-attr-class="shape.classes" data-style-left="shape.left" data-style-top="shape.top" data-style-width="shape.width" data-style-height="shape.height"></div></div></div>
 			<div class="row" id="scale-row"><span class="caption">Interface scale:</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
 				<option data-for="entry : scales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch movies to fit resolution</label>
 			<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>Classic Yuri's Revenge menus</label>
 			<label class="check" id="switch-modern-interface"><input type="checkbox" id="modern-interface" data-attrif-checked="moderninterface" data-event-click="queue('moderninterface', moderninterface ? 0 : 1)"/>Modern in-game interface</label>
-			<div class="row" id="rows-row"><span class="caption">Sidebar rows:</span><select id="sidebar-rows" data-value="rowcount" data-event-change="queue('sidebarrows', ev.value)">
+			<div class="row" id="rows-row" data-class-disabled="!moderninterface"><span class="caption">Sidebar rows:</span><select id="sidebar-rows" data-value="rowcount" data-attrif-disabled="!moderninterface" data-event-change="queue('sidebarrows', ev.value)">
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>

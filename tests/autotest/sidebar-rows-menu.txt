@@ -1,19 +1,30 @@
-; The Display page from the main menu, where there is no game: the small drawing of the modern build panel beside the
-; Sidebar rows drop-down shows the rows picked. Run with -Menus -MenuStyle Modern (no -Settings needed for the menus).
-; Run from the repository root:
-;   scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/sidebar-rows-menu.txt -Menus -MenuStyle Modern -Width 1920 -Height 1080 -Seconds 90
+; The Display page from the main menu, where there is no game. The Sidebar rows drop-down and its mock screen are
+; shown with the modern in-game interface off (greyed) and on, for 4 and 2 rows, and after a resolution change.
+; The ui shot lines write .tga files to the game's Screenshots folder. The runner copies only .png files, so
+; convert the pictures after each run and name them by screen size, since the shot names do not carry it.
+; Run from the repository root, once at 800 x 600 and once at 1920 x 1080:
+;   scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/sidebar-rows-menu.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 60
 ui waitfor backdrop
 ui wait 2000
 ui press Options
 ui wait 1500
 ui click tab-display
 ui wait 1500
-ui shot sidebar-rows-menu-4
+ui shot menu-modern-off-rows-4
+ui click modern-interface
+ui wait 800
+ui shot menu-modern-on-rows-4
 ui click sidebar-rows
 ui wait 800
 ui choose sidebar-rows|2
 ui wait 1500
-ui shot sidebar-rows-menu-2
+ui shot menu-modern-on-rows-2
+ui choose modes|1024 x 768
+ui wait 1500
+ui shot menu-modern-on-rows-2-1024x768
+ui click modern-interface
+ui wait 800
+ui shot menu-modern-off-rows-2-1024x768
 ui press Cancel
 ui wait 1500
-ui shot sidebar-rows-menu-cancel
+ui shot menu-cancel

@@ -115,13 +115,19 @@ int Upper_Layout(HudLayout & layout)
 }
 
 
-int Hud_Max_Rows(void)
+int Hud_Max_Rows_For_Frame(int frame_height)
 {
 	HudLayout upper {};
 	int const top = Upper_Layout(upper);
-	int const fit = (VisibleRect.Height - top - HUD_ARROWS_HEIGHT - HUD_MARGIN) / SidebarClass::StripClass::OBJECT_HEIGHT;
+	int const fit = (frame_height - top - HUD_ARROWS_HEIGHT - HUD_MARGIN) / SidebarClass::StripClass::OBJECT_HEIGHT;
 	int const most = SidebarClass::StripClass::MAX_SLOTS / HUD_GRID_COLUMNS;
 	return(std::clamp(fit, int(HUD_MIN_ROWS), most));
+}
+
+
+int Hud_Max_Rows(void)
+{
+	return(Hud_Max_Rows_For_Frame(VisibleRect.Height));
 }
 
 
@@ -132,14 +138,14 @@ int Hud_Rows(void)
 }
 
 
-HudLayout Hud_Layout_For_Rows(int rows)
+HudLayout Hud_Layout_For_Frame(int rows, int frame_width, int frame_height)
 {
 	int const object_width = SidebarClass::StripClass::OBJECT_WIDTH;
 	int const object_height = SidebarClass::StripClass::OBJECT_HEIGHT;
 
 	HudLayout layout {};
 	int const top = Upper_Layout(layout);
-	layout.Rows = std::clamp(rows, int(HUD_MIN_ROWS), Hud_Max_Rows());
+	layout.Rows = std::clamp(rows, int(HUD_MIN_ROWS), Hud_Max_Rows_For_Frame(frame_height));
 
 	layout.Power = Rect(HUD_MARGIN, top, HUD_POWER_WIDTH, 0);
 	layout.Tabs = Rect(layout.Power.X + layout.Power.Width + 2, top, HUD_TAB_WIDTH, layout.Rows * object_height);
@@ -149,8 +155,14 @@ HudLayout Hud_Layout_For_Rows(int rows)
 	// The panel ends under the arrows, and the power bar runs down its left side to the same edge.
 	int const bottom = layout.Arrows.Y + layout.Arrows.Height + HUD_MARGIN;
 	layout.Power.Height = bottom - HUD_MARGIN - top;
-	layout.Panel = Rect(VisibleRect.Width - HUD_PANEL_WIDTH, 0, HUD_PANEL_WIDTH, bottom);
+	layout.Panel = Rect(frame_width - HUD_PANEL_WIDTH, 0, HUD_PANEL_WIDTH, bottom);
 	return(layout);
+}
+
+
+HudLayout Hud_Layout_For_Rows(int rows)
+{
+	return(Hud_Layout_For_Frame(rows, VisibleRect.Width, VisibleRect.Height));
 }
 
 
