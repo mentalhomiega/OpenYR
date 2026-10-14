@@ -1,0 +1,4 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP. Captures the message list after side A's long line and
+; its private line. Side A runs chat-long-side-a.txt.
+1 log netsync side B: waits for the long and private lines from side A
+600 command ScreenCapture

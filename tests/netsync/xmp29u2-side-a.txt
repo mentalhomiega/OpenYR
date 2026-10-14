@@ -114,3 +114,15 @@
 13000 supers
 15000 fire ChronoSphereSpecial 70 72
 15500 dump
+; Chat at the end of the match, after the orders, so no earlier step depends on the alliance. Chat
+; does not touch the simulation, so both sides must stay in sync through it. Backspace is written
+; 08, since a one-digit key name is read as a character.
+15600 winkey 13
+15610 wintype HELLO FROM SIDE A
+15620 command ScreenCapture
+15640 winkey 13
+15800 alliance 1
+15900 winkey 08
+15910 wintype TEAM LINE FROM SIDE A
+15940 winkey 13
+16000 command ScreenCapture

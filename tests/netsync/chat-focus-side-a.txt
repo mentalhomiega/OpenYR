@@ -1,0 +1,14 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP, run with -InterfaceStyle Modern. Allies with side B on frame
+; 200, clicks a sidebar tab so an interface element may hold the focus, then sends an all-chat line and a team
+; line. Side B runs chat-ally-side-b.txt. Backspace is written 08, since a one-digit key name is read as a character.
+1 log netsync side A: all-chat and team chat after a sidebar click
+200 alliance 1
+290 windowclick 512 210
+300 winkey 13
+310 wintype HI
+325 command ScreenCapture
+330 winkey 13
+400 winkey 08
+410 wintype TEAM
+420 winkey 13
+500 command ScreenCapture

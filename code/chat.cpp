@@ -159,6 +159,7 @@ void Chat_Send(char const * text)
 	if (scope == ChatScopeType::Player) {
 		target = Session.MessageTarget;
 	}
+	DebugString("CHAT sent scope %d target %d: %s\n", int(scope), target, Session.GPacket.Message.Buf);
 	Chat_Show(PlayerPtr, scope, target, Session.GPacket.Message.Buf);
 	std::strcpy(Session.LastMessage, Session.GPacket.Message.Buf);
 }
@@ -232,5 +233,6 @@ void Chat_Show(HouseClass const * sender, ChatScopeType scope, int target, char 
 			TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), timeout);
 	}
 	DesyncDialog.Notify_Chat(name, text);
+	DebugString("CHAT shown scope %d from %s: %s\n", int(scope), name, text);
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 }

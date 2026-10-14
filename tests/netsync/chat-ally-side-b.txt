@@ -1,0 +1,5 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP. Allies with side A on frame 200, then waits for the
+; allies line side A sends with Backspace and Enter, and captures the message list. Side A runs chat-ally-side-a.txt.
+1 log netsync side B: waits for the allies line from side A
+200 alliance 0
+500 command ScreenCapture

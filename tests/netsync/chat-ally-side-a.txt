@@ -1,0 +1,10 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP. Both sides ally on frame 200, then side A opens an
+; allies-only line with Backspace (written 08: a one-digit key name is read as a character), types HI TEAM,
+; and sends it with Enter. Side B runs chat-ally-side-b.txt.
+1 log netsync side A: allies chat by the keyboard
+200 alliance 1
+300 winkey 08
+310 wintype HI TEAM
+325 command ScreenCapture
+330 winkey 13
+400 command ScreenCapture

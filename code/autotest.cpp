@@ -49,8 +49,12 @@
 **							changes, and its destruction with the saboteur's experience and the player's money and points
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
-**	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
+**	key <Key>			presses and releases that key on the keyboard queue, skipping the interface; the key
 **							is a letter or digit, or a virtual-key code in decimal
+**	winkey <Key>			presses and releases that key through the game window, so the interface sees it first as it does
+**							a player's key; a one-character name is read as a letter or digit, so Backspace is written 08
+**	wintype <text>			types the text through the game window, one character at a time, each as a press, its text event and a release
+**	alliance <house>		queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame
 **	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
 **	modes				writes which special mode is on (repair, sell, power, waypoint, beacon, and targeting) and the object pending placement
 **	windowclick x y			moves the pointer to that window pixel and clicks there through the window's event path,
@@ -1825,6 +1829,48 @@ void Run(StepType const & step)
 		Keyboard->Handle_Window_Event(event);
 		event.Type = WINDOW_EVENT_KEY_UP;
 		Keyboard->Handle_Window_Event(event);
+		return;
+	}
+
+	// winkey <VK>: a key press and release sent to the game window, so the interface sees it
+	// first as it does a player's key. The key step skips that routing.
+	if (step.Command == "winkey") {
+		WindowEvent event;
+		event.VirtualKey = Key_Code(step.Argument);
+		event.Type = WINDOW_EVENT_KEY_DOWN;
+		Game_Window_Handle_Event(event);
+		event.Type = WINDOW_EVENT_KEY_UP;
+		Game_Window_Handle_Event(event);
+		return;
+	}
+
+	// wintype <text>: each character as a key press, the text event that carries the typed
+	// character, and the release, all sent to the game window in the order a keyboard sends them.
+	if (step.Command == "wintype") {
+		for (char const character : step.Argument) {
+			WindowEvent event;
+			event.VirtualKey = std::toupper((unsigned char)character);
+			event.Type = WINDOW_EVENT_KEY_DOWN;
+			Game_Window_Handle_Event(event);
+			event.Type = WINDOW_EVENT_TEXT;
+			event.Text = (unsigned char)character;
+			Game_Window_Handle_Event(event);
+			event.Type = WINDOW_EVENT_KEY_UP;
+			Game_Window_Handle_Event(event);
+		}
+		return;
+	}
+
+	// alliance <house>: queues the ALLY event the alliance toggle queues, so every copy of a match
+	// makes the alliance on the same frame. A house that is already an ally is made an enemy.
+	if (step.Command == "alliance") {
+		int const index = std::atoi(step.Argument.c_str());
+		if (index < 0 || index >= Houses.Count() || Houses[index] == NULL || Houses[index] == PlayerPtr) {
+			DebugString("AUTOTEST alliance %s: no such house other than the player\n", step.Argument.c_str());
+			return;
+		}
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALLY, index));
+		DebugString("AUTOTEST alliance %s %s queued\n", step.Argument.c_str(), Houses[index]->Class->Name());
 		return;
 	}
 
@@ -3781,7 +3827,8 @@ bool AutoTest_Load(char const * filename)
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
 			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
 			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
-			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0) {
+			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
+			|| std::strcmp(command, "wintype") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);

@@ -1,0 +1,8 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP. Opens an all-chat line with Enter, types HI, and
+; sends it with Enter. The keys go through the game window (winkey, wintype), as a player's do.
+; Side B runs chat-side-b.txt and shows the line in its message list.
+1 log netsync side A: chat to all by the keyboard
+300 winkey 13
+310 wintype HI
+330 winkey 13
+400 command ScreenCapture

@@ -106,3 +106,8 @@
 13000 supers
 14000 fire SpyPlaneSpecial 89 41
 15500 dump
+; Chat at the end of the match: side B captures its message list after side A's all-chat line, and
+; again after side A's allies line. The alliance is formed on the same frame as side A's.
+15700 command ScreenCapture
+15800 alliance 0
+16010 command ScreenCapture

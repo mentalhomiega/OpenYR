@@ -1,0 +1,12 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP. Types a line longer than the edit box allows, sends it,
+; then opens a private line to the other player with F1 and sends PRIV. Side B runs chat-long-side-b.txt.
+1 log netsync side A: long all-chat line, then a private line
+300 winkey 13
+310 wintype THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG ABCDEFGHIJKLMNOPQRSTUVWXYZ
+320 wintype 0123456789 THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG ABCDEFGHIJKLMNO
+330 wintype PQRSTUVWXYZ 0123456789 THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG
+340 winkey 13
+400 winkey 112
+410 wintype PRIV
+420 winkey 13
+500 command ScreenCapture

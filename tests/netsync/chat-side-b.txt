@@ -1,0 +1,4 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP. Waits for the line side A sends with Enter and
+; captures the message list. Side A runs chat-side-a.txt.
+1 log netsync side B: waits for the chat line from side A
+500 command ScreenCapture
