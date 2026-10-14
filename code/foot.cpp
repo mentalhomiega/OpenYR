@@ -3037,12 +3037,9 @@ AbstractClass * FootClass::Greatest_Threat(ThreatType method, Coord const & coor
 		return(NULL);
 	}
 
-	if (!(method & (THREAT_INFANTRY|THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_TIBERIUM|THREAT_CIVILIANS|THREAT_POWER|THREAT_FACTORIES|THREAT_BASE_DEFENSE|THREAT_OCCUPIABLE|THREAT_TECH))) {
-		method = ThreatType(method | THREAT_GROUND);
-	}
-
 	/*
-	**	Perform the search for the target.
+	**	Perform the search for the target. A scan that names no kind finds nothing here; the
+	**	UnitClass and InfantryClass overrides add their weapons' kinds before this point.
 	*/
 	AbstractClass * target = BASECLASS::Greatest_Threat(method, coord, onlyenemy);
 
