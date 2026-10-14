@@ -1624,8 +1624,9 @@ void EventClass::Execute(void)
 
 			DebugString("Network timing event at frame %d from player %d: %u/%u at %u fps %s\n", Frame, ID, settings.FrameSendRate, settings.MaxAhead,
 				Data.Timing.DesiredFrameRate, result == NetTiming::ScheduleResult::Applied ? "applied" : "staged");
+			// The tier names rungs of the adaptive table, so gamemd's timing does not announce one.
 			NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
-			if (quality != old_quality) {
+			if (Session.NetworkTimingAdaptive && quality != old_quality) {
 				char const * format = Fetch_String(TXT_CONNECTION_QUALITY_STATUS);
 				char const * quality_name = Fetch_String(Network_Quality_Text_ID(quality));
 				if (format != NULL && quality_name != NULL && format[0] != '\0' && quality_name[0] != '\0') {

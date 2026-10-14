@@ -537,10 +537,15 @@ bool SessionClass::Is_Network_Timing_Player_Active(int id) const
 void SessionClass::Reset_Network_Timing(unsigned int frame)
 {
 	if (CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-		NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
-		FrameSendRate = initial.FrameSendRate;
-		MaxAhead = initial.MaxAhead;
+		// gamemd sets the start values from the game speed before the first frame, so the rate starts at the speed's rate.
+		NetTiming::TimingSettings const start = Network_Start_Timing();
+		FrameSendRate = start.FrameSendRate;
+		MaxAhead = start.MaxAhead;
+		if (!NetworkTimingAdaptive) {
+			DesiredFrameRate = static_cast<int>(NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+		}
 		MaxMaxAhead = MaxAhead;
+		NetworkPeerLag = 0;
 	}
 	NetworkTimingReports.Reset();
 	NetworkTimingPolicy.Reset(frame);
@@ -605,6 +610,31 @@ NetTiming::TimingEvaluation SessionClass::Evaluate_Network_Timing(NetTiming::Tim
 NetTiming::TimingSettings SessionClass::Network_Timing_Target(void) const
 {
 	return(PendingNetworkTiming ? PendingNetworkTiming->Timing.Plan.Settings : NetTiming::TimingSettings{FrameSendRate, MaxAhead});
+}
+
+
+/// <summary>The send period and look-ahead every machine starts a network game with.</summary>
+NetTiming::TimingSettings SessionClass::Network_Start_Timing(void) const
+{
+	if (NetworkTimingAdaptive) {
+		return(NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG));
+	}
+	return(NetTiming::Gamemd_Start_Settings(Options.GameSpeed, NetworkThroughTunnel));
+}
+
+
+/// <summary>
+/// The settings a connection's tier is named by: the target under the adaptive policy, and under gamemd's
+/// policy the rung the adaptive table would pick for the worst measured round trip at the desired rate.
+/// </summary>
+NetTiming::TimingSettings SessionClass::Network_Quality_Settings(void)
+{
+	if (NetworkTimingAdaptive || CommProtocol != COMM_PROTOCOL_MULTI_E_COMP) {
+		return(NetTiming::TimingSettings{FrameSendRate, MaxAhead});
+	}
+	NetTiming::TimingCensus const census = NetworkTimingReports.Inspect(Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
+	return(NetTiming::Select_Timing_Settings(census.WorstRoundTrip,
+		static_cast<unsigned int>(std::clamp(DesiredFrameRate, 1, 60)), false));
 }
 
 

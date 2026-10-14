@@ -525,6 +525,99 @@ namespace
 	}
 
 
+	// The values below follow gamemd's Queue_AI_Multiplayer and Game::MainLoop, worked by hand.
+	// Response times are ticks of 1/60 second; the send period is 10 at 31 FPS and up.
+	void Test_Gamemd_Timing(void)
+	{
+		using namespace NetTiming;
+
+		Expect_Equal("send period is 10 at 60 FPS", Gamemd_Frame_Send_Rate(60), 10u);
+		Expect_Equal("send period is 10 at 31 FPS", Gamemd_Frame_Send_Rate(31), 10u);
+		Expect_Equal("send period is 5 at 30 FPS", Gamemd_Frame_Send_Rate(30), 5u);
+		Expect_Equal("send period is 5 at 10 FPS", Gamemd_Frame_Send_Rate(10), 5u);
+
+		Expect("start settings at speed 0 are 10/40", Gamemd_Start_Settings(0, false) == (TimingSettings{10, 40}));
+		Expect("start settings at speed 1 are 10/40", Gamemd_Start_Settings(1, false) == (TimingSettings{10, 40}));
+		Expect("start settings at speed 2 are 5/30", Gamemd_Start_Settings(2, false) == (TimingSettings{5, 30}));
+		Expect("start settings at speed 3 are 5/20", Gamemd_Start_Settings(3, false) == (TimingSettings{5, 20}));
+		Expect("start settings at speed 5 are 5/20", Gamemd_Start_Settings(5, false) == (TimingSettings{5, 20}));
+		Expect("start settings at speed 6 are 5/10", Gamemd_Start_Settings(6, false) == (TimingSettings{5, 10}));
+		Expect("an unlisted speed starts at 5/10", Gamemd_Start_Settings(9, false) == (TimingSettings{5, 10}));
+		Expect("a tunnelled match adds 20 frames to the start look-ahead",
+			Gamemd_Start_Settings(0, true) == (TimingSettings{10, 60}) && Gamemd_Start_Settings(6, true) == (TimingSettings{5, 30}));
+
+		Expect_Equal("a 1000 ms wait at 60 FPS is 16 ms, truncated", Gamemd_Frame_Wait(60), 16u);
+		Expect_Equal("45 FPS waits 22 ms", Gamemd_Frame_Wait(45), 22u);
+		Expect_Equal("30 FPS waits 33 ms", Gamemd_Frame_Wait(30), 33u);
+		Expect_Equal("10 FPS waits 100 ms", Gamemd_Frame_Wait(10), 100u);
+		Expect_Equal("no rate means no wait", Gamemd_Frame_Wait(0), 0u);
+
+		Expect_Equal("83 ms is 4 ticks", Round_Trip_Ticks(83), 4u);
+		Expect_Equal("100 ms is 6 ticks", Round_Trip_Ticks(100), 6u);
+		Expect_Equal("16 ms rounds down to 0 ticks", Round_Trip_Ticks(16), 0u);
+		Expect_Equal("1000 ms is 60 ticks", Round_Trip_Ticks(1000), 60u);
+
+		// A 4-tick round trip at 60 FPS with stage 1: 4 + 2 = 6 ticks, 6 * 60 / 120 + 10 = 13 frames.
+		// The 13 frames round up to 20, and the minimum at a 10-frame send period is 30.
+		Expect_Equal("83 ms at 60 FPS, stage 1, gives 30 frames", Gamemd_Max_Ahead(4, 60, 10, 40, 1), 30u);
+		Expect_Equal("83 ms at 45 FPS, stage 1, gives 30 frames", Gamemd_Max_Ahead(4, 45, 10, 40, 1), 30u);
+		Expect_Equal("83 ms at 30 FPS, stage 1, gives 15 frames", Gamemd_Max_Ahead(4, 30, 5, 15, 1), 15u);
+		Expect_Equal("no measured round trip gives the minimum, 3 send periods", Gamemd_Max_Ahead(0, 60, 10, 40, 1), 30u);
+		Expect_Equal("a fall of the target is applied at once", Gamemd_Max_Ahead(0, 60, 10, 250, 1), 30u);
+
+		// 60 ticks at 60 FPS, stage 1: 90 * 60 / 120 + 10 = 55 frames, but the rise is limited to 10 per evaluation.
+		Expect_Equal("a rise from 30 is limited to one send period", Gamemd_Max_Ahead(60, 60, 10, 30, 1), 40u);
+		Expect_Equal("the next rise continues one send period further", Gamemd_Max_Ahead(60, 60, 10, 40, 1), 50u);
+		Expect_Equal("a target inside the rise limit is taken as it is", Gamemd_Max_Ahead(60, 60, 10, 50, 1), 60u);
+		Expect_Equal("stage 0 scales nothing and adds nothing", Gamemd_Max_Ahead(60, 60, 10, 30, 0), 30u);
+		Expect_Equal("stage 2 doubles the response and adds 20", Gamemd_Max_Ahead(60, 60, 10, 80, 2), 80u);
+		Expect_Equal("stage 3 triples the response and adds 30", Gamemd_Max_Ahead(60, 60, 10, 120, 3), 120u);
+
+		// A target that is not a send-period multiple rounds up: 16 frames at a 5-frame period is 20.
+		Expect_Equal("a 16-frame target rounds up to 20 at a 5-frame period", Gamemd_Max_Ahead(33, 60, 5, 20, 0), 20u);
+
+		// gamemd's ceiling is 250 rounded up to a send period, so 252 at a 3-frame period.
+		Expect_Equal("the ceiling is 250 at a 10-frame period", Gamemd_Max_Ahead(100000, 60, 10, 250, 1), 250u);
+		Expect_Equal("the ceiling is 250 at a 5-frame period", Gamemd_Max_Ahead(100000, 60, 5, 250, 1), 250u);
+		Expect_Equal("the ceiling is 252 at a 3-frame period", Gamemd_Max_Ahead(100000, 60, 3, 249, 1), 252u);
+
+		Expect("settings for 83 ms at 45 FPS are 10/30",
+			Gamemd_Timing_Settings(83, 45, 40) == (TimingSettings{10, 30}));
+		Expect("settings for 100 ms at 30 FPS are 5/15",
+			Gamemd_Timing_Settings(100, 30, 15) == (TimingSettings{5, 15}));
+
+		// Every output is a setting the rest of the code accepts. The rise limit comes before the
+		// round-up to a send period and before the three-period floor, so a rise can end at the
+		// floor or up to one send period short of two periods past the current look-ahead.
+		bool all_valid = true;
+		bool rise_limited = true;
+		for (Milliseconds rtt : {0u, 17u, 50u, 83u, 150u, 300u, 1000u, 5000u, 65534u}) {
+			for (unsigned int rate : {60u, 45u, 31u, 30u, 20u, 15u, 12u, 10u, 1u}) {
+				for (unsigned int current : {10u, 15u, 20u, 30u, 40u, 60u, 120u, 250u}) {
+					TimingSettings const next = Gamemd_Timing_Settings(rtt, rate, current);
+					all_valid = all_valid && Timing_Settings_Are_Valid(next);
+					if (next.MaxAhead > current) {
+						unsigned int const bound = std::max(current + 2 * next.FrameSendRate, 3 * next.FrameSendRate);
+						rise_limited = rise_limited && next.MaxAhead <= bound;
+					}
+				}
+			}
+		}
+		Expect("every gamemd setting is valid", all_valid);
+		Expect("a gamemd rise stays within one send period of the alignment, or at the floor", rise_limited);
+
+		Expect_Equal("no local pacing below look-ahead 31", Gamemd_Local_Pacing(30, 100), 0u);
+		Expect_Equal("no local pacing without a lagging peer", Gamemd_Local_Pacing(40, 0), 0u);
+		Expect_Equal("a lag short of a quarter adds nothing", Gamemd_Local_Pacing(40, 9), 0u);
+		Expect_Equal("a lag of 10 at look-ahead 40 adds one step", Gamemd_Local_Pacing(40, 10), 10u);
+		Expect_Equal("a lag of 20 at look-ahead 40 adds two steps", Gamemd_Local_Pacing(40, 20), 20u);
+		Expect_Equal("a lag of 30 at look-ahead 40 adds three steps", Gamemd_Local_Pacing(40, 30), 30u);
+		Expect_Equal("look-ahead 31 steps at 7, 15 and 23", Gamemd_Local_Pacing(31, 7), 10u);
+		Expect_Equal("look-ahead 31 gives two steps at 15", Gamemd_Local_Pacing(31, 15), 20u);
+		Expect_Equal("look-ahead 31 gives three steps at 23", Gamemd_Local_Pacing(31, 23), 30u);
+	}
+
+
 	void Test_Census(void)
 	{
 		using namespace NetTiming;
@@ -1351,6 +1444,7 @@ int main(void)
 	Test_Solo_Game_Speed_Frame_Rate();
 	Test_Frame_Pacer();
 	Test_Speed_Reaches_Frame_Rate();
+	Test_Gamemd_Timing();
 	Test_Census();
 	Test_Rungs();
 	Test_Connection_Quality();

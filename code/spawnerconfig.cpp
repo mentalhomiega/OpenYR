@@ -285,7 +285,7 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 
 	crc(AutoSurrender);
 
-	// ConnTimeout and ReconnectTimeout are each machine's own, so they are left out on purpose.
+	// ConnTimeout, ReconnectTimeout and TimingPolicy are each machine's own, so they are left out on purpose.
 
 	for (bool flag : GlobalFlags) {
 		crc(flag);
@@ -530,6 +530,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 
 	ConnTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ConnTimeout", ConnTimeout));
 	ReconnectTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout));
+	AdaptiveTiming = Read_Text(ini, SETTINGS, "TimingPolicy", "") == "Adaptive";
 
 	QuickMatch = Spawn_Bool(ini, SETTINGS, "QuickMatch", QuickMatch);
 	SkipScoreScreen = Spawn_Bool(ini, SETTINGS, "SkipScoreScreen", SkipScoreScreen);

@@ -259,6 +259,26 @@ int main(void)
 	}
 
 	/*
+	 * Only TimingPolicy=Adaptive selects the rung table. Each machine reads its own choice, so the
+	 * choice stays out of the identity.
+	 */
+	{
+		char const adaptive[] =
+			"[Settings]\n"
+			"TimingPolicy=Adaptive\n";
+		char const gamemd[] =
+			"[Settings]\n"
+			"TimingPolicy=GameMD\n";
+		SpawnerConfigClass const adaptive_config = Read(adaptive, sizeof(adaptive) - 1);
+		SpawnerConfigClass const gamemd_config = Read(gamemd, sizeof(gamemd) - 1);
+
+		Check(adaptive_config.AdaptiveTiming, "TimingPolicy=Adaptive selects the adaptive rung table");
+		Check(!gamemd_config.AdaptiveTiming, "TimingPolicy=GameMD keeps gamemd's timing");
+		Check(adaptive_config.Session_Identity_CRC() == gamemd_config.Session_Identity_CRC(),
+			"the timing policy is left out of the session identity");
+	}
+
+	/*
 	 * A departing player's base is destroyed unless the file asks for the computer to take it.
 	 */
 	{

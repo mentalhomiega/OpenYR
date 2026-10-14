@@ -92,7 +92,7 @@ void UI_Game_Options_State(UIGameOptionsState & state)
 	}
 	state.Speed = (OptionsClass::MAX_SPEED_SETTING - 1) - Options.GameSpeed;
 
-	NetTiming::TimingSettings const settings{Session.FrameSendRate, Session.MaxAhead};
+	NetTiming::TimingSettings const settings = Session.Network_Quality_Settings();
 	NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
 	unsigned int const rung = (settings.FrameSendRate >= NetTiming::MINIMUM_TIMING_RUNG
 		&& settings.FrameSendRate <= NetTiming::MAXIMUM_TIMING_RUNG)

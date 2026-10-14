@@ -332,7 +332,16 @@ bool Main_Loop(void)
 	**	Setup the timer so that the Main_Loop function processes at the correct rate.
 	*/
 	static NetTiming::FramePacer pacer;
-	FrameTimer = pacer.Next_Wait(Target_Frame_Rate());
+	if ((Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) && !Session.NetworkTimingAdaptive) {
+		// gamemd arms each network frame for 1000 / rate whole milliseconds. Online games (mode 4) add 10 ms per pacing threshold.
+		NetTiming::Milliseconds wait = NetTiming::Gamemd_Frame_Wait(Target_Frame_Rate());
+		if (Session.Type == GAME_INTERNET) {
+			wait += NetTiming::Gamemd_Local_Pacing(Session.MaxAhead, Session.NetworkPeerLag);
+		}
+		FrameTimer = wait;
+	} else {
+		FrameTimer = pacer.Next_Wait(Target_Frame_Rate());
+	}
 
 	/*
 	**	Update the display, unless we're inside a dialog.

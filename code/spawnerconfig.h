@@ -133,6 +133,9 @@ class SpawnerConfigClass
 		static constexpr int TIMEOUT_MAX = 36000;
 		int ConnTimeout = 3600;
 		int ReconnectTimeout = 2400;
+		// TimingPolicy=Adaptive selects the adaptive rung table. Any other value, and the default, plays
+		// gamemd's timing. Each machine's own, like the timeouts.
+		bool AdaptiveTiming = false;
 
 		// A debugging aid that logs the frame check value each frame. It does not change the match,
 		// so it stays out of the session identity.

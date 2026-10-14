@@ -169,6 +169,30 @@ namespace NetTiming
 	};
 	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps);
 
+	// gamemd's online timing, which the default policy follows. Response times are in ticks of
+	// 1/60 second, as gamemd's IPX response time reports them.
+	constexpr unsigned int NETWORK_TICKS_PER_SECOND = 60;
+	constexpr unsigned int GAMEMD_EVALUATION_INTERVAL = 256;
+	constexpr unsigned int GAMEMD_LATENCY_STAGE = 1;
+	constexpr unsigned int GAMEMD_PACING_MIN_MAX_AHEAD = 31;
+	constexpr Milliseconds GAMEMD_PACING_STEP = 10;
+
+	// Frame-send period for a frame rate: 10 at 31 frames per second and up, otherwise 5.
+	unsigned int Gamemd_Frame_Send_Rate(unsigned int frame_rate);
+	// Frame-send period and look-ahead at game start, from the game speed. A tunnelled match adds 20.
+	TimingSettings Gamemd_Start_Settings(int game_speed, bool through_tunnel);
+	// Look-ahead for a response time in ticks; the current look-ahead is the rise limit.
+	unsigned int Gamemd_Max_Ahead(unsigned int response_ticks, unsigned int frame_rate, unsigned int frame_send_rate,
+		unsigned int current_max_ahead, unsigned int latency_stage = GAMEMD_LATENCY_STAGE);
+	// The settings a master sends for the worst round trip at the desired frame rate.
+	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead);
+	// Whole milliseconds a frame is armed for. gamemd truncates 1000 / rate and does not spread the remainder.
+	Milliseconds Gamemd_Frame_Wait(unsigned int rate);
+	// Extra milliseconds a frame waits for a peer that lags by lag_frames, at look-ahead 31 and up.
+	Milliseconds Gamemd_Local_Pacing(unsigned int max_ahead, unsigned int lag_frames);
+	// Round trip in whole ticks, as gamemd's response time counts it.
+	unsigned int Round_Trip_Ticks(Milliseconds round_trip);
+
 	struct TimingEvaluation {
 		TimingSettings Settings;
 		unsigned int Rung = INITIAL_TIMING_RUNG;

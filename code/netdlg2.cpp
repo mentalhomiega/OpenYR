@@ -983,7 +983,7 @@ bool Net2Remote_Connect(void)
 			PregameSetup();
 
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
 				Session.FrameSendRate = initial.FrameSendRate;
 				Session.MaxAhead = initial.MaxAhead;
 			} else {
@@ -1007,7 +1007,7 @@ bool Net2Remote_Connect(void)
 			PregameSetup();
 
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
 				Session.FrameSendRate = initial.FrameSendRate;
 				Session.MaxAhead = initial.MaxAhead;
 			} else {
@@ -2088,7 +2088,7 @@ static void Get_Join_Responses(void)
 						continue;
 					}
 
-					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+					NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
 					NetTiming::TimingSettings const received{initial.FrameSendRate, static_cast<unsigned int>(max_ahead)};
 					if (!NetTiming::Timing_Settings_Are_Valid(received) || received != initial) {
 						continue;

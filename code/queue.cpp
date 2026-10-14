@@ -941,8 +941,12 @@ static void Queue_AI_Multiplayer(void)
 	}
 
 	int const timing_master = Session.Master_Player_ID();
+	// gamemd evaluates on absolute frames that are multiples of 256; the adaptive policy counts from its own origin.
+	bool const evaluation_due = Session.NetworkTimingAdaptive
+		? NetTiming::Evaluation_Is_Due(network_timing_frame)
+		: Frame % static_cast<int>(NetTiming::GAMEMD_EVALUATION_INTERVAL) == 0;
 	if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP && PlayerPtr != NULL && PlayerPtr->HeapID == timing_master
-		&& Frame > 0 && NetTiming::Evaluation_Is_Due(network_timing_frame)) {
+		&& Frame > 0 && evaluation_due) {
 		Generate_Real_Timing_Event();
 	}
 
@@ -1577,6 +1581,50 @@ static Rect Stall_Marker_Rect(int connection, int offset, int width)
 }
 
 
+/// <summary>Queues a timing event that every machine applies on the frame it executes.</summary>
+static void Queue_Timing_Event(NetTiming::TimingSettings settings, unsigned int desired_frame_rate)
+{
+	EventClass event;
+	memset(&event, 0, sizeof(event));
+	event.Type = EventClass::TIMING;
+	event.Data.Timing.DesiredFrameRate = desired_frame_rate;
+	event.Data.Timing.MaxAhead = settings.MaxAhead;
+	event.Data.Timing.FrameSendRate = settings.FrameSendRate;
+	OutList.push_back(event);
+}
+
+
+/// <summary>
+/// Queues gamemd's timing for the census. The master evaluates on frames that are multiples of 256.
+/// A seated player without a fresh process report stops the evaluation, as gamemd's Queue_AI does.
+/// </summary>
+static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census, unsigned int frame)
+{
+	if (!census.ProcessComplete) {
+		return;
+	}
+
+	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
+		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+	NetTiming::TimingSettings const current = Session.Network_Timing_Target();
+	// A round trip that no connection has measured in 512 frames is treated as the slowest link, as the adaptive policy does.
+	NetTiming::TimingSettings const settings = census.RequiresConservativeTiming
+		? NetTiming::TimingSettings{NetTiming::MAXIMUM_TIMING_RUNG, NetTiming::MAXIMUM_MAX_AHEAD}
+		: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead);
+
+	if (Debug_SyncLog) {
+		DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
+			frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
+			(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, settings.FrameSendRate, settings.MaxAhead,
+			(int)(settings != current || desired_frame_rate != static_cast<unsigned int>(Session.DesiredFrameRate)));
+	}
+	if (settings == current && desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate)) {
+		return;
+	}
+	Queue_Timing_Event(settings, desired_frame_rate);
+}
+
+
 /// <summary>Queues timing selected from the synchronized report census.</summary>
 static void Generate_Real_Timing_Event(void)
 {
@@ -1592,6 +1640,10 @@ static void Generate_Real_Timing_Event(void)
 	Session.Prepare_Network_Timing_Master(master_id, frame);
 
 	NetTiming::TimingCensus const census = Session.Network_Timing_Census(frame);
+	if (!Session.NetworkTimingAdaptive) {
+		Generate_Gamemd_Timing_Event(census, frame);
+		return;
+	}
 	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
 		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
@@ -1613,14 +1665,7 @@ static void Generate_Real_Timing_Event(void)
 		&& desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate))) {
 		return;
 	}
-
-	EventClass event;
-	memset(&event, 0, sizeof(event));
-	event.Type = EventClass::TIMING;
-	event.Data.Timing.DesiredFrameRate = desired_frame_rate;
-	event.Data.Timing.MaxAhead = evaluation.Settings.MaxAhead;
-	event.Data.Timing.FrameSendRate = evaluation.Settings.FrameSendRate;
-	OutList.push_back(event);
+	Queue_Timing_Event(evaluation.Settings, desired_frame_rate);
 }
 
 
@@ -2078,6 +2123,10 @@ static int Can_Advance(ConnManClass *net, int max_ahead, FrameSyncStruct *their,
 			*frame_stall = i;
 		}
 	}
+
+	// Local pacing reads how far the most-behind connected peer trails this machine.
+	Session.NetworkPeerLag = *frame_stall >= 0 && their_oldest_frame < Frame
+		? static_cast<unsigned int>(Frame - their_oldest_frame) : 0u;
 
 	//------------------------------------------------------------------------
 	// I can advance to the next frame IF:

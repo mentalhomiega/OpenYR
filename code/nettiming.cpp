@@ -447,6 +447,120 @@ namespace NetTiming
 	}
 
 
+	/// <summary>The frame-send period gamemd uses for a frame rate: 10 at 31 frames per second and up, else 5.</summary>
+	unsigned int Gamemd_Frame_Send_Rate(unsigned int frame_rate)
+	{
+		return(frame_rate >= GAMEMD_PACING_MIN_MAX_AHEAD ? 10u : 5u);
+	}
+
+
+	/// <summary>Returns gamemd's send period and look-ahead for a game speed, from its game-start table.</summary>
+	TimingSettings Gamemd_Start_Settings(int game_speed, bool through_tunnel)
+	{
+		unsigned int frame_send_rate = 5;
+		unsigned int max_ahead = 20;
+		switch (game_speed) {
+			case 0:
+			case 1:
+				frame_send_rate = 10;
+				max_ahead = 40;
+				break;
+			case 2:
+				max_ahead = 30;
+				break;
+			case 3:
+			case 4:
+			case 5:
+				break;
+			default:
+				max_ahead = 10;
+				break;
+		}
+		if (through_tunnel) {
+			max_ahead += 20;
+		}
+		return(TimingSettings{frame_send_rate, max_ahead});
+	}
+
+
+	/// <summary>Computes gamemd's look-ahead: a one-way flight in frames plus a stage add-on, rounded to send periods.</summary>
+	unsigned int Gamemd_Max_Ahead(unsigned int response_ticks, unsigned int frame_rate, unsigned int frame_send_rate,
+		unsigned int current_max_ahead, unsigned int latency_stage)
+	{
+		frame_send_rate = std::max(frame_send_rate, 1u);
+		std::uint64_t response = response_ticks;
+		std::uint64_t add_on = 0;
+		// The stage scales the response time before the frame count and adds frames after it.
+		if (response != 0) {
+			switch (latency_stage) {
+				case 1: response += response / 2; add_on = 10; break;
+				case 2: response *= 2; add_on = 20; break;
+				case 3: response *= 3; add_on = 30; break;
+				default: break;
+			}
+		}
+
+		std::uint64_t target = response * frame_rate / (2 * NETWORK_TICKS_PER_SECOND) + add_on;
+		// A rise is limited to one send period per evaluation; a fall applies at once.
+		if (current_max_ahead < target && current_max_ahead + frame_send_rate <= target) {
+			target = current_max_ahead + frame_send_rate;
+		}
+
+		std::uint64_t aligned = Divide_Round_Up(target, frame_send_rate) * frame_send_rate;
+		aligned = std::max<std::uint64_t>(aligned, 3ull * frame_send_rate);
+		std::uint64_t const ceiling = Divide_Round_Up(MAXIMUM_MAX_AHEAD, frame_send_rate) * frame_send_rate;
+		if (ceiling <= aligned) {
+			aligned = ceiling;
+		}
+		return(static_cast<unsigned int>(aligned));
+	}
+
+
+	/// <summary>Settings for the worst round trip at the desired frame rate, under gamemd's rules.</summary>
+	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead)
+	{
+		unsigned int const frame_send_rate = Gamemd_Frame_Send_Rate(frame_rate);
+		unsigned int const max_ahead = Gamemd_Max_Ahead(Round_Trip_Ticks(worst_round_trip), frame_rate, frame_send_rate,
+			current_max_ahead, GAMEMD_LATENCY_STAGE);
+		return(TimingSettings{frame_send_rate, max_ahead});
+	}
+
+
+	/// <summary>Whole milliseconds per frame, truncated as gamemd does; zero means no limit.</summary>
+	Milliseconds Gamemd_Frame_Wait(unsigned int rate)
+	{
+		return(rate == 0 ? 0 : static_cast<Milliseconds>(1000 / rate));
+	}
+
+
+	/// <summary>Adds 10 ms for each of look-ahead / 4, / 2 and 3 / 4 that a peer's lag reaches; a zero lag adds nothing.</summary>
+	Milliseconds Gamemd_Local_Pacing(unsigned int max_ahead, unsigned int lag_frames)
+	{
+		if (lag_frames == 0 || max_ahead < GAMEMD_PACING_MIN_MAX_AHEAD) {
+			return(0);
+		}
+
+		Milliseconds extra = 0;
+		if (max_ahead / 4 <= lag_frames) {
+			extra += GAMEMD_PACING_STEP;
+		}
+		if (max_ahead / 2 <= lag_frames) {
+			extra += GAMEMD_PACING_STEP;
+		}
+		if ((3 * max_ahead) / 4 <= lag_frames) {
+			extra += GAMEMD_PACING_STEP;
+		}
+		return(extra);
+	}
+
+
+	/// <summary>Converts a round trip in milliseconds to whole ticks of 1/60 second, rounding down.</summary>
+	unsigned int Round_Trip_Ticks(Milliseconds round_trip)
+	{
+		return(static_cast<unsigned int>((static_cast<std::uint64_t>(round_trip) * NETWORK_TICKS_PER_SECOND) / 1000));
+	}
+
+
 	/// <summary>Restores the initial rung and anchors the evaluation cadence to a frame.</summary>
 	void BalancedTimingPolicy::Reset(std::uint32_t frame)
 	{

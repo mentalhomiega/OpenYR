@@ -544,6 +544,8 @@ class SessionClass
 		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
 		NetTiming::TimingEvaluation Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame);
 		NetTiming::TimingSettings Network_Timing_Target(void) const;
+		NetTiming::TimingSettings Network_Start_Timing(void) const;
+		NetTiming::TimingSettings Network_Quality_Settings(void);
 		void Prepare_Network_Timing_Master(int master_id, unsigned int frame);
 		void Apply_Network_Response_Time(unsigned int max_ahead, unsigned int event_frame);
 		NetTiming::ScheduleResult Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame);
@@ -633,6 +635,12 @@ class SessionClass
 		NetTiming::BalancedTimingPolicy NetworkTimingPolicy;
 		std::optional<NetworkTimingTransition> PendingNetworkTiming;
 		int NetworkTimingPolicyOwner;
+		// False uses gamemd's timing; true keeps the adaptive rung table (the spawner's TimingPolicy=Adaptive).
+		bool NetworkTimingAdaptive = false;
+		// Set when the match runs through a tunnel. gamemd adds 20 to the start look-ahead then.
+		bool NetworkThroughTunnel = false;
+		// Frames the most-behind peer was last heard at, behind this machine. Drives the local pacing.
+		unsigned int NetworkPeerLag = 0;
 
 		// How long this machine waits on another, in game ticks. Each machine keeps its own: the
 		// waits decide when this machine gives up, never what the match computes.

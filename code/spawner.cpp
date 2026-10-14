@@ -354,6 +354,10 @@ static void Spawner_Bind_Scenario(void)
 /// <returns>bool; Is the network ready to carry the match?</returns>
 static bool Spawner_Wire_Network(void)
 {
+	// Create_Connections reads both to set the start timing, so they are set before it runs.
+	Session.NetworkTimingAdaptive = SpawnConfig.AdaptiveTiming;
+	Session.NetworkThroughTunnel = SpawnConfig.TunnelPort != 0;
+
 	if (SpawnConfig.TunnelPort != 0) {
 		Ipx.Configure_Tunnel(htons((unsigned short)SpawnConfig.TunnelId),
 			inet_addr(SpawnConfig.TunnelAddress.c_str()), htons((unsigned short)SpawnConfig.TunnelPort));
