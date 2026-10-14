@@ -20,6 +20,9 @@ The developer guides are split by subject:
 - [Network timing](NETCODE.md) — how a network game schedules orders, how the
   timing policy picks its values, how it compares with gamemd, and measured
   order delays.
+- [Multiplayer game modes](MULTIPLAYER_MODES.md) — the modes gamemd defines
+  in `MPModesMD.ini`, the virtual slots of its mode class, and what the port
+  applies from them.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution and review rules.
 Player and modder documentation is under [manual/](../manual/README.md). When a

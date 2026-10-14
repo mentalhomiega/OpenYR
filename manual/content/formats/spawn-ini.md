@@ -7,6 +7,8 @@ source_files:
 - code/spawnerconfig.cpp
 - code/spawnerconfig.h
 - code/spawner.cpp
+- code/mpmode.cpp
+- code/mpmodeparse.cpp
 filenames:
 - SPAWN.INI
 related:
@@ -106,6 +108,7 @@ These `[Settings]` keys set the rules of a skirmish or a game against other mach
 | `AIPlayers` | The number of computer players, from `0` to 8 minus the number of people | `0` |
 | `AIDifficulty` | The computer players' difficulty as the player sees it: `0` easy, `1` normal, `2` hard | `1` |
 | `AlliesAllowed` | `yes` or `no` | `no` |
+| `GameMode` | The index of a [multiplayer mode](#the-multiplayer-mode) in `MPModesMD.ini`: `1` Battle, `2` FreeForAll, `3` Cooperative, `4` UnholyAlliance, `5` Megawealth, `6` Duel, `7` MeatGrinder, `8` NavalWar, `9` TeamGame | `1` |
 | `HarvesterTruce` | `yes` or `no` | `no` |
 | `FogOfWar` | `yes` or `no` | `no` |
 | `MCVRedeploy` | `yes` or `no` | `yes` |
@@ -143,6 +146,18 @@ A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty sett
 A nonzero `Seed` makes a launch repeatable: launching the same file again places every house the same way, and builds the same map from a scenario file with [`RandomMap=yes`](/keys/randommap/). In a skirmish or a campaign mission, `0` draws a new seed at each launch. In a [game against other machines](#a-game-against-other-machines), every machine uses the seed exactly as written, `0` included, so write a new seed for each match.
 
 `HarvesterTruce` applies only in a game against other machines. A skirmish ignores it, as a skirmish set up from the menu does.
+
+## The multiplayer mode
+
+`GameMode` names a multiplayer mode by its index in the game's `MPModesMD.ini`. A skirmish and a game against other machines take a mode; a campaign mission does not. A resumed game takes the mode from the file, because the save does not record one.
+
+The mode changes these parts of the match:
+
+- A mode whose rules forbid alliances turns `AlliesAllowed` off. FreeForAll and Cooperative forbid them.
+- `UnholyAlliance` turns `Bases` on, whatever the file says, and gives each house every base unit the rules list, not only its own.
+- In `Cooperative`, when the last house still alive is a person, the local player wins even if the local player was defeated.
+
+Battle, Megawealth, Duel, MeatGrinder, NavalWar and TeamGame add none of these changes.
 
 ## Automatic saves
 
@@ -307,6 +322,8 @@ A game against other machines, new or resumed, is also refused when:
 - through a tunnel, `[Tunnel] Port` is negative or above `65535`, or `[Tunnel] Ip` is not a dotted IPv4 address other than `0.0.0.0`;
 - through a tunnel, `[Settings] Port` or another person's `Port` is `0` or outside `-65535` to `65535`;
 - the network cannot be opened.
+
+A new skirmish or game against other machines is also refused when `MPModesMD.ini` cannot be read, or when `GameMode` names no mode in it.
 
 ## What the game does not take from a launch file
 
