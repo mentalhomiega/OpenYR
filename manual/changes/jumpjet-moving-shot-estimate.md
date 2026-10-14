@@ -6,6 +6,14 @@ targets:
 - type: key
   id: JumpJet
   effect: changed
+- type: key
+  id: JumpJet
+  effect: added
+  scope: aircrafttype
+- type: key
+  id: JumpJet
+  effect: removed
+  scope: infantrytype
 credit:
 - MentalHomiega
 ---

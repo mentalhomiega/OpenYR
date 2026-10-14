@@ -20802,7 +20802,7 @@ Jellyfish:
 JumpJet:
   key: JumpJet
   scopes:
-  - applies_to: *id013
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -20811,11 +20811,11 @@ JumpJet:
     status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: InfantryTypeClass
+      declared_in: TechnoTypeClass
       member: IsJumpJet
-      source: code/infatype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: InfantryTypeClass
+    level: TechnoTypeClass
 JumpjetAccel:
   key: JumpjetAccel
   scopes:
@@ -40433,6 +40433,23 @@ V3Warhead:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+VHPScan:
+  key: VHPScan
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VShift:
   key: VShift
   scopes:
