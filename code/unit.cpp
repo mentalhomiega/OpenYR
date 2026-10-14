@@ -574,7 +574,7 @@ void UnitClass::AI(void)
 	}
 
 	/*
-	 * As FootClass::EnterAsPassenger and RemovePassenger (0x4DE630, 0x4DE670): a gunner
+	 * As FootClass::EnterAsPassenger and RemoveFirstPassenger (0x4DE630, 0x4DE710): a gunner
 	 * vehicle takes the weapon its first passenger's IFVMode names, and returns to
 	 * position 0 once it is empty.
 	 */
@@ -1549,6 +1549,14 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 				FootClass * object = Cargo.Detach_Object();
 
 				if (object == NULL) break;		// How can this happen?
+
+				/*
+				**	The last passenger out of a gunner returns the vehicle's temporal and rearm state, as
+				**	gamemd's UnitClass::Destroy (0x737C90) does through FootClass::RemoveFirstPassenger (0x4DE710).
+				*/
+				if (Class->IsGunner && Cargo.How_Many() == 0) {
+					Remove_Gunner(object);
+				}
 
 				ScenarioInit++;
 				object->IsOnBridge = IsOnBridge;

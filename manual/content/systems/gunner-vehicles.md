@@ -57,7 +57,7 @@ Weapons are counted from `0` here, so weapon `0` is [`Weapon1`](/keys/weapon1/) 
 
 ## Temporal and rearm
 
-A temporal weapon that the first passenger holds moves to the vehicle when that passenger boards. When the last passenger leaves by unloading, the temporal moves to that passenger, and if it holds a target, the temporal lets go of it. A rearm restarts only when a temporal moves with it.
+A temporal weapon that the first passenger holds moves to the vehicle when that passenger boards. When the last passenger leaves by unloading, or is put out when the vehicle is destroyed, the temporal moves to that passenger, and if it holds a target, the temporal lets go of it. This applies to a passenger that cannot be placed and is removed as well. A rearm restarts only when a temporal moves with it. When a vehicle is removed from the game rather than destroyed, its temporal goes with it and no passenger receives it.
 
 - A passenger that boards while its rearm is still running restarts the vehicle's rearm on weapon `7` and adds one to the vehicle's burst count.
 - A vehicle whose rearm is still running when its last passenger leaves restarts that passenger's rearm on weapon `0` and adds one to the passenger's burst count.
