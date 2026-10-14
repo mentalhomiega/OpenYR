@@ -1,0 +1,26 @@
+; Experience for a garrison's kill. A Battle Bunker (NABNKR) at 58,44 holds three of the player's soldiers, entered in
+; the order E1 at 52,40, 52,41, 52,42. A computer E1 is spawned at 63,44 and hit with 396 raw points by the bunker. The AP
+; warhead scales that to 99, which leaves the E1 with 26 of its strength, so the bunker needs more than one shot.
+; TechnoClass::Fire (0x6FF06E) moves FiringOccupantIndex on after each shot is placed, and RegisterDestruction (0x702D40)
+; reads Occupants[FiringOccupantIndex] when the death is registered, so the experience goes to the occupant whose turn is
+; next after the killing shot, not to the soldier that fired it.
+; Expected: the garrison lines show the firing value 0 at frames 84 and 120, before any shot. The bunker then fires twice
+; and the firing value reads 2 at frame 150. The E1 at 52,42 shows experience of about 0.333333 at frame 152, and the E1 at
+; 52,40 and 52,41 show zero. The enemy E1 gives 200 points to the player.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script E:\Claude ra2 decomp\src-agent17\tests\autotest\garrison-kill-credit.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   garrison|AUTOTEST   veterancy|AUTOTEST   hit|AUTOTEST spawn|Exception"
+30 reveal
+40 own NABNKR 58 44
+50 own E1 52 40
+51 own E1 52 41
+52 own E1 52 42
+60 occupy E1 58 44
+61 occupy E1 58 44
+62 occupy E1 58 44
+70 garrisons
+80 spawn E1 63 44
+81 hit E1:AP@NABNKR 396
+84 garrisons
+120 garrisons
+150 garrisons
+152 veterancy E1
+160 quit

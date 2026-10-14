@@ -6806,7 +6806,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 			value *= 3;
 		}
 
-		// The experience goes to the object that fired, or to the transport, launcher or occupant it fired through.
+		// The experience goes to the object that fired, or to the transport or launcher it fired through. A garrison gives it to the occupant whose turn is next, since each shot moves the turn on when it is placed.
 		TechnoClass * credit = NULL;
 		if (killer->IsInOpenToppedTransport && killer->Transporter != NULL && killer->Transporter->TClass->IsTrainable) {
 			credit = killer->Transporter;

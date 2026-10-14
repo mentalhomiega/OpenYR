@@ -58,7 +58,7 @@ The kill goes to the object that deals the fatal damage, or to another object st
 - A unit inside an open-topped transport gives the kill to the transport, if the transport has [`Trainable=yes`](/keys/trainable/).
 - Otherwise the killing object itself earns it, if its type has `Trainable=yes`.
 - Otherwise an object with `MissileSpawn=yes`, such as a missile, gives the kill to the object that launched it, if that object has `Trainable=yes`.
-- Otherwise a structure with [`CanOccupyFire=yes`](/keys/canoccupyfire/) and infantry inside gives the kill to the occupant that fired.
+- Otherwise a structure with [`CanOccupyFire=yes`](/keys/canoccupyfire/) and infantry inside gives the kill to the occupant whose firing turn is next when the victim dies. Each shot moves the turn on when it is placed, so this is the occupant after the one that fired most recently, which is not necessarily the one that fired the killing shot.
 
 If none applies, no object earns experience from the kill. Score still updates, unless the victim's type has [`DontScore=yes`](/keys/dontscore/). Each kill adds `victim value / (killer cost * VeteranRatio)` to its experience. The victim value is its cost, doubled when the victim was a veteran and tripled when it was elite at the moment it died. The costs come from [`Cost`](/keys/cost/#scope-aircrafttype); [`Points`](/keys/points/) does not affect experience.
 
