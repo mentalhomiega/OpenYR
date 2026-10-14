@@ -2616,7 +2616,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		if (vehicle->Is_Disguised_As(House)) {
 			int const side = House->Class->Side;
 			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
-			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Sim_Random_Pick(0, 99) > percent) {
+			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
 				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}

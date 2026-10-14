@@ -315,7 +315,7 @@ void CaptureManagerClass::Decide_Unit_Fate(TechnoClass * unit) const
 		weights = &Rule->AICaptureWounded;
 	}
 
-	int const roll = Sim_Random_Pick(1, 100);
+	int const roll = Random_Pick(1, 100);
 	int decision = 0;
 	int sum = 0;
 	while (sum < roll) {

@@ -3093,7 +3093,7 @@ void UnitClass::Mirage_AI(void)
 		}
 	}
 	if (MirageType == NULL && Frame >= MirageBlockedUntil && Rule->DefaultMirageDisguises.Count() > 0) {
-		MirageType = Rule->DefaultMirageDisguises[Sim_Random_Pick(0, Rule->DefaultMirageDisguises.Count() - 1)];
+		MirageType = Rule->DefaultMirageDisguises[Random_Pick(0, Rule->DefaultMirageDisguises.Count() - 1)];
 		MirageCreationFrame = Frame;
 		Mark(MARK_CHANGE);
 	}
