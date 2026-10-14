@@ -50,6 +50,7 @@ class UIDisplayServiceClass
 		virtual void Set_System_Cursor(bool on) = 0;
 		virtual void Set_Classic_Menus(bool on) = 0;
 		virtual void Set_Modern_Interface(bool on) = 0;
+		virtual void Set_Sidebar_Rows(int rows) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
 		virtual void Set_Interface_Scale(float scale) = 0;
 		virtual void Set_Fullscreen(bool on) = 0;
@@ -84,6 +85,8 @@ struct UIDisplayState
 	int CursorScale = 0;
 	std::vector<UIDisplayChoice> Renderers;
 	int Renderer = 0;
+	std::vector<UIDisplayChoice> RowCounts;
+	int RowCount = 0;
 };
 
 
@@ -109,6 +112,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialFrameRate;
 		int InitialCursorScale;
 		int InitialRenderer;
+		int InitialRowCount;
 		bool InitialDebugMode;
 };
 

@@ -72,6 +72,7 @@
 #include "deploymentconfig.h"
 #include "dsurface.h"
 #include "globals.h"
+#include "hud.h"
 #include "init.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
@@ -196,6 +197,7 @@ OptionsClass::OptionsClass(void) :
 	IsSidebarOnRight(true),
 	ModernInterface(false),
 	IsModernInterfaceChosen(false),
+	SidebarRows(HUD_DEFAULT_ROWS),
 	DebugMode(false),
 	SidebarCameoText(false),
 	SidebarSorting(true),
@@ -575,6 +577,7 @@ void OptionsClass::Load_Interface_Style(void)
 	ConfigINI.Get_String("Options", "InterfaceStyle", "Classic", style, sizeof(style));
 	ModernInterface = (stricmp(style, "Modern") == 0);
 	IsModernInterfaceChosen = ModernInterface;
+	SidebarRows = ConfigINI.Get_Int("Options", "SidebarRows", HUD_DEFAULT_ROWS);
 	DebugString("Interface style is %s\n", ModernInterface ? "Modern" : "Classic");
 }
 
@@ -634,6 +637,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
+	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);

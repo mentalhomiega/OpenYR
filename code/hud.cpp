@@ -82,24 +82,22 @@ bool Point_Over_Map(Point2D const & point)
 }
 
 
-static int HudRows = 0;
+static int HudPreviewRows = 0;
 
 
-bool Set_Hud_Rows(int rows)
+void Hud_Rows_Preview(int rows)
 {
-	int const before = Hud_Layout().Rows;
-	HudRows = rows;
-	return(Hud_Layout().Rows != before);
+	HudPreviewRows = (rows > 0) ? rows : 0;
 }
 
 
-HudLayout Hud_Layout(void)
-{
-	int const object_width = SidebarClass::StripClass::OBJECT_WIDTH;
-	int const object_height = SidebarClass::StripClass::OBJECT_HEIGHT;
-	int const inner = HUD_PANEL_WIDTH - HUD_MARGIN * 2;
+namespace {
 
-	HudLayout layout {};
+// Lays out the part of the build panel above the cameo grid, which is the same for every row count.
+// Returns the y of the tabs, power bar and grid.
+int Upper_Layout(HudLayout & layout)
+{
+	int const inner = HUD_PANEL_WIDTH - HUD_MARGIN * 2;
 	int const buttons = 4;
 	int const options_gap = 12;
 	int const row = buttons * HUD_BUTTON_SIZE + (buttons - 1) * HUD_BUTTON_GAP + options_gap + HUD_BUTTON_SIZE;
@@ -111,22 +109,54 @@ HudLayout Hud_Layout(void)
 	int const half = (inner - 4) / 2;
 	layout.Credits = Rect(layout.Readouts.X, layout.Readouts.Y, half, layout.Readouts.Height);
 	layout.PowerReadout = Rect(layout.Readouts.X + layout.Readouts.Width - half, layout.Readouts.Y, half, layout.Readouts.Height);
+	return(layout.Readouts.Y + layout.Readouts.Height + 6);
+}
 
-	int const top = layout.Readouts.Y + layout.Readouts.Height + 6;
-	int const arrows = 26;
-	int const fit = (VisibleRect.Height - top - arrows - HUD_MARGIN) / object_height;
+}
+
+
+int Hud_Max_Rows(void)
+{
+	HudLayout upper {};
+	int const top = Upper_Layout(upper);
+	int const fit = (VisibleRect.Height - top - HUD_ARROWS_HEIGHT - HUD_MARGIN) / SidebarClass::StripClass::OBJECT_HEIGHT;
 	int const most = SidebarClass::StripClass::MAX_SLOTS / HUD_GRID_COLUMNS;
-	int const room = std::clamp(fit, 1, most);
-	layout.Rows = (HudRows > 0) ? std::clamp(HudRows, std::min(int(HUD_MIN_ROWS), room), room) : room;
+	return(std::clamp(fit, int(HUD_MIN_ROWS), most));
+}
 
-	layout.Power = Rect(HUD_MARGIN, top, 12, layout.Rows * object_height);
+
+int Hud_Rows(void)
+{
+	int const wanted = (HudPreviewRows > 0) ? HudPreviewRows : Options.SidebarRows;
+	return(std::clamp(wanted, int(HUD_MIN_ROWS), Hud_Max_Rows()));
+}
+
+
+HudLayout Hud_Layout_For_Rows(int rows)
+{
+	int const object_width = SidebarClass::StripClass::OBJECT_WIDTH;
+	int const object_height = SidebarClass::StripClass::OBJECT_HEIGHT;
+
+	HudLayout layout {};
+	int const top = Upper_Layout(layout);
+	layout.Rows = std::clamp(rows, int(HUD_MIN_ROWS), Hud_Max_Rows());
+
+	layout.Power = Rect(HUD_MARGIN, top, HUD_POWER_WIDTH, 0);
 	layout.Tabs = Rect(layout.Power.X + layout.Power.Width + 2, top, HUD_TAB_WIDTH, layout.Rows * object_height);
 	layout.Grid = Rect(layout.Tabs.X + layout.Tabs.Width + 2, top, HUD_GRID_COLUMNS * object_width, layout.Rows * object_height);
-	layout.Arrows = Rect(layout.Grid.X, layout.Grid.Y + layout.Grid.Height + 2, layout.Grid.Width, arrows - 2);
+	layout.Arrows = Rect(layout.Grid.X, layout.Grid.Y + layout.Grid.Height + 2, layout.Grid.Width, HUD_ARROWS_HEIGHT - 2);
 
-	int const height = std::min(int(VisibleRect.Height), layout.Arrows.Y + layout.Arrows.Height + HUD_MARGIN);
-	layout.Panel = Rect(VisibleRect.Width - HUD_PANEL_WIDTH, 0, HUD_PANEL_WIDTH, height);
+	// The panel ends under the arrows, and the power bar runs down its left side to the same edge.
+	int const bottom = layout.Arrows.Y + layout.Arrows.Height + HUD_MARGIN;
+	layout.Power.Height = bottom - HUD_MARGIN - top;
+	layout.Panel = Rect(VisibleRect.Width - HUD_PANEL_WIDTH, 0, HUD_PANEL_WIDTH, bottom);
 	return(layout);
+}
+
+
+HudLayout Hud_Layout(void)
+{
+	return(Hud_Layout_For_Rows(Hud_Rows()));
 }
 
 

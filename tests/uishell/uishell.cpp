@@ -919,6 +919,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_System_Cursor(bool on) override { Calls.push_back(on ? "system cursor on" : "system cursor off"); }
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
+		virtual void Set_Sidebar_Rows(int rows) override { Calls.push_back("sidebar rows " + std::to_string(rows)); }
 		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
@@ -3015,7 +3016,9 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("modern-interface"), "the interface style switch follows the menu style switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("debug-mode"), "the debug mode switch follows the interface style switch");
+		Check(focused("sidebar-rows"), "the sidebar rows drop-down follows the interface style switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("debug-mode"), "the debug mode switch follows the sidebar rows drop-down");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);

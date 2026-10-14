@@ -14,6 +14,7 @@
 #include "debugmode.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hud.h"
 #include "misc.h"
 #include "numparse.h"
 #include "options.h"
@@ -21,13 +22,16 @@
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uisettings.h"
+#include "ui/uisettingpreview.h"
 #include "ui/uiview.h"
 #include "sdl/sdlwindow.h"
 #include "video.h"
 #include "wwmouse.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <initializer_list>
+#include <string>
 
 
 namespace
@@ -66,6 +70,14 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		virtual void Set_Modern_Interface(bool on) override
 		{
 			Options.IsModernInterfaceChosen = on;
+		}
+
+		virtual void Set_Sidebar_Rows(int rows) override
+		{
+			// The saved rows are the shown rows now, so a preview ends with the save.
+			Options.SidebarRows = rows;
+			Hud_Rows_Preview(0);
+			Modern_Panel_Rows_Changed();
 		}
 
 		virtual void Set_Debug_Mode(bool on) override
@@ -155,6 +167,22 @@ int Fill_Choices(std::vector<UIDisplayChoice> & list, std::initializer_list<UIDi
 
 UIDisplayEngineServiceClass _Service;
 
+// Shows a Sidebar rows value in the modern build panel while the Display page has it picked. Reverting
+// shows the saved rows again.
+void Register_Setting_Previews(void)
+{
+	UISettingPreview rows;
+	rows.Preview = [](int value) {
+		Hud_Rows_Preview(value);
+		Modern_Panel_Rows_Changed();
+	};
+	rows.Revert = []() {
+		Hud_Rows_Preview(0);
+		Modern_Panel_Rows_Changed();
+	};
+	UI_Setting_Preview_Register("sidebar-rows", rows);
+}
+
 }
 
 
@@ -203,6 +231,16 @@ void UI_Display_State(UIDisplayState & state)
 		{BACKEND_RENDERER_VULKAN, "Vulkan"},
 		{BACKEND_RENDERER_OPENGL, "OpenGL"}
 	}, Options.Renderer, "%d");
+
+	// The rows the screen fits, from one up. The panel holds the saved count within them.
+	int const most = Hud_Max_Rows();
+	for (int rows = HUD_MIN_ROWS; rows <= most; rows++) {
+		UIDisplayChoice choice;
+		choice.Value = rows;
+		choice.Label = std::to_string(rows);
+		state.RowCounts.push_back(choice);
+	}
+	state.RowCount = std::clamp(Hud_Rows(), int(HUD_MIN_ROWS), most) - HUD_MIN_ROWS;
 
 	// Automatic, the usual steps, and whatever else the settings file has asked for.
 	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
@@ -261,6 +299,7 @@ std::optional<UIDisplayMode> UI_Display_Dialog(void)
 {
 	UIDisplayState state;
 	UI_Display_State(state);
+	Register_Setting_Previews();
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
 	UI_Settings_Join(presenter, UI_TAB_DISPLAY);
@@ -270,6 +309,9 @@ std::optional<UIDisplayMode> UI_Display_Dialog(void)
 		return(std::nullopt);
 	}
 	UI_Settings_Leave(presenter);
+	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		UI_Setting_Preview_Revert();
+	}
 
 	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
 		UIDisplayMode current;

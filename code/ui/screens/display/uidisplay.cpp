@@ -10,6 +10,7 @@
 #include "ui/screens/display/uidisplay.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uisettingpreview.h"
 
 #include <utility>
 
@@ -26,6 +27,7 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
+	InitialRowCount(State.RowCount),
 	InitialDebugMode(State.DebugMode)
 {
 }
@@ -87,6 +89,12 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "renderer") {
 		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
 
+	} else if (intent.Name == "sidebarrows") {
+		State.RowCount = Pick_Choice(State.RowCounts, intent.Value, InitialRowCount);
+		if (State.RowCount >= 0 && State.RowCount < (int)State.RowCounts.size()) {
+			UI_Setting_Preview_Show("sidebar-rows", State.RowCounts[State.RowCount].Value);
+		}
+
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
@@ -116,6 +124,10 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
 			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
 		}
+		if (State.RowCount >= 0 && State.RowCount < (int)State.RowCounts.size()) {
+			Service.Set_Sidebar_Rows(State.RowCounts[State.RowCount].Value);
+		}
+		UI_Setting_Preview_Commit();
 		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
 			Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
 			ScaleChanged = true;
@@ -199,6 +211,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
 			Model.DirtyVariable("renderer");
+			Model.DirtyVariable("rowcount");
 		}
 
 	protected:
@@ -247,7 +260,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("cursorscales", &state.CursorScales)
 				&& model.Bind("cursorscale", &state.CursorScale)
 				&& model.Bind("renderers", &state.Renderers)
-				&& model.Bind("renderer", &state.Renderer));
+				&& model.Bind("renderer", &state.Renderer)
+				&& model.Bind("rowcounts", &state.RowCounts)
+				&& model.Bind("rowcount", &state.RowCount));
 		}
 
 	private:

@@ -115,6 +115,9 @@ class OptionsClass {
 		// The interface style the settings file holds. A change takes effect when the game next starts.
 		bool IsModernInterfaceChosen;
 
+		// The cameo rows the modern build panel shows; the panel clamps it to what the screen fits.
+		int SidebarRows;
+
 		// Offers the tester debug cheats in single-player games; see debugmode.h.
 		bool DebugMode;
 

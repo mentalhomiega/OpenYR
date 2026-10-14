@@ -177,6 +177,10 @@ static ShapeSet const * HudIconSet = NULL;
 // Whether each classic tab is disabled, as it was last set in AI. A gadget does not expose its own state.
 static bool TabDisabled[SidebarClass::COLUMNS] = {};
 
+// The cameo slots of the shown strip that are in the map's button list. Changing the rows of the
+// modern build panel adds or removes the difference.
+static int Registered_Slots = 0;
+
 // Whether each classic strip's two scroll arrows are disabled, as they were last set in AI.
 static bool ArrowsDisabled[SidebarClass::COLUMNS] = {};
 
@@ -1798,7 +1802,8 @@ void SidebarClass::StripClass::Activate(void)
 	DownButton[ID].Zap();
 	Map.Add_A_Button(DownButton[ID]);
 
-	for (int index = 0; index < Map.Max_Visible(); index++) {
+	Registered_Slots = Map.Max_Visible();
+	for (int index = 0; index < Registered_Slots; index++) {
 		SelectButton[ID][index].Zap();
 		Map.Add_A_Button(SelectButton[ID][index]);
 	}
@@ -1824,7 +1829,7 @@ void SidebarClass::StripClass::Deactivate(void)
 {
 	Map.Remove_A_Button(UpButton[ID]);
 	Map.Remove_A_Button(DownButton[ID]);
-	for (int index = 0; index < Map.Max_Visible(); index++) {
+	for (int index = 0; index < Registered_Slots; index++) {
 		Map.Remove_A_Button(SelectButton[ID][index]);
 	}
 }
@@ -2007,18 +2012,13 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	**	If this is scroll button for this side strip, then scroll the strip as
 	**	indicated.
 	*/
-	// In the classic sidebar both arrows page the strip, as gamemd's do (SidebarClass::Update, 0x6A7780).
+	// Both arrows page the strip by a screenful, as the classic sidebar's do (SidebarClass::Update, 0x6A7780).
+	// The modern panel's screenful is its row count, so a click moves it by the rows it shows.
 	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
 		UpButton[ID].IsPressed = false;
 		if (Modern_Interface()) {
-			if ((input & KN_UNK) != 0) {
-				if (!Page(true)) {
-					Sound_Effect(Rule->ScoldSound);
-				}
-			} else {
-				if (!Scroll(true)) {
-					Sound_Effect(Rule->ScoldSound);
-				}
+			if (!Page(true)) {
+				Sound_Effect(Rule->ScoldSound);
 			}
 		} else if (Page(true)) {
 			Sound_Effect(Rule->GUITabSound);
@@ -2029,14 +2029,8 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	else if (key == KeyNumType(DownButton[ID].ID|KN_BUTTON)) {
 		DownButton[ID].IsPressed = false;
 		if (Modern_Interface()) {
-			if ((input & KN_UNK) != 0) {
-				if (!Page(false)) {
-					Sound_Effect(Rule->ScoldSound);
-				}
-			} else {
-				if (!Scroll(false)) {
-					Sound_Effect(Rule->ScoldSound);
-				}
+			if (!Page(false)) {
+				Sound_Effect(Rule->ScoldSound);
 			}
 		} else if (Page(false)) {
 			Sound_Effect(Rule->GUITabSound);
@@ -3415,8 +3409,9 @@ void SidebarClass::Flash_Ready_Tabs(void)
 
 
 /// <summary>
-/// Sizes the modern build panel's grid to the cameos of the shown tab, within the rows the screen
-/// allows, and moves the panel's buttons to match.
+/// Lays the modern build panel out again when the number of cameo slots it shows changes, such as
+/// after the Sidebar rows setting changes. The shown strip's buttons follow, and its scroll position
+/// is held within the cameos that remain.
 /// </summary>
 void SidebarClass::Fit_Panel_To_Strip(void)
 {
@@ -3424,13 +3419,14 @@ void SidebarClass::Fit_Panel_To_Strip(void)
 		return;
 	}
 
-	StripClass & strip = Column[ActiveTab];
-	int const before = Max_Visible();
-	if (!Set_Hud_Rows((strip.BuildableCount + HUD_GRID_COLUMNS - 1) / HUD_GRID_COLUMNS)) {
+	int const after = Max_Visible();
+	int const before = Registered_Slots;
+	if (after == before) {
 		return;
 	}
+	Registered_Slots = after;
 
-	int const after = Max_Visible();
+	StripClass & strip = Column[ActiveTab];
 	if (IsSidebarActive) {
 		for (int i = before; i < after; i++) {
 			StripClass::SelectButton[ActiveTab][i].Zap();
@@ -3449,6 +3445,22 @@ void SidebarClass::Fit_Panel_To_Strip(void)
 	IsToRedraw = true;
 	strip.Flag_To_Redraw();
 	Flag_To_Redraw(GS_REDRAW_ALL);
+}
+
+
+/// <summary>
+/// Lays the modern build panel out again after the rows it shows change, whether the setting was
+/// saved or is being previewed, and draws the screen at once. A settings page open over the game
+/// does not run the game's frames, so the screen would otherwise keep the old panel.
+/// </summary>
+void Modern_Panel_Rows_Changed(void)
+{
+	if (!GameActive || SidebarSurface == NULL || !Modern_Interface()) {
+		return;
+	}
+	Map.SidebarClass::Fit_Panel_To_Strip();
+	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	Map.Render();
 }
 
 

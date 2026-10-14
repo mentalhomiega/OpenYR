@@ -1,0 +1,5 @@
+; The modern build panel shown at the Sidebar rows setting, captured once the skirmish has started.
+; Run with -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarRows=4" (or 2) at the size wanted; the ScreenCapture line writes the picture.
+; Run from the repository root:
+;   scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/sidebar-rows.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarRows=4"
+60 command ScreenCapture

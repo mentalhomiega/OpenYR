@@ -1,0 +1,18 @@
+; In-game preview of the Sidebar rows setting: the Display page picks 2 rows, and the modern build panel shows them at once
+; while the page is open. Cancel then puts the saved 4 rows back. Run with -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarRows=4".
+; The ui shot lines write the window with the page open (as .tga in the Screenshots folder).
+60 options
+ui wait 5000
+ui press Game Controls
+ui wait 1500
+ui click tab-display
+ui wait 1500
+ui click sidebar-rows
+ui wait 800
+ui choose sidebar-rows|2
+ui wait 1500
+ui shot preview-rows-2
+ui wait 500
+ui press Cancel
+ui wait 1500
+ui shot cancel-rows-4

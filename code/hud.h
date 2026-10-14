@@ -49,8 +49,8 @@ struct HudLayout {
 	Rect Power;			// The power bar, beside the tabs.
 	Rect Tabs;			// The category tabs, one above the other.
 	Rect Grid;			// The cameo slots.
-	Rect Arrows;		// The cameo scroll buttons.
-	int Rows;
+	Rect Arrows;		// The cameo scroll buttons, directly under the grid.
+	int Rows;			// The cameo rows the grid shows.
 };
 
 enum HudEnums {
@@ -58,18 +58,37 @@ enum HudEnums {
 	HUD_MARGIN=6,
 	HUD_GRID_COLUMNS=3,
 	HUD_TAB_WIDTH=28,
-	HUD_MIN_ROWS=4,
+	HUD_MIN_ROWS=1,			// The fewest cameo rows the Sidebar rows setting can ask for.
+	HUD_DEFAULT_ROWS=4,		// The Sidebar rows setting's default, as OpenRA's sidebar shows.
+	HUD_ARROWS_HEIGHT=26,	// The scroll arrows' row, with the gap above it.
+	HUD_POWER_WIDTH=12,
 	HUD_TIP_PADDING=3,
 	HUD_BUTTON_SIZE=28,
 	HUD_BUTTON_GAP=4,
 	HUD_ICON_RADIUS=4		// The corner radius of the icons in the ui folder.
 };
 
+// The cameo rows the build panel can show at the current screen height: as many as fit above the
+// scroll arrows, at least HUD_MIN_ROWS and at most the grid's slots allow.
+int Hud_Max_Rows(void);
+
+// The cameo rows the build panel shows: the Sidebar rows setting, or the value being previewed, held
+// within Hud_Max_Rows.
+int Hud_Rows(void);
+
+// Shows this many rows in the build panel while the Display page previews them. Zero ends the preview
+// and goes back to the saved setting.
+void Hud_Rows_Preview(int rows);
+
+// The build panel laid out for the given number of cameo rows, held within Hud_Max_Rows. Everything
+// that follows the row count is computed here, so a change of rows needs no other constants.
+HudLayout Hud_Layout_For_Rows(int rows);
+
+// The build panel laid out for the rows the screen shows now.
 HudLayout Hud_Layout(void);
 
-// Asks for a build grid of this many rows, or of as many as fit for zero. The grid is never
-// shorter than HUD_MIN_ROWS or taller than the screen allows. Returns whether the layout changed.
-bool Set_Hud_Rows(int rows);
+// Lays the build panel out again after its row count changes, at once rather than on the next frame.
+void Modern_Panel_Rows_Changed(void);
 
 // Draws a panel frame in the player's side colours: a dark fill inside a bright border.
 void Draw_Hud_Frame(Surface & surface, Rect const & rect);

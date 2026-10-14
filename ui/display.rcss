@@ -59,7 +59,7 @@
 #modes
 {
 	margin-top: 2dp;
-	height: 179dp;
+	height: 150dp;
 }
 
 .row

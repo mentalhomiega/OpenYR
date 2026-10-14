@@ -12,6 +12,7 @@ opents_add_test(UIShell
         ui/uiinput.cpp
         ui/uishell.cpp
         ui/uireveal.cpp
+        ui/uisettingpreview.cpp
         utf8.cpp
         hsv.cpp
         modchoice.cpp
