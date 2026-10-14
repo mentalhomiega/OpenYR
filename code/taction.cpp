@@ -2858,7 +2858,7 @@ bool TActionClass::TAction_HOUSE_DESTROY_ALL(HouseClass * , ObjectClass * , Trig
 		return(false);
 	}
 
-	hptr->Blowup_All();
+	hptr->Destroy_All();
 	hptr->MPlayer_Defeated();
 	return(true);
 }
@@ -3049,7 +3049,7 @@ bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerCla
 		return(false);
 	}
 
-	hptr->Blowup(true, true, true);
+	hptr->Destroy_All();
 	return(true);
 }
 
@@ -3065,7 +3065,7 @@ bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , 
 		return(false);
 	}
 
-	hptr->Blowup(true, false, false);
+	hptr->Destroy_All_Buildings();
 	return(true);
 }
 
@@ -3081,7 +3081,7 @@ bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * ,
 		return(false);
 	}
 
-	hptr->Blowup(false, true, false);
+	hptr->Destroy_All_Non_Buildings_Non_Naval();
 	return(true);
 }
 
@@ -3097,7 +3097,7 @@ bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * 
 		return(false);
 	}
 
-	hptr->Blowup(false, false, true);
+	hptr->Destroy_All_Non_Buildings_Naval();
 	return(true);
 }
 

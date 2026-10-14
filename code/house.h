@@ -1155,11 +1155,13 @@ class HouseClass : public AbstractClass
 		*/
 		void Clobber_All(void);
 
-		/*
-		**	This routine blows up everything in this house.  Fun!
-		*/
-		void Blowup_All(void);
-		void Blowup(bool buildings, bool land, bool naval);
+		// Destroy every object this house originally owns that is still under its control (gamemd's DestroyAll, 0x4FC6D0).
+		void Destroy_All(void);
+
+		// The trigger actions' passes: buildings only, land units (non-naval, non-building), and naval units.
+		void Destroy_All_Buildings(void);
+		void Destroy_All_Non_Buildings_Non_Naval(void);
+		void Destroy_All_Non_Buildings_Naval(void);
 
 		/*
 		**	This routine gets called in multiplayer games when every unit, building,

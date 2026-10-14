@@ -3407,6 +3407,23 @@ HouseClass * TechnoClass::Owner_HouseClass(void) const
 }
 
 
+/// <summary>
+/// Returns the house this object was taken from by mind control, or its owner when no
+/// mind control holds it (TechnoClass::GetOriginalOwner, 0x70F820). A unit that has
+/// lost its controller's record returns NULL.
+/// </summary>
+HouseClass * TechnoClass::Original_Owner(void) const
+{
+	if (MindControlledBy != NULL) {
+		return(MindControlledBy->CaptureManager ? MindControlledBy->CaptureManager->Original_Owner_Of(this) : NULL);
+	}
+	if (MindControlledByHouse != NULL) {
+		return(OriginallyOwnedByHouse);
+	}
+	return(House);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Clicked_As_Target -- Sets the flash count for this techno object.              *
  *                                                                                             *

@@ -121,8 +121,11 @@
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
 **	houses					writes each house's money, power, spy effects, resource gatherers and powered unit centres
-**	defeat <house>			runs the defeat a house gets once it has nothing left, on that house: its forces are destroyed,
-**							then MPlayer_Defeated runs. The house is named as the waits name one; "player" is the local player
+**	defeat <house>			runs the defeat a house gets once it has nothing left, on that house: its objects are destroyed
+**							(HouseClass::Destroy_All), then MPlayer_Defeated runs. The house is named as the waits name one; "player" is the local player
+**	houseobjects <house>	writes the units, infantry, aircraft and buildings the house owns outside limbo, its objects in limbo,
+**							the objects it originally owns, and the living vehicles it owns
+**	shortgame <0|1>			sets the Short Game option on this copy, as the setup screen does
 **	observer				writes the local player's defeat, watching, whole-map and Session.ObiWan state, its owned objects,
 **							the houses still playing, its selection and the beacon and planning modes
 **	statics					writes how many sounds that Play Sound Effect At started are still going
@@ -3153,10 +3156,55 @@ void Run(StepType const & step)
 		if (house == NULL || house->IsDefeated) {
 			DebugString("AUTOTEST defeat %s: %s\n", step.Argument.c_str(), house == NULL ? "no such house" : "already defeated");
 		} else {
-			house->Blowup_All();
+			house->Destroy_All();
 			house->MPlayer_Defeated();
 			DebugString("AUTOTEST defeat %s: defeated frame %d, local %d\n", house->Class->Name(), Frame, (int)(house == PlayerPtr));
 		}
+	} else if (step.Command == "houseobjects") {
+		// houseobjects <house>: the objects the house owns, by kind, and the ones it originally owns.
+		HouseClass * house = Wait_House(step.Argument);
+		if (house == NULL) {
+			DebugString("AUTOTEST houseobjects %s: no such house\n", step.Argument.c_str());
+		} else {
+			int units = 0;
+			int infantry = 0;
+			int aircraft = 0;
+			int buildings = 0;
+			int limbo = 0;
+			int original = 0;
+			int living_units = 0;
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass * techno = Technos[index];
+				if (techno->Original_Owner() == house) {
+					original++;
+				}
+				if (techno->House != house) {
+					continue;
+				}
+				if (techno->IsInLimbo) {
+					limbo++;
+					continue;
+				}
+				switch (techno->RTTI) {
+					case RTTI_UNIT: units++; break;
+					case RTTI_INFANTRY: infantry++; break;
+					case RTTI_AIRCRAFT: aircraft++; break;
+					case RTTI_BUILDING: buildings++; break;
+					default: break;
+				}
+			}
+			for (int index = 0; index < Units.Count(); index++) {
+				if (Units[index]->House == house && Units[index]->IsActive) {
+					living_units++;
+				}
+			}
+			DebugString("AUTOTEST houseobjects %s frame %d: units %d infantry %d aircraft %d buildings %d limbo %d original %d living units %d defeated %d\n",
+				house->Class->Name(), Frame, units, infantry, aircraft, buildings, limbo, original, living_units, (int)house->IsDefeated);
+		}
+	} else if (step.Command == "shortgame") {
+		// shortgame <0|1>: the Short Game option on this copy.
+		Session.Options.ShortGame = std::atoi(step.Argument.c_str()) != 0;
+		DebugString("AUTOTEST shortgame %d frame %d\n", (int)Session.Options.ShortGame, Frame);
 	} else if (step.Command == "observer") {
 		// observer: the local player's defeat and observer state, what it owns and selects, and its beacon mode.
 		int owned = 0;

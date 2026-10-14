@@ -50,7 +50,7 @@
  *   HouseClass::Attacked -- Lets player know if base is under attack.                         *
  *   HouseClass::Available_Money -- Fetches the total credit worth of the house.               *
  *   HouseClass::Begin_Production -- Starts production of the specified object type.           *
- *   HouseClass::Blowup_All -- blows up everything                                             *
+ *   HouseClass::Destroy_All -- destroys every object the house still owns                    *
  *   HouseClass::Can_Build -- General purpose build legality checker.                          *
  *   HouseClass::Clobber_All -- removes all objects for this house                             *
  *   HouseClass::Computer_Paranoid -- Cause the computer players to becom paranoid.            *
@@ -1523,11 +1523,11 @@ void HouseClass::AI(void)
 	}
 
 	/*
-	**	Check to see if all objects of this house should be blown up.
+	**	Check to see if all objects of this house should be destroyed.
 	*/
 	if (IsToDie && BorrowedTime == 0) {
 		IsToDie = false;
-		Blowup_All();
+		Destroy_All();
 	}
 
 	/*
@@ -1743,7 +1743,7 @@ void HouseClass::AI(void)
 		}
 
 		if (defeated) {
-			Blowup_All();
+			Destroy_All();
 			MPlayer_Defeated();
 		}
 	}
@@ -3772,6 +3772,100 @@ bool HouseClass::Flag_Attach(UnitClass * object, bool set_home)
 }
 
 
+/// <summary>
+/// Removes a living vehicle from the game with no death sequence, as gamemd's FootClass::UnInit
+/// (0x4DE5D0) does. The vehicle frees the units it holds, drops its target locomotion and
+/// bomb, and kills its passengers before it is queued for deletion.
+/// </summary>
+static void Uninit_Vehicle(UnitClass * unit)
+{
+	if (unit->CaptureManager) {
+		unit->CaptureManager->Free_All();
+	}
+	if (unit->LocomotorTarget != NULL) {
+		unit->Release_Locomotor(true);
+	}
+	if (unit->BombOwner != NULL) {
+		unit->Disarm_Bomb();
+	}
+	unit->Kill_Cargo(NULL);
+	unit->Delete_Me();
+}
+
+
+/// <summary>
+/// The objects a destroy-all pass takes from a house. The defeat pass takes everything; each
+/// trigger action takes one kind.
+/// </summary>
+enum DestroyScope
+{
+	DESTROY_SCOPE_EVERYTHING,
+	DESTROY_SCOPE_BUILDINGS,
+	DESTROY_SCOPE_LAND,
+	DESTROY_SCOPE_NAVAL,
+};
+
+
+/// <summary>
+/// Does a destroy-all pass of the given scope take this techno from the house? The original
+/// owner decides, so a unit that another house's mind control holds still counts for the house
+/// it was taken from. Only the defeat pass takes objects in limbo (passengers and the like)
+/// and spares a unit that another house's mind control still holds, as gamemd's DestroyAll
+/// (0x4FC6D0) does.
+/// </summary>
+/// <returns>bool; Is the techno one of the house's objects this pass takes?</returns>
+static bool Is_Destroy_Target(TechnoClass * techno, HouseClass const * house, DestroyScope scope)
+{
+	if (techno->Original_Owner() != house) {
+		return(false);
+	}
+	bool const building = techno->RTTI == RTTI_BUILDING;
+
+	switch (scope) {
+		case DESTROY_SCOPE_EVERYTHING:
+			if (techno->House != house && techno->MindControlledBy != NULL && techno->MindControlledBy->CaptureManager
+				&& techno->MindControlledBy->CaptureManager->Holds(techno)) {
+				return(false);
+			}
+			return(true);
+
+		case DESTROY_SCOPE_BUILDINGS:
+			return(building && !techno->IsInLimbo);
+
+		case DESTROY_SCOPE_LAND:
+			return(!building && !techno->IsInLimbo && !techno->TClass->IsNaval);
+
+		case DESTROY_SCOPE_NAVAL:
+			return(!building && !techno->IsInLimbo && techno->TClass->IsNaval);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Hits every object of the house that the scope selects with one shot of its own strength from
+/// the C4 warhead, in the order of the technos list. A hit that leaves the object standing does
+/// not repeat in the same pass.
+/// </summary>
+static void Destroy_Selected(HouseClass * house, DestroyScope scope)
+{
+	TechnoClass * last = NULL;
+	int index = 0;
+
+	while (index < Technos.Count()) {
+		TechnoClass * techno = Technos[index];
+		if (techno == last || !Is_Destroy_Target(techno, house, scope)) {
+			index++;
+			continue;
+		}
+
+		last = techno;
+		int damage = techno->Strength;
+		techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+	}
+}
+
+
 /***************************************************************************
  * HouseClass::MPlayer_Defeated -- multiplayer; house is defeated          *
  *                                                                         *
@@ -3826,13 +3920,14 @@ void HouseClass::MPlayer_Defeated(void)
 	}
 
 	/*
-	 * If harvester truce is on, remove all of this player's harvesters.
+	 * With the harvester truce on, every living vehicle this house owns is removed, not only
+	 * its harvesters (gamemd's AcceptDefeat, 0x4FC0B0, under SpecialFlags bit 0x800).
 	 */
 	if (Session.Type != GAME_NORMAL && Scen->Special.IsHarvesterImmune) {
 		for (int i = 0; i < Units.Count(); i++) {
 			UnitClass * unit = Units[i];
 			if (unit->House == this && unit->IsActive) {
-				unit->Delete_Me();
+				Uninit_Vehicle(unit);
 			}
 		}
 	}
@@ -3971,132 +4066,41 @@ void HouseClass::MPlayer_Defeated(void)
 }
 
 
-/***************************************************************************
- * HouseClass::Blowup_All -- blows up everything                           *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   05/16/1995 BRR : Created.                                             *
- *   06/09/1995 JLB : Handles aircraft.                                    *
- *   05/07/1996 JLB : Handles ships.                                       *
- *=========================================================================*/
-void HouseClass::Blowup_All(void)
+/// <summary>
+/// Destroys every object this house still owns, as gamemd's HouseClass::DestroyAll (0x4FC6D0)
+/// does before a defeat is accepted, and as the Destroy house trigger action does.
+/// </summary>
+void HouseClass::Destroy_All(void)
 {
-	Blowup(true, true, true);
+	Destroy_Selected(this, DESTROY_SCOPE_EVERYTHING);
 }
 
 
 /// <summary>
-/// Blows up the chosen kinds of object the house owns, each with as much damage as it takes.
-/// The land kind covers infantry, aircraft and every vehicle that is not naval.
+/// Destroys every building this house owns (gamemd's HouseClass::DestroyAllBuildings, 0x4FC790).
 /// </summary>
-/// <param name="buildings">Blow up the buildings.</param>
-/// <param name="land">Blow up the infantry, aircraft and land vehicles.</param>
-/// <param name="naval">Blow up the naval vehicles.</param>
-void HouseClass::Blowup(bool buildings, bool land, bool naval)
+void HouseClass::Destroy_All_Buildings(void)
 {
-	int i;
-	int damage;
-	UnitClass * uptr;
-	InfantryClass * iptr;
-	BuildingClass * bptr;
-	int count;
+	Destroy_Selected(this, DESTROY_SCOPE_BUILDINGS);
+}
 
-	/*
-	**	Find everything owned by this house & blast it with a huge amount of damage
-	**	at zero range.  Do units before infantry, so the units' drivers are killed
-	**	too.  Using Explosion_Damage is like dropping a big bomb right on the
-	**	object; it will also damage anything around it.
-	*/
-	for (i = 0; i < ::Units.Count(); i++) {
-		if (::Units[i]->House == this && !::Units[i]->IsInLimbo && (::Units[i]->Class->IsNaval ? naval : land)) {
-			uptr = ::Units[i];
 
-			/*
-			**	Some units can't be killed with one shot, so keep damaging them until
-			**	they're gone.  The unit will destroy itself, and put an infantry in
-			**	its place.  When the unit destroys itself, decrement 'i' since
-			**	its pointer will be removed from the active pointer list.
-			*/
-			count = 0;
-			while (::Units[i]==uptr && uptr->Strength) {
-				damage = uptr->Strength;
-				uptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-				count++;
-				if (count > 5 && uptr->IsActive) {
-					delete uptr;
-					break;
-				}
-			}
-			i--;
-		}
-	}
+/// <summary>
+/// Destroys every infantry, aircraft and land vehicle this house owns, not its buildings or naval
+/// vehicles (gamemd's HouseClass::DestroyAllNonBuildingsNonNaval, 0x4FC820).
+/// </summary>
+void HouseClass::Destroy_All_Non_Buildings_Non_Naval(void)
+{
+	Destroy_Selected(this, DESTROY_SCOPE_LAND);
+}
 
-	/*
-	**	Destroy all aircraft owned by this house.
-	*/
-	for (i = 0; i < ::Aircraft.Count(); i++) {
-		if (land && ::Aircraft[i]->House == this && !::Aircraft[i]->IsInLimbo) {
-			AircraftClass * aptr = ::Aircraft[i];
 
-			damage = aptr->Strength;
-			aptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-			if (!aptr->IsActive) {
-				i--;
-			}
-		}
-	}
-
-	/*
-	**	Buildings don't delete themselves when they die; they shake the screen
-	**	and begin a countdown, so don't decrement 'i' when it's destroyed.
-	*/
-	for (i = 0; i < Buildings.Count(); i++) {
-		if (buildings && Buildings[i]->House == this && !Buildings[i]->IsInLimbo) {
-			bptr = Buildings[i];
-
-			count = 0;
-			while (Buildings[i]==bptr && bptr->Strength) {
-				damage = bptr->Strength;
-				bptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-				count++;
-				if (count > 5) {
-					delete bptr;
-					break;
-				}
-			}
-		}
-	}
-
-	/*
-	**	Infantry don't delete themselves when they die; they go into a death-
-	**	animation sequence, so there's no need to decrement 'i' when they die.
-	*/
-	for (i = 0; i < Infantry.Count(); i++) {
-		if (land && Infantry[i]->House == this && !Infantry[i]->IsInLimbo) {
-			iptr = Infantry[i];
-
-			count = 0;
-			while (Infantry[i]==iptr && iptr->Strength) {
-				damage = iptr->Strength;
-				iptr->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-
-				count++;
-				if (count > 5) {
-					delete iptr;
-					break;
-				}
-			}
-		}
-	}
+/// <summary>
+/// Destroys every naval vehicle this house owns (gamemd's HouseClass::DestroyAllNonBuildingsNaval, 0x4FC8D0).
+/// </summary>
+void HouseClass::Destroy_All_Non_Buildings_Naval(void)
+{
+	Destroy_Selected(this, DESTROY_SCOPE_NAVAL);
 }
 
 

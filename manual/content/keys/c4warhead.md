@@ -23,7 +23,7 @@ Most of these events deal forced damage. Forced damage skips the warhead's [`Ver
 - an aircraft, jumpjet or tunneling unit with nowhere to land or surface, and a jumpjet that moves while off the ground during an ion storm;
 - collecting an explosive crate, for the collector;
 - an engineer [damaging a structure](/systems/capture/#damaging-it-instead) in a multiplayer game;
-- a defeated house having all of its objects blown up;
+- each object a defeated house still owns, and each object a destroy trigger action removes, which takes one hit from this warhead;
 - the [Self destruct](/mapping/missions/tmission-self-destruct/) team mission.
 
 The other events deal an explosion around a point. The warhead's `Verses` table, [`Spread`](/keys/spread/#scope-warheadtype) and `Immune=yes` apply to it as they do to a weapon's blast. The events that explode through this warhead are:

@@ -37,6 +37,8 @@ class CaptureManagerClass
 		bool Is_Overloading(void) const;
 		int Controlled_Count(void) const {return((int)Nodes.size());}
 		TechnoClass * Controlled(int index) const {return(Nodes[index].Unit);}
+		bool Holds(TechnoClass const * unit) const;
+		HouseClass * Original_Owner_Of(TechnoClass const * unit) const;
 		bool Is_Link_Shown(int index) const;
 		void Detach(AbstractClass const * target);
 		void Serialize(SaveStreamClass & stream);

@@ -5,6 +5,10 @@
 40 select SMCV
 60 command DeployObject
 200 observer
+299 houseobjects Americans
 300 defeat Americans
 301 observer
+302 houseobjects Americans
+341 houseobjects Americans
 500 observer
+501 houseobjects Americans

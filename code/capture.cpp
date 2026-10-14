@@ -166,6 +166,36 @@ bool CaptureManagerClass::Free_Unit(TechnoClass * unit)
 
 
 /// <summary>
+/// Is the unit one this firer still controls?
+/// </summary>
+/// <returns>bool; Does a node hold the unit?</returns>
+bool CaptureManagerClass::Holds(TechnoClass const * unit) const
+{
+	for (NodeType const & node : Nodes) {
+		if (node.Unit == unit) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Returns the house the unit was taken from, as recorded by its node.
+/// </summary>
+/// <returns>HouseClass *; The original owner, or NULL when no node holds the unit.</returns>
+HouseClass * CaptureManagerClass::Original_Owner_Of(TechnoClass const * unit) const
+{
+	for (NodeType const & node : Nodes) {
+		if (node.Unit == unit) {
+			return(node.OriginalOwner);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
 /// Lets every unit go (CaptureManagerClass::FreeAll, 0x472140).
 /// </summary>
 void CaptureManagerClass::Free_All(void)

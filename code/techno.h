@@ -748,6 +748,7 @@ class TechnoClass :	public RadioClass,
 
 		virtual HousesType Owner(void) const override;
 		virtual HouseClass * Owner_HouseClass(void) const override;
+		HouseClass * Original_Owner(void) const;
 		virtual bool Can_Player_Fire(void) const override;
 		virtual bool Can_Player_Move(void) const override;
 		virtual bool Can_Repair(void) const override;

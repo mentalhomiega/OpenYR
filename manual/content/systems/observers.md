@@ -41,6 +41,8 @@ An observer does not appear on the [score screen](/systems/multiplayer-score-scr
 
 An observer's house is still an observer after a [saved game](/formats/save-games/) is loaded. A launch file that resumes a network game's save must mark the same seats as watching, or the game refuses to load the save.
 
+An observer owns nothing, and a defeated player's objects are destroyed when the defeat is accepted. The [Destroy all of...](/mapping/actions/taction-house-destroy-all/) action describes what that takes. Mind control is the exception. A unit the defeated player holds keeps the defeated player as its owner, and a unit another house holds from the defeated player survives under that house.
+
 ## The whole map
 
 An observer is given the whole map, and so is a defeated player in a match without [coach mode](#coach-mode). Both see the match the same way:
@@ -54,7 +56,7 @@ An observer is given the whole map, and so is a defeated player in a match witho
 | Disguises | They hold, as they do for every player except the owner. |
 | Chat | Messages can go to everyone. An observer can also message the other observers. A team or private message cannot be opened ([in-game chat](/systems/chat/)). |
 
-An observer owns nothing, and a defeated player's forces are destroyed at defeat. Clicking an object therefore only selects it for viewing and gives no order.
+Clicking an object of a defeated player therefore only selects it for viewing and gives no order.
 
 ## Commands
 

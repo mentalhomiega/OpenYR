@@ -1,0 +1,15 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP, with Short Game on, as defeat-short-side-a.txt. The Americans
+; are a remote player to this copy, defeated at frame 300.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/defeat-short-side-a.txt -ScriptB tests/netsync/defeat-short-side-b.txt -Seconds 120 -PortA 24745 -PortB 24746
+1 log netsync side B: short game on, defeat the Americans, a remote player to this copy
+1 shortgame 1
+40 select SMCV
+60 command DeployObject
+200 observer
+299 houseobjects Americans
+300 defeat Americans
+301 observer
+302 houseobjects Americans
+341 houseobjects Americans
+500 observer
+501 houseobjects Americans
