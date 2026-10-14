@@ -48,7 +48,7 @@ the player as not responding.
 
 ### Master
 
-The master is the host's seat once the host announces itself. Before the first frame, the announced seat replaces the lowest seat that connection setup chose, so every machine names the same master. A machine that names another master sends no timing events, and the rate stays at its start value.
+The master is the host's seat once the host announces itself. Before the first frame, the announced seat replaces the lowest seat that connection setup chose, so every machine names the same master. Only the machine that names itself master sends timing events. If the machines name different masters, none sends them and the rate stays at its start value.
 
 ### Rungs
 

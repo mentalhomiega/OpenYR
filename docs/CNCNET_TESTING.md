@@ -227,7 +227,7 @@ Each frame waits 1000 divided by the frame rate. The master sends the rate in a 
 
 Build 21 did not reach that rate. The testers' logs show no timing event on either copy, and the game averaged 29 FPS. The host was not the lowest seat. The joining copy adopted the host before it reset its timing census, so it named the host as master. The host had named the lowest seat, so neither copy generated a timing event. The rate stayed at 30 FPS, so a speed change made in game did not affect it. This build makes the announced host the master on every machine before the first frame. See [Master](NETCODE.md#master).
 
-With two copies on loopback, `GameSpeed=0` and the host in the higher seat, this build ran 6945 frames in sync over 120 seconds, about 59 FPS. The loopback order did not reproduce the stall, because the joining copy adopted the host after its own reset.
+With two copies on loopback, `GameSpeed=0` and the host in the higher seat, this build ran 6945 frames in sync over 120 seconds, about 59 FPS. Build 21 ran at about 59 FPS in the same loopback order, because the joining copy adopted the host after its own reset and so named itself as master.
 
 Any seated player who is not watching can change the speed from the Game Controls slider. The change goes to every machine as a game order and applies when that order runs. The master picks up the new rate at its next timing evaluation, every 256 frames.
 
