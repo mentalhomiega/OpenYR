@@ -79,7 +79,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |
 | `waitcell <TypeID> <x> <y> [radius] [timeout]` | Pauses the script until one of the player's objects of that type is within `radius` cells of the cell (default 2), measured as a straight line. Objects not on the map do not count. See [Waiting for conditions](#waiting-for-conditions) |
 | `waittrigger <TriggerID or name> [timeout]` | Pauses the script until that trigger has sprung at least once. `runtrigger` and `trigaction` carry out actions without a spring, so they do not count |
-| `waitowns <House> <TypeID> <count> [timeout]` | Pauses the script until the house owns at least `count` of the type, counted as the `quantity` step counts owned. `player` names the player, and an underscore stands for a space |
+| `waitowns <House> <TypeID> <count> [timeout]` | Pauses the script until at least `count` objects of the type that the house owns are on the map. A structure still in production does not count, and neither does an object in limbo. `player` names the player, and an underscore stands for a space |
 | `waitlocal <index> <0\|1> [timeout]` | Pauses the script until that scenario local variable has that value |
 | `triggerlog <0\|1>` | With `1`, writes `AUTOTEST trigger fired frame N: <ID> <name> house <house>` each time a trigger springs |
 | `triggercoverage` | Writes each trigger type in the scenario with how many times it has sprung since the run started, then the types that never sprung. A long list runs over several lines, the later ones marked `(continued)` |
@@ -163,7 +163,7 @@ Each copy starts with `-SYNCLOG`, which writes one line to its debug log for eve
 SYNC frame 400 crc 6134918a
 ```
 
-The value is the frame check value the network already compares. A copy writes it into the frame info it sends, and the other copy checks it. While the copies agree, their logs hold the same value on every frame. The check value covers the position and facing of each infantry, unit and building, the position and type of each map and logic object, and the scenario's random-number state. It does not cover credits or other house state; the `hash` command does. With `-SYNCLOG`, each copy also writes timing and order lines; [NETCODE.md](NETCODE.md) gives their format.
+The value is the frame check value the network already compares. A copy writes it into the frame info it sends, and the other copy checks it. While the copies agree, their logs hold the same value on every frame. The check value covers the position and facing of each infantry, unit and building, the position and type of each map and logic object, and the scenario's random-number state. It does not cover credits or other house state; the `hash` command does. The same log also has one `HOUSE_SYNC` line per house each frame, with its credits, tiberium value and build state, so a desync can be traced to house state. With `-SYNCLOG`, each copy also writes timing and order lines; [NETCODE.md](NETCODE.md) gives their format.
 
 The runner reports:
 
@@ -195,7 +195,7 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 | `-RelaySeed` | `1` | Seed for the jitter and the loss |
 | `-RelayBuffer` | `1024` | The largest envelope the relay accepts; see below |
 
-`tests/netsync/` holds one script per side for each map the test has been run on (`xmp29u2-side-a.txt` and `xmp29u2-side-b.txt` for `XMP29U2.MAP`, and the `xmp01t4` pair for `XMP01T4.MAP`). Pass them with `-ScriptA` and `-ScriptB`. The `XMP29U2.MAP` pair stayed in sync for about 17,800 ticks in its last run. In its last run the `XMP01T4.MAP` pair desynced at frame 12061, and the cause is not known.
+`tests/netsync/` holds one script per side for each map the test has been run on (`xmp29u2-side-a.txt` and `xmp29u2-side-b.txt` for `XMP29U2.MAP`, and the `xmp01t4` pair for `XMP01T4.MAP`). Pass them with `-ScriptA` and `-ScriptB`. The `XMP01T4.MAP` pair stayed in sync for 17,851 ticks in its last run. Before the AI capture and disguise picks drew from the scenario's random stream, that pair desynced at frame 12061. The `XMP29U2.MAP` pair is intermittent: of four runs after that change, one desynced at frame 14726 and three stayed in sync (for 16,800 to 17,625 ticks). The cause of the intermittent desync is not known. In the desynced run, the copies' random draws first differ at frame 14636, in house unit production and particle spawning, about 90 frames before the mismatch.
 
 Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
 
