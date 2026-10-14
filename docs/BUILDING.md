@@ -137,6 +137,43 @@ Saved games, logs, and crash reports go to the user directory, which defaults to
 the executable's own directory, so a build writes beside itself unless
 `-USERDIR=` says otherwise.
 
+## The setup program
+
+The `OpenYRSetup` target builds `OpenYR-Setup.exe` into `<build directory>/bin/<configuration>/`, beside `Game.exe`. Its logic is in `tools/setup/`, and the `setup` ctest drives that logic against temporary folders only.
+
+The executable carries no game data. `scripts/package_modern.ps1 -Build <name>` builds a package from `build-<name>` and `src-<name>`. It appends the package's files, stored without compression, and a 24-byte trailer to a copy of the executable, and writes `build/packages/OpenYR-Setup-<version>.exe`. The zip the script already wrote stays as the fallback. The script stops when `OpenYR-Setup.exe` has not been built in that build directory.
+
+Without switches the setup shows a wizard. These switches run it silently:
+
+| Switch | Effect |
+| --- | --- |
+| `/S` | No window. The exit code is 0 on success, 1 on failure, 2 when the OpenYR folder cannot be used, 3 when the wizard is cancelled, and 4 when no Yuri's Revenge install was found or the one given is not one. |
+| `/YR=<folder>` | The Yuri's Revenge folder. Without it, the first install found is used. |
+| `/DIR=<folder>` | The OpenYR folder. The default is `%LOCALAPPDATA%\Programs\OpenYR`. |
+| `/DESKTOP=0` | No desktop shortcut. The default is to make one. |
+| `/RUN` | Start OpenYR when a silent install ends. |
+| `/UNINSTALL` | Remove OpenYR from `/DIR`, or from the folder the setup runs in. |
+| `/DELETEDATA` | With `/UNINSTALL`, also delete the settings, saves and Debug log. |
+| `/LOG=<file>` | Append what the run did to a file. |
+| `/SHOTDIR=<folder>` | Save a PNG of each wizard page as it is shown. |
+| `/PAYLOAD=<folder>` | Install from a package folder instead of the one inside the executable. |
+
+An install writes to the OpenYR folder, the player's Start Menu and desktop, and the Apps & Features key. It writes nothing to the Yuri's Revenge folder and needs no administrator rights.
+
+| File or folder | Contents |
+| --- | --- |
+| `Game.exe`, `Language.dll`, `ui\`, `licenses\`, `LICENSE.md`, `TESTERS.md`, `CnCNet setup.bat` | The program files. The launchers and `README.txt` are not installed; the zip carries them. |
+| `OPENTS.INI` | `[Paths] DataDirectory=` names the Yuri's Revenge folder and `UserDirectory=user` names the folder for the player's files, so the game reads its data from there and keeps its own files in `user\`. |
+| `openyr-install.ini` | The build, the commit, the Yuri's Revenge folder and the program files written. Updates and uninstall read it. |
+| `Uninstall OpenYR.exe` | A copy of the setup without its package. |
+| `user\` | `RA2MD.INI` and `SPAWN.INI`, copied only when missing. The game's settings, saves and screenshots also go here. |
+
+The shortcuts are `OpenYR.lnk` on the desktop, when asked for, and `OpenYR.lnk` and `Uninstall OpenYR.lnk` in `Start Menu\Programs\OpenYR`. The Apps & Features entry is `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenYR`.
+
+An install over an existing one replaces the program files, removes the program files the earlier build wrote that the new one does not ship, and leaves `user\` as it is. Uninstall removes what `openyr-install.ini` lists, the shortcuts and the registry entry. `user\` and `Debug\` stay unless `/DELETEDATA` is given.
+
+The `setup` ctest covers the find, install, update and uninstall logic with a fake Yuri's Revenge folder and a fake package, and checks that the Yuri's Revenge folder is unchanged. Whether the installed copy finds the game's data needs the game, so check it with `scripts/run_autotest.ps1 -InstallDir <folder>`.
+
 ## Experimental clang-cl cross-build
 
 An unsupported Linux cross-build is available for compiler-portability work. It
