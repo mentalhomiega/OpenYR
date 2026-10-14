@@ -195,8 +195,8 @@ OptionsClass::OptionsClass(void) :
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
 	IsSidebarOnRight(true),
-	ModernInterface(false),
-	IsModernInterfaceChosen(false),
+	ModernInterface(true),
+	IsModernInterfaceChosen(true),
 	SidebarRows(HUD_DEFAULT_ROWS),
 	DebugMode(false),
 	SidebarCameoText(false),
@@ -574,7 +574,7 @@ void OptionsClass::Load_Menu_Style(void)
 void OptionsClass::Load_Interface_Style(void)
 {
 	char style[16];
-	ConfigINI.Get_String("Options", "InterfaceStyle", "Classic", style, sizeof(style));
+	ConfigINI.Get_String("Options", "InterfaceStyle", "Modern", style, sizeof(style));
 	ModernInterface = (stricmp(style, "Modern") == 0);
 	IsModernInterfaceChosen = ModernInterface;
 	SidebarRows = ConfigINI.Get_Int("Options", "SidebarRows", HUD_DEFAULT_ROWS);

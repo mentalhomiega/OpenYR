@@ -4,7 +4,7 @@ scope: client-settings
 label: In-game interface style
 when_omitted:
   kind: value
-  value: Classic
+  value: Modern
 ---
 
 `InterfaceStyle=` chooses how the in-game interface is laid out. It accepts two names, in any capitalization:
