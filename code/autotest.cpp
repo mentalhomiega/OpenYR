@@ -36,6 +36,8 @@
 **	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
 **	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
 **	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
+**	concretehit x y			damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down
+**	passable x y			writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell
 **	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
 **	hutclick <TypeID> x y	clicks the building on that cell with the player's object of that type, through the object path a real click takes
 **	hutc4 x y				writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength
@@ -1487,6 +1489,32 @@ static void Bridge_Hit_Step(StepType const & step)
 
 
 /// <summary>
+/// Hits the concrete low bridge on a cell through MapClass::Damage_Concrete_Bridge, the call a weapon impact
+/// makes on a concrete piece, and logs whether a span came down.
+/// </summary>
+/// <param name="step">The x in the argument and the y in X.</param>
+static void Concrete_Hit_Step(StepType const & step)
+{
+	int const x = std::atoi(step.Argument.c_str());
+	bool const destroyed = Map.Damage_Concrete_Bridge(Cell(x, step.X));
+	DebugString("AUTOTEST   concretehit %d,%d %d\n", x, step.X, (int)destroyed);
+}
+
+
+/// <summary>
+/// Logs whether a foot unit and a tracked unit can move onto a cell, and the overlay on it.
+/// </summary>
+/// <param name="step">The x in the argument and the y in X.</param>
+static void Passable_Step(StepType const & step)
+{
+	int const x = std::atoi(step.Argument.c_str());
+	CellClass const & c = Map[Cell(x, step.X)];
+	DebugString("AUTOTEST   passable %d,%d foot %d track %d overlay %d\n", x, step.X,
+		(int)c.Is_Clear_To_Move(SPEED_FOOT, true, true), (int)c.Is_Clear_To_Move(SPEED_TRACK, true, true), (int)c.Overlay);
+}
+
+
+/// <summary>
 /// Logs the action the player's object of a type gets over a building, through the object path a real mouse-over takes.
 /// </summary>
 /// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
@@ -1572,6 +1600,14 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "bridgehit") {
 		Bridge_Hit_Step(step);
+		return;
+	}
+	if (step.Command == "concretehit") {
+		Concrete_Hit_Step(step);
+		return;
+	}
+	if (step.Command == "passable") {
+		Passable_Step(step);
 		return;
 	}
 	if (step.Command == "hutaction") {

@@ -1,0 +1,54 @@
+; Concrete low bridge regression on SOV04DMD: the north-south span at 95-97, 46-56 is made of concrete low bridge
+; pieces (overlays 205 to 232). A bridge repair hut is spawned for the computer at 99,47, beside the span. A Ghost
+; plants C4 on the hut through a real click (hutclick, which gives the sabotage action), and the charge goes off
+; through Map.Destroy_Bridge_At, which walks the concrete pieces around the hut. The span is logged before the
+; strike, after the C4 has gone off, and after an engineer repairs it through the player's own hut at 99,44 (hutclick).
+; The enemy-owned hut at 99,47 is where the Ghost sabotages; an engineer's order to enter it was not carried out in
+; testing, so the engineer uses the player's own hut. An infantryman (E1) stands on the piece at 96,53, which falls
+; with the span, and is logged before and after; it stays on that piece in the test.
+; Expected: before the strike the caps at 96,46 and 96,56 are overlays 227 and 229, the piece at 96,50 is a
+; 214 to 219 piece, and the span is passable. After the C4 the piece at 96,50 has taken its first hit (221, still
+; passable), the pieces at 96,52 and 96,54 are overlay 232 (fallen, not passable on foot), and the caps are unchanged. After
+; the engineer's repair, the logged pieces are intact again (214 to 217) and passable, and repairbridge reads 0.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/concrete-bridge-sov04.txt -Build agent16 -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   bridge |AUTOTEST   passable|AUTOTEST   hut|AUTOTEST   repairbridge|AUTOTEST   where|AUTOTEST   hutaction|AUTOTEST enter|AUTOTEST frame 1900|Exception"
+30 spawn CABHUT 99 47
+30 own CABHUT 99 44
+31 grantunit E1 96 53
+32 grantunit GHOST 99 46
+33 grantunit ENGINEER 98 46
+100 bridge 96 46
+101 bridge 96 50
+102 bridge 96 52
+103 bridge 96 56
+104 passable 96 50
+105 passable 96 52
+106 repairbridge 99 47
+107 where E1
+200 hutaction GHOST 99 47
+201 hutclick GHOST 99 47
+300 hutc4 CABHUT 99 47
+1000 bridge 96 46
+1001 bridge 96 50
+1002 bridge 96 52
+1003 bridge 96 54
+1004 bridge 96 56
+1005 passable 96 50
+1006 passable 96 52
+1007 repairbridge 99 44
+1008 where E1
+1009 where GHOST
+1100 where ENGINEER
+1101 hutaction ENGINEER 99 44
+1102 hutclick ENGINEER 99 44
+1200 where ENGINEER
+1400 where ENGINEER
+1600 where ENGINEER
+1700 bridge 96 46
+1701 bridge 96 50
+1702 bridge 96 52
+1703 bridge 96 54
+1704 bridge 96 56
+1705 passable 96 50
+1706 passable 96 52
+1707 repairbridge 99 44
+1900 quit

@@ -12372,11 +12372,521 @@ void MapClass::Destroy_Wood_Bridge_At(Cell const & cell)
 }
 
 
+/*
+ * Concrete low bridges. Their overlays are 205 to 232 in gamemd's numbering (the LOBRDB set, 0xCD to
+ * 0xE8). Two families share the range. The north-south family (205 to 213, 223 to 226 and 231) is a
+ * span that runs east and west, and a break takes out the three cells north, middle and south of the
+ * hit. The east-west family (214 to 222, 227 to 230 and 232) is a span that runs north and south, and a
+ * break takes out the three cells west, middle and east. 231 and 232 are the fallen middles of a span.
+ * The routines below follow gamemd's concrete path: the hit routine FUN_0057CCF0, its state routines
+ * FUN_0057CF60 and FUN_0057D530, the side updates FUN_0057E7A0 and FUN_0057ED00, and the hut and repair
+ * walkers FUN_005749C0, FUN_0057F440, FUN_005800D0 and FUN_00580600.
+ */
+
+/*
+ * The overlay of a cell, or OVERLAY_NONE when the cell is not on the map.
+ */
+static int Concrete_Overlay_At(Cell const & cell)
+{
+	CellClass const * cptr = Bridge_Cell_At(cell);
+	return(cptr != NULL ? (int)cptr->Overlay : (int)OVERLAY_NONE);
+}
+
+
+/*
+ * Tests whether a cell holds a concrete low bridge overlay (205 to 232).
+ */
+static bool Is_Concrete_Bridge_Cell(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+	return(overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && overlay <= OVERLAY_CONCRETE_BRIDGE_LAST);
+}
+
+
+/*
+ * Tests whether an overlay belongs to the north-south family (205 to 213, 223 to 226 and 231).
+ */
+static bool Is_Concrete_NS_Overlay(int overlay)
+{
+	return((overlay >= 205 && overlay <= 213) || (overlay >= 223 && overlay <= 226) || overlay == OVERLAY_CONCRETE_BRIDGE_END1);
+}
+
+
+/*
+ * Tests whether an overlay belongs to the east-west family (214 to 222, 227 to 230 and 232).
+ */
+static bool Is_Concrete_EW_Overlay(int overlay)
+{
+	return((overlay >= 214 && overlay <= 222) || (overlay >= 227 && overlay <= 230) || overlay == OVERLAY_CONCRETE_BRIDGE_END2);
+}
+
+
+/*
+ * The neighbor mask of a north-south concrete piece (gamemd FUN_0057CAB0): bit 1 when the piece to the
+ * east is 209, 211, 213 or 224, bit 2 when it is 212 or 231, bit 4 when the piece to the west is 210,
+ * 211, 212 or 226, and bit 8 when it is 213 or 231.
+ */
+static int Concrete_NS_Side_Mask(Cell const & cell)
+{
+	int index = 0;
+	switch (Concrete_Overlay_At(cell + Cell(1, 0))) {
+		case 209:
+		case 211:
+		case 213:
+		case 224:
+			index |= 1;
+			break;
+		case 212:
+		case OVERLAY_CONCRETE_BRIDGE_END1:
+			index |= 2;
+			break;
+		default:
+			break;
+	}
+	switch (Concrete_Overlay_At(cell + Cell(-1, 0))) {
+		case 210:
+		case 211:
+		case 212:
+		case 226:
+			index |= 4;
+			break;
+		case 213:
+		case OVERLAY_CONCRETE_BRIDGE_END1:
+			index |= 8;
+			break;
+		default:
+			break;
+	}
+	return(index);
+}
+
+
+/*
+ * The neighbor mask of an east-west concrete piece (gamemd FUN_0057CBE0): bit 1 when the piece to the
+ * north is 218, 220, 222 or 228, bit 2 when it is 221 or 232, bit 4 when the piece to the south is 219,
+ * 220, 221 or 230, and bit 8 when it is 222 or 232.
+ */
+static int Concrete_EW_Side_Mask(Cell const & cell)
+{
+	int index = 0;
+	switch (Concrete_Overlay_At(cell + Cell(0, -1))) {
+		case 218:
+		case 220:
+		case 222:
+		case 228:
+			index |= 1;
+			break;
+		case 221:
+		case OVERLAY_CONCRETE_BRIDGE_END2:
+			index |= 2;
+			break;
+		default:
+			break;
+	}
+	switch (Concrete_Overlay_At(cell + Cell(0, 1))) {
+		case 219:
+		case 220:
+		case 221:
+		case 230:
+			index |= 4;
+			break;
+		case 222:
+		case OVERLAY_CONCRETE_BRIDGE_END2:
+			index |= 8;
+			break;
+		default:
+			break;
+	}
+	return(index);
+}
+
+
+/*
+ * The overlay a north-south side piece takes for each neighbor mask (gamemd FUN_0057E7A0's table). Only
+ * masks 1, 2, 4, 5, 6, 8, 9 and 10 can occur, since a piece has one overlay on each side.
+ */
+static int const Concrete_NS_Side_Table[16] = {-1, 210, 213, -1, 209, 211, 213, -1, 212, 212, 231, -1, -1, -1, -1, -1};
+
+
+/*
+ * The overlay an east-west side piece takes for each neighbor mask (gamemd FUN_0057ED00's table).
+ */
+static int const Concrete_EW_Side_Table[16] = {-1, 219, 222, -1, 218, 220, 222, -1, 221, 221, 232, -1, -1, -1, -1, -1};
+
+
 /// <summary>
-/// Destroys the concrete bridge beside a bridge repair hut (gamemd DestroyConcreteBridgeAt,
-/// 0x574000). A concrete low bridge overlay (205 to 232 in gamemd's numbering) in the
-/// two-cell block ends the search. Its damage is gamemd's wall overlay redirect, which is not
-/// ported, so the bridge stays up. Otherwise the span is found from the hut
+/// Sets one concrete piece to an overlay, and refreshes its attributes and its redraw. A change to or
+/// from a fallen piece also repaints the radar at that cell (gamemd RadarClass::Radar_Background).
+/// </summary>
+/// <param name="cell">The cell to change.</param>
+/// <param name="overlay">The new overlay.</param>
+void MapClass::Set_Concrete_Piece(Cell const & cell, int overlay)
+{
+	CellClass * cptr = Bridge_Cell_At(cell);
+	if (cptr == NULL) {
+		return;
+	}
+
+	int const old = cptr->Overlay;
+	cptr->Overlay = (OverlayType)overlay;
+	cptr->Recalc_Attributes(-1);
+	cptr->Register_For_Redraw();
+
+	bool const fallen_before = old == OVERLAY_CONCRETE_BRIDGE_END1 || old == OVERLAY_CONCRETE_BRIDGE_END2;
+	bool const fallen_after = overlay == OVERLAY_CONCRETE_BRIDGE_END1 || overlay == OVERLAY_CONCRETE_BRIDGE_END2;
+	if (fallen_before || fallen_after) {
+		Map.Radar_Background(cell);
+	}
+}
+
+
+/// <summary>
+/// Sets the three pieces a span break covers: the hit cell and its two neighbors across the span. A
+/// north-south family break covers the cells north and south of the cell, and an east-west family
+/// break covers the cells west and east of it.
+/// </summary>
+/// <param name="cell">The middle piece of the break.</param>
+/// <param name="along_x">True to cover the cells west and east, false to cover the cells north and south.</param>
+/// <param name="overlay">The overlay all three pieces take.</param>
+void MapClass::Set_Concrete_Section(Cell const & cell, bool along_x, int overlay)
+{
+	Cell const step = along_x ? Cell(1, 0) : Cell(0, 1);
+	Set_Concrete_Piece(cell - step, overlay);
+	Set_Concrete_Piece(cell, overlay);
+	Set_Concrete_Piece(cell + step, overlay);
+}
+
+
+/// <summary>
+/// Moves a north-south concrete piece on by its neighbors (gamemd FUN_0057E7A0). The piece is changed only
+/// when its east and west neighbors call for a new shape, and then its north and south neighbors change
+/// with it.
+/// </summary>
+/// <param name="cell">The side piece, which lies east or west of a hit.</param>
+void MapClass::Update_Concrete_Side_NS(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+	if (overlay < OVERLAY_CONCRETE_BRIDGE_FIRST || overlay > OVERLAY_CONCRETE_BRIDGE_LAST) {
+		return;
+	}
+
+	int const mask = Concrete_NS_Side_Mask(cell);
+	if (mask == 0) {
+		return;
+	}
+
+	int next = overlay;
+	if (overlay < 223) {
+		next = Concrete_NS_Side_Table[mask];
+		if (next == overlay) {
+			return;
+		}
+	} else if (overlay == 223) {
+		next = 224;
+	} else if (overlay == 225) {
+		next = 226;
+	} else {
+		return;
+	}
+
+	Set_Concrete_Section(cell, false, next);
+}
+
+
+/// <summary>
+/// Moves an east-west concrete piece on by its neighbors (gamemd FUN_0057ED00). The north-south
+/// counterpart of Update_Concrete_Side_NS: the piece's own shape follows its north and south neighbors,
+/// and its west and east neighbors change with it.
+/// </summary>
+/// <param name="cell">The side piece, which lies north or south of a hit.</param>
+void MapClass::Update_Concrete_Side_EW(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+	if (overlay < OVERLAY_CONCRETE_BRIDGE_FIRST || overlay > OVERLAY_CONCRETE_BRIDGE_LAST) {
+		return;
+	}
+
+	int const mask = Concrete_EW_Side_Mask(cell);
+	if (mask == 0) {
+		return;
+	}
+
+	int next = overlay;
+	if (overlay < 227) {
+		next = Concrete_EW_Side_Table[mask];
+		if (next == overlay) {
+			return;
+		}
+	} else if (overlay == 227) {
+		next = 228;
+	} else if (overlay == 229) {
+		next = 230;
+	} else {
+		return;
+	}
+
+	Set_Concrete_Section(cell, true, next);
+}
+
+
+/// <summary>
+/// Springs the destruction triggers for a north-south concrete span that has just fallen (gamemd FUN_0057DC20
+/// through FUN_00575EE0). The run of concrete pieces along the row is measured west and east first.
+/// </summary>
+/// <param name="cell">A cell of the fallen piece.</param>
+void MapClass::Spring_Concrete_Bridge_Destroyed_NS(Cell cell)
+{
+	Cell west = cell;
+	while (Is_Concrete_Bridge_Cell(west + Cell(-1, 0))) {
+		west = west + Cell(-1, 0);
+	}
+
+	Cell east = cell;
+	while (Is_Concrete_Bridge_Cell(east + Cell(1, 0))) {
+		east = east + Cell(1, 0);
+	}
+
+	Spring_Bridge_Destruction_Triggers(west, east);
+}
+
+
+/// <summary>
+/// Springs the destruction triggers for an east-west concrete span that has just fallen (gamemd FUN_0057DAF0
+/// through FUN_00575EE0). The run of concrete pieces along the column is measured north and south first.
+/// </summary>
+/// <param name="cell">A cell of the fallen piece.</param>
+void MapClass::Spring_Concrete_Bridge_Destroyed_EW(Cell cell)
+{
+	Cell north = cell;
+	while (Is_Concrete_Bridge_Cell(north + Cell(0, -1))) {
+		north = north + Cell(0, -1);
+	}
+
+	Cell south = cell;
+	while (Is_Concrete_Bridge_Cell(south + Cell(0, 1))) {
+		south = south + Cell(0, 1);
+	}
+
+	Spring_Bridge_Destruction_Triggers(north, south);
+}
+
+
+/// <summary>
+/// Hits a north-south concrete piece (gamemd FUN_0057CF60, 0x57CF60). A piece in the first stage (205 to 210)
+/// moves to the cracked stage 211. A piece in the cracked stages (211 to 213) falls: the three cells north, middle
+/// and south become the fallen piece 231, the span is sprung for its triggers, and the pathfinding around it is
+/// refreshed. The side pieces east and west take their new shape as well.
+/// </summary>
+/// <param name="cell">The middle piece of the north-south break that was hit.</param>
+/// <returns>bool; Did this hit bring the span down?</returns>
+bool MapClass::Damage_Concrete_Bridge_NS(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+
+	if (overlay == 223) {
+		Set_Concrete_Section(cell, false, 224);
+		Update_Concrete_Side_NS(cell - Cell(1, 0));
+		return(false);
+	}
+
+	if (overlay == 225) {
+		Set_Concrete_Section(cell, false, 226);
+		Update_Concrete_Side_NS(cell + Cell(1, 0));
+		return(false);
+	}
+
+	if (overlay < 211) {
+		Set_Concrete_Section(cell, false, 211);
+		Update_Concrete_Side_NS(cell - Cell(1, 0));
+		Update_Concrete_Side_NS(cell + Cell(1, 0));
+		return(false);
+	}
+
+	if (overlay > 213) {
+		return(false);
+	}
+
+	Set_Concrete_Section(cell, false, OVERLAY_CONCRETE_BRIDGE_END1);
+	Update_Concrete_Side_NS(cell - Cell(1, 0));
+	Update_Concrete_Side_NS(cell + Cell(1, 0));
+	Spring_Concrete_Bridge_Destroyed_NS(cell);
+	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
+	Zone_Reset();
+	return(true);
+}
+
+
+/// <summary>
+/// Hits an east-west concrete piece (gamemd FUN_0057D530, 0x57D530). The counterpart of Damage_Concrete_Bridge_NS:
+/// a piece in the first stage (214 to 219) moves to 220, a piece in 220 to 222 falls to the fallen piece 232, and
+/// the span is sprung for its triggers with the pathfinding refreshed.
+/// </summary>
+/// <param name="cell">The middle piece of the east-west break that was hit.</param>
+/// <returns>bool; Did this hit bring the span down?</returns>
+bool MapClass::Damage_Concrete_Bridge_EW(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+
+	if (overlay == 227) {
+		Set_Concrete_Section(cell, true, 228);
+		Update_Concrete_Side_EW(cell + Cell(0, 1));
+		return(false);
+	}
+
+	if (overlay == 229) {
+		Set_Concrete_Section(cell, true, 230);
+		Update_Concrete_Side_EW(cell - Cell(0, 1));
+		return(false);
+	}
+
+	if (overlay < 220) {
+		Set_Concrete_Section(cell, true, 220);
+		Update_Concrete_Side_EW(cell - Cell(0, 1));
+		Update_Concrete_Side_EW(cell + Cell(0, 1));
+		return(false);
+	}
+
+	if (overlay > 222) {
+		return(false);
+	}
+
+	Set_Concrete_Section(cell, true, OVERLAY_CONCRETE_BRIDGE_END2);
+	Update_Concrete_Side_EW(cell - Cell(0, 1));
+	Update_Concrete_Side_EW(cell + Cell(0, 1));
+	Spring_Concrete_Bridge_Destroyed_EW(cell);
+	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
+	Zone_Reset();
+	return(true);
+}
+
+
+/// <summary>
+/// Damages the concrete low bridge at a cell (gamemd FUN_0057CCF0, the concrete hit routine that
+/// MapClass::Damage_Bridge_At_Cell and the weapon hit reach through overlays 205 to 230). The piece picks
+/// its family from its overlay, then the state routine runs on the piece the family's neighbors call for:
+/// the piece itself, or the one beside it when a run continues across it.
+/// </summary>
+/// <param name="cell">The cell that was hit.</param>
+/// <returns>bool; Did this hit bring a span down?</returns>
+bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+
+	if (Is_Concrete_NS_Overlay(overlay)) {
+		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
+			return(Damage_Concrete_Bridge_NS(cell + Cell(0, 1)));
+		}
+		if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
+			return(Damage_Concrete_Bridge_NS(cell + Cell(0, -1)));
+		}
+		return(Damage_Concrete_Bridge_NS(cell));
+	}
+
+	if (Is_Concrete_EW_Overlay(overlay)) {
+		if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
+			return(Damage_Concrete_Bridge_EW(cell + Cell(1, 0)));
+		}
+		if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
+			return(Damage_Concrete_Bridge_EW(cell + Cell(-1, 0)));
+		}
+		return(Damage_Concrete_Bridge_EW(cell));
+	}
+
+	return(false);
+}
+
+
+/// <summary>
+/// Blows up a run of concrete low bridge pieces along one axis, showing explosions over the middle of it
+/// and damaging up to four pieces (gamemd 0x575870 for east and west, skipping the fallen piece 231, and
+/// 0x575BA0 for north and south, skipping 232). The walk ends at the first cell that is not concrete.
+/// </summary>
+/// <param name="cell">A cell on the run.</param>
+/// <param name="axis">FACING_E to walk east and west, FACING_S to walk north and south.</param>
+void MapClass::Detonate_Concrete_Bridge_Run(Cell const & cell, FacingType axis)
+{
+	bool const east_west = axis == FACING_E;
+	int const ax = east_west ? 1 : 0;
+	int const ay = 1 - ax;
+	int const skip = east_west ? OVERLAY_CONCRETE_BRIDGE_END1 : OVERLAY_CONCRETE_BRIDGE_END2;
+
+	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
+
+	int negative = 0;
+	do {
+		negative++;
+	} while (Is_Concrete_Bridge_Cell(at(-negative)));
+
+	int positive = 0;
+	do {
+		positive++;
+	} while (Is_Concrete_Bridge_Cell(at(positive)));
+
+	int const dir = positive < negative ? -1 : 1;
+	int t = -((negative - positive) / 2);
+
+	for (int n = 0; n < 4; n++) {
+		Cell const cur = at(t);
+		int const overlay = Concrete_Overlay_At(cur);
+
+		if (overlay != skip) {
+			for (int side = -1; side <= 1; side++) {
+				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
+				Spawn_Bridge_Explosion(spot);
+			}
+		}
+
+		for (int tries = 0; tries < 3; tries++) {
+			if (Damage_Concrete_Bridge(cur)) {
+				break;
+			}
+		}
+
+		t += dir;
+		if (!Is_Concrete_Bridge_Cell(at(t))) {
+			break;
+		}
+	}
+
+	Zone_Reset();
+}
+
+
+/// <summary>
+/// Takes down the concrete low bridge beside a bridge repair hut, from a concrete piece that the hut's search
+/// found (gamemd FUN_005749C0). A north-south piece is blown up as a run that goes east and west, and an
+/// east-west piece as a run that goes north and south. The neighbors pick the cell the run is walked from.
+/// </summary>
+/// <param name="cell">A concrete low bridge cell.</param>
+void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+
+	if (Is_Concrete_NS_Overlay(overlay)) {
+		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
+			Detonate_Concrete_Bridge_Run(cell + Cell(0, 1), FACING_E);
+		} else if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
+			Detonate_Concrete_Bridge_Run(cell + Cell(0, -1), FACING_E);
+		} else {
+			Detonate_Concrete_Bridge_Run(cell, FACING_E);
+		}
+		return;
+	}
+
+	if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
+		Detonate_Concrete_Bridge_Run(cell + Cell(1, 0), FACING_S);
+	} else if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
+		Detonate_Concrete_Bridge_Run(cell + Cell(-1, 0), FACING_S);
+	} else {
+		Detonate_Concrete_Bridge_Run(cell, FACING_S);
+	}
+}
+
+
+/// <summary>
+/// Destroys the concrete bridge beside a bridge repair hut (gamemd DestroyConcreteBridgeAt, 0x574000). The hut's
+/// five-cell square is searched column by column for a concrete low bridge piece. The first one found is handed to
+/// the neighbor walk, which takes its span down. With no concrete piece in reach, the span is found from the hut
 /// (Destroy_Bridge_Span_Near).
 /// </summary>
 /// <param name="cell">The cell the hut stands on.</param>
@@ -12384,13 +12894,204 @@ void MapClass::Destroy_Concrete_Bridge_At(Cell const & cell)
 {
 	for (int x = -2; x < 3; x++) {
 		for (int y = -2; y < 3; y++) {
-			CellClass const * cptr = Bridge_Cell_At(cell + Cell(x, y));
-			if (cptr != NULL && cptr->Overlay >= 205 && cptr->Overlay <= 232) {
+			Cell const probe = cell + Cell(x, y);
+			if (Is_Concrete_Bridge_Cell(probe)) {
+				Destroy_Concrete_Bridge_Neighbors(probe);
 				return;
 			}
 		}
 	}
 	Destroy_Bridge_Span_Near(cell);
+}
+
+
+/// <summary>
+/// Repairs a north-south concrete run (gamemd FUN_005800D0). The run is walked from its western end. A fallen
+/// or cracked piece takes one of the four intact north-south shapes at random, and a transitional piece goes
+/// back to the shape it came from. The pathfinding around the run is refreshed once a piece has been rebuilt.
+/// </summary>
+/// <param name="cell">A piece on the run to repair.</param>
+void MapClass::Repair_Concrete_Bridge_NS(Cell const & cell)
+{
+	Cell start = cell;
+	while (Is_Concrete_Bridge_Cell(start + Cell(-1, 0))) {
+		start = start + Cell(-1, 0);
+	}
+
+	bool rebuilt = false;
+	int min_x = start.X;
+	int max_x = start.X;
+
+	for (Cell cur = start; Is_Concrete_Bridge_Cell(cur); cur = cur + Cell(1, 0)) {
+		int const overlay = Concrete_Overlay_At(cur);
+		int next = overlay;
+
+		if ((overlay >= 209 && overlay <= 213) || overlay == OVERLAY_CONCRETE_BRIDGE_END1) {
+			next = OVERLAY_CONCRETE_BRIDGE_FIRST + Random_Pick(0, 3);
+			rebuilt = true;
+			min_x = min_x < cur.X ? min_x : cur.X;
+			max_x = max_x > cur.X ? max_x : cur.X;
+		} else if (overlay == 223 || overlay == 224) {
+			next = 223;
+		} else if (overlay == 225 || overlay == 226) {
+			next = 225;
+		}
+
+		if (next != overlay) {
+			Set_Concrete_Section(cur, false, next);
+		}
+	}
+
+	if (rebuilt) {
+		Zone_Reset();
+		Recalc_Cells_In_Rect(Rect(min_x, cell.Y - 1, max_x - min_x + 1, 3));
+	}
+}
+
+
+/// <summary>
+/// Repairs an east-west concrete run (gamemd FUN_00580600). The counterpart of Repair_Concrete_Bridge_NS: the
+/// run is walked from its northern end, and a fallen or damaged piece takes one of the four intact east-west
+/// shapes at random (214 to 217).
+/// </summary>
+/// <param name="cell">A piece on the run to repair.</param>
+void MapClass::Repair_Concrete_Bridge_EW(Cell const & cell)
+{
+	Cell start = cell;
+	while (Is_Concrete_Bridge_Cell(start + Cell(0, -1))) {
+		start = start + Cell(0, -1);
+	}
+
+	bool rebuilt = false;
+	int min_y = start.Y;
+	int max_y = start.Y;
+
+	for (Cell cur = start; Is_Concrete_Bridge_Cell(cur); cur = cur + Cell(0, 1)) {
+		int const overlay = Concrete_Overlay_At(cur);
+		int next = overlay;
+
+		if ((overlay >= 218 && overlay <= 222) || overlay == OVERLAY_CONCRETE_BRIDGE_END2) {
+			next = 214 + Random_Pick(0, 3);
+			rebuilt = true;
+			min_y = min_y < cur.Y ? min_y : cur.Y;
+			max_y = max_y > cur.Y ? max_y : cur.Y;
+		} else if (overlay == 227 || overlay == 228) {
+			next = 227;
+		} else if (overlay == 229 || overlay == 230) {
+			next = 229;
+		}
+
+		if (next != overlay) {
+			Set_Concrete_Section(cur, true, next);
+		}
+	}
+
+	if (rebuilt) {
+		Zone_Reset();
+		Recalc_Cells_In_Rect(Rect(cell.X - 1, min_y, 3, max_y - min_y + 1));
+	}
+}
+
+
+/// <summary>
+/// Repairs the concrete run through a cell (gamemd FUN_0057F440), choosing the north-south or the east-west
+/// walker from the piece's family and the neighbors that continue the run.
+/// </summary>
+/// <param name="cell">A concrete low bridge cell of the run.</param>
+void MapClass::Repair_Concrete_Bridge_Span(Cell const & cell)
+{
+	int const overlay = Concrete_Overlay_At(cell);
+
+	if (Is_Concrete_NS_Overlay(overlay)) {
+		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
+			Repair_Concrete_Bridge_NS(cell + Cell(0, 1));
+		} else if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
+			Repair_Concrete_Bridge_NS(cell + Cell(0, -1));
+		} else {
+			Repair_Concrete_Bridge_NS(cell);
+		}
+		return;
+	}
+
+	if (Is_Concrete_EW_Overlay(overlay)) {
+		if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
+			Repair_Concrete_Bridge_EW(cell + Cell(1, 0));
+		} else if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
+			Repair_Concrete_Bridge_EW(cell + Cell(-1, 0));
+		} else {
+			Repair_Concrete_Bridge_EW(cell);
+		}
+	}
+}
+
+
+/// <summary>
+/// Repairs the concrete bridge beside a bridge repair hut (gamemd RepairConcreteBridgeAt, 0x573540). The hut's
+/// five-cell square is searched column by column for a concrete piece, and the first one found is handed to
+/// Repair_Concrete_Bridge_Span. With no concrete piece in reach, the hut's search falls back to
+/// Repair_Bridge, the search that finds a road or train span nearby.
+/// </summary>
+/// <param name="cell">The cell the hut stands on.</param>
+void MapClass::Repair_Concrete_Bridge(Cell const & cell)
+{
+	for (int x = -2; x < 3; x++) {
+		for (int y = -2; y < 3; y++) {
+			Cell const probe = cell + Cell(x, y);
+			if (Is_Concrete_Bridge_Cell(probe)) {
+				Repair_Concrete_Bridge_Span(probe);
+				return;
+			}
+		}
+	}
+	Repair_Bridge(cell);
+}
+
+
+/// <summary>
+/// Tests whether a concrete span near a cell has fallen (gamemd MapClass::IsLinkedBridgeDestroyed, 0x587410, its
+/// concrete branch). The last concrete piece in the five-cell square is taken as the span's piece. A north-south
+/// piece is walked east and west, and an east-west piece north and south, and a fallen end (231 or 232) on the
+/// walk means the span needs repair.
+/// </summary>
+/// <param name="cell">The cell the engineer is repairing from.</param>
+/// <returns>bool; Is a concrete span beside this cell broken?</returns>
+bool MapClass::Concrete_Bridge_Repairable(Cell const & cell)
+{
+	bool found = false;
+	Cell linked = cell;
+	for (int y = -2; y < 3; y++) {
+		for (int x = -2; x < 3; x++) {
+			Cell const probe = cell + Cell(x, y);
+			if (Is_Concrete_Bridge_Cell(probe)) {
+				linked = probe;
+				found = true;
+			}
+		}
+	}
+
+	if (!found) {
+		return(false);
+	}
+
+	bool const ns = Is_Concrete_NS_Overlay(Concrete_Overlay_At(linked));
+	Cell const step_a = ns ? Cell(-1, 0) : Cell(0, -1);
+	Cell const step_b = ns ? Cell(1, 0) : Cell(0, 1);
+
+	for (Cell walk = linked; Is_Concrete_Bridge_Cell(walk); walk = walk + step_a) {
+		int const piece = Concrete_Overlay_At(walk);
+		if (piece == OVERLAY_CONCRETE_BRIDGE_END1 || piece == OVERLAY_CONCRETE_BRIDGE_END2) {
+			return(true);
+		}
+	}
+
+	for (Cell walk = linked; Is_Concrete_Bridge_Cell(walk); walk = walk + step_b) {
+		int const piece = Concrete_Overlay_At(walk);
+		if (piece == OVERLAY_CONCRETE_BRIDGE_END1 || piece == OVERLAY_CONCRETE_BRIDGE_END2) {
+			return(true);
+		}
+	}
+
+	return(false);
 }
 
 
@@ -12661,7 +13362,7 @@ void MapClass::Spawn_Bridge_Explosion(Cell const & cell)
 /// under-bridge path of BlowUpBridgeAt does. A railway middle piece, or a cell whose owner
 /// carries overlay 237 or 238 without a bridge flag, is blown up as a railway span
 /// (Blow_Up_Train_Bridge_At). A road middle piece is left alone. A concrete low bridge overlay
-/// (205 to 230) is not ported and takes no action here (see Destroy_Concrete_Bridge_At).
+/// (205 to 230) is damaged by Damage_Concrete_Bridge.
 /// </summary>
 /// <param name="cell">The cell to damage.</param>
 /// <returns>bool; Did a span come down?</returns>
@@ -12674,7 +13375,10 @@ bool MapClass::Damage_Bridge_At_Cell(Cell const & cell)
 	if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_26) {
 		result = Damage_Bridge(cell);
 
-	} else if (overlay < 205 || overlay > 230) {
+	} else if (overlay >= 205 && overlay <= 230) {
+		result = Damage_Concrete_Bridge(cell);
+
+	} else {
 		CellClass * owner = NULL;
 		bool handled = false;
 
@@ -13160,6 +13864,10 @@ bool MapClass::Can_Repair_Bridge(Cell const & cell)
 				}
 			}
 		}
+	}
+
+	if (!found && cellptr == NULL) {
+		return(Concrete_Bridge_Repairable(cell));
 	}
 
 	if (found) {

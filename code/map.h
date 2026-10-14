@@ -162,8 +162,10 @@ class MapClass: public GScreenClass
 		 */
 		bool Damage_Bridge(Cell const & cell);
 		bool Damage_Low_Bridge(Cell const & cell);
+		bool Damage_Concrete_Bridge(Cell const & cell);
 		void Repair_Train_Bridge(Cell const & cell);
 		void Repair_Bridge(Cell const & cell);
+		void Repair_Concrete_Bridge(Cell const & cell);
 		bool Can_Repair_Bridge(Cell const & cell);
 		void Destroy_Bridge_At(Cell const & cell);
 
@@ -211,6 +213,20 @@ class MapClass: public GScreenClass
 		 */
 		void Destroy_Wood_Bridge_At(Cell const & cell);
 		void Destroy_Concrete_Bridge_At(Cell const & cell);
+		void Destroy_Concrete_Bridge_Neighbors(Cell const & cell);
+		void Detonate_Concrete_Bridge_Run(Cell const & cell, FacingType axis);
+		void Set_Concrete_Piece(Cell const & cell, int overlay);
+		void Set_Concrete_Section(Cell const & cell, bool along_x, int overlay);
+		bool Damage_Concrete_Bridge_NS(Cell const & cell);
+		bool Damage_Concrete_Bridge_EW(Cell const & cell);
+		void Update_Concrete_Side_NS(Cell const & cell);
+		void Update_Concrete_Side_EW(Cell const & cell);
+		void Spring_Concrete_Bridge_Destroyed_NS(Cell cell);
+		void Spring_Concrete_Bridge_Destroyed_EW(Cell cell);
+		void Repair_Concrete_Bridge_Span(Cell const & cell);
+		void Repair_Concrete_Bridge_NS(Cell const & cell);
+		void Repair_Concrete_Bridge_EW(Cell const & cell);
+		bool Concrete_Bridge_Repairable(Cell const & cell);
 		void Destroy_Bridge_Span_Near(Cell const & cell);
 		void Destroy_Wood_Bridge_Neighbors(Cell const & cell);
 		void Detonate_Wood_Bridge_Run(Cell const & cell, FacingType axis);

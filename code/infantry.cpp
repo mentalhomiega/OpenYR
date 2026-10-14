@@ -903,6 +903,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						Sound_Effect(Rule->RepairBridgeSound, tech->Center_Coord());
 
 						bool train = false;
+						bool road_or_wood = false;
 						for (int y = -2; y < 3; y++) {
 							for (int x = -2; x < 3; x++) {
 								Cell cell = (Cell)Cell(PositionCell + Cell(x, y));
@@ -910,12 +911,23 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 								if (ittype >= IsometricTileTypeClass::TrainBridgeSet && ittype < IsometricTileTypeClass::TrainBridgeSet + TRAIN_BRIDGE_COUNT) {
 									train = true;
 								}
+								if (ittype >= IsometricTileTypeClass::BridgeSet && ittype < IsometricTileTypeClass::BridgeSet + BRIDGE_COUNT) {
+									road_or_wood = true;
+								}
+								if (Map[cell].Overlay >= OVERLAY_LOWBRIDGE_01 && Map[cell].Overlay <= OVERLAY_LOWBRIDGE_28) {
+									road_or_wood = true;
+								}
 							}
 						}
+
+						// gamemd's engineer repair (InfantryClass.c) uses the wood walker when a road or wood piece is in
+						// the five-cell square, and RepairConcreteBridgeAt (0x573540) otherwise.
 						if (train) {
 							Map.Repair_Train_Bridge(PositionCell);
-						} else {
+						} else if (road_or_wood) {
 							Map.Repair_Bridge(PositionCell);
+						} else {
+							Map.Repair_Concrete_Bridge(PositionCell);
 						}
 						for (int i = Infantry.Count() - 1; i >= 0; i--) {
 							Infantry[i]->Detach(tech, false);

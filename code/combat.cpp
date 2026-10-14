@@ -518,6 +518,19 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 				}
 			}
 		}
+
+		/*
+		 * A concrete low bridge piece (overlays 205 to 230) takes the same strength roll, once, and
+		 * then its state routine runs (gamemd 0x48A214, FUN_0057CCF0).
+		 */
+		if (cellptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cellptr->Overlay <= 230) {
+			if (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength) {
+				bool const destroyed = Map.Damage_Concrete_Bridge(cell);
+				if (destroyed) {
+					TechnoClass::Remove_Target(cellptr);
+				}
+			}
+		}
 	}
 
 	if (cellptr->Overlay != OVERLAY_NONE && OverlayTypes[cellptr->Overlay]->IsExplosive) {
