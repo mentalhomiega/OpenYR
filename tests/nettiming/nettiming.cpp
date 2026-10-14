@@ -490,6 +490,41 @@ namespace
 	}
 
 
+	// The master's desired rate, then each machine's pacer. The rate starts at the synchronized
+	// value and changes only when a fresh census and the game speed both allow it.
+	void Test_Speed_Reaches_Frame_Rate(void)
+	{
+		using namespace NetTiming;
+
+		TimingCensus measured;
+		measured.ActivePlayers = 2;
+		measured.FreshProcessReports = 2;
+		measured.FreshRoundTripReports = 2;
+		measured.WorstProcessMilliseconds = 4;
+		measured.WorstRoundTrip = 83;
+
+		unsigned int const fastest = Select_Desired_Frame_Rate(measured, 30, Game_Speed_Frame_Rate(0));
+		Expect_Equal("fastest speed with cheap frames asks for 60 FPS", fastest, 60u);
+
+		FramePacer pacer;
+		Milliseconds total = 0;
+		for (int frame = 0; frame < 60; frame++) {
+			total += pacer.Next_Wait(fastest);
+		}
+		Expect_Equal("60 frames at the fastest speed last exactly one second", total, 1000u);
+
+		TimingCensus incomplete = measured;
+		incomplete.ProcessComplete = false;
+		Expect_Equal("an incomplete process census holds the 30 FPS start", Select_Desired_Frame_Rate(incomplete, 30, Game_Speed_Frame_Rate(0)), 30u);
+
+		Expect_Equal("speed 1 caps the rate at 45 FPS", Select_Desired_Frame_Rate(measured, 30, Game_Speed_Frame_Rate(1)), 45u);
+
+		TimingCensus slow_frames = measured;
+		slow_frames.WorstProcessMilliseconds = 25;
+		Expect_Equal("a 25 ms frame limits the fastest speed to 40 FPS", Select_Desired_Frame_Rate(slow_frames, 30, Game_Speed_Frame_Rate(0)), 40u);
+	}
+
+
 	void Test_Census(void)
 	{
 		using namespace NetTiming;
@@ -1315,6 +1350,7 @@ int main(void)
 	Test_Game_Speed_Frame_Rate();
 	Test_Solo_Game_Speed_Frame_Rate();
 	Test_Frame_Pacer();
+	Test_Speed_Reaches_Frame_Rate();
 	Test_Census();
 	Test_Rungs();
 	Test_Connection_Quality();

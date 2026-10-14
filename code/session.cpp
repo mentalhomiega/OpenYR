@@ -515,6 +515,15 @@ void SessionClass::Adopt_Master(int house, char const * name)
 {
 	MasterPlayerID = house;
 	std::snprintf(MasterPlayerName, sizeof(MasterPlayerName), "%s", name != NULL ? name : "");
+
+	// Before the first frame, the announced host replaces the lowest seat that connection setup chose,
+	// so every machine names the same timing master.
+	if (CommProtocol == COMM_PROTOCOL_MULTI_E_COMP && house >= 0) {
+		if (Frame <= 0) {
+			NetworkTimingPolicyOwner = -1;
+		}
+		Prepare_Network_Timing_Master(house, Frame > 0 ? static_cast<unsigned int>(Frame) : 0u);
+	}
 }
 
 
