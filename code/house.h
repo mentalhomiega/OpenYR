@@ -1015,6 +1015,7 @@ class HouseClass : public AbstractClass
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
 		bool Is_Reversed(ObjectTypeClass const * type) const;
 		bool Is_Secret_Item(ObjectTypeClass const * type) const;
+		bool Owns_Prerequisite_Override(TechnoTypeClass const * type) const;
 		bool Has_Keep_Alive(void) const;
 		bool Add_Reversed(TechnoTypeClass const * type);
 

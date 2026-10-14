@@ -736,6 +736,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		TypeList<int> Prerequisite;
 
+		// A house that owns one of these buildings skips the Prerequisite, tech level, stolen tech
+		// and house checks. The Unbuildable flag and the build limit still apply.
+		TypeList<int> PrerequisiteOverride;
+
 		/*
 		**	The risk and reward values are used to determine targets and paths
 		**	toward targets. When heading toward a target, a path of least

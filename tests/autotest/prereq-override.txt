@@ -1,0 +1,30 @@
+; PrerequisiteOverride keeps a type buildable after its Prerequisite list is lost, while the house owns an override building.
+; Americans on the skirmish map. prereq-override.ini sets GHOST (the Navy SEAL) to PrerequisiteOverride=GATECH, a building the
+; player can place. Stock GHOST lists Prerequisite=GAPILE,RADAR and an override of CAWA2A-D, which skirmish players cannot own.
+; Expected: canbuild GHOST gives "can 0" at frame 48 (barracks, no radar, no battle lab), "can 1" at frame 100 (barracks and radar).
+; After the battle lab GATECH is placed at frame 110, the radar is destroyed at frame 200. GHOST still reads "can 1" at frame 220,
+; its cameo stays in the infantry strip reading "can 1" at frame 230, and clickcameo GHOST reports "offered" at frame 240.
+; Destroying GATECH at frame 300 leaves no prerequisite met, so GHOST reads "can 0" at frame 320, its cameo is gone at frame 330,
+; and clickcameo GHOST reports "no cameo" at frame 340.
+; Run: scripts/run_autotest.ps1 -Script src-agent12\tests\autotest\prereq-override.txt -Build agent12 -Filter "AUTOTEST +(cameo|clickcameo|quantity|kill|canbuild GHOST|own |rules)|Exception"
+1 rules E:/Claude ra2 decomp/src-agent12/tests/autotest/prereq-override.ini
+1 log prerequisite override: barracks and radar, then the override building GATECH
+30 own GACNST 50 96
+40 own GAPOWR 46 92
+45 own GAPILE 44 98
+48 canbuild GHOST
+50 own AMRADR 40 96
+100 canbuild GHOST
+110 own GATECH 56 100
+120 quantity GATECH
+200 kill AMRADR 1
+210 quantity AMRADR
+220 canbuild GHOST
+230 cameos
+240 clickcameo GHOST
+300 kill GATECH 1
+310 quantity GATECH
+320 canbuild GHOST
+330 cameos
+340 clickcameo GHOST
+600 quit

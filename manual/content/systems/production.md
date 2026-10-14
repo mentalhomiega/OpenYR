@@ -125,13 +125,13 @@ A newly placed factory is flagged primary only when its house has no primary of 
 
 ## What a house may build
 
-Five gates decide whether a house may build an object type, and a type must pass all five unless the house has [reverse engineered](#reverse-engineering) it or owns a [tech secret lab](#tech-secret-labs) that offers it.
+Five gates decide whether a house may build an object type, and a type must pass all five unless the house has [reverse engineered](#reverse-engineering) it, owns a [tech secret lab](#tech-secret-labs) that offers it, or owns a structure on the type's [`PrerequisiteOverride=`](/keys/prerequisiteoverride/) list. Each of those leaves only the [build limit](#build-limits) to check.
 
 By default ([`RecheckPrerequisites=yes`](/keys/recheckprerequisites/)), [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) applies all five gates again and cancels production of any type that fails.
 
 ### Tech level
 
-[`TechLevel=-1`](/keys/techlevel/#scope-aircrafttype) makes a type unbuildable. Otherwise the type's level must not exceed the house's tech level. A house's level comes from [its section in the map](/keys/techlevel/#scope-house-per-scenario) and defaults to the scenario number. Outside campaigns, every house the session sets up gets the session's chosen level instead, which starts from [`[MultiplayerDefaults] TechLevel`](/keys/techlevel/#scope-global-rules).
+[`TechLevel=-1`](/keys/techlevel/#scope-aircrafttype) makes a type unbuildable, unless the house owns a structure on its [`PrerequisiteOverride=`](/keys/prerequisiteoverride/) list. Otherwise the type's level must not exceed the house's tech level. A house's level comes from [its section in the map](/keys/techlevel/#scope-house-per-scenario) and defaults to the scenario number. Outside campaigns, every house the session sets up gets the session's chosen level instead, which starts from [`[MultiplayerDefaults] TechLevel`](/keys/techlevel/#scope-global-rules).
 
 ### Country and stolen technology
 
@@ -155,6 +155,8 @@ Eight group names are satisfied by owning any structure on the matching rules li
 | `GDIFACTORY` | [`PrerequisiteGDIFactory`](/keys/prerequisitegdifactory/) |
 | `NODFACTORY` | [`PrerequisiteNodFactory`](/keys/prerequisitenodfactory/) |
 | `PROC` | [`PrerequisiteProc`](/keys/prerequisiteproc/), or a unit on [`PrerequisiteProcAlternate`](/keys/prerequisiteprocalternate/) |
+
+A house that owns a structure on the type's [`PrerequisiteOverride=`](/keys/prerequisiteoverride/) list skips the entries above.
 
 :::caution[An upgrade prerequisite checks only the newest structure]
 When a prerequisite names an upgrade (a type with [`PowersUpBuilding=`](/keys/powersupbuilding/)), one structure decides the test: the house's newest structure that is on the map, switched on and not being sold, whatever its type. The prerequisite is met only if that structure has the upgrade installed. The same upgrade installed on any other structure does not count.
@@ -189,7 +191,7 @@ CanBeReversed=no            ; grinding an engineer teaches nothing
 
 ### Computer houses
 
-A computer house faces only the tech-level gate and the country and stolen-technology gate. Every type that passes them counts as buildable, and [base planning](/systems/ai-base-building/) decides what the house actually produces.
+A computer house faces only the tech-level gate and the country and stolen-technology gate, and an owned [`PrerequisiteOverride=`](/keys/prerequisiteoverride/) structure lifts both for it. Every type that passes them counts as buildable, and [base planning](/systems/ai-base-building/) decides what the house actually produces.
 
 ## Tech secret labs
 

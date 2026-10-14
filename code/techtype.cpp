@@ -105,6 +105,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	Soylent(0),
 	Level(255),
 	Prerequisite(),
+	PrerequisiteOverride(),
 	Risk(0),
 	Reward(0),
 	MaxSpeed(MPH_IMMOBILE),
@@ -1109,6 +1110,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);
 		}
 		Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
+		PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
 		SightRange = ini.Get_Int(Name(), "Sight", SightRange);
 		Level = ini.Get_Int(Name(), "TechLevel", Level);
 		int maxspeed = ini.Get_Int(Name(), "Speed", -1);
@@ -1731,6 +1733,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FlightLevel);
 	stream.Serialize(Level);
 	stream.Serialize(Prerequisite);
+	stream.Serialize(PrerequisiteOverride);
 	stream.Serialize(Risk);
 	stream.Serialize(Reward);
 	stream.Serialize(MaxSpeed);
@@ -1876,6 +1879,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Soylent);
 	crc(Level);
 	crc(Prerequisite.Count());
+	crc(PrerequisiteOverride.Count());
 	crc(Risk);
 	crc(Reward);
 	crc(MaxSpeed);

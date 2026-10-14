@@ -1072,6 +1072,21 @@ bool HouseClass::Is_Secret_Item(ObjectTypeClass const * type) const
 }
 
 
+/// <summary>
+/// Whether this house has a structure of the type's PrerequisiteOverride list in service.
+/// The count is the one the Prerequisite entries read, and a group code never counts.
+/// </summary>
+bool HouseClass::Owns_Prerequisite_Override(TechnoTypeClass const * type) const
+{
+	for (int index = 0; index < type->PrerequisiteOverride.Count(); index++) {
+		if (ABQuantity.Value(type->PrerequisiteOverride[index]) > 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 bool HouseClass::Is_Reversed(ObjectTypeClass const * type) const
 {
 	for (std::string const & name : ReversedTypes) {
@@ -1108,6 +1123,11 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 
 	if (!forced && SecretLabs.Count() > 0 && Is_Secret_Item(type)) {
 		if (((TechnoTypeClass const *)type)->IsUnbuildable) return(0);
+		forced = true;
+	}
+
+	// gamemd's CanBuild (0x4F7870) skips the gates below when an override building is in service.
+	if (!forced && !((TechnoTypeClass const *)type)->IsUnbuildable && Owns_Prerequisite_Override((TechnoTypeClass const *)type)) {
 		forced = true;
 	}
 

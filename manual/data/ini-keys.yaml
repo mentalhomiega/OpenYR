@@ -27946,6 +27946,23 @@ PrerequisiteNodFactory:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+PrerequisiteOverride:
+  key: PrerequisiteOverride
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of BuildingTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: PrerequisiteOverride
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PrerequisitePower:
   key: PrerequisitePower
   scopes:
