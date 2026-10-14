@@ -134,6 +134,9 @@ struct UninstallType
 	std::wstring Folder;
 	bool DeleteData = false;
 	LocationType Where;
+
+	// False leaves the shortcuts and the Apps & Features entry alone. The tests use it, as the install does.
+	bool Shortcuts = true;
 };
 
 // Removes what the install record names, its shortcuts and its Apps & Features entry. Settings and

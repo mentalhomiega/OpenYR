@@ -616,6 +616,19 @@ void Test_Shortcuts(void)
 	Check(setup::Install_Package(quiet, Package("engine", "beta23", false, false), nullptr, error), "an install with no shortcuts succeeds");
 	Check(!Exists(Path_Of(Programs, L"OpenYR\\OpenYR.lnk")) && !Exists(desktop_link), "and it writes no Start Menu or desktop entry");
 	setup::Remove_Tree(folder, error);
+
+	// An uninstall with no shortcuts leaves the shortcuts and the Apps & Features key as they are.
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), false, error), "an install with shortcuts succeeds before the quiet uninstall");
+	setup::UninstallType quiet_uninstall;
+	quiet_uninstall.Folder = folder;
+	quiet_uninstall.Where = Where();
+	quiet_uninstall.Shortcuts = false;
+	std::vector<std::wstring> left;
+	Check(setup::Uninstall_Package(quiet_uninstall, nullptr, error, left), "an uninstall with no shortcuts succeeds");
+	std::wstring version;
+	Check(Exists(desktop_link) && setup::Registry_String(HKEY_CURRENT_USER, 0, TestKey, L"DisplayName", version), "and it leaves the desktop shortcut and the Apps & Features entry in place");
+	setup::Delete_File_Forced(desktop_link);
+	setup::Remove_Tree(folder, error);
 }
 
 

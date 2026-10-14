@@ -728,11 +728,13 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 	LocationType const where = request.Where;
 	std::wstring const start_folder = Program_Shortcut_Folder(where);
 
-	Say(report, 2, L"Removing the shortcuts");
-	Remove_Own_Shortcut(Desktop_Folder(where) + L"\\" + ShortcutName, folder);
-	Remove_Own_Shortcut(start_folder + L"\\" + ShortcutName, folder);
-	Remove_Shortcut_To(start_folder + L"\\" + UninstallShortcutName, Join(folder, UninstallerName));
-	Remove_Folder_If_Empty(start_folder);
+	if (request.Shortcuts) {
+		Say(report, 2, L"Removing the shortcuts");
+		Remove_Own_Shortcut(Desktop_Folder(where) + L"\\" + ShortcutName, folder);
+		Remove_Own_Shortcut(start_folder + L"\\" + ShortcutName, folder);
+		Remove_Shortcut_To(start_folder + L"\\" + UninstallShortcutName, Join(folder, UninstallerName));
+		Remove_Folder_If_Empty(start_folder);
+	}
 
 	std::size_t index = 0;
 	for (std::wstring const & name : info.Files) {
@@ -802,8 +804,10 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 	}
 	Remove_Folder_If_Empty(folder);
 
-	Say(report, 96, L"Removing the Apps & Features entry");
-	Registry_Delete_Tree(HKEY_CURRENT_USER, Uninstall_Key(where).c_str());
+	if (request.Shortcuts) {
+		Say(report, 96, L"Removing the Apps & Features entry");
+		Registry_Delete_Tree(HKEY_CURRENT_USER, Uninstall_Key(where).c_str());
+	}
 
 	Say(report, 100, L"OpenYR was removed");
 	return(left.empty() && error.empty());

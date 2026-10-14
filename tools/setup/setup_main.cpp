@@ -144,6 +144,7 @@ int Run_Silent_Uninstall(AppOptionsType & options)
 	setup::UninstallType request;
 	request.Folder = options.Folder.empty() ? options.SelfFolder : setup::Normalize_Path(options.Folder);
 	request.DeleteData = options.DeleteData;
+	request.Shortcuts = options.Shortcuts;
 
 	bool const from_install = setup::Is_Inside(options.Self, request.Folder);
 	std::wstring error;
