@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-`FlyBy=yes` keeps an aircraft in the game after it leaves the [`LocalSize`](/keys/localsize/) area. A loaner, or a team member on its way out, is then removed only once it leaves the [playfield](/keys/size/). Without the key, it is removed as soon as it leaves the local area.
+`FlyBy=yes` keeps an aircraft in the game after it leaves the [`LocalSize`](/keys/localsize/) area. A loaner, or a team member on its way out, is then removed only once it leaves the [playfield](/keys/size/). Without the key, it is removed as soon as it leaves the local area, once it has entered the playable area.
 
 ```ini title="rules.ini"
 [ORCA]

@@ -4373,12 +4373,16 @@ int AircraftClass::Do_MISSION_SPYPLANE_OVERFLY(void)
 /// <summary>
 /// Should this aircraft be quietly removed once it leaves the map?
 /// A loaner, or an aircraft belonging to a team that is on its way off the map, has no
-/// further business in the scenario and is deleted rather than left to fly forever.
+/// further business in the scenario and is deleted rather than left to fly forever. An
+/// aircraft that has not yet entered the playable area, or is on a paradrop mission, is not.
 /// </summary>
 /// <returns>bool; Should this aircraft be deleted when it flies off the map?</returns>
 bool AircraftClass::Should_Delete_Off_Map(void)
 {
-	// AircraftClass::IsLeavingMap (0x41B890) does not test IsLocked; a plane that retreats outside the local view must still leave.
+	// As AircraftClass::IsLeavingMap (0x41B890): an aircraft that has not entered the playable area, or is on a paradrop mission, stays.
+	if (!IsLocked || Get_Mission() == MISSION_PARADROP_APPROACH || Get_Mission() == MISSION_PARADROP_OVERFLY) {
+		return(false);
+	}
 	if (TarCom == NULL || CurrentMission == MISSION_SPYPLANE_OVERFLY) {
 		if ((Team == NULL && IsALoaner) || (Team != NULL && Team->Is_Leaving_Map())) {
 			return(true);
