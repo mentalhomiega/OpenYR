@@ -905,15 +905,25 @@ bool CNCNet_Writable(std::string const & folder)
 }
 
 
-std::string CNCNet_Default_Destination(std::string const & build, std::string const & documents)
+std::string CNCNet_Default_Destination(std::string const & install, std::string const & build, std::string const & games)
 {
 	if (CNCNet_Is_Marked_Copy(build)) {
 		return(build);
 	}
-	if (CNCNet_Writable(build)) {
-		return(Under(build, "CnCNet"));
+	if (install.empty()) {
+		return(std::string());
 	}
-	return(Under(Under(documents, "OpenYR"), "CnCNet"));
+
+	// A trailing separator names the same folder, so the install's name is the last part that is not empty.
+	fs::path folder = Path(install).lexically_normal();
+	if (folder.filename().empty()) {
+		folder = folder.parent_path();
+	}
+	fs::path const parent = folder.parent_path();
+	if (CNCNet_Writable(parent.string())) {
+		return((parent / Path(folder.filename().string() + " - OpenYR")).string());
+	}
+	return((Path(games) / "OpenYR CnCNet").string());
 }
 
 
@@ -1006,6 +1016,10 @@ CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & dest
 	}
 	if (Is_Inside(destination, install)) {
 		plan.Problem = "The copy cannot be made inside the install folder. Choose another folder with Change destination.";
+		return(plan);
+	}
+	if (Is_Inside(install, destination)) {
+		plan.Problem = "The install is inside the copy folder, so the copy would contain itself. Choose another folder with Change destination.";
 		return(plan);
 	}
 

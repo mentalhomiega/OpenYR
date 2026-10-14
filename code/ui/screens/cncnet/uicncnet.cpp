@@ -53,21 +53,21 @@ std::string Megabytes(std::uint64_t bytes)
 }
 
 
-UICNCNetSessionClass::UICNCNetSessionClass(std::string const & build, std::string const & documents) :
+UICNCNetSessionClass::UICNCNetSessionClass(std::string const & build, std::string const & games) :
 	Build(build),
-	Documents(documents)
+	Games(games)
 {
 }
 
 
 void UICNCNetSessionClass::Restore_Choices(void)
 {
-	std::string const destination = Remembered("Destination");
-	Destination = destination.empty() ? CNCNet_Default_Destination(Build, Documents) : destination;
+	// An empty remembered destination means the player never chose one, so it follows the install.
+	Destination = Remembered("Destination");
 
 	std::string const install = Remembered("Install");
 	if (CNCNet_Is_Install(install)) {
-		Install = install;
+		Use_Install(install);
 		Message.clear();
 		Problem = false;
 		Refresh();
@@ -85,11 +85,24 @@ void UICNCNetSessionClass::Find_Install(void)
 		Message = "No CnCNet install was found in the registry, beside this build or in its parent folder.";
 		Problem = true;
 	} else {
-		Install = installs.front();
+		Use_Install(installs.front());
 		Message.clear();
 		Problem = false;
 	}
 	Refresh();
+}
+
+
+void UICNCNetSessionClass::Use_Install(std::string const & folder)
+{
+	auto default_for = [this](std::string const & install) {
+		return(CNCNet_Default_Destination(install, Build, Games));
+	};
+	bool const follows_default = Destination.empty() || Destination == default_for(Install);
+	Install = folder;
+	if (follows_default) {
+		Destination = default_for(Install);
+	}
 }
 
 
@@ -100,7 +113,7 @@ void UICNCNetSessionClass::Choose_Install(std::string const & folder)
 		Problem = true;
 		return;
 	}
-	Install = folder;
+	Use_Install(folder);
 	Message.clear();
 	Problem = false;
 	Remember_Choices();

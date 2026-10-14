@@ -209,13 +209,17 @@ int main(void)
 	Check(CNCNet_Is_Install(install), "a folder with ClientDefinitions.ini and CnCNetYRLauncher.exe is an install");
 	Check(!CNCNet_Is_Install(build), "a build folder without those files is not an install");
 	Check(!CNCNet_Is_Install(copy), "a folder that does not exist is not an install");
-	// The default copy folder is a CnCNet folder beside a build that can be written. A build under a file
-	// cannot be written, so the default moves to CnCNet under Documents. A marked copy is its own default.
-	std::string const documents = Join(root, "Documents");
+	// The default copy folder is "<install> - OpenYR" beside the install when the install's parent can be
+	// written, and games\OpenYR CnCNet otherwise. A missing install gives no default.
+	std::string const games = Join(root, "Games");
 	Write_Text(Join(root, "blocker.txt"), "a file, not a folder");
-	Check(CNCNet_Default_Destination(build, documents) == Join(build, "CnCNet"), "the default copy folder is CnCNet beside a build that can be written");
-	Check(CNCNet_Default_Destination(Join(Join(root, "blocker.txt"), "build"), documents) == Join(Join(documents, "OpenYR"), "CnCNet"),
-		"a build that cannot be written gets CnCNet under Documents");
+	Check(CNCNet_Default_Destination(install, build, games) == Join(root, "CnCNet Yuri's Revenge - OpenYR"),
+		"the default copy folder is beside the install, with ' - OpenYR' added, when the install's parent can be written");
+	Check(CNCNet_Default_Destination(install + "\\", build, games) == Join(root, "CnCNet Yuri's Revenge - OpenYR"),
+		"a trailing separator on the install gives the same default");
+	Check(CNCNet_Default_Destination(Join(Join(root, "blocker.txt"), "install"), build, games) == Join(games, "OpenYR CnCNet"),
+		"an install whose parent cannot be written gets games\\OpenYR CnCNet");
+	Check(CNCNet_Default_Destination("", build, games).empty(), "no install gives no default copy folder");
 
 	// Writability: an existing folder or a missing folder beneath one can be written; a path under a file cannot.
 	// The check leaves no probe file behind.
@@ -248,6 +252,10 @@ int main(void)
 	Check(CNCNet_Plan(install, "", build).Problem.find("Choose the folder") != std::string::npos, "an empty copy folder is refused");
 	Check(CNCNet_Plan(install, Join(install, "inside"), build).Problem.find("inside the install") != std::string::npos,
 		"a copy folder inside the install is refused");
+	Check(CNCNet_Plan(install, install, build).Problem.find("inside the install") != std::string::npos,
+		"a copy folder equal to the install is refused");
+	Check(CNCNet_Plan(install, root, build).Problem.find("inside the copy folder") != std::string::npos,
+		"an install inside the copy folder is refused, so the copy cannot contain itself");
 	Check(CNCNet_Plan(install, Join(Join(root, "blocker.txt"), "CnCNet"), build).Problem.find("cannot be written") != std::string::npos,
 		"a copy folder that cannot be written is refused before anything is copied");
 
@@ -302,7 +310,7 @@ int main(void)
 	Check(status.Build_Game_Size == status.Copy_Game_Size, "the status reports the copy's Game.exe size");
 	Check(CNCNet_Status(install, copy, Join(root, "nothing-here")).Copy_Present, "a status from another build folder still finds the copy at its destination");
 	Check(!CNCNet_Status(install, Join(root, "no-copy-here"), build).Copy_Present, "a folder without the marker is not reported as a copy");
-	Check(CNCNet_Default_Destination(copy, documents) == copy, "a build that is a copy defaults to its own folder");
+	Check(CNCNet_Default_Destination(install, copy, games) == copy, "a build that is a copy defaults to its own folder");
 
 	// A marked copy made from another install is not updated in place, since its install files would be wrong.
 	std::string const other = Join(root, "Other Install");

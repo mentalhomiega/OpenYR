@@ -20,7 +20,6 @@
 #include <memory>
 #include <string>
 
-#include <knownfolders.h>
 #include <objbase.h>
 #include <shlobj.h>
 
@@ -49,16 +48,16 @@ std::string Build_Folder(void)
 }
 
 
-// The player's Documents folder, or an empty string when Windows does not name one.
-std::string Documents_Folder(void)
+// The Games folder on the drive Windows is installed on, or an empty string when Windows does not name one.
+std::string Games_Folder(void)
 {
-	PWSTR path = nullptr;
-	std::string folder;
-	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &path)) && path != nullptr) {
-		folder = To_Narrow(path);
+	wchar_t path[MAX_PATH];
+	UINT const length = GetSystemWindowsDirectoryW(path, MAX_PATH);
+	if (length == 0 || length >= MAX_PATH) {
+		return(std::string());
 	}
-	CoTaskMemFree(path);
-	return(folder);
+	std::wstring const root = std::filesystem::path(std::wstring(path, length)).root_path().wstring();
+	return(To_Narrow(root + L"Games"));
 }
 
 
@@ -96,7 +95,7 @@ bool Browse_For_Folder(std::string & folder, wchar_t const * title)
 
 bool UI_CNCNet_Dialog(void)
 {
-	UICNCNetSessionClass session(Build_Folder(), Documents_Folder());
+	UICNCNetSessionClass session(Build_Folder(), Games_Folder());
 	session.Restore_Choices();
 
 	while (true) {

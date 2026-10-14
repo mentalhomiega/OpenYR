@@ -15,7 +15,7 @@ This page covers how the CnCNet client starts OpenYR's `Game.exe`, what our buil
 | Item | Status |
 | --- | --- |
 | Launch file reader (`SPAWN.INI`: seats, tunnel, mode index) | Built into `Game.exe`; `spawncontract` in ctest |
-| CnCNet page: copy, edits, marker, update, removal, start | Built into `Game.exe`; `cncnetcopy` in ctest and the page screenshots. Not run with the client |
+| CnCNet page: copy, destination, edits, marker, update, removal, start, remembered choices | Built into `Game.exe`; `cncnetcopy` in ctest and the page screenshots. Not run with the client |
 | Superweapons key | Read case-insensitively from this build on, as gamemd does. See [Lobby options](#lobby-options) |
 | Unknown command-line switches | Ignored by the parser. Not seen in a running game |
 | The exact command line the client builds | Not verified. `client.log` does not record it |
@@ -61,9 +61,30 @@ Both testers still run the same build, as the tester guide says.
 
 ### The CnCNet page
 
-Open the main menu and choose CnCNet. The page looks for the install in this order: the `installpath` value under `HKLM\SOFTWARE\Westwood\Yuri's Revenge`, which the stock installer writes; the folder that holds the running `Game.exe`; and that folder's parent. A folder counts as an install when it holds `Resources\ClientDefinitions.ini` and `CnCNetYRLauncher.exe`. When none is found, or another one is wanted, Choose folder... asks for it.
+Open the main menu and choose CnCNet. The page uses the install and the copy folder it remembers. Without a remembered install, it looks for one in this order: the `installpath` value under `HKLM\SOFTWARE\Westwood\Yuri's Revenge`, which the stock installer writes; the folder that holds the running `Game.exe`; and that folder's parent. A folder counts as an install when it holds `Resources\ClientDefinitions.ini` and `CnCNetYRLauncher.exe`. Choose folder... picks another install.
 
-Before it changes anything, the page lists the copy's folder, every file it replaces or adds, and each edit. Create copy starts the copy on a worker thread, so the menus keep drawing. The progress bar counts bytes. Cancel copy stops the copy and removes the files that run created. The install is only read. If the folder beside the install already exists and is not an OpenYR copy, the page refuses and names the folder.
+The copy goes to a destination folder, shown on the page's OpenYR copy line. Without a remembered destination, the default is:
+
+- the running build's own folder, when that folder is an OpenYR copy;
+- otherwise `<install> - OpenYR` beside the install, when the install's parent folder can be written;
+- otherwise `OpenYR CnCNet` in a `Games` folder on the drive Windows is on.
+
+Testers extract the package inside their Yuri's Revenge folder, so the running `Game.exe` is often inside the install. The default never puts a new copy in the running build's folder, because the copy would then sit inside the install.
+
+Change destination... picks another folder. The folder must be empty, or hold an OpenYR copy of the same install. The page never asks for administrator rights, so a folder it cannot write to is refused and the page says so.
+
+The page keeps the install and the destination in the `[CnCNet]` section of the settings file, which is `RA2MD.INI` unless `OPENTS.INI` names another. It saves them when you choose either folder, when Find install finds one, and when a copy starts. Next time the page opens, it uses them. A remembered install that is no longer an install is replaced by a search, as above.
+
+Before it changes anything, the page lists the copy's folder, every file it replaces or adds, and each edit. The plan is refused, and Create copy stays disabled, when:
+
+- the destination is the install folder or lies inside it;
+- the install lies inside the destination, so the copy would contain itself;
+- the destination cannot be written. The page creates and deletes a test file in the nearest folder that exists;
+- the destination exists, is not empty, and is not an OpenYR copy;
+- the destination is an OpenYR copy made from another install;
+- the drive has less free space than the install needs plus 1 GB.
+
+Create copy starts the copy on a worker thread, so the menus keep drawing. The progress bar counts bytes. Cancel copy stops the copy and removes the files that run created. The install is only read.
 
 The page reports three things about the copy:
 
@@ -74,6 +95,8 @@ The page reports three things about the copy:
 When the client update has undone the edits, the button reads Repair copy. Repair and Update copy run the same job: they copy `Game.exe`, `Language.dll` and the `ui` folder again and make the edits again. They do not copy the install again.
 
 Remove OpenYR copy asks for confirmation. It deletes only a folder that holds the marker file. Start CnCNet runs `CnCNetYRLauncher.exe` from the copy and then ends this game, as Exit Game does.
+
+The page's screenshots come from a fake install. `tests/autotest/cncnet-page-fixture.ps1` builds it from the text files of a client folder. Its executables are placeholder bytes that nothing runs. The `cncnet-page-*.txt` scripts run the page against that install, with the settings the fixture prints.
 
 ### The script
 

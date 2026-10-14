@@ -32,8 +32,8 @@ enum UICNCNetChoice
 class UICNCNetSessionClass
 {
 	public:
-		// documents is the player's Documents folder, the copy's fallback when the build's folder cannot be written.
-		UICNCNetSessionClass(std::string const & build, std::string const & documents);
+		// games is the Games folder on the drive Windows is on, where a copy goes when the install's parent cannot be written.
+		UICNCNetSessionClass(std::string const & build, std::string const & games);
 
 		// Uses the install and the copy folder the player chose last time. An install that is no longer
 		// there is searched for again, as Find_Install does.
@@ -65,7 +65,7 @@ class UICNCNetSessionClass
 		bool Busy(void) const;
 
 		std::string Build;
-		std::string Documents;
+		std::string Games;
 		std::string Install;
 		std::string Destination;
 		CNCNetStatusType Status;
@@ -78,6 +78,9 @@ class UICNCNetSessionClass
 		bool Copying = false;
 
 	private:
+		// Sets the install. A copy folder the player has not chosen follows the install's default.
+		void Use_Install(std::string const & folder);
+
 		CNCNetJobStateType Seen = CNCNetJobStateType::Idle;
 };
 
