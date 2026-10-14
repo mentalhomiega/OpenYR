@@ -1,0 +1,32 @@
+; Type select (T) over Mirage Tanks. A moving pair is ordered first, so it is never disguised. Three still
+; tanks follow on screen and take their tree look when they stand still. The owner sees a still Mirage as
+; a tree during frames 0x48 to 0x77 of its 256-frame cycle, and the cycle starts 64 frames before the look
+; is taken (frame 45 here), so the tap at frame 71 falls inside that window and the tap at frame 121 does
+; not. One tank stands off screen. Each tap is followed by 'selected' (the selection) and each batch of
+; steps by 'where' (the Mirage look of every tank and whether the owner sees it as terrain).
+; Expected with the type-select rules: the tap at 71 selects the three still tanks although they look like
+; trees; the tap at 121 finds nothing unselected on screen and widens to the whole map, selecting the one
+; off screen; the tap at 131 changes nothing.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/type-select-mirage.txt -Filter "AUTOTEST|Exception"
+30 view 60 42
+35 reveal
+40 grantunit MGTK 63 44
+41 grantunit MGTK 64 44
+42 move MGTK 50 44
+45 grantunit MGTK 60 42
+46 grantunit MGTK 61 42
+47 grantunit MGTK 62 42
+48 grantunit MGTK 110 110
+69 pickable MGTK
+70 where MGTK
+71 key 84
+72 selected
+119 pickable MGTK
+120 where MGTK
+121 key 84
+122 selected
+129 pickable MGTK
+130 where MGTK
+131 key 84
+132 selected
+300 quit

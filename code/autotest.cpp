@@ -3083,6 +3083,18 @@ void Run(StepType const & step)
 				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
 				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
 		}
+	} else if (step.Command == "pickable") {
+		// pickable <TypeID>: each object of that type the player owns, and whether the clickable list
+		// holds it. The list is the one the last render built, which the on-screen type select reads.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			bool listed = false;
+			for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
+				listed = listed || entry.Object == static_cast<ObjectClass const *>(techno);
+			}
+			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed);
+		}
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
 		for (int index = 0; index < Technos.Count(); index++) {

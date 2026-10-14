@@ -59,6 +59,8 @@ Which look a viewer sees depends on whose vehicle it is and on the frame:
 
 A computer house's units pick a Mirage tank as an automatic target only in those blink frames, and then only on a roll set by [`DisabledDisguiseDetectionPercent`](/keys/disableddisguisedetectionpercent/) for the side. A human house's units never pick it automatically, and units of a type with [`DetectDisguise=yes`](/keys/detectdisguise/) see through the disguise. The player's own vehicle has a short translucent shimmer in bursts of its cycle, on either look. Other vehicles get no shimmer.
 
+A vehicle that looks like terrain to its owner stays on the clickable list, so a click on it and a [type-select](/commands/typeselect/) tap still select it.
+
 ## Structures that see through disguises
 
 A [`DetectDisguise=yes`](/keys/detectdisguise/) structure shows its owner the objects within [`DetectDisguiseRange`](/keys/detectdisguiserange/) cells as they are: an object that copied a soldier keeps its own look and name, and a still `DisguiseWhenStill` vehicle is drawn as a vehicle. The structure does this only if it is [operational](/systems/power/#defenses) when it is placed on the map; losing power later does not stop it, and gaining power later does not start it. It stops when it leaves the map, and a working one that is captured works for its new owner instead.

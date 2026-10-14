@@ -3230,6 +3230,8 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	// A disguised Mirage is drawn as its terrain while Is_Shown_As_Terrain_To says the viewer sees it so.
 	if (MirageType != NULL && PlayerPtr != NULL && Is_Shown_As_Terrain_To(PlayerPtr)) {
+		// The vehicle stays clickable and type-selectable while it looks like terrain.
+		TacticalMap->Add_To_Selectables((ObjectClass *)this, point);
 		ShapeSet const * shape = (ShapeSet const *)MirageType->Get_Image_Data();
 		CellClass & cellptr = Map[Get_Cell()];
 		if (cellptr.Drawer == NULL) {
