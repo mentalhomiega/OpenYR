@@ -6,8 +6,8 @@
 ; structure is complete does nothing, and one after it places it, so each produce line is followed by
 ; place lines over a window that covers its build time. The windows assume about 40 frames a second.
 ; Run: scripts/run_netsync.ps1 -Build agent17 -Map XMP29U2.MAP -ScriptA tests/netsync/xmp29u2-side-a.txt -ScriptB tests/netsync/xmp29u2-side-b.txt -Seconds 400
-; No Chronosphere is built in these runs, so the fire at 15000 has no effect.
-; GAAIRC is the Allied radar ID, but the Americans (this side's country) may not build it: the rules forbid it to them, so its produce step is refused and GATECH and GACSPH stay unbuilt. The runner seats side A as Americans.
+; GACSPH is built last, so its ChronoSphereSpecial is still charging at 15000 and the fire there has no effect.
+; AMRADR is the American radar (RequiredHouses=Americans). It also satisfies the RADAR prerequisite of GATECH. GAAIRC, the other Allied countries' radar, forbids Americans, so a produce step for it is refused. The runner seats side A as Americans.
 1 log netsync side A: base, army, planning, attack and superweapon orders
 40 select AMCV
 60 command DeployObject
@@ -28,16 +28,16 @@
 3000 place GAREFN
 3100 place GAREFN
 3200 place GAREFN
-3250 produce GAAIRC
-3650 place GAAIRC
-3750 place GAAIRC
-3850 place GAAIRC
-3950 place GAAIRC
-4050 place GAAIRC
-4150 place GAAIRC
-4250 place GAAIRC
-4350 place GAAIRC
-4450 place GAAIRC
+3250 produce AMRADR
+3650 place AMRADR
+3750 place AMRADR
+3850 place AMRADR
+3950 place AMRADR
+4050 place AMRADR
+4150 place AMRADR
+4250 place AMRADR
+4350 place AMRADR
+4450 place AMRADR
 4500 produce GAWEAP
 5100 place GAWEAP
 5200 place GAWEAP
@@ -83,29 +83,33 @@
 7800 place GAPOWR
 7900 place GAPOWR
 8000 produce GATECH
-8500 place GATECH
-8600 place GATECH
-8700 place GATECH
-8800 place GATECH
-8900 place GATECH
-9000 place GATECH
-9100 produce GACSPH
-9500 place GACSPH
-9550 place GACSPH
-9600 place GACSPH
-9650 place GACSPH
-9700 place GACSPH
-9750 place GACSPH
-9800 place GACSPH
+9200 place GATECH
+9300 place GATECH
+9400 place GATECH
+9500 place GATECH
+9600 place GATECH
+9700 place GATECH
+9800 place GATECH
 9900 attack MTNK
 9950 strikeobj GAPILE 69 74 6 all
 10000 strike E1 69 74
 10050 rally GAPILE 47 91
+10100 produce GACSPH
 10200 dump
 10300 where MTNK
 10400 supers
 11000 sell 51 94
+11420 place GACSPH
+11470 place GACSPH
 11500 attack MTNK
+11520 place GACSPH
+11570 place GACSPH
+11620 place GACSPH
+11670 place GACSPH
+11720 place GACSPH
+11770 place GACSPH
+11820 place GACSPH
+11870 place GACSPH
 12000 dump
 13000 supers
 15000 fire ChronoSphereSpecial 70 72
