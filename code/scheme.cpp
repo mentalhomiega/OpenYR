@@ -11,12 +11,15 @@
 
 #include "scheme.h"
 
+#include "_palette.h"
 #include "_surface.h"
 #include "lightcon.h"
+#include "playercolor.h"
 #include "sun.h"
 #include "vector.h"
 
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 
 bool _indexes[256] =
@@ -72,26 +75,10 @@ DynamicVectorClass<ColorScheme *> ColorSchemes;
 /// <returns>Returns with a pointer to the newly created converter.</returns>
 ConvertClass *Build_Light_Converter(HSVClass & hsv, const PaletteClass & base, const PaletteClass & screenpalette, PaletteClass * remapped, Surface const & typicalsurface, int intensity_levels, int r, int g, int b, bool *indexes)
 {
-	int hue = hsv.Get_Hue();
-	int saturation = hsv.Get_Saturation();
-	int value = hsv.Get_Value();
-
 	*remapped = base;
 
-	double cos_step = DEG_TO_RAD(14.0 / 3.0);
-	double sin_step = DEG_TO_RAD(8.0 / 3.0);
-
 	for (int i = 0; i < 16; i++) {
-		double cosval = DEG_TO_RAD(20) + (i * cos_step);
-		double sinval = DEG_TO_RAD(50) + (i * sin_step);
-		if (i == 0) {
-			cosval = DEG_TO_RAD(360.0/32.0); /// 11.25 degrees, expressed in radians.
-		}
-
-		int sat = int(std::sin(sinval) * saturation);
-		int val = int(std::cos(cosval) * value);
-
-		(*remapped)[i + 16] = HSVClass(hue, sat, val);
+		(*remapped)[i + 16] = Player_Ramp_Entry(hsv, i);
 	}
 
 	return(new LightConvertClass(*remapped, screenpalette, typicalsurface, r, g, b, false, indexes, intensity_levels));
@@ -112,26 +99,10 @@ ConvertClass *Build_Light_Converter(HSVClass & hsv, const PaletteClass & base, c
 /// <returns>Returns with a pointer to the newly created converter.</returns>
 ConvertClass *Build_Converter(HSVClass & hsv, const PaletteClass & base, const PaletteClass & screenpalette, Surface const & typicalsurface, PaletteClass *remapped)
 {
-	int hue = hsv.Get_Hue();
-	int saturation = hsv.Get_Saturation();
-	int value = hsv.Get_Value();
-
 	PaletteClass pal = base;
 
-	double cos_step = DEG_TO_RAD(14.0 / 3.0);
-	double sin_step = DEG_TO_RAD(8.0 / 3.0);
-
 	for (int i = 0; i < 16; i++) {
-		double cosval = DEG_TO_RAD(20) + (i * cos_step);
-		double sinval = DEG_TO_RAD(50) + (i * sin_step);
-		if (i == 0) {
-			cosval = DEG_TO_RAD(360.0/32.0); /// 11.25 degrees, expressed in radians.
-		}
-
-		int sat = int(std::sin(sinval) * saturation);
-		int val = int(std::cos(cosval) * value);
-
-		pal[i + 16] = HSVClass(hue, sat, val);
+		pal[i + 16] = Player_Ramp_Entry(hsv, i);
 	}
 
 	if (remapped != NULL) {
@@ -322,4 +293,42 @@ int Fetch_Scheme_Index_By_Name(char const * name, int intensity_levels)
 		}
 	}
 	return(-1);
+}
+
+
+/// <summary>
+/// Finds or builds the color scheme of a custom player color.
+/// The scheme is named after its packed value, so every player who picks the same color shares
+/// one scheme. A scheme built during a game takes the lighting the stock schemes carry at that
+/// time, so it is drawn at the same brightness as they are.
+/// </summary>
+/// <param name="packed">A packed custom color from Player_Color_Pack.</param>
+/// <returns>Returns with the index of the lit scheme, the index a house keeps as its scheme.</returns>
+int Custom_Color_Scheme_Index(unsigned int packed)
+{
+	char name[32];
+	std::snprintf(name, sizeof(name), "Custom%06X", packed & 0xFFFFFF);
+
+	int lit = Fetch_Scheme_Index_By_Name(name, NUM_INTENSITY_LEVELS);
+	if (lit >= 0) {
+		return(lit);
+	}
+
+	HSVClass hsv = Player_Color_Unpack(packed);
+	ColorScheme::Find_Or_Make(name, hsv, SchemePalette, GamePalette, 1);
+	lit = ColorScheme::Find_Or_Make(name, hsv, SchemePalette, GamePalette, NUM_INTENSITY_LEVELS);
+
+	int red = NORMAL_LIGHT;
+	int green = NORMAL_LIGHT;
+	int blue = NORMAL_LIGHT;
+	for (int index = 0; index < ColorSchemes.Count(); index++) {
+		ColorScheme const * other = ColorSchemes[index];
+		if (index != lit && other->IntensityLevels > 1 && other->Converter != NULL) {
+			other->Converter->Get_Tint(red, green, blue);
+			break;
+		}
+	}
+	ColorSchemes[lit]->Build_Light_Converters(SchemePalette, GamePalette, red, green, blue);
+
+	return(lit);
 }

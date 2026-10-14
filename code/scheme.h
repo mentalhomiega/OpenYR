@@ -103,5 +103,6 @@ ConvertClass *Build_Light_Converter(HSVClass & hsv, const PaletteClass & base, c
 
 ColorScheme * Fetch_Scheme_By_Name(const char * name, int intensity_levels = 1);
 int Fetch_Scheme_Index_By_Name(char const * name, int intensity_levels = 1);
+int Custom_Color_Scheme_Index(unsigned int packed);
 
 extern DynamicVectorClass<ColorScheme *> ColorSchemes;
