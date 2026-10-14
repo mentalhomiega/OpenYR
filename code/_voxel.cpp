@@ -25,3 +25,6 @@ StaticBufferClass VoxelStaticBuffer(2000000);
 /// Both use the truncated pi the voxel code carries, not M_PI.
 const float DefaultLightAngle = (float)(45 * (3.1415 / 180.0));
 const float DefaultCameraAngle = (float)(55 * (3.1415 / 180.0));
+
+/// Specular strength for technos. gamemd passes 3.0 (0x40400000) only from its TechnoClass voxel draw; bullets and voxel animations are shaded diffuse alone.
+const float TechnoSpecularStrength = 3.0f;

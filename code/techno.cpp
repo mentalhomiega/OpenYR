@@ -7956,7 +7956,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	VoxelLibrary * voxlib = voxeldata.VoxLib;
 	MotionLibrary * motlib = voxeldata.MotLib;
 
-	VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, mtx2, VoxelLightSource);
+	VoxelDrawSystem::Precalculate_Light(voxlib, 0, 0, mtx2, mtx2, VoxelLightSource, TechnoSpecularStrength);
 	VoxelDrawSystem::Reset();
 
 	for (unsigned layer = 0; layer < voxlib->Get_Layer_Count(); layer++) {

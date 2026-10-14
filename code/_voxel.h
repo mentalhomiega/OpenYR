@@ -64,6 +64,7 @@ extern StaticBufferClass VoxelStaticBuffer;
 
 extern const float DefaultLightAngle;
 extern const float DefaultCameraAngle;
+extern const float TechnoSpecularStrength;
 
 inline void Set_Voxel_Camera_Angle(float angle)
 {
