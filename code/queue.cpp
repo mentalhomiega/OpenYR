@@ -430,9 +430,8 @@ namespace {
 			return(false);
 		}
 		FootClass const * foot = static_cast<FootClass *>(techno);
-		if (!foot->Can_Take_Planned_Order()) {
-			// A full queue is the unit's own limit; otherwise the house has too many units with plans.
-			Planned_Order_Refused_Cue(foot->PlannedOrders.Count() >= Rule->MaxWaypointPathLength);
+		if (PlannedOrderBlock const block = foot->Planned_Order_Block(); block != PLANNED_ORDER_OPEN) {
+			Planning_Refusal(Planned_Order_Block_Label(block));
 			return(false);
 		}
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLAN_ORDER, whom, mission, target, destination));
@@ -3544,6 +3543,9 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 			}
 		}
 	}
+
+	// The planning messages of this frame's orders show once its events have run (PlanningNodeClass::ProcessPendingPlans, 0x637270).
+	Planning_Flush_Frame_Cue();
 
 	return(1);
 

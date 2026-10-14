@@ -2140,25 +2140,45 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 }
 
 
-namespace {
-	// The most units in one house that may hold planned orders (PlanningNodeClass::CanCreatePlanningNode, 0x639130).
-	constexpr int PLANNED_UNIT_LIMIT = 128;
-
-
-	/// <summary>Counts the units of a house that hold at least one planned order.</summary>
-	int Planned_Unit_Count(HouseClass const * house)
-	{
-		int count = 0;
-		for (int index = 0; index < Feet.Count(); index++) {
-			FootClass const * foot = Feet[index];
-			if (foot->House == house && foot->PlannedOrders.Count() > 0) {
-				count++;
-			}
+/// <summary>Counts the units of a house that hold at least one planned order.</summary>
+int Planned_Unit_Count(HouseClass const * house)
+{
+	int count = 0;
+	for (int index = 0; index < Feet.Count(); index++) {
+		FootClass const * foot = Feet[index];
+		if (foot->House == house && foot->PlannedOrders.Count() > 0) {
+			count++;
 		}
-		return(count);
 	}
+	return(count);
+}
 
 
+/// <summary>Tells whether a mission ends its waypoint path. MISSION_EATEN keeps gamemd's number 9, which gamemd also tests.</summary>
+bool Planned_Order_Is_Terminal(MissionType mission)
+{
+	return(mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_EATEN);
+}
+
+
+/// <summary>
+/// Tells whether a mission never completes at its target. An attack or guard area at a cell is
+/// continual, and so is a guard area with no target.
+/// </summary>
+bool Planned_Order_Is_Continual(MissionType mission, xTargetClass const & target)
+{
+	RTTIType const kind = target;
+	if (mission == MISSION_ATTACK) {
+		return(kind == RTTI_CELL);
+	}
+	if (mission == MISSION_GUARD_AREA) {
+		return(kind == RTTI_CELL || kind == RTTI_NONE);
+	}
+	return(false);
+}
+
+
+namespace {
 	/// <summary>Checks that the unit is active, outside limbo and alive, so it can carry out a plan.</summary>
 	bool Planned_Unit_Can_Run(FootClass const & foot)
 	{
@@ -2189,22 +2209,46 @@ namespace {
 /// <summary>
 /// Tells whether the unit can take one more planned order.
 /// </summary>
-/// <remarks>The unit's queue is capped by RulesClass::MaxWaypointPathLength. A unit with no orders
-/// yet also needs room in its house, which is capped at 128 units.</remarks>
+/// <returns>bool; True when Planned_Order_Block reports no block.</returns>
 bool FootClass::Can_Take_Planned_Order(void) const
 {
+	return(Planned_Order_Block() == PLANNED_ORDER_OPEN);
+}
+
+
+/// <summary>
+/// Tells why the unit cannot take another planned order, checking the last queued order first.
+/// </summary>
+/// <returns>PlannedOrderBlock; PLANNED_ORDER_OPEN when the unit can take one.</returns>
+/// <remarks>The order of the checks follows gamemd (PlanningNodeClass::ProcessCommand). A terminal or
+/// continual last order blocks before the count, and the house limit applies only to a unit with no plan yet.
+/// The house limit is also checked for the whole selection before any order is given (display.cpp).</remarks>
+PlannedOrderBlock FootClass::Planned_Order_Block(void) const
+{
 	int const queued = PlannedOrders.Count();
-	if (queued >= Rule->MaxWaypointPathLength) {
-		return(false);
+	if (queued > 0) {
+		PlannedOrderClass const & last = PlannedOrders[queued - 1];
+		if (Planned_Order_Is_Terminal(last.Mission)) {
+			return(PLANNED_ORDER_AFTER_TERMINAL);
+		}
+		if (Planned_Order_Is_Continual(last.Mission, last.Target)) {
+			return(PLANNED_ORDER_AFTER_CONTINUAL);
+		}
 	}
-	return(queued > 0 || Planned_Unit_Count(House) < PLANNED_UNIT_LIMIT);
+	if (queued >= PLANNED_ORDER_LIMIT) {
+		return(PLANNED_ORDER_NODE_FULL);
+	}
+	if (queued == 0 && Planned_Unit_Count(House) >= PLANNED_UNIT_LIMIT) {
+		return(PLANNED_ORDER_HOUSE_FULL);
+	}
+	return(PLANNED_ORDER_OPEN);
 }
 
 
 /// <summary>
 /// Appends a planned order to the unit's queue.
 /// </summary>
-/// <returns>bool; Was the order queued? False when the unit or its house is at the limit.</returns>
+/// <returns>bool; Was the order queued? False when the unit cannot take one (see Planned_Order_Block).</returns>
 bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
 {
 	if (!Can_Take_Planned_Order()) {

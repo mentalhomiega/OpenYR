@@ -28,6 +28,6 @@ In planning mode, Stop, Scatter, Deploy and Guard are refused. The refused comma
 
 An order that includes an aircraft, a building, or another object that cannot take a plan is refused as a whole. The message is "You cannot use waypoints with aircraft." for aircraft, "You cannot use waypoints with buildings." for buildings, and "You cannot use waypoints with one of these units." for other objects. Aircraft no longer take planned orders.
 
-When a unit already holds `MaxWaypointPathLength` orders, the refusal shows "You have reached the maximum number of waypoints allowed for this path." When 128 units already hold plans, it shows "You have exceeded the maximum number of units allowed for all waypoint paths."
+When a unit already holds 16 orders, the refusal shows "You have reached the maximum number of waypoints allowed for this path." When 128 units already hold plans, it shows "You have exceeded the maximum number of units allowed for all waypoint paths."
 
 Refusals share one frame. A second refusal in the same frame shows no message and plays no scold sound. Each planning message stays on screen for 480 ticks, the duration gamemd gives them.

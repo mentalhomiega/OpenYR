@@ -56,6 +56,22 @@ struct PlannedOrderClass
 	xTargetClass Destination;
 };
 
+// The most orders a unit's plan holds. gamemd's planning node refuses the order after the sixteenth (PlanningNodeClass::ProcessCommand, 0x638120).
+inline constexpr int PLANNED_ORDER_LIMIT = 16;
+
+// The most units of one house that may hold a plan (PlanningNodeClass::CanCreatePlanningNode, 0x639130).
+inline constexpr int PLANNED_UNIT_LIMIT = 128;
+
+// Why a unit cannot take another planned order. PLANNED_ORDER_OPEN means it can.
+enum PlannedOrderBlock
+{
+	PLANNED_ORDER_OPEN,
+	PLANNED_ORDER_AFTER_TERMINAL,	// The last order ends the path: enter, capture or eaten.
+	PLANNED_ORDER_AFTER_CONTINUAL,	// The last order never completes: attack or guard area at a cell, or guard area with no target.
+	PLANNED_ORDER_NODE_FULL,		// The unit already holds PLANNED_ORDER_LIMIT orders.
+	PLANNED_ORDER_HOUSE_FULL,		// The house already holds PLANNED_UNIT_LIMIT units with plans.
+};
+
 
 /****************************************************************************
 **	Movable objects are handled by this class definition. Moveable objects
@@ -483,6 +499,7 @@ class FootClass : public TechnoClass
 
 		// Planning mode: queue an order, start the queue on commit, and issue the next order when idle.
 		bool Can_Take_Planned_Order(void) const;
+		PlannedOrderBlock Planned_Order_Block(void) const;
 		bool Add_Planned_Order(PlannedOrderClass const & order);
 		void Start_Planned_Orders(void);
 		bool Advance_Planned_Order(void);
@@ -631,3 +648,15 @@ extern DynamicVectorClass<FootClass *> Feet;
 
 // Starts the planned orders of every unit of the house (the PLAN_COMMIT event).
 void Planned_Orders_Commit(HouseClass const * house);
+
+// Tells whether a mission ends its waypoint path, so no order may follow it (PlanningNodeClass::ProcessCommand, 0x638380).
+bool Planned_Order_Is_Terminal(MissionType mission);
+
+// Tells whether a mission never completes at its target, so no order may follow it (FUN_00638C40, 0x638C40).
+bool Planned_Order_Is_Continual(MissionType mission, xTargetClass const & target);
+
+// Counts the units of a house that hold at least one planned order (PlanningNodeClass::CanCreatePlanningNode, 0x639130).
+int Planned_Unit_Count(HouseClass const * house);
+
+// Gives the message for a planned order that a unit cannot take, or NULL when it can take one (event.cpp).
+char const * Planned_Order_Block_Label(PlannedOrderBlock block);

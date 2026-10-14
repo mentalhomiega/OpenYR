@@ -3930,11 +3930,16 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		return;
 	}
 
-	// Planning mode refuses the whole order when a selected object cannot take a plan (gamemd's FUN_0063A5A0, path B).
+	// Planning mode refuses the whole order when a selected object cannot take a plan (gamemd's FUN_0063A5A0, path B),
+	// or when the selection would take the house past its planned unit limit (CanCreatePlanningNode, 0x639130).
 	if (IsPlanningMode) {
 		char const * label = Planning_Selection_Label();
 		if (label != NULL) {
 			Planning_Refusal(label);
+			return;
+		}
+		if (Planning_Selection_Over_House_Limit()) {
+			Planning_Refusal(PLANNING_MSG_PLANNER_MAXIMUM);
 			return;
 		}
 	}

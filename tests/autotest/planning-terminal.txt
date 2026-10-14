@@ -1,0 +1,26 @@
+; Terminal planned order: an order that enters a transport ends the waypoint path, as gamemd's PlanningNodeClass::ProcessCommand
+; does for MISSION_ENTER (0x638380). The frame that queues the enter order shows the post-terminating message once its
+; events have run, and the next click on the ground is refused with the same message, so E1 keeps one order. Run in a
+; skirmish on the default map, as planning-cues.txt does. The sounds 1 step logs each sound as a "Sound:" line.
+; Expected AUTOTEST lines:
+;   frame 330: Planning message MSG:PostTerminatingCommand (the enter order ends the path) and one add sound line.
+;   frame 335: one scold sound line, no add sound line, and Planning message MSG:PostTerminatingCommand (refused).
+;   frame 340: planstate E1 orders 1 running 0 (the refused move is not in the queue).
+;   frame 360: planstate E1 orders 0 running 1 mission 7 (the enter leg runs).
+;   frame 700: planstate E1 at 62,63, the transport's cell, with orders 0.
+30 command CenterBase
+300 grantunit BFRT 62 63
+300 grantunit E1 60 63
+305 reveal
+315 sounds 1
+320 planning 1
+325 select E1
+330 clickon E1 62 63
+335 clickcell E1 70 63
+340 planstate E1
+345 sounds 0
+350 planning 0
+360 planstate E1
+400 where E1
+700 planstate E1
+700 quit

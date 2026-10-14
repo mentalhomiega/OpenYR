@@ -1325,11 +1325,27 @@ void EventClass::Execute(void)
 				order.Mission = (MissionType)Data.MegaMission.Mission;
 				order.Target = Data.MegaMission.Target;
 				order.Destination = Data.MegaMission.Destination;
-				if (!((FootClass *)techno)->Add_Planned_Order(order)) {
+				FootClass * foot = (FootClass *)techno;
+				PlannedOrderBlock const block = foot->Planned_Order_Block();
+				if (block != PLANNED_ORDER_OPEN) {
 					Log_Event_Rejection(EventRejectReason::PlannedOrderLimit, Type, ID, Data.MegaMission.Mission);
-				} else if (house == PlayerPtr) {
-					// The local player hears the add sound once an order is queued (FUN_00638120, 0x638597).
-					Sound_Effect(Rule->AddPlanningModeCommandSound);
+					if (house == PlayerPtr) {
+						Planning_Refusal(Planned_Order_Block_Label(block));
+					}
+				} else {
+					// gamemd checks the count before it appends (ProcessCommand, 0x6383B4), so the order that fills the plan shows the node maximum.
+					bool const ends_path = Planned_Order_Is_Terminal(order.Mission) || Planned_Order_Is_Continual(order.Mission, order.Target);
+					bool const fills_plan = foot->PlannedOrders.Count() == PLANNED_ORDER_LIMIT - 1;
+					foot->Add_Planned_Order(order);
+					if (house == PlayerPtr) {
+						if (ends_path) {
+							Planning_Frame_Cue(PLANNING_MSG_POST_TERMINATING);
+						} else if (fills_plan) {
+							Planning_Frame_Cue(PLANNING_MSG_NODE_MAXIMUM);
+						}
+						// The local player hears the add sound once an order is queued (FUN_00638120, 0x638597).
+						Sound_Effect(Rule->AddPlanningModeCommandSound);
+					}
 				}
 			}
 			break;
@@ -1697,6 +1713,9 @@ void EventClass::Execute_Planned_Leg(void)
 namespace {
 	// The frame of the last refusal cue. Refusals of every kind share it, as gamemd's DAT_00ac4c08 does.
 	int Last_Planning_Refusal_Frame = -1;
+
+	// The message the frame shows after its events, set by Planning_Frame_Cue.
+	char const * Pending_Frame_Cue = NULL;
 }
 
 
@@ -1773,10 +1792,76 @@ char const * Planning_Selection_Label(void)
 
 
 /// <summary>
-/// Tells the local player that a planned order was refused: the scold sound and a message.
+/// Gives the message for a planned order that a unit cannot take.
 /// </summary>
-/// <param name="unit_full">True when the unit's queue is full, false when too many units hold plans.</param>
-void Planned_Order_Refused_Cue(bool unit_full)
+/// <param name="block">The reason from FootClass::Planned_Order_Block.</param>
+/// <returns>The label, or NULL when the block is PLANNED_ORDER_OPEN.</returns>
+char const * Planned_Order_Block_Label(PlannedOrderBlock block)
 {
-	Planning_Refusal(unit_full ? PLANNING_MSG_NODE_MAXIMUM : PLANNING_MSG_PLANNER_MAXIMUM);
+	switch (block) {
+		case PLANNED_ORDER_AFTER_TERMINAL:
+			return(PLANNING_MSG_POST_TERMINATING);
+
+		case PLANNED_ORDER_AFTER_CONTINUAL:
+			return(PLANNING_MSG_POST_CONTINUAL);
+
+		case PLANNED_ORDER_NODE_FULL:
+			return(PLANNING_MSG_NODE_MAXIMUM);
+
+		case PLANNED_ORDER_HOUSE_FULL:
+			return(PLANNING_MSG_PLANNER_MAXIMUM);
+
+		case PLANNED_ORDER_OPEN:
+		default:
+			return(NULL);
+	}
+}
+
+
+/// <summary>
+/// Sets the message the frame shows for the local player when its events have run.
+/// </summary>
+/// <param name="label">The CSF label of the message.</param>
+/// <remarks>gamemd keeps one pending message and overwrites it, so the last cue of a frame is the one shown
+/// (PlanningNodeClass::ProcessPendingPlans, 0x637270).</remarks>
+void Planning_Frame_Cue(char const * label)
+{
+	Pending_Frame_Cue = label;
+}
+
+
+/// <summary>
+/// Shows the pending message of the frame, then clears it.
+/// </summary>
+void Planning_Flush_Frame_Cue(void)
+{
+	char const * label = Pending_Frame_Cue;
+	Pending_Frame_Cue = NULL;
+	if (label != NULL) {
+		Planning_Refusal(label);
+	}
+}
+
+
+/// <summary>
+/// Tells whether the selection would take the house past its planned unit limit.
+/// </summary>
+/// <returns>bool; True when the house's planned units and the selected units without plans exceed PLANNED_UNIT_LIMIT.</returns>
+/// <remarks>The planning click refuses the whole selection in this case, so no unit takes a plan from it.</remarks>
+bool Planning_Selection_Over_House_Limit(void)
+{
+	if (PlayerPtr == NULL) {
+		return(false);
+	}
+	int unplanned = 0;
+	for (int index = 0; index < CurrentObject.Count(); index++) {
+		ObjectClass const * object = CurrentObject[index];
+		if (object->Is_Foot()) {
+			FootClass const * foot = static_cast<FootClass const *>(object);
+			if (foot->House == PlayerPtr && foot->PlannedOrders.Count() == 0) {
+				unplanned++;
+			}
+		}
+	}
+	return(Planned_Unit_Count(PlayerPtr) + unplanned > PLANNED_UNIT_LIMIT);
 }

@@ -1238,6 +1238,9 @@ restart:
 	*/
 	Init_Random();
 
+	// The planning hints show again for each game, as gamemd's Select_Game resets them (0x52E61E).
+	Map.Reset_Planning_Hints();
+
 	/*
 	**	Load the scenario.
 	*/
