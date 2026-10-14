@@ -963,7 +963,11 @@ void WizardType::Pump_Messages(void)
 void WizardType::Capture(PageType page)
 {
 	std::wstring error;
-	std::wstring const path = Options.ShotFolder + L"\\" + PageNames[static_cast<int>(page)] + L".png";
+	wchar_t const * name = PageNames[static_cast<int>(page)];
+	if (page == PageType::Progress && Options.Uninstall) {
+		name = L"u3-uninstall-progress";
+	}
+	std::wstring const path = Options.ShotFolder + L"\\" + name + L".png";
 	Make_Folders(Options.ShotFolder);
 	if (!Save_Window_Png(Window, path, error)) {
 		Log_Line(Options.LogFile, L"Screenshot failed: " + error);
