@@ -12380,7 +12380,7 @@ void BuildingClass::Prism_AI(void)
 		}
 		SupportingPrisms = 0;
 	} else if (stage == PRISM_SLAVE) {
-		new LaserDrawClass(Turret_Coord(0), PrismTargetCoord, 0, true, House->RemapColorRGB, RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, false, 1.0f, 0.0f);
+		new LaserDrawClass(Turret_Coord(0), PrismTargetCoord, 0, true, House->RemapColorRGB, RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, true, 1.0f, 0.0f);
 		Arm = Rule->PrismSupportDelay;
 		SupportingPrisms = 0;
 	}
