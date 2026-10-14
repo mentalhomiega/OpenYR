@@ -79,6 +79,7 @@
 #include "lstorm.h"
 #include "map.h"
 #include "missile.h"
+#include "revent.h"
 #include "overtype.h"
 #include "partsys.h"
 #include "radsite.h"
@@ -944,8 +945,11 @@ void BulletClass::AI(void)
 						}
 					}
 				}
-				if (stricmp(Warhead->Name(), "NUKE") == 0 && Start_Nuke_Blast()) {
-					break;
+				if (stricmp(Warhead->Name(), "NUKE") == 0) {
+					Submit_Radar_Event(RADAREVENT_SUPERWEAPON, Get_Coord().As_Cell());
+					if (Start_Nuke_Blast()) {
+						break;
+					}
 				}
 				Bullet_Explodes(forced);
 				Delete_Me();

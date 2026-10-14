@@ -1992,7 +1992,12 @@ void HouseClass::Attacked(BuildingClass * source)
 	if (SpeakAttackDelay == 0) {
 		// Gamemd (HouseClass::BuildingUnderAttack, 0x4F93E0) plays the line only when its radar event is created.
 		if (Is_Player_Control()) {
-			if (Submit_Radar_Event(RADAREVENT_BASE_ATTACKED, source->Center_Coord().As_Cell())) {
+			// A gatherer that can undeploy raises the harvester event and line instead of the base one.
+			if (source != NULL && source->Class->UndeploysInto != NULL && source->Class->IsResourceGatherer) {
+				if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, source->Center_Coord().As_Cell())) {
+					Speak(VOX_HARVESTER_UNDER_ATTACK);
+				}
+			} else if (Submit_Radar_Event(RADAREVENT_BASE_ATTACKED, source->Center_Coord().As_Cell())) {
 				Speak(VOX_BASE_UNDER_ATTACK);
 			}
 			SpeakAttackDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
@@ -3227,6 +3232,9 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						**	the production manager tied to this slot in the sidebar. Its job
 						**	has been completed.
 						*/
+						if (Is_Player_Control()) {
+							Submit_Radar_Event(RADAREVENT_FACTORY_OUTPUT, builder->Get_Coord().As_Cell());
+						}
 						factory->Completed();
 						Abandon_Production(type, -1, buildcat, naval);
 						placed = true;

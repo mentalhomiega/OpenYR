@@ -57,7 +57,8 @@ const char * RadarEventNames[RADAREVENT_COUNT] = {
 /// This is the routine the game logic calls to draw the player's eye to something
 /// worth looking at. A new event is refused when an event of the same kind is in play
 /// within the kind's suppression distance, and the caller must then skip its EVA line.
-/// A created event also becomes the newest cell for the space-bar jump.
+/// Creating an event does not change the space-bar jump cell. Only the callers that gamemd
+/// records a cell for call Push_Radar_Event_Cell.
 /// </summary>
 /// <param name="event">The kind of event to raise.</param>
 /// <param name="cell">The cell that the event should draw attention to.</param>
@@ -74,7 +75,6 @@ bool Submit_Radar_Event(RadarEventType event, Cell cell)
 		}
 	}
 	new RadarEventClass(event, cell);
-	Push_Radar_Event_Cell(cell);
 	return(true);
 }
 

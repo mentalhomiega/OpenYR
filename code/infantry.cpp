@@ -111,6 +111,7 @@
 #include "houstype.h"
 #include "incdec.h"
 #include "infatype.h"
+#include "revent.h"
 #include "inline.h"
 #include "ion.h"
 #include "isotype.h"
@@ -896,7 +897,9 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				if (Class->IsEngineer) {
 					// are we trying to repair a bridge?
 					if (tech->RTTI == RTTI_BUILDING && ((BuildingClass*)tech)->Class->IsBridgeRepairHut) {
-						if (House->Is_Player_Control()) Speak(VOX_BRIDGE_REPAIRED);
+						if (House->Is_Player_Control() && Submit_Radar_Event(RADAREVENT_FACTORY_FOUND, Get_Coord().As_Cell())) {
+							Speak(VOX_BRIDGE_REPAIRED);
+						}
 						Sound_Effect(Rule->RepairBridgeSound, tech->Center_Coord());
 
 						bool train = false;

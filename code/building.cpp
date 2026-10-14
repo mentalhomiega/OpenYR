@@ -2248,6 +2248,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 		// Another house's RevealToAll structure shows the player its surroundings (BuildingClass::Place, 0x445F80).
 		if (Class->IsRevealToAll && !House->Is_Player_Control() && PlayerPtr != NULL) {
 			Map.Sight_From(Center_Coord(), Class->SightRange, PlayerPtr);
+			Submit_Radar_Event(RADAREVENT_BUILDING_PLACED, Get_Cell());
 		}
 
 		return(true);
@@ -4843,7 +4844,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		}
 
 		if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
-			if (announce) {
+			// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
+			if (announce && Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
 				Speak(VOX_BUILDING_CAPTURED);
 			}
 			Map.PowerClass::IsToRedraw = true;
@@ -6191,7 +6193,10 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 						if (radio != RADIO_ALL_DONE) {
 							return(1);
 						}
-						if (IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
+						// Gamemd (Mission_Repair, 0x44B960) raises the repair event for a player's building and speaks only when it is created.
+						if (House->Is_Player_Control() && Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell())) {
+							Speak(VOX_UNIT_REPAIRED);
+						}
 					}
 					Exit_Object(Cargo.Detach_Object());
 					Assign_Mission(MISSION_GUARD);
@@ -6453,7 +6458,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 							case RADIO_ALL_DONE:
 							default:
 								{
-									if (IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
+									// Gamemd (Mission_Repair, 0x44BDB2) raises the repair event without a player-control test.
+									if (Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell()) && IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
 									End_Anim(BANIM_PRODUCTION);
 									End_Anim(BANIM_SPECIAL_TWO);
 									Begin_Anim(BANIM_SPECIAL_THREE, false);
@@ -11852,8 +11858,14 @@ void BuildingClass::Spied_By(HouseClass * house)
 	SpiedBy.Set(house);
 
 	// The owner hears what was lost and the spy's house what was gained.
-	bool const victim = House->Is_Player_Control();
-	bool const spy = house->Is_Player_Control();
+	bool victim = House->Is_Player_Control();
+	bool spy = house->Is_Player_Control();
+
+	// Gamemd (Infiltrated_By, 0x45722F) raises the event only when a player is involved, and its lines play only when it is created.
+	if (!((victim || spy) && Submit_Radar_Event(RADAREVENT_INFILTRATED, Center_Coord().As_Cell()))) {
+		victim = false;
+		spy = false;
+	}
 
 	/*
 	 * Each kind of structure gives up one thing, tested in this order, as gamemd's FUN_004571E0

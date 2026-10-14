@@ -23,6 +23,7 @@
 #include "globals.h"
 #include "house.h"
 #include "ion.h"
+#include "revent.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -196,6 +197,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 		return;
 	}
 
+	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, Center);
 	StartTime = Frame;
 	IsActive = true;
 	IsTimeToEnd = false;

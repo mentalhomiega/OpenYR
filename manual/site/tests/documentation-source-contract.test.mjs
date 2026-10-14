@@ -1581,8 +1581,8 @@ test('An insignificant unit dies without announcing it', () => {
 			.replace(/\/\/[^\n]*/g, '')
 			.replace(/[\s]+/g, ' ')
 			.trim(),
-		'if (IsOwnedByPlayer && !TClass->IsInsignificant) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Destination_Coord().As_Cell())) { Speak(VOX_UNIT_LOST); } }',
-		'the voice and the radar event are refused together',
+		'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) { Speak(VOX_UNIT_LOST); } }',
+		'the event and the voice are refused together',
 	);
 
 	assert.equal(

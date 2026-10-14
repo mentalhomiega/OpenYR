@@ -148,6 +148,11 @@ bool BeaconManagerClass::Set_Text(int house, int slot, char const * text, int le
 	}
 	std::memcpy(beacon->Text, text, count);
 	beacon->Text[count] = '\0';
+
+	// Gamemd (EditBeaconMessage, 0x4316E5) raises the event for another house's beacon, without a voice line.
+	if (Is_Available() && PlayerPtr != NULL && house != PlayerPtr->HeapID && Visible_To_Player(beacon)) {
+		Submit_Radar_Event(RADAREVENT_BEACON, beacon->Where.As_Cell());
+	}
 	return(true);
 }
 
@@ -219,7 +224,7 @@ bool BeaconManagerClass::Visible_To_Player(BeaconClass const * beacon) const
 	if (owner == NULL || owner->IsDefeated) {
 		return(false);
 	}
-	return(owner == PlayerPtr || PlayerPtr->Is_Ally(owner));
+	return(owner == PlayerPtr || (PlayerPtr->Is_Ally(owner) && owner->Is_Ally(PlayerPtr)));
 }
 
 
@@ -267,7 +272,7 @@ void BeaconManagerClass::Announce(int house, BeaconClass const & beacon)
 		return;
 	}
 
-	if (Visible_To_Player(&beacon) && Submit_Radar_Event(RADAREVENT_BEACON, beacon.Where.As_Cell())) {
+	if (Is_Available() && Visible_To_Player(&beacon) && Submit_Radar_Event(RADAREVENT_BEACON, beacon.Where.As_Cell())) {
 		Speak_Eva("EVA_BeaconDetected");
 	}
 }

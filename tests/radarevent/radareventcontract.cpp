@@ -58,6 +58,17 @@ void Test_Table(void)
 }
 
 
+void Test_Call_Site_Kinds(void)
+{
+	// Each value is the ECX a gamemd call to RadarEventClass::Create (0x65FA70) passes, read from
+	// the call sites listed in revent.hh.
+	Check(RADAREVENT_FACTORY_OUTPUT == 6 && RADAREVENT_UNIT_LOST == 7 && RADAREVENT_REPAIR == 8 && RADAREVENT_INFILTRATED == 9, "kinds 6 to 9 match gamemd's call sites");
+	Check(RADAREVENT_OWNER_CHANGED == 10 && RADAREVENT_BEACON == 11 && RADAREVENT_BUILDING_PLACED == 12 && RADAREVENT_SUPERWEAPON == 13, "kinds 10 to 13 match gamemd's call sites");
+	Check(RADAREVENT_FACTORY_FOUND == 14 && RADAREVENT_MIND_CONTROL == 15, "kinds 14 and 15 match gamemd's call sites");
+	Check(!RadarEventKinds[RADAREVENT_SUPERWEAPON].Suppressible, "two superweapon launches in one cell both get a box");
+}
+
+
 void Test_Colors(void)
 {
 	Check(RadarEventKinds[RADAREVENT_COMBAT].ColorGroup == RADAREVENT_GROUP_MAGENTA, "combat is magenta");
@@ -132,6 +143,7 @@ void Test_Ring(void)
 int main(void)
 {
 	Test_Table();
+	Test_Call_Site_Kinds();
 	Test_Colors();
 	Test_Suppression();
 	Test_Ring();

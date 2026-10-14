@@ -29,7 +29,7 @@ enum RadarEventType {
 	RADAREVENT_OWNER_CHANGED,		// 10, call at 0x448477 in BuildingClass::SetOwningHouse
 	RADAREVENT_BEACON,				// 11, calls at 0x430F08 and 0x4316E5 in the beacon placement code
 	RADAREVENT_BUILDING_PLACED,		// 12, call at 0x4468A8 in BuildingClass::Place
-	RADAREVENT_SUPERWEAPON,			// 13, calls in SuperClass::Launch (0x6CC4BE) and LightningStorm::Start (0x539F89)
+	RADAREVENT_SUPERWEAPON,			// 13, calls in SuperClass::Launch (0x6CC4BE), LightningStorm::Start (0x539F89) and BulletClass::Update (0x467EA7)
 	RADAREVENT_FACTORY_FOUND,		// 14, call at 0x519BB6 in InfantryClass::FindFactory
 	RADAREVENT_MIND_CONTROL,		// 15, call at 0x4582C5 in BuildingClass::Check_Mind_Control_Status
 	RADAREVENT_ALLY_ATTACKED,		// 16, call at 0x4F95A0 in HouseClass::BuildingUnderAttack, ally branch

@@ -69,6 +69,7 @@
 #include "lstorm.h"
 #include "mouse.h"
 #include "psydom.h"
+#include "revent.h"
 #include "rules.h"
 #include "savestream.h"
 #include "side.h"
@@ -772,6 +773,7 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 	if (Rule->IronCurtainInvokeAnim != NULL) {
 		new AnimClass(Rule->IronCurtainInvokeAnim, coord);
 	}
+	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 
 	/*
 	 * Gather everything first: the curtain kills infantry, which must not upset the walk
@@ -818,6 +820,7 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 		new AnimClass(Rule->IonBlast, Coord(coord.X, coord.Y, coord.Z + 5));
 	}
 	Sound_Effect(Rule->GeneticMutatorActivateSound, coord);
+	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 
 	if (Rule->MutateExplosion) {
 		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House);
@@ -1214,6 +1217,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 		case SUPER_PSYCHIC_DOMINATOR:
 			if (IsReady) {
+				Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 				PsychicDominatorClass::Start(cell, House);
 				Sound_Effect(Rule->PsychicDominatorActivateSound, Map[cell].Center_Coord());
 				Speak_Eva("EVA_PsychicDominatorActivated");
@@ -1285,6 +1289,8 @@ void SuperClass::Place(Cell const & cell, bool player)
 			break;
 
 		case SUPER_CHRONO_WARP:
+			Submit_Radar_Event(RADAREVENT_SUPERWEAPON, ChronoSource);
+			Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 			Chrono_Warp(cell);
 			Speak_Eva("EVA_ChronosphereActivated");
 			if (player) {

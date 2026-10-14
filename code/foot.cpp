@@ -3048,9 +3048,8 @@ int FootClass::Rescue_Mission(AbstractClass * tarcom)
  *=============================================================================================*/
 void FootClass::Death_Announcement(TechnoClass const * ) const
 {
-	if (IsOwnedByPlayer && !TClass->IsInsignificant) {
-		// Gamemd (FootClass::Destroyed, 0x4D98FE) raises kind 7 and plays the line only when it is created.
-		if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Destination_Coord().As_Cell())) {
+	if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {
+		if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {
 			Speak(VOX_UNIT_LOST);
 		}
 	}

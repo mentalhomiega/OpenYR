@@ -18,11 +18,15 @@
 #include "builtype.h"
 #include "cell.h"
 #include "infantry.h"
+#include "revent.h"
 #include "rules.h"
 #include "savestream.h"
 #include "slaveman.h"
 #include "techno.h"
 #include "techtype.h"
+#include "unit.h"
+#include "unittype.h"
+#include "vox.h"
 #include "weapon.h"
 
 #include <cmath>
@@ -98,6 +102,11 @@ void TemporalClass::Fire(TechnoClass * target)
 	if (head == nullptr) {
 		target->WarpedBy = Owner;
 		WarpRemaining = target->TClass->MaxStrength * 10;
+		if (target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->House == PlayerPtr) {
+			if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, ((UnitClass *)target)->Destination_Coord().As_Cell())) {
+				Speak(VOX_HARVESTER_UNDER_ATTACK);
+			}
+		}
 	} else {
 		Next = head->Owner;
 		Prev = head->Prev;
