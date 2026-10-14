@@ -180,6 +180,8 @@ Several parts of a shot take their settings from the first slot, not from the sl
 | The barrel elevation, including the high arc from `Lobber` | Not placed | The first slot |
 | The reload delay | Not placed | The firing slot |
 
+A structure's laser beam sorts with its render point by how far its mounting is drawn above that point. That adjust is never positive. A beam from any other object has no adjust.
+
 A sonic wave starts at the mounting of the slot that fired it. From the next frame it is redrawn from the first slot's mounting. If the two slots have different offsets, a second-slot sonic wave therefore jumps one frame after it is fired. A [`UseFireParticles=yes`](/keys/usefireparticles/) stream also moves to the first slot's mounting, but only on frames when the firer has a target and is still turning. [Particle systems](/systems/particle-systems/#what-each-system-behavior-reads) covers how it follows the firer.
 
 ## Effects that hold the weapon shut

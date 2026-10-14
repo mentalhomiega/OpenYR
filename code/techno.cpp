@@ -4752,10 +4752,13 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		source = source_coord;
 	} else {
 		source = Turret_Coord(which);
-		if (source.Y != Render_Coord().Y) {
-			Point2D p1 = TacticalMap->Coord_To_Pixel_Absolute(source);
-			Point2D p2 = TacticalMap->Coord_To_Pixel_Absolute(Render_Coord());
-			zadjust = p1.Y - p2.Y;
+
+		// A structure's beam sorts by how far its muzzle is drawn above its render point. The adjust is
+		// never positive, and an object that is not a structure uses zero (TechnoClass::CreateLaser, 0x6FD210).
+		if (RTTI == RTTI_BUILDING) {
+			Point2D muzzle = TacticalMap->Coord_To_Pixel_Absolute(source);
+			Point2D base = TacticalMap->Coord_To_Pixel_Absolute(Render_Coord());
+			zadjust = std::min(muzzle.Y - base.Y, 0);
 		}
 	}
 
