@@ -23,6 +23,16 @@ enum VideoScaleMode {
 };
 
 
+// Whether the presented frame goes out as HDR10, as one of the HDROutput settings values.
+// Automatic does so only while Windows has HDR on for the game's display; On does so even when
+// Windows reports HDR off, for testing.
+enum VideoHDROutput {
+	VIDEO_HDR_AUTOMATIC,
+	VIDEO_HDR_OFF,
+	VIDEO_HDR_ON,
+};
+
+
 // Where the game's frame lands inside the window. The frame keeps its aspect ratio, so
 // the destination is centered and the window may show bars on two of its sides.
 // Drawable dimensions and the destination rectangle are measured in physical pixels.

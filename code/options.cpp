@@ -222,6 +222,9 @@ OptionsClass::OptionsClass(void) :
 	RenderFrameRate(0),
 	VSync(false),
 	Renderer(0),
+	HDROutput(VIDEO_HDR_AUTOMATIC),
+	HDRPaperWhite(0),
+	HDRPeakBrightness(0),
 	CursorScale(0),
 	InterfaceScale(0.0f),
 	SystemCursor(false),
@@ -403,6 +406,52 @@ static int Scale_Mode_From_Name(char const * name, int fallback)
 	if (stricmp(name, "PixelArt") == 0) return(VIDEO_SCALE_PIXELART);
 
 	return(fallback);
+}
+
+
+static int HDR_Output_From_Name(char const * name)
+{
+	if (stricmp(name, "Off") == 0) return(VIDEO_HDR_OFF);
+	if (stricmp(name, "On") == 0) return(VIDEO_HDR_ON);
+	return(VIDEO_HDR_AUTOMATIC);
+}
+
+
+static char const * HDR_Output_Name(int mode)
+{
+	switch (mode) {
+		case VIDEO_HDR_OFF:
+			return("Off");
+
+		case VIDEO_HDR_ON:
+			return("On");
+
+		default:
+			return("Automatic");
+	}
+}
+
+
+/// <summary>
+/// Reads a nit setting. "Auto", or anything that is not a positive number, gives zero.
+/// </summary>
+static int HDR_Nits_From_Text(char const * text)
+{
+	double const value = Parse_Nearest_Double(text, nullptr);
+	return((value > 0.0) ? (int)std::min(value, 10000.0) : 0);
+}
+
+
+/// <summary>
+/// Writes a nit setting as a number, or as "Auto" when it is zero.
+/// </summary>
+static void Save_HDR_Nits(char const * key, int nits)
+{
+	if (nits > 0) {
+		ConfigINI.Put_Int("Video", key, nits);
+	} else {
+		ConfigINI.Put_String("Video", key, "Auto");
+	}
 }
 
 
@@ -598,6 +647,25 @@ void OptionsClass::Load_Interface_Scale(void)
 }
 
 
+/// <summary>
+/// Reads the HDR output settings from the settings file. Startup calls it before the window is
+/// made, since the window's renderer is started with the output decided by them.
+/// </summary>
+void OptionsClass::Load_HDR_Output(void)
+{
+	char text[32];
+	ConfigINI.Get_String("Video", "HDROutput", "Automatic", text, sizeof(text));
+	HDROutput = HDR_Output_From_Name(text);
+
+	ConfigINI.Get_String("Video", "HDRPaperWhite", "Auto", text, sizeof(text));
+	HDRPaperWhite = HDR_Nits_From_Text(text);
+
+	ConfigINI.Get_String("Video", "HDRPeakBrightness", "Auto", text, sizeof(text));
+	HDRPeakBrightness = HDR_Nits_From_Text(text);
+	DebugString("HDROutput is %s, HDRPaperWhite is %d, HDRPeakBrightness is %d\n", HDR_Output_Name(HDROutput), HDRPaperWhite, HDRPeakBrightness);
+}
+
+
 /***********************************************************************************************
  * OptionsClass::Save_Settings -- writes options settings to the INI file                      *
  *                                                                                             *
@@ -655,6 +723,9 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
+	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));
+	Save_HDR_Nits("HDRPaperWhite", HDRPaperWhite);
+	Save_HDR_Nits("HDRPeakBrightness", HDRPeakBrightness);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
 	if (InterfaceScale > 0.0f) {
 		char scaletext[32];

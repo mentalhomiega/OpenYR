@@ -33,6 +33,7 @@
 #pragma once
 
 #include "keyboard.h"
+#include "video.h"
 
 #include "diff.hh"
 
@@ -68,6 +69,7 @@ class OptionsClass {
 		void Load_Menu_Style(void);
 		void Load_Interface_Scale(void);
 		void Load_Interface_Style(void);
+		void Load_HDR_Output(void);
 		void Load_Seen_Movies(void);
 		void Save_Seen_Movies(void) const;
 		void Save_Settings(void);
@@ -229,6 +231,24 @@ class OptionsClass {
 		 * choosing for itself.
 		 */
 		int Renderer;
+
+		/*
+		 * Whether the frame is presented as HDR10, as one of the VideoHDROutput values. The
+		 * setting applies when the game next starts.
+		 */
+		int HDROutput;
+
+		/*
+		 * The brightness, in nits, that SDR white is drawn at when HDR output is on. Zero follows
+		 * the SDR content brightness Windows reports, or 200 nits when it reports none.
+		 */
+		int HDRPaperWhite;
+
+		/*
+		 * The brightness, in nits, of the brightest output when HDR output is on. Zero follows the
+		 * peak luminance the display reports.
+		 */
+		int HDRPeakBrightness;
 
 		/*
 		 * This is how many times larger than its artwork the mouse pointer is drawn.
