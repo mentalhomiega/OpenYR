@@ -150,6 +150,9 @@
 **							animation frame, recoil state, target cell, and a building's turret and barrel frame counts
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
+**	turretcoord <TypeID>	writes each object of that type, whoever owns it, with its body and turret facings in 256 directions, its
+**							TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point,
+**							with the body's draw matrix rows
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
 **							now and every interval frames after when one is given
 **	stop <TypeID>			sends the Stop command's idle event to the player's objects of that type that can move or fire
@@ -3130,6 +3133,21 @@ void Run(StepType const & step)
 				if (teleport != NULL) {
 					DebugString("AUTOTEST   warp %s phase %d end %d warping %d chrono %d selected %d\n", techno->TClass->Name(), (int)teleport->Warp_Phase(), teleport->Warp_End(), (int)techno->IsBeingWarpedOut, (int)foot->Is_Chrono_Warping(), (int)techno->IsSelected);
 				}
+			}
+		}
+	} else if (step.Command == "turretcoord") {
+		// turretcoord <TypeID>: the body and turret facings, TurretOffset and mounting that Turret_Coord(0) is built from.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			TPoint3D<int> const flh = techno->Weapon_FLH(0);
+			Coord const render = techno->Render_Coord();
+			Coord const mount = techno->Turret_Coord(0);
+			DebugString("AUTOTEST   turretcoord %s of %s cell %d,%d body %d turret %d offset %d flh %d,%d,%d relative %d,%d,%d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->Turret_Facing().As_Dir256(), (int)techno->TClass->TurretOffset, flh.X, flh.Y, flh.Z, mount.X - render.X, mount.Y - render.Y, mount.Z - render.Z);
+			if (techno->Is_Foot()) {
+				FootClass const * foot = static_cast<FootClass const *>(techno);
+				Matrix3D const draw = foot->Locomotion->Draw_Matrix(NULL);
+				DebugString("AUTOTEST   turretcoord draw %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n", (double)draw[0].X, (double)draw[0].Y, (double)draw[0].Z, (double)draw[0].W, (double)draw[1].X, (double)draw[1].Y, (double)draw[1].Z, (double)draw[1].W, (double)draw[2].X, (double)draw[2].Y, (double)draw[2].Z, (double)draw[2].W);
 			}
 		}
 	} else if (step.Command == "statics") {

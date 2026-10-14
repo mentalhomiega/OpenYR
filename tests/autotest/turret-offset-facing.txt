@@ -1,0 +1,19 @@
+; A player's Half-track HTK (Turret=yes, TurretOffset=-80, PrimaryFireFLH=65,0,220) at 60,36 with its body
+; facing north (0). An enemy Allied Pill Box (GAPILL, a 1x1 structure) at 63,36 lies due east on the same row, so the
+; HTK's turret turns to face east (256-direction 64) while its body stays at 0. The turretcoord lines give the body and
+; turret facings, TurretOffset, the weapon 0 mounting and Turret_Coord(0) relative to the render point, and the body's
+; draw matrix.
+; Expected once the turret has turned (gamemd TechnoClass::GetFLH, 0x6F3AD0): theta = -pi/2 (turret 64 minus body 0),
+; the body-frame TurretOffset is applied before the turn, so the relative point is
+; (TurretOffset + FLH.Y, FLH.X, FLH.Z) = (-80, 65, 220). The old order turned TurretOffset with the turret and gave (0, -15, 220).
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/turret-offset-facing.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   turretcoord|Exception"
+30 command CenterBase
+60 reveal
+100 own HTK 60 36
+120 spawn GAPILL 63 36
+150 turretcoord HTK
+160 strikeobj GAPILL 63 36 1
+300 turretcoord HTK
+340 turretcoord HTK
+380 turretcoord HTK
+400 quit

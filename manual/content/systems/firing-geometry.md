@@ -114,7 +114,7 @@ Step 10 sets the reload delay after step 9 has started the weapon's effects. Thi
 
 ## The mounting
 
-Every shot uses one point on the firer, the mounting. It is where the projectile is created and where its aim is measured from. Most parts of a shot start there too, as [What each part of a shot reads](#what-each-part-of-a-shot-reads) lists. It is the firing slot's offset turned to the gun heading, with [`TurretOffset`](/keys/turretoffset/) added to the forward distance. The barrel is not part of it, so the point stays in place while the gun elevates.
+Every shot uses one point on the firer, the mounting. It is where the projectile is created and where its aim is measured from. Most parts of a shot start there too, as [What each part of a shot reads](#what-each-part-of-a-shot-reads) lists. It is [`TurretOffset`](/keys/turretoffset/) placed forward along the body, plus the firing slot's offset turned by the gun heading relative to the body. The turn is about the body's center, so the `TurretOffset` part does not turn with the gun. The barrel is not part of it, so the point stays in place while the gun elevates.
 
 The gun heading, and whether the point tilts with the body, depend on the kind of firer:
 

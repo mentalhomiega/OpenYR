@@ -828,9 +828,9 @@ int TechnoClass::Passenger_Seat(FootClass const * passenger) const
 /// left and right mounting on successive shots.
 /// </summary>
 /// <param name="which">The weapon slot, or a negative passenger seat (see Weapon_FLH).</param>
-/// <param name="base">An offset added to the mounting before the body and turret rotation, as
-/// gamemd's BaseCoords argument of GetFLH. The burst parity flips its lateral part too. Only
-/// units and aircraft use it; a structure or infantry ignores it.</param>
+/// <param name="base">An offset added to the mounting after the turret turns, as gamemd's
+/// BaseCoords argument of GetFLH. The burst parity flips its lateral part too. A structure or
+/// infantry ignores it.</param>
 /// <returns>Returns with the coordinate the projectile should be created at.</returns>
 Coord TechnoClass::Turret_Coord(int which, TPoint3D<int> base) const
 {
@@ -848,8 +848,10 @@ Coord TechnoClass::Turret_Coord(int which, TPoint3D<int> base) const
 		matrix.Make_Identity();
 	}
 
+	// TurretOffset lies along the body, so it is applied before the turret turns (GetFLH, 0x6F3AD0).
+	matrix.Translate_X(tclass->TurretOffset);
 	matrix.Rotate_Z(Turret_Facing().As_Radian32() - angle);
-	matrix.Translate(flh.X + base.X + tclass->TurretOffset, (flh.Y + base.Y) * (BurstIndex % 2 != 0 ? -1 : 1), flh.Z + base.Z);
+	matrix.Translate(flh.X + base.X, (flh.Y + base.Y) * (BurstIndex % 2 != 0 ? -1 : 1), flh.Z + base.Z);
 
 	Vector3 firevec = matrix * Vector3(0, 0, 0);
 	Coord coord(firevec.X, -firevec.Y, firevec.Z);

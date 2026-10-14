@@ -14,14 +14,14 @@ The distance is in leptons, 256 to a cell. A positive value moves the turret tow
 TurretOffset=-40 ; the turret sits behind the middle of the hull
 ```
 
-The offset moves where shots come from. It is added to the forward (`X`) component of every weapon slot's firing offset, so neither [`PrimaryFireFLH`](/keys/primaryfireflh/) nor [`SecondaryFireFLH`](/keys/secondaryfireflh/) has to repeat it. The mounting that every shot and effect starts from moves with it.
+The offset moves where shots come from. A vehicle's shots start the offset along its hull, and the firing offset of each weapon slot turns with the turret. Neither [`PrimaryFireFLH`](/keys/primaryfireflh/) nor [`SecondaryFireFLH`](/keys/secondaryfireflh/) has to repeat it. The mounting that every shot and effect starts from moves with it.
 
 The offset also moves the drawn turret:
 
-- A vehicle's voxel turret and barrel are drawn this far along the hull's heading, and turn about that point. The turret therefore pivots where its artwork sits, not at the middle of the hull.
-- A structure's voxel turret ([`TurretAnimIsVoxel=yes`](/keys/turretanimisvoxel/)) is drawn this far along the turret's heading, which matches where it fires from.
+- A vehicle's voxel turret and barrel are drawn this far along the hull's heading, and turn about that point. The turret therefore pivots where its artwork sits, not at the middle of the hull. A vehicle's shots use the same point as the offset, so they leave from the turret's pivot plus the weapon's own offset.
+- A structure's voxel turret ([`TurretAnimIsVoxel=yes`](/keys/turretanimisvoxel/)) is drawn this far along the turret's heading.
 - An aircraft or an infantryman has no turret artwork, so only its firing offsets move.
 
-:::caution[A vehicle's shots and its drawn turret can separate]
-A vehicle's firing offset is moved along the turret's heading, but its drawn turret is moved along the hull's heading. The two match while the turret points the same way as the hull, and drift apart as the turret turns away from it.
+:::caution[A structure's shots and its drawn turret can separate]
+A structure's shots start the offset along its unturned axis, the direction 64 (`DIR_E`), but its voxel turret is drawn along the turret's heading. The two match only while the turret faces 64.
 :::
