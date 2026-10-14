@@ -10399,8 +10399,9 @@ void BuildingClass::Toggle_Laser_Fence_Post(bool force)
 /// barrel or a voxel turret moves the point from the mounting.
 /// </summary>
 /// <param name="slot">The weapon slot to fetch the mounting for.</param>
+/// <param name="base">Ignored. gamemd's BuildingClass::GetFLH (0x453840) does not read its BaseCoords argument.</param>
 /// <returns>Returns with the coordinate the projectile should be created at.</returns>
-Coord BuildingClass::Turret_Coord(int slot) const
+Coord BuildingClass::Turret_Coord(int slot, TPoint3D<int> /* base */) const
 {
 	if (Class->IsCanBeOccupied && Occupants.Count() > 0) {
 		int index = std::min<int>(FiringOccupantIndex, BuildingTypeClass::MUZZLE_FLASH_COUNT - 1);

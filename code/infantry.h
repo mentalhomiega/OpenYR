@@ -248,7 +248,7 @@ class InfantryClass : public FootClass
 		virtual void Per_Cell_Process(PCPType why) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool=true) override;
 		virtual void Scatter(Coord const & threat, bool forced=false, bool nokidding=false) override;
-		virtual Coord Turret_Coord(int which=0) const override;
+		virtual Coord Turret_Coord(int which=0, TPoint3D<int> base=TPoint3D<int>(0, 0, 0)) const override;
 		virtual bool Is_Immobilized(void) const override;
 		virtual int Current_Speed(void) override;
 		virtual void Approach_Target(void) override;

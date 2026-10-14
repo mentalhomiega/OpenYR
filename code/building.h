@@ -474,7 +474,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Should_Uncloak(void) const override;
 		virtual DirType Barrel_Pitch(AbstractClass * target) const override;
 		virtual Cell Find_Exit_Cell(TechnoClass const * techno) const override;
-		virtual Coord Turret_Coord(int which=0) const override;
+		virtual Coord Turret_Coord(int which=0, TPoint3D<int> base=TPoint3D<int>(0, 0, 0)) const override;
 		virtual InfantryTypeClass const * Crew_Type(void) const override;
 		virtual int Pip_Count(void) const override;
 		virtual bool Can_Player_Move(void) const override;

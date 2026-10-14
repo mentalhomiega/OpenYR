@@ -718,7 +718,7 @@ class TechnoClass :	public RadioClass,
 		long long Dock_Distance(BuildingClass const * building) const;
 		BuildingClass * Find_Docking_Bay(TypeList<BuildingTypeClass const *> const & list, bool friendly = false, bool unoccupied = false, long long * distance = NULL) const;
 		virtual Cell Find_Exit_Cell(TechnoClass const * techno) const;
-		virtual Coord Turret_Coord(int which=0) const;
+		virtual Coord Turret_Coord(int which=0, TPoint3D<int> base=TPoint3D<int>(0, 0, 0)) const;
 		TPoint3D<int> Weapon_FLH(int which) const;
 		int Passenger_Seat(FootClass const * passenger) const;
 		virtual FacingType Desired_Load_Dir(ObjectClass * , Cell & moveto) const;

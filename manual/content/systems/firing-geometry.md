@@ -129,6 +129,8 @@ The gun heading, and whether the point tilts with the body, depend on the kind o
 
 A passenger of an open-topped transport fires from its seat on the transport instead of from its own mounting. [Transports](/systems/transports/) describes the seats.
 
+A carried aircraft or missile launched by a spawner leaves from the mounting of its launch slot, with [`SecondSpawnOffset`](/keys/secondspawnoffset/#scope-aircrafttype) added when that applies. [Spawned aircraft and missiles](/systems/spawned-aircraft/#launching) gives the slot.
+
 A structure can replace the mounting. The engine tests these cases in order and uses the first that applies:
 
 1. A structure with a [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` uses that screen offset, projected onto the ground, for every slot. With [`PrimaryFireDualOffset=yes`](/keys/primaryfiredualoffset/), the mounting is instead the point described above with that offset added to it.

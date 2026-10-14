@@ -4623,8 +4623,9 @@ void InfantryClass::Compute_CRC(CRCEngine & crc) const
 /// infantry fires from the mounting of its own weapon.
 /// </summary>
 /// <param name="which">The weapon slot to fetch the mounting for.</param>
+/// <param name="base">Ignored. gamemd's InfantryClass::GetFLH (0x523250) does not read its BaseCoords argument.</param>
 /// <returns>Returns with the coordinate the projectile should be created at.</returns>
-Coord InfantryClass::Turret_Coord(int which) const
+Coord InfantryClass::Turret_Coord(int which, TPoint3D<int> /* base */) const
 {
 	if (IsInOpenToppedTransport && Transporter != NULL) {
 		int const seat = Transporter->Passenger_Seat(this);

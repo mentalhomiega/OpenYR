@@ -8,7 +8,9 @@ when_omitted:
   value: "0,0,0"
 ---
 
-The point, in leptons from the object's center, that every second carried aircraft or missile leaves from. The others leave from the object's primary weapon firing point. With the default `0,0,0` all of them use the firing point.
+The offset, in leptons, added to the firing point that a carried aircraft or missile launches from. It is added to the launch slot's firing point in the forward, lateral and height parts that [`PrimaryFireFLH`](/keys/primaryfireflh/) uses, and it turns with the object. A missile takes it on the odd-numbered launches when the object's first weapon has a [`Burst`](/keys/burst/) above `1`. Any other launch takes it only while the object's own burst index is not zero, which a burst weapon sets while it fires. A structure or infantry spawner ignores it. With the default `0,0,0` it changes nothing.
+
+[Spawned aircraft and missiles](/systems/spawned-aircraft/#launching) gives the launch slot.
 
 ```ini title="rulesmd.ini"
 [MYMISSILESHIP] ; example VesselType

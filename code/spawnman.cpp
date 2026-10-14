@@ -16,8 +16,11 @@
 #include "_rules.h"
 #include "aircraft.h"
 #include "airctype.h"
+#include "anim.h"
+#include "animtype.h"
 #include "cell.h"
 #include "dbgprint.h"
+#include "draw.hh"
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
@@ -27,6 +30,7 @@
 #include "savestream.h"
 #include "techno.h"
 #include "techtype.h"
+#include "weapon.h"
 
 #include <cmath>
 
@@ -225,19 +229,50 @@ void SpawnManagerClass::Send_Home(AircraftClass * unit) const
 void SpawnManagerClass::Launch(NodeType & node, int index)
 {
 	AircraftClass * unit = node.Unit;
-	Coord coord = Owner->Turret_Coord(0);
-	if (index % 2 == 1 && Owner->TClass->SecondSpawnOffset != TPoint3D<int>(0, 0, 0)) {
-		coord = Owner->Center_Coord() + Coord(Owner->TClass->SecondSpawnOffset.X, Owner->TClass->SecondSpawnOffset.Y, Owner->TClass->SecondSpawnOffset.Z);
+	WeaponTypeClass const * first = Owner->Get_Primary_Weapon();
+
+	// A missile spawn of a burst weapon sets the owner's burst index to the spawn's index parity, so the
+	// mounting and the second spawn offset follow that barrel (SpawnManagerClass::Update, 0x6B7230).
+	bool const sets_burst = node.IsMissile && first != NULL && first->Burst > 1;
+	if (sets_burst) {
+		Owner->BurstIndex = index & 1;
 	}
+
+	// Slot 0 is used when its weapon is a spawner weapon, and slot 1 otherwise. The second spawn offset
+	// is added to that mounting only while the burst index is not zero.
+	int const which = (first != NULL && first->IsSpawner) ? 0 : 1;
+	TPoint3D<int> base(0, 0, 0);
+	if (Owner->BurstIndex != 0) {
+		base = Owner->TClass->SecondSpawnOffset;
+	}
+	Coord coord = Owner->Turret_Coord(which, base);
 	coord.Z += 10;
 
-	if (!unit->Unlimbo(coord, Owner->PrimaryFacing.Current().As_Dir256())) {
+	// The CMisl spawn launches 40 leptons back on each axis (SpawnManagerClass::Update, 0x84009C and 0x8400A0).
+	if (SpawnType == Rule->CMisl.Type) {
+		coord.X -= 40;
+		coord.Y -= 40;
+	}
+
+	bool const placed = unit->Unlimbo(coord, Owner->PrimaryFacing.Current().As_Dir256());
+	if (sets_burst) {
+		Owner->BurstIndex = 0;
+	}
+	if (!placed) {
 		return;
 	}
 	unit->Mark(MARK_UP);
 	unit->Set_Coord(coord);
 	unit->Mark(MARK_DOWN);
 	node.Status = NODE_PREPARING;
+
+	// A CMisl spawn plays V3TAKOFF at its launch point, two frames after it appears (0x6B7552).
+	if (SpawnType == Rule->CMisl.Type) {
+		AnimType const anim = AnimTypeClass::From_Name("V3TAKOFF");
+		if (anim != ANIM_NONE) {
+			new AnimClass(AnimTypes[anim], coord, 2, 1, ShapeFlags_Type(SHAPE_WIN_REL | SHAPE_CENTER), -10);
+		}
+	}
 
 	if (node.IsMissile) {
 		if (NewTarget != NULL) {
