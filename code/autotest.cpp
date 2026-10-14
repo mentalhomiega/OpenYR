@@ -32,11 +32,13 @@
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
 **	bridge x y				writes a cell's bridge tile, overlay, deck and under-bridge flags
-**	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are
+**	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are, and the cell of each concrete-bridge overlay
 **	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
 **	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
+**	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
 **	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
 **	hutclick <TypeID> x y	clicks the building on that cell with the player's object of that type, through the object path a real click takes
+**	hutc4 x y				writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
 **	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
@@ -1393,6 +1395,7 @@ static void Bridge_Census_Step(StepType const & step)
 		}
 		if (cptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cptr->Overlay <= OVERLAY_CONCRETE_BRIDGE_LAST) {
 			concrete++;
+			DebugString("AUTOTEST   bridgeconcrete %d,%d overlay %d\n", (int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->Overlay);
 		}
 		bool const is_high = cptr->Overlay == OVERLAY_BRIDGE1 || cptr->Overlay == OVERLAY_BRIDGE2;
 		bool const is_railway = cptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || cptr->Overlay == OVERLAY_RAILWAY_BRIDGE2;
@@ -1448,6 +1451,18 @@ static void Repair_Bridge_Step(StepType const & step)
 
 
 /// <summary>
+/// Hits the bridge on a cell through MapClass::Damage_Bridge, the call a weapon impact makes, and logs whether a span came down.
+/// </summary>
+/// <param name="step">The x in the argument and the y in X.</param>
+static void Bridge_Hit_Step(StepType const & step)
+{
+	int const x = std::atoi(step.Argument.c_str());
+	bool const destroyed = Map.Damage_Bridge(Cell(x, step.X));
+	DebugString("AUTOTEST   bridgehit %d,%d %d\n", x, step.X, (int)destroyed);
+}
+
+
+/// <summary>
 /// Logs the action the player's object of a type gets over a building, through the object path a real mouse-over takes.
 /// </summary>
 /// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
@@ -1495,6 +1510,21 @@ static void Hut_Click_Step(StepType const & step)
 }
 
 
+/// <summary>
+/// Logs the C4 state of the building on a cell: whether a charge is on it, the countdown, and its strength.
+/// </summary>
+/// <param name="step">The building's cell in X and Y.</param>
+static void Hut_C4_Step(StepType const & step)
+{
+	BuildingClass const * building = Map[Cell(step.X, step.Y)].Cell_Building();
+	if (building == NULL) {
+		DebugString("AUTOTEST   hutc4 %d,%d no building\n", step.X, step.Y);
+		return;
+	}
+	DebugString("AUTOTEST   hutc4 %s %d,%d c4 %d going_to_blow %d countdown %d strength %d active %d\n", building->Class->Name(), step.X, step.Y, (int)building->IsC4Applied, (int)building->IsGoingToBlow, building->CountDown, (int)building->Strength, (int)building->IsActive);
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -1516,12 +1546,20 @@ void Run(StepType const & step)
 		Repair_Bridge_Step(step);
 		return;
 	}
+	if (step.Command == "bridgehit") {
+		Bridge_Hit_Step(step);
+		return;
+	}
 	if (step.Command == "hutaction") {
 		Hut_Action_Step(step);
 		return;
 	}
 	if (step.Command == "hutclick") {
 		Hut_Click_Step(step);
+		return;
+	}
+	if (step.Command == "hutc4") {
+		Hut_C4_Step(step);
 		return;
 	}
 

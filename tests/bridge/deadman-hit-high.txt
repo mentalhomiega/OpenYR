@@ -1,0 +1,13 @@
+; Deadman high road bridge weapon regression: weapon impacts on the intact road deck at 55,41 (MapClass::Damage_Bridge,
+; the call a shell or warhead makes) bring the span down, and an infantryman standing on the deck at 55,41 falls with it.
+; The span is logged before the first impact and after the last one.
+; Run: scripts/run_autotest.ps1 -Script src-agent4/tests/bridge/deadman-hit-high.txt -Build agent4 -Map Deadman.mmx -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   bridge|AUTOTEST   where|Exception"
+30 grantunit E1 55 41
+100 bridgearea 55 43
+200 bridgehit 55 41
+210 bridgehit 55 41
+220 bridgehit 55 41
+230 bridgehit 55 41
+400 where E1
+500 bridgearea 55 43
+600 quit
