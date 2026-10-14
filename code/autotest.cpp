@@ -145,6 +145,8 @@
 **	stripfill <column> <count>	offers building types 0 to count-1 to that sidebar strip and writes how many it took
 **	aiscan					writes each foot object no player owns with its mission, team, target, range and area scan picks,
 **							and the nearest player object with whether it is in range and can be fired at
+**	lockscan				writes each object outside limbo whose IsLocked flag is clear, whoever owns it, with whether its cell is in
+**							the local radar now, then the count of such objects and how many of them are in the local radar
 **	gattling <TypeID>		writes each object of that type, whoever owns it, with its primary facing and the facing it turns to, a building's
 **							aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret
 **							animation frame, recoil state, target cell, and a building's turret and barrel frame counts
@@ -3062,6 +3064,20 @@ void Run(StepType const & step)
 				homecell.X, homecell.Y, (int)(foot->NavCom != NULL), (int)foot->IsFiring,
 				areaobject != NULL ? areaobject->Class_Of()->Name() : (area != NULL ? "cell" : "-"), areacell.X, areacell.Y);
 		}
+	} else if (step.Command == "lockscan") {
+		// lockscan: each object outside limbo whose IsLocked flag is clear, whoever owns it, with its cell, whether that cell
+		// is in the local radar now (a flag that stayed clear there would be stale), its mission and its strength.
+		int unlocked = 0;
+		int stale = 0;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->IsInLimbo || techno->IsLocked) continue;
+			bool const inlocal = Map.In_Local_Radar(techno->PositionCell);
+			unlocked++;
+			stale += (int)inlocal;
+			DebugString("AUTOTEST   lockscan %s of %s cell %d,%d mission %s inlocal %d strength %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), (int)inlocal, (int)techno->Strength);
+		}
+		DebugString("AUTOTEST   lockscan frame %d unlocked %d stale %d\n", (int)Frame, unlocked, stale);
 	} else if (step.Command == "gattling") {
 		// gattling <TypeID>: the state a gattling structure's draw and fire code read, for each object of that type.
 		for (int index = 0; index < Technos.Count(); index++) {
