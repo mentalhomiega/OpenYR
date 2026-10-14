@@ -5,6 +5,12 @@
 # The launcher gets /QUIET, so no message box can wait for a click. Everything is written under a
 # temporary folder that the script removes. The Yuri's Revenge folder is a fake holding two dummy archives.
 #
+# Safety: every setup call is checked before it starts. It must run silently, with /NOSHORTCUTS, and
+# name its /DIR= under the test folder. Every launcher call must carry /QUIET and /NOSHORTCUTS, must not
+# start the game (/NOGAME or /CHECKONLY), and may name paths only under the test folder. The script also
+# compares the default install folder, the Start Menu and desktop shortcuts and the HKCU Uninstall key
+# before and after, and fails if any of them changed.
+#
 # Usage: launcher_e2e.ps1 -Launcher <OpenYR.exe> -Setup <OpenYR-Setup.exe>
 # Exit code 0 when every check passes, 1 otherwise.
 
@@ -17,6 +23,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $Launcher = (Resolve-Path -LiteralPath $Launcher).Path
 $Setup = (Resolve-Path -LiteralPath $Setup).Path
+$defaultInstall = Join-Path $env:LOCALAPPDATA 'Programs\OpenYR'
 
 # The stored-zip writer the packager uses: the setup reads stored entries only.
 Add-Type -TypeDefinition @'
@@ -145,8 +152,88 @@ function Check([bool]$ok, [string]$what) {
 	if (-not $ok) { $script:Failures++ }
 }
 
-# Runs an executable with one argument string and returns its exit code.
-function Run-Exe([string]$exe, [string]$arguments) {
+# A path must lie under the test folder; nothing outside it is touched.
+function Assert-Under([string]$path, [string]$folder, [string]$what) {
+	$full = [IO.Path]::GetFullPath($path).TrimEnd('\') + '\'
+	$base = [IO.Path]::GetFullPath($folder).TrimEnd('\') + '\'
+	if (-not $full.StartsWith($base, [StringComparison]::OrdinalIgnoreCase)) {
+		throw "SAFETY: $what '$path' is outside the test folder '$folder'."
+	}
+}
+
+# Every path named in an argument string must lie under the test folder. URLs are not paths.
+function Assert-Paths([string]$arguments) {
+	$pattern = '/(?:DIR|FOLDER|YR|LOG|FEED|SETUPURL|SUMURL)=(?:"([^"]*)"|(\S+))'
+	foreach ($match in [regex]::Matches($arguments, $pattern, 'IgnoreCase')) {
+		$value = if ($match.Groups[1].Success) { $match.Groups[1].Value } else { $match.Groups[2].Value }
+		if ($value -match '^https?://') { continue }
+		Assert-Under $value $root 'a path in the arguments'
+	}
+}
+
+function Assert-Setup-Args([string]$arguments) {
+	if ($arguments -notmatch '(^|\s)/S(\s|$)') { throw 'SAFETY: the setup must run silently (/S).' }
+	if ($arguments -notmatch '(^|\s)/NOSHORTCUTS(\s|$)') { throw 'SAFETY: the setup must run with /NOSHORTCUTS.' }
+	if ($arguments -notmatch '/DIR=') { throw 'SAFETY: the setup must name its folder with /DIR=.' }
+	Assert-Paths $arguments
+}
+
+function Assert-Launcher-Args([string]$arguments) {
+	if ($arguments -notmatch '(^|\s)/QUIET(\s|$)') { throw 'SAFETY: the launcher must run with /QUIET.' }
+	if ($arguments -notmatch '(^|\s)/NOSHORTCUTS(\s|$)') { throw 'SAFETY: the launcher must run with /NOSHORTCUTS.' }
+	if ($arguments -notmatch '(^|\s)/NOGAME(\s|$)' -and $arguments -notmatch '(^|\s)/CHECKONLY(\s|$)') {
+		throw 'SAFETY: the launcher must not start the game: pass /NOGAME or /CHECKONLY.'
+	}
+	Assert-Paths $arguments
+}
+
+# Checks the guards refuse the dangerous calls and accept a safe one. Nothing is started here.
+function Test-Guards {
+	$refused = 0
+	$attempts = @(
+		{ Assert-Setup-Args ('/S /NOSHORTCUTS /DIR="' + $defaultInstall + '"') },
+		{ Assert-Setup-Args ('/S /DIR="' + $root + '\x"') },
+		{ Assert-Launcher-Args '/CHECKONLY /QUIET' },
+		{ Assert-Launcher-Args ('/NOGAME /QUIET /NOSHORTCUTS /NOSHORTCUTS /LOG="' + $defaultInstall + '\user\x.log"') }
+	)
+	foreach ($attempt in $attempts) {
+		try { & $attempt; } catch { $refused++ }
+	}
+	Check ($refused -eq $attempts.Count) 'the guards refuse each unsafe call before anything starts'
+
+	$accepted = $true
+	try { Assert-Setup-Args ('/S /NOSHORTCUTS /DIR="' + $root + '\x"'); Assert-Launcher-Args ('/NOGAME /QUIET /NOSHORTCUTS /NOSHORTCUTS /FEED="' + $root + '\f.json"') } catch { $accepted = $false }
+	Check $accepted 'and they accept a call that stays in the test folder'
+}
+
+# The parts of the real machine a test must not change: the default install, its shortcuts and the HKCU key.
+function Get-Real-State {
+	$lines = New-Object System.Collections.Generic.List[string]
+	if (Test-Path -LiteralPath $defaultInstall) {
+		foreach ($item in Get-ChildItem -LiteralPath $defaultInstall -Recurse -Force) {
+			$lines.Add('F|' + $item.FullName + '|' + $item.Length + '|' + $item.LastWriteTimeUtc.Ticks)
+		}
+	}
+	$startMenu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\OpenYR'
+	$desktop = Join-Path ([Environment]::GetFolderPath('Desktop')) 'OpenYR.lnk'
+	foreach ($item in @(Get-ChildItem -LiteralPath $startMenu -Force -ErrorAction SilentlyContinue) + @(Get-Item -LiteralPath $desktop -Force -ErrorAction SilentlyContinue)) {
+		if ($item) { $lines.Add('S|' + $item.FullName + '|' + $item.LastWriteTimeUtc.Ticks) }
+	}
+	$key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenYR'
+	if (Test-Path -LiteralPath $key) {
+		foreach ($property in (Get-ItemProperty -LiteralPath $key).PSObject.Properties) {
+			if ($property.Name -notlike 'PS*') { $lines.Add('R|' + $property.Name + '|' + $property.Value) }
+		}
+	} else {
+		$lines.Add('R|absent')
+	}
+	return ($lines -join "`n")
+}
+
+# Runs an executable with one argument string and returns its exit code. The call is checked first.
+function Run-Exe([string]$kind, [string]$exe, [string]$arguments) {
+	if ($kind -eq 'setup') { Assert-Setup-Args $arguments } else { Assert-Launcher-Args $arguments }
+	Assert-Under $exe $root 'the executable'
 	$process = Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -Wait -PassThru
 	return $process.ExitCode
 }
@@ -206,7 +293,10 @@ $root = Join-Path ([IO.Path]::GetTempPath()) ('openyr-launcher-e2e-' + $PID)
 Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $root | Out-Null
 
+$realBefore = $null
 try {
+	$realBefore = Get-Real-State
+	Test-Guards
 	$yuri = Join-Path $root 'Yuri'
 	$install = Join-Path $root 'Programs\OpenYR'
 	$logs = Join-Path $root 'logs'
@@ -231,7 +321,7 @@ try {
 	New-Feed 'beta23' $setup23 $sum23 $feed23
 
 	# Install beta22 silently, as a player's first install would.
-	$code = Run-Exe $setup22 ('/S /DIR="' + $install + '" /YR="' + $yuri + '" /NOSHORTCUTS /LOG="' + (Join-Path $logs 'install22.log') + '"')
+	$code = Run-Exe 'setup' $setup22 ('/S /DIR="' + $install + '" /YR="' + $yuri + '" /NOSHORTCUTS /LOG="' + (Join-Path $logs 'install22.log') + '"')
 	Check ($code -eq 0) 'the setup installs beta22 silently with exit code 0'
 	$record = Read-Text (Join-Path $install 'openyr-install.ini')
 	Check ($record.Contains('Build=beta22')) 'the install record names beta22'
@@ -243,7 +333,7 @@ try {
 	[IO.File]::WriteAllText((Join-Path $install 'user\Saved Games\mission.sav'), 'a save', [Text.Encoding]::ASCII)
 
 	$log = Join-Path $logs 'check-feed.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /LOG="' + $log + '"')
 	$text = Read-Text $log
 	Check ($code -eq 0) 'a check-only run from the install exits with 0'
 	Check ($text.Contains('would ask to update from Beta 22 to Beta 23')) 'the check reads the feed from [Update] FeedURL and offers beta23'
@@ -252,23 +342,23 @@ try {
 	Check ((Read-Text (Join-Path $install 'Game.exe')) -eq 'engine beta22') 'and Game.exe is still beta22'
 
 	$log = Join-Path $logs 'check-same.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /FEED="' + $feed22 + '" /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /FEED="' + $feed22 + '" /LOG="' + $log + '"')
 	Check ((Read-Text $log).Contains('not newer than the Beta 22 installed')) 'a feed naming the installed beta offers nothing'
 
 	$log = Join-Path $logs 'check-http.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /FEED=http://127.0.0.1:9/feed /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /FEED=http://127.0.0.1:9/feed /LOG="' + $log + '"')
 	Check ((Read-Text $log).Contains('must start with https://')) 'a plain http feed is refused and the game would start as before'
 
 	$log = Join-Path $logs 'check-missing.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /FEED="' + (Join-Path $root 'missing.json') + '" /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /FEED="' + (Join-Path $root 'missing.json') + '" /LOG="' + $log + '"')
 	Check ((Read-Text $log).Contains('Update check skipped: Could not read')) 'a missing feed file is logged and the run goes on'
 
 	$log = Join-Path $logs 'quiet-offer.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /FEED="' + $feed23 + '" /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed23 + '" /LOG="' + $log + '"')
 	Check ($code -eq 0 -and (Read-Text $log).Contains('but no question is asked')) 'a quiet run that finds beta23 asks nothing and starts the version it has'
 
 	$log = Join-Path $logs 'normal-run.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /FEED="' + $feed22 + '" /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/NOGAME /QUIET /NOSHORTCUTS /FEED="' + $feed22 + '" /LOG="' + $log + '"')
 	Check ($code -eq 0 -and (Read-Text $log).Contains('Not starting Game.exe (/NOGAME).')) 'a normal run with nothing newer starts the game path and exits with 0'
 
 	# The update copy, as the launcher starts it. A bad checksum stops the update before the setup runs.
@@ -277,7 +367,7 @@ try {
 	Copy-Item -LiteralPath $Launcher -Destination (Join-Path $helper 'OpenYR-Update.exe')
 	$log = Join-Path $logs 'update-badsum.log'
 	$arguments = '/UPDATE=beta23 /SETUPURL="' + $setup23 + '" /SUMURL="' + $badSum + '" /FOLDER="' + $install + '" /YR="' + $yuri + '" /LOG="' + $log + '" /NOGAME /QUIET /NOSHORTCUTS -- -SPAWN'
-	$code = Run-Exe (Join-Path $helper 'OpenYR-Update.exe') $arguments
+	$code = Run-Exe 'launcher' (Join-Path $helper 'OpenYR-Update.exe') $arguments
 	Check ($code -eq 1) 'an update copy with a bad checksum exits with 1'
 	Check ((Read-Text $log).Contains('does not match its checksum')) 'and says the download did not match'
 	Check ((Read-Text (Join-Path $install 'openyr-install.ini')).Contains('Build=beta22')) 'the install is still beta22'
@@ -288,7 +378,7 @@ try {
 	Copy-Item -LiteralPath $Launcher -Destination (Join-Path $helper 'OpenYR-Update.exe')
 	$log = Join-Path $logs 'update-noyuri.log'
 	$arguments = '/UPDATE=beta23 /SETUPURL="' + $setup23 + '" /SUMURL="' + $sum23 + '" /FOLDER="' + $install + '" /YR="' + (Join-Path $root 'nowhere') + '" /LOG="' + $log + '" /NOGAME /QUIET /NOSHORTCUTS -- -SPAWN'
-	$code = Run-Exe (Join-Path $helper 'OpenYR-Update.exe') $arguments
+	$code = Run-Exe 'launcher' (Join-Path $helper 'OpenYR-Update.exe') $arguments
 	Check ($code -eq 1 -and (Read-Text $log).Contains('the setup exit code is 4')) 'a setup that finds no Yuri''s Revenge exits with 4, and the update copy reports it'
 	Check ((Read-Text (Join-Path $install 'openyr-install.ini')).Contains('Build=beta22')) 'and the install is still beta22'
 
@@ -300,7 +390,7 @@ try {
 	# /WAITFOR names a process the copy waits for before the setup runs; a short ping stands in for the launcher.
 	$waiter = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c ping -n 3 127.0.0.1 >nul' -WindowStyle Hidden -PassThru
 	$arguments = '/UPDATE=beta23 /SETUPURL="' + $setup23 + '" /SUMURL="' + $sum23 + '" /FOLDER="' + $install + '" /YR="' + $yuri + '" /LOG="' + $log + '" /WAITFOR=' + $waiter.Id + ' /NOGAME /QUIET /NOSHORTCUTS -- -SPAWN'
-	$code = Run-Exe (Join-Path $helper 'OpenYR-Update.exe') $arguments
+	$code = Run-Exe 'launcher' (Join-Path $helper 'OpenYR-Update.exe') $arguments
 	$text = Read-Text $log
 	Check ($code -eq 0) 'the update copy exits with 0 when the update installs'
 	Check ($text.Contains('has closed.')) 'the update copy waits for the process named by /WAITFOR before it runs the setup'
@@ -317,11 +407,20 @@ try {
 	Check ($installed -eq $built) 'the launcher in the install is the one from the package'
 
 	$log = Join-Path $logs 'check-after.log'
-	$code = Run-Exe (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /LOG="' + $log + '"')
+	$code = Run-Exe 'launcher' (Join-Path $install 'OpenYR.exe') ('/CHECKONLY /QUIET /NOSHORTCUTS /LOG="' + $log + '"')
 	Check ((Read-Text $log).Contains('not newer than the Beta 23 installed')) 'after the update the same feed offers nothing'
 }
 finally {
+	$realAfter = Get-Real-State
+	$realChanged = $null -eq $realBefore -or $realBefore -ne $realAfter
+	Check (-not $realChanged) 'the default install, its shortcuts and the HKCU Uninstall key are unchanged'
+	if ($realChanged -and $null -ne $realBefore) {
+		# Printed so a change made by someone else during the run is visible; the test writes nothing there.
+		$differences = Compare-Object -ReferenceObject ($realBefore -split "`n") -DifferenceObject ($realAfter -split "`n") | Select-Object -First 12
+		foreach ($difference in $differences) { Write-Output ('  changed: ' + $difference.SideIndicator + ' ' + $difference.InputObject) }
+	}
 	if (-not $KeepTemp) {
+		Assert-Under $root ([IO.Path]::GetTempPath()) 'the test folder'
 		Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 	}
 }
