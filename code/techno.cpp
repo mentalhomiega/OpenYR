@@ -323,7 +323,6 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BombDetonateFrame(-1),
 	IsBerzerk(false),
 	BerzerkDuration(0),
-	OpportunityScanFrame(0),
 	BombSound(),
 	GattlingSound(),
 	GattlingVoc(VOC_NONE),
@@ -3539,19 +3538,6 @@ void TechnoClass::AI(void)
 		DisguiseHouse = House;
 	}
 
-	/*
-	 * Every NormalTargetingDelay frames, an OpportunityFire object that is moving or harvesting
-	 * drops a target out of range and takes the best one in range, firing on the move
-	 * (TechnoClass::Update, 0x6F9E50, and CanOpportunityFire, 0x709290). A computer's member of an
-	 * aggressive, non-suicide team scans on a move order without the type flag, if it holds no target.
-	 */
-	bool const opportunity = (Mission == MISSION_MOVE || Mission == MISSION_HARVEST) && TClass->IsOpportunityFire && TClass->IsCanPassiveAquire;
-	bool const aggressive = Mission == MISSION_MOVE && TarCom == NULL && !House->Is_Human_Player() && Is_Aggressive_Team_Member(this);
-	if ((opportunity || aggressive) && Is_Weapon_Equipped() && Frame - OpportunityScanFrame >= Rule->NormalTargetingDelay) {
-		OpportunityScanFrame = Frame;
-		Target_Something_Nearby(PositionCoord, THREAT_RANGE, true);
-	}
-
 	if (Is_Voxel_Loaded()) {
 		Rocking_AI();
 		if (!IsActive) {
@@ -3792,6 +3778,16 @@ void TechnoClass::AI(void)
 	BASECLASS::AI();
 
 	if (!IsActive) return;
+
+	/*
+	 * TechnoClass::Update (0x6F9E50, 0x6FA65A to 0x6FA6F5) runs this after the mission's own update. Once the
+	 * targeting timer has run out, an object on a move, harvest or guard mission that can opportunity-fire takes a
+	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). An attack-move mega mission, which
+	 * gamemd tests first, is not ported.
+	 */
+	if (Targeting_Timer_Finished() && (Mission == MISSION_MOVE || Mission == MISSION_HARVEST || Mission == MISSION_GUARD) && Can_Opportunity_Fire()) {
+		Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE);
+	}
 
 	/*
 	**	If this is an object that heals itself (e.g., Mammoth Tank), then it will perform
@@ -9499,6 +9495,74 @@ bool TechnoClass::Target_And_Estimate_Damage(Coord const & coord, ThreatType thr
 }
 
 
+/// <summary>
+/// Whether this object may take a target on its own. The port of TechnoClass::CanPassiveAcquireTargets (0x7091D0).
+/// </summary>
+/// <returns>bool; False for a warping object, a slave, a CanPassiveAquire=no type, an occupiable structure with no
+/// occupant, an engineer under a human owner, an object whose capture control is spent, or an unarmed object.</returns>
+bool TechnoClass::Can_Passive_Acquire_Targets(void)
+{
+	if (TemporalImUsing.has_value() && TemporalImUsing->Target != NULL) {
+		return(false);
+	}
+	if (SlaveOwner != NULL || !TClass->IsCanPassiveAquire) {
+		return(false);
+	}
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = static_cast<BuildingClass const *>(this);
+		if (building->Class->IsCanBeOccupied && building->Occupants.Count() == 0) {
+			return(false);
+		}
+	}
+	bool const capture_spent = CaptureManager.has_value() && CaptureManager->Cannot_Control_Any_More();
+	if (RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Class->IsEngineer && House->Is_Human_Player()) {
+		return(false);
+	}
+	return(!capture_spent && Is_Weapon_Equipped());
+}
+
+
+/// <summary>
+/// Whether this object may scan for a target on the move. The port of TechnoClass::CanOpportunityFire (0x709290).
+/// The balloon and special-unit clauses of the gamemd function are not ported.
+/// </summary>
+/// <returns>bool; True for a computer's aggressive, non-suicide team member on a move order with no target; otherwise
+/// the object must pass Can_Passive_Acquire_Targets, and a type without OpportunityFire scans only on the guard mission.</returns>
+bool TechnoClass::Can_Opportunity_Fire(void)
+{
+	if (TarCom == NULL && !House->Is_Human_Player() && Mission == MISSION_MOVE && Is_Aggressive_Team_Member(this)) {
+		return(true);
+	}
+	if (!Can_Passive_Acquire_Targets()) {
+		return(false);
+	}
+	if (!TClass->IsOpportunityFire) {
+		if (Mission != MISSION_GUARD) {
+			return(false);
+		}
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(0)->Weapon;
+		int const select = TarCom != NULL ? What_Weapon_Should_I_Use(TarCom) : 0;
+		if (weapon != NULL && weapon->IsAreaFire && select == 0) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// The opportunity re-target that a warp runs when it ends. The port of TechnoClass::OpportunityFire (0x709480).
+/// </summary>
+/// <returns>bool; True if the range scan found a target. The scan restarts the targeting timer.</returns>
+bool TechnoClass::Opportunity_Fire(void)
+{
+	if (!Can_Opportunity_Fire()) {
+		return(false);
+	}
+	return(Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Exit_Object -- Causes specified object to leave this object.                   *
  *                                                                                             *
@@ -10386,7 +10450,6 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombDetonateFrame);
 	stream.Serialize(IsBerzerk);
 	stream.Serialize(BerzerkDuration);
-	stream.Serialize(OpportunityScanFrame);
 	stream.Serialize(IsForceShielded);
 	stream.Serialize(RadarPos);
 	stream.Serialize(SpiedBy);

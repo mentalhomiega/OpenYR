@@ -5242,10 +5242,8 @@ int BuildingClass::Do_MISSION_GUARD(void)
 			/*
 			**	If there is no target available, then search for one.
 			*/
-			if (TarCom == NULL) {
-				ThreatType threat = THREAT_NORMAL;
-				Assign_Target(Greatest_Threat(threat, PositionCoord, false));
-			}
+			// No target is searched for here. BuildingClass::Mission_Guard (0x4496B0) takes only the target that the
+			// opportunity scan of TechnoClass::Update has set.
 
 			/*
 			**	There is a valid target. Switch into attack mode right away.

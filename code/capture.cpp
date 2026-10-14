@@ -267,6 +267,16 @@ bool CaptureManagerClass::Is_Overloading(void) const
 }
 
 
+/// <summary>
+/// Whether this manager has no control node left to spend. An infinite manager never runs out
+/// (CaptureManagerClass::CannotControlAnyMore, 0x4722A0).
+/// </summary>
+bool CaptureManagerClass::Cannot_Control_Any_More(void) const
+{
+	return(!IsInfinite && (int)Nodes.size() >= MaxControlNodes);
+}
+
+
 // Is the link to this unit still showing after its capture?
 bool CaptureManagerClass::Is_Link_Shown(int index) const
 {

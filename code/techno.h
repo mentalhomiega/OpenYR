@@ -269,8 +269,6 @@ class TechnoClass :	public RadioClass,
 		bool IsBerzerk;
 		int BerzerkDuration;
 
-		// The frame of an OpportunityFire object's last scan for targets on the move.
-		int OpportunityScanFrame;
 
 		// The loop a spinning gattling weapon plays.
 		AudioHandle GattlingSound;
@@ -792,6 +790,9 @@ class TechnoClass :	public RadioClass,
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL, bool estimate=false);
 		bool Target_And_Estimate_Damage(Coord const & coord, ThreatType threat);
 		bool Targeting_Timer_Finished(void) const { return(TargetingTimer.Value() == 0); }
+		bool Can_Passive_Acquire_Targets(void);
+		bool Can_Opportunity_Fire(void);
+		bool Opportunity_Fire(void);
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;

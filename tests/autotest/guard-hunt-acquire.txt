@@ -1,0 +1,38 @@
+; Guard and Area Guard units acquire and fire on enemies in range, for the computer's units and the player's.
+; Computer E1 is spawned on Guard three cells from the player's AMCV at 65,20. E2 is spawned at 58,20 and given a move
+; to the cell it stands on, so it settles into Area Guard once its house reaches GuardArea and it is armed.
+; The player's own E1 at 64,24 and E2 at 66,23 stay on Guard. A second computer E2 is spawned at 60,26 and both computer
+; E2s are given a move to 66,22, to see whether a move's end puts a unit on Hunt. No unit reached Hunt in the runs
+; made so far, so this script does not show Hunt acquisition.
+; Each aiscan line shows the computer unit's mission, the target it holds (tarcom), the range scan pick and whether the
+; nearest player object is in range and can be fired at. Each where line shows a unit's mission and target.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script tests/autotest/guard-hunt-acquire.txt -Map XMP29U2.MAP -Seconds 150 -Filter "aiscan|where (E1|E2)|Exception"
+10 command CenterBase
+30 spawn E1 62 23
+40 spawn E2 58 20
+50 cmove E2 58 20
+55 spawn E2 60 26
+60 cmove E2 66 22
+70 own E1 64 24
+80 own E2 66 23
+100 aiscan
+101 where E1
+102 where E2
+103 where E2
+140 aiscan
+141 where E1
+142 where E2
+143 where E2
+180 aiscan
+181 where E1
+182 where E2
+183 where E2
+220 aiscan
+221 where E1
+222 where E2
+223 where E2
+260 aiscan
+261 where E1
+262 where E2
+263 where E2
+300 quit

@@ -35,6 +35,7 @@ class CaptureManagerClass
 		void Free_All(void);
 		void Handle_Overload(void);
 		bool Is_Overloading(void) const;
+		bool Cannot_Control_Any_More(void) const;
 		int Controlled_Count(void) const {return((int)Nodes.size());}
 		TechnoClass * Controlled(int index) const {return(Nodes[index].Unit);}
 		bool Holds(TechnoClass const * unit) const;

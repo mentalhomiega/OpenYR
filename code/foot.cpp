@@ -946,8 +946,6 @@ int FootClass::Do_MISSION_ATTACK(void)
  *=============================================================================================*/
 int FootClass::Do_MISSION_GUARD(void)
 {
-	bool renovator = Is_Renovator();
-
 	// A soldier with an ElectricAssault second weapon starts charging its own Overpowerable structure next to it (FootClass::Mission_Guard, 0x4D5070).
 	if (TarCom == NULL && RTTI == RTTI_INFANTRY) {
 		WeaponTypeClass const * second = Get_Class_Weapon_Data(1)->Weapon;
@@ -967,11 +965,10 @@ int FootClass::Do_MISSION_GUARD(void)
 		Hover_Attack_Lift_Off();
 	}
 
-	// A CanPassiveAquire=no type never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
-	if (!renovator && TClass->IsCanPassiveAquire && (TarCom == NULL || RTTI != RTTI_AIRCRAFT || House->Is_Human_Player())) {
-		if (!Target_Something_Nearby(PositionCoord, THREAT_RANGE)) {
-			Random_Animate();
-		}
+	// A guard object takes no target on the mission's own timer. Its range scan runs in TechnoClass::AI once the
+	// targeting timer runs out (TechnoClass::Update, 0x6F9E50), and FootClass::Mission_Guard (0x4D5070) never acquires.
+	if (TarCom == NULL) {
+		Random_Animate();
 	}
 
 	int dtime = Current_Mission_Control().Normal_Delay();
@@ -1013,7 +1010,8 @@ int FootClass::Do_MISSION_GUARD(void)
  *=============================================================================================*/
 int FootClass::Do_MISSION_HUNT(void)
 {
-	if (!Target_Something_Nearby(PositionCoord, THREAT_NORMAL, true)) {
+	// The hunt scan restarts the targeting timer, as FootClass::Mission_Hunt (0x4D5350) does through TargetAndEstimateDamage.
+	if (!Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
 		Random_Animate();
 	} else {
 		InfantryClass * infantry = RTTI == RTTI_INFANTRY ? (InfantryClass *)this : NULL;
@@ -1611,7 +1609,7 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 		}
 
 		// The area scan waits for the targeting timer to run out (FootClass::Mission_AreaGuard, 0x4D6AA0).
-		if (TarCom == NULL && TClass->IsCanPassiveAquire) {
+		if (TarCom == NULL && Can_Passive_Acquire_Targets()) {
 			if (Targeting_Timer_Finished()) {
 				Target_And_Estimate_Damage(ArchiveTarget->Center_Coord(), THREAT_AREA);
 			}
