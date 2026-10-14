@@ -1,0 +1,35 @@
+; Computer units on the default skirmish map acquire and fire on the player's AMCV, which is unarmed and starts at 65,20.
+; The E1 is spawned on Guard, three cells from the AMCV, and is never moved, so it scans from the Guard mission.
+; The E2 is spawned on Guard at 58,20, then given a cmove to the cell it stands on. It goes idle there and settles into
+; Area Guard when the computer house's IQ reaches GuardArea and it is armed. It has to approach the AMCV from there.
+; Each aiscan line shows the mission, the target held (tarcom), the range scan pick and whether the unit is firing.
+; Each where line shows the unit's mission and target. Each dump line shows the AMCV's strength, which falls
+; when the computer units hit it.
+; Seen on the default skirmish map: the E2 holds the AMCV by frame 140 and is firing by frame 260, and the
+; AMCV's strength falls from 982 to 892 over the run.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script tests/autotest/area-guard-aiscan.txt -Map XMP29U2.MAP -Seconds 150 -Filter "aiscan (E1|E2) of Africans|where (E1|E2)|unit AMCV|AUTOTEST (spawn|cmove)|Exception"
+10 command CenterBase
+30 spawn E1 62 23
+40 spawn E2 58 20
+50 cmove E2 58 20
+100 aiscan
+101 where E2
+102 where E1
+104 dump
+140 aiscan
+141 where E2
+142 where E1
+144 dump
+180 aiscan
+181 where E2
+182 where E1
+184 dump
+220 aiscan
+221 where E2
+222 where E1
+224 dump
+260 aiscan
+261 where E2
+262 where E1
+264 dump
+300 quit

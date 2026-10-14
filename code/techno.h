@@ -125,6 +125,13 @@ class TechnoClass :	public RadioClass,
 		CDTimerClass<FrameTimerClass> RadarFlashTimer;
 
 		/*
+		 * The targeting timer holds back the area scan. It starts at 45 frames, and each area scan
+		 * restarts it with GuardAreaTargetingDelay plus a random 0 to 2 frames. Losing a target while
+		 * more than 10 frames remain restarts it with a random 4 to 8 frames.
+		 */
+		CDTimerClass<FrameTimerClass> TargetingTimer;
+
+		/*
 		 * While the Iron Curtain timer runs, this object takes no damage. The tint stage and
 		 * its timer step the object's brightness through the curtain's pulse.
 		 */
@@ -782,6 +789,8 @@ class TechnoClass :	public RadioClass,
 		void Pay_Bounty(TechnoClass * source) const;
 		virtual void Reduce_Ammunition(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL, bool estimate=false);
+		bool Target_And_Estimate_Damage(Coord const & coord, ThreatType threat);
+		bool Targeting_Timer_Finished(void) const { return(TargetingTimer.Value() == 0); }
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;

@@ -277,6 +277,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	Cargo(),
 	Veterancy(),
 	RadarFlashTimer(),
+	TargetingTimer(45),
 	IronCurtainTimer(),
 	IronTintTimer(),
 	IronTintStage(10),
@@ -8420,6 +8421,10 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 	**	computer must be cleared.
 	*/
 	if (TarCom == target && clear_target && (all || target->Owner_HouseClass() != House)) {
+		// A lost target with more than 10 frames left on the timer shortens the wait to a new scan.
+		if (TargetingTimer.Value() > 10 && !ScenarioInit) {
+			TargetingTimer = Random_Pick(4, 8);
+		}
 		Assign_Target(NULL);
 		if (Has_Suspended_Mission()) {
 			Restore_Mission();
@@ -9481,6 +9486,16 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 }
 
 
+// Restarts the targeting timer, then takes the estimate-enabled target scan for an object without a target
+// (TechnoClass::TargetAndEstimateDamage, 0x709820).
+bool TechnoClass::Target_And_Estimate_Damage(Coord const & coord, ThreatType threat)
+{
+	int const delay = Mission == MISSION_GUARD_AREA ? Rule->GuardAreaTargetingDelay : Rule->NormalTargetingDelay;
+	TargetingTimer = delay + Random_Pick(0, 2);
+	return(Target_Something_Nearby(coord, threat, true));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Exit_Object -- Causes specified object to leave this object.                   *
  *                                                                                             *
@@ -10315,6 +10330,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FirepowerBias);
 	stream.Serialize(IdleTimer);
 	stream.Serialize(RadarFlashTimer);
+	stream.Serialize(TargetingTimer);
 	stream.Serialize(IronCurtainTimer);
 	stream.Serialize(IronTintTimer);
 	stream.Serialize(IronTintStage);
@@ -10455,6 +10471,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(FirepowerBias);
 	AttachedEffects.Compute_CRC(crc);
 	crc((int)IdleTimer);
+	crc((int)TargetingTimer);
 	SpiedBy.Compute_CRC(crc);
 	crc(Cloak);
 	crc((int)CloakDelay);

@@ -107,7 +107,7 @@ The middle column gives each scan's shape and reach. A *ring* scan walks whole r
 | Mission | Scan | Notes |
 | --- | --- | --- |
 | Guard | Ring, guard radius | Not run on an engineer. An aircraft seldom reaches this scan. It attacks a target it already holds, returns to idle handling at cruising height, and does not scan while landed unless it is docked. A human-owned aircraft scans only while airborne. A computer-owned aircraft first looks for the nearest enemy vehicle within 11 cells of it that lies outside its owner's base and is not cloaked, and attacks it without scanning. Only vehicles on a bridge deck are found, so a vehicle on the ground is never picked |
-| Guard area | Ring, area radius, from the home position | Runs only while the object has no target |
+| Guard area | Ring, area radius, from the home position | Runs only while the object has no target and its [targeting timer](#the-targeting-timer) has run out |
 | Patrol | Ring, patrol radius, from the object, then re-scanned from the patrol cell | An aircraft on patrol with ammunition left runs only the first scan |
 | Move | Ring, weapon range, only as the opportunity scan below the table | A move order has no scan of its own. An object scans on the move only when the opportunity scan admits it, by its type or as a member of an aggressive team |
 | Hunt | Whole map | Outside campaigns, an aircraft first scans for Tiberium processors alone (objects whose type sets a nonzero [`Storage`](/keys/storage/)), then scans again without that restriction |
@@ -129,6 +129,10 @@ Three more conditions stop a scan before it starts. **Any of** them is enough, a
 - [`NoAutoFire=yes`](/keys/noautofire/) on the object's type;
 - the object is in Guard, and it can cloak (from its type or a cloaking crate) or holds the `CLOAK` ability;
 - [`DeployToFire=yes`](/keys/deploytofire/) on a vehicle.
+
+### The targeting timer
+
+Only the area scan waits for the targeting timer. The timer starts at 45 frames when the object is created. Each area scan that runs restarts it with [`GuardAreaTargetingDelay`](/keys/guardareatargetingdelay/) frames plus a random 0 to 2, whether or not the scan finds a target. When the object's target is removed or changes owner while more than 10 frames remain, the timer restarts with a random 4 to 8 frames, so the next area scan comes soon.
 
 ### Scan radius
 

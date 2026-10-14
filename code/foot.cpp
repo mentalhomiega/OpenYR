@@ -1610,8 +1610,11 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 			Assign_Destination(ArchiveTarget);
 		}
 
+		// The area scan waits for the targeting timer to run out (FootClass::Mission_AreaGuard, 0x4D6AA0).
 		if (TarCom == NULL && TClass->IsCanPassiveAquire) {
-			Target_Something_Nearby(ArchiveTarget->Center_Coord(), THREAT_AREA, true);
+			if (Targeting_Timer_Finished()) {
+				Target_And_Estimate_Damage(ArchiveTarget->Center_Coord(), THREAT_AREA);
+			}
 			if (TarCom != NULL) {
 				return(1);
 			}
