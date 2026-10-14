@@ -1,0 +1,16 @@
+; Options > Keyboard, then the reset button, which restores the Yuri's Revenge defaults. The modern menu style reaches the
+; keyboard page through the Settings tab; the classic style's Options menu has a Keyboard button instead. The box steps log
+; where the reset, OK and Cancel buttons lie, and the shot is written as keyboard-reset-<name>.tga in the autotest Screenshots folder.
+; Run from the workspace root (the folder that holds scripts/), once per menu style and size, with -Menus:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/autotest/keyboard-reset-label.txt -Menus -MenuStyle Modern -Width 640 -Height 480 -Seconds 90
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-keyboard
+ui wait 1500
+ui box reset
+ui box ok
+ui box cancel
+ui shot keyboard-reset-modern-640
+ui quit

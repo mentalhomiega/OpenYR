@@ -148,10 +148,11 @@
 	margin-top: 8dp;
 }
 
+/* Wide enough for "Reset to YR Defaults"; the margin keeps OK and Cancel where they were. */
 #reset
 {
-	width: 82dp;
-	margin-right: 165dp;
+	width: 168dp;
+	margin-right: 79dp;
 }
 
 #ok

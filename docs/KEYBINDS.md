@@ -32,7 +32,7 @@ No OpenTS command takes a key that a Yuri's Revenge command uses by default. The
 - A file with `[Defaults] Version=2` is read as saved. A command the file does not name has no key.
 - A file without that version is read as version 1, which is what the older builds wrote. Each start applies the upgrade in memory, and the file stays as it was until the keyboard dialog saves it. An entry that still holds its old key takes the current key, or loses its key when the current table gives none. A key the player set stays. A command the file does not name gets its current key when that key is free.
 - With no keyboard file, each command gets its current key.
-- The keyboard page's reset control, labelled "Reset All", deletes the loose file and reads the built-in defaults. The label does not yet say "Reset to Yuri's Revenge defaults"; a longer label needs a wider button and a layout check.
+- The keyboard page's reset control, labelled "Reset to YR Defaults", deletes the loose file and reads the built-in defaults. "Reset to Yuri's Revenge defaults" measures about 232 px in Arial at 16 px, which leaves no room beside OK and Cancel in the row of about 440 dp; "Reset to YR Defaults" measures about 149 px. The button is 168 dp wide, and its margin keeps OK and Cancel where they were.
 
 ## Yuri's Revenge commands
 
