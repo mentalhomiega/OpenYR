@@ -1,0 +1,24 @@
+; Planning clears: a scatter clears a unit's planned orders before it runs, so the commit starts nothing. The
+; scatter is a player command that reaches EventClass::Execute like a click. Run in a skirmish on the default map,
+; as planning-legs.txt does. The reveal at frame 305 opens the shroud.
+; Expected AUTOTEST lines:
+;   frame 340: planstate E1 orders 2 running 0 (two legs recorded, none run).
+;   frame 343: planstate E1 orders 0 running 0 (the scatter at frame 342 cleared the plan).
+;   frame 351: planstate E1 orders 0 running 0 (the commit has no plan to start).
+;   where E1 at frames 400 and 600: the unit stays where the scatter left it (mission Guard), and no leg runs.
+30 command CenterBase
+300 grantunit E1 60 63
+305 reveal
+320 planning 1
+330 clickcell E1 70 63
+331 clickcell E1 70 68
+340 planstate E1
+341 select E1
+342 command ScatterObject
+343 planstate E1
+350 planning 0
+351 planstate E1
+400 where E1
+600 where E1
+700 planstate E1
+1100 quit

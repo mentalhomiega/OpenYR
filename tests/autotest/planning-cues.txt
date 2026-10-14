@@ -1,0 +1,36 @@
+; Planned-order cues: each queued order plays the add sound for the local player, and an order that a unit's queue
+; cannot take plays the scold sound and a message. The queue holds MaxWaypointPathLength orders (15 by default), so
+; fifteen clicks on two reachable cells fill it and the sixteenth click (frame 345) is refused. Run in a skirmish on
+; the default map, as planning-legs.txt does. The sounds 1 step logs each sound as a "Sound:" line, in order with the
+; AUTOTEST lines.
+; Expected AUTOTEST lines:
+;   frames 330 to 344: one add sound line after each clickcell (fifteen in all).
+;   frame 345: one scold sound line and no add sound line (the sixteenth order is refused, not queued).
+;   frame 350: planstate E1 orders 15 running 0 (the refused order is not in the queue).
+30 command CenterBase
+300 grantunit E1 60 63
+305 reveal
+315 sounds 1
+320 planning 1
+330 clickcell E1 70 63
+331 clickcell E1 70 68
+332 clickcell E1 70 63
+333 clickcell E1 70 68
+334 clickcell E1 70 63
+335 clickcell E1 70 68
+336 clickcell E1 70 63
+337 clickcell E1 70 68
+338 clickcell E1 70 63
+339 clickcell E1 70 68
+340 clickcell E1 70 63
+341 clickcell E1 70 68
+342 clickcell E1 70 63
+343 clickcell E1 70 68
+344 clickcell E1 70 63
+345 clickcell E1 70 68
+350 planstate E1
+355 sounds 0
+360 planning 0
+361 planstate E1
+400 planstate E1
+1100 quit

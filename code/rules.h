@@ -1183,10 +1183,12 @@ class RulesClass
 
 		/*
 		 * The sounds played when planning mode starts and when it ends. Ending it commits
-		 * the queued plans.
+		 * the queued plans. AddPlanningModeCommandSound plays for the local player when a
+		 * planned order is queued.
 		 */
 		VocType StartPlanningModeSound;
 		VocType EndPlanningModeSound;
+		VocType AddPlanningModeCommandSound;
 
 		/*
 		 * This is the sound effect played when a building takes a hit heavy enough to

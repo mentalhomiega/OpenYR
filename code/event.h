@@ -294,3 +294,6 @@ class EventClass
 		static char const * EventNames[LAST_EVENT];
 };
 #pragma pack(pop)
+
+// Plays the scold sound and a message for the local player when a planned order is refused (event.cpp).
+void Planned_Order_Refused_Cue(bool unit_full);

@@ -69,6 +69,7 @@
 #include "surface.h"
 #include "techno.h"
 #include "unit.h"
+#include "voc.h"
 #include "vox.h"
 #include "unittype.h"
 
@@ -136,6 +137,19 @@ namespace {
 
 	// Set while a unit's planned leg runs, so the leg does not cancel the unit's remaining plan.
 	bool Executing_Planned_Leg = false;
+
+
+	/// <summary>
+	/// Drops the planned orders of the object an event acts on. A building holds no plan in this build,
+	/// so for a building the call changes nothing. Called before the event's own checks, as
+	/// EventClass::Execute calls ClearPlanningTokens (0x6386E0) on the looked-up object.
+	/// </summary>
+	void Clear_Planning(TechnoClass * techno)
+	{
+		if (techno != NULL && techno->Is_Foot()) {
+			static_cast<FootClass *>(techno)->Clear_Planned_Orders();
+		}
+	}
 
 
 	/// <summary>Records a rejected synchronized event.</summary>
@@ -819,6 +833,7 @@ void EventClass::Execute(void)
 
 		case POWERON:
 			building = Data.Target.Whom.As_Building();
+			Clear_Planning(building);
 			if (building && building->IsActive && !building->IsInLimbo && !building->Class->IsFirestormWall) {
 				building->Turn_On();
 			}
@@ -826,6 +841,7 @@ void EventClass::Execute(void)
 
 		case POWEROFF:
 			building = Data.Target.Whom.As_Building();
+			Clear_Planning(building);
 			if (building && building->IsActive && !building->IsInLimbo && !building->Class->IsFirestormWall) {
 				building->Turn_Off();
 			}
@@ -836,6 +852,7 @@ void EventClass::Execute(void)
 		*/
 		case ARCHIVE:
 			techno = Data.NavCom.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno && techno->IsActive) {
 				techno->ArchiveTarget = Data.NavCom.Where.As_Abstract();
 
@@ -894,6 +911,7 @@ void EventClass::Execute(void)
 		*/
 		case REPAIR:
 			techno = Data.Target.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno && techno->IsActive) {
 				techno->Repair(-1);
 			}
@@ -905,6 +923,7 @@ void EventClass::Execute(void)
 		*/
 		case SELL:
 			techno = Data.Target.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno && techno->IsActive && techno->House->HeapID == ID) {
 				if (techno->RTTI == RTTI_BUILDING || ((techno->RTTI == RTTI_UNIT || techno->RTTI == RTTI_AIRCRAFT) && Map[techno->Center_Coord()].Cell_Building() != NULL)) {
 					techno->Sell_Back(-1);
@@ -1027,6 +1046,7 @@ void EventClass::Execute(void)
 		case PRIMARY:
 			{
 				BuildingClass * building = Data.Target.Whom.As_Building();
+				Clear_Planning(building);
 				if (building && building->IsActive) {
 					building->Toggle_Primary();
 				}
@@ -1054,6 +1074,11 @@ void EventClass::Execute(void)
 			// Fall thru to next case...
 
 		case MEGAMISSION:
+			// A player order clears the unit's plan before any check, as EventClass::Execute does (0x4C71F1).
+			// A planned leg is part of the plan, so it keeps it.
+			if (!Executing_Planned_Leg) {
+				Clear_Planning(Data.MegaMission.Whom.As_Techno());
+			}
 			if (!NetSemantic::Mission_Is_Valid(Data.MegaMission.Mission, MISSION_NONE, MISSION_COUNT)) {
 				Log_Event_Rejection(EventRejectReason::InvalidMission, Type, ID, Data.MegaMission.Mission);
 				break;
@@ -1119,11 +1144,6 @@ void EventClass::Execute(void)
 				if (techno->NearbyObject != NULL) {
 					techno->NearbyObject = NULL;
 				}
-				// A player order replaces the unit's remaining plan; a planned leg is part of that plan.
-				if (techno->Is_Foot() && !Executing_Planned_Leg) {
-					((FootClass *)techno)->Clear_Planned_Orders();
-				}
-
 				if (techno->Is_Foot()) {
 					//if (!formation) ((FootClass *)techno)->IsFormationMove = false;
 					if (((FootClass *)techno)->Team && Data.MegaMission.Mission != MISSION_UNLOAD) {
@@ -1199,6 +1219,7 @@ void EventClass::Execute(void)
 		*/
 		case IDLE:
 			techno = Data.Target.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno != NULL && techno->IsActive && !techno->IsInLimbo && !techno->IsTethered) {
 
 				if (techno->CurrentMission == MISSION_CONSTRUCTION || techno->CurrentMission == MISSION_DECONSTRUCTION) {
@@ -1210,7 +1231,6 @@ void EventClass::Execute(void)
 				}
 
 				if (techno->Is_Foot()) {
-					((FootClass *)techno)->Clear_Planned_Orders();
 					((FootClass *)techno)->NavQueue.Clear();
 					((FootClass *)techno)->Clear_Navigation_List();
 					((FootClass *)techno)->CurrentPath = PATH_NONE;
@@ -1241,6 +1261,7 @@ void EventClass::Execute(void)
 		// Only the house whose bomb it is can set it off (EventClass::Execute, 0x4C6CB0).
 		case DETONATE:
 			techno = Data.Target.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno != NULL && techno->IsActive && techno->BombDetonateFrame != -1 && techno->BombHouse == Houses[ID]) {
 				techno->Detonate_Bomb();
 			}
@@ -1265,6 +1286,9 @@ void EventClass::Execute(void)
 				order.Destination = Data.MegaMission.Destination;
 				if (!((FootClass *)techno)->Add_Planned_Order(order)) {
 					Log_Event_Rejection(EventRejectReason::PlannedOrderLimit, Type, ID, Data.MegaMission.Mission);
+				} else if (house == PlayerPtr) {
+					// The local player hears the add sound once an order is queued (FUN_00638120, 0x638597).
+					Sound_Effect(Rule->AddPlanningModeCommandSound);
 				}
 			}
 			break;
@@ -1276,6 +1300,7 @@ void EventClass::Execute(void)
 
 		case DEPLOY:
 			techno = Data.Target.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno != NULL && techno->IsActive && !techno->IsInLimbo && !techno->IsTethered && techno->StunDuration == 0) {
 
 				if (!techno->IsOnBridge) {
@@ -1313,6 +1338,7 @@ void EventClass::Execute(void)
 		*/
 		case SCATTER:
 			techno = Data.Target.Whom.As_Techno();
+			Clear_Planning(techno);
 			if (techno != NULL && techno->Is_Foot() && techno->IsActive && !techno->IsInLimbo && !techno->IsTethered) {
 				((FootClass *)techno)->IsScattering = true;
 				techno->Scatter(COORD_NONE, true, false);
@@ -1592,4 +1618,22 @@ void EventClass::Execute_Planned_Leg(void)
 	Executing_Planned_Leg = true;
 	Execute();
 	Executing_Planned_Leg = false;
+}
+
+
+/// <summary>
+/// Tells the local player that a planned order was refused: the scold sound and a message.
+/// </summary>
+/// <param name="unit_full">True when the unit's queue is full, false when too many units hold plans.</param>
+/// <remarks>Calls within one frame make one cue, so a multi-unit order does not repeat it.</remarks>
+void Planned_Order_Refused_Cue(bool unit_full)
+{
+	static int last_cue_frame = -1;
+	if (PlayerPtr == NULL || last_cue_frame == ::Frame) {
+		return;
+	}
+	last_cue_frame = ::Frame;
+	Sound_Effect(Rule->ScoldSound);
+	Session.Messages.Add_Message(NULL, 0, Fetch_String(unit_full ? TXT_PLANNING_UNIT_FULL : TXT_PLANNING_HOUSE_FULL), PlayerPtr->Scheme,
+		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
 }

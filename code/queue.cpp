@@ -425,7 +425,10 @@ namespace {
 		if (techno == NULL || !techno->IsActive || !techno->Is_Foot() || techno->House != PlayerPtr) {
 			return(false);
 		}
-		if (!static_cast<FootClass *>(techno)->Can_Take_Planned_Order()) {
+		FootClass const * foot = static_cast<FootClass *>(techno);
+		if (!foot->Can_Take_Planned_Order()) {
+			// A full queue is the unit's own limit; otherwise the house has too many units with plans.
+			Planned_Order_Refused_Cue(foot->PlannedOrders.Count() >= Rule->MaxWaypointPathLength);
 			return(false);
 		}
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLAN_ORDER, whom, mission, target, destination));
