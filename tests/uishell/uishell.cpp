@@ -921,6 +921,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Sidebar_Rows(int rows) override { Calls.push_back("sidebar rows " + std::to_string(rows)); }
 		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
+		virtual void Set_Bitmap_System_Font(bool on) override { Calls.push_back(on ? "bitmap font on" : "bitmap font off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }

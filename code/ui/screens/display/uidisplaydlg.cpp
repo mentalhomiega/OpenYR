@@ -86,6 +86,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Debug_Mode_Set(on);
 		}
 
+		virtual void Set_Bitmap_System_Font(bool on) override
+		{
+			Options.BitmapSystemFont = on;
+		}
+
 		virtual void Set_Interface_Scale(float scale) override
 		{
 			// The caller resets the display, which settles the frame size from this.
@@ -312,6 +317,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.DebugMode = Options.DebugMode;
+	state.BitmapSystemFont = Options.BitmapSystemFont;
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;

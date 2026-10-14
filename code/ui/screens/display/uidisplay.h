@@ -53,6 +53,7 @@ class UIDisplayServiceClass
 		virtual void Set_Modern_Interface(bool on) = 0;
 		virtual void Set_Sidebar_Rows(int rows) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
+		virtual void Set_Bitmap_System_Font(bool on) = 0;
 		virtual void Set_Interface_Scale(float scale) = 0;
 		virtual void Set_Fullscreen(bool on) = 0;
 		virtual void Set_VSync(bool on) = 0;
@@ -80,6 +81,7 @@ struct UIDisplayState
 	bool ClassicMenus = false;
 	bool ModernInterface = false;
 	bool DebugMode = false;
+	bool BitmapSystemFont = false;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
 	bool Fullscreen = false;
@@ -137,6 +139,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		// The index of the row the drop-down shows, as the presenter last set it.
 		int ShownRowIndex = -1;
 		bool InitialDebugMode;
+		bool InitialBitmapSystemFont;
 };
 
 
