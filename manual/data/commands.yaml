@@ -1840,7 +1840,7 @@ registered_commands:
   route_id: placebeacon
   kind: registered
   title: Place Beacon
-  description: Places a beacon in a multiplayer game. Not available in this build yet.
+  description: Places a beacon on the next cell you click in a multiplayer game.
   category: Interface
   audience: player
   availability:
@@ -1855,7 +1855,7 @@ registered_commands:
   route_id: delete
   kind: registered
   title: Delete Beacon
-  description: Deletes your beacon in a multiplayer game. Not available in this build yet.
+  description: Deletes the selected beacon of yours in a multiplayer game.
   category: Interface
   audience: player
   availability:
