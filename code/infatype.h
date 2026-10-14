@@ -201,13 +201,6 @@ class InfantryTypeClass : public TechnoTypeClass
 		TypeList<AnimTypeClass const *> DeadBodies;
 
 		/*
-		 * If this infantry type gets about on a jump jet, then this flag will be true. While
-		 * airborne it ignores the terrain below it entirely, but an ion storm grounds it and
-		 * puts it back to walking.
-		 */
-		bool IsJumpJet;
-
-		/*
 		 * If this infantry type shrugs off webbing weapons, then this flag will be true.
 		 * Everyone else is snared in place and struggles for as long as the warhead specifies.
 		 */

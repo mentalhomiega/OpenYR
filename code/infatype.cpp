@@ -116,7 +116,6 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsDoggie(false),
 	IsNotHuman(false),
 	DeadBodies(),
-	IsJumpJet(false),
 	IsWebImmune(false),
 	HeapID(INFANTRY_NONE),
 	Pip(PIP_GREEN),
@@ -430,7 +429,6 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
 		IsNotHuman = ini.Get_Bool(Name(), "NotHuman", IsNotHuman);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeadBodies", DeadBodies);
-		IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
 		if (IsBomber) IsCapture = true;
 		if (IsEngineer) IsCapture = true;
 		IsWebImmune = ini.Get_Bool(Name(), "IsWebImmune", IsWebImmune);
@@ -593,7 +591,6 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDoggie);
 	stream.Serialize(IsNotHuman);
 	stream.Serialize(DeadBodies);
-	stream.Serialize(IsJumpJet);
 	stream.Serialize(IsWebImmune);
 }
 

@@ -1013,7 +1013,7 @@ int FootClass::Do_MISSION_GUARD(void)
  *=============================================================================================*/
 int FootClass::Do_MISSION_HUNT(void)
 {
-	if (!Target_Something_Nearby(PositionCoord, THREAT_NORMAL)) {
+	if (!Target_Something_Nearby(PositionCoord, THREAT_NORMAL, true)) {
 		Random_Animate();
 	} else {
 		InfantryClass * infantry = RTTI == RTTI_INFANTRY ? (InfantryClass *)this : NULL;
@@ -1611,7 +1611,7 @@ int FootClass::Do_MISSION_GUARD_AREA(void)
 		}
 
 		if (TarCom == NULL && TClass->IsCanPassiveAquire) {
-			Target_Something_Nearby(ArchiveTarget->Center_Coord(), THREAT_AREA);
+			Target_Something_Nearby(ArchiveTarget->Center_Coord(), THREAT_AREA, true);
 			if (TarCom != NULL) {
 				return(1);
 			}

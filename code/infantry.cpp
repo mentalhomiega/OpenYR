@@ -320,6 +320,7 @@ void InfantryClass::Init(void)
 	if (Class != NULL) {
 
 		Strength = Class->MaxStrength;
+		EstimatedHealth = Strength;
 
 		/*
 		**	Civilians carry much less ammo than soldiers do.

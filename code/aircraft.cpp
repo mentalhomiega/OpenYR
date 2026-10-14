@@ -264,6 +264,7 @@ void AircraftClass::Init(void)
 		HeightAGL = Class->Flight_Level();
 		Ammo = Class->Initial_Ammo();
 		Strength = Class->MaxStrength;
+		EstimatedHealth = Strength;
 	}
 
 	if (House != NULL) {

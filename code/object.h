@@ -110,6 +110,13 @@ class ObjectClass : public AbstractClass
 		int Strength;
 
 		/*
+		**	This is the strength the object is estimated to have once the shots already fired at
+		**	it land. A shot lowers it, and it recovers one point on each frame that has bit 2 of
+		**	the frame count set, up to Strength.
+		*/
+		int EstimatedHealth;
+
+		/*
 		**	The object can be in one of two states -- placed down on the map, or not. If the
 		**	object is placed down on the map, then this flag will be true.
 		*/

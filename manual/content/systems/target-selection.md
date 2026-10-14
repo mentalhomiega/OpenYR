@@ -233,6 +233,7 @@ The engine tests each candidate against these rows in order and rejects it at th
 | The scan is limited to Tiberium processors and the candidate's [`Storage`](/keys/storage/) is zero | |
 | Both stand in bridge cells, and only one of the two is up on the bridge | |
 | This object has a web warhead and the candidate is an infantry still webbed for more than a quarter of the warhead's [`WebDuration`](/keys/webduration/) | The secondary slot's warhead is used when it is [`Webby=yes`](/keys/webby/), otherwise the primary slot's |
+| This object's type sets `VHPScan=Strong` and the candidate's [estimated health](#estimated-health) is below `1` | |
 
 ## The threat score
 
@@ -298,7 +299,9 @@ The per-type coefficients are in force for every house from the first frame of e
 
 ### Adjustments after scoring
 
-These adjustments apply after the score is calculated, in this order:
+Before these adjustments, a type with `VHPScan=Normal` changes the score by the candidate's [estimated health](#estimated-health). A candidate whose estimate is below `1` scores half. A candidate whose estimate is at most half its type's [`Strength`](/keys/strength/), rounded down, scores double. Any other candidate keeps its score.
+
+Then these adjustments apply after the score is calculated, in this order:
 
 1. If this house has been ordered to hunt with everything and has a declared enemy, any candidate outside that enemy scores exactly `1`.
 2. A scan for power plants adds `Power × 1000` for a building with a positive [`Power`](/keys/power/), and sets any other building's score to zero.
@@ -306,6 +309,16 @@ These adjustments apply after the score is calculated, in this order:
 4. A scan for base defenses sets the score of any candidate with no primary weapon to zero.
 5. If this object's primary weapon sets [`Supress=yes`](/keys/supress/), the score is halved once for each cell near the candidate that holds a building of this house or an ally. The cells checked are the square rings around the candidate's cell, out to one cell less than the [`FireSupress`](/keys/firesupress/) distance in `[CombatDamage]`. A building that covers several of those cells halves the score several times. At `FireSupress=1` there is no ring to check, so the halving never happens until `FireSupress` is raised.
 6. A score of exactly zero rejects the candidate. Any other score below `1` is raised to `1`.
+
+## Estimated health
+
+Each object has an estimated health next to its [strength](/keys/strength/). It starts at the object's strength and returns to its strength when the object is repaired to full. It drops to the strength at once when the strength falls below it. Otherwise it recovers one point on each frame whose frame count has bit 2 set, until it matches the strength. Recovery first lifts a value below `-30` to `-29`, so an estimate can stay negative while more estimated damage is on its way than the object has health.
+
+A shot takes its estimated damage off its target when it is fired. The estimate starts from the weapon's `Damage`, scaled by the firer's house and object firepower biases and its veterancy, as a hit is, but without the bunker, garrison and transport multipliers. The divisor is the target's house country armor multiplier for the firer's type's category, times the firer's own armor multiplier. The target's veteran armor divides the result again, and a result below `1` becomes `1`. The warhead's [`Verses`](/keys/verses/) against the target's armor at zero distance then gives the figure. A sonic or fire-particle weapon estimates nothing.
+
+A shot takes no estimate when it is inaccurate: its projectile sets [`Inaccurate=yes`](/keys/inaccurate/), or its firer is moving and its type does not set [`JumpJet=yes`](/keys/jumpjet/).
+
+A unit that picks a target from a hunt scan, an area-guard scan, or a scan for a nearby target while it moves or harvests takes the same estimate for its chosen weapon, unless that weapon's projectile is `Inaccurate=yes`. The scan takes the estimate only when it picks a new target. A `DistributedFire` object takes none.
 
 ## Which weapon the score assumes
 

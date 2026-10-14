@@ -1,6 +1,6 @@
 ---
 key: JumpJet
-summary: Marks the InfantryType as a jumpjet, so it routes, is targeted and dies as an air unit.
+summary: Marks a type as a jumpjet, so a jumpjet soldier routes, is targeted and dies as an air unit, and its shots fired on the move count against their targets' estimated health.
 see_also: [Locomotor, MovementZone, InfantryExplode, "system:ion-storms", "system:target-selection"]
 when_omitted:
   kind: value
@@ -38,5 +38,9 @@ To walk, the soldier puts a walking locomotor on top of its jumpjet one. Choosin
 A jumpjet is found by the flying-object passes of a [threat scan](/systems/target-selection/#picking-the-winner), alongside aircraft.
 
 An explosion whose center is above ground level includes any jumpjet within one cell of that center among the objects it damages, as it does aircraft. This is how a shot fired into the air reaches it.
+
+## Estimated health
+
+A moving firer's shot is inaccurate and takes no estimated damage off its target's [estimated health](/systems/target-selection/#estimated-health), unless the firer's type has `JumpJet=yes`.
 
 A killed jumpjet plays `[AudioVisual] InfantryExplode` at its position and is removed at once, with no death animation and no corpse. A jumpjet that falls from a height into water leaves a wake and a splash instead.

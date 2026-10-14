@@ -244,6 +244,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 		Ammo = Class->Initial_Ammo();
 		IsCloakable = Class->IsCloakable;
 		Strength = Class->MaxStrength;
+		EstimatedHealth = Strength;
 	}
 
 	Reload = 0;

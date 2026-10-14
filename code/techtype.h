@@ -45,6 +45,13 @@ class InfantryTypeClass;
 **	or delivered as reinforcements. These are objects that typically contain
 **	crews and weapons -- the fighting objects of the game.
 */
+// The VHPScan= settings, which change how a scan weighs a target by its estimated health.
+enum VHPScanType {
+	VHP_SCAN_NONE,		// The scan ignores estimated health.
+	VHP_SCAN_NORMAL,	// The scan doubles a target at half strength or less, and halves one whose estimate is spent.
+	VHP_SCAN_STRONG		// The scan skips a target whose estimate is spent.
+};
+
 class TechnoTypeClass : public ObjectTypeClass
 {
 		typedef ObjectTypeClass BASECLASS;
@@ -326,6 +333,12 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Does a grounded jumpjet of this type take off when it has something to attack? (Rules key HoverAttack.)
 		bool IsHoverAttack;
+
+		// Does this type fly on a jump jet? (Rules key JumpJet.) A moving jumpjet's shot is not inaccurate.
+		bool IsJumpJet;
+
+		// How a scan by this type weighs targets by their estimated health. (Rules key VHPScan.)
+		int VHPScan;
 
 		// Does a moving or harvesting object of this type shoot at targets that come into range?
 		bool IsOpportunityFire;

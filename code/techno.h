@@ -781,7 +781,7 @@ class TechnoClass :	public RadioClass,
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
 		virtual void Reduce_Ammunition(void);
-		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL);
+		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL, bool estimate=false);
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
@@ -797,6 +797,7 @@ class TechnoClass :	public RadioClass,
 		virtual bool Restore_Mission(void) override;
 		virtual BulletClass * Fire_At(AbstractClass * target, int which=0);
 		int Fire_Damage(WeaponTypeClass const * weapon) const;
+		int Estimated_Damage(TechnoClass const * target, WeaponTypeClass const * weapon) const;
 		virtual int Weapon_Range(int which) const override;
 		virtual bool Captured(HouseClass * newowner);
 		virtual bool Set_Owning_House(HouseClass * newowner, bool announce);

@@ -1286,6 +1286,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 						House->Spend_Money(cost);
 					}
 					Strength += step;
+					EstimatedHealth += step;
 
 					if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
 						if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE]) {
@@ -1302,6 +1303,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 						return(RADIO_ROGER);
 					} else {
 						Strength = TClass->MaxStrength;
+						EstimatedHealth = Strength;
 						return(RADIO_ALL_DONE);
 					}
 				} else {
@@ -2714,11 +2716,33 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 
 
 	/*
+	**	A VHPScan=Strong scan passes over a target whose estimated health is spent (TechnoClass::GreatestThreat's
+	**	threat filter, 0x6F7CA0).
+	*/
+	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
+		BEnd(BENCH_EVAL_OBJECT);
+		return(false);
+	}
+
+	/*
 	**	If this target value is better than the previously recorded best
 	**	target value then record this target for possible return as the
 	**	best.
 	*/
 	value = Target_Threat((TechnoClass *)object, coord);
+
+	/*
+	**	A VHPScan=Normal scan doubles a target at half strength or less, and halves a target whose
+	**	estimated health is spent; a target above half strength is left alone (TechnoClass::GreatestThreat's
+	**	threat filter, 0x6F7CA0). A VHPScan=Strong scan passes over a spent target before this point.
+	*/
+	if (TClass->VHPScan == VHP_SCAN_NORMAL) {
+		if (object->EstimatedHealth < 1) {
+			value /= 2;
+		} else if (!(object->TClass->MaxStrength / 2 < object->EstimatedHealth)) {
+			value *= 2;
+		}
+	}
 
 	/*
 	**	If the candidate object is owned by the designated enemy of this house, then
@@ -3496,6 +3520,18 @@ void TechnoClass::AI(void)
 		IsBerzerk = false;
 	}
 
+	// The estimate drops to strength at once, and recovers one point on each frame with bit 2 of the frame count set,
+	// as gamemd's TechnoClass::Update (0x6F9E50) does. Recovery first lifts an estimate below -30 to -29, so overkill can leave it negative.
+	if (Strength < EstimatedHealth) {
+		EstimatedHealth = Strength;
+	}
+	if ((Frame & 4) && EstimatedHealth < Strength) {
+		if (EstimatedHealth + 30 < 0) {
+			EstimatedHealth = -30;
+		}
+		EstimatedHealth++;
+	}
+
 	// A PermaDisguise object always looks like its side's default soldier when it has no other disguise (TechnoClass::Init, 0x6F3F40).
 	if (DisguiseType == NULL && TClass->IsCanDisguise && TClass->IsPermaDisguise) {
 		int const side = (int)House->Class->Side;
@@ -3513,7 +3549,7 @@ void TechnoClass::AI(void)
 	bool const aggressive = Mission == MISSION_MOVE && TarCom == NULL && !House->Is_Human_Player() && Is_Aggressive_Team_Member(this);
 	if ((opportunity || aggressive) && Is_Weapon_Equipped() && Frame - OpportunityScanFrame >= Rule->NormalTargetingDelay) {
 		OpportunityScanFrame = Frame;
-		Target_Something_Nearby(PositionCoord, THREAT_RANGE);
+		Target_Something_Nearby(PositionCoord, THREAT_RANGE, true);
 	}
 
 	if (Is_Voxel_Loaded()) {
@@ -4837,6 +4873,46 @@ int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 }
 
 
+/// <summary>
+/// Returns the damage this object's shot with the weapon is estimated to deal to the target,
+/// which is subtracted from the target's EstimatedHealth (TechnoClass::ApplyDamage_Calc, 0x6FDB80).
+/// </summary>
+/// <param name="target">The object the shot would hit.</param>
+/// <param name="weapon">The weapon that fires the shot.</param>
+/// <returns>Returns the estimated damage. A sonic or fire-particle weapon estimates none, and a
+/// non-positive Damage is returned unchanged.</returns>
+int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass const * weapon) const
+{
+	if (target == NULL) {
+		return(0);
+	}
+	if (weapon->IsSonic || weapon->UseFireParticles) {
+		return(0);
+	}
+
+	int damage = weapon->Attack;
+	if (damage <= 0) {
+		return(damage);
+	}
+
+	// The firepower steps match Fire_Damage, without its bunker, garrison and transport multipliers.
+	int firepower = (int)(House->FirepowerBias * FirepowerBias * damage);
+	if (Has_Ability(ABILITY_FIREPOWER)) {
+		firepower = (int)(Rule->VeteranCombat * firepower);
+	}
+
+	// The divisor is the target's house country multiplier for this object's type category, times this object's ArmorBias.
+	int estimate = (int)(firepower / (target->House->Country_Armor_Multiplier(TClass) * ArmorBias));
+	if (target->Has_Ability(ABILITY_STRONGER)) {
+		estimate = (int)(estimate / Rule->VeteranArmor);
+	}
+	if (estimate < 1) {
+		estimate = 1;
+	}
+	return(Modify_Damage(estimate, weapon->WarheadPtr, target->Class_Of()->Armor, 0));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Fire_At -- Fires projectile at target specified.                               *
  *                                                                                             *
@@ -5028,10 +5104,18 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		bullet->Limbo();
 
 		/*
-		**	If this is firing from a moving platform, then the projectile is inaccurate.
+		**	If this is firing from a moving platform, then the projectile is inaccurate. A jumpjet
+		**	type is exempt (TechnoClass::Fire, 0x6FDD50, reads TechnoTypeClass::JumpJet at 0xD94).
 		*/
-		if (Is_Foot() && ((FootClass const *)this)->Locomotion->Is_Moving()) {
+		if (Is_Foot() && ((FootClass const *)this)->Locomotion->Is_Moving() && !TClass->IsJumpJet) {
 			bullet->IsInaccurate = true;
+		}
+
+		// An accurate shot takes its estimated damage off its target's estimated health, at the target this object
+		// has been ordered to attack (TechnoClass::Fire, 0x6FE5D4-0x6FE622).
+		if (!bullet->IsInaccurate && !bullet->Class->IsInaccurate && TarCom != NULL && TarCom->Is_Techno()) {
+			TechnoClass * estimate_target = (TechnoClass *)TarCom;
+			estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
 		}
 
 		Coord turret_coord = Turret_Coord(which);
@@ -6014,6 +6098,7 @@ void TechnoClass::Renovate(void)
 {
 	Mark(MARK_CHANGE);
 	Strength = TClass->MaxStrength;
+	EstimatedHealth = Strength;
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->Repair(0);
 		((BuildingClass *)this)->Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
@@ -9351,7 +9436,7 @@ void TechnoClass::Response_Attack(void)
  * HISTORY:                                                                                    *
  *   07/29/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat)
+bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat, bool estimate)
 {
 	threat = ThreatType(threat & (THREAT_RANGE|THREAT_AREA));
 
@@ -9376,6 +9461,16 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 	if (TarCom == NULL && SlaveOwner == NULL) {
 		AbstractClass * best = Greatest_Threat(threat, coord, false);
 		Assign_Target(TClass->IsDistributedFire ? Distributed_Target() : best);
+
+		// A target chosen by a scan that takes the estimate (TechnoClass::TargetAndEstimateDamage, 0x709820) takes this
+		// object's estimated damage at once, unless the weapon is inaccurate. A DistributedFire object takes no estimate.
+		if (estimate && !TClass->IsDistributedFire && TarCom != NULL && TarCom->Is_Techno() && Is_Weapon_Equipped()) {
+			WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(TarCom))->Weapon;
+			if (weapon != NULL && weapon->Bullet != NULL && !weapon->Bullet->IsInaccurate) {
+				TechnoClass * estimate_target = (TechnoClass *)TarCom;
+				estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
+			}
+		}
 	}
 
 	/*

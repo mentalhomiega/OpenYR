@@ -175,6 +175,7 @@ ObjectClass::ObjectClass(void) :
 	Next(NULL),
 	Tag(NULL),
 	Strength(255),
+	EstimatedHealth(255),
 	Position(COORD_NONE)
 {
 	Objects.Add(this);
@@ -2108,6 +2109,7 @@ void ObjectClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Next);
 	stream.Serialize(Tag);
 	stream.Serialize(Strength);
+	stream.Serialize(EstimatedHealth);
 	stream.Serialize(IsDown);
 	stream.Serialize(IsToDamage);
 	stream.Serialize(IsToDisplay);
@@ -2308,6 +2310,7 @@ void ObjectClass::Compute_CRC(CRCEngine & crc) const
 		crc(Tag->Fetch_ID());
 	}
 
+	crc(EstimatedHealth);
 	crc(Strength);
 	crc(IsDown);
 	crc(IsToDamage);

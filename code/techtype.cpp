@@ -177,6 +177,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsCanPassiveAquire(true),
 	IsCanRetaliate(true),
 	IsHoverAttack(false),
+	IsJumpJet(false),
+	VHPScan(VHP_SCAN_NONE),
 	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
@@ -808,6 +810,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanPassiveAquire = ini.Get_Bool(Name(), "CanPassiveAquire", IsCanPassiveAquire);
 		IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
 		IsHoverAttack = ini.Get_Bool(Name(), "HoverAttack", IsHoverAttack);
+		IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
 		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
@@ -914,6 +917,15 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 				EMPThreshold = 0;
 			} else {
 				EMPThreshold = atoi(value);
+			}
+		}
+		if (ini.Get_String(Name(), "VHPScan", "", value, sizeof(value)) > 0) {
+			if (stricmp(value, "none") == 0) {
+				VHPScan = VHP_SCAN_NONE;
+			} else if (stricmp(value, "normal") == 0) {
+				VHPScan = VHP_SCAN_NORMAL;
+			} else if (stricmp(value, "strong") == 0) {
+				VHPScan = VHP_SCAN_STRONG;
 			}
 		}
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
@@ -1570,6 +1582,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanPassiveAquire);
 	stream.Serialize(IsCanRetaliate);
 	stream.Serialize(IsHoverAttack);
+	stream.Serialize(IsJumpJet);
+	stream.Serialize(VHPScan);
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
