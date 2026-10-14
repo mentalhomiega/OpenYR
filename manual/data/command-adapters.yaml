@@ -615,16 +615,6 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MULTIINSTANCE' }
-  - id: launch:sync-log
-    title: Sync log
-    syntax: -SYNCLOG
-    description: >-
-      Writes the game's check value for every frame to the debug log as SYNC lines, so the logs
-      of two copies in one network game can be compared to find the first frame they differ.
-    audience: developer
-    availability: *all
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SYNCLOG' }
   - id: launch:exception-test
     title: Exception reporting test
     syntax: -EXCEPTIONTEST=<fault>

@@ -2709,18 +2709,6 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
-- id: launch:sync-log
-  route_id: sync-log
-  kind: launch
-  title: Sync log
-  description: Writes the game's check value for every frame to the debug log as SYNC lines, so the logs
-    of two copies in one network game can be compared to find the first frame they differ.
-  audience: developer
-  availability: *id001
-  syntax: -SYNCLOG
-  _provenance:
-    source: code/init.cpp
-    guard: null
 - id: launch:exception-test
   route_id: exception-test
   kind: launch
