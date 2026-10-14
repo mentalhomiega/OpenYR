@@ -1118,6 +1118,9 @@ void Go_Editor(bool flag)
 #endif
 
 
+bool TypeSelectCycle = false;
+
+
 /***********************************************************************************************
  * Unselect_All -- Causes all selected objects to become unselected.                           *
  *                                                                                             *
@@ -1137,6 +1140,7 @@ void Unselect_All(void)
 	while (CurrentObject.Count()) {
 		CurrentObject[0]->Unselect();
 	}
+	TypeSelectCycle = false;
 
 	// Clearing the unit selection also clears the beacon selection.
 	Beacons.Select(NULL);

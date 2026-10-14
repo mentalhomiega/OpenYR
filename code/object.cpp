@@ -1098,6 +1098,7 @@ bool ObjectClass::Select(void)
 	}
 
 	IsSelected = true;
+	TypeSelectCycle = false;
 
 	return(true);
 }

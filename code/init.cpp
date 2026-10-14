@@ -153,6 +153,7 @@
 #include "mono.h"
 #include "movie.h"
 #include "mplayer.h"
+#include "mpload.h"
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netdlg2.h"
@@ -223,6 +224,7 @@
 #include <conio.h>
 #include <ctime>
 #include <dos.h>
+#include <set>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -6329,8 +6331,10 @@ class VeterancyNavCommandClass : public CommandClass
 
 
 /// <summary>
-/// Selects the units on screen whose types match the selection, on a tap of the key. A press
-/// held for half a second or more does nothing, as in Yuri's Revenge.
+/// Selects the player's units whose types match the selection, on a tap of the key. The first tap
+/// takes the matching units on screen. When none of them is left unselected, the tap takes every
+/// matching unit on the map, and later taps do the same until the selection changes. A press held
+/// for half a second or more does nothing, as in Yuri's Revenge.
 /// </summary>
 class TypeSelectCommandClass : public CommandClass
 {
@@ -6345,30 +6349,128 @@ class TypeSelectCommandClass : public CommandClass
 			return(Fetch_String((TXT_SELECTION)));
 		}
 		virtual char const * Get_Description(void) const {
-			return("Tap to select the units on screen whose types match the selection. Holding the key does nothing.");
+			return("Tap to select the units on screen whose types match the selection. When they are all selected already, selects every such unit on the map. Holding the key does nothing.");
 		}
 
 		virtual void Execute(void) const {
-			if (!PlayerPtr->Is_Watching()) {
-				int now = TickCount;
-				Pressed_At = now;
+			if (!Held) {
+				Held = true;
+				Pressed_At = Monotonic_Milliseconds();
 			}
 		}
 
 		virtual void Release(void) const {
-			if (Pressed_At < 0) {
+			if (!Held) {
 				return;
 			}
-			int now = TickCount;
-			bool const tap = (now - Pressed_At) < TIMER_SECOND / 2;
-			Pressed_At = -1;
-			if (tap && !PlayerPtr->Is_Watching()) {
-				SelectSameTypeCommandClass::Select_Same_Types(false);
+			Held = false;
+			// gamemd treats a press released in under 0x1F5 (501) milliseconds as a tap (TypeSelectCommandClass::Stop, 0x732CC0).
+			bool const tap = Monotonic_Milliseconds() - Pressed_At < 501;
+			if (tap) {
+				Select_Matching_Types();
 			}
 		}
 
 	private:
-		inline static int Pressed_At = -1;
+		static std::string Type_Name(TechnoTypeClass const * type)
+		{
+			std::string name = type->Name();
+			for (char & letter : name) {
+				letter = (char)toupper((unsigned char)letter);
+			}
+			return(name);
+		}
+
+		// The names the selection sought: each selected type, and the types it deploys into or undeploys from (0x732D10).
+		static std::set<std::string> Sought_Types(void)
+		{
+			std::set<std::string> names;
+			for (int index = 0; index < CurrentObject.Count(); index++) {
+				ObjectClass const * obj = CurrentObject[index];
+				if (obj == NULL || !obj->Is_Techno()) {
+					continue;
+				}
+				TechnoTypeClass const * type = obj->TClass;
+				names.insert(Type_Name(type));
+				if (type->DeploysInto != NULL) {
+					names.insert(Type_Name(type->DeploysInto));
+				}
+				if (type->UndeploysInto != NULL) {
+					names.insert(Type_Name(type->UndeploysInto));
+				}
+			}
+			return(names);
+		}
+
+		// A sought name matches a unit that can be selected now, or a structure that undeploys (0x732C30).
+		static bool Matches(TechnoClass const * techno, std::set<std::string> const & sought)
+		{
+			if (sought.count(Type_Name(techno->TClass)) == 0) {
+				return(false);
+			}
+			bool const can_select = techno->Transporter == NULL && !techno->IsAttackedByLocomotor && techno->Class_Of()->IsSelectable;
+			return(can_select || (techno->What_Am_I() == RTTI_BUILDING && techno->TClass->UndeploysInto != NULL));
+		}
+
+		static TechnoClass * Player_Techno(ObjectClass * obj)
+		{
+			if (obj == NULL || !obj->IsActive || !obj->Is_Techno()) {
+				return(NULL);
+			}
+			TechnoClass * techno = (TechnoClass *)obj;
+			return(techno->House->Is_Player_Control() ? techno : NULL);
+		}
+
+		// The screen pass and the map pass (0x732950). The screen pass is what the clickable list holds.
+		static void Select_Matching_Types(void)
+		{
+			if (PlayerPtr->Is_Watching()) {
+				return;
+			}
+			if (!TypeSelectCycle) {
+				Widen = false;
+			}
+
+			std::set<std::string> const sought = Sought_Types();
+			std::vector<TechnoClass *> chosen;
+			if (!Widen) {
+				for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
+					TechnoClass * techno = Player_Techno(entry.Object);
+					if (techno != NULL) {
+						chosen.push_back(techno);
+					}
+				}
+				bool unselected = false;
+				for (TechnoClass const * techno : chosen) {
+					unselected = unselected || (!techno->IsSelected && Matches(techno, sought));
+				}
+				Widen = !unselected;
+			}
+			if (Widen) {
+				chosen.clear();
+				for (int index = 0; index < Technos.Count(); index++) {
+					TechnoClass * techno = Player_Techno(Technos[index]);
+					if (techno != NULL) {
+						chosen.push_back(techno);
+					}
+				}
+			}
+
+			for (TechnoClass * techno : chosen) {
+				if (Matches(techno, sought)) {
+					techno->Select();
+				}
+			}
+
+			char const * label = CurrentObject.Count() == 0 ? "MSG:NothingSelected" : (Widen ? "MSG:SelAcrossMap" : "MSG:SelAcrossScreen");
+			// gamemd shows the message for 240 ticks (TypeSelect apply, 0x732BD5).
+			Session.Messages.Add_Message(NULL, 0, Fetch_String_UTF8(label).c_str(), PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), TICKS_PER_SECOND * 16);
+			TypeSelectCycle = true;
+		}
+
+		inline static bool Held = false;
+		inline static std::int64_t Pressed_At = 0;
+		inline static bool Widen = false;
 };
 
 

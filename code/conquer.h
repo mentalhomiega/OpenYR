@@ -43,6 +43,8 @@ void IPX_Call_Back(void);
 void Shake_The_Screen(int shakes);
 
 void Unselect_All(void);
+// Set once a type select has run. Selecting a unit or clearing the selection resets it, so the next type select starts on screen.
+extern bool TypeSelectCycle;
 TechnoTypeClass const * Fetch_Techno_Type(RTTIType type, int id);
 unsigned int Disk_Space_Available(void);
 

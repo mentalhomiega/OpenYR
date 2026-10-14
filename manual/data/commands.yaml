@@ -1656,8 +1656,8 @@ registered_commands:
   route_id: typeselect
   kind: registered
   title: Select Type On Screen
-  description: Tap to select the units on screen whose types match the selection. Holding the key does
-    nothing.
+  description: Tap to select the units on screen whose types match the selection. When they are all selected
+    already, selects every such unit on the map. Holding the key does nothing.
   category: Selection
   audience: player
   availability:
