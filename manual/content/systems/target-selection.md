@@ -226,7 +226,7 @@ The engine tests each candidate against these rows in order and rejects it at th
 | The candidate is in [limbo](/glossary/#limbo), or already at zero strength | |
 | The weapon chosen against it refuses to fire at it outright | The chosen weapon's fire check returns a refusal for this candidate, such as an airborne candidate when that weapon's projectile is `AA=no`. Range is not part of this check, so an out-of-range candidate passes it |
 | It is cloaked, its cell is not sensed by this house, and it belongs to another house | |
-| It has not yet entered the playable area | Reinforcements still crossing in from off the map are not targeted |
+| It has not yet entered the playable area | Reinforcements still crossing in from off the map are not targeted. An object enters the playable area when it is placed inside it, or when it reaches a cell center inside it. A [BalloonHover](/keys/balloonhover/) object also enters it while it hovers over such a cell. The object keeps that status, even after it moves out again, until it is placed again or the local area changes |
 | Its current mission sets [`NoThreat=yes`](/keys/nothreat/) | |
 | It is more than 20 leptons below ground level | A cell is 256 leptons across |
 | It is in a different [movement zone](/glossary/#movement-zone) | A ring scan tests the cell and a whole-map scan tests the candidate. Neither test runs for a range scan, or when the scanning object is a building or an aircraft |

@@ -3833,6 +3833,14 @@ void FootClass::AI(void)
 		}
 	}
 
+	/*
+	 * As FootClass::Update (0x4DA530): a BalloonHover object over a cell inside the playable area
+	 * joins it, even when it does not move into a new cell.
+	 */
+	if (IsActive && !IsLocked && TClass->IsBalloonHover && Map.In_Local_Radar(Get_Cell())) {
+		IsLocked = true;
+	}
+
 	if (IsActive) {
 		IsIdle = false;
 

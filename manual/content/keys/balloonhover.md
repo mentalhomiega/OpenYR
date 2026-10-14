@@ -11,6 +11,8 @@ A jumpjet object whose type sets `BalloonHover=yes` stays in the air. It takes o
 
 A BalloonHover type whose selected weapon fires a vertical projectile, such as the Kirov's bombs, flies onto its target and keeps it. It bombs the target until the target is destroyed, and it does not search for a firing spot as other units do.
 
+A BalloonHover object that hovers over a cell inside the playable area counts as having entered it, so computer units can target it and it can be selected.
+
 The psychic dominator does not take over an object whose type is `BalloonHover=yes`. The object still takes the blast's damage.
 
 ```ini title="rulesmd.ini"
