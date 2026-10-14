@@ -809,6 +809,14 @@ static void Queue_AI_Multiplayer(void)
 	// Frame info packets carry this value to the other machines.
 	if (Debug_SyncLog) {
 		DebugString("SYNC frame %d crc %08x\n", Frame, GameCRC);
+		for (int house_index = 0; house_index < Houses.Count(); house_index++) {
+			HouseClass const * house = Houses[house_index];
+			if (house != NULL) {
+				DebugString("HOUSE_SYNC frame %d house %d credits %d tiberium %d build %d %d %d %d\n", Frame, house_index,
+					house->Credits, house->Tiberium.Get_Total_Value(), (int)house->BuildUnit, (int)house->BuildInfantry,
+					(int)house->BuildAircraft, (int)house->BuildStructure);
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------
