@@ -56,9 +56,16 @@
 	height: 17dp;
 }
 
+#modes-row
+{
+	display: flex;
+	margin-top: 2dp;
+	height: 150dp;
+}
+
 #modes
 {
-	margin-top: 2dp;
+	width: 172dp;
 	height: 150dp;
 }
 
@@ -121,6 +128,70 @@ select
 {
 	margin-top: 3dp;
 	line-height: 17dp;
+}
+
+/* The preview stands beside the resolution list, as tall as the list. */
+#panel-preview
+{
+	display: flex;
+	margin-left: 12dp;
+	height: 150dp;
+}
+
+#preview-tabs
+{
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	width: 12dp;
+	height: 100%;
+	margin-right: 6dp;
+}
+
+.preview-tab
+{
+	display: block;
+	width: 12dp;
+	height: 10dp;
+	background-color: #2a2148;
+}
+
+#preview-body
+{
+	height: 100%;
+	padding: 4dp;
+	background-color: #120d24;
+}
+
+.preview-row
+{
+	display: flex;
+	margin-bottom: 2dp;
+}
+
+.preview-cell
+{
+	display: block;
+	width: 20dp;
+	height: 100%;
+	margin-right: 2dp;
+	background-color: #06040e;
+}
+
+#preview-arrows
+{
+	display: flex;
+	margin-top: 2dp;
+	height: 10dp;
+}
+
+.preview-arrow
+{
+	display: block;
+	width: 20dp;
+	height: 10dp;
+	margin-right: 2dp;
+	background-color: #3c2f66;
 }
 
 #buttons

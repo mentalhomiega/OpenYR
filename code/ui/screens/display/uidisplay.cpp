@@ -12,6 +12,8 @@
 #include "ui/rml/rmlview.h"
 #include "ui/uisettingpreview.h"
 
+#include <algorithm>
+#include <cstdio>
 #include <utility>
 
 
@@ -30,6 +32,23 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialRowCount(State.RowCount),
 	InitialDebugMode(State.DebugMode)
 {
+}
+
+
+std::vector<UIDisplayRow> UI_Display_Preview_Rows(int rows)
+{
+	// The rows and the gaps between them fill the height of the resolution list, so a tall count is drawn in thinner rows.
+	int const gap = 2;
+	int const height = std::clamp(130 / std::max(rows, 1) - gap, 2, 16);
+	std::vector<UIDisplayRow> list;
+	for (int row = 0; row < rows; row++) {
+		UIDisplayRow entry;
+		char buffer[16];
+		std::snprintf(buffer, sizeof(buffer), "%ddp", height);
+		entry.Height = buffer;
+		list.push_back(entry);
+	}
+	return(list);
 }
 
 
@@ -93,6 +112,8 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		State.RowCount = Pick_Choice(State.RowCounts, intent.Value, InitialRowCount);
 		if (State.RowCount >= 0 && State.RowCount < (int)State.RowCounts.size()) {
 			UI_Setting_Preview_Show("sidebar-rows", State.RowCounts[State.RowCount].Value);
+			State.PreviewRows = UI_Display_Preview_Rows(State.RowCounts[State.RowCount].Value);
+			PreviewChanged = true;
 		}
 
 	} else if (intent.Name == "ok") {
@@ -212,6 +233,10 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("cursorscale");
 			Model.DirtyVariable("renderer");
 			Model.DirtyVariable("rowcount");
+			if (Data.PreviewChanged) {
+				Data.PreviewChanged = false;
+				Model.DirtyVariable("previewrows");
+			}
 		}
 
 	protected:
@@ -230,6 +255,12 @@ class UIDisplayViewClass : public UIRmlViewClass
 				return(false);
 			}
 			scale.RegisterMember("label", &UIDisplayScale::Label);
+
+			Rml::StructHandle<UIDisplayRow> row = model.RegisterStruct<UIDisplayRow>();
+			if (!row) {
+				return(false);
+			}
+			row.RegisterMember("height", &UIDisplayRow::Height);
 
 			Rml::StructHandle<UIDisplayChoice> choice = model.RegisterStruct<UIDisplayChoice>();
 			if (!choice) {
@@ -262,7 +293,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("renderers", &state.Renderers)
 				&& model.Bind("renderer", &state.Renderer)
 				&& model.Bind("rowcounts", &state.RowCounts)
-				&& model.Bind("rowcount", &state.RowCount));
+				&& model.Bind("rowcount", &state.RowCount)
+				&& model.RegisterArray<std::vector<UIDisplayRow>>()
+				&& model.Bind("previewrows", &state.PreviewRows));
 		}
 
 	private:

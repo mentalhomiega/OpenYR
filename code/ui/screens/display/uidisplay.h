@@ -42,6 +42,13 @@ struct UIDisplayChoice
 };
 
 
+// One row of the build panel preview, with the height it is drawn at, in dp.
+struct UIDisplayRow
+{
+	std::string Height;
+};
+
+
 class UIDisplayServiceClass
 {
 	public:
@@ -87,6 +94,7 @@ struct UIDisplayState
 	int Renderer = 0;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
+	std::vector<UIDisplayRow> PreviewRows;
 };
 
 
@@ -100,6 +108,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		UIDisplayState State;
 		std::optional<UIDisplayMode> Picked;
 		bool ScaleChanged = false;
+		bool PreviewChanged = false;
 
 	private:
 		UIDisplayServiceClass & Service;
@@ -137,6 +146,9 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 		std::optional<int> Deadline;
 };
 
+
+// The rows the build panel preview draws for a row count, each sized to keep the preview a fixed height.
+std::vector<UIDisplayRow> UI_Display_Preview_Rows(int rows);
 
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);

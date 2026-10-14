@@ -18,9 +18,10 @@
 	<div id="columns">
 		<div id="left">
 			<p class="heading" id="modes-label">Resolution Modes</p>
-			<div id="modes" class="list"><div class="rows">
+			<div id="modes-row"><div id="modes" class="list"><div class="rows">
 				<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
 			</div></div>
+				<div id="panel-preview"><div id="preview-tabs"><span class="preview-tab"></span><span class="preview-tab"></span><span class="preview-tab"></span><span class="preview-tab"></span></div><div id="preview-body"><div class="preview-row" data-for="row : previewrows" data-style-height="row.height"><span class="preview-cell"></span><span class="preview-cell"></span><span class="preview-cell"></span></div><div id="preview-arrows"><span class="preview-arrow"></span><span class="preview-arrow"></span></div></div></div></div>
 			<div class="row" id="scale-row"><span class="caption">Interface scale:</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
 				<option data-for="entry : scales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>

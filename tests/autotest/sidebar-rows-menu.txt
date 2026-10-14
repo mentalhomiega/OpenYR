@@ -1,0 +1,19 @@
+; The Display page from the main menu, where there is no game: the small drawing of the modern build panel beside the
+; Sidebar rows drop-down shows the rows picked. Run with -Menus -MenuStyle Modern (no -Settings needed for the menus).
+; Run from the repository root:
+;   scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/sidebar-rows-menu.txt -Menus -MenuStyle Modern -Width 1920 -Height 1080 -Seconds 90
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-display
+ui wait 1500
+ui shot sidebar-rows-menu-4
+ui click sidebar-rows
+ui wait 800
+ui choose sidebar-rows|2
+ui wait 1500
+ui shot sidebar-rows-menu-2
+ui press Cancel
+ui wait 1500
+ui shot sidebar-rows-menu-cancel

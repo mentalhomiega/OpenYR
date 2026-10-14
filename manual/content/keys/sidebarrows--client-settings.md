@@ -17,4 +17,4 @@ A value below 1 acts as 1. A value above the number of rows that fit between the
 
 Each scroll arrow under the cameos moves the shown tab by one screenful, which is as many rows as the panel shows. [`SidebarPageUp`](/commands/sidebarpageup/) and [`SidebarPageDown`](/commands/sidebarpagedown/) move it by a screenful too. [`SidebarUp`](/commands/sidebarup/) and [`SidebarDown`](/commands/sidebardown/) move it by one row.
 
-The **Sidebar rows** drop-down on the Display page lists 1 up to the number of rows that fit at the current resolution. In a game, picking a value resizes the panel at once while the page is open. Cancel puts back the saved value. OK saves the picked value to `RA2MD.INI`.
+The **Sidebar rows** drop-down on the Display page lists 1 up to the number of rows that fit at the current resolution. A small drawing beside the resolution list shows the picked rows, with the panel's tabs, rows and arrows. In a game, picking a value also resizes the real panel at once while the page is open. Cancel puts back the saved value. OK saves the picked value to `RA2MD.INI`.

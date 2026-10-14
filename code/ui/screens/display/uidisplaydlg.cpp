@@ -241,6 +241,7 @@ void UI_Display_State(UIDisplayState & state)
 		state.RowCounts.push_back(choice);
 	}
 	state.RowCount = std::clamp(Hud_Rows(), int(HUD_MIN_ROWS), most) - HUD_MIN_ROWS;
+	state.PreviewRows = UI_Display_Preview_Rows(state.RowCounts[state.RowCount].Value);
 
 	// Automatic, the usual steps, and whatever else the settings file has asked for.
 	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
