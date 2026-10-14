@@ -219,6 +219,20 @@ The lobby's `GameMode` value is the mode's index in `MPModesMD.ini`. The table g
 
 The `Team Alliance` map code also writes `[Settings] GameMode=4` into the map. Our loader does not read that key from the map, so the lobby's `GameMode=9` decides the mode.
 
+## Game speed and frame rate
+
+The lobby's Game Speed writes `GameSpeed` as an index: `0` is Fastest (60 FPS) and `6` is 10 FPS. Our build reads that key. It does not read the client's forced `Protocol`, `FrameSendRate` or `MaxAhead`. Gamemd sets its protocol in its own code (`PregameSetup` sets protocol 2), so the client's `Protocol=0` does not select a protocol.
+
+Each frame waits 1000 divided by the frame rate. The master sends the rate in a timing event, and every machine runs at 30 FPS until the first event arrives. The master is the host's seat once the host announces itself. On a good connection the fastest setting should reach 60 FPS, because a frame takes a few milliseconds of work, so the speed setting sets the rate.
+
+Build 21 did not reach that rate. The testers' logs show no timing event on either copy, and the game averaged 29 FPS. The host was not the lowest seat. The joining copy adopted the host before it reset its timing census, so it named the host as master. The host had named the lowest seat, so neither copy generated a timing event. The rate stayed at 30 FPS, so a speed change made in game did not affect it. This build makes the announced host the master on every machine before the first frame. See [Master](NETCODE.md#master).
+
+With two copies on loopback, `GameSpeed=0` and the host in the higher seat, this build ran 6945 frames in sync over 120 seconds, about 59 FPS. The loopback order did not reproduce the stall, because the joining copy adopted the host after its own reset.
+
+Any seated player who is not watching can change the speed from the Game Controls slider. The change goes to every machine as a game order and applies when that order runs. The master picks up the new rate at its next timing evaluation, every 256 frames.
+
+Gamemd limits the slider further. Online games are game mode 4. Game mode 0, which the campaign uses, hides the slider and forces speed 2 unless the game runs with `-SPEEDCONTROL`. Game mode 5 sends no speed change. Our build sends the change in every online mode. We have not mapped the lobby's modes to gamemd's game-mode values, so this difference is open.
+
 ## Maps
 
 The copied client folder has no `.map` files, so we have not checked any map. Testers pick maps from the lobby's Battle list. Avoid Blitz maps, mod maps and ladder maps. CnCNet's additions in `Maps\Yuri's Revenge\` are not checked either.

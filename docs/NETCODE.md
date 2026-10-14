@@ -46,6 +46,10 @@ the player as not responding.
 
 ## Timing values
 
+### Master
+
+The master is the host's seat once the host announces itself. Before the first frame, the announced seat replaces the lowest seat that connection setup chose, so every machine names the same master. A machine that names another master sends no timing events, and the rate stays at its start value.
+
 ### Rungs
 
 The policy chooses a rung from 1 to 10. Rung r sets FSR r and MA 3r. Rung 1 sets FSR 1 and MA 4.
@@ -147,7 +151,7 @@ every call site.
 | Frame advance | MA is compared with peer frames in `Wait_For_Players`. Not traced line by line. | `Can_Advance` checks the same two conditions. |
 | Evaluation | Every 256 frames (frame number low byte 0), and when a precalculated value is pending. | Every 256 frames after bootstrap. |
 | Target | One-way frames = response time × F / 120. An escalation stage of 0 to 3 scales the response time by 1, 1.5, 2 or 3 and adds 0, 10, 20 or 30 frames. MA rises at most one FSR per evaluation. Minimum 3 FSR. | Rung table from R in ms, with hysteresis and staged drops. MA can jump several rungs at once. |
-| Timing event | Sets F, MA (minus 10 when special-flags bit 0x1000 is set) and FSR. | Sets F, MA and FSR. No −10 adjustment. |
+| Timing event | Sets F, MA (plus 10 when special-flags bit 0x1000 is set) and FSR. | Sets F, MA and FSR. No +10 adjustment. |
 | Frame rate | min(1000 / largest process ms, game-speed rate). | Same. |
 | Frame timer | 1000 / F ms, truncated to whole milliseconds. | `FramePacer`, exact average. |
 | Local pacing | In game mode 4 with MA of at least 31, adds 10 ms to a frame's wait for each of MA/4, MA/2 and 3MA/4 that a per-player value reaches. | None. |
@@ -303,7 +307,7 @@ with the same frame model and values that every machine agrees on.
   RTT-based MA) or `CChatEventSink::OnGameStart` (the fixed table). Neither call site is traced yet.
 - What raises gamemd's stage counter (0 to 3), which adds 0, 10, 20 or 30 to the target.
 - What writes the per-player values at `unknown_2854[0x3c]` that gamemd's local 10 ms waits read.
-- What special-flags bit 0x1000 does to the timing event (MA minus 10 in gamemd).
+- What sets special-flags bit 0x1000. Gamemd adds 10 to the MA in the timing event when it is set.
 - Whether the delay follows the table above at FSR above 2 on a real link. Loopback reached FSR 2
   only in the first 76 frames.
 - Whether the 183 ms wait on loopback is host scheduling alone. The run did not record CPU load.

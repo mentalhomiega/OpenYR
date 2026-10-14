@@ -78,6 +78,10 @@ If the master picks another target before a staged decrease finishes, the new ta
 
 Each timing event also carries the frame rate every machine runs at. The master sets it to the lower of the rate the game speed allows and the rate the slowest player's processing time allows. While any player lacks a fresh report, the master keeps the current frame rate. Each machine paces its frames to this rate. The rate applies when the timing event executes. For a decrease, it applies when the decrease activates.
 
+### Starting master
+
+At the start, the master is the host that the host's announcement names. A machine that has not yet received the announcement uses the lowest seat and switches to the host when the announcement arrives. The announcement asks for an acknowledgement, so a lost copy is sent again.
+
 ### Master handoff
 
 Only an executed removal event changes the master. A machine that loses its connection to the master keeps it as master until then. When the master is removed, the first remaining human player in house order takes over. The new master keeps the current target. Any running descent or count of three starts over, and the new master waits 256 frames before an improvement.
