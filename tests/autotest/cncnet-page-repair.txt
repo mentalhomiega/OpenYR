@@ -1,0 +1,10 @@
+; The CnCNet page after the fixture's client update has put the stock ClientDefinitions.ini back in the copy
+; (cncnet-page-fixture.ps1 -Edit). The button reads Repair copy, and the edits line says they are missing.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui shot cncnet-repair
+ui press OK
+ui wait 1000
+ui quit

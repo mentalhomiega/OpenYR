@@ -1,0 +1,10 @@
+; The CnCNet page with a destination the user cannot write to (cncnet-page-fixture.ps1 -Lock). The plan names
+; the folder and says it cannot be written, and Create copy stays disabled.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui shot cncnet-locked
+ui press OK
+ui wait 1000
+ui quit

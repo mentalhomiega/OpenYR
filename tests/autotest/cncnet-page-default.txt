@@ -1,0 +1,18 @@
+; The CnCNet page with only the install remembered. The page picks the default copy folder (CnCNet beside the
+; running build, which is writable), makes the copy, and writes both choices to the settings file. The copy is
+; then removed with the page's own Remove OpenYR copy button, so the run leaves nothing behind.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Create copy
+ui wait 6000
+ui shot cncnet-default
+ui press Remove OpenYR copy
+ui wait 1000
+ui press Remove copy
+ui wait 4000
+ui shot cncnet-removed
+ui press OK
+ui wait 1000
+ui quit

@@ -1,0 +1,14 @@
+; The CnCNet page with no copy yet, then with the copy made by the page's Create copy button. Run it on the
+; fixture from cncnet-page-fixture.ps1 -Install, with its [CnCNet] settings. The copy goes to the destination
+; the settings name, a scratch folder, so the real install is not used and nothing else is written.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui shot cncnet-none
+ui press Create copy
+ui wait 6000
+ui shot cncnet-ready
+ui press OK
+ui wait 1000
+ui quit
