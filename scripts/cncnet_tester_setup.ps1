@@ -1,8 +1,12 @@
 # Sets up a copy of a CnCNet Yuri's Revenge install that starts OpenYR's Game.exe through the
 # CnCNet client. The original install is only read. Everything is written into a new folder.
 #
-# Run it from the folder that holds Game.exe and Language.dll (the unpacked OpenYR zip):
+# Double-click "Set up CnCNet.bat" beside Game.exe. With no -InstallPath the script finds the install
+# or asks for it, shows the copy folder, and asks before copying anything.
+# From a prompt, run it from the folder that holds Game.exe and Language.dll (the unpacked OpenYR zip):
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File cncnet_tester_setup.ps1 -InstallPath "C:\Games\Command & Conquer Red Alert II"
+# Without -Destination the copy goes beside the install as "<install> - OpenYR" when that folder is
+# writable, and otherwise to "<system drive>\Games\OpenYR CnCNet".
 #
 # It makes the new folder, copies the install into it, and then changes these files in the new folder only:
 #   game.exe                       replaced by Game.exe; the original is kept as game.exe.cncnet-orig
@@ -15,8 +19,9 @@
 #   Resources\ClientDefinitions.ini marked read-only, so the updater cannot write its stock copy back
 #   OPENYR-TESTER-COPY.txt         a list of every change, written last
 #
-# To remove the copy, run it again with -Remove -Destination "<the new folder>". That deletes only
-# a folder that holds OPENYR-TESTER-COPY.txt. The install is never changed.
+# To remove the copy, double-click "Remove CnCNet copy.bat", or run the script with -Remove
+# -Destination "<the new folder>". That deletes only a folder that holds OPENYR-TESTER-COPY.txt.
+# The install is never changed.
 #
 # This script never starts the CnCNet client or any program from the install, and it makes no network connection.
 param(
@@ -40,6 +45,75 @@ function Add-Change([string]$Text) {
 
 function Get-FullPath([string]$Path) {
 	return [IO.Path]::GetFullPath($Path).TrimEnd('\')
+}
+
+function Test-Inside([string]$Path, [string]$Folder) {
+	return $Path -ieq $Folder -or $Path.StartsWith($Folder + '\', [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Test-CnCNetInstall([string]$Path) {
+	return $Path -and (Test-Path -LiteralPath (Join-Path $Path 'CnCNetYRLauncher.exe')) -and (Test-Path -LiteralPath (Join-Path $Path 'Resources\ClientDefinitions.ini'))
+}
+
+# Returns the OpenYR folder when it is a CnCNet install (testers often unpack OpenYR there), or else the
+# first CnCNet install named by the game's registry keys or found in the usual store folders.
+function Find-CnCNetInstall {
+	$candidates = New-Object System.Collections.ArrayList
+	[void]$candidates.Add($BuildPath)
+	foreach ($key in @('HKLM:\SOFTWARE\WOW6432Node\Westwood\Yuri''s Revenge', 'HKLM:\SOFTWARE\Westwood\Yuri''s Revenge', 'HKCU:\SOFTWARE\Westwood\Yuri''s Revenge')) {
+		$value = (Get-ItemProperty -LiteralPath $key -Name InstallPath -ErrorAction SilentlyContinue).InstallPath
+		if ($value) { [void]$candidates.Add($(if ($value -match '\.exe$') { Split-Path $value -Parent } else { $value })) }
+	}
+	foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles)) {
+		if ($base) {
+			[void]$candidates.Add((Join-Path $base 'Steam\steamapps\common\Command & Conquer Red Alert II'))
+			[void]$candidates.Add((Join-Path $base 'Origin Games\Command and Conquer Red Alert II'))
+			[void]$candidates.Add((Join-Path $base 'EA Games\Command and Conquer Red Alert II'))
+		}
+	}
+	foreach ($folder in $candidates) {
+		if (Test-CnCNetInstall $folder) { return (Get-FullPath $folder) }
+	}
+	return $null
+}
+
+function Test-Writable([string]$Folder) {
+	if (-not (Test-Path -LiteralPath $Folder)) { return $false }
+	$probe = Join-Path $Folder ('openyr-write-test-' + [guid]::NewGuid().ToString('N') + '.tmp')
+	try {
+		[IO.File]::WriteAllText($probe, '')
+		Remove-Item -LiteralPath $probe -Force
+		return $true
+	} catch {
+		return $false
+	}
+}
+
+function Get-DefaultDestination([string]$Install) {
+	if (Test-Writable (Split-Path $Install -Parent)) { return $Install + ' - OpenYR' }
+	return Join-Path ([IO.Path]::GetPathRoot($env:SystemRoot)) 'Games\OpenYR CnCNet'
+}
+
+function Confirm-Step([string]$Question) {
+	while ($true) {
+		$answer = Read-Host "$Question [Y/N]"
+		if ($answer -match '^\s*y') { return $true }
+		if ($answer -match '^\s*n') { return $false }
+	}
+}
+
+function Select-Folder([string]$Prompt) {
+	Add-Type -AssemblyName System.Windows.Forms
+	$owner = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true }
+	$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+	$dialog.Description = $Prompt
+	$dialog.ShowNewFolderButton = $true
+	try {
+		if ($dialog.ShowDialog($owner) -ne [System.Windows.Forms.DialogResult]::OK) { throw 'No folder was chosen, so nothing was changed.' }
+		return $dialog.SelectedPath
+	} finally {
+		$owner.Dispose()
+	}
 }
 
 # Replaces a key inside one INI section, or adds the key under the section header when it is missing.
@@ -84,11 +158,16 @@ function Write-Lines([string]$Path, [System.Collections.ArrayList]$Lines) {
 
 # ---------------------------------------------------------------- remove
 if ($Remove) {
-	if (-not $Destination) { throw '-Remove needs -Destination, the copy to delete.' }
+	$ask = -not $Destination
+	if ($ask) { $Destination = Select-Folder "Choose the OpenYR copy to remove: the folder that holds $Marker." }
 	$dest = Get-FullPath $Destination
 	$markerPath = Join-Path $dest $Marker
 	if (-not (Test-Path -LiteralPath $markerPath)) {
 		throw "Refusing to delete '$dest': it has no $Marker, so the script did not create it."
+	}
+	if ($ask -and -not (Confirm-Step "Delete the OpenYR copy '$dest' and everything in it?")) {
+		Write-Host 'Nothing was deleted.'
+		return
 	}
 	Get-ChildItem -LiteralPath $dest -Recurse -Force -File | ForEach-Object { $_.IsReadOnly = $false }
 	Remove-Item -LiteralPath $dest -Recurse -Force
@@ -97,9 +176,27 @@ if ($Remove) {
 }
 
 # ---------------------------------------------------------------- checks
-if (-not $InstallPath) { throw '-InstallPath is required: the CnCNet Yuri''s Revenge folder.' }
+$Interactive = -not $InstallPath
+if ($Interactive) {
+	Write-Host 'OpenYR CnCNet setup: makes a separate copy of your CnCNet Yuri''s Revenge install that starts OpenYR.'
+	Write-Host 'Your install is only read. Nothing is copied or changed until you confirm.'
+	Write-Host ''
+	$InstallPath = Find-CnCNetInstall
+	if ($InstallPath) {
+		Write-Host "Found a CnCNet install: $InstallPath"
+		if (-not (Confirm-Step 'Use this install?')) { $InstallPath = $null }
+	}
+	if (-not $InstallPath) { $InstallPath = Select-Folder 'Choose your CnCNet Yuri''s Revenge folder: the one that holds CnCNetYRLauncher.exe.' }
+}
 $src = Get-FullPath $InstallPath
 $build = Get-FullPath $BuildPath
+if ($Interactive -and -not $Destination) {
+	$Destination = Get-DefaultDestination $src
+	Write-Host "The OpenYR copy will be made in: $Destination"
+	if (-not (Confirm-Step 'Use this folder?')) {
+		$Destination = Join-Path (Select-Folder 'Choose where to put the OpenYR copy. A new folder named "OpenYR CnCNet" is made inside the one you choose.') 'OpenYR CnCNet'
+	}
+}
 
 foreach ($need in @('CnCNetYRLauncher.exe', 'ra2md.mix', 'updateconfig.ini', 'Resources\ClientDefinitions.ini')) {
 	if (-not (Test-Path -LiteralPath (Join-Path $src $need))) {
@@ -110,23 +207,40 @@ if (-not (Test-Path -LiteralPath (Join-Path $build 'Game.exe'))) {
 	throw "No Game.exe in '$build'. Run this script from the unpacked OpenYR folder or pass -BuildPath."
 }
 
-if (-not $Destination) { $Destination = $src + ' - OpenYR' }
+if (-not $Destination) { $Destination = Get-DefaultDestination $src }
 $dst = Get-FullPath $Destination
-if ($dst -ieq $src -or $dst.StartsWith($src + '\', [StringComparison]::OrdinalIgnoreCase) -or $dst -ieq $build) {
-	throw "The destination must be a new folder outside the install and the build: '$dst'."
+if ((Test-Inside $dst $src) -or (Test-Inside $src $dst) -or (Test-Inside $build $dst)) {
+	throw "The copy must go in a new folder outside the install and outside the OpenYR folder: '$dst'."
 }
 if (Test-Path -LiteralPath $dst) {
 	if (@(Get-ChildItem -LiteralPath $dst -Force).Count -gt 0) {
 		throw "The destination '$dst' already exists and is not empty. Pick another folder or run -Remove first."
 	}
 } elseif (-not (Test-Path -LiteralPath (Split-Path $dst -Parent))) {
-	throw "The parent of the destination does not exist: '$dst'."
+	if (-not $Interactive) { throw "The parent of the destination does not exist: '$dst'." }
+	New-Item -ItemType Directory -Force -Path (Split-Path $dst -Parent) | Out-Null
+}
+if (-not (Test-Writable (Split-Path $dst -Parent))) {
+	throw "Windows does not allow writing to '$(Split-Path $dst -Parent)' without administrator rights. Choose another folder."
 }
 
 $needBytes = (Get-ChildItem -LiteralPath $src -Recurse -File -Force | Measure-Object -Property Length -Sum).Sum
 $freeBytes = (New-Object System.IO.DriveInfo ([IO.Path]::GetPathRoot($dst))).AvailableFreeSpace
 if ($freeBytes -lt ($needBytes + 1GB)) {
 	throw ("Not enough free space on {0}: the copy needs about {1:N1} GB plus 1 GB." -f [IO.Path]::GetPathRoot($dst), ($needBytes / 1GB))
+}
+if ($Interactive) {
+	Write-Host ''
+	Write-Host 'Ready to:'
+	Write-Host ("  copy {0}" -f $src)
+	Write-Host ("  to   {0} (about {1:N1} GB)" -f $dst, ($needBytes / 1GB))
+	Write-Host "  put OpenYR's Game.exe, Language.dll and ui folder from $build into the copy"
+	Write-Host '  set the copy''s CnCNet client to start Game.exe, and turn off its updater'
+	Write-Host "Every change is printed, and listed afterwards in $Marker in the copy."
+	if (-not (Confirm-Step 'Go ahead?')) {
+		Write-Host 'Nothing was copied or changed.'
+		return
+	}
 }
 
 # ---------------------------------------------------------------- copy the install
@@ -232,5 +346,18 @@ $report = @(
 [IO.File]::WriteAllText((Join-Path $dst $Marker), ($report -join "`r`n") + "`r`n", $Latin1)
 
 Write-Host ''
-Write-Host "Done. Start the CnCNet client from: $dst"
-Write-Host 'Set the client to the copy folder before you host or join. The original install is unchanged.'
+Write-Host "Done. The OpenYR copy is in $dst, and the original install is unchanged."
+Write-Host 'Start the CnCNet client from the copy, never from the original install, when you play OpenYR.'
+if ($Interactive) {
+	$launcher = Join-Path $dst 'CnCNetYRLauncher.exe'
+	if (Confirm-Step 'Put a shortcut named "OpenYR CnCNet" on your desktop?') {
+		$shell = New-Object -ComObject WScript.Shell
+		$link = $shell.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'OpenYR CnCNet.lnk'))
+		$link.TargetPath = $launcher
+		$link.WorkingDirectory = $dst
+		$link.Save()
+		Write-Host 'Added the desktop shortcut "OpenYR CnCNet". Start CnCNet with it.'
+	} else {
+		Write-Host "Start CnCNet with CnCNetYRLauncher.exe in $dst."
+	}
+}

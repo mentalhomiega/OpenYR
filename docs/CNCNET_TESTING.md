@@ -77,13 +77,17 @@ Remove OpenYR copy asks for confirmation. It deletes only a folder that holds th
 
 ### The script
 
-Run `scripts/cncnet_tester_setup.ps1` with the path of the CnCNet folder. It copies the folder and makes every change in the copy. The original install is not touched. The page makes the same changes and writes the same marker file.
+Double-click `Set up CnCNet.bat` in the unpacked OpenYR folder, which holds `Game.exe`, `Language.dll` and the script. It finds the CnCNet install or asks for it with a folder picker, shows where the copy will go, and asks before it copies anything. It can also add an "OpenYR CnCNet" desktop shortcut to the copy's `CnCNetYRLauncher.exe`. `Remove CnCNet copy.bat` asks for the copy folder and confirms before deleting it.
+
+The script copies the install and makes every change in the copy. The original install is not touched. The page makes the same changes and writes the same marker file.
+
+To run it without questions, pass the install folder:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File cncnet_tester_setup.ps1 -InstallPath "C:\Games\Command & Conquer Red Alert II"
 ```
 
-Run it from the unpacked OpenYR folder, which holds `Game.exe` and `Language.dll`. The copy goes to a new folder next to the install, named with ` - OpenYR` added. Pass `-Destination` to choose another empty folder.
+The install it finds first is the OpenYR folder itself, when OpenYR was unpacked into a CnCNet install, then the install the game's registry keys name, then the usual Steam, Origin and EA folders. The copy goes beside the install, named with ` - OpenYR` added, when Windows lets the script write there; otherwise it goes to `Games\OpenYR CnCNet` on the system drive. Pass `-Destination` to choose another empty folder. The script refuses a destination inside the install or the OpenYR folder, and one it cannot write to without administrator rights.
 
 The script prints each change as it makes it:
 
