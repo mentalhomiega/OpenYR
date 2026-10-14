@@ -1506,6 +1506,78 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 }
 
 
+/// <summary>
+/// Settles the crew escape, the hijacker's step out and the truck crate of a vehicle that is
+/// destroyed or becomes a wreck. A vehicle taken by a hijacker returns the hijacker in place of
+/// the crew roll.
+/// </summary>
+/// <param name="no_crew">Was the destroying damage flagged to leave no crew?</param>
+/// <param name="select">Does a soldier that appears inherit the vehicle's selection?</param>
+void UnitClass::Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select)
+{
+	/*
+	**	Possibly have the crew member run away.
+	*/
+	bool make_crew = false;
+	bool make_infiltrator = false;
+	InfantryClass * i = NULL;
+
+	if (EnteredByInfType == INFANTRY_NONE) {
+		if (!no_crew && Class->IsCrew && Class->Max_Passengers() == 0) {
+			if (Rule->CrewEscape > Random_Double(0.0, 1.0)) {
+				if (EnteredByInfType != INFANTRY_NONE) {
+					make_infiltrator = true;
+				} else {
+					make_crew = true;
+				}
+			}
+		}
+	} else {
+		make_infiltrator = true;
+	}
+
+	if (make_infiltrator) {
+		i = new InfantryClass(InfantryTypes[EnteredByInfType], House);
+	}
+
+	if (make_crew) {
+		InfantryTypeClass const * crew = Crew_Type();
+		if (crew) {
+			i = new InfantryClass(crew, House);
+		}
+	}
+
+	if (i != NULL) {
+		i->IsOnBridge = IsOnBridge;
+		if (i->Unlimbo(PositionCoord, DIR_N)) {
+			i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
+			i->Scatter(COORD_NONE, true);
+			if (!House->Is_Human_Player()) {
+				i->Assign_Mission(MISSION_HUNT);
+			} else {
+				i->Assign_Mission(MISSION_GUARD);
+			}
+			if (select) i->Select();
+			if (Tag != NULL && Tag->Is_To_Inherit()) i->Attach_Tag(Tag);
+		} else {
+			delete i;
+		}
+	}
+
+	/*
+	**	If this is a truck, there is a possibility that a crate will drop out
+	**	if the scenario so indicates and there is room.
+	*/
+	if (Class->IsCarriesCrate && (Scen->IsTruckCrate && !Class->IsTrain || Scen->IsTrainCargo && Class->IsTrain)) {
+		Cell cell = Map.Nearby_Location(PositionCell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(1,1), true);
+		if (cell != CELL_NONE) {
+			new OverlayClass(Rule->WoodCrateImg, cell);
+			Map[cell].Register_For_Redraw();
+		}
+	}
+}
+
+
 /***********************************************************************************************
  * UnitClass::Take_Damage -- Inflicts damage points on a unit.                                 *
  *                                                                                             *
@@ -1576,6 +1648,14 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 		if (Class->DeathFrames > 0) {
 			if (DeathCounter == -1) {
 				DeathCounter = 0;
+
+				// gamemd settles the wreck as it is created (0x737C90). A wreck can be hit again, so this runs once.
+				if (Class->WreckReleasesPassengers) {
+					Mark(MARK_UP);
+					Resolve_Passengers_On_Death(source, forced, select);
+					Mark(MARK_DOWN);
+				}
+				Resolve_Crew_And_Crate_On_Death(no_crew, select);
 			}
 			Strength = 1;
 			IsActive = true;
@@ -1634,66 +1714,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			Mark(MARK_UP);
 			Resolve_Passengers_On_Death(source, forced, select);
 
-			/*
-			**	Possibly have the crew member run away.
-			*/
-			bool make_crew = false;
-			bool make_infiltrator = false;
-			InfantryClass * i = NULL;
-
-			if (EnteredByInfType == INFANTRY_NONE) {
-				if (!no_crew && Class->IsCrew && Class->Max_Passengers() == 0) {
-					if (Rule->CrewEscape > Random_Double(0.0, 1.0)) {
-						if (EnteredByInfType != INFANTRY_NONE) {
-							make_infiltrator = true;
-						} else {
-							make_crew = true;
-						}
-					}
-				}
-			} else {
-				make_infiltrator = true;
-			}
-
-			if (make_infiltrator) {
-				i = new InfantryClass(InfantryTypes[EnteredByInfType], House);
-			}
-
-			if (make_crew) {
-				InfantryTypeClass const * crew = Crew_Type();
-				if (crew) {
-					i = new InfantryClass(crew, House);
-				}
-			}
-
-			if (i != NULL) {
-				i->IsOnBridge = IsOnBridge;
-				if (i->Unlimbo(PositionCoord, DIR_N)) {
-					i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
-					i->Scatter(COORD_NONE, true);
-					if (!House->Is_Human_Player()) {
-						i->Assign_Mission(MISSION_HUNT);
-					} else {
-						i->Assign_Mission(MISSION_GUARD);
-					}
-					if (select) i->Select();
-					if (Tag != NULL && Tag->Is_To_Inherit()) i->Attach_Tag(Tag);
-				} else {
-					delete i;
-				}
-			}
-
-			/*
-			**	If this is a truck, there is a possibility that a crate will drop out
-			**	if the scenario so indicates and there is room.
-			*/
-			if (Class->IsCarriesCrate && (Scen->IsTruckCrate && !Class->IsTrain || Scen->IsTrainCargo && Class->IsTrain)) {
-				Cell cell = Map.Nearby_Location(PositionCell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(1,1), true);
-				if (cell != CELL_NONE) {
-					new OverlayClass(Rule->WoodCrateImg, cell);
-					Map[cell].Register_For_Redraw();
-				}
-			}
+			Resolve_Crew_And_Crate_On_Death(no_crew, select);
 
 			/*
 			**	Finally, delete the vehicle.

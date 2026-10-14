@@ -161,6 +161,12 @@ class UnitTypeClass : public TechnoTypeClass
 		bool IsCarriesCrate;
 
 		/*
+		 * When true, a vehicle with DeathFrames settles its passengers as it becomes a wreck, as an
+		 * outright death does. When false, they stay aboard and die when the wreck explodes.
+		 */
+		bool WreckReleasesPassengers;
+
+		/*
 		 * This points to the shape set fetched from the AltImageFile, or NULL if this type
 		 * has no alternate artwork. A visceroid keeps the tail of its idle animation here,
 		 * past the frames its regular image data provides.

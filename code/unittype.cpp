@@ -125,6 +125,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsSmallVisceroid(false),
 	IsLargeVisceroid(false),
 	IsCarriesCrate(false),
+	WreckReleasesPassengers(true),
 	AltImageData(NULL),
 	IsNonVehicle(false),
 	IsDisguiseWhenStill(false),
@@ -394,6 +395,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsTilter = ini.Get_Bool(Name(), "IsTilter", IsTilter);
 		IsCarriesCrate = ini.Get_Bool(Name(), "CarriesCrate", IsCarriesCrate);
+		WreckReleasesPassengers = ini.Get_Bool(Name(), "WreckReleasesPassengers", WreckReleasesPassengers);
 		IsLockTurret = !IsTurretEquipped;
 		IsTooBigToFitUnderBridge = ini.Get_Bool(Name(), "TooBigToFitUnderBridge", IsTooBigToFitUnderBridge);
 		IsTotable = ini.Get_Bool(Name(), "Totable", IsTotable);
@@ -560,6 +562,7 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(MovementRestrictedTo);
 	crc(IsPassive);
 	crc(IsCrateGoodie);
+	crc(WreckReleasesPassengers);
 	crc(IsToHarvest);
 	crc(IsToVeinHarvest);
 	crc(IsFireAnim);
@@ -623,6 +626,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSmallVisceroid);
 	stream.Serialize(IsLargeVisceroid);
 	stream.Serialize(IsCarriesCrate);
+	stream.Serialize(WreckReleasesPassengers);
 	// AltImageData -- artwork, fetched from the mix files again as this loads.
 	stream.Serialize(IsNonVehicle);
 	stream.Serialize(IsDisguiseWhenStill);
