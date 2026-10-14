@@ -141,6 +141,8 @@
 **	radar <TypeID>			writes each player object of that type with its limbo, radar tracking, discovery and whether Is_Radar_Visible plots it
 **	radarall <TypeID>		writes each object of that type whoever owns it, with its owner and whether Is_Radar_Visible plots it
 **	stripfill <column> <count>	offers building types 0 to count-1 to that sidebar strip and writes how many it took
+**	aiscan					writes each foot object no player owns with its mission, team, target, range and area scan picks,
+**							and the nearest player object with whether it is in range and can be fired at
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
@@ -2884,6 +2886,56 @@ void Run(StepType const & step)
 				techno->Assign_Mission(MISSION_CAPTURE);
 				techno->Assign_Destination(building);
 			}
+		}
+	} else if (step.Command == "aiscan") {
+		// aiscan: each foot object no player owns, with its mission, queued mission, team, the target it holds,
+		// the target its range scan picks now, and the nearest player object with whether that object is in its
+		// weapon range and can be fired at, and the mission-level flags a threat check reads.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr || techno->IsInLimbo || !techno->Is_Foot()) continue;
+			FootClass * foot = static_cast<FootClass *>(techno);
+			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
+			bool const tarcell = techno->TarCom != NULL && tarobject == NULL;
+			AbstractClass * scan = techno->Greatest_Threat(THREAT_RANGE, techno->Center_Coord(), false);
+			ObjectClass const * scanobject = dynamic_cast<ObjectClass const *>(scan);
+			Cell const scancell = scan != NULL ? scan->Center_Coord().As_Cell() : Cell(-1, -1);
+			TechnoClass * nearest = NULL;
+			int nearest_dist = 0;
+			for (int other = 0; other < Technos.Count(); other++) {
+				TechnoClass * target = Technos[other];
+				if (target->House != PlayerPtr || target->IsInLimbo) continue;
+				int const dist = (int)(Point2D(techno->Center_Coord()) - Point2D(target->Center_Coord())).Length();
+				if (nearest == NULL || dist < nearest_dist) {
+					nearest = target;
+					nearest_dist = dist;
+				}
+			}
+			int inrange = -1;
+			int fire = -1;
+			int nothreat = -1;
+			int locked = -1;
+			if (nearest != NULL) {
+				int const weapon = techno->What_Weapon_Should_I_Use(nearest);
+				inrange = (int)techno->In_Range(nearest, weapon);
+				fire = (int)techno->Can_Fire(nearest, weapon);
+				nothreat = (int)nearest->Current_Mission_Control().IsNoThreat;
+				locked = (int)nearest->IsLocked;
+			}
+			AbstractClass * home = techno->ArchiveTarget;
+			Coord const home_coord = home != NULL ? home->Center_Coord() : techno->Center_Coord();
+			AbstractClass * area = techno->Greatest_Threat(THREAT_AREA, home_coord, false);
+			ObjectClass const * areaobject = dynamic_cast<ObjectClass const *>(area);
+			Cell const areacell = area != NULL ? area->Center_Coord().As_Cell() : Cell(-1, -1);
+			Cell const homecell = home != NULL ? home->Center_Coord().As_Cell() : Cell(-1, -1);
+			DebugString("AUTOTEST   aiscan %s of %s cell %d,%d mission %s queued %d team %s tarcom %s tarcell %d,%d scan %s scancell %d,%d passive %d slave %d near %s dist %d inrange %d fire %d nearnothreat %d nearlocked %d home %d,%d navcom %d firing %d area %s areacell %d,%d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), (int)foot->MissionQueue,
+				foot->Team != NULL ? foot->Team->Class->Name() : "-", tarobject != NULL ? tarobject->Class_Of()->Name() : (tarcell ? "cell" : "-"),
+				techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell().X : -1, techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell().Y : -1,
+				scanobject != NULL ? scanobject->Class_Of()->Name() : (scan != NULL ? "cell" : "-"), scancell.X, scancell.Y,
+				(int)techno->TClass->IsCanPassiveAquire, (int)(techno->SlaveOwner != NULL), nearest != NULL ? nearest->TClass->Name() : "-", nearest_dist, inrange, fire, nothreat, locked,
+				homecell.X, homecell.Y, (int)(foot->NavCom != NULL), (int)foot->IsFiring,
+				areaobject != NULL ? areaobject->Class_Of()->Name() : (area != NULL ? "cell" : "-"), areacell.X, areacell.Y);
 		}
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
