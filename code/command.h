@@ -19,4 +19,6 @@ class CommandClass
 		virtual char const * Get_Category(void) const = 0;
 		virtual char const * Get_Description(void) const = 0;
 		virtual void Execute(void) const = 0;
+		// Called when the key bound to the command is released. Commands that act on the press alone ignore it.
+		virtual void Release(void) const {}
 };

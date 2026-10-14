@@ -521,6 +521,16 @@ void Keyboard_Process(KeyNumType & input)
 	KeyNumType plain = KeyNumType(input & ~(WWKEY_SHIFT_BIT|WWKEY_ALT_BIT|WWKEY_CTRL_BIT|WWKEY_VK_BIT));
 	KeyNumType key = KeyNumType(input /*& ~WWKEY_VK_BIT*/);
 
+	/*
+	**	A key release goes to the command its key is bound to, so a command can end a hold.
+	*/
+	if ((input & WWKEY_RLS_BIT) != 0) {
+		const CommandClass * released = HotkeyCommands[KeyNumType(input & ~WWKEY_RLS_BIT)];
+		if (released != NULL) {
+			released->Release();
+		}
+	}
+
 	const CommandClass * cmd = HotkeyCommands[key];
 
 	if (cmd != NULL) {

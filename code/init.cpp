@@ -103,6 +103,7 @@
 #include "campaign.h"
 #include "ccfile.h"
 #include "cctooltip.h"
+#include "cdfile.h"
 #include "cell.h"
 #include "chat.h"
 #include "command.h"
@@ -115,6 +116,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "keybinddefaults.h"
 #include "radbeam.h"
 #include "egos.h"
 #include "empulse.h"
@@ -5110,7 +5112,12 @@ class SelectSameTypeCommandClass : public CommandClass
 			int now = TickCount;
 			bool widen = (LastTick >= 0) && (now - LastTick < TIMER_SECOND / 2);
 			LastTick = now;
+			Select_Same_Types(widen);
+		}
 
+		// Selects the objects whose types match the selection, across the view or the whole map.
+		static void Select_Same_Types(bool widen)
+		{
 			SoughtTypes.clear();
 			for (int i = 0; i < CurrentObject.Count(); i++) {
 				ObjectClass * obj = CurrentObject[i];
@@ -6078,6 +6085,345 @@ class DebugFastForwardCommandClass : public CommandClass
 
 
 /// <summary>
+/// Selects the player's combatants on screen, or every combatant on the map once the ones on
+/// screen are all selected already.
+/// </summary>
+class CombatantSelectCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("CombatantSelect");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Select Combatants");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_SELECTION)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Selects the combatants on screen. When they are all selected already, selects every combatant on the map.");
+		}
+
+		virtual void Execute(void) const {
+			if (PlayerPtr->IsObserver) {
+				return;
+			}
+
+			InView.clear();
+			TacticalMap->Select_These(TacticalRect, Add_In_View);
+
+			bool unselected = false;
+			for (TechnoClass const * techno : InView) {
+				unselected = unselected || !techno->IsSelected;
+			}
+
+			std::vector<TechnoClass *> chosen = InView;
+			if (InView.empty() || !unselected) {
+				chosen.clear();
+				for (int i = 0; i < Technos.Count(); i++) {
+					TechnoClass * techno = Technos[i];
+					if (techno != NULL && techno->IsActive && techno->IsDown && Is_Combatant(techno)) {
+						chosen.push_back(techno);
+					}
+				}
+			}
+
+			if (chosen.empty()) {
+				return;
+			}
+
+			Unselect_All();
+			for (TechnoClass * techno : chosen) {
+				techno->Select();
+			}
+		}
+
+	private:
+		static void Add_In_View(ObjectClass * obj)
+		{
+			if (obj != NULL && obj->Is_Techno() && obj->IsDown && Is_Combatant((TechnoClass *)obj)) {
+				InView.push_back((TechnoClass *)obj);
+			}
+		}
+
+		static bool Is_Combatant(TechnoClass * techno)
+		{
+			return(techno->House->Is_Player_Control() && techno->What_Am_I() != RTTI_BUILDING && techno->Is_Weapon_Equipped());
+		}
+
+		inline static std::vector<TechnoClass *> InView;
+};
+
+
+/// <summary>
+/// Cycles the player's units through tiers 0, 1 and 2 on each press, selecting the units of
+/// the next tier that has any. The units a cycle starts from stay the source while the
+/// selection still holds the cycle's last result.
+/// </summary>
+class TierNavigationClass
+{
+	public:
+		typedef int (*TierFunction)(TechnoClass const * techno);
+
+		explicit TierNavigationClass(TierFunction tier) : Tier(tier) {}
+
+		void Select_Next_Tier(void)
+		{
+			if (PlayerPtr->IsObserver) {
+				return;
+			}
+
+			if (!Shows_Last_Result()) {
+				Source.clear();
+				for (int i = 0; i < CurrentObject.Count(); i++) {
+					ObjectClass * obj = CurrentObject[i];
+					if (obj->Is_Techno() && ((TechnoClass *)obj)->House->Is_Player_Control()) {
+						Source.push_back((TechnoClass *)obj);
+					}
+				}
+				if (Source.empty()) {
+					for (int i = 0; i < Technos.Count(); i++) {
+						TechnoClass * techno = Technos[i];
+						if (techno != NULL && techno->IsActive && techno->IsDown && techno->House->Is_Player_Control()) {
+							Source.push_back(techno);
+						}
+					}
+				}
+			}
+
+			for (int attempt = 0; attempt < 3; attempt++) {
+				int const wanted = Next_Tier;
+				Next_Tier = (Next_Tier + 1) % 3;
+
+				std::vector<TechnoClass *> matches;
+				for (TechnoClass * techno : Source) {
+					if (Tier(techno) == wanted) {
+						matches.push_back(techno);
+					}
+				}
+
+				if (!matches.empty()) {
+					Unselect_All();
+					for (TechnoClass * techno : matches) {
+						techno->Select();
+					}
+					Shown = matches;
+					return;
+				}
+			}
+		}
+
+	private:
+		bool Shows_Last_Result(void) const
+		{
+			if (Shown.empty() || CurrentObject.Count() != (int)Shown.size()) {
+				return(false);
+			}
+			for (int i = 0; i < CurrentObject.Count(); i++) {
+				if (std::find(Shown.begin(), Shown.end(), CurrentObject[i]) == Shown.end()) {
+					return(false);
+				}
+			}
+			return(true);
+		}
+
+		TierFunction Tier;
+		int Next_Tier = 0;
+		std::vector<TechnoClass *> Source;
+		std::vector<TechnoClass *> Shown;
+};
+
+
+/// <summary>
+/// Selects the player's units in the next health band: red, then yellow, then green.
+/// </summary>
+class HealthNavCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("HealthNav");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Select By Health");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_SELECTION)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Selects the units in the next health band: red, then yellow, then green. Bands with no unit are skipped.");
+		}
+
+		virtual void Execute(void) const {
+			Navigator.Select_Next_Tier();
+		}
+
+	private:
+		inline static TierNavigationClass Navigator{&Health_Tier};
+};
+
+
+/// <summary>
+/// Selects the player's units in the next veterancy rank: elite, then veteran, then green.
+/// </summary>
+class VeterancyNavCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("VeterancyNav");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Select By Veterancy");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_SELECTION)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Selects the units in the next rank: elite, then veteran, then green. Ranks with no unit are skipped.");
+		}
+
+		virtual void Execute(void) const {
+			Navigator.Select_Next_Tier();
+		}
+
+	private:
+		inline static TierNavigationClass Navigator{&Veterancy_Tier};
+};
+
+
+/// <summary>
+/// Selects the units on screen whose types match the selection, on a tap of the key. A press
+/// held for half a second or more does nothing, as in Yuri's Revenge.
+/// </summary>
+class TypeSelectCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("TypeSelect");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Select Type On Screen");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_SELECTION)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Tap to select the units on screen whose types match the selection. Holding the key does nothing.");
+		}
+
+		virtual void Execute(void) const {
+			if (!PlayerPtr->IsObserver) {
+				int now = TickCount;
+				Pressed_At = now;
+			}
+		}
+
+		virtual void Release(void) const {
+			if (Pressed_At < 0) {
+				return;
+			}
+			int now = TickCount;
+			bool const tap = (now - Pressed_At) < TIMER_SECOND / 2;
+			Pressed_At = -1;
+			if (tap && !PlayerPtr->IsObserver) {
+				SelectSameTypeCommandClass::Select_Same_Types(false);
+			}
+		}
+
+	private:
+		inline static int Pressed_At = -1;
+};
+
+
+/// <summary>
+/// Plays a taunt in multiplayer games. Taunts are not in this build yet, so the command says so.
+/// </summary>
+class TauntCommandClass : public CommandClass
+{
+	public:
+		explicit TauntCommandClass(int taunt) : Name("Taunt_" + std::to_string(taunt)), Display("Taunt " + std::to_string(taunt)) {}
+
+		virtual char const * Get_Unique_Name(void) const {
+			return(Name.c_str());
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Display.c_str());
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_CHAT));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Plays this taunt in a multiplayer game. Not available in this build yet.");
+		}
+
+		virtual void Execute(void) const {
+			if (Session.Type != GAME_NORMAL) {
+				Session.Messages.Add_Message(NULL, 0, "Taunts are not available in this build.", PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+			}
+		}
+
+	private:
+		std::string Name;
+		std::string Display;
+};
+
+
+/// <summary>
+/// Says that beacons are not in this build, in multiplayer games only. Single-player games
+/// place no beacon, as in Yuri's Revenge.
+/// </summary>
+static void Report_Beacons_Unavailable(void)
+{
+	if (Session.Type != GAME_NORMAL) {
+		Session.Messages.Add_Message(NULL, 0, "Beacons are not available in this build.", PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+	}
+}
+
+
+class PlaceBeaconCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("PlaceBeacon");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Place Beacon");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Places a beacon in a multiplayer game. Not available in this build yet.");
+		}
+
+		virtual void Execute(void) const {
+			Report_Beacons_Unavailable();
+		}
+};
+
+
+class BeaconDeleteCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("Delete");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Delete Beacon");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Deletes your beacon in a multiplayer game. Not available in this build yet.");
+		}
+
+		virtual void Execute(void) const {
+			Report_Beacons_Unavailable();
+		}
+};
+
+
+/// <summary>
 /// Gives a command a key when the keyboard file bound neither the command nor the key.
 /// </summary>
 static void Claim_Free_Key(KeyNumType key, CommandClass const * command)
@@ -6244,6 +6590,16 @@ static void Init_Commands(void)
 
 	AllCommands.Add(new SelectSameTypeCommandClass);
 
+	AllCommands.Add(new TypeSelectCommandClass);
+	AllCommands.Add(new CombatantSelectCommandClass);
+	AllCommands.Add(new HealthNavCommandClass);
+	AllCommands.Add(new VeterancyNavCommandClass);
+	for (int taunt = 1; taunt <= 8; taunt++) {
+		AllCommands.Add(new TauntCommandClass(taunt));
+	}
+	AllCommands.Add(new PlaceBeaconCommandClass);
+	AllCommands.Add(new BeaconDeleteCommandClass);
+
 	AllCommands.Add(new VeterancyFilterCommandClass);
 	AllCommands.Add(new VeterancyFilterAddLowerCommandClass);
 	AllCommands.Add(new HealthFilterCommandClass);
@@ -6334,8 +6690,9 @@ static void Init_Commands(void)
 
 /// <summary>
 /// Binds the game commands to the keys named in the keyboard file, KEYBOARDMD.INI by default.
-/// This routine throws the current key assignments away and rebuilds them from the
-/// player's keyboard file, matching each entry against a command's unique name.
+/// A file that cannot be loaded gives each command its default key. A file from an older build
+/// is upgraded to the current defaults in memory, and is rewritten only when the keyboard
+/// dialog saves it.
 /// </summary>
 /// <returns>bool; Was the keyboard file loaded?</returns>
 /// <remarks>The command list must already be built before calling this routine.</remarks>
@@ -6343,33 +6700,53 @@ bool Init_Hotkeys(void)
 {
 	CCINIClass ini;
 	CCFileClass file(DeploymentConfig.KeyboardFile.c_str());
+	bool const loaded = ini.Load(file, false);
 
-	if (ini.Load(file, false)) {
-
-		HotkeyCommands.Clear();
-
+	std::vector<HotkeyEntry> entries;
+	if (loaded) {
+		std::set<std::string> named;
 		for (int index = 0; index < ini.Entry_Count("Hotkey"); index++) {
-			const char *entry = ini.Get_Entry("Hotkey", index);
-			int id = ini.Get_Int("Hotkey", entry, 0);
-			const CommandClass *command = NULL;
-
-			for (int cindex = 0; cindex < AllCommands.Count(); cindex++) {
-				if (strcmp(AllCommands[cindex]->Get_Unique_Name(), entry) == 0) {
-					command = AllCommands[cindex];
-					break;
-				}
-			}
-
-			if ((command != NULL) && (id != 0)) {
-				HotkeyCommands.Add_Index(id, command);
+			std::string const entry = ini.Get_Entry("Hotkey", index);
+			int const id = ini.Get_Int("Hotkey", entry.c_str(), 0);
+			if (id != 0 && named.insert(entry).second) {
+				entries.push_back({ entry, id });
 			}
 		}
-
-		return(true);
+		Upgrade_Hotkeys(entries, ini.Get_Int("Defaults", "Version", 1));
+	} else {
+		DebugString("Unable to load %s\n", DeploymentConfig.KeyboardFile.c_str());
+		entries = Default_Hotkeys();
 	}
 
-	DebugString("Unable to load %s\n", DeploymentConfig.KeyboardFile.c_str());
-	return(false);
+	HotkeyCommands.Clear();
+	for (HotkeyEntry const & entry : entries) {
+		for (int cindex = 0; cindex < AllCommands.Count(); cindex++) {
+			if (entry.Command == AllCommands[cindex]->Get_Unique_Name()) {
+				HotkeyCommands.Add_Index(entry.Key, AllCommands[cindex]);
+				break;
+			}
+		}
+	}
+
+	return(loaded);
+}
+
+
+/// <summary>
+/// Writes the current key assignments to the keyboard file with the current defaults version,
+/// so a command the file omits stays unbound when the file is read again.
+/// </summary>
+void Save_Hotkeys(void)
+{
+	CCINIClass ini;
+	ini.Put_Int("Defaults", "Version", KEYBOARD_DEFAULTS_VERSION);
+	for (int position = 0; position < HotkeyCommands.Count(); position++) {
+		CommandClass const * command = HotkeyCommands.Fetch_By_Position(position);
+		ini.Put_Int("Hotkey", command->Get_Unique_Name(), HotkeyCommands.Fetch_ID_By_Position(position));
+	}
+
+	CDFileClass file(DeploymentConfig.KeyboardFile.c_str());
+	ini.Save(file, false);
 }
 
 

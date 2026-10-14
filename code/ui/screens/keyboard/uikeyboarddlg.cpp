@@ -82,15 +82,7 @@ class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 				}
 			}
 
-			CCINIClass ini;
-			ini.Clear();
-			for (int position = 0; position < HotkeyCommands.Count(); position++) {
-				CommandClass const * command = HotkeyCommands.Fetch_By_Position(position);
-				ini.Put_Int("Hotkey", command->Get_Unique_Name(), HotkeyCommands.Fetch_ID_By_Position(position));
-			}
-
-			CDFileClass file(DeploymentConfig.KeyboardFile.c_str());
-			ini.Save(file, false);
+			Save_Hotkeys();
 		}
 };
 

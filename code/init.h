@@ -34,6 +34,7 @@ int Main_Menu(unsigned int timeout);
 bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, const Rect & tile_rect, const Rect & sidebar_rect, bool hidden_first = false);
 
 bool Init_Hotkeys(void);
+void Save_Hotkeys(void);
 void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
 
