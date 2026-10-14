@@ -1,0 +1,18 @@
+; An IFV (FV) with E1 soldiers aboard takes a non-forced hit after the rules overlay in crashable-ifv.ini sets
+; Crashable=yes. A crashable vehicle does not release its passengers: Resolve_Passengers_On_Death kills them. Without the
+; overlay the same hit releases the boarded soldier onto the IFV's cell (see transport-death-survivors.txt).
+; Expected: at frame 150 the boarded E1 shows limbo 1. At frame 180 that soldier is not listed, the E1 that never boarded is
+; still listed with limbo 0, and no FV is listed.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Map XMP29U2.MAP -Script src-agent17/tests/autotest/transport-death-crashable.txt -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+30 reveal
+40 own FV 60 20
+41 own E1 59 20
+42 own E1 59 21
+50 enter E1 60 20
+150 where E1
+160 rules E:\Claude ra2 decomp\src-agent17\tests\autotest\crashable-ifv.ini
+170 hit FV:AP 5000
+180 where E1
+180 where FV
+200 quit

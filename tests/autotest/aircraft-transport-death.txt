@@ -1,0 +1,17 @@
+; A Hind (HIND) on the ground with two Guardian GIs (GGI) aboard takes a non-forced hit. An aircraft that dies where it stands
+; is removed without falling, and its passengers die with it (ObjectClass::UnInit kills them with no killer), so the "where GGI"
+; lines at frame 180 show no GGI.
+; Expected: at frame 150 both GGI show limbo 1. At frame 180 no GGI and no HIND are listed.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Map XMP29U2.MAP -Script src-agent17/tests/autotest/aircraft-transport-death.txt -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+30 reveal
+40 own HIND 60 20
+41 own GGI 59 20
+42 own GGI 59 21
+50 enter GGI 60 20
+150 where GGI
+160 where HIND
+170 hit HIND:AP 5000
+180 where GGI
+180 where HIND
+200 quit

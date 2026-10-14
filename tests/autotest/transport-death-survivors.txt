@@ -1,0 +1,29 @@
+; Passengers of destroyed transports. E1 soldiers are ordered into an IFV (FV) at 60,20, and the one that boards is
+; still aboard when the IFV takes a non-forced hit of 5000 points from AP. UnitClass::Take_Damage's passenger tail
+; (Resolve_Passengers_On_Death) puts each passenger out onto the IFV's cell, so the "where E1" lines after the hit show limbo
+; 0 at 60,20 for the released soldier and the IFV is gone. Two Guardian GIs (GGI) board a Battle Fortress (BFRT) at 60,30,
+; and a forced kill ("kill BFRT 1") kills every passenger. The enter, hit and kill verbs act on every object of the type
+; they name, so each transport gets a soldier type of its own.
+; Expected: at frame 180 the E1 that boarded shows limbo 1 and both GGI show limbo 1. At frame 200 that E1 shows limbo 0 at
+; 60,20 and no FV is listed. At frame 300 no GGI is listed, after the BFRT is killed at frame 280. An E1 that did not board
+; stays outside with limbo 0.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Map XMP29U2.MAP -Script src-agent17/tests/autotest/transport-death-survivors.txt -Seconds 120 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+30 reveal
+40 own FV 60 20
+41 own E1 59 20
+42 own E1 59 21
+50 enter E1 60 20
+60 own BFRT 60 30
+61 own GGI 59 30
+62 own GGI 59 31
+70 enter GGI 60 30
+180 where E1
+180 where GGI
+190 hit FV:AP 5000
+200 where E1
+200 where FV
+250 where GGI
+280 kill BFRT 1
+300 where GGI
+300 quit
