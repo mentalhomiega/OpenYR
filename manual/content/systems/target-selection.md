@@ -160,6 +160,8 @@ When the guard radius falls back to weapon range, the scan changes in two ways:
 - It walks as many rings as the longer of the two weapon ranges, in whole cells, plus one. An object with no weapon at all therefore scans only the cell it stands in.
 - Each candidate must also pass a range test. An object with a primary weapon accepts a candidate only within range of the weapon it would choose against it. An object with no primary weapon accepts a candidate within `GuardRange`.
 
+When `GuardRange` is not zero, the guard radius replaces the weapon test. A candidate inside it is not checked against the weapon's range, and one beyond it is rejected even when the weapon reaches it. The stock Dreadnought (`DRED`) shows the effect: its `GuardRange` is 10 cells, its `DredLauncher` reaches 25, and its `CanPassiveAquire=no` means it takes no target on its own while guarding.
+
 A healer is an object whose weapons average negative damage, such as a medic. In Guard, a healer scans a fixed 2 cells, whatever the radius rules above give.
 
 :::caution[`GuardRange` is also a fence connection distance]
