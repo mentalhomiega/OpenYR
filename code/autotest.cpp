@@ -151,6 +151,7 @@
 #include "session.h"
 #include "rulesreload.h"
 
+#include "_command.h"
 #include "_keyboar.h"
 #include "_map.h"
 #include "queue.h"
@@ -166,6 +167,7 @@
 #include "builtype.h"
 #include "bullettype.h"
 #include "cell.h"
+#include "command.h"
 #include "conquer.h"
 #include "crate.hh"
 #include "dbgprint.h"
@@ -1406,7 +1408,15 @@ void Run(StepType const & step)
 		return;
 	}
 
-	// key <Key> and tab sit before the chain below, which is nested too deeply to take another branch.
+	// key, hotkey and tab sit before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "hotkey") {
+		// hotkey <key>: the command the key is bound to, given as a virtual-key code or a letter.
+		int const key = Key_Code(step.Argument);
+		CommandClass const * command = HotkeyCommands[key];
+		DebugString("AUTOTEST   hotkey %d %s\n", key, command != NULL ? command->Get_Unique_Name() : "none");
+		return;
+	}
+
 	if (step.Command == "key") {
 		WindowEvent event;
 		event.VirtualKey = Key_Code(step.Argument);

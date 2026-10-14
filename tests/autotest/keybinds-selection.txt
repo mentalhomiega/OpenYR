@@ -1,0 +1,33 @@
+; Keyboard command checks for the player's units in view (the view is centred on the granted units at step 30), each run through its command name or, for
+; TypeSelect, a tap of T (virtual-key code 84). The selected lines show the units after each step.
+; TypeSelect: one infantry is left selected by SelectOneLess, and the tap selects both infantry on screen.
+; CombatantSelect: the infantry and the tank are armed; the harvester carries a 20mm weapon in the stock
+; rules, so it is selected too. HealthNav and VeterancyNav: the granted units are at full strength and are
+; rookies, so only the green band has units and every unit is selected.
+; PlaceBeacon, Delete and Taunt_1 do nothing in a single-player game and log nothing.
+; Run: scripts/run_autotest.ps1 -Build agent12 -Script src-agent12/tests/autotest/keybinds-selection.txt -Filter "AUTOTEST|Exception"
+30 view 60 42
+35 reveal
+40 grantunit E1 60 42
+41 grantunit E1 61 42
+42 grantunit MTNK 62 42
+43 grantunit HARV 63 44
+50 select E1
+55 selected
+57 command SelectOneLess
+58 selected
+60 key 84
+65 selected
+70 select MTNK
+75 selected
+80 command CombatantSelect
+85 selected
+90 command HealthNav
+95 selected
+100 command VeterancyNav
+105 selected
+110 command PlaceBeacon
+111 command Delete
+112 command Taunt_1
+120 selected
+300 quit
