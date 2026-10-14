@@ -54,7 +54,20 @@ struct BackendLayer
 	int DestHeight;
 };
 
-bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr);
+// Emissive masks for the frame and the layer, one byte per pixel laid out like their pictures. A
+// null pointer means the picture has no mask this present.
+struct BackendEmissive
+{
+	unsigned char const * Frame;
+	int FramePitch;
+	unsigned char const * Layer;
+	int LayerPitch;
+};
+
+bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr, BackendEmissive const * emissive = nullptr);
+
+// Shows the emissive masks in place of the pictures; the red channel carries the mask value.
+void Backend_Set_Emissive_View(bool masks);
 void Backend_End_Frame(void);
 
 void Backend_Build_Ortho_Projection(float * result, int width, int height);

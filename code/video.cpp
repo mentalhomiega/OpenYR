@@ -21,6 +21,7 @@
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "dsurface.h"
+#include "emissive.h"
 #include "globals.h"
 #include "goptions.h"
 #include "misc.h"
@@ -382,10 +383,26 @@ static void Present(void)
 		}
 	}
 
-	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr);
-	if (presented && layerptr != NULL) {
-		_LayerFresh = false;
+	// Masks are passed only while they are kept; the layer's mask follows the layer picture when it is fresh.
+	BackendEmissive emissive = {NULL, 0, NULL, 0};
+	BackendEmissive const * emissiveptr = NULL;
+	Backend_Set_Emissive_View(Emissive_Debug_View());
+	if (Emissive_Is_Enabled()) {
+		if (EmissivePlane const * frame = Emissive_Plane_For(VisibleSurface)) {
+			emissive.Frame = frame->Pixels;
+			emissive.FramePitch = frame->Pitch;
+			emissiveptr = &emissive;
+		}
+		if (layerptr != NULL && layer.Pixels != NULL) {
+			if (EmissivePlane const * layer_plane = Emissive_Plane_For(_LayerSurface)) {
+				emissive.Layer = layer_plane->Pixels + _LayerSource.Y * layer_plane->Pitch + _LayerSource.X;
+				emissive.LayerPitch = layer_plane->Pitch;
+				emissiveptr = &emissive;
+			}
+		}
 	}
+
+	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr, emissiveptr);
 	if (presented) {
 		if (snapshot.Upload) {
 			_Dirty.Upload_Completed();
