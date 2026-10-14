@@ -23,6 +23,7 @@ namespace setup {
 namespace {
 
 wchar_t const * const GameName = L"Game.exe";
+wchar_t const * const LauncherName = L"OpenYR.exe";
 wchar_t const * const UninstallerName = L"Uninstall OpenYR.exe";
 wchar_t const * const ConfigName = L"OPENTS.INI";
 wchar_t const * const RecordName = L"openyr-install.ini";
@@ -43,14 +44,16 @@ enum class KindType
 };
 
 /*
- * The files of a package that an install copies: the engine, its interface, the licences and the
- * notes, and the CnCNet setup script. The launchers and README are left out, because they assume
- * the package sits next to Yuri's Revenge. Settings under user\ are copied only when missing.
+ * The files of a package that an install copies: the engine and its launcher, its interface, the
+ * licences and the notes, and the CnCNet setup script. The Play scripts and README are left out,
+ * because they assume the package sits next to Yuri's Revenge. Settings under user\ are copied
+ * only when missing.
  */
 KindType Classify(std::wstring const & name)
 {
 	static wchar_t const * const Programs[] = {
 		L"Game.exe",
+		L"OpenYR.exe",
 		L"Language.dll",
 		L"LICENSE.md",
 		L"TESTERS.md",
@@ -199,14 +202,34 @@ std::wstring Uninstall_Key(LocationType const & where)
 }
 
 
-/*
- * Removes the shortcut only when it still starts this install's Game.exe, so a shortcut the player
- * made under the same name is left alone.
- */
-void Remove_Own_Shortcut(std::wstring const & link, std::wstring const & game)
+bool Shortcut_Starts(std::wstring const & link, std::wstring const & target)
 {
-	std::wstring target;
-	if (Is_File(link) && Shortcut_Target(link, target) && Same_Path(target, game)) {
+	std::wstring found;
+	return(Is_File(link) && Shortcut_Target(link, found) && Same_Path(found, target));
+}
+
+
+/*
+ * True when the shortcut starts this install's launcher or Game.exe. A shortcut the player made under
+ * the same name does not count. Shortcuts from earlier builds start Game.exe.
+ */
+bool Own_Shortcut(std::wstring const & link, std::wstring const & folder)
+{
+	return(Shortcut_Starts(link, Join(folder, LauncherName)) || Shortcut_Starts(link, Join(folder, GameName)));
+}
+
+
+void Remove_Shortcut_To(std::wstring const & link, std::wstring const & target)
+{
+	if (Shortcut_Starts(link, target)) {
+		Delete_File_Forced(link);
+	}
+}
+
+
+void Remove_Own_Shortcut(std::wstring const & link, std::wstring const & folder)
+{
+	if (Own_Shortcut(link, folder)) {
 		Delete_File_Forced(link);
 	}
 }
@@ -518,54 +541,62 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 		return(false);
 	}
 
-	// Shortcuts and the Apps & Features entry. A shortcut that cannot be made is reported, not fatal.
+	// Shortcuts start the launcher, which checks for updates first. A package without one starts Game.exe.
+	// A shortcut or entry that cannot be made is reported, not fatal.
 	std::wstring const game = Join(folder, GameName);
+	std::wstring const start = Is_File(Join(folder, LauncherName)) ? Join(folder, LauncherName) : game;
 	LocationType const where = request.Where;
 	std::wstring const start_folder = Program_Shortcut_Folder(where);
+	std::wstring const desktop_link = Desktop_Folder(where) + L"\\" + ShortcutName;
 	std::wstring shortcut_error;
 
-	Say(report, 94, L"Adding the Start Menu entry");
-	if (Make_Folders(start_folder)) {
-		if (!Create_Shortcut(start_folder + L"\\" + ShortcutName, game, folder, game, 0, L"OpenYR", shortcut_error)) {
-			Say(report, -1, shortcut_error);
+	if (request.Shortcuts) {
+		Say(report, 94, L"Adding the Start Menu entry");
+		if (Make_Folders(start_folder)) {
+			if (!Create_Shortcut(start_folder + L"\\" + ShortcutName, start, folder, start, 0, L"OpenYR", shortcut_error)) {
+				Say(report, -1, shortcut_error);
+			}
+			if (!Create_Shortcut(start_folder + L"\\" + UninstallShortcutName, uninstaller, folder, uninstaller, 0, L"Uninstall OpenYR", shortcut_error)) {
+				Say(report, -1, shortcut_error);
+			}
+		} else {
+			Say(report, -1, L"Could not create the Start Menu folder " + start_folder + L".");
 		}
-		if (!Create_Shortcut(start_folder + L"\\" + UninstallShortcutName, uninstaller, folder, uninstaller, 0, L"Uninstall OpenYR", shortcut_error)) {
-			Say(report, -1, shortcut_error);
+
+		// KeepDesktop refreshes a shortcut this install already has and never adds one.
+		bool const desktop_wanted = request.KeepDesktop ? Own_Shortcut(desktop_link, folder) : request.Desktop;
+		if (desktop_wanted) {
+			if (!Create_Shortcut(desktop_link, start, folder, start, 0, L"OpenYR", shortcut_error)) {
+				Say(report, -1, shortcut_error);
+			}
+		} else {
+			Remove_Own_Shortcut(desktop_link, folder);
 		}
-	} else {
-		Say(report, -1, L"Could not create the Start Menu folder " + start_folder + L".");
 	}
 
-	std::wstring const desktop_link = Desktop_Folder(where) + L"\\" + ShortcutName;
-	if (request.Desktop) {
-		if (!Create_Shortcut(desktop_link, game, folder, game, 0, L"OpenYR", shortcut_error)) {
-			Say(report, -1, shortcut_error);
+	if (request.Shortcuts) {
+		std::wstring const key = Uninstall_Key(where);
+		SYSTEMTIME now{};
+		GetLocalTime(&now);
+		wchar_t date[16] = {};
+		swprintf(date, 16, L"%04u%02u%02u", static_cast<unsigned>(now.wYear), static_cast<unsigned>(now.wMonth), static_cast<unsigned>(now.wDay));
+
+		bool registered = true;
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayName", L"OpenYR");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayVersion", Build_Text(build.Build));
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"Publisher", L"OpenYR");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallLocation", folder);
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayIcon", game + L",0");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"UninstallString", L"\"" + uninstaller + L"\" /UNINSTALL");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"QuietUninstallString", L"\"" + uninstaller + L"\" /UNINSTALL /S");
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"URLInfoAbout", HelpUrl);
+		registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallDate", date);
+		registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"EstimatedSize", static_cast<DWORD>(Estimated_Kilobytes(programs)));
+		registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoModify", 1);
+		registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoRepair", 1);
+		if (!registered) {
+			Say(report, -1, L"Could not write the Apps & Features entry.");
 		}
-	} else {
-		Remove_Own_Shortcut(desktop_link, game);
-	}
-
-	std::wstring const key = Uninstall_Key(where);
-	SYSTEMTIME now{};
-	GetLocalTime(&now);
-	wchar_t date[16] = {};
-	swprintf(date, 16, L"%04u%02u%02u", static_cast<unsigned>(now.wYear), static_cast<unsigned>(now.wMonth), static_cast<unsigned>(now.wDay));
-
-	bool registered = true;
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayName", L"OpenYR");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayVersion", Build_Text(build.Build));
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"Publisher", L"OpenYR");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallLocation", folder);
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"DisplayIcon", game + L",0");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"UninstallString", L"\"" + uninstaller + L"\" /UNINSTALL");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"QuietUninstallString", L"\"" + uninstaller + L"\" /UNINSTALL /S");
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"URLInfoAbout", HelpUrl);
-	registered = registered && Registry_Set_String(HKEY_CURRENT_USER, key.c_str(), L"InstallDate", date);
-	registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"EstimatedSize", static_cast<DWORD>(Estimated_Kilobytes(programs)));
-	registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoModify", 1);
-	registered = registered && Registry_Set_Dword(HKEY_CURRENT_USER, key.c_str(), L"NoRepair", 1);
-	if (!registered) {
-		Say(report, -1, L"Could not write the Apps & Features entry.");
 	}
 
 	Say(report, 100, previous.Present ? L"OpenYR was updated" : L"OpenYR was installed");
@@ -582,14 +613,13 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 		return(false);
 	}
 
-	std::wstring const game = Join(folder, GameName);
 	LocationType const where = request.Where;
 	std::wstring const start_folder = Program_Shortcut_Folder(where);
 
 	Say(report, 2, L"Removing the shortcuts");
-	Remove_Own_Shortcut(Desktop_Folder(where) + L"\\" + ShortcutName, game);
-	Remove_Own_Shortcut(start_folder + L"\\" + ShortcutName, game);
-	Remove_Own_Shortcut(start_folder + L"\\" + UninstallShortcutName, Join(folder, UninstallerName));
+	Remove_Own_Shortcut(Desktop_Folder(where) + L"\\" + ShortcutName, folder);
+	Remove_Own_Shortcut(start_folder + L"\\" + ShortcutName, folder);
+	Remove_Shortcut_To(start_folder + L"\\" + UninstallShortcutName, Join(folder, UninstallerName));
 	Remove_Folder_If_Empty(start_folder);
 
 	std::size_t index = 0;
@@ -647,10 +677,11 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 
 bool Launch_Game(std::wstring const & folder, std::wstring & error)
 {
-	std::wstring const game = Join(folder, GameName);
-	HINSTANCE const result = ShellExecuteW(nullptr, L"open", game.c_str(), nullptr, Normalize_Path(folder).c_str(), SW_SHOWNORMAL);
+	std::wstring const launcher = Join(folder, LauncherName);
+	std::wstring const target = Is_File(launcher) ? launcher : Join(folder, GameName);
+	HINSTANCE const result = ShellExecuteW(nullptr, L"open", target.c_str(), nullptr, Normalize_Path(folder).c_str(), SW_SHOWNORMAL);
 	if (reinterpret_cast<INT_PTR>(result) <= 32) {
-		error = L"Could not start " + game + L".";
+		error = L"Could not start " + target + L".";
 		return(false);
 	}
 	return(true);

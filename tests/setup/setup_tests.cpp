@@ -231,6 +231,7 @@ std::vector<PayloadFileType> Package(char const * engine, char const * build, bo
 	};
 
 	add("Game.exe", engine);
+	add("OpenYR.exe", "launcher");
 	add("Language.dll", "language");
 	add("LICENSE.md", "licence");
 	add("TESTERS.md", "testers");
@@ -458,10 +459,12 @@ void Test_Install_And_Uninstall(void)
 
 	setup::InstalledType record = setup::Read_Installed(folder);
 	Check(record.Present && record.Build == L"2026-10-14i" && record.Commit == L"abc1234", "the record holds the build and commit");
-	Check(record.Files.size() == 8, "the record lists the seven program files and the uninstaller");
+	Check(record.Files.size() == 9, "the record lists the eight program files and the uninstaller");
+	Check(Exists(Path_Of(folder, L"OpenYR.exe")), "the launcher is installed beside Game.exe");
 
 	std::wstring target;
-	Check(setup::Shortcut_Target(Path_Of(Programs, L"OpenYR\\OpenYR.lnk"), target) && setup::Same_Path(target, Path_Of(folder, L"Game.exe")), "the Start Menu entry starts Game.exe");
+	Check(setup::Shortcut_Target(Path_Of(Programs, L"OpenYR\\OpenYR.lnk"), target) && setup::Same_Path(target, Path_Of(folder, L"OpenYR.exe")), "the Start Menu entry starts the launcher");
+	Check(setup::Shortcut_Target(Path_Of(Desktop, L"OpenYR.lnk"), target) && setup::Same_Path(target, Path_Of(folder, L"OpenYR.exe")), "the desktop shortcut starts the launcher");
 	Check(Read_Text(Path_Of(folder, L"Uninstall OpenYR.exe")).size() == 4096, "the uninstaller is the stub's bytes, without a package");
 	Check(Exists(Path_Of(Desktop, L"OpenYR.lnk")), "the desktop shortcut is made when asked for");
 
@@ -516,6 +519,62 @@ void Test_Install_And_Uninstall(void)
 	// The Yuri's Revenge folder is never written to.
 	Check(Snapshot(Yuri) == yuri_before, "the Yuri's Revenge folder is unchanged after every step");
 	Check(Read_Text(Path_Of(Yuri, L"RA2MD.INI")) == yuri_ini_before, "its own settings file is unchanged");
+}
+
+
+// An install with the launcher left out, or with KeepDesktop set, as the launcher's update sends it.
+bool Install_Keeping_Desktop(std::wstring const & folder, std::vector<PayloadFileType> const & files, bool keep_desktop, std::wstring & error)
+{
+	setup::InstallType request = Request(folder, true);
+	request.KeepDesktop = keep_desktop;
+	request.UninstallerSource = Path_Of(Root, L"stub.exe");
+	request.UninstallerBytes = 4096;
+	return(setup::Install_Package(request, files, nullptr, error));
+}
+
+
+void Test_Shortcuts(void)
+{
+	std::wstring error;
+	std::wstring const folder = Installs + L"\\Shortcuts";
+	std::wstring const desktop_link = Path_Of(Desktop, L"OpenYR.lnk");
+	std::wstring const launcher = Path_Of(folder, L"OpenYR.exe");
+	std::wstring const game = Path_Of(folder, L"Game.exe");
+	std::wstring target;
+
+	std::vector<PayloadFileType> no_launcher;
+	for (PayloadFileType const & file : Package("engine", "beta22", false, false)) {
+		if (file.Name != L"OpenYR.exe") {
+			no_launcher.push_back(file);
+		}
+	}
+
+	setup::Delete_File_Forced(desktop_link);
+	Check(Install_Keeping_Desktop(folder, no_launcher, false, error), "a package without the launcher installs");
+	Check(setup::Shortcut_Target(desktop_link, target) && setup::Same_Path(target, game), "without a launcher the shortcut starts Game.exe");
+
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), true, error), "an update that keeps the desktop shortcut succeeds");
+	Check(setup::Shortcut_Target(desktop_link, target) && setup::Same_Path(target, launcher), "the kept shortcut is refreshed to start the launcher");
+
+	setup::Delete_File_Forced(desktop_link);
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), true, error), "an update with no desktop shortcut succeeds");
+	Check(!Exists(desktop_link), "an update that keeps the desktop shortcut adds none when there was none");
+
+	Check(setup::Create_Shortcut(desktop_link, Path_Of(Root, L"stub.exe"), Root, Path_Of(Root, L"stub.exe"), 0, L"player", error), "a shortcut the player made is in place");
+	Check(Install_Keeping_Desktop(folder, Package("engine", "beta23", false, false), true, error), "an update over a player's shortcut succeeds");
+	Check(setup::Shortcut_Target(desktop_link, target) && setup::Same_Path(target, Path_Of(Root, L"stub.exe")), "and leaves a shortcut that does not start this install alone");
+
+	setup::Delete_File_Forced(desktop_link);
+	setup::Remove_Tree(folder, error);
+
+	setup::Delete_File_Forced(Path_Of(Programs, L"OpenYR\\OpenYR.lnk"));
+	setup::InstallType quiet = Request(folder, true);
+	quiet.Shortcuts = false;
+	quiet.UninstallerSource = Path_Of(Root, L"stub.exe");
+	quiet.UninstallerBytes = 4096;
+	Check(setup::Install_Package(quiet, Package("engine", "beta23", false, false), nullptr, error), "an install with no shortcuts succeeds");
+	Check(!Exists(Path_Of(Programs, L"OpenYR\\OpenYR.lnk")) && !Exists(desktop_link), "and it writes no Start Menu or desktop entry");
+	setup::Remove_Tree(folder, error);
 }
 
 
@@ -580,6 +639,7 @@ int main()
 	Test_Find();
 	Test_Check_Folder();
 	Test_Install_And_Uninstall();
+	Test_Shortcuts();
 	Test_Refusals();
 
 	Remove_Test_Keys();

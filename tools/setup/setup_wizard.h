@@ -24,6 +24,8 @@ struct AppOptionsType
 	bool Run = false;
 	bool DeleteData = false;
 	bool Desktop = true;
+	bool DesktopKeep = false;
+	bool Shortcuts = true;
 
 	std::wstring Yuri;
 	std::wstring Folder;

@@ -112,6 +112,12 @@ struct InstallType
 	std::wstring Folder;
 	bool Desktop = true;
 
+	// Set by the launcher's update: a desktop shortcut this install already has is refreshed, and none is added.
+	bool KeepDesktop = false;
+
+	// False writes no shortcut and no Apps & Features entry. The tests use it to stay off the player's desktop.
+	bool Shortcuts = true;
+
 	// The setup executable's own bytes, without its package, copied as the uninstaller. Empty skips the copy.
 	std::wstring UninstallerSource;
 	std::uint64_t UninstallerBytes = 0;
@@ -134,7 +140,7 @@ struct UninstallType
 // the uninstaller running from the folder is one of them.
 bool Uninstall_Package(UninstallType const & request, ReportType const & report, std::wstring & error, std::vector<std::wstring> & left);
 
-// Starts Game.exe in the folder with the folder as its working directory. False when it cannot start.
+// Starts the launcher in the folder, or Game.exe when the install has none, with the folder as its working directory. False when it cannot start.
 bool Launch_Game(std::wstring const & folder, std::wstring & error);
 
 // The text of a path or name that a setup run prints or stores; false when it has characters
