@@ -85,3 +85,63 @@ void HDR_Encode_Pixel(float const * srgb, float paperwhite, float peak, float * 
 		pq[channel] = HDR_PQ_Encode(std::min(std::max(rec2020[channel], 0.0f), peak));
 	}
 }
+
+
+void HDR_Colour_Adjust_Reset(HDRColourAdjust & adjust)
+{
+	for (int index = 0; index < 9; index++) {
+		adjust.Matrix[index] = (index % 4 == 0) ? 1.0f : 0.0f;
+	}
+	adjust.Brightness = 1.0f;
+	adjust.Gamma = 1.0f;
+}
+
+
+bool HDR_Colour_Adjust_Is_Identity(HDRColourAdjust const & adjust)
+{
+	for (int index = 0; index < 9; index++) {
+		if (adjust.Matrix[index] != ((index % 4 == 0) ? 1.0f : 0.0f)) {
+			return(false);
+		}
+	}
+	return(adjust.Brightness == 1.0f && adjust.Gamma == 1.0f);
+}
+
+
+void HDR_Apply_Colour_Adjust(HDRColourAdjust const & adjust, float const * linear, float * out)
+{
+	float mixed[3];
+	for (int row = 0; row < 3; row++) {
+		mixed[row] = adjust.Matrix[row * 3] * linear[0]
+			+ adjust.Matrix[row * 3 + 1] * linear[1]
+			+ adjust.Matrix[row * 3 + 2] * linear[2];
+	}
+	for (int channel = 0; channel < 3; channel++) {
+		float const bright = std::max(mixed[channel] * adjust.Brightness, 0.0f);
+		out[channel] = std::pow(bright, adjust.Gamma);
+	}
+}
+
+
+int HDR_Resolve_Paper_White(int setting, bool sdrknown, float sdrnits)
+{
+	if (setting > 0) {
+		return(HDR_Clamp_Paper_White(setting));
+	}
+	if (sdrknown) {
+		return(HDR_Clamp_Paper_White((int)std::lround(sdrnits)));
+	}
+	return(HDR_PAPER_WHITE_DEFAULT);
+}
+
+
+int HDR_Resolve_Peak(int setting, float reported, int paperwhite)
+{
+	if (setting > 0) {
+		return(HDR_Clamp_Peak(setting, paperwhite));
+	}
+	if (reported > 0.0f) {
+		return(HDR_Clamp_Peak((int)std::lround(reported), paperwhite));
+	}
+	return(HDR_Clamp_Peak(HDR_PEAK_FALLBACK_NITS, paperwhite));
+}

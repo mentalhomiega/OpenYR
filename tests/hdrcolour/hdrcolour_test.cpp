@@ -116,6 +116,61 @@ void Check_Pixels(void)
 }
 
 
+void Check_Adjust(void)
+{
+	HDRColourAdjust adjust;
+	HDR_Colour_Adjust_Reset(adjust);
+	Expect_True("reset adjustment is the identity", HDR_Colour_Adjust_Is_Identity(adjust));
+
+	float const linear[3] = {0.2f, 0.4f, 0.6f};
+	float out[3];
+	HDR_Apply_Colour_Adjust(adjust, linear, out);
+	for (int channel = 0; channel < 3; channel++) {
+		Expect_Near("identity leaves linear light alone", out[channel], linear[channel], 1e-6f);
+	}
+
+	// A channel swap, then brightness 0.5 and gamma 2. In that order the first channel is
+	// (0.4 * 0.5)^2 = 0.04; gamma before brightness would give 0.4^2 * 0.5 = 0.08.
+	HDR_Colour_Adjust_Reset(adjust);
+	adjust.Matrix[0] = 0.0f;
+	adjust.Matrix[1] = 1.0f;
+	adjust.Matrix[3] = 1.0f;
+	adjust.Matrix[4] = 0.0f;
+	adjust.Brightness = 0.5f;
+	adjust.Gamma = 2.0f;
+	Expect_True("swap is not the identity", !HDR_Colour_Adjust_Is_Identity(adjust));
+	HDR_Apply_Colour_Adjust(adjust, linear, out);
+	Expect_Near("matrix, brightness, gamma: red", out[0], 0.04f, 1e-6f);
+	Expect_Near("matrix, brightness, gamma: green", out[1], 0.01f, 1e-6f);
+	Expect_Near("matrix, brightness, gamma: blue", out[2], 0.09f, 1e-6f);
+
+	// Brightness above one is kept in linear light for the paper white scale to limit later.
+	HDR_Colour_Adjust_Reset(adjust);
+	adjust.Brightness = 2.0f;
+	float const bright[3] = {0.8f, 0.8f, 0.8f};
+	HDR_Apply_Colour_Adjust(adjust, bright, out);
+	Expect_Near("brightness above one is not clipped", out[0], 1.6f, 1e-6f);
+}
+
+
+void Check_Resolve(void)
+{
+	Expect_True("automatic paper white follows a known Windows level", HDR_Resolve_Paper_White(0, true, 80.0f) == 80);
+	Expect_True("automatic paper white rounds the Windows level", HDR_Resolve_Paper_White(0, true, 159.6f) == 160);
+	Expect_True("automatic paper white clamps a high Windows level", HDR_Resolve_Paper_White(0, true, 2000.0f) == 480);
+	Expect_True("automatic paper white falls back to 200", HDR_Resolve_Paper_White(0, false, 0.0f) == 200);
+	Expect_True("explicit paper white is used", HDR_Resolve_Paper_White(300, true, 80.0f) == 300);
+	Expect_True("explicit paper white clamps up", HDR_Resolve_Paper_White(50, true, 80.0f) == 80);
+
+	Expect_True("automatic peak follows the reported peak", HDR_Resolve_Peak(0, 1000.0f, 200) == 1000);
+	Expect_True("automatic peak falls back to 1000", HDR_Resolve_Peak(0, 0.0f, 200) == HDR_PEAK_FALLBACK_NITS);
+	Expect_True("automatic peak clamps to 10000", HDR_Resolve_Peak(0, 20000.0f, 200) == 10000);
+	Expect_True("automatic peak rises to paper white", HDR_Resolve_Peak(0, 100.0f, 480) == 480);
+	Expect_True("explicit peak is used", HDR_Resolve_Peak(1500, 400.0f, 200) == 1500);
+	Expect_True("explicit peak rises to paper white", HDR_Resolve_Peak(100, 400.0f, 200) == 200);
+}
+
+
 void Check_Limits(void)
 {
 	Expect_True("paper white below range clamps up", HDR_Clamp_Paper_White(79) == 80);
@@ -136,6 +191,8 @@ int main()
 	Check_Primaries();
 	Check_Pixels();
 	Check_Limits();
+	Check_Adjust();
+	Check_Resolve();
 
 	std::printf("hdrcolour: %d checks, %d failures\n", checks, failures);
 	return(failures == 0 ? 0 : 1);
