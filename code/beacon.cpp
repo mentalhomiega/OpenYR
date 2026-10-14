@@ -23,6 +23,7 @@
 #include "session.h"
 #include "stimer.h"
 #include "voc.h"
+#include "vox.h"
 
 #include <cmath>
 #include <cstdio>
@@ -247,8 +248,9 @@ void BeaconManagerClass::Clear(void)
 
 
 /*
- * The owner hears the sound and reads the two messages. An ally who can see the beacon gets a
- * radar ping on its cell.
+ * The owner reads the two messages, hears the placement line and plays the placement sound. A
+ * visible beacon of an ally raises a radar ping, and the ally hears the detection line only when
+ * that ping is raised.
  */
 void BeaconManagerClass::Announce(int house, BeaconClass const & beacon)
 {
@@ -257,15 +259,16 @@ void BeaconManagerClass::Announce(int house, BeaconClass const & beacon)
 	}
 
 	if (house == PlayerPtr->HeapID) {
-		Sound_Effect(Rule->PlaceBeaconSound);
 		TextPrintType const print = TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW);
 		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_PLACED), PlayerPtr->Scheme, print, TICKS_PER_SECOND * 4);
 		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_SELECT_HINT), PlayerPtr->Scheme, print, TICKS_PER_SECOND * 4);
+		Speak_Eva("EVA_BeaconPlaced");
+		Sound_Effect(Rule->PlaceBeaconSound);
 		return;
 	}
 
-	if (Visible_To_Player(&beacon)) {
-		Submit_Radar_Event(RADAREVENT_NONCOMBAT, beacon.Where.As_Cell());
+	if (Visible_To_Player(&beacon) && Submit_Radar_Event(RADAREVENT_NONCOMBAT, beacon.Where.As_Cell())) {
+		Speak_Eva("EVA_BeaconDetected");
 	}
 }
 

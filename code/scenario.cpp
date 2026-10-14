@@ -1176,6 +1176,10 @@ void Clear_Scenario(void)
 		}
 	}
 	Delete_All_Objects();
+
+	// Beacons are not saved, so a load or a new scenario starts with none.
+	Beacons.Clear();
+
 	Reset_Selection_Filters();
 	for (index = 0; index < IsometricTileTypes.Count(); index++) {
 		AbstractTypes.Add(IsometricTileTypes[index]);
@@ -2423,7 +2427,6 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	}
 
 	RadarEventClass::Clear();
-	Beacons.Clear();
 
 	Map.Complete_Radar_Refresh();
 

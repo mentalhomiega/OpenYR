@@ -7,4 +7,4 @@ when_omitted:
   value: none
 ---
 
-The sound played when a beacon is placed in a multiplayer game. It plays for the players who can see the beacon: its owner and the owner's allies.
+The sound played for the player who places a beacon in a multiplayer game. Allies do not hear it; an ally who can see the beacon hears the announcer's detection line when the beacon raises a radar ping.
