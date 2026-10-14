@@ -1161,6 +1161,18 @@ class RulesClass
 		VocType ScoldSound;
 
 		/*
+		 * This is the sound effect played when the player clicks a sidebar repair or
+		 * sell button, from [AudioVisual] GUIMainButtonSound=.
+		 */
+		VocType GUIMainButtonSound;
+
+		/*
+		 * This is the sound effect played when the player clicks a sidebar tab, or a
+		 * scroll arrow that moves the strip, from [AudioVisual] GUITabSound=.
+		 */
+		VocType GUITabSound;
+
+		/*
 		 * This is the sound effect played as a defensive structure charges its turret
 		 * before it fires.
 		 */

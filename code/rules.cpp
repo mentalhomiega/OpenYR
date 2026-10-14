@@ -657,6 +657,8 @@ RulesClass::RulesClass(void) :
 	RadarOn(VOC_NONE),
 	RadarOff(VOC_NONE),
 	ScoldSound(VOC_NONE),
+	GUIMainButtonSound(VOC_NONE),
+	GUITabSound(VOC_NONE),
 	TeslaCharge(VOC_NONE),
 	TeslaZap(VOC_NONE),
 	GenericClick(VOC_NONE),
@@ -1176,6 +1178,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		RadarOn = ini.Get_VocType(AUDIOVISUAL, "RadarOn", RadarOn);
 		RadarOff = ini.Get_VocType(AUDIOVISUAL, "RadarOff", RadarOff);
 		ScoldSound = ini.Get_VocType(AUDIOVISUAL, "ScoldSound", ScoldSound);
+		GUIMainButtonSound = ini.Get_VocType(AUDIOVISUAL, "GUIMainButtonSound", GUIMainButtonSound);
+		GUITabSound = ini.Get_VocType(AUDIOVISUAL, "GUITabSound", GUITabSound);
 		TeslaCharge = ini.Get_VocType(AUDIOVISUAL, "TeslaCharge", TeslaCharge);
 		TeslaZap = ini.Get_VocType(AUDIOVISUAL, "TeslaZap", TeslaZap);
 		BlowupSound = ini.Get_VocType(AUDIOVISUAL, "BlowupSound", BlowupSound);
@@ -3076,6 +3080,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadarOn);
 	stream.Serialize(RadarOff);
 	stream.Serialize(ScoldSound);
+	stream.Serialize(GUIMainButtonSound);
+	stream.Serialize(GUITabSound);
 	stream.Serialize(TeslaCharge);
 	stream.Serialize(TeslaZap);
 	stream.Serialize(GenericClick);

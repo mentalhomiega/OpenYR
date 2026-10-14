@@ -177,6 +177,19 @@ static ShapeSet const * HudIconSet = NULL;
 // Whether each classic tab is disabled, as it was last set in AI. A gadget does not expose its own state.
 static bool TabDisabled[SidebarClass::COLUMNS] = {};
 
+// Whether each classic strip's two scroll arrows are disabled, as they were last set in AI.
+static bool ArrowsDisabled[SidebarClass::COLUMNS] = {};
+
+// A classic tab or scroll arrow tooltip. A disabled gadget adds "(Disabled)" on a second line.
+static std::string Classic_Tip(char const * label, char const * fallback, bool enabled)
+{
+	std::string text = Panel_Text(label, fallback);
+	if (!enabled) {
+		text += "\n(" + Panel_Text("Tip:Disabled", "Disabled") + ")";
+	}
+	return(text);
+}
+
 ShapeButtonClass SidebarClass::OptionsButton;
 ShapeButtonClass SidebarClass::DiplomacyButton;
 ShapeButtonClass SidebarClass::BeaconButton;
@@ -949,8 +962,20 @@ bool SidebarClass::Add(RTTIType type, int id)
 	if (!Debug_Map) {
 		int column = Which_Column(type, id);
 
+		bool empty = true;
+		for (int index = 0; index < COLUMNS; index++) {
+			if (Column[index].BuildableCount > 0) {
+				empty = false;
+			}
+		}
+
 		if (Column[column].Add(type, id)) {
 			Activate(1);
+
+			// In the classic sidebar the first cameo added shows its tab, as gamemd's AddCameo (0x6A6300) does.
+			if (empty && !Modern_Interface()) {
+				Set_Tab(column);
+			}
 			IsToRedraw = true;
 			Flag_To_Redraw();
 			return(true);
@@ -1318,6 +1343,25 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 				Flag_To_Redraw();
 			}
 		}
+
+		// The arrows of a classic strip are enabled only when it holds more cameos than fit, as gamemd's UpdateScrollButtons (0x6A6610) decides.
+		int const visible = Max_Visible();
+		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
+			bool const scrollable = Column[index].BuildableCount > visible;
+			if (scrollable == ArrowsDisabled[index]) {
+				if (scrollable) {
+					StripClass::UpButton[index].Enable();
+					StripClass::DownButton[index].Enable();
+				} else {
+					StripClass::UpButton[index].Disable();
+					StripClass::DownButton[index].Disable();
+				}
+				ArrowsDisabled[index] = !scrollable;
+				StripClass::UpButton[index].Flag_To_Redraw();
+				StripClass::DownButton[index].Flag_To_Redraw();
+				Flag_To_Redraw();
+			}
+		}
 	}
 
 	if (Modern_Interface()) {
@@ -1345,6 +1389,7 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 		}
 
 		if (input == (BUTTON_REPAIR|KN_BUTTON)) {
+			if (!Modern_Interface()) Sound_Effect(Rule->GUIMainButtonSound);
 			Repair_Mode_Control(-1);
 		}
 
@@ -1364,12 +1409,14 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 		}
 
 		if (input == (BUTTON_UPGRADE|KN_BUTTON)) {
+			if (!Modern_Interface()) Sound_Effect(Rule->GUIMainButtonSound);
 			Sell_Mode_Control(-1);
 		}
 
 		for (int index = 0; index < COLUMNS; index++) {
 			if (input == KeyNumType((BUTTON_TAB + index)|KN_BUTTON)) {
 				TabButton[index].IsPressed = false;
+				if (!Modern_Interface()) Sound_Effect(Rule->GUITabSound);
 				Set_Tab(index);
 			}
 		}
@@ -1435,8 +1482,19 @@ void SidebarClass::Recalc(void)
 	bool redraw = false;
 
 	for (int index = 0; index < COLUMNS; index++) {
+		int const before = Column[index].BuildableCount;
 		if (Column[index].Recalc()) {
 			redraw = true;
+		}
+
+		// A classic strip that its recheck empties hands the shown tab to the first tab with cameos, as gamemd's RebuildScrollableStripList (0x6AA600) does.
+		if (!Modern_Interface() && before > 0 && Column[index].BuildableCount == 0) {
+			for (int shown = 0; shown < COLUMNS; shown++) {
+				if (Column[shown].BuildableCount > 0) {
+					Set_Tab(shown);
+					break;
+				}
+			}
 		}
 	}
 	if (redraw) {
@@ -1948,28 +2006,41 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	**	If this is scroll button for this side strip, then scroll the strip as
 	**	indicated.
 	*/
+	// In the classic sidebar both arrows page the strip, as gamemd's do (SidebarClass::Update, 0x6A7780).
 	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
 		UpButton[ID].IsPressed = false;
-		if ((input & KN_UNK) != 0) {
-			if (!Page(true)) {
-				Sound_Effect(Rule->ScoldSound);
+		if (Modern_Interface()) {
+			if ((input & KN_UNK) != 0) {
+				if (!Page(true)) {
+					Sound_Effect(Rule->ScoldSound);
+				}
+			} else {
+				if (!Scroll(true)) {
+					Sound_Effect(Rule->ScoldSound);
+				}
 			}
+		} else if (Page(true)) {
+			Sound_Effect(Rule->GUITabSound);
 		} else {
-			if (!Scroll(true)) {
-				Sound_Effect(Rule->ScoldSound);
-			}
+			Sound_Effect(Rule->ScoldSound);
 		}
 	}
 	else if (key == KeyNumType(DownButton[ID].ID|KN_BUTTON)) {
 		DownButton[ID].IsPressed = false;
-		if ((input & KN_UNK) != 0) {
-			if (!Page(false)) {
-				Sound_Effect(Rule->ScoldSound);
+		if (Modern_Interface()) {
+			if ((input & KN_UNK) != 0) {
+				if (!Page(false)) {
+					Sound_Effect(Rule->ScoldSound);
+				}
+			} else {
+				if (!Scroll(false)) {
+					Sound_Effect(Rule->ScoldSound);
+				}
 			}
+		} else if (Page(false)) {
+			Sound_Effect(Rule->GUITabSound);
 		} else {
-			if (!Scroll(false)) {
-				Sound_Effect(Rule->ScoldSound);
-			}
+			Sound_Effect(Rule->ScoldSound);
 		}
 	}
 
@@ -3300,6 +3371,15 @@ void SidebarClass::Add_Tool_Tips(void)
 				ToolTips->Remove(tooltip.ID);
 				ToolTips->Add(&tooltip);
 			}
+
+			// Only the shown strip's arrows are on screen, so only they need a region.
+			for (ShapeButtonClass const * button : {&TabButton[0], &TabButton[1], &TabButton[2], &TabButton[3], &StripClass::UpButton[ActiveTab], &StripClass::DownButton[ActiveTab]}) {
+				tooltip.ID = button->ID;
+				tooltip.Text = TXT_NONE;
+				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
+				ToolTips->Remove(tooltip.ID);
+				ToolTips->Add(&tooltip);
+			}
 		}
 	}
 }
@@ -3533,6 +3613,24 @@ const char * SidebarClass::Help_Text(int id)
 				return(_text.c_str());
 		}
 	} else {
+		// gamemd's tips for tabs and scroll arrows (0x6AC210) use these CSF labels.
+		static std::string _tip;
+		static char const * const tab_labels[COLUMNS] = {"Tip:Tab1", "Tip:Tab2", "Tip:Tab3", "Tip:Tab4"};
+		static char const * const tab_fallbacks[COLUMNS] = {"Structures Tab", "Armory Tab", "Infantry Tab", "Vehicles Tab"};
+		if (id >= BUTTON_TAB && id < BUTTON_TAB + COLUMNS) {
+			int const index = id - BUTTON_TAB;
+			_tip = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
+			return(_tip.c_str());
+		}
+		if (id >= StripClass::BUTTON_UP && id < StripClass::BUTTON_UP + COLUMNS) {
+			_tip = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
+			return(_tip.c_str());
+		}
+		if (id >= StripClass::BUTTON_DOWN && id < StripClass::BUTTON_DOWN + COLUMNS) {
+			_tip = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
+			return(_tip.c_str());
+		}
+
 		// gamemd's tips for 0xF2 and 0xF3 (0x654320): the briefing in a campaign, else diplomacy.
 		static std::string _text;
 		switch (id) {

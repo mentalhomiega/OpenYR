@@ -29,6 +29,17 @@ related:
 
 The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the diplomacy and options buttons, the radar pane, the repair and sell buttons, four tabs, and the cameos of the tab that is shown, two to a row. Each tab has its own strip of cameos, and clicking a tab shows its strip in place of the one shown before. Production on the other tabs goes on while they are hidden. The panel stays up for the whole match. An observer gets the panel with every strip empty.
 
+## The tabs
+
+Each tab's tooltip names it: Structures Tab, Armory Tab, Infantry Tab or Vehicles Tab.
+
+A tab with no cameos is disabled. A click on it does nothing, and its tooltip adds `(Disabled)` on a second line. A click on an enabled tab plays `GUITabSound`, including a click on the tab already shown.
+
+The shown tab changes in two cases:
+
+- The first cameo added to a panel with no cameos shows its tab.
+- The strips are checked again, and a strip that held cameos is emptied. The shown tab then moves to the first tab, in order, that still holds cameos. This applies even when the emptied strip is not the shown one. [What removes a cameo](#what-removes-a-cameo) describes the check.
+
 ## What the strips list
 
 A cameo appears on a strip when one of the player's structures offers its type. A structure makes offers only while it is on the map, discovered by the player, switched on, and not being sold or queued to be sold.
@@ -159,7 +170,11 @@ The cameo of the outstanding structure order still answers: a left click resumes
 
 ## Scrolling the strips
 
-The two arrows below the cameos scroll the shown tab's strip. A left click moves it one row of two cameos and a right click moves it a screenful. Clicking an arrow that has nowhere left to go plays [`ScoldSound`](/keys/scoldsound/). The other tabs' strips keep their own positions.
+The two arrows below the cameos scroll the shown tab's strip by a screenful, and both arrows move it the same distance. The left arrow shows later cameos and the right arrow shows earlier ones. A click acts when the button is released, so holding a button down does not repeat the scroll. A click that moves the strip plays `GUITabSound`. A click on an arrow already at the end it moves toward plays [`ScoldSound`](/keys/scoldsound/). The other tabs' strips keep their own positions.
+
+An arrow is enabled only when the shown tab holds more cameos than fit on the screen. When the whole list fits, both arrows are disabled and ignore clicks, and their tooltips add `(Disabled)`. The tooltips read Down Scroll Arrow for the left arrow and Up Scroll Arrow for the right one.
+
+An observer's panel holds no cameos, so its arrows stay disabled. In gamemd an observer's arrows scroll a list of houses, one house per click. OpenTS does not draw that list yet.
 
 Twelve commands do the same from the keyboard, and every one of them moves only the shown tab's strip. The Structure List and Unit List commands move the shown strip just as the Sidebar commands do.
 
@@ -216,7 +231,7 @@ The two buttons above the radar pane are diplomacy on the left and options on th
 
 ### The mode buttons
 
-The two buttons above the tabs toggle the same modes as [Repair Mode](/commands/togglerepair/) and [Sell Mode](/commands/togglesell/), in that order from the left. [Power Mode](/commands/togglepower/) and [Waypoint Mode](/commands/waypointmode/) have no button and are reached only through their commands.
+The two buttons above the tabs toggle the same modes as [Repair Mode](/commands/togglerepair/) and [Sell Mode](/commands/togglesell/), in that order from the left. Clicking either one plays `GUIMainButtonSound`. [Power Mode](/commands/togglepower/) and [Waypoint Mode](/commands/waypointmode/) have no button and are reached only through their commands.
 
 ## The command bar
 
@@ -236,7 +251,7 @@ UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist/): the `[Advance
 
 ## What is fixed in the engine
 
-No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos, the size of a cameo slot and the 225-entry capacity are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row scroll step, the timing of the power bar's blink, and the timing of the radar animation.
+No setting changes the panel's layout. Its width, the four tabs, the positions of its buttons and cameos, the size of a cameo slot and the 225-entry capacity are fixed in the engine. The first side's panel places its buttons and cameos a few pixels differently from the other sides' panels. So are the one-row step of the Sidebar Up and Sidebar Down commands, the timing of the power bar's blink, and the timing of the radar animation.
 
 The panel always sits on the right edge of the screen. Neither `RA2MD.INI` nor the rules can move it.
 
