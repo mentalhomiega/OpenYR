@@ -1,0 +1,98 @@
+; Gattling facing sweep: a player YAGGUN at 62,62, with a power plant so it can fire, turns to a computer HARV placed
+; at radius 4 in eight directions. Each HARV is removed with kill once the tower has fired at it.
+; Each gattling line gives the primary facing, the desired facing, the aim point of the turret, the fire error of the
+; primary weapon (6 is FIRE_CANT, 2 is FIRE_FACING, 0 is FIRE_OK), the barrel pitch, the spin, the gattling stage, the
+; turret animation frame, the recoil state, the target cell, and the turret and barrel frame counts of the model.
+; Expected: the facing reaches the desired value within a few dozen frames of each target, the spin rises while the tower
+; fires and falls to 0 once it loses its target, and the animation frame advances one step a frame while it spins.
+; The screenshots come from ScreenCapture, so the runner copies them with -ShotDir.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/gattling-facings.txt -Width 800 -Height 600 -Seconds 250 -ShotDir <dir> -Filter "AUTOTEST   gattling|Exception"
+60 view 62 62
+62 zoom 2.5
+70 reveal
+80 windowmove 795 595
+90 own GAPOWR 50 50
+100 own YAGGUN 62 62
+150 gattling YAGGUN
+151 command ScreenCapture
+200 spawn HARV 66 62
+210 gattling YAGGUN
+211 command ScreenCapture
+240 gattling YAGGUN
+241 command ScreenCapture
+320 gattling YAGGUN
+321 command ScreenCapture
+400 kill HARV
+430 gattling YAGGUN
+431 command ScreenCapture
+500 spawn HARV 66 66
+510 gattling YAGGUN
+511 command ScreenCapture
+540 gattling YAGGUN
+541 command ScreenCapture
+620 gattling YAGGUN
+621 command ScreenCapture
+700 kill HARV
+730 gattling YAGGUN
+731 command ScreenCapture
+800 spawn HARV 62 66
+810 gattling YAGGUN
+811 command ScreenCapture
+840 gattling YAGGUN
+841 command ScreenCapture
+920 gattling YAGGUN
+921 command ScreenCapture
+1000 kill HARV
+1030 gattling YAGGUN
+1031 command ScreenCapture
+1100 spawn HARV 58 66
+1110 gattling YAGGUN
+1111 command ScreenCapture
+1140 gattling YAGGUN
+1141 command ScreenCapture
+1220 gattling YAGGUN
+1221 command ScreenCapture
+1300 kill HARV
+1330 gattling YAGGUN
+1331 command ScreenCapture
+1400 spawn HARV 58 62
+1410 gattling YAGGUN
+1411 command ScreenCapture
+1440 gattling YAGGUN
+1441 command ScreenCapture
+1520 gattling YAGGUN
+1521 command ScreenCapture
+1600 kill HARV
+1630 gattling YAGGUN
+1631 command ScreenCapture
+1700 spawn HARV 58 58
+1710 gattling YAGGUN
+1711 command ScreenCapture
+1740 gattling YAGGUN
+1741 command ScreenCapture
+1820 gattling YAGGUN
+1821 command ScreenCapture
+1900 kill HARV
+1930 gattling YAGGUN
+1931 command ScreenCapture
+2000 spawn HARV 62 58
+2010 gattling YAGGUN
+2011 command ScreenCapture
+2040 gattling YAGGUN
+2041 command ScreenCapture
+2120 gattling YAGGUN
+2121 command ScreenCapture
+2200 kill HARV
+2230 gattling YAGGUN
+2231 command ScreenCapture
+2300 spawn HARV 66 58
+2310 gattling YAGGUN
+2311 command ScreenCapture
+2340 gattling YAGGUN
+2341 command ScreenCapture
+2420 gattling YAGGUN
+2421 command ScreenCapture
+2500 kill HARV
+2530 gattling YAGGUN
+2531 command ScreenCapture
+2600 quit

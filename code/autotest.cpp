@@ -143,6 +143,9 @@
 **	stripfill <column> <count>	offers building types 0 to count-1 to that sidebar strip and writes how many it took
 **	aiscan					writes each foot object no player owns with its mission, team, target, range and area scan picks,
 **							and the nearest player object with whether it is in range and can be fired at
+**	gattling <TypeID>		writes each object of that type, whoever owns it, with its primary facing and the facing it turns to, a building's
+**							aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret
+**							animation frame, recoil state, target cell, and a building's turret and barrel frame counts
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
@@ -2936,6 +2939,27 @@ void Run(StepType const & step)
 				(int)techno->TClass->IsCanPassiveAquire, (int)(techno->SlaveOwner != NULL), nearest != NULL ? nearest->TClass->Name() : "-", nearest_dist, inrange, fire, nothreat, locked,
 				homecell.X, homecell.Y, (int)(foot->NavCom != NULL), (int)foot->IsFiring,
 				areaobject != NULL ? areaobject->Class_Of()->Name() : (area != NULL ? "cell" : "-"), areacell.X, areacell.Y);
+		}
+	} else if (step.Command == "gattling") {
+		// gattling <TypeID>: the state a gattling structure's draw and fire code read, for each object of that type.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+			int const aim = techno->TarCom != NULL && techno->RTTI == RTTI_BUILDING ? (int)static_cast<BuildingClass const *>(techno)->Aim_Direction(techno->TarCom).As_Int() : -1;
+			int const center = techno->TarCom != NULL ? (int)::Direction(techno->Center_Coord(), techno->TarCom->Center_Coord()).As_Int() : -1;
+			int const fire = techno->RTTI == RTTI_BUILDING && techno->TarCom != NULL ? (int)static_cast<BuildingClass const *>(techno)->Can_Fire(techno->TarCom, 0) : -1;
+			int turret_frames = -1;
+			int barrel_frames = -1;
+			if (techno->RTTI == RTTI_BUILDING) {
+				BuildingTypeClass const * btype = static_cast<BuildingClass const *>(techno)->Class;
+				turret_frames = btype->AuxVoxel.MotLib != NULL ? btype->AuxVoxel.MotLib->Get_Frame_Count() : -1;
+				barrel_frames = btype->AuxVoxel2.MotLib != NULL ? btype->AuxVoxel2.MotLib->Get_Frame_Count() : -1;
+			}
+			DebugString("AUTOTEST   gattling %s of %s cell %d,%d mission %s facing %d desired %d dir32 %d aim %d center %d fire %d pitch %d spin %d stage %d frame %d recoil %d target %d,%d at %d hva %d %d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
+				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
+				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
 		}
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
