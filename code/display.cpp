@@ -423,12 +423,12 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 	Session.Messages.Init(
 		ScreenTacticalRect.X, ScreenTacticalRect.Y, // x,y for messages
 		6,                                  // max # msgs
-		MAX_MESSAGE_LENGTH-14,              // max msg length
+		98,                                 // max msg length, as gamemd's message list (0x62)
 		7 * 2/*RESFACTOR*/,                 // font height in pixels
 		-1, -1,                             // x,y for edit line (appears above msgs)
 		0,                                  /// enable edit overflow
 		20,                                 // min,
-		MAX_MESSAGE_LENGTH - 14,            // max for trimming overflow
+		98,                                 // max for trimming overflow, as gamemd (0x62)
 		ScreenTacticalRect.Width);          // Width in pixels of buffer
 
 	Session.Messages.Set_Width(ScreenTacticalRect.Width);

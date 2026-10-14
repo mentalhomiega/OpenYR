@@ -46,6 +46,10 @@ A receiving game drops any line from a machine that holds no [seat](/formats/spa
 
 Chat does not travel with the game's orders. A line is shown as soon as it arrives and has no effect on play.
 
+## Long lines
+
+The editor holds at most 97 characters. When the typed text fills the editor's width, or reaches 97 characters, the text up to the last space is sent as one line and the rest stays in the editor. A stretch with no space is cut after 20 characters. Press Enter to send whatever remains.
+
 ## What is shown
 
 A line reads `Name: text` in the sender's color. A tag after the name shows who the line was for, as in `Name [to team]: text`:
