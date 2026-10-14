@@ -6711,13 +6711,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						velocity.Set_Pitch(pitch);
 
 						if (valid && bullet->Unlimbo(ucoord, velocity)) {
-							if (Get_Class_Weapon_Data(0)->BarrelLength > 0) {
-								bullet->AI();
-								if (bullet->IsActive) {
-									bullet->AI();
-								}
-							}
-
+							// The launched shell takes no AI tick here, as gamemd's BuildingClass::Mission_Missile (0x44C980) does not update it.
 							if (Is_Turret_Equipped()) {
 								IsInRecoilState = true;
 							}
