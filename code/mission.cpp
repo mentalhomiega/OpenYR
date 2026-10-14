@@ -599,6 +599,11 @@ void MissionClass::Compute_CRC(CRCEngine &crc) const
 /// mission.</returns>
 MissionControlClass const & MissionClass::Current_Mission_Control(void) const
 {
+	// MISSION_NONE has no table entry; indexing the table with it reads memory outside the table.
+	static MissionControlClass const no_mission;
+	if (CurrentMission == MISSION_NONE) {
+		return(no_mission);
+	}
 	return(MissionControl[CurrentMission]);
 }
 
