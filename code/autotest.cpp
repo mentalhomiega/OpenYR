@@ -32,7 +32,11 @@
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
 **	bridge x y				writes a cell's bridge tile, overlay, deck and under-bridge flags
-**	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged
+**	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are
+**	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
+**	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
+**	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
+**	hutclick <TypeID> x y	clicks the building on that cell with the player's object of that type, through the object path a real click takes
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
 **	key <Key>			presses and releases that key through the window's keyboard path, as a player's press does; the key
@@ -1379,9 +1383,17 @@ static void Bridge_Census_Step(StepType const & step)
 	int high_flagged = 0;
 	int railway = 0;
 	int railway_flagged = 0;
+	int lowbridge = 0;
+	int concrete = 0;
 
 	Map.Reset_Iterator();
 	for (CellClass * cptr = Map.Iterate(); cptr != NULL; cptr = Map.Iterate()) {
+		if (cptr->Overlay >= OVERLAY_LOWBRIDGE_FIRST && cptr->Overlay <= OVERLAY_LOWBRIDGE_LAST) {
+			lowbridge++;
+		}
+		if (cptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cptr->Overlay <= OVERLAY_CONCRETE_BRIDGE_LAST) {
+			concrete++;
+		}
 		bool const is_high = cptr->Overlay == OVERLAY_BRIDGE1 || cptr->Overlay == OVERLAY_BRIDGE2;
 		bool const is_railway = cptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || cptr->Overlay == OVERLAY_RAILWAY_BRIDGE2;
 		if (!is_high && !is_railway) {
@@ -1399,7 +1411,87 @@ static void Bridge_Census_Step(StepType const & step)
 			(int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->Overlay, (int)cptr->OverlayData,
 			(int)cptr->IsBridgeDeck, (int)cptr->IsUnderBridge, (int)cptr->WasUnderBridge);
 	}
-	DebugString("AUTOTEST bridgecensus high %d flagged %d railway %d flagged %d\n", high, high_flagged, railway, railway_flagged);
+	DebugString("AUTOTEST bridgecensus high %d flagged %d railway %d flagged %d lowbridge %d concrete %d\n", high, high_flagged, railway, railway_flagged, lowbridge, concrete);
+}
+
+
+/// <summary>
+/// Logs the bridge tile, overlay and flags of every on-map cell within four cells of a cell.
+/// </summary>
+/// <param name="step">A step whose argument is the centre's X and whose X field is its Y.</param>
+static void Bridge_Area_Step(StepType const & step)
+{
+	int const centre_x = std::atoi(step.Argument.c_str());
+	for (int y = step.X - 4; y <= step.X + 4; y++) {
+		for (int x = centre_x - 4; x <= centre_x + 4; x++) {
+			if (!Map.Is_Valid(Cell(x, y))) {
+				continue;
+			}
+			CellClass const & c = Map[Cell(x, y)];
+			DebugString("AUTOTEST   bridgearea %d,%d tile %d overlay %d sub %d height %d deck %d under %d was %d ew %d rail %d road %d\n",
+				x, y, (int)c.ITType, (int)c.Overlay, (int)c.SubTile, (int)c.Height,
+				(int)c.IsBridgeDeck, (int)c.IsUnderBridge, (int)c.WasUnderBridge, (int)c.IsBridgeEastWest, (int)c.Is_Tile_Train_Bridge(), (int)c.Is_Tile_Bridge());
+		}
+	}
+}
+
+
+/// <summary>
+/// Logs what MapClass::Can_Repair_Bridge reports for a cell.
+/// </summary>
+/// <param name="step">A step whose argument is the cell's X and whose X field is its Y.</param>
+static void Repair_Bridge_Step(StepType const & step)
+{
+	int const x = std::atoi(step.Argument.c_str());
+	DebugString("AUTOTEST   repairbridge %d,%d %d\n", x, step.X, (int)Map.Can_Repair_Bridge(Cell(x, step.X)));
+}
+
+
+/// <summary>
+/// Logs the action the player's object of a type gets over a building, through the object path a real mouse-over takes.
+/// </summary>
+/// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
+static void Hut_Action_Step(StepType const & step)
+{
+	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+	if (building == NULL) {
+		DebugString("AUTOTEST   hutaction %d,%d no building\n", step.X, step.Y);
+		return;
+	}
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			ActionType const action = techno->What_Action(building, false);
+			DebugString("AUTOTEST   hutaction %s on %s %d,%d: %s\n", techno->TClass->Name(), building->Class->Name(), step.X, step.Y, ActionName[action]);
+			return;
+		}
+	}
+	DebugString("AUTOTEST   hutaction %s no object\n", step.Argument.c_str());
+}
+
+
+/// <summary>
+/// Clicks the building on a cell with the player's object of a type, through the object path a real click takes.
+/// </summary>
+/// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
+static void Hut_Click_Step(StepType const & step)
+{
+	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+	if (building == NULL) {
+		DebugString("AUTOTEST   hutclick %d,%d no building\n", step.X, step.Y);
+		return;
+	}
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			ActionType const action = techno->What_Action(building, false);
+			DebugString("AUTOTEST   hutclick %s on %s %d,%d: %s\n", techno->TClass->Name(), building->Class->Name(), step.X, step.Y, ActionName[action]);
+			PlanningRecordScope const recording(Map.IsPlanningMode);
+			techno->Active_Click_With(action, building, false);
+			return;
+		}
+	}
+	DebugString("AUTOTEST   hutclick %s no object\n", step.Argument.c_str());
 }
 
 
@@ -1414,6 +1506,22 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "bridgecensus") {
 		Bridge_Census_Step(step);
+		return;
+	}
+	if (step.Command == "bridgearea") {
+		Bridge_Area_Step(step);
+		return;
+	}
+	if (step.Command == "repairbridge") {
+		Repair_Bridge_Step(step);
+		return;
+	}
+	if (step.Command == "hutaction") {
+		Hut_Action_Step(step);
+		return;
+	}
+	if (step.Command == "hutclick") {
+		Hut_Click_Step(step);
 		return;
 	}
 
