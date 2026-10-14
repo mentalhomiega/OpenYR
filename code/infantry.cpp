@@ -1095,6 +1095,14 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 				}
 				if (building->Mission != MISSION_DECONSTRUCTION && !building->Is_Iron_Curtained()) {
+					// A building that already carries a C4 keeps its timer and planter, so this infantry only re-arms and runs (0x51A550).
+					if (building->IsC4Applied) {
+						Assign_Destination(NULL);
+						Arm = Rearm_Delay(true);
+						Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
+						BEnd(BENCH_PCP);
+						return;
+					}
 					building->IsGoingToBlow = true;
 					building->IsC4Applied = true;
 					building->Clicked_As_Target((Rule->C4Delay * TICKS_PER_MINUTE) / 2);
@@ -1104,6 +1112,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				NavCom = NULL;
 				Do_Uncloak();
 				Arm = Rearm_Delay(true);
+				// gamemd calls InfantryClass::Ignite (0x51D0D0) here; Scatter chooses the cell differently.
 				Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
 				BEnd(BENCH_PCP);
 				return;
