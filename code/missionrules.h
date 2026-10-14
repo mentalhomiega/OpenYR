@@ -28,6 +28,17 @@ namespace MissionRules
 	constexpr bool DefaultScatter = true;
 	constexpr double DefaultRate = .016;
 
+	// Values of the record that stands in for MISSION_NONE. gamemd reads the same values from the
+	// bytes below its mission table; see manual/changes/mission-none-threat-record.md.
+	constexpr bool NoMissionNoThreat = false;
+	constexpr bool NoMissionZombie = false;
+	constexpr bool NoMissionRecruitable = false;
+	constexpr bool NoMissionParalyzed = false;
+	constexpr bool NoMissionRetaliate = true;
+	constexpr bool NoMissionScatter = true;
+	constexpr double NoMissionRate = 0;
+	constexpr double NoMissionAARate = 0;
+
 	// True when the two names match, ignoring the case of ASCII letters.
 	inline bool Same_Name(char const * a, char const * b)
 	{

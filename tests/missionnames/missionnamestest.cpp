@@ -187,6 +187,19 @@ void Test_Defaults(void)
 	Check(MissionRules::Delay_Frames(0, 900) == 0, "a rate of 0 gives no delay");
 }
 
+
+void Test_No_Mission(void)
+{
+	Check(!MissionRules::NoMissionNoThreat && !MissionRules::NoMissionZombie && !MissionRules::NoMissionParalyzed
+		&& !MissionRules::NoMissionRecruitable,
+		"an object with no mission is not NoThreat, a zombie, paralyzed or recruitable, as gamemd reads it");
+	Check(MissionRules::NoMissionRetaliate && MissionRules::NoMissionScatter,
+		"an object with no mission retaliates and scatters, as gamemd reads it");
+	Check(MissionRules::Delay_Frames(MissionRules::NoMissionRate, 900) == 0
+		&& MissionRules::Delay_Frames(MissionRules::NoMissionAARate, 900) == 0,
+		"an object with no mission has no delay between mission passes");
+}
+
 }
 
 
@@ -196,6 +209,7 @@ int main(void)
 	Test_Names();
 	Test_Lookup();
 	Test_Defaults();
+	Test_No_Mission();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);
