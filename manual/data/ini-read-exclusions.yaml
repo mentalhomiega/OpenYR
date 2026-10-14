@@ -176,7 +176,7 @@ site_exclusions:
     reason: Each names one seat of a match inside a section the CnCNet client numbers per seat, not an authored game-data setting.
   - path: code/spawnerconfig.cpp
     function: SpawnerConfigClass::Read_INI
-    keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, ShortGame, SkipScoreScreen, SuperWeapons, TechLevel, UnitCount]
+    keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameMode, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, ShortGame, SkipScoreScreen, SuperWeapons, TechLevel, UnitCount]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.
   - path: code/spawnerconfig.cpp
@@ -184,6 +184,11 @@ site_exclusions:
     keys: [SyncLog]
     classification: excluded
     reason: A tester adds SyncLog to a launch file to log the frame check value. It is a debugging switch, not an authored game-data setting.
+  - path: code/mpmodeparse.cpp
+    function: MPMode_Read_Dialog_Settings
+    keys: [AlliesAllowed, MustAlly]
+    classification: excluded
+    reason: Each multiplayer mode names its own small overrides file in MPModesMD.ini, and these lobby settings are read from that file, not from the rules or art data the key catalog covers.
 
   - path: code/truecolour.cpp
     function: Png_Only_Layout
