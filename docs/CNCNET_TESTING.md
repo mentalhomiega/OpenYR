@@ -100,7 +100,11 @@ The page's screenshots come from a fake install. `tests/autotest/cncnet-page-fix
 
 ### The script
 
-Double-click `Set up CnCNet.bat` in the unpacked OpenYR folder, which holds `Game.exe`, `Language.dll` and the script. It finds the CnCNet install or asks for it with a folder picker, shows where the copy will go, and asks before it copies anything. It can also add an "OpenYR CnCNet" desktop shortcut to the copy's `CnCNetYRLauncher.exe`. `Remove CnCNet copy.bat` asks for the copy folder and confirms before deleting it.
+Double-click `CnCNet setup.bat` in the unpacked OpenYR folder, which holds `Game.exe` and `Language.dll`. It asks whether to make a copy or remove one.
+- Making a copy finds the CnCNet install or asks for it with a folder picker, shows where the copy will go, and asks before it copies anything. It can also add an "OpenYR CnCNet" desktop shortcut to the copy's `CnCNetYRLauncher.exe`.
+- Removing one asks for the copy folder and confirms before deleting it.
+
+`CnCNet setup.bat` is `scripts/cncnet_tester_setup.ps1` behind a short batch header, so one file can be double-clicked; Windows opens a `.ps1` in Notepad instead. `scripts/make_cncnet_setup_bat.ps1` writes it, and the package script runs it.
 
 The script copies the install and makes every change in the copy. The original install is not touched. The page makes the same changes and writes the same marker file.
 

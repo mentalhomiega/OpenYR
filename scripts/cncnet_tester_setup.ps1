@@ -1,8 +1,9 @@
 # Sets up a copy of a CnCNet Yuri's Revenge install that starts OpenYR's Game.exe through the
 # CnCNet client. The original install is only read. Everything is written into a new folder.
 #
-# Double-click "Set up CnCNet.bat" beside Game.exe. With no -InstallPath the script finds the install
-# or asks for it, shows the copy folder, and asks before copying anything.
+# Testers double-click "CnCNet setup.bat" beside Game.exe; make_cncnet_setup_bat.ps1 builds it from
+# this script. With no arguments it asks whether to make or remove a copy. Making one finds the
+# install or asks for it, shows the copy folder, and asks before copying anything.
 # From a prompt, run it from the folder that holds Game.exe and Language.dll (the unpacked OpenYR zip):
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File cncnet_tester_setup.ps1 -InstallPath "C:\Games\Command & Conquer Red Alert II"
 # Without -Destination the copy goes beside the install as "<install> - OpenYR" when that folder is
@@ -19,7 +20,7 @@
 #   Resources\ClientDefinitions.ini marked read-only, so the updater cannot write its stock copy back
 #   OPENYR-TESTER-COPY.txt         a list of every change, written last
 #
-# To remove the copy, double-click "Remove CnCNet copy.bat", or run the script with -Remove
+# To remove the copy, choose 2 in "CnCNet setup.bat", or run the script with -Remove
 # -Destination "<the new folder>". That deletes only a folder that holds OPENYR-TESTER-COPY.txt.
 # The install is never changed.
 #
@@ -154,6 +155,15 @@ function Read-Lines([string]$Path) {
 
 function Write-Lines([string]$Path, [System.Collections.ArrayList]$Lines) {
 	[IO.File]::WriteAllText($Path, ($Lines -join $script:NewLineStyle), $Latin1)
+}
+
+if (-not $InstallPath -and -not $Destination -and -not $Remove) {
+	Write-Host 'OpenYR CnCNet setup'
+	Write-Host '  1. Make an OpenYR copy of your CnCNet Yuri''s Revenge install'
+	Write-Host '  2. Remove an OpenYR copy'
+	do { $choice = Read-Host 'Type 1 or 2' } until ($choice -match '^\s*[12]\s*$')
+	if ($choice.Trim() -eq '2') { $Remove = $true }
+	Write-Host ''
 }
 
 # ---------------------------------------------------------------- remove
