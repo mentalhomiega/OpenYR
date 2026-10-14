@@ -1,0 +1,118 @@
+; Defence art survey (generated): each defence is placed alone at a centre cell and turned to enemy targets
+; on a radius-4 ring; ScreenCapture after each facing, then a damaged shot. turretcoord lines log facings.
+60 view 62 62
+62 zoom 2.5
+70 reveal
+80 windowmove 795 595
+90 own GAPOWR 50 50
+100 view 62 62
+105 own YAGGUN 62 62
+125 turretcoord YAGGUN
+130 spawn HARV 66 62
+140 turretcoord YAGGUN
+250 turretcoord YAGGUN
+260 command ScreenCapture
+270 turretcoord YAGGUN
+275 kill HARV
+280 spawn HARV 65 65
+290 turretcoord YAGGUN
+400 turretcoord YAGGUN
+410 command ScreenCapture
+420 turretcoord YAGGUN
+425 kill HARV
+430 spawn HARV 62 66
+440 turretcoord YAGGUN
+550 turretcoord YAGGUN
+560 command ScreenCapture
+570 turretcoord YAGGUN
+575 kill HARV
+580 spawn HARV 59 65
+590 turretcoord YAGGUN
+700 turretcoord YAGGUN
+710 command ScreenCapture
+720 turretcoord YAGGUN
+725 kill HARV
+730 spawn HARV 58 62
+740 turretcoord YAGGUN
+850 turretcoord YAGGUN
+860 command ScreenCapture
+870 turretcoord YAGGUN
+875 kill HARV
+880 spawn HARV 59 59
+890 turretcoord YAGGUN
+1000 turretcoord YAGGUN
+1010 command ScreenCapture
+1020 turretcoord YAGGUN
+1025 kill HARV
+1030 spawn HARV 62 58
+1040 turretcoord YAGGUN
+1150 turretcoord YAGGUN
+1160 command ScreenCapture
+1170 turretcoord YAGGUN
+1175 kill HARV
+1180 spawn HARV 65 59
+1190 turretcoord YAGGUN
+1300 turretcoord YAGGUN
+1310 command ScreenCapture
+1320 turretcoord YAGGUN
+1325 kill HARV
+1330 damage YAGGUN 700
+1350 turretcoord YAGGUN
+1360 command ScreenCapture
+1370 kill YAGGUN 1
+1400 view 74 74
+1405 own YAGGUN 74 74
+1425 turretcoord YAGGUN
+1430 spawn HARV 78 74
+1440 turretcoord YAGGUN
+1550 turretcoord YAGGUN
+1560 command ScreenCapture
+1570 turretcoord YAGGUN
+1575 kill HARV
+1580 spawn HARV 77 77
+1590 turretcoord YAGGUN
+1700 turretcoord YAGGUN
+1710 command ScreenCapture
+1720 turretcoord YAGGUN
+1725 kill HARV
+1730 spawn HARV 74 78
+1740 turretcoord YAGGUN
+1850 turretcoord YAGGUN
+1860 command ScreenCapture
+1870 turretcoord YAGGUN
+1875 kill HARV
+1880 spawn HARV 71 77
+1890 turretcoord YAGGUN
+2000 turretcoord YAGGUN
+2010 command ScreenCapture
+2020 turretcoord YAGGUN
+2025 kill HARV
+2030 spawn HARV 70 74
+2040 turretcoord YAGGUN
+2150 turretcoord YAGGUN
+2160 command ScreenCapture
+2170 turretcoord YAGGUN
+2175 kill HARV
+2180 spawn HARV 71 71
+2190 turretcoord YAGGUN
+2300 turretcoord YAGGUN
+2310 command ScreenCapture
+2320 turretcoord YAGGUN
+2325 kill HARV
+2330 spawn HARV 74 70
+2340 turretcoord YAGGUN
+2450 turretcoord YAGGUN
+2460 command ScreenCapture
+2470 turretcoord YAGGUN
+2475 kill HARV
+2480 spawn HARV 77 71
+2490 turretcoord YAGGUN
+2600 turretcoord YAGGUN
+2610 command ScreenCapture
+2620 turretcoord YAGGUN
+2625 kill HARV
+2630 damage YAGGUN 700
+2650 turretcoord YAGGUN
+2660 command ScreenCapture
+2670 kill YAGGUN 1
+2720 quit

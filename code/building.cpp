@@ -1062,18 +1062,17 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				matrix.Rotate_Z(PrimaryFacing.Current().As_Radian32());
 				matrix.Translate_X(Class->TurretOffset / 8);
 
-				/*
-				**	A recoiling turret moves "backward" one pixel.
-				*/
-				if (IsInRecoilState) {
-					matrix.Translate_X(-2);
-				}
+				// The turret body slides back along its facing by its recoil travel (BuildingClass::Draw, 0x43DA80).
+				matrix.Translate_X(-TurretRecoil.TravelSoFar);
 
 				Matrix3D barrel_matrix = matrix;
 				Vector3 vec2 = Vector3(matrix.Get_X_Translation(), matrix.Get_Y_Translation(), matrix.Get_Z_Translation());
 				barrel_matrix.Translate(-vec2);
 
 				barrel_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32()));
+
+				// The barrel slides back along its pitched axis by its own recoil travel.
+				barrel_matrix.Translate_X(-BarrelRecoil.TravelSoFar);
 				barrel_matrix.Translate(vec2);
 
 				Point2D drawpoint = xy + Class->AnimData[BANIM_TURRET].Location;
@@ -1397,6 +1396,71 @@ int BuildingClass::Set_Turret_Frame(void)
 
 
 /// <summary>
+/// Starts the recoil of the turret body and barrel after the building fires.
+/// Nothing moves unless the building type sets TurretRecoil=yes.
+/// </summary>
+void BuildingClass::Start_Turret_Recoil(void)
+{
+	if (Class->IsTurretRecoil) {
+		TurretRecoil.Fire(Class->TurretRecoilControl);
+		BarrelRecoil.Fire(Class->BarrelRecoilControl);
+	}
+}
+
+
+/// <summary>
+/// Begins a recoil of this part, if its travel is not zero.
+/// </summary>
+/// <param name="control">The travel and frame counts of the part, from the building type.</param>
+void BuildingRecoilState::Fire(BuildingTypeClass::RecoilControlType const & control)
+{
+	if (control.Travel != 0) {
+		CurrentPhase = PHASE_COMPRESSING;
+		FramesLeft = control.CompressFrames < 1 ? 1 : control.CompressFrames;
+		TravelPerFrame = (float)control.Travel / (float)FramesLeft;
+	}
+}
+
+
+/// <summary>
+/// Advances the recoil by one game frame, moving from compressing through holding to recovering.
+/// </summary>
+/// <param name="control">The travel and frame counts of the part, from the building type.</param>
+void BuildingRecoilState::Update(BuildingTypeClass::RecoilControlType const & control)
+{
+	if (CurrentPhase == PHASE_IDLE) {
+		return;
+	}
+
+	FramesLeft--;
+	TravelSoFar += TravelPerFrame;
+	if (FramesLeft > 0) {
+		return;
+	}
+
+	if (CurrentPhase == PHASE_COMPRESSING) {
+		FramesLeft = control.HoldFrames;
+		CurrentPhase = PHASE_HOLDING;
+		TravelPerFrame = 0.0f;
+		if (FramesLeft > 1) {
+			return;
+		}
+
+	} else if (CurrentPhase != PHASE_HOLDING) {
+		if (CurrentPhase == PHASE_RECOVERING) {
+			CurrentPhase = PHASE_IDLE;
+			TravelSoFar = 0.0f;
+		}
+		return;
+	}
+
+	FramesLeft = control.RecoverFrames < 1 ? 1 : control.RecoverFrames;
+	CurrentPhase = PHASE_RECOVERING;
+	TravelPerFrame = -((float)control.Travel / (float)FramesLeft);
+}
+
+
+/// <summary>
 /// Sets which turret animation the building displays.
 /// Buildings whose turret is drawn as an animation rather than a voxel carry a set of
 /// lettered variants, one per facing group. This routine takes down the turret currently
@@ -1665,6 +1729,9 @@ void BuildingClass::AI(void)
 	if (Temporal_AI()) {
 		return;
 	}
+
+	TurretRecoil.Update(Class->TurretRecoilControl);
+	BarrelRecoil.Update(Class->BarrelRecoilControl);
 
 	if (PrismStage != PRISM_IDLE) {
 		Prism_AI();
@@ -6712,7 +6779,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						if (valid && bullet->Unlimbo(ucoord, velocity)) {
 							// The launched shell takes no AI tick here, as gamemd's BuildingClass::Mission_Missile (0x44C980) does not update it.
 							if (Is_Turret_Equipped()) {
-								IsInRecoilState = true;
+								Start_Turret_Recoil();
 							}
 							Sound_Effect((VocType)weap->Sound.Pick(NonCriticalRandomNumber), Turret_Coord(0));
 							Status = DONE;

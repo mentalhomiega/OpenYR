@@ -386,6 +386,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCoreDefender(false),
 	IsBarrelAnimAVoxel(false),
 	IsTurretAnimExclusive(false),
+	IsTurretRecoil(false),
 	IsDamagedDoor(false),
 	IsInvisibleInGame(false),
 	IsTerrainPalette(false),
@@ -1326,6 +1327,15 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		TurretChargeAnimRate = ini.Get_Int(Name(), "TurretChargeAnimRate", TurretChargeAnimRate);
 		ChargedAnimTime = ini.Get_Float(Name(), "ChargedAnimTime", ChargedAnimTime);
 		IsTurretAnimExclusive = ini.Get_Bool(Name(), "TurretAnimIsExclusive", IsTurretAnimExclusive);
+		IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
+		TurretRecoilControl.Travel = ini.Get_Int(Name(), "TurretTravel", TurretRecoilControl.Travel);
+		TurretRecoilControl.CompressFrames = ini.Get_Int(Name(), "TurretCompressFrames", TurretRecoilControl.CompressFrames);
+		TurretRecoilControl.HoldFrames = ini.Get_Int(Name(), "TurretHoldFrames", TurretRecoilControl.HoldFrames);
+		TurretRecoilControl.RecoverFrames = ini.Get_Int(Name(), "TurretRecoverFrames", TurretRecoilControl.RecoverFrames);
+		BarrelRecoilControl.Travel = ini.Get_Int(Name(), "BarrelTravel", BarrelRecoilControl.Travel);
+		BarrelRecoilControl.CompressFrames = ini.Get_Int(Name(), "BarrelCompressFrames", BarrelRecoilControl.CompressFrames);
+		BarrelRecoilControl.HoldFrames = ini.Get_Int(Name(), "BarrelHoldFrames", BarrelRecoilControl.HoldFrames);
+		BarrelRecoilControl.RecoverFrames = ini.Get_Int(Name(), "BarrelRecoverFrames", BarrelRecoilControl.RecoverFrames);
 
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
@@ -2281,6 +2291,15 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(TurretChargeAnimRate);
 	crc(ChargedAnimTime);
 	crc(IsTurretAnimExclusive);
+	crc(IsTurretRecoil);
+	crc(TurretRecoilControl.Travel);
+	crc(TurretRecoilControl.CompressFrames);
+	crc(TurretRecoilControl.HoldFrames);
+	crc(TurretRecoilControl.RecoverFrames);
+	crc(BarrelRecoilControl.Travel);
+	crc(BarrelRecoilControl.CompressFrames);
+	crc(BarrelRecoilControl.HoldFrames);
+	crc(BarrelRecoilControl.RecoverFrames);
 	crc(IsExtraDamageStage);
 	crc(IsHospital);
 	crc(IsArmory);
@@ -2497,6 +2516,15 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCoreDefender);
 	stream.Serialize(IsBarrelAnimAVoxel);
 	stream.Serialize(IsTurretAnimExclusive);
+	stream.Serialize(IsTurretRecoil);
+	stream.Serialize(TurretRecoilControl.Travel);
+	stream.Serialize(TurretRecoilControl.CompressFrames);
+	stream.Serialize(TurretRecoilControl.HoldFrames);
+	stream.Serialize(TurretRecoilControl.RecoverFrames);
+	stream.Serialize(BarrelRecoilControl.Travel);
+	stream.Serialize(BarrelRecoilControl.CompressFrames);
+	stream.Serialize(BarrelRecoilControl.HoldFrames);
+	stream.Serialize(BarrelRecoilControl.RecoverFrames);
 	stream.Serialize(UnusedBTypeBool1);
 	stream.Serialize(IsDamagedDoor);
 	stream.Serialize(IsInvisibleInGame);

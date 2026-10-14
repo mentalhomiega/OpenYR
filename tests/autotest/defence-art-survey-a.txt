@@ -1,0 +1,299 @@
+; Defence art survey (generated): each defence is placed alone at a centre cell and turned to enemy targets
+; on a radius-4 ring; ScreenCapture after each facing, then a damaged shot. turretcoord lines log facings.
+60 view 62 62
+62 zoom 2.5
+70 reveal
+80 windowmove 795 595
+90 own GAPOWR 50 50
+100 view 62 62
+105 own NAFLAK 62 62
+125 turretcoord NAFLAK
+130 spawn ZEP 66 62
+134 airborne ZEP
+140 turretcoord NAFLAK
+250 turretcoord NAFLAK
+260 command ScreenCapture
+270 turretcoord NAFLAK
+275 kill ZEP
+280 spawn ZEP 65 65
+284 airborne ZEP
+290 turretcoord NAFLAK
+400 turretcoord NAFLAK
+410 command ScreenCapture
+420 turretcoord NAFLAK
+425 kill ZEP
+430 spawn ZEP 62 66
+434 airborne ZEP
+440 turretcoord NAFLAK
+550 turretcoord NAFLAK
+560 command ScreenCapture
+570 turretcoord NAFLAK
+575 kill ZEP
+580 spawn ZEP 59 65
+584 airborne ZEP
+590 turretcoord NAFLAK
+700 turretcoord NAFLAK
+710 command ScreenCapture
+720 turretcoord NAFLAK
+725 kill ZEP
+730 spawn ZEP 58 62
+734 airborne ZEP
+740 turretcoord NAFLAK
+850 turretcoord NAFLAK
+860 command ScreenCapture
+870 turretcoord NAFLAK
+875 kill ZEP
+880 spawn ZEP 59 59
+884 airborne ZEP
+890 turretcoord NAFLAK
+1000 turretcoord NAFLAK
+1010 command ScreenCapture
+1020 turretcoord NAFLAK
+1025 kill ZEP
+1030 spawn ZEP 62 58
+1034 airborne ZEP
+1040 turretcoord NAFLAK
+1150 turretcoord NAFLAK
+1160 command ScreenCapture
+1170 turretcoord NAFLAK
+1175 kill ZEP
+1180 spawn ZEP 65 59
+1184 airborne ZEP
+1190 turretcoord NAFLAK
+1300 turretcoord NAFLAK
+1310 command ScreenCapture
+1320 turretcoord NAFLAK
+1325 kill ZEP
+1330 damage NAFLAK 700
+1350 turretcoord NAFLAK
+1360 command ScreenCapture
+1370 kill NAFLAK 1
+1400 view 74 62
+1405 own NASAM 74 62
+1425 turretcoord NASAM
+1430 spawn ZEP 78 62
+1434 airborne ZEP
+1440 turretcoord NASAM
+1550 turretcoord NASAM
+1560 command ScreenCapture
+1570 turretcoord NASAM
+1575 kill ZEP
+1580 spawn ZEP 77 65
+1584 airborne ZEP
+1590 turretcoord NASAM
+1700 turretcoord NASAM
+1710 command ScreenCapture
+1720 turretcoord NASAM
+1725 kill ZEP
+1730 spawn ZEP 74 66
+1734 airborne ZEP
+1740 turretcoord NASAM
+1850 turretcoord NASAM
+1860 command ScreenCapture
+1870 turretcoord NASAM
+1875 kill ZEP
+1880 spawn ZEP 71 65
+1884 airborne ZEP
+1890 turretcoord NASAM
+2000 turretcoord NASAM
+2010 command ScreenCapture
+2020 turretcoord NASAM
+2025 kill ZEP
+2030 spawn ZEP 70 62
+2034 airborne ZEP
+2040 turretcoord NASAM
+2150 turretcoord NASAM
+2160 command ScreenCapture
+2170 turretcoord NASAM
+2175 kill ZEP
+2180 spawn ZEP 71 59
+2184 airborne ZEP
+2190 turretcoord NASAM
+2300 turretcoord NASAM
+2310 command ScreenCapture
+2320 turretcoord NASAM
+2325 kill ZEP
+2330 spawn ZEP 74 58
+2334 airborne ZEP
+2340 turretcoord NASAM
+2450 turretcoord NASAM
+2460 command ScreenCapture
+2470 turretcoord NASAM
+2475 kill ZEP
+2480 spawn ZEP 77 59
+2484 airborne ZEP
+2490 turretcoord NASAM
+2600 turretcoord NASAM
+2610 command ScreenCapture
+2620 turretcoord NASAM
+2625 kill ZEP
+2630 damage NASAM 700
+2650 turretcoord NASAM
+2660 command ScreenCapture
+2670 kill NASAM 1
+2700 view 86 62
+2705 own YAGGUN 86 62
+2725 turretcoord YAGGUN
+2730 spawn HARV 90 62
+2740 turretcoord YAGGUN
+2850 turretcoord YAGGUN
+2860 command ScreenCapture
+2870 turretcoord YAGGUN
+2875 kill HARV
+2880 spawn HARV 89 65
+2890 turretcoord YAGGUN
+3000 turretcoord YAGGUN
+3010 command ScreenCapture
+3020 turretcoord YAGGUN
+3025 kill HARV
+3030 spawn HARV 86 66
+3040 turretcoord YAGGUN
+3150 turretcoord YAGGUN
+3160 command ScreenCapture
+3170 turretcoord YAGGUN
+3175 kill HARV
+3180 spawn HARV 83 65
+3190 turretcoord YAGGUN
+3300 turretcoord YAGGUN
+3310 command ScreenCapture
+3320 turretcoord YAGGUN
+3325 kill HARV
+3330 spawn HARV 82 62
+3340 turretcoord YAGGUN
+3450 turretcoord YAGGUN
+3460 command ScreenCapture
+3470 turretcoord YAGGUN
+3475 kill HARV
+3480 spawn HARV 83 59
+3490 turretcoord YAGGUN
+3600 turretcoord YAGGUN
+3610 command ScreenCapture
+3620 turretcoord YAGGUN
+3625 kill HARV
+3630 spawn HARV 86 58
+3640 turretcoord YAGGUN
+3750 turretcoord YAGGUN
+3760 command ScreenCapture
+3770 turretcoord YAGGUN
+3775 kill HARV
+3780 spawn HARV 89 59
+3790 turretcoord YAGGUN
+3900 turretcoord YAGGUN
+3910 command ScreenCapture
+3920 turretcoord YAGGUN
+3925 kill HARV
+3930 damage YAGGUN 700
+3950 turretcoord YAGGUN
+3960 command ScreenCapture
+3970 kill YAGGUN 1
+4000 view 62 74
+4005 own NALASR 62 74
+4025 turretcoord NALASR
+4030 spawn HARV 66 74
+4040 turretcoord NALASR
+4150 turretcoord NALASR
+4160 command ScreenCapture
+4170 turretcoord NALASR
+4175 kill HARV
+4180 spawn HARV 65 77
+4190 turretcoord NALASR
+4300 turretcoord NALASR
+4310 command ScreenCapture
+4320 turretcoord NALASR
+4325 kill HARV
+4330 spawn HARV 62 78
+4340 turretcoord NALASR
+4450 turretcoord NALASR
+4460 command ScreenCapture
+4470 turretcoord NALASR
+4475 kill HARV
+4480 spawn HARV 59 77
+4490 turretcoord NALASR
+4600 turretcoord NALASR
+4610 command ScreenCapture
+4620 turretcoord NALASR
+4625 kill HARV
+4630 spawn HARV 58 74
+4640 turretcoord NALASR
+4750 turretcoord NALASR
+4760 command ScreenCapture
+4770 turretcoord NALASR
+4775 kill HARV
+4780 spawn HARV 59 71
+4790 turretcoord NALASR
+4900 turretcoord NALASR
+4910 command ScreenCapture
+4920 turretcoord NALASR
+4925 kill HARV
+4930 spawn HARV 62 70
+4940 turretcoord NALASR
+5050 turretcoord NALASR
+5060 command ScreenCapture
+5070 turretcoord NALASR
+5075 kill HARV
+5080 spawn HARV 65 71
+5090 turretcoord NALASR
+5200 turretcoord NALASR
+5210 command ScreenCapture
+5220 turretcoord NALASR
+5225 kill HARV
+5230 damage NALASR 700
+5250 turretcoord NALASR
+5260 command ScreenCapture
+5270 kill NALASR 1
+5300 view 74 74
+5305 own GTGCAN 74 74
+5325 turretcoord GTGCAN
+5330 spawn HARV 78 74
+5340 turretcoord GTGCAN
+5560 turretcoord GTGCAN
+5570 command ScreenCapture
+5580 turretcoord GTGCAN
+5585 kill HARV
+5590 spawn HARV 77 77
+5600 turretcoord GTGCAN
+5820 turretcoord GTGCAN
+5830 command ScreenCapture
+5840 turretcoord GTGCAN
+5845 kill HARV
+5850 spawn HARV 74 78
+5860 turretcoord GTGCAN
+6080 turretcoord GTGCAN
+6090 command ScreenCapture
+6100 turretcoord GTGCAN
+6105 kill HARV
+6110 spawn HARV 71 77
+6120 turretcoord GTGCAN
+6340 turretcoord GTGCAN
+6350 command ScreenCapture
+6360 turretcoord GTGCAN
+6365 kill HARV
+6370 spawn HARV 70 74
+6380 turretcoord GTGCAN
+6600 turretcoord GTGCAN
+6610 command ScreenCapture
+6620 turretcoord GTGCAN
+6625 kill HARV
+6630 spawn HARV 71 71
+6640 turretcoord GTGCAN
+6860 turretcoord GTGCAN
+6870 command ScreenCapture
+6880 turretcoord GTGCAN
+6885 kill HARV
+6890 spawn HARV 74 70
+6900 turretcoord GTGCAN
+7120 turretcoord GTGCAN
+7130 command ScreenCapture
+7140 turretcoord GTGCAN
+7145 kill HARV
+7150 spawn HARV 77 71
+7160 turretcoord GTGCAN
+7380 turretcoord GTGCAN
+7390 command ScreenCapture
+7400 turretcoord GTGCAN
+7405 kill HARV
+7410 damage GTGCAN 700
+7430 turretcoord GTGCAN
+7440 command ScreenCapture
+7450 kill GTGCAN 1
+7500 quit
