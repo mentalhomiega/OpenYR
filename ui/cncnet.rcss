@@ -11,9 +11,9 @@
 #reveal
 {
 	width: 620dp;
-	height: 540dp;
+	height: 600dp;
 	top: 50%;
-	margin-top: -270dp;
+	margin-top: -300dp;
 }
 
 #content
@@ -81,7 +81,7 @@
 #plan
 {
 	margin-top: 8dp;
-	height: 150dp;
+	height: 230dp;
 }
 
 #plan .item
