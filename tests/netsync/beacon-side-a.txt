@@ -1,0 +1,12 @@
+; Side A for scripts/run_netsync.ps1 on XMP29U2.MAP. It places a beacon at 52,90, writes a message on it,
+; then deletes it. Every step here reaches side B through the event queue.
+; Side B runs beacon-side-b.txt, which lists the beacons at frames between these steps.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/beacon-side-a.txt -ScriptB tests/netsync/beacon-side-b.txt -Seconds 60 -PortA 24693 -PortB 24694
+1 log netsync side A: beacon placed, given a message, then deleted
+300 beacon place 52 90
+340 beacon list
+400 beacon select 52 90
+410 beacontext Hold the north ridge
+440 beacon list
+450 command Delete
+480 beacon list

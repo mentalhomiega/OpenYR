@@ -28,6 +28,7 @@
 #include "_xmouse.h"
 #include "audio/audioengine.h"
 #include "autotest.h"
+#include "beacon.h"
 #include "bench.h"
 #include "chat.h"
 #include "command.h"
@@ -746,6 +747,7 @@ void Message_Input(KeyNumType &input)
 	**	Process message-system input; send the message out if RETURN is hit.
 	*/
 	copy_input = input;
+	bool const beacon_text = Beacon_Text_Editing();
 	rc = Session.Messages.Input(input);
 
 	/*
@@ -770,9 +772,25 @@ void Message_Input(KeyNumType &input)
 	}
 
 	/*
+	**	A beacon message goes to its beacon's event rather than to the chat.
+	*/
+	if (beacon_text) {
+		if (rc == 3) {
+			Beacon_Text_Send(Session.Messages.Get_Edit_Buf());
+		} else if (rc == 4) {
+			Beacon_Text_Send(Session.Messages.Get_Overflow_Buf());
+			Session.Messages.Clear_Overflow_Buf();
+		}
+		Beacon_Text_Sync();
+		if (rc == 3 || rc == 4) {
+			Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		}
+	}
+
+	/*
 	**	Send a message
 	*/
-	if ((rc==3 || rc==4) && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
+	if (!beacon_text && (rc==3 || rc==4) && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
 			if (rc==3) {
 				Chat_Send(Session.Messages.Get_Edit_Buf());

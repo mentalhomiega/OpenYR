@@ -178,7 +178,7 @@ namespace NetPacket
 			if (!size) {
 				failure.Code = DecodeError::TRUNCATED_ADDPLAYER;
 				failure.Offset = event_offset;
-				failure.EventType = EventClass::ADDPLAYER;
+				failure.EventType = event.Type;
 				return(false);
 			}
 
@@ -186,7 +186,7 @@ namespace NetPacket
 			if (!data) {
 				failure.Code = DecodeError::TRUNCATED_ADDPLAYER;
 				failure.Offset = event_offset;
-				failure.EventType = EventClass::ADDPLAYER;
+				failure.EventType = event.Type;
 				return(false);
 			}
 
@@ -356,7 +356,7 @@ namespace NetPacket
 				event.Frame = envelope.Frame;
 				event.Sender = envelope.Sender;
 
-				if (type == EventClass::ADDPLAYER) {
+				if (EventClass::Has_Variable_Payload(type)) {
 					if (EventClass::EventLength[type] != sizeof(VariableSizeType)) {
 						return(Failed(DecodeError::INVALID_EVENT_LENGTH, event_offset, type));
 					}
@@ -428,7 +428,7 @@ namespace NetPacket
 
 			if (*type == EventClass::FRAMEINFO) {
 				std::memcpy(event.Data.data(), data->data(), sizeof(FrameInfoType));
-			} else if (*type == EventClass::ADDPLAYER) {
+			} else if (EventClass::Has_Variable_Payload(*type)) {
 				std::memcpy(event.Data.data() + VARIABLE_SIZE_OFFSET, data->data() + VARIABLE_SIZE_OFFSET, sizeof(VariableSizeType));
 			} else if (*type == EventClass::RESPONSE_TIME) {
 				std::memcpy(event.Data.data() + FRAMEINFO_DELAY_OFFSET, data->data() + FRAMEINFO_DELAY_OFFSET, data_length);
@@ -517,7 +517,7 @@ namespace NetPacket
 					return(Failed(DecodeError::NESTED_ENVELOPE, event_offset, event.Type));
 				}
 
-				if (event.Type == EventClass::ADDPLAYER) {
+				if (EventClass::Has_Variable_Payload(event.Type)) {
 					VariableSizeType const size = Add_Player_Size(event);
 					auto data = reader.Take(size);
 					if (!data) {
@@ -595,7 +595,7 @@ namespace NetPacket
 	/// <summary>Binds an ADDPLAYER event to its owned variable payload.</summary>
 	void DecodedEvent::Bind_AddPlayer_Data(void) noexcept
 	{
-		if (Event.Type != EventClass::ADDPLAYER) {
+		if (!EventClass::Has_Variable_Payload(Event.Type)) {
 			return;
 		}
 
@@ -669,7 +669,7 @@ namespace NetPacket
 			case DecodeError::TRUNCATED_EVENT: return("truncated event");
 			case DecodeError::ZERO_MEGAMISSION_COUNT: return("zero megamission count");
 			case DecodeError::TRUNCATED_MEGAMISSION: return("truncated megamission");
-			case DecodeError::TRUNCATED_ADDPLAYER: return("truncated add-player data");
+			case DecodeError::TRUNCATED_ADDPLAYER: return("truncated variable-length event payload");
 			case DecodeError::TRAILING_BYTES: return("trailing packet bytes");
 			case DecodeError::INVALID_CONNECTION: return("invalid connection");
 			case DecodeError::COUNT: break;

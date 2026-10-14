@@ -115,9 +115,15 @@ class EventClass
 			ALL_CHEER,      // Every soldier of the sending house cheers.
 			PLAN_ORDER,     // Appends one planned order to a unit's queue (planning mode).
 			PLAN_COMMIT,    // Starts the planned orders of every unit of the sending house.
+			BEACON_PLACE,   // Places a beacon for the sending house at the location; the slot is the first free one.
+			BEACON_DELETE,  // Removes the sending house's beacon in the slot named by the value.
+			BEACON_TEXT,    // Sets the text of the sending house's beacon. The payload is the slot byte, then the text.
 
 			LAST_EVENT,			// one past the last event
 		};
+
+		// The payload of these events follows them in a packet, with its length in Data.Variable.Size.
+		static bool Has_Variable_Payload(unsigned char type) { return type == ADDPLAYER || type == BEACON_TEXT; }
 
 		static constexpr std::uint16_t NETWORK_RTT_UNAVAILABLE = UINT16_MAX;
 
@@ -161,6 +167,9 @@ class EventClass
 			struct {
 				int 			Value;		// general-purpose data
 			} General;
+			struct {
+				xCoord			Where;		// The location a beacon is placed at.
+			} Beacon;
 			struct {
 				xTargetClass	Whom;			// Whom to apply mission to.
 				MissionType	Mission;			// What mission to apply.
@@ -265,6 +274,7 @@ class EventClass
 		EventClass(int index, unsigned char type, TargetClass target);
 		EventClass(int index, unsigned char type);
 		EventClass(int index, unsigned char type, int val);
+		EventClass(int index, unsigned char type, xCoord const & where);
 		EventClass(int index, unsigned char type, Cell const & cell);
 		EventClass(int index, unsigned char type, TargetClass src, TargetClass dest);
 		EventClass(int index, TargetClass src, MissionType mission, TargetClass target/*=TARGET_NONE*/, TargetClass destination/*=TARGET_NONE*/);

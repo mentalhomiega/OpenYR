@@ -145,6 +145,7 @@
 #include "tagtype.h"
 #include "terrtype.h"
 #include "unittype.h"
+#include "beacon.h"
 #include "vein.h"
 #include "vector3.h"
 #include "viewzoom.h"
@@ -216,6 +217,7 @@ DisplayClass::DisplayClass(void) :
 	IsWaypointMode(false),
 	IsPlanningMode(false),
 	PlanningHoldKey(-1),
+	IsPlaceBeaconMode(false),
 	IsTargettingMode(SUPER_NONE),
 	DraggedWaypoint(NULL),
 	DraggedWaypointCoord(0,0,0),
@@ -1700,6 +1702,8 @@ void DisplayClass::Mouse_Right_Release(Point2D const & point)
 		PendingObject = NULL;
 		PendingHouse = HOUSE_NONE;
 		Set_Cursor_Shape(NULL);
+	} else if (IsPlaceBeaconMode) {
+		Place_Beacon_Mode_Control(0);
 	} else if (IsPlanningMode) {
 		// Planning mode issues no order on a right click and stays on (PlanningNodeClass::ResetPlanningState, 0x63AAC0).
 	} else {
@@ -2109,6 +2113,30 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 
 	} else {
 
+		// A click in beacon placement mode places a beacon on the clicked cell and ends the mode.
+		if (IsPlaceBeaconMode) {
+			if (!PlayerPtr->IsObserver && Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
+				xCoord where;
+				where = cell.As_Coord();
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::BEACON_PLACE, where));
+			}
+			Place_Beacon_Mode_Control(0);
+			IsTentative = false;
+			return;
+		}
+
+		// A click on a beacon selects it, ahead of any action the cell would give, as in Yuri's Revenge.
+		if (!IsRubberBand && !IsSellMode && !IsRepairMode && !IsPowerMode && IsTargettingMode == SUPER_NONE && Beacons.Is_Available()) {
+			BeaconClass * beacon = Beacons.Find_Near(cell);
+			if (beacon != NULL) {
+				Unselect_All();
+				Beacons.Select(beacon);
+				TacticalMap->IsToRedraw = true;
+				IsTentative = false;
+				return;
+			}
+		}
+
 		if (IsRubberBand) {
 			TacticalMap->IsToRedraw = true;
 
@@ -2314,7 +2342,7 @@ void Bandbox_Selection_Callback(ObjectClass *object)
  *=============================================================================================*/
 void DisplayClass::Mouse_Left_Press(Point2D const & point)
 {
-	if (!IsRepairMode && !IsPowerMode && !IsSellMode && IsTargettingMode == SUPER_NONE && !PendingObject) {
+	if (!IsRepairMode && !IsPowerMode && !IsSellMode && IsTargettingMode == SUPER_NONE && !PendingObject && !IsPlaceBeaconMode) {
 		IsTentative = true;
 		BandX = point.X;
 		BandY = point.Y;
@@ -2639,6 +2667,55 @@ void DisplayClass::Reset_Planning_Mode(void)
 {
 	IsPlanningMode = false;
 	PlanningHoldKey = -1;
+}
+
+
+/// <summary>
+/// Turns beacon placement mode on or off.
+/// Turning it on cancels the repair, sell, power and waypoint modes and clears the selection.
+/// It does nothing in a single-player or skirmish game, while a placement is pending, when no
+/// slot is free, or for a multiplayer observer.
+/// </summary>
+/// <param name="control">The mode to set. Zero turns the mode off, one turns it on, and -1 toggles it.</param>
+void DisplayClass::Place_Beacon_Mode_Control(int control)
+{
+	bool mode = IsPlaceBeaconMode;
+	switch (control) {
+		case 0:
+			mode = false;
+			break;
+
+		case -1:
+			mode = (mode == false);
+			break;
+
+		case 1:
+			mode = true;
+			break;
+	}
+
+	if (mode == IsPlaceBeaconMode) {
+		return;
+	}
+
+	if (!mode) {
+		IsPlaceBeaconMode = false;
+		Revert_Mouse_Shape();
+		return;
+	}
+
+	if (PendingObject || !Beacons.Is_Available() || PlayerPtr->IsObserver || !Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
+		return;
+	}
+	IsRepairMode = false;
+	IsSellMode = false;
+	IsPowerMode = false;
+	if (IsWaypointMode) {
+		Waypoint_Mode_Control(0);
+	}
+	Unselect_All();
+	IsPlaceBeaconMode = true;
+	Revert_Mouse_Shape();
 }
 
 

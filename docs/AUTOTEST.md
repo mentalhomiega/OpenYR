@@ -70,6 +70,11 @@ A command runs once the game frame reaches its frame, in file order.
 | `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers and destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
+| `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
+| `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
+| `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |
+| `beacon list` | Writes each beacon with its house, slot, cell, whether the player sees it, whether it is selected and its text |
+| `beacontext <text>` | Queues the text for the player's selected beacon, as a message typed on a selected beacon does |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
@@ -213,6 +218,7 @@ In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that
 | `produce`, `place`, `primary`, `stop`, `order`, `command DeployObject`, `clickcell`, `fire` | Already queue events, as the sidebar and the map clicks do |
 | `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell` | Queue an event: a mission for each object, an archive target or a sale |
 | `planning 1`, `planning 0` | `planning 1` sets this copy's mode only. Orders given while the mode is on are recorded as planned orders, and `planning 0` queues the commit that starts them |
+| `beacon place x y`, `beacontext <text>` | Queue the beacon event: a placement on the cell, or the text of the selected beacon. `beacon select x y` and `beacon delete` change this copy's selection, and `beacon delete` queues a removal only for a beacon the player owns |
 
 A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state: with `1000 own E1 60 60` on one side only, the runner reports a desync at frame 1000. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
 

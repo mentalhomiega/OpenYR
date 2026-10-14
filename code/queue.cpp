@@ -1980,7 +1980,7 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	if (event.Type != EventClass::FRAMESYNC) {
 		for (NetPacket::DecodedEvent const & source : decoded.Events) {
 			EventClass queued = source.Event;
-			if (queued.Type == EventClass::ADDPLAYER) {
+			if (EventClass::Has_Variable_Payload(queued.Type)) {
 				queued.Data.Variable.Pointer = NULL;
 				if (!source.AddPlayerData.empty()) {
 					queued.Data.Variable.Pointer = new char[source.AddPlayerData.size()];
@@ -2831,7 +2831,7 @@ static int Add_Uncompressed_Events(void *buf, int bufsize, int frame_delay,
 
 		//Keyboard->Check();
 
-		if (OutList.front().Type==EventClass::ADDPLAYER) {
+		if (EventClass::Has_Variable_Payload(OutList.front().Type)) {
 			ev_size = sizeof(EventClass) + OutList.front().Data.Variable.Size;
 		}
 		else {
@@ -2864,7 +2864,7 @@ static int Add_Uncompressed_Events(void *buf, int bufsize, int frame_delay,
 		//.....................................................................
 		// Add event to the send packet
 		//.....................................................................
-		if (OutList.front().Type==EventClass::ADDPLAYER) {
+		if (EventClass::Has_Variable_Payload(OutList.front().Type)) {
 			memcpy ( ((char *)buf) + size, &OutList.front(), sizeof(EventClass) );
 			size += sizeof(EventClass);
 			memcpy ( ((char *)buf) + size,
@@ -2945,7 +2945,7 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 		// (The other data elements in the event, Frame, ID, etc, are stored
 		// in the packet header.)
 		//.....................................................................
-		if (eventtype==EventClass::ADDPLAYER) {
+		if (EventClass::Has_Variable_Payload(eventtype)) {
 			storedsize = datasize + size_of(EventClass, Type) +
 				OutList.front().Data.Variable.Size;
 		}
@@ -3151,6 +3151,7 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 			// Variable-sized packets: Copy the packet Size & the buffer
 			//..................................................................
 			case (EventClass::ADDPLAYER):
+			case (EventClass::BEACON_TEXT):
 				*(unsigned char *)( ((char *)buf) + size) = eventtype;
 
 				memcpy ( ((char *)buf) + size + size_of(EventClass, Type),

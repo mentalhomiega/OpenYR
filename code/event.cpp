@@ -49,6 +49,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "anim.h"
+#include "beacon.h"
 #include "building.h"
 #include "cell.h"
 #include "conquer.h"
@@ -105,6 +106,10 @@ namespace {
 		InvalidAbandonCount,
 		InvalidPlannedOrder,
 		PlannedOrderLimit,
+		InvalidBeaconLocation,
+		BeaconLimit,
+		MissingBeacon,
+		InvalidBeaconText,
 		Count,
 	};
 
@@ -130,6 +135,10 @@ namespace {
 		"invalid abandon count",
 		"invalid planned order",
 		"planned order limit",
+		"invalid beacon location",
+		"beacon limit",
+		"missing beacon",
+		"invalid beacon text",
 	};
 
 	static_assert(ARRAY_SIZE(EventRejectReasonNames) == (int)EventRejectReason::Count);
@@ -148,6 +157,18 @@ namespace {
 	{
 		if (techno != NULL && techno->Is_Foot()) {
 			static_cast<FootClass *>(techno)->Clear_Planned_Orders();
+		}
+	}
+
+
+	/// <summary>
+	/// Frees the text payload of a BEACON_TEXT event that Execute refuses before its switch.
+	/// </summary>
+	void Discard_Beacon_Text(EventClass & event)
+	{
+		if (event.Type == EventClass::BEACON_TEXT) {
+			delete [] static_cast<char *>(event.Data.Variable.Pointer);
+			event.Data.Variable.Pointer = NULL;
 		}
 	}
 
@@ -380,6 +401,23 @@ EventClass::EventClass(int index, unsigned char type, int val)
 		Type = EMPTY;
 		Frame = ::Frame;
 
+	}
+}
+
+
+EventClass::EventClass(int index, unsigned char type, xCoord const & where)
+{
+	DebugString("Adding event %s\n", EventNames[type]);
+
+	if (index >= 0) {
+		ID = index;
+		Type = type;
+		Data.Beacon.Where = where;
+		Frame = ::Frame;
+	} else {
+		ID = -1;
+		Type = EMPTY;
+		Frame = ::Frame;
 	}
 }
 
@@ -791,10 +829,12 @@ void EventClass::Execute(void)
 	}
 	if (!NetSemantic::Index_Is_Valid(ID, Houses.Count())) {
 		Log_Event_Rejection(EventRejectReason::InvalidOrigin, Type, ID, ID);
+		Discard_Beacon_Text(*this);
 		return;
 	}
 	if (Houses[ID] == NULL) {
 		Log_Event_Rejection(EventRejectReason::MissingOrigin, Type, ID, ID);
+		Discard_Beacon_Text(*this);
 		return;
 	}
 
@@ -1296,6 +1336,38 @@ void EventClass::Execute(void)
 		// Starts the first planned order of every unit of the sending house (planning mode, commit).
 		case PLAN_COMMIT:
 			Planned_Orders_Commit(house);
+			break;
+
+		// Beacons are display state. Every copy keeps the same list by running these events in the same order.
+		case BEACON_PLACE:
+			if (!Beacons.Is_Valid_Location(Data.Beacon.Where)) {
+				Log_Event_Rejection(EventRejectReason::InvalidBeaconLocation, Type, ID, Data.Beacon.Where.X);
+				break;
+			}
+			if (Beacons.Place(ID, Data.Beacon.Where) < 0) {
+				Log_Event_Rejection(EventRejectReason::BeaconLimit, Type, ID, ID);
+			}
+			break;
+
+		case BEACON_DELETE:
+			if (!Beacons.Remove(ID, Data.General.Value)) {
+				Log_Event_Rejection(EventRejectReason::MissingBeacon, Type, ID, Data.General.Value);
+			}
+			break;
+
+		// The payload is the slot byte, then the text. The executing copy owns and frees it.
+		case BEACON_TEXT:
+			{
+				char * payload = (char *)Data.Variable.Pointer;
+				unsigned int const size = Data.Variable.Size;
+				if (payload == NULL || size < 1 || size > BEACON_TEXT_MAX + 1) {
+					Log_Event_Rejection(EventRejectReason::InvalidBeaconText, Type, ID, (int)size);
+				} else if (!Beacons.Set_Text(ID, (unsigned char)payload[0], payload + 1, (int)size - 1)) {
+					Log_Event_Rejection(EventRejectReason::MissingBeacon, Type, ID, (unsigned char)payload[0]);
+				}
+				delete [] payload;
+				Data.Variable.Pointer = NULL;
+			}
 			break;
 
 		case DEPLOY:

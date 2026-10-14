@@ -63,6 +63,9 @@ unsigned char EventClass::EventLength[EventClass::LAST_EVENT] = {
 	0,                                               // ALL_CHEER
 	size_of(EventClass, Data.MegaMission),           // PLAN_ORDER
 	0,                                               // PLAN_COMMIT
+	size_of(EventClass, Data.Beacon),                // BEACON_PLACE
+	size_of(EventClass, Data.General),               // BEACON_DELETE
+	size_of(EventClass, Data.Variable.Size),         // BEACON_TEXT
 };
 
 char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
@@ -108,4 +111,7 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"ALL_CHEER",
 	"PLAN_ORDER",
 	"PLAN_COMMIT",
+	"BEACON_PLACE",
+	"BEACON_DELETE",
+	"BEACON_TEXT",
 };

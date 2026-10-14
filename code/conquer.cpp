@@ -78,6 +78,7 @@
 #include "_wsproto.h"
 #include "airctype.h"
 #include "autosave.h"
+#include "beacon.h"
 #include "builtype.h"
 #include "cctooltip.h"
 #include "chat.h"
@@ -1130,6 +1131,9 @@ void Unselect_All(void)
 	while (CurrentObject.Count()) {
 		CurrentObject[0]->Unselect();
 	}
+
+	// Clearing the unit selection also clears the beacon selection.
+	Beacons.Select(NULL);
 }
 
 

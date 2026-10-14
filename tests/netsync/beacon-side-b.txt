@@ -1,0 +1,8 @@
+; Side B for scripts/run_netsync.ps1 on XMP29U2.MAP. It lists the beacons while side A places,
+; messages and deletes one. Side A runs beacon-side-a.txt.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -ScriptA tests/netsync/beacon-side-a.txt -ScriptB tests/netsync/beacon-side-b.txt -Seconds 60 -PortA 24693 -PortB 24694
+1 log netsync side B: beacon arrival, message and deletion
+360 beacon list
+440 beacon list
+460 beacon list
+600 beacon list

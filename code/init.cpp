@@ -93,6 +93,7 @@
 #include "anim.h"
 #include "audio/audioengine.h"
 #include "autosave.h"
+#include "beacon.h"
 #include "bench.h"
 #include "bitfont.h"
 #include "blight.h"
@@ -5717,7 +5718,10 @@ class ChatToAllCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Chat_Begin(ChatScopeType::Everyone);
+			// With the local player's beacon selected, the line writes that beacon's message instead.
+			if (!Beacon_Text_Begin()) {
+				Chat_Begin(ChatScopeType::Everyone);
+			}
 		}
 };
 
@@ -5739,6 +5743,10 @@ class ChatToAlliesCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
+			// With the local player's beacon selected, Backspace writes its message, as Enter does.
+			if (Beacon_Text_Begin()) {
+				return;
+			}
 			// An observer holds no allies; its team is the other observers.
 			Chat_Begin(PlayerPtr->IsObserver ? ChatScopeType::Observers : ChatScopeType::Allies);
 		}
@@ -6368,18 +6376,9 @@ class TauntCommandClass : public CommandClass
 };
 
 
-/// <summary>
-/// Says that beacons are not in this build, in multiplayer games only. Single-player games
-/// place no beacon, as in Yuri's Revenge.
-/// </summary>
-static void Report_Beacons_Unavailable(void)
-{
-	if (Session.Type != GAME_NORMAL) {
-		Session.Messages.Add_Message(NULL, 0, "Beacons are not available in this build.", PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
-	}
-}
-
-
+/*
+ * Starts beacon placement mode in a multiplayer game; the next map click places a beacon.
+ */
 class PlaceBeaconCommandClass : public CommandClass
 {
 	public:
@@ -6393,11 +6392,11 @@ class PlaceBeaconCommandClass : public CommandClass
 			return(Fetch_String((TXT_INTERFACE)));
 		}
 		virtual char const * Get_Description(void) const {
-			return("Places a beacon in a multiplayer game. Not available in this build yet.");
+			return("Places a beacon on the next cell you click in a multiplayer game.");
 		}
 
 		virtual void Execute(void) const {
-			Report_Beacons_Unavailable();
+			Map.Place_Beacon_Mode_Control(-1);
 		}
 };
 
@@ -6415,11 +6414,11 @@ class BeaconDeleteCommandClass : public CommandClass
 			return(Fetch_String((TXT_INTERFACE)));
 		}
 		virtual char const * Get_Description(void) const {
-			return("Deletes your beacon in a multiplayer game. Not available in this build yet.");
+			return("Deletes the selected beacon of yours in a multiplayer game.");
 		}
 
 		virtual void Execute(void) const {
-			Report_Beacons_Unavailable();
+			Beacon_Delete_Selected();
 		}
 };
 

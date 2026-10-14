@@ -13,6 +13,7 @@
 #include "chat.h"
 
 #include "_map.h"
+#include "beacon.h"
 #include "_rules.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -116,6 +117,8 @@ bool Chat_Begin(ChatScopeType scope, int house)
 		Session.MessageAddress = *Ipx.Connection_Address(house);
 	}
 
+	// A chat line never writes a beacon message, even if a closed beacon edit left its flag set.
+	Beacon_Text_Sync();
 	Session.Messages.Add_Edit(PlayerPtr->Scheme,
 		TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), prefix, 0, -1);
 	Map.Flag_To_Redraw();

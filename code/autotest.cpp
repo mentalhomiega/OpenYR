@@ -69,6 +69,11 @@
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
 **							the Behind animation
+**	beacon place x y	queues a beacon for the player on that cell, as a click in beacon mode does
+**	beacon select x y	selects the beacon near that cell, as a click on it does
+**	beacon delete		deletes the selected beacon when the player owns it, as the Delete command does
+**	beacon list		writes each beacon with its house, slot, cell, visibility and text
+**	beacontext <text>	sets the text of the player's selected beacon through the beacon event
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
@@ -160,6 +165,7 @@
 #include "_command.h"
 #include "_keyboar.h"
 #include "_map.h"
+#include "beacon.h"
 #include "queue.h"
 #include "_rules.h"
 #include "_tactica.h"
@@ -1843,6 +1849,47 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// beacon <place|select|delete|list> [x y]: the beacon steps. place queues the placement event.
+	if (step.Command == "beacon") {
+		if (step.Argument == "place") {
+			Coord coord = Cell(step.X, step.Y).As_Coord();
+			xCoord where;
+			where = coord;
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::BEACON_PLACE, where));
+			DebugString("AUTOTEST   beacon place %d,%d queued\n", step.X, step.Y);
+		} else if (step.Argument == "select") {
+			BeaconClass * beacon = Beacons.Find_Near(Cell(step.X, step.Y));
+			Unselect_All();
+			if (beacon != NULL) {
+				Beacons.Select(beacon);
+				DebugString("AUTOTEST   beacon select house %d slot %d\n", beacon->House, beacon->Slot);
+			} else {
+				DebugString("AUTOTEST   beacon select %d,%d: no beacon\n", step.X, step.Y);
+			}
+		} else if (step.Argument == "delete") {
+			Beacon_Delete_Selected();
+			DebugString("AUTOTEST   beacon delete queued\n");
+		} else if (step.Argument == "list") {
+			for (int house = 0; house < MAX_PLAYERS; house++) {
+				for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
+					BeaconClass const * beacon = Beacons.Get(house, slot);
+					if (beacon != NULL) {
+						DebugString("AUTOTEST   beacon house %d slot %d at %d,%d visible %d selected %d text %s\n", beacon->House, beacon->Slot,
+							beacon->Where.As_Cell().X, beacon->Where.As_Cell().Y, Beacons.Visible_To_Player(beacon) ? 1 : 0, beacon->IsSelected ? 1 : 0, beacon->Text);
+					}
+				}
+			}
+		}
+		return;
+	}
+
+	// beacontext <text>: sets the text of the player's selected beacon through the beacon event.
+	if (step.Command == "beacontext") {
+		Beacon_Text_Send(step.Argument.c_str());
+		DebugString("AUTOTEST   beacontext queued: %s\n", step.Argument.c_str());
+		return;
+	}
+
 	// planstate <TypeName>: for each of the player's units of that type, its cell, queued planned orders and whether its plan runs.
 	if (step.Command == "planstate") {
 		for (int index = 0; index < Feet.Count(); index++) {
@@ -3234,7 +3281,7 @@ bool AutoTest_Load(char const * filename)
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
 			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
 			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
-			|| std::strcmp(command, "log") == 0) {
+			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);

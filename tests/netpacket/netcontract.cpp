@@ -157,7 +157,12 @@ void Test_Event_Contract(void)
 {
 	Check(EventClass::LATENCYFUDGE == 35, "the last inherited event keeps numeric ID 35");
 	Check(EventClass::NETWORK_REPORT == 36 && EventClass::ABANDON_COUNT == 37 && EventClass::DETONATE == 38 && EventClass::ALL_CHEER == 39, "the timing report, the multi-abandon, the bomb detonation and the all-cheer keep their inherited numbers");
-	Check(EventClass::PLAN_ORDER == 40 && EventClass::PLAN_COMMIT == 41 && EventClass::LAST_EVENT == 42, "the planned order and its commit append after the inherited events");
+	Check(EventClass::PLAN_ORDER == 40 && EventClass::PLAN_COMMIT == 41 && EventClass::BEACON_PLACE == 42 && EventClass::BEACON_DELETE == 43 && EventClass::BEACON_TEXT == 44 && EventClass::LAST_EVENT == 45, "the planned orders and the beacon events append after the inherited events");
+	Check(EventClass::EventLength[EventClass::BEACON_PLACE] == sizeof(xCoord), "BEACON_PLACE carries its location");
+	Check(EventClass::EventLength[EventClass::BEACON_DELETE] == sizeof(int), "BEACON_DELETE carries its slot");
+	Check(EventClass::EventLength[EventClass::BEACON_TEXT] == sizeof(unsigned int) && EventClass::Has_Variable_Payload(EventClass::BEACON_TEXT), "BEACON_TEXT carries a variable payload behind its size");
+	Check(!EventClass::Has_Variable_Payload(EventClass::BEACON_PLACE) && !EventClass::Has_Variable_Payload(EventClass::BEACON_DELETE), "the fixed beacon events carry no variable payload");
+	Check(std::strcmp(EventClass::EventNames[EventClass::BEACON_PLACE], "BEACON_PLACE") == 0 && std::strcmp(EventClass::EventNames[EventClass::BEACON_DELETE], "BEACON_DELETE") == 0 && std::strcmp(EventClass::EventNames[EventClass::BEACON_TEXT], "BEACON_TEXT") == 0, "the beacon events have diagnostic names");
 	Check(EventClass::EventLength[EventClass::PLAN_ORDER] == EventClass::EventLength[EventClass::MEGAMISSION], "PLAN_ORDER carries the mega mission payload");
 	Check(std::strcmp(EventClass::EventNames[EventClass::PLAN_ORDER], "PLAN_ORDER") == 0, "PLAN_ORDER has a diagnostic name");
 	Check(EventClass::EventLength[EventClass::PLAN_COMMIT] == 0, "PLAN_COMMIT carries no payload");
@@ -325,12 +330,12 @@ Bytes Valid_Compressed_Event(std::uint8_t type)
 
 	if (type == EventClass::MEGAMISSION) {
 		packet.push_back(std::byte{1});
-	} else if (type == EventClass::ADDPLAYER) {
+	} else if (EventClass::Has_Variable_Payload(type)) {
 		std::uint32_t const size = 0;
 		Append_Value(packet, size);
 	}
 
-	if (type != EventClass::ADDPLAYER) {
+	if (!EventClass::Has_Variable_Payload(type)) {
 		packet.insert(packet.end(), EventClass::EventLength[type], std::byte{0});
 	}
 	return(packet);
@@ -360,7 +365,7 @@ void Test_Full_Compressed_Table(void)
 
 		packet.pop_back();
 		NetPacket::DecodeError expected = NetPacket::DecodeError::TRUNCATED_EVENT;
-		if (type == EventClass::ADDPLAYER) {
+		if (EventClass::Has_Variable_Payload(type)) {
 			expected = NetPacket::DecodeError::TRUNCATED_ADDPLAYER;
 		} else if (type == EventClass::MEGAMISSION) {
 			expected = NetPacket::DecodeError::TRUNCATED_MEGAMISSION;
@@ -515,6 +520,52 @@ void Test_Add_Player(void)
 		NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
 		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
 		"uncompressed ADDPLAYER rejects a truncated owned payload");
+}
+
+
+/*
+ * A BEACON_TEXT payload is its slot byte and then its text. It decodes and binds like ADDPLAYER data.
+ */
+void Test_Beacon_Text(void)
+{
+	Bytes payload{std::byte{0x02}, std::byte{'h'}, std::byte{'i'}};
+	std::uint32_t const size = static_cast<std::uint32_t>(payload.size());
+
+	Bytes compressed = Compressed_Packet();
+	compressed.push_back(static_cast<std::byte>(EventClass::BEACON_TEXT));
+	Append_Value(compressed, size);
+	Append_Bytes(compressed, payload);
+
+	NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(compressed, NetPacket::Encoding::COMPRESSED, Sender);
+	bool valid = result.Succeeded() && result.Events.size() == 2;
+	if (valid) {
+		NetPacket::DecodedEvent const & event = result.Events[1];
+		valid = event.Event.Type == EventClass::BEACON_TEXT
+			&& event.Event.Data.Variable.Size == size
+			&& event.AddPlayerData.size() == size
+			&& event.Event.Data.Variable.Pointer == event.AddPlayerData.data()
+			&& std::to_integer<int>(event.AddPlayerData[0]) == 0x02
+			&& std::to_integer<int>(event.AddPlayerData[2]) == 'i';
+	}
+	Check(valid, "compressed BEACON_TEXT owns and binds its payload");
+
+	Bytes truncated = compressed;
+	truncated.pop_back();
+	Check_Error(
+		NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		"compressed BEACON_TEXT rejects a payload shorter than its declared size");
+
+	Bytes uncompressed = Full_Event(EventClass::FRAMEINFO);
+	Bytes text = Full_Event(EventClass::BEACON_TEXT);
+	Write_Value(text, DataOffset + VariableSizeOffset, size);
+	Append_Bytes(uncompressed, text);
+	Append_Bytes(uncompressed, payload);
+	NetPacket::DecodeResult uncompressed_result = NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender);
+	Check(uncompressed_result.Succeeded() && uncompressed_result.Events.size() == 2
+		&& uncompressed_result.Events[1].Event.Type == EventClass::BEACON_TEXT
+		&& uncompressed_result.Events[1].AddPlayerData.size() == size,
+		"uncompressed BEACON_TEXT owns and binds its payload");
 }
 
 
@@ -1210,6 +1261,7 @@ int main(void)
 	Test_Full_Compressed_Table();
 	Test_Mega_Mission();
 	Test_Add_Player();
+	Test_Beacon_Text();
 	Test_Uncompressed();
 	Test_Datagram_Admission();
 	Test_Connection_Admission();

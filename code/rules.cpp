@@ -663,6 +663,7 @@ RulesClass::RulesClass(void) :
 	GenericBeep(VOC_NONE),
 	StartPlanningModeSound(VOC_NONE),
 	EndPlanningModeSound(VOC_NONE),
+	PlaceBeaconSound(VOC_NONE),
 	AddPlanningModeCommandSound(VOC_NONE),
 	BlowupSound(VOC_NONE),
 	HealCrateSound(VOC_NONE),
@@ -1183,6 +1184,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		GenericBeep = ini.Get_VocType(AUDIOVISUAL, "GenericBeep", GenericBeep);
 		StartPlanningModeSound = ini.Get_VocType(AUDIOVISUAL, "StartPlanningModeSound", StartPlanningModeSound);
 		EndPlanningModeSound = ini.Get_VocType(AUDIOVISUAL, "EndPlanningModeSound", EndPlanningModeSound);
+		PlaceBeaconSound = ini.Get_VocType(AUDIOVISUAL, "PlaceBeaconSound", PlaceBeaconSound);
 		AddPlanningModeCommandSound = ini.Get_VocType(AUDIOVISUAL, "AddPlanningModeCommandSound", AddPlanningModeCommandSound);
 		BuildingDrop = ini.Get_VocType(AUDIOVISUAL, "BuildingDrop", BuildingDrop);
 		BunkerWallsUpSound = ini.Get_VocType(AUDIOVISUAL, "BunkerWallsUpSound", BunkerWallsUpSound);
@@ -3080,6 +3082,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GenericBeep);
 	stream.Serialize(StartPlanningModeSound);
 	stream.Serialize(EndPlanningModeSound);
+	stream.Serialize(PlaceBeaconSound);
 	stream.Serialize(AddPlanningModeCommandSound);
 	stream.Serialize(BlowupSound);
 	stream.Serialize(HealCrateSound);

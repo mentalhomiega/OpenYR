@@ -927,6 +927,9 @@
 #define TXT_PLANNING_MODE_OFF           4552
 #define TXT_PLANNING_UNIT_FULL          4553
 #define TXT_PLANNING_HOUSE_FULL         4554
+#define TXT_BEACON_PLACED               4555
+#define TXT_BEACON_SELECT_HINT          4556
+#define TXT_BEACON_TEXT_PROMPT          4557
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046

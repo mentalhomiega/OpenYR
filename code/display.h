@@ -181,6 +181,7 @@ class DisplayClass: public MapClass
 		void Waypoint_Mode_Control(int control, bool edit_selected_path=false);
 		void Planning_Mode_Control(int control, int hold_key);
 		void Planning_Hold_Check(void);
+		void Place_Beacon_Mode_Control(int control);
 		void Reset_Planning_Mode(void);
 		void Power_Mode_Control(int control);
 		void Repair_Mode_Control(int control);
@@ -242,6 +243,12 @@ class DisplayClass: public MapClass
 		 */
 		bool IsPlanningMode;
 		int PlanningHoldKey;
+
+		/*
+		 * While beacon placement mode is on, the next click on the map places a beacon there and
+		 * turns the mode off. The mode is not saved.
+		 */
+		bool IsPlaceBeaconMode;
 
 		/*
 		**	If the player is currently in ion cannon targeting mode, then this

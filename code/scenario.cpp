@@ -80,6 +80,7 @@
 #include "_wsproto.h"
 #include "addon.h"
 #include "aircraft.h"
+#include "beacon.h"
 #include "aitrig.h"
 #include "anim.h"
 #include "astar.h"
@@ -2422,6 +2423,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	}
 
 	RadarEventClass::Clear();
+	Beacons.Clear();
 
 	Map.Complete_Radar_Refresh();
 

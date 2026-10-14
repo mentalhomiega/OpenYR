@@ -28,6 +28,7 @@
 #include "_zbuffer.h"
 #include "alphashp.h"
 #include "anim.h"
+#include "beacon.h"
 #include "animtype.h"
 #include "building.h"
 #include "builtype.h"
@@ -1323,6 +1324,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Mind_Control_Links();
 		Draw_Psychic_Lines();
 		Draw_Hidden_Markers();
+		Draw_Beacons();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
@@ -3529,6 +3531,45 @@ void Tactical::Reset_Dirty_Rectangles(void)
 /// the bridge height so the line terminates at the correct screen position.
 /// </summary>
 /// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
+/// <summary>
+/// Draws each beacon the local player can see, with its message above it.
+/// </summary>
+void Tactical::Draw_Beacons(void)
+{
+	if (Debug_Map || !Beacons.Is_Available()) {
+		return;
+	}
+
+	ShapeSet const * shapes = (ShapeSet const *)MixFileClass::Retrieve("PBEACON.SHP");
+	if (shapes == NULL || shapes->Get_Count() < 2) {
+		return;
+	}
+	int const half = shapes->Get_Count() / 2;
+
+	for (int house = 0; house < MAX_PLAYERS; house++) {
+		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
+			BeaconClass * beacon = Beacons.Get(house, slot);
+			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
+				continue;
+			}
+
+			Point2D pixel;
+			Coord_To_Pixel(beacon->Where, pixel);
+			pixel.Y += TacticalRect.Y;
+
+			// A selected beacon draws from the second half of its frames.
+			int const frame = (beacon->IsSelected ? half : 0) + Frame % half;
+			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA));
+
+			if (beacon->Text[0] != '\0') {
+				Point2D label(pixel.X, pixel.Y - 25);
+				Simple_Text_Print(beacon->Text, *LogicalSurface, TacticalRect, label, ColorSchemes[Houses[house]->Scheme], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
+			}
+		}
+	}
+}
+
+
 void Tactical::Draw_Rally_Points(bool inshroud)
 {
 	static bool _pattern[8] = {

@@ -173,6 +173,7 @@ class RadarClass: public DisplayClass
 		void Redraw_Radar(bool complete);
 
 		void Render_Radar(void);
+		void Draw_Beacon_Blips(void);
 		void Play_Movie(void);
 		void Complete_Radar_Refresh(void);
 

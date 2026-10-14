@@ -77,7 +77,9 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
+#include "beacon.h"
 #include "bsurface.h"
+#include "shapeset.h"
 #include "builtype.h"
 #include "cell.h"
 #include "convert.h"
@@ -2145,6 +2147,37 @@ void RadarClass::Redraw_Radar(bool complete)
 /// background and pixel updates, lets the radar events draw themselves, and then blits the
 /// dirty portion of the radar surface onto the sidebar.
 /// </summary>
+/// <summary>
+/// Draws the blinking marker of each beacon the local player can see onto the sidebar's radar.
+/// Each cycle is four times the marker's frame count; the marker shows its first frame count of them.
+/// </summary>
+void RadarClass::Draw_Beacon_Blips(void)
+{
+	ShapeSet const * shapes = (ShapeSet const *)MixFileClass::Retrieve("RDRBEACN.SHP");
+	if (shapes == NULL || shapes->Get_Count() < 1) {
+		return;
+	}
+
+	int const count = shapes->Get_Count();
+	int const phase = Frame % (count * 4);
+	if (phase >= count) {
+		return;
+	}
+
+	for (int house = 0; house < MAX_PLAYERS; house++) {
+		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
+			BeaconClass * beacon = Beacons.Get(house, slot);
+			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
+				continue;
+			}
+
+			Rect const pixel = Cell_To_Radar_Pixel(beacon->Where.As_Cell());
+			Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
+		}
+	}
+}
+
+
 void RadarClass::Render_Radar(void)
 {
 	int i;
@@ -2192,7 +2225,7 @@ void RadarClass::Render_Radar(void)
 		OldRadarViewRect = RadarViewRect;
 	}
 
-	if (IsToRedraw || OldRadarViewRect != RadarViewRect || !No_Radar_Events_Submitted() || PixelStack.Count() > 0 || BackgroundStack.Count() > 0) {
+	if (IsToRedraw || OldRadarViewRect != RadarViewRect || !No_Radar_Events_Submitted() || PixelStack.Count() > 0 || BackgroundStack.Count() > 0 || Beacons.Has_Visible()) {
 		if (is_tactical) {
 			IsToRedraw = false;
 		}
@@ -2257,6 +2290,12 @@ void RadarClass::Render_Radar(void)
 
 			if (LastDrawRect.Is_Valid()) {
 				SidebarSurface->Blit_From(LastDrawRect, *RadarSurface, LastDrawRect - RadarRect.TopLeft);
+			}
+
+			// The blips are drawn over the radar, so the radar is copied again before them each pass.
+			if (Beacons.Has_Visible()) {
+				SidebarSurface->Blit_From(RadarRect, *RadarSurface, RadarRect - RadarRect.TopLeft);
+				Draw_Beacon_Blips();
 			}
 
 			SidebarSurface->Draw_Rect(RadarViewRect, DSurface::Build_Hicolor_Pixel(255, 255, 255));

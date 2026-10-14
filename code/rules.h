@@ -1188,6 +1188,11 @@ class RulesClass
 		 */
 		VocType StartPlanningModeSound;
 		VocType EndPlanningModeSound;
+
+		/*
+		 * The sound played for the player who places a beacon in a multiplayer game.
+		 */
+		VocType PlaceBeaconSound;
 		VocType AddPlanningModeCommandSound;
 
 		/*

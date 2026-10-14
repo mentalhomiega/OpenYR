@@ -1134,6 +1134,9 @@ BEGIN
     TXT_PLANNING_MODE_OFF   "Planning mode off. Queued orders start now."
     TXT_PLANNING_UNIT_FULL  "This unit's plan is full. The order was not planned."
     TXT_PLANNING_HOUSE_FULL "Too many units have planned orders. The order was not planned."
+    TXT_BEACON_PLACED       "Beacon placed."
+    TXT_BEACON_SELECT_HINT  "Select the beacon and press Enter to write a message for it."
+    TXT_BEACON_TEXT_PROMPT  "Beacon message: "
     TXT_DEBUG_FAST_FORWARD_DESC "Runs the game without the frame limit that the game speed sets, so it runs much faster. Each tick does the same work as usual. Works only with Debug mode on in single-player games."
 END
 
