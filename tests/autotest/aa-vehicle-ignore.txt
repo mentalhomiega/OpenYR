@@ -1,0 +1,29 @@
+; A computer Grizzly (MTNK at 60,22) whose only weapon is anti-air (RedEye2, AA=yes AG=no, via the aa-vehicle-rules mod).
+; Two player ground units stand beside it: infantry (E1 at 62,25 and 58,25) and an IFV (FV at 63,22). A player Kirov (ZEP)
+; is granted at 60,19 at frame 620 and climbs by itself; it is In_Air from about frame 760.
+; Expected: the Grizzly's scans (threatscan 0 Normal, 2 Area, 4 Air, 5 Air|Range, 6 Air|Area) pick nothing while no aircraft
+; flies, so the infantry and the IFV are never a target, and the Area, Air|Range and Air|Area scans at frames 761 to 763 pick the Kirov. The Normal scan at frame 760 finds nothing in the run that wrote this header.
+; The where lines show the Grizzly's own target: the infantry or IFV on the baseline build, none on the fixed one before the Kirov flies, and the Kirov after.
+; Run (with -Mods tests/autotest/aa-vehicle-rules): scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/aa-vehicle-ignore.txt -Mods src-agent6/tests/autotest/aa-vehicle-rules -Seconds 150
+30 command CenterBase
+35 reveal
+40 spawn MTNK 60 22
+45 grantunit E1 62 25
+46 grantunit E1 58 25
+47 grantunit FV 63 22
+50 weapons MTNK
+60 threatscan MTNK 0
+61 threatscan MTNK 2
+62 threatscan MTNK 4
+63 threatscan MTNK 5
+64 threatscan MTNK 6
+100 where MTNK
+300 where MTNK
+620 grantunit ZEP 60 19
+760 threatscan MTNK 0
+761 threatscan MTNK 2
+762 threatscan MTNK 5
+763 threatscan MTNK 6
+770 where MTNK
+772 where ZEP
+800 quit
