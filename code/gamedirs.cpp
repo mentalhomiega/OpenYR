@@ -97,6 +97,12 @@ std::string Data_Directory(void)
 }
 
 
+std::string User_Directory(void)
+{
+	return(UserDirectory);
+}
+
+
 /*
  * What went wrong with the directories, kept for whoever is in a position to tell the
  * player. Reporting it is not this module's business, since it has no window to report in.

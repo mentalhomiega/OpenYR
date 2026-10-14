@@ -26,6 +26,11 @@ class DeploymentConfigClass
 		// The mods read when the player's RA2MD.INI gives no list, in the order they are read; the command line can add more.
 		std::string Mods = "";
 
+		// The game data directory and the user directory, for a copy kept apart from its data. The game
+		// takes them only from the file beside it, and only where the command line names neither.
+		std::string DataDirectory = "";
+		std::string UserDirectory = "";
+
 		// Whether a save carries the scenario file it was played from, which enlarges a save by half again.
 		bool CarryScenarioFile = false;
 

@@ -1,7 +1,7 @@
 ---
 format_id: opents-ini
 title: OPENTS.INI
-summary: Names the folders a deployment sorts its game files into, the mods it starts with, the names of the files the game reads, and what its saves hold.
+summary: Names the game data and user directories, the folders a deployment sorts its game files into, the mods it starts with, the names of the files the game reads, and what its saves hold.
 kind: file
 source_files:
   - code/cdfile.cpp
@@ -124,11 +124,23 @@ The copy makes every save larger, by about the compressed size of the scenario f
 
 Each save keeps what it was written with. Turning the key off makes new saves smaller and does not change existing ones, and a save that holds a copy still restarts from it.
 
+## The data and user directories
+
+```ini title="OPENTS.INI"
+[Paths]
+DataDirectory=C:\Games\Yuri's Revenge
+UserDirectory=user
+```
+
+`DataDirectory` names the game data directory, and `UserDirectory` names the user data directory. They take the place of [`-DATADIR`](/using/command-line/data-directory/) and [`-USERDIR`](/using/command-line/user-directory/). A relative path is relative to the game's own directory. Each key applies only where its command line option is not given.
+
+The game reads these keys from the file beside `Game.exe`, or from that directory's `INI` or `MIX` folder. `DataDirectory` takes effect only without `-DATADIR`. When it takes effect this way, the file beside the game is the deployment's file, and the copy in the data directory is not read. A data directory that does not exist stops startup, as it does for `-DATADIR`. The user directory is created when it is missing.
+
 ## Where the file is looked for
 
-`OPENTS.INI` must be a loose file, because the game does not read it from an archive. The game looks for it in the game data directory, then in that directory's `INI` and `MIX` folders, and reads the first copy it finds. The user data directory is not searched for it.
+`OPENTS.INI` must be a loose file, because the game does not read it from an archive. The game looks for it in the game data directory, then in that directory's `INI` and `MIX` folders, and reads the first copy it finds. The user data directory is not searched for it. The file beside the game is read instead, when it names the data directory itself; see [the data and user directories](#the-data-and-user-directories).
 
-The game data directory is the one [`-DATADIR`](/using/command-line/data-directory/) names, or the game's own directory when that option is not used.
+The game data directory is the one [`-DATADIR`](/using/command-line/data-directory/) names, or the one [`DataDirectory`](#the-data-and-user-directories) names in the file beside the game, or the game's own directory when neither is given.
 
 The game never writes to the file.
 

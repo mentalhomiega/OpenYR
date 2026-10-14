@@ -29,6 +29,9 @@ bool Apply_Game_Directories(void);
  */
 std::string Data_Directory(void);
 
+// The user directory as applied, empty or ending in a separator.
+std::string User_Directory(void);
+
 // Installs the folders the deployment's files are searched in, relative to the data directory.
 void Init_Search_Folders(char const * list);
 

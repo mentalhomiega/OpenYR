@@ -434,6 +434,32 @@ static bool Claim_Single_Instance(void)
 }
 
 
+/*
+ * The game's own OPENTS.INI can name the data directory and the user directory, so a copy
+ * installed apart from its data finds the data. Each one applies only where the command line
+ * named none. A data directory named there makes the file beside the game the deployment's file.
+ */
+static bool Deployment_Beside_Game = false;
+
+
+static void Read_Beside_Game_Directories(void)
+{
+	DeploymentConfigClass beside;
+	if (!beside.Read_File("")) {
+		return;
+	}
+
+	if (Data_Directory().empty() && !beside.DataDirectory.empty()) {
+		Set_Data_Directory(beside.DataDirectory.c_str());
+		Deployment_Beside_Game = true;
+	}
+
+	if (User_Directory().empty() && !beside.UserDirectory.empty()) {
+		Set_User_Directory(beside.UserDirectory.c_str());
+	}
+}
+
+
 /***********************************************************************************************
  * main -- Initial startup routine (preps library systems).                                    *
  *                                                                                             *
@@ -516,7 +542,12 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 	int error_code = EXIT_FAILURE;
 
-	if (Parse_Command_Line(argc, argv) && Apply_Game_Directories()) {
+	bool const command_line_ok = Parse_Command_Line(argc, argv);
+	if (command_line_ok) {
+		Read_Beside_Game_Directories();
+	}
+
+	if (command_line_ok && Apply_Game_Directories()) {
 
 		if (!Debug_MultipleInstances && !Claim_Single_Instance()) {
 			return(EXIT_SUCCESS);
@@ -530,7 +561,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		 * the deployment's own file is read, then the folders it names are installed, then the
 		 * player's settings are read and the mods they or the deployment name are installed.
 		 */
-		DeploymentConfig.Read_File(Data_Directory().c_str());
+		DeploymentConfig.Read_File(Deployment_Beside_Game ? "" : Data_Directory().c_str());
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
 
 		// The player's settings are read before the mods are installed, so that their Mods= is

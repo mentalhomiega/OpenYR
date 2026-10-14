@@ -27,6 +27,8 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 {
 	SearchPaths = ini.Get_String("Paths", "SearchPaths", SearchPaths.c_str());
 	Mods = ini.Get_String("Paths", "Mods", Mods.c_str());
+	DataDirectory = ini.Get_String("Paths", "DataDirectory", DataDirectory.c_str());
+	UserDirectory = ini.Get_String("Paths", "UserDirectory", UserDirectory.c_str());
 	CarryScenarioFile = ini.Get_Bool("Saves", "CarryScenarioFile", CarryScenarioFile);
 	RulesFile = ini.Get_String("Files", "Rules", RulesFile.c_str());
 	RulesExpansionFile = ini.Get_String("Files", "RulesExpansion", RulesExpansionFile.c_str());

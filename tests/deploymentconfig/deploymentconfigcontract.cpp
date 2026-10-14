@@ -135,6 +135,24 @@ void Test_Search_Paths(void)
 }
 
 
+void Test_Directories(void)
+{
+	DeploymentConfigClass config;
+
+	Check(config.DataDirectory.empty() && config.UserDirectory.empty(), "with no file no directory is named");
+
+	Write_File(Root + "\\OPENTS.INI", "[Paths]\nDataDirectory=C:\\Games\\Yuri's Revenge\nUserDirectory=user\n");
+
+	Check(config.Read_File(""), "a file naming the directories is read");
+	Check(config.DataDirectory == "C:\\Games\\Yuri's Revenge", "the data directory is taken as written, apostrophe and all");
+	Check(config.UserDirectory == "user", "and so is the user directory");
+
+	Remove_File(Root + "\\OPENTS.INI");
+	config.Read_File("");
+	Check(config.DataDirectory.empty(), "with the file gone the data directory is not named");
+}
+
+
 void Test_Mods(void)
 {
 	DeploymentConfigClass config;
@@ -334,6 +352,7 @@ int main(void)
 	Test_Defaults();
 	Test_Search_Paths();
 	Test_Mods();
+	Test_Directories();
 	Test_Where_The_File_Is_Looked_For();
 	Test_The_Directory_Named();
 	Test_A_Read_Starts_Over();
