@@ -1056,9 +1056,8 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 			if (Class->AuxVoxel.VoxLib != NULL) {
 
-				// The turret and barrel step through their frames as the turret animates (BuildingClass::Draw, 0x43DA80).
+				// The turret steps through its frames as it animates, and a barrel under a voxel turret stays on frame 0 (BuildingClass::Draw, 0x43DA80).
 				int const turret_frame = Class->AuxVoxel.MotLib != NULL && Class->AuxVoxel.MotLib->Get_Frame_Count() > 0 ? TurretAnimFrame % Class->AuxVoxel.MotLib->Get_Frame_Count() : 0;
-				int const barrel_frame = Class->AuxVoxel2.MotLib != NULL && Class->AuxVoxel2.MotLib->Get_Frame_Count() > 0 ? TurretAnimFrame % Class->AuxVoxel2.MotLib->Get_Frame_Count() : 0;
 
 				matrix.Rotate_Z(PrimaryFacing.Current().As_Radian32());
 				matrix.Translate_X(Class->TurretOffset / 8);
@@ -1085,7 +1084,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 					draw_barrel = false;
 					voxl = &Class->AuxVoxel2;
 					if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-						Draw_Voxel(Class->AuxVoxel2, barrel_frame, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
+						Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
 					}
 				} else {
 					draw_barrel = true;
@@ -1096,7 +1095,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				if (draw_barrel) {
 					voxl = &Class->AuxVoxel2;
 					if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-						Draw_Voxel(Class->AuxVoxel2, barrel_frame, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
+						Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
 					}
 				}
 
@@ -1110,7 +1109,9 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32()));
 				matrix.Translate(vec2);
 
-				Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, xy + Class->AnimData[BANIM_TURRET].Location, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
+				// A barrel drawn alone steps through its frames with the turret animation (BuildingClass::Draw, 0x43DA80).
+				int const barrel_frame = Class->AuxVoxel2.MotLib->Get_Frame_Count() > 0 ? TurretAnimFrame % Class->AuxVoxel2.MotLib->Get_Frame_Count() : 0;
+				Draw_Voxel(Class->AuxVoxel2, barrel_frame, -1, &Class->VoxelIndex, rect, xy + Class->AnimData[BANIM_TURRET].Location, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
 			}
 		}
 

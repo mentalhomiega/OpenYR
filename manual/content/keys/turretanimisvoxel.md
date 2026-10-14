@@ -41,3 +41,9 @@ A voxel turret aims exactly, where an animated turret aims to the nearest of its
 | Its shot leaves along | the rounded facing | the exact direction to the target |
 
 A voxel turret that has come within 2.8125 degrees of the target snaps the rest of the way, so it can fire.
+
+## Frames
+
+The voxel turret shows the frame that the building's animation counter selects, taken modulo the frame count of its motion file. A [gattling](/systems/gattling-weapons/) structure advances that counter while it spins. A barrel under a voxel turret stays on its first frame.
+
+A `TurretAnim` name without `TUR` after its first four characters loads no turret model. Its voxel model is drawn as the barrel, and it shows the counter frame in the same way.
