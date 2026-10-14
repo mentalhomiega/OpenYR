@@ -1,0 +1,12 @@
+; Deadman high road bridge regression: the stock map has a gap of three cells in the road span at 57,41 to 59,41.
+; A bridge repair hut at 52,43 is within reach of that gap. The span is logged before the engineer goes out
+; (the gap is there), and after the engineer has repaired it through the hut (the deck overlays are back).
+; Run: scripts/run_autotest.ps1 -Script tests/bridge/deadman-hut-high.txt -Build agent4 -Map Deadman.mmx -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   bridge|AUTOTEST   hut|AUTOTEST   repairbridge|AUTOTEST   where|Exception"
+100 bridgearea 55 43
+101 repairbridge 52 43
+150 grantunit ENGINEER 50 46
+200 hutaction ENGINEER 52 43
+201 hutclick ENGINEER 52 43
+1500 bridgearea 55 43
+1501 repairbridge 52 43
+1502 quit

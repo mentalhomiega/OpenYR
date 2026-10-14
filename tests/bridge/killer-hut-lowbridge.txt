@@ -1,0 +1,20 @@
+; Killer wood low-bridge regression: a Ghost plants C4 on the bridge repair hut at 58,65, which stands beside a
+; wood low bridge on rows 66 to 68. The span is logged before the strike (overlays 74 to 77 and 94), after the
+; C4 has gone off (the cells at 66 to 69 become overlay 100, the broken end), and after an engineer repairs it
+; through the hut (the wood overlays are back, though some cells use other segment art).
+; Run: scripts/run_autotest.ps1 -Script tests/bridge/killer-hut-lowbridge.txt -Build agent4 -Map Killer.mmx -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   bridgearea|AUTOTEST   hut|AUTOTEST   repairbridge|AUTOTEST   where|Exception"
+30 grantunit GHOST 57 63
+100 bridgearea 66 67
+101 repairbridge 58 65
+250 strike GHOST 58 65
+1400 bridgearea 66 67
+1401 repairbridge 58 65
+1403 grantunit ENGINEER 57 64
+1420 hutaction ENGINEER 58 65
+1421 hutclick ENGINEER 58 65
+1900 bridgearea 66 67
+1901 repairbridge 58 65
+1950 where ENGINEER
+2000 bridgearea 66 67
+2001 repairbridge 58 65
+2002 quit

@@ -1,13 +1,23 @@
-; Carville bridge-hut regression: a Ghost plants C4 on the bridge repair hut at 47,60. The railway span
-; east of the hut (cells 50,63 to 53,63) is logged before the strike and after the C4 has gone off.
-; Run: scripts/run_autotest.ps1 -Script tests/bridge/carville-hut.txt -Build agent4 -Map Carville.mmx -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   bridge|Exception"
+; Carville bridge-hut regression: a Ghost plants C4 on the bridge repair hut at 47,60, and an engineer then
+; repairs the railway span through that hut. The span is logged before the strike (deck overlay 237 on 50,63 and
+; 51,63), after the C4 has gone off (the overlays are gone), and after the engineer's repair (they are back).
+; The engineer starts on the west bank, beside the hut.
+; Run: scripts/run_autotest.ps1 -Script tests/bridge/carville-hut.txt -Build agent4 -Map Carville.mmx -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   bridge|AUTOTEST   hut|AUTOTEST   repairbridge|AUTOTEST   where|Exception"
 30 grantunit GHOST 49 58
 100 bridge 50 63
 101 bridge 52 63
-101 bridge 53 63
+102 bridge 53 63
+103 repairbridge 47 60
 250 strike GHOST 47 60
 1500 bridge 50 63
 1501 bridge 52 63
 1502 bridge 53 63
-1503 bridge 47 63
-1504 quit
+1503 repairbridge 47 60
+1510 grantunit ENGINEER 45 58
+1520 hutaction ENGINEER 47 60
+1521 hutclick ENGINEER 47 60
+1900 bridge 50 63
+1901 bridge 52 63
+1902 bridge 53 63
+1903 repairbridge 47 60
+1904 quit
