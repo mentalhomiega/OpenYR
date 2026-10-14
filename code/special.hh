@@ -28,4 +28,5 @@ enum SpecialDialogType {
 	SDLG_SPECIAL,
 	SDLG_QUICKLOAD,
 	SDLG_LOAD,
+	SDLG_BRIEFING,			// The sidebar's briefing button in a campaign mission.
 };

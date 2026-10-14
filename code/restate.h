@@ -16,3 +16,4 @@
 class ScenarioClass;
 
 void Restate_Mission(ScenarioClass * scen);
+void Show_Mission_Briefing(ScenarioClass * scen);

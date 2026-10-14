@@ -134,3 +134,20 @@ void Restate_Mission(ScenarioClass * scen)
 	ScenarioActive = save_started;
 	Keyboard->Clear();
 }
+
+
+// The sidebar's briefing button shows the text only, as gamemd's briefing dialog (0x65F520) does.
+void Show_Mission_Briefing(ScenarioClass * scen)
+{
+	if (scen == NULL) {
+		return;
+	}
+
+	std::string const text = Briefing_Text(scen);
+
+	bool save_started = ScenarioActive;
+	ScenarioActive = false;
+	UI_Restate_Mission(text.c_str(), false);
+	ScenarioActive = save_started;
+	Keyboard->Clear();
+}

@@ -1,0 +1,40 @@
+; Classic sidebar check: the diplomacy button above the radar (0xF2, windowclick 695 31 at 800x600) opens the
+; mission briefing in a campaign, and the ui lines after it page through the briefing and close it.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/classic-sidebar-briefing.txt -Campaign -Map ALL01UMD.MAP -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST diplomacy|Restate:|Exception"
+; Expects "Restate: Fetching briefing Brief:ALL01md" after the click and "AUTOTEST diplomacy button clicked" after the briefing closes.
+; The ui lines run inside the modal briefing, so the game frames continue once it closes.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+ui waitfor more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui waitfor resume
+ui wait 300
+ui click resume
+60 own CAPOWR01 88 99
+61 own CAPOWR01 90 99
+62 own CAPOWR01 92 99
+63 own CAPOWR01 86 97
+64 own CAPOWR01 84 99
+65 own CAPOWR01 80 100
+84 windowclick 695 31
+90 log AUTOTEST diplomacy button clicked
+200 quit

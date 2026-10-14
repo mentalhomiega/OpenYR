@@ -212,7 +212,7 @@ With something selected, a left click in the radar picture can act as a click on
 
 ### The diplomacy and options buttons
 
-The two buttons above the radar pane are diplomacy on the left and options on the right. Options opens the same menu as [Options](/commands/options/). Diplomacy does nothing yet.
+The two buttons above the radar pane are diplomacy on the left and options on the right. Options opens the same menu as [Options](/commands/options/). In a campaign, diplomacy opens the mission briefing text. In skirmish and multiplayer it does nothing yet, because OpenTS has no diplomacy screen.
 
 ### The mode buttons
 

@@ -173,6 +173,10 @@ static unsigned TabFlashMask = 0;
 // Do the modern panel's tabs show the icons drawn for it, rather than Yuri's Revenge's art?
 static bool TabIcons = false;
 static ShapeSet const * HudIconSet = NULL;
+
+// Whether each classic tab is disabled, as it was last set in AI. A gadget does not expose its own state.
+static bool TabDisabled[SidebarClass::COLUMNS] = {};
+
 ShapeButtonClass SidebarClass::OptionsButton;
 ShapeButtonClass SidebarClass::DiplomacyButton;
 ShapeButtonClass SidebarClass::BeaconButton;
@@ -1299,6 +1303,23 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	Fit_Panel_To_Strip();
 
+	// A classic tab with no items is disabled, as gamemd does when its last item goes (SidebarClass::RebuildScrollableStripList, 0x6AA600).
+	if (!Modern_Interface()) {
+		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
+			bool const enabled = Column[index].BuildableCount > 0;
+			if (enabled == TabDisabled[index]) {
+				if (enabled) {
+					TabButton[index].Enable();
+				} else {
+					TabButton[index].Disable();
+				}
+				TabDisabled[index] = !enabled;
+				TabButton[index].Flag_To_Redraw();
+				Flag_To_Redraw();
+			}
+		}
+	}
+
 	if (Modern_Interface()) {
 		Flash_Ready_Tabs();
 		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton, &Repair, &Upgrade, &Power, &BeaconButton}) {
@@ -1359,10 +1380,14 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 			Execute_Command("Options");
 		}
 
-		// There is no diplomacy screen yet, so the button does nothing.
+		// gamemd's 0xF2 opens the mission briefing in a campaign (RadarClass::Update, 0x653850). Other
+		// games open diplomacy, which OpenTS does not have yet, so the button does nothing there.
 		if (input == (BUTTON_DIPLOMACY|KN_BUTTON)) {
 			DiplomacyButton.IsPressed = false;
 			input = KN_NONE;
+			if (Session.Type == GAME_NORMAL) {
+				SpecialDialog = SDLG_BRIEFING;
+			}
 		}
 	}
 
@@ -3094,7 +3119,7 @@ void SidebarClass::Reposition_Sidebar(void)
 	int const tab_y = 39;
 	int const rows = Max_Visible() / StripClass::SLOT_COLUMNS;
 	int const arrow_y = SidebarRect.Y + GRID_Y + rows * StripClass::OBJECT_HEIGHT + 7;
-	int const down_step = first ? 46 : 45;
+	int const up_step = first ? 46 : 45;
 
 	Background.Set_Position(SidebarRect.X + 16, ScreenTacticalRect.Y);
 	Background.Flag_To_Redraw();
@@ -3129,11 +3154,12 @@ void SidebarClass::Reposition_Sidebar(void)
 	 * are in the button list.
 	 */
 	for (int col = 0; col < COLUMNS; col++) {
-		StripClass::UpButton[col].Set_Position(SidebarRect.X + 39, arrow_y);
+		// gamemd places the page-down arrow (R-DN, button 0xC9) left of the page-up arrow (R-UP, 0xC8) (0x6ABD30).
+		StripClass::UpButton[col].Set_Position(SidebarRect.X + 39 + up_step, arrow_y);
 		StripClass::UpButton[col].Flag_To_Redraw();
 		StripClass::UpButton[col].DrawOffsetX = -SidebarRect.X;
 
-		StripClass::DownButton[col].Set_Position(SidebarRect.X + 39 + down_step, arrow_y);
+		StripClass::DownButton[col].Set_Position(SidebarRect.X + 39, arrow_y);
 		StripClass::DownButton[col].Flag_To_Redraw();
 		StripClass::DownButton[col].DrawOffsetX = -SidebarRect.X;
 
@@ -3260,6 +3286,14 @@ void SidebarClass::Add_Tool_Tips(void)
 
 		if (Modern_Interface()) {
 			for (ShapeButtonClass const * button : {&Power, &BeaconButton, &OptionsButton}) {
+				tooltip.ID = button->ID;
+				tooltip.Text = TXT_NONE;
+				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
+				ToolTips->Remove(tooltip.ID);
+				ToolTips->Add(&tooltip);
+			}
+		} else {
+			for (ShapeButtonClass const * button : {&OptionsButton, &DiplomacyButton}) {
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
@@ -3496,6 +3530,21 @@ const char * SidebarClass::Help_Text(int id)
 				return(_text.c_str());
 			case BUTTON_OPTIONS:
 				_text = Panel_Text("GUI:Options", "Options");
+				return(_text.c_str());
+		}
+	} else {
+		// gamemd's tips for 0xF2 and 0xF3 (0x654320): the briefing in a campaign, else diplomacy.
+		static std::string _text;
+		switch (id) {
+			case BUTTON_OPTIONS:
+				_text = Panel_Text("Tip_OptionsButton", "Options");
+				return(_text.c_str());
+			case BUTTON_DIPLOMACY:
+				if (Session.Type == GAME_NORMAL) {
+					_text = Panel_Text("Tip_BriefingButton", "Briefing");
+				} else {
+					_text = Panel_Text("Tip_DiplomacyButton", "Diplomacy");
+				}
 				return(_text.c_str());
 		}
 	}

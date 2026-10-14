@@ -111,6 +111,7 @@
 #include "netshare.h"
 #include "progress.h"
 #include "queue.h"
+#include "restate.h"
 #include "rules.h"
 #include "savemgr.h"
 #include "scenario.h"
@@ -278,6 +279,11 @@ void Ingame_Menu_Dialog(void)
 
 				case SDLG_LOAD:
 					SpecialDialog = SaveManager.Multiplayer_Load_Prompt() ? SDLG_NONE : SDLG_OPTIONS;
+					break;
+
+				case SDLG_BRIEFING:
+					Show_Mission_Briefing(Scen);
+					SpecialDialog = SDLG_NONE;
 					break;
 
 				case SDLG_KEYBOARD:
