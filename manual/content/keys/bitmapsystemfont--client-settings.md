@@ -4,7 +4,7 @@ scope: client-settings
 label: Bitmap dialog text
 when_omitted:
   kind: value
-  value: "yes"
+  value: "no"
 ---
 
 `BitmapSystemFont=yes` draws the lists, text boxes, tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the original dialogs used. `BitmapSystemFont=no` draws them in the scalable face of the same design. Captions and button text use the game's own font art and look the same at either setting.

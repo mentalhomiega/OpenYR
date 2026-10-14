@@ -190,7 +190,7 @@ OptionsClass::OptionsClass(void) :
 	SoundVolume(.7f),
 	VoiceVolume(1.0f),
 	ScoreVolume(.5f),
-	BitmapSystemFont(true),
+	BitmapSystemFont(false),
 	AutoScroll(true),
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
