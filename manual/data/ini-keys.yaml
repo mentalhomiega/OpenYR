@@ -1948,6 +1948,24 @@ ActsLike:
       source: code/house.cpp
       guard: null
     level: HouseClass
+AddPlanningModeCommandSound:
+  key: AddPlanningModeCommandSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: AddPlanningModeCommandSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Adjacent:
   key: Adjacent
   scopes:
@@ -14013,6 +14031,24 @@ EndOfGame:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+EndPlanningModeSound:
+  key: EndPlanningModeSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: EndPlanningModeSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 EndStateAI:
   key: EndStateAI
   scopes:
@@ -35391,6 +35427,24 @@ StartPitch:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+StartPlanningModeSound:
+  key: StartPlanningModeSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: StartPlanningModeSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 StartSound:
   key: StartSound
   scopes:
