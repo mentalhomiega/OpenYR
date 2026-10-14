@@ -448,6 +448,11 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		bool IsShouldFogRemove;
 
+		// Set when a demand load found no artwork for ArtMissingTheater, so repeated calls do not retry it.
+		// Runtime state only: it is neither saved nor part of the checksum.
+		mutable bool IsArtMissing;
+		mutable TheaterType ArtMissingTheater;
+
 		//---------------------------------------------------------------------------
 		AnimTypeClass(char const * ininame = NULL);
 		virtual ~AnimTypeClass(void) override;

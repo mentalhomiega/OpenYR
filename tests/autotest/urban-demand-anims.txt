@@ -1,0 +1,16 @@
+; CALA10 and CAMACH are civilian structures. Their ActiveAnim, CALA10_A and CAMACH_F, is demand loaded
+; from the URBAN art, and the theater has no file under their names, so the generic CG-prefixed art
+; stands in for it, as in gamemd. No stock URBAN multiplayer map places these structures, so the
+; script places them on Kaliforn.mmx, an URBAN skirmish map.
+; Expected: each "neutral" line says placed; the log has one "Demand loading image for" line for
+; CALA10_A and one for CAMACH_F, however many structures are drawn; the screenshots show the
+; animations at the structures.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script tests/autotest/urban-demand-anims.txt -Map Kaliforn.mmx -Width 800 -Height 600 -Seconds 120 -ShotDir "E:\Claude ra2 decomp\shots\anim-demand" -Filter "AUTOTEST|Demand loading|Exception"
+10 reveal
+20 view 100 108
+60 neutral CAMACH 100 106
+60 neutral CALA10 96 112
+60 neutral CAMACH 108 112
+300 command ScreenCapture
+600 command ScreenCapture
+700 quit

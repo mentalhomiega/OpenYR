@@ -76,6 +76,26 @@ static void Free_Demand_Loaded_Shape(void const *& data)
 }
 
 
+/// <summary>
+/// Reads the shape file a demand loaded animation names.
+/// When that file is missing, the same name is tried again with G as its second letter, as
+/// gamemd does, so the generic art stands in for a theater's own art that does not exist.
+/// </summary>
+/// <param name="name">The file name to read. Its second letter is changed to G for the retry.</param>
+/// <returns>Returns with the shape data, which Free_Demand_Loaded_Shape releases, or NULL if neither file exists.</returns>
+static void * Load_Demand_Shape(char * name)
+{
+	CCFileClass file(name);
+	void * data = Load_Alloc_Data(file);
+	if (data == NULL && name[0] != '\0' && name[1] != '\0') {
+		name[1] = 'G';
+		CCFileClass generic(name);
+		data = Load_Alloc_Data(generic);
+	}
+	return(data);
+}
+
+
 /***********************************************************************************************
  * AnimTypeClass::AnimTypeClass -- Constructor for animation types.                            *
  *                                                                                             *
@@ -159,7 +179,9 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsPingPong(false),
 	IsReverse(false),
 	IsShadow(false),
-	IsShouldFogRemove(true)
+	IsShouldFogRemove(true),
+	IsArtMissing(false),
+	ArtMissingTheater(THEATER_NONE)
 {
 	Create_ID();
 	IsSentient = true;
@@ -394,6 +416,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 	}
 
 	if (BASECLASS::Read_INI(ini)) {
+		IsArtMissing = false;
 		if (!GraphicName.empty()) {
 			if (ImageData == NULL) {
 				IsTheater = ArtINI.Get_Bool(Name(), "Theater", IsTheater);
@@ -714,12 +737,13 @@ void AnimTypeClass::Detach(AbstractClass const * target, bool all)
 /// pull the shape file in the first time something actually needs to draw the animation.
 /// </summary>
 /// <returns>
-/// Returns with a pointer to the shape data. Otherwise, NULL is returned.
+/// Returns with a pointer to the shape data. Otherwise, NULL is returned. The miss is kept until
+/// another theater misses or the type's art is read again, so repeated calls do not reopen the file.
 /// </returns>
 void const * AnimTypeClass::Get_Image_Data(void) const
 {
 	void const * data = ImageData;
-	if (data == NULL && IsDemandLoad) {
+	if (data == NULL && IsDemandLoad && !(IsArtMissing && ArtMissingTheater == Scen->Theater)) {
 		DebugString("Demand loading image for %s\n", Full_Name());
 
 		char fullname[_MAX_FNAME + _MAX_EXT];
@@ -731,8 +755,14 @@ void const * AnimTypeClass::Get_Image_Data(void) const
 			Theater_Naming_Convention(fullname, Scen->Theater);
 		}
 
-		CCFileClass file(fullname);
-		((void const *&)ImageData) = Load_Alloc_Data(file);
+		void * shape = Load_Demand_Shape(fullname);
+		if (shape == NULL) {
+			IsArtMissing = true;
+			ArtMissingTheater = Scen->Theater;
+			return(NULL);
+		}
+
+		((void const *&)ImageData) = shape;
 		((AnimTypeClass*)this)->Load_Image(Scen->Theater);
 
 		data = ImageData;

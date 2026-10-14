@@ -21,9 +21,9 @@ NewTheater=yes ; draws GTFLAG.SHP in temperate, then GGFLAG.SHP, then GAFLAG.SHP
 
 Put `NewTheater=yes` in the art section of the Image ID, which is the AnimType's own section when `Image=` is not set. When the Image ID names another section, the AnimType's own section is read for this key only if neither `<AnimType ID>.SHP` nor `<Image ID>.SHP` exists.
 
-:::caution[Some animations get no fallback]
-Two kinds of animation never fall back to the unrenamed file, so they draw nothing when the theater file is missing:
+:::caution[Some animations get no unrenamed fallback]
+Two kinds of animation never fall back to the unrenamed file:
 
-- a [`DemandLoad=yes`](/keys/demandload/#scope-animtype) animation;
-- any animation after a saved game is loaded, even one that drew its unrenamed file before the save.
+- a [`DemandLoad=yes`](/keys/demandload/#scope-animtype) animation tries the theater file and then the `G` file, and draws nothing when both are missing;
+- any animation after a saved game is loaded, even one that drew its unrenamed file before the save, and draws nothing when its theater file is missing.
 :::
