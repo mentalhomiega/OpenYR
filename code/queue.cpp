@@ -812,6 +812,9 @@ static void Queue_AI_Multiplayer(void)
 	// Frame info packets carry this value to the other machines.
 	if (Debug_SyncLog) {
 		DebugString("SYNC frame %d crc %08x\n", Frame, GameCRC);
+		unsigned draw_count = 0;
+		std::uint32_t const draw_digest = Sync_Take_Draw_Digest(draw_count);
+		DebugString("SYNC_DRAWS frame %d draws %u digest %08x\n", Frame, draw_count, draw_digest);
 		for (int house_index = 0; house_index < Houses.Count(); house_index++) {
 			HouseClass const * house = Houses[house_index];
 			if (house != NULL) {

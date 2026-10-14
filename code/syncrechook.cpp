@@ -32,6 +32,10 @@ static uintptr_t ModuleBase = 0;
 static uint32_t ModuleSize = 0;
 static uint32_t MapImageBase = 0;
 
+// Word-wise FNV-style hash of the scenario draws (value and call site) since the last SYNC_DRAWS line.
+static uint32_t Scenario_Draw_Digest = 2166136261u;
+static unsigned Scenario_Draw_Count = 0;
+
 
 static uint32_t Sync_Caller_RVA(unsigned caller)
 {
@@ -145,7 +149,22 @@ void Sync_Record_Random_Impl(Random2Class const & gen, int value, int minval, in
 	entry.Max = maxval;
 	entry.Kind = (Scen != nullptr && &gen == &Scen->RandomNumber) ? SYNC_RANDOM_CRITICAL : SYNC_RANDOM_NONCRITICAL;
 	entry.Shape = ranged ? SYNC_DRAW_RANGED : (SyncRecorder.In_Ranged_Draw() ? SYNC_DRAW_INNER : SYNC_DRAW_PLAIN);
+	if (entry.Kind == SYNC_RANDOM_CRITICAL) {
+		Scenario_Draw_Digest = (Scenario_Draw_Digest ^ (uint32_t)value) * 16777619u;
+		Scenario_Draw_Digest = (Scenario_Draw_Digest ^ entry.Caller) * 16777619u;
+		Scenario_Draw_Count++;
+	}
 	SyncRecorder.Add_Random(entry);
+}
+
+
+uint32_t Sync_Take_Draw_Digest(unsigned & count)
+{
+	uint32_t const digest = Scenario_Draw_Digest;
+	count = Scenario_Draw_Count;
+	Scenario_Draw_Digest = 2166136261u;
+	Scenario_Draw_Count = 0;
+	return(digest);
 }
 
 

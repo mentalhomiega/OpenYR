@@ -65,6 +65,9 @@ inline void Sync_Record_Event(EventClass const & event, int source)
 	Sync_Record_Event_Impl(event, source);
 }
 
+// Returns the digest of the scenario draws since the last call and sets count to how many there were.
+uint32_t Sync_Take_Draw_Digest(unsigned & count);
+
 // Turns recording on for a network game or an armed recording/playback and caches the image base
 // for caller offsets; the disarm clears the histories back to empty.
 void Sync_Recorder_Arm(void);
