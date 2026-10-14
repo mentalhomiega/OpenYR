@@ -1,0 +1,54 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>CnCNet</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="cncnet.rcss"/>
+</head>
+<body template="dialog" data-model="cncnet">
+	<p id="title">CnCNet</p>
+	<div id="install">
+		<p id="installtext" class="line">{{installtext}}</p>
+		<p id="copytext" class="line">{{copytext}}</p>
+		<p id="edittext" class="line" data-if="copypresent">{{edittext}}</p>
+		<p id="versiontext" class="line" data-if="copypresent">{{versiontext}}</p>
+	</div>
+	<div id="actions" class="row">
+		<button id="find" data-class-disabled="busy" data-event-click="queue('find')">Find install</button>
+		<button id="choose" data-class-disabled="busy" data-event-click="queue('choose')">Choose folder...</button>
+		<button id="create" data-class-disabled="!cancreate" data-event-click="queue('create')">{{createcaption}}</button>
+		<button id="cancelcopy" data-if="cancancel" data-event-click="queue('cancelcopy')">Cancel copy</button>
+	</div>
+	<div id="progress" data-if="showprogress">
+		<progress id="bar" max="100" direction="right" data-attr-value="percent"/>
+		<p id="progresstext">{{progresstext}}</p>
+	</div>
+	<div id="plan" class="list"><div class="rows">
+		<div class="item" data-for="row : rows"><span class="line">{{row.text}}</span></div>
+	</div></div>
+	<p id="status" data-class-problem="problem">{{status}}</p>
+	<div id="confirm" class="row" data-if="confirming">
+		<p id="confirmtext">{{confirmtext}}</p>
+		<button id="removeyes" data-event-click="queue('removeyes')">Remove copy</button>
+		<button id="keep" data-event-click="queue('keep')">Keep copy</button>
+	</div>
+	<div id="notes">
+		<p class="line"><span class="label">Safe play:</span> leave Red Alert 2 mode, Lock Game Speed and Crates Appear off.</p>
+		<p class="line">Play only in a lobby with a password. Never play ranked games or Quick Match with this build.</p>
+		<p class="line">After each match, send the Debug folder beside Game.exe from every player.</p>
+	</div>
+	<div id="buttons">
+		<button id="start" data-class-disabled="!canstart" data-event-click="queue('start')">Start CnCNet</button>
+		<button id="remove" data-class-disabled="!canremove" data-event-click="queue('remove')">Remove OpenYR copy</button>
+		<button id="ok" data-class-disabled="busy" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	</div>
+</body>
+</rml>

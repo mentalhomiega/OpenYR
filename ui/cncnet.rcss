@@ -1,0 +1,149 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 620dp;
+	height: 540dp;
+	top: 50%;
+	margin-top: -270dp;
+}
+
+#content
+{
+	padding: 16dp 30dp 0 30dp;
+}
+
+#title
+{
+	height: 18dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#install
+{
+	margin-top: 6dp;
+}
+
+.line
+{
+	line-height: 15dp;
+	margin: 0 0 3dp 0;
+}
+
+.label
+{
+	font-weight: bold;
+}
+
+.row
+{
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+#actions
+{
+	margin-top: 8dp;
+}
+
+#actions button
+{
+	white-space: nowrap;
+	margin: 0 6dp 4dp 0;
+}
+
+#progress
+{
+	margin-top: 4dp;
+}
+
+#bar
+{
+	width: 100%;
+}
+
+#progresstext
+{
+	margin-top: 2dp;
+	line-height: 15dp;
+}
+
+#plan
+{
+	margin-top: 8dp;
+	height: 150dp;
+}
+
+#plan .item
+{
+	height: auto;
+	padding: 2dp 0;
+}
+
+#plan .line
+{
+	white-space: normal;
+}
+
+#status
+{
+	margin-top: 6dp;
+	line-height: 15dp;
+}
+
+#status.problem
+{
+	color: #ff7070;
+}
+
+#confirm
+{
+	margin-top: 6dp;
+}
+
+#confirmtext
+{
+	width: 100%;
+	margin: 0 0 4dp 0;
+	line-height: 15dp;
+}
+
+#confirm button
+{
+	white-space: nowrap;
+	margin: 0 6dp 0 0;
+}
+
+#notes
+{
+	margin-top: 8dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 8dp;
+}
+
+#buttons button
+{
+	white-space: nowrap;
+	margin-right: 6dp;
+}
+
+#ok
+{
+	margin-left: auto;
+	margin-right: 0;
+	width: 76dp;
+}

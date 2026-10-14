@@ -197,6 +197,7 @@
 #include "tube.h"
 #include "tutorial.h"
 #include "ui/screens/campaign/uicampaign.h"
+#include "ui/screens/cncnet/uicncnet.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
 #include "ui/screens/version/uiversion.h"
@@ -2981,6 +2982,7 @@ static int const MENU_NETWORK = 102;
 static int const MENU_SKIRMISH = 103;
 static int const MENU_BACK = 104;
 static int const MENU_PLAY_MOVIES = 105;
+static int const MENU_CNCNET = 106;
 
 
 // The text of a string table label, or the fallback when the table lacks it.
@@ -3047,6 +3049,10 @@ static int Menu_Selection(int choice)
 		case MENU_BACK:
 			return(SEL_NONE);
 
+		// Starting CnCNet from its page ends this game, as Exit Game does.
+		case MENU_CNCNET:
+			return(UI_CNCNet_Dialog() ? SEL_EXIT : SEL_NONE);
+
 		case MENU_NETWORK:
 		case MENU_SKIRMISH:
 			Session.Type = (choice == MENU_NETWORK) ? GAME_IPX : GAME_SKIRMISH;
@@ -3088,15 +3094,12 @@ int Main_Menu(unsigned int timeout)
 
 	while (retval == SEL_NONE) {
 		MainMenuKeyResult = SEL_NONE;
-		bool const classic = Options.IsClassicMenus;
 
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MAIN;
 		menu.Title = Menu_Text("GUI:MainMenu", "Main Menu");
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
-		if (classic) {
-			menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:WWOnline", "Internet"), SEL_NONE, false});
-		}
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Network", "Network"), MENU_NETWORK, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});

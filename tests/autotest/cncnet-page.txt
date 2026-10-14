@@ -1,0 +1,14 @@
+; The CnCNet page from the main menu: opens it, takes a screenshot, and leaves it with OK. The page only
+; reads the folders and writes nothing until a button is pressed, so the run changes no install.
+; Run from the workspace root (the folder that holds scripts/), once per menu style and size, with -Menus:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent16 -Script src-agent16/tests/autotest/cncnet-page.txt -Menus -MenuStyle Modern -Width 1280 -Height 720 -Seconds 90
+; The shot is written as cncnet-page.tga in the autotest Screenshots folder.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui shot cncnet-page
+ui ids
+ui press OK
+ui wait 1000
+ui quit
