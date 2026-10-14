@@ -27,7 +27,7 @@ class SpawnerConfigClass
 	public:
 
 		// Bump when the game's reading of a launch file or the wire format of a network packet changes; it feeds the session identity.
-		static constexpr int SCHEMA_VERSION = 5;
+		static constexpr int SCHEMA_VERSION = 6;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
@@ -102,6 +102,8 @@ class SpawnerConfigClass
 		int AIPlayers = 0;
 		int AIDifficulty = 1;
 		bool AlliesAllowed = false;
+		// The MPModesMD.ini index of the multiplayer mode the match plays; 1 is Battle.
+		int GameMode = 1;
 		bool HarvesterTruce = false;
 		bool FogOfWar = false;
 		bool MCVRedeploy = true;

@@ -167,6 +167,7 @@
 #include "logic.h"
 #include "mono.h"
 #include "mouse.h"
+#include "mpmode.h"
 #include "overtype.h"
 #include "quarry.h"
 #include "revent.h"
@@ -4047,7 +4048,13 @@ void HouseClass::MPlayer_Defeated(void)
 	if (game_over) {
 		IsToDie = false;
 
-		if (PlayerPtr->IsDefeated) {
+		/*
+		 * In a Cooperative match a defeated player still wins when the last living house is a
+		 * person, as gamemd's HouseClass::AcceptDefeat (0x4FC0B0) gives the win to CurrentPlayer.
+		 */
+		bool const allies_win = MPMode_Allies_Win() && num_alive == 1 && num_humans == 1;
+
+		if (PlayerPtr->IsDefeated && !allies_win) {
 			DebugString("MPlayer_Defeated() - Flag_To_Lose\n");
 			PlayerPtr->Flag_To_Lose(false);
 		} else {

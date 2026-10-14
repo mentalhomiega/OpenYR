@@ -1,0 +1,4 @@
+; Side B for scripts/run_netsync.ps1 with -GameMode 4 (Unholy Alliance). Side A runs unholy-mode-side-a.txt.
+1 log netsync side B: Unholy Alliance start
+2 houses
+600 houses

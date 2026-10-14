@@ -1252,6 +1252,21 @@ int main(void)
 			"the sync log does not change the session identity");
 	}
 
+	/*
+	 * GameMode names a mode by its MPModesMD.ini index. Battle, index 1, plays unless the file
+	 * names another, and the index is part of the session identity.
+	 */
+	{
+		char const unset[] = "[Settings]\n";
+		char const unholy[] = "[Settings]\nGameMode=4\n";
+
+		Check(Read(unset, sizeof(unset) - 1).GameMode == 1, "the match plays Battle unless the file names a mode");
+		Check(Read(unholy, sizeof(unholy) - 1).GameMode == 4, "GameMode names the mode by its MPModesMD.ini index");
+		Check(Read(unset, sizeof(unset) - 1).Session_Identity_CRC() !=
+			Read(unholy, sizeof(unholy) - 1).Session_Identity_CRC(),
+			"a different mode is a different session identity");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

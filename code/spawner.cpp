@@ -30,6 +30,7 @@
 #include "language/language.h"
 #include "loaddlg.h"
 #include "mplayer.h"
+#include "mpmode.h"
 #include "netshare.h"
 #include "msgbox.h"
 #include "saveload.h"
@@ -252,6 +253,26 @@ static void Spawner_Bind_Options(void)
 
 
 /// <summary>
+/// Plays the multiplayer mode the launch file names. The caller has checked that the mode exists.
+/// The mode can clear the file's AlliesAllowed and can turn Bases on, and it changes nothing else.
+/// </summary>
+static void Spawner_Bind_Mode(void)
+{
+	MPModeType const * mode = MPMode_Find(SpawnConfig.GameMode);
+	if (mode == NULL) {
+		return;
+	}
+
+	MPMode_Set_Current(*mode);
+	Session.Options.AlliesAllowed = Session.Options.AlliesAllowed && mode->AlliesAllowed;
+
+	if (mode->Kind == MPModeKind::Unholy) {
+		Session.Options.Bases = true;
+	}
+}
+
+
+/// <summary>
 /// Copies what the launch file asks a player be shown into the session.
 /// </summary>
 static void Spawner_Bind_Presentation(void)
@@ -395,6 +416,15 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("The saved game %s could not be loaded.", SpawnConfig.SaveGameName.c_str()));
 	}
 
+	// A save does not record the mode, so the file's GameMode names it again. The save's options
+	// stay as they are, and a file that names no loaded mode leaves the game without one.
+	if (MPMode_Load()) {
+		MPModeType const * mode = MPMode_Find(SpawnConfig.GameMode);
+		if (mode != NULL) {
+			MPMode_Set_Current(*mode);
+		}
+	}
+
 	if (type == GAME_INTERNET && !Reconcile_Players()) {
 		return(Spawner_Refuse("The saved game and the file do not agree on who is playing."));
 	}
@@ -476,6 +506,7 @@ static void Spawner_Setup_Session(void)
 	Clear_Vector(&Session.Computers);
 
 	Spawner_Bind_Options();
+	Spawner_Bind_Mode();
 
 	if (Session.Type == GAME_INTERNET) {
 		Commit_Session_Specials();
@@ -585,6 +616,15 @@ bool Spawner_Prepare(bool & gameloaded)
 			return(false);
 		}
 	} else {
+		if (!MPMode_Load()) {
+			return(Spawner_Refuse("MPModesMD.ini could not be read, so no multiplayer mode can be chosen."));
+		}
+
+		if (MPMode_Find(SpawnConfig.GameMode) == NULL) {
+			return(Spawner_Refuse("The file names game mode %d, which MPModesMD.ini does not list.",
+				SpawnConfig.GameMode));
+		}
+
 		std::string fault;
 		if (!SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)) {
 			return(Spawner_Refuse("%s", fault.c_str()));

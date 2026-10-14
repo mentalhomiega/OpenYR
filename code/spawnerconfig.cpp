@@ -248,6 +248,7 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(AIPlayers);
 	crc(AIDifficulty);
 	crc(AlliesAllowed);
+	crc(GameMode);
 	crc(HarvesterTruce);
 	crc(FogOfWar);
 	crc(MCVRedeploy);
@@ -485,6 +486,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	AIPlayers = ini.Get_Int(SETTINGS, "AIPlayers", AIPlayers);
 	AIDifficulty = ini.Get_Int(SETTINGS, "AIDifficulty", AIDifficulty);
 	AlliesAllowed = ini.Get_Bool(SETTINGS, "AlliesAllowed", AlliesAllowed);
+	GameMode = ini.Get_Int(SETTINGS, "GameMode", GameMode);
 	HarvesterTruce = ini.Get_Bool(SETTINGS, "HarvesterTruce", HarvesterTruce);
 	FogOfWar = ini.Get_Bool(SETTINGS, "FogOfWar", FogOfWar);
 	MCVRedeploy = ini.Get_Bool(SETTINGS, "MCVRedeploy", MCVRedeploy);

@@ -1,0 +1,9 @@
+; Side A for scripts/run_netsync.ps1 with -GameMode 4 (Unholy Alliance) on XMP29U2.MAP, with the default two
+; computer players. The houses command prints each house's seat line, its allies as a bit mask, and its unit
+; counts at the start and again later, so a run shows what the mode gives every house before any order is given.
+; Side B runs unholy-mode-side-b.txt, which prints the same lines. Run the Battle baseline with -GameMode 1
+; to compare the starting unit counts.
+; Run: scripts/run_netsync.ps1 -Build agent12 -Map XMP29U2.MAP -GameMode 4 -ScriptA tests/netsync/unholy-mode-side-a.txt -ScriptB tests/netsync/unholy-mode-side-b.txt -Seconds 120 -PortA 24743 -PortB 24744
+1 log netsync side A: Unholy Alliance start
+2 houses
+600 houses

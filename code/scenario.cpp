@@ -127,6 +127,7 @@
 #include "mouse.h"
 #include "movie.h"
 #include "movieskip.h"
+#include "mpmode.h"
 #include "mpu.h"
 #include "msgbox.h"
 #include "netdlg.h"
@@ -3143,22 +3144,35 @@ static void Create_Units(bool official)
 			**	- Attach a flag to it for capture-the-flag mode
 			*/
 //			scaleval = 1;
-			UnitTypeClass const * baseunit = hptr->Get_Preferred(Rule->BaseUnit);
-			TechnoClass * obj = baseunit != NULL ? new UnitClass(baseunit, hptr) : NULL;
-			if (obj != NULL && !obj->Unlimbo(Coord(centroid))) {
-				if (!Scan_Place_Object(obj, centroid)) {
-					delete obj;
-					obj = NULL;
+
+			/*
+			 * Unholy Alliance gives each house every base unit the rules list. Other modes give the
+			 * house's own base unit. Only the first unit placed takes the capture-the-flag flag.
+			 */
+			bool const every_unit = MPMode_Spawns_All_Base_Units();
+			int const wanted = every_unit ? Rule->BaseUnit.Count() : 1;
+			bool flagged = false;
+			for (int which = 0; which < wanted; which++) {
+				UnitTypeClass const * baseunit = every_unit ? Rule->BaseUnit[which] : hptr->Get_Preferred(Rule->BaseUnit);
+				TechnoClass * obj = baseunit != NULL ? new UnitClass(baseunit, hptr) : NULL;
+				if (obj != NULL && !obj->Unlimbo(Coord(centroid))) {
+					if (!Scan_Place_Object(obj, centroid)) {
+						delete obj;
+						obj = NULL;
+					}
 				}
-			}
-			if (obj != NULL) {
-				hptr->FlagHome = CELL_NONE;
-				hptr->FlagLocation = NULL;
-				if (Scen->Special.IsCaptureTheFlag) {
-					hptr->Flag_Attach((UnitClass *)obj, true);
-				}
-				if (Session.Options.AutoDeployMCV) {
-					obj->Set_Mission(MISSION_UNLOAD);
+				if (obj != NULL) {
+					if (!flagged) {
+						hptr->FlagHome = CELL_NONE;
+						hptr->FlagLocation = NULL;
+						if (Scen->Special.IsCaptureTheFlag) {
+							hptr->Flag_Attach((UnitClass *)obj, true);
+						}
+						flagged = true;
+					}
+					if (Session.Options.AutoDeployMCV) {
+						obj->Set_Mission(MISSION_UNLOAD);
+					}
 				}
 			}
 		} else {
