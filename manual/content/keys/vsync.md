@@ -3,7 +3,7 @@ key: VSync
 summary: Whether the renderer waits for the display's refresh before showing a finished frame.
 when_omitted:
   kind: value
-  value: "no"
+  value: "yes"
 ---
 
 With `VSync=yes`, each present waits for the display's next refresh. This removes tearing, the horizontal seam that can appear while the map scrolls.
