@@ -2470,6 +2470,11 @@ void Run(StepType const & step)
 				ActionType const action = techno->What_Action(cell, false, false);
 				DebugString("AUTOTEST   clickcell %s at %d,%d: %s\n", techno->TClass->Name(), step.X, step.Y, ActionName[action]);
 				// Test hook: a click in planning mode is recorded as a planned order, as the real click path does.
+				// The real click path refuses the whole order when a selected object cannot take a plan (DisplayClass::Active_Click).
+				if (Map.IsPlanningMode && Planning_Selection_Label() != NULL) {
+					Planning_Refusal(Planning_Selection_Label());
+					break;
+				}
 				PlanningRecordScope const recording(Map.IsPlanningMode);
 				techno->Active_Click_With(action, cell, false);
 				break;

@@ -2589,6 +2589,13 @@ void DisplayClass::Waypoint_Mode_Control(int control, bool edit_selected_path)
 }
 
 
+namespace {
+	// The enter and exit hints each show once per scenario, as gamemd's DAT_00ac4bf8 and DAT_00ac4bfc slots do.
+	bool Planning_Enter_Hint_Shown = false;
+	bool Planning_Exit_Hint_Shown = false;
+}
+
+
 /// <summary>
 /// Turns planning mode on or off.
 /// Turning it on cancels the repair, sell, power and waypoint modes and keeps the selection.
@@ -2627,8 +2634,10 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLAN_COMMIT));
 		Revert_Mouse_Shape();
 		Sound_Effect(Rule->EndPlanningModeSound);
-		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_PLANNING_MODE_OFF), PlayerPtr->Scheme,
-			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+		if (!PlayerPtr->IsObserver && !Planning_Exit_Hint_Shown) {
+			Planning_Exit_Hint_Shown = true;
+			Planning_Message(PLANNING_MSG_INTRO_EXIT);
+		}
 		return;
 	}
 
@@ -2645,8 +2654,20 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 	PlanningHoldKey = hold_key;
 	Revert_Mouse_Shape();
 	Sound_Effect(Rule->StartPlanningModeSound);
-	Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_PLANNING_MODE_ON), PlayerPtr->Scheme,
-		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+	if (!Planning_Enter_Hint_Shown) {
+		Planning_Enter_Hint_Shown = true;
+		Planning_Message(PLANNING_MSG_INTRO_KEY);
+	}
+}
+
+
+/// <summary>
+/// Forgets the planning hints that have shown, so the next scenario shows them again.
+/// </summary>
+void DisplayClass::Reset_Planning_Hints(void)
+{
+	Planning_Enter_Hint_Shown = false;
+	Planning_Exit_Hint_Shown = false;
 }
 
 
@@ -3907,6 +3928,15 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 
 	if (Debug_Map) {
 		return;
+	}
+
+	// Planning mode refuses the whole order when a selected object cannot take a plan (gamemd's FUN_0063A5A0, path B).
+	if (IsPlanningMode) {
+		char const * label = Planning_Selection_Label();
+		if (label != NULL) {
+			Planning_Refusal(label);
+			return;
+		}
 	}
 
 	// In planning mode the orders below are recorded for later instead of being issued.

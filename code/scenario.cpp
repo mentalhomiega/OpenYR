@@ -1180,6 +1180,9 @@ void Clear_Scenario(void)
 	// Beacons are not saved, so a load or a new scenario starts with none.
 	Beacons.Clear();
 
+	// The planning hints show again in each scenario, as gamemd's Clear_Scenario resets them.
+	Map.Reset_Planning_Hints();
+
 	Reset_Selection_Filters();
 	for (index = 0; index < IsometricTileTypes.Count(); index++) {
 		AbstractTypes.Add(IsometricTileTypes[index]);

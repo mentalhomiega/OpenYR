@@ -416,13 +416,17 @@ namespace {
 
 
 	/// <summary>
-	/// Queues a planned order for one of the local player's units that can take one. Other
-	/// objects are passed over, as buildings take no planned orders.
+	/// Queues a planned order for one of the local player's units that can take one. An object
+	/// that cannot take a plan (an aircraft, a building or another kind) is refused with its message.
 	/// </summary>
 	bool Record_Planned_Order(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination)
 	{
 		TechnoClass * techno = whom.As_Techno();
-		if (techno == NULL || !techno->IsActive || !techno->Is_Foot() || techno->House != PlayerPtr) {
+		if (techno == NULL || techno->House != PlayerPtr) {
+			return(false);
+		}
+		if (char const * label = Planning_Unplannable_Label(techno)) {
+			Planning_Refusal(label);
 			return(false);
 		}
 		FootClass const * foot = static_cast<FootClass *>(techno);

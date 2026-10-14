@@ -183,6 +183,7 @@ class DisplayClass: public MapClass
 		void Planning_Hold_Check(void);
 		void Place_Beacon_Mode_Control(int control);
 		void Reset_Planning_Mode(void);
+		void Reset_Planning_Hints(void);
 		void Power_Mode_Control(int control);
 		void Repair_Mode_Control(int control);
 		ObjectClass * Object_To_Follow(void) const;

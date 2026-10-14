@@ -1,11 +1,17 @@
-; Planning clears: a scatter clears a unit's planned orders before it runs, so the commit starts nothing. The
-; scatter is a player command that reaches EventClass::Execute like a click. Run in a skirmish on the default map,
-; as planning-legs.txt does. The reveal at frame 305 opens the shroud.
-; Expected AUTOTEST lines:
+; Planning refusal and clears: a scatter ordered while planning mode is on is refused with its message, so the queued
+; plan stays. A scatter ordered after planning mode ends clears the queued legs of the plan the unit is running; the
+; leg in progress is not stopped. Run in a skirmish on the default map, as planning-legs.txt does. The reveal at
+; frame 305 opens the shroud.
+; Expected AUTOTEST lines (and the "Planning message" line, from the DEBUG log):
+;   frame 320: Planning message MSG:PlanningModeIntro1Key (the enter hint, once per scenario).
 ;   frame 340: planstate E1 orders 2 running 0 (two legs recorded, none run).
-;   frame 343: planstate E1 orders 0 running 0 (the scatter at frame 342 cleared the plan).
-;   frame 351: planstate E1 orders 0 running 0 (the commit has no plan to start).
-;   where E1 at frames 400 and 600: the unit stays where the scatter left it (mission Guard), and no leg runs.
+;   frame 342: Planning message MSG:PlanningModeNoScatter: Units in a waypoint path cannot be ordered to scatter.
+;   frame 343: planstate E1 orders 2 running 0 (the refused scatter leaves the plan as it was).
+;   frame 350: Planning message MSG:PlanningModeIntro3 (the exit hint).
+;   frame 351: planstate E1 orders 1 running 1 (the commit starts the first leg and keeps the second queued).
+;   frame 361: planstate E1 orders 0 running 0 (the scatter at frame 360 clears the queued leg).
+;   where E1 at frames 400 and 600: the unit moves on the leg in progress to 70,63 and the leg to 70,68 never runs.
+;   frame 700: planstate E1 orders 0 running 0, mission Guard at 70,63 (the leg in progress ends there).
 30 command CenterBase
 300 grantunit E1 60 63
 305 reveal
@@ -18,6 +24,8 @@
 343 planstate E1
 350 planning 0
 351 planstate E1
+360 command ScatterObject
+361 planstate E1
 400 where E1
 600 where E1
 700 planstate E1

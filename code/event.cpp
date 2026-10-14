@@ -53,6 +53,7 @@
 #include "building.h"
 #include "cell.h"
 #include "conquer.h"
+#include "csf.h"
 #include "coord.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -1315,7 +1316,7 @@ void EventClass::Execute(void)
 		// Appends one planned order to a unit; the unit runs its queue after PLAN_COMMIT.
 		case PLAN_ORDER:
 			techno = Data.MegaMission.Whom.As_Techno();
-			if (techno != NULL && techno->IsActive && techno->Is_Foot() && techno->House == house) {
+			if (techno != NULL && techno->IsActive && techno->Is_Foot() && techno->RTTI != RTTI_AIRCRAFT && techno->House == house) {
 				if (Data.MegaMission.Mission == MISSION_NONE || !NetSemantic::Mission_Is_Valid(Data.MegaMission.Mission, MISSION_NONE, MISSION_COUNT)) {
 					Log_Event_Rejection(EventRejectReason::InvalidPlannedOrder, Type, ID, Data.MegaMission.Mission);
 					break;
@@ -1693,19 +1694,89 @@ void EventClass::Execute_Planned_Leg(void)
 }
 
 
+namespace {
+	// The frame of the last refusal cue. Refusals of every kind share it, as gamemd's DAT_00ac4c08 does.
+	int Last_Planning_Refusal_Frame = -1;
+}
+
+
+/// <summary>
+/// Shows a planning-mode message to the local player from its string table label.
+/// </summary>
+/// <param name="label">The CSF label of the message, such as PLANNING_MSG_INTRO_KEY.</param>
+/// <remarks>The message stays up for 0x1e0 ticks, the duration gamemd gives each planning message.</remarks>
+void Planning_Message(char const * label)
+{
+	if (PlayerPtr == NULL) {
+		return;
+	}
+	std::string const text = Fetch_String_UTF8(label);
+	DebugString("Planning message %s: %s\n", label, text.c_str());
+	Session.Messages.Add_Message(NULL, 0, text.c_str(), PlayerPtr->Scheme,
+		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 0x1E0);
+}
+
+
+/// <summary>
+/// Refuses a planning action for the local player: the scold sound and the message.
+/// </summary>
+/// <param name="label">The CSF label of the message to show.</param>
+/// <remarks>Only the first refusal of a frame is shown or heard. A later one in the same frame does nothing.</remarks>
+void Planning_Refusal(char const * label)
+{
+	if (PlayerPtr == NULL || Last_Planning_Refusal_Frame == ::Frame) {
+		return;
+	}
+	Last_Planning_Refusal_Frame = ::Frame;
+	Sound_Effect(Rule->ScoldSound);
+	Planning_Message(label);
+}
+
+
+/// <summary>
+/// Gives the planning message for an object that cannot take a plan.
+/// </summary>
+/// <param name="object">The object to check.</param>
+/// <returns>The label for aircraft, buildings and other kinds, or NULL when the object can take a plan.</returns>
+char const * Planning_Unplannable_Label(ObjectClass const * object)
+{
+	if (object == NULL || !object->IsActive) {
+		return(PLANNING_MSG_NO_UNKNOWNS);
+	}
+	if (object->RTTI == RTTI_AIRCRAFT) {
+		return(PLANNING_MSG_NO_AIRCRAFT);
+	}
+	if (object->Is_Foot()) {
+		return(NULL);
+	}
+	if (object->RTTI == RTTI_BUILDING) {
+		return(PLANNING_MSG_NO_BUILDINGS);
+	}
+	return(PLANNING_MSG_NO_UNKNOWNS);
+}
+
+
+/// <summary>
+/// Gives the planning message for the first selected object that cannot take a plan.
+/// </summary>
+/// <returns>The label to show, or NULL when every selected object can take a plan.</returns>
+char const * Planning_Selection_Label(void)
+{
+	for (int index = 0; index < CurrentObject.Count(); index++) {
+		char const * label = Planning_Unplannable_Label(CurrentObject[index]);
+		if (label != NULL) {
+			return(label);
+		}
+	}
+	return(NULL);
+}
+
+
 /// <summary>
 /// Tells the local player that a planned order was refused: the scold sound and a message.
 /// </summary>
 /// <param name="unit_full">True when the unit's queue is full, false when too many units hold plans.</param>
-/// <remarks>Calls within one frame make one cue, so a multi-unit order does not repeat it.</remarks>
 void Planned_Order_Refused_Cue(bool unit_full)
 {
-	static int last_cue_frame = -1;
-	if (PlayerPtr == NULL || last_cue_frame == ::Frame) {
-		return;
-	}
-	last_cue_frame = ::Frame;
-	Sound_Effect(Rule->ScoldSound);
-	Session.Messages.Add_Message(NULL, 0, Fetch_String(unit_full ? TXT_PLANNING_UNIT_FULL : TXT_PLANNING_HOUSE_FULL), PlayerPtr->Scheme,
-		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+	Planning_Refusal(unit_full ? PLANNING_MSG_NODE_MAXIMUM : PLANNING_MSG_PLANNER_MAXIMUM);
 }

@@ -3499,6 +3499,11 @@ class StopCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
+				// Planning mode refuses the stop order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
+				if (Map.IsPlanningMode) {
+					Planning_Refusal(PLANNING_MSG_NO_STOP);
+					return;
+				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
 					ObjectClass const * tech = CurrentObject[index];
 
@@ -3540,6 +3545,11 @@ class DeployCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
+				// Planning mode refuses the deploy order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
+				if (Map.IsPlanningMode) {
+					Planning_Refusal(PLANNING_MSG_NO_DEPLOY);
+					return;
+				}
 				// Matches the mixed-selection test in gamemd's deploy command (FUN_00730AF0, 0x730AF0): with
 				// dug-in and not-dug-in deployer soldiers selected, the dug-in ones get no deploy event.
 				bool dug_in = false;
@@ -3622,6 +3632,11 @@ class GuardCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
+			// Planning mode refuses guard before it reads the selection (gamemd's guard command, 0x730D60).
+			if (Map.IsPlanningMode) {
+				Planning_Refusal(PLANNING_MSG_NO_GUARD_AREA);
+				return;
+			}
 			if (CurrentObject.Count() > 0) {
 				AllowVoice = true;
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -3671,6 +3686,11 @@ class ScatterCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
+				// Planning mode refuses the scatter order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
+				if (Map.IsPlanningMode) {
+					Planning_Refusal(PLANNING_MSG_NO_SCATTER);
+					return;
+				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
 					ObjectClass const * tech = CurrentObject[index];
 

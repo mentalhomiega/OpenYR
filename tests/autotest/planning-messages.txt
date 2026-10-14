@@ -1,0 +1,38 @@
+; Planning messages: the hints and refusals that planning mode shows, each with its CSF text as gamemd shows it.
+; Run in a skirmish on the default map, as planning-legs.txt does. The reveal at frame 305 opens the shroud.
+; The starting MCV deploys at frame 45 (outside planning) to give the construction yard that frame 370 selects.
+; The messages are DEBUG log lines, so run with -Filter "AUTOTEST|Planning message".
+; Expected lines:
+;   frame 310: Planning message MSG:PlanningModeIntro1Key: You have entered waypoint mode. Release the waypoint key to exit.
+;   frame 315: Planning message MSG:PlanningModeIntro3: When you exit waypoint mode, your units will follow their waypoint path.
+;   frames 320, 325, 330 and 380: no message (each hint shows once per scenario, and planning 1 and 0 repeat).
+;   frame 340: Planning message MSG:PlanningModeNoStop: Units in a waypoint path cannot be ordered to stop.
+;   frame 345: Planning message MSG:PlanningModeNoScatter: Units in a waypoint path cannot be ordered to scatter.
+;   frame 350: Planning message MSG:PlanningModeNoDeploy: Units in a waypoint path cannot be ordered to deploy.
+;   frame 355: Planning message MSG:PlanningModeNoGuardArea: Units in a waypoint path cannot be ordered to guard their current location.
+;   frame 365: Planning message MSG:PlanningModeNoAircraft: You cannot use waypoints with aircraft.
+;   frame 375: Planning message MSG:PlanningModeNoBuildings: You cannot use waypoints with buildings.
+;   frame 385: planstate E1 orders 0 running 0 (no refused command reached the unit's queue).
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 grantunit E1 60 63
+301 grantunit ORCA 58 56
+305 reveal
+310 planning 1
+315 planning 0
+320 planning 1
+325 planning 0
+330 planning 1
+335 select E1
+340 command StopObject
+345 command ScatterObject
+350 command DeployObject
+355 command GuardObject
+360 select ORCA
+365 clickcell ORCA 62 60
+370 select GACNST
+375 clickcell GACNST 62 66
+380 planning 0
+385 planstate E1
+400 quit

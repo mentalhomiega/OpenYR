@@ -305,5 +305,30 @@ class EventClass
 };
 #pragma pack(pop)
 
+// The string table labels of the planning-mode messages that gamemd shows from PlanMgr.cpp.
+inline constexpr char const * PLANNING_MSG_NODE_MAXIMUM = "MSG:NodeMaximum";
+inline constexpr char const * PLANNING_MSG_PLANNER_MAXIMUM = "MSG:PlannerMaximum";
+inline constexpr char const * PLANNING_MSG_INTRO_KEY = "MSG:PlanningModeIntro1Key";
+inline constexpr char const * PLANNING_MSG_INTRO_EXIT = "MSG:PlanningModeIntro3";
+inline constexpr char const * PLANNING_MSG_NO_STOP = "MSG:PlanningModeNoStop";
+inline constexpr char const * PLANNING_MSG_NO_SCATTER = "MSG:PlanningModeNoScatter";
+inline constexpr char const * PLANNING_MSG_NO_DEPLOY = "MSG:PlanningModeNoDeploy";
+inline constexpr char const * PLANNING_MSG_NO_GUARD_AREA = "MSG:PlanningModeNoGuardArea";
+inline constexpr char const * PLANNING_MSG_NO_AIRCRAFT = "MSG:PlanningModeNoAircraft";
+inline constexpr char const * PLANNING_MSG_NO_BUILDINGS = "MSG:PlanningModeNoBuildings";
+inline constexpr char const * PLANNING_MSG_NO_UNKNOWNS = "MSG:PlanningModeNoUnknowns";
+
+// Shows a planning-mode message for the local player, from its string table label, for gamemd's 0x1e0 ticks (event.cpp).
+void Planning_Message(char const * label);
+
+// Refuses a planning action: shows the message and plays the scold sound, at most once a frame, as gamemd's DAT_00ac4c08 guard (event.cpp).
+void Planning_Refusal(char const * label);
+
+// The label of the message for a selected object that cannot take a plan, or NULL when it can: aircraft, buildings and other kinds (event.cpp).
+char const * Planning_Unplannable_Label(ObjectClass const * object);
+
+// The label of the refusal for the first selected object that cannot take a plan, or NULL when every selected object can (event.cpp).
+char const * Planning_Selection_Label(void);
+
 // Plays the scold sound and a message for the local player when a planned order is refused (event.cpp).
 void Planned_Order_Refused_Cue(bool unit_full);
