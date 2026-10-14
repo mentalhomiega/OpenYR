@@ -329,6 +329,7 @@ void UI_Display_State(UIDisplayState & state)
 	}, Options.ScaleMode, "%d");
 	state.FrameRate = Fill_Choices(state.FrameRates, {
 		{0, "Off"},
+		{-1, "Match display"},
 		{30, "30"},
 		{60, "60"},
 		{120, "120"},

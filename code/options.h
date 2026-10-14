@@ -42,7 +42,8 @@ class OptionsClass {
 			MAX_SCROLL_SETTING=7,
 			MAX_SPEED_SETTING=7,
 			MAX_DETAIL_SETTING=3,
-			MAX_DIFFICULTY_SETTING=DIFF_COUNT
+			MAX_DIFFICULTY_SETTING=DIFF_COUNT,
+			RENDER_FRAME_RATE_MATCH_DISPLAY=-1
 		};
 
 		OptionsClass(void);
@@ -58,6 +59,7 @@ class OptionsClass {
 		int Normalize_Delay(int delay) const;
 		int Normalize_Volume(int volume) const;
 		int Get_Scroll_Method(void) const;
+		int Render_Frame_Rate(void) const;
 
 		void Hotkey_Dialog(void);
 
@@ -214,7 +216,8 @@ class OptionsClass {
 		bool IntegerScaling;
 
 		// Redraws a second between game frames, drawing moving objects between their positions;
-		// 0 draws once per game frame, as the original game does.
+		// 0 draws once per game frame, as the original game does, and a negative value matches
+		// the display's refresh rate where Render_Frame_Rate allows it.
 		int RenderFrameRate;
 
 		/*

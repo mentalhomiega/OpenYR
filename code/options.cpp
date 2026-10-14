@@ -219,7 +219,7 @@ OptionsClass::OptionsClass(void) :
 	WindowHeight(-1),
 	ScaleMode(VIDEO_SCALE_PIXELART),
 	IntegerScaling(false),
-	RenderFrameRate(0),
+	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	VSync(true),
 	Renderer(0),
 	CursorScale(0),
@@ -525,7 +525,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
-	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), 0, 1000);
+	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
 	char scalename[32];
@@ -784,4 +784,20 @@ void OptionsClass::Hotkey_Dialog(void)
 int OptionsClass::Get_Scroll_Method(void) const
 {
 	return(ScrollMethod);
+}
+
+
+/// <summary>
+/// Returns how many extra pictures per second the game draws between game frames in this session.
+/// </summary>
+/// <returns>int; Zero for none. Match display gives the display's refresh rate in solo and skirmish games, and zero in network games.</returns>
+int OptionsClass::Render_Frame_Rate(void) const
+{
+	if (RenderFrameRate >= 0) {
+		return(RenderFrameRate);
+	}
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
+		return(0);
+	}
+	return(Video_Refresh_Rate());
 }
