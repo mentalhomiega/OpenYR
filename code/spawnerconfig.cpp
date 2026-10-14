@@ -13,6 +13,8 @@
 #include "crc.h"
 #include "diff.hh"
 #include "ini.h"
+#include "playercolor.h"
+#include "rgb.h"
 #include "utf8.h"
 
 #include <algorithm>
@@ -27,6 +29,27 @@ namespace {
 
 // The match's options, which also describe this machine's own seat.
 char const * const SETTINGS = "Settings";
+
+
+/// <summary>
+/// Reads a seat's ColorRGB entry, three values from 0 to 255 separated by commas, as a free color.
+/// Any other text gives zero, so the seat keeps the stock color its Color entry names.
+/// </summary>
+unsigned int Read_Free_Color(INIClass const & ini, char const * section)
+{
+	std::string const text = ini.Get_String(section, "ColorRGB");
+	int red = -1;
+	int green = -1;
+	int blue = -1;
+	char extra = 0;
+	if (std::sscanf(text.c_str(), "%d,%d,%d%c", &red, &green, &blue, &extra) != 3) {
+		return(0);
+	}
+	if (red < 0 || red > 255 || green < 0 || green > 255 || blue < 0 || blue > 255) {
+		return(0);
+	}
+	return(Player_Color_From_RGB(RGBClass((unsigned char)red, (unsigned char)green, (unsigned char)blue)));
+}
 
 
 /// <summary>Reads a string entry, or the fallback when it is empty.</summary>
@@ -146,6 +169,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 			std::string name = Read_Text(ini, section.c_str(), "Name", "");
 			slot.Name = name.substr(0, UTF8::Boundary_Before(name.c_str(), HOUSE_NAME_MAX - 1));
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
+			slot.CustomColor = Read_Free_Color(ini, section.c_str());
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
 			slot.IsSpectator = Spawn_Bool(ini, section.c_str(), "IsSpectator", false);
 			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);

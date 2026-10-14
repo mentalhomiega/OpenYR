@@ -129,6 +129,8 @@ static void Spawner_Seat_Local(void)
 	Session.House = local.Country;
 	Session.ColorIdx = local.Color;
 	Session.PrefColor = Session.ColorIdx;
+	Session.CustomColor = local.CustomColor;
+	Session.PrefCustomColor = local.CustomColor;
 }
 
 
@@ -144,6 +146,7 @@ static void Spawner_Seat_Human(int index)
 		seat.Name.empty() ? "Player" : seat.Name.c_str());
 	node->Player.House = seat.Country;
 	node->Player.Color = seat.Color;
+	node->Player.CustomColor = seat.CustomColor;
 	node->Player.ProcessTime = -1;
 	node->Player.SpawnChoice = seat.StartingPosition;
 	node->Player.AlliesMask = Spawner_Allies_Mask(seat);
