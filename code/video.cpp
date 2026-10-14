@@ -23,6 +23,7 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hdrdisplay.h"
 #include "misc.h"
 #include "sdl/sdlwindow.h"
 #include "surface.h"
@@ -181,6 +182,8 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 
 	_ScaleInfo.DrawableWidth = drawablewidth;
 	_ScaleInfo.DrawableHeight = drawableheight;
+
+	HDR_Query_Window_Display(window.Handle);
 
 	BackendRenderer renderer = (BackendRenderer)Options.Renderer;
 	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync)) {
