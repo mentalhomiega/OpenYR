@@ -265,7 +265,7 @@ When an object reaches the last step and the player does not consider its house 
 
 A player who has been given the whole map senses every cell, and never counts an object as a detection. The [observers and coach mode](/systems/observers/) page covers who that is.
 
-A detection raises an enemy-sensed [radar event](/enums/radar-event/) at the object's cell. No announcer line plays with it. An object traveling through a tunnel raises no event. A detection within the suppression distance of an enemy-sensed event already on the radar raises no event.
+A detection raises an enemy-sensed [radar event](/reference/enums/radar-event/) at the object's cell. No announcer line plays with it. An object traveling through a tunnel raises no event. A detection within the suppression distance of an enemy-sensed event already on the radar raises no event.
 
 A structure goes through the same questions, with two differences. The hidden test in step 4 also fails at its fifteenth translucency level, and the height and ability tests do not apply. A detected structure is always of the hidden kind, never the underground one.
 
