@@ -224,7 +224,7 @@ OptionsClass::OptionsClass(void) :
 	Renderer(0),
 	CursorScale(0),
 	InterfaceScale(0.0f),
-	SystemCursor(false),
+	SystemCursor(true),
 	SoundLatency(9),
 	KeyForceMove1(KN_LALT),
 	KeyForceMove2(KN_LALT),
