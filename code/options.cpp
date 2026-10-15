@@ -80,6 +80,7 @@
 #include "mouse.h"
 #include "msgbox.h"
 #include "numparse.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "session.h"
 #include "techno.h"
@@ -199,6 +200,7 @@ OptionsClass::OptionsClass(void) :
 	IsModernInterfaceChosen(false),
 	SidebarRows(HUD_DEFAULT_ROWS),
 	DebugMode(false),
+	PlayerColorView(0),
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
@@ -499,6 +501,11 @@ void OptionsClass::Load_Settings(void)
 	DebugMode = ConfigINI.Get_Bool("Options", "DebugMode", DebugMode);
 	DebugString("DebugMode is %s\n", DebugMode == true ? "ON" : "OFF");
 
+	char playercolors[32];
+	ConfigINI.Get_String("Options", "PlayerColors", "Default", playercolors, sizeof(playercolors));
+	PlayerColorView = (stricmp(playercolors, "ColorBlindSafe") == 0) ? PLAYER_VIEW_COLORBLIND_SAFE
+		: (stricmp(playercolors, "Relationship") == 0) ? PLAYER_VIEW_RELATIONSHIP : PLAYER_VIEW_DEFAULT;
+
 	// Turns on the per-frame check value log, as -SYNCLOG does; a false or absent value leaves the switch as it was.
 	if (ConfigINI.Get_Bool("Options", "SyncLog", false)) {
 		Debug_SyncLog = true;
@@ -639,6 +646,8 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
+	ConfigINI.Put_String("Options", "PlayerColors", PlayerColorView == PLAYER_VIEW_COLORBLIND_SAFE ? "ColorBlindSafe"
+		: PlayerColorView == PLAYER_VIEW_RELATIONSHIP ? "Relationship" : "Default");
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);

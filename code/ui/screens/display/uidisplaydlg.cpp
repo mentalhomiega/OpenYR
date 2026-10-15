@@ -18,6 +18,7 @@
 #include "misc.h"
 #include "numparse.h"
 #include "options.h"
+#include "playerdisplay.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
@@ -85,6 +86,12 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		virtual void Set_Debug_Mode(bool on) override
 		{
 			Debug_Mode_Set(on);
+		}
+
+		virtual void Set_Player_Colors(int view) override
+		{
+			Options.PlayerColorView = view;
+			Player_View_Changed();
 		}
 
 		virtual void Set_Interface_Scale(float scale) override
@@ -313,6 +320,11 @@ void UI_Display_State(UIDisplayState & state)
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.DebugMode = Options.DebugMode;
+	state.PlayerColors = Fill_Choices(state.PlayerColorChoices, {
+		{PLAYER_VIEW_DEFAULT, "Default"},
+		{PLAYER_VIEW_COLORBLIND_SAFE, "Color-blind safe"},
+		{PLAYER_VIEW_RELATIONSHIP, "Relationship"}
+	}, Options.PlayerColorView, "%d");
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;

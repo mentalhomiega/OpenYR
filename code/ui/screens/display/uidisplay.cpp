@@ -31,7 +31,8 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
-	InitialDebugMode(State.DebugMode)
+	InitialDebugMode(State.DebugMode),
+	InitialPlayerColors(State.PlayerColors)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -155,6 +156,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "moderninterface") {
 		State.ModernInterface = (intent.Value != 0);
 
+	} else if (intent.Name == "playercolors") {
+		State.PlayerColors = Pick_Choice(State.PlayerColorChoices, intent.Value, InitialPlayerColors);
+
 	} else if (intent.Name == "debugmode") {
 		State.DebugMode = (intent.Value != 0);
 
@@ -205,6 +209,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_Modern_Interface(State.ModernInterface);
 		if (State.DebugMode != InitialDebugMode) {
 			Service.Set_Debug_Mode(State.DebugMode);
+		}
+		if (Choice_Changed(State.PlayerColorChoices, State.PlayerColors, InitialPlayerColors)) {
+			Service.Set_Player_Colors(State.PlayerColorChoices[State.PlayerColors].Value);
 		}
 		if (State.Fullscreen != InitialFullscreen) {
 			Service.Set_Fullscreen(State.Fullscreen);
@@ -306,6 +313,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("classicmenus");
 			Model.DirtyVariable("moderninterface");
 			Model.DirtyVariable("debugmode");
+			Model.DirtyVariable("playercolors");
 			Model.DirtyVariable("scale");
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
@@ -361,6 +369,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("classicmenus", &state.ClassicMenus)
 				&& model.Bind("moderninterface", &state.ModernInterface)
 				&& model.Bind("debugmode", &state.DebugMode)
+				&& model.Bind("playercolorchoices", &state.PlayerColorChoices)
+				&& model.Bind("playercolors", &state.PlayerColors)
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)

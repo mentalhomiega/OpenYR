@@ -121,6 +121,9 @@ class OptionsClass {
 		// Offers the tester debug cheats in single-player games; see debugmode.h.
 		bool DebugMode;
 
+		// How this machine draws player colors: 0 default, 1 color-blind safe, 2 relationship. See playerdisplay.h.
+		int PlayerColorView;
+
 		/*
 		 * If each sidebar cameo is to be captioned with the name of what it builds, then this
 		 * flag will be true.

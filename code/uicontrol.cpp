@@ -13,12 +13,15 @@
 
 #include "ccfile.h"
 #include "ccini.h"
+#include "playerdisplay.h"
 
 
 namespace {
 
 char const * const INGAME = "Ingame";
 char const * const PIPS = "Pips";
+char const * const RELATIONSHIP = "Relationship";
+char const * const COLORBLIND_SAFE = "ColorBlindSafe";
 
 // Empty names between commas are skipped.
 std::vector<std::string> Split_Button_List(std::string const & value)
@@ -83,6 +86,16 @@ bool UIControlsClass::Read_INI(CCINIClass const & ini)
 	BuildingWithPipGroupNumberOffset = ini.Get_Point(PIPS, "BuildingWithPipGroupNumberOffset", BuildingWithPipGroupNumberOffset);
 	AircraftWithPipGroupNumberOffset = ini.Get_Point(PIPS, "AircraftWithPipGroupNumberOffset", AircraftWithPipGroupNumberOffset);
 
+	PlayerColorOwn = ini.Get_RGBClass(RELATIONSHIP, "OwnColor", PlayerColorOwn);
+	PlayerColorAlly = ini.Get_RGBClass(RELATIONSHIP, "AllyColor", PlayerColorAlly);
+	PlayerColorEnemy = ini.Get_RGBClass(RELATIONSHIP, "EnemyColor", PlayerColorEnemy);
+
+	// The stock lobby colors in lobby order: gold, red, blue, green, orange, sky blue, purple and pink.
+	static char const * const STOCK_KEYS[PLAYER_COLOR_SEATS] = {"Gold", "Red", "Blue", "Green", "Orange", "SkyBlue", "Purple", "Pink"};
+	for (int seat = 0; seat < PLAYER_COLOR_SEATS; seat++) {
+		ColorBlindSafeColors[seat] = ini.Get_RGBClass(COLORBLIND_SAFE, STOCK_KEYS[seat], ColorBlindSafeColors[seat]);
+	}
+
 	// A missing section keeps its list; an empty one clears it.
 	if (ini.Is_Present("AdvancedCommandBar")) {
 		CommandBarButtons = Split_Button_List(ini.Get_String("AdvancedCommandBar", "ButtonList"));
@@ -105,6 +118,7 @@ bool UIControlsClass::Read_INI_File(char const * filename, bool reset)
 {
 	if (reset) {
 		*this = UIControlsClass();
+		Player_View_Changed();
 	}
 
 	CCFileClass file(filename);
@@ -116,7 +130,9 @@ bool UIControlsClass::Read_INI_File(char const * filename, bool reset)
 	if (!ini.Load(file, false)) {
 		return(false);
 	}
-	return(Read_INI(ini));
+	bool const read = Read_INI(ini);
+	Player_View_Changed();
+	return(read);
 }
 
 
