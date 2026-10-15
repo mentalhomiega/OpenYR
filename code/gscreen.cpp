@@ -65,6 +65,8 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "video.h"
 #include "viewzoom.h"
 
@@ -397,6 +399,12 @@ void GScreenClass::Render(void)
 
 	bool redraw = DrawFlags != GS_REDRAW_DIRTY;
 	bool complete = DrawFlags == GS_REDRAW_ALL;
+
+	// Masks follow the composite: planes are bound here, and a full redraw starts them clear.
+	Emissive_Sync(CompositeSurface, MapCompositeSurface, VisibleSurface);
+	if (complete && Emissive_Is_Enabled() && CompositeSurface != NULL) {
+		Emissive_After_Fill(*CompositeSurface, CompositeSurface->Get_Rect());
+	}
 
 	// While zoomed, the map's passes draw into the map's own surfaces; the panning pass may swap them.
 	bool const zoomed = (MapCompositeSurface != NULL && MapTileSurface != NULL);

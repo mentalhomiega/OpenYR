@@ -48,6 +48,10 @@
 			<div class="row"><span class="caption">Smooth motion:</span><select id="framerate" data-value="framerate" data-event-change="queue('framerate', ev.value)">
 				<option data-for="entry : framerates" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
+			<div class="row" id="highlights-row" tip="Needs HDR output" data-class-disabled="!hdroutput"><span class="caption">Highlights:</span><select id="highlights" data-value="highlights" data-attrif-disabled="!hdroutput" data-event-change="queue('highlights', ev.value)">
+				<option value="0">Classic</option>
+				<option value="1">Enhanced</option>
+			</select></div>
 			<p class="heading" id="pointer-label">Mouse Pointer</p>
 			<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the system mouse pointer</label>
 			<div class="row"><span class="caption">Pointer size:</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">

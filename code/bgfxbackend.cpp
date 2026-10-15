@@ -113,6 +113,20 @@ static float _PaperWhiteNits = (float)HDR_PAPER_WHITE_DEFAULT;
 static float _PeakNits = (float)HDR_PEAK_FALLBACK_NITS;
 static HDRColourAdjust _ColourAdjust = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}, 1.0f, 1.0f};
 
+// An emissive mask uploaded as an R8 texture. Uploaded says whether the texture holds a mask for
+// the picture it follows, so the presenter draws it only then.
+struct BackendMask
+{
+	bgfx::TextureHandle Handle;
+	int Width;
+	int Height;
+	bool Uploaded;
+};
+
+static BackendMask _FrameMask = {BGFX_INVALID_HANDLE, 0, 0, false};
+static BackendMask _LayerMask = {BGFX_INVALID_HANDLE, 0, 0, false};
+static bool _MaskView = false;
+
 
 struct BackendVertex
 {
@@ -339,8 +353,55 @@ static bool Ensure_Prescale_Target(int width, int height)
 }
 
 
+static void Destroy_Mask(BackendMask & mask)
+{
+	if (bgfx::isValid(mask.Handle)) {
+		bgfx::destroy(mask.Handle);
+	}
+	mask.Handle = BGFX_INVALID_HANDLE;
+	mask.Width = 0;
+	mask.Height = 0;
+	mask.Uploaded = false;
+}
+
+
+/// <summary>
+/// Uploads one mask, making its R8 texture first when the size changed. False means the mask is
+/// not available, such as when the hardware cannot sample R8.
+/// </summary>
+static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pitch, int width, int height)
+{
+	if (!bgfx::isValid(mask.Handle) || mask.Width != width || mask.Height != height) {
+		Destroy_Mask(mask);
+		const bgfx::Caps * caps = bgfx::getCaps();
+		if ((caps->formats[bgfx::TextureFormat::R8] & BGFX_CAPS_FORMAT_TEXTURE_2D) == 0) {
+			return(false);
+		}
+		if (width > caps->limits.maxTextureSize || height > caps->limits.maxTextureSize) {
+			return(false);
+		}
+		mask.Handle = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8);
+		if (!bgfx::isValid(mask.Handle)) {
+			return(false);
+		}
+		mask.Width = width;
+		mask.Height = height;
+	}
+
+	// The rows are packed to the texture width, since the pitch of a mask may be wider than the picture.
+	bgfx::Memory const * memory = bgfx::alloc((uint32_t)(width * height));
+	for (int y = 0; y < height; y++) {
+		std::memcpy(memory->data + y * width, pixels + y * pitch, (size_t)width);
+	}
+	bgfx::updateTexture2D(mask.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)height, memory, (uint16_t)width);
+	mask.Uploaded = true;
+	return(true);
+}
+
+
 static void Destroy_Layer(void)
 {
+	Destroy_Mask(_LayerMask);
 	if (bgfx::isValid(_LayerTexture)) {
 		bgfx::destroy(_LayerTexture);
 		_LayerTexture = BGFX_INVALID_HANDLE;
@@ -376,6 +437,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 		}
 		delete [] _LayerConvertBuffer;
 		_LayerConvertBuffer = NULL;
+		Destroy_Mask(_LayerMask);
 
 		const bgfx::Caps * caps = bgfx::getCaps();
 		if (layer.Width > caps->limits.maxTextureSize || layer.Height > caps->limits.maxTextureSize) {
@@ -799,6 +861,7 @@ void Backend_Shutdown(void)
 	Destroy_Prescale_Target();
 	Destroy_Layer();
 	Destroy_Targets();
+	Destroy_Mask(_FrameMask);
 
 	if (bgfx::isValid(_FrameTexture)) {
 		bgfx::destroy(_FrameTexture);
@@ -865,6 +928,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 		_FrameTexture = BGFX_INVALID_HANDLE;
 	}
 	Destroy_Layer();
+	Destroy_Mask(_FrameMask);
 
 	// bgfx names packed formats from their low bits up, so its B5G6R5 is the layout the
 	// game already draws in. Emulated support would convert every upload on the way
@@ -936,11 +1000,15 @@ void Backend_Set_VSync(bool vsync)
 /// Submits the layer and then the frame over it, with the frame's key pixels see-through. False
 /// means nothing was submitted and the frame should be presented without the layer.
 /// </summary>
-static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer)
+static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer, BackendEmissive const * emissive)
 {
 	if (layer.Pixels != NULL) {
 		if (!Upload_Layer(layer)) {
 			return(false);
+		}
+		_LayerMask.Uploaded = false;
+		if (emissive != NULL && emissive->Layer != NULL) {
+			Upload_Mask(_LayerMask, emissive->Layer, emissive->LayerPitch, layer.Width, layer.Height);
 		}
 	} else if (!_LayerUploaded) {
 		return(false);
@@ -966,8 +1034,13 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 
 	// The map keeps whole pixels while it is drawn at its own size or larger, and is smoothed when shrunk.
 	bool const layer_shrunk = layer.DestWidth < _LayerWidth || layer.DestHeight < _LayerHeight;
-	if (!Submit_Quad(VIEW_PRESENT, _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
+	// The debug view shows the layer's mask alone, since it covers the same area as the frame.
+	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
+	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
+	}
+	if (layer_masked) {
+		return(true);
 	}
 
 	unsigned int const framesampler = clamp | (mode == BACKEND_SCALE_LINEAR ? 0 : BGFX_SAMPLER_POINT);
@@ -992,7 +1065,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 /// <param name="layer">A picture to draw under the frame, or NULL for none.</param>
 /// <returns>bool; Was a frame submitted? When not, the window is unchanged and nothing should
 /// be drawn over it.</returns>
-bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer)
+bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer, BackendEmissive const * emissive)
 {
 	if (!_Initialized || !bgfx::isValid(_FrameTexture)) {
 		return(false);
@@ -1016,7 +1089,15 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	_FramePending = true;
 
-	if (layer != NULL && Present_With_Layer(pixels, pitch, destx, desty, destwidth, destheight, mode, *layer)) {
+	// A frame with no mask this present leaves the frame mask cleared, so the debug view shows nothing stale.
+	if (pixels != NULL) {
+		_FrameMask.Uploaded = false;
+		if (emissive != NULL && emissive->Frame != NULL) {
+			Upload_Mask(_FrameMask, emissive->Frame, emissive->FramePitch, _FrameWidth, _FrameHeight);
+		}
+	}
+
+	if (layer != NULL && Present_With_Layer(pixels, pitch, destx, desty, destwidth, destheight, mode, *layer, emissive)) {
 		return(true);
 	}
 
@@ -1041,7 +1122,9 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		}
 	}
 
-	bgfx::TextureHandle source = _FrameTexture;
+	// The debug view draws the frame mask where the picture would be.
+	bgfx::TextureHandle const picture = (_MaskView && _FrameMask.Uploaded) ? _FrameMask.Handle : _FrameTexture;
+	bgfx::TextureHandle source = picture;
 	unsigned int samplerflags = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 	bool from_prescale = false;
 
@@ -1067,7 +1150,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 				bgfx::setViewFrameBuffer(VIEW_PRESCALE, _PrescaleTarget);
 				bgfx::setViewClear(VIEW_PRESCALE, BGFX_CLEAR_COLOR, 0x000000FF);
 				Set_View_Transform(VIEW_PRESCALE, _PrescaleWidth, _PrescaleHeight);
-				if (Submit_Quad(VIEW_PRESCALE, _FrameTexture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
+				if (Submit_Quad(VIEW_PRESCALE, picture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
 					source = bgfx::getTexture(_PrescaleTarget);
 					from_prescale = true;
 				}
@@ -1085,6 +1168,12 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
 	return(Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv));
+}
+
+
+void Backend_Set_Emissive_View(bool masks)
+{
+	_MaskView = masks;
 }
 
 

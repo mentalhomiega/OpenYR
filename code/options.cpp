@@ -97,6 +97,9 @@
 #include <cstring>
 #include <string>
 
+#include "emissive.h"
+#include "goptions.h"
+
 
 char const * const OptionsClass::HotkeyName = "WinHotkeys";
 
@@ -221,6 +224,7 @@ OptionsClass::OptionsClass(void) :
 	IntegerScaling(false),
 	RenderFrameRate(0),
 	VSync(false),
+	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
 	HDROutput(VIDEO_HDR_AUTOMATIC),
 	HDRPaperWhite(0),
@@ -492,6 +496,20 @@ static char const * Scale_Mode_Name(int mode)
  *   07/03/1996 JLB : Reworked to use new INI handler.                                         *
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
+// HDR output is not part of this build, so Enhanced highlights stay off until it lands.
+static bool HDR_Output_Active(void)
+{
+	return(false);
+}
+
+
+void Apply_HDR_Highlights(void)
+{
+	bool const enhanced = HDR_Output_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
+}
+
+
 void OptionsClass::Load_Settings(void)
 {
 	DebugString("--------- Loading %s settings ---------------\n", DeploymentConfig.SettingsFile.c_str());
@@ -574,6 +592,12 @@ void OptionsClass::Load_Settings(void)
 	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
+
+	char highlightsname[16];
+	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
+	HDRHighlights = stricmp(highlightsname, "Classic") == 0 ? HDR_HIGHLIGHTS_CLASSIC : HDR_HIGHLIGHTS_ENHANCED;
+	Emissive_Set_Debug_View(ConfigINI.Get_Bool("Video", "EmissiveDebugView", false));
+	Apply_HDR_Highlights();
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), 0, 1000);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
@@ -722,6 +746,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "IntegerScaling", IntegerScaling);
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
+	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));
 	Save_HDR_Nits("HDRPaperWhite", HDRPaperWhite);

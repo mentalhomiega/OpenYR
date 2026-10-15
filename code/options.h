@@ -37,6 +37,16 @@
 
 #include "diff.hh"
 
+// Whether HDR output uses the emissive masks: Classic keeps every picture at paper white, and
+// Enhanced lets light sources go brighter. Enhanced has no effect without HDR output.
+enum HDRHighlightsMode {
+	HDR_HIGHLIGHTS_CLASSIC,
+	HDR_HIGHLIGHTS_ENHANCED
+};
+
+// Turns the emissive masks on or off from the HDR highlights setting and the debug view.
+void Apply_HDR_Highlights(void);
+
 class OptionsClass {
 	public:
 		enum {
@@ -224,6 +234,12 @@ class OptionsClass {
 		 * Presents are already limited to the refresh rate without it.
 		 */
 		bool VSync;
+
+		/*
+		 * Whether light sources go brighter than paper white on HDR output, as an
+		 * HDRHighlightsMode. It defaults to Enhanced and takes effect only while HDR output is on.
+		 */
+		int HDRHighlights;
 
 		/*
 		 * This is the graphics interface the renderer is asked for, as one of the

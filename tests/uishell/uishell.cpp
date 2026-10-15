@@ -932,6 +932,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_HDR_Output(int mode) override { Calls.push_back("hdr output " + std::to_string(mode)); }
 		virtual void Set_HDR_Paper_White(int nits) override { Calls.push_back("hdr paper white " + std::to_string(nits)); }
 		virtual void Set_HDR_Peak_Brightness(int nits) override { Calls.push_back("hdr peak " + std::to_string(nits)); }
+		virtual void Set_HDR_Highlights(int highlights) override { Calls.push_back("hdr highlights " + std::to_string(highlights)); }
 
 		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override

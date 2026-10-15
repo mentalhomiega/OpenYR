@@ -12,6 +12,8 @@ opents_add_test(ZBufRing
         blit.cpp
         buff.cpp
         _zbuffer.cpp
+        emissive.cpp
+        emissive_surface.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
 )
