@@ -37,6 +37,8 @@
 
 #include "diff.hh"
 
+#include <string>
+
 // Whether HDR output uses the emissive masks: Classic keeps every picture at paper white, and
 // Enhanced lets light sources go brighter. Enhanced has no effect without HDR output.
 enum HDRHighlightsMode {
@@ -100,6 +102,12 @@ class OptionsClass {
 		 * single player game starts; multiplay takes its difficulty from the session options.
 		 */
 		int Difficulty;
+
+		/*
+		 * The campaign the mission browser last selected, by its name in the battle file, so the
+		 * browser selects it again. Empty when none was chosen.
+		 */
+		std::string LastMission;
 
 		/*
 		 * These control how the tactical map scrolls. The method (0 - 2) selects what holding

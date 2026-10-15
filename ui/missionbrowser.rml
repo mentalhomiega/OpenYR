@@ -1,0 +1,51 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+
+	The mission browser of the modern menus: the missions grouped by campaign on the left, the selected
+	mission's picture and briefing on the right, and the difficulty with Back and Play below.
+-->
+<rml>
+<head>
+	<title>Missions</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="missionbrowser.rcss"/>
+</head>
+<body class="missionbrowser" template="dialog" data-model="missionbrowser">
+	<div id="columns">
+		<div id="list-column" class="frame">
+			<span class="caption" id="list-caption">Missions</span>
+			<div id="missions" class="list"><div class="rows">
+				<div class="item" data-for="row : rows" data-class-header="row.header" data-class-selected="row.selected" data-class-disabled="row.disabled" data-event-click="queue('rowclick', it_index)" data-event-dblclick="queue('rowplay', it_index)">{{row.text}}</div>
+			</div></div>
+		</div>
+		<div id="info-column">
+			<div id="top">
+				<div id="map" class="frame"><surface id="preview"/></div>
+				<div id="summary">
+					<span class="caption" id="subtitle">{{subtitle}}</span>
+					<span class="caption" id="title">{{title}}</span>
+					<span class="caption" id="mapname">{{mapname}}</span>
+					<span id="notice">{{notice}}</span>
+				</div>
+			</div>
+			<div id="briefing" class="frame"><div id="briefing-text">{{briefing}}</div></div>
+		</div>
+	</div>
+	<div id="buttons">
+		<div id="difficulty-row">
+			<span class="caption" id="difficulty-caption">Difficulty</span>
+			<select id="difficulty" data-event-change="queue('difficulty', ev.value)"><option data-for="entry : difficulties" data-attr-value="it_index" data-attrif-selected="it_index == difficulty">{{entry.label}}</option></select>
+		</div>
+		<div id="actions">
+			<button id="back" data-event-click="queue('cancel')">Back</button>
+			<button id="play" data-attrif-disabled="!playable" data-event-click="queue('ok')">Play</button>
+		</div>
+	</div>
+</body>
+</rml>

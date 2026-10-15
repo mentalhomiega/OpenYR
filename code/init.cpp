@@ -202,6 +202,7 @@
 #include "tube.h"
 #include "tutorial.h"
 #include "ui/screens/campaign/uicampaign.h"
+#include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/screens/cncnet/uicncnet.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
@@ -738,6 +739,12 @@ static CampaignType Choose_Campaign(void)
 		if (Campaigns.Count() == 0) {
 			return(CAMPAIGN_NONE);
 		}
+	}
+
+	// The modern menus list the missions in one browser; the classic menus keep their campaign and mission screens.
+	if (!Options.IsClassicMenus) {
+		std::optional<int> played = UI_Mission_Browser_Dialog();
+		return(played.has_value() ? (CampaignType)*played : CAMPAIGN_NONE);
 	}
 
 	std::optional<UICampaignEntry> picked = UI_Campaign_Dialog();
