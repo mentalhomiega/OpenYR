@@ -12,6 +12,7 @@ the engine builds from a number in that range. A lower bound with a leading zero
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -42,6 +43,21 @@ PATTERN_SCOPES = [
 ]
 
 
+# InfantryTypeClass::Read_Sequence_INI reads one do-string from the section an infantry art
+# section names with Sequence=, under each name in this table.
+SEQUENCE_SOURCE = ROOT / "code/infatype.cpp"
+
+
+def sequence_names(source):
+    """The do-string key names listed in the SequenceName table of infatype.cpp."""
+    text = source.read_text(encoding="utf-8")
+    table = re.search(r"SequenceName\s*\[[^\]]*\]\s*=\s*\{(.*?)\}\s*;", text, re.S)
+    names = re.findall(r'"([^"]+)"', table.group(1)) if table else []
+    if not names:
+        sys.exit(f"{source}: no SequenceName table found")
+    return names
+
+
 # Sections the engine names in code that the manual's extractor describes by source only.
 # RulesClass::Difficulty reads the same keys from each of these three sections of rules.ini.
 SOURCE_SECTIONS = {
@@ -68,6 +84,7 @@ def section_field(section):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--keys", type=Path, default=ROOT / "manual/data/ini-keys.yaml")
+    parser.add_argument("--sequence-source", type=Path, default=SEQUENCE_SOURCE, help="source file holding the SequenceName table")
     parser.add_argument("--output", type=Path, help="file to write; standard output when omitted")
     args = parser.parse_args()
 
@@ -90,6 +107,8 @@ def main():
                 lines.append("\t".join(fields))
     for key, file, section, applies_to, value_type in PATTERN_SCOPES:
         lines.append("\t".join([key, file, section, ",".join(applies_to), value_type]))
+    for key in sequence_names(args.sequence_source):
+        lines.append("\t".join([key, "art.ini", "@sequence", "InfantryType", "infantry sequence"]))
 
     text = "\n".join(lines) + "\n"
     if args.output:

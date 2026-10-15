@@ -96,9 +96,21 @@ of its own name, whatever its `Image=`. A projectile reads art only when its
 rules section has an `Image=`. A section that several types read accepts the
 keys of all of them.
 
+The section that an infantry type's art section names with `Sequence=` holds
+that type's do-strings. It is checked against the do-string keys, which are
+the names in the engine's sequence table: `Ready=`, `Guard=`, `Walk=`,
+`FireUp=`, `Die1=`, `Deploy=` and the rest. Each value is a frame, a count and
+a jump, written as whole numbers separated by commas, then optionally a facing
+of `N`, `NE`, `E`, `SE`, `S`, `SW`, `W` or `NW`. The engine reads the numbers
+in decimal only, accepts no blank before a comma and ignores a facing it does
+not know without a message, so the checker reports all three. Any other key
+in the sequence section is reported, including art keys such as `Crawls=`. A
+`Sequence=` line is followed only from an art section that an infantry type
+reads, as described above.
+
 An art section no type reads is skipped. That includes the own-name section of
-a type whose `Image=` names another section, and a section that only an
-infantry `Sequence=` names.
+a type whose `Image=` names another section, and a sequence section that no
+infantry type's art section names.
 
 ## Theater control files
 
@@ -138,8 +150,10 @@ whose names the catalog does not give, such as the land types.
 
 The catalog holds the keys the manual's extractor finds in the source, plus the
 numbered `art.ini` structure keys `DockingOffset0=` and up and `PowerUp1Anim=`
-and up, and the numbered `Tile01Anim=` keys of a theater tile set, which the
-export script adds. Another key the engine builds from a number may be missing
+and up, the numbered `Tile01Anim=` keys of a theater tile set, and the
+do-string keys of an infantry sequence, which the export script adds. It reads
+the do-string names from the `SequenceName` table in `code/infatype.cpp`.
+Another key the engine builds from a number may be missing
 and is then reported although the engine reads it. Treat a finding as
 something to look at, not as proof of an error.
 
