@@ -1,5 +1,6 @@
-; A Magnetron lifts a Rhino, is ordered away so the Rhino is released in the air, and the Rhino is then given a move order
-; while it falls. The move is refused: the falling Rhino stays on its cell, takes no horizontal travel and lands before anything else.
+; A Magnetron lifts a Rhino (HTNK), is ordered away so the Rhino is released in the air, and then the Rhino is given a
+; move order (cmove) while it falls. The order is refused: the falling Rhino keeps its cell, takes no horizontal travel,
+; and is destroyed by the drop when it lands.
 ; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/airborne-order.txt -Seconds 150
 300 own TELE 54 40
 301 spawn HTNK 62 40

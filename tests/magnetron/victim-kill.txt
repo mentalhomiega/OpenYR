@@ -1,5 +1,6 @@
-; A lifted Rhino is killed while the beam holds it. The Rhino is destroyed in the air, so no fall, no landing and no crash
-; damage remain. The holder's beam is released with it.
+; A Magnetron lifts a Rhino (HTNK) and the Rhino is killed while the beam holds it. The Rhino is let go in the air and
+; falls straight down, as a Rhino released by the beam does, and is destroyed by the drop when it lands. The holder's
+; beam is released with it. Each "AUTOTEST   lift" line gives the Rhino's height, locomotor, jumpjet state and hold flags.
 ; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/victim-kill.txt -Seconds 150
 300 own TELE 54 40
 301 spawn HTNK 62 40
