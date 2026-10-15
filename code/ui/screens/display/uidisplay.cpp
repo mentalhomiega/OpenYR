@@ -549,11 +549,25 @@ static char const * Page_Document(UISettingsTab page)
 }
 
 
+// The data model each tab's document binds to. Each tab has its own, as all of them stay loaded.
+static char const * Page_Model(UISettingsTab page)
+{
+	switch (page) {
+		case UI_TAB_GRAPHICS:
+			return("graphics");
+		case UI_TAB_ACCESSIBILITY:
+			return("accessibility");
+		default:
+			return("display");
+	}
+}
+
+
 class UIDisplayViewClass : public UIRmlViewClass
 {
 	public:
-		explicit UIDisplayViewClass(UIDisplayPresenterClass & presenter) :
-			UIRmlViewClass(presenter, Page_Document(presenter.State.Page), "display"),
+		UIDisplayViewClass(UIDisplayPresenterClass & presenter, UISettingsTab page) :
+			UIRmlViewClass(presenter, Page_Document(page), Page_Model(page)),
 			Data(presenter)
 		{
 		}
@@ -712,7 +726,13 @@ class UIConfirmModeViewClass : public UIRmlViewClass
 
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter)
 {
-	return(std::make_unique<UIDisplayViewClass>(presenter));
+	return(std::make_unique<UIDisplayViewClass>(presenter, presenter.State.Page));
+}
+
+
+std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter, UISettingsTab page)
+{
+	return(std::make_unique<UIDisplayViewClass>(presenter, page));
 }
 
 

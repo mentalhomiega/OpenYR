@@ -582,6 +582,30 @@ void UI_Display_State(UIDisplayState & state)
 }
 
 
+std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void)
+{
+	UIDisplayState state;
+	UI_Display_State(state);
+	Register_Setting_Previews();
+	return(std::make_unique<UIDisplayPresenterClass>(UI_Display_Service(), state));
+}
+
+
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+{
+	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		presenter.Restore_Preview();
+	}
+	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
+		UIDisplayMode current;
+		current.Width = Options.ScreenWidth;
+		current.Height = Options.ScreenHeight;
+		return(current);
+	}
+	return(presenter.Picked);
+}
+
+
 std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
 {
 	UIDisplayState state;
@@ -590,7 +614,7 @@ std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
 	Register_Setting_Previews();
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_DISPLAY);
+	UI_Settings_Join(presenter, page);
 	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {

@@ -219,6 +219,18 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 }
 
 
+std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(bool tabbed)
+{
+	UIGameControlsState state;
+	UI_Game_Controls_State(state);
+	if (tabbed) {
+		state.LeaveLabel = UI_Settings_Back_Label();
+		state.Extras = true;
+	}
+	return(std::make_unique<UIGameControlsPresenterClass>(UI_Game_Controls_Service(), state));
+}
+
+
 void UI_Game_Controls_Dialog(void)
 {
 	UIGameControlsState state;

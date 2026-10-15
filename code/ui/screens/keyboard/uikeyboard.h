@@ -115,6 +115,8 @@ class UIKeyboardPresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter);
 
 UIKeyboardServiceClass & UI_Keyboard_Service(void);
+// The presenter of the Controls page, with the bindings as they stand now.
+std::unique_ptr<UIKeyboardPresenterClass> UI_Keyboard_New_Presenter(void);
 void UI_Keyboard_State(UIKeyboardState & state);
 
 void UI_Keyboard_Dialog(void);

@@ -23,6 +23,7 @@
 #include "ui/screens/gameopt/uigameopt.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "keybindings.h"
+#include "ui/uisettingshost.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mapgen/uimapgen.h"
 #include "ui/screens/missionsel/uimissionsel.h"
@@ -4012,8 +4013,8 @@ void Test_Settings_Tabs_Presenter(void)
 		Drive(presenter, "tab", -1);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab that does not exist is ignored");
 		Drive(presenter, "tab", UI_TAB_AUDIO);
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Tab_Request == UI_TAB_AUDIO, "another tab ends the page and names itself");
-		Check(service.Joined().find("edge on") != std::string::npos && service.Joined().find("save") != std::string::npos, "leaving by a tab applies the page's edits as OK does");
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "another tab names itself and leaves the page open");
+		Check(service.Calls.empty(), "a tab request applies nothing; the edits wait for OK or Cancel");
 	}
 
 	{
@@ -4032,7 +4033,7 @@ void Test_Settings_Tabs_Presenter(void)
 		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
 		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
 		Drive(presenter, "tab", UI_TAB_GAME);
-		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a page that cannot save stays open rather than lose its edits");
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_GAME, "a page that cannot save still hands its edits to the next tab");
 	}
 
 	{
@@ -4068,7 +4069,7 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 
 	Press(context, Rml::Input::KI_TAB, Rml::Input::KM_CTRL);
 	presenter.Drain();
-	Check(presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "Ctrl+Tab moves to the next tab the bar offers");
+	Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "Ctrl+Tab moves to the next tab the bar offers");
 	view->Release();
 	context.Update();
 
@@ -4081,7 +4082,7 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 
 	Press(context, Rml::Input::KI_PRIOR, Rml::Input::KM_CTRL);
 	back.Drain();
-	Check(back.Result.has_value() && back.Tab_Request == UI_TAB_KEYBOARD, "Ctrl+Page Up wraps round to the last tab");
+	Check(!back.Result.has_value() && back.Tab_Request == UI_TAB_KEYBOARD, "Ctrl+Page Up wraps round to the last tab");
 	second->Release();
 	context.Update();
 
@@ -7344,6 +7345,148 @@ void Test_Shell(void)
 }
 
 
+// The tabbed Settings host: pages stay loaded, one shows at a time, and a tab request moves at once.
+class FakeTabPresenterClass : public UIPresenterClass
+{
+	public:
+		virtual void Execute(UIIntent const & intent) override
+		{
+			Calls.push_back(intent.Name);
+			if (intent.Name == "ok") {
+				Result = UI_RESULT_ACCEPTED;
+			} else if (intent.Name == "cancel") {
+				Result = UI_RESULT_CANCELLED;
+			}
+		}
+		virtual void Refresh(void) override {}
+
+		std::vector<std::string> Calls;
+};
+
+
+class FakeTabViewClass : public UIViewClass
+{
+	public:
+		FakeTabViewClass(UIPresenterClass & presenter, char const * name) :
+			Presenter_(presenter),
+			Name_(name)
+		{
+		}
+
+		virtual bool Prepare(UIShellClass & shell) override
+		{
+			(void)shell;
+			Prepared++;
+			return(true);
+		}
+		virtual void Show(bool modal) override
+		{
+			(void)modal;
+			Shown = true;
+			Shows++;
+		}
+		virtual void Hide(void) override
+		{
+			Shown = false;
+		}
+		virtual void Release(void) override {}
+		virtual void Sync(void) override {}
+		virtual bool Is_Shown(void) const override { return(Shown); }
+		virtual UIPresenterClass & Presenter(void) const override { return(Presenter_); }
+		virtual char const * Name(void) const override { return(Name_); }
+		virtual void Set_Tab(int tab, unsigned offered) override
+		{
+			LastTab = tab;
+			LastOffered = offered;
+		}
+
+		bool Shown = false;
+		int Shows = 0;
+		int Prepared = 0;
+		int LastTab = -1;
+		unsigned LastOffered = 0;
+
+	private:
+		UIPresenterClass & Presenter_;
+		char const * Name_;
+};
+
+
+static void Queue_Tab(UIPresenterClass & presenter, int tab)
+{
+	UIIntent intent;
+	intent.Name = "tab";
+	intent.Value = tab;
+	presenter.Queue(intent);
+}
+
+
+void Test_Settings_Host(void)
+{
+	FakeTabPresenterClass game;
+	FakeTabPresenterClass display;
+	FakeTabPresenterClass audio;
+	FakeTabViewClass game_view(game, "game");
+	FakeTabViewClass display_view(display, "display");
+	FakeTabViewClass graphics_view(display, "graphics");
+	FakeTabViewClass audio_view(audio, "audio");
+
+	std::vector<UISettingsPageClass> pages;
+	UISettingsPageClass page;
+	page.Tab = UI_TAB_GAME;
+	page.View = &game_view;
+	page.Presenter = &game;
+	pages.push_back(page);
+	page.Tab = UI_TAB_DISPLAY;
+	page.View = &display_view;
+	page.Presenter = &display;
+	pages.push_back(page);
+	page.Tab = UI_TAB_GRAPHICS;
+	page.View = &graphics_view;
+	page.Presenter = &display;
+	pages.push_back(page);
+	page.Tab = UI_TAB_AUDIO;
+	page.View = &audio_view;
+	page.Presenter = &audio;
+	pages.push_back(page);
+
+	unsigned const offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_GRAPHICS) | (1u << UI_TAB_AUDIO);
+	UISettingsHostPresenterClass host(pages, { &game, &display, &audio }, offered, UI_TAB_GAME);
+	UISettingsHostViewClass view(host);
+
+	view.Show(true);
+	Check(game_view.Shown && !display_view.Shown && !audio_view.Shown && game_view.LastTab == UI_TAB_GAME, "the settings screen opens on the first tab alone");
+	Check(display_view.LastTab == UI_TAB_GAME && graphics_view.LastTab == UI_TAB_GAME && audio_view.LastTab == UI_TAB_GAME, "every page's tab bar lights the tab on show");
+
+	// Several tab requests in one update: only the last one is shown, and the page on show matches it.
+	Queue_Tab(game, UI_TAB_DISPLAY);
+	Queue_Tab(game, UI_TAB_AUDIO);
+	Queue_Tab(game, UI_TAB_DISPLAY);
+	Queue_Tab(game, UI_TAB_AUDIO);
+	host.Drain();
+	Check(host.Shown_Tab() == UI_TAB_AUDIO && audio_view.Shown && !game_view.Shown && !display_view.Shown && !graphics_view.Shown, "rapid tab requests show the last tab asked for, and only that page");
+	Check(game.Calls.empty() && audio.Calls.empty(), "a tab change applies nothing");
+	Check(game_view.LastTab == UI_TAB_AUDIO && display_view.LastTab == UI_TAB_AUDIO && graphics_view.LastTab == UI_TAB_AUDIO, "a tab change lights the new tab on every page");
+
+	// A page that shares a presenter comes back with the values it held.
+	Queue_Tab(display, UI_TAB_GRAPHICS);
+	host.Drain();
+	Check(host.Shown_Tab() == UI_TAB_GRAPHICS && graphics_view.Shown && !audio_view.Shown && !display_view.Shown, "a request from a shared presenter shows its other tab");
+	Check(view.Is_Shown() && view.Presenter().Result.has_value() == false, "the screen stays open across tab changes");
+
+	// OK on one page applies every page; Cancel does the same for the others.
+	UIIntent ok;
+	ok.Name = "ok";
+	audio.Queue(ok);
+	host.Drain();
+	Check(host.Result.has_value() && *host.Result == UI_RESULT_ACCEPTED, "OK on one page closes the screen accepted");
+	Check(display.Calls == std::vector<std::string>{ "ok" } && game.Calls == std::vector<std::string>{ "ok" }, "OK applies the pages the player did not end on, once each");
+	Check(audio.Calls == std::vector<std::string>{ "ok" }, "the page that ended the screen applies once");
+
+	view.Release();
+}
+
+
 int main(void)
 {
 	Test_FreeType();
@@ -7356,6 +7499,7 @@ int main(void)
 	Test_Keyboard_Presenter();
 	Test_Mods_Presenter();
 	Test_Settings_Tabs_Presenter();
+	Test_Settings_Host();
 	Test_Classic_Options_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();

@@ -117,9 +117,33 @@ static bool UI_Tab_Keyboard = false;
 /// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
 /// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
 /// </summary>
+UISettingsTab UIRmlViewClass::Tab_Of_View(void) const
+{
+	return((ViewTab != UI_TAB_NONE) ? ViewTab : Owner.Settings_Tab());
+}
+
+
+unsigned UIRmlViewClass::Offered_Of_View(void) const
+{
+	return((ViewTab != UI_TAB_NONE) ? ViewOffered : Owner.Settings_Tabs_Offered());
+}
+
+
+/// <summary>
+/// Makes this view a page of the tabbed Settings: the tab bar of the page lights the tab given and hides the tabs not offered.
+/// The host calls this on every page at once, so the tab bars of pages that are not shown agree with the one on show.
+/// </summary>
+void UIRmlViewClass::Set_Tab(int tab, unsigned offered)
+{
+	ViewTab = (UISettingsTab)tab;
+	ViewOffered = offered;
+	Apply_Tabs();
+}
+
+
 void UIRmlViewClass::Apply_Tabs(void)
 {
-	UISettingsTab const tab = Owner.Settings_Tab();
+	UISettingsTab const tab = Tab_Of_View();
 	if (Doc == nullptr || tab == UI_TAB_NONE) {
 		return;
 	}
@@ -134,12 +158,10 @@ void UIRmlViewClass::Apply_Tabs(void)
 		Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[index]);
 		if (button != nullptr) {
 			button->SetClass("active", index == tab);
-			button->SetClass("gone", (Owner.Settings_Tabs_Offered() & (1u << index)) == 0);
+			button->SetClass("gone", (Offered_Of_View() & (1u << index)) == 0);
 		}
 	}
 
-	FocusTab = UI_Tab_Keyboard;
-	UI_Tab_Keyboard = false;
 }
 
 
@@ -150,7 +172,7 @@ void UIRmlViewClass::Apply_Tabs(void)
 /// <returns>bool; Was the key a tab change?</returns>
 bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
 {
-	if (Owner.Settings_Tab() == UI_TAB_NONE) {
+	if (Tab_Of_View() == UI_TAB_NONE) {
 		return(false);
 	}
 
@@ -177,10 +199,10 @@ bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
 		return(false);
 	}
 
-	int tab = Owner.Settings_Tab();
+	int tab = Tab_Of_View();
 	for (int tries = 0; tries < UI_TAB_COUNT; tries++) {
 		tab = (tab + step + UI_TAB_COUNT) % UI_TAB_COUNT;
-		if ((Owner.Settings_Tabs_Offered() & (1u << tab)) != 0) {
+		if ((Offered_Of_View() & (1u << tab)) != 0) {
 			UI_Tab_Keyboard = true;
 			Mark_Keyboard();
 			Queue("tab", tab);
@@ -237,9 +259,11 @@ void UIRmlViewClass::Show(bool modal)
 	if (Doc != nullptr) {
 		Doc->Show(modal ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, Rml::FocusFlag::Document);
 
-		if (FocusTab) {
-			FocusTab = false;
-			Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[Owner.Settings_Tab()]);
+		// The keyboard flag belongs to the page on show, so only that page takes it.
+		bool const keyboard_tab = UI_Tab_Keyboard;
+		UI_Tab_Keyboard = false;
+		if (keyboard_tab && Tab_Of_View() != UI_TAB_NONE) {
+			Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[Tab_Of_View()]);
 			if (button != nullptr) {
 				button->Focus();
 				Mark_Keyboard();

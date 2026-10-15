@@ -14,7 +14,7 @@
 	<link type="text/rcss" href="settings.rcss"/>
 	<link type="text/rcss" href="display.rcss"/>
 </head>
-<body template="dialog" class="page-settings" data-model="display">
+<body template="dialog" class="page-settings" data-model="accessibility">
 	<div id="page">
 		<div id="list">
 			<p class="section">Colour</p>

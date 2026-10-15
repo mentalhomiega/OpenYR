@@ -317,6 +317,17 @@ void Display_Options_Dialog(int page)
 }
 
 
+
+/// <summary>
+/// Applies a picked mode as a trial, as the display options do after they close.
+/// </summary>
+/// <returns>bool; False if the player did not keep the mode.</returns>
+bool Display_Mode_Kept(UIDisplayMode const & picked, float scale)
+{
+	return(Try_Display_Mode(picked, scale));
+}
+
+
 /// <summary>
 /// Offers the player a resolution or interface scale they picked on the display options and
 /// keeps it if they confirm it.

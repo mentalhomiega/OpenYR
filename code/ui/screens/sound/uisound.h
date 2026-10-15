@@ -82,6 +82,8 @@ class UISoundPresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Sound_View(UISoundPresenterClass & presenter);
 
 UISoundServiceClass & UI_Sound_Service(void);
+// The presenter of the audio settings, with the levels and switches as they stand now.
+std::unique_ptr<UISoundPresenterClass> UI_Sound_New_Presenter(void);
 void UI_Sound_State(UISoundState & state);
 
 void UI_Sound_Dialog(void);

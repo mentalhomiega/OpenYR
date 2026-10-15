@@ -108,6 +108,14 @@ void UI_Keyboard_State(UIKeyboardState & state)
 }
 
 
+std::unique_ptr<UIKeyboardPresenterClass> UI_Keyboard_New_Presenter(void)
+{
+	UIKeyboardState state;
+	UI_Keyboard_State(state);
+	return(std::make_unique<UIKeyboardPresenterClass>(UI_Keyboard_Service(), state));
+}
+
+
 void UI_Keyboard_Dialog(void)
 {
 	UIKeyboardState state;

@@ -82,3 +82,7 @@ std::unique_ptr<UIViewClass> UI_Mods_View(UIModsPresenterClass & presenter);
 UIModsServiceClass & UI_Mods_Service(void);
 
 void UI_Mods_Dialog(void);
+// The presenter of the Mods page, with the mod list as it stands now.
+std::unique_ptr<UIModsPresenterClass> UI_Mods_New_Presenter(void);
+// Tells the player the new mod list takes effect at the next start, when the page closed with it saved.
+void UI_Mods_Settled(UIModsPresenterClass & presenter);

@@ -121,6 +121,14 @@ void UI_Sound_State(UISoundState & state)
 }
 
 
+std::unique_ptr<UISoundPresenterClass> UI_Sound_New_Presenter(void)
+{
+	UISoundState state;
+	UI_Sound_State(state);
+	return(std::make_unique<UISoundPresenterClass>(UI_Sound_Service(), state));
+}
+
+
 void UI_Sound_Dialog(void)
 {
 	UISoundState state;

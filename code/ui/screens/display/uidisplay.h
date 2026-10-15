@@ -243,6 +243,12 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 
 
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
+// The view of one tab of the display settings. The tabs share the presenter; each keeps its own document.
+std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter, UISettingsTab page);
+// The presenter the display, graphics and accessibility tabs share, with the settings as they stand now.
+std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void);
+// What the display tabs settle to when they close: the mode to try, if any, as UI_Display_Dialog returns it.
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
 UIDisplayServiceClass & UI_Display_Service(void);

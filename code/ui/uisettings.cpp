@@ -13,20 +13,102 @@
 
 #include "audio/audioengine.h"
 #include "csf.h"
-#include "gamedlg.h"
 #include "globals.h"
 #include "goptions.h"
 #include "mainopt.h"
-#include "sounddlg.h"
+#include "ui/screens/display/uidisplay.h"
+#include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mods/uimods.h"
+#include "ui/screens/sound/uisound.h"
+#include "ui/uienginehost.h"
+#include "ui/uisettingshost.h"
+
+#include <memory>
+#include <optional>
+#include <vector>
 
 
 namespace
 {
 
-// Zero while no Settings are open, so a screen opened another way gets no tab bar.
-unsigned Offered = 0;
-UISettingsTab Requested = UI_TAB_NONE;
+/*
+ * The presenters and views of one tabbed Settings screen. Each page's document loads once, when the
+ * screen opens, and stays loaded until the screen closes. The presenters are declared before the views
+ * so the views are released first.
+ */
+struct UISettingsSessionClass
+{
+	std::unique_ptr<UIDisplayPresenterClass> Display;
+	std::unique_ptr<UIGameControlsPresenterClass> Game;
+	std::unique_ptr<UISoundPresenterClass> Sound;
+	std::unique_ptr<UIKeyboardPresenterClass> Keyboard;
+	std::unique_ptr<UIModsPresenterClass> Mods;
+
+	std::vector<std::unique_ptr<UIViewClass>> Views;
+	std::vector<UISettingsPageClass> Pages;
+	std::vector<UIPresenterClass *> Presenters;
+	std::unique_ptr<UISettingsHostPresenterClass> Host;
+	std::unique_ptr<UISettingsHostViewClass> View;
+};
+
+
+void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_ptr<UIViewClass> view, UIPresenterClass * presenter, std::function<void(void)> enter = nullptr)
+{
+	UISettingsPageClass page;
+	page.Tab = tab;
+	page.View = view.get();
+	page.Presenter = presenter;
+	page.Enter = std::move(enter);
+	session.Pages.push_back(page);
+	session.Views.push_back(std::move(view));
+}
+
+
+void Add_Presenter(UISettingsSessionClass & session, UIPresenterClass * presenter)
+{
+	if (presenter != nullptr) {
+		session.Presenters.push_back(presenter);
+	}
+}
+
+
+// Builds the pages the tab bar offers. The display, graphics and accessibility tabs share one presenter.
+void Build_Session(UISettingsSessionClass & session, unsigned offered, UISettingsTab first)
+{
+	session.Display = UI_Display_New_Presenter();
+	UIDisplayPresenterClass * display = session.Display.get();
+	for (UISettingsTab tab : { UI_TAB_DISPLAY, UI_TAB_GRAPHICS, UI_TAB_ACCESSIBILITY }) {
+		Add_Page(session, tab, UI_Display_View(*display, tab), display, [display, tab]() {
+			display->State.Page = tab;
+		});
+	}
+	Add_Presenter(session, display);
+
+	if ((offered & (1u << UI_TAB_GAME)) != 0) {
+		session.Game = UI_Game_Controls_New_Presenter(true);
+		Add_Page(session, UI_TAB_GAME, UI_Game_Controls_View(*session.Game), session.Game.get());
+		Add_Presenter(session, session.Game.get());
+	}
+	if ((offered & (1u << UI_TAB_AUDIO)) != 0) {
+		session.Sound = UI_Sound_New_Presenter();
+		Add_Page(session, UI_TAB_AUDIO, UI_Sound_View(*session.Sound), session.Sound.get());
+		Add_Presenter(session, session.Sound.get());
+	}
+	if ((offered & (1u << UI_TAB_KEYBOARD)) != 0) {
+		session.Keyboard = UI_Keyboard_New_Presenter();
+		Add_Page(session, UI_TAB_KEYBOARD, UI_Keyboard_View(*session.Keyboard), session.Keyboard.get());
+		Add_Presenter(session, session.Keyboard.get());
+	}
+	if ((offered & (1u << UI_TAB_MODS)) != 0) {
+		session.Mods = UI_Mods_New_Presenter();
+		Add_Page(session, UI_TAB_MODS, UI_Mods_View(*session.Mods), session.Mods.get());
+		Add_Presenter(session, session.Mods.get());
+	}
+
+	session.Host = std::make_unique<UISettingsHostPresenterClass>(session.Pages, session.Presenters, offered, first);
+	session.View = std::make_unique<UISettingsHostViewClass>(*session.Host);
+}
 
 }
 
@@ -44,25 +126,23 @@ bool UI_Settings_Tabbed(void)
 }
 
 
+// The tabbed Settings opens its pages as one screen, so a page never runs its own modal run.
 void UI_Settings_Join(UIPresenterClass & presenter, UISettingsTab tab)
 {
-	if (Offered != 0) {
-		presenter.Set_Settings_Tab(tab, Offered);
-	}
+	(void)presenter;
+	(void)tab;
 }
 
 
 void UI_Settings_Leave(UIPresenterClass const & presenter)
 {
-	if (Offered != 0 && presenter.Tab_Request != UI_TAB_NONE) {
-		Requested = presenter.Tab_Request;
-	}
+	(void)presenter;
 }
 
 
 bool UI_Settings_Moving(void)
 {
-	return(Requested != UI_TAB_NONE);
+	return(false);
 }
 
 
@@ -78,42 +158,25 @@ void UI_Settings_Run(UISettingsTab first)
 	if (!ingame) {
 		offered |= (1u << UI_TAB_MODS);
 	}
-
-	Offered = offered;
 	UISettingsTab tab = ((offered & (1u << first)) != 0) ? first : UI_TAB_GAME;
 
-	while (tab != UI_TAB_NONE) {
-		Requested = UI_TAB_NONE;
+	while (true) {
+		// A picked resolution is tried after the screen closes; a refused one opens the screen again on its page.
+		float const scale = Options.InterfaceScale;
+		UISettingsSessionClass session;
+		Build_Session(session, offered, tab);
 
-		switch (tab) {
-			case UI_TAB_DISPLAY:
-			case UI_TAB_GRAPHICS:
-			case UI_TAB_ACCESSIBILITY:
-				Display_Options_Dialog(tab);
-				break;
-
-			case UI_TAB_AUDIO:
-				SoundControlsClass().Dialog();
-				break;
-
-			case UI_TAB_KEYBOARD:
-				Options.Hotkey_Dialog();
-				break;
-
-			case UI_TAB_MODS:
-				UI_Mods_Dialog();
-				break;
-
-			default:
-				GameControlsClass().Dialog();
-				break;
+		UIResult const result = UI_Run_Modal(*session.View);
+		std::optional<UIDisplayMode> picked = UI_Display_Settled(*session.Display);
+		if (session.Mods) {
+			UI_Mods_Settled(*session.Mods);
 		}
 
-		// Turning the classic menus on from the Display tab ends the tabs.
-		tab = UI_Settings_Tabbed() ? Requested : UI_TAB_NONE;
+		tab = session.Host->Shown_Tab();
+		if (result == UI_RESULT_FAILED_TO_OPEN || !picked.has_value() || Display_Mode_Kept(*picked, scale)) {
+			break;
+		}
 	}
 
-	Requested = UI_TAB_NONE;
-	Offered = 0;
 	Options.Save_Settings();
 }

@@ -125,6 +125,8 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 
 
 std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
+// The presenter of the game controls, with the settings as they stand now. Tabbed, it leaves with the Back label.
+std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(bool tabbed);
 
 UIGameControlsServiceClass & UI_Game_Controls_Service(void);
 void UI_Game_Controls_State(UIGameControlsState & state);
