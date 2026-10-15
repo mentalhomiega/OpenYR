@@ -1445,6 +1445,27 @@ static void Cursor_Probe(std::string const & type_name, int x, int y)
 }
 
 
+// swaim <SuperSection> x y: aims that super weapon as its cameo click does, then writes the action the cell and the
+// object under it give, and the mouse shape that action shows (Mouse_Left_Up). A cell under shroud is probed as shroud.
+static void SW_Aim_Probe(std::string const & section, int x, int y)
+{
+	SuperWeaponType const id = SuperWeaponTypeClass::From_Name(section.c_str());
+	if (id == SUPER_NONE) {
+		DebugString("AUTOTEST   swaim %s: no such super weapon\n", section.c_str());
+		return;
+	}
+
+	Cell const cell(x, y);
+	ObjectClass * target = Map[cell].Cell_Occupier();
+	bool const shadow = Map.Is_Shrouded(Map[cell].Center_Coord());
+	Unselect_All();
+	Map.IsTargettingMode = id;
+	ActionType const action = SuperWeaponTypes[id]->What_Action(cell, target);
+	Map.Mouse_Left_Up(cell, shadow, target, action, false);
+	DebugString("AUTOTEST   swaim %s cell %d,%d shroud %d object %s action %s mouse %d range %d line %d\n", section.c_str(), x, y, (int)shadow, target != NULL ? target->Class_Of()->Name() : "none", ActionName[action], (int)Map.Get_Mouse_Shape(), (int)SuperWeaponTypes[id]->Range, SuperWeaponTypes[id]->LineMultiplier);
+}
+
+
 // canbuild <TypeID>: writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses,
 // whether the country lists pass with the own country (gate own) and with the acted one (gate acted), and what
 // Can_Build says for that house now.
@@ -1828,6 +1849,12 @@ void Run(StepType const & step)
 	// cursor <TypeID> x y: see Cursor_Probe. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "cursor") {
 		Cursor_Probe(step.Argument, step.X, step.Y);
+		return;
+	}
+
+	// swaim <SuperSection> x y: see SW_Aim_Probe, dispatched here for the same reason as cursor.
+	if (step.Command == "swaim") {
+		SW_Aim_Probe(step.Argument, step.X, step.Y);
 		return;
 	}
 

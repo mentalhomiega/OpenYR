@@ -164,6 +164,13 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		// Does every player see this weapon's countdown in the corner of the battlefield while its owner holds it?
 		bool IsShowTimer;
 		SuperWeaponType PreDependent;
+
+		/*
+		 * The target radius, in cells, drawn around the cursor while the weapon is aimed (Range=).
+		 * LineMultiplier= is how many rings per cell are drawn across that radius; below one, a single ring.
+		 */
+		float Range;
+		int LineMultiplier;
 };
 
 SuperWeaponType Special_From_Name(char const * name);

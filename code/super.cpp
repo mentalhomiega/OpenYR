@@ -822,8 +822,11 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 	Sound_Effect(Rule->GeneticMutatorActivateSound, coord);
 	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 
+	// With MutateFriendly=no the blast spares infantry of the firing house and its allies.
+	HouseClass const * spare = Rule->MutateFriendly ? NULL : House;
+
 	if (Rule->MutateExplosion) {
-		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House);
+		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House, spare);
 		return;
 	}
 
@@ -834,7 +837,7 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 			if (!Map.In_Radar(where)) continue;
 			CellClass & cellptr = Map[where];
 			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
-				if (object->RTTI == RTTI_INFANTRY) {
+				if (object->RTTI == RTTI_INFANTRY && (spare == NULL || !spare->Is_Ally(((InfantryClass *)object)->House))) {
 					victims.Add((InfantryClass *)object);
 				}
 			}
@@ -1078,8 +1081,8 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 	 */
 	foot->Teleport_To(dest);
 
-	if (Rule->WarpOut != NULL) {
-		new AnimClass(Rule->WarpOut, foot->Center_Coord());
+	if (Rule->WarpIn != NULL) {
+		new AnimClass(Rule->WarpIn, foot->Center_Coord());
 	}
 	Sound_Effect(in_sound, foot->Center_Coord());
 

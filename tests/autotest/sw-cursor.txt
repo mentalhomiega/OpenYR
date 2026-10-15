@@ -1,0 +1,90 @@
+; Superweapon targeting cursors and target rings. Every superweapon is granted fully charged, then aimed as its cameo
+; click does (swaim). Each swaim line logs the action the cell gives (SuperWeaponTypeClass::What_Action, with ForceShield
+; over a structure of the player or an ally only, SuperWeaponTypeClass::MouseOverObject 0x6CEF80) and the mouse shape
+; that action shows (DisplayClass::ConvertAction 0x4AAE90). Cells: 70,70 is open ground, 56,40 is the player's power plant,
+; 96,96 is a computer house's structure, and 20,20 is shrouded until the reveal step.
+; Expected: ForceShield shows ForceShield over 56,40 and NoForceShield elsewhere; every other type shows its own action on
+; every cell; Nuke shows Nuke and PsychicReveal shows PsychicReveal (72) under shroud too.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script tests/autotest/sw-cursor.txt -Width 800 -Height 600 -Seconds 150
+;   -Settings "[Options]`r`nUnitActionLines=yes" -ShotDir shots/sw-cursor -Filter "AUTOTEST   swaim|Exception"
+20 own GAPOWR 56 40
+25 spawn GAPOWR 96 96
+30 view 70 70
+40 command DebugChargeSuperweapons
+50 grant NukeSpecial
+51 grant IronCurtainSpecial
+52 grant LightningStormSpecial
+53 grant ChronoSphereSpecial
+54 grant ChronoWarpSpecial
+55 grant ParaDropSpecial
+56 grant AmericanParaDropSpecial
+57 grant PsychicDominatorSpecial
+58 grant SpyPlaneSpecial
+59 grant GeneticConverterSpecial
+60 grant ForceShieldSpecial
+61 grant PsychicRevealSpecial
+70 swaim NukeSpecial 70 70
+70 swaim NukeSpecial 56 40
+70 swaim NukeSpecial 96 96
+70 swaim NukeSpecial 20 20
+71 swaim IronCurtainSpecial 70 70
+71 swaim IronCurtainSpecial 56 40
+71 swaim IronCurtainSpecial 96 96
+71 swaim IronCurtainSpecial 20 20
+72 swaim LightningStormSpecial 70 70
+72 swaim LightningStormSpecial 56 40
+72 swaim LightningStormSpecial 96 96
+72 swaim LightningStormSpecial 20 20
+73 swaim ChronoSphereSpecial 70 70
+73 swaim ChronoSphereSpecial 56 40
+73 swaim ChronoSphereSpecial 96 96
+73 swaim ChronoSphereSpecial 20 20
+74 swaim ChronoWarpSpecial 70 70
+74 swaim ChronoWarpSpecial 56 40
+74 swaim ChronoWarpSpecial 96 96
+74 swaim ChronoWarpSpecial 20 20
+75 swaim ParaDropSpecial 70 70
+75 swaim ParaDropSpecial 56 40
+75 swaim ParaDropSpecial 96 96
+75 swaim ParaDropSpecial 20 20
+76 swaim AmericanParaDropSpecial 70 70
+76 swaim AmericanParaDropSpecial 56 40
+76 swaim AmericanParaDropSpecial 96 96
+76 swaim AmericanParaDropSpecial 20 20
+77 swaim PsychicDominatorSpecial 70 70
+77 swaim PsychicDominatorSpecial 56 40
+77 swaim PsychicDominatorSpecial 96 96
+77 swaim PsychicDominatorSpecial 20 20
+78 swaim SpyPlaneSpecial 70 70
+78 swaim SpyPlaneSpecial 56 40
+78 swaim SpyPlaneSpecial 96 96
+78 swaim SpyPlaneSpecial 20 20
+79 swaim GeneticConverterSpecial 70 70
+79 swaim GeneticConverterSpecial 56 40
+79 swaim GeneticConverterSpecial 96 96
+79 swaim GeneticConverterSpecial 20 20
+80 swaim ForceShieldSpecial 70 70
+80 swaim ForceShieldSpecial 56 40
+80 swaim ForceShieldSpecial 96 96
+80 swaim ForceShieldSpecial 20 20
+81 swaim PsychicRevealSpecial 70 70
+81 swaim PsychicRevealSpecial 56 40
+81 swaim PsychicRevealSpecial 96 96
+81 swaim PsychicRevealSpecial 20 20
+90 reveal
+91 swaim NukeSpecial 20 20
+91 swaim ForceShieldSpecial 20 20
+91 swaim PsychicRevealSpecial 20 20
+100 view 70 70
+101 windowmove 400 300
+102 swaim NukeSpecial 70 70
+103 command ScreenCapture
+104 swaim ChronoSphereSpecial 70 70
+105 command ScreenCapture
+106 swaim IronCurtainSpecial 70 70
+107 command ScreenCapture
+108 swaim ForceShieldSpecial 56 40
+109 command ScreenCapture
+110 swaim ForceShieldSpecial 70 70
+111 command ScreenCapture
+120 quit
