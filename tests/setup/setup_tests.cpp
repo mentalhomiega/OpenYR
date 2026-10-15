@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "setup_core.h"
+#include "setup_names.h"
 #include "setup_system.h"
 
 namespace {
@@ -334,6 +335,17 @@ void Test_Normalize(void)
 	Check(setup::Is_Inside(L"C:\\A\\B", L"c:\\a"), "a path below a folder is inside it, ignoring case");
 	Check(setup::Is_Inside(L"C:\\A", L"C:\\A"), "a folder is inside itself");
 	Check(!setup::Is_Inside(L"C:\\AB", L"C:\\A"), "a sibling with the same start is not inside");
+}
+
+
+// The uninstaller removes itself through cmd.exe, so a path cmd.exe would read differently is refused.
+void Test_Cmd_Paths(void)
+{
+	Check(setup::Is_Safe_For_Cmd(L"C:\\Users\\Player One\\AppData\\Local\\Programs\\OpenYR\\Uninstall OpenYR.exe"), "an ordinary path with spaces can go inside a cmd.exe argument");
+	Check(setup::Is_Safe_For_Cmd(L"C:\\Games\\A&B (x86)\\OpenYR"), "an ampersand or a parenthesis inside quotes is literal");
+	Check(!setup::Is_Safe_For_Cmd(L"C:\\Games\\%TEMP%\\OpenYR"), "a path with a percent sign is refused, since cmd.exe expands it");
+	Check(!setup::Is_Safe_For_Cmd(L"C:\\Games\\a\"b"), "a path with a quote is refused");
+	Check(!setup::Is_Safe_For_Cmd(L"C:\\Games\\a\nb") && !setup::Is_Safe_For_Cmd(L""), "a path with a line end, or no path, is refused");
 }
 
 
@@ -872,6 +884,7 @@ int main()
 	Remove_Test_Keys();
 
 	Test_Normalize();
+	Test_Cmd_Paths();
 	Test_Zip();
 	Test_Zip_Hostile_Names();
 	Test_Embedded();

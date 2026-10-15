@@ -141,6 +141,21 @@ inline bool Clean_Package_Name(std::wstring name, std::wstring & clean)
 }
 
 /*
+ * True when a path can sit inside a quoted argument of "cmd.exe /c" and reach the command unchanged.
+ * cmd.exe expands %NAME% even inside quotes, and a quote or a line end in a path ends the argument,
+ * so the setup does not hand such a path to cmd.exe.
+ */
+inline bool Is_Safe_For_Cmd(std::wstring const & path)
+{
+	for (wchar_t character : path) {
+		if (character < 0x20 || character == L'%' || character == L'"') {
+			return(false);
+		}
+	}
+	return(!path.empty());
+}
+
+/*
  * True when a line of the install record may be deleted as one of the install's files: a name that
  * Clean_Package_Name leaves unchanged, and not the player's settings and saves under user, the Debug
  * log folder, OPENTS.INI or the record itself. Those have their own rules in an uninstall.

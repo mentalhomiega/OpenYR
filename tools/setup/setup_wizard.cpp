@@ -10,6 +10,7 @@
 #include "setup_wizard.h"
 
 #include "resource.h"
+#include "setup_names.h"
 #include "setup_system.h"
 
 #include <commctrl.h>
@@ -148,10 +149,15 @@ bool Pick_Folder(HWND owner, std::wstring const & title, std::wstring & folder)
 
 void Schedule_Removal(std::wstring const & folder, std::wstring const & self)
 {
+	// The uninstaller stays on disk when its path would change meaning inside the cmd.exe line below.
+	if (!Is_Safe_For_Cmd(folder) || !Is_Safe_For_Cmd(self)) {
+		return;
+	}
+
 	wchar_t system[MAX_PATH] = {};
 	GetSystemDirectoryW(system, MAX_PATH);
 
-	std::wstring const command = std::wstring(L"/d /s /c \"ping -n 3 127.0.0.1 >nul & del /f /q \"") + self + L"\" & rmdir \"" + folder + L"\"\"";
+	std::wstring const command = std::wstring(L"/d /v:off /s /c \"ping -n 3 127.0.0.1 >nul & del /f /q \"") + self + L"\" & rmdir \"" + folder + L"\"\"";
 	std::wstring line = std::wstring(system) + L"\\cmd.exe " + command;
 	std::vector<wchar_t> buffer(line.begin(), line.end());
 	buffer.push_back(L'\0');
