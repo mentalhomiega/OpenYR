@@ -170,3 +170,8 @@ fuzz_add_target(FuzzMix NAME fuzz_mix
         shastraw.cpp sha.cpp blwstraw.cpp blowfish.cpp rndstraw.cpp random.cpp _syncrec.cpp syncrec.cpp
         buff.cpp crc.cpp int.cpp mpmath.cpp pipe.cpp straw.cpp xpipe.cpp xstraw.cpp
 )
+
+fuzz_add_target(FuzzImage NAME fuzz_image
+    SOURCES fuzz_image.cpp
+    ENGINE ui/rml/rmlimage.cpp
+)
