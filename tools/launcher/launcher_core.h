@@ -124,6 +124,15 @@ std::string Wide_To_Utf8(std::wstring const & text);
 // One argument, quoted so that CommandLineToArgvW and the C runtime read it back unchanged.
 std::wstring Quote_Argument(std::wstring const & arg);
 
+// Lower-case hex text of the given number of random bytes from the system's generator, or an empty
+// string when the generator fails.
+std::wstring Random_Hex(unsigned bytes);
+
+// Creates the folder, whose parent must exist, so that only the current user and SYSTEM can open it
+// and what is made inside it. Fails when the folder already exists, so a name another user made
+// beforehand is never taken over.
+bool Create_Private_Folder(std::wstring const & path, std::wstring & error);
+
 // Appends a line to the log, prefixed with the local time. Nothing is written when the file cannot be opened.
 void Append_Log(std::wstring const & path, std::wstring const & line);
 

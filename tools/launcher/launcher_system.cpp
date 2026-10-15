@@ -413,8 +413,9 @@ std::wstring Folder_Of(std::wstring const & path)
 bool Make_Update_Folder(std::wstring & folder, std::wstring & error)
 {
 	wchar_t temp[MAX_PATH] = {};
-	if (GetTempPathW(MAX_PATH, temp) == 0) {
-		error = L"There is no temporary folder.";
+	DWORD const length = GetTempPathW(MAX_PATH, temp);
+	if (length == 0 || length >= MAX_PATH) {
+		error = L"There is no usable temporary folder.";
 		return false;
 	}
 
@@ -423,12 +424,16 @@ bool Make_Update_Folder(std::wstring & folder, std::wstring & error)
 		base.pop_back();
 	}
 
-	folder = base + L"\\OpenYR-Update-" + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64());
-	if (!CreateDirectoryW(folder.c_str(), nullptr)) {
-		error = L"Could not create " + folder + L".";
+	// The name cannot be guessed, and the folder is closed to other users, because the update copy
+	// runs from it and loads from it.
+	std::wstring const random = Random_Hex(8);
+	if (random.empty()) {
+		error = L"The system could not make a random name for the update folder.";
 		return false;
 	}
-	return true;
+
+	folder = base + L"\\OpenYR-Update-" + std::to_wstring(GetCurrentProcessId()) + L"-" + random;
+	return Create_Private_Folder(folder, error);
 }
 
 

@@ -11,6 +11,8 @@
 // or game process is used.
 
 #include <windows.h>
+#include <aclapi.h>
+#include <sddl.h>
 #include <shellapi.h>
 
 #include <cctype>
@@ -332,6 +334,68 @@ void Test_Quoting(void)
 }
 
 
+// True when an access-allowed entry of the list names the well-known SID.
+bool Acl_Grants(PACL acl, WELL_KNOWN_SID_TYPE type)
+{
+	BYTE sid[SECURITY_MAX_SID_SIZE] = {};
+	DWORD size = sizeof(sid);
+	if (!CreateWellKnownSid(type, nullptr, sid, &size)) {
+		return false;
+	}
+
+	for (DWORD index = 0; index < acl->AceCount; index++) {
+		void * entry = nullptr;
+		if (GetAce(acl, index, &entry) && static_cast<ACE_HEADER *>(entry)->AceType == ACCESS_ALLOWED_ACE_TYPE
+			&& EqualSid(&static_cast<ACCESS_ALLOWED_ACE *>(entry)->SidStart, sid)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+
+// The folder an update runs from is closed to other users, so a user who shares the temporary folder
+// cannot swap the downloaded setup or plant a DLL beside the update copy.
+void Test_Private_Folder(void)
+{
+	std::wstring const first = launcher::Random_Hex(8);
+	Check(first.size() == 16 && first.find_first_not_of(L"0123456789abcdef") == std::wstring::npos, "the random name is sixteen hex digits");
+	Check(first != launcher::Random_Hex(8), "and two random names differ");
+	Check(launcher::Random_Hex(0).empty(), "no bytes give no name");
+
+	wchar_t temp[MAX_PATH] = {};
+	GetTempPathW(MAX_PATH, temp);
+	std::wstring const folder = std::wstring(temp) + L"openyr-private-test-" + std::to_wstring(GetCurrentProcessId()) + L"-" + first;
+
+	std::wstring error;
+	Check(launcher::Create_Private_Folder(folder, error), "a private folder is created");
+	Check(!launcher::Create_Private_Folder(folder, error) && !error.empty(), "a folder that already exists is refused, not taken over");
+	Check(!launcher::Create_Private_Folder(folder + L"\\missing\\child", error), "a folder whose parent is missing is refused");
+
+	PACL acl = nullptr;
+	PSECURITY_DESCRIPTOR descriptor = nullptr;
+	DWORD const status = GetNamedSecurityInfoW(folder.c_str(), SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &acl, nullptr, &descriptor);
+	Check(status == ERROR_SUCCESS && acl != nullptr, "the folder's access list can be read");
+	if (status == ERROR_SUCCESS && acl != nullptr) {
+		bool inherited = false;
+		for (DWORD index = 0; index < acl->AceCount; index++) {
+			void * entry = nullptr;
+			if (GetAce(acl, index, &entry) && (static_cast<ACE_HEADER *>(entry)->AceFlags & INHERITED_ACE) != 0) {
+				inherited = true;
+			}
+		}
+		Check(!inherited, "no entry is inherited from the temporary folder");
+		Check(acl->AceCount == 2 && Acl_Grants(acl, WinLocalSystemSid), "it holds two entries, one of them SYSTEM");
+		Check(!Acl_Grants(acl, WinWorldSid) && !Acl_Grants(acl, WinBuiltinUsersSid) && !Acl_Grants(acl, WinAuthenticatedUserSid), "and none for Everyone, Users or Authenticated Users");
+	}
+	if (descriptor != nullptr) {
+		LocalFree(descriptor);
+	}
+
+	RemoveDirectoryW(folder.c_str());
+}
+
+
 void Test_Text(void)
 {
 	Check(launcher::Utf8_To_Wide("caf\xC3\xA9") == L"caf\u00E9", "UTF-8 text converts to wide text");
@@ -350,6 +414,7 @@ int main()
 	Test_Decision();
 	Test_Sources_And_Config();
 	Test_Quoting();
+	Test_Private_Folder();
 	Test_Text();
 
 	if (Failures != 0) {

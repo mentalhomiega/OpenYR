@@ -48,7 +48,7 @@ std::wstring Module_Path(void);
 // The folder a path lies in, without the trailing separator.
 std::wstring Folder_Of(std::wstring const & path);
 
-// A new empty folder in the temporary folder for one update.
+// A new empty folder in the temporary folder for one update, with an unguessable name and open to this user and SYSTEM only.
 bool Make_Update_Folder(std::wstring & folder, std::wstring & error);
 
 // Starts a command line in a folder. The process handle is returned in info and must be closed.

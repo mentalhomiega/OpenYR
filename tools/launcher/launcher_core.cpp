@@ -9,6 +9,9 @@
 
 #include "launcher_core.h"
 
+#include <bcrypt.h>
+#include <sddl.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -722,6 +725,65 @@ std::wstring Quote_Argument(std::wstring const & arg)
 	out.append(backslashes * 2, L'\\');
 	out += L'"';
 	return out;
+}
+
+
+std::wstring Random_Hex(unsigned bytes)
+{
+	std::vector<UCHAR> random(bytes);
+	if (bytes == 0 || !BCRYPT_SUCCESS(BCryptGenRandom(nullptr, random.data(), bytes, BCRYPT_USE_SYSTEM_PREFERRED_RNG))) {
+		return std::wstring();
+	}
+
+	std::wstring text;
+	for (UCHAR byte : random) {
+		text += L"0123456789abcdef"[byte >> 4];
+		text += L"0123456789abcdef"[byte & 15];
+	}
+	return text;
+}
+
+
+bool Create_Private_Folder(std::wstring const & path, std::wstring & error)
+{
+	HANDLE token = nullptr;
+	DWORD size = 0;
+	std::vector<BYTE> user;
+	bool ok = OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token) != 0;
+	if (ok) {
+		GetTokenInformation(token, TokenUser, nullptr, 0, &size);
+		user.assign(size, 0);
+		ok = size > 0 && GetTokenInformation(token, TokenUser, user.data(), size, &size) != 0;
+		CloseHandle(token);
+	}
+
+	LPWSTR sid = nullptr;
+	ok = ok && ConvertSidToStringSidW(reinterpret_cast<TOKEN_USER *>(user.data())->User.Sid, &sid) != 0;
+
+	// Protected, so nothing is inherited from the temporary folder; full control for this user and SYSTEM only.
+	PSECURITY_DESCRIPTOR descriptor = nullptr;
+	if (ok) {
+		std::wstring const sddl = L"D:P(A;OICI;FA;;;" + std::wstring(sid) + L")(A;OICI;FA;;;SY)";
+		ok = ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(), SDDL_REVISION_1, &descriptor, nullptr) != 0;
+	}
+	if (sid != nullptr) {
+		LocalFree(sid);
+	}
+
+	if (ok) {
+		SECURITY_ATTRIBUTES attributes{};
+		attributes.nLength = sizeof(attributes);
+		attributes.lpSecurityDescriptor = descriptor;
+		ok = CreateDirectoryW(path.c_str(), &attributes) != 0;
+	}
+	if (descriptor != nullptr) {
+		LocalFree(descriptor);
+	}
+
+	if (!ok) {
+		error = L"Could not create " + path + L" for this user alone.";
+	}
+	return ok;
 }
 
 
