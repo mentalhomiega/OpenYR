@@ -5327,7 +5327,8 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	if (fire == FIRE_OK) {
-		if (IsTethered && Contact_With_Whom()->RTTI == RTTI_BUILDING) {
+		// A unit whose exit link was refused is tethered with no contact (see BuildingClass::KickOutUnit, 0x443C60).
+		if (IsTethered && Contact_With_Whom() != NULL && Contact_With_Whom()->RTTI == RTTI_BUILDING) {
 			return(FIRE_CANT);
 		}
 
