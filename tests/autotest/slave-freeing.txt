@@ -1,0 +1,29 @@
+; A computer Slave Miner walks to the ore and deploys into its refinery, and its slaves go out to work.
+; The player's Rhino tank then destroys that refinery, so the slaves join the player's house and cheer
+; (SlaveManagerClass::Killed, 0x6B0AE0: the killer's house, then Guard, then a forced Cheer, 0x3D4 0x3D0 0x388).
+; A second Slave Miner then deploys, and its refinery is destroyed with no attacker, so its slaves go to the
+; Civilian-side house (Neutral). The freed slaves walk away from the second miner's gun first (move SLAV).
+; Expected in the "where SLAV" lines: Africans (the computer) before each kill;
+; Americans (the player) for the first group after the first kill, and Neutral for the second group after the
+; second kill. A freed slave's do value is 33 (DO_CHEER) right after it changes hands.
+; Run: scripts/run_autotest.ps1 -Script E:/Claude ra2 decomp/src-agent24/tests/autotest/slave-freeing.txt
+;      -InstallDir <build>/bin/Release -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST|Slave: |Exception"
+20 reveal
+30 view 58 36
+40 spawn SMIN 62 38
+50 own HTNK 54 37
+420 where SMIN
+421 where SLAV
+422 where YAREFN
+430 hit YAREFN:HE@HTNK 5000
+431 where SLAV
+432 where YAREFN
+440 move HTNK 46 42
+440 move SLAV 46 42
+450 spawn SMIN 58 40
+460 waitowns Africans YAREFN 1 2000
+700 where SLAV
+720 kill YAREFN
+721 where SLAV
+722 where YAREFN
+760 quit

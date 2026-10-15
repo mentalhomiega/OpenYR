@@ -36,7 +36,6 @@ class SlaveManagerClass
 		void Wake_Up(void);
 		void Set_Owner(TechnoClass * owner);
 		void Free_All(TechnoClass * killer);
-		void Discard(void);
 		void Detach(AbstractClass const * target);
 		void Serialize(SaveStreamClass & stream);
 

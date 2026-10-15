@@ -11912,8 +11912,8 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 
 /// <summary>
 /// Hands this object's slaves to the object it turns into, as a slave miner does when it
-/// deploys or packs up (SlaveManagerClass::SetOwner, 0x6AF580). The new object's own fresh
-/// slaves are removed.
+/// deploys or packs up (SlaveManagerClass::SetOwner, 0x6AF580). The new object's own manager is
+/// killed off first, so its docked slaves die and any slaves out in the field are freed.
 /// </summary>
 void TechnoClass::Transfer_Slaves(TechnoClass * to)
 {
@@ -11921,7 +11921,8 @@ void TechnoClass::Transfer_Slaves(TechnoClass * to)
 		return;
 	}
 	if (to->SlaveManager) {
-		to->SlaveManager->Discard();
+		to->SlaveManager->Free_All(NULL);
+		to->SlaveManager.reset();
 	}
 	to->SlaveManager = std::move(SlaveManager);
 	SlaveManager.reset();

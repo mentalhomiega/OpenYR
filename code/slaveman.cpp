@@ -601,10 +601,11 @@ void SlaveManagerClass::Miner_AI(void)
 
 
 /// <summary>
-/// Frees the slaves when their miner is destroyed (SlaveManagerClass::Killed, 0x6B0AE0). A slave
-/// docked in the miner dies, credited to the killer. With no killer and no Civilian-side house,
-/// each slave in the field takes C4 damage; otherwise it joins the killer's house, or the
-/// Civilian-side house without a killer.
+/// Frees the slaves when their miner is destroyed or removed (SlaveManagerClass::Killed, 0x6B0AE0).
+/// A slave docked in the miner dies, credited to the killer. With no killer and no Civilian-side
+/// house, each slave in the field takes C4 damage. Otherwise a slave in the field goes to the
+/// killer's house, or to the Civilian-side house without a killer; it then guards and cheers
+/// (0x3D4, 0x3D0, 0x388). The free sound plays when a slave changed hands outside scenario start.
 /// </summary>
 void SlaveManagerClass::Free_All(TechnoClass * killer)
 {
@@ -631,32 +632,18 @@ void SlaveManagerClass::Free_All(TechnoClass * killer)
 		slave->Storage = StorageClass();
 		slave->Assign_Destination(NULL);
 		slave->Assign_Target(NULL);
-		if (house != NULL && house != slave->House) {
+		if (house != slave->House) {
 			slave->Set_Owning_House(house, true);
 		}
 		slave->Assign_Mission(MISSION_GUARD);
+		slave->Cheer(true);
 		freed = true;
 	}
-	if (freed) {
+	if (freed && ScenarioInit == 0 && Rule->SlavesFreeSound != VOC_NONE) {
 		Sound_Effect(Rule->SlavesFreeSound, Owner->Center_Coord());
-		DebugString("Slave: %s's slaves are freed\n", Owner->TClass->Name());
 	}
-	Owner = NULL;
-}
-
-
-/// <summary>
-/// Removes the slaves without freeing them, for a manager that another takes over.
-/// </summary>
-void SlaveManagerClass::Discard(void)
-{
-	for (NodeType & node : Nodes) {
-		if (node.Slave != NULL && node.Slave->IsActive) {
-			node.Slave->SlaveOwner = NULL;
-			node.Slave->Delete_Me();
-		}
-		node.Slave = NULL;
-		node.Status = NODE_DEAD;
+	if (freed) {
+		DebugString("Slave: %s's slaves are freed\n", Owner->TClass->Name());
 	}
 	Owner = NULL;
 }
