@@ -109,6 +109,10 @@
 **							weapon at the object on that cell now, and why not, then the
 **							weapon it would choose and whether that one could fire
 **	weapons <TypeID>		writes each weapon slot of the type with its bullet's AA and AG flags and range
+**	waypoint <any> x y	places a waypoint on the cell on the selected path, as a click in waypoint mode does
+**	wpsend <any> x y	gives the selected objects the follow-path order a click on the waypoint at the cell gives
+**	wpstate <TypeID>	writes each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status,
+**					ammo, the waypoint path and next waypoint it follows, whether it moves, and its radio contact
 **	airborne <TypeID>		writes each object of the type with its height above ground, whether it is in the air,
 **							its render layer, and whether the ground or bridge occupier chain of its cell holds it
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
@@ -132,7 +136,7 @@
 **	veterancy <TypeID>	writes the experience, rank and cost of every object of that type, with the veterancy rules and the player's score
 **	action <TypeID> x y		writes what the player's object of that type would do when clicked
 **							on the object standing on that cell
-**	rule <Key> <0|1>		overrides a rules setting the tests need; only CanDetonateTimeBomb so far
+**	rule <Key> <0|1>		overrides a rules setting the tests need: CanDetonateTimeBomb and AircraftWaypointReload
 **	clickon <TypeID> x y	clicks the player's object of that type on the object standing on that
 **							cell, as the player would with it selected
 **	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
