@@ -3660,6 +3660,13 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 
 
 /*
+ * The waypoint marker is MOUSE.SHA frame 384 (MouseCursor::Cursors[0x3c] in TacticalClass::RenderPlanningPaths,
+ * 006dad60). The entry has one frame, so the marker does not animate.
+ */
+static int const WAYPOINT_MARKER_FRAME = 384;
+
+
+/*
  * Dash pattern for the animated "marching" line that joins the selected waypoint path.
  */
 static bool Draw_WaypointPoint_Line_Style[8] = {
@@ -3706,17 +3713,17 @@ class Dash_Table_Restore
 
 
 /// <summary>
-/// Draws the local player's waypoint paths over the tactical view.
-/// Each waypoint on screen is marked with the waypoint cursor and its number within the
-/// path, and consecutive waypoints are joined by a line. The path the player currently has
-/// selected is drawn with an animated dashed line so it stands out from the rest.
+/// Draws the local player's waypoint paths over the tactical view, as gamemd's
+/// TacticalClass::RenderPlanningPaths (006dad60) does for every path the player owns.
+/// Each waypoint on screen is marked with the MOUSE.SHA waypoint frame and its number within
+/// the path, and consecutive waypoints are joined by a line in the path's colour. The selected
+/// path's line is dashed and animated; the other paths' lines are solid.
 /// </summary>
 /// <param name="inshroud">Draw the waypoints under shroud rather than the visible ones?</param>
 void Tactical::Draw_Waypoints(bool inshroud)
 {
 	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = Map.Get_Mouse_Start_Frame(MOUSE_WAYPOINT);
-	frame += WaypointAnimCounter % Map.Get_Mouse_Frame_Count(MOUSE_WAYPOINT);
+	int frame = WAYPOINT_MARKER_FRAME;
 
 	if (Debug_Map) {
 		return;
@@ -3724,7 +3731,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 	Dash_Table_Restore const dashtable;
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHP");
+	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
 	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
 
 	for (PathType path = PATH_FIRST; path < PATH_COUNT; path++) {
@@ -3775,7 +3782,8 @@ void Tactical::Draw_Waypoints(bool inshroud)
 				nextpixel.Y += TacticalRect.Y;
 
 				if (Clip_Line_To_Rect(pixel, nextpixel, TacticalRect)) {
-					unsigned color = MouseDrawer->Convert_Pixel(3);
+					// Translate entry 3 holds this path's colour, set by Update_Waypoint_Color above.
+					unsigned color = ((unsigned short *)MouseDrawer->Get_Translate_Table())[3];
 					if (path == PlayerPtr->SelectedPath) {
 						phase = LogicalSurface->Draw_Masked_Dashed_Line(pixel, nextpixel, color, Draw_WaypointPoint_Line_Style, phase, inshroud);
 					} else {
