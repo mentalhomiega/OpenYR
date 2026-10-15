@@ -1,0 +1,61 @@
+; A Magnetron lifts a Rhino, is ordered away so the Rhino is released in the air, and the Rhino is then given a move order
+; while it falls. The move is refused: the falling Rhino stays on its cell, takes no horizontal travel and lands before anything else.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/airborne-order.txt -Seconds 150
+300 own TELE 54 40
+301 spawn HTNK 62 40
+302 reveal
+303 view 58 40
+310 strike TELE 62 40
+320 lift HTNK
+324 lift HTNK
+328 lift HTNK
+332 lift HTNK
+336 lift HTNK
+340 lift HTNK
+344 lift HTNK
+348 lift HTNK
+352 lift HTNK
+356 lift HTNK
+360 lift HTNK
+364 lift HTNK
+366 windowshot airborne-order-held
+400 move TELE 46 40
+402 cmove HTNK 60 44
+403 lift HTNK
+407 lift HTNK
+407 windowshot airborne-order-fall
+410 where HTNK
+411 lift HTNK
+415 lift HTNK
+419 lift HTNK
+423 lift HTNK
+427 lift HTNK
+431 lift HTNK
+435 lift HTNK
+439 lift HTNK
+443 lift HTNK
+447 lift HTNK
+451 lift HTNK
+455 lift HTNK
+459 lift HTNK
+463 lift HTNK
+467 lift HTNK
+471 lift HTNK
+475 lift HTNK
+479 lift HTNK
+483 lift HTNK
+487 lift HTNK
+491 lift HTNK
+495 lift HTNK
+499 lift HTNK
+503 lift HTNK
+507 lift HTNK
+511 lift HTNK
+515 lift HTNK
+519 lift HTNK
+523 lift HTNK
+527 lift HTNK
+531 lift HTNK
+535 lift HTNK
+539 lift HTNK
+550 quit
