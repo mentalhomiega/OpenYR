@@ -245,6 +245,11 @@ class UIEngineHostClass : public UIShellHostClass
 			return(UI_Theme_Tint());
 		}
 
+		virtual bool Menu_Live_Background(void) const override
+		{
+			return(UI_Theme_Live_Background());
+		}
+
 		virtual void Log(char const * text) override
 		{
 			DebugString("%s", text);

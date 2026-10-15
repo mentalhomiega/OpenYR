@@ -809,9 +809,11 @@ void UIShellClass::Tick(void)
 		// Each document carries the class of the tint in force, so only that tint's colours apply.
 		bool const ingame = Host.Game_Running();
 		UIMenuTintType const tint = Host.Menu_Tint();
+		bool const live = Host.Menu_Live_Background();
 		for (int index = 0; index < Context->GetNumDocuments(); index++) {
 			Rml::ElementDocument * document = Context->GetDocument(index);
 			document->SetClass("ingame", ingame);
+			document->SetClass("live", live);
 			for (int choice = 0; choice < UI_TINT_COUNT; choice++) {
 				document->SetClass(UI_Theme_Tint_Class((UIMenuTintType)choice), choice == tint);
 			}

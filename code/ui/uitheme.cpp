@@ -11,6 +11,8 @@
 
 #include "ui/uitheme.h"
 
+#include "_ui.h"
+#include "ui/uishell.h"
 #include "globals.h"
 #include "goptions.h"
 
@@ -23,6 +25,9 @@ std::string Directory;
 
 // The tint Random drew for this run, or -1 before the first draw.
 int Random_Tint = -1;
+
+// Whether a live battle runs behind the menus.
+bool Live_Background = false;
 
 }	// namespace
 
@@ -67,6 +72,23 @@ UIMenuTintType UI_Theme_Tint(void)
 		Random_Tint = (int)(device() % (unsigned int)UI_TINT_COUNT);
 	}
 	return((UIMenuTintType)Random_Tint);
+}
+
+
+void UI_Theme_Set_Live_Background(bool live)
+{
+	if (Live_Background == live) {
+		return;
+	}
+
+	Live_Background = live;
+	UIShell.Refresh();
+}
+
+
+bool UI_Theme_Live_Background(void)
+{
+	return(Live_Background);
 }
 
 
