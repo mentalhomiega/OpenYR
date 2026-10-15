@@ -974,6 +974,10 @@ UIDisplayState Display_Fixture(void)
 	state.FrameRates = { { 0, "Off" }, { 60, "60" }, { 144, "144" } };
 	state.CursorScales = { { 0, "Auto" }, { 1, "1x" }, { 2, "2x" } };
 	state.Renderers = { { 0, "Auto" }, { 1, "Direct3D 11" } };
+	state.HDROutputs = { { 0, "Automatic" }, { 1, "Off" }, { 2, "On (testing)" } };
+	state.HDROutput = 0;
+	state.PaperWhite = 200;
+	state.PeakBrightness = 1000;
 	return(state);
 }
 
@@ -3264,6 +3268,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("debug-mode"), "the debug mode switch follows the sidebar rows drop-down");
 		Press(context, Rml::Input::KI_TAB);
+		Check(focused("hdr"), "the HDR output drop-down follows the debug mode switch");
+		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("vsync"), "the vertical sync switch follows full screen");
@@ -3279,6 +3285,10 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("renderer"), "the graphics interface follows the pointer size");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("paper-white"), "the paper white slider follows the graphics interface");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("peak-brightness"), "the peak brightness slider follows paper white");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the settings");
 		Press(context, Rml::Input::KI_TAB);
