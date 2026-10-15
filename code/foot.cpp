@@ -2432,8 +2432,8 @@ bool FootClass::Plan_Waits_For_Rearm(void) const
 /// <summary>
 /// Puts the attack the unit was carrying out back at the front of its plan, when its target still lives.
 /// </summary>
-/// <remarks>Called when a plan unit must rearm, so the attack resumes after the rearm. Only attacks are
-/// put back: an attack ends with the ammunition spent, while other orders end at their destination.</remarks>
+/// <remarks>Only an attack is put back, because only an attack spends ammunition and a rearm can cut it short.
+/// A move leg is not put back.</remarks>
 void FootClass::Requeue_Interrupted_Planned_Leg(void)
 {
 	if (HasPlannedRunningOrder && PlannedRunningOrder.Mission == MISSION_ATTACK && Planned_Order_Objects_Live(PlannedRunningOrder)) {

@@ -547,21 +547,6 @@ int AircraftClass::Do_MISSION_HUNT(void)
 }
 
 
-/***********************************************************************************************
- * AircraftClass::AI -- Processes the normal non-graphic AI for the aircraft.                  *
- *                                                                                             *
- *    This handles the non-graphic AI processing for the aircraft. This usually entails        *
- *    maintenance and other AI functions.                                                      *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/26/1994 JLB : Created.                                                                 *
- *=============================================================================================*/
 /// <summary>
 /// Tells whether the aircraft rearms at a dock: it has limited ammunition and carries a weapon.
 /// </summary>
@@ -581,6 +566,21 @@ bool AircraftClass::Plan_Waits_For_Rearm(void) const
 }
 
 
+/***********************************************************************************************
+ * AircraftClass::AI -- Processes the normal non-graphic AI for the aircraft.                  *
+ *                                                                                             *
+ *    This handles the non-graphic AI processing for the aircraft. This usually entails        *
+ *    maintenance and other AI functions.                                                      *
+ *                                                                                             *
+ * INPUT:   none                                                                               *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/26/1994 JLB : Created.                                                                 *
+ *=============================================================================================*/
 void AircraftClass::AI(void)
 {
 	if (Temporal_AI()) {
