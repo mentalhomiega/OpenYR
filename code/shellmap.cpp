@@ -354,7 +354,8 @@ bool Prepare_Battle(char * file, int file_size)
 
 bool Battle_Over(void)
 {
-	if (PlayerWins || PlayerLoses || PlayerRestarts || PlayerAborts) {
+	// With no person playing, the first defeat flags the match won or lost, so only the houses left decide it.
+	if (PlayerRestarts || PlayerAborts) {
 		return(true);
 	}
 	if (timeGetTime() - Started > BATTLE_LIFETIME_MS) {

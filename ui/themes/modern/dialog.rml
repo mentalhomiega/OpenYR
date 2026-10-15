@@ -25,9 +25,11 @@
 		<div id="tabs">
 			<button class="tab" id="tab-game" data-event-click="queue('tab', 0)">Game</button>
 			<button class="tab" id="tab-display" data-event-click="queue('tab', 1)">Display</button>
-			<button class="tab" id="tab-audio" data-event-click="queue('tab', 2)">Audio</button>
-			<button class="tab" id="tab-keyboard" data-event-click="queue('tab', 3)">Keyboard</button>
-			<button class="tab" id="tab-mods" data-event-click="queue('tab', 4)">Mods</button>
+			<button class="tab" id="tab-graphics" data-event-click="queue('tab', 2)">Graphics</button>
+			<button class="tab" id="tab-audio" data-event-click="queue('tab', 3)">Audio</button>
+			<button class="tab" id="tab-keyboard" data-event-click="queue('tab', 4)">Keyboard</button>
+			<button class="tab" id="tab-accessibility" data-event-click="queue('tab', 5)">Accessibility</button>
+			<button class="tab" id="tab-mods" data-event-click="queue('tab', 6)">Mods</button>
 		</div>
 		<div id="reveal">
 			<div id="chrome">
