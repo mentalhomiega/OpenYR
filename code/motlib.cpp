@@ -76,7 +76,23 @@ BOOL MotionLibrary::Read_File(FileClass & file)
 
 	VoxelAnimFileHeaderStruct header;
 
-	file.Read(&header, sizeof(header));
+	if (file.Read(&header, sizeof(header)) != sizeof(header)) {
+		file.Close();
+		return(false);
+	}
+
+	// The counts are the file's claims. An animation needs a frame of at least one layer, and
+	// its layer names and matrices must lie in the file: a count the file cannot back would
+	// size the matrix table from nothing.
+	long long const file_size = file.Size();
+	long long const matrix_size = 12 * sizeof(float);
+	long long const matrices = (long long)header.LayerCount * (long long)header.FrameCount;
+	if (header.LayerCount <= 0 || header.FrameCount <= 0 || matrices > file_size / matrix_size
+		|| (long long)sizeof(header) + (long long)MAX_VOXEL_NAME_LENGTH * header.LayerCount + matrices * matrix_size > file_size) {
+		file.Close();
+		return(false);
+	}
+
 	LayerCount = header.LayerCount;
 	FrameCount = header.FrameCount;
 
@@ -139,4 +155,6 @@ void MotionLibrary::Clear()
 		delete [] LayerMatrices;
 	}
 	LayerMatrices = NULL;
+	LayerCount = 0;
+	FrameCount = 0;
 }

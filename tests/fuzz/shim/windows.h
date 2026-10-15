@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -37,6 +38,12 @@ typedef void * HANDLE;
 typedef void * HWND;
 typedef void * HINSTANCE;
 typedef void * HDC;
+typedef void * HBITMAP;
+typedef void * HGDIOBJ;
+typedef void * HPALETTE;
+typedef std::intptr_t LRESULT;
+typedef std::uintptr_t WPARAM;
+typedef std::intptr_t LPARAM;
 typedef void * HMODULE;
 typedef void * LPVOID;
 typedef char * LPSTR;

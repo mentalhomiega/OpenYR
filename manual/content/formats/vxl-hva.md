@@ -115,8 +115,8 @@ Give the `.HVA` the same number of layers as its `.VXL`, in the same order. Laye
 
 When a pair is loaded, the translation of every transform is multiplied by the scale recorded in the model's first layer. That brings the animation into the model's scale. Give every model at least one layer. For a model with none, the game reads the scale from memory outside the model, which can crash the game while the pair loads or scale the animation unpredictably.
 
-Frames are taken modulo the frame count, so an animation that runs past its last frame starts again at the first. A file that declares no frames still loads, and the game crashes the first time the model is drawn.
+Frames are taken modulo the frame count, so an animation that runs past its last frame starts again at the first. A file that declares no frames or no layers fails to load, as a file too short for its counts does.
 
-:::danger[Do not ship an empty model or motion file]
-An empty `.VXL` or `.HVA` is loaded with unpredictable layer, layer info and frame counts. If a count is too large to allocate, the game crashes while it loads the file. Otherwise the load usually fails at the first read past the end of the file. An empty file can also load as a model with no layers or a motion file with no frames, with the crashes described above.
+:::caution[A damaged model or motion file fails to load]
+A `.VXL` or `.HVA` that is empty, or whose counts ask for more than the file holds, fails to load, like one that ends early. A `.VXL` also fails when its header counts below zero, when a layer names an info record that does not exist, or when a layer's span tables or voxel data lie outside the voxel body.
 :::

@@ -9,11 +9,12 @@
 
 // Included ahead of every source in a Linux build of the fuzz harness. `always.h` already
 // maps the MSVC string and path helpers; this supplies the floating-point control names that
-// `numparse.h` uses.
+// `numparse.h` uses, and the integer types that MSVC's headers include on their own.
 
 #pragma once
 
 #include <cfloat>
+#include <cstdint>
 #include <strings.h>
 
 // MSVC's <string.h> declares these; the sources that do not include `always.h` rely on it.
