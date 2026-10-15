@@ -3325,7 +3325,8 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		return;
 	}
 
-	static ShapeSet const * harvesting_shape = (ShapeSet const *)MFCD::Retrieve("HARVESTR.SHP");
+	// The gather effect is OREGATH.SHP, which gamemd draws in UnitClass::DrawIt (0x73CEC0).
+	static ShapeSet const * harvesting_shape = (ShapeSet const *)MFCD::Retrieve("OREGATH.SHP");
 
 	Point2D adjusted_point = point;
 	adjusted_point.Y -= IonBlastYDrawOffset;
@@ -3366,7 +3367,9 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			Point2D pixel;
 			FacingType face = (FacingType)PrimaryFacing.Current().As_Dir8();
 			TacticalMap->Coord_To_Pixel(Move_Coord(Render_Coord(), face, 150), pixel);
-			Draw_Shape(*LogicalSurface, *AnimDrawer, harvesting_shape, (Frame + TotalFramesWalked) % 15, pixel, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_ALPHA|SHAPE_ZGRAD), NULL, Get_Z_Adjust() - 2, ZGRAD_GROUND, brightness);
+			// Each of the 8 facings has 15 frames, and the block counts down from facing 7 as in gamemd.
+			int const gather_frame = (Frame + TotalFramesWalked) % 15 + (FACING_COUNT - 1 - face) * 15;
+			Draw_Shape(*LogicalSurface, *VoxelDrawer, harvesting_shape, gather_frame, pixel, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_ALPHA|SHAPE_ZGRAD), NULL, Get_Z_Adjust() - 2, ZGRAD_GROUND, brightness);
 		}
 
 		UnitTypeClass * oldclass = Class;

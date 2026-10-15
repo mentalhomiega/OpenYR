@@ -8542,7 +8542,8 @@ void BuildingClass::Animation_AI(void)
 		Update_Storage_Anims();
 	}
 
-	if (Class->IsInfantryAbsorb && Class->ExtraPowerBonus > 0 && BState != BSTATE_NONE && !IsInLimbo) {
+	// gamemd's UpdateAnimations (0x4509D0) tests BState != 0, so the absorber art waits for construction to finish.
+	if (Class->IsInfantryAbsorb && Class->ExtraPowerBonus > 0 && BState != BSTATE_CONSTRUCTION && !IsInLimbo) {
 		Update_Absorber_Anims();
 	}
 
@@ -8867,7 +8868,7 @@ void BuildingClass::Update_Storage_Anims(void)
 /// <summary>
 /// Shows a power absorber that makes more power for each soldier inside, such as the
 /// bio reactor, in the state it is in: its first active animation while it is empty and its
-/// second one while it has someone inside, as BuildingClass::UpdateAnimations (0x450BD0) does.
+/// second one while it has someone inside, as BuildingClass::UpdateAnimations (0x4509D0) does.
 /// </summary>
 void BuildingClass::Update_Absorber_Anims(void)
 {

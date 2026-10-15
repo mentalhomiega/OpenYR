@@ -24,17 +24,20 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "mixfile.h"
+#include "_mixfile.h"
 #include "shapeset.h"
 #include "xsurface.h"
 #include "zbuffer.h"
 #include "_zbuffer.h"
 #include "_palette.h"
 #include "rawfile.h"
+#include "scheme.h"
 
 #include <miniz/miniz.h>
 
 #include <algorithm>
 #include <climits>
+#include <cstdlib>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -864,7 +867,12 @@ void TrueColour_Report(char const * name)
 /// written beside the sheet with "_hc" before the extension. Returns false when the shape is
 /// not found or a file cannot be written.
 /// </summary>
-bool TrueColour_Export(char const * name, char const * path)
+/// <summary>
+/// Writes a shape's frames as a PNG sheet, with the colour of each index taken from the palette given.
+/// When displayed is set, each palette colour is shown as the nearest entry of the screen palette,
+/// which is how the game's converters show it on screen.
+/// </summary>
+static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, bool displayed, char const * path)
 {
 	LooseShape loose;
 	ShapeSet const * shape = (ShapeSet const *)Fetch_Shape(name, loose);
@@ -917,6 +925,26 @@ bool TrueColour_Export(char const * name, char const * path)
 		}
 	}
 
+	RGBClass shown[256];
+	for (int colour = 0; colour < 256; colour++) {
+		shown[colour] = palette[colour];
+		if (displayed) {
+			int best = 0;
+			long best_distance = LONG_MAX;
+			for (int screen = 0; screen < 256; screen++) {
+				long const dr = (long)GamePalette[screen].Get_Red() - palette[colour].Get_Red();
+				long const dg = (long)GamePalette[screen].Get_Green() - palette[colour].Get_Green();
+				long const db = (long)GamePalette[screen].Get_Blue() - palette[colour].Get_Blue();
+				long const distance = dr * dr + dg * dg + db * db;
+				if (distance < best_distance) {
+					best_distance = distance;
+					best = screen;
+				}
+			}
+			shown[colour] = GamePalette[best];
+		}
+	}
+
 	std::vector<unsigned char> pixels(indices.size() * 4, 0);
 	std::vector<unsigned char> mask(indices.size() * 4, 0);
 	bool house = false;
@@ -925,9 +953,9 @@ bool TrueColour_Export(char const * name, char const * path)
 		if (colour == 0) {
 			continue;
 		}
-		pixels[index * 4 + 0] = SchemePalette[colour].Get_Red();
-		pixels[index * 4 + 1] = SchemePalette[colour].Get_Green();
-		pixels[index * 4 + 2] = SchemePalette[colour].Get_Blue();
+		pixels[index * 4 + 0] = shown[colour].Get_Red();
+		pixels[index * 4 + 1] = shown[colour].Get_Green();
+		pixels[index * 4 + 2] = shown[colour].Get_Blue();
 		pixels[index * 4 + 3] = 255;
 		if (colour >= 16 && colour <= 31) {
 			// The loader turns shade s back into index 31 - s * 15 / 255.
@@ -965,4 +993,48 @@ bool TrueColour_Export(char const * name, char const * path)
 	DebugString("AUTOTEST   exportshape %s frames %d cell %dx%d sheet %dx%d house %d -> %s %s\n", name, count, width, height, sheetwidth, sheetheight, (int)house, path,
 		ok ? "ok" : "failed");
 	return(ok);
+}
+
+
+bool TrueColour_Export(char const * name, char const * path)
+{
+	return(Export_Shape_Sheet(name, SchemePalette, false, path));
+}
+
+
+/// <summary>
+/// Writes a shape's frames as a PNG sheet, shown with a named palette, as the game would show
+/// them on screen. The names are "theater" (the screen palette), "unit" (the unit palette
+/// UNITSNO.PAL), "anim" (ANIM.PAL, which AnimDrawer uses) and "house:N" (colour scheme N's palette
+/// with its remap ramp, which a building's animations draw with through its owner's scheme).
+/// </summary>
+bool TrueColour_Export_Palette(char const * name, char const * palette, char const * path)
+{
+	PaletteClass pal = BlackPalette;
+	if (stricmp(palette, "theater") == 0) {
+		pal = GamePalette;
+	} else if (stricmp(palette, "unit") == 0) {
+		pal = SchemePalette;
+	} else if (stricmp(palette, "anim") == 0) {
+		void const * data = MFCD::Retrieve("ANIM.PAL");
+		if (data == NULL) {
+			DebugString("AUTOTEST   exportpal %s: ANIM.PAL not found\n", name);
+			return(false);
+		}
+		memmove(&pal[0], data, sizeof(pal));
+		for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
+			pal[index] = RGBClass((unsigned char)(pal[index].Get_Red() << 2), (unsigned char)(pal[index].Get_Green() << 2), (unsigned char)(pal[index].Get_Blue() << 2));
+		}
+	} else if (strnicmp(palette, "house:", 6) == 0) {
+		int const scheme = std::atoi(palette + 6);
+		if (scheme < 0 || scheme >= ColorSchemes.Count()) {
+			DebugString("AUTOTEST   exportpal %s: no colour scheme %d\n", name, scheme);
+			return(false);
+		}
+		pal = ColorSchemes[scheme]->Palette;
+	} else {
+		DebugString("AUTOTEST   exportpal %s: no palette named %s\n", name, palette);
+		return(false);
+	}
+	return(Export_Shape_Sheet(name, pal, true, path));
 }
