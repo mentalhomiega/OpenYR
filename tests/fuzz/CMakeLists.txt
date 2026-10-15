@@ -180,3 +180,8 @@ fuzz_add_target(FuzzVoxel NAME fuzz_voxel
     SOURCES fuzz_voxel.cpp
     ENGINE voxlib.cpp motlib.cpp voxpal.cpp matrix3d.cpp gmmath.cpp
 )
+
+fuzz_add_target(FuzzPcx NAME fuzz_pcx
+    SOURCES fuzz_pcx.cpp
+    ENGINE pcx.cpp xsurface.cpp buff.cpp palette.cpp rgb.cpp
+)
