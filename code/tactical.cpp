@@ -3899,15 +3899,10 @@ void Tactical::Draw_Planned_Orders(bool inshroud)
 
 
 /// <summary>
-/// Draws the cell occupier and object list links.
-/// This routine is a debugging aid that joins each cell to the object occupying it, on the
-/// ground and on any bridge above it, and chains together the objects that share a cell.
-/// </summary>
-/// <summary>
-/// Draws a line in its house's color from each mind controller to every unit it holds, while
-/// either one is selected and for MindControlAttackLineFrames after the capture
-/// (CaptureManagerClass::DrawLinks, 0x472160). The line ends LeptonMindControlOffset above the
-/// unit.
+/// Draws a mind control link from each controller to every unit it holds, while either one is
+/// selected and for MindControlAttackLineFrames after the capture (CaptureManagerClass::DrawLinks,
+/// 0x472160). Each link starts at the controller's firing point for burst index -1 - (node % 5),
+/// and ends LeptonMindControlOffset above the unit. The newest link is drawn first.
 /// </summary>
 void Tactical::Draw_Mind_Control_Links(void)
 {
@@ -3918,22 +3913,74 @@ void Tactical::Draw_Mind_Control_Links(void)
 		}
 		CaptureManagerClass const & manager = *techno->CaptureManager;
 		RGBClass const rgb = House_Display_RGB(techno->House);
-		int const color = DSurface::Build_Hicolor_Pixel(rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue());
-		Point2D start;
-		Coord_To_Pixel(techno->Center_Coord(), start);
-		for (int node = 0; node < manager.Controlled_Count(); node++) {
+		for (int node = manager.Controlled_Count() - 1; node >= 0; node--) {
 			TechnoClass const * unit = manager.Controlled(node);
 			if (unit == NULL || unit->IsInLimbo || (!techno->IsSelected && !unit->IsSelected && !manager.Is_Link_Shown(node))) {
 				continue;
 			}
+			Coord from = techno->Turret_Coord(-1 - (node % 5));
 			Coord to = unit->PositionCoord;
 			to.Z += unit->TClass->LeptonMindControlOffset;
-			Point2D end;
-			Coord_To_Pixel(to, end);
-			LogicalSurface->Draw_Line(TacticalRect, start, end, color);
+			Draw_Mind_Control_Link(from, to, rgb);
 		}
 	}
 }
+
+
+/// <summary>
+/// Draws one mind control link as an arc (CaptureManagerClass::DrawLink, 0x704E40). The arc is
+/// 32 segments long. Its height is 512 leptons above the straight line at the middle and zero at
+/// both ends. A band of segments brightens toward white and moves from the controller toward the
+/// unit as time passes. Both ends get a 3x3 square, drawn in the plain house color.
+/// </summary>
+/// <param name="from">The controller's firing point, in leptons.</param>
+/// <param name="to">The unit's point to link to, in leptons, already lifted above its center.</param>
+/// <param name="rgb">The house color the link is drawn in.</param>
+void Tactical::Draw_Mind_Control_Link(Coord const & from, Coord const & to, RGBClass const & rgb)
+{
+	int const color = DSurface::Build_Hicolor_Pixel(rgb);
+
+	Point2D start;
+	Point2D end;
+	Coord_To_Pixel(from, start);
+	Coord_To_Pixel(to, end);
+	LogicalSurface->Fill_Rect(TacticalRect, Rect(start - Point2D(2, 2), 3, 3), color);
+	LogicalSurface->Fill_Rect(TacticalRect, Rect(end - Point2D(2, 2), 3, 3), color);
+
+	// The band advances 8 index units per 16 ms, and each segment is 8 index units apart.
+	unsigned const phase = (timeGetTime() >> 4) << 3;
+	Point2D previous_pixel = start;
+	for (int step = 1; step <= 32; step++) {
+		// Step k sits k/32 of the way to the unit. Integer division truncates toward zero, as gamemd's
+		// shifts do. The height uses u = (k - 16) / 16, which is exact in double precision.
+		Coord point((from.X * (32 - step) + to.X * step) / 32, (from.Y * (32 - step) + to.Y * step) / 32, 0);
+		double const u = (step - 16) * 0.0625;
+		point.Z = int((from.Z * (32 - step) + to.Z * step) / 32 + 512.0 * (1.0 - u * u));
+
+		Point2D pixel;
+		Coord_To_Pixel(point, pixel);
+
+		RGBClass segment = rgb;
+		unsigned const band = (8u * step - phase) & 0x1f8u;
+		if (band != 0 && band <= 0xf8) {
+			// Blends the channel toward 255 by band / 256, as gamemd's color blend (0x6612C0) does.
+			auto toward_white = [band](int channel) {
+				return(channel + (((255 - channel) * int(band)) >> 8));
+			};
+			segment = RGBClass(toward_white(rgb.Get_Red()), toward_white(rgb.Get_Green()), toward_white(rgb.Get_Blue()));
+		}
+		LogicalSurface->Draw_Line(TacticalRect, previous_pixel, pixel, DSurface::Build_Hicolor_Pixel(segment));
+
+		previous_pixel = pixel;
+	}
+}
+
+
+/// <summary>
+/// Draws the cell occupier and object list links.
+/// This routine is a debugging aid that joins each cell to the object occupying it, on the
+/// ground and on any bridge above it, and chains together the objects that share a cell.
+/// </summary>
 
 
 void Tactical::Debug_Draw_Occupier_Links(void)

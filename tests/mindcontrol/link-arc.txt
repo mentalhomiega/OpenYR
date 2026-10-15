@@ -1,0 +1,31 @@
+; Mind control link arcs: a Mastermind (MIND) for the player takes five computer Gunners placed directly above,
+; directly below, left, right and down-left of it on screen, at 4 to 6 cells. The Mastermind is selected from frame 60,
+; so every link stays drawn. Each link should be a parabola that rises about 512 leptons (two cells of height) above
+; the straight line at its middle and meets the Mastermind's firing point and the Gunner's raised point at its ends.
+; The three ScreenCapture shots (frames 330, 342, 354) are 12 frames apart, so the brightened band on each arc moves
+; from the Mastermind toward the Gunners between shots. The Gunners walk off once attacked, so the strikes are
+; ordered to take the one below the Mastermind first, then the others.
+; Run: scripts/run_autotest.ps1 -Build agent16 -Script E:/Claude ra2 decomp/src-agent16/tests/mindcontrol/link-arc.txt -Country 9 -Width 800 -Height 600 -Seconds 120 -ShotDir "E:/Claude ra2 decomp/shots/mc-link" -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 reveal
+30 view 40 90
+40 windowmove 795 595
+50 grantunit MIND 40 90
+52 spawn E1 37 87
+52 spawn E1 43 93
+52 spawn E1 45 90
+52 spawn E1 35 89
+52 spawn E1 42 96
+60 select MIND
+62 strike MIND 43 93
+110 strike MIND 37 87
+160 strike MIND 45 90
+210 strike MIND 42 96
+260 strike MIND 35 89
+300 where MIND
+300 where E1
+330 command ScreenCapture
+342 command ScreenCapture
+354 command ScreenCapture
+360 where E1
+380 quit
