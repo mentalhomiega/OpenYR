@@ -27,6 +27,7 @@
 #include "sdl/sdlwindow.h"
 #include "vidscale.h"
 #include "video.h"
+#include "colourblind.h"
 #include "wwmouse.h"
 
 #include <algorithm>
@@ -158,6 +159,13 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		{
 			// The renderer is chosen when the game starts.
 			Options.Renderer = renderer;
+		}
+
+		virtual void Set_Colour_Blind(int mode, int strength) override
+		{
+			Options.ColorBlindMode = mode;
+			Options.ColorBlindStrength = strength;
+			Video_Apply_Colour_Settings();
 		}
 
 		virtual void Set_HDR_Highlights(int highlights) override
@@ -342,6 +350,13 @@ void UI_Display_State(UIDisplayState & state)
 	state.IntegerScaling = Options.IntegerScaling;
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 	state.HDRActive = Video_HDR_Active();
+	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {
+		{COLORBLIND_OFF, "Off"},
+		{COLORBLIND_PROTANOPIA, "Protanopia"},
+		{COLORBLIND_DEUTERANOPIA, "Deuteranopia"},
+		{COLORBLIND_TRITANOPIA, "Tritanopia"}
+	}, Options.ColorBlindMode, "%d");
+	state.ColorBlindStrength = Options.ColorBlindStrength;
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},

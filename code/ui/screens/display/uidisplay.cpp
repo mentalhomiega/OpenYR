@@ -14,6 +14,7 @@
 #include "ui/rml/rmlview.h"
 #include "ui/uisettingpreview.h"
 #include "video.h"
+#include "colourblind.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -37,7 +38,9 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialDebugMode(State.DebugMode),
 	InitialHDROutput(State.HDROutput),
 	InitialPaperWhite(State.PaperWhite),
-	InitialPeakBrightness(State.PeakBrightness)
+	InitialPeakBrightness(State.PeakBrightness),
+	InitialColorBlindMode(State.ColorBlindMode),
+	InitialColorBlindStrength(State.ColorBlindStrength)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -202,6 +205,12 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "highlights") {
 		State.Highlights = std::clamp(intent.Value, 0, 1);
 
+	} else if (intent.Name == "colorblindmode") {
+		State.ColorBlindMode = Pick_Choice(State.ColorBlindModes, intent.Value, InitialColorBlindMode);
+
+	} else if (intent.Name == "colorblindstrength") {
+		State.ColorBlindStrength = std::clamp(intent.Value, COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
+
 	} else if (intent.Name == "sidebarrows") {
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
@@ -257,6 +266,10 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (State.Highlights != InitialHighlights) {
 			Service.Set_HDR_Highlights(State.Highlights);
+		}
+		if (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size()
+			&& (State.ColorBlindMode != InitialColorBlindMode || State.ColorBlindStrength != InitialColorBlindStrength)) {
+			Service.Set_Colour_Blind(State.ColorBlindModes[State.ColorBlindMode].Value, State.ColorBlindStrength);
 		}
 		if (PickedRows >= 0) {
 			Service.Set_Sidebar_Rows(PickedRows);
@@ -373,6 +386,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("paperwhite");
 			Model.DirtyVariable("peakbrightness");
 			Model.DirtyVariable("highlights");
+			Model.DirtyVariable("colorblindmode");
+			Model.DirtyVariable("colorblindstrength");
 			Model.DirtyVariable("rowcount");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
@@ -436,6 +451,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("paperwhite", &state.PaperWhite)
 				&& model.Bind("peakbrightness", &state.PeakBrightness)
 				&& model.Bind("highlights", &state.Highlights)
+				&& model.Bind("colorblindmodes", &state.ColorBlindModes)
+				&& model.Bind("colorblindmode", &state.ColorBlindMode)
+				&& model.Bind("colorblindstrength", &state.ColorBlindStrength)
 				&& model.Bind("hdractive", &state.HDRActive)
 				&& model.Bind("hdroutputtip", &state.HDROutputTip)
 				&& model.Bind("highlightstip", &state.HighlightsTip)

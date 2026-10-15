@@ -63,6 +63,11 @@
 			</select></div>
 			<div class="row slider-row" id="paper-row"><span class="caption">Paper white</span><input type="range" id="paper-white" min="80" max="480" step="10" data-attr-value="paperwhite" data-event-change="queue('paperwhite', ev.value)"/><span class="value" id="paper-value">{{paperwhite}} nits</span></div>
 			<div class="row slider-row" id="peak-row"><span class="caption">Peak brightness</span><input type="range" id="peak-brightness" min="80" max="10000" step="10" data-attr-value="peakbrightness" data-event-change="queue('peak', ev.value)"/><span class="value" id="peak-value">{{peakbrightness}} nits</span></div>
+			<p class="heading" id="colour-label">Colour</p>
+			<div class="row" id="colorblind-row"><span class="caption">Colour-blind mode:</span><select id="colorblind" data-value="colorblindmode" data-event-change="queue('colorblindmode', ev.value)">
+				<option data-for="entry : colorblindmodes" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<div class="row slider-row" id="colorblind-strength-row"><span class="caption">Strength</span><input type="range" id="colorblind-strength" min="0" max="100" step="5" data-attr-value="colorblindstrength" data-event-change="queue('colorblindstrength', ev.value)"/><span class="value" id="colorblind-strength-value">{{colorblindstrength}}%</span></div>
 		</div>
 	</div>
 	<div id="buttons">

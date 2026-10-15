@@ -65,6 +65,7 @@ class UIDisplayServiceClass
 		virtual void Set_HDR_Paper_White(int nits) = 0;
 		virtual void Set_HDR_Peak_Brightness(int nits) = 0;
 		virtual void Set_HDR_Highlights(int highlights) = 0;
+		virtual void Set_Colour_Blind(int mode, int strength) = 0;
 
 		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
 		// scale given (zero is automatic).
@@ -109,6 +110,10 @@ struct UIDisplayState
 	std::string HighlightsTip;
 	// Whether the emissive highlights are on, as 0 or 1.
 	int Highlights = 0;
+	// The colour-blind mode, as an index into ColorBlindModes, and how strongly it applies, in percent.
+	std::vector<UIDisplayChoice> ColorBlindModes;
+	int ColorBlindMode = 0;
+	int ColorBlindStrength = 100;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
 	// The screen the page starts on, used for the preview when no resolution is picked.
@@ -157,6 +162,8 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialHDROutput;
 		int InitialPaperWhite;
 		int InitialPeakBrightness;
+		int InitialColorBlindMode;
+		int InitialColorBlindStrength;
 };
 
 

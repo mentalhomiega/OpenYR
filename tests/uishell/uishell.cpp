@@ -933,6 +933,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_HDR_Paper_White(int nits) override { Calls.push_back("hdr paper white " + std::to_string(nits)); }
 		virtual void Set_HDR_Peak_Brightness(int nits) override { Calls.push_back("hdr peak " + std::to_string(nits)); }
 		virtual void Set_HDR_Highlights(int highlights) override { Calls.push_back("hdr highlights " + std::to_string(highlights)); }
+		virtual void Set_Colour_Blind(int mode, int strength) override { Calls.push_back("colour blind " + std::to_string(mode) + " " + std::to_string(strength)); }
 
 		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
@@ -996,6 +997,23 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "modern interface off" }, "accepting the display options applies the switches");
 		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.ColorBlindModes = { {0, "Off"}, {1, "Protanopia"}, {2, "Deuteranopia"}, {3, "Tritanopia"} };
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "colorblindmode", 2);
+		Drive(presenter, "colorblindstrength", 40);
+		Check(service.Calls.empty(), "colour-blind edits are held until the player accepts");
+		Drive(presenter, "ok");
+		std::string joined;
+		for (std::string const & call : service.Calls) {
+			joined += call + ";";
+		}
+		std::size_t const first = joined.find("colour blind 2 40");
+		Check(first != std::string::npos && joined.find("colour blind", first + 1) == std::string::npos, "accepting the colour-blind mode and strength applies them once");
 	}
 
 	{
@@ -3290,6 +3308,10 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(focused("paper-white"), "the paper white slider follows the graphics interface");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("peak-brightness"), "the peak brightness slider follows paper white");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("colorblind"), "the colour-blind mode drop-down follows the peak brightness slider");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("colorblind-strength"), "the colour-blind strength slider follows the mode");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the settings");
 		Press(context, Rml::Input::KI_TAB);

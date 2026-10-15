@@ -97,6 +97,7 @@
 #include <cstring>
 #include <string>
 
+#include "colourblind.h"
 #include "emissive.h"
 #include "goptions.h"
 
@@ -229,6 +230,8 @@ OptionsClass::OptionsClass(void) :
 	HDROutput(VIDEO_HDR_AUTOMATIC),
 	HDRPaperWhite(0),
 	HDRPeakBrightness(0),
+	ColorBlindMode(COLORBLIND_OFF),
+	ColorBlindStrength(100),
 	CursorScale(0),
 	InterfaceScale(0.0f),
 	SystemCursor(false),
@@ -421,6 +424,33 @@ static int HDR_Output_From_Name(char const * name)
 }
 
 
+static int ColorBlind_Mode_From_Name(char const * name)
+{
+	if (stricmp(name, "Protanopia") == 0) return(COLORBLIND_PROTANOPIA);
+	if (stricmp(name, "Deuteranopia") == 0) return(COLORBLIND_DEUTERANOPIA);
+	if (stricmp(name, "Tritanopia") == 0) return(COLORBLIND_TRITANOPIA);
+	return(COLORBLIND_OFF);
+}
+
+
+static char const * ColorBlind_Mode_Name(int mode)
+{
+	switch (mode) {
+		case COLORBLIND_PROTANOPIA:
+			return("Protanopia");
+
+		case COLORBLIND_DEUTERANOPIA:
+			return("Deuteranopia");
+
+		case COLORBLIND_TRITANOPIA:
+			return("Tritanopia");
+
+		default:
+			return("Off");
+	}
+}
+
+
 static char const * HDR_Output_Name(int mode)
 {
 	switch (mode) {
@@ -595,6 +625,13 @@ void OptionsClass::Load_Settings(void)
 	HDRHighlights = stricmp(highlightsname, "Classic") == 0 ? HDR_HIGHLIGHTS_CLASSIC : HDR_HIGHLIGHTS_ENHANCED;
 	Emissive_Set_Debug_View(ConfigINI.Get_Bool("Video", "EmissiveDebugView", false));
 	Apply_HDR_Highlights();
+
+	char colorblindname[16];
+	ConfigINI.Get_String("Video", "ColorBlindMode", "Off", colorblindname, sizeof(colorblindname));
+	ColorBlindMode = ColorBlind_Mode_From_Name(colorblindname);
+	ColorBlindStrength = std::clamp(ConfigINI.Get_Int("Video", "ColorBlindStrength", ColorBlindStrength), COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
+	DebugString("ColorBlindMode is %s, ColorBlindStrength is %d\n", ColorBlind_Mode_Name(ColorBlindMode), ColorBlindStrength);
+
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), 0, 1000);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
@@ -748,6 +785,8 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));
 	Save_HDR_Nits("HDRPaperWhite", HDRPaperWhite);
 	Save_HDR_Nits("HDRPeakBrightness", HDRPeakBrightness);
+	ConfigINI.Put_String("Video", "ColorBlindMode", ColorBlind_Mode_Name(ColorBlindMode));
+	ConfigINI.Put_Int("Video", "ColorBlindStrength", ColorBlindStrength);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
 	if (InterfaceScale > 0.0f) {
 		char scaletext[32];

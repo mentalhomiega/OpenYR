@@ -267,6 +267,13 @@ class OptionsClass {
 		int HDRPeakBrightness;
 
 		/*
+		 * The colour-blind correction for the presented frame, as a ColorBlindMode value, and how much
+		 * of it applies, from 0 to 100 percent. Off applies no correction at any strength.
+		 */
+		int ColorBlindMode;
+		int ColorBlindStrength;
+
+		/*
 		 * This is how many times larger than its artwork the mouse pointer is drawn.
 		 * Zero follows the size of the frame on screen, and a negative value leaves the
 		 * pointer at the size the artwork was drawn at.

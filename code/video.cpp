@@ -19,6 +19,7 @@
 #include "_ui.h"
 #include "_xmouse.h"
 #include "bgfxbackend.h"
+#include "colourblind.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "emissive.h"
@@ -228,6 +229,7 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 	_ScaleInfo.DrawableHeight = drawableheight;
 
 	HDR_Query_Window_Display(window.Handle);
+	Video_Apply_Colour_Settings();
 
 	BackendRenderer renderer = (BackendRenderer)Options.Renderer;
 	bool const hdr = HDR_Output_Wanted(renderer);
@@ -395,6 +397,18 @@ void Video_Set_Colour_Adjust(float const * matrix, float brightness, float gamma
 {
 	Backend_Set_Colour_Adjust(matrix, brightness, gamma);
 	Video_Refresh_Scaling();
+}
+
+
+/// <summary>
+/// Sets the colour adjustment from the colour-blind settings. Before the presenter starts, the adjustment
+/// is kept for the renderer to use from its first frame.
+/// </summary>
+void Video_Apply_Colour_Settings(void)
+{
+	float matrix[9];
+	ColorBlind_Matrix(Options.ColorBlindMode, Options.ColorBlindStrength / 100.0f, matrix);
+	Video_Set_Colour_Adjust(matrix, 1.0f, 1.0f);
 }
 
 
