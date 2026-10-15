@@ -10,6 +10,7 @@ endif()
 opents_add_test(LauncherTests
     NAME launcher
     SOURCES launcher_tests.cpp
+    INCLUDES "${CMAKE_SOURCE_DIR}/tools/common"
     LIBRARIES OpenYRLauncherCore advapi32 shell32
 )
 

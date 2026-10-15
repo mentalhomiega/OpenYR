@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "dll_search.h"
 #include "launcher_core.h"
 
 namespace {
@@ -453,6 +454,73 @@ void Test_Private_Folder(void)
 }
 
 
+// After Restrict_Dll_Search a DLL beside the program or in the current folder is no longer found,
+// while a System32 DLL still loads. This changes the process's DLL search for the rest of the run, so
+// it is the last test.
+void Test_Dll_Search(void)
+{
+	wchar_t system[MAX_PATH] = {};
+	GetSystemDirectoryW(system, MAX_PATH);
+	std::wstring const real = std::wstring(system) + L"\\version.dll";
+
+	wchar_t temp[MAX_PATH] = {};
+	GetTempPathW(MAX_PATH, temp);
+	std::wstring const folder = std::wstring(temp) + L"openyr-dll-probe-" + std::to_wstring(GetCurrentProcessId());
+	CreateDirectoryW(folder.c_str(), nullptr);
+	std::wstring const in_cwd = folder + L"\\openyr-probe-cwd.dll";
+	bool const cwd_ready = CopyFileW(real.c_str(), in_cwd.c_str(), FALSE) != 0;
+
+	wchar_t module[MAX_PATH] = {};
+	GetModuleFileNameW(nullptr, module, MAX_PATH);
+	std::wstring app_dll = module;
+	app_dll = app_dll.substr(0, app_dll.find_last_of(L'\\')) + L"\\openyr-probe-app.dll";
+	bool const app_ready = CopyFileW(real.c_str(), app_dll.c_str(), FALSE) != 0;
+
+	wchar_t old_directory[MAX_PATH] = {};
+	GetCurrentDirectoryW(MAX_PATH, old_directory);
+	SetCurrentDirectoryW(folder.c_str());
+
+	// Before the call the planted copies load, which is what the call must stop.
+	HMODULE const cwd_before = cwd_ready ? LoadLibraryW(L"openyr-probe-cwd.dll") : nullptr;
+	HMODULE const app_before = app_ready ? LoadLibraryW(L"openyr-probe-app.dll") : nullptr;
+	if (cwd_before != nullptr) {
+		FreeLibrary(cwd_before);
+	}
+	if (app_before != nullptr) {
+		FreeLibrary(app_before);
+	}
+	Check(cwd_before != nullptr || app_before != nullptr || !(cwd_ready || app_ready), "before the call, a DLL in the current or program folder is found");
+
+	Check(dll_search::Restrict_Dll_Search(), "the search is restricted to System32");
+
+	if (cwd_ready) {
+		HMODULE const after = LoadLibraryW(L"openyr-probe-cwd.dll");
+		Check(after == nullptr && GetLastError() == ERROR_MOD_NOT_FOUND, "afterwards a DLL in the current folder is not loaded");
+		if (after != nullptr) {
+			FreeLibrary(after);
+		}
+	}
+	if (app_ready) {
+		HMODULE const after = LoadLibraryW(L"openyr-probe-app.dll");
+		Check(after == nullptr && GetLastError() == ERROR_MOD_NOT_FOUND, "afterwards a DLL beside the program is not loaded");
+		if (after != nullptr) {
+			FreeLibrary(after);
+		}
+	}
+
+	HMODULE const system_dll = LoadLibraryW(L"version.dll");
+	Check(system_dll != nullptr, "and a System32 DLL still loads by name");
+	if (system_dll != nullptr) {
+		FreeLibrary(system_dll);
+	}
+
+	SetCurrentDirectoryW(old_directory);
+	DeleteFileW(in_cwd.c_str());
+	DeleteFileW(app_dll.c_str());
+	RemoveDirectoryW(folder.c_str());
+}
+
+
 void Test_Text(void)
 {
 	Check(launcher::Utf8_To_Wide("caf\xC3\xA9") == L"caf\u00E9", "UTF-8 text converts to wide text");
@@ -476,6 +544,7 @@ int main()
 	Test_Update_Folder();
 	Test_Private_Folder();
 	Test_Text();
+	Test_Dll_Search();
 
 	if (Failures != 0) {
 		std::printf("%d check(s) failed.\n", Failures);

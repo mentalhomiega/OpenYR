@@ -30,6 +30,7 @@
  * Exit codes: 0 when the launcher is done, 1 when the update copy failed.
  */
 
+#include "dll_search.h"
 #include "launcher_core.h"
 #include "launcher_system.h"
 
@@ -487,6 +488,8 @@ int Run_Update(OptionsType const & options)
 
 int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
+	dll_search::Restrict_Dll_Search();
+
 	INITCOMMONCONTROLSEX controls{sizeof(controls), ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES};
 	InitCommonControlsEx(&controls);
 

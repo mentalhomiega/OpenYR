@@ -26,6 +26,7 @@
  *   /PAYLOAD=<folder>  install from a package folder instead of the one inside this file
  */
 
+#include "dll_search.h"
 #include "setup_core.h"
 #include "setup_system.h"
 #include "setup_wizard.h"
@@ -271,6 +272,8 @@ void Log_Line(std::wstring const & log_file, std::wstring const & line)
 
 int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
+	dll_search::Restrict_Dll_Search();
+
 	INITCOMMONCONTROLSEX controls{sizeof(controls), ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES};
 	InitCommonControlsEx(&controls);
 
