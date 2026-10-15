@@ -341,6 +341,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
+	state.HDRActive = Video_HDR_Active();
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},
@@ -374,7 +375,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.HDROutput = Fill_Choices(state.HDROutputs, {
 		{VIDEO_HDR_AUTOMATIC, "Automatic"},
 		{VIDEO_HDR_OFF, "Off"},
-		{VIDEO_HDR_ON, "On (testing)"}
+		{VIDEO_HDR_ON, "On"}
 	}, Options.HDROutput, "%d");
 	state.PaperWhite = Video_HDR_Paper_White();
 	state.PeakBrightness = Video_HDR_Peak();

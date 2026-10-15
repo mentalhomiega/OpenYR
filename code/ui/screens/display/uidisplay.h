@@ -102,6 +102,11 @@ struct UIDisplayState
 	// The paper white and peak brightness on the sliders, in nits.
 	int PaperWhite = 0;
 	int PeakBrightness = 0;
+	// Whether HDR output is on now. The Highlights list needs it, and its tooltip says so while it is off.
+	bool HDRActive = false;
+	// The tooltips of the HDR output and Highlights rows, which describe the choice on show. Empty means none.
+	std::string HDROutputTip;
+	std::string HighlightsTip;
 	// Whether the emissive highlights are on, as 0 or 1.
 	int Highlights = 0;
 	std::vector<UIDisplayChoice> RowCounts;

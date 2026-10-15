@@ -33,7 +33,7 @@
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>
-			<div class="row" id="hdr-row"><span class="caption">HDR output:</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
+			<div class="row" id="hdr-row" data-attr-tip="hdroutputtip"><span class="caption">HDR:</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
 				<option data-for="entry : hdroutputs" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 		</div>
@@ -48,7 +48,7 @@
 			<div class="row"><span class="caption">Smooth motion:</span><select id="framerate" data-value="framerate" data-event-change="queue('framerate', ev.value)">
 				<option data-for="entry : framerates" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<div class="row" id="highlights-row" tip="Needs HDR output" data-class-disabled="!hdroutput"><span class="caption">Highlights:</span><select id="highlights" data-value="highlights" data-attrif-disabled="!hdroutput" data-event-change="queue('highlights', ev.value)">
+			<div class="row" id="highlights-row" data-attr-tip="highlightstip" data-class-disabled="!hdractive"><span class="caption">Highlights:</span><select id="highlights" data-value="highlights" data-attrif-disabled="!hdractive" data-event-change="queue('highlights', ev.value)">
 				<option value="0">Classic</option>
 				<option value="1">Enhanced</option>
 			</select></div>

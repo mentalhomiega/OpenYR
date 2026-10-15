@@ -13,6 +13,7 @@
 #include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uisettingpreview.h"
+#include "video.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -319,6 +320,26 @@ void UIConfirmModePresenterClass::Refresh(void)
 namespace
 {
 
+/// <summary>
+/// Sets the two HDR tooltips from the choice on show. The HDR output tooltip says what the choice does and
+/// that it applies at the next start. The Highlights tooltip is empty while HDR output is on, so it shows
+/// only while the list is grayed out.
+/// </summary>
+void Update_HDR_Tips(UIDisplayState & state)
+{
+	bool forced = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_ON;
+	bool off = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_OFF;
+	if (forced) {
+		state.HDROutputTip = "On forces HDR10 output. Turn on HDR in Windows for this display first, or the picture will look wrong. Applies at the next start.";
+	} else if (off) {
+		state.HDROutputTip = "Off keeps the picture in SDR. Applies at the next start.";
+	} else {
+		state.HDROutputTip = "Automatic uses HDR10 output while Windows HDR is on for this display. Applies at the next start.";
+	}
+	state.HighlightsTip = state.HDRActive ? std::string() : std::string("Needs HDR output");
+}
+
+
 class UIDisplayViewClass : public UIRmlViewClass
 {
 	public:
@@ -330,6 +351,10 @@ class UIDisplayViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
+			Update_HDR_Tips(Data.State);
+			Model.DirtyVariable("hdractive");
+			Model.DirtyVariable("hdroutputtip");
+			Model.DirtyVariable("highlightstip");
 			Model.DirtyVariable("selected");
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
@@ -411,6 +436,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("paperwhite", &state.PaperWhite)
 				&& model.Bind("peakbrightness", &state.PeakBrightness)
 				&& model.Bind("highlights", &state.Highlights)
+				&& model.Bind("hdractive", &state.HDRActive)
+				&& model.Bind("hdroutputtip", &state.HDROutputTip)
+				&& model.Bind("highlightstip", &state.HighlightsTip)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
 				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));
