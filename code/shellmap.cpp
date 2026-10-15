@@ -44,6 +44,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <map>
+#include <string>
 #include <random>
 #include <vector>
 
@@ -73,7 +75,6 @@ struct SessionPart
 SessionPart Battle;
 bool Running = false;
 bool Loading = false;
-float SoundLevel = 0.5f;
 int ScopeDepth = 0;
 bool InService = false;
 
@@ -178,6 +179,51 @@ void Free_Players(SessionPart & part)
 }
 
 
+// The map's visible area in map pixels, or 0 by 0 when the file cannot be read.
+Point2D Visible_Map_Size(char const * file)
+{
+	static std::map<std::string, Point2D> known;
+	auto found = known.find(file);
+	if (found != known.end()) {
+		return(found->second);
+	}
+
+	Point2D size(0, 0);
+	CCFileClass map(file);
+	if (map.Is_Available()) {
+		CCINIClass ini;
+		ini.Load(map, false);
+		Rect const local = ini.Get_Rect("Map", "LocalSize", Rect(0, 0, 0, 0));
+		size = Point2D(ISO_TILE_PIXEL_W * local.Width, ISO_TILE_PIXEL_H * (2 * local.Height + 9) / 2);
+	}
+	known[file] = size;
+	return(size);
+}
+
+
+// Takes a map whose visible area covers the screen, so no black edge shows; failing that, the largest.
+int Pick_Fitting(std::vector<int> & choices)
+{
+	Rect const shown = Shown_Map_Rect();
+	std::shuffle(choices.begin(), choices.end(), Dice);
+
+	int best = choices.front();
+	long long best_area = -1;
+	for (int index : choices) {
+		Point2D const size = Visible_Map_Size(Session.Scenarios[index]->Get_Filename());
+		if (size.X >= shown.Width && size.Y >= shown.Height) {
+			return(index);
+		}
+		long long const area = (long long)size.X * size.Y;
+		if (area > best_area) {
+			best = index;
+			best_area = area;
+		}
+	}
+	return(best);
+}
+
+
 int Pick_Map(int & starts)
 {
 	char forced[_MAX_PATH] = "";
@@ -207,7 +253,7 @@ int Pick_Map(int & starts)
 		return(-1);
 	}
 
-	int const index = choices[Dice() % choices.size()];
+	int const index = choices.size() == 1 ? choices.front() : Pick_Fitting(choices);
 	starts = RandomMapWaypointCount(index);
 	return(CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available() ? index : -1);
 }
@@ -295,7 +341,6 @@ bool Prepare_Battle(char * file, int file_size)
 	Battle.Options.BuildOffAlly = false;
 	Battle.Options.AutoDeployMCV = true;
 	Battle.Options.SWAllowed = ConfigINI.Get_Bool("MenuBattle", "SuperWeapons", false);
-	SoundLevel = std::clamp((float)ConfigINI.Get_Float("MenuBattle", "SoundVolume", 0.5), 0.0f, 1.0f);
 	Battle.AIOnly = true;
 	Battle.PlayerHouse = (HousesType)observer_house;
 	Battle.ScenarioActive = false;
@@ -514,9 +559,9 @@ bool Shellmap_In_Scope(void)
 }
 
 
-float Shellmap_Sound_Level(void)
+bool Shellmap_Silent(void)
 {
-	return(Running ? SoundLevel : 1.0f);
+	return(Running);
 }
 
 

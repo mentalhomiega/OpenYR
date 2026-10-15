@@ -23,8 +23,8 @@ bool Shellmap_Running(void);
 // Is the battle's own session state swapped in?
 bool Shellmap_In_Scope(void);
 
-// Scales the battle's positional sounds while it runs; 1 otherwise.
-float Shellmap_Sound_Level(void);
+// True while the battle runs, when its sound effects and ambient sounds are not played.
+bool Shellmap_Silent(void);
 
 // Loads a battle on a random map when the menus should have one and none is running.
 void Shellmap_Start(void);

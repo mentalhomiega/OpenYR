@@ -218,6 +218,10 @@ AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handl
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
 		return(AudioHandle());
 	}
+	// The menu battle plays silently; menu clicks are played outside its scope.
+	if (Shellmap_In_Scope()) {
+		return(AudioHandle());
+	}
 	if (LogSoundEffects) {
 		DebugString("Sound: %s\n", Voc_Name(voc));
 	}
@@ -300,7 +304,7 @@ float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & 
 	}
 
 	pan = std::clamp((pixel.X - width / 2) * 100 / (width / 2), -100, 100);
-	return(std::min(volume, 1.0f) * Shellmap_Sound_Level());
+	return(Shellmap_Silent() ? 0.0f : std::min(volume, 1.0f));
 }
 
 
@@ -457,6 +461,9 @@ void Static_Sounds_Serialize(SaveStreamClass & stream)
 
 void Sound_Effect_AI(void)
 {
+	if (Shellmap_Silent()) {
+		return;
+	}
 	Static_Sounds_AI();
 	AmbientSounds.AI();
 
