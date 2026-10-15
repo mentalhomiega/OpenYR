@@ -100,13 +100,14 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	Doc->AddEventListener(Rml::EventId::Textinput, this, true);
 	Doc->AddEventListener(Rml::EventId::Mousedown, this);
 	Doc->AddEventListener(Rml::EventId::Mousemove, this, true);
+	Doc->AddEventListener(Rml::EventId::Focus, this, true);
 	Loaded();
 	Apply_Tabs();
 	return(true);
 }
 
 
-static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "audio", "keyboard", "mods"};
+static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
 
 // A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
 static bool UI_Tab_Keyboard = false;
@@ -819,9 +820,33 @@ void UIRmlViewClass::Serve_Tip(void)
 	}
 }
 
+// Shows the desc attribute of the setting an element belongs to in the page's description element, if the page has one.
+static void Describe_Setting(Rml::ElementDocument * doc, Rml::Element * element)
+{
+	if (doc == nullptr) {
+		return;
+	}
+	for (Rml::Element * step = element; step != nullptr && step != doc; step = step->GetParentNode()) {
+		Rml::String const text = step->GetAttribute<Rml::String>("desc", Rml::String());
+		if (!text.empty()) {
+			Rml::Element * panel = doc->GetElementById("description");
+			if (panel != nullptr && panel->GetInnerRML() != text) {
+				panel->SetInnerRML(text);
+			}
+			return;
+		}
+	}
+}
+
+
 void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 {
+	if (event.GetId() == Rml::EventId::Focus) {
+		Describe_Setting(Doc, event.GetTargetElement());
+	}
+
 	if (event.GetId() == Rml::EventId::Mousemove) {
+		Describe_Setting(Doc, event.GetTargetElement());
 		Rml::Element * tipped = Tip_Of(event.GetTargetElement());
 		TipAt = Rml::Vector2f(event.GetParameter<float>("mouse_x", 0.0f),
 			event.GetParameter<float>("mouse_y", 0.0f));

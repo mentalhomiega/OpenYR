@@ -126,7 +126,7 @@ void Main_Options_Dialog(void)
 				break;
 
 			case UI_MAIN_OPTIONS_DISPLAY:
-				Display_Options_Dialog();
+				Display_Options_Dialog(UI_TAB_DISPLAY);
 				break;
 
 			case UI_MAIN_OPTIONS_KEYBOARD:
@@ -296,11 +296,11 @@ bool Test_Display_Mode_Dialog(int width, int height)
 /// A picked mode is applied as a trial; if the player does not confirm it, the screen opens
 /// again.
 /// </summary>
-void Display_Options_Dialog(void)
+void Display_Options_Dialog(int page)
 {
 	while (true) {
 		float const scale = Options.InterfaceScale;
-		std::optional<UIDisplayMode> picked = UI_Display_Dialog();
+		std::optional<UIDisplayMode> picked = UI_Display_Dialog((UISettingsTab)page);
 		if (!picked.has_value()) {
 			break;
 		}

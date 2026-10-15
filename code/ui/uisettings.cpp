@@ -70,7 +70,7 @@ void UI_Settings_Run(UISettingsTab first)
 {
 	bool const ingame = GameActive;
 
-	unsigned offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_KEYBOARD);
+	unsigned offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_GRAPHICS) | (1u << UI_TAB_KEYBOARD) | (1u << UI_TAB_ACCESSIBILITY);
 	if (AudioEngine.Is_Available()) {
 		offered |= (1u << UI_TAB_AUDIO);
 	}
@@ -87,7 +87,9 @@ void UI_Settings_Run(UISettingsTab first)
 
 		switch (tab) {
 			case UI_TAB_DISPLAY:
-				Display_Options_Dialog();
+			case UI_TAB_GRAPHICS:
+			case UI_TAB_ACCESSIBILITY:
+				Display_Options_Dialog(tab);
 				break;
 
 			case UI_TAB_AUDIO:
