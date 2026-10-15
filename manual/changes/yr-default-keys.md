@@ -66,4 +66,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A new player has Yuri's Revenge's key for each command without binding it. The five tab and planning commands gain their keys, and the new commands are registered. `TypeSelect`, `CombatantSelect` and `VeterancyNav` work. `PlaceBeacon`, `Delete` and the taunts report that the feature is not in this build. A keyboard file from an earlier build keeps its own keys, and it gains the keys of the commands it omits.
+A new player has Yuri's Revenge's key for each command without binding it. The five tab and planning commands gain their keys, and the new commands are registered. `TypeSelect`, `CombatantSelect` and `VeterancyNav` work. `PlaceBeacon` and `Delete` place and remove beacons in a multiplayer game, and the taunts report that the feature is not in this build. A keyboard file from an earlier build keeps its own keys, and it gains the keys of the commands it omits.
