@@ -3690,6 +3690,7 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Stage);
 	stream.Serialize(IsInputLocked);
 	stream.Serialize(IsMPAIBaseNodes);
+	stream.Serialize(TeamsPresent);
 	stream.Serialize(SourceFile);
 }
 
@@ -4337,6 +4338,15 @@ void ScenarioClass::Compute_CRC(CRCEngine & crc) const
 	crc(AmbientLight);
 	crc(CurrentAmbientLight);
 	crc(DesiredAmbientLight);
+	crc(DominatorAmbientLight);
+	crc(DominatorRedTint);
+	crc(DominatorGreenTint);
+	crc(DominatorBlueTint);
+	crc(DominatorGroundLight);
+	crc(DominatorLevelLight);
+	crc(DominatorAmbientChangeRate);
+	crc(NukeAmbientChangeRate);
+	crc(TeamsPresent);
 }
 
 

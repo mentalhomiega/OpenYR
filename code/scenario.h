@@ -476,8 +476,7 @@ class ScenarioClass {
 		// start position and builds as it does in a campaign.
 		bool IsMPAIBaseNodes;
 
-		// Set when a computer seat starts with allies, which makes the game a team game. Not
-		// serialized, so a loaded save starts with false.
+		// Set when a computer seat starts with allies, which makes the game a team game.
 		bool TeamsPresent;
 
 		/*
