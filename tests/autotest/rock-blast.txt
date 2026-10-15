@@ -1,0 +1,36 @@
+; Weapon-hit rock: an ARTYHE blast (Rocker=yes) lands 3 cells west of a computer Rhino (HTNK) at frame 160, outside its damage spread.
+; Explosion_Damage rocks each techno within 3 cells of the blast. The Rhino faces north and the blast is to its west, so the roll is sideways: it peaks near 0.245 rad by frame 176 and settles by frame 190. The Rhino keeps its 400 strength. The rock lines give the tilt every 2 frames.
+1 view 62 62
+2 zoom 2.5
+3 reveal
+150 spawn HTNK 64 62
+152 rock HTNK
+154 rock HTNK
+156 rock HTNK
+158 rock HTNK
+160 blast ARTYHE 61 62
+160 rock HTNK
+162 rock HTNK
+162 command ScreenCapture
+164 rock HTNK
+166 rock HTNK
+168 rock HTNK
+168 command ScreenCapture
+170 rock HTNK
+172 rock HTNK
+174 rock HTNK
+176 rock HTNK
+176 command ScreenCapture
+178 rock HTNK
+180 rock HTNK
+182 rock HTNK
+184 rock HTNK
+186 rock HTNK
+188 rock HTNK
+190 rock HTNK
+192 rock HTNK
+194 rock HTNK
+196 rock HTNK
+198 rock HTNK
+200 rock HTNK
+202 quit
