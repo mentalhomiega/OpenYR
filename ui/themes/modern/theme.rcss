@@ -454,6 +454,11 @@ body.lobby .chip
 	border-radius: 2dp;
 }
 
+body.lobby .colour-name
+{
+	font-size: 13dp;
+}
+
 body.lobby #switches
 {
 	margin-top: 12dp;

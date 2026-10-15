@@ -68,11 +68,13 @@
 	height: 34dp;
 }
 
-.col-player { width: 132dp; margin-right: 6dp; }
-.col-side { width: 104dp; margin-right: 6dp; }
-.col-color { width: 104dp; margin-right: 6dp; }
-.col-start { width: 68dp; margin-right: 6dp; }
-.col-team { width: 60dp; margin-right: 0; }
+/* The five columns add up to the list's inner width, so no column shrinks. The color column holds
+   a custom color's name, such as "Custom (near Lime)", at the name size below. */
+.col-player { width: 100dp; margin-right: 6dp; }
+.col-side { width: 92dp; margin-right: 6dp; }
+.col-color { width: 132dp; margin-right: 6dp; }
+.col-start { width: 64dp; margin-right: 6dp; }
+.col-team { width: 56dp; margin-right: 0; }
 
 .cell
 {
@@ -104,6 +106,35 @@
 	border: 1dp #00000099;
 }
 
+/* The color button shows the seat's swatch and its name, and opens the free color picker. */
+.colour-button
+{
+	display: flex;
+	flex: 1;
+	align-items: center;
+	min-width: 0;
+	height: 24dp;
+	margin: 0;
+	padding: 2dp 4dp 0 4dp;
+	text-align: left;
+}
+
+.colour-button .chip
+{
+	margin-right: 4dp;
+}
+
+.colour-name
+{
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-size: 13dp;
+	line-height: 17dp;
+}
+
 .slot.off .chip
 {
 	opacity: 0.35;
@@ -112,9 +143,9 @@
 /* A seat nobody plays fades, so the seats in use stand out. Its player drop-down stays solid,
    as it is how the seat is filled, and its open list would fade with it. */
 .slot.off .cell > select.side,
-.slot.off .cell > select.color,
 .slot.off .cell > select.start,
-.slot.off .cell > select.team
+.slot.off .cell > select.team,
+.slot.off .cell > .colour-button
 {
 	opacity: 0.55;
 }
@@ -223,16 +254,6 @@
 .setting .trough
 {
 	line-height: 23dp;
-}
-
-.chip-button
-{
-	display: block;
-	flex: none;
-	margin: 0dp;
-	padding: 0dp;
-	border: 0dp #00000000;
-	background-color: transparent;
 }
 
 #notice

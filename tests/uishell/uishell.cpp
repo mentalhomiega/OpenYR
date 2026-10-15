@@ -4971,6 +4971,8 @@ void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass 
 	Check(players != nullptr && players->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(226.0f, 110.0f), "the player list is its template's rect");
 
 	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map's picture");
+	Rml::Element * colour = document->GetElementById("color-pick");
+	Check(colour != nullptr && colour->GetInnerRML().find("Gold") != std::string::npos, "the color button names the player's color");
 
 	Drive(presenter, "bases", 0);
 	Check(!presenter.State.Bases && !presenter.State.ShortGame, "clearing bases clears the short game with it");
@@ -5239,13 +5241,13 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 			}
 			return(count);
 		};
-		Check(visible(slots[0], "select") == 4 && visible(slots[0], "input") == 1, "the first row holds the person's name field and four drop-downs");
-		Check(visible(slots[1], "select") == 5 && visible(slots[1], "input") == 0, "a computer's row adds a drop-down for what plays it");
+		Check(visible(slots[0], "select") == 3 && visible(slots[0], "input") == 1 && visible(slots[0], "button") == 1, "the first row holds the person's name field, three drop-downs and a color button");
+		Check(visible(slots[1], "select") == 4 && visible(slots[1], "input") == 0 && visible(slots[1], "button") == 1, "a computer's row adds a drop-down for what plays it, and no drop-down for its color");
 		Check(slots[2]->IsClassSet("off") && !slots[1]->IsClassSet("off"), "a seat nobody plays is marked as off");
 	}
 
-	Check(document->GetElementById("kind1") != nullptr && document->GetElementById("side0") != nullptr && document->GetElementById("color3") != nullptr
-		&& document->GetElementById("start2") != nullptr && document->GetElementById("team1") != nullptr, "each row's drop-downs carry an id of their field and row, so a script can open one");
+	Check(document->GetElementById("kind1") != nullptr && document->GetElementById("side0") != nullptr && document->GetElementById("swatch3") != nullptr
+		&& document->GetElementById("start2") != nullptr && document->GetElementById("team1") != nullptr, "each row's drop-downs and color button carry an id of their field and row, so a script can open one");
 
 	Rml::Element * switches = document->GetElementById("switches");
 	Check(switches != nullptr && switches->GetBox().GetSize(Rml::BoxArea::Border).x == 484.0f, "the switch frame spans the player list");
@@ -5280,16 +5282,18 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Choose_Slot(presenter, "slotkind", 7, UI_SKIRMISH_SLOT_HARD);
 	Check(!presenter.State.Slots[7].Active && presenter.State.Slots[7].Kind == UI_SKIRMISH_SLOT_OPEN, "a row the map does not hold cannot be filled");
 
-	// Colors never repeat: choosing one another row holds hands that row the old one.
+	// Colors never repeat: a stock color another row holds changes places with it when the picker takes it.
 	int const first = presenter.State.Slots[0].Color;
 	int const second = presenter.State.Slots[1].Color;
-	Choose_Slot(presenter, "slotcolor", 0, second);
+	Drive(presenter, "pickopen", 0);
+	Drive(presenter, "pickpreset", second);
+	Drive(presenter, "pickok");
 	Check(presenter.State.Slots[0].Color == second && presenter.State.Slots[1].Color == first, "a color another row holds changes places with it");
-	Check(presenter.State.Slots[0].Swatch == "#ff1818", "a row carries the swatch of its color");
+	Check(presenter.State.Slots[0].Swatch == "#ff1818" && presenter.State.Slots[0].ColorName == "Color " + std::to_string(second), "a row carries the swatch and the name of its color");
 	view->Sync();
 	context.Update();
-	Rml::ElementFormControlSelect * shown = rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("color1"));
-	Check(shown != nullptr && shown->GetSelection() == first, "the drop-down of the row that gave up a color shows its new one");
+	Rml::Element * shown = document->GetElementById("swatch1");
+	Check(shown != nullptr && shown->GetInnerRML().find("Color " + std::to_string(first)) != std::string::npos, "the color button of the row that gave up a color shows its new name");
 
 	// Numbered starts are the same, and Random may repeat.
 	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_EASY);
@@ -5593,6 +5597,142 @@ static std::vector<std::uint8_t> Build_Font_Image(std::vector<std::uint8_t> cons
 static bool Read_Strike(std::vector<std::uint8_t> const & fnt, UIRasterStrike & strike)
 {
 	return(UI_Read_Raster_Strike(std::span<std::uint8_t const>(fnt.data(), fnt.size()), strike));
+}
+
+
+/// The color button and the free color picker: the names the button shows, which presets another
+/// row takes, where the marker sits, and how the arrow keys move through the presets.
+void Test_Colour_Picker(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	Check(UI_Color_Name("Gold", 0) == "Gold", "a stock color is named by its label");
+	Check(UI_Color_Name("", Player_Color_From_RGB(RGBClass(0x00, 0x72, 0xB2))) == "Safe blue", "a free color that is exactly a preset takes the preset's name");
+	Check(UI_Color_Name("", Player_Color_Pack(HSVClass(0, 255, 255))) == "Custom (near Red)", "any other free color is named for the nearest preset");
+	Check(UI_Color_Button_Name("", Player_Color_Pack(HSVClass(0, 255, 255))) == "Custom" && UI_Color_Button_Name("", Player_Color_From_RGB(RGBClass(0x00, 0x72, 0xB2))) == "Safe blue", "the color button says Custom for such a color, and keeps a preset's name");
+
+	RGBClass const safe_blue = Player_Color_Preview(Player_Color_From_RGB(RGBClass(0x00, 0x72, 0xB2)));
+	UIColorPickRival blue_rival;
+	blue_rival.Custom = true;
+	blue_rival.Color = safe_blue;
+	UIColorPickRival stock_rival;
+	stock_rival.Color = UI_Stock_Color_RGB(0);
+	UIColorPickRival gold_rival;
+	gold_rival.Custom = true;
+	gold_rival.Color = UI_Stock_Color_RGB(0);
+
+	auto taken = [](UIColorPickState const & picker, char const * label) {
+		for (UIColorPresetOption const & option : picker.Presets) {
+			if (option.Label == label) {
+				return(option.Taken);
+			}
+		}
+		return(false);
+	};
+
+	UIColorPickState picker;
+	UI_Color_Pick_Open(picker, 0, 0, 1, std::vector<UIColorPickRival>{blue_rival, stock_rival});
+	Check(taken(picker, "Safe blue") && !taken(picker, "Safe orange"), "a preset that clashes with another row's free color is taken");
+	Check(!taken(picker, "Gold"), "a stock color of another row does not take a stock preset, since the lobby swaps those");
+
+	UI_Color_Pick_Open(picker, 0, 0, 1, std::vector<UIColorPickRival>{gold_rival});
+	Check(taken(picker, "Gold") && !taken(picker, "Safe blue"), "a free color of another row takes the stock preset it matches, and the list is marked again on each open");
+
+	// The brightness slider reports its own value when the picker opens; that must not turn a stock color custom.
+	UIColorPickState stock_picker;
+	UI_Color_Pick_Open(stock_picker, 0, 0, 0, std::vector<UIColorPickRival>());
+	UI_Color_Pick_Value(stock_picker, stock_picker.Value);
+	Check(stock_picker.Custom == 0, "a brightness report equal to the picker's own leaves a stock color stock");
+
+	UISkirmishState state;
+	state.Handle = "Player";
+	Fill_Skirmish_Lists(state);
+	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
+	state.Slots[0].Custom = Player_Color_From_RGB(RGBClass(0x00, 0x72, 0xB2));
+	state.Slots[1].Kind = UI_SKIRMISH_SLOT_MEDIUM;
+	state.Preview.Width = 4;
+	state.Preview.Height = 2;
+	state.Preview.Pixels.assign(4 * 2 * 4, 200);
+	state.Preview.Generation = 1;
+
+	RecordingSkirmishServiceClass service;
+	UISkirmishPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the colour test's skirmish view prepares");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * first_button = document->GetElementById("swatch0");
+	Rml::Element * open_button = document->GetElementById("swatch2");
+	Check(first_button != nullptr && first_button->GetInnerRML().find("Safe blue") != std::string::npos, "a free color's button shows the name of its preset");
+	Check(open_button != nullptr && open_button->HasAttribute("disabled") && !document->GetElementById("swatch1")->HasAttribute("disabled"), "a seat nobody plays has its color button disabled, and a seat that plays does not");
+
+	Drive(presenter, "pickopen", 1);
+	view->Sync();
+	context.Update();
+	context.Render();
+
+	Rml::Element * marker = document->GetElementById("field-marker");
+	std::string const placed = marker != nullptr ? marker->GetAttribute<Rml::String>("style", "") : std::string();
+	Check(placed.find("left: ") != std::string::npos && placed.find("top: ") != std::string::npos, "the picker's marker is placed by its style");
+
+	int expected = 0;
+	for (UIColorPresetOption const & option : presenter.State.Picker.Presets) {
+		expected += option.Taken ? 1 : 0;
+	}
+	Rml::ElementList marked;
+	document->GetElementsByClassName(marked, "taken");
+	Check(expected > 0 && (int)marked.size() == expected, "the picker marks each preset another row's color takes, and each one says in use");
+
+	Drive(presenter, "pickfield", 96, "0");
+	Drive(presenter, "pickok");
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(!presenter.State.Picker.Open && presenter.State.Slots[1].Custom != 0, "a color picked on the wheel is kept as a free color");
+	Rml::Element * wheel_button = document->GetElementById("swatch1");
+	Check(wheel_button != nullptr && wheel_button->GetInnerRML().find(">Custom<") != std::string::npos && wheel_button->GetInnerRML().find("Red") == std::string::npos, "the color button of a wheel color says Custom, not the stock color it sat on");
+	Check(presenter.State.Slots[1].ColorTip.rfind("Custom (near ", 0) == 0 && wheel_button->GetAttribute<Rml::String>("tip", "") == presenter.State.Slots[1].ColorTip, "its hover tip names the nearest preset");
+	Check(marker != nullptr && marker->GetAttribute<Rml::String>("style", "") != placed, "the marker moves when the wheel color changes");
+
+	Drive(presenter, "pickopen", 1);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Rml::Element * presets = document->GetElementById("presets");
+	int captioned = 0;
+	for (int child = 0; presets != nullptr && child < presets->GetNumChildren(); child++) {
+		captioned += presets->GetChild(child)->GetInnerRML().find("(in use)") != std::string::npos ? 1 : 0;
+	}
+	int taken_now = 0;
+	for (UIColorPresetOption const & option : presenter.State.Picker.Presets) {
+		taken_now += option.Taken ? 1 : 0;
+	}
+	Check(captioned == taken_now, "each taken preset's caption says in use, and no other does");
+	Check(presets != nullptr && presets->IsClassSet("grid") && presets->GetNumChildren() > 2, "the presets form a grid of buttons");
+	if (presets != nullptr && presets->GetNumChildren() > 2) {
+		Rml::Element * origin = presets->GetChild(1);
+		origin->Focus();
+		Press(context, Rml::Input::KI_RIGHT);
+		Check(context.GetFocusElement() == presets->GetChild(2), "the right arrow key moves the focus to the next preset");
+		Press(context, Rml::Input::KI_LEFT);
+		Check(context.GetFocusElement() == presets->GetChild(1), "the left arrow key moves the focus back");
+		Press(context, Rml::Input::KI_DOWN);
+		Rml::Element * below = context.GetFocusElement();
+		Check(below != nullptr && below != presets->GetChild(1) && below->GetAbsoluteOffset(Rml::BoxArea::Border).y > presets->GetChild(1)->GetAbsoluteOffset(Rml::BoxArea::Border).y, "the down arrow key moves the focus to a preset in the row below");
+	}
+
+	Drive(presenter, "pickcancel");
+	view->Sync();
+	context.Update();
+	view->Release();
+	context.Update();
+
+	Check(system.Problems == problems, "the colour picker raises no RmlUi warning or error");
 }
 
 
@@ -6119,6 +6259,7 @@ void Test_Documents(void)
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
 		Test_Skirmish_Layouts(*context, system);
+		Test_Colour_Picker(*context, system);
 		Test_Scenario_Screen(*context, system);
 		Test_Net_Browser_Screen(*context, system);
 		Test_Net_Setup_Screen(*context, system);
