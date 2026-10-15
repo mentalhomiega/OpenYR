@@ -25,6 +25,7 @@
 #include "_rules.h"
 #include "globals.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "unit.h"
 #include "unittype.h"
@@ -145,6 +146,9 @@ Coord TeleportLocomotionClass::Destination(void)
 /// <param name="to">The coordinate to teleport the object to.</param>
 void TeleportLocomotionClass::Move_To(Coord to)
 {
+	if (WarpPhase == TELEPORT_WARP_OUT) {
+		return;
+	}
 	if (WarpPhase == TELEPORT_HOLD) {
 		return;
 	}
@@ -174,6 +178,10 @@ void TeleportLocomotionClass::Do_Turn(DirType dir)
 /// </summary>
 void TeleportLocomotionClass::Stop_Moving(void)
 {
+	// A chronosphere warp on its countdown cannot be stopped; it runs on to its jump.
+	if (WarpPhase == TELEPORT_WARP_OUT) {
+		return;
+	}
 	DestinationCoord = COORD_NONE;
 }
 
@@ -237,10 +245,104 @@ bool TeleportLocomotionClass::Process(void)
 				DebugString("AUTOTEST   warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
 			}
 		}
+	} else if (WarpPhase == TELEPORT_WARP_OUT) {
+		if (Frame >= WarpEnd) {
+			Land_Chrono_Warp();
+		}
 	} else if (DestinationCoord != COORD_NONE) {
 		Start_Warp();
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Finishes a chronosphere warp once the object has been set down: the arrival sound plays and the
+/// warp-out flag clears. A vehicle set down on water it cannot cross sinks. Anything else the cell
+/// cannot hold is destroyed.
+/// </summary>
+/// <param name="foot">The unit that has just landed. It is destroyed when the call returns false.</param>
+/// <returns>bool; Is the unit still alive?</returns>
+static bool Chrono_Land(FootClass * foot)
+{
+	TechnoTypeClass const * type = foot->TClass;
+	VocType const in_sound = type->ChronoInSound != VOC_NONE ? type->ChronoInSound : Rule->ChronoInSound;
+	Sound_Effect(in_sound, foot->Center_Coord());
+	foot->IsBeingWarpedOut = false;
+
+	CellClass * cellptr = &Map[foot->Get_Cell()];
+	if (!cellptr->Is_Clear_To_Move(type->Speed, true, true)) {
+		if (foot->RTTI == RTTI_UNIT && cellptr->Land_Type() == LAND_WATER) {
+			foot->IsSinking = true;
+			foot->Stun();
+			if (Rule->Wake != NULL) {
+				new AnimClass(Rule->Wake, foot->PositionCoord);
+			}
+		} else {
+			int damage = type->MaxStrength;
+			foot->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false, NULL);
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Starts a chronosphere warp: the object stays on its cell, under the warp-out animation, for
+/// countdown frames and then lands at to (Land_Chrono_Warp). The caller has already dropped the
+/// object's orders and carried its locomotor.
+/// </summary>
+/// <param name="to">The coordinate the object is set down at.</param>
+/// <param name="countdown">The frames the object waits on its cell before the jump.</param>
+void TeleportLocomotionClass::Begin_Chrono_Warp(Coord to, int countdown)
+{
+	DestinationCoord = to;
+	WarpPhase = TELEPORT_WARP_OUT;
+	WarpEnd = Frame + countdown;
+	if (Rule->WarpOut != NULL) {
+		new AnimClass(Rule->WarpOut, LinkedTo->PositionCoord);
+	}
+	if (AutoTest_Active()) {
+		Cell const to_cell = to.As_Cell();
+		DebugString("AUTOTEST   chrono warp out %s cell %d,%d to %d,%d frame %d countdown %d land at %d\n",
+			LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, to_cell.X, to_cell.Y, Frame, countdown, WarpEnd);
+	}
+}
+
+
+/// <summary>
+/// Lands a chronosphere warp when its countdown has run out. The object is set down at its landing
+/// spot with the warp-in animation and sound, and it is then free: a chronosphere warp has no
+/// arrival hold. A landing on water the object cannot cross, or on a cell it cannot stand on, is
+/// handled by Chrono_Land.
+/// </summary>
+void TeleportLocomotionClass::Land_Chrono_Warp(void)
+{
+	Coord landing = Landing_Spot(DestinationCoord);
+	DestinationCoord = COORD_NONE;
+	WarpPhase = TELEPORT_IDLE;
+	bool const bridge = Map[landing.As_Cell()].IsUnderBridge;
+	if (bridge) {
+		landing.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+	LinkedTo->Mark(MARK_UP);
+	LinkedTo->PositionCoord = landing;
+	LinkedTo->RenderPrevCoord = COORD_NONE;
+	LinkedTo->IsOnBridge = bridge;
+	LinkedTo->Mark(MARK_DOWN);
+	LinkedTo->Assign_Destination(NULL);
+	if (Rule->WarpIn != NULL) {
+		new AnimClass(Rule->WarpIn, landing);
+	}
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST   chrono landed %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
+	}
+	if (!Chrono_Land(LinkedTo)) {
+		return;
+	}
+	LinkedTo->Per_Cell_Process(PCP_END);
+	LinkedTo->Look();
 }
 
 
@@ -318,6 +420,52 @@ void TeleportLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DestinationCoord);
 	stream.Serialize(WarpPhase);
 	stream.Serialize(WarpEnd);
+
+	bool haspiggy = (Piggybackee != NULL);
+	stream.Serialize(haspiggy);
+	if (haspiggy) {
+		if (stream.Is_Saving()) {
+			Save_Object(stream, Piggybackee.get());
+		} else {
+			Piggybackee = Load_Locomotor(stream);
+		}
+	}
+}
+
+
+/// <summary>
+/// Takes the object's own locomotor into this one for the length of a chronosphere warp.
+/// The carried locomotor keeps its state, and Is_Ok_To_End hands it back once the warp has landed.
+/// </summary>
+/// <param name="carried">The locomotor to carry. It is moved in only when the call returns true.</param>
+/// <returns>bool; Was the locomotor taken? A teleport already carrying one refuses.</returns>
+bool TeleportLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
+{
+	if (carried == nullptr || Piggybackee != nullptr) {
+		return(false);
+	}
+	Piggybackee = std::move(carried);
+	return(true);
+}
+
+
+/// <summary>
+/// Hands back the carried locomotor and ends the piggyback session.
+/// </summary>
+/// <returns>The carried locomotor, or nothing when none was carried.</returns>
+std::unique_ptr<ILocomotion> TeleportLocomotionClass::End_Piggyback(void)
+{
+	return(std::move(Piggybackee));
+}
+
+
+/// <summary>
+/// Can the carried locomotor take over again? True once a carried locomotor is waiting and no warp is left to run.
+/// </summary>
+/// <returns>bool; Is there a carried locomotor and no warp left to run?</returns>
+bool TeleportLocomotionClass::Is_Ok_To_End(void)
+{
+	return(Piggybackee != nullptr && WarpPhase == TELEPORT_IDLE);
 }
 
 

@@ -1,0 +1,56 @@
+; Chronosphere timing. A Rhino tank (HTNK) is sphered at frame 60 and the chrono warp fires at frame 70 to 46,40 (6 cells).
+; Expected: the tank stays at 40,40 from the order (frame 70) under WARPOUT, the log reads 'chrono warp out ... land at 130',
+; it lands at 46,40 at frame 130 with WARPIN, and it stays there. ChronoDelay=60 gives the 60-frame countdown.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-chrono-timing.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   chrono|AUTOTEST   warp|AUTOTEST   where|Exception"
+20 own GAPOWR 56 40
+30 own HTNK 40 40
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 46 40
+71 where HTNK
+74 where HTNK
+77 where HTNK
+80 where HTNK
+83 where HTNK
+86 where HTNK
+89 where HTNK
+92 where HTNK
+95 where HTNK
+98 where HTNK
+101 where HTNK
+104 where HTNK
+107 where HTNK
+110 where HTNK
+113 where HTNK
+116 where HTNK
+119 where HTNK
+122 where HTNK
+125 where HTNK
+128 where HTNK
+131 where HTNK
+134 where HTNK
+137 where HTNK
+140 where HTNK
+143 where HTNK
+146 where HTNK
+149 where HTNK
+152 where HTNK
+155 where HTNK
+158 where HTNK
+161 where HTNK
+164 where HTNK
+167 where HTNK
+170 where HTNK
+173 where HTNK
+176 where HTNK
+179 where HTNK
+182 where HTNK
+185 where HTNK
+188 where HTNK
+191 where HTNK
+194 where HTNK
+197 where HTNK
+200 where HTNK
+205 quit
