@@ -1,9 +1,9 @@
 # INI checker
 
-`inicheck` reads a rules file, and optionally the art file that goes with it,
-and lists the keys the engine does not read there and the values it cannot read
-in the expected form. It only reports. Neither
-the tool nor its library changes how the game reads a value.
+`inicheck` reads a rules file, and optionally the art file and a theater
+control file, and lists the keys the engine does not read there and the values
+it cannot read in the expected form. It only reports. Neither the tool nor its
+library changes how the game reads a value.
 
 ## In the game
 
@@ -44,6 +44,7 @@ directory.
 | `--catalog <file>` | The catalog to check against. Required. |
 | `--file <name>` | Which file's keys to use, as the catalog names it. The default is `rules.ini`; use it for `rulesmd.ini` too. |
 | `--art <file>` | Also checks this art file. Its sections are placed through the rules file, so pass the rules file that goes with it. |
+| `--theater <file>` | Also checks this theater control file. See [Theater control files](#theater-control-files). The rules file may be left out when `--art` is not used. |
 | `--unchecked` | Also lists each section the checker skipped. |
 
 Each finding is one line naming the file, line, section, key and value. The
@@ -99,6 +100,35 @@ An art section no type reads is skipped. That includes the own-name section of
 a type whose `Image=` names another section, and a section that only an
 infantry `Sequence=` names.
 
+## Theater control files
+
+`--theater` checks a theater control file, such as `temperat.ini`, in three
+kinds of section:
+
+- `[General]`, against the tile keys the engine reads there, such as
+  `RampBase=` and `ClearTile=`.
+- Each `[TileSet0000]`-style section, named `TileSet` and a four-digit number,
+  against the tile set keys `TilesInSet=`, `LastTilesInSet=`, `SetName=`,
+  `FileName=`, `Morphable=` and the others the engine reads there.
+- The section that a tile set's `SetName=` names, against the per-tile keys
+  `Tile01Anim=`, `Tile01XOffset=`, `Tile01YOffset=`, `Tile01AttachesTo=` and
+  `Tile01ZAdjust=`.
+
+The tile number is written with at least two digits, so `Tile1Anim=` is
+reported. The engine reads these keys only from the section `SetName=` names,
+so the same key in the `TileSet` section is also reported. A tile's
+`Tile01XOffset=`, `Tile01YOffset=`, `Tile01AttachesTo=` and `Tile01ZAdjust=`
+are read only when its `Tile01Anim=` is set.
+
+The engine reads `TileSet0000`, `TileSet0001` and so on, and stops at the first
+number whose section is missing or whose `TilesInSet=` is missing or negative.
+The checker stops at the same place. The `TileSet` sections after it, and the
+sections their `SetName=` names, are skipped and listed by `--unchecked`.
+
+The checker does not compare a tile number with `TilesInSet=`, so
+`Tile09Anim=` in a four-tile set is accepted although the engine never reads
+it.
+
 ## Skipped sections
 
 Every other section is skipped, such as a weapon nothing names and sections
@@ -109,18 +139,18 @@ whose names the catalog does not give, such as the land types.
 The catalog holds the keys the manual's extractor finds in the source, plus the
 numbered `art.ini` structure keys `DockingOffset0=` and up and `PowerUp1Anim=`
 and up, and the numbered `Tile01Anim=` keys of a theater tile set, which the
-export script adds. The checker does not read theater control files yet, so
-the tile set keys have no effect until it does. Another key the engine builds
-from a number may be missing and is then reported although the engine reads
-it. Treat a finding as something to look at, not as proof of an error.
+export script adds. Another key the engine builds from a number may be missing
+and is then reported although the engine reads it. Treat a finding as
+something to look at, not as proof of an error.
 
 ## The catalog format
 
 `export_catalog.py` writes one line per place the engine reads a key, as five
 tab-separated fields: the key, the file, the section, the type kinds and the
 value type. The section is the literal section name, `*` for an object
-section, or `@` followed by the section source for a section the checker does
-not place. A key holding a range, such as `Weapon{1-18}` or
+section, or `@` followed by the section source for a section that other lines
+name, such as `@tile-set`. The checker leaves a section source it cannot place
+unchecked. A key holding a range, such as `Weapon{1-18}` or
 `DockingOffset{0-}` with an open end, stands for each key with a number in that
 range written without leading zeros. A lower bound with a leading zero, as in
 `Tile{01-}Anim`, stands for numbers printed with at least that many digits:
