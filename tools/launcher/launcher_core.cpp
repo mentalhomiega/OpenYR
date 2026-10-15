@@ -9,6 +9,7 @@
 
 #include "launcher_core.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -589,10 +590,13 @@ bool Ini_Value(std::wstring const & text, wchar_t const * section, wchar_t const
 			end = text.size();
 		}
 
-		std::wstring const line = Trim_Wide(text.substr(start, end - start));
+		// The game drops everything from the first ';' on a line, so a trailing comment is not part of a value.
+		std::wstring raw = text.substr(start, end - start);
+		raw.erase(std::min(raw.find(L';'), raw.size()));
+		std::wstring const line = Trim_Wide(raw);
 		start = end + 1;
 
-		if (line.empty() || line[0] == L';') {
+		if (line.empty()) {
 			continue;
 		}
 

@@ -112,7 +112,7 @@ struct ConfigType
 ConfigType Read_Config(std::wstring const & ini_text);
 
 // Value of key under section in INI text, trimmed. Section and key names are case-insensitive, and
-// lines starting with ';' are comments. The first match wins.
+// everything from a ';' to the end of a line is a comment, as the game reads it. The first match wins.
 bool Ini_Value(std::wstring const & text, wchar_t const * section, wchar_t const * key, std::wstring & value);
 
 // Converts text between encodings. Invalid bytes become replacement characters.
