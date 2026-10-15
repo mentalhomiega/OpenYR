@@ -472,7 +472,11 @@ InstalledType Read_Installed(std::wstring const & folder)
 			section = SectionType::Files;
 			info.Present = true;
 		} else if (section == SectionType::Files && !line.empty()) {
-			info.Files.push_back(line);
+			if (Is_Record_File_Name(line)) {
+				info.Files.push_back(line);
+			} else {
+				info.Refused.push_back(line);
+			}
 		} else if (section == SectionType::Build) {
 			std::wstring::size_type equals = line.find(L'=');
 			if (equals != std::wstring::npos) {
@@ -557,6 +561,9 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 	InstalledType const previous = Read_Installed(folder);
 
 	Say(report, 0, previous.Present ? L"Updating OpenYR in " + folder : L"Installing OpenYR to " + folder);
+	for (std::wstring const & name : previous.Refused) {
+		Say(report, -1, L"Ignored a line of the install record that is not one of OpenYR's files: " + name);
+	}
 	if (!Make_Folders(folder)) {
 		error = L"Could not create " + folder + L".";
 		return(false);
@@ -720,6 +727,10 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 	if (!info.Present) {
 		error = L"OpenYR is not installed in " + folder + L".";
 		return(false);
+	}
+
+	for (std::wstring const & name : info.Refused) {
+		Say(report, -1, L"Ignored a line of the install record that is not one of OpenYR's files: " + name);
 	}
 
 	LocationType const where = request.Where;

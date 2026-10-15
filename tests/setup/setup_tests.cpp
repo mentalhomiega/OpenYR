@@ -584,6 +584,51 @@ void Test_Install_And_Uninstall(void)
 }
 
 
+// A record whose [Files] list was damaged or written by hand must not make an update or an uninstall
+// delete anything outside the install folder, or the player's settings, saves and log.
+void Test_Damaged_Record(void)
+{
+	std::wstring const folder = Installs + L"\\damaged";
+	std::wstring error;
+	auto const files = Package("engine v1", "2026-10-14i", false, false);
+	Check(Install(folder, files, false, error), "an install to hold a damaged record succeeds");
+
+	std::wstring const outside = Path_Of(Installs, L"outside-the-install.txt");
+	Make_File(outside, "keep me");
+	Make_File(Path_Of(folder, L"user\\RA2MD.INI"), "settings");
+	Make_File(Path_Of(folder, L"Debug\\log.txt"), "log");
+
+	std::string record = Read_Text(Path_Of(folder, L"openyr-install.ini"));
+	record += "..\\outside-the-install.txt\r\n";
+	record += "ui\\..\\..\\outside-the-install.txt\r\n";
+	record += Narrow(outside) + "\r\n";
+	record += "user\\RA2MD.INI\r\n";
+	record += "Debug\\log.txt\r\n";
+	record += "ui/theme.txt\r\n";
+	Make_File(Path_Of(folder, L"openyr-install.ini"), record);
+
+	setup::InstalledType const info = setup::Read_Installed(folder);
+	Check(info.Present && info.Files.size() == 8, "the record's seven program files and the uninstaller are still read");
+	Check(info.Refused.size() == 6, "and the six damaged lines are set aside");
+
+	Check(Install(folder, files, false, error), "an update over a damaged record succeeds");
+	Check(Read_Text(outside) == "keep me", "an update deletes nothing outside the install folder");
+	Check(Read_Text(Path_Of(folder, L"user\\RA2MD.INI")) == "settings" && Read_Text(Path_Of(folder, L"Debug\\log.txt")) == "log", "and keeps the settings and the log a damaged line named");
+	Check(setup::Read_Installed(folder).Refused.empty(), "the update writes a clean record");
+
+	Make_File(Path_Of(folder, L"openyr-install.ini"), record);
+	setup::UninstallType request;
+	request.Folder = folder;
+	request.DeleteData = false;
+	request.Where = Where();
+	std::vector<std::wstring> left;
+	Check(setup::Uninstall_Package(request, nullptr, error, left), "an uninstall over a damaged record succeeds");
+	Check(Read_Text(outside) == "keep me", "an uninstall deletes nothing outside the install folder");
+	Check(Read_Text(Path_Of(folder, L"user\\RA2MD.INI")) == "settings" && Read_Text(Path_Of(folder, L"Debug\\log.txt")) == "log", "and keeps the settings and the log a damaged line named");
+	Check(!Exists(Path_Of(folder, L"Game.exe")), "while the program files are removed");
+}
+
+
 void Test_Config_File(void)
 {
 	std::wstring error;
@@ -756,6 +801,7 @@ int main()
 	Test_Find();
 	Test_Check_Folder();
 	Test_Install_And_Uninstall();
+	Test_Damaged_Record();
 	Test_Shortcuts();
 	Test_Config_File();
 	Test_Refusals();
