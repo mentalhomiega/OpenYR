@@ -43,7 +43,7 @@ related:
     id: TACTION_TOGGLE_TRAIN_CARGO
 ---
 
-A crate is an overlay. Any OverlayType with [`Crate=yes`](/keys/crate/) is collected as a crate. Crates the engine places itself always use the overlay type named by [`WoodCrateImg`](/keys/woodcrateimg/). In a campaign, `WoodCrateImg` and [`CrateImg`](/keys/crateimg/) also decide which result a crate gives.
+A crate is an overlay. Any OverlayType with [`Crate=yes`](/keys/crate/) is collected as a crate. Crates the engine places itself always use the overlay type named by [`WoodCrateImg`](/keys/woodcrateimg/). In a campaign, `WoodCrateImg`, [`CrateImg`](/keys/crateimg/) and [`WaterCrateImg`](/keys/watercrateimg/) also decide which result a crate gives.
 
 Outside a campaign, the engine places random crates, draws each crate's result from weighted shares, and replaces crates as they expire or are collected. A campaign does none of this: its crates come only from the map, from destroyed vehicles and from destroyed structures.
 
@@ -178,7 +178,8 @@ In a campaign, a crate drawn into the map, or a money crate left by a [destroyed
 
 1. An overlay matching `CrateImg` gives the [`SilverCrate`](/keys/silvercrate/) result.
 2. An overlay matching `WoodCrateImg` gives the [`WoodCrate`](/keys/woodcrate/) result, replacing the result from step 1.
-3. Any other crate overlay gives money.
+3. An overlay matching [`WaterCrateImg`](/keys/watercrateimg/) gives the [`WaterCrate`](/keys/watercrate/) result, replacing the result from steps 1 and 2.
+4. Any other crate overlay gives money.
 
 A campaign crate that is collected is not replaced. A `Squad` result becomes money, as described under [results without effect](#settings-and-results-without-effect).
 
@@ -197,7 +198,7 @@ The drawn result is then replaced by a free MCV, delivered through the `Unit` re
 - it owns no vehicle of any [`BaseUnit`](/keys/baseunit/) type;
 - bases are enabled for the match.
 
-Six results are then converted to money. The conversions run after the MCV override, so a house with more than 50 vehicles receives money in place of its free MCV.
+Seven results are then converted to money. The conversions run after the MCV override, so a house with more than 50 vehicles receives money in place of its free MCV.
 
 | Drawn result | Converted to money when |
 | --- | --- |
@@ -207,9 +208,10 @@ Six results are then converted to money. The conversions run after the MCV overr
 | `Speed` | the collector's speed multiplier was already changed |
 | `Firepower` | the collector's firepower multiplier was already changed, unless [`FirepowerCrateStacks=yes`](/keys/firepowercratestacks/); or the collector has no primary weapon |
 | `Cloak` | the collector can already cloak |
+| `Veteran` | the collector is not `Trainable=yes`, or is already elite |
 
 :::caution[The conversions check only the collector]
-`Armor`, `Speed`, `Firepower` and `Cloak` affect every object inside [`CrateRadius`](/keys/crateradius/), but the conversion checks only the collector. A firepower crate collected by an already-boosted vehicle becomes money, even when a dozen unboosted vehicles stand inside the radius.
+`Armor`, `Speed`, `Firepower`, `Cloak` and `Veteran` affect every object inside [`CrateRadius`](/keys/crateradius/), but the conversion checks only the collector. A firepower crate collected by an already-boosted vehicle becomes money, even when a dozen unboosted vehicles stand inside the radius.
 :::
 
 ## What each result does
