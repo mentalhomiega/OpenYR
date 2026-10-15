@@ -45,8 +45,18 @@ Each computer player plays at the difficulty its row names. Hard AI gives the ho
 
 ## What the game remembers
 
-Leaving the screen, whether to play or to cancel, writes each row to `[Skirmish]` in `RA2MD.INI` as `Slot1` to `Slot8`. Each value holds five numbers separated by commas: the choice for the seat (0 Open, 1 Closed, 2 Easy AI, 3 Medium AI, 4 Hard AI), the country's number in the rules' list or `-1` for Random, the color position, the start number or `0` for Random, and the team. The next visit reads them back. A value the screen cannot read, or one that names a country the rules no longer list, leaves that row at its default, which is Random for a country and a start.
+Leaving the screen, whether to play or to cancel, writes the setup to `[Skirmish]` in `RA2MD.INI`:
 
-The first row's name, country and color are the multiplayer preferences kept under [`Handle`](/keys/handle/), [`Side`](/keys/side/) and [`Color`](/keys/color/), which the network lobby shares. The game options on the screen (bases, crates, credits and the rest) are not written to `[Skirmish]`. Until a match starts from this screen, Fog Of War, Re-Deployable MCV, Multi Engineer, Superweapons, Build Off Ally, Short Game and Game Speed show the values of the `[MultiplayerDialogSettings]` section in the rules, as [multiplayer rules](/formats/multiplayer-rules/) describes. After a match starts from it, these options keep that match's values for the rest of the run.
+- `Map` holds the file name of the chosen map.
+- `Slot1` to `Slot8` hold the rows. Each value holds five numbers separated by commas: the choice for the seat (0 Open, 1 Closed, 2 Easy AI, 3 Medium AI, 4 Hard AI), the country's number in the rules' list or `-1` for Random, the color position, the start number or `0` for Random, and the team.
+- `Units`, `Credits`, `Tech` and `Speed` hold the unit count, the credits, the tech level and the game speed. `Bases`, `Crates`, `Fog`, `Bridges`, `Redeploy`, `ShortGame`, `Engineer`, `SuperWeapons` and `BuildOffAlly` hold the switches as `0` or `1`.
+
+The screen reads these keys each time it opens. The setup therefore comes back after a game started from the screen ends, after a cancel, and after the game is closed and started again. A switch or number the file lacks leaves that setting at the rules' value.
+
+The remembered map is used only while its file is on hand; otherwise the first map that is on hand takes its place. A map with fewer start positions than the saved players keeps the rows it can seat, and the rows past its last start position stay in the file. A country or start that the lists no longer hold becomes Random. A kind past the end of the list is held at the last kind.
+
+Until the screen has written its options, Fog Of War, Re-Deployable MCV, Multi Engineer, Superweapons, Build Off Ally, Short Game and Game Speed show the values of the `[MultiplayerDialogSettings]` section in the rules, as [multiplayer rules](/formats/multiplayer-rules/) describes.
+
+The first row's name, country and color are the multiplayer preferences kept under [`Handle`](/keys/handle/), [`Side`](/keys/side/) and [`Color`](/keys/color/), which the network lobby shares.
 
 A game started from a [launch file](/formats/spawn-ini/) does not use this screen or `[Skirmish]`.

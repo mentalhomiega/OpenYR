@@ -1,0 +1,12 @@
+; Opens the skirmish lobby with the setup the run remembers, then cancels it. Its one "AUTOTEST lobby" block
+; shows what the lobby restored. Run it with -Menus and a -Settings text that holds the case to test, as in
+; skirmish-lobby-restore.txt, for example a [Skirmish] Map= that is not on hand. See docs/AUTOTEST.md.
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui click cancel
+ui wait 1500
+ui quit

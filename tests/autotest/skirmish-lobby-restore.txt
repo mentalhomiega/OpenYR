@@ -1,0 +1,35 @@
+; The skirmish lobby keeps its last setup. The -Settings text below writes a remembered setup into the
+; settings file: four players on XMP03T4.MAP (Anytown, Amerika, four start spots). The script opens the
+; lobby and starts a game. The computers on start spots 2 to 4 (Spawn2 to Spawn4) are destroyed, so the
+; player wins; skipscore passes over the score screen. The lobby opens again, is cancelled, and opens a
+; third time. The log has one "AUTOTEST lobby" block per opening, and the three blocks must match.
+; Run from the workspace root (the folder that holds scripts/), in PowerShell:
+;   $s = "[Skirmish]`r`nMap=XMP03T4.MAP`r`nUnits=8`r`nCredits=5000`r`nTech=5`r`nSpeed=3`r`nBases=0`r`nCrates=1`r`nFog=1`r`nBridges=0`r`nRedeploy=0`r`nShortGame=0`r`nEngineer=1`r`nSuperWeapons=0`r`nBuildOffAlly=1`r`nSlot1=0,-1,0,0,0,0`r`nSlot2=3,2,1,2,1,0`r`nSlot3=4,0,2,3,1,0`r`nSlot4=2,-1,3,4,2,0"
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/skirmish-lobby-restore.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 200 -Settings $s -Filter "AUTOTEST lobby|game over|Exception"
+0 continuewin
+0 skipscore
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui click ok
+ui wait 60000
+60 log SKIRMISH_FIRST_GAME
+200 killhouse Spawn2 0
+200 killhouse Spawn3 0
+200 killhouse Spawn4 0
+ui waitfor ok
+ui wait 1000
+ui shot skirmish-lobby-after-game
+ui click cancel
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui shot skirmish-lobby-after-cancel
+ui click cancel
+ui wait 1500
+ui quit

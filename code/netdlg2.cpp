@@ -20,6 +20,7 @@
 #include "_rules.h"
 #include "_timer.h"
 #include "addon.h"
+#include "autotest.h"
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -351,6 +352,52 @@ static void Net2Refresh_Preview(void)
 }
 
 
+// The map the host last picked in a LAN lobby, read from the settings file the first time a host
+// lobby opens in a run and written back whenever a map is picked.
+static bool Lan_Map_Loaded = false;
+static std::string Lan_Map;
+
+
+static void Load_Lan_Map(void)
+{
+	if (!Lan_Map_Loaded) {
+		Lan_Map_Loaded = true;
+		Lan_Map = ConfigINI.Get_String("LAN", "Map", "");
+	}
+}
+
+
+static void Remember_Lan_Map(void)
+{
+	Lan_Map_Loaded = true;
+	Lan_Map = Session.ScenarioFileName;
+	ConfigINI.Put_String("LAN", "Map", Lan_Map.c_str());
+}
+
+
+/// <summary>
+/// Gives a hosted LAN game the remembered map, or the first map on hand when that one is not. Only
+/// the session takes the map, so the loaded scenario is left alone until the game starts.
+/// </summary>
+static void Restore_Lan_Map(void)
+{
+	Load_Lan_Map();
+
+	int index = Find_Available_Scenario(Lan_Map.c_str());
+	if (index < 0) {
+		index = First_Available_Scenario();
+	}
+	if (index < 0) {
+		index = 0;
+	}
+
+	Session.Options.ScenarioIndex = index;
+	if (index < Session.Scenarios.Count()) {
+		Select_Scenario_Session(index);
+	}
+}
+
+
 void Net2Pick_Map(void)
 {
 	int old = Session.Options.ScenarioIndex;
@@ -367,6 +414,8 @@ void Net2Pick_Map(void)
 	} else {
 		if (!Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex)) {
 			Session.Options.ScenarioIndex = old;
+		} else {
+			Remember_Lan_Map();
 		}
 		IsRandomMap = true;
 		Net2Refresh_Preview();
@@ -407,9 +456,8 @@ void Net2Host_Game(void)
 
 		Session.NetOpen = true;
 		Session.NetStealth = false;
-		Session.Options.ScenarioIndex = 0;
+		Restore_Lan_Map();
 		Session.PlayingAgainstVersion = VerNum.Version_Number();
-		Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
 
 		Clear_Vector(&Session.Players);
 
@@ -441,6 +489,11 @@ void Net2Host_Game(void)
 bool Net2Can_Start(void)
 {
 	Session.Write_MultiPlayer_Settings();
+
+	// The map is set on the session when the host lobby opens, so the loaded scenario is named here.
+	if (Session.ScenarioFileName[0] != '\0') {
+		strcpy(Scen->ScenarioName, Session.ScenarioFileName);
+	}
 
 	bool ok = true;
 	if (Session.Players.Count() == 1) {
@@ -531,8 +584,10 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 			srand(NonCriticalRandomNumber(1, 0x7FFF));
 			Seed = rand();
 
-			Set_Scenario_Info_From_Index(0);
-			Session.Options.ScenarioIndex = 0;
+			Restore_Lan_Map();
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST lan host map %s\n", Session.ScenarioFileName);
+			}
 			Update_Network_Dialog_Preview();
 
 			if (Session.Players.Count() > 0) {
@@ -1120,6 +1175,9 @@ bool Net2Remote_Connect(void)
 					if (responses[i] == NET_REQ_SCENARIO) {
 						Session.ScenarioRequests[Session.RequestCount++] = i;
 					}
+				}
+				if (Session.ScenarioFileName[0] != '\0') {
+					strcpy(Scen->ScenarioName, Session.ScenarioFileName);
 				}
 				Send_Remote_File(Scen->ScenarioName, false, true);
 			}

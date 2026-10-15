@@ -922,11 +922,7 @@ void Receive_Random_Map_Preview(void)
 bool Set_Scenario_Info_From_Index(int index)
 {
 	if (index == -1) {
-		Session.ScenarioFileName[0] = '\0';
-		Session.ScenarioDigest[0] = '\0';
-		Session.ScenarioFileLength = 0;
-		Session.ScenarioIsOfficial = 0;
-		Session.Options.ScenarioDescription[0] = '\0';
+		Select_Scenario_Session(-1);
 		return(false);
 	}
 
@@ -937,14 +933,70 @@ bool Set_Scenario_Info_From_Index(int index)
 		return(false);
 	}
 
+	Select_Scenario_Session(index);
+	strcpy(Scen->ScenarioName, Session.ScenarioFileName);
+	return(true);
+}
+
+
+/// <summary>
+/// Copies a scenario's description, digest, file name and size into the session. The loaded
+/// scenario is not touched, and nothing is shown, so a lobby can use it while a game is not running.
+/// </summary>
+/// <param name="index">Index into the multiplayer scenario list, or -1 to clear the session's fields.</param>
+/// <remarks>The caller checks that the file is on hand and sets Session.Options.ScenarioIndex.</remarks>
+void Select_Scenario_Session(int index)
+{
+	if (index == -1) {
+		Session.ScenarioFileName[0] = '\0';
+		Session.ScenarioDigest[0] = '\0';
+		Session.ScenarioFileLength = 0;
+		Session.ScenarioIsOfficial = 0;
+		Session.Options.ScenarioDescription[0] = '\0';
+		return;
+	}
+
 	strcpy(Session.Options.ScenarioDescription, Session.Scenarios[index]->Description());
 	strcpy(Session.ScenarioDigest, (Session.Scenarios[index])->Get_Digest());
 	strcpy(Session.ScenarioFileName, (Session.Scenarios[index])->Get_Filename());
-	strcpy(Scen->ScenarioName, Session.ScenarioFileName);
 	Session.ScenarioIsOfficial = Session.Scenarios[index]->Get_Official();
 	Session.ScenarioFileLength = CCFileClass(Session.ScenarioFileName).Size();
-	Session.ScenarioFileLength = CCFileClass(Session.ScenarioFileName).Size();
-	return(true);
+}
+
+
+/// <summary>
+/// Finds the first multiplayer scenario whose file is on hand.
+/// </summary>
+/// <returns>The index into the scenario list, or -1 when none is on hand.</returns>
+int First_Available_Scenario(void)
+{
+	for (int index = 0; index < Session.Scenarios.Count(); index++) {
+		if (CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available()) {
+			return(index);
+		}
+	}
+	return(-1);
+}
+
+
+/// <summary>
+/// Finds the multiplayer scenario with a file name, if its file is on hand. The name is compared
+/// without regard to case.
+/// </summary>
+/// <param name="filename">The scenario's file name; an empty name finds nothing.</param>
+/// <returns>The index into the scenario list, or -1 when no scenario with that name is on hand.</returns>
+int Find_Available_Scenario(char const * filename)
+{
+	if (filename == NULL || filename[0] == '\0') {
+		return(-1);
+	}
+
+	for (int index = 0; index < Session.Scenarios.Count(); index++) {
+		if (stricmp(Session.Scenarios[index]->Get_Filename(), filename) == 0 && CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available()) {
+			return(index);
+		}
+	}
+	return(-1);
 }
 
 

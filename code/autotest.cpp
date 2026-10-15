@@ -4017,6 +4017,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "skipscore") {
+		// skipscore: a multiplayer or skirmish win passes over its score screen, as a launch file's
+		// SkipScoreScreen does, so the run reaches the lobby without a key press.
+		Session.SkipScoreScreen = true;
+		DebugString("AUTOTEST skipscore\n");
 	} else if (step.Command == "lansession") {
 		// lansession: marks the game as a network game, so steps can see the multiplayer limits.
 		Session.Type = GAME_IPX;
