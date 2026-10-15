@@ -89,6 +89,7 @@
 #include "gamedirs.h"
 #include "gamedlg.h"
 #include "globals.h"
+#include "hangwatch.h"
 #include "houstype.h"
 #include "incdec.h"
 #include "infatype.h"
@@ -373,6 +374,9 @@ void Main_Game(int argc, char * argv[])
 		}
 		return;
 	}
+
+	// The watchdog times only what runs after one-time initialization.
+	Hang_Watchdog_Start();
 
 	/*
 	**	Game processing loop:

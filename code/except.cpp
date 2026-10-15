@@ -180,9 +180,20 @@ static char FullDumpPath[MAX_PATH];
 // Report storage. Allocating any of this at crash time would depend on the heap that the
 // crash may have been caused by.
 static char ExceptionReport[EXCEPTION_REPORT_SIZE];
-static unsigned ExceptionReportLength = 0;
 static bool ExceptionReportFinished = false;
 static char PendingMessage[1024];
+
+// A report being built. The crash report uses CrashReportSink; a thread that writes another report,
+// such as the hang watchdog, selects its own sink so that the two never share text.
+struct ReportSinkType
+{
+	char * Text;
+	unsigned Capacity;
+	unsigned Length;
+};
+
+static ReportSinkType CrashReportSink = { ExceptionReport, sizeof(ExceptionReport), 0 };
+static thread_local ReportSinkType * ThreadReportSink = nullptr;
 
 struct ModuleEntryType
 {
@@ -262,7 +273,9 @@ static ExceptionCodeType const ExceptionCodes[] = {
 	{ EXCEPTION_OPENTS_PURECALL, "OPENTS_PURE_VIRTUAL_CALL",
 		"A pure virtual function was called, usually on a partly built or already destroyed object." },
 	{ EXCEPTION_OPENTS_INVALID_PARAMETER, "OPENTS_INVALID_PARAMETER",
-		"A C runtime function was called with an argument it rejects." }
+		"A C runtime function was called with an argument it rejects." },
+	{ EXCEPTION_OPENTS_STALL, "OPENTS_MAIN_THREAD_STALL",
+		"The main thread stopped pumping messages. The hang watchdog captured it while it was suspended." }
 };
 
 // Test faults are requested by name so that every path through this file can be reached
@@ -311,20 +324,22 @@ static void Exception_Printf(_Printf_format_string_ char const * format, ...)
 		return;
 	}
 
+	ReportSinkType & sink = (ThreadReportSink != nullptr) ? *ThreadReportSink : CrashReportSink;
+
 	unsigned length = (unsigned)written;
 	if (length > sizeof(scratch) - 1) {
 		length = sizeof(scratch) - 1;
 	}
-	if (ExceptionReportLength + length > sizeof(ExceptionReport) - 1) {
-		length = (unsigned)(sizeof(ExceptionReport) - 1 - ExceptionReportLength);
+	if (sink.Length + length > sink.Capacity - 1) {
+		length = (unsigned)(sink.Capacity - 1 - sink.Length);
 	}
 	if (length == 0) {
 		return;
 	}
 
-	memcpy(ExceptionReport + ExceptionReportLength, scratch, length);
-	ExceptionReportLength += length;
-	ExceptionReport[ExceptionReportLength] = '\0';
+	memcpy(sink.Text + sink.Length, scratch, length);
+	sink.Length += length;
+	sink.Text[sink.Length] = '\0';
 }
 
 
@@ -470,10 +485,10 @@ static BOOL Guarded_Sym_Get_Line(DWORD_PTR address, DWORD * displacement, IMAGEH
 }
 
 
-static BOOL Guarded_Stack_Walk(STACKFRAME64 * frame, CONTEXT * context)
+static BOOL Guarded_Stack_Walk(HANDLE thread, STACKFRAME64 * frame, CONTEXT * context)
 {
 	__try {
-		return(StackWalk64(MACHINE_TYPE, GetCurrentProcess(), GetCurrentThread(),
+		return(StackWalk64(MACHINE_TYPE, GetCurrentProcess(), thread,
 					frame, context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL));
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
 		return(FALSE);
@@ -481,11 +496,16 @@ static BOOL Guarded_Stack_Walk(STACKFRAME64 * frame, CONTEXT * context)
 }
 
 
+// The code of the fault that ended the last dump write, or zero. A writer that faults leaves no
+// Win32 error behind, so the code is kept here for the caller to report.
+static DWORD LastDumpFault = 0;
+
 static BOOL Guarded_Mini_Dump_Write(HANDLE file, MINIDUMP_TYPE flags, MINIDUMP_EXCEPTION_INFORMATION * info)
 {
 	__try {
 		return(MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), file, flags, info, NULL, NULL));
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
+		LastDumpFault = GetExceptionCode();
 		return(FALSE);
 	}
 }
@@ -949,7 +969,10 @@ static void Append_Frame_Chain(CONTEXT const * context)
 /// <summary>
 /// Appends the call stack as reconstructed by the symbol handler.
 /// </summary>
-static void Append_Call_Stack(CONTEXT const * context)
+/// <param name="context">The machine state to start the walk from.</param>
+/// <param name="thread">The thread the state was taken from: the current thread for a crash, or a
+/// suspended thread for a stall.</param>
+static void Append_Call_Stack(CONTEXT const * context, HANDLE thread)
 {
 	Exception_Printf("\r\nCall stack (symbol handler)\r\n---------------------------\r\n");
 
@@ -973,7 +996,7 @@ static void Append_Call_Stack(CONTEXT const * context)
 
 	for (unsigned depth = 0; depth < MAX_FRAME_DEPTH; depth++) {
 		EnterCriticalSection(&DbgHelpLock);
-		BOOL const walked = Guarded_Stack_Walk(&frame, &working);
+		BOOL const walked = Guarded_Stack_Walk(thread, &frame, &working);
 		LeaveCriticalSection(&DbgHelpLock);
 
 		if (!walked || frame.AddrPC.Offset == 0) {
@@ -1081,6 +1104,16 @@ static void Guarded_Crash_Site(CONTEXT const * context)
 }
 
 
+static void Guarded_Stall_Address(CONTEXT const * context)
+{
+	__try {
+		Append_Address(Instruction_Pointer(context), "Stopped at  : ");
+	} __except (EXCEPTION_EXECUTE_HANDLER) {
+		Exception_Printf("  <stopped address faulted>\r\n");
+	}
+}
+
+
 static void Guarded_Registers(CONTEXT const * context)
 {
 	__try {
@@ -1105,10 +1138,10 @@ static void Guarded_Frame_Chain(CONTEXT const * context)
 }
 
 
-static void Guarded_Call_Stack(CONTEXT const * context)
+static void Guarded_Call_Stack(CONTEXT const * context, HANDLE thread)
 {
 	__try {
-		Append_Call_Stack(context);
+		Append_Call_Stack(context, thread);
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
 		Exception_Printf("  <call stack walk faulted (corrupt stack or symbols); skipped>\r\n");
 	}
@@ -1195,7 +1228,7 @@ static bool Get_Link_Time(SYSTEMTIME * when)
 /// <param name="crashed_thread">The thread that faulted.</param>
 static void Build_Exception_Report(EXCEPTION_POINTERS * e_info, DWORD crashed_thread)
 {
-	ExceptionReportLength = 0;
+	CrashReportSink.Length = 0;
 	ExceptionReport[0] = '\0';
 
 	Exception_Printf("OpenTS exception report\r\n");
@@ -1242,7 +1275,7 @@ static void Build_Exception_Report(EXCEPTION_POINTERS * e_info, DWORD crashed_th
 	Guarded_Crash_Site(e_info->ContextRecord);
 	Guarded_Registers(e_info->ContextRecord);
 	Guarded_Frame_Chain(e_info->ContextRecord);
-	Guarded_Call_Stack(e_info->ContextRecord);
+	Guarded_Call_Stack(e_info->ContextRecord, GetCurrentThread());
 	Guarded_Module_List();
 	Guarded_Memory_Status();
 	Guarded_Stack_Dump(e_info->ContextRecord);
@@ -1270,14 +1303,22 @@ static bool Write_Whole_File(char const * path, void const * data, DWORD length,
 }
 
 
+// The reason the last dump was not written: the Win32 error or the fault code, or zero when the
+// dump was not allowed yet.
+static DWORD LastMiniDumpError = 0;
+
 /// <summary>
-/// Writes a minidump of the crashed process.
+/// Writes a minidump of this process.
 /// </summary>
 /// <param name="path">The file to write.</param>
 /// <param name="full_memory">True to include the whole address space rather than a summary.</param>
+/// <param name="thread_id">The thread the dump names as the one that stopped. Used only with pointers.</param>
+/// <param name="pointers">The exception record and machine state for that thread, or null for a dump
+/// with no exception record.</param>
 /// <returns>True when the dump was written.</returns>
-static bool Write_Mini_Dump(char const * path, bool full_memory)
+static bool Write_Mini_Dump(char const * path, bool full_memory, DWORD thread_id, EXCEPTION_POINTERS * pointers)
 {
+	LastMiniDumpError = 0;
 	if (!Dump_Allowed()) {
 		return(false);
 	}
@@ -1288,6 +1329,7 @@ static bool Write_Mini_Dump(char const * path, bool full_memory)
 	HANDLE const file = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
 				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS, NULL);
 	if (file == INVALID_HANDLE_VALUE) {
+		LastMiniDumpError = GetLastError();
 		return(false);
 	}
 
@@ -1296,8 +1338,8 @@ static bool Write_Mini_Dump(char const * path, bool full_memory)
 
 	// The dump normally runs on the dumper thread, so the thread to open the dump on has to
 	// be named explicitly. Left to itself the dump would present the reporting thread.
-	info.ThreadId = CrashedThreadId;
-	info.ExceptionPointers = &SavedPointers;
+	info.ThreadId = thread_id;
+	info.ExceptionPointers = pointers;
 	info.ClientPointers = FALSE;
 
 	MINIDUMP_TYPE flags = (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithDataSegs
@@ -1308,11 +1350,19 @@ static bool Write_Mini_Dump(char const * path, bool full_memory)
 		flags = (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithDataSegs | MiniDumpWithFullMemory);
 	}
 
+	LastDumpFault = 0;
+	SetLastError(ERROR_SUCCESS);
+
 	EnterCriticalSection(&DbgHelpLock);
-	BOOL const written = Guarded_Mini_Dump_Write(file, flags, &info);
+	BOOL const written = Guarded_Mini_Dump_Write(file, flags, (pointers != NULL) ? &info : NULL);
+	DWORD const writer_error = GetLastError();
 	LeaveCriticalSection(&DbgHelpLock);
 
 	CloseHandle(file);
+
+	if (written == FALSE) {
+		LastMiniDumpError = (LastDumpFault != 0) ? LastDumpFault : writer_error;
+	}
 
 	return(written != FALSE);
 }
@@ -1429,7 +1479,7 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 	// the artifact that keeps its value when the rest of the report does not survive.
 	char dump_path[MAX_PATH];
 	snprintf(dump_path, sizeof(dump_path), "%s\\minidump.dmp", ArtifactFolder);
-	bool const dumped = Write_Mini_Dump(dump_path, false);
+	bool const dumped = Write_Mini_Dump(dump_path, false, crashed_thread, e_info);
 
 	Build_Exception_Report(e_info, crashed_thread);
 
@@ -1446,8 +1496,184 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 
 	// Written through, unlike the dump: the report is small, and it is what survives if the
 	// machine is lost before the file system catches up.
-	Write_Whole_File(report_path, ExceptionReport, ExceptionReportLength,
+	Write_Whole_File(report_path, ExceptionReport, CrashReportSink.Length,
 				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH);
+}
+
+
+/// <summary>
+/// Takes the symbol lock for a stall capture, waiting for another holder to let go.
+/// </summary>
+/// <param name="wait_milliseconds">How long to wait before giving up.</param>
+/// <returns>True when the lock is held and must be released with Exception_Stall_Unlock.</returns>
+/// <remarks>
+/// Taking the lock before the stalled thread is suspended keeps that thread out of the symbol
+/// handler while it is stopped. The lock is recursive, so the capture may take it again.
+/// </remarks>
+bool Exception_Stall_Lock(unsigned wait_milliseconds)
+{
+	if (!DbgHelpLockReady) {
+		return(false);
+	}
+
+	ULONGLONG const deadline = GetTickCount64() + wait_milliseconds;
+	while (!TryEnterCriticalSection(&DbgHelpLock)) {
+		if (GetTickCount64() >= deadline) {
+			return(false);
+		}
+		Sleep(1);
+	}
+
+	return(true);
+}
+
+
+/// <summary>
+/// Releases the symbol lock taken by Exception_Stall_Lock.
+/// </summary>
+void Exception_Stall_Unlock(void)
+{
+	LeaveCriticalSection(&DbgHelpLock);
+}
+
+
+/// <summary>
+/// Refreshes the module table that addresses in a stall report are named from.
+/// </summary>
+/// <remarks>
+/// Call before the thread is suspended. The snapshot can wait on the loader lock, which a
+/// suspended thread may hold.
+/// </remarks>
+void Exception_Refresh_Module_Table(void)
+{
+	Guarded_Capture_Module_Table();
+}
+
+
+/// <summary>
+/// Writes the call stack of a stalled thread into a text buffer.
+/// </summary>
+/// <param name="thread">A handle to the thread, which the caller has suspended.</param>
+/// <param name="thread_id">The thread's identifier, shown in the report.</param>
+/// <param name="context">The thread's machine state, from GetThreadContext on the suspended thread.</param>
+/// <param name="text">The buffer to write into. The text is always null terminated.</param>
+/// <param name="size">The size of the buffer in characters.</param>
+/// <returns>True when the buffer holds text.</returns>
+/// <remarks>
+/// The caller must hold the symbol lock from Exception_Stall_Lock. Symbols are named only when the
+/// symbol handler is ready; otherwise the stack is listed as return addresses.
+/// </remarks>
+bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, char * text, unsigned size)
+{
+	if (text == NULL || size == 0 || context == NULL) {
+		return(false);
+	}
+
+	text[0] = '\0';
+
+	ReportSinkType sink = { text, size, 0 };
+	ReportSinkType * const previous = ThreadReportSink;
+	ThreadReportSink = &sink;
+
+	Exception_Printf("Thread      : 0x%04X%s\r\n", thread_id, (thread_id == MainThreadId) ? " (main thread)" : "");
+	Guarded_Stall_Address(context);
+	Guarded_Call_Stack(context, thread);
+
+	if (!Symbols_Usable()) {
+		Guarded_Frame_Chain(context);
+	}
+
+	ThreadReportSink = previous;
+
+	return(sink.Length > 0);
+}
+
+
+/// <summary>
+/// Creates the folder for a stall's artifacts, named for the time and the process.
+/// </summary>
+/// <returns>True when the folder was created and its path is in folder.</returns>
+static bool Create_Stall_Folder(char * folder, unsigned folder_size)
+{
+	SYSTEMTIME now;
+	GetLocalTime(&now);
+
+	char root[MAX_PATH];
+	snprintf(root, sizeof(root), "%s\\Exceptions", ExecutableDirectory);
+	CreateDirectoryA(root, NULL);
+
+	snprintf(folder, folder_size, "%s\\exception-hang-%04u%02u%02u-%02u%02u%02u-%u",
+				root, now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond,
+				GetCurrentProcessId());
+
+	if (!CreateDirectoryA(folder, NULL)) {
+		folder[0] = '\0';
+		return(false);
+	}
+
+	return(true);
+}
+
+
+/// <summary>
+/// Writes a stall's minidump and its report, in a folder of its own.
+/// </summary>
+/// <param name="text">The report to save beside the dump, as Exception_Describe_Stall wrote it.</param>
+/// <param name="folder">Receives the folder's path, or an empty string when no folder was created.</param>
+/// <param name="folder_size">The size of the folder buffer in characters.</param>
+/// <param name="error">Receives the reason the dump was not written, or zero. May be null.</param>
+/// <returns>True when the minidump was written.</returns>
+/// <remarks>
+/// The caller must hold the symbol lock and keep the thread suspended until this returns. The dump
+/// is skipped, as with a crash, while the symbol handler is starting up. A dump that fails part way
+/// can leave a partial minidump.dmp, which the report names.
+/// </remarks>
+bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folder_size, DWORD * error)
+{
+	if (error != NULL) {
+		*error = 0;
+	}
+	if (folder == NULL || folder_size == 0) {
+		return(false);
+	}
+
+	folder[0] = '\0';
+	if (!Create_Stall_Folder(folder, folder_size)) {
+		return(false);
+	}
+
+	// A stall raises no exception, so the dump has no exception record. The threads are captured
+	// as they stand, and the stalled one is already suspended.
+	char dump_path[MAX_PATH];
+	snprintf(dump_path, sizeof(dump_path), "%s\\minidump.dmp", folder);
+	bool const dumped = Write_Mini_Dump(dump_path, false, 0, NULL);
+	DWORD const dump_error = dumped ? 0 : LastMiniDumpError;
+	if (error != NULL) {
+		*error = dump_error;
+	}
+
+	char status[160];
+	if (dumped) {
+		snprintf(status, sizeof(status), "Minidump    : written\r\n");
+	} else if (dump_error == 0) {
+		snprintf(status, sizeof(status), "Minidump    : not written, because the symbol handler was still starting\r\n");
+	} else {
+		snprintf(status, sizeof(status), "Minidump    : not written, error 0x%08lX; a partial file may remain\r\n", dump_error);
+	}
+
+	char report_path[MAX_PATH];
+	snprintf(report_path, sizeof(report_path), "%s\\stall.txt", folder);
+
+	HANDLE const report = CreateFileA(report_path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
+				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
+	if (report != INVALID_HANDLE_VALUE) {
+		DWORD written = 0;
+		WriteFile(report, text, (DWORD)strlen(text), &written, NULL);
+		WriteFile(report, status, (DWORD)strlen(status), &written, NULL);
+		CloseHandle(report);
+	}
+
+	return(dumped);
 }
 
 
@@ -1501,7 +1727,7 @@ static INT_PTR CALLBACK Exception_Dialog_Proc(HWND window, UINT message, WPARAM 
 					HCURSOR const previous = SetCursor(LoadCursor(NULL, IDC_WAIT));
 
 					snprintf(FullDumpPath, sizeof(FullDumpPath), "%s\\fulldump.dmp", ArtifactFolder);
-					bool const written = Write_Mini_Dump(FullDumpPath, true);
+					bool const written = Write_Mini_Dump(FullDumpPath, true, CrashedThreadId, &SavedPointers);
 
 					SetCursor(previous);
 					SetDlgItemText(window, IDC_EXCEPTION_FULLDUMP, written ? "Dump saved" : "Dump failed");

@@ -36,4 +36,10 @@ bool Delete_Files_Older_Than(char const * directory, char const * pattern, unsig
 void __cdecl DebugString(_Printf_format_string_ char const * string, ...);
 void __cdecl DebugStringNoPrefix(_Printf_format_string_ char const * string, ...);
 
+// Writes each line of the text to the debug log, stamped as DebugString stamps a line, then flushes
+// the log to disk. Returns false without writing when the logging lock stays busy for the wait.
+#if defined(_WIN32)
+bool Debug_Log_Block(char const * text, unsigned wait_milliseconds);
+#endif
+
 char const * Last_Error_Text(unsigned long error);

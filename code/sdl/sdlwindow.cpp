@@ -12,6 +12,7 @@
 #include "autotest.h"
 #include "dbgprint.h"
 #include "gamewindow.h"
+#include "hangwatch.h"
 #include "resource.h"
 #include "sdl/sdlevents.h"
 #include "sdl/sdlinput.h"
@@ -564,6 +565,9 @@ bool Main_Window_Desktop_Size(int & width, int & height)
 
 void Main_Window_Pump_Events(void)
 {
+	// The only place the SDL queue is polled, so every message loop beats the hang watchdog here.
+	Hang_Watchdog_Beat();
+
 	if (_Window == nullptr) {
 		return;
 	}
@@ -803,6 +807,7 @@ void Main_Window_Set_Clipboard_Text(std::string const & text)
 
 void Main_Window_Error_Box(char const * title, char const * text)
 {
+	HangWatchDialogScope const dialog;
 	Begin_Native_Modal();
 	if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, text, _Window)) {
 		DebugString("SDL: the message box was not shown: %s\n", SDL_GetError());
@@ -827,6 +832,7 @@ bool Main_Window_Confirm_Box(char const * title, char const * text, char const *
 	box.numbuttons = SDL_arraysize(buttons);
 	box.buttons = buttons;
 
+	HangWatchDialogScope const dialog;
 	Begin_Native_Modal();
 	int button = -1;
 	bool const shown = SDL_ShowMessageBox(&box, &button);

@@ -1,0 +1,9 @@
+; The hang watchdog check for a menu. The UI script holds the main thread for 8 seconds on the main menu,
+; from inside the menu's loop and between two message pumps. The watchdog should report it after 5 seconds
+; and report the thread again afterwards. Run from the workspace root, with the build's own copy of the game:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent23/tests/autotest/hang-watchdog-menu-stall.txt -InstallDir build-agent23/bin/Release -Menus -Seconds 90 -Filter "HANG|UISCRIPT|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui stall 8000
+ui wait 1000
+ui quit

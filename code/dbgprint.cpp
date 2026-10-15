@@ -606,6 +606,71 @@ void __cdecl DebugStringNoPrefix(char const * string, ...)
 
 
 /// <summary>
+/// Writes text to the debug log one line at a time, then flushes the log to disk.
+/// </summary>
+/// <param name="text">The text to write. A carriage return before a newline is dropped.</param>
+/// <param name="wait_milliseconds">How long to wait for the logging lock before giving up.</param>
+/// <returns>False, with nothing written, when the lock stayed busy for that long.</returns>
+/// <remarks>
+/// The hang watchdog calls this while the thread that may hold the logging lock is suspended, so
+/// the wait is bounded. Lines longer than the message buffer are cut short.
+/// </remarks>
+bool Debug_Log_Block(char const * text, unsigned wait_milliseconds)
+{
+	DWORD const self = GetCurrentThreadId();
+
+	// A caller that already holds the lock would wait for itself.
+	if (text == NULL || DebugLockOwner == self) {
+		return(false);
+	}
+
+	ULONGLONG const deadline = GetTickCount64() + wait_milliseconds;
+	while (!TryAcquireSRWLockExclusive(&DebugLock)) {
+		if (GetTickCount64() >= deadline) {
+			return(false);
+		}
+		Sleep(1);
+	}
+
+	DebugLockOwner = self;
+	Init_Locked();
+
+	char line[DEBUG_MESSAGE_MAX];
+	while (*text != '\0') {
+		size_t length = 0;
+		while (text[length] != '\0' && text[length] != '\n' && length < sizeof(line) - 2) {
+			length++;
+		}
+
+		size_t used = 0;
+		for (size_t index = 0; index < length; index++) {
+			if (text[index] != '\r') {
+				line[used++] = text[index];
+			}
+		}
+		line[used++] = '\n';
+		line[used] = '\0';
+
+		Write_Message_Locked(line, true);
+
+		text += length;
+		if (*text == '\n') {
+			text++;
+		}
+	}
+
+	if (DebugFile != INVALID_HANDLE_VALUE) {
+		FlushFileBuffers(DebugFile);
+	}
+
+	DebugLockOwner = 0;
+	ReleaseSRWLockExclusive(&DebugLock);
+
+	return(true);
+}
+
+
+/// <summary>
 /// Returns the system message text for a Win32 error code, in a buffer owned by the calling
 /// thread.
 /// </summary>
