@@ -28,6 +28,10 @@ wchar_t const * const ProgressClass = L"OpenYRLauncherProgress";
 std::uint64_t const FeedLimit = 1024 * 1024;
 DWORD const UpdateTimeoutMs = 15 * 60 * 1000;
 
+// WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 and _TLS1_3, which older headers do not define.
+DWORD const SecureProtocolTls12 = 0x00000800;
+DWORD const SecureProtocolTls13 = 0x00002000;
+
 
 /*
  * Opens a GET request for an https URL. The feed passes short timeouts, so a dead network starts
@@ -61,6 +65,13 @@ bool Open_Request(std::wstring const & url, DWORD resolve_ms, DWORD connect_ms, 
 	}
 	WinHttpSetTimeouts(session, resolve_ms, connect_ms, send_ms, receive_ms);
 
+	// Offer TLS 1.2 and 1.3 only. A system that does not know 1.3 refuses the pair, and then gets 1.2 alone.
+	DWORD protocols = SecureProtocolTls12 | SecureProtocolTls13;
+	if (!WinHttpSetOption(session, WINHTTP_OPTION_SECURE_PROTOCOLS, &protocols, sizeof(protocols))) {
+		protocols = SecureProtocolTls12;
+		WinHttpSetOption(session, WINHTTP_OPTION_SECURE_PROTOCOLS, &protocols, sizeof(protocols));
+	}
+
 	connection = WinHttpConnect(session, host, parts.nPort, 0);
 	if (connection == nullptr) {
 		error = L"Could not reach " + std::wstring(host) + L".";
@@ -74,6 +85,10 @@ bool Open_Request(std::wstring const & url, DWORD resolve_ms, DWORD connect_ms, 
 		error = L"Could not make the request.";
 		return false;
 	}
+
+	// A redirect from https to plain http is refused. This is WinHTTP's default, set here so it stays so.
+	DWORD redirects = WINHTTP_OPTION_REDIRECT_POLICY_DISALLOW_HTTPS_TO_HTTP;
+	WinHttpSetOption(request, WINHTTP_OPTION_REDIRECT_POLICY, &redirects, sizeof(redirects));
 
 	std::wstring const headers = L"Accept: application/vnd.github+json\r\n";
 	if (!WinHttpSendRequest(request, headers.c_str(), static_cast<DWORD>(headers.size()), WINHTTP_NO_REQUEST_DATA, 0, 0, 0)
@@ -222,6 +237,8 @@ bool Fetch_Text(std::wstring const & source, std::string & body, std::wstring & 
 
 bool Download_File(std::wstring const & source, std::wstring const & path, ProgressType const & progress, std::wstring & error)
 {
+	error.clear();
+
 	if (Source_Kind(source) == SourceType::LocalFile) {
 		if (!CopyFileW(source.c_str(), path.c_str(), FALSE)) {
 			error = L"Could not copy " + source + L".";
@@ -249,11 +266,17 @@ bool Download_File(std::wstring const & source, std::wstring const & path, Progr
 		return false;
 	}
 
+	// The length is read as text, since a number query cannot hold more than 4 GB.
 	std::uint64_t total = 0;
-	DWORD length = 0;
-	DWORD length_size = sizeof(length);
-	if (WinHttpQueryHeaders(request, WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &length, &length_size, WINHTTP_NO_HEADER_INDEX)) {
-		total = length;
+	wchar_t length[32] = {};
+	DWORD length_size = sizeof(length) - sizeof(wchar_t);
+	if (WinHttpQueryHeaders(request, WINHTTP_QUERY_CONTENT_LENGTH, WINHTTP_HEADER_NAME_BY_INDEX, length, &length_size, WINHTTP_NO_HEADER_INDEX)) {
+		total = _wcstoui64(length, nullptr, 10);
+	}
+	if (!Download_Size_Allowed(total, 0)) {
+		error = L"The download is larger than the update limit.";
+		Close_Request(session, connection, request);
+		return false;
 	}
 
 	HANDLE const file = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -288,6 +311,10 @@ bool Download_File(std::wstring const & source, std::wstring const & path, Progr
 		DWORD wrote = 0;
 		ok = WriteFile(file, buffer.data(), read, &wrote, nullptr) && wrote == read;
 		done += read;
+		if (ok && !Download_Size_Allowed(total, done)) {
+			ok = false;
+			error = L"The download is larger than the server said or than the update limit.";
+		}
 		progress(done, total);
 	}
 
@@ -296,7 +323,9 @@ bool Download_File(std::wstring const & source, std::wstring const & path, Progr
 
 	if (!ok) {
 		DeleteFileW(path.c_str());
-		error = L"The download stopped before it was complete.";
+		if (error.empty()) {
+			error = L"The download stopped before it was complete.";
+		}
 	}
 	return ok;
 }

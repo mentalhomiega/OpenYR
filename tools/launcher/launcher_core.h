@@ -105,6 +105,13 @@ SourceType Source_Kind(std::wstring const & url);
 // feed, used by the tests, may name either. On false, reason says which asset was refused.
 bool Asset_Sources_Allowed(std::wstring const & feed, UpdateType const & update, std::wstring & reason);
 
+// The largest download, in bytes, that the update copy accepts. The setup with its package is far smaller.
+inline constexpr std::uint64_t DownloadLimit = 512ull * 1024 * 1024;
+
+// True when a download of the declared length (zero when the server gave none) that has received the
+// given number of bytes is within the limit and has not passed its declared length.
+bool Download_Size_Allowed(std::uint64_t declared, std::uint64_t received);
+
 // The OpenYR settings the launcher reads from OPENTS.INI.
 struct ConfigType
 {

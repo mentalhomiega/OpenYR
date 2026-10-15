@@ -298,6 +298,19 @@ void Test_Asset_Sources(void)
 }
 
 
+// A download stops at the limit, and at the length the server declared.
+void Test_Download_Size(void)
+{
+	std::uint64_t const limit = launcher::DownloadLimit;
+	Check(launcher::Download_Size_Allowed(0, 0) && launcher::Download_Size_Allowed(0, limit), "a download of unknown length is allowed up to the limit");
+	Check(!launcher::Download_Size_Allowed(0, limit + 1), "and stops one byte past it");
+	Check(launcher::Download_Size_Allowed(52428800, 52428800) && launcher::Download_Size_Allowed(52428800, 1024), "a download within its declared length is allowed");
+	Check(!launcher::Download_Size_Allowed(1000, 1001), "a download that passes its declared length is refused");
+	Check(launcher::Download_Size_Allowed(limit, limit) && !launcher::Download_Size_Allowed(limit + 1, 0), "a declared length over the limit is refused before any byte arrives");
+	Check(!launcher::Download_Size_Allowed(0xFFFFFFFFull + 1, 0), "a length above 4 GB is refused rather than truncated");
+}
+
+
 void Test_Sources_And_Config(void)
 {
 	Check(launcher::Source_Kind(L"https://api.github.com/x") == launcher::SourceType::Https, "an https URL is fetched over the network");
@@ -457,6 +470,7 @@ int main()
 	Test_Checksum();
 	Test_Decision();
 	Test_Asset_Sources();
+	Test_Download_Size();
 	Test_Sources_And_Config();
 	Test_Quoting();
 	Test_Update_Folder();

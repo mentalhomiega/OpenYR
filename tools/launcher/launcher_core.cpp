@@ -606,6 +606,15 @@ bool Asset_Sources_Allowed(std::wstring const & feed, UpdateType const & update,
 }
 
 
+bool Download_Size_Allowed(std::uint64_t declared, std::uint64_t received)
+{
+	if (declared > DownloadLimit || received > DownloadLimit) {
+		return false;
+	}
+	return declared == 0 || received <= declared;
+}
+
+
 ConfigType Read_Config(std::wstring const & ini_text)
 {
 	ConfigType config;
