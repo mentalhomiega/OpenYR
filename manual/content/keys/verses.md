@@ -26,5 +26,6 @@ The same table also decides how objects armed with this warhead choose and answe
 - An object with two weapons passes over one whose warhead has `0%` against the target's class, as [Which weapon the score assumes](/systems/target-selection/#which-weapon-the-score-assumes) describes.
 - The [threat score](/systems/target-selection/#the-threat-score) weighs how well each side's warhead does against the other's armor.
 - An object whose chosen weapon has less than `1%` against its attacker's class does not [retaliate](/systems/target-selection/#retaliation).
+- An object does not choose on its own a target whose class its weapon has less than `2%` against. Ordered attacks still fire at it; the [armor types](/systems/armor-types/#switch-forced-fire-retaliation-and-automatic-targeting) page gives the per-armor switch.
 - When the computer's base is attacked, it does not [call up](/systems/base-attacked/#which-objects-qualify) an object whose primary weapon has `0%` against the attacker's class.
 - `medium` and `wood` entries both of exactly `0%` confine infantry whose primary weapon uses this warhead to [infantry targets](/systems/target-selection/#what-each-kind-of-object-considers).

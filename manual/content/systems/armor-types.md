@@ -75,10 +75,10 @@ An entry that is present and starts with anything other than `n`, `f` or `0` cou
 | Switch | Allowed unless the multiplier is |
 | --- | --- |
 | `ForceFire` | exactly `0` |
-| `PassiveAcquire` | exactly `0` |
+| `PassiveAcquire` | below `2%` |
 | `Retaliate` | below `1%` |
 
-The `Retaliate` threshold matches Yuri's Revenge: a `1%` multiplier still retaliates and anything smaller does not. A `yes` entry allows the action whatever the multiplier is, so `Versus.Shielded.ForceFire=yes` lets a weapon with `0%` against `Shielded` fire at it, and then it deals no damage.
+The `Retaliate` threshold matches Yuri's Revenge: a `1%` multiplier still retaliates and anything smaller does not. The `PassiveAcquire` threshold matches it too: a `2%` multiplier still acquires a target on its own, and `1%` does not. A `yes` entry allows the action whatever the multiplier is, so `Versus.Shielded.ForceFire=yes` lets a weapon with `0%` against `Shielded` fire at it, and then it deals no damage.
 
 Switches are not inherited. A declared armor type reads its own three entries and does not take them from its base, so `Versus.Shielded.Retaliate=no` has to be written even when `Shielded` is declared with a base.
 
