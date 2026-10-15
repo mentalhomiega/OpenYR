@@ -21,6 +21,7 @@
 
 #include "globals.h"
 #include "goptions.h"
+#include "ui/uitheme.h"
 
 #include <cctype>
 #include <chrono>
@@ -386,6 +387,11 @@ void UIScript_Tick(Rml::Context * context)
 				} else {
 					Options.MenuTheme = MENU_THEME_RANDOM;
 				}
+				WaitUntil = now + 300;
+				return;
+			} else if (step.Command == "live") {
+				// "live on" or "live off" turns the live background of the menus on or off, as a battle behind them does.
+				UI_Theme_Set_Live_Background(step.Argument != "off");
 				WaitUntil = now + 300;
 				return;
 			} else if (step.Command == "movie") {
