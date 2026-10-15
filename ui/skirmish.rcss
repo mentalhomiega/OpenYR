@@ -109,8 +109,12 @@
 	opacity: 0.35;
 }
 
-/* A seat nobody plays fades, so the seats in use stand out. */
-.slot.off .cell > select
+/* A seat nobody plays fades, so the seats in use stand out. Its player drop-down stays solid,
+   as it is how the seat is filled, and its open list would fade with it. */
+.slot.off .cell > select.side,
+.slot.off .cell > select.color,
+.slot.off .cell > select.start,
+.slot.off .cell > select.team
 {
 	opacity: 0.55;
 }

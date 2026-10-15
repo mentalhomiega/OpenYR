@@ -339,7 +339,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 		}
 
 		UISkirmishOption option;
-		option.Label = (char const *)house->GivenName;
+		option.Label = house->Full_Name();
 		option.Value = index;
 		state.Sides.push_back(option);
 	}
