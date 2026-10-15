@@ -9,7 +9,9 @@ when_omitted:
 
 Raising the value increases the damage the object's weapons deal: `1.1` adds 10 percent, and the default `1` leaves it unchanged. Only an object whose rank grants the `FIREPOWER` ability through [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) is affected.
 
-The multiplier applies last, after the house's firepower multiplier and any firepower crate bonus. It never raises these weapons:
+The multiplier applies after the house's firepower multiplier and any firepower crate bonus, and before the [`BunkerDamageMultiplier`](/keys/bunkerdamagemultiplier/), [`OccupyDamageMultiplier`](/keys/occupydamagemultiplier/) and open-topped damage multipliers.
+
+It never raises these weapons:
 
 - a sonic weapon or a weapon that fires through the fire particle system, because their damage does not come from the projectile this multiplier scales;
 - a weapon with negative damage, such as a healing weapon.
