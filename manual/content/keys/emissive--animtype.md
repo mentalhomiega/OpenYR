@@ -18,8 +18,9 @@ The omitted default is the largest default in the table below whose condition th
 | `AnimSelfLit` | 200 | Animations with [`UseNormalLight=yes`](/keys/usenormallight/) |
 | `AnimTiberium` | 96 | Animations with [`IsAnimatedTiberium=yes`](/keys/isanimatedtiberium/) |
 | `AnimTranslucency` | 96 | Animations with [`Translucency`](/keys/translucency/#scope-animtype) set to `25`, `50` or `75` |
-| `VoxelSpecular` | 128 (not applied yet) | Not applied in this version. Meant for the top highlight row, row 31, of a voxel shade. |
+| `AnimLightPost` | 160 | Animations named `NAPOST_A`, `NAPOST_AD` and `NAPOST_B`, the lamp glow of the light posts |
+| `VoxelSpecular` | 128 | Voxel shade rows above 16, scaled up to this strength at row 31. Row 16 is neutral. The table does not separate specular rows from diffuse rows above 16. |
 
-The strength takes effect only while the emissive masks are kept. The masks are kept when [`HDRHighlights`](/keys/hdrhighlights/) is `Enhanced` on HDR output, or when [`EmissiveDebugView`](/keys/emissivedebugview/) is `yes`. This build has no HDR output, so only `EmissiveDebugView=yes` keeps them.
+The strength takes effect only while the emissive masks are kept. The masks are kept when [`HDRHighlights`](/keys/hdrhighlights/) is `Enhanced` on HDR output, or when [`EmissiveDebugView`](/keys/emissivedebugview/) is `yes`.
 
-The strength applies to the animation's picture. Its shadow, its bounce pass and any darkened draw get no emissive value.
+The strength applies to the animation's picture. Its shadow, its bounce pass and any darkened draw get no emissive value. A translucent picture keeps only its share of the strength: 25 percent translucency keeps three quarters, and 75 percent keeps a quarter.

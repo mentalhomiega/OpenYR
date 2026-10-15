@@ -13,4 +13,4 @@ On HDR output with `Enhanced`, explosions, flames, lasers and electric bolts can
 
 The **Highlights** list on the Display page of the settings writes this key. The list is grayed out, with the tooltip "Needs HDR output", unless the game is showing HDR output. When the settings are saved, the game writes the value back to `RA2MD.INI` as `Classic` or `Enhanced`.
 
-This build has no HDR output. The list stays grayed out, so only editing `RA2MD.INI` can set the value, and `Enhanced` has no visible effect yet.
+Highlights only apply while the game is showing HDR output, so `Enhanced` has no visible effect with [`HDROutput`](/keys/hdroutput/) set to `Off`, or with `Automatic` while Windows HDR is off for the display.

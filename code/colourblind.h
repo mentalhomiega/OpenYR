@@ -34,9 +34,8 @@ int const COLORBLIND_STRENGTH_MAX = 100;
 // The deficiency is simulated with the severity 1.0 matrices of Machado, Oliveira and Fernandes,
 // "A Physiologically-based Model for Simulation of Color Vision Deficiency", IEEE TVCG 2009. The
 // correction is the Daltonize form: M = I + K (I - S), where S is the simulation and K moves the
-// part of each colour the viewer cannot see into channels they can. K is the redistribution used
-// by the common Daltonize implementations (Fidaleo and Nussbaum's method), not a value taken from a
-// paper here.
+// part of each colour the viewer cannot see into channels they can. The values of K are the ones
+// the common open-source Daltonize implementations use; they are not taken from a paper.
 void ColorBlind_Matrix(int mode, float strength, float * matrix);
 
 // Writes the simulation matrix that a mode's deficiency applies to linear RGB at full severity.
