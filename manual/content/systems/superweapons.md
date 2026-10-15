@@ -554,7 +554,7 @@ A `Type=GeneticConverter` weapon plays [`IonBlast`](/keys/ionblast/) over the ta
 - With `MutateExplosion=yes`, a blast of 10000 damage goes off through [`MutateExplosionWarhead`](/keys/mutateexplosionwarhead/), so that warhead's [`CellSpread`](/keys/cellspread/) and `Verses` decide who is caught.
 - Otherwise, every infantryman on the target cell and the eight cells around it takes its full strength as damage through [`MutateWarhead`](/keys/mutatewarhead/), ignoring armor.
 
-A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes. The firing house is credited with every infantryman killed.
+A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes. The firing house is credited with every infantryman killed. [MutateFriendly](/keys/mutatefriendly/) decides whether infantry of the firing house and its allies are mutated too. It defaults to yes, which matches Yuri's Revenge.
 
 ### Force shield
 

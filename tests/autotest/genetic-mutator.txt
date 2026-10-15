@@ -1,0 +1,17 @@
+; Genetic Mutator (GeneticConverterSpecial) on the player's own and enemy infantry, away from the computer base.
+; Gamemd's mutator (SuperClass::Launch, GeneticMutator case) has no owner filter: the MutateExplosion blast (the default)
+; catches every infantryman it reaches, and each one killed turns into a brute of the firing house after its GENDEATH
+; animation (MakeInfantry=0 picks BRUTE) finishes, about 2.5 seconds later. The where lines write each E1 and BRUTE with its
+; owner before and after the strike. The harness has only one computer house, so no infantry of an allied house is placed.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/genetic-mutator.txt -Seconds 150 -Filter "AUTOTEST   where|AUTOTEST frame|Exception"
+20 own GAPOWR 56 40
+30 spawn E1 52 36
+31 spawn E1 54 44
+32 own E1 50 40
+33 own E1 52 44
+40 grant GeneticConverterSpecial
+50 where E1
+60 fire GeneticConverterSpecial 52 40
+150 where E1
+200 where BRUTE
+260 quit
