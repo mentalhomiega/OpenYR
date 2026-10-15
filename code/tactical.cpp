@@ -1340,6 +1340,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
 		Draw_Placement_Range();
+		Draw_Super_Range();
 		Draw_Super_Timers();
 		Draw_Chrono_Screen_Effect();
 		Draw_Flying_Texts();
@@ -1618,6 +1619,52 @@ void Tactical::Draw_Placement_Range(void)
 		BuildingClass * building = Buildings[index];
 		if (is_same_type(building) && distance_to(building) == nearest && building->Is_Powered_On() && building->House->Is_Player_Control()) {
 			Draw_Range_Ring(building->Center_Coord(), range, House_Display_RGB(building->House));
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws the target radius of the super weapon being aimed, centred on the cell under the pointer.
+/// Nothing is drawn unless unit action lines are on, a super weapon is aimed, and the pointer is over
+/// the tactical view. A weapon with LineMultiplier of at least one gets a ring for each step of
+/// 1/LineMultiplier cell up to its radius, each ring at its whole-cell radius (DrawUnitAndSuperRadialIndicators, 0x6DBE20).
+/// </summary>
+void Tactical::Draw_Super_Range(void)
+{
+	if (!TechnoClass::ActionLines || Map.IsTargettingMode == SUPER_NONE) {
+		return;
+	}
+
+	Point2D mouse = MouseCursor->Get_Mouse_Point();
+	if (!TacticalRect.Is_Point_Within(mouse)) {
+		return;
+	}
+
+	SuperWeaponTypeClass const * type = SuperWeaponTypes[Map.IsTargettingMode];
+	if (type->Range <= 0.0f) {
+		return;
+	}
+
+	Cell cell = Pixel_To_Cell(mouse);
+	if (!Map.In_Radar(cell)) {
+		return;
+	}
+
+	RGBClass const color = House_Display_RGB(PlayerPtr);
+	Coord const center = Map[cell].Center_Coord();
+	if (type->LineMultiplier < 1) {
+		Draw_Range_Ring(center, (int)type->Range, color);
+		return;
+	}
+
+	int const steps = (int)(type->LineMultiplier * type->Range);
+	int last = -1;
+	for (int step = 0; step <= steps; step++) {
+		int const radius = (int)((float)step / (float)type->LineMultiplier);
+		if (radius != last) {
+			Draw_Range_Ring(center, radius, color);
+			last = radius;
 		}
 	}
 }
