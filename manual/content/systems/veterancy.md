@@ -204,7 +204,7 @@ Set the five bonuses below in `rules.ini` under `[General]`. Each applies only w
 | Setting | Applied as |
 | --- | --- |
 | [`VeteranCombat`](/keys/veterancombat/) | Damage is multiplied by the value, after the house and object firepower biases. |
-| [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value, after the house ground-speed bias. |
+| [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value, after the owning country's speed multiplier and any speed crate bonus. |
 | [`VeteranSight`](/keys/veteransight/) | Sight range is multiplied by the value. A value of `0` switches the bonus off. |
 | [`VeteranArmor`](/keys/veteranarmor/) | Incoming damage is divided by the value. |
 | [`VeteranROF`](/keys/veteranrof/) | Reload delay is multiplied by the value. |

@@ -252,7 +252,7 @@ For a vehicle moved by the drive locomotor, the distance it covers each frame co
 | 5 | The type's top speed, reduced by any limpet drone clamped to the vehicle |
 | 6 | The owner country's speed multiplier for the object's kind: [`SpeedInfantryMult`](/keys/speedinfantrymult/) for infantry and [`SpeedUnitsMult`](/keys/speedunitsmult/) for vehicles |
 | 7 | The speed multiplier a [crate](/systems/crates/#results-that-sweep-a-radius) gave the vehicle. Only the first speed crate counts; later ones do not raise it |
-| 8 | [`VeteranSpeed`](/keys/veteranspeed/) plus one, for a vehicle that has the [`FASTER` ability](/systems/veterancy/#abilities) |
+| 8 | [`VeteranSpeed`](/keys/veteranspeed/) itself, for a vehicle that has the [`FASTER` ability](/systems/veterancy/#abilities) |
 | 9 | The throttle from steps 1 to 4 |
 | 10 | Half, while the vehicle is carrying a captured flag |
 

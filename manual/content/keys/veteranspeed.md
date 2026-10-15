@@ -9,6 +9,6 @@ when_omitted:
 
 Raising the value speeds the object up: `1.2` gives 20 percent more movement speed, and the default `1` leaves it unchanged. Only an object whose rank grants the `FASTER` ability through [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) is affected.
 
-The multiplier applies after the house's ground-speed multiplier and any speed crate bonus.
+The multiplier applies after the owning country's speed multiplier for the object's kind and any speed crate bonus.
 
 It reaches infantry and vehicles whose [`Locomotor`](/keys/locomotor/) is Drive, Hover, Walk, Mech or Tunnel. Every other locomotor, including Flyer, Jumpjet and Levitate, sets its pace without reading the multiplier, so aircraft, jumpjets and levitating objects gain nothing. A building has no speed to raise.
