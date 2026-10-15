@@ -144,7 +144,20 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 	Rect const all(0, 0, frame.Get_Width(), frame.Get_Height());
 	auto composed = std::make_unique<DSurface>(all.Width, all.Height);
 	composed->Blit_From(all, frame, all);
-	composed->Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+
+	// The presenter shows the map layer only where the frame is keyed out, so the capture does the same.
+	DSurface map(all.Width, all.Height);
+	map.Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+	Rect const area = Intersect(ScreenTacticalRect, all);
+	for (int y = area.Y; y < area.Y + area.Height; y++) {
+		unsigned short * out = (unsigned short *)((char *)composed->Get_Buffer() + y * composed->Stride()) + area.X;
+		unsigned short const * in = (unsigned short const *)((char const *)map.Get_Buffer() + y * map.Stride()) + area.X;
+		for (int x = 0; x < area.Width; x++) {
+			if (out[x] == VIDEO_LAYER_KEY) {
+				out[x] = in[x];
+			}
+		}
+	}
 	return(composed);
 }
 

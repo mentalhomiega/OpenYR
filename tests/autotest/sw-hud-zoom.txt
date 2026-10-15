@@ -1,0 +1,12 @@
+; HUD at zoom: the sidebar and the superweapon timer at zoom 1, then at zoom 2.5 (the build clamps the zoom to 2.00) and back to 1.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-hud-zoom.txt -Width 800 -Height 600 -Seconds 60 -ShotDir "E:\Claude ra2 decomp\shots\sw-followup" -Filter "AUTOTEST zoom|AUTOTEST   liveanims|Exception"
+20 own GAPOWR 56 40
+22 own E1 41 50
+25 view 42 50
+30 grant NukeSpecial
+35 command ScreenCapture
+40 zoom 2.5
+45 command ScreenCapture
+50 zoom 1
+55 command ScreenCapture
+60 quit
