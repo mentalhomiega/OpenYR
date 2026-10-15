@@ -9454,6 +9454,8 @@ void BuildingClass::Bunker_Up(FootClass * object)
 	Cell const corner = PositionCoord.As_Cell();
 	object->Assign_Destination(NULL);
 	object->Stop_Driver();
+	// gamemd turns the hull to face south once the vehicle is in (0x459216, DirStruct 0x8000).
+	object->PrimaryFacing.Set_Desired(DIR_S);
 	object->Set_Coord(Coord(corner.X * CELL_LEPTON_W + Class->Width() * CELL_LEPTON_W / 2, corner.Y * CELL_LEPTON_H + Class->Height() * CELL_LEPTON_H / 2, object->Get_Coord().Z));
 	DebugString("Bunker: %s takes %s\n", Class->Name(), object->TClass->Name());
 	object->Assign_Mission(MISSION_GUARD);
