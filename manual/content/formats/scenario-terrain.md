@@ -76,6 +76,6 @@ When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the 
 
 ## Overlay packs
 
-`[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay.
+`[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay, and so does a value that is not the index of an overlay type in the loaded rules.
 
 The loader reads both sections only when [`NewINIFormat`](/keys/newiniformat/) is above 1, and ignores the bytes for cells outside the playfield. It reads `[OverlayPack]` up to 512,000 decoded bytes and `[OverlayDataPack]` up to 256,000, and drops anything past that.
