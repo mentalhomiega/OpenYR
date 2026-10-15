@@ -61,22 +61,24 @@ static bool Options_Started = false;
 struct SkirmishMemory
 {
 	bool Loaded = false;
-	bool HasOptions = false;
 	std::string Map;
 	std::string Slots[UI_SKIRMISH_MAX_SLOTS];
-	int Units = 0;
-	int Credits = 0;
-	int TechLevel = 1;
-	int GameSpeed = 0;
-	bool Bases = true;
-	bool Crates = true;
-	bool Fog = false;
-	bool Bridges = true;
-	bool Redeploy = true;
-	bool ShortGame = false;
-	bool MultiEngineer = false;
-	bool SuperWeapons = true;
-	bool BuildOffAlly = false;
+
+	// Each option is -1 when the settings file does not hold it, so the rules' value stays. A
+	// switch is 0 or 1.
+	int Units = -1;
+	int Credits = -1;
+	int TechLevel = -1;
+	int GameSpeed = -1;
+	int Bases = -1;
+	int Crates = -1;
+	int Fog = -1;
+	int Bridges = -1;
+	int Redeploy = -1;
+	int ShortGame = -1;
+	int MultiEngineer = -1;
+	int SuperWeapons = -1;
+	int BuildOffAlly = -1;
 };
 
 static SkirmishMemory Memory;
@@ -136,20 +138,19 @@ static void Load_Memory(void)
 		Memory.Slots[row] = ConfigINI.Get_String(SKIRMISH_SECTION, key, "");
 	}
 
-	Memory.HasOptions = !ConfigINI.Get_String(SKIRMISH_SECTION, "Units", "").empty();
-	Memory.Units = ConfigINI.Get_Int(SKIRMISH_SECTION, "Units", 0);
-	Memory.Credits = ConfigINI.Get_Int(SKIRMISH_SECTION, "Credits", 0);
-	Memory.TechLevel = ConfigINI.Get_Int(SKIRMISH_SECTION, "Tech", 1);
-	Memory.GameSpeed = ConfigINI.Get_Int(SKIRMISH_SECTION, "Speed", 0);
-	Memory.Bases = ConfigINI.Get_Bool(SKIRMISH_SECTION, "Bases", Memory.Bases);
-	Memory.Crates = ConfigINI.Get_Bool(SKIRMISH_SECTION, "Crates", Memory.Crates);
-	Memory.Fog = ConfigINI.Get_Bool(SKIRMISH_SECTION, "Fog", Memory.Fog);
-	Memory.Bridges = ConfigINI.Get_Bool(SKIRMISH_SECTION, "Bridges", Memory.Bridges);
-	Memory.Redeploy = ConfigINI.Get_Bool(SKIRMISH_SECTION, "Redeploy", Memory.Redeploy);
-	Memory.ShortGame = ConfigINI.Get_Bool(SKIRMISH_SECTION, "ShortGame", Memory.ShortGame);
-	Memory.MultiEngineer = ConfigINI.Get_Bool(SKIRMISH_SECTION, "Engineer", Memory.MultiEngineer);
-	Memory.SuperWeapons = ConfigINI.Get_Bool(SKIRMISH_SECTION, "SuperWeapons", Memory.SuperWeapons);
-	Memory.BuildOffAlly = ConfigINI.Get_Bool(SKIRMISH_SECTION, "BuildOffAlly", Memory.BuildOffAlly);
+	Memory.Units = ConfigINI.Get_Int(SKIRMISH_SECTION, "Units", -1);
+	Memory.Credits = ConfigINI.Get_Int(SKIRMISH_SECTION, "Credits", -1);
+	Memory.TechLevel = ConfigINI.Get_Int(SKIRMISH_SECTION, "Tech", -1);
+	Memory.GameSpeed = ConfigINI.Get_Int(SKIRMISH_SECTION, "Speed", -1);
+	Memory.Bases = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bases", -1);
+	Memory.Crates = ConfigINI.Get_Int(SKIRMISH_SECTION, "Crates", -1);
+	Memory.Fog = ConfigINI.Get_Int(SKIRMISH_SECTION, "Fog", -1);
+	Memory.Bridges = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bridges", -1);
+	Memory.Redeploy = ConfigINI.Get_Int(SKIRMISH_SECTION, "Redeploy", -1);
+	Memory.ShortGame = ConfigINI.Get_Int(SKIRMISH_SECTION, "ShortGame", -1);
+	Memory.MultiEngineer = ConfigINI.Get_Int(SKIRMISH_SECTION, "Engineer", -1);
+	Memory.SuperWeapons = ConfigINI.Get_Int(SKIRMISH_SECTION, "SuperWeapons", -1);
+	Memory.BuildOffAlly = ConfigINI.Get_Int(SKIRMISH_SECTION, "BuildOffAlly", -1);
 }
 
 
@@ -174,21 +175,20 @@ static void Remember_Preferences(UISkirmishState const & state)
 	}
 
 	Memory.Loaded = true;
-	Memory.HasOptions = true;
 	Memory.Map = Session.ScenarioFileName;
 	Memory.Units = state.UnitCount;
 	Memory.Credits = state.Credits;
 	Memory.TechLevel = state.TechLevel;
 	Memory.GameSpeed = state.GameSpeed;
-	Memory.Bases = state.Bases;
-	Memory.Crates = state.Crates;
-	Memory.Fog = state.Fog;
-	Memory.Bridges = state.Bridges;
-	Memory.Redeploy = state.Redeploy;
-	Memory.ShortGame = state.ShortGame;
-	Memory.MultiEngineer = state.MultiEngineer;
-	Memory.SuperWeapons = state.SuperWeapons;
-	Memory.BuildOffAlly = state.BuildOffAlly;
+	Memory.Bases = state.Bases ? 1 : 0;
+	Memory.Crates = state.Crates ? 1 : 0;
+	Memory.Fog = state.Fog ? 1 : 0;
+	Memory.Bridges = state.Bridges ? 1 : 0;
+	Memory.Redeploy = state.Redeploy ? 1 : 0;
+	Memory.ShortGame = state.ShortGame ? 1 : 0;
+	Memory.MultiEngineer = state.MultiEngineer ? 1 : 0;
+	Memory.SuperWeapons = state.SuperWeapons ? 1 : 0;
+	Memory.BuildOffAlly = state.BuildOffAlly ? 1 : 0;
 
 	// Written to the settings file by the Session.Write_MultiPlayer_Settings call that follows.
 	ConfigINI.Put_String(SKIRMISH_SECTION, "Map", Memory.Map.c_str());
@@ -202,15 +202,15 @@ static void Remember_Preferences(UISkirmishState const & state)
 	ConfigINI.Put_Int(SKIRMISH_SECTION, "Credits", Memory.Credits);
 	ConfigINI.Put_Int(SKIRMISH_SECTION, "Tech", Memory.TechLevel);
 	ConfigINI.Put_Int(SKIRMISH_SECTION, "Speed", Memory.GameSpeed);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "Bases", Memory.Bases);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "Crates", Memory.Crates);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "Fog", Memory.Fog);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "Bridges", Memory.Bridges);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "Redeploy", Memory.Redeploy);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "ShortGame", Memory.ShortGame);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "Engineer", Memory.MultiEngineer);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "SuperWeapons", Memory.SuperWeapons);
-	ConfigINI.Put_Bool(SKIRMISH_SECTION, "BuildOffAlly", Memory.BuildOffAlly);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bases", Memory.Bases);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Crates", Memory.Crates);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Fog", Memory.Fog);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bridges", Memory.Bridges);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Redeploy", Memory.Redeploy);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "ShortGame", Memory.ShortGame);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Engineer", Memory.MultiEngineer);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "SuperWeapons", Memory.SuperWeapons);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "BuildOffAlly", Memory.BuildOffAlly);
 }
 
 
@@ -482,20 +482,44 @@ void UI_Skirmish_State(UISkirmishState & state)
 	// The remembered setup comes back as it was left. Its options replace the rules' values, and its
 	// map is used only while the map's file is on hand; the first map that is on hand takes its place.
 	Load_Memory();
-	if (Memory.HasOptions) {
+	if (Memory.Units >= 0) {
 		state.UnitCount = std::clamp(Memory.Units, state.UnitCountMin, state.UnitCountMax);
+	}
+	if (Memory.Credits >= 0) {
 		state.Credits = std::clamp(Memory.Credits, state.CreditsMin, state.CreditsMax);
+	}
+	if (Memory.TechLevel >= 0) {
 		state.TechLevel = std::clamp(Memory.TechLevel, 1, state.TechLevelMax);
+	}
+	if (Memory.GameSpeed >= 0) {
 		state.GameSpeed = std::clamp(Memory.GameSpeed, 0, 6);
-		state.Bases = Memory.Bases;
-		state.Crates = Memory.Crates;
-		state.Fog = Memory.Fog;
-		state.Bridges = Memory.Bridges;
-		state.Redeploy = Memory.Redeploy;
-		state.ShortGame = Memory.ShortGame;
-		state.MultiEngineer = Memory.MultiEngineer;
-		state.SuperWeapons = Memory.SuperWeapons;
-		state.BuildOffAlly = Memory.BuildOffAlly;
+	}
+	if (Memory.Bases >= 0) {
+		state.Bases = Memory.Bases != 0;
+	}
+	if (Memory.Crates >= 0) {
+		state.Crates = Memory.Crates != 0;
+	}
+	if (Memory.Fog >= 0) {
+		state.Fog = Memory.Fog != 0;
+	}
+	if (Memory.Bridges >= 0) {
+		state.Bridges = Memory.Bridges != 0;
+	}
+	if (Memory.Redeploy >= 0) {
+		state.Redeploy = Memory.Redeploy != 0;
+	}
+	if (Memory.ShortGame >= 0) {
+		state.ShortGame = Memory.ShortGame != 0;
+	}
+	if (Memory.MultiEngineer >= 0) {
+		state.MultiEngineer = Memory.MultiEngineer != 0;
+	}
+	if (Memory.SuperWeapons >= 0) {
+		state.SuperWeapons = Memory.SuperWeapons != 0;
+	}
+	if (Memory.BuildOffAlly >= 0) {
+		state.BuildOffAlly = Memory.BuildOffAlly != 0;
 	}
 
 	// Only the session takes the map here. The loaded scenario is named when the game starts.
