@@ -109,6 +109,7 @@ class MissionClass : public ObjectClass
 		virtual int Do_MISSION_HARVEST(void);
 		virtual int Do_MISSION_HUNT(void);
 		virtual int Do_MISSION_MOVE(void);
+		virtual int Do_MISSION_ATTACK_MOVE(void);
 		virtual int Do_MISSION_RETREAT(void);
 		virtual int Do_MISSION_RETURN(void);
 		virtual int Do_MISSION_STOP(void);

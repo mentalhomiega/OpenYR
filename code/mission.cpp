@@ -118,6 +118,7 @@ int MissionClass::Do_MISSION_GUARD_AREA(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_HARVEST(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_HUNT(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_MOVE(void) {return(TICKS_PER_SECOND*30);};
+int MissionClass::Do_MISSION_ATTACK_MOVE(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_RETREAT(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_RETURN(void) {return(TICKS_PER_SECOND*30);};
 int MissionClass::Do_MISSION_STOP(void) {return(TICKS_PER_SECOND*30);};
@@ -274,6 +275,7 @@ void MissionClass::AI(void)
 			INVOKE(GUARD);
 			INVOKE(CAPTURE);
 			INVOKE(MOVE);
+			INVOKE(ATTACK_MOVE);
 			INVOKE(HUNT);
 			INVOKE(RESCUE);
 			INVOKE(PATROL);

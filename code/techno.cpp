@@ -5456,8 +5456,22 @@ void TechnoClass::Draw_Target_Laser(void) const
  * HISTORY:                                                                                    *
  *   05/22/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
+bool AttackMoveArmed = false;
+bool AttackMoveOrdering = false;
+
+
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
+	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held.
+	bool const ground_move = (mission == MISSION_MOVE && target == NULL && destination != NULL && destination->What_Am_I() == RTTI_CELL);
+	bool const ground_attack = (mission == MISSION_ATTACK && target != NULL && target->What_Am_I() == RTTI_CELL);
+	bool const ctrlshift = (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2)) && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
+	if ((ground_move || ground_attack) && Is_Foot() && (AttackMoveOrdering || ctrlshift)) {
+		destination = (mission == MISSION_MOVE) ? destination : target;
+		target = NULL;
+		mission = MISSION_ATTACK_MOVE;
+	}
+
 	/*
 	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
 	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,

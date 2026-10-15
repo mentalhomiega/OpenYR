@@ -4413,6 +4413,29 @@ class NextSidebarTabCommandClass : public CommandClass
 };
 
 
+// Arms an attack-move: the next left release on the map orders the selected units to attack-move to where it is.
+class AttackMoveCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("AttackMove");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Attack move");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Makes the next click on the ground an attack-move order for the selected units.");
+		}
+
+		virtual void Execute(void) const {
+			AttackMoveArmed = true;
+		}
+};
+
+
 // A modifier the player holds. The mouse commands test whether its key is down, so the binding does nothing when it runs.
 class HeldModifierCommandClass : public CommandClass
 {
@@ -6700,6 +6723,7 @@ static void Init_Commands(void)
 
 	AllCommands.Add(new StructureTabCommandClass);
 	AllCommands.Add(new NextSidebarTabCommandClass);
+	AllCommands.Add(new AttackMoveCommandClass);
 	AllCommands.Add(new HeldModifierCommandClass("ForceFire", "Force fire", "Hold to fire on a unit or the ground."));
 	AllCommands.Add(new HeldModifierCommandClass("ForceMove", "Force move", "Hold to move onto an occupied cell."));
 	AllCommands.Add(new HeldModifierCommandClass("SelectModifier", "Add to selection", "Hold to add or remove units from the selection."));
