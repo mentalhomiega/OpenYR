@@ -52,6 +52,8 @@
 **	key <Key> [ctrl|shift|alt]	presses and releases that key on the keyboard queue, skipping the interface; the key
 **							is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or
 **							digit, so Tab is written 09); the modifier words hold that key with the modifier
+**	hold <Key> [ctrl|shift|alt]	presses that key on the keyboard queue and leaves it down, as a player holding it does, until a release
+**	release <Key> [ctrl|shift|alt]	lets go of a key a hold step left down; Keyboard->Down stays false in autotests, so the held state is the queue's
 **	winkey <Key> [ctrl|shift|alt]	presses and releases that key through the game window, so the interface sees it first as it does
 **							a player's key; a one-character name is read as a letter or digit, so Backspace is written 08
 **	binding <Key> [Double|Hold|Held]	writes the command the key's binding of that trigger runs, with the modifier words
@@ -1873,6 +1875,16 @@ void Run(StepType const & step)
 		event.Type = WINDOW_EVENT_KEY_DOWN;
 		Keyboard->Handle_Window_Event(event);
 		event.Type = WINDOW_EVENT_KEY_UP;
+		Keyboard->Handle_Window_Event(event);
+		return;
+	}
+
+	// hold <Key> / release <Key>: the press or the release alone, so the key stays down between steps as a held key does.
+	if (step.Command == "hold" || step.Command == "release") {
+		WindowEvent event;
+		event.VirtualKey = Key_Code(step.Argument);
+		event.Modifiers = Key_Modifiers(step.Argument);
+		event.Type = (step.Command == "hold") ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
 		Keyboard->Handle_Window_Event(event);
 		return;
 	}
@@ -3959,6 +3971,7 @@ bool AutoTest_Load(char const * filename)
 			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
 			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
 			|| std::strcmp(command, "wintype") == 0 || std::strcmp(command, "key") == 0 || std::strcmp(command, "winkey") == 0
+			|| std::strcmp(command, "hold") == 0 || std::strcmp(command, "release") == 0
 			|| std::strcmp(command, "binding") == 0 || std::strcmp(command, "scheme") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
