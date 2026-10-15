@@ -165,6 +165,18 @@ void Test_Checksum(void)
 	std::string not_hex = Digest;
 	not_hex[10] = 'z';
 	Check(!launcher::Parse_Checksum(not_hex, digest), "a digest with a non-hex character is refused");
+
+	std::string const name_line = std::string(Digest) + " *dist\\OpenYR-beta23-Setup.exe\r\n\r\n  \n";
+	Check(launcher::Parse_Checksum(name_line, digest) && digest == Digest, "a binary-mode file name and trailing blank lines are allowed");
+	Check(launcher::Parse_Checksum(std::string(Digest) + "\tOpenYR-beta23-Setup.exe", digest) && digest == Digest, "a tab before the file name is allowed");
+
+	std::string const second = std::string(Digest) + "  OpenYR-beta23-Setup.exe\n" + std::string(64, 'a') + "  Other.exe\n";
+	Check(!launcher::Parse_Checksum(second, digest), "a second entry after the first is refused");
+	Check(!launcher::Parse_Checksum(std::string(Digest) + "\ntrailing words", digest), "text on a later line is refused");
+	Check(!launcher::Parse_Checksum(std::string(Digest) + std::string("\0  name", 7), digest), "a control character after the digest is refused");
+	Check(!launcher::Parse_Checksum(std::string("\x01") + Digest, digest), "a control character before the digest is refused");
+	Check(!launcher::Parse_Checksum(std::string(Digest) + "a", digest), "a digest with a character glued on is refused");
+	Check(!launcher::Parse_Checksum(std::string(Digest) + std::string(Digest), digest), "two digests run together are refused");
 }
 
 

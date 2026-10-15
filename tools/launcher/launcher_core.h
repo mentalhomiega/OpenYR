@@ -76,7 +76,8 @@ bool Parse_Release(std::string const & json, ReleaseType & release, std::wstring
 bool Choose_Release_Assets(ReleaseType const & release, AssetType & setup, AssetType & checksum, std::wstring & error);
 
 // The SHA-256 digest a checksum file holds, in lower-case hex. The file is one hex digest, optionally
-// followed by a space and a file name, as sha256sum writes it.
+// followed by a space and a file name, as sha256sum writes it. A second line with text, a control
+// character other than tab and line ends, or a token that is not 64 hex digits makes it false.
 bool Parse_Checksum(std::string const & text, std::string & digest);
 
 struct UpdateType

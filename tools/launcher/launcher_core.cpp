@@ -479,6 +479,15 @@ bool Parse_Checksum(std::string const & text, std::string & digest)
 	if (text.compare(0, 3, "\xEF\xBB\xBF") == 0) {
 		at = 3;
 	}
+
+	// Only tab, carriage return and line feed may be control characters.
+	for (std::size_t index = at; index < text.size(); index++) {
+		unsigned char const character = static_cast<unsigned char>(text[index]);
+		if (character < 0x20 && character != '\t' && character != '\r' && character != '\n') {
+			return false;
+		}
+	}
+
 	while (at < text.size() && (text[at] == ' ' || text[at] == '\t' || text[at] == '\r' || text[at] == '\n')) {
 		at++;
 	}
@@ -490,6 +499,12 @@ bool Parse_Checksum(std::string const & text, std::string & digest)
 	}
 
 	if (token.size() != 64) {
+		return false;
+	}
+
+	// The rest of the digest's line may name the file, as sha256sum writes. Nothing but blank lines may follow it.
+	std::size_t const line_end = text.find('\n', at);
+	if (line_end != std::string::npos && text.find_first_not_of(" \t\r\n", line_end) != std::string::npos) {
 		return false;
 	}
 
