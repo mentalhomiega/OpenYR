@@ -35,6 +35,7 @@
 			<label class="check" id="switch-bitmap-font"><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/>Pixel-perfect UI font</label>
 			<div class="row" id="windowsize-row"><span class="caption">Window size:</span><select id="windowsize" data-value="windowsize" data-event-change="queue('windowsize', ev.value)">
 				<option data-for="entry : windowsizes" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
 			<div class="row" id="hdr-row" data-attr-tip="hdroutputtip"><span class="caption">HDR:</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
 				<option data-for="entry : hdroutputs" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>

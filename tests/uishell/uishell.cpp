@@ -3395,7 +3395,9 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("windowsize"), "the window size list follows the pixel-perfect UI font switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("hdr"), "the HDR output drop-down follows the debug mode switch");
+		Check(focused("hdr"), "the HDR output drop-down follows the window size list");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("player-colors"), "the player colours drop-down follows the HDR output drop-down");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);
