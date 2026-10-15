@@ -211,7 +211,12 @@ double View_Zoom_Min(void)
 
 double View_Zoom_Max(void)
 {
-	return(VIEW_ZOOM_MAX * View_Zoom_Native());
+	double const native = View_Zoom_Native();
+	double closest = VIEW_ZOOM_MAX * native;
+	if (ScreenTacticalRect.Height > 0) {
+		closest = std::max(closest, native * ScreenTacticalRect.Height / VIEW_ZOOM_CLOSEST_HEIGHT);
+	}
+	return(closest);
 }
 
 

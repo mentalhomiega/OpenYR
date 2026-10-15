@@ -41,6 +41,10 @@ extern bool ViewZoomGameClock;
 double const VIEW_ZOOM_MIN = 0.5;
 double const VIEW_ZOOM_MAX = 2.0;
 
+// On a tall screen the wheel zooms in further, until the map view is this many map pixels tall,
+// as on the original game's 800x600 screen.
+double const VIEW_ZOOM_CLOSEST_HEIGHT = 600.0;
+
 // The furthest out a multiplayer game zooms, the same for every player, since seeing more of
 // the map is an advantage.
 double const VIEW_ZOOM_MIN_MULTIPLAYER = 0.75;
