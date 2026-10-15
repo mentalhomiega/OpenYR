@@ -45,11 +45,3 @@ inline char const * UI_Theme_Tint_Class(UIMenuTintType tint)
 	static char const * const CLASSES[UI_TINT_COUNT] = {"theme-allied", "theme-soviet", "theme-yuri"};
 	return(CLASSES[tint]);
 }
-
-// Turns the live background on or off. While it is on, every document carries the live class, so
-// the title art gives way to a shade and the game behind the menus shows through. Screens already
-// open take the change at once.
-void UI_Theme_Set_Live_Background(bool live);
-
-// Is a live background behind the menus? See UI_Theme_Set_Live_Background.
-bool UI_Theme_Live_Background(void);

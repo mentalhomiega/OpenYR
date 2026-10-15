@@ -118,6 +118,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.SimulateWhileUnfocused = on;
 		}
 
+		virtual void Set_Aircraft_Body_Pick(bool on) override
+		{
+			Options.AircraftBodyPick = on;
+		}
+
 		virtual void Set_Sidebar_Sorting(bool on) override
 		{
 			Options.SidebarSorting = on;
@@ -194,6 +199,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 
 	state.AltToRally = Options.AltToRally;
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
+	state.AircraftBodyPick = Options.AircraftBodyPick;
 	state.SidebarSorting = Options.SidebarSorting;
 	state.DebugMode = Options.DebugMode;
 

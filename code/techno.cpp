@@ -7910,15 +7910,28 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 
 	brightness = Apparent_Brightness(brightness);
 
+	/*
+	 * An airborne object, such as an aircraft or a flying Kirov, records the area its body covers so
+	 * that the click search can pick it by its body. Only the body draw counts; the shadow is drawn
+	 * by its own routine.
+	 */
+	auto const note_body = [this, negflags](Rect const & area) {
+		if (negflags == SHAPE_NORMAL && In_Air()) {
+			TacticalMap->Note_Selectable_Body(this, area);
+		}
+	};
+
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
 		if (entry != NULL) {
 			Techno_Blit_Voxel(*entry, point, cliprect, flags, brightness);
+			note_body(Rect(point.X + entry->X, point.Y + entry->Y, entry->Width, entry->Height));
 			return;
 		}
 	}
 
 	SurfaceRegion region = Techno_Render_Voxel_Object(voxeldata, matrix, point, cliprect, frame, flags, brightness);
+	note_body(Rect(region.Point.X + point.X, region.Point.Y + point.Y, region.Bounds.Width, region.Bounds.Height));
 	UnitCompositeDirtyRect = Union(UnitCompositeDirtyRect, Rect(region.Point.X + point.X, region.Point.Y + point.Y, region.Bounds.Width, region.Bounds.Height));
 
 	if (key == -1) return;

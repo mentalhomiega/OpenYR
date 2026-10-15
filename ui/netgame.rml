@@ -20,11 +20,7 @@
 		<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
 	</select>
 	<span class="caption" id="cap-color">Your Color:</span>
-	<select id="color" data-event-change="queue('color', ev.value)">
-		<option data-for="entry : colors" data-attr-value="it_index" data-attrif-selected="it_index == color" data-style-color="entry.color">{{entry.label}}</option>
-	</select>
-
-	<button id="color-pick" data-event-click="queue('pickopen')">Free color</button>
+	<button id="color-pick" data-attr-tip="colortip" data-event-click="queue('pickopen')"><span class="chip" data-attr-style="colorstyle"></span><span class="colour-name">{{colorname}}</span></button>
 	<button id="pick" data-if="host" data-event-click="queue('map')">Multiplayer Map</button>
 	<span class="caption" id="cap-map" data-if="!host">Map:</span>
 	<span class="caption" id="mapname">{{mapname}}</span>
@@ -75,14 +71,14 @@
 			<span class="caption">Choose a color</span>
 			<div id="picker-body">
 				<surface id="colorfield"/>
-				<span id="field-marker" data-style-left="pickmarkerleft" data-style-top="pickmarkertop"><span id="field-marker-core"></span></span>
+				<span id="field-marker" data-attr-style="pickstyle"><span id="field-marker-core"></span></span>
 				<div id="picker-side">
 					<input type="range" id="picker-value" min="96" max="255" data-attr-value="pickvalue" data-event-change="queue('pickvalue', ev.value)"/>
 					<span class="chip big" id="picker-chip" style="background-color: #000000"></span>
 				</div>
 			</div>
-			<div id="presets">
-				<button class="preset" data-for="preset : pickpresets" data-style-background-color="preset.color" data-style-color="preset.textcolor" data-event-click="queue('pickpreset', preset.value)">{{preset.label}}</button>
+			<div id="presets" class="grid">
+				<button class="preset" data-for="preset : pickpresets" data-class-taken="preset.taken" data-style-background-color="preset.color" data-style-color="preset.textcolor" data-event-click="queue('pickpreset', preset.value)">{{preset.caption}}</button>
 			</div>
 			<span id="picker-notice">{{picknotice}}</span>
 			<div id="picker-buttons">

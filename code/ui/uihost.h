@@ -71,6 +71,6 @@ class UIShellHostClass
 		// The faction tint the modern menus are coloured with.
 		virtual UIMenuTintType Menu_Tint(void) const { return(UI_TINT_ALLIED); }
 
-		// Is a live battle running behind the menus?
-		virtual bool Menu_Live_Background(void) const { return(false); }
+		// Is the menu battle drawn behind the menus, in place of the title art?
+		virtual bool Live_Background(void) const { return(false); }
 };
