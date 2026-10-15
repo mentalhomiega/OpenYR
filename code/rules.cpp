@@ -246,6 +246,7 @@ RulesClass::RulesClass(void) :
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(true),
 	IsLargeSidebarStrips(false),
+	AircraftWaypointReload(true),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
 	IsFineDifficulty(false),
@@ -1727,6 +1728,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsMultiMCV = ini.Get_Bool(GENERAL, "MultiMCV", IsMultiMCV);
 		IsRecheckPrerequisites = ini.Get_Bool(GENERAL, "RecheckPrerequisites", IsRecheckPrerequisites);
 		IsLargeSidebarStrips = ini.Get_Bool(GENERAL, "LargeSidebarStrips", IsLargeSidebarStrips);
+		AircraftWaypointReload = ini.Get_Bool(GENERAL, "AircraftWaypointReload", AircraftWaypointReload);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);

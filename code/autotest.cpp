@@ -295,6 +295,7 @@ extern int VoxelNormalTableEntryCount[];
 #include "surface.h"
 #include "truecolour.h"
 #include "weapon.h"
+#include "waypoint.h"
 #include "ui/uiscript.h"
 #include "windowevent.hh"
 
@@ -1766,6 +1767,41 @@ static void C4_Watch_Frame(void)
 }
 
 
+/*
+**	Waypoint probes: the waypoint placement, path send and aircraft path state steps. They sit in their own
+**	function, as the air probes do, because the Run chain is nested too deeply to take more branches.
+*/
+static void Waypoint_Probe_Step(StepType const & step)
+{
+	if (step.Command == "waypoint") {
+		// waypoint <any> x y: places a waypoint on the cell on the selected path, as a click in waypoint mode does.
+		Cell const cell(step.X, step.Y);
+		Coord coord = cell.As_Coord();
+		coord.Z = (Map[cell].IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0) + Map.Get_Height_GL(coord);
+		PlayerPtr->Place_Waypoint(coord);
+		DebugString("AUTOTEST   waypoint %d,%d selected path %d waypoints on it %d\n", step.X, step.Y, (int)PlayerPtr->SelectedPath, PlayerPtr->SelectedPath == PATH_NONE ? 0 : PlayerPtr->Paths[PlayerPtr->SelectedPath]->Waypoint_Count());
+	} else if (step.Command == "wpsend") {
+		// wpsend <any> x y: a click on the waypoint at that cell by the selected objects, with the path order a click makes on it.
+		Map.Active_Click(NULL, Cell(step.X, step.Y), ACTION_FOLLOW_WAYPOINT);
+		DebugString("AUTOTEST   wpsend %d,%d\n", step.X, step.Y);
+	} else if (step.Command == "wpstate") {
+		// wpstate <TypeID>: each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status, ammo,
+		// the waypoint path it follows and the next waypoint, and its radio contact.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->RTTI != RTTI_AIRCRAFT || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			AircraftClass const * plane = static_cast<AircraftClass const *>(techno);
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			TechnoClass const * contact = plane->In_Radio_Contact() ? plane->Contact_With_Whom() : NULL;
+			DebugString("AUTOTEST   wpstate #%04X %s of %s cell %d,%d agl %d in_air %d mission %s status %d ammo %d path %d next %d moving %d limbo %d contact %s\n",
+				index & 0xFFFF, techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, (int)techno->In_Air(),
+				MissionClass::Mission_Name(techno->Get_Mission()), (int)techno->Status, (int)techno->Ammo, (int)foot->CurrentPath, (int)foot->NextWaypoint,
+				(int)plane->Locomotion->Is_Moving(), (int)techno->IsInLimbo, contact != NULL ? contact->TClass->Name() : "-");
+		}
+	}
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
@@ -1819,6 +1855,11 @@ void Run(StepType const & step)
 	// weapons and airborne: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "weapons" || step.Command == "airborne") {
 		Air_Probe_Step(step);
+		return;
+	}
+
+	if (step.Command == "waypoint" || step.Command == "wpsend" || step.Command == "wpstate") {
+		Waypoint_Probe_Step(step);
 		return;
 	}
 
@@ -2230,8 +2271,8 @@ void Run(StepType const & step)
 		for (int index = 0; index < Feet.Count(); index++) {
 			FootClass const * foot = Feet[index];
 			if (foot->House == PlayerPtr && stricmp(foot->TClass->Name(), step.Argument.c_str()) == 0) {
-				DebugString("AUTOTEST   planstate %s at %d,%d orders %d running %d mission %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y,
-					foot->PlannedOrders.Count(), foot->IsPlanRunning ? 1 : 0, (int)foot->CurrentMission);
+				DebugString("AUTOTEST   planstate %s at %d,%d orders %d running %d mission %d leg %d target %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y,
+					foot->PlannedOrders.Count(), foot->IsPlanRunning ? 1 : 0, (int)foot->CurrentMission, foot->HasPlannedRunningOrder ? (int)foot->PlannedRunningOrder.Mission : -1, (int)foot->PlannedRunningOrder.Target.Is_Valid());
 			}
 		}
 		return;
@@ -2825,6 +2866,9 @@ void Run(StepType const & step)
 		}
 		if (stricmp(step.Argument.c_str(), "BallisticScatter") == 0) {
 			Rule->BallisticScatter = step.X;
+		}
+		if (stricmp(step.Argument.c_str(), "AircraftWaypointReload") == 0) {
+			Rule->AircraftWaypointReload = step.X != 0;
 		}
 		DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
 	} else if (step.Command == "action" || step.Command == "clickon") {

@@ -2708,6 +2708,14 @@ class RulesClass
 		bool IsLargeSidebarStrips;
 
 		/*
+		 * If true, an ammunition-limited armed aircraft may take planned orders in planning mode, and
+		 * goes to a dock to rearm when its ammunition runs out, then carries on with the order it left.
+		 * If false, planning mode refuses every aircraft, as gamemd's AircraftTypeClass::CanUseWaypoint
+		 * (0x41CB50) does.
+		 */
+		bool AircraftWaypointReload;
+
+		/*
 		 * If the fog is to be blended evenly into the terrain beneath it, then this flag
 		 * will be true. Otherwise the fog is dithered on, covering every other pixel in a
 		 * checkerboard so that half the terrain still shows through.

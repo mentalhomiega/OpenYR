@@ -1,0 +1,84 @@
+; Jet dock cycle: two Harriers attack the Africans' NACNST at 51,96, then return to the Air Force Command at 60,40 (four docks).
+; wpstate every 60 frames logs each Harrier's cell, height above ground, in_air, mission, status, ammo and radio contact until
+; both are reloaded and resting on the airfield. A take-off and landing loop shows as alternating Attack or Enter missions
+; with agl going from 0 to above 0 and back on the same Harrier (#tag). Observed on 2026-10-15: each Harrier lands once,
+; rests on a dock with mission Sleep while ammo is 0, reloads to 1, and stays on guard. No loop occurred.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/aircraft-jet-dock-cycle.txt -Seconds 300 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 60 45
+311 grantunit ORCA 62 45
+320 view 60 45
+330 attack ORCA
+400 wpstate ORCA
+460 wpstate ORCA
+520 wpstate ORCA
+580 wpstate ORCA
+640 wpstate ORCA
+700 wpstate ORCA
+760 wpstate ORCA
+820 wpstate ORCA
+880 wpstate ORCA
+940 wpstate ORCA
+1000 wpstate ORCA
+1060 wpstate ORCA
+1120 wpstate ORCA
+1180 wpstate ORCA
+1240 wpstate ORCA
+1300 wpstate ORCA
+1360 wpstate ORCA
+1420 wpstate ORCA
+1480 wpstate ORCA
+1540 wpstate ORCA
+1600 wpstate ORCA
+1660 wpstate ORCA
+1720 wpstate ORCA
+1780 wpstate ORCA
+1840 wpstate ORCA
+1900 wpstate ORCA
+1960 wpstate ORCA
+2020 wpstate ORCA
+2080 wpstate ORCA
+2140 wpstate ORCA
+2200 wpstate ORCA
+2260 wpstate ORCA
+2320 wpstate ORCA
+2380 wpstate ORCA
+2440 wpstate ORCA
+2500 wpstate ORCA
+2560 wpstate ORCA
+2620 wpstate ORCA
+2680 wpstate ORCA
+2740 wpstate ORCA
+2800 wpstate ORCA
+2860 wpstate ORCA
+2920 wpstate ORCA
+2980 wpstate ORCA
+3040 wpstate ORCA
+3100 wpstate ORCA
+3160 wpstate ORCA
+3220 wpstate ORCA
+3280 wpstate ORCA
+3340 wpstate ORCA
+3400 wpstate ORCA
+3460 wpstate ORCA
+3520 wpstate ORCA
+3580 wpstate ORCA
+3640 wpstate ORCA
+3700 wpstate ORCA
+3760 wpstate ORCA
+3820 wpstate ORCA
+3880 wpstate ORCA
+3940 wpstate ORCA
+4000 wpstate ORCA
+4060 wpstate ORCA
+4120 wpstate ORCA
+4180 wpstate ORCA
+4240 wpstate ORCA
+4300 wpstate ORCA
+4360 wpstate ORCA
+4500 quit

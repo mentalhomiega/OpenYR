@@ -562,10 +562,40 @@ int AircraftClass::Do_MISSION_HUNT(void)
  * HISTORY:                                                                                    *
  *   07/26/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+/// <summary>
+/// Tells whether the aircraft rearms at a dock: it has limited ammunition and carries a weapon.
+/// </summary>
+bool AircraftClass::Reloads_At_Dock(void) const
+{
+	return(Class->MaxAmmo > 0 && Is_Weapon_Equipped());
+}
+
+
+/// <summary>
+/// Tells whether a planned order must wait until the aircraft has rearmed.
+/// </summary>
+/// <returns>bool; True when AircraftWaypointReload is on, the aircraft rearms at a dock and it is short of ammunition.</returns>
+bool AircraftClass::Plan_Waits_For_Rearm(void) const
+{
+	return(Rule->AircraftWaypointReload && Reloads_At_Dock() && Ammo < Class->MaxAmmo);
+}
+
+
 void AircraftClass::AI(void)
 {
 	if (Temporal_AI()) {
 		return;
+	}
+
+	// A plan unit that must rearm puts back the attack it was carrying out. The attack ends in the
+	// return-to-base status without going idle, so this is checked every frame, not only at idle.
+	if (IsPlanRunning && Plan_Waits_For_Rearm()) {
+		Requeue_Interrupted_Planned_Leg();
+	}
+
+	// A plan held for rearming resumes once the aircraft is loaded and on guard.
+	if (IsPlanRunning && Mission == MISSION_GUARD && !Plan_Waits_For_Rearm() && !Locomotion->Is_Moving()) {
+		Advance_Planned_Order();
 	}
 
 	if (Mission == MISSION_SLEEP && HeightAGL > 0 && !Class->IsMissileSpawn) {
@@ -1669,7 +1699,9 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		if (IsIdle) {
 			return(true);
 		}
-		if (Advance_Planned_Order()) {
+		if (Plan_Waits_For_Rearm()) {
+			Requeue_Interrupted_Planned_Leg();
+		} else if (Advance_Planned_Order()) {
 			IsIdle = true;
 			return(true);
 		}

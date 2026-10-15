@@ -57,6 +57,7 @@
 #include "coord.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "aircraft.h"
 #include "foot.h"
 #include "goptions.h"
 #include "house.h"
@@ -1317,7 +1318,7 @@ void EventClass::Execute(void)
 		// Appends one planned order to a unit; the unit runs its queue after PLAN_COMMIT.
 		case PLAN_ORDER:
 			techno = Data.MegaMission.Whom.As_Techno();
-			if (techno != NULL && techno->IsActive && techno->Is_Foot() && techno->RTTI != RTTI_AIRCRAFT && techno->House == house) {
+			if (techno != NULL && techno->IsActive && techno->Is_Foot() && Planning_Unplannable_Label(techno) == NULL && techno->House == house) {
 				if (Data.MegaMission.Mission == MISSION_NONE || !NetSemantic::Mission_Is_Valid(Data.MegaMission.Mission, MISSION_NONE, MISSION_COUNT)) {
 					Log_Event_Rejection(EventRejectReason::InvalidPlannedOrder, Type, ID, Data.MegaMission.Mission);
 					break;
@@ -1765,6 +1766,9 @@ char const * Planning_Unplannable_Label(ObjectClass const * object)
 		return(PLANNING_MSG_NO_UNKNOWNS);
 	}
 	if (object->RTTI == RTTI_AIRCRAFT) {
+		if (Rule->AircraftWaypointReload && static_cast<AircraftClass const *>(object)->Reloads_At_Dock()) {
+			return(NULL);
+		}
 		return(PLANNING_MSG_NO_AIRCRAFT);
 	}
 	if (object->Is_Foot()) {

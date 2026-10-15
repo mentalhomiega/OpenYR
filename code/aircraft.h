@@ -116,6 +116,12 @@ class AircraftClass : public FootClass, public IFlyControl
 		Dir256 Pose_Dir(void) const;
 		AbstractClass * Good_LZ(void) const;
 		BuildingClass * Find_Dock_Building(void);
+
+		/*
+		 * Whether the aircraft has limited ammunition and a weapon, so that it rearms at a dock.
+		 */
+		bool Reloads_At_Dock(void) const;
+		virtual bool Plan_Waits_For_Rearm(void) const override;
 		virtual DirType Fire_Direction(void) const override;
 		virtual bool Can_Player_Fire(void) const override;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which) const override;

@@ -410,6 +410,13 @@ class FootClass : public TechnoClass
 		bool IsPlanRunning;
 
 		/*
+		 * The planned order the unit is carrying out. An aircraft that must rearm takes it back to the
+		 * front of its plan, so it resumes the order after reloading. Like PlannedOrders, it is not saved.
+		 */
+		PlannedOrderClass PlannedRunningOrder;
+		bool HasPlannedRunningOrder;
+
+		/*
 		 * This is the distance, expressed in screen pixels, that the object is lifted up
 		 * the display while an ion storm blast tosses it about. It is thrown away at the
 		 * start of every game frame, so the blast must keep renewing it to hold the object
@@ -496,6 +503,8 @@ class FootClass : public TechnoClass
 
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool = true) override;
+		virtual bool Plan_Waits_For_Rearm(void) const;
+		void Requeue_Interrupted_Planned_Leg(void);
 
 		// Planning mode: queue an order, start the queue on commit, and issue the next order when idle.
 		bool Can_Take_Planned_Order(void) const;
