@@ -221,6 +221,119 @@
 	line-height: 23dp;
 }
 
+.chip-button
+{
+	display: block;
+	flex: none;
+	margin: 0dp;
+	padding: 0dp;
+	border: 0dp #00000000;
+	background-color: transparent;
+}
+
+/* The free color picker covers the lobby while it is open. */
+#picker
+{
+	display: none;
+	position: absolute;
+	left: 0dp;
+	top: 0dp;
+	right: 0dp;
+	bottom: 0dp;
+	background-color: #000000c0;
+}
+
+#picker.open
+{
+	display: block;
+}
+
+#picker-panel
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 330dp;
+	margin-left: -165dp;
+	margin-top: -190dp;
+	padding: 10dp;
+}
+
+#picker-body
+{
+	display: flex;
+}
+
+#colorfield
+{
+	width: 128dp;
+	height: 128dp;
+	border: 1dp #00000099;
+}
+
+#picker-side
+{
+	display: flex;
+	flex-direction: column;
+	margin-left: 12dp;
+}
+
+#picker-value
+{
+	width: 24dp;
+	height: 128dp;
+}
+
+.chip.big
+{
+	width: 48dp;
+	height: 40dp;
+	margin-top: 8dp;
+	margin-right: 0dp;
+}
+
+#presets
+{
+	display: flex;
+	flex-wrap: wrap;
+	margin-top: 10dp;
+}
+
+.preset
+{
+	width: 72dp;
+	height: 22dp;
+	margin: 2dp;
+	font-size: 9dp;
+	color: #ffffff;
+}
+
+#picker-notice
+{
+	display: block;
+	height: 16dp;
+	margin-top: 6dp;
+	line-height: 16dp;
+	color: #ffcc66;
+}
+
+#picker-buttons
+{
+	display: flex;
+	margin-top: 4dp;
+}
+
+#picker-use
+{
+	width: 150dp;
+	margin-right: 14dp;
+}
+
+#picker-back
+{
+	width: 120dp;
+}
+
 #notice
 {
 	display: block;

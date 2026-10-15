@@ -26,6 +26,11 @@
 #define PLAYER_COLOR_MIN_VALUE		96
 
 /*
+ * The number of stock lobby colors. The engine checks it against MAX_MPLAYER_COLORS.
+ */
+#define PLAYER_COLOR_SEATS		8
+
+/*
  * The smallest CIELAB distance, in Delta E 1976 units, between two colors that the lobby accepts
  * for two players. The distance is the smallest over normal, protanopic and deuteranopic vision.
  */

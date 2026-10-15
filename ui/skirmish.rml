@@ -37,7 +37,7 @@
 						</select>
 					</div>
 					<div class="cell col-color">
-						<span class="chip" data-style-background-color="slot.swatch"></span>
+						<button class="chip-button" data-attrif-disabled="!slot.active" data-event-click="queue('pickopen', row)" title="Pick a free color"><span class="chip" data-style-background-color="slot.swatch"></span></button>
 						<select class="pick color" data-attr-id="'color' + row" data-attrif-disabled="!slot.active" data-event-change="queue('slotcolor', row, ev.value)">
 							<option data-for="entry : colors" data-attr-value="it_index" data-attrif-selected="it_index == slot.color" data-style-color="entry.color">{{entry.label}}</option>
 						</select>
@@ -95,6 +95,26 @@
 			<div id="buttons">
 				<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
 				<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+			</div>
+		</div>
+	</div>
+	<div id="picker" data-class-open="pickopen">
+		<div id="picker-panel" class="frame">
+			<span class="caption">Choose a color</span>
+			<div id="picker-body">
+				<surface id="colorfield"/>
+				<div id="picker-side">
+					<input type="range" id="picker-value" min="96" max="255" data-attr-value="pickvalue" data-event-change="queue('pickvalue', ev.value)"/>
+					<span class="chip big" id="picker-chip" style="background-color: #000000"></span>
+				</div>
+			</div>
+			<div id="presets">
+				<button class="preset" data-for="preset : pickpresets" data-style-background-color="preset.color" data-event-click="queue('pickpreset', preset.value)">{{preset.label}}</button>
+			</div>
+			<span id="picker-notice">{{picknotice}}</span>
+			<div id="picker-buttons">
+				<button id="picker-use" data-event-click="queue('pickok')">Use this color</button>
+				<button id="picker-back" data-event-click="queue('pickcancel')">Back</button>
 			</div>
 		</div>
 	</div>

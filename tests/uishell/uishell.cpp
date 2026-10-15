@@ -4307,6 +4307,7 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 		virtual void Say(char const * text) override { Said.push_back(text); }
 		virtual void Set_Side(int) override {}
 		virtual void Set_Color(int) override {}
+		virtual void Set_Custom_Color(int, unsigned int) override {}
 		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
 		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
 		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
@@ -5011,7 +5012,12 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	// What the settings file keeps.
 	UISkirmishState reread = presenter.State;
 	std::string const kept = UI_Skirmish_Slot_Text(reread, 1);
-	Check(kept.rfind("3,12,", 0) == 0 && kept.size() > 5 && kept.back() == '2', "a row's text holds its kind, its country's value, its color, its start and its team");
+	Check(kept.rfind("3,12,", 0) == 0 && kept.size() > 5 && kept.compare(kept.size() - 4, 4, ",2,0") == 0, "a row's text holds its kind, its country's value, its color, its start, its team and its free color");
+	reread.Slots[1].Custom = Player_Color_Pack(HSVClass(10, 200, 200));
+	std::string const freed = UI_Skirmish_Slot_Text(reread, 1);
+	reread.Slots[1] = UISkirmishSlot();
+	UI_Skirmish_Slot_Parse(reread, 1, freed);
+	Check(reread.Slots[1].Custom == Player_Color_Pack(HSVClass(10, 200, 200)), "a row's free color reads back as it was written");
 	reread.Slots[1] = UISkirmishSlot();
 	UI_Skirmish_Slot_Parse(reread, 1, kept);
 	Check(UI_Skirmish_Slot_Text(reread, 1) == kept, "a row's text reads back as it was written");

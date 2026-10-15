@@ -6,7 +6,7 @@
 # for the developer overlays.
 opents_add_test(UIShell
     NAME uishell
-    SOURCES uishell.cpp uidevstub.cpp uiscriptstub.cpp uitexturestub.cpp
+    SOURCES uishell.cpp uicolorstub.cpp uidevstub.cpp uiscriptstub.cpp uitexturestub.cpp
     ENGINE
         ui/uiscreen.cpp
         ui/uiinput.cpp
@@ -16,6 +16,8 @@ opents_add_test(UIShell
         utf8.cpp
         hsv.cpp
         modchoice.cpp
+        playercolor.cpp
+        ui/screens/colorpick/uicolorpick.cpp
         rgb.cpp
         ui/rml/rmlfont.cpp
         ui/rml/rmlfontfon.cpp

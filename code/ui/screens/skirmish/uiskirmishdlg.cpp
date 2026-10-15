@@ -24,6 +24,7 @@
 #include "preview.h"
 #include "rules.h"
 #include "session.h"
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
@@ -106,7 +107,9 @@ static void Remember_Preferences(UISkirmishState const & state)
 		}
 
 		Session.ColorIdx = state.Slots[0].Color;
+		Session.CustomColor = state.Slots[0].Custom;
 		Session.PrefColor = state.Slots[0].Color;
+		Session.PrefCustomColor = state.Slots[0].Custom;
 	}
 
 	// Written to the settings file by the Session.Write_MultiPlayer_Settings call that follows.
@@ -168,6 +171,7 @@ static void Seat_Players(UISkirmishState const & state)
 
 		who->Player.House = side;
 		who->Player.Color = Session.ColorIdx;
+		who->Player.CustomColor = Session.CustomColor;
 		who->Player.ProcessTime = -1;
 		who->Player.SpawnChoice = Slot_Start(state, state.Slots[0]);
 		who->Player.AlliesMask = mask[0];
@@ -196,6 +200,7 @@ static void Seat_Players(UISkirmishState const & state)
 		// A Random country stays -1 for the game to pick; the list has already kept colors apart.
 		node->Player.House = Slot_Side(state, slot);
 		node->Player.Color = slot.Color;
+		node->Player.CustomColor = slot.Custom;
 		node->Player.Handicap = DIFF_HARD - level;
 		node->Player.SpawnChoice = Slot_Start(state, slot);
 		node->Player.AlliesMask = mask[row];
@@ -340,6 +345,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 	}
 
 	int const palette = (int)(sizeof(UI_SKIRMISH_COLORS) / sizeof(UI_SKIRMISH_COLORS[0]));
+	UI_Color_Pick_Build_Presets(state.Picker);
 	state.Colors.clear();
 	for (int index = 0; index < MAX_PLAYERS && index < palette; index++) {
 		UISkirmishOption option;
@@ -407,6 +413,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 		}
 	}
 	state.Slots[0].Color = (Session.PrefColor >= 0 && Session.PrefColor < (int)state.Colors.size()) ? Session.PrefColor : 0;
+	state.Slots[0].Custom = Player_Color_Is_Custom(Session.PrefCustomColor) ? Session.PrefCustomColor : 0;
 	state.Slots[0].Kind = UI_SKIRMISH_SLOT_OPEN;
 
 	Clear_Vector(&Session.Players);
