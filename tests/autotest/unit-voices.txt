@@ -1,0 +1,30 @@
+; Unit voices: an infantry and a vehicle of each side answer a select, a move and an attack order. The player
+; is granted an Allied and a Soviet pair; the computer's infantry and tank are the attack targets. Each response
+; is logged as "Voice: <sound>" when it is given, so the log shows it even in a muted run.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/unit-voices.txt -Width 800 -Height 600 -Seconds 60 -Filter "Voice:|AUTOTEST frame|AUTOTEST   clickcell|AUTOTEST   action|Exception"
+30 scheme Modern
+32 view 60 44
+35 reveal
+40 grantunit E1 60 42
+41 grantunit MTNK 62 42
+42 grantunit E2 60 46
+43 grantunit HTNK 62 46
+44 spawn E1 68 42
+45 spawn MTNK 68 46
+60 select E1
+70 clickcell E1 57 42
+80 select MTNK
+90 clickcell MTNK 57 44
+100 select E2
+110 clickcell E2 57 46
+120 select HTNK
+130 clickcell HTNK 57 48
+140 select E1
+150 clickon E1 68 42
+160 select MTNK
+170 clickon MTNK 68 46
+180 select E2
+190 clickon E2 68 42
+200 select HTNK
+210 clickon HTNK 68 46
+300 quit

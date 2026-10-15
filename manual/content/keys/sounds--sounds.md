@@ -8,7 +8,7 @@ when_omitted:
   note: The one sample named like the section.
 ---
 
-The samples the sound plays, named without an extension and separated by spaces or commas. The engine reads the first 32 names and ignores the rest. The first [`Attack=`](/keys/attack/) names are attack samples and the last [`Decay=`](/keys/decay/) names are decay samples. The rest are the body, and [`Control=`](/keys/control/) decides how the body plays.
+The samples the sound plays, named without an extension and separated by spaces or commas. A leading `$` or `#` is not part of the name, so `$igisea` names the sample `igisea`. The engine reads the first 32 names and ignores the rest. The first [`Attack=`](/keys/attack/) names are attack samples and the last [`Decay=`](/keys/decay/) names are decay samples. The rest are the body, and [`Control=`](/keys/control/) decides how the body plays.
 
 ```ini title="sound01.ini"
 [MYLOOP]

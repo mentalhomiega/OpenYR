@@ -249,6 +249,24 @@ void Test_Values(void)
 }
 
 
+// A sound list name may carry leading '$' or '#' marks, which the original skips when it looks
+// the sample up. A name made of marks alone names no sample and is left out.
+void Test_Sample_Prefixes(void)
+{
+	INIClass ini;
+	Read(ini,
+		"[VOICE]\r\n"
+		"Sounds=$igisea,#igiseb,$$igisec,plain,$,##\r\n");
+
+	AudioEventTypeClass defaults;
+	VocClass::Read_Defaults(ini, defaults);
+	AudioEventTypeClass type;
+	Check(VocClass::Read_Type(ini, "VOICE", defaults, type), "prefixed section found");
+	Check(type.SoundCount == 4 && std::strcmp(type.Sounds[0], "igisea") == 0 && std::strcmp(type.Sounds[1], "igiseb") == 0
+		&& std::strcmp(type.Sounds[2], "igisec") == 0 && std::strcmp(type.Sounds[3], "plain") == 0, "leading marks are not part of the sample name");
+}
+
+
 void Test_Limits(void)
 {
 	char text[4096];
@@ -289,6 +307,7 @@ int main(void)
 	Test_Vinifera_Shape();
 	Test_Values();
 	Test_Limits();
+	Test_Sample_Prefixes();
 
 	std::printf("soundini: %d checks, %d failures\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);
