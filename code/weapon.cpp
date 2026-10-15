@@ -389,6 +389,8 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsRevealOnFire);
 	crc(IsTerrainFire);
 	crc(DisguiseFakeBlinkTime);
+	crc(IsFireWhileMoving);
+	if (AssaultAnim != NULL) crc(AssaultAnim->Fetch_ID());
 	crc(IsHouseColor);
 	crc(IsTurboBoosted);
 	crc(IsSupressed);
@@ -470,6 +472,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRevealOnFire);
 	stream.Serialize(IsTerrainFire);
 	stream.Serialize(DisguiseFakeBlinkTime);
+	stream.Serialize(IsFireWhileMoving);
 	stream.Serialize(IsHouseColor);
 	stream.Serialize(IsTurboBoosted);
 	stream.Serialize(IsSupressed);
