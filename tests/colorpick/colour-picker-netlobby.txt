@@ -14,7 +14,7 @@ ui shot netgame-start
 ui click color-pick
 ui wait 1500
 ui shot netgame-picker-open
-ui press Okabe-Ito yellow
+ui press Safe yellow
 ui wait 1000
 ui pointer colorfield 0.22 0.35
 ui wait 1000

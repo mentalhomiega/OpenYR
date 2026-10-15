@@ -13,7 +13,7 @@ ui shot lobby-start
 ui click swatch0
 ui wait 1500
 ui shot picker-open-seat0
-ui press Okabe-Ito yellow
+ui press Safe yellow
 ui wait 1000
 ui shot picker-preset-yellow
 ui pointer colorfield 0.22 0.35

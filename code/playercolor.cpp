@@ -39,13 +39,13 @@ PlayerColorPreset const PRESETS[] = {
 	{"Teal", -1, 0x008080},
 	{"Lime", -1, 0x96E61E},
 	{"Brown", -1, 0x78461E},
-	{"Okabe-Ito blue", -1, 0x0072B2},
-	{"Okabe-Ito orange", -1, 0xE69F00},
-	{"Okabe-Ito sky blue", -1, 0x56B4E9},
-	{"Okabe-Ito bluish green", -1, 0x009E73},
-	{"Okabe-Ito vermillion", -1, 0xD55E00},
-	{"Okabe-Ito reddish purple", -1, 0xCC79A7},
-	{"Okabe-Ito yellow", -1, 0xF0E442},
+	{"Safe blue", -1, 0x0072B2},
+	{"Safe orange", -1, 0xE69F00},
+	{"Safe sky blue", -1, 0x56B4E9},
+	{"Safe green", -1, 0x009E73},
+	{"Safe vermilion", -1, 0xD55E00},
+	{"Safe purple", -1, 0xCC79A7},
+	{"Safe yellow", -1, 0xF0E442},
 };
 
 /// A 3 by 3 matrix over linear RGB.
