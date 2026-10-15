@@ -39,7 +39,9 @@ if(FUZZ_STANDALONE)
 
     set(FUZZ_SANITIZER_FLAGS "")
     if(OPENTS_FUZZ_SANITIZE)
-        set(FUZZ_SANITIZER_FLAGS -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer)
+        # The vptr check is off because the inherited intrusive lists hand out their head node as
+        # an element of the derived type, which that check reports on every walk of a list.
+        set(FUZZ_SANITIZER_FLAGS -fsanitize=address,undefined -fno-sanitize=vptr -fno-sanitize-recover=undefined -fno-omit-frame-pointer)
     endif()
 
     if(OPENTS_FUZZ_SYSTEM_LINKER_DRIVER)
@@ -104,6 +106,13 @@ function(fuzz_add_target target)
 endfunction()
 
 
+# The directory search behind the file classes has one source per platform.
+if(MSVC)
+    set(FUZZ_FILE_PLATFORM file_win.cpp)
+else()
+    set(FUZZ_FILE_PLATFORM file_posix.cpp)
+endif()
+
 # The INI reader and the sources it is built from.
 set(FUZZ_INI_ENGINE
     ini.cpp
@@ -153,4 +162,11 @@ fuzz_add_target(FuzzNet NAME fuzz_net
 fuzz_add_target(FuzzCsf NAME fuzz_csf
     SOURCES fuzz_csf.cpp
     ENGINE csf.cpp utf8.cpp buff.cpp straw.cpp xstraw.cpp
+)
+
+fuzz_add_target(FuzzMix NAME fuzz_mix
+    SOURCES fuzz_mix.cpp
+    ENGINE mixfile.cpp ccfile.cpp cdfile.cpp rawfile.cpp file.cpp ${FUZZ_FILE_PLATFORM} bfiofile.cpp pk.cpp pkstraw.cpp
+        shastraw.cpp sha.cpp blwstraw.cpp blowfish.cpp rndstraw.cpp random.cpp _syncrec.cpp syncrec.cpp
+        buff.cpp crc.cpp int.cpp mpmath.cpp pipe.cpp straw.cpp xpipe.cpp xstraw.cpp
 )
