@@ -3258,6 +3258,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("bitmap-font"), "the pixel-perfect UI font switch follows the sidebar rows drop-down");
 		Press(context, Rml::Input::KI_TAB);
+		Check(focused("windowsize"), "the window size list follows the pixel-perfect UI font switch");
+		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("vsync"), "the vertical sync switch follows full screen");
@@ -3272,9 +3274,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("show-fps"), "the show FPS switch follows the frame rate limit");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("windowsize"), "the window size follows the show FPS switch");
-		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == cursor, "the pointer switch follows the window size");
+		Check(context.GetFocusElement() == cursor, "the pointer switch follows the show FPS switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);

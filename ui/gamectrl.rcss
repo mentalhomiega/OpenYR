@@ -86,7 +86,7 @@
 
 .frontend .row > .caption
 {
-	width: 87dp;
+	width: 104dp;
 	height: 22dp;
 	margin-right: 0;
 	text-align: left;
@@ -94,7 +94,7 @@
 
 .frontend .row > input[type='range']
 {
-	width: 222dp;
+	width: 205dp;
 	height: 22dp;
 }
 

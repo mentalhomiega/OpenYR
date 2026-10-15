@@ -33,6 +33,9 @@
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-bitmap-font"><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/>Pixel-perfect UI font</label>
+			<div class="row" id="windowsize-row"><span class="caption">Window size:</span><select id="windowsize" data-value="windowsize" data-event-change="queue('windowsize', ev.value)">
+				<option data-for="entry : windowsizes" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
 		</div>
 		<div id="right">
 			<p class="heading" id="window-label">Window</p>
@@ -49,9 +52,6 @@
 				<option data-for="entry : framelimits" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<label class="check" id="switch-show-fps"><input type="checkbox" id="show-fps" data-attrif-checked="showfps" data-event-click="queue('showfps', showfps ? 0 : 1)"/>Show FPS</label>
-			<div class="row" id="windowsize-row"><span class="caption">Window size:</span><select id="windowsize" data-value="windowsize" data-event-change="queue('windowsize', ev.value)">
-				<option data-for="entry : windowsizes" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
 			<p class="heading" id="pointer-label">Mouse Pointer</p>
 			<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the Windows pointer</label>
 			<div class="row"><span class="caption">Cursor size:</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">
