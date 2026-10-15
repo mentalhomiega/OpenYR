@@ -292,6 +292,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	LocomotorSource(NULL),
 	IsAttackedByLocomotor(false),
 	IsLetGoByLocomotor(false),
+	IsCrashing(false),
 	LetGoBy(NULL),
 	LetGoByHouse(NULL),
 	ThreatPosed(0),
@@ -3574,20 +3575,6 @@ void TechnoClass::AI(void)
 
 	AttachedEffects.AI(this);
 
-	// A vehicle let go in the air by its holder crushes what is under it and is destroyed when it reaches the ground (ReleaseLocomotor, 0x70FEE0).
-	if (IsLetGoByLocomotor && HeightAGL <= 0) {
-		IsLetGoByLocomotor = false;
-		Crush_On_Landing();
-		if (!IsActive) {
-			return;
-		}
-		int damage = Strength;
-		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-		if (!IsActive) {
-			return;
-		}
-	}
-
 	// A held vehicle is let go when the holder turns to something else, and is otherwise pulled
 	// toward the holder (TechnoClass::AI and ReleaseLocomotor, 0x70FEE0).
 	if (LocomotorTarget != NULL) {
@@ -4278,6 +4265,14 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A vehicle a locomotor holds cannot fire, and a holder does not fire at the vehicle it holds (TechnoClass::GetFireError, 0x6FC0B0).
+	if (Is_Foot() && IsAttackedByLocomotor) {
+		return(FIRE_ILLEGAL);
+	}
+	if (LocomotorTarget == target) {
+		return(FIRE_REARM);
+	}
+
 	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
 	CellClass * cellptr = &Map[target->Center_Coord()];
 	WeaponTypeClass const * weapon;
@@ -4433,6 +4428,12 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	*/
 	if (target->In_Air() && !weapon->Bullet->IsAntiAircraft) {
 		return(LocomotorTarget == target ? FIRE_REARM : FIRE_ILLEGAL);
+	}
+
+	// While a magnetron holds a vehicle, it fires at a structure, or at a new target once its beam is gone
+	// (TechnoClass::GetFireError, 0x6FC0B0).
+	if (weapon->IsMagBeam && LocomotorTarget != NULL && (techno == NULL || techno->RTTI != RTTI_BUILDING) && (Wave != NULL || LocomotorTarget == target)) {
+		return(FIRE_REARM);
 	}
 
 	// Only a map cell needs an anti-ground projectile (TechnoClass::GetFireError, 0x6FC7EB); an object is judged by
@@ -6568,6 +6569,20 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	switch (result) {
 		case RESULT_DESTROYED:
 
+			// A vehicle held or let go in the air is not destroyed where it is. It is let go and falls, and the drop
+			// on landing destroys it (FootClass::Crash, 0x4DEBB0).
+			if (Is_Foot() && IsAttackedByLocomotor && HeightAGL > 0) {
+				if (!IsCrashing) {
+					if (LocomotorSource != NULL) {
+						LocomotorSource->LocomotorTarget = NULL;
+						LocomotorSource = NULL;
+					}
+					Release_Held_Vehicle(NULL);
+				}
+				Strength = 1;
+				return(RESULT_NONE);
+			}
+
 			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
 			if (CaptureManager) {
 				CaptureManager->Free_All();
@@ -8433,9 +8448,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (LocomotorSource == target) {
 			LocomotorSource = NULL;
 			if (IsAttackedByLocomotor) {
-				IsAttackedByLocomotor = false;
-				IsLetGoByLocomotor = HeightAGL > 0;
-				Fall_After_Release();
+				Release_Held_Vehicle(NULL);
 			}
 		}
 		if (DrainTarget == target) {
@@ -10497,6 +10510,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LocomotorSource);
 	stream.Serialize(IsAttackedByLocomotor);
 	stream.Serialize(IsLetGoByLocomotor);
+	stream.Serialize(IsCrashing);
 	stream.Serialize(LetGoBy);
 	stream.Serialize(LetGoByHouse);
 	stream.Serialize(ThreatPosed);
@@ -11737,9 +11751,8 @@ void TechnoClass::Stop_Drain(void)
 
 
 /// <summary>
-/// Lets go of the vehicle this object holds (TechnoClass::ReleaseLocomotor, 0x70FEE0). One let
-/// go in the air falls and is destroyed when it lands; one on the ground gets its own
-/// locomotor back once it has stopped.
+/// Lets go of the vehicle this object holds (TechnoClass::ReleaseLocomotor, 0x70FEE0), through
+/// the vehicle's Release_Held_Vehicle.
 /// </summary>
 void TechnoClass::Release_Locomotor(bool clear_target)
 {
@@ -11749,12 +11762,7 @@ void TechnoClass::Release_Locomotor(bool clear_target)
 	TechnoClass * target = LocomotorTarget;
 	LocomotorTarget = NULL;
 	target->LocomotorSource = NULL;
-	target->IsAttackedByLocomotor = false;
-	target->IsLetGoByLocomotor = target->HeightAGL > 0;
-	target->LetGoBy = this;
-	target->LetGoByHouse = House;
-	DebugString("Locomotor: %s lets go of %s%s\n", TClass->Name(), target->TClass->Name(), target->IsLetGoByLocomotor ? " in the air" : "");
-	target->Fall_After_Release();
+	target->Release_Held_Vehicle(this);
 	if (clear_target) {
 		Assign_Target(NULL);
 	}
@@ -11762,20 +11770,34 @@ void TechnoClass::Release_Locomotor(bool clear_target)
 
 
 /// <summary>
-/// Sends a vehicle a locomotor let go of down to the ground. A vehicle the locomotor held
-/// still in the air has no move to stop, so it is ordered to the ground under it.
+/// The vehicle side of a release (TechnoClass::ReleaseLocomotor, 0x70FEE0). A vehicle let go in
+/// the air is stunned, keeps its hold and falls straight down until it lands. A vehicle let go on
+/// the ground is let go at once, so it can hand its own locomotor back. The holder is NULL when
+/// it has already expired.
 /// </summary>
-void TechnoClass::Fall_After_Release(void)
+void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 {
-	if (!Is_Foot() || ((FootClass *)this)->Locomotion == NULL) {
+	if (!Is_Foot()) {
 		return;
 	}
-	ILocomotion * locomotion = ((FootClass *)this)->Locomotion.get();
-	locomotion->Stop_Moving();
-	if (HeightAGL > 0 && !locomotion->Is_Moving()) {
-		Coord ground = Get_Coord();
-		ground.Z = Map.Get_Height_GL(ground);
-		locomotion->Move_To(ground);
+	DebugString("Locomotor: %s lets go of %s%s\n", holder != NULL ? holder->TClass->Name() : "(gone)", TClass->Name(), HeightAGL > 0 ? " in the air" : "");
+
+	if (HeightAGL > 0) {
+		IsCrashing = true;
+		if (holder != NULL) {
+			LetGoBy = holder;
+			LetGoByHouse = holder->House;
+		}
+		Stun();
+		Assign_Destination(NULL);
+		ILocomotion * locomotion = ((FootClass *)this)->Locomotion.get();
+		if (locomotion != NULL) {
+			locomotion->Begin_Fall();
+		}
+	} else {
+		Assign_Destination(NULL);
+		IsLetGoByLocomotor = true;
+		Assign_Destination(NULL);
 	}
 }
 
@@ -11852,6 +11874,7 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 
 	IsAttackedByLocomotor = true;
 	IsLetGoByLocomotor = false;
+	IsCrashing = false;
 	LetGoBy = NULL;
 	LetGoByHouse = source->House;
 	LocomotorSource = source;
