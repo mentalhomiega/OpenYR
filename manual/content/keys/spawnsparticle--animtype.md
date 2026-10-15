@@ -12,4 +12,4 @@ The animation puts [`NumParticles`](/keys/numparticles/#scope-animtype) particle
 
 An animation whose largest frame is its first spawns the particles once, when it starts. Otherwise a looping animation spawns them again each time it reaches that frame, as [`Crater`](/keys/crater/#scope-animtype) does.
 
-The shipped [`VIRUSD`](/keys/infantryvirus/) animation, which a virus kill leaves, sets `SpawnsParticle=VirusCloud1` with `NumParticles=3`. Each `VirusCloud1` particle poisons the infantry standing in its cell.
+The shipped [`VIRUSD`](/keys/infantryvirus/) animation, which a virus kill leaves, sets `SpawnsParticle=VirusCloud1` with `NumParticles=3`. Each `VirusCloud1` particle damages the objects standing in its cell, as its particle type's `Damage` and `Warhead` say.
