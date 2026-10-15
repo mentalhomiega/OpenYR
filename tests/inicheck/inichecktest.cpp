@@ -103,6 +103,11 @@ void Test_Values(void)
 	Check(Value_Fits(ValueKind::COLOR, "255,128,0") && !Value_Fits(ValueKind::COLOR, "red"), "a color needs three whole numbers");
 	Check(Value_Fits(ValueKind::INTEGER_LIST, "1, 2,3") && !Value_Fits(ValueKind::INTEGER_LIST, "1,,3"), "a list of integers refuses an empty item");
 
+	Check(Value_Fits(ValueKind::SEQUENCE, "0,1,0") && Value_Fits(ValueKind::SEQUENCE, "6, 6, 6") && Value_Fits(ValueKind::SEQUENCE, "-1,0,8,NW"), "a sequence takes three whole numbers and an optional facing");
+	Check(Value_Fits(ValueKind::SEQUENCE, "1,2,3,S ; stand") && Value_Fits(ValueKind::SEQUENCE, "1,2,3,"), "a sequence ignores what follows its facing, and an empty facing is unset");
+	Check(!Value_Fits(ValueKind::SEQUENCE, "1,2") && !Value_Fits(ValueKind::SEQUENCE, "1 ,2,3") && !Value_Fits(ValueKind::SEQUENCE, "1,2.5,3") && !Value_Fits(ValueKind::SEQUENCE, "$1,2,3"), "a sequence refuses two numbers, a blank before a comma, a fraction and hexadecimal");
+	Check(!Value_Fits(ValueKind::SEQUENCE, "1,2,3,X") && !Value_Fits(ValueKind::SEQUENCE, "1,2,3,n") && !Value_Fits(ValueKind::SEQUENCE, "1,2,3,North"), "a sequence refuses a facing other than the eight names, in capitals");
+
 	Check(Value_Fits(ValueKind::OTHER, "anything"), "a form the checker cannot test always fits");
 	Check(IniCheck::Kind_From_Name("floating point") == ValueKind::FLOAT && IniCheck::Kind_From_Name("speed") == ValueKind::OTHER, "catalog value types map to forms");
 }
@@ -358,6 +363,73 @@ void Test_Theater(void)
 }
 
 
+char const SEQUENCE_CATALOG[] =
+	"Sequence\tart.ini\t@image\tInfantryType\tstring\n"
+	"Crawls\tart.ini\t@image\tInfantryType\tboolean\n"
+	"FireUp\tart.ini\t@image\tInfantryType\tinteger\n"
+	"Ready\tart.ini\t@sequence\tInfantryType\tinfantry sequence\n"
+	"Walk\tart.ini\t@sequence\tInfantryType\tinfantry sequence\n"
+	"Down\tart.ini\t@sequence\tInfantryType\tinfantry sequence\n"
+	"Up\tart.ini\t@sequence\tInfantryType\tinfantry sequence\n"
+	"FireUp\tart.ini\t@sequence\tInfantryType\tinfantry sequence\n";
+
+
+void Test_Sequences(void)
+{
+	IniCheck::Catalog catalog;
+	std::istringstream stream(SEQUENCE_CATALOG);
+	std::string error;
+	Check(catalog.Load(stream, error), "the sequence catalog loads");
+	Check(IniCheck::Kind_From_Name("infantry sequence") == IniCheck::ValueKind::SEQUENCE, "the catalog names the sequence form");
+
+	char const rules[] =
+		"[InfantryTypes]\n"                 // 1
+		"0=E1\n"                            // 2
+		"1=E2\n"                            // 3
+		"[VehicleTypes]\n"                  // 4
+		"0=MTNK\n"                          // 5
+		"[E2]\n"                            // 6
+		"Image=GGI\n";                      // 7
+
+	char const art[] =
+		"[E1]\n"                            // 1
+		"Sequence=DoE1\n"                   // 2
+		"FireUp=3\n"                        // 3
+		"[GGI]\n"                           // 4
+		"Sequence=DoGGI\n"                  // 5
+		"[E2]\n"                            // 6
+		"Sequence=DoUnused\n"               // 7
+		"[MTNK]\n"                          // 8
+		"Sequence=DoTank\n"                 // 9
+		"[DoE1]\n"                          // 10
+		"Ready=0,1,0\n"                     // 11
+		"Walk=6,6,6,N\n"                    // 12
+		"FireUp=58,6,6\n"                   // 13
+		"Down=1,2\n"                        // 14
+		"Up=1 ,2,3\n"                       // 15
+		"Crawls=yes\n"                      // 16
+		"[DoGGI]\n"                         // 17
+		"Walk=6,6,6,X\n"                    // 18
+		"Ready=0,1,0,SW\n"                  // 19
+		"[DoUnused]\n"                      // 20
+		"Walk=bad\n"                        // 21
+		"[DoTank]\n"                        // 22
+		"Walk=bad\n";                       // 23
+
+	IniCheck::Report const report = IniCheck::Check_Art(catalog, art, rules);
+
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Sequence", 2) && !Has(report, IniCheck::FindingType::UNKNOWN_KEY, "FireUp", 3), "an infantry type's art section keeps its own keys, including Sequence=");
+	Check(!Has(report, IniCheck::FindingType::BAD_VALUE, "Ready", 11) && !Has(report, IniCheck::FindingType::BAD_VALUE, "Walk", 12) && !Has(report, IniCheck::FindingType::BAD_VALUE, "FireUp", 13), "the section Sequence= names takes do-strings, including keys the art section reads as numbers");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Down", 14) && Has(report, IniCheck::FindingType::BAD_VALUE, "Up", 15), "a do-string the engine cannot scan is reported");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Crawls", 16), "an art key in a sequence section is reported");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Walk", 18) && !Has(report, IniCheck::FindingType::BAD_VALUE, "Ready", 19), "the sequence of a type whose Image= names another section is placed through that section");
+	Check(report.Findings.size() == 5, "nothing else is reported");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Sequence", 9), "a vehicle's art section does not read Sequence=");
+	Check(report.UncheckedSections.size() == 3 && report.UncheckedSections[0] == "E2" && report.UncheckedSections[1] == "DoUnused" && report.UncheckedSections[2] == "DoTank",
+		"a Sequence= in a section no infantry type reads is not followed");
+}
+
+
 void Test_Rules(void)
 {
 	IniCheck::Catalog catalog = Load_Catalog();
@@ -492,6 +564,7 @@ int main(void)
 	Test_Difficulty();
 	Test_Art_Placement();
 	Test_Theater();
+	Test_Sequences();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);

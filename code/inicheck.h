@@ -36,6 +36,7 @@ namespace IniCheck
 		POINT3,
 		COLOR,
 		INTEGER_LIST,
+		SEQUENCE,
 	};
 
 	ValueKind Kind_From_Name(std::string_view value_type);
