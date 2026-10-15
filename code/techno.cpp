@@ -188,6 +188,7 @@
 #include "navalweapon.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "productionrules.h"
 #include "psystype.h"
 #include "queue.h"
 #include "revent.h"
@@ -979,13 +980,8 @@ int TechnoClass::Time_To_Build(void) const
 	**	minimum and, while the house is short, the maximum (TechnoClass::TimeToBuild, 0x6F47A0).
 	*/
 	// gamemd stores the power ratio as a float32 truncated toward zero (TechnoClass::TimeToBuild, 0x6F4808).
-	double const power = Truncate_To_Single(House->Power_Fraction());
-	double speed = 1.0 - (1.0 - power) * Rule->LowPowerPenaltyModifier;
-	speed = std::max(speed, Rule->MinLowPowerProductionSpeed);
-	if (power < 1.0) speed = std::min(speed, Rule->MaxLowPowerProductionSpeed);
-	// The floor is gamemd's float32 0.01 (TechnoClass::TimeToBuild, 0x7F4E34), not the double.
-	if (speed == 0.0) speed = 0.01f;
-	val /= speed;
+	// The zero-speed floor is gamemd's float32 0.01 (TechnoClass::TimeToBuild, 0x7F4E34), not the double.
+	val = ProductionRules::Low_Power_Build_Time(val, House->Power_Fraction(), Rule->LowPowerPenaltyModifier, Rule->MinLowPowerProductionSpeed, Rule->MaxLowPowerProductionSpeed);
 
 	int extra = House->Factory_Count(RTTI) - 1;
 	if (Rule->MultipleFactoryCap > 0) {
