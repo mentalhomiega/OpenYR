@@ -13,6 +13,8 @@ The developer guides are split by subject:
 - [Project direction](DIRECTION.md) — long-term architecture.
 - [The saved game format](SAVE-FORMAT.md) — the layout of a `.SAV` file: its
   header, listing fields, compressed content, and object records.
+- [OpenYR-only INI keys](OPENYR_KEYS.md) — every key we read that gamemd does
+  not, grouped by file, with its default, effect and manual page.
 - [INI checker](INICHECK.md) — reports rules keys the engine does not read
   and values it cannot read.
 - [True-colour sprites](TRUECOLOUR.md) — PNG sheets drawn in place of SHP
