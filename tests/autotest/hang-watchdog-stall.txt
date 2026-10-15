@@ -2,6 +2,6 @@
 ; frame 300. With the default [Debug] HangSeconds=5 the watchdog reports it after 5 seconds, with the
 ; call stack naming Hang_Watchdog_Test_Stall, and it reports the thread again once it resumes.
 ; Run from the workspace root, with the build's own copy of the game:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent23/tests/autotest/hang-watchdog-stall.txt -InstallDir build-agent23/bin/Release -Seconds 90 -Filter "HANG|AUTOTEST|Exception"
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent23/tests/autotest/hang-watchdog-stall.txt -InstallDir build-agent23/bin/Release -Seconds 240 -Filter "HANG|AUTOTEST|Exception"
 300 stall 8000
 600 quit
