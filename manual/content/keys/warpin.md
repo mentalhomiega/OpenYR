@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-A unit that teleports with a teleport locomotor, such as a Chrono Legionnaire or a Chrono Miner, plays this animation at its center where it lands. A landing moved to a nearby cell plays it on that cell.
+This build's teleport locomotor does not play this animation. A unit that teleports, such as a Chrono Legionnaire or a Chrono Miner, plays [WarpOut](/keys/warpout/) at its center where it lands, as gamemd does (0x719788).
 
 ```ini title="rulesmd.ini"
 [General]

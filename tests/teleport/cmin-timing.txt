@@ -1,0 +1,31 @@
+; Chrono Miner warp timing on the default skirmish map (XMP29U2). A Chrono Miner teleports only on its
+; refinery trip (unit.cpp: a teleporter goes onto a free dock cell with the Teleport locomotor), so this
+; script builds a refinery and drops the miner on the ore at 63,31. Each trip logs 'warp out' and 'warp in'
+; on one frame, then 'warp released' when it can act again. Plain move orders drive the miner instead.
+; Short trip: the refinery at 62,26 has its dock at 64,27, about 4 cells from the ore.
+; Run: run_autotest.ps1 -Build agent2 -Script tests/teleport/cmin-timing.txt -Seconds 200 -ShotDir "E:/Claude ra2 decomp/shots/chrono-legion"
+60 command CenterBase
+70 select AMCV
+80 command DeployObject
+300 own GAREFN 62 26
+310 own CMIN 63 31
+320 where CMIN
+320 reveal
+380 where CMIN
+440 where CMIN
+500 where CMIN
+560 where CMIN
+600 dump
+620 where CMIN
+680 where CMIN
+740 where CMIN
+800 where CMIN
+860 where CMIN
+875 view 64 27
+880 command ScreenCapture
+920 where CMIN
+980 where CMIN
+1040 where CMIN
+1100 where CMIN
+1160 where CMIN
+1200 quit

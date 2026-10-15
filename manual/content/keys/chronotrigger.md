@@ -1,6 +1,6 @@
 ---
 key: ChronoTrigger
-summary: Whether a teleporting object's warp-out wait grows with the distance it teleports.
+summary: Whether a teleporting object's hold after landing grows with the distance it teleports.
 see_also: ["system:tiberium", "Teleporter", "ChronoDistanceFactor", "ChronoMinimumDelay", "ChronoDelay"]
 when_omitted:
   kind: value
@@ -12,4 +12,4 @@ when_omitted:
 ChronoTrigger=yes
 ```
 
-With `yes`, a teleporting object waits its distance divided by [`ChronoDistanceFactor`](/keys/chronodistancefactor/) before it jumps, and never less than [`ChronoMinimumDelay`](/keys/chronominimumdelay/). With `no`, every jump waits only `ChronoMinimumDelay`. Under [`ChronoRangeMinimum`](/keys/chronorangeminimum/) the wait is always `ChronoMinimumDelay`.
+With `yes`, a teleporting object holds for its distance divided by [`ChronoDistanceFactor`](/keys/chronodistancefactor/) after it lands, and never less than [`ChronoMinimumDelay`](/keys/chronominimumdelay/). With `no`, every landing holds only `ChronoMinimumDelay`. Under [`ChronoRangeMinimum`](/keys/chronorangeminimum/) the hold is always `ChronoMinimumDelay`.

@@ -1,8 +1,9 @@
 ; Chrono Legionnaire warp check on the default skirmish map (XMP29U2, base at 64,19).
 ; Run: run_autotest.ps1 -Build agent7 -Script tests/teleport/cleg-warp.txt -Seconds 150
-; Expected: 60,24 -> 60,20 (1024 leptons) delay 21 (1024 / ChronoDistanceFactor 48), landing at 351,
-; hold until 411; a long order to 40,24 is set down on the nearest clear cell in the local area
-; (43,28), delay 108, hold 60. No second warp follows a landing (the move ends there).
+; Expected: each order jumps on the frame after it, and holds for max(distance / ChronoDistanceFactor,
+; ChronoMinimumDelay) frames: 21 for 60,24 -> 60,20 (1024 leptons, factor 48). A long order to 40,24 is set
+; down on the nearest clear cell in the local area, held for its own distance. No second warp follows a landing
+; (the move ends there). cleg-timing.txt logs the frames.
 60 command CenterBase
 70 select AMCV
 80 command DeployObject

@@ -1,6 +1,6 @@
 ---
 key: ChronoDelay
-summary: Frames a teleporting object holds still where it lands before it can act again.
+summary: Reserved for the chronosphere's post-warp countdown. This build does not read it.
 see_also: ["system:tiberium", "Teleporter", "ChronoTrigger", "ChronoDistanceFactor", "ChronoMinimumDelay", "ChronoRangeMinimum"]
 when_omitted:
   kind: value
@@ -12,6 +12,6 @@ when_omitted:
 ChronoDelay=60
 ```
 
-An object that a [`Teleporter`](/keys/teleporter/) moves with the Teleport locomotor holds still for this many game frames after it lands. Its AI waits during the hold, so a Chrono Miner unloads only once the hold has run out. The jump itself is preceded by a wait set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/).
+The hold after a [`Teleporter`](/keys/teleporter/) lands is set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/), not by this key. gamemd stores this value in the object's countdown on its chronosphere path (0x719973 to 0x719983), which this build does not model.
 
-This build applies the hold to teleport locomotors only. The chronosphere places its units at once and does not hold them.
+This build's teleport locomotor never reads this key, so changing it has no effect here.

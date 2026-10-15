@@ -436,7 +436,7 @@ bool XSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 /// The plain surface has no depth buffer to work against, so it refuses the request.
 /// DSurface supplies the working version of this routine.
 /// </summary>
-bool XSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth)
+bool XSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth, bool shade_by_alpha)
 {
 	return(false);
 }
