@@ -215,7 +215,7 @@ bool Load_Zip_Payload(std::string const & archive, std::vector<PayloadFileType> 
 			return(Zip_Failed(error, L"an entry is compressed; the setup reads stored entries only"));
 		}
 
-		if (local + ZipLocalBytes > archive.size() || U32(archive, local) != ZipLocalSignature) {
+		if (local > archive.size() || ZipLocalBytes > archive.size() - local || U32(archive, local) != ZipLocalSignature) {
 			return(Zip_Failed(error, L"an entry's data header is missing"));
 		}
 

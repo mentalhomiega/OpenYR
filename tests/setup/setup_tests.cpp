@@ -395,6 +395,19 @@ void Test_Zip_Hostile_Names(void)
 	Check(files.size() == 2, "only the two plain names are kept");
 	Check(files.size() == 2 && files[0].Name == L"Game.exe" && files[1].Name == L"ui\\ok.txt", "and they are the plain ones");
 
+	// An entry whose data header is placed near the top of the 32-bit range must not be read, even
+	// where adding the header size to the offset would wrap around.
+	std::string damaged = Make_Zip({{"Game.exe", "engine"}});
+	std::string::size_type const central = damaged.find("PK\x01\x02");
+	Check(central != std::string::npos, "the test zip has a directory entry to damage");
+	if (central != std::string::npos) {
+		for (int byte = 0; byte < 4; byte++) {
+			damaged[central + 42 + byte] = static_cast<char>(byte == 0 ? 0xF0 : 0xFF);
+		}
+		std::vector<PayloadFileType> wrapped;
+		Check(!setup::Load_Zip_Payload(damaged, wrapped, error), "an entry whose data header lies beyond the archive is refused");
+	}
+
 	std::vector<PayloadFileType> dotted;
 	Check(setup::Load_Zip_Payload(Make_Zip({{"./Game.exe", "engine"}}), dotted, error) && dotted.size() == 1 && dotted[0].Name == L"Game.exe", "a leading './' is dropped from a name");
 }
