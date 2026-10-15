@@ -15,6 +15,9 @@
 <head>
 	<link type="text/rcss" href="kit.rcss"/>
 	<link type="text/rcss" href="theme.rcss"/>
+	<link type="text/rcss" href="tint-allied.rcss"/>
+	<link type="text/rcss" href="tint-soviet.rcss"/>
+	<link type="text/rcss" href="tint-yuri.rcss"/>
 </head>
 <body>
 	<div id="screen-bg"><div id="screen-art"></div><div id="screen-shade"></div></div>

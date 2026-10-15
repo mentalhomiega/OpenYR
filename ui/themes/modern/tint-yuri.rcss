@@ -1,0 +1,52 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The Yuri tint. Every colour of the modern menus for this tint is one of these variables;
+   theme.rcss reads them with var(). Yuri's Revenge purple, the colours the modern menus had before the faction tints. */
+body.theme-yuri
+{
+	--t-ink: #05040a;
+	--t-shade-top: #0a061299;
+	--t-shade-bottom: #05030ae6;
+	--t-panel: #120d1ce8;
+	--t-edge: #6b43a8;
+	--t-edge-dim: #4d3d6b;
+	--t-caption: #d9c8ff;
+	--t-text: #ece6f7;
+	--t-text-hot: #ffffff;
+	--t-face-top: #2e2640;
+	--t-face-bottom: #18131f;
+	--t-hover-top: #3d2f57;
+	--t-hover-bottom: #1f1829;
+	--t-press-top: #1a1424;
+	--t-press-bottom: #2a203a;
+	--t-accent: #b46bff;
+	--t-accent-strong: #d29bff;
+	--t-disabled-top: #1c1825;
+	--t-disabled-bottom: #141119;
+	--t-disabled-edge: #2c2638;
+	--t-disabled-text: #5f5873;
+	--t-disabled-check: #5f4a80;
+	--t-field: #0b0812d0;
+	--t-field-solid: #0b0812;
+	--t-field-list: #0b0812a0;
+	--t-select: #4a2f78;
+	--t-popup: #120d1c;
+	--t-tooltip: #120d1cf0;
+	--t-track: #1c1528;
+	--t-rule: #2e2640;
+	--t-muted: #a99bc9;
+	--t-stamp: #8f84a8;
+	--t-column: #0a0814b3;
+	--t-column-edge: #3b2f55;
+	--t-tab-top: #2a2238;
+	--t-tab-text: #b9aad6;
+	--t-tab-active: #120d1c;
+	--t-backdrop: #0a081480;
+}
