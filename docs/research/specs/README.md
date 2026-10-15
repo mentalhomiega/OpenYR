@@ -33,3 +33,4 @@ Rules for these files:
 | `phobos-shields.md` | Phobos `[ShieldTypes]`, `Shield` and the `Shield.*` keys on technos and warheads |
 | `phobos-autodeath-convert-animunit.md` | Phobos `AutoDeath.*`, `Convert.*` (ammo, health, owner change, deploy, superweapon) and `CreateUnit.*` on animations |
 | `superweapon-extensions.md` | Ares `SW.*` framework and `Type=` superweapons; Phobos superweapon additions (`SW.Next`, linked superweapons, `LimboDelivery`, EMPulse settings and others) |
+| `phobos-trajectories-and-interception.md` | Phobos projectile trajectories, projectile interception, parabombs, return weapon and related bullet-motion keys |
