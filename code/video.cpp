@@ -27,6 +27,7 @@
 #include "hdrcolour.h"
 #include "hdrdisplay.h"
 #include "misc.h"
+#include "options.h"
 #include "sdl/sdlwindow.h"
 #include "surface.h"
 #include "ui/uishell.h"
@@ -248,6 +249,9 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 	Update_Scale_Info();
 	Refresh_Mouse_Pointer();
 	Update_Present_Interval(refreshrate);
+
+	// The emissive masks follow the renderer, so they are switched on only once HDR output is known to be on.
+	Apply_HDR_Highlights();
 	return(true);
 }
 
@@ -359,6 +363,15 @@ int Video_HDR_Paper_White(void)
 int Video_HDR_Peak(void)
 {
 	return(HDR_Resolve_Peak(Options.HDRPeakBrightness, HDR_Current_Display().PeakNits, Video_HDR_Paper_White()));
+}
+
+
+/// <summary>
+/// Whether the renderer started with an HDR10 back buffer.
+/// </summary>
+bool Video_HDR_Active(void)
+{
+	return(Backend_HDR_Active());
 }
 
 

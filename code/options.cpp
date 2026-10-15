@@ -496,16 +496,13 @@ static char const * Scale_Mode_Name(int mode)
  *   07/03/1996 JLB : Reworked to use new INI handler.                                         *
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
-// HDR output is not part of this build, so Enhanced highlights stay off until it lands.
-static bool HDR_Output_Active(void)
-{
-	return(false);
-}
-
-
+/// <summary>
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, and for the debug view.
+/// The masks follow the renderer, so this is called again once the renderer has started.
+/// </summary>
 void Apply_HDR_Highlights(void)
 {
-	bool const enhanced = HDR_Output_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
+	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
 	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
 }
 

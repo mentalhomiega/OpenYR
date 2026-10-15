@@ -103,6 +103,26 @@ void Test_Blend(void)
 	Check(Near(Emissive_Output_Nits(1.0f, 255, 200.0f, 800.0f), 800.0f), "mask 255 reaches the peak");
 	Check(Near(Emissive_Output_Nits(2.0f, 255, 200.0f, 800.0f), 800.0f), "a result above the peak is clamped to it");
 	Check(Near(Emissive_Output_Nits(2.0f, 0, 200.0f, 800.0f), 400.0f), "mask 0 gives paper white times linear, whatever the peak");
+
+	// The composite shader writes the gain as paper + mask * (peak - paper). It must match the CPU form.
+	bool shader_form = true;
+	for (int mask = 0; mask <= 255; mask += 51) {
+		for (float linear = 0.0f; linear <= 1.0f; linear += 0.25f) {
+			float const shader = std::min(800.0f, linear * (200.0f + (mask / 255.0f) * (800.0f - 200.0f)));
+			shader_form = shader_form && Near(Emissive_Output_Nits(linear, (unsigned char)mask, 200.0f, 800.0f), shader);
+		}
+	}
+	Check(shader_form, "the composite's gain form matches the CPU blend");
+}
+
+
+void Test_Opacity(void)
+{
+	Check(Emissive_Scale_By_Opacity(200, 255) == 200, "a whole picture keeps its strength");
+	Check(Emissive_Scale_By_Opacity(200, 0) == 0, "an invisible picture keeps no strength");
+	Check(Emissive_Scale_By_Opacity(255, 192) == 192, "a 25 percent translucent picture keeps three quarters of its strength");
+	Check(Emissive_Scale_By_Opacity(96, 64) == 24, "a 75 percent translucent picture keeps a quarter of its strength");
+	Check(Emissive_Scale_By_Opacity(96, 1000) == 96, "an opacity above 255 is a whole picture");
 }
 
 
@@ -200,6 +220,7 @@ int main(void)
 	Test_Parse();
 	Test_Voxel_Highlight();
 	Test_Blend();
+	Test_Opacity();
 	Test_Lifecycle();
 	Test_Fill_And_Copy();
 	Test_Segment();

@@ -4,16 +4,18 @@ $input v_color0, v_texcoord0
 //   1. decode the sRGB frame to linear light,
 //   2. apply the 3x3 colour matrix (rows of u_colourMatrix),
 //   3. multiply by the brightness and raise to the gamma (u_colourTone),
-//   4. HDR only: scale by the paper white, apply Rec.709 to Rec.2020 and limit to the peak,
-//      then encode with ST.2084,
+//   4. HDR only: scale by the gain from the emissive mask, apply Rec.709 to Rec.2020 and limit
+//      to the peak, then encode with ST.2084,
 //   5. SDR only: encode with the sRGB curve.
 // Steps 2 and 3 run only when u_compositeLevels.w is 1, which the backend sets when the
-// adjustment is not the identity. Edit this file and regenerate fs_composite.bin.h as
-// docs/HDR.md describes.
+// adjustment is not the identity. Step 4 reads the emissive mask from s_mask at the same UV,
+// and only when u_maskLevels.x is 1. Edit this file and regenerate fs_composite.bin.h as
+// docs/HDR.md and docs/EMISSIVE_MASK.md describe.
 
 #include "bgfx_shader.sh"
 
 SAMPLER2D(s_tex, 0);
+SAMPLER2D(s_mask, 1);
 
 // x is the paper white and y the peak, both in units of 10000 nits; z is 1 for HDR10 output and 0
 // for sRGB; w is 1 when the colour adjustment applies.
@@ -22,6 +24,9 @@ uniform vec4 u_compositeLevels;
 // Rows of the matrix; x of u_colourTone is the brightness and y the gamma exponent.
 uniform vec4 u_colourMatrix[3];
 uniform vec4 u_colourTone;
+
+// x is 1 when the mask target holds this frame's emissive masks, and 0 when the mask is not bound.
+uniform vec4 u_maskLevels;
 
 vec3 Srgb_To_Linear(vec3 c)
 {
@@ -63,9 +68,15 @@ void main()
 	}
 
 	if (u_compositeLevels.z > 0.5) {
-		// The paper white scale is the last step before the Rec.2020 conversion, so SDR white
-		// lands at the paper white.
-		vec3 nits = light * u_compositeLevels.x;
+		// The gain is paper white + mask * (peak - paper white), which is the same as
+		// paper * (1 + mask * (peak / paper - 1)). A mask of 0 gives paper white, so SDR white
+		// lands at the paper white. The mask is a 0-1 value read point-sampled at this UV.
+		float mask = 0.0;
+		if (u_maskLevels.x > 0.5) {
+			mask = texture2DLod(s_mask, v_texcoord0, 0.0).r;
+		}
+		float gain = u_compositeLevels.x + mask * (u_compositeLevels.y - u_compositeLevels.x);
+		vec3 nits = light * gain;
 		vec3 rec2020;
 		rec2020.r = dot(vec3(0.627404, 0.329282, 0.043313), nits);
 		rec2020.g = dot(vec3(0.069097, 0.919540, 0.011362), nits);

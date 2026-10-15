@@ -69,6 +69,10 @@ float Emissive_Gain(unsigned char mask, float peak_over_paper);
 // min(peak, paper * linear * gain(mask)).
 float Emissive_Output_Nits(float linear, unsigned char mask, float paper_white, float peak);
 
+// The mask for a draw that is drawn at the given opacity, from 0 for none to 255 for the whole picture.
+// A translucent draw keeps only its share of the strength, so a faint anim does not glow at full strength.
+unsigned char Emissive_Scale_By_Opacity(unsigned char strength, int opacity);
+
 // Mask value that the draws in progress write. Zero outside an emissive draw.
 extern unsigned char Emissive_Draw_Strength;
 

@@ -605,7 +605,27 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			}
 
 			// The shadow and the bounce above pass draw ordinary light; only the picture itself is emissive.
-			EmissiveDrawScope emissive_scope(Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0);
+			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
+			// translucency is three quarters opaque, as the blitter's opacity is.
+			int opacity = 255;
+			switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
+				case SHAPE_TRANSLUCENT25:
+					opacity = 192;
+					break;
+
+				case SHAPE_TRANSLUCENT50:
+					opacity = 128;
+					break;
+
+				case SHAPE_TRANSLUCENT75:
+					opacity = 64;
+					break;
+
+				default:
+					break;
+			}
+			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
+			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
 			if (Class->IsTiled) {
 				int frameheight = shapefile->Get_Rect(0).Height;

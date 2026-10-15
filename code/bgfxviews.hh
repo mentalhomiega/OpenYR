@@ -16,6 +16,7 @@ enum BgfxViewType : unsigned short
 	VIEW_PRESENT,
 	VIEW_UI,
 	VIEW_DEV,
+	VIEW_MASK,
 	VIEW_COMPOSITE,
 	VIEW_SHOT,
 	VIEW_READBACK,

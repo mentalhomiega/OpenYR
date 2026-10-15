@@ -117,6 +117,13 @@ unsigned char Emissive_Voxel_Highlight(int shade_row)
 }
 
 
+unsigned char Emissive_Scale_By_Opacity(unsigned char strength, int opacity)
+{
+	int const clamped = std::clamp(opacity, 0, 255);
+	return((unsigned char)((strength * clamped + 127) / 255));
+}
+
+
 float Emissive_Gain(unsigned char mask, float peak_over_paper)
 {
 	return(1.0f + (mask / 255.0f) * (peak_over_paper - 1.0f));

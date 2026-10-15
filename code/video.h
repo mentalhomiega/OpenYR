@@ -69,6 +69,9 @@ int Video_HDR_Peak(void);
 // Hands the HDR brightness settings to the renderer and presents them.
 void Video_Refresh_HDR_Levels(void);
 
+// Whether the renderer started with an HDR10 back buffer, so the frame is composed in HDR now.
+bool Video_HDR_Active(void);
+
 // Sets the colour adjustment for the presented frame, as Backend_Set_Colour_Adjust does, and presents it.
 void Video_Set_Colour_Adjust(float const * matrix, float brightness, float gamma);
 
