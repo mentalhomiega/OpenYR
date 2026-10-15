@@ -1169,6 +1169,9 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 #endif
 
 		if (!unlocked && ((TechnoTypeClass const *)type)->Level > level) return(0);
+		// Even unlocked, a type above the highest tech level a game can pick is never offered: those are
+		// internal types such as DeathDummy, which have no TechLevel and so keep the default 255.
+		if (unlocked && ((TechnoTypeClass const *)type)->Level > 10) return(0);
 
 		/*
 		**	The computer can always build everything.

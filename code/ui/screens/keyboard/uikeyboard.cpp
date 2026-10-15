@@ -187,6 +187,10 @@ void UIKeyboardPresenterClass::Check_Capture(void)
 			break;
 		}
 	}
+	// A key held by a command the screen hides (the cheats, with debug mode off) is no conflict.
+	if (State.ConflictCommand < 0) {
+		return;
+	}
 	State.Conflict = std::string(Hotkey_Trigger_Prefix((HotkeyTrigger)State.Trigger)) + State.CapturedName + " is already used by " + (State.ConflictCommand >= 0 ? State.Commands[State.ConflictCommand].Display : other.Command) + ".";
 }
 
@@ -201,13 +205,20 @@ void UIKeyboardPresenterClass::Assign(bool swap)
 	}
 
 	std::string const name = State.Commands[State.Selected].Name;
-	HotkeyAssignResult const result = Hotkey_Assign(State.Bindings, name, State.SelectedSlot, State.Captured, (HotkeyTrigger)State.Trigger, swap);
+
+	// The key moves silently from a command the screen hides, as the player can't see that command.
+	bool hidden = false;
+	int const conflict = Hotkey_Conflict(State.Bindings, name, State.SelectedSlot, State.Captured, (HotkeyTrigger)State.Trigger);
+	if (conflict >= 0) {
+		hidden = std::none_of(State.Commands.begin(), State.Commands.end(), [&](UIHotkeyCommand const & command) { return(command.Name == State.Bindings[conflict].Command); });
+	}
+	HotkeyAssignResult const result = Hotkey_Assign(State.Bindings, name, State.SelectedSlot, State.Captured, (HotkeyTrigger)State.Trigger, swap || hidden);
 	if (!result.Assigned) {
 		Check_Capture();
 		return;
 	}
 
-	State.Notice = result.Displaced.empty() ? std::string() : ("Moved the key from " + result.Displaced + ".");
+	State.Notice = (result.Displaced.empty() || hidden) ? std::string() : ("Moved the key from " + result.Displaced + ".");
 	State.Captured = 0;
 	State.CapturedName.clear();
 	State.ConflictCommand = -1;

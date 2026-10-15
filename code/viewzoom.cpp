@@ -16,6 +16,7 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "dbgprint.h"
+#include "debugmode.h"
 #include "dsurface.h"
 #include "ftimer.h"
 #include "gscreen.h"
@@ -211,7 +212,15 @@ double View_Zoom_Min(void)
 
 double View_Zoom_Max(void)
 {
-	return(VIEW_ZOOM_MAX * View_Zoom_Native());
+	if (Debug_Mode_Active()) {
+		return(VIEW_ZOOM_MAX_DEBUG);
+	}
+	// ScreenTacticalRect is measured in frame pixels, so the view is Height / zoom map pixels tall.
+	double closest = VIEW_ZOOM_MAX * View_Zoom_Native();
+	if (ScreenTacticalRect.Height > 0) {
+		closest = std::max(closest, ScreenTacticalRect.Height / VIEW_ZOOM_CLOSEST_HEIGHT);
+	}
+	return(closest);
 }
 
 

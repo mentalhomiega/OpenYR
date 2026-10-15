@@ -12,6 +12,8 @@
 #include "_command.h"
 #include "_ui.h"
 #include "command.h"
+#include "globals.h"
+#include "goptions.h"
 #include "init.h"
 #include "keybindings.h"
 #include "keyboard.h"
@@ -83,6 +85,10 @@ void UI_Keyboard_State(UIKeyboardState & state)
 		char const * description = command->Get_Description();
 		entry.Description = (description != NULL) ? description : "";
 		entry.Category = (int)Hotkey_Category_Of(entry.Name);
+		// The cheats only work in debug mode, so they are only listed then.
+		if (entry.Category == HOTKEY_CATEGORY_DEBUG && !Options.DebugMode) {
+			continue;
+		}
 		state.Commands.push_back(entry);
 	}
 	std::stable_sort(state.Commands.begin(), state.Commands.end(), [](UIHotkeyCommand const & a, UIHotkeyCommand const & b) {
@@ -91,6 +97,9 @@ void UI_Keyboard_State(UIKeyboardState & state)
 
 	state.Categories.push_back("All");
 	for (int category = 0; category < HOTKEY_CATEGORY_COUNT; category++) {
+		if (category == HOTKEY_CATEGORY_DEBUG && !Options.DebugMode) {
+			continue;
+		}
 		state.Categories.push_back(Hotkey_Category_Name((HotkeyCategory)category));
 	}
 
