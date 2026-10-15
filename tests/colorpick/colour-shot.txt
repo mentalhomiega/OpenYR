@@ -1,0 +1,5 @@
+; Shows the start base in the local seat color, for a screenshot of units in a free color.
+; Run: scripts/run_autotest.ps1 -Script <this file> -SpawnIni tests/colorpick/free-match.ini -ShotDir <folder>
+30 command CenterBase
+240 command ScreenCapture
+260 quit
