@@ -21,6 +21,7 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -202,7 +203,8 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// Carries out the menu steps that are due. A step that opens a screen running its own loop
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
-/// id), set (a slider's id and the value to give it, separated by a space), press (a button's
+/// id), pointer (an element id and two fractions of its box, where the mouse is pressed and released),
+/// set (a slider's id and the value to give it, separated by a space), press (a button's
 /// label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie), movie (plays the
@@ -290,6 +292,25 @@ void UIScript_Tick(Rml::Context * context)
 				DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
 			} else {
 				element->SetAttribute("value", step.Argument.substr(space + 1));
+				WaitUntil = now + 300;
+				return;
+			}
+		} else if (step.Command == "pointer") {
+			// "id fx fy" presses and releases the mouse at a point given as fractions of the element's box.
+			std::istringstream fields(step.Argument);
+			std::string id;
+			float fx = 0.0f;
+			float fy = 0.0f;
+			fields >> id >> fx >> fy;
+			Rml::Element * element = Find_Element(context, id);
+			if (element == nullptr || fields.fail()) {
+				DebugString("UISCRIPT   pointer %s: no such visible element or no point\n", step.Argument.c_str());
+			} else {
+				Rml::Vector2f const origin = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+				Rml::Vector2f const size = element->GetBox().GetSize(Rml::BoxArea::Border);
+				context->ProcessMouseMove((int)(origin.x + fx * size.x), (int)(origin.y + fy * size.y), 0);
+				context->ProcessMouseButtonDown(0, 0);
+				context->ProcessMouseButtonUp(0, 0);
 				WaitUntil = now + 300;
 				return;
 			}

@@ -1,0 +1,32 @@
+; The skirmish lobby's free color picker, from the main menu. It opens the picker on seat 0, picks a preset,
+; then picks a wheel color by pressing the mouse on the color square, and opens the picker on the AI seat as well.
+; The ui shot lines write .tga files to the autotest Screenshots folder; convert them to .png afterwards.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/colorpick/colour-picker-lobby.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 120
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 2500
+ui shot lobby-start
+ui click swatch0
+ui wait 1500
+ui shot picker-open-seat0
+ui press Okabe-Ito yellow
+ui wait 1000
+ui shot picker-preset-yellow
+ui pointer colorfield 0.22 0.35
+ui wait 1000
+ui box picker-chip
+ui box field-marker
+ui shot picker-wheel-seat0
+ui press Back
+ui wait 1000
+ui click swatch1
+ui wait 1500
+ui shot picker-open-seat1
+ui press Back
+ui wait 1000
+ui shot lobby-end
+ui quit
