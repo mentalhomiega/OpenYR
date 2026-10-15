@@ -35,6 +35,8 @@ opents_add_test(UIShell
         ui/screens/gamectrl/uigamectrl.cpp
         ui/screens/gameopt/uigameopt.cpp
         ui/screens/keyboard/uikeyboard.cpp
+        keybinddefaults.cpp
+        keybindings.cpp
         ui/screens/mainopt/uimainopt.cpp
         ui/screens/desync/uidesync.cpp
         ui/screens/mapgen/uimapgen.cpp

@@ -22,6 +22,7 @@
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/screens/gameopt/uigameopt.h"
 #include "ui/screens/keyboard/uikeyboard.h"
+#include "keybindings.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mapgen/uimapgen.h"
 #include "ui/screens/missionsel/uimissionsel.h"
@@ -1153,34 +1154,35 @@ class RecordingKeyboardServiceClass : public UIKeyboardServiceClass
 	public:
 		std::vector<std::string> Calls;
 		bool ConfirmAnswer = true;
-		std::vector<UIHotkeyBinding> ResetTable;
+		std::vector<HotkeyEntry> DefaultTable;
 
 		virtual std::string Key_Name(int key) override
 		{
 			return("K" + std::to_string(key));
 		}
 
-		virtual bool Confirm_Reset(void) override
+		virtual bool Confirm(void) override
 		{
 			Calls.push_back("confirm");
 			return(ConfirmAnswer);
 		}
 
-		virtual void Reset(std::vector<UIHotkeyBinding> & bindings) override
+		virtual std::vector<HotkeyEntry> Defaults(int scheme) override
 		{
-			Calls.push_back("reset");
-			bindings = ResetTable;
+			Calls.push_back("defaults " + std::to_string(scheme));
+			return(DefaultTable);
 		}
 
-		virtual void Save(std::vector<UIHotkeyBinding> const & bindings) override
+		virtual void Save(std::vector<HotkeyEntry> const & bindings, int scheme) override
 		{
-			std::vector<UIHotkeyBinding> sorted = bindings;
-			std::sort(sorted.begin(), sorted.end(), [](UIHotkeyBinding const & a, UIHotkeyBinding const & b) {
-				return(a.Command < b.Command);
-			});
-			std::string call = "save";
-			for (UIHotkeyBinding const & binding : sorted) {
-				call += " " + std::to_string(binding.Command) + "=" + std::to_string(binding.Key);
+			std::vector<std::string> lines;
+			for (HotkeyEntry const & entry : bindings) {
+				lines.push_back(entry.Command + "/" + std::to_string(entry.Slot) + "=" + std::to_string(entry.Key) + "@" + std::to_string((int)entry.Trigger));
+			}
+			std::sort(lines.begin(), lines.end());
+			std::string call = "save " + std::to_string(scheme);
+			for (std::string const & line : lines) {
+				call += " " + line;
 			}
 			Calls.push_back(call);
 		}
@@ -1191,20 +1193,37 @@ UIKeyboardState Keyboard_Fixture(void)
 {
 	UIKeyboardState state;
 	state.Commands = {
-		{ "Selection", "Select View", "Selects the view" },
-		{ "Interface", "Toggle Repair", "Toggles repair mode" },
-		{ "selection", "Scatter", "Scatters the selection" },
-		{ "Interface", "Alliance", "Toggles an alliance" },
+		{ "TypeSelect", "Select same type", "Selects the units of one type", (int)HOTKEY_CATEGORY_SELECTION },
+		{ "ToggleRepair", "Toggle repair", "Toggles repair mode", (int)HOTKEY_CATEGORY_COMMANDS },
+		{ "ScatterObject", "Scatter", "Scatters the selection", (int)HOTKEY_CATEGORY_COMMANDS },
+		{ "ToggleSell", "Toggle sell", "Toggles sell mode", (int)HOTKEY_CATEGORY_COMMANDS },
 	};
-	state.Bindings = { { 577, 0 }, { 338, 1 }, { 88, 2 } };
+	state.Categories.push_back("All");
+	for (int category = 0; category < HOTKEY_CATEGORY_COUNT; category++) {
+		state.Categories.push_back(Hotkey_Category_Name((HotkeyCategory)category));
+	}
+	state.Bindings = {
+		{ "TypeSelect", 84, 0, HOTKEY_PRESS },
+		{ "ToggleRepair", 75, 0, HOTKEY_PRESS },
+		{ "ScatterObject", 88, 0, HOTKEY_PRESS },
+		{ "ToggleSell", 76, 0, HOTKEY_PRESS },
+	};
 	return(state);
+}
+
+
+// The key of the command's first slot in the bindings, or 0 when it has none.
+int Key_Of_Name(std::vector<HotkeyEntry> const & bindings, std::string const & command)
+{
+	int const index = Hotkey_Find(bindings, command, 0);
+	return((index >= 0) ? bindings[index].Key : 0);
 }
 
 
 std::vector<int> Visible_Commands(UIKeyboardState const & state)
 {
 	std::vector<int> commands;
-	for (UIHotkeyRow const & row : state.Visible) {
+	for (UIHotkeyRow const & row : state.Rows) {
 		commands.push_back(row.Command);
 	}
 	return(commands);
@@ -1234,74 +1253,123 @@ void Test_Keys(void)
 }
 
 
+void Drive_Text(UIPresenterClass & presenter, char const * name, std::string const & text)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Text = text;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+// The text of a row's slot, found by the command's index.
+std::string Slot_Text_Of(UIKeyboardState const & state, int command, int slot)
+{
+	for (UIHotkeyRow const & row : state.Rows) {
+		if (row.Command == command) {
+			return(slot == 0 ? row.Slot0 : row.Slot1);
+		}
+	}
+	return("<no row>");
+}
+
+
 void Test_Keyboard_Presenter(void)
 {
 	RecordingKeyboardServiceClass service;
 	UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
 
-	Check(presenter.State.Categories == std::vector<std::string>{ "Interface", "Selection" }, "the categories are listed once each, sorted without regard to case");
-	Check(presenter.State.Category == 0 && Visible_Commands(presenter.State) == std::vector<int>{ 3, 1 } && presenter.State.Selected == -1, "the first category opens with its commands sorted by name and none selected");
-	Check(presenter.State.Visible.size() == 2 && presenter.State.Visible[0].Name == "Alliance", "a row carries its command's name");
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 0, 1, 2, 3 } && presenter.State.Selected == -1, "the All filter lists every command with none selected");
 
-	Drive(presenter, "category", 1);
-	Check(Visible_Commands(presenter.State) == std::vector<int>{ 2, 0 } && presenter.State.Description.empty(), "another category lists its own commands with the description cleared");
+	Drive(presenter, "category", 3);
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 1, 2, 3 }, "the Commands category lists its own commands");
+	Drive(presenter, "category", 2);
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 0 }, "the Selection category lists its own commands");
+	Drive(presenter, "category", 0);
 
-	Drive(presenter, "select", 0);
-	Check(presenter.State.Description == "Selects the view" && presenter.State.Shortcut == "K577", "selecting a command shows its description and shortcut");
+	Drive_Text(presenter, "search", "scatter");
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 2 }, "a search matches the display name");
+	Drive_Text(presenter, "search", "TOGGLE");
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 1, 3 }, "a search ignores case");
+	Drive_Text(presenter, "search", "");
+	Check(Visible_Commands(presenter.State).size() == 4, "an empty search lists every command again");
 
-	Drive(presenter, "capture", 338);
-	Check(presenter.State.CapturedName == "K338" && presenter.State.AssignedTo == "Toggle Repair", "a captured key names the command that holds it");
+	Drive(presenter, "pick", 1 * HOTKEY_SLOT_COUNT);
+	Check(presenter.State.Selected == 1 && presenter.State.SelectedSlot == 0 && presenter.State.Trigger == HOTKEY_PRESS, "picking a slot selects its command with its trigger");
+	Check(presenter.State.Description == "Toggles repair mode" && presenter.State.SelectedName == "Toggle repair", "a picked command shows its name and description");
+	Check(Slot_Text_Of(presenter.State, 1, 0) == "K75" && Slot_Text_Of(presenter.State, 1, 1).empty(), "a row shows the key of each slot, and an empty slot is blank");
 
-	Drive(presenter, "capture", 999);
-	Check(presenter.State.AssignedTo.empty(), "a free key names no command");
+	Drive(presenter, "capture", 88);
+	Check(presenter.State.CapturedName == "K88" && presenter.State.ConflictCommand == 2 && !presenter.State.Conflict.empty(), "a press of a key another press uses warns of the conflict");
 
-	Drive(presenter, "capture", 338);
 	Drive(presenter, "assign");
-	Check(presenter.Key_Of(0) == 338 && presenter.Key_Of(1) == 0 && presenter.Owner_Of(577) == -1, "assigning moves the key to the selected command and unbinds its previous holder");
-	Check(presenter.State.Shortcut == "K338" && presenter.State.Captured == 0 && presenter.State.AssignedTo.empty(), "assigning shows the new shortcut and clears the capture");
+	Check(Key_Of_Name(presenter.State.Bindings, "ToggleRepair") == 75 && !presenter.State.Conflict.empty(), "assigning a conflicting key changes nothing until the player chooses");
 
-	Drive(presenter, "select", 2);
+	Drive(presenter, "dismiss");
+	Check(presenter.State.Captured == 0 && presenter.State.Conflict.empty(), "Cancel drops the capture and the warning");
+
+	Drive(presenter, "capture", 88);
+	Drive(presenter, "trigger", HOTKEY_DOUBLE);
+	Check(presenter.State.Conflict.empty(), "a double press of a key a press uses does not conflict");
 	Drive(presenter, "assign");
-	Check(presenter.Key_Of(2) == 0 && presenter.State.Shortcut.empty(), "assigning an empty capture unbinds the command");
+	Check(Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) >= 0 && presenter.State.Bindings[Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0)].Trigger == HOTKEY_DOUBLE, "the double press is assigned to the slot");
+	Check(Slot_Text_Of(presenter.State, 1, 0) == "2x K88", "a double press shows the 2x prefix in the slot");
+	Check(Hotkey_Bindings_Valid(presenter.State.Bindings), "the list stays valid after the assignment");
 
-	Drive(presenter, "select", -1);
-	Drive(presenter, "capture", 65);
+	Drive(presenter, "pick", 3 * HOTKEY_SLOT_COUNT);
+	Drive(presenter, "trigger", HOTKEY_PRESS);
+	Drive(presenter, "capture", 88);
+	Check(presenter.State.ConflictCommand == 2, "the conflict names the command that holds the key");
+	Drive(presenter, "swap");
+	Check(Key_Of_Name(presenter.State.Bindings, "ToggleSell") == 88 && Key_Of_Name(presenter.State.Bindings, "ScatterObject") == 76, "swapping gives the other command the key the slot had");
+	Check(presenter.State.Captured == 0 && presenter.State.Conflict.empty() && presenter.State.Notice == "Moved the key from ScatterObject.", "a swap clears the capture and names the command it moved");
+
+	Drive(presenter, "pick", 1 * HOTKEY_SLOT_COUNT);
+	Drive(presenter, "clear");
+	Check(Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) < 0, "clearing a slot removes its binding");
+
+	Drive(presenter, "pick", 0);
+	Drive(presenter, "trigger", HOTKEY_HOLD);
+	Drive(presenter, "capture", 84);
 	Drive(presenter, "assign");
-	Check(presenter.Owner_Of(65) == -1 && presenter.State.Captured == 65, "assigning with no command selected changes nothing");
+	Check(Hotkey_Find(presenter.State.Bindings, "TypeSelect", 0) >= 0 && presenter.State.Bindings[Hotkey_Find(presenter.State.Bindings, "TypeSelect", 0)].Trigger == HOTKEY_HOLD, "a key bound to its own command keeps the trigger picked");
 
-	Check(service.Calls.empty(), "nothing reaches the game before the player accepts");
+	// The scheme switch and the resets ask first, and change nothing when declined.
+	service.DefaultTable = { { "ScatterObject", 88 }, { "ToggleRepair", 75 } };
+	service.ConfirmAnswer = false;
+	Drive(presenter, "scheme", 1);
+	Check(presenter.State.Scheme == 0 && Hotkey_Find(presenter.State.Bindings, "TypeSelect", 0) >= 0, "a declined scheme change keeps the bindings");
+
+	service.ConfirmAnswer = true;
+	Drive(presenter, "scheme", 1);
+	Check(presenter.State.Scheme == 1 && presenter.State.Bindings.size() == 2 && Key_Of_Name(presenter.State.Bindings, "ScatterObject") == 88, "a confirmed scheme change replaces every binding with the scheme's defaults");
+
+	Drive(presenter, "category", 3);
+	service.ConfirmAnswer = false;
+	Drive(presenter, "resetcategory");
+	Check(presenter.State.Bindings.size() == 2, "a declined category reset keeps the bindings");
+
+	service.ConfirmAnswer = true;
+	service.DefaultTable = { { "ScatterObject", 88 }, { "ToggleRepair", 75 } };
+	Drive(presenter, "resetcategory");
+	Check(Key_Of_Name(presenter.State.Bindings, "ToggleRepair") == 75 && Key_Of_Name(presenter.State.Bindings, "ScatterObject") == 88, "a confirmed category reset restores the defaults of the category");
+
+	Drive(presenter, "category", 0);
+	Drive(presenter, "resetall");
+	Check(presenter.State.Bindings.size() == 2 && Hotkey_Bindings_Valid(presenter.State.Bindings), "reset all restores the scheme's defaults");
 
 	Drive(presenter, "ok");
-	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "save 0=338" }, "OK saves the edited table");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !service.Calls.empty() && service.Calls.back().rfind("save 1 ", 0) == 0, "OK saves the bindings with their scheme");
 
 	{
 		RecordingKeyboardServiceClass quiet;
 		UIKeyboardPresenterClass cancelled(quiet, Keyboard_Fixture());
-		Drive(cancelled, "select", 3);
+		Drive(cancelled, "pick", 3 * HOTKEY_SLOT_COUNT);
 		Drive(cancelled, "capture", 70);
 		Drive(cancelled, "assign");
 		Drive(cancelled, "cancel");
 		Check(cancelled.Result.has_value() && *cancelled.Result == UI_RESULT_CANCELLED && quiet.Calls.empty(), "Cancel drops the edits without a call");
-	}
-
-	{
-		RecordingKeyboardServiceClass declined;
-		declined.ConfirmAnswer = false;
-		UIKeyboardPresenterClass kept(declined, Keyboard_Fixture());
-		Drive(kept, "category", 1);
-		Drive(kept, "reset");
-		Check(declined.Calls == std::vector<std::string>{ "confirm" } && kept.Key_Of(0) == 577 && kept.State.Category == 1, "a declined reset asks and changes nothing");
-	}
-
-	{
-		RecordingKeyboardServiceClass confirmed;
-		confirmed.ResetTable = { { 65, 3 } };
-		UIKeyboardPresenterClass reset(confirmed, Keyboard_Fixture());
-		Drive(reset, "category", 1);
-		Drive(reset, "select", 0);
-		Drive(reset, "reset");
-		Check(confirmed.Calls == std::vector<std::string>{ "confirm", "reset" } && reset.Key_Of(3) == 65 && reset.Key_Of(0) == 0, "a confirmed reset reloads the table from the game");
-		Check(reset.State.Category == 0 && reset.State.Selected == -1 && reset.State.Description.empty(), "a reset reopens the first category with nothing selected");
 	}
 }
 
@@ -3070,31 +3138,24 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		Check(system.Problems == problems, "the keyboard screen raises no RmlUi warning or error");
 
 		Rml::ElementDocument * document = Rml(*view).Document();
-		std::vector<Rml::Element *> rows = Keyboard_Rows(document);
-		Check(rows.size() == 4, "the keyboard screen lists the categories and the open category's commands");
-		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->HasAttribute("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
-
-		if (rows.size() == 4) {
-			Pick_Category(document, 1);
-			presenter.Drain();
-			view->Sync();
-			context.Update();
-			rows = Keyboard_Rows(document);
-			Check(rows.size() == 4 && rows[1]->HasAttribute("selected") && rows[2]->GetInnerRML() == "Scatter" && rows[3]->GetInnerRML() == "Select View", "picking a category lists its commands");
-		}
+		std::vector<Rml::Element *> rows = Visible_Rows(document, "commands");
+		Check(rows.size() == 4, "the keyboard screen lists every command under All");
+		Check(document->GetElementById("categories") != nullptr && document->GetElementById("search") != nullptr && document->GetElementById("scheme") != nullptr, "the keyboard screen has its scheme, search and category controls");
 
 		Rml::Element * capture = document->GetElementById("capture");
 		Rml::Element * description = document->GetElementById("description");
-		Rml::Element * shortcut = document->GetElementById("shortcut");
-		Check(capture != nullptr && description != nullptr && shortcut != nullptr, "the keyboard screen has its capture element, description and shortcut");
+		Check(description != nullptr, "the description is present before a slot is picked");
 
 		if (rows.size() == 4) {
-			Click(context, rows[3]);
+			// Each row's second child is the primary slot; the first is the command's name.
+			Click(context, rows[1]->GetChild(0)->GetChild(1));
 			presenter.Drain();
 			view->Sync();
 			context.Update();
-			Check(presenter.State.Selected == 0 && description->GetInnerRML() == "Selects the view" && shortcut->GetInnerRML() == "K577", "a click on a command shows its description and shortcut");
-			Check(context.GetFocusElement() == capture, "selecting a command focuses the capture element");
+			capture = document->GetElementById("capture");
+			description = document->GetElementById("description");
+			Check(presenter.State.Selected == 1 && presenter.State.SelectedSlot == 0 && description->GetInnerRML() == "Toggles repair mode", "a click on a command's primary slot selects it and shows its description");
+			Check(capture != nullptr && context.GetFocusElement() == capture, "picking a slot focuses the capture element");
 		}
 
 		if (capture != nullptr) {
@@ -3105,32 +3166,62 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 			presenter.Drain();
 			view->Sync();
 			context.Update();
-			Check(presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair", "Shift and R in the capture element become the number 338 and name its holder");
+			Check(presenter.State.Captured == 338 && presenter.State.CapturedName == "K338" && presenter.State.Conflict.empty(), "Shift and R in the capture element capture the number 338");
 			Check(capture->GetInnerRML().find("K338") != std::string::npos, "the capture element shows the captured key");
 
-			context.ProcessKeyDown(Rml::Input::KI_LSHIFT, Rml::Input::KM_SHIFT);
-			context.ProcessKeyUp(Rml::Input::KI_LSHIFT, 0);
+			context.ProcessKeyDown(Rml::Input::KI_X, 0);
+			context.ProcessKeyUp(Rml::Input::KI_X, 0);
 			context.Update();
-			presenter.Drain();
-			Check(presenter.State.Captured == 338, "a modifier on its own leaves the capture as it was");
-		}
-
-		Rml::Element * assign = document->GetElementById("assign");
-		if (assign != nullptr) {
-			Click(context, assign);
 			presenter.Drain();
 			view->Sync();
 			context.Update();
-			Check(presenter.Key_Of(0) == 338 && presenter.Key_Of(1) == 0 && shortcut->GetInnerRML() == "K338" && presenter.State.Captured == 0, "Assign moves the key to the selected command and shows the new shortcut");
-		}
+			Rml::Element * conflict_text = document->GetElementById("conflict-text");
+			Check(presenter.State.Captured == 88 && presenter.State.ConflictCommand == 2 && conflict_text != nullptr && conflict_text->GetInnerRML().find("already used") != std::string::npos, "a key another command uses shows the conflict and names its holder");
 
-		if (capture != nullptr) {
-			capture->Focus();
-			context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
-			context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+			context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+			context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 			context.Update();
 			presenter.Drain();
-			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "save 0=338 2=88" }, "Enter in the capture element accepts the screen and saves");
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Captured == 0 && presenter.State.Conflict.empty() && !presenter.Result.has_value(), "Escape ends the capture and leaves the screen open");
+
+			capture->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_R, Rml::Input::KM_SHIFT);
+			context.ProcessKeyUp(Rml::Input::KI_R, Rml::Input::KM_SHIFT);
+			context.Update();
+			presenter.Drain();
+			Rml::Element * assign = document->GetElementById("assign");
+			if (assign != nullptr) {
+				Click(context, assign);
+				presenter.Drain();
+				view->Sync();
+				context.Update();
+				Check(Key_Of_Name(presenter.State.Bindings, "ToggleRepair") == 338 && presenter.State.Captured == 0, "Assign binds the captured key to the selected slot");
+				Check(Slot_Text_Of(presenter.State, 1, 0) == "K338", "the row shows the key the slot now holds");
+			}
+
+			capture->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_BACK, 0);
+			context.ProcessKeyUp(Rml::Input::KI_BACK, 0);
+			context.Update();
+			presenter.Drain();
+			Check(Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) < 0, "Backspace in the capture element clears the slot");
+		}
+
+		service.ConfirmAnswer = false;
+		Rml::Element * reset_all = document->GetElementById("reset-all");
+		if (reset_all != nullptr) {
+			Click(context, reset_all);
+			presenter.Drain();
+			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.State.Bindings.size() == 3, "Reset all asks first and a refusal changes nothing");
+		}
+
+		Rml::Element * ok = document->GetElementById("ok");
+		if (ok != nullptr) {
+			Click(context, ok);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !service.Calls.empty() && service.Calls.back().rfind("save 0 ", 0) == 0, "OK saves the bindings with the Classic scheme");
 		}
 
 		view->Release();
@@ -3139,7 +3230,6 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	{
 		RecordingKeyboardServiceClass service;
-		service.ConfirmAnswer = false;
 		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
 		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
 
@@ -3148,13 +3238,9 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		view->Sync();
 		context.Update();
 
-		Rml::Element * reset = Rml(*view).Document()->GetElementById("reset");
-		if (reset != nullptr) {
-			Click(context, reset);
-			presenter.Drain();
-			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.Key_Of(0) == 577, "Reset All asks first and a refusal changes nothing");
-		}
-
+		Drive(presenter, "pick", 0);
+		view->Sync();
+		context.Update();
 		Rml::Element * capture = Rml(*view).Document()->GetElementById("capture");
 		if (capture != nullptr) {
 			capture->Focus();
@@ -3163,7 +3249,7 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.size() == 1, "Escape in the capture element cancels the screen without saving");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Escape with no key being captured cancels the screen without saving");
 
 		view->Release();
 		context.Update();
@@ -6848,54 +6934,54 @@ void Test_Shell(void)
 		int passes = 0;
 		bool listed = false;
 		bool focused = false;
-		bool captured = false;
+		bool conflicted = false;
 		bool modified = false;
 		bool moved = false;
 
 		shell.Run_Modal(*view, [&](void) {
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
-			std::vector<Rml::Element *> rows = Keyboard_Rows(document);
-			Rml::Element * capture = document->GetElementById("capture");
-			Rml::Element * assign = document->GetElementById("assign");
-			Rml::Element * ok = document->GetElementById("ok");
-			listed = rows.size() == 4 && capture != nullptr && assign != nullptr && ok != nullptr;
+			std::vector<Rml::Element *> rows = Visible_Rows(document, "commands");
+			listed = rows.size() == 4 && document->GetElementById("ok") != nullptr;
 			if (!listed) {
 				return(true);
 			}
 
 			if (passes == 2) {
-				Click_Through_Hook(shell, host, rows[2]);
+				// Each row's first child is the command's name, which picks its primary slot.
+				Click_Through_Hook(shell, host, rows[1]->GetChild(0)->GetChild(0));
 			}
 			if (passes == 3) {
-				focused = shell.Rml_Context()->GetFocusElement() == capture;
+				Rml::Element * capture = document->GetElementById("capture");
+				focused = capture != nullptr && shell.Rml_Context()->GetFocusElement() == capture;
 				Key_Down(shell, 'X');
 				Key_Up(shell, 'X');
 			}
 			if (passes == 4) {
-				captured = presenter.State.Captured == 88 && presenter.State.AssignedTo == "Scatter" && capture->GetInnerRML().find("K88") != std::string::npos;
+				Rml::Element * capture = document->GetElementById("capture");
+				conflicted = presenter.State.Captured == 88 && presenter.State.ConflictCommand == 2 && capture != nullptr && capture->GetInnerRML().find("K88") != std::string::npos;
 
 				// The host reports no keys held, so Shift can only come from the events.
 				Key_Down(shell, 'R', WINDOW_MOD_SHIFT);
 				Key_Up(shell, 'R', WINDOW_MOD_SHIFT);
 			}
 			if (passes == 5) {
-				modified = presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair";
-				Click_Through_Hook(shell, host, assign);
+				modified = presenter.State.Captured == 338 && presenter.State.Conflict.empty();
+				Click_Through_Hook(shell, host, document->GetElementById("assign"));
 			}
 			if (passes == 6) {
-				moved = presenter.Key_Of(3) == 338 && presenter.Key_Of(1) == 0;
-				Click_Through_Hook(shell, host, ok);
+				moved = Key_Of_Name(presenter.State.Bindings, "ToggleRepair") == 338 && Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) >= 0;
+				Click_Through_Hook(shell, host, document->GetElementById("ok"));
 			}
 			return(passes > 7);
 		});
 
-		Check(listed && presenter.State.Selected == 3, "a click on a command row selects the command it names");
+		Check(listed && presenter.State.Selected == 1 && presenter.State.SelectedSlot == 0, "a click on a command's name selects its primary slot");
 		Check(focused, "and moves the focus to the capture element the keys go to");
-		Check(captured, "a key sent through the hook becomes its hotkey number there and names the command holding it");
-		Check(modified, "the same key with a modifier on its event is a different number naming a different command");
-		Check(moved, "assigning it moves the key to the selected command and off its old owner");
-		Check(service.Calls == std::vector<std::string>{ "save 0=577 2=88 3=338" }, "and accepting saves the table the edits left behind");
+		Check(conflicted, "a key sent through the hook becomes its hotkey number and names the command holding it");
+		Check(modified, "the same key with Shift is a different number that clears the conflict");
+		Check(moved, "assigning it binds the key to the selected slot and drops the old one");
+		Check(service.Calls == std::vector<std::string>{ "save 0 ScatterObject/0=88@0 ToggleRepair/0=338@0 ToggleSell/0=76@0 TypeSelect/0=84@0" }, "and accepting saves the bindings the edits left behind");
 	}
 
 	{
