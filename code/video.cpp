@@ -98,7 +98,15 @@ static void Update_Present_Interval(int refreshrate)
 	}
 	_RefreshRate = refreshrate;
 
-	_PresentInterval = (unsigned int)(1000 / refreshrate);
+	// A frame rate limit of zero presents at every chance; a negative one follows the refresh rate.
+	int const limit = Options.FrameRateLimit;
+	if (limit == 0) {
+		_PresentInterval = 0;
+		return;
+	}
+	int const rate = (limit > 0) ? limit : refreshrate;
+
+	_PresentInterval = (unsigned int)(1000 / rate);
 	if (_PresentInterval < 3) {
 		_PresentInterval = 3;
 	}

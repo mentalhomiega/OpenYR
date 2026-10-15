@@ -596,6 +596,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Options.WindowWidth = ConfigINI.Get_Int("Video", "WindowWidth", Options.WindowWidth);
 		Options.WindowHeight = ConfigINI.Get_Int("Video", "WindowHeight", Options.WindowHeight);
 		Options.VSync = ConfigINI.Get_Bool("Video", "VSync", Options.VSync);
+		Options.FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", Options.FrameRateLimit);
 		Options.Renderer = ConfigINI.Get_Int("Video", "Renderer", Options.Renderer);
 
 		/*

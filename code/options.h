@@ -226,6 +226,9 @@ class OptionsClass {
 		// the display's refresh rate where Render_Frame_Rate allows it.
 		int RenderFrameRate;
 
+		// Caps the presents per second: zero is unlimited, and a negative value follows the display's refresh rate.
+		int FrameRateLimit;
+
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
 		 * Presents are already limited to the refresh rate without it.

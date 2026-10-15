@@ -54,6 +54,8 @@ class UIDisplayServiceClass
 		virtual void Set_Sidebar_Rows(int rows) = 0;
 		virtual void Set_Bitmap_System_Font(bool on) = 0;
 		virtual void Set_Show_FPS(bool on) = 0;
+		virtual void Set_Frame_Limit(int limit) = 0;
+		virtual void Set_Window_Size(int width, int height) = 0;
 		virtual void Set_Interface_Scale(float scale) = 0;
 		virtual void Set_Fullscreen(bool on) = 0;
 		virtual void Set_VSync(bool on) = 0;
@@ -82,6 +84,11 @@ struct UIDisplayState
 	bool ModernInterface = false;
 	bool BitmapSystemFont = false;
 	bool ShowFPS = false;
+	std::vector<UIDisplayChoice> FrameLimits;
+	int FrameLimit = 0;
+	// The window sizes offered; the first is Match resolution, which leaves both dimensions at -1.
+	std::vector<UIDisplayMode> WindowSizes;
+	int WindowSize = 0;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
 	bool Fullscreen = false;
@@ -140,6 +147,8 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int ShownRowIndex = -1;
 		bool InitialBitmapSystemFont;
 		bool InitialShowFPS;
+		int InitialFrameLimit;
+		int InitialWindowSize;
 };
 
 

@@ -90,6 +90,23 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.ShowFPS = on;
 		}
 
+		virtual void Set_Frame_Limit(int limit) override
+		{
+			Options.FrameRateLimit = limit;
+			Video_Set_Refresh_Rate(Video_Refresh_Rate());
+		}
+
+		virtual void Set_Window_Size(int width, int height) override
+		{
+			Options.WindowWidth = width;
+			Options.WindowHeight = height;
+			if (WindowedMode) {
+				int const frame_width = (width > 0) ? width : Options.ScreenWidth;
+				int const frame_height = (height > 0) ? height : Options.ScreenHeight;
+				Main_Window_Resize(frame_width, frame_height);
+			}
+		}
+
 		virtual void Set_Interface_Scale(float scale) override
 		{
 			// The caller resets the display, which settles the frame size from this.
@@ -317,6 +334,52 @@ void UI_Display_State(UIDisplayState & state)
 	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.BitmapSystemFont = Options.BitmapSystemFont;
 	state.ShowFPS = Options.ShowFPS;
+	state.FrameLimit = Fill_Choices(state.FrameLimits, {
+		{-1, "Display refresh"},
+		{30, "30"},
+		{60, "60"},
+		{120, "120"},
+		{144, "144"},
+		{240, "240"},
+		{0, "Unlimited"}
+	}, (Options.FrameRateLimit < 0) ? -1 : Options.FrameRateLimit, "%d");
+
+	// Match resolution follows ScreenWidth and ScreenHeight. The fixed sizes above the desktop are left out.
+	UIDisplayMode match;
+	match.Width = -1;
+	match.Height = -1;
+	match.Label = "Match resolution";
+	state.WindowSizes.push_back(match);
+	static int const window_sizes[][2] = {{800, 600}, {1024, 768}, {1280, 720}, {1280, 800}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160}};
+	int desktop_width = 0;
+	int desktop_height = 0;
+	bool const known_desktop = Main_Window_Desktop_Size(desktop_width, desktop_height);
+	for (auto const & size : window_sizes) {
+		if (known_desktop && (size[0] > desktop_width || size[1] > desktop_height)) {
+			continue;
+		}
+		UIDisplayMode mode;
+		mode.Width = size[0];
+		mode.Height = size[1];
+		mode.Label = std::to_string(size[0]) + " x " + std::to_string(size[1]);
+		state.WindowSizes.push_back(mode);
+	}
+	state.WindowSize = -1;
+	for (int index = 0; index < (int)state.WindowSizes.size(); index++) {
+		if (state.WindowSizes[index].Width == Options.WindowWidth && state.WindowSizes[index].Height == Options.WindowHeight) {
+			state.WindowSize = index;
+		}
+	}
+	if (state.WindowSize < 0) {
+		UIDisplayMode mode;
+		mode.Width = Options.WindowWidth;
+		mode.Height = Options.WindowHeight;
+		int const shown_width = (Options.WindowWidth > 0) ? Options.WindowWidth : Options.ScreenWidth;
+		int const shown_height = (Options.WindowHeight > 0) ? Options.WindowHeight : Options.ScreenHeight;
+		mode.Label = std::to_string(shown_width) + " x " + std::to_string(shown_height);
+		state.WindowSize = (int)state.WindowSizes.size();
+		state.WindowSizes.push_back(mode);
+	}
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;

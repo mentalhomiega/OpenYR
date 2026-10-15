@@ -222,6 +222,7 @@ OptionsClass::OptionsClass(void) :
 	IntegerScaling(false),
 	ShowFPS(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
+	FrameRateLimit(-1),
 	VSync(true),
 	Renderer(0),
 	CursorScale(0),
@@ -530,6 +531,7 @@ void OptionsClass::Load_Settings(void)
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
 	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
+	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
 	char scalename[32];
@@ -659,6 +661,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "IntegerScaling", IntegerScaling);
 	ConfigINI.Put_Bool("Video", "ShowFPS", ShowFPS);
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
+	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
