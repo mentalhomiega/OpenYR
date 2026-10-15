@@ -364,8 +364,12 @@ void UI_Display_State(UIDisplayState & state)
 		mode.Label = std::to_string(size[0]) + " x " + std::to_string(size[1]);
 		state.WindowSizes.push_back(mode);
 	}
+	// Zero or below in either dimension follows the frame, so both are treated as Match resolution.
 	state.WindowSize = -1;
-	for (int index = 0; index < (int)state.WindowSizes.size(); index++) {
+	if (Options.WindowWidth <= 0 && Options.WindowHeight <= 0) {
+		state.WindowSize = 0;
+	}
+	for (int index = 1; state.WindowSize < 0 && index < (int)state.WindowSizes.size(); index++) {
 		if (state.WindowSizes[index].Width == Options.WindowWidth && state.WindowSizes[index].Height == Options.WindowHeight) {
 			state.WindowSize = index;
 		}
