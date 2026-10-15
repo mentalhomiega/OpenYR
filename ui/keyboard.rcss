@@ -106,12 +106,12 @@
 
 .head-row .cmd-head
 {
-	width: 130dp;
+	width: 150dp;
 }
 
 .head-row .slot-head
 {
-	width: 80dp;
+	width: 76dp;
 	text-align: center;
 }
 
@@ -137,13 +137,13 @@
 
 .cmd-name
 {
-	width: 130dp;
+	width: 150dp;
 	overflow: hidden;
 }
 
 .slot
 {
-	width: 80dp;
+	width: 76dp;
 	height: 17dp;
 	text-align: center;
 	overflow: hidden;
@@ -264,20 +264,21 @@
 
 #reset-category
 {
-	width: 120dp;
+	width: 150dp;
+	white-space: nowrap;
 	margin-right: 8dp;
 }
 
 #reset-all
 {
-	width: 96dp;
+	width: 110dp;
 	margin-right: 0;
 }
 
 #ok
 {
 	width: 76dp;
-	margin-left: 150dp;
+	margin-left: 106dp;
 	margin-right: 8dp;
 }
 

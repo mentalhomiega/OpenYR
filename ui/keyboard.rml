@@ -18,7 +18,7 @@
 	<div id="top-row">
 		<div class="field" id="scheme-field"><span class="caption">Control scheme:</span>
 			<select id="scheme" data-value="scheme" data-event-change="queue('scheme', ev.value)">
-				<option value="0">Classic (Yuri's Revenge)</option>
+				<option value="0">Classic</option>
 				<option value="1">Modern</option>
 			</select>
 		</div>
