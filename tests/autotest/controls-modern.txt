@@ -1,0 +1,44 @@
+; Modern control scheme: Ctrl+1 makes a control group, 1 selects it, a double press of 1 centres the camera on it,
+; Ctrl+F1 stores a camera bookmark and F1 returns to it, Up scrolls the view north while held, and the binding
+; readouts show the Modern keys for the menu, attack-move, the Home key and the sidebar tab.
+; The camera lines write the tactical position in leptons; a centred or returned view matches the stored one.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/controls-modern.txt -Width 640 -Height 480 -Seconds 90 -Filter "AUTOTEST|Exception"
+30 scheme Modern
+31 binding 17 Held
+31 binding 27
+31 binding 121
+31 binding 36
+31 binding 09
+31 binding 86
+31 binding 38
+31 binding 49 Double
+31 binding 49
+32 view 60 42
+35 reveal
+40 grantunit E1 60 42
+41 grantunit E1 61 42
+42 grantunit MTNK 62 42
+50 select E1
+55 selected
+58 winkey 49 ctrl
+60 select MTNK
+62 view 30 20
+64 camera
+70 winkey 49
+90 selected
+95 camera
+100 winkey 49
+102 winkey 49
+120 selected
+122 camera
+125 view 60 42
+127 winkey 112 ctrl
+130 view 30 20
+132 camera
+134 winkey 112
+140 camera
+142 view 60 42
+144 camera
+146 winkey 38
+150 camera
+300 quit
