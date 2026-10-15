@@ -18,36 +18,43 @@
 	<p class="heading" id="title">Display Options:</p>
 	<div id="columns">
 		<div id="left">
-			<p class="heading" id="modes-label">Resolution Modes</p>
+			<p class="heading" id="modes-label">Resolution</p>
 			<div id="modes-row"><div id="modes" class="list"><div class="rows">
 				<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
 			</div></div>
 				<div id="panel-preview" class="setting-preview" data-class-disabled="!moderninterface"><p class="setting-preview-caption">{{preview.caption}}</p><div data-for="shape : preview.shapes" data-attr-class="shape.classes" data-style-left="shape.left" data-style-top="shape.top" data-style-width="shape.width" data-style-height="shape.height"></div></div></div>
-			<div class="row" id="scale-row"><span class="caption">Interface scale:</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
+			<div class="row" id="scale-row"><span class="caption">UI scale:</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
 				<option data-for="entry : scales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch movies to fit resolution</label>
-			<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>Classic Yuri's Revenge menus</label>
+			<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch videos to fill the screen</label>
+			<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>Classic menu art</label>
 			<label class="check" id="switch-modern-interface"><input type="checkbox" id="modern-interface" data-attrif-checked="moderninterface" data-event-click="queue('moderninterface', moderninterface ? 0 : 1)"/>Modern in-game interface</label>
 			<div class="row" id="rows-row" data-class-disabled="!moderninterface"><span class="caption">Sidebar rows:</span><select id="sidebar-rows" data-value="rowcount" data-attrif-disabled="!moderninterface" data-event-change="queue('sidebarrows', ev.value)">
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>
+			<label class="check" id="switch-bitmap-font"><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/>Pixel-perfect UI font</label>
+			<div class="row" id="windowsize-row"><span class="caption">Window size:</span><select id="windowsize" data-value="windowsize" data-event-change="queue('windowsize', ev.value)">
+				<option data-for="entry : windowsizes" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
 		</div>
 		<div id="right">
 			<p class="heading" id="window-label">Window</p>
-			<label class="check" id="switch-fullscreen"><input type="checkbox" id="fullscreen" data-attrif-checked="fullscreen" data-event-click="queue('fullscreen', fullscreen ? 0 : 1)"/>Full screen</label>
-			<label class="check" id="switch-vsync"><input type="checkbox" id="vsync" data-attrif-checked="vsync" data-event-click="queue('vsync', vsync ? 0 : 1)"/>Wait for vertical sync</label>
-			<label class="check" id="switch-integer-scaling"><input type="checkbox" id="integer-scaling" data-attrif-checked="integerscaling" data-event-click="queue('integerscaling', integerscaling ? 0 : 1)"/>Scale by whole steps only</label>
+			<label class="check" id="switch-fullscreen"><input type="checkbox" id="fullscreen" data-attrif-checked="fullscreen" data-event-click="queue('fullscreen', fullscreen ? 0 : 1)"/>Fullscreen (borderless)</label>
+			<label class="check" id="switch-vsync"><input type="checkbox" id="vsync" data-attrif-checked="vsync" data-event-click="queue('vsync', vsync ? 0 : 1)"/>V-Sync</label>
+			<label class="check" id="switch-integer-scaling"><input type="checkbox" id="integer-scaling" data-attrif-checked="integerscaling" data-event-click="queue('integerscaling', integerscaling ? 0 : 1)"/>Integer scaling</label>
 			<div class="row" id="filter-row"><span class="caption">Scaling filter:</span><select id="filter" data-value="filter" data-event-change="queue('filter', ev.value)">
 				<option data-for="entry : filters" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<div class="row"><span class="caption">Smooth motion:</span><select id="framerate" data-value="framerate" data-event-change="queue('framerate', ev.value)">
+			<div class="row"><span class="caption">Motion smoothing:</span><select id="framerate" data-value="framerate" data-event-change="queue('framerate', ev.value)">
 				<option data-for="entry : framerates" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
+			<div class="row" id="framelimit-row"><span class="caption">Frame rate limit:</span><select id="framelimit" data-value="framelimit" data-event-change="queue('framelimit', ev.value)">
+				<option data-for="entry : framelimits" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<label class="check" id="switch-show-fps"><input type="checkbox" id="show-fps" data-attrif-checked="showfps" data-event-click="queue('showfps', showfps ? 0 : 1)"/>Show FPS</label>
 			<p class="heading" id="pointer-label">Mouse Pointer</p>
-			<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the system mouse pointer</label>
-			<div class="row"><span class="caption">Pointer size:</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">
+			<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the Windows pointer</label>
+			<div class="row"><span class="caption">Cursor size:</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">
 				<option data-for="entry : cursorscales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
 			<p class="heading" id="renderer-label">Renderer</p>

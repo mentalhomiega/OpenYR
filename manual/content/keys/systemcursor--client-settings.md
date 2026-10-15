@@ -1,10 +1,10 @@
 ---
 key: SystemCursor
 scope: client-settings
-label: System mouse pointer
+label: Use the Windows pointer
 when_omitted:
   kind: value
-  value: "no"
+  value: "yes"
 ---
 
 `SystemCursor=yes` shows the Windows mouse pointer wherever the game would show its green arrow: over its menus and dialogs, and wherever no battlefield pointer is up. The battlefield pointers, such as the move and attack pointers, stay the game's own at either setting.

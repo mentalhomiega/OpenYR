@@ -31,7 +31,10 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
-	InitialDebugMode(State.DebugMode)
+	InitialBitmapSystemFont(State.BitmapSystemFont),
+	InitialShowFPS(State.ShowFPS),
+	InitialFrameLimit(State.FrameLimit),
+	InitialWindowSize(State.WindowSize)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -155,8 +158,17 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "moderninterface") {
 		State.ModernInterface = (intent.Value != 0);
 
-	} else if (intent.Name == "debugmode") {
-		State.DebugMode = (intent.Value != 0);
+	} else if (intent.Name == "bitmapfont") {
+		State.BitmapSystemFont = (intent.Value != 0);
+
+	} else if (intent.Name == "showfps") {
+		State.ShowFPS = (intent.Value != 0);
+
+	} else if (intent.Name == "framelimit") {
+		State.FrameLimit = Pick_Choice(State.FrameLimits, intent.Value, InitialFrameLimit);
+
+	} else if (intent.Name == "windowsize") {
+		State.WindowSize = (intent.Value >= 0 && intent.Value < (int)State.WindowSizes.size()) ? intent.Value : InitialWindowSize;
 
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
@@ -203,8 +215,17 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_System_Cursor(State.SystemCursor);
 		Service.Set_Classic_Menus(State.ClassicMenus);
 		Service.Set_Modern_Interface(State.ModernInterface);
-		if (State.DebugMode != InitialDebugMode) {
-			Service.Set_Debug_Mode(State.DebugMode);
+		if (State.BitmapSystemFont != InitialBitmapSystemFont) {
+			Service.Set_Bitmap_System_Font(State.BitmapSystemFont);
+		}
+		if (State.ShowFPS != InitialShowFPS) {
+			Service.Set_Show_FPS(State.ShowFPS);
+		}
+		if (Choice_Changed(State.FrameLimits, State.FrameLimit, InitialFrameLimit)) {
+			Service.Set_Frame_Limit(State.FrameLimits[State.FrameLimit].Value);
+		}
+		if (State.WindowSize != InitialWindowSize && State.WindowSize >= 0 && State.WindowSize < (int)State.WindowSizes.size()) {
+			Service.Set_Window_Size(State.WindowSizes[State.WindowSize].Width, State.WindowSizes[State.WindowSize].Height);
 		}
 		if (State.Fullscreen != InitialFullscreen) {
 			Service.Set_Fullscreen(State.Fullscreen);
@@ -305,7 +326,10 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("systemcursor");
 			Model.DirtyVariable("classicmenus");
 			Model.DirtyVariable("moderninterface");
-			Model.DirtyVariable("debugmode");
+			Model.DirtyVariable("bitmapfont");
+			Model.DirtyVariable("showfps");
+			Model.DirtyVariable("framelimit");
+			Model.DirtyVariable("windowsize");
 			Model.DirtyVariable("scale");
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
@@ -360,7 +384,12 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("systemcursor", &state.SystemCursor)
 				&& model.Bind("classicmenus", &state.ClassicMenus)
 				&& model.Bind("moderninterface", &state.ModernInterface)
-				&& model.Bind("debugmode", &state.DebugMode)
+				&& model.Bind("bitmapfont", &state.BitmapSystemFont)
+				&& model.Bind("showfps", &state.ShowFPS)
+				&& model.Bind("framelimits", &state.FrameLimits)
+				&& model.Bind("framelimit", &state.FrameLimit)
+				&& model.Bind("windowsizes", &state.WindowSizes)
+				&& model.Bind("windowsize", &state.WindowSize)
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)

@@ -56,12 +56,15 @@
 #include "_xmouse.h"
 #include "bench.h"
 #include "cctooltip.h"
+#include "dialog.h"
 #include "gadget.h"
 #include "globals.h"
 #include "hud.h"
 #include "goptions.h"
 #include "keyboard.h"
+#include "logic.h"
 #include "savestream.h"
+#include "scheme.h"
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
@@ -467,6 +470,12 @@ void GScreenClass::Render(void)
 		Multiplayer_Debug_Print();
 	}
 
+	if (Options.ShowFPS) {
+		char buffer[32];
+		snprintf(buffer, sizeof(buffer), "%u FPS", LastFramesPerSecond);
+		Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	}
+
 	if (ToolTips != NULL) {
 		ToolTips->Draw_Current();
 	}
@@ -523,21 +532,25 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 
 	Rect dest_rect(0, 0, surface->Get_Width(), surface->Get_Height());
 
+	// With screen shake off, the picture is drawn unshaken; the map keeps the offsets for the simulation.
+	int const shake_x = Options.ScreenShake ? Map.ScreenX : 0;
+	int const shake_y = Options.ScreenShake ? Map.ScreenY : 0;
+
 	/// Screen shake handling
-	if (Map.ScreenX == 0 && Map.ScreenY == 0) {
+	if (shake_x == 0 && shake_y == 0) {
 		// Do nothing
 	} else {
-		if (Map.ScreenX > 0) {
-			dest_rect.X += Map.ScreenX;
-			dest_rect.Width -= Map.ScreenX;
-		} else if (Map.ScreenX < 0) {
-			dest_rect.Width += Map.ScreenX;
+		if (shake_x > 0) {
+			dest_rect.X += shake_x;
+			dest_rect.Width -= shake_x;
+		} else if (shake_x < 0) {
+			dest_rect.Width += shake_x;
 		}
-		if (Map.ScreenY > 0) {
-			dest_rect.Y += Map.ScreenY;
-			dest_rect.Height -= Map.ScreenY;
-		} else if (Map.ScreenY < 0) {
-			dest_rect.Height += Map.ScreenY;
+		if (shake_y > 0) {
+			dest_rect.Y += shake_y;
+			dest_rect.Height -= shake_y;
+		} else if (shake_y < 0) {
+			dest_rect.Height += shake_y;
 		}
 	}
 
@@ -581,26 +594,26 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 
 	}
 
-	if (Map.ScreenY < 0) {
-		src_rect.Y -= Map.ScreenY;
+	if (shake_y < 0) {
+		src_rect.Y -= shake_y;
 	}
 
-	if (Map.ScreenX < 0) {
-		src_rect.X -= Map.ScreenX;
+	if (shake_x < 0) {
+		src_rect.X -= shake_x;
 	}
 
 	/// Draw filler for X offset
-	if (Map.ScreenX != 0) {
-		fill_rect.Set(fill_rect.X, 0, abs(Map.ScreenX), surface->Get_Height());
-		fill_rect.X = Map.ScreenX < 0 ? dest_rect.X + dest_rect.Width : dest_rect.X - Map.ScreenX;
+	if (shake_x != 0) {
+		fill_rect.Set(fill_rect.X, 0, abs(shake_x), surface->Get_Height());
+		fill_rect.X = shake_x < 0 ? dest_rect.X + dest_rect.Width : dest_rect.X - shake_x;
 
 		VisibleSurface->Fill_Rect(VisibleSurface->Get_Rect(), fill_rect, 0);
 	}
 
 	/// Draw filler for Y offset
-	if (Map.ScreenY != 0) {
-		fill_rect.Set(0, fill_rect.Y, surface->Get_Width(), abs(Map.ScreenY));
-		fill_rect.Y = Map.ScreenY < 0 ? dest_rect.Y + dest_rect.Height : dest_rect.Y - Map.ScreenY;
+	if (shake_y != 0) {
+		fill_rect.Set(0, fill_rect.Y, surface->Get_Width(), abs(shake_y));
+		fill_rect.Y = shake_y < 0 ? dest_rect.Y + dest_rect.Height : dest_rect.Y - shake_y;
 
 		VisibleSurface->Fill_Rect(VisibleSurface->Get_Rect(), fill_rect, 0);
 	}

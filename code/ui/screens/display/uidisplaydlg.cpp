@@ -11,12 +11,10 @@
 
 #include "_ui.h"
 #include "bgfxbackend.h"
-#include "debugmode.h"
 #include "globals.h"
 #include "goptions.h"
 #include "hud.h"
 #include "misc.h"
-#include "numparse.h"
 #include "options.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
@@ -82,9 +80,31 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Modern_Panel_Rows_Changed();
 		}
 
-		virtual void Set_Debug_Mode(bool on) override
+		virtual void Set_Bitmap_System_Font(bool on) override
 		{
-			Debug_Mode_Set(on);
+			Options.BitmapSystemFont = on;
+		}
+
+		virtual void Set_Show_FPS(bool on) override
+		{
+			Options.ShowFPS = on;
+		}
+
+		virtual void Set_Frame_Limit(int limit) override
+		{
+			Options.FrameRateLimit = limit;
+			Video_Set_Refresh_Rate(Video_Refresh_Rate());
+		}
+
+		virtual void Set_Window_Size(int width, int height) override
+		{
+			Options.WindowWidth = width;
+			Options.WindowHeight = height;
+			if (WindowedMode) {
+				int const frame_width = (width > 0) ? width : Options.ScreenWidth;
+				int const frame_height = (height > 0) ? height : Options.ScreenHeight;
+				Main_Window_Resize(frame_width, frame_height);
+			}
 		}
 
 		virtual void Set_Interface_Scale(float scale) override
@@ -312,18 +332,70 @@ void UI_Display_State(UIDisplayState & state)
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
-	state.DebugMode = Options.DebugMode;
+	state.BitmapSystemFont = Options.BitmapSystemFont;
+	state.ShowFPS = Options.ShowFPS;
+	state.FrameLimit = Fill_Choices(state.FrameLimits, {
+		{-1, "Display refresh"},
+		{30, "30"},
+		{60, "60"},
+		{120, "120"},
+		{144, "144"},
+		{240, "240"},
+		{0, "Unlimited"}
+	}, (Options.FrameRateLimit < 0) ? -1 : Options.FrameRateLimit, "%d");
+
+	// Match resolution follows ScreenWidth and ScreenHeight. The fixed sizes above the desktop are left out.
+	UIDisplayMode match;
+	match.Width = -1;
+	match.Height = -1;
+	match.Label = "Match resolution";
+	state.WindowSizes.push_back(match);
+	static int const window_sizes[][2] = {{800, 600}, {1024, 768}, {1280, 720}, {1280, 800}, {1600, 900}, {1920, 1080}, {2560, 1440}, {3840, 2160}};
+	int desktop_width = 0;
+	int desktop_height = 0;
+	bool const known_desktop = Main_Window_Desktop_Size(desktop_width, desktop_height);
+	for (auto const & size : window_sizes) {
+		if (known_desktop && (size[0] > desktop_width || size[1] > desktop_height)) {
+			continue;
+		}
+		UIDisplayMode mode;
+		mode.Width = size[0];
+		mode.Height = size[1];
+		mode.Label = std::to_string(size[0]) + " x " + std::to_string(size[1]);
+		state.WindowSizes.push_back(mode);
+	}
+	// Zero or below in either dimension follows the frame, so both are treated as Match resolution.
+	state.WindowSize = -1;
+	if (Options.WindowWidth <= 0 && Options.WindowHeight <= 0) {
+		state.WindowSize = 0;
+	}
+	for (int index = 1; state.WindowSize < 0 && index < (int)state.WindowSizes.size(); index++) {
+		if (state.WindowSizes[index].Width == Options.WindowWidth && state.WindowSizes[index].Height == Options.WindowHeight) {
+			state.WindowSize = index;
+		}
+	}
+	if (state.WindowSize < 0) {
+		UIDisplayMode mode;
+		mode.Width = Options.WindowWidth;
+		mode.Height = Options.WindowHeight;
+		int const shown_width = (Options.WindowWidth > 0) ? Options.WindowWidth : Options.ScreenWidth;
+		int const shown_height = (Options.WindowHeight > 0) ? Options.WindowHeight : Options.ScreenHeight;
+		mode.Label = std::to_string(shown_width) + " x " + std::to_string(shown_height);
+		state.WindowSize = (int)state.WindowSizes.size();
+		state.WindowSizes.push_back(mode);
+	}
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},
-		{VIDEO_SCALE_NEAREST, "Sharp"},
-		{VIDEO_SCALE_LINEAR, "Smooth"}
+		{VIDEO_SCALE_NEAREST, "Nearest"},
+		{VIDEO_SCALE_LINEAR, "Linear"}
 	}, Options.ScaleMode, "%d");
 	state.FrameRate = Fill_Choices(state.FrameRates, {
 		{0, "Off"},
+		{-1, "Match display"},
 		{30, "30"},
 		{60, "60"},
 		{120, "120"},
@@ -376,7 +448,7 @@ void UI_Display_State(UIDisplayState & state)
 		scale.Value = step;
 		if (step > 0.0f) {
 			char buffer[32];
-			Snprintf_Nearest(buffer, sizeof(buffer), "%g", step);
+			std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(step * 100.0f));
 			scale.Label = buffer;
 		} else {
 			scale.Label = "Auto";
@@ -387,7 +459,7 @@ void UI_Display_State(UIDisplayState & state)
 		UIDisplayScale scale;
 		scale.Value = current;
 		char buffer[32];
-		Snprintf_Nearest(buffer, sizeof(buffer), "%g", current);
+		std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(current * 100.0f));
 		scale.Label = buffer;
 		state.Scale = (int)state.Scales.size();
 		state.Scales.push_back(scale);

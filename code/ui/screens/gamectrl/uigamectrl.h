@@ -43,6 +43,8 @@ class UIGameControlsServiceClass
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
 		virtual void Set_Sidebar_Sorting(bool on) = 0;
 		virtual void Set_Autosave_Interval(int frames) = 0;
+		virtual void Set_Debug_Mode(bool on) = 0;
+		virtual void Set_Screen_Shake(bool on) = 0;
 		virtual void Save(void) = 0;
 };
 
@@ -69,6 +71,8 @@ struct UIGameControlsState
 	bool AltToRally = false;
 	bool SimulateUnfocused = false;
 	bool SidebarSorting = false;
+	bool DebugMode = false;
+	bool ScreenShake = true;
 	std::vector<UIGameControlsChoice> Autosaves;
 	int Autosave = 0;
 
@@ -118,6 +122,8 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		bool InitialSimulateUnfocused;
 		bool InitialSidebarSorting;
 		int InitialAutosave;
+		bool InitialDebugMode;
+		bool InitialScreenShake;
 };
 
 

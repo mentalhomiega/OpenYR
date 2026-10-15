@@ -9,7 +9,9 @@ when_omitted:
 
 The width is that of the window's drawable area. The border and title bar are added outside it. The value applies only while the game is windowed; a full-screen game ignores it.
 
-The window opens centered on the main display. A window wider than the display opens against its left edge, and one taller than the display opens against its top edge.
+The window opens centered on the main display. A window larger than the display's usable area, which excludes the taskbar, is shrunk to fit inside it, frame included.
+
+The **Window size** list on the Display page of the settings sets this and [`WindowHeight`](/keys/windowheight/) together. Choosing Match resolution sets both to -1.
 
 While both this and [`WindowHeight`](/keys/windowheight/) are unset or at zero or below, the window follows the rendering resolution. It opens at [`ScreenWidth`](/keys/screenwidth/) by [`ScreenHeight`](/keys/screenheight/). When the resolution changes, the window resizes about its center, and is moved if needed so it stays on its display and clear of the taskbar.
 

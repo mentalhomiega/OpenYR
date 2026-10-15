@@ -334,6 +334,12 @@ void Main_Window_Destroy(void)
 }
 
 
+bool Main_Window_Start(void)
+{
+	return(Start_SDL());
+}
+
+
 /// <summary>
 /// Starts SDL, then creates and shows the main window. A window for windowed play has a client
 /// area of the size given and is centered on the primary display, kept clear of its top and
@@ -357,15 +363,22 @@ bool Main_Window_Create(bool windowed, int width, int height)
 
 	if (windowed) {
 		float const density = Pixel_Density();
-		int const clientwidth = (int)std::lround(width / density);
-		int const clientheight = (int)std::lround(height / density);
-		SDL_SetWindowSize(_Window, clientwidth, clientheight);
+		int clientwidth = (int)std::lround(width / density);
+		int clientheight = (int)std::lround(height / density);
 
 		int top = 0;
 		int left = 0;
 		int bottom = 0;
 		int right = 0;
 		SDL_GetWindowBordersSize(_Window, &top, &left, &bottom, &right);
+
+		// A window larger than the usable area of its display is shrunk to fit inside it, frame included.
+		SDL_Rect usable;
+		if (SDL_GetDisplayUsableBounds(SDL_GetPrimaryDisplay(), &usable)) {
+			clientwidth = SDL_min(clientwidth, usable.w - left - right);
+			clientheight = SDL_min(clientheight, usable.h - top - bottom);
+		}
+		SDL_SetWindowSize(_Window, clientwidth, clientheight);
 
 		SDL_Rect display;
 		if (SDL_GetDisplayBounds(SDL_GetPrimaryDisplay(), &display)) {
@@ -527,6 +540,25 @@ std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void)
 	std::sort(sizes.begin(), sizes.end());
 	sizes.erase(std::unique(sizes.begin(), sizes.end()), sizes.end());
 	return(sizes);
+}
+
+
+bool Main_Window_Desktop_Size(int & width, int & height)
+{
+	if (!_Started) {
+		return(false);
+	}
+
+	SDL_DisplayMode const * mode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
+	if (mode == nullptr) {
+		DebugString("SDL: the desktop mode was not read: %s\n", SDL_GetError());
+		return(false);
+	}
+
+	float const density = mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f;
+	width = (int)std::lround(mode->w * density);
+	height = (int)std::lround(mode->h * density);
+	return(true);
 }
 
 

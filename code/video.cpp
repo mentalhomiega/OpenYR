@@ -62,6 +62,7 @@ static bool _LayerFresh = false;
 
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
+static int _RefreshRate = 60;
 
 static unsigned int _PresentsThisSecond = 0;
 static unsigned int _PresentsLastSecond = 0;
@@ -95,8 +96,17 @@ static void Update_Present_Interval(int refreshrate)
 	if (refreshrate <= 1) {
 		refreshrate = 60;
 	}
+	_RefreshRate = refreshrate;
 
-	_PresentInterval = (unsigned int)(1000 / refreshrate);
+	// A frame rate limit of zero presents at every chance; a negative one follows the refresh rate.
+	int const limit = Options.FrameRateLimit;
+	if (limit == 0) {
+		_PresentInterval = 0;
+		return;
+	}
+	int const rate = (limit > 0) ? limit : refreshrate;
+
+	_PresentInterval = (unsigned int)(1000 / rate);
 	if (_PresentInterval < 3) {
 		_PresentInterval = 3;
 	}
@@ -306,6 +316,15 @@ void Video_Set_Refresh_Rate(int refreshrate)
 
 	Update_Present_Interval(refreshrate);
 	Video_Mark_Overlay_Dirty();
+}
+
+
+/// <summary>
+/// Returns the refresh rate the presents are paced to, in hertz; 60 when none was reported.
+/// </summary>
+int Video_Refresh_Rate(void)
+{
+	return(_RefreshRate);
 }
 
 

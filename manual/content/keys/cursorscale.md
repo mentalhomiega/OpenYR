@@ -15,4 +15,4 @@ The same size applies to the arrow shown over the game's menus and dialogs, unle
 
 Windows draws the pointer over the picture, so it does not grow when the picture is enlarged. This keeps it moving smoothly while the game is busy.
 
-The **Pointer size** list on the Display page of the settings offers Auto (`0`) and 1x to 4x, and resizes the pointer at once. It shows a negative value as 1x, which draws the pointer at the same size.
+The **Cursor size** list on the Display page of the settings offers Auto (`0`) and 1x to 4x, and resizes the pointer at once. It shows a negative value as 1x, which draws the pointer at the same size.

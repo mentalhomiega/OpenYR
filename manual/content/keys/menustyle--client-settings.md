@@ -18,6 +18,6 @@ Both styles scale with the window. `Modern` is laid out for 1280 by 720, so it i
 
 A name other than `Classic` is read as `Modern`, and the setting is written back to `RA2MD.INI` that way.
 
-The display options screen has the same choice as its "Classic Yuri's Revenge menus" switch. Accepting that screen changes the style at once, and leaving the options menu saves the setting to `RA2MD.INI`.
+The display options screen has the same choice as its "Classic menu art" switch. Accepting that screen changes the style at once, and leaving the options menu saves the setting to `RA2MD.INI`.
 
 The files each style draws with are in the [UI files](/systems/ui-files/#menu-styles).

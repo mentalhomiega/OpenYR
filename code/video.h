@@ -47,6 +47,7 @@ void Video_Shutdown(void);
 bool Video_Set_Mode(int width, int height);
 void Video_On_Resize(int drawablewidth, int drawableheight);
 void Video_Set_Refresh_Rate(int refreshrate);
+int Video_Refresh_Rate(void);
 
 // Takes up a change to the filter, integer scaling or pointer size settings from the next present.
 void Video_Refresh_Scaling(void);

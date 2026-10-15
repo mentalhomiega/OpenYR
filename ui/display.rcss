@@ -60,20 +60,30 @@
 {
 	display: flex;
 	margin-top: 2dp;
-	height: 150dp;
+	height: 126dp;
 }
 
 #modes
 {
 	width: 130dp;
-	height: 150dp;
+	height: 126dp;
 }
 
 .row
 {
 	display: flex;
-	margin-top: 5dp;
+	margin-top: 3dp;
 	height: 24dp;
+}
+
+#framelimit-row .caption
+{
+	width: 112dp;
+}
+
+#framelimit, #windowsize
+{
+	width: 118dp;
 }
 
 #scale-row
@@ -105,7 +115,7 @@ select
 .check
 {
 	display: block;
-	margin-top: 3dp;
+	margin-top: 2dp;
 }
 
 #switch-stretch, #switch-fullscreen

@@ -15,6 +15,7 @@
 #include "audio/audioengine.h"
 #include "cctooltip.h"
 #include "data.h"
+#include "debugmode.h"
 #include "gamedlg.h"
 #include "globals.h"
 #include "goptions.h"
@@ -122,6 +123,16 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.SidebarSorting = on;
 		}
 
+		virtual void Set_Debug_Mode(bool on) override
+		{
+			Debug_Mode_Set(on);
+		}
+
+		virtual void Set_Screen_Shake(bool on) override
+		{
+			Options.ScreenShake = on;
+		}
+
 		virtual void Set_Autosave_Interval(int frames) override
 		{
 			Options.AutoSaveInterval = frames;
@@ -189,6 +200,8 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.AltToRally = Options.AltToRally;
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
 	state.SidebarSorting = Options.SidebarSorting;
+	state.DebugMode = Options.DebugMode;
+	state.ScreenShake = Options.ScreenShake;
 
 	static int const intervals[] = {0, 5400, 10800, 21600};
 	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;

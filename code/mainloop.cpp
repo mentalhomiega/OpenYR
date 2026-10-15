@@ -383,7 +383,7 @@ bool Main_Loop(void)
 	DisplayClass::Layer[LAYER_GROUND].Sort();
 
 	// Remember where moving objects stand before this frame's logic, so drawing between frames can blend toward their new places.
-	if (Options.RenderFrameRate > 0) {
+	if (Options.Render_Frame_Rate() > 0) {
 		for (int index = 0; index < Feet.Count(); index++) {
 			// An object off the map has no position to blend from when it is placed again.
 			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
@@ -623,7 +623,8 @@ void Sync_Delay(void)
 
 	// With RenderFrameRate set, the wait is filled with redraws at that rate, each drawing moving
 	// objects further along their move from the previous game frame.
-	if (Options.RenderFrameRate > 0 && !Session.Play) {
+	int const render_frame_rate = Options.Render_Frame_Rate();
+	if (render_frame_rate > 0 && !Session.Play) {
 		static unsigned int stat_start = timeGetTime();
 		static unsigned int stat_frames = 0;
 		static unsigned int stat_draws = 0;
@@ -631,7 +632,7 @@ void Sync_Delay(void)
 		stat_frames++;
 		stat_wait += FrameTimer;
 		unsigned int const period = std::max<unsigned int>(FrameTimer, 1);
-		unsigned int const spacing = std::max(1000 / Options.RenderFrameRate, 1);
+		unsigned int const spacing = std::max(1000 / render_frame_rate, 1);
 		unsigned int next_draw = timeGetTime();
 		while (FrameTimer) {
 			Call_Back();

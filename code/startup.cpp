@@ -596,6 +596,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Options.WindowWidth = ConfigINI.Get_Int("Video", "WindowWidth", Options.WindowWidth);
 		Options.WindowHeight = ConfigINI.Get_Int("Video", "WindowHeight", Options.WindowHeight);
 		Options.VSync = ConfigINI.Get_Bool("Video", "VSync", Options.VSync);
+		Options.FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", Options.FrameRateLimit);
 		Options.Renderer = ConfigINI.Get_Int("Video", "Renderer", Options.Renderer);
 
 		/*
@@ -617,9 +618,18 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 			}
 		}
 
+		// The display can be read only once SDL is running, and the window would start SDL later.
 		if (Options.ScreenWidth == -1 || Options.ScreenHeight == -1) {
-			Options.ScreenWidth = 640;
-			Options.ScreenHeight = 480;
+			int desktopwidth = 640;
+			int desktopheight = 480;
+			Main_Window_Start();
+			Main_Window_Desktop_Size(desktopwidth, desktopheight);
+			if (Options.ScreenWidth == -1) {
+				Options.ScreenWidth = desktopwidth;
+			}
+			if (Options.ScreenHeight == -1) {
+				Options.ScreenHeight = desktopheight;
+			}
 		}
 
 		/*

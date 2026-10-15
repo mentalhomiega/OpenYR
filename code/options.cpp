@@ -190,19 +190,20 @@ OptionsClass::OptionsClass(void) :
 	SoundVolume(.7f),
 	VoiceVolume(1.0f),
 	ScoreVolume(.5f),
-	BitmapSystemFont(true),
+	BitmapSystemFont(false),
 	AutoScroll(true),
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
 	IsSidebarOnRight(true),
-	ModernInterface(false),
-	IsModernInterfaceChosen(false),
+	ModernInterface(true),
+	IsModernInterfaceChosen(true),
 	SidebarRows(HUD_DEFAULT_ROWS),
 	DebugMode(false),
 	SidebarCameoText(false),
 	SidebarSorting(true),
 	ActionLines(true),
 	ShowHidden(false),
+	ScreenShake(true),
 	IsClassicMenus(false),
 	ToolTips(true),
 	AltToRally(false),
@@ -219,12 +220,14 @@ OptionsClass::OptionsClass(void) :
 	WindowHeight(-1),
 	ScaleMode(VIDEO_SCALE_PIXELART),
 	IntegerScaling(false),
-	RenderFrameRate(0),
-	VSync(false),
+	ShowFPS(false),
+	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
+	FrameRateLimit(-1),
+	VSync(true),
 	Renderer(0),
 	CursorScale(0),
 	InterfaceScale(0.0f),
-	SystemCursor(false),
+	SystemCursor(true),
 	SoundLatency(9),
 	KeyForceMove1(KN_LALT),
 	KeyForceMove2(KN_LALT),
@@ -489,6 +492,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("ActionLines are %s\n", ActionLines == true ? "ON" : "OFF");
 
 	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
+	ScreenShake = ConfigINI.Get_Bool("Options", "ScreenShake", ScreenShake);
 	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
 
 	Load_Menu_Style();
@@ -525,7 +529,9 @@ void OptionsClass::Load_Settings(void)
 	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
-	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), 0, 1000);
+	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
+	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
+	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
 	char scalename[32];
@@ -574,7 +580,7 @@ void OptionsClass::Load_Menu_Style(void)
 void OptionsClass::Load_Interface_Style(void)
 {
 	char style[16];
-	ConfigINI.Get_String("Options", "InterfaceStyle", "Classic", style, sizeof(style));
+	ConfigINI.Get_String("Options", "InterfaceStyle", "Modern", style, sizeof(style));
 	ModernInterface = (stricmp(style, "Modern") == 0);
 	IsModernInterfaceChosen = ModernInterface;
 	SidebarRows = ConfigINI.Get_Int("Options", "SidebarRows", HUD_DEFAULT_ROWS);
@@ -635,6 +641,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
+	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
@@ -652,7 +659,9 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "WindowHeight", WindowHeight);
 	ConfigINI.Put_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode));
 	ConfigINI.Put_Bool("Video", "IntegerScaling", IntegerScaling);
+	ConfigINI.Put_Bool("Video", "ShowFPS", ShowFPS);
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
+	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
@@ -784,4 +793,20 @@ void OptionsClass::Hotkey_Dialog(void)
 int OptionsClass::Get_Scroll_Method(void) const
 {
 	return(ScrollMethod);
+}
+
+
+/// <summary>
+/// Returns how many extra pictures per second the game draws between game frames in this session.
+/// </summary>
+/// <returns>int; Zero for none. Match display gives the display's refresh rate in solo and skirmish games, and zero in network games.</returns>
+int OptionsClass::Render_Frame_Rate(void) const
+{
+	if (RenderFrameRate >= 0) {
+		return(RenderFrameRate);
+	}
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
+		return(0);
+	}
+	return(Video_Refresh_Rate());
 }

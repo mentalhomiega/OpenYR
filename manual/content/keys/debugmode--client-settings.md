@@ -21,7 +21,7 @@ Heal selected restores full strength to the player's selected units and building
 
 Fast-forward removes the frame limit that the game speed sets. The game logic run in each tick is unchanged, and turning the cheat off returns the game to the game speed. The game speed setting itself does not change.
 
-The display options screen has the same choice as its "Debug mode (for testing)" switch. The settings are saved to `RA2MD.INI` when the options screens close.
+The Game Controls page of the settings has the same choice as its "Debug mode (for testing)" switch. The settings are saved to `RA2MD.INI` when the options screens close.
 
 ```ini title="RA2MD.INI"
 [Options]

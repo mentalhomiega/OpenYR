@@ -1,10 +1,10 @@
 ---
 key: BitmapSystemFont
 scope: client-settings
-label: Bitmap dialog text
+label: Pixel-perfect UI font
 when_omitted:
   kind: value
-  value: "yes"
+  value: "no"
 ---
 
 `BitmapSystemFont=yes` draws the lists, text boxes, tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the original dialogs used. `BitmapSystemFont=no` draws them in the scalable face of the same design. Captions and button text use the game's own font art and look the same at either setting.
@@ -15,4 +15,4 @@ Windows ships the bitmap face as one file per writing system, and the game loads
 
 On a machine without the bitmap face files installed, the scalable face is used.
 
-The game reads the key at startup, and no screen offers it, so a change takes effect the next time the game runs.
+The **Pixel-perfect UI font** switch on the Display page of the settings sets the key. The game applies the choice when the next screen opens, so the Display page keeps its current face until it closes.

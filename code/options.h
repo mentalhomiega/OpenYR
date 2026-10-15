@@ -42,7 +42,8 @@ class OptionsClass {
 			MAX_SCROLL_SETTING=7,
 			MAX_SPEED_SETTING=7,
 			MAX_DETAIL_SETTING=3,
-			MAX_DIFFICULTY_SETTING=DIFF_COUNT
+			MAX_DIFFICULTY_SETTING=DIFF_COUNT,
+			RENDER_FRAME_RATE_MATCH_DISPLAY=-1
 		};
 
 		OptionsClass(void);
@@ -58,6 +59,7 @@ class OptionsClass {
 		int Normalize_Delay(int delay) const;
 		int Normalize_Volume(int volume) const;
 		int Get_Scroll_Method(void) const;
+		int Render_Frame_Rate(void) const;
 
 		void Hotkey_Dialog(void);
 
@@ -142,6 +144,9 @@ class OptionsClass {
 		// If the marker over an object hidden behind a building is to be shown, then this flag will be true.
 		bool ShowHidden;
 
+		// If warhead and ion blast shakes move the view, then this flag will be true. The simulation never reads it.
+		bool ScreenShake;
+
 		// The look of the menus: false for Yuri's Revenge art in a modern layout, true for
 		// Yuri's Revenge's own screens (MenuStyle=Modern or Classic in the settings).
 		bool IsClassicMenus;
@@ -213,9 +218,16 @@ class OptionsClass {
 		 */
 		bool IntegerScaling;
 
+		// If the game's frame count per second is to be drawn in the corner of the game view, then this flag will be true.
+		bool ShowFPS;
+
 		// Redraws a second between game frames, drawing moving objects between their positions;
-		// 0 draws once per game frame, as the original game does.
+		// 0 draws once per game frame, as the original game does, and a negative value matches
+		// the display's refresh rate where Render_Frame_Rate allows it.
 		int RenderFrameRate;
+
+		// Caps the presents per second: zero is unlimited, and a negative value follows the display's refresh rate.
+		int FrameRateLimit;
 
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
