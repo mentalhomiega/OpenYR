@@ -1,0 +1,53 @@
+; Voxel turret survey for the Yuri Gattling Cannon (YAGGUN, 62,62) and the Soviet Sentry Gun (NALASR, 70,62).
+; Both turrets are turned to eight 32-step facings, one ScreenCapture each, then the Gattling barrels are set to
+; pitch 32 (45 degrees up) and 0 (straight up) with the pitch verb, so the anti-air elevation is captured without
+; an aircraft. Each capture is named by its step order. Run from E:\Claude ra2 decomp:
+;   scripts/run_autotest.ps1 -Script src-agent19/tests/autotest/gattling-turret.txt -Build agent19 -ShotDir <dir> -Seconds 90
+30 command CenterBase
+35 reveal
+40 own GAPOWR 58 58
+45 own YAGGUN 62 62
+47 own NALASR 70 62
+50 view 66 62
+55 zoom 2.5
+60 windowmove 795 595
+62 turretcoord YAGGUN
+70 face 0 62 62
+70 face 0 70 62
+82 command ScreenCapture
+84 face 32 62 62
+84 face 32 70 62
+96 command ScreenCapture
+98 face 64 62 62
+98 face 64 70 62
+110 command ScreenCapture
+112 face 96 62 62
+112 face 96 70 62
+124 command ScreenCapture
+126 face 128 62 62
+126 face 128 70 62
+138 command ScreenCapture
+140 face 160 62 62
+140 face 160 70 62
+152 command ScreenCapture
+154 face 192 62 62
+154 face 192 70 62
+166 command ScreenCapture
+168 face 224 62 62
+168 face 224 70 62
+180 command ScreenCapture
+182 face 0 62 62
+182 face 0 70 62
+184 pitch 64 62 62
+196 command ScreenCapture
+198 pitch 32 62 62
+210 command ScreenCapture
+212 pitch 0 62 62
+224 command ScreenCapture
+226 face 128 62 62
+238 command ScreenCapture
+240 pitch 32 62 62
+252 command ScreenCapture
+254 face 96 62 62
+266 command ScreenCapture
+288 quit

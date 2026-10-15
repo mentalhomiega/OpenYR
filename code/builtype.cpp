@@ -1215,6 +1215,29 @@ void BuildingTypeClass::Fetch_Building_Voxel_Image(void)
 				*nameroot++ = 'L';
 				*nameroot++ = '\0';
 			}
+		} else if (IsTurretAnimAVoxel && !IsBarrelAnimAVoxel) {
+
+			// gamemd (ObjectTypeClass::LoadVoxel, 0x5F8110) takes the turret model from <name>.VXL when that file exists,
+			// and the barrel from <name>BARL.VXL. A turret named that way has no separate TUR file.
+			CCFileClass named(fullname);
+			if (named.Is_Available()) {
+				delete AuxVoxel.VoxLib;
+				AuxVoxel.VoxLib = new VoxelLibrary(named);
+
+				_makepath(fullname, NULL, NULL, buffer, ".HVA");
+				CCFileClass hva(fullname);
+				delete AuxVoxel.MotLib;
+				AuxVoxel.MotLib = new MotionLibrary(hva);
+
+				if (AuxVoxel.MotLib != NULL && !AuxVoxel.MotLib->Load_Failed()) {
+					AuxVoxel.MotLib->Scale(AuxVoxel.VoxLib->Get_Layer_Info(0, 0).Scale);
+				}
+			}
+
+			char barrel[128];
+			snprintf(barrel, sizeof(barrel), "%sBARL", buffer);
+			strcpy(buffer, barrel);
+
 		} else if (IsBarrelAnimAVoxel) {
 			strncpy(buffer, VoxelBarrelFile, sizeof(buffer));
 		}
