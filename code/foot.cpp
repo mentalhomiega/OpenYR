@@ -5428,9 +5428,9 @@ void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 /// <summary>
 /// Moves a Sensors=yes object's coverage with it (FootClass::AddSensorsAt, 0x4DE7B0, and
-/// RemoveSensorsAt): its owner senses every cell within SensorsSight cells of where it stands,
-/// which reveals the cloaked objects there. With lift, or once the object is in limbo, the
-/// coverage is taken away.
+/// RemoveSensorsAt): its owner senses every cell whose squared offset from where it stands is
+/// below SensorsSight squared, which reveals the cloaked objects there. With lift, or once the
+/// object is in limbo, the coverage is taken away.
 /// </summary>
 void FootClass::Update_Sensors(bool lift)
 {
@@ -5446,10 +5446,10 @@ void FootClass::Update_Sensors(bool lift)
 		if (origin == CELL_NONE || house == NULL) {
 			continue;
 		}
-		for (int y = -radius; y <= radius; y++) {
-			for (int x = -radius; x <= radius; x++) {
+		for (int y = -radius; y < radius; y++) {
+			for (int x = -radius; x < radius; x++) {
 				Cell const cell(origin.X + x, origin.Y + y);
-				if (x * x + y * y > radius * radius || !Map.In_Radar(cell)) {
+				if (x * x + y * y >= radius * radius || !Map.In_Radar(cell)) {
 					continue;
 				}
 				CellClass * cellptr = &Map[cell];

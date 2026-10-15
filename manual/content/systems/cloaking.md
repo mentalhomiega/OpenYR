@@ -176,7 +176,7 @@ Arrays of one house may overlap. A cell stays sensed while any of the house's ar
 
 ### Mobile sensors
 
-A vehicle, infantryman or aircraft with `Sensors=yes` and a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, for its owner, every cell within that many cells of the cell it stands on. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers and dolphins use this to find submarines.
+A vehicle, infantryman or aircraft with `Sensors=yes` and a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, for its owner, every cell whose distance from the cell it stands on is less than that many cells. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers and dolphins use this to find submarines.
 
 ### What sensing changes
 
