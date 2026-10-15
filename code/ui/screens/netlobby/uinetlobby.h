@@ -10,6 +10,7 @@
 #pragma once
 
 #include "ui/uipreview.h"
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/uiscreen.h"
 
 #include <memory>
@@ -108,6 +109,11 @@ struct UINetLobbyState
 	int Side = 0;
 	std::vector<UINetOption> Colors;
 	int Color = 0;
+	/// The free color, zero for the stock color at Color, and the picker over the lobby.
+	unsigned int CustomColor = 0;
+	UIColorPickState Picker;
+	/// The colors of the other players, for the picker's duplicate check.
+	std::vector<UIColorPickRival> Rivals;
 
 	std::string MapName;
 	UIMapPreviewImage Preview;
@@ -151,6 +157,7 @@ class UINetLobbyServiceClass
 		virtual void Say(char const * text) = 0;
 		virtual void Set_Side(int index) = 0;
 		virtual void Set_Color(int index) = 0;
+		virtual void Set_Custom_Color(int index, unsigned int custom) = 0;
 		virtual void Set_Switch(UINetSwitch which, bool on) = 0;
 		virtual void Set_Slider(UINetSlider which, int value) = 0;
 		virtual void Kick(std::vector<std::string> const & names) = 0;
