@@ -152,6 +152,7 @@
 #include "debugmode.h"
 #include "ddist.h"
 #include "dsurface.h"
+#include "economyrules.h"
 #include "factory.h"
 #include "globals.h"
 #include "gmmath.h"
@@ -2079,12 +2080,9 @@ void HouseClass::Purified(int tiberium, TiberiumType slot)
 	}
 
 	// The share is truncated to single precision and paid without rounding to whole units, as UnitClass::Mission_Unload does at 0x73E441.
-	double const share = static_cast<double>(purifiers) * Truncate_To_Single(Rule->PurifierBonus) * static_cast<double>(tiberium);
-	float const bonus = Truncate_To_Single(share);
-	if (bonus > 0) {
-		PointTotal += static_cast<int>(bonus * 5.0);
-		Credits += static_cast<int>(Tiberiums[slot]->CreditValue * Class->IncomeMult * bonus);
-	}
+	EconomyRules::PurifierPayout const payout = EconomyRules::Purifier_Payout(purifiers, Rule->PurifierBonus, tiberium, Tiberiums[slot]->CreditValue, Class->IncomeMult);
+	PointTotal += payout.Points;
+	Credits += payout.Credits;
 }
 
 
@@ -5344,10 +5342,8 @@ int HouseClass::AI_Unit(void)
 
 	// A computer house keeps HarvestersPerRefinery gatherers for each refinery it owns, or
 	// AISlaveMinerNumber when no refinery type is buildable (HouseClass::AI_VehicleConstructionUpdate, 0x4FEA60).
-	int target = Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty) * ref;
-	if (Get_First_Acted(Rule->BuildRefinery) == NULL) {
-		target = Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty);
-	}
+	int const target = EconomyRules::Harvester_Target(Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty), ref,
+		Get_First_Acted(Rule->BuildRefinery) != NULL, Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
 	int const gatherers = Count_Resource_Gatherers();
 
 	/*
@@ -8242,10 +8238,7 @@ static TypeList<int> const * Side_Base_Defense_Counts(int side)
 
 static int Difficulty_Entry(TypeList<int> const & list, int difficulty)
 {
-	if (difficulty >= 0 && difficulty < list.Count()) {
-		return(list[difficulty]);
-	}
-	return(0);
+	return(EconomyRules::Difficulty_Entry(list, difficulty));
 }
 
 
