@@ -167,6 +167,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
+		virtual void Set_Menu_Theme(int theme) override
+		{
+			Options.MenuTheme = (MenuThemeType)theme;
+		}
+
 		virtual void Set_HDR_Output(int mode) override
 		{
 			// The output is decided when the renderer starts.
@@ -489,6 +494,12 @@ void UI_Display_State(UIDisplayState & state)
 		{3, "3x"},
 		{4, "4x"}
 	}, (Options.CursorScale < 0) ? 1 : Options.CursorScale, "%dx");
+	state.MenuTheme = Fill_Choices(state.MenuThemes, {
+		{MENU_THEME_RANDOM, "Random"},
+		{MENU_THEME_ALLIED, "Allied"},
+		{MENU_THEME_SOVIET, "Soviet"},
+		{MENU_THEME_YURI, "Yuri"}
+	}, (int)Options.MenuTheme, "%d");
 	state.Renderer = Fill_Choices(state.Renderers, {
 		{BACKEND_RENDERER_AUTO, "Auto"},
 		{BACKEND_RENDERER_D3D11, "Direct3D 11"},

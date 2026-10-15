@@ -211,6 +211,7 @@ OptionsClass::OptionsClass(void) :
 	ShowHidden(false),
 	ScreenShake(true),
 	IsClassicMenus(false),
+	MenuTheme(MENU_THEME_RANDOM),
 	ToolTips(true),
 	AltToRally(false),
 	SimulateWhileUnfocused(false),
@@ -706,6 +707,13 @@ void OptionsClass::Load_Menu_Style(void)
 	char menustyle[32];
 	ConfigINI.Get_String("Options", "MenuStyle", "Modern", menustyle, sizeof(menustyle));
 	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
+
+	char theme[16];
+	ConfigINI.Get_String("Options", "MenuTheme", "Random", theme, sizeof(theme));
+	MenuTheme = (stricmp(theme, "Allied") == 0) ? MENU_THEME_ALLIED
+		: (stricmp(theme, "Soviet") == 0) ? MENU_THEME_SOVIET
+		: (stricmp(theme, "Yuri") == 0) ? MENU_THEME_YURI
+		: MENU_THEME_RANDOM;
 }
 
 
@@ -798,6 +806,8 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
 	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
+	ConfigINI.Put_String("Options", "MenuTheme", MenuTheme == MENU_THEME_ALLIED ? "Allied"
+		: MenuTheme == MENU_THEME_SOVIET ? "Soviet" : MenuTheme == MENU_THEME_YURI ? "Yuri" : "Random");
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);

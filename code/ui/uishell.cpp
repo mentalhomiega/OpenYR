@@ -19,6 +19,7 @@
 #include "ui/uihost.h"
 #include "ui/uireveal.h"
 #include "ui/uiscript.h"
+#include "ui/uitheme.h"
 #include "ui/uiview.h"
 #include "windowevent.hh"
 
@@ -805,9 +806,15 @@ void UIShellClass::Tick(void)
 
 	{
 		// A style tells the menus over a game apart from the ones at the title by this class.
+		// Each document carries the class of the tint in force, so only that tint's colours apply.
 		bool const ingame = Host.Game_Running();
+		UIMenuTintType const tint = Host.Menu_Tint();
 		for (int index = 0; index < Context->GetNumDocuments(); index++) {
-			Context->GetDocument(index)->SetClass("ingame", ingame);
+			Rml::ElementDocument * document = Context->GetDocument(index);
+			document->SetClass("ingame", ingame);
+			for (int choice = 0; choice < UI_TINT_COUNT; choice++) {
+				document->SetClass(UI_Theme_Tint_Class((UIMenuTintType)choice), choice == tint);
+			}
 		}
 
 		UIReentryGuardClass ticking(InTick);

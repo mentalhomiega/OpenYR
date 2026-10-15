@@ -44,6 +44,14 @@ enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_ENHANCED
 };
 
+// The faction tint of the modern menus. Random picks one of the three when the game starts.
+enum MenuThemeType {
+	MENU_THEME_RANDOM,
+	MENU_THEME_ALLIED,
+	MENU_THEME_SOVIET,
+	MENU_THEME_YURI
+};
+
 // Turns the emissive masks on or off from the HDR highlights setting and the debug view.
 void Apply_HDR_Highlights(void);
 
@@ -165,6 +173,9 @@ class OptionsClass {
 		// The look of the menus: false for Yuri's Revenge art in a modern layout, true for
 		// Yuri's Revenge's own screens (MenuStyle=Modern or Classic in the settings).
 		bool IsClassicMenus;
+
+		// The faction tint of the modern menus, from the MenuTheme setting.
+		MenuThemeType MenuTheme;
 
 		/*
 		 * If tooltips are to pop up over the user interface, then this flag will be true.

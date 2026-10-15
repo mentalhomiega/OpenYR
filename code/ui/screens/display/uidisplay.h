@@ -63,6 +63,7 @@ class UIDisplayServiceClass
 		virtual void Set_Filter(int mode) = 0;
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
+		virtual void Set_Menu_Theme(int theme) = 0;
 		virtual void Set_Renderer(int renderer) = 0;
 		virtual void Set_HDR_Output(int mode) = 0;
 		virtual void Set_HDR_Paper_White(int nits) = 0;
@@ -117,6 +118,8 @@ struct UIDisplayState
 	int FrameRate = 0;
 	std::vector<UIDisplayChoice> CursorScales;
 	int CursorScale = 0;
+	std::vector<UIDisplayChoice> MenuThemes;
+	int MenuTheme = 0;
 	std::vector<UIDisplayChoice> Renderers;
 	int Renderer = 0;
 	std::vector<UIDisplayChoice> HDROutputs;
@@ -189,6 +192,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialFilter;
 		int InitialFrameRate;
 		int InitialCursorScale;
+		int InitialMenuTheme;
 		int InitialRenderer;
 		int InitialHighlights;
 		// The rows the player last picked on this page, or -1 for none. Only a pick is saved on OK.
