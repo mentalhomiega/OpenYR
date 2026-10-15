@@ -118,6 +118,20 @@ class UIMenuViewClass : public UIRmlViewClass
 				Document()->AppendChild(std::move(stamp));
 			}
 
+			if (!Data.State.Version.empty()) {
+				Rml::Element * version = Document()->GetElementById("badge-version");
+				if (version != nullptr) {
+					version->AppendChild(Document()->CreateTextNode(Data.State.Version));
+				}
+			}
+
+			if (!Data.State.Profile.empty()) {
+				Rml::Element * name = Document()->GetElementById("profile-name");
+				if (name != nullptr) {
+					name->AppendChild(Document()->CreateTextNode(Data.State.Profile));
+				}
+			}
+
 			Rml::Element * dialog = Document()->GetElementById("reveal");
 			if (dialog == nullptr || Data.State.Top < 0) {
 				return;

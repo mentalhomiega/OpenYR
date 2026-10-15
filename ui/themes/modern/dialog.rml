@@ -40,6 +40,9 @@
 			<div id="edge-left"></div>
 			<div id="edge-right"></div>
 		</div>
+		<div id="frame"></div>
+		<div id="profile"><p id="profile-name"></p><p id="profile-line">Local profile</p></div>
+		<div id="emblem"><div id="badge"></div><p id="badge-version"></p></div>
 		<div id="tip" class="tooltip"></div>
 	</div>
 </body>

@@ -48,5 +48,12 @@ body.theme-yuri
 	--t-tab-top: #2a2238;
 	--t-tab-text: #b9aad6;
 	--t-tab-active: #120d1c;
+	--t-frame: #6b43a8;
 	--t-backdrop: #0a081480;
+}
+
+/* The Yuri insignia, from the game's files, is the emblem of the title menus. */
+body.theme-yuri #badge
+{
+	decorator: image(YRII.PCX fill);
 }

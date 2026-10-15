@@ -48,5 +48,12 @@ body.theme-allied
 	--t-tab-top: #22467f;
 	--t-tab-text: #b4cbec;
 	--t-tab-active: #0c1e44;
+	--t-frame: #2f6fd6;
 	--t-backdrop: #0a1a3a80;
+}
+
+/* The Allied insignia, from the game's files, is the emblem of the title menus. */
+body.theme-allied #badge
+{
+	decorator: image(USAI.PCX fill);
 }

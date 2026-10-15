@@ -48,5 +48,12 @@ body.theme-soviet
 	--t-tab-top: #6e1f1a;
 	--t-tab-text: #e6b8b0;
 	--t-tab-active: #3a0c0c;
+	--t-frame: #b3261e;
 	--t-backdrop: #1e060680;
+}
+
+/* The Soviet insignia, from the game's files, is the emblem of the title menus. */
+body.theme-soviet #badge
+{
+	decorator: image(RUSI.PCX fill);
 }

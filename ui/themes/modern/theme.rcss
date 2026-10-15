@@ -345,6 +345,87 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	pointer-events: none;
 }
 
+/* The screen-edge frame: a tinted border round the window, over every screen. */
+#frame
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	border: 4dp var(--t-frame, #6b43a8);
+	pointer-events: none;
+}
+
+/* The profile panel at the top left of the title menus: the player's name over a smaller line. */
+#profile
+{
+	display: none;
+	position: absolute;
+	left: 16dp;
+	top: 16dp;
+	width: 200dp;
+	height: 50dp;
+	padding: 6dp 10dp 0 10dp;
+	background-color: var(--t-panel, #120d1ce8);
+	border: 1dp var(--t-edge, #6b43a8);
+	border-radius: 3dp;
+	pointer-events: none;
+}
+
+#profile-name
+{
+	font-size: 16dp;
+	line-height: 20dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+#profile-line
+{
+	font-size: 11dp;
+	line-height: 14dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+/* The faction emblem at the top right of the title menus, with the version centred under it. */
+#emblem
+{
+	display: none;
+	position: absolute;
+	right: 16dp;
+	top: 16dp;
+	width: 180dp;
+	height: 104dp;
+	pointer-events: none;
+}
+
+#badge
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 180dp;
+	height: 82dp;
+}
+
+#badge-version
+{
+	position: absolute;
+	left: 0;
+	top: 84dp;
+	width: 180dp;
+	height: 16dp;
+	font-size: 12dp;
+	line-height: 16dp;
+	text-align: center;
+	color: var(--t-stamp, #8f84a8);
+}
+
+body.titlemenu #profile, body.titlemenu #emblem
+{
+	display: block;
+}
+
 /* The title screen menus stand in one panel on the left, the same size for every menu, with
    the menu's name at the top and its buttons stacked below. */
 body.titlemenu #backdrop #reveal
