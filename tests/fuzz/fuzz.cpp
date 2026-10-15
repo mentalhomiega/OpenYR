@@ -34,6 +34,22 @@ extern "C" void __sanitizer_set_death_callback(void (*callback)(void)) __attribu
 #endif
 
 
+#if defined(__GNUC__) || defined(__clang__)
+// The sanitizers read these when they start. A harness wants the first undefined behavior to
+// end the run with an abort that Install_Reporters sees, and has no use for leak reports from
+// parsers that leave their own state allocated.
+extern "C" __attribute__((used)) char const * __ubsan_default_options(void)
+{
+	return("print_stacktrace=1:abort_on_error=1");
+}
+
+extern "C" __attribute__((used)) char const * __asan_default_options(void)
+{
+	return("detect_leaks=0");
+}
+#endif
+
+
 namespace
 {
 
@@ -189,6 +205,9 @@ void Install_Reporters(void)
 {
 	std::set_terminate(On_Terminate);
 
+	// UndefinedBehaviorSanitizer ends the run with an abort, which this handler reports. The
+	// sanitizers own the other signals, so those are handled here only without them.
+	std::signal(SIGABRT, On_Signal);
 #if defined(FUZZ_SANITIZED) && (defined(__GNUC__) || defined(__clang__))
 	if (__sanitizer_set_death_callback != nullptr) {
 		__sanitizer_set_death_callback(On_Sanitizer_Death);
@@ -197,7 +216,6 @@ void Install_Reporters(void)
 	std::signal(SIGSEGV, On_Signal);
 	std::signal(SIGFPE, On_Signal);
 	std::signal(SIGILL, On_Signal);
-	std::signal(SIGABRT, On_Signal);
 #endif
 
 	std::thread(Watchdog).detach();
