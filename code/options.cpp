@@ -576,6 +576,10 @@ void OptionsClass::Load_Settings(void)
 	Difficulty = std::max(Difficulty, 0);
 	DebugString("Difficulty = %d\n", Difficulty);
 
+	char last_mission[128];
+	ConfigINI.Get_String("Options", "LastMission", "", last_mission, sizeof(last_mission));
+	LastMission = last_mission;
+
 	ScrollMethod = ConfigINI.Get_Int("Options", "ScrollMethod", ScrollMethod);
 	DebugString("ScrollMethod = %d\n", ScrollMethod);
 
@@ -801,6 +805,7 @@ void OptionsClass::Save_Settings (void)
 	*/
 	ConfigINI.Put_Int("Options", "GameSpeed", GameSpeed);
 	ConfigINI.Put_Int("Options", "Difficulty", Difficulty);
+	ConfigINI.Put_String("Options", "LastMission", LastMission.c_str());
 	ConfigINI.Put_Int("Options", "ScrollMethod", ScrollMethod);
 	ConfigINI.Put_Int("Options", "ScrollRate", ScrollRate);
 	ConfigINI.Put_Bool("Options", "AutoScroll", AutoScroll);

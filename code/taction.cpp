@@ -56,8 +56,10 @@
 #include "builtype.h"
 #include "bullet.h"
 #include "ccrand.h"
+#include "campaign.h"
 #include "cell.h"
 #include "combat.h"
+#include "conquer.h"
 #include "empulse.h"
 #include "foot.h"
 #include "globals.h"
@@ -1684,12 +1686,30 @@ bool TActionClass::TAction_SET_TIMER(HouseClass * , ObjectClass * , TriggerClass
 
 
 /// <summary>
+/// Converts the movie a trigger action names into an entry of Movies.
+/// A Red Alert 2 mission numbers its movies by Red Alert 2's list, so its index is read as that list's name. Yuri's Revenge
+/// missions use their index unchanged.
+/// </summary>
+/// <returns>VQType; the movie, or VQ_NONE when a Red Alert 2 name is not in Movies.</returns>
+static VQType Trigger_Movie(VQType index)
+{
+	if (Scen->Campaign < 0 || Scen->Campaign >= Campaigns.Count() || Campaigns[Scen->Campaign] == nullptr
+		|| Campaigns[Scen->Campaign]->ScenarioArchive != "RA2") {
+		return(index);
+	}
+
+	char const * name = Movies_RA2_Name(index);
+	return(name != NULL ? VQ_From_Name(name) : VQ_NONE);
+}
+
+
+/// <summary>
 /// Plays a full screen movie.
 /// The mission is interrupted while the movie runs, and no music plays over it.
 /// </summary>
 bool TActionClass::TAction_PLAY_MOVIE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Play_Movie(Data.Movie, THEME_NONE, true);
+	Play_Movie(Trigger_Movie(Data.Movie), THEME_NONE, true);
 	return(true);
 }
 
@@ -1701,7 +1721,7 @@ bool TActionClass::TAction_PLAY_MOVIE(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_PLAY_INGAME_MOVIE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Play_Ingame_Movie(Data.Movie);
+	Play_Ingame_Movie(Trigger_Movie(Data.Movie));
 	return(true);
 }
 

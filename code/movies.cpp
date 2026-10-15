@@ -24,11 +24,97 @@
 #include "win.h"
 #include "video.h"
 
+#include "_deploymentconfig.h"
+#include "ccfile.h"
+#include "ccini.h"
+#include "conquer.h"
+#include "deploymentconfig.h"
+
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+
 
 DynamicVectorClass<char const *> Movies;
 
 VQHandle *CurrentVQ = NULL;
 int MovieInt1 = 0;
+
+namespace
+{
+
+// Red Alert 2's list, in the order its mission triggers index. An entry is empty where the art file has no name for that index.
+std::vector<std::string> RA2_Movie_List;
+
+// The number of movies the Yuri's Revenge art file names, which the attract sequence plays. Movies past it come from Red Alert 2.
+int Yuri_Movie_Count = -1;
+
+}
+
+
+/// <summary>
+/// Reads the movie list of Red Alert 2's art file and adds the names Yuri's Revenge's list lacks to the end of Movies.
+/// The names Yuri's Revenge already lists keep their numbers, so its missions index the same movies as before. Missing
+/// art files leave the list empty.
+/// </summary>
+void Movies_Read_RA2_Art(void)
+{
+	if (Yuri_Movie_Count < 0) {
+		Yuri_Movie_Count = Movies.Count();
+	}
+
+	RA2_Movie_List.clear();
+	CCFileClass file(DeploymentConfig.RA2ArtFile.c_str());
+	if (!file.Is_Available()) {
+		return;
+	}
+
+	CCINIClass ini;
+	ini.Load(file, false);
+
+	static char const * const MOVIES = "Movies";
+	int const count = ini.Entry_Count(MOVIES);
+	for (int index = 0; index < count; index++) {
+		// An entry's key is its index plus one, as Red Alert 2 numbers them from one.
+		int const number = std::atoi(ini.Get_Entry(MOVIES, index));
+		if (number < 1) {
+			continue;
+		}
+		if ((int)RA2_Movie_List.size() < number) {
+			RA2_Movie_List.resize(number);
+		}
+		RA2_Movie_List[number - 1] = ini.Get_String(MOVIES, ini.Get_Entry(MOVIES, index), "");
+	}
+
+	for (std::string const & name : RA2_Movie_List) {
+		if (!name.empty() && VQ_From_Name(name.c_str()) == VQ_NONE) {
+			Movies.Add(strdup(name.c_str()));
+		}
+	}
+}
+
+
+/// <summary>
+/// Fetches the movie name Red Alert 2's list gives an index.
+/// </summary>
+/// <returns>char const *; the name, or NULL when the list has no name for the index.</returns>
+char const * Movies_RA2_Name(int index)
+{
+	if (index < 0 || index >= (int)RA2_Movie_List.size() || RA2_Movie_List[index].empty()) {
+		return(NULL);
+	}
+	return(RA2_Movie_List[index].c_str());
+}
+
+
+/// <summary>
+/// Fetches how many movies Yuri's Revenge's own art file names, counted before any Red Alert 2 name was added.
+/// </summary>
+int Movies_Yuri_Count(void)
+{
+	return(Yuri_Movie_Count < 0 ? Movies.Count() : Yuri_Movie_Count);
+}
 
 
 /// <summary>

@@ -203,6 +203,7 @@
 #include "tube.h"
 #include "tutorial.h"
 #include "ui/screens/campaign/uicampaign.h"
+#include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/screens/cncnet/uicncnet.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
@@ -741,6 +742,12 @@ static CampaignType Choose_Campaign(void)
 		}
 	}
 
+	// The modern menus list the missions in one browser; the classic menus keep their campaign and mission screens.
+	if (!Options.IsClassicMenus) {
+		std::optional<int> played = UI_Mission_Browser_Dialog();
+		return(played.has_value() ? (CampaignType)*played : CAMPAIGN_NONE);
+	}
+
 	std::optional<UICampaignEntry> picked = UI_Campaign_Dialog();
 	return(picked.has_value() ? (CampaignType)picked->Campaign : CAMPAIGN_NONE);
 }
@@ -812,6 +819,7 @@ static bool Init_Rules(void)
 	Rule->Color_Schemes(*RuleINI);
 	Rule->Do_Movies(ArtINI);
 	Rule->Do_Movies(art_ini);
+	Movies_Read_RA2_Art();
 	Rule->Audio_Visual_Rules(*RuleINI);
 	Rule->MPlayer(*RuleINI);
 	Rule->MPlayer(MPRuleINI);
@@ -1401,8 +1409,8 @@ static void Play_Intro(bool sequenced)
 
 	//Keyboard->Clear();
 	if (sequenced) {
-		if (_counter <= VQ_FIRST) _counter = (VQType)Movies.Count();
-		if (_counter == Movies.Count()) _counter--;
+		if (_counter <= VQ_FIRST) _counter = (VQType)Movies_Yuri_Count();
+		if (_counter == Movies_Yuri_Count()) _counter--;
 		//Hide_Mouse();
 		//VisiblePage.Clear();
 		//Show_Mouse();

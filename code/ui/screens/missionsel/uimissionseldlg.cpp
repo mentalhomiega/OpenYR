@@ -12,6 +12,7 @@
 #include "_deploymentconfig.h"
 #include "deploymentconfig.h"
 #include "campaign.h"
+#include "campaignname.hh"
 #include "ccfile.h"
 #include "ccini.h"
 #include "csf.h"
@@ -86,7 +87,7 @@ UIMissionSelState Mission_Select_State(int difficulty)
 
 		CampaignType const type = CampaignClass::From_Name(name);
 		CampaignClass * campaign = (type == CAMPAIGN_NONE) ? nullptr : Campaigns[type];
-		if (campaign == nullptr || campaign->ScenarioName[0] == '\0' || !Campaign_Available(campaign)) {
+		if (campaign == nullptr || !Campaign_Is_Mission_File(campaign->ScenarioName) || !Campaign_Available(campaign)) {
 			continue;
 		}
 

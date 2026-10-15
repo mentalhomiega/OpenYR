@@ -18,6 +18,8 @@ Both styles scale with the window. `Modern` is laid out for 1280 by 720, so it i
 
 A name other than `Classic` is read as `Modern`, and the setting is written back to `RA2MD.INI` that way.
 
+In `Modern`, New Campaign opens one browser that lists every campaign mission, grouped by Yuri's Revenge and Red Alert 2 and by side. `Classic` keeps the campaign list and its Mission Select screen. The browser remembers the mission last selected in `[Options] LastMission=`.
+
 The display options screen has the same choice as its "Classic menu art" switch. Accepting that screen changes the style at once, and leaving the options menu saves the setting to `RA2MD.INI`.
 
 The files each style draws with are in the [UI files](/systems/ui-files/#menu-styles).

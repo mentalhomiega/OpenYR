@@ -11,6 +11,7 @@
 
 #include "campaign.h"
 
+#include "campaignname.hh"
 #include "ccini.h"
 #include "crc.h"
 #include "globals.h"
@@ -20,6 +21,8 @@
 #include "vector.h"
 
 #include <cassert>
+#include <cstdio>
+#include <string>
 
 
 /// <summary>
@@ -86,8 +89,14 @@ bool CampaignClass::Read_INI(CCINIClass const & ini)
 	if (BASECLASS::Read_INI(ini)) {
 		CDNumber = ini.Get_Int(IniName, "CD", CDNumber);
 		FinalMovie = ini.Get_VQType(IniName, "FinalMovie", FinalMovie);
-		ini.Get_String(IniName, "Scenario", ScenarioName, ScenarioName, sizeof(ScenarioName));
-		strupr(ScenarioName);
+		if (ini.Is_Present(IniName, "Scenario")) {
+			std::string archive;
+			std::string file;
+			Campaign_Split_Scenario(ini.Get_String(IniName, "Scenario"), archive, file);
+			ScenarioArchive = archive;
+			std::snprintf(ScenarioName, sizeof(ScenarioName), "%s", file.c_str());
+			strupr(ScenarioName);
+		}
 		ini.Get_String(IniName, "Description", Description, Description, sizeof(Description));
 		RequiredAddon = ini.Get_Int(IniName, "RequiredAddon", RequiredAddon);
 		DebugOnly = ini.Get_Bool(IniName, "DebugOnly", DebugOnly);

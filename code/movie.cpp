@@ -59,6 +59,20 @@ BOOL				PalettesRead;
 unsigned			PaletteCounter;
 
 
+/// <summary>
+/// Checks that a movie index names an entry of the movie list.
+/// A mission can index a movie the list lacks, so an unknown index plays nothing rather than read past the list.
+/// </summary>
+static bool Movie_Index_Known(VQType vq)
+{
+	if (vq < 0 || vq >= Movies.Count()) {
+		DebugString("Movie %d is not in the movie list of %d names\n", (int)vq, Movies.Count());
+		return(false);
+	}
+	return(true);
+}
+
+
 /***********************************************************************************************
  * Play_Movie -- Plays a VQ movie.                                                             *
  *                                                                                             *
@@ -215,7 +229,7 @@ void _Play_Movie(char const * name, ThemeType theme)
 void Play_Movie(VQType vq, ThemeType theme, bool clrscrn, bool stretch)
 {
 	static char _buf[20];
-	if (vq != VQ_NONE) {
+	if (vq != VQ_NONE && Movie_Index_Known(vq)) {
 		strcpy(_buf, Movies[vq]);
 		strcpy(_buf + strlen(Movies[vq]), ".VQA");
 		Play_Movie(_buf, theme, clrscrn, stretch, true);
@@ -250,7 +264,7 @@ void Play_Ingame_Movie(const char * name)
 void Play_Ingame_Movie(VQType vq)
 {
 	static char _buf[20];
-	if (vq != VQ_NONE) {
+	if (vq != VQ_NONE && Movie_Index_Known(vq)) {
 		strcpy(_buf, Movies[vq]);
 		strcpy(_buf + strlen(Movies[vq]), ".VQA");
 		Play_Ingame_Movie(_buf);

@@ -24,4 +24,7 @@ struct UIMapPreviewImage
 
 bool UI_Map_Preview_Image(UIMapPreviewImage & image);
 
+/// Reads the picture of the map file given, which may be a campaign's map. Its generation advances even when there is no picture.
+bool UI_Map_File_Preview_Image(char const * map, UIMapPreviewImage & image);
+
 bool UI_Generated_Map_Preview_Image(UIMapPreviewImage & image);

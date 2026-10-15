@@ -20,18 +20,19 @@
 #include <span>
 
 
-bool UI_Map_Preview_Image(UIMapPreviewImage & image)
+namespace
 {
-	int generation = image.Generation + 1;
 
-	image = UIMapPreviewImage();
-	image.Generation = generation;
-
-	if (MultiplayerMapPreview == NULL) {
+/// <summary>
+/// Copies a map preview's picture into an RGBA image. A preview with no picture leaves the image empty.
+/// </summary>
+bool Copy_Preview(MapPreviewClass const * preview, UIMapPreviewImage & image)
+{
+	if (preview == NULL) {
 		return(false);
 	}
 
-	XSurface * surface = MultiplayerMapPreview->Get_Preview_Surface();
+	XSurface * surface = const_cast<MapPreviewClass *>(preview)->Get_Preview_Surface();
 	if (surface == NULL || surface->Bytes_Per_Pixel() != 2) {
 		return(false);
 	}
@@ -60,6 +61,35 @@ bool UI_Map_Preview_Image(UIMapPreviewImage & image)
 	image.Width = width;
 	image.Height = height;
 	return(true);
+}
+
+}
+
+
+bool UI_Map_Preview_Image(UIMapPreviewImage & image)
+{
+	int generation = image.Generation + 1;
+
+	image = UIMapPreviewImage();
+	image.Generation = generation;
+
+	return(Copy_Preview(MultiplayerMapPreview, image));
+}
+
+
+/// <summary>
+/// Reads the picture a map file's preview section holds, without loading the map. A map with no preview leaves the image empty.
+/// </summary>
+bool UI_Map_File_Preview_Image(char const * map, UIMapPreviewImage & image)
+{
+	int generation = image.Generation + 1;
+
+	image = UIMapPreviewImage();
+	image.Generation = generation;
+
+	MapPreviewClass preview;
+	preview.Read_INI_Preview(map);
+	return(Copy_Preview(&preview, image));
 }
 
 

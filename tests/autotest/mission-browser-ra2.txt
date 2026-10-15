@@ -1,0 +1,41 @@
+; Mission browser, end to end: Single Player, New Campaign, then the browser. It shows the Red Alert 2 group
+; closed and open, takes a Red Alert 2 test mission (from tests/autotest/ra2-campaigns, which lists the RA2
+; maps), shows its briefing, and plays it. The steps then click through the briefing pages and the game runs
+; in the mission. The in-game checks run at frames 60 to 180: the idle test player loses at frame 240, so the
+; script quits at frame 200, before that.
+; Run from E:\Claude ra2 decomp:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/autotest/mission-browser-ra2.txt -Menus -MenuStyle Modern -Mods "E:\Claude ra2 decomp\src-agent18\tests\autotest\ra2-campaigns" -Width 1920 -Height 1080 -Seconds 200 -Filter "AUTOTEST|UISCRIPT|Exception|Mission browser|Movie .* not"
+ui waitfor backdrop
+ui wait 1500
+ui press Single Player
+ui wait 1200
+ui press New Campaign
+ui waitfor missions
+ui wait 800
+ui shot mission-browser-default
+ui choose [-] Red Alert 2: Allied (12)
+ui wait 600
+ui shot mission-browser-group-closed
+ui choose [+] Red Alert 2: Allied (12)
+ui wait 600
+ui choose Test Allied mission 1
+ui wait 800
+ui shot mission-browser-ra2-selected
+ui press Play
+ui wait 1500
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click more
+ui wait 400
+ui click resume
+ui wait 1000
+60 log in the Red Alert 2 mission at frame 60
+120 log in the Red Alert 2 mission at frame 120
+180 log in the Red Alert 2 mission at frame 180
+200 quit
