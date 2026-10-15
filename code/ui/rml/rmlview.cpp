@@ -694,6 +694,63 @@ bool UIRmlViewClass::Step_Range(Rml::Element * element, int key)
 }
 
 
+/// <summary>
+/// Moves the focus to the nearest button of a grid, an element with class grid, in the arrow key's
+/// direction. A button in the same row is the neighbour for Left and Right, and the nearest button
+/// in the row above or below, and then in its column, for Up and Down.
+/// </summary>
+/// <returns>bool; Did the focus move?</returns>
+bool UIRmlViewClass::Navigate_Grid(Rml::Element * element, int key)
+{
+	Rml::Element * grid = (element != nullptr) ? element->GetParentNode() : nullptr;
+	if (grid == nullptr || element->GetTagName() != "button" || !grid->IsClassSet("grid")) {
+		return(false);
+	}
+
+	bool const across = key == Rml::Input::KI_LEFT || key == Rml::Input::KI_RIGHT;
+	if (!across && key != Rml::Input::KI_UP && key != Rml::Input::KI_DOWN) {
+		return(false);
+	}
+	float const sign = (key == Rml::Input::KI_LEFT || key == Rml::Input::KI_UP) ? -1.0f : 1.0f;
+
+	Rml::Vector2f const from = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+	float const half_height = element->GetBox().GetSize(Rml::BoxArea::Border).y * 0.5f;
+	Rml::Element * best = nullptr;
+	float best_rank = 0.0f;
+	for (int index = 0; index < grid->GetNumChildren(); index++) {
+		Rml::Element * other = grid->GetChild(index);
+		if (other == element || other->GetTagName() != "button" || Is_Disabled(other) || !other->IsVisible()) {
+			continue;
+		}
+
+		Rml::Vector2f const to = other->GetAbsoluteOffset(Rml::BoxArea::Border);
+		float const along = (across ? to.x - from.x : to.y - from.y) * sign;
+		float const side = across ? to.y - from.y : to.x - from.x;
+		if (along <= 0.0f) {
+			continue;
+		}
+
+		// Across a row, the candidate must sit in the same row; up or down, it must sit in a row of its own.
+		float const rank = across
+			? (std::fabs(side) < half_height ? along : -1.0f)
+			: (along >= half_height ? along * 1000.0f + std::fabs(side) : -1.0f);
+		if (rank < 0.0f) {
+			continue;
+		}
+		if (best == nullptr || rank < best_rank) {
+			best = other;
+			best_rank = rank;
+		}
+	}
+
+	if (best == nullptr) {
+		return(false);
+	}
+	best->Focus();
+	return(true);
+}
+
+
 bool UIRmlViewClass::Type_Ahead(Rml::Element * list, Rml::String const & text)
 {
 	if (text.empty() || (unsigned char)text[0] <= ' ') {
@@ -925,6 +982,12 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 	}
 
 	if (Step_Range(target, key)) {
+		Mark_Keyboard();
+		event.StopPropagation();
+		return;
+	}
+
+	if (Navigate_Grid(target, key)) {
 		Mark_Keyboard();
 		event.StopPropagation();
 		return;

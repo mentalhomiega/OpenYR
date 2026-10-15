@@ -76,6 +76,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		Rml::Element * List_Of(Rml::Element * element) const;
 		bool Navigate_List(Rml::Element * list, int key);
 		bool Step_Range(Rml::Element * element, int key);
+		bool Navigate_Grid(Rml::Element * element, int key);
 		bool Type_Ahead(Rml::Element * list, Rml::String const & text);
 		void Mark_Keyboard(void);
 		void Apply_Tabs(void);

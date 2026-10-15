@@ -1,0 +1,27 @@
+; The network lobby's colour button and free color picker, from the main menu. The host opens the lobby with New,
+; then shows a stock color, a preset applied from the picker, and a wheel color named as custom.
+; The ui shot lines write .tga files to the autotest Screenshots folder; convert them to .png afterwards.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/colorpick/colour-button-netlobby.txt -Menus -MenuStyle Modern -Width 1024 -Height 768 -Seconds 120
+ui waitfor backdrop
+ui wait 2000
+ui press Network
+ui wait 2500
+ui press New
+ui wait 3000
+ui shot netgame-stock
+ui click color-pick
+ui wait 1500
+ui press Safe yellow
+ui wait 800
+ui press Use this color
+ui wait 1500
+ui shot netgame-preset
+ui click color-pick
+ui wait 1000
+ui pointer colorfield 0.22 0.35
+ui wait 800
+ui press Use this color
+ui wait 1500
+ui shot netgame-custom
+ui quit
