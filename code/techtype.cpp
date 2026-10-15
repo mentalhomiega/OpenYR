@@ -1715,6 +1715,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EliteAirstrikeRechargeTime);
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
+	stream.Serialize(IsMobileFire);
 	stream.Serialize(IsGattling);
 	stream.Serialize(IsChargeTurret);
 	stream.Serialize(WeaponStages);
@@ -1770,6 +1771,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TurretNotExportedOnGround);
 	stream.Serialize(Weapons);
 	stream.Serialize(EliteWeapons);
+	stream.Serialize(AlternativeFLH);
 	stream.Serialize(IsTypeImmune);
 	stream.Serialize(IsCanBeHidden);
 	stream.Serialize(IsDetectDisguise);
@@ -1935,6 +1937,22 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsManualReload);
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
+	crc(IsJumpJet);
+	crc(VHPScan);
+	crc(SuperGapRadiusInCells);
+	crc(IsCloseRange);
+	crc(IsCanRecalcApproachTarget);
+	crc(JumpjetCrash);
+	crc(IsMobileFire);
+	crc(IsChargeTurret);
+	crc(RadialFireSegments);
+	crc(IsOmniCrusher);
+	crc(IsOmniCrushResistant);
+	for (int seat = 0; seat < 5; seat++) {
+		crc(AlternativeFLH[seat].X);
+		crc(AlternativeFLH[seat].Y);
+		crc(AlternativeFLH[seat].Z);
+	}
 }
 
 
