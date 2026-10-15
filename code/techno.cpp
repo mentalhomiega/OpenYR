@@ -1490,7 +1490,8 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 
 	} else {
 
-		bool hovered = Map.HoverObject == this && Class_Of()->IsSelectable && !IsALoaner;
+		// Selectable=no only withholds selection; the hover bar still shows (TechnoClass::DrawExtras, 0x6F5190).
+		bool hovered = Map.HoverObject == this && !IsALoaner;
 
 		if (hovered && Is_Decoration_Visible()) {
 			if (!TClass->IsHealthBarHidden) {
