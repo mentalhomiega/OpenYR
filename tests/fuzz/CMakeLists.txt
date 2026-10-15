@@ -138,3 +138,9 @@ fuzz_add_target(FuzzLcw NAME fuzz_lcw
     SOURCES fuzz_lcw.cpp
     ENGINE ${FUZZ_INI_ENGINE} lcw.cpp lcwpipe.cpp lcwstraw.cpp
 )
+
+fuzz_add_target(FuzzLzo NAME fuzz_lzo
+    SOURCES fuzz_lzo.cpp
+    ENGINE ${FUZZ_INI_ENGINE} lzopipe.cpp lzostraw.cpp
+    LIBRARIES lzo
+)
