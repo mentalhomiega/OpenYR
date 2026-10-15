@@ -1,0 +1,31 @@
+; Lightning Storm on its own: fired at frame 42, the storm starts after LightningDeferment (250 frames) and lasts
+; LightningStormDuration (180 frames). The clouds and bolts are picked at random from their lists (WeatherConClouds,
+; WeatherConBolts), so each sample counts every type of that list. The ScreenCapture lines take shots of the sky.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-visuals-storm.txt -Width 800 -Height 600 -Seconds 90 -ShotDir "E:\Claude ra2 decomp\shots\sw-visuals-storm" -Filter "AUTOTEST   liveanims|AUTOTEST frame|Exception"
+20 own GAPOWR 56 40
+30 view 42 50
+35 reveal
+40 grant LightningStormSpecial
+42 fire LightningStormSpecial 42 50
+300 liveanims WCCLOUD2
+300 liveanims WCCLOUD3
+301 liveanims WCLBOLT1
+301 liveanims WCLBOLT2
+301 liveanims WCLBOLT3
+302 liveanims EXPLOLB
+304 command ScreenCapture
+312 liveanims WCLBOLT1
+312 liveanims WCLBOLT2
+312 liveanims WCLBOLT3
+313 liveanims EXPLOLB
+316 liveanims WCCLOUD1
+316 liveanims WCCLOUD2
+316 liveanims WCCLOUD3
+330 liveanims WCLBOLT1
+330 liveanims WCLBOLT2
+330 liveanims WCLBOLT3
+331 command ScreenCapture
+360 liveanims WCCLOUD1
+360 liveanims WCCLOUD2
+360 liveanims WCCLOUD3
+450 quit

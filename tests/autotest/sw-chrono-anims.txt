@@ -1,0 +1,42 @@
+; Chronosphere ends: a vehicle is sphered at frame 60 and warped to 46,40 at frame 70. Each frame from 70 to 84 counts the warp-out and warp-in animations, and where writes the vehicle's cell at 72 and 84.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-chrono-anims.txt -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST   liveanims WARP[A-Z]+ [1-9]|AUTOTEST   where|Exception"
+20 own GAPOWR 56 40
+30 own HARV 40 40
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 46 40
+70 liveanims WARPOUT
+70 liveanims WARPIN
+71 liveanims WARPOUT
+71 liveanims WARPIN
+72 liveanims WARPOUT
+72 liveanims WARPIN
+73 liveanims WARPOUT
+73 liveanims WARPIN
+74 liveanims WARPOUT
+74 liveanims WARPIN
+75 liveanims WARPOUT
+75 liveanims WARPIN
+76 liveanims WARPOUT
+76 liveanims WARPIN
+77 liveanims WARPOUT
+77 liveanims WARPIN
+78 liveanims WARPOUT
+78 liveanims WARPIN
+79 liveanims WARPOUT
+79 liveanims WARPIN
+80 liveanims WARPOUT
+80 liveanims WARPIN
+81 liveanims WARPOUT
+81 liveanims WARPIN
+82 liveanims WARPOUT
+82 liveanims WARPIN
+83 liveanims WARPOUT
+83 liveanims WARPIN
+84 liveanims WARPOUT
+84 liveanims WARPIN
+72 where HARV
+84 where HARV
+100 quit
