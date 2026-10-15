@@ -14,12 +14,16 @@
 #include <cstring>
 #include <cwchar>
 #include <cwctype>
+#include <new>
 #include <utility>
 
 namespace launcher {
 namespace {
 
 constexpr int MaxJsonDepth = 64;
+
+// A release object with many assets holds a few thousand values; the feed limit alone would allow half a million.
+constexpr std::size_t MaxJsonValues = 100000;
 
 
 void Append_Utf8(std::string & out, unsigned long code)
@@ -126,7 +130,9 @@ bool Parse_String(std::string const & text, std::size_t & at, std::string & out,
 				at += 4;
 
 				// A high surrogate joins the low surrogate that follows it; a lone one is replaced.
-				if (code >= 0xD800 && code <= 0xDBFF) {
+				if (code >= 0xDC00 && code <= 0xDFFF) {
+					code = 0xFFFD;
+				} else if (code >= 0xD800 && code <= 0xDBFF) {
 					unsigned low = 0;
 					if (at + 6 <= text.size() && text[at] == '\\' && text[at + 1] == 'u' && Parse_Hex4(text, at + 2, low) && low >= 0xDC00 && low <= 0xDFFF) {
 						code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
@@ -150,10 +156,10 @@ bool Parse_String(std::string const & text, std::size_t & at, std::string & out,
 }
 
 
-bool Parse_Value(std::string const & text, std::size_t & at, int depth, JsonValueType & value, std::string & error);
+bool Parse_Value(std::string const & text, std::size_t & at, int depth, std::size_t & nodes, JsonValueType & value, std::string & error);
 
 
-bool Parse_Array(std::string const & text, std::size_t & at, int depth, JsonValueType & value, std::string & error)
+bool Parse_Array(std::string const & text, std::size_t & at, int depth, std::size_t & nodes, JsonValueType & value, std::string & error)
 {
 	value.Kind = JsonValueType::KindType::Array;
 	at++;
@@ -165,7 +171,7 @@ bool Parse_Array(std::string const & text, std::size_t & at, int depth, JsonValu
 
 	while (true) {
 		JsonValueType item;
-		if (!Parse_Value(text, at, depth + 1, item, error)) {
+		if (!Parse_Value(text, at, depth + 1, nodes, item, error)) {
 			return false;
 		}
 		value.Items.push_back(std::move(item));
@@ -185,7 +191,7 @@ bool Parse_Array(std::string const & text, std::size_t & at, int depth, JsonValu
 }
 
 
-bool Parse_Object(std::string const & text, std::size_t & at, int depth, JsonValueType & value, std::string & error)
+bool Parse_Object(std::string const & text, std::size_t & at, int depth, std::size_t & nodes, JsonValueType & value, std::string & error)
 {
 	value.Kind = JsonValueType::KindType::Object;
 	at++;
@@ -215,7 +221,7 @@ bool Parse_Object(std::string const & text, std::size_t & at, int depth, JsonVal
 		at++;
 
 		JsonValueType member;
-		if (!Parse_Value(text, at, depth + 1, member, error)) {
+		if (!Parse_Value(text, at, depth + 1, nodes, member, error)) {
 			return false;
 		}
 		value.Keys.push_back(key);
@@ -247,10 +253,15 @@ bool Parse_Literal(std::string const & text, std::size_t & at, char const * word
 }
 
 
-bool Parse_Value(std::string const & text, std::size_t & at, int depth, JsonValueType & value, std::string & error)
+bool Parse_Value(std::string const & text, std::size_t & at, int depth, std::size_t & nodes, JsonValueType & value, std::string & error)
 {
 	if (depth > MaxJsonDepth) {
 		error = "the document nests too deeply";
+		return false;
+	}
+
+	if (++nodes > MaxJsonValues) {
+		error = "the document holds too many values";
 		return false;
 	}
 
@@ -262,10 +273,10 @@ bool Parse_Value(std::string const & text, std::size_t & at, int depth, JsonValu
 
 	char const first = text[at];
 	if (first == '{') {
-		return Parse_Object(text, at, depth, value, error);
+		return Parse_Object(text, at, depth, nodes, value, error);
 	}
 	if (first == '[') {
-		return Parse_Array(text, at, depth, value, error);
+		return Parse_Array(text, at, depth, nodes, value, error);
 	}
 	if (first == '"') {
 		value.Kind = JsonValueType::KindType::String;
@@ -402,7 +413,14 @@ bool Json_Parse(std::string const & text, JsonValueType & value, std::string & e
 		at = 3;
 	}
 
-	if (!Parse_Value(text, at, 0, value, error)) {
+	value = JsonValueType();
+	std::size_t nodes = 0;
+	try {
+		if (!Parse_Value(text, at, 0, nodes, value, error)) {
+			return false;
+		}
+	} catch (std::bad_alloc const &) {
+		error = "there is not enough memory to read the document";
 		return false;
 	}
 

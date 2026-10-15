@@ -116,6 +116,60 @@ void Test_Json(void)
 }
 
 
+// Feeds a hostile or damaged document can hold: odd escapes, lone surrogates, truncation and sheer size.
+void Test_Json_Hostile(void)
+{
+	launcher::JsonValueType value;
+	std::string error;
+
+	Check(!launcher::Json_Parse("\"\\x\"", value, error), "an unknown escape is refused");
+	Check(!launcher::Json_Parse("\"\\u12\"", value, error), "a \\u escape with too few digits is refused");
+	Check(!launcher::Json_Parse("\"\\u12G4\"", value, error), "a \\u escape with a non-hex digit is refused");
+	Check(!launcher::Json_Parse("\"abc\\", value, error), "a string cut off inside an escape is refused");
+	Check(!launcher::Json_Parse("\"a\tb\"", value, error), "a raw tab inside a string is refused");
+	Check(!launcher::Json_Parse("{\"a\"", value, error) && !launcher::Json_Parse("{\"a\":", value, error) && !launcher::Json_Parse("[1,", value, error), "documents cut off inside a member are refused");
+	Check(!launcher::Json_Parse("-", value, error) && !launcher::Json_Parse("1.2.3", value, error) && !launcher::Json_Parse("--1", value, error), "malformed numbers are refused");
+	Check(!launcher::Json_Parse("tru", value, error) && !launcher::Json_Parse("nul", value, error), "cut-off literals are refused");
+
+	launcher::JsonValueType lone;
+	Check(launcher::Json_Parse("\"\\uD800x\\uDC00\"", lone, error) && lone.String == "\xEF\xBF\xBDx\xEF\xBF\xBD", "lone high and low surrogates become U+FFFD, which is valid UTF-8");
+
+	launcher::JsonValueType nul;
+	Check(launcher::Json_Parse("\"a\\u0000b\"", nul, error) && nul.String == std::string("a\0b", 3), "an escaped NUL stays in the string and does not end it");
+
+	std::string wide = "[";
+	for (int index = 0; index < 1000; index++) {
+		wide += index == 0 ? "0" : ",0";
+	}
+	wide += "]";
+	Check(launcher::Json_Parse(wide, value, error) && value.Items.size() == 1000, "an array of a thousand values reads");
+
+	std::string huge = "[";
+	for (int index = 0; index < 150000; index++) {
+		huge += index == 0 ? "0" : ",0";
+	}
+	huge += "]";
+	Check(!launcher::Json_Parse(huge, value, error) && error.find("too many") != std::string::npos, "a document of a hundred and fifty thousand values is refused");
+
+	std::string wide_object = "{";
+	for (int index = 0; index < 150000; index++) {
+		wide_object += index == 0 ? "\"k\":0" : ",\"k\":0";
+	}
+	wide_object += "}";
+	Check(!launcher::Json_Parse(wide_object, value, error), "an object with a hundred and fifty thousand members is refused");
+
+	std::string long_string = "\"" + std::string(900 * 1024, 'x') + "\"";
+	launcher::JsonValueType text;
+	Check(launcher::Json_Parse(long_string, text, error) && text.String.size() == 900 * 1024, "one long string within the feed size limit reads");
+
+	launcher::ReleaseType release;
+	std::wstring wide_error;
+	Check(!launcher::Parse_Release("{\"tag_name\": 23}", release, wide_error), "a tag_name that is not a string is refused");
+	Check(launcher::Parse_Release("{\"tag_name\": \"beta23\", \"assets\": {\"a\": 1}, \"draft\": \"yes\"}", release, wide_error) && release.Assets.empty() && !release.Draft, "assets that are not an array, and a draft flag that is not a boolean, are ignored");
+	Check(launcher::Parse_Release("{\"tag_name\": \"beta23\", \"assets\": [1, null, {\"name\": \"x\"}, {\"name\": 5, \"browser_download_url\": \"u\"}]}", release, wide_error) && release.Assets.empty(), "assets with a missing or mistyped field are skipped");
+}
+
+
 void Test_Release_And_Assets(void)
 {
 	launcher::ReleaseType release;
@@ -290,6 +344,7 @@ int main()
 {
 	Test_Beta_Names();
 	Test_Json();
+	Test_Json_Hostile();
 	Test_Release_And_Assets();
 	Test_Checksum();
 	Test_Decision();
