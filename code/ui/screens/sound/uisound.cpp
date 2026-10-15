@@ -18,6 +18,11 @@ UISoundPresenterClass::UISoundPresenterClass(UISoundServiceClass & service, UISo
 	State(std::move(state)),
 	Service(service)
 {
+	InitialScore = State.Score;
+	InitialSound = State.Sound;
+	InitialVoice = State.Voice;
+	InitialShuffle = State.Shuffle;
+	InitialRepeat = State.Repeat;
 }
 
 
@@ -89,8 +94,30 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_Voice_Volume(Volume_Of(State.Voice), false);
 		Result = UI_RESULT_ACCEPTED;
 
+	} else if (intent.Name == "reset") {
+		// The levels Options starts from: music 0.5, sound 0.7 and voice 1.0, with shuffle and repeat off.
+		Execute(UIIntent{ "score", Level_Of(0.5f), "" });
+		Execute(UIIntent{ "sound", Level_Of(0.7f), "" });
+		Execute(UIIntent{ "voice", Level_Of(1.0f), "" });
+		if (State.Shuffle) {
+			Execute(UIIntent{ "shuffle", 0, "" });
+		}
+		if (State.Repeat) {
+			Execute(UIIntent{ "repeat", 0, "" });
+		}
+
 	} else if (intent.Name == "cancel") {
-		Result = UI_RESULT_ACCEPTED;
+		// Cancel puts back the levels and switches the screen opened with.
+		Service.Set_Score_Volume(Volume_Of(InitialScore), false);
+		Service.Set_Sound_Volume(Volume_Of(InitialSound), false);
+		Service.Set_Voice_Volume(Volume_Of(InitialVoice), false);
+		if (State.Shuffle != InitialShuffle) {
+			Service.Set_Shuffle(InitialShuffle);
+		}
+		if (State.Repeat != InitialRepeat) {
+			Service.Set_Repeat(InitialRepeat);
+		}
+		Result = UI_RESULT_CANCELLED;
 	}
 }
 

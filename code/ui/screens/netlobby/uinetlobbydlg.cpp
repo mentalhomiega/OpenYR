@@ -167,7 +167,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		}
 
 		UINetOption option;
-		option.Label = (char const *)house->GivenName;
+		option.Label = house->Full_Name();
 		option.Value = index;
 		if (index == Session.House) {
 			state.Side = (int)state.Sides.size();

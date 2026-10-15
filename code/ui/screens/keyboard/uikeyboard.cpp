@@ -78,7 +78,7 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "resetcategory") {
 		Reset_Category();
 
-	} else if (intent.Name == "resetall") {
+	} else if (intent.Name == "resetall" || intent.Name == "reset") {
 		Reset_All();
 
 	} else if (intent.Name == "scheme") {

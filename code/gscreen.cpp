@@ -70,6 +70,7 @@
 #include "tactical.h"
 #include "emissive.h"
 #include "emissive_surface.h"
+#include "shellmap.h"
 #include "video.h"
 #include "viewzoom.h"
 
@@ -433,10 +434,14 @@ void GScreenClass::Render(void)
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
 	use_map_surfaces(false);
-	if (complete && Modern_Interface() && SidebarSurface != NULL) {
+	// The menu battle is drawn bare: the menus stand where the sidebar and messages would be.
+	bool const hud = !Shellmap_In_Scope();
+	if (hud && complete && Modern_Interface() && SidebarSurface != NULL) {
 		Draw_Hud_Panel(*SidebarSurface);
 	}
-	Draw_It(complete);
+	if (hud) {
+		Draw_It(complete);
+	}
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	use_map_surfaces(false);
@@ -451,11 +456,11 @@ void GScreenClass::Render(void)
 		Video_Set_Map_Layer(NULL, Rect(), Rect());
 	}
 
-	if (Modern_Interface()) {
+	if (hud && Modern_Interface()) {
 		Draw_Panel_Backdrops(*CompositeSurface);
 	}
-	if (Buttons) Buttons->Draw_All(false);
-	if (Modern_Interface()) {
+	if (hud && Buttons) Buttons->Draw_All(false);
+	if (hud && Modern_Interface()) {
 		Draw_Panels(*CompositeSurface);
 	}
 
@@ -473,7 +478,10 @@ void GScreenClass::Render(void)
 	**	Draw the multiplayer message system to the Hidpage at this point.
 	**	This way, they'll Blit along with the rest of the map.
 	*/
-	Session.Messages.Draw();
+	if (hud) {
+		Session.Messages.Draw();
+		TacticalMap->Draw_Super_Timers();
+	}
 	if (Session.ShowInternetDebug) {
 		Multiplayer_Debug_Print();
 	}
@@ -484,7 +492,7 @@ void GScreenClass::Render(void)
 		Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 	}
 
-	if (ToolTips != NULL) {
+	if (hud && ToolTips != NULL) {
 		ToolTips->Draw_Current();
 	}
 

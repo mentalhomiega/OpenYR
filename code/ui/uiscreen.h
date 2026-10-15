@@ -40,8 +40,10 @@ enum UISettingsTab
 	UI_TAB_NONE = -1,
 	UI_TAB_GAME,
 	UI_TAB_DISPLAY,
+	UI_TAB_GRAPHICS,
 	UI_TAB_AUDIO,
 	UI_TAB_KEYBOARD,
+	UI_TAB_ACCESSIBILITY,
 	UI_TAB_MODS,
 	UI_TAB_COUNT
 };
@@ -60,7 +62,8 @@ class UIPresenterClass
 	public:
 		virtual ~UIPresenterClass(void) = default;
 		void Queue(UIIntent const & intent);
-		void Drain(void);
+		// Runs the queued intents. A host presenter overrides this to drain the pages it holds.
+		virtual void Drain(void);
 		void Discard(void);
 		bool Has_Pending(void) const;
 		virtual void Execute(UIIntent const & intent) = 0;
@@ -78,6 +81,9 @@ class UIPresenterClass
 		void Set_Settings_Tab(UISettingsTab tab, unsigned offered);
 		UISettingsTab Settings_Tab(void) const { return(OwnTab); }
 		unsigned Settings_Tabs_Offered(void) const { return(Offered); }
+
+		/// <summary>Sets the tabs a tab request may name, as a bit for every tab, without making this screen a page.</summary>
+		void Offer_Tabs(unsigned offered) { Offered = offered; }
 
 		/// <summary>The tab the player picked to leave this page for, or UI_TAB_NONE.</summary>
 		UISettingsTab Tab_Request = UI_TAB_NONE;

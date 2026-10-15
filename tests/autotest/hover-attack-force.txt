@@ -1,0 +1,44 @@
+; Hover-attack voxel unit (SHAD, HoverAttack=yes, Voxel=yes): its walk counter and body frame are logged with
+; animlog before, during and after a force-attack on the ground at 62,40. Compare with floating-disc-force-attack.txt.
+30 command CenterBase
+300 own SHAD 58 40
+302 follow SHAD
+304 zoom 2
+310 animlog SHAD
+320 animlog SHAD
+330 animlog SHAD
+340 animlog SHAD
+350 animlog SHAD
+360 animlog SHAD
+370 animlog SHAD
+380 animlog SHAD
+390 animlog SHAD
+400 animlog SHAD
+420 forceattack SHAD 62 40
+421 animlog SHAD
+427 animlog SHAD
+433 animlog SHAD
+439 animlog SHAD
+445 animlog SHAD
+451 animlog SHAD
+457 animlog SHAD
+463 animlog SHAD
+469 animlog SHAD
+475 animlog SHAD
+481 animlog SHAD
+487 animlog SHAD
+493 animlog SHAD
+499 animlog SHAD
+505 animlog SHAD
+511 animlog SHAD
+517 animlog SHAD
+530 stop SHAD
+540 animlog SHAD
+550 animlog SHAD
+560 animlog SHAD
+570 animlog SHAD
+580 animlog SHAD
+590 animlog SHAD
+600 animlog SHAD
+610 command ScreenCapture
+800 quit

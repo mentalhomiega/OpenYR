@@ -1,0 +1,24 @@
+; Kirov hovering over the player's own Soviet War Factory (NAWEAP at cell 60,20; Kirov at cell 61,21). Run with -Country 8.
+; The Kirov settles at 750 AGL by frame 450. Window 300,150 lies inside the Kirov's drawn body and over the factory's roof.
+; Modern (AircraftBodyPick on, the default): the click selects the Kirov, the far click moves it, and the factory has no rally point.
+; Classic (AircraftBodyPick=no, as gamemd picks): the body click selects nothing, so the far click sets nothing.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/kirov-over-factory.txt -Country 8 -Width 640 -Height 480 -Seconds 120 -Filter "selected|where|rallyof|pickat 300,150|AircraftBodyPick|Exception"
+; Classic run: add -Settings "[Options]`r`nAircraftBodyPick=no" to the same command.
+30 command CenterBase
+35 reveal
+40 own NAWEAP 60 20
+41 own ZEP 61 21
+50 view 61 21
+450 airborne ZEP
+451 pickable ZEP
+452 pickat 300 150
+453 selected
+454 windowclick 300 150
+455 selected
+456 windowclick 380 420
+457 selected
+458 where ZEP
+459 where NAWEAP
+460 rallyof NAWEAP
+470 windowshot kirov-repro-after
+500 quit

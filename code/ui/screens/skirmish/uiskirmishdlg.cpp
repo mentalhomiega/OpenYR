@@ -11,8 +11,10 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "autotest.h"
 #include "ccfile.h"
 #include "data.h"
+#include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
 #include "houstype.h"
@@ -23,6 +25,7 @@
 #include "netshare.h"
 #include "preview.h"
 #include "rules.h"
+#include "scenario.h"
 #include "session.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/skirmish/uiskirmish.h"
@@ -33,6 +36,7 @@
 #include "utf8.h"
 #include "win.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <random>
@@ -47,6 +51,37 @@ static char const * const SKIRMISH_SECTION = "Skirmish";
 
 // Set once a match is started from this screen; until then its match options show the rules' values.
 static bool Options_Started = false;
+
+/// <summary>
+/// The setup the player last left the skirmish lobby with. The lobby takes it from here, not from
+/// the game's session or world, so a finished game or a menu battle cannot change what the next
+/// lobby shows. It is read from the settings file the first time the lobby opens in a run, and
+/// written back to the settings file on every exit, which keeps it across launches.
+/// </summary>
+struct SkirmishMemory
+{
+	bool Loaded = false;
+	std::string Map;
+	std::string Slots[UI_SKIRMISH_MAX_SLOTS];
+
+	// Each option is -1 when the settings file does not hold it, so the rules' value stays. A
+	// switch is 0 or 1.
+	int Units = -1;
+	int Credits = -1;
+	int TechLevel = -1;
+	int GameSpeed = -1;
+	int Bases = -1;
+	int Crates = -1;
+	int Fog = -1;
+	int Bridges = -1;
+	int Redeploy = -1;
+	int ShortGame = -1;
+	int MultiEngineer = -1;
+	int SuperWeapons = -1;
+	int BuildOffAlly = -1;
+};
+
+static SkirmishMemory Memory;
 
 static int const UI_SKIRMISH_COLORS[] = {
 	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
@@ -72,17 +107,6 @@ static void Refresh_Preview(void)
 }
 
 
-static int First_Available_Scenario(void)
-{
-	for (int index = 0; index < Session.Scenarios.Count(); index++) {
-		if (CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available()) {
-			return(index);
-		}
-	}
-	return(-1);
-}
-
-
 static int Slot_Start(UISkirmishState const & state, UISkirmishSlot const & slot)
 {
 	// A numbered start is the map's waypoint of that number plus one; none leaves the game to draw.
@@ -96,6 +120,44 @@ static int Slot_Side(UISkirmishState const & state, UISkirmishSlot const & slot)
 }
 
 
+/// <summary>
+/// Reads the remembered setup from the settings file the first time it is needed in a run. A key
+/// that is absent leaves that part of the setup to the rules' defaults.
+/// </summary>
+static void Load_Memory(void)
+{
+	if (Memory.Loaded) {
+		return;
+	}
+	Memory.Loaded = true;
+
+	Memory.Map = ConfigINI.Get_String(SKIRMISH_SECTION, "Map", "");
+	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
+		char key[16];
+		std::snprintf(key, sizeof(key), "Slot%d", row + 1);
+		Memory.Slots[row] = ConfigINI.Get_String(SKIRMISH_SECTION, key, "");
+	}
+
+	Memory.Units = ConfigINI.Get_Int(SKIRMISH_SECTION, "Units", -1);
+	Memory.Credits = ConfigINI.Get_Int(SKIRMISH_SECTION, "Credits", -1);
+	Memory.TechLevel = ConfigINI.Get_Int(SKIRMISH_SECTION, "Tech", -1);
+	Memory.GameSpeed = ConfigINI.Get_Int(SKIRMISH_SECTION, "Speed", -1);
+	Memory.Bases = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bases", -1);
+	Memory.Crates = ConfigINI.Get_Int(SKIRMISH_SECTION, "Crates", -1);
+	Memory.Fog = ConfigINI.Get_Int(SKIRMISH_SECTION, "Fog", -1);
+	Memory.Bridges = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bridges", -1);
+	Memory.Redeploy = ConfigINI.Get_Int(SKIRMISH_SECTION, "Redeploy", -1);
+	Memory.ShortGame = ConfigINI.Get_Int(SKIRMISH_SECTION, "ShortGame", -1);
+	Memory.MultiEngineer = ConfigINI.Get_Int(SKIRMISH_SECTION, "Engineer", -1);
+	Memory.SuperWeapons = ConfigINI.Get_Int(SKIRMISH_SECTION, "SuperWeapons", -1);
+	Memory.BuildOffAlly = ConfigINI.Get_Int(SKIRMISH_SECTION, "BuildOffAlly", -1);
+}
+
+
+/// <summary>
+/// Records the lobby's setup as the remembered one and writes it to the settings file. The map is
+/// the session's file name, which the lobby's own map choice sets.
+/// </summary>
 static void Remember_Preferences(UISkirmishState const & state)
 {
 	UTF8::Copy(Session.Handle, sizeof(Session.Handle), state.Handle.c_str());
@@ -112,12 +174,43 @@ static void Remember_Preferences(UISkirmishState const & state)
 		Session.PrefCustomColor = state.Slots[0].Custom;
 	}
 
+	Memory.Loaded = true;
+	Memory.Map = Session.ScenarioFileName;
+	Memory.Units = state.UnitCount;
+	Memory.Credits = state.Credits;
+	Memory.TechLevel = state.TechLevel;
+	Memory.GameSpeed = state.GameSpeed;
+	Memory.Bases = state.Bases ? 1 : 0;
+	Memory.Crates = state.Crates ? 1 : 0;
+	Memory.Fog = state.Fog ? 1 : 0;
+	Memory.Bridges = state.Bridges ? 1 : 0;
+	Memory.Redeploy = state.Redeploy ? 1 : 0;
+	Memory.ShortGame = state.ShortGame ? 1 : 0;
+	Memory.MultiEngineer = state.MultiEngineer ? 1 : 0;
+	Memory.SuperWeapons = state.SuperWeapons ? 1 : 0;
+	Memory.BuildOffAlly = state.BuildOffAlly ? 1 : 0;
+
 	// Written to the settings file by the Session.Write_MultiPlayer_Settings call that follows.
+	ConfigINI.Put_String(SKIRMISH_SECTION, "Map", Memory.Map.c_str());
 	for (int row = 0; row < (int)state.Slots.size(); row++) {
 		char key[16];
 		std::snprintf(key, sizeof(key), "Slot%d", row + 1);
-		ConfigINI.Put_String(SKIRMISH_SECTION, key, UI_Skirmish_Slot_Text(state, row).c_str());
+		Memory.Slots[row] = UI_Skirmish_Slot_Text(state, row);
+		ConfigINI.Put_String(SKIRMISH_SECTION, key, Memory.Slots[row].c_str());
 	}
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Units", Memory.Units);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Credits", Memory.Credits);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Tech", Memory.TechLevel);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Speed", Memory.GameSpeed);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bases", Memory.Bases);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Crates", Memory.Crates);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Fog", Memory.Fog);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bridges", Memory.Bridges);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Redeploy", Memory.Redeploy);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "ShortGame", Memory.ShortGame);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "Engineer", Memory.MultiEngineer);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "SuperWeapons", Memory.SuperWeapons);
+	ConfigINI.Put_Int(SKIRMISH_SECTION, "BuildOffAlly", Memory.BuildOffAlly);
 }
 
 
@@ -216,6 +309,11 @@ static void Commit(UISkirmishState const & state)
 {
 	Options_Started = true;
 	Remember_Preferences(state);
+
+	// Restoring the lobby leaves the loaded scenario alone, so the lobby's map is named for the game here.
+	if (Session.ScenarioFileName[0] != '\0') {
+		strcpy(Scen->ScenarioName, Session.ScenarioFileName);
+	}
 
 	Session.Options.UnitCount = state.UnitCount;
 	BuildLevel = state.TechLevel;
@@ -339,7 +437,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 		}
 
 		UISkirmishOption option;
-		option.Label = (char const *)house->GivenName;
+		option.Label = house->Full_Name();
 		option.Value = index;
 		state.Sides.push_back(option);
 	}
@@ -381,12 +479,60 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.SuperWeapons = rules_defaults ? Rule->IsMPSuperWeapons : Session.Options.SWAllowed;
 	state.BuildOffAlly = rules_defaults ? Rule->IsMPBuildOffAlly : Session.Options.BuildOffAlly;
 
-	Session.Options.ScenarioIndex = First_Available_Scenario();
-	Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
+	// The remembered setup comes back as it was left. Its options replace the rules' values, and its
+	// map is used only while the map's file is on hand; the first map that is on hand takes its place.
+	Load_Memory();
+	if (Memory.Units >= 0) {
+		state.UnitCount = std::clamp(Memory.Units, state.UnitCountMin, state.UnitCountMax);
+	}
+	if (Memory.Credits >= 0) {
+		state.Credits = std::clamp(Memory.Credits, state.CreditsMin, state.CreditsMax);
+	}
+	if (Memory.TechLevel >= 0) {
+		state.TechLevel = std::clamp(Memory.TechLevel, 1, state.TechLevelMax);
+	}
+	if (Memory.GameSpeed >= 0) {
+		state.GameSpeed = std::clamp(Memory.GameSpeed, 0, 6);
+	}
+	if (Memory.Bases >= 0) {
+		state.Bases = Memory.Bases != 0;
+	}
+	if (Memory.Crates >= 0) {
+		state.Crates = Memory.Crates != 0;
+	}
+	if (Memory.Fog >= 0) {
+		state.Fog = Memory.Fog != 0;
+	}
+	if (Memory.Bridges >= 0) {
+		state.Bridges = Memory.Bridges != 0;
+	}
+	if (Memory.Redeploy >= 0) {
+		state.Redeploy = Memory.Redeploy != 0;
+	}
+	if (Memory.ShortGame >= 0) {
+		state.ShortGame = Memory.ShortGame != 0;
+	}
+	if (Memory.MultiEngineer >= 0) {
+		state.MultiEngineer = Memory.MultiEngineer != 0;
+	}
+	if (Memory.SuperWeapons >= 0) {
+		state.SuperWeapons = Memory.SuperWeapons != 0;
+	}
+	if (Memory.BuildOffAlly >= 0) {
+		state.BuildOffAlly = Memory.BuildOffAlly != 0;
+	}
+
+	// Only the session takes the map here. The loaded scenario is named when the game starts.
+	int index = Find_Available_Scenario(Memory.Map.c_str());
+	if (index < 0) {
+		index = First_Available_Scenario();
+	}
+	Session.Options.ScenarioIndex = index;
+	Select_Scenario_Session(index);
 	state.MapName = Session.Options.ScenarioDescription;
 	Fill_Starts(state);
 
-	// The last setup comes back from the settings file; a first run has one opponent.
+	// The last setup comes back from the remembered copy; a first run has one opponent.
 	state.Slots.assign(UI_SKIRMISH_MAX_SLOTS, UISkirmishSlot());
 	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
 		state.Slots[row].Kind = row == 1 ? UI_SKIRMISH_SLOT_MEDIUM : UI_SKIRMISH_SLOT_OPEN;
@@ -395,12 +541,8 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 	bool remembered = false;
 	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
-		char key[16];
-		char text[64];
-		std::snprintf(key, sizeof(key), "Slot%d", row + 1);
-		ConfigINI.Get_String(SKIRMISH_SECTION, key, "", text, sizeof(text));
-		UI_Skirmish_Slot_Parse(state, row, text);
-		remembered = remembered || text[0] != '\0';
+		UI_Skirmish_Slot_Parse(state, row, Memory.Slots[row]);
+		remembered = remembered || !Memory.Slots[row].empty();
 	}
 
 	// The player's own country and color are the multiplayer preferences, which the network lobby
@@ -424,6 +566,22 @@ void UI_Skirmish_State(UISkirmishState & state)
 }
 
 
+/// <summary>
+/// Writes the lobby's setup to the debug log, one line for the options and one for each row, so an
+/// autotest run can check what the lobby showed when it opened.
+/// </summary>
+static void Log_Lobby_Setup(UISkirmishState const & state)
+{
+	DebugString("AUTOTEST lobby map %s rows %d units %d credits %d tech %d speed %d bases %d crates %d fog %d bridges %d redeploy %d shortgame %d engineer %d superweapons %d buildoffally %d\n",
+		Session.ScenarioFileName, state.Rows, state.UnitCount, state.Credits, state.TechLevel, state.GameSpeed,
+		state.Bases, state.Crates, state.Fog, state.Bridges, state.Redeploy, state.ShortGame, state.MultiEngineer,
+		state.SuperWeapons, state.BuildOffAlly);
+	for (int row = 0; row < state.Rows && row < (int)state.Slots.size(); row++) {
+		DebugString("AUTOTEST lobby row %d active %d %s\n", row, state.Is_Active(row) ? 1 : 0, UI_Skirmish_Slot_Text(state, row).c_str());
+	}
+}
+
+
 bool UI_Skirmish_Dialog(void)
 {
 	UISkirmishState state;
@@ -431,6 +589,9 @@ bool UI_Skirmish_Dialog(void)
 
 	UISkirmishEngineServiceClass service;
 	UISkirmishPresenterClass presenter(service, std::move(state));
+	if (AutoTest_Active()) {
+		Log_Lobby_Setup(presenter.State);
+	}
 	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
 
 	UIResult result = UI_Run_Modal(*view);

@@ -1503,10 +1503,14 @@ void BulletClass::Detonate(Coord const & coord)
 	 */
 	else if (warhead->IsLocomotor) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (Payback != NULL && target != NULL && target->RTTI == RTTI_UNIT && target != Payback
-			&& Payback->LocomotorTarget != target && target->LocomotorSource == NULL && Payback->LocomotorSource == NULL) {
+		// The firer lets go of what it holds before the target is checked, so a hit that lifts nothing still releases it (BulletClass::Detonate, 0x469210).
+		if (Payback != NULL && Payback->LocomotorTarget != target && Payback->LocomotorSource == NULL && !Payback->IsAttackedByLocomotor) {
 			Payback->Release_Locomotor(false);
-			target->Imbue_Locomotor(Payback, warhead->Locomotor);
+			// A vehicle is lifted only from the ground, and only when it weighs less than the bullet's strength.
+			if (target != NULL && target != Payback && target->RTTI == RTTI_UNIT && target->LocomotorSource == NULL
+				&& target->HeightAGL < 1 && target->TClass->Weight < Strength) {
+				target->Imbue_Locomotor(Payback, warhead->Locomotor);
+			}
 		}
 	}
 

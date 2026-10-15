@@ -42,6 +42,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `triggers [all]` | Writes the trigger types with their owner, the events they wait for and whether a live trigger of each is enabled (only the enabled ones, unless `all`), then every tag with the objects and cells it rides on, and the local and global variables that are set |
 | `typecounts` | Writes how many structure, vehicle, soldier and aircraft types there are, and any whose ID is not a plain name, which is how a list read as one name shows up |
 | `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in |
+| `animlog <TypeID>` | Writes each object of that type, whoever owns it, with its walk counter and the body voxel frame that counter selects, its turret frame and facings, whether its locomotor moves, its target, and whether a DiskLaser ring is active |
+| `forceattack <TypeID> x y` | Orders the player's objects of that type to force-attack the object on that cell, or the ground there, as a Ctrl+click does. Autotests never report Ctrl as held, so the order is given directly |
 | `quantity <TypeID>` | Writes how many of that type each house is counted as having, owned and active, which are the two counts the map events read. A structure uses the building counts, a unit, infantry or aircraft type its own |
 | `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in; a teleporting object gets its warp phase (0 idle, 1 warping out, 2 holding), the frame the phase ends, whether it is warping, whether a chrono warp holds it, and whether it is selected |
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
@@ -71,6 +73,10 @@ A command runs once the game frame reaches its frame, in file order.
 | `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers and destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
+| `rallyof <TypeID>` | Writes the rally point (archive target) of each of the player's structures of that type, as the cell it names, or `-1,-1` when none is set |
+| `pickable <TypeID>` | Writes each object of that type the player owns, with whether the clickable list holds it and, when it does, the window pixel its entry is drawn at (`window x,y`, or `-1,-1` when it is not listed). The list is the one the last render built |
+| `pickat x y` | Writes the object a left click at that window pixel would pick from the clickable list and the cell under it, without selecting anything |
+| `cellpixel x y` | Writes the window pixel of the centre of that cell under the current view, for a `windowclick` step |
 | `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
 | `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
 | `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |
@@ -93,6 +99,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `triggerlog <0\|1>` | With `1`, writes `AUTOTEST trigger fired frame N: <ID> <name> house <house>` each time a trigger springs |
 | `triggercoverage` | Writes each trigger type in the scenario with how many times it has sprung since the run started, then the types that never sprung. A long list runs over several lines, the later ones marked `(continued)` |
 | `modsig [text]` | Writes the mods in force as a join request carries them: each folder name with a hash of its `mod.ini` and overlay files. With a signature as text, which is another machine's, also writes whether a host with these mods would take that machine in, and how the mods differ |
+| `skipscore` | A won multiplayer or skirmish game passes over its score screen, as `SkipScoreScreen=yes` in a launch file does |
 | `quit` | Ends the process |
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to
@@ -134,6 +141,30 @@ and does nothing.
 
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
+
+## Skirmish lobby
+
+`tests/autotest/skirmish-lobby-restore.txt` checks that the skirmish lobby keeps its setup after a
+game and after a cancel. A `-Settings` text writes a `[Skirmish]` setup into the settings file: four
+players on `XMP03T4.MAP`, which has four start spots. The script opens the lobby and starts a game.
+`killhouse Spawn2 0`, `Spawn3 0` and `Spawn4 0` destroy the computers, `skipscore` passes over the
+score screen, and the player wins. The lobby opens again, is cancelled, and opens a third time. The
+log has three `AUTOTEST lobby` blocks, one for each opening. Each block is an `AUTOTEST lobby map`
+line followed by one `AUTOTEST lobby row` line per row, and the three blocks must match.
+
+```text
+$s = "[Skirmish]`r`nMap=XMP03T4.MAP`r`nUnits=8`r`nCredits=5000`r`nTech=5`r`nSpeed=3`r`nBases=0`r`nCrates=1`r`nFog=1`r`nBridges=0`r`nRedeploy=0`r`nShortGame=0`r`nEngineer=1`r`nSuperWeapons=0`r`nBuildOffAlly=1`r`nSlot1=0,-1,0,0,0,0`r`nSlot2=3,2,1,2,1,0`r`nSlot3=4,0,2,3,1,0`r`nSlot4=2,-1,3,4,2,0"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/skirmish-lobby-restore.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 200 -Settings $s -Filter "AUTOTEST lobby|game over|Exception"
+```
+
+`tests/autotest/skirmish-lobby-fallback.txt` opens the lobby once and cancels it. Its `AUTOTEST lobby`
+block shows what the lobby fell back to. Run it with a `-Settings` text that names a map that is not on
+hand, or four rows on a two-start map such as `XMP29U2.MAP`. The lobby then shows the first map on hand,
+or two rows.
+
+The unit test `skirmishsetup` (CTest name `skirmishsetup`) restores saved rows onto maps with fewer
+start spots and checks the fallbacks for a missing country or start, a kind past the list, and clashing
+colors and starts. It needs no game data.
 
 ## Saving and loading
 

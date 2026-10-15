@@ -46,6 +46,12 @@ struct UIMenuState
 	// Lines the styles print in a corner of the screen, such as the version; empty prints none.
 	std::vector<std::string> Stamp;
 
+	// The version shown under the faction emblem of the modern title menus; empty shows no emblem.
+	std::string Version;
+
+	// The player's name on the profile panel of the modern title menus; empty shows no panel.
+	std::string Profile;
+
 	bool Wide = true;
 	std::vector<UIMenuItemType> Items;
 	int Top = -1;

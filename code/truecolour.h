@@ -26,3 +26,4 @@ void TrueColour_Add_Directory(char const * path);
 bool TrueColour_Draw(Surface & surface, ConvertClass & convert, ShapeSet const * shapefile, int shapenum, Point2D const & point, Rect const & window, ShapeFlags_Type flags, unsigned char const * remap, int height_offset, ZGradientType zgrad, int intensity, ShapeSet const * z_shapefile, int z_shapenum, Point2D const & z_off);
 void TrueColour_Report(char const * name);
 bool TrueColour_Export(char const * name, char const * path);
+bool TrueColour_Export_Palette(char const * name, char const * palette, char const * path);

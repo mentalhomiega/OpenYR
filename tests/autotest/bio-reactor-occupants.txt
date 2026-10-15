@@ -1,0 +1,35 @@
+; A Yuri Bio Reactor (YAPOWR) with infantry walked into it. Its art follows gamemd's BuildingClass::UpdateAnimations
+; (0x4509D0): the first active animation (YAPOWR_A) plays while it is empty, and the second (YAPOWR_B) while soldiers are
+; inside. The banimstate lines show which slots hold an animation at each stage, and the screenshots show the art.
+; Frames 60-72 are empty, 400-412 hold one soldier, and 700-712 hold five.
+; Run: scripts/run_autotest.ps1 -Build agent18 -Script E:/Claude ra2 decomp/src-agent18/tests/autotest/bio-reactor-occupants.txt -Width 800 -Height 600 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/shots/bio-reactor" -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 reveal
+30 view 60 20
+40 own YAPOWR 60 20
+41 own E1 58 20
+60 banimstate YAPOWR
+60 command ScreenCapture
+64 command ScreenCapture
+68 command ScreenCapture
+72 command ScreenCapture
+100 enter E1 60 20
+380 banimstate YAPOWR
+380 where E1
+400 command ScreenCapture
+404 command ScreenCapture
+408 command ScreenCapture
+412 command ScreenCapture
+420 own E1 58 21
+421 own E1 57 20
+422 own E1 57 21
+423 own E1 59 22
+424 own E1 58 22
+440 enter E1 60 20
+680 banimstate YAPOWR
+680 where E1
+700 command ScreenCapture
+704 command ScreenCapture
+708 command ScreenCapture
+712 command ScreenCapture
+750 quit

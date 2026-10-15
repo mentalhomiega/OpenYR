@@ -1,0 +1,72 @@
+; Firing visuals for each superweapon in the coordinator's list. Each weapon is granted fully charged right before it is fired,
+; because a fired weapon with no structure to grant it is dropped by the house update. The liveanims lines count the named
+; animations still playing, and the ScreenCapture lines take the mid-effect shots. Expected anims (rulesmd.ini): NUKETO (nuke
+; take-off), WCCLOUD1 and WCLBOLT1 (lightning storm clouds and bolts), IRONBLST (Iron Curtain invoke), FORCSHLD (force shield
+; invoke), GENDEATH (genetic mutator), WARPOUT and WARPIN (chronosphere ends).
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-visuals.txt -Width 800 -Height 600 -Seconds 150 -ShotDir "E:\Claude ra2 decomp\shots\sw-visuals" -Filter "AUTOTEST   liveanims|AUTOTEST   where|AUTOTEST frame|Exception"
+20 own GAPOWR 56 40
+22 own NAMISL 60 46
+24 own E1 41 50
+25 own HARV 40 40
+35 reveal
+60 view 42 50
+62 grant NukeSpecial
+63 fire NukeSpecial 42 50
+70 liveanims NUKETO
+80 command ScreenCapture
+100 liveanims NUKETO
+110 command ScreenCapture
+190 view 42 50
+200 grant LightningStormSpecial
+202 fire LightningStormSpecial 42 50
+240 liveanims WCCLOUD1
+250 command ScreenCapture
+280 liveanims WCLBOLT1
+290 command ScreenCapture
+330 view 56 40
+340 grant IronCurtainSpecial
+342 fire IronCurtainSpecial 56 40
+350 liveanims IRONBLST
+355 command ScreenCapture
+390 view 56 40
+400 grant ForceShieldSpecial
+402 fire ForceShieldSpecial 56 40
+410 liveanims FORCSHLD
+415 command ScreenCapture
+450 view 42 50
+460 grant GeneticConverterSpecial
+462 fire GeneticConverterSpecial 42 50
+470 liveanims GENDEATH
+475 command ScreenCapture
+510 view 40 30
+520 grant ParaDropSpecial
+522 fire ParaDropSpecial 40 30
+530 command ScreenCapture
+540 command ScreenCapture
+590 view 40 30
+600 grant AmericanParaDropSpecial
+602 fire AmericanParaDropSpecial 40 30
+610 command ScreenCapture
+620 command ScreenCapture
+670 view 40 30
+680 grant SpyPlaneSpecial
+682 fire SpyPlaneSpecial 40 30
+690 command ScreenCapture
+700 command ScreenCapture
+750 view 40 30
+760 grant PsychicDominatorSpecial
+762 fire PsychicDominatorSpecial 40 30
+770 command ScreenCapture
+790 command ScreenCapture
+830 view 42 40
+835 grant ChronoSphereSpecial
+838 fire ChronoSphereSpecial 40 40
+845 command ScreenCapture
+850 grant ChronoWarpSpecial
+852 fire ChronoWarpSpecial 46 40
+856 liveanims WARPOUT
+858 command ScreenCapture
+862 liveanims WARPIN
+866 command ScreenCapture
+880 where HARV
+950 quit

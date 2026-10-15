@@ -1,0 +1,7 @@
+; Skirmish score screen: the computer's Africans (country 5) lose everything, so the player wins.
+; The win shows the multiplayer score screen for a skirmish, saves a capture of it, and carries on
+; (continuewin), so the run ends at the quit step.
+; Run from the repository root: scripts/run_autotest.ps1 -Script tests/mpscore/skirmish-score.txt -Build agent13 -Width 1024 -Height 768 -Seconds 150 -ShotDir <folder> -Filter "AUTOTEST|Exception|game over"
+0 continuewin
+200 killhouse Africans 0
+600 quit

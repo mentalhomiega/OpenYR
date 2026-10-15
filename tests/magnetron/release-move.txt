@@ -1,0 +1,50 @@
+; A Magnetron lifts an enemy Rhino (HTNK), then is ordered to move away mid-lift. The order releases the Rhino in the air:
+; it falls straight down and is destroyed by the drop when it lands.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/release-move.txt -Seconds 150
+300 own TELE 54 40
+301 spawn HTNK 62 40
+302 reveal
+303 view 58 40
+310 strike TELE 62 40
+320 lift HTNK
+324 lift HTNK
+328 lift HTNK
+332 lift HTNK
+336 lift HTNK
+340 lift HTNK
+344 lift HTNK
+348 lift HTNK
+352 lift HTNK
+356 lift HTNK
+360 lift HTNK
+364 lift HTNK
+366 windowshot release-move-held
+400 move TELE 46 40
+400 where TELE
+401 lift HTNK
+407 lift HTNK
+413 lift HTNK
+419 lift HTNK
+425 lift HTNK
+430 windowshot release-move-fall
+431 lift HTNK
+437 lift HTNK
+443 lift HTNK
+449 lift HTNK
+455 lift HTNK
+461 lift HTNK
+467 lift HTNK
+473 lift HTNK
+479 lift HTNK
+485 lift HTNK
+491 lift HTNK
+497 lift HTNK
+503 lift HTNK
+509 lift HTNK
+515 lift HTNK
+521 lift HTNK
+527 lift HTNK
+533 lift HTNK
+539 lift HTNK
+545 where HTNK
+550 quit

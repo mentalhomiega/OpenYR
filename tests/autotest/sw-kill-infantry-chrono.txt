@@ -1,0 +1,16 @@
+; Chronosphere on an own infantryman and an own vehicle. The sphere takes the unit on its cell (ChronoSphere case, 0x6CC...),
+; and the warp sets it down at the warp cell. The where lines show whether each unit survives and where it stands. An
+; infantryman caught in the teleport should be moved, not destroyed (gamemd's ChronoWarp case, SuperClass.c line 1162).
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-kill-infantry-chrono.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST frame|Exception"
+20 own GAPOWR 56 40
+30 own E1 52 40
+31 own HARV 50 36
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+50 where E1
+51 where HARV
+60 fire ChronoSphereSpecial 52 40
+70 fire ChronoWarpSpecial 60 40
+100 where E1
+101 where HARV
+120 quit

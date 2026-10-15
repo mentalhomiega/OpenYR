@@ -1,0 +1,40 @@
+; Kirov body pick grid at its settled 750 AGL height, over the factory. pickat logs what a click at each window
+; pixel picks. With AircraftBodyPick on (the default) the points inside the Kirov's drawn body pick the Kirov, including
+; those over the factory's drawn roof; with it off (-Settings "[Options]`r`nAircraftBodyPick=no") they pick as gamemd does.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/kirov-body-pick.txt -Country 8 -Width 640 -Height 480 -Seconds 120 -Filter "pickat|pickable|airborne ZEP|Exception"
+30 command CenterBase
+35 reveal
+40 own NAWEAP 60 20
+41 own ZEP 61 21
+50 view 61 21
+450 airborne ZEP
+451 pickable ZEP
+452 windowshot kirov-body-pick
+460 pickat 270 110
+461 pickat 280 100
+462 pickat 290 130
+463 pickat 300 110
+464 pickat 300 125
+465 pickat 300 140
+466 pickat 300 150
+467 pickat 300 160
+468 pickat 310 100
+469 pickat 320 90
+470 pickat 320 110
+471 pickat 320 150
+472 pickat 330 100
+473 pickat 340 130
+474 pickat 350 110
+475 pickat 360 100
+476 pickat 365 130
+477 pickat 320 165
+478 pickat 320 180
+479 pickat 320 196
+480 pickat 320 212
+481 pickat 300 196
+482 pickat 300 214
+483 pickat 340 196
+484 pickat 340 214
+485 pickat 280 160
+486 pickat 370 150
+490 quit

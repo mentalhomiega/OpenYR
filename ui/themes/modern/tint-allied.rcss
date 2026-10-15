@@ -1,0 +1,59 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The Allied tint. Every colour of the modern menus for this tint is one of these variables;
+   theme.rcss reads them with var(). Allied blue: navy panels, light bevels and blue buttons. The states differ by brightness and border. */
+body.theme-allied
+{
+	--t-ink: #040812;
+	--t-shade-top: #0a1a3499;
+	--t-shade-bottom: #05102ae6;
+	--t-panel: #0c1e44a0;
+	--t-edge: #7fb2ff;
+	--t-edge-dim: #1d4687;
+	--t-caption: #cfe3ff;
+	--t-text: #e8f1ff;
+	--t-text-hot: #ffffff;
+	--t-face-top: #2a5698;
+	--t-face-bottom: #17335f;
+	--t-hover-top: #3c6fbf;
+	--t-hover-bottom: #1f4a88;
+	--t-press-top: #0d2347;
+	--t-press-bottom: #163466;
+	--t-accent: #6fb0ff;
+	--t-accent-strong: #bcd9ff;
+	--t-disabled-top: #1d2636;
+	--t-disabled-bottom: #161d2a;
+	--t-disabled-edge: #2d3a50;
+	--t-disabled-text: #6c7a92;
+	--t-disabled-check: #34507e;
+	--t-field: #081329d0;
+	--t-field-solid: #081329;
+	--t-field-list: #081329a0;
+	--t-select: #24518f;
+	--t-popup: #0c1e44;
+	--t-tooltip: #0c1e44f0;
+	--t-track: #13244a;
+	--t-rule: #2a4a7a;
+	--t-muted: #9fb7da;
+	--t-stamp: #8aa4c9;
+	--t-column: #0a1a3ab3;
+	--t-column-edge: #2a4a7a;
+	--t-tab-top: #22467f;
+	--t-tab-text: #b4cbec;
+	--t-tab-active: #0c1e44;
+	--t-frame: #2f6fd6;
+	--t-backdrop: #0a1a3a80;
+}
+
+/* The Allied insignia, from the game's files, is the emblem of the title menus. */
+body.theme-allied #badge
+{
+	decorator: image(USAI.PCX fill);
+}

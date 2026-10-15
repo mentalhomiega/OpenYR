@@ -1119,6 +1119,40 @@ bool FootClass::Is_Chrono_Warping(void) const
 /// way through. The place is not checked: the caller sees to what stands there.
 /// </summary>
 /// <param name="dest">Where the object goes.</param>
+/// <summary>
+/// Starts a chronosphere warp that lands the object at dest. The object stays on its cell, under the
+/// warp-out animation, for ChronoDelay frames, then its teleport locomotor sets it down at dest. A
+/// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
+/// is dropped.
+/// </summary>
+/// <param name="dest">The coordinate the object lands at.</param>
+void FootClass::Begin_Chrono_Warp(Coord dest)
+{
+	IsBeingWarpedOut = true;
+	Stop_Driver();
+	Assign_Destination(NULL);
+
+	if (dynamic_cast<TeleportLocomotionClass *>(Locomotion.get()) == NULL) {
+		std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
+		carried->Mark_All_Occupation_Bits(0);
+		carried->Stop_Movement_Animation();
+		carried->Stop_Moving();
+		Locomotion = Create_Locomotor(ClassID_TeleportLocomotion);
+		Locomotion->Link_To_Object(this);
+		Locomotion->Unlimbo();
+		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+		piggy->Begin_Piggyback(carried);
+	}
+	if (IonStormClass::Is_Ion_Storm_Active() && Locomotion->Is_Ion_Sensitive()) {
+		Locomotion->Power_Off();
+	} else {
+		Locomotion->Power_On();
+	}
+	TeleportLocomotionClass * teleport = static_cast<TeleportLocomotionClass *>(Locomotion.get());
+	teleport->Begin_Chrono_Warp(dest, Rule->ChronoDelay);
+}
+
+
 void FootClass::Teleport_To(Coord dest)
 {
 	CellClass * cellptr = &Map[dest.As_Cell()];
@@ -2983,6 +3017,13 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 		Release_Locomotor(true);
 	}
 
+	// A held vehicle that is given no destination lets go of its holder (FootClass::SetDestination, 0x4D94B0).
+	if (target == NULL && IsAttackedByLocomotor && LocomotorSource != NULL) {
+		LocomotorSource->LocomotorTarget = NULL;
+		LocomotorSource = NULL;
+		IsLetGoByLocomotor = true;
+	}
+
 	NavCom = target;
 
 	if (NavCom != NULL) {
@@ -3969,12 +4010,28 @@ void FootClass::AI(void)
 					Assign_Mission(MISSION_ENTER);
 				}
 			}
-			if (Locomotion->Is_Moving_Now()) {
-				if ((Frame % TClass->WalkRate) == 0) {
-					TotalFramesWalked++;
+			// FootClass::Update (0x4DA530) steps the walk counter on the walk rate while the locomotor moves, and on the idle rate
+			// while it stands still. A unit that stands still on a hover-attack target, and is not deployed, also steps on each
+			// walk-rate frame, and a DeployToLand unit in the air steps every frame. Warp-in is taken as a chrono teleport hold.
+			bool const moving = Locomotion->Is_Moving_Now();
+			bool const warp_out = IsBeingWarpedOut;
+			bool const warp_in = Is_Chrono_Warping();
+			bool const attacked = IsAttackedByLocomotor;
+			bool const busy = warp_out || warp_in || attacked;
+			bool const is_unit = RTTI == RTTI_UNIT;
+			bool const hover_holding = is_unit && TClass->IsHoverAttack && TarCom != NULL;
+			bool const deployed = is_unit && static_cast<UnitClass const *>(this)->IsSimpleDeployed;
+			bool const deploy_to_land = is_unit && static_cast<UnitClass const *>(this)->Class->IsDeployToLand;
+			bool const holds_still = (!moving || warp_in) && (!hover_holding || deployed);
+			bool const off_walk_frame = (Frame % TClass->WalkRate) != 0 || busy;
+			bool step = !holds_still && !off_walk_frame;
+			if (!step) {
+				step = TClass->IdleRate != 0 && !moving && (Frame % TClass->IdleRate) == 0 && !busy;
+				if (!step) {
+					step = deploy_to_land && HeightAGL >= 1 && !busy;
 				}
-			} else if (TClass->IdleRate != 0 && (Frame % TClass->IdleRate) == 0 && !IsAttackedByLocomotor) {
-				// A stopped object steps its walk animation every IdleRate frames (FootClass::Update, 0x4DA530).
+			}
+			if (step) {
 				TotalFramesWalked++;
 			}
 		}

@@ -1,0 +1,22 @@
+; Campaign results check: the Soviet 5 mission's win script, with continuewin so the campaign results screen shows and the run carries on.
+; Run: scripts/run_autotest.ps1 -Script tests/mpscore/campaign-results.txt -Build agent13 -Campaign -Map SOV05UMD.MAP -Width 1024 -Height 768 -Seconds 300 -ShotDir <folder> -Filter "AUTOTEST score|game over|Exception"
+0 continuewin
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+300 killtag 0ED70D7C
+301 killhouse Yuri2Country 0
+302 killhouse YuriCountry 0
+500 killhouse YuriCountry 0
+501 killhouse Yuri2Country 0
+800 killhouse YuriCountry 0
+801 killhouse Yuri2Country 0
+1400 quit

@@ -261,7 +261,7 @@ Cell Cell_Spread_Offset(int index)
  *   06/20/1994 JLB : Source is a pointer.                                                     *
  *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
  *=============================================================================================*/
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse)
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of)
 {
 	Cell								cell;		// Cell number under explosion.
 	ObjectClass *						object;		// Working object pointer.
@@ -361,6 +361,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			if (object == source && !source->TClass->IsDamageSelf && warhead != Rule->CrushWarhead) continue;
 			if (!object->IsActive) continue;
 			if (object->RTTI == RTTI_UNIT && Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List((UnitTypeClass *)object->Class_Of())) continue;
+			if (spare_infantry_of != NULL && object->RTTI == RTTI_INFANTRY && spare_infantry_of->Is_Ally(((InfantryClass *)object)->House)) continue;
 
 			if (object->RTTI == RTTI_BUILDING) {
 				if (index != 0) {

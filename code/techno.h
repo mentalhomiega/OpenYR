@@ -193,11 +193,13 @@ class TechnoClass :	public RadioClass,
 		AttachedEffectsClass AttachedEffects;
 
 		// The vehicle this object holds with a locomotor warhead, the object holding this one, whether
-		// this one is being held, and whether it was let go in the air and is falling to its destruction.
+		// this one is being held, whether it was let go and may hand its locomotor back on landing
+		// (IsLetGoByLocomotor, 0x6AE), and whether it is falling after a let go in the air (IsCrashing, 0x425).
 		TechnoClass * LocomotorTarget;
 		TechnoClass * LocomotorSource;
 		bool IsAttackedByLocomotor;
 		bool IsLetGoByLocomotor;
+		bool IsCrashing;
 
 		// The object and house that held this one, as they are credited with what it crushes when it lands.
 		TechnoClass * LetGoBy;
@@ -207,7 +209,7 @@ class TechnoClass :	public RadioClass,
 		// The threat this object has added to the cell it stands in, so it can be taken back exactly.
 		int ThreatPosed;
 		void Update_Threat_In_Cell(void);
-		void Fall_After_Release(void);
+		void Release_Held_Vehicle(TechnoClass * holder);
 		void Release_Locomotor(bool clear_target);
 		void Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor);
 

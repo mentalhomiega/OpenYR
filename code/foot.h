@@ -111,8 +111,9 @@ class FootClass : public TechnoClass
 
 		/*
 		 * This is the running count of animation steps this object has taken. It advances
-		 * once every WalkRate game frames while the locomotor reports movement, and the walk
-		 * cycle, the tread animation and the harvesting animation are all indexed from it.
+		 * once every WalkRate game frames while the locomotor reports movement, and every
+		 * IdleRate frames while it stands still; FootClass::Update lists the other cases. The
+		 * walk cycle, the tread animation and the harvesting animation are all indexed from it.
 		 */
 		int TotalFramesWalked;
 
@@ -499,6 +500,8 @@ class FootClass : public TechnoClass
 
 		// Puts the object at a place on the map at once, dropping the move it was making.
 		void Teleport_To(Coord dest);
+		// Starts a chronosphere warp that holds the object on its cell and then lands it at dest.
+		void Begin_Chrono_Warp(Coord dest);
 		virtual bool Is_Chrono_Warping(void) const override;
 
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;

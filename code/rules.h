@@ -301,6 +301,12 @@ class RulesClass
 		 * leaves an animation whose MakeInfantry entry picks the AnimToInfantry type it becomes.
 		 */
 		bool MutateExplosion;
+
+		/*
+		 * Whether the genetic mutator mutates infantry of the firing house and its allies as well
+		 * as enemies. Yuri's Revenge mutates every infantryman it reaches, so this defaults to yes.
+		 */
+		bool MutateFriendly;
 		WarheadTypeClass const * MutateWarhead;
 		WarheadTypeClass const * MutateExplosionWarhead;
 		TypeList<InfantryTypeClass const *> AnimToInfantry;

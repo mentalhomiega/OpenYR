@@ -42,13 +42,36 @@ Coord Ring_Point(Coord const & center, int index)
 	return(Coord(center.X + int(std::cos(radians) * RING_RADIUS), center.Y + int(std::sin(radians) * RING_RADIUS), center.Z));
 }
 
+
+// The point the beam is drawn to: an object's target coordinate, or the centre of a cell (DiskLaserClass::Update, 0x4A7340).
+Coord Strike_Point(AbstractClass const * target)
+{
+	ObjectClass const * object = target->As_ObjectClass();
+	return(object != NULL ? object->Target_Coord() : target->Center_Coord());
+}
+
+
+// The position the range is measured to: an object's position, or the centre of a cell.
+Coord Range_Point(AbstractClass const * target)
+{
+	ObjectClass const * object = target->As_ObjectClass();
+	return(object != NULL ? object->PositionCoord : target->Center_Coord());
+}
+
+
+char const * Target_Name(AbstractClass const * target)
+{
+	ObjectClass const * object = target->As_ObjectClass();
+	return(object != NULL ? object->Class_Of()->Name() : "the ground");
+}
+
 }
 
 
 /// <summary>
 /// Starts drawing the ring for one shot at the target; the damage is done when the ring closes.
 /// </summary>
-void DiskLaserClass::Fire(TechnoClass * owner, TechnoClass * target, WeaponTypeClass * weapon, int damage)
+void DiskLaserClass::Fire(TechnoClass * owner, AbstractClass * target, WeaponTypeClass * weapon, int damage)
 {
 	if (owner == NULL || target == NULL || weapon == NULL) {
 		Stop();
@@ -66,7 +89,7 @@ void DiskLaserClass::Fire(TechnoClass * owner, TechnoClass * target, WeaponTypeC
 	int const facing = (int)(std::lround((radians - M_PI / 2) * (-65534.0 / (2.0 * M_PI))) & 0xFFFF);
 	int const ring = (((facing >> 11) + 1) >> 1) + RING_POINTS / 2;
 	StartPoint = ring & (RING_POINTS - 1);
-	DebugString("Disk laser: %s charges at %s\n", owner->TClass->Name(), target->TClass->Name());
+	DebugString("Disk laser: %s charges at %s\n", owner->TClass->Name(), Target_Name(target));
 	Step = 0;
 	Delay = 0;
 }
@@ -93,12 +116,12 @@ void DiskLaserClass::AI(void)
 
 	// The range runs between the two positions, flat while the firer is airborne (DiskLaserClass::Update, 0x4A7340).
 	Coord from = Owner->PositionCoord;
-	Coord const to = Target->PositionCoord;
+	Coord const to = Range_Point(Target);
 	if (Owner->In_Air()) {
 		from.Z = to.Z;
 	}
 	int distance = Gamemd_Distance(from, to);
-	if (Target->RTTI == RTTI_BUILDING) {
+	if (Target->What_Am_I() == RTTI_BUILDING) {
 		BuildingTypeClass const * type = ((BuildingClass *)Target)->Class;
 		distance = std::max(0, distance - (type->Width() + type->Height()) * 64);
 	}
@@ -120,9 +143,9 @@ void DiskLaserClass::AI(void)
 	int const anticlockwise = StartPoint - Step;
 
 	if (Step != 0 && ((clockwise - anticlockwise) % RING_POINTS) == 0) {
-		Coord const at = Target->Target_Coord();
+		Coord const at = Strike_Point(Target);
 		new LaserDrawClass(Ring_Point(center, clockwise), at, 0, true, inner, outer, spread, Weapon->LaserDuration, false, false, 1.0, 0.0);
-		DebugString("Disk laser: %s strikes %s for %d\n", Owner->TClass->Name(), Target->TClass->Name(), Damage);
+		DebugString("Disk laser: %s strikes %s for %d\n", Owner->TClass->Name(), Target_Name(Target), Damage);
 		Explosion_Damage(at, Damage, Owner, Weapon->WarheadPtr, true);
 		if (Weapon->Sound.Count() > 0) {
 			Sound_Effect((VocType)Weapon->Sound.Pick(Owner->SoundRandomSeed), at);
