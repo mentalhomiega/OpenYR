@@ -2315,6 +2315,12 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ProduceCashDelay);
 	crc(ProduceCashBudget);
 	crc(IsProduceCashResetOnCapture);
+	crc(ExtraPowerDrain);
+	crc(NumberImpassableRows);
+	crc(IsYuriBarracks);
+	if (SecretInfantry != NULL) crc(SecretInfantry->Fetch_ID());
+	if (SecretUnit != NULL) crc(SecretUnit->Fetch_ID());
+	if (SecretBuilding != NULL) crc(SecretBuilding->Fetch_ID());
 }
 
 
@@ -2496,6 +2502,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DockingOffsets);
 	stream.Serialize(IsGDIBarracks);
 	stream.Serialize(IsNODBarracks);
+	stream.Serialize(IsYuriBarracks);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(GateStages);
