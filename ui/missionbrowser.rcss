@@ -86,10 +86,11 @@ body.missionbrowser #content
 	padding: 1dp;
 }
 
+/* The frame is 384 by 216 with a 1dp border and 1dp padding, so its content is 380 by 212. */
 #map #preview
 {
-	width: 382dp;
-	height: 214dp;
+	width: 380dp;
+	height: 212dp;
 }
 
 #map

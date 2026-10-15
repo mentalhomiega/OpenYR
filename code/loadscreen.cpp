@@ -596,40 +596,31 @@ void LoadScreenClass::Mount_Art(void)
 
 
 /// <summary>
-/// Draws the picture MISSIONMD.INI names for a campaign mission. The 640 by 480 picture uses its side's loading palette;
-/// the 800 by 600 picture uses LS800BkgdPal=.
+/// Draws a campaign mission's loading picture. The 640 by 480 picture uses its side's loading palette; the 800 by 600
+/// picture uses the palette the mission names.
 /// </summary>
-/// <param name="scenario">The mission's map file name, which MISSIONMD.INI names as a section.</param>
-/// <param name="mission">The mission's own INI, which picks the 640 by 480 side palette, or NULL.</param>
+/// <param name="picture">The picture's SHP file name, as the mission's entry names it.</param>
+/// <param name="palette">The 800 by 600 picture's palette file name.</param>
 /// <param name="small">True for the 640 by 480 picture, false for the 800 by 600 one.</param>
+/// <param name="mission">The mission's own INI, which picks the 640 by 480 side palette, or NULL.</param>
 /// <param name="surface">The surface the picture is drawn upon.</param>
 /// <param name="at">Where the picture's top left corner goes on the surface.</param>
-/// <param name="name">Receives the picture's file name whenever the mission names one.</param>
-/// <returns>Returns with false, and nothing drawn, when MISSIONMD.INI is missing, names no picture for the mission or
-/// the picture cannot be read.</returns>
-bool LoadScreenClass::Draw_Campaign_Picture(char const * scenario, CCINIClass const * mission, bool small, Surface & surface, Point2D at, std::string & name)
+/// <returns>Returns with false, and nothing drawn, when the picture name is empty or the picture or its palette cannot be read.</returns>
+bool LoadScreenClass::Draw_Campaign_Picture(std::string const & picture, std::string const & palette, bool small, CCINIClass const * mission, Surface & surface, Point2D at)
 {
-	CCFileClass database("MISSIONMD.INI");
-	if (!database.Is_Available()) {
-		return(false);
-	}
-	CCINIClass ini;
-	ini.Load(database, false);
-
-	name = ini.Get_String(scenario, small ? "LS640BkgdName" : "LS800BkgdName");
-	if (name.empty()) {
+	if (picture.empty()) {
 		return(false);
 	}
 
-	ShapeFile const picture(name.c_str());
+	ShapeFile const shape(picture.c_str());
 	std::unique_ptr<ConvertClass> const picture_drawer = small
 		? Load_Drawer(Campaign_Is_Allied(mission) ? "LDSCRNA.PAL" : "LDSCRNS.PAL", surface)
-		: Load_Drawer(ini.Get_String(scenario, "LS800BkgdPal"), surface);
-	if (picture.Get() == NULL || picture_drawer == nullptr) {
+		: Load_Drawer(palette, surface);
+	if (shape.Get() == NULL || picture_drawer == nullptr) {
 		return(false);
 	}
 
-	Draw_Shape(surface, *picture_drawer, picture.Get(), 0, at, surface.Get_Rect(), SHAPE_WIN_REL);
+	Draw_Shape(surface, *picture_drawer, shape.Get(), 0, at, surface.Get_Rect(), SHAPE_WIN_REL);
 	return(true);
 }
 
@@ -668,7 +659,8 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 	}
 
 	// A mission with no picture returns false here, and Begin then leaves the game's own loading backdrop in place.
-	if (!Draw_Campaign_Picture(scenario, mission, small, *Backdrop, art.Top_Left(), PictureName)) {
+	PictureName = ini.Get_String(scenario, small ? "LS640BkgdName" : "LS800BkgdName");
+	if (!Draw_Campaign_Picture(PictureName, ini.Get_String(scenario, "LS800BkgdPal"), small, mission, *Backdrop, art.Top_Left())) {
 		return(false);
 	}
 

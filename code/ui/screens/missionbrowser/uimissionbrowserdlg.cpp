@@ -212,10 +212,43 @@ UIMissionBrowserState Mission_Browser_State(void)
 
 
 /// <summary>
-/// Makes the picture a campaign mission shows on its loading screen, for the browser's picture box. The picture is the
-/// one MISSIONMD.INI names for the mission, drawn at this screen's layout. A mission without one shows its side's loading
-/// backdrop, which the game picks from two at random; the browser shows the first of the two. The image is set only when
-/// a picture loads; the caller then falls back to the map's preview.
+/// Reads a mission's loading picture entry from one of the mission files. The palette is the entry's LS800BkgdPal=, or
+/// else the picture's own name with a .PAL extension, which the Yuri's Revenge entries use too.
+/// </summary>
+/// <param name="file">The mission file, MISSIONMD.INI or MISSION.INI.</param>
+/// <param name="map">The mission's map file name, which names the file's section.</param>
+/// <param name="small">True to read the 640 by 480 picture's name, false for the 800 by 600 one.</param>
+/// <param name="picture">Receives the picture's SHP file name.</param>
+/// <param name="palette">Receives the palette file name for the 800 by 600 picture.</param>
+/// <returns>Returns with false when the file is missing or the mission names no picture in it.</returns>
+bool Read_Art_Entry(char const * file, char const * map, bool small, std::string & picture, std::string & palette)
+{
+	CCFileClass database(file);
+	if (!database.Is_Available()) {
+		return(false);
+	}
+	CCINIClass ini;
+	ini.Load(database, false);
+
+	picture = ini.Get_String(map, small ? "LS640BkgdName" : "LS800BkgdName");
+	if (picture.empty()) {
+		return(false);
+	}
+
+	palette = ini.Get_String(map, "LS800BkgdPal");
+	if (palette.empty()) {
+		palette = picture.substr(0, picture.find('.')) + ".PAL";
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Makes the picture a campaign mission shows, for the browser's picture box. The picture is the one the mission's
+/// entry names: MISSIONMD.INI for Yuri's Revenge, then MISSION.INI for Red Alert 2, which the game's own loading screen
+/// does not read. It is drawn at this screen's layout. A mission with no loadable picture shows its side's loading
+/// backdrop, which the game picks from two at random; the browser shows the first of the two. The image is set only
+/// when a picture loads; the caller then falls back to the map's preview.
 /// </summary>
 /// <returns>Returns with true when a picture is in the image.</returns>
 bool Mission_Loading_Picture(CampaignClass const & campaign, char const * map, UIMapPreviewImage & image)
@@ -242,9 +275,14 @@ bool Mission_Loading_Picture(CampaignClass const & campaign, char const * map, U
 	Point2D const size = LoadScreenClass::Campaign_Picture_Size(small);
 	DSurface picture_surface(size.X, size.Y);
 	picture_surface.Fill(0);
-	std::string name;
-	if (LoadScreenClass::Draw_Campaign_Picture(map, has_scenario ? &scenario : NULL, small, picture_surface, Point2D(0, 0), name)) {
-		return(UI_Surface_Preview_Image(&picture_surface, image));
+	char const * const files[] = {"MISSIONMD.INI", "MISSION.INI"};
+	for (char const * file : files) {
+		std::string picture;
+		std::string palette;
+		if (Read_Art_Entry(file, map, small, picture, palette)
+			&& LoadScreenClass::Draw_Campaign_Picture(picture, palette, small, has_scenario ? &scenario : NULL, picture_surface, Point2D(0, 0))) {
+			return(UI_Surface_Preview_Image(&picture_surface, image));
+		}
 	}
 
 	// The backdrop the game shows for this side, at this resolution. The choice is the side's first picture, so no random number is drawn.

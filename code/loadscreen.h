@@ -54,9 +54,9 @@ class LoadScreenClass
 		// the art mounts them here, and End or the destructor releases them.
 		void Mount_Art(void);
 
-		// Draws the picture MISSIONMD.INI names for a campaign mission, with its top left at the point given. Name receives
-		// the picture's file name whenever the mission names one, even if the picture then fails to draw.
-		static bool Draw_Campaign_Picture(char const * scenario, CCINIClass const * mission, bool small, Surface & surface, Point2D at, std::string & name);
+		// Draws a campaign mission's loading picture with its top left at the point given. False, with nothing drawn, when
+		// the picture or its palette cannot be read. Palette is the 800 by 600 palette file; small picks the side palette.
+		static bool Draw_Campaign_Picture(std::string const & picture, std::string const & palette, bool small, CCINIClass const * mission, Surface & surface, Point2D at);
 
 		// The size of a campaign mission's picture, which fills the loading screen between the title bar and the strip.
 		static Point2D Campaign_Picture_Size(bool small);
