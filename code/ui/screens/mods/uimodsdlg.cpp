@@ -72,6 +72,22 @@ UIModsServiceClass & UI_Mods_Service(void)
 /// the deployment's, and the mods the command line names. When OK saves a changed list, a
 /// message says it takes effect after a restart.
 /// </summary>
+std::unique_ptr<UIModsPresenterClass> UI_Mods_New_Presenter(void)
+{
+	return(std::make_unique<UIModsPresenterClass>(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory())));
+}
+
+
+void UI_Mods_Settled(UIModsPresenterClass & presenter)
+{
+	if (presenter.Result != UI_RESULT_ACCEPTED || !presenter.Saved) {
+		return;
+	}
+
+	WWMessageBox().Process("The new mod list takes effect when you restart the game.", TXT_OK);
+}
+
+
 void UI_Mods_Dialog(void)
 {
 	UIModsPresenterClass presenter(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory()));

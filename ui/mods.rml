@@ -13,7 +13,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="mods.rcss"/>
 </head>
-<body template="dialog" data-model="mods">
+<body template="dialog" class="settings-backdrop" data-model="mods">
 	<p id="title">Mods</p>
 	<div id="mods" class="list"><div class="rows">
 		<div class="item" data-for="row : rows" data-attr-id="row.key" data-class-selected="row.id == selected" data-event-click="queue('select', row.id)"><input type="checkbox" data-attr-id="row.key + '-on'" data-attrif-checked="row.on" data-attrif-disabled="row.locked" data-event-click="queue('toggle', row.id)"/><span class="place">{{row.place}}</span><span class="name">{{row.name}}</span><span class="note">{{row.note}}</span></div>

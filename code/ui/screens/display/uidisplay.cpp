@@ -15,6 +15,7 @@
 #include "ui/uisettingpreview.h"
 #include "video.h"
 #include "colourblind.h"
+#include "hud.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -46,9 +47,14 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialColorBlindStrength(State.ColorBlindStrength),
 	InitialBrightness(State.Brightness),
 	InitialGamma(State.Gamma),
-	InitialPlayerColors(State.PlayerColors)
+	InitialPlayerColors(State.PlayerColors),
+	InitialScreenShake(State.ScreenShake)
 {
 	ShownRowIndex = State.RowCount;
+	PreviewedMode = InitialColorBlindMode;
+	PreviewedStrength = InitialColorBlindStrength;
+	PreviewedBrightness = InitialBrightness;
+	PreviewedGamma = InitialGamma;
 	Refresh_Preview();
 }
 
@@ -152,6 +158,111 @@ static bool Choice_Changed(std::vector<UIDisplayChoice> const & choices, int ind
 }
 
 
+// The index of the choice with the value given, or the fallback when no choice has it.
+static int Index_Of(std::vector<UIDisplayChoice> const & choices, int value, int fallback)
+{
+	for (int index = 0; index < (int)choices.size(); index++) {
+		if (choices[index].Value == value) {
+			return index;
+		}
+	}
+	return fallback;
+}
+
+
+// Sets the settings of the page to the values Yuri's Revenge starts from. Nothing is saved until OK.
+void UIDisplayPresenterClass::Reset_Page(void)
+{
+	if (State.Page == UI_TAB_DISPLAY) {
+		// Match resolution is the first window size, and automatic the first interface scale.
+		State.WindowSize = 0;
+		State.FrameLimit = Index_Of(State.FrameLimits, -1, State.FrameLimit);
+		State.ShowFPS = false;
+		for (int index = 0; index < (int)State.Scales.size(); index++) {
+			if (State.Scales[index].Value == 0.0f) {
+				State.Scale = index;
+			}
+		}
+		State.CursorScale = Index_Of(State.CursorScales, 0, State.CursorScale);
+		State.SystemCursor = true;
+		State.Fullscreen = true;
+		State.VSync = true;
+		Refresh_Rows();
+
+	} else if (State.Page == UI_TAB_GRAPHICS) {
+		// A frame rate of -1 is match the display, and highlights 1 is Enhanced.
+		State.Filter = Index_Of(State.Filters, VIDEO_SCALE_PIXELART, State.Filter);
+		State.IntegerScaling = false;
+		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
+		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
+		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
+		State.Highlights = 1;
+		State.PaperWhite = State.DefaultPaperWhite;
+		State.PeakBrightness = State.DefaultPeakBrightness;
+		HDRLevelsReset = true;
+		State.ModernInterface = true;
+		State.ClassicMenus = false;
+		State.BitmapSystemFont = false;
+		State.StretchMovies = false;
+		State.Brightness = 100;
+		State.Gamma = 100;
+
+		int const row = Index_Of(State.RowCounts, HUD_DEFAULT_ROWS, ShownRowIndex);
+		if (row >= 0 && row < (int)State.RowCounts.size()) {
+			ShownRowIndex = row;
+			State.RowCount = row;
+			PickedRows = State.RowCounts[row].Value;
+			UI_Setting_Preview_Show("sidebar-rows", PickedRows);
+			Refresh_Preview();
+		}
+		Show_Colour_Preview();
+
+	} else {
+		State.ColorBlindMode = Index_Of(State.ColorBlindModes, COLORBLIND_OFF, State.ColorBlindMode);
+		State.ColorBlindStrength = COLORBLIND_STRENGTH_MAX;
+		State.PlayerColors = Index_Of(State.PlayerColorChoices, 0, State.PlayerColors);
+		State.ScreenShake = true;
+		Show_Colour_Preview();
+	}
+}
+
+
+// Shows the colour values on the page, which the whole frame takes while a graphics or accessibility page is open.
+void UIDisplayPresenterClass::Show_Colour_Preview(void)
+{
+	if (State.Page == UI_TAB_DISPLAY) {
+		return;
+	}
+	// The drop-down and sliders report their values when they are first shown, which is not a change.
+	if (State.ColorBlindMode == PreviewedMode && State.ColorBlindStrength == PreviewedStrength
+		&& State.Brightness == PreviewedBrightness && State.Gamma == PreviewedGamma) {
+		return;
+	}
+	PreviewedMode = State.ColorBlindMode;
+	PreviewedStrength = State.ColorBlindStrength;
+	PreviewedBrightness = State.Brightness;
+	PreviewedGamma = State.Gamma;
+
+	int const mode = (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size())
+		? State.ColorBlindModes[State.ColorBlindMode].Value : COLORBLIND_OFF;
+	Service.Preview_Colour(mode, State.ColorBlindStrength, State.Brightness, State.Gamma);
+	PreviewShown = true;
+}
+
+
+// Puts back the colour values the page opened with, so a page left without OK changes nothing.
+void UIDisplayPresenterClass::Restore_Preview(void)
+{
+	if (!PreviewShown || PreviewRestored) {
+		return;
+	}
+	PreviewRestored = true;
+	int const mode = (InitialColorBlindMode >= 0 && InitialColorBlindMode < (int)State.ColorBlindModes.size())
+		? State.ColorBlindModes[InitialColorBlindMode].Value : COLORBLIND_OFF;
+	Service.Preview_Colour(mode, InitialColorBlindStrength, InitialBrightness, InitialGamma);
+}
+
+
 void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "select") {
@@ -184,6 +295,12 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "playercolors") {
 		State.PlayerColors = Pick_Choice(State.PlayerColorChoices, intent.Value, InitialPlayerColors);
 
+	} else if (intent.Name == "screenshake") {
+		State.ScreenShake = (intent.Value != 0);
+
+	} else if (intent.Name == "reset") {
+		Reset_Page();
+
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
 		Refresh_Rows();
@@ -214,10 +331,12 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "paperwhite") {
 		State.PaperWhite = std::clamp(intent.Value, HDR_PAPER_WHITE_MIN, HDR_PAPER_WHITE_MAX);
+		HDRLevelsReset = false;
 		State.PeakBrightness = std::max(State.PeakBrightness, State.PaperWhite);
 
 	} else if (intent.Name == "peak") {
 		State.PeakBrightness = std::clamp(intent.Value, State.PaperWhite, (int)HDR_PQ_PEAK_NITS);
+		HDRLevelsReset = false;
 
 	} else if (intent.Name == "highlights") {
 		State.Highlights = std::clamp(intent.Value, 0, 1);
@@ -269,6 +388,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		if (Choice_Changed(State.PlayerColorChoices, State.PlayerColors, InitialPlayerColors)) {
 			Service.Set_Player_Colors(State.PlayerColorChoices[State.PlayerColors].Value);
 		}
+		if (State.ScreenShake != InitialScreenShake) {
+			Service.Set_Screen_Shake(State.ScreenShake);
+		}
 		if (State.Fullscreen != InitialFullscreen) {
 			Service.Set_Fullscreen(State.Fullscreen);
 		}
@@ -293,11 +415,17 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		if (Choice_Changed(State.HDROutputs, State.HDROutput, InitialHDROutput)) {
 			Service.Set_HDR_Output(State.HDROutputs[State.HDROutput].Value);
 		}
-		if (State.PaperWhite != InitialPaperWhite) {
-			Service.Set_HDR_Paper_White(State.PaperWhite);
-		}
-		if (State.PeakBrightness != InitialPeakBrightness) {
-			Service.Set_HDR_Peak_Brightness(State.PeakBrightness);
+		if (HDRLevelsReset) {
+			// Zero is the automatic level, which the engine follows from the display.
+			Service.Set_HDR_Paper_White(0);
+			Service.Set_HDR_Peak_Brightness(0);
+		} else {
+			if (State.PaperWhite != InitialPaperWhite) {
+				Service.Set_HDR_Paper_White(State.PaperWhite);
+			}
+			if (State.PeakBrightness != InitialPeakBrightness) {
+				Service.Set_HDR_Peak_Brightness(State.PeakBrightness);
+			}
 		}
 		if (State.Highlights != InitialHighlights) {
 			Service.Set_HDR_Highlights(State.Highlights);
@@ -323,7 +451,12 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Result = UI_RESULT_ACCEPTED;
 
 	} else if (intent.Name == "cancel") {
+		Restore_Preview();
 		Result = UI_RESULT_CANCELLED;
+	}
+
+	if (intent.Name == "brightness" || intent.Name == "gamma" || intent.Name == "colorblindmode" || intent.Name == "colorblindstrength") {
+		Show_Colour_Preview();
 	}
 }
 
@@ -402,11 +535,39 @@ void Update_HDR_Tips(UIDisplayState & state)
 }
 
 
+// The page document each tab of the display settings shows.
+static char const * Page_Document(UISettingsTab page)
+{
+	switch (page) {
+		case UI_TAB_GRAPHICS:
+			return("graphics.rml");
+		case UI_TAB_ACCESSIBILITY:
+			return("accessibility.rml");
+		default:
+			return("display.rml");
+	}
+}
+
+
+// The data model each tab's document binds to. Each tab has its own, as all of them stay loaded.
+static char const * Page_Model(UISettingsTab page)
+{
+	switch (page) {
+		case UI_TAB_GRAPHICS:
+			return("graphics");
+		case UI_TAB_ACCESSIBILITY:
+			return("accessibility");
+		default:
+			return("display");
+	}
+}
+
+
 class UIDisplayViewClass : public UIRmlViewClass
 {
 	public:
-		explicit UIDisplayViewClass(UIDisplayPresenterClass & presenter) :
-			UIRmlViewClass(presenter, "display.rml", "display"),
+		UIDisplayViewClass(UIDisplayPresenterClass & presenter, UISettingsTab page) :
+			UIRmlViewClass(presenter, Page_Document(page), Page_Model(page)),
 			Data(presenter)
 		{
 		}
@@ -441,6 +602,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("highlights");
 			Model.DirtyVariable("colorblindmode");
 			Model.DirtyVariable("colorblindstrength");
+			Model.DirtyVariable("screenshake");
 			Update_Gamma_Label(Data.State);
 			Model.DirtyVariable("brightness");
 			Model.DirtyVariable("gamma");
@@ -521,6 +683,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("brightness", &state.Brightness)
 				&& model.Bind("gamma", &state.Gamma)
 				&& model.Bind("gammalabel", &state.GammaLabel)
+				&& model.Bind("screenshake", &state.ScreenShake)
 				&& model.Bind("hdractive", &state.HDRActive)
 				&& model.Bind("hdroutputtip", &state.HDROutputTip)
 				&& model.Bind("highlightstip", &state.HighlightsTip)
@@ -563,7 +726,13 @@ class UIConfirmModeViewClass : public UIRmlViewClass
 
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter)
 {
-	return(std::make_unique<UIDisplayViewClass>(presenter));
+	return(std::make_unique<UIDisplayViewClass>(presenter, presenter.State.Page));
+}
+
+
+std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter, UISettingsTab page)
+{
+	return(std::make_unique<UIDisplayViewClass>(presenter, page));
 }
 
 

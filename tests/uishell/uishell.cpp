@@ -23,6 +23,7 @@
 #include "ui/screens/gameopt/uigameopt.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "keybindings.h"
+#include "ui/uisettingshost.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mapgen/uimapgen.h"
 #include "ui/screens/missionsel/uimissionsel.h"
@@ -940,6 +941,11 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Colour_Blind(int mode, int strength) override { Calls.push_back("colour blind " + std::to_string(mode) + " " + std::to_string(strength)); }
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override { Calls.push_back("brightness gamma " + std::to_string(brightness) + " " + std::to_string(gamma)); }
 		virtual void Set_Player_Colors(int view) override { Calls.push_back("player colors " + std::to_string(view)); }
+		virtual void Set_Screen_Shake(bool on) override { Calls.push_back(on ? "shake on" : "shake off"); }
+		virtual void Preview_Colour(int mode, int strength, int brightness, int gamma) override
+		{
+			Calls.push_back("preview " + std::to_string(mode) + " " + std::to_string(strength) + " " + std::to_string(brightness) + " " + std::to_string(gamma));
+		}
 
 		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
@@ -1613,7 +1619,6 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
 		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
-		virtual void Set_Screen_Shake(bool on) override { Calls.push_back(on ? "shake on" : "shake off"); }
 		virtual void Save(void) override { Calls.push_back("save"); }
 
 		std::string Joined(void) const
@@ -1692,9 +1697,8 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "scroll", 1);
 		Drive(presenter, "cancel");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED &&
-			service.Joined() == "speed 0; scroll 1; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; difficulty 0; save",
-			"Escape keeps and saves what was set");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(),
+			"Escape leaves the game controls with nothing applied");
 	}
 
 	{
@@ -1719,10 +1723,9 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsState state;
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "debugmode", 1);
-		Drive(presenter, "screenshake", 0);
-		Check(presenter.State.DebugMode && !presenter.State.ScreenShake && service.Calls.empty(), "the debug mode and screen shake switches are held until the player accepts");
+		Check(presenter.State.DebugMode && service.Calls.empty(), "the debug mode switch is held until the player accepts");
 		Drive(presenter, "ok");
-		Check(service.Joined().find("debug mode on; shake off; save") != std::string::npos, "accepting applies the debug mode and screen shake switches");
+		Check(service.Joined().find("debug mode on; save") != std::string::npos, "accepting applies the debug mode switch");
 	}
 
 	{
@@ -2215,7 +2218,12 @@ std::vector<Rml::Element *> Visible_Buttons(Rml::ElementDocument * document)
 	Rml::ElementList all;
 	document->GetElementsByTagName(all, "button");
 	for (Rml::Element * element : all) {
-		if (element->IsVisible() && element->GetComputedValues().display() != Rml::Style::Display::None) {
+		// A button inside a hidden block, such as the settings footer on other pages, is not shown.
+		bool shown = element->IsVisible() && element->GetComputedValues().display() != Rml::Style::Display::None;
+		for (Rml::Element * step = element->GetParentNode(); shown && step != nullptr; step = step->GetParentNode()) {
+			shown = step->GetComputedValues().display() != Rml::Style::Display::None;
+		}
+		if (shown) {
 			buttons.push_back(element);
 		}
 	}
@@ -2515,7 +2523,7 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "Escape closes the sound screen without reverting anything");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Escape closes the sound screen and puts back its levels");
 
 		view->Release();
 		context.Update();
@@ -2686,7 +2694,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !service.Calls.empty() && service.Calls.back() == "save", "Escape leaves the game controls and saves what was set");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Escape leaves the game controls with nothing applied");
 
 		view->Release();
 		context.Update();
@@ -2867,6 +2875,31 @@ void Test_Sidebar_Rows_Presenter(void)
 }
 
 
+// Runs one intent on a presenter, as a control on its page would.
+static void Send_Intent(UIPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+// The graphics page: the sidebar rows in use, the HDR rows enabled and a colour-blind list for the preview.
+static UIDisplayState Graphics_Fixture(void)
+{
+	UIDisplayState state = Display_Fixture();
+	state.Page = UI_TAB_GRAPHICS;
+	state.ModernInterface = true;
+	state.HDRActive = true;
+	state.RowCounts = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
+	state.RowCount = 2;
+	state.ColorBlindModes = { { 0, "Off" }, { 1, "Protanopia" }, { 2, "Deuteranopia" }, { 3, "Tritanopia" } };
+	return(state);
+}
+
+
 void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -2912,15 +2945,6 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			Check(presenter.State.Scale == 3 && service.Calls.empty(), "choosing a scale does not apply it");
 		}
 
-		Rml::Element * stretch = document->GetElementById("stretch");
-		if (stretch != nullptr) {
-			Click(context, stretch);
-			presenter.Drain();
-			view->Sync();
-			context.Update();
-			Check(presenter.State.StretchMovies && stretch->HasAttribute("checked") && service.Calls.empty(), "the movie switch turns on and shows it without applying");
-		}
-
 		Rml::Element * cursor = document->GetElementById("system-cursor");
 		Check(cursor != nullptr, "the display screen has the system pointer switch");
 		if (cursor != nullptr) {
@@ -2931,21 +2955,22 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			Check(presenter.State.SystemCursor && cursor->HasAttribute("checked") && service.Calls.empty(), "the pointer switch turns on and shows it without applying");
 		}
 
-		Rml::Element * ok = document->GetElementById("ok");
-		Rml::Element * cancel = document->GetElementById("cancel");
-		Check(ok != nullptr && cancel != nullptr && ok->GetAbsoluteOffset(Rml::BoxArea::Border).x < cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x, "OK sits left of Cancel");
+		Rml::Element * ok = document->GetElementById("footer-ok");
+		Rml::Element * cancel = document->GetElementById("footer-cancel");
+		Rml::Element * reset = document->GetElementById("footer-reset");
+		Check(reset != nullptr && cancel != nullptr && ok != nullptr && reset->GetAbsoluteOffset(Rml::BoxArea::Border).x < cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x && cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x < ok->GetAbsoluteOffset(Rml::BoxArea::Border).x, "the footer holds Reset to defaults, then Cancel, then OK");
 
 		Rml::Element * reveal = document->GetElementById("reveal");
 		if (ok != nullptr && reveal != nullptr) {
 			float bottom = ok->GetAbsoluteOffset(Rml::BoxArea::Border).y + ok->GetBox().GetSize(Rml::BoxArea::Border).y;
 			float frame = reveal->GetAbsoluteOffset(Rml::BoxArea::Border).y + reveal->GetBox().GetSize(Rml::BoxArea::Border).y;
-			Check(bottom <= frame - 19.0f, "the buttons keep the dialog's bottom margin below the switches");
+			Check(bottom <= frame, "the footer stays inside the window");
 		}
 
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
-			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "modern interface off", "scale 20" }, "OK applies the switches and the chosen scale");
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch off", "system cursor on", "classic menus off", "modern interface off", "scale 20" }, "OK applies the switches and the chosen scale");
 			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
 		}
 
@@ -2980,10 +3005,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 
 	{
 		RecordingDisplayServiceClass service;
-		UIDisplayState state = Display_Fixture();
-		state.RowCounts = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
-		state.RowCount = 2;
-		state.ModernInterface = true;
+		UIDisplayState state = Graphics_Fixture();
 		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
@@ -3051,7 +3073,9 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 
 	{
 		RecordingDisplayServiceClass service;
-		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		UIDisplayState state = Display_Fixture();
+		state.Page = UI_TAB_GRAPHICS;
+		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 		Check(Rml(*view).Prepare(context), "the display view prepares for the sidebar rows drop-down");
@@ -3081,6 +3105,110 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(!presenter.State.ModernInterface && rows != nullptr && rows->HasAttribute("disabled") && preview != nullptr && preview->IsClassSet("disabled"), "unticking the modern interface greys them again");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.ShowFPS = true;
+		state.Fullscreen = false;
+		state.SystemCursor = false;
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for a reset");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * reset = Rml(*view).Document()->GetElementById("footer-reset");
+		if (reset != nullptr) {
+			Click(context, reset);
+			presenter.Drain();
+		}
+		Check(!presenter.State.ShowFPS && presenter.State.Fullscreen && presenter.State.SystemCursor && service.Calls.empty(), "Reset to defaults puts the display settings back and applies nothing");
+		Check(!presenter.Result.has_value(), "Reset to defaults keeps the page open");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Graphics_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+		int const graphics_problems = system.Problems;
+
+		Check(Rml(*view).Prepare(context), "the graphics view prepares against the test context");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		context.Render();
+		Check(system.Problems == graphics_problems, "the graphics screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * stretch = document->GetElementById("stretch");
+		Check(stretch != nullptr, "the graphics screen has the movie switch");
+		if (stretch != nullptr) {
+			Click(context, stretch);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.StretchMovies && stretch->HasAttribute("checked") && service.Calls.empty(), "the movie switch turns on and shows it without applying");
+		}
+
+		Send_Intent(presenter, "brightness", 150);
+		Check(presenter.State.Brightness == 150 && service.Calls.back() == "preview 0 100 150 100", "a brightness change shows on the whole frame before OK");
+		Send_Intent(presenter, "gamma", 120);
+		Check(service.Calls.back() == "preview 0 100 150 120", "a gamma change shows on the whole frame before OK");
+
+		Send_Intent(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.back() == "preview 0 100 100 100", "Cancel puts the colour back and applies nothing");
+		Check(std::find(service.Calls.begin(), service.Calls.end(), std::string("brightness gamma 150 120")) == service.Calls.end(), "Cancel does not save the brightness or gamma");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.Page = UI_TAB_ACCESSIBILITY;
+		state.ColorBlindModes = { { 0, "Off" }, { 1, "Protanopia" }, { 2, "Deuteranopia" } };
+		state.PlayerColorChoices = { { 0, "Default" }, { 1, "Colour-blind safe" } };
+		state.ScreenShake = true;
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the accessibility view prepares against the test context");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * shake = Rml(*view).Document()->GetElementById("shake");
+		Check(shake != nullptr && shake->HasAttribute("checked"), "the accessibility screen has the screen shake switch, on");
+		if (shake != nullptr) {
+			Click(context, shake);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(!presenter.State.ScreenShake && service.Calls.empty(), "the screen shake switch turns off without applying");
+
+		Send_Intent(presenter, "colorblindmode", 2);
+		Check(service.Calls.back() == "preview 2 100 100 100", "the colour-blind mode shows on the whole frame before OK");
+		Send_Intent(presenter, "colorblindstrength", 50);
+		Check(service.Calls.back() == "preview 2 50 100 100", "the colour-blind strength shows on the whole frame before OK");
+
+		Send_Intent(presenter, "reset");
+		Check(presenter.State.ColorBlindMode == 0 && presenter.State.ColorBlindStrength == 100 && presenter.State.ScreenShake && service.Calls.back() == "preview 0 100 100 100", "Reset to defaults puts the accessibility settings back and shows them");
+
+		Send_Intent(presenter, "screenshake", 0);
+		Send_Intent(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && std::find(service.Calls.begin(), service.Calls.end(), std::string("shake off")) != service.Calls.end(), "OK saves the screen shake switch");
 
 		view->Release();
 		context.Update();
@@ -3256,14 +3384,14 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		}
 
 		service.ConfirmAnswer = false;
-		Rml::Element * reset_all = document->GetElementById("reset-all");
+		Rml::Element * reset_all = document->GetElementById("footer-reset");
 		if (reset_all != nullptr) {
 			Click(context, reset_all);
 			presenter.Drain();
 			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.State.Bindings.size() == 3, "Reset all asks first and a refusal changes nothing");
 		}
 
-		Rml::Element * ok = document->GetElementById("ok");
+		Rml::Element * ok = document->GetElementById("footer-ok");
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
@@ -3339,10 +3467,9 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 	int problems = system.Problems;
 
 	{
+		// The Display page: the list, then the drop-downs and switches in reading order, then the footer.
 		RecordingDisplayServiceClass service;
-		UIDisplayState state = Display_Fixture();
-		state.ModernInterface = true;
-		UIDisplayPresenterClass presenter(service, state);
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 		Check(Rml(*view).Prepare(context), "the display view prepares for the tab order");
@@ -3352,32 +3479,6 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * modes = document->GetElementById("modes");
-		Rml::Element * scale = document->GetElementById("scale");
-		Rml::Element * stretch = document->GetElementById("stretch");
-		Rml::Element * cursor = document->GetElementById("system-cursor");
-		Rml::Element * classic = document->GetElementById("classic-menus");
-		Rml::Element * ok = document->GetElementById("ok");
-		Rml::Element * cancel = document->GetElementById("cancel");
-
-		int unsupported = render.Unsupported;
-		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == modes && modes->IsPseudoClassSet("focus-visible"), "the first tab stop is the list, and it shows the focus");
-		Check(document->IsClassSet("keys"), "driving by keyboard marks the document");
-
-		context.Render();
-		Check(render.Unsupported == unsupported, "the focus mark stays within the implemented render methods");
-
-		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == scale || (context.GetFocusElement() != nullptr && context.GetFocusElement()->GetParentNode() == scale), "the next tab stop is the interface scale");
-		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == stretch, "the movie switch follows the interface scale");
-
-		Press(context, Rml::Input::KI_SPACE);
-		presenter.Drain();
-		view->Sync();
-		context.Update();
-		Check(presenter.State.StretchMovies && stretch->HasAttribute("checked"), "a space on the switch turns it on");
-
 		auto focused = [&](char const * id) {
 			Rml::Element * element = document->GetElementById(id);
 			Rml::Element * focus = context.GetFocusElement();
@@ -3385,59 +3486,104 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		};
 
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == classic, "the menu style switch follows the movie switch");
+		Check(context.GetFocusElement() == modes && modes->IsPseudoClassSet("focus-visible"), "the first tab stop is the list, and it shows the focus");
+		Check(document->IsClassSet("keys"), "driving by keyboard marks the document");
+
+		context.Render();
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("modern-interface"), "the interface style switch follows the menu style switch");
+		Check(focused("scale"), "the next tab stop is the interface scale");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("sidebar-rows"), "the sidebar rows drop-down follows the interface style switch");
+		Check(focused("windowsize"), "the window size list follows the interface scale");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("bitmap-font"), "the pixel-perfect UI font switch follows the sidebar rows drop-down");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("windowsize"), "the window size list follows the pixel-perfect UI font switch");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("hdr"), "the HDR output drop-down follows the window size list");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("player-colors"), "the player colours drop-down follows the HDR output drop-down");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("fullscreen"), "the second column starts with the full screen switch");
+		Check(focused("fullscreen"), "the full screen switch follows the window size list");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("vsync"), "the vertical sync switch follows full screen");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("integer-scaling"), "the whole step switch follows vertical sync");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("filter"), "the scaling filter follows the whole step switch");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("framerate"), "smooth motion follows the scaling filter");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("framelimit"), "the frame rate limit follows smooth motion");
+		Check(focused("framelimit"), "the frame rate limit follows vertical sync");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("show-fps"), "the show FPS switch follows the frame rate limit");
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == cursor, "the pointer switch follows the show FPS switch");
+		Check(focused("system-cursor"), "the pointer switch follows the show FPS switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("renderer"), "the graphics interface follows the pointer size");
+		Check(focused("footer-reset"), "the footer's first stop is Reset to defaults");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("paper-white"), "the paper white slider follows the graphics interface");
+		Check(focused("footer-cancel"), "Cancel follows Reset to defaults");
 		Press(context, Rml::Input::KI_TAB);
-		Check(focused("peak-brightness"), "the peak brightness slider follows paper white");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("colorblind"), "the colour-blind mode drop-down follows the peak brightness slider");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("colorblind-strength"), "the colour-blind strength slider follows the mode");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("brightness"), "the brightness slider follows the colour-blind strength");
-		Press(context, Rml::Input::KI_TAB);
-		Check(focused("gamma"), "the gamma slider follows brightness");
-		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == ok, "OK follows the settings");
-		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == cancel, "and Cancel follows OK");
+		Check(focused("footer-ok"), "OK is the last stop");
 
 		Press(context, Rml::Input::KI_RETURN);
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Enter presses the button that holds the focus, not OK");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "Enter presses the button that holds the focus");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		// The Graphics page: picture, interface, HDR, picture level and renderer, then the footer.
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Graphics_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the graphics view prepares for the tab order");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		auto focused = [&](char const * id) {
+			Rml::Element * element = Rml(*view).Document()->GetElementById(id);
+			Rml::Element * focus = context.GetFocusElement();
+			return(focus != nullptr && (focus == element || focus->GetParentNode() == element));
+		};
+
+		char const * const order[] = {
+			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "classic-menus",
+			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"footer-reset", "footer-cancel", "footer-ok"
+		};
+		bool in_order = true;
+		for (char const * id : order) {
+			Press(context, Rml::Input::KI_TAB);
+			in_order = in_order && focused(id);
+		}
+		Check(in_order, "the graphics page is tabbed through in reading order, ending on the footer");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		// The Accessibility page: colour, then effects, then the footer.
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.Page = UI_TAB_ACCESSIBILITY;
+		state.ColorBlindModes = { { 0, "Off" }, { 1, "Protanopia" }, { 2, "Deuteranopia" } };
+		state.PlayerColorChoices = { { 0, "Default" }, { 1, "Colour-blind safe" } };
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the accessibility view prepares for the tab order");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		auto focused = [&](char const * id) {
+			Rml::Element * element = Rml(*view).Document()->GetElementById(id);
+			Rml::Element * focus = context.GetFocusElement();
+			return(focus != nullptr && (focus == element || focus->GetParentNode() == element));
+		};
+
+		char const * const order[] = {
+			"colorblind", "colorblind-strength", "player-colors", "shake", "footer-reset", "footer-cancel", "footer-ok"
+		};
+		bool in_order = true;
+		for (char const * id : order) {
+			Press(context, Rml::Input::KI_TAB);
+			in_order = in_order && focused(id);
+		}
+		Check(in_order, "the accessibility page is tabbed through in reading order, ending on the footer");
 
 		view->Release();
 		context.Update();
@@ -3453,7 +3599,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		view->Sync();
 		context.Update();
 
-		Rml::Element * ok = Rml(*view).Document()->GetElementById("ok");
+		Rml::Element * ok = Rml(*view).Document()->GetElementById("footer-ok");
 		if (ok != nullptr) {
 			ok->Focus();
 			Press(context, Rml::Input::KI_SPACE);
@@ -3475,7 +3621,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		view->Sync();
 		context.Update();
 
-		Rml::Element * ok = Rml(*view).Document()->GetElementById("ok");
+		Rml::Element * ok = Rml(*view).Document()->GetElementById("footer-ok");
 		if (ok != nullptr) {
 			ok->SetClass("disabled", true);
 			context.Update();
@@ -3867,8 +4013,8 @@ void Test_Settings_Tabs_Presenter(void)
 		Drive(presenter, "tab", -1);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab that does not exist is ignored");
 		Drive(presenter, "tab", UI_TAB_AUDIO);
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Tab_Request == UI_TAB_AUDIO, "another tab ends the page and names itself");
-		Check(service.Joined().find("edge on") != std::string::npos && service.Joined().find("save") != std::string::npos, "leaving by a tab applies the page's edits as OK does");
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "another tab names itself and leaves the page open");
+		Check(service.Calls.empty(), "a tab request applies nothing; the edits wait for OK or Cancel");
 	}
 
 	{
@@ -3887,7 +4033,7 @@ void Test_Settings_Tabs_Presenter(void)
 		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
 		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
 		Drive(presenter, "tab", UI_TAB_GAME);
-		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a page that cannot save stays open rather than lose its edits");
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_GAME, "a page that cannot save still hands its edits to the next tab");
 	}
 
 	{
@@ -3923,7 +4069,7 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 
 	Press(context, Rml::Input::KI_TAB, Rml::Input::KM_CTRL);
 	presenter.Drain();
-	Check(presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "Ctrl+Tab moves to the next tab the bar offers");
+	Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "Ctrl+Tab moves to the next tab the bar offers");
 	view->Release();
 	context.Update();
 
@@ -3936,7 +4082,7 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 
 	Press(context, Rml::Input::KI_PRIOR, Rml::Input::KM_CTRL);
 	back.Drain();
-	Check(back.Result.has_value() && back.Tab_Request == UI_TAB_KEYBOARD, "Ctrl+Page Up wraps round to the last tab");
+	Check(!back.Result.has_value() && back.Tab_Request == UI_TAB_KEYBOARD, "Ctrl+Page Up wraps round to the last tab");
 	second->Release();
 	context.Update();
 
@@ -4078,7 +4224,7 @@ void Test_Classic_Options_Screen(Rml::Context & context, CountingSystemInterface
 		Check(presenter.Game.State.ActionLines && parts.Game.Calls.empty(), "a check box changes the page's state and applies nothing");
 	}
 
-	Rml::Element * ok = document != nullptr ? document->GetElementById("ok") : nullptr;
+	Rml::Element * ok = document != nullptr ? document->GetElementById("footer-ok") : nullptr;
 	if (ok != nullptr) {
 		Click(context, ok);
 		presenter.Drain();
@@ -5922,9 +6068,14 @@ void Test_Documents(void)
 		render.Scissors.clear();
 
 		std::string model = Data_Model_Name(Read_Text(path));
+		// The colour picker's marker is bound by the lobby and skirmish presenters; the bare model needs it too.
+		static std::string marker_left = "0dp";
+		static std::string marker_top = "0dp";
 		if (!model.empty()) {
 			Rml::DataModelConstructor constructor = context->CreateDataModel(model, nullptr, true);
 			constructor.BindEventCallback("queue", [](Rml::DataModelHandle, Rml::Event &, Rml::VariantList const &) {});
+			constructor.Bind("pickmarkerleft", &marker_left);
+			constructor.Bind("pickmarkertop", &marker_top);
 		}
 
 		Rml::ElementDocument * document = context->LoadDocument(path.string());
@@ -6667,7 +6818,7 @@ void Test_Shell(void)
 				held = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
 			}
 			if (passes == 4 && score != nullptr) {
-				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
+				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged && service.Calls.size() == 1;
 				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
@@ -6677,7 +6828,7 @@ void Test_Shell(void)
 
 		Check(consumed && dragged == UISoundPresenterClass::LEVELS, "a drag to the end of the music slider reaches the document and lands on the top level");
 		Check(held, "the level a drag left is what the model holds after the pass");
-		Check(kept && service.Calls.size() == 1, "the level stays put on the next pass and previews once");
+		Check(kept, "the level stays put on the next pass and previews once");
 	}
 
 	{
@@ -6940,7 +7091,7 @@ void Test_Shell(void)
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
 			std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
-			Rml::Element * ok = document->GetElementById("ok");
+			Rml::Element * ok = document->GetElementById("footer-ok");
 			listed = rows.size() == 3 && ok != nullptr;
 			if (!listed) {
 				return(true);
@@ -7016,7 +7167,7 @@ void Test_Shell(void)
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
 			std::vector<Rml::Element *> rows = Visible_Rows(document, "commands");
-			listed = rows.size() == 4 && document->GetElementById("ok") != nullptr;
+			listed = rows.size() == 4 && document->GetElementById("footer-ok") != nullptr;
 			if (!listed) {
 				return(true);
 			}
@@ -7045,7 +7196,7 @@ void Test_Shell(void)
 			}
 			if (passes == 6) {
 				moved = Key_Of_Name(presenter.State.Bindings, "ToggleRepair") == 338 && Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) >= 0;
-				Click_Through_Hook(shell, host, document->GetElementById("ok"));
+				Click_Through_Hook(shell, host, document->GetElementById("footer-ok"));
 			}
 			return(passes > 7);
 		});
@@ -7194,6 +7345,148 @@ void Test_Shell(void)
 }
 
 
+// The tabbed Settings host: pages stay loaded, one shows at a time, and a tab request moves at once.
+class FakeTabPresenterClass : public UIPresenterClass
+{
+	public:
+		virtual void Execute(UIIntent const & intent) override
+		{
+			Calls.push_back(intent.Name);
+			if (intent.Name == "ok") {
+				Result = UI_RESULT_ACCEPTED;
+			} else if (intent.Name == "cancel") {
+				Result = UI_RESULT_CANCELLED;
+			}
+		}
+		virtual void Refresh(void) override {}
+
+		std::vector<std::string> Calls;
+};
+
+
+class FakeTabViewClass : public UIViewClass
+{
+	public:
+		FakeTabViewClass(UIPresenterClass & presenter, char const * name) :
+			Presenter_(presenter),
+			Name_(name)
+		{
+		}
+
+		virtual bool Prepare(UIShellClass & shell) override
+		{
+			(void)shell;
+			Prepared++;
+			return(true);
+		}
+		virtual void Show(bool modal) override
+		{
+			(void)modal;
+			Shown = true;
+			Shows++;
+		}
+		virtual void Hide(void) override
+		{
+			Shown = false;
+		}
+		virtual void Release(void) override {}
+		virtual void Sync(void) override {}
+		virtual bool Is_Shown(void) const override { return(Shown); }
+		virtual UIPresenterClass & Presenter(void) const override { return(Presenter_); }
+		virtual char const * Name(void) const override { return(Name_); }
+		virtual void Set_Tab(int tab, unsigned offered) override
+		{
+			LastTab = tab;
+			LastOffered = offered;
+		}
+
+		bool Shown = false;
+		int Shows = 0;
+		int Prepared = 0;
+		int LastTab = -1;
+		unsigned LastOffered = 0;
+
+	private:
+		UIPresenterClass & Presenter_;
+		char const * Name_;
+};
+
+
+static void Queue_Tab(UIPresenterClass & presenter, int tab)
+{
+	UIIntent intent;
+	intent.Name = "tab";
+	intent.Value = tab;
+	presenter.Queue(intent);
+}
+
+
+void Test_Settings_Host(void)
+{
+	FakeTabPresenterClass game;
+	FakeTabPresenterClass display;
+	FakeTabPresenterClass audio;
+	FakeTabViewClass game_view(game, "game");
+	FakeTabViewClass display_view(display, "display");
+	FakeTabViewClass graphics_view(display, "graphics");
+	FakeTabViewClass audio_view(audio, "audio");
+
+	std::vector<UISettingsPageClass> pages;
+	UISettingsPageClass page;
+	page.Tab = UI_TAB_GAME;
+	page.View = &game_view;
+	page.Presenter = &game;
+	pages.push_back(page);
+	page.Tab = UI_TAB_DISPLAY;
+	page.View = &display_view;
+	page.Presenter = &display;
+	pages.push_back(page);
+	page.Tab = UI_TAB_GRAPHICS;
+	page.View = &graphics_view;
+	page.Presenter = &display;
+	pages.push_back(page);
+	page.Tab = UI_TAB_AUDIO;
+	page.View = &audio_view;
+	page.Presenter = &audio;
+	pages.push_back(page);
+
+	unsigned const offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_GRAPHICS) | (1u << UI_TAB_AUDIO);
+	UISettingsHostPresenterClass host(pages, { &game, &display, &audio }, offered, UI_TAB_GAME);
+	UISettingsHostViewClass view(host);
+
+	view.Show(true);
+	Check(game_view.Shown && !display_view.Shown && !audio_view.Shown && game_view.LastTab == UI_TAB_GAME, "the settings screen opens on the first tab alone");
+	Check(display_view.LastTab == UI_TAB_GAME && graphics_view.LastTab == UI_TAB_GAME && audio_view.LastTab == UI_TAB_GAME, "every page's tab bar lights the tab on show");
+
+	// Several tab requests in one update: only the last one is shown, and the page on show matches it.
+	Queue_Tab(game, UI_TAB_DISPLAY);
+	Queue_Tab(game, UI_TAB_AUDIO);
+	Queue_Tab(game, UI_TAB_DISPLAY);
+	Queue_Tab(game, UI_TAB_AUDIO);
+	host.Drain();
+	Check(host.Shown_Tab() == UI_TAB_AUDIO && audio_view.Shown && !game_view.Shown && !display_view.Shown && !graphics_view.Shown, "rapid tab requests show the last tab asked for, and only that page");
+	Check(game.Calls.empty() && audio.Calls.empty(), "a tab change applies nothing");
+	Check(game_view.LastTab == UI_TAB_AUDIO && display_view.LastTab == UI_TAB_AUDIO && graphics_view.LastTab == UI_TAB_AUDIO, "a tab change lights the new tab on every page");
+
+	// A page that shares a presenter comes back with the values it held.
+	Queue_Tab(display, UI_TAB_GRAPHICS);
+	host.Drain();
+	Check(host.Shown_Tab() == UI_TAB_GRAPHICS && graphics_view.Shown && !audio_view.Shown && !display_view.Shown, "a request from a shared presenter shows its other tab");
+	Check(view.Is_Shown() && view.Presenter().Result.has_value() == false, "the screen stays open across tab changes");
+
+	// OK on one page applies every page; Cancel does the same for the others.
+	UIIntent ok;
+	ok.Name = "ok";
+	audio.Queue(ok);
+	host.Drain();
+	Check(host.Result.has_value() && *host.Result == UI_RESULT_ACCEPTED, "OK on one page closes the screen accepted");
+	Check(display.Calls == std::vector<std::string>{ "ok" } && game.Calls == std::vector<std::string>{ "ok" }, "OK applies the pages the player did not end on, once each");
+	Check(audio.Calls == std::vector<std::string>{ "ok" }, "the page that ended the screen applies once");
+
+	view.Release();
+}
+
+
 int main(void)
 {
 	Test_FreeType();
@@ -7206,6 +7499,7 @@ int main(void)
 	Test_Keyboard_Presenter();
 	Test_Mods_Presenter();
 	Test_Settings_Tabs_Presenter();
+	Test_Settings_Host();
 	Test_Classic_Options_Presenter();
 	Test_Sound_Presenter();
 	Test_Map_Generator_Presenter();

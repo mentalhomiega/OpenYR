@@ -31,5 +31,8 @@ class UIViewClass
 		virtual void Reveal_Done(void) {}
 
 		virtual UIPresenterClass & Presenter(void) const = 0;
+		// Makes the view one page of a tabbed Settings screen: the tab bar lights the tab (a UISettingsTab value)
+		// and hides the tabs not in the offered mask. Views that are not tab pages ignore it.
+		virtual void Set_Tab(int tab, unsigned offered) { (void)tab; (void)offered; }
 		virtual char const * Name(void) const = 0;
 };

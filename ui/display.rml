@@ -11,80 +11,47 @@
 <head>
 	<title>Display options</title>
 	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="settings.rcss"/>
 	<link type="text/rcss" href="display.rcss"/>
-	<link type="text/rcss" href="setting-preview.rcss"/>
 </head>
-<body template="dialog" data-model="display">
-	<p class="heading" id="title">Display Options:</p>
-	<div id="columns">
-		<div id="left">
-			<p class="heading" id="modes-label">Resolution</p>
-			<div id="modes-row"><div id="modes" class="list"><div class="rows">
+<body template="dialog" class="page-settings settings-backdrop" data-model="display">
+	<div id="page">
+		<div id="list">
+			<p class="section">Screen</p>
+			<div class="setting tall" id="modes-row" desc="The screen size the game switches to. You are asked to keep it before it stays."><span class="caption">Resolution</span><div id="modes" class="list"><div class="rows">
 				<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
-			</div></div>
-				<div id="panel-preview" class="setting-preview" data-class-disabled="!moderninterface"><p class="setting-preview-caption">{{preview.caption}}</p><div data-for="shape : preview.shapes" data-attr-class="shape.classes" data-style-left="shape.left" data-style-top="shape.top" data-style-width="shape.width" data-style-height="shape.height"></div></div></div>
-			<div class="row" id="scale-row"><span class="caption">UI scale:</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
+			</div></div></div>
+			<div class="setting" id="scale-row" desc="The size of the menus and in-game panels. Automatic picks one that fits the screen."><span class="caption">UI scale</span><select id="scale" data-value="scale" data-event-change="queue('scale', ev.value)">
 				<option data-for="entry : scales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch videos to fill the screen</label>
-			<label class="check" id="switch-classic-menus"><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/>Classic menu art</label>
-			<label class="check" id="switch-modern-interface"><input type="checkbox" id="modern-interface" data-attrif-checked="moderninterface" data-event-click="queue('moderninterface', moderninterface ? 0 : 1)"/>Modern in-game interface</label>
-			<div class="row" id="rows-row" data-class-disabled="!moderninterface"><span class="caption">Sidebar rows:</span><select id="sidebar-rows" data-value="rowcount" data-attrif-disabled="!moderninterface" data-event-change="queue('sidebarrows', ev.value)">
-				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-			<label class="check" id="switch-bitmap-font"><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/>Pixel-perfect UI font</label>
-			<div class="row" id="windowsize-row"><span class="caption">Window size:</span><select id="windowsize" data-value="windowsize" data-event-change="queue('windowsize', ev.value)">
+			<div class="setting" id="windowsize-row" desc="The size of the game window when it is not fullscreen. Match resolution uses the screen size."><span class="caption">Window size</span><select id="windowsize" data-value="windowsize" data-event-change="queue('windowsize', ev.value)">
 				<option data-for="entry : windowsizes" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<div class="row" id="hdr-row" data-attr-tip="hdroutputtip"><span class="caption">HDR:</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
-				<option data-for="entry : hdroutputs" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-			<div class="row" id="player-colors-row"><span class="caption">Player colors:</span><select id="player-colors" data-value="playercolors" data-event-change="queue('playercolors', ev.value)">
-				<option data-for="entry : playercolorchoices" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-		</div>
-		<div id="right">
-			<p class="heading" id="window-label">Window</p>
-			<label class="check" id="switch-fullscreen"><input type="checkbox" id="fullscreen" data-attrif-checked="fullscreen" data-event-click="queue('fullscreen', fullscreen ? 0 : 1)"/>Fullscreen (borderless)</label>
-			<label class="check" id="switch-vsync"><input type="checkbox" id="vsync" data-attrif-checked="vsync" data-event-click="queue('vsync', vsync ? 0 : 1)"/>V-Sync</label>
-			<label class="check" id="switch-integer-scaling"><input type="checkbox" id="integer-scaling" data-attrif-checked="integerscaling" data-event-click="queue('integerscaling', integerscaling ? 0 : 1)"/>Integer scaling</label>
-			<div class="row" id="filter-row"><span class="caption">Scaling filter:</span><select id="filter" data-value="filter" data-event-change="queue('filter', ev.value)">
-				<option data-for="entry : filters" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-			<div class="row"><span class="caption">Motion smoothing:</span><select id="framerate" data-value="framerate" data-event-change="queue('framerate', ev.value)">
-				<option data-for="entry : framerates" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-			<div class="row" id="framelimit-row"><span class="caption">Frame rate limit:</span><select id="framelimit" data-value="framelimit" data-event-change="queue('framelimit', ev.value)">
+
+			<p class="section">Window</p>
+			<label class="check setting" id="switch-fullscreen" desc="Fills the screen with a borderless window. Off runs the game in a window."><span class="caption">Fullscreen</span><input type="checkbox" id="fullscreen" data-attrif-checked="fullscreen" data-event-click="queue('fullscreen', fullscreen ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-vsync" desc="Waits for the screen to refresh before it draws a frame, which stops tearing. It can add a little delay."><span class="caption">V-Sync</span><input type="checkbox" id="vsync" data-attrif-checked="vsync" data-event-click="queue('vsync', vsync ? 0 : 1)"/></label>
+			<div class="setting" id="framelimit-row" desc="The most frames a second the game draws. Off leaves the rate uncapped."><span class="caption">Frame rate limit</span><select id="framelimit" data-value="framelimit" data-event-change="queue('framelimit', ev.value)">
 				<option data-for="entry : framelimits" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<label class="check" id="switch-show-fps"><input type="checkbox" id="show-fps" data-attrif-checked="showfps" data-event-click="queue('showfps', showfps ? 0 : 1)"/>Show FPS</label>
-			<div class="row" id="highlights-row" data-attr-tip="highlightstip" data-class-disabled="!hdractive"><span class="caption">Highlights:</span><select id="highlights" data-value="highlights" data-attrif-disabled="!hdractive" data-event-change="queue('highlights', ev.value)">
-				<option value="0">Classic</option>
-				<option value="1">Enhanced</option>
-			</select></div>
-			<p class="heading" id="pointer-label">Mouse Pointer</p>
-			<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the Windows pointer</label>
-			<div class="row"><span class="caption">Cursor size:</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">
+			<label class="check setting" id="switch-show-fps" desc="Shows the frames drawn each second in the corner of the screen."><span class="caption">Show FPS</span><input type="checkbox" id="show-fps" data-attrif-checked="showfps" data-event-click="queue('showfps', showfps ? 0 : 1)"/></label>
+
+			<p class="section">Mouse pointer</p>
+			<label class="check setting" id="switch-system-cursor" desc="Uses the pointer Windows draws, instead of the one the game draws."><span class="caption">Use the Windows pointer</span><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/></label>
+			<div class="setting" id="cursorscale-row" desc="The size of the pointer the game draws."><span class="caption">Cursor size</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">
 				<option data-for="entry : cursorscales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
-			<p class="heading" id="renderer-label">Renderer</p>
-			<div class="row"><span class="caption">Graphics API:</span><select id="renderer" data-value="renderer" data-event-change="queue('renderer', ev.value)">
-				<option data-for="entry : renderers" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-			<div class="row slider-row" id="paper-row"><span class="caption">Paper white</span><input type="range" id="paper-white" min="80" max="480" step="10" data-attr-value="paperwhite" data-event-change="queue('paperwhite', ev.value)"/><span class="value" id="paper-value">{{paperwhite}} nits</span></div>
-			<div class="row slider-row" id="peak-row"><span class="caption">Peak brightness</span><input type="range" id="peak-brightness" min="80" max="10000" step="10" data-attr-value="peakbrightness" data-event-change="queue('peak', ev.value)"/><span class="value" id="peak-value">{{peakbrightness}} nits</span></div>
-			<p class="heading" id="colour-label">Colour</p>
-			<div class="row" id="colorblind-row"><span class="caption">Colour-blind mode:</span><select id="colorblind" data-value="colorblindmode" data-event-change="queue('colorblindmode', ev.value)">
-				<option data-for="entry : colorblindmodes" data-attr-value="it_index">{{entry.label}}</option>
-			</select></div>
-			<div class="row slider-row" id="colorblind-strength-row"><span class="caption">Strength</span><input type="range" id="colorblind-strength" min="0" max="100" step="5" data-attr-value="colorblindstrength" data-event-change="queue('colorblindstrength', ev.value)"/><span class="value" id="colorblind-strength-value">{{colorblindstrength}}%</span></div>
-			<div class="row slider-row" id="brightness-row"><span class="caption">Brightness</span><input type="range" id="brightness" min="50" max="200" step="5" data-attr-value="brightness" data-event-change="queue('brightness', ev.value)"/><span class="value" id="brightness-value">{{brightness}}%</span></div>
-			<div class="row slider-row" id="gamma-row"><span class="caption">Gamma</span><input type="range" id="gamma" min="50" max="200" step="5" data-attr-value="gamma" data-event-change="queue('gamma', ev.value)"/><span class="value" id="gamma-value">{{gammalabel}}</span></div>
+		</div>
+		<div id="side">
+			<p id="side-title">Description</p>
+			<p id="description">Point at a setting or select it to read what it does.</p>
 		</div>
 	</div>
-	<div id="buttons">
-		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
-		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	<div id="footer">
+		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
+		<span id="footer-spacer"></span>
+		<button id="footer-cancel" data-event-click="queue('cancel')">Back</button>
+		<button id="footer-ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
 	</div>
 </body>
 </rml>

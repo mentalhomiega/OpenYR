@@ -13,6 +13,8 @@
 #include "bgfxbackend.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hdrcolour.h"
+#include "hdrdisplay.h"
 #include "hud.h"
 #include "misc.h"
 #include "options.h"
@@ -194,6 +196,21 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.ColorBlindMode = mode;
 			Options.ColorBlindStrength = strength;
 			Video_Apply_Colour_Settings();
+		}
+
+		virtual void Preview_Colour(int mode, int strength, int brightness, int gamma) override
+		{
+			// The pending values go on the frame now; the page puts the saved ones back when it is left without OK.
+			Options.ColorBlindMode = mode;
+			Options.ColorBlindStrength = strength;
+			Options.Brightness = brightness;
+			Options.Gamma = gamma / 100.0f;
+			Video_Apply_Colour_Settings();
+		}
+
+		virtual void Set_Screen_Shake(bool on) override
+		{
+			Options.ScreenShake = on;
 		}
 
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override
@@ -488,6 +505,10 @@ void UI_Display_State(UIDisplayState & state)
 	}, Options.HDROutput, "%d");
 	state.PaperWhite = Video_HDR_Paper_White();
 	state.PeakBrightness = Video_HDR_Peak();
+	// The levels automatic mode resolves to, which Reset to defaults puts back.
+	state.DefaultPaperWhite = HDR_Resolve_Paper_White(0, HDR_Current_Display().SDRWhiteKnown, HDR_Current_Display().SDRWhiteNits);
+	state.DefaultPeakBrightness = HDR_Resolve_Peak(0, HDR_Current_Display().PeakNits, state.DefaultPaperWhite);
+	state.ScreenShake = Options.ScreenShake;
 
 	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
 	// the frame allows when the saved count is more.
@@ -561,14 +582,39 @@ void UI_Display_State(UIDisplayState & state)
 }
 
 
-std::optional<UIDisplayMode> UI_Display_Dialog(void)
+std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void)
 {
 	UIDisplayState state;
 	UI_Display_State(state);
 	Register_Setting_Previews();
+	return(std::make_unique<UIDisplayPresenterClass>(UI_Display_Service(), state));
+}
+
+
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+{
+	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		presenter.Restore_Preview();
+	}
+	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
+		UIDisplayMode current;
+		current.Width = Options.ScreenWidth;
+		current.Height = Options.ScreenHeight;
+		return(current);
+	}
+	return(presenter.Picked);
+}
+
+
+std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
+{
+	UIDisplayState state;
+	UI_Display_State(state);
+	state.Page = page;
+	Register_Setting_Previews();
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_DISPLAY);
+	UI_Settings_Join(presenter, page);
 	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
@@ -576,6 +622,7 @@ std::optional<UIDisplayMode> UI_Display_Dialog(void)
 	}
 	UI_Settings_Leave(presenter);
 	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		presenter.Restore_Preview();
 		UI_Setting_Preview_Revert();
 	}
 

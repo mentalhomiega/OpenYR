@@ -9,6 +9,7 @@ opents_add_test(UIShell
     SOURCES uishell.cpp uicolorstub.cpp uidevstub.cpp uiscriptstub.cpp uitexturestub.cpp
     ENGINE
         ui/uiscreen.cpp
+        ui/uisettingshost.cpp
         ui/uiinput.cpp
         ui/uishell.cpp
         ui/uireveal.cpp

@@ -71,6 +71,11 @@ class UIDisplayServiceClass
 		virtual void Set_Colour_Blind(int mode, int strength) = 0;
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) = 0;
 		virtual void Set_Player_Colors(int view) = 0;
+		virtual void Set_Screen_Shake(bool on) = 0;
+
+		// Shows the colour adjustment on the frame now, without saving it. Cancel puts the saved values back
+		// through the same call.
+		virtual void Preview_Colour(int mode, int strength, int brightness, int gamma) = 0;
 
 		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
 		// scale given (zero is automatic).
@@ -83,6 +88,8 @@ class UIDisplayServiceClass
 
 struct UIDisplayState
 {
+	// The tab this page stands for. The display, graphics and accessibility tabs share one presenter.
+	UISettingsTab Page = UI_TAB_DISPLAY;
 	std::vector<UIDisplayMode> Modes;
 	int Selected = -1;
 	bool StretchMovies = false;
@@ -138,6 +145,11 @@ struct UIDisplayState
 	int ScreenWidth = 0;
 	int ScreenHeight = 0;
 	UISettingPreviewScreen Preview;
+	// Whether the screen-shake effect is on.
+	bool ScreenShake = true;
+	// The automatic paper white and peak brightness, which Reset to defaults puts back, in nits.
+	int DefaultPaperWhite = 0;
+	int DefaultPeakBrightness = 0;
 };
 
 
@@ -154,7 +166,14 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		bool PreviewChanged = false;
 		bool RowCountsChanged = false;
 
+		// Puts back the colour values the page found, when the page is left without OK.
+		void Restore_Preview(void);
+
 	private:
+		// Sets the page's settings to their defaults, as its Reset to defaults button does.
+		void Reset_Page(void);
+		// Shows the colour values now on the frame, on the graphics and accessibility pages.
+		void Show_Colour_Preview(void);
 		// The row choices follow the frame that the picked resolution and interface scale give.
 		void Refresh_Rows(void);
 		void Refresh_Preview(void);
@@ -188,6 +207,17 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialBrightness;
 		int InitialGamma;
 		int InitialPlayerColors;
+		bool InitialScreenShake;
+		// Whether a colour preview has been shown, and whether the page has put its colour back.
+		bool PreviewShown = false;
+		bool PreviewRestored = false;
+		// The colour values last sent to the frame, as the page's indices and values, so an unchanged value is not sent again.
+		int PreviewedMode = 0;
+		int PreviewedStrength = 0;
+		int PreviewedBrightness = 0;
+		int PreviewedGamma = 0;
+		// Set by Reset to defaults on the HDR levels, so OK writes them back to automatic.
+		bool HDRLevelsReset = false;
 };
 
 
@@ -213,6 +243,12 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 
 
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
+// The view of one tab of the display settings. The tabs share the presenter; each keeps its own document.
+std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter, UISettingsTab page);
+// The presenter the display, graphics and accessibility tabs share, with the settings as they stand now.
+std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void);
+// What the display tabs settle to when they close: the mode to try, if any, as UI_Display_Dialog returns it.
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
 UIDisplayServiceClass & UI_Display_Service(void);
@@ -220,6 +256,6 @@ void UI_Display_State(UIDisplayState & state);
 
 // Returns the mode to switch to when the player changed the resolution or the interface scale
 // (the current resolution, in the latter case), or nothing when the display need not be reset.
-std::optional<UIDisplayMode> UI_Display_Dialog(void);
+std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page);
 
 bool UI_Confirm_Mode_Dialog(void);
