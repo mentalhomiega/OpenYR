@@ -9,6 +9,6 @@ when_omitted:
 
 Raising the value reduces the damage the object takes: `1.5` leaves two thirds of it, and the default `1` leaves it unchanged. Only an object whose rank grants the `STRONGER` ability through [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) is affected.
 
-The reduction applies after the house's armor multiplier and any armor crate bonus, and before the warhead's [`Verses`](/keys/verses/) and distance falloff. At this stage a hit is never reduced below one point, but the warhead can still lower it afterward.
+The reduction applies after the owning country's armor multiplier and any armor crate bonus, and before the warhead's [`Verses`](/keys/verses/) and distance falloff. At this stage a hit is never reduced below one point, but the warhead can still lower it afterward.
 
 Forced damage and healing skip the reduction.
