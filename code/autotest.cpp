@@ -3285,10 +3285,35 @@ void Run(StepType const & step)
 			TechnoClass const * techno = Technos[index];
 			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
 			bool listed = false;
+			Point2D window(-1, -1);
 			for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
-				listed = listed || entry.Object == static_cast<ObjectClass const *>(techno);
+				if (!listed && entry.Object == static_cast<ObjectClass const *>(techno)) {
+					listed = true;
+					window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(entry.Position - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+				}
 			}
-			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed);
+			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d window %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed, window.X, window.Y);
+		}
+	} else if (step.Command == "cellpixel") {
+		// cellpixel x y: the window pixel of the centre of that cell under the current view, for windowclick.
+		Coord const centre = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();
+		Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
+		Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+		DebugString("AUTOTEST   cellpixel %d,%d at window %d,%d\n", std::atoi(step.Argument.c_str()), step.X, window.X, window.Y);
+	} else if (step.Command == "pickat") {
+		// pickat x y: the object a click at that window pixel would pick, and the cell under it. Selection is left alone.
+		Point2D const view = Screen_To_View_Offset(Point2D(std::atoi(step.Argument.c_str()), step.X) - ScreenTacticalRect.Top_Left());
+		ObjectClass * object = TacticalMap->Get_Selectable_Object(view);
+		Cell const cell = TacticalMap->Pixel_To_Cell(view + TacticalRect.Top_Left());
+		DebugString("AUTOTEST   pickat %d,%d picks %s cell %d,%d\n", std::atoi(step.Argument.c_str()), step.X,
+			object != NULL ? object->Class_Of()->Name() : "-", cell.X, cell.Y);
+	} else if (step.Command == "rallyof") {
+		// rallyof <TypeID>: the rally point (ArchiveTarget) of each of the player's structures of that type.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (building->House != PlayerPtr || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const rally = building->ArchiveTarget != NULL ? building->ArchiveTarget->Center_Coord().As_Cell() : Cell(-1, -1);
+			DebugString("AUTOTEST   rallyof %s cell %d,%d rally %d,%d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y, rally.X, rally.Y);
 		}
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.

@@ -1,0 +1,28 @@
+; Kirov hovering over the player's own Soviet War Factory (NAWEAP, cell 60,20; Kirov at cell 61,21).
+; Run from the outer checkout: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/kirov-over-factory.txt -Country 8 -Width 640 -Height 480 -Seconds 90 -Filter "AUTOTEST|Exception"
+; Click run: the Kirov is clicked at its drawn anchor (window 320,146), then at the factory's drawn body (window 320,200),
+; then a move click goes to a far ground cell (cell 68,26 at window 380,420). The selected, where and rallyof lines
+; show each selection and whether the far click set the factory's rally point. The anchor is taken at 648 leptons AGL,
+; before the Kirov settles at 750 (see kirov-steady-pick.txt for the settled pick grid).
+30 command CenterBase
+35 reveal
+40 own NAWEAP 60 20
+41 own ZEP 61 21
+50 view 61 21
+150 airborne ZEP
+151 airborne NAWEAP
+152 pickable ZEP
+153 windowshot kirov-over-factory-before
+154 windowclick 320 146
+155 selected
+156 windowclick 320 200
+157 selected
+158 where ZEP
+159 where NAWEAP
+160 windowclick 380 420
+161 selected
+162 where ZEP
+163 where NAWEAP
+164 rallyof NAWEAP
+165 windowshot kirov-over-factory-after
+200 quit
