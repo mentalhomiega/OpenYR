@@ -33,6 +33,7 @@ enum EmissiveKind
 	EMISSIVE_ANIM_TIBERIUM,			// Anim with IsAnimatedTiberium=yes.
 	EMISSIVE_LASER,					// Beam drawn for a weapon with IsLaser=yes.
 	EMISSIVE_ELECTRIC_BOLT,			// Arc drawn for a weapon with IsElectricBolt=yes.
+	EMISSIVE_ANIM_LIGHT_POST,		// Anim named NAPOST_A, NAPOST_AD or NAPOST_B, the glow of a light post.
 	EMISSIVE_VOXEL_SPECULAR,		// Voxel specular highlight at its brightest row (31).
 	EMISSIVE_KIND_COUNT
 };
@@ -56,6 +57,9 @@ unsigned char Emissive_Anim_Default(bool translucent, bool self_lit, int translu
 // Reads an Emissive= value: yes is 255, no is 0, and a number is clamped to 0-255. Anything
 // else gives the fallback.
 unsigned char Emissive_Parse_Strength(char const * text, unsigned char fallback);
+
+// The strength for an anim by its name, for the anims that flags cannot identify. Zero is not emissive.
+unsigned char Emissive_Anim_Name_Default(char const * name);
 
 // Voxel highlight strength for a shade row. Rows 16 and below are not highlights; row 31 gives
 // the table strength.

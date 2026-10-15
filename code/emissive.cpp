@@ -25,6 +25,7 @@ EmissiveDefault const EmissiveDefaults[EMISSIVE_KIND_COUNT] = {
 	{"AnimTiberium",		96,		"Anims with IsAnimatedTiberium=yes."},
 	{"Laser",				220,	"Beams of weapons with IsLaser=yes, including Prism beams."},
 	{"ElectricBolt",		230,	"Arcs of weapons with IsElectricBolt=yes."},
+	{"AnimLightPost",		160,	"Anims named NAPOST_A, NAPOST_AD and NAPOST_B, the glow of light posts."},
 	{"VoxelSpecular",		128,	"Voxel specular highlight at row 31; lower rows scale down to zero at row 16."},
 };
 
@@ -105,6 +106,18 @@ unsigned char Emissive_Parse_Strength(char const * text, unsigned char fallback)
 		return(fallback);
 	}
 	return((unsigned char)std::clamp(value, 0L, 255L));
+}
+
+
+unsigned char Emissive_Anim_Name_Default(char const * name)
+{
+	if (name == NULL) {
+		return(0);
+	}
+	if (Equals_Ignore_Case(name, "NAPOST_A") || Equals_Ignore_Case(name, "NAPOST_AD") || Equals_Ignore_Case(name, "NAPOST_B")) {
+		return(EmissiveDefaults[EMISSIVE_ANIM_LIGHT_POST].Strength);
+	}
+	return(0);
 }
 
 

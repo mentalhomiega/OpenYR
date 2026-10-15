@@ -42,7 +42,7 @@ bool Near(float a, float b)
 
 void Test_Table(void)
 {
-	Check(EMISSIVE_KIND_COUNT == 7, "the default table has one row per kind");
+	Check(EMISSIVE_KIND_COUNT == 8, "the default table has one row per kind");
 	Check(std::strcmp(EmissiveDefaults[EMISSIVE_LASER].Name, "Laser") == 0, "the laser row is named Laser");
 	Check(std::strcmp(EmissiveDefaults[EMISSIVE_ELECTRIC_BOLT].Name, "ElectricBolt") == 0, "the bolt row is named ElectricBolt");
 	bool named = true;
@@ -51,6 +51,9 @@ void Test_Table(void)
 	}
 	Check(named, "every row has a name and a description");
 	Check(EmissiveDefaults[EMISSIVE_LASER].Strength == 220, "the laser default is 220");
+	Check(Emissive_Anim_Name_Default("NAPOST_A") == EmissiveDefaults[EMISSIVE_ANIM_LIGHT_POST].Strength, "the light post lamp glow is named");
+	Check(Emissive_Anim_Name_Default("napost_b") == EmissiveDefaults[EMISSIVE_ANIM_LIGHT_POST].Strength, "the light post names match without case");
+	Check(Emissive_Anim_Name_Default("NAPOST") == 0 && Emissive_Anim_Name_Default(NULL) == 0, "other names, and no name, are not emissive by name");
 }
 
 
