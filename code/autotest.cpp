@@ -49,10 +49,14 @@
 **							changes, and its destruction with the saboteur's experience and the player's money and points
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
-**	key <Key>			presses and releases that key on the keyboard queue, skipping the interface; the key
-**							is a letter or digit, or a virtual-key code in decimal
-**	winkey <Key>			presses and releases that key through the game window, so the interface sees it first as it does
+**	key <Key> [ctrl|shift|alt]	presses and releases that key on the keyboard queue, skipping the interface; the key
+**							is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or
+**							digit, so Tab is written 09); the modifier words hold that key with the modifier
+**	winkey <Key> [ctrl|shift|alt]	presses and releases that key through the game window, so the interface sees it first as it does
 **							a player's key; a one-character name is read as a letter or digit, so Backspace is written 08
+**	binding <Key> [Double|Hold|Held]	writes the command the key's binding of that trigger runs, with the modifier words
+**	scheme <Classic|Modern>	replaces the bindings with that scheme's defaults, as the keyboard screen does when the scheme changes
+**	camera					writes the tactical position the view is centred on, in leptons
 **	wintype <text>			types the text through the game window, one character at a time, each as a press, its text event and a release
 **	alliance <house>		queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame
 **	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
