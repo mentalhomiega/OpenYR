@@ -11,21 +11,21 @@
 #reveal
 {
 	width: 438dp;
-	height: 286dp;
+	height: 315dp;
 	top: 50%;
-	margin-top: -143dp;
+	margin-top: -157.5dp;
 }
 
 .difficulty #reveal
 {
-	height: 336dp;
-	margin-top: -168dp;
+	height: 365dp;
+	margin-top: -182.5dp;
 }
 
 .frontend #reveal
 {
-	height: 292dp;
-	margin-top: -146dp;
+	height: 318dp;
+	margin-top: -159dp;
 }
 
 #content

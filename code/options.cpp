@@ -213,6 +213,7 @@ OptionsClass::OptionsClass(void) :
 	IsClassicMenus(false),
 	ToolTips(true),
 	AltToRally(false),
+	AircraftBodyPick(true),
 	SimulateWhileUnfocused(false),
 	TextBackgroundColor(12),
 	AutoSaveInterval(10800),
@@ -629,6 +630,9 @@ void OptionsClass::Load_Settings(void)
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
 	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
 
+	AircraftBodyPick = ConfigINI.Get_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
+	DebugString("AircraftBodyPick is %s\n", AircraftBodyPick == true ? "ON" : "OFF");
+
 	SimulateWhileUnfocused = ConfigINI.Get_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
 	DebugString("SimulateWhileUnfocused is %s\n", SimulateWhileUnfocused == true ? "ON" : "OFF");
 
@@ -805,6 +809,7 @@ void OptionsClass::Save_Settings (void)
 		: PlayerColorView == PLAYER_VIEW_RELATIONSHIP ? "Relationship" : "Default");
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
+	ConfigINI.Put_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
 	ConfigINI.Put_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	ConfigINI.Put_Int("Options", "AutoSaveInterval", AutoSaveInterval);

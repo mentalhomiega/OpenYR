@@ -3185,10 +3185,29 @@ bool Tactical::Add_To_Selectables(ObjectClass * object, Point2D point)
 		return(false);
 	}
 	if (point.X >= -32 && point.X <= TacticalRect.Width + 32 && point.Y >= -32 && point.Y <= TacticalRect.Height + 32) {
-		SelectableObjects.push_back({object, point + Point2D(TacPixelX, TacPixelY)});
+		SelectableObjects.push_back({object, point + Point2D(TacPixelX, TacPixelY), Rect(0, 0, 0, 0)});
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Records the screen area an object's body was drawn over, for the most recently added entry of that object.
+/// The rectangle is relative to the tactical view, as the body draw reports it.
+/// </summary>
+/// <param name="object">The object whose body was drawn.</param>
+/// <param name="rect">The area the body covered, relative to the tactical view.</param>
+void Tactical::Note_Selectable_Body(ObjectClass const * object, Rect const & rect)
+{
+	for (int index = (int)SelectableObjects.size() - 1; index >= 0; index--) {
+		Selectable & sel = SelectableObjects[index];
+		if (sel.Object == object) {
+			Rect const area(rect.X + TacPixelX, rect.Y + TacPixelY, rect.Width, rect.Height);
+			sel.Body = (sel.Body.Width > 0 && sel.Body.Height > 0) ? Union(sel.Body, area) : area;
+			return;
+		}
+	}
 }
 
 
@@ -3365,6 +3384,25 @@ void Tactical::Noop(int)
 
 
 /// <summary>
+/// Tells whether the click search may pick a clickable entry, as Get_Selectable_Object checks it.
+/// An active object that is not in limbo and is not cloaked from the player may be picked; a vein
+/// hole may be picked as terrain. Anything else may not.
+/// </summary>
+static bool Selectable_Is_Pickable(ObjectClass * obj)
+{
+	TechnoClass const * tech = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)obj);
+	if (tech != NULL) {
+		return(obj->IsActive && !tech->IsInLimbo && (tech->IsOwnedByPlayer || tech->Cloak != CLOAKED || tech->Is_Sensed_By_Player()));
+	}
+	if (obj->Class_Of() != NULL && obj->Class_Of()->RTTI == RTTI_TERRAINTYPE) {
+		TerrainTypeClass * type = (TerrainTypeClass *)obj->Class_Of();
+		return(type->IsVeinhole);
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Fetches the object that the player has clicked on.
 /// This routine picks the closest eligible object to the pixel specified. Objects in limbo
 /// are ignored, as is any cloaked object the player has no business seeing. When nothing
@@ -3382,39 +3420,32 @@ ObjectClass * Tactical::Get_Selectable_Object(Point2D const & point)
 	pixel.X = point.X + TacPixelX;
 	pixel.Y = point.Y + TacPixelY;
 
+	/*
+	 * With the aircraft body pick on, an aircraft whose drawn body covers the click is picked
+	 * ahead of anything beneath it. The body drawn last is on top, so it is taken first.
+	 */
+	if (Options.AircraftBodyPick) {
+		for (int index = (int)SelectableObjects.size() - 1; index >= 0; index--) {
+			Selectable const & sel = SelectableObjects[index];
+			if (sel.Object != NULL && sel.Body.Width > 0 && sel.Body.Height > 0
+				&& pixel.X >= sel.Body.X && pixel.X < sel.Body.X + sel.Body.Width
+				&& pixel.Y >= sel.Body.Y && pixel.Y < sel.Body.Y + sel.Body.Height
+				&& Selectable_Is_Pickable(sel.Object)) {
+				return(sel.Object);
+			}
+		}
+	}
+
 	for (int index = 0; index < (int)SelectableObjects.size(); index++) {
 		Selectable & sel = SelectableObjects[index];
 		ObjectClass * obj = sel.Object;
 
-		if (obj != NULL) {
-
-			TechnoClass const * tech = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)obj);
-			bool pass = false;
-
-			if (tech != NULL) {
-				if (obj->IsActive && !tech->IsInLimbo) {
-					if (tech->IsOwnedByPlayer || tech->Cloak != CLOAKED || tech->Is_Sensed_By_Player()) {
-						pass = true;
-					}
-				}
-			}
-
-			if (tech == NULL) {
-				if (obj->Class_Of() != NULL && obj->Class_Of()->RTTI == RTTI_TERRAINTYPE) {
-					TerrainTypeClass * type = (TerrainTypeClass *)obj->Class_Of();
-					if (type->IsVeinhole) {
-						pass = true;
-					}
-				}
-			}
-
-			if (pass) {
-				Point2D pos = sel.Position - pixel;
-				unsigned int dist = int(double(pos.X * pos.X) + double(pos.Y * pos.Y) * 0.5);
-				if (dist < bestdist && dist < 200) {
-					bestdist = dist;
-					best = obj;
-				}
+		if (obj != NULL && Selectable_Is_Pickable(obj)) {
+			Point2D pos = sel.Position - pixel;
+			unsigned int dist = int(double(pos.X * pos.X) + double(pos.Y * pos.Y) * 0.5);
+			if (dist < bestdist && dist < 200) {
+				bestdist = dist;
+				best = obj;
 			}
 		}
 	}
