@@ -20,7 +20,37 @@ Your job:
 
 ## Open jobs
 
-Build 08 for play-testers was made from `1cb8bf7`. Since then over 100 commits on `modern` have ported gamemd behaviour found by local agents: AI teams and triggers, unit abilities, veterancy, crates, superweapons, buildings and the ore economy. They were tested in the real game but not reviewed line by line, so the first four jobs review them.
+Jobs A to E target Beta 23 (`d375ab28`) and are the most useful now; take them first. Jobs 1 to 10 are older and still open.
+
+### A. Review: the Beta 23 changes
+
+```text
+Review the commits in `33ea7c86..d375ab28` on `origin/modern` (Beta 23). They change four areas. (1) The map reader accepts a terrain pack with no end marker: `code/cellrecords.h` and `MapClass::Read_Binary_4/5`. (2) A `-SPAWN` game whose scenario fails to load now exits: `code/init.cpp` `Select_Game`. (3) Structure turret recoil and its keys: `code/building.cpp`, `code/techno.cpp`, `BuildingRecoilState`. (4) The voxel specular highlight and the `VoxelSpecularStrength`/`VoxelShadeScale`/`VoxelSpecularFromView` keys: `code/techno.cpp`, `voxlib.cpp`, `_voxel.cpp`. Also review the new launcher and setup in `tools/launcher` and `tools/setup`, but only for correctness, because job B covers security. For each real bug you find (wrong behaviour, a missed case, undefined behaviour, a save or sync mistake), fix it with a unit test if one fits, one commit per fix. Branch: `cloud/review-beta23-YYYY-MM-DD`.
+```
+
+### B. Security review: setup program and launcher
+
+```text
+Testers run `tools/setup` (OpenYR-Setup.exe) and `tools/launcher` (OpenYR.exe) on their own PCs. The launcher downloads new betas from GitHub Releases and runs the setup silently, so audit both programs as code that handles untrusted input. Check these things. Zip extraction: path traversal (zip-slip), absolute paths, `..`, drive letters and reparse points. Uninstall: it must never delete outside the install folder, never follow junctions, and never act on a damaged `openyr-install.ini` `[Files]` list. Download: the HTTPS checks; the SHA-256 compare and its exact parsing of the `.sha256` file; partial-download handling; temp-folder permissions; DLL search-order hijacking when the copied updater runs from %TEMP% (consider `SetDefaultDllDirectories`). Also check command-line quoting when starting processes, registry writes, and the JSON feed parser against hostile input such as huge strings, odd escapes and missing fields. Fix every real issue with a test in `tests/setup` or `tests/launcher`, one commit per fix. Note in the log what can only be checked on Windows. Branch: `cloud/security-setup-YYYY-MM-DD`.
+```
+
+### C. Fuzz the parsers that read untrusted data
+
+```text
+Players load custom maps, mods and network data from strangers. Add a deterministic fuzz-test harness under `tests/fuzz` that needs no game files and no new dependencies. It should use a fixed-seed mutator over small synthetic seed inputs written by the test itself, run a bounded number of iterations, and register in ctest. Point it at these parsers: the INI parser; the spawn.ini reader (`code/spawnerconfig.cpp`, including the new `ColorRGB`); the scenario binary packs (IsoMapPack5, OverlayPack, OverlayDataPack, PreviewPack) and the Format80 and LZO decoders they use; the network game-options text decode (`code/netshare.cpp`); the CSF string table; the MIX header; and the SHP, VXL, HVA, PCX and PAL header readers. Where you can, build the targets with the sanitizers available on Linux (`-fsanitize=address,undefined`). Fix each crash, overflow or hang with a bounds check, one commit per parser, and keep any input that once crashed as a regression seed. Branch: `cloud/fuzz-YYYY-MM-DD`.
+```
+
+### D. Custom map compatibility
+
+```text
+Beta 22 rejected custom maps from the CnCNet map list because our IsoMapPack5 reader required an end marker that map editors don't write (fixed in commit `3ad785e1`). Other readers may be stricter than gamemd in the same way. From public format documentation only (ModEnc, the C&C modding wikis and format write-ups), list how maps saved by FinalAlert 2 and by newer editors such as World-Altering Editor differ from Westwood's maps. Never copy code from GPL editors. Check: pack chunk sizes and padding; empty or missing sections; key order; lowercase or duplicate keys; Tags, Triggers, Events and Actions written with extra or fewer fields; `[Map] Size`/`LocalSize` edge cases; `[Basic]` keys editors add; and preview packs. Compare each with our readers (grep `Read_Binary`, `Read_INI`, `Load_Scenario_File`, `trigger*.cpp`, `tevent.cpp`, `taction.cpp`). Wherever we reject or mis-read something gamemd accepts, fix it to accept what gamemd accepts, and write a synthetic unit test. Branch: `cloud/custom-maps-YYYY-MM-DD`.
+```
+
+### E. Index of OpenYR-only INI keys for modders
+
+```text
+Since forking, OpenYR has added many INI keys that Yuri's Revenge doesn't have, for example the recoil keys, the voxel lighting keys, `ColorRGB` in spawn.ini, launcher `[Update]` keys and the display options. The change records in `manual/changes/` and the key pages under `manual/content/keys/` describe them one by one. Write `docs/OPENYR_KEYS.md`: a single index of every key OpenYR reads that gamemd does not, grouped by area (rules, art, client settings, spawn.ini, OPENTS.INI). Give each key its default, a one-line effect, and a link to its key page, plus a short example block for the main groups. Generate the list from the manual data (`manual/data/ini-keys.yaml` and the change records) rather than by hand, and add a small script under `manual/tools/` that rebuilds the index, so it stays current. Write in our docs voice ("we/our", plain). Branch: `cloud/keys-index-YYYY-MM-DD`.
+```
 
 ### 1. Review: AI, teams and triggers
 
@@ -43,7 +73,7 @@ Review the `modern` commits since `1cb8bf7` that touch buildings, money and supe
 ### 4. Save-game and sync audit
 
 ```text
-The save revision in `code/savever.h` went from 19 to 31 since `1cb8bf7` as new fields were added to game classes. Run `git log -p 1cb8bf7..origin/modern -- 'code/*.h'` and list every data member added to a class that is saved. For each one, check that it is initialised in every constructor (including the one used when a save is loaded), written and read by the class's save and load code in the same order, and included in the class's CRC or sync calculation if it affects the simulation. Fix only what is missing, one class per commit, bumping `REVISION` once for the whole branch if the save layout changes. List the fields you checked in your log, each with its verdict. Stop when every new field has a verdict. Branch: cloud/save-audit-YYYY-MM-DD.
+The save revision in `code/savever.h` went from 19 to 69 since `1cb8bf7` as new fields were added to game classes. Run `git log -p 1cb8bf7..origin/modern -- 'code/*.h'` and list every data member added to a class that is saved. For each one, check that it is initialised in every constructor (including the one used when a save is loaded), written and read by the class's save and load code in the same order, and included in the class's CRC or sync calculation if it affects the simulation. Fix only what is missing, one class per commit, bumping `REVISION` once for the whole branch if the save layout changes. List the fields you checked in your log, each with its verdict. Stop when every new field has a verdict. Branch: cloud/save-audit-YYYY-MM-DD.
 ```
 
 ### 5. Research: specs for the next priorities
