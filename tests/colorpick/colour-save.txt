@@ -1,0 +1,7 @@
+; Saves a skirmish in a free color, loads it back, and captures the loaded game: the local units must still be
+; drawn in the free color. Run: scripts/run_autotest.ps1 -Script <this file> -SpawnIni tests/colorpick/free-match.ini -ShotDir <folder>
+30 command CenterBase
+120 command QuickSave
+150 command QuickLoad
+240 command ScreenCapture
+260 quit

@@ -15,6 +15,7 @@
 #include <string>
 
 #include "ini.h"
+#include "playercolor.h"
 #include "spawnerconfig.h"
 #include "xstraw.h"
 
@@ -1314,6 +1315,28 @@ int main(void)
 		Check(!Read(lower, sizeof(lower) - 1).SuperWeapons, "Superweapons=False switches the superweapons off");
 		Check(!Read(upper, sizeof(upper) - 1).SuperWeapons, "the key and the value match without regard to case");
 		Check(Read(absent, sizeof(absent) - 1).SuperWeapons, "superweapons stay on when the file does not name them");
+	}
+
+	/*
+	 * A seat's ColorRGB entry is a free color. A value that is not three numbers from 0 to 255 leaves
+	 * the seat on its stock color, and a dark value is raised to the minimum.
+	 */
+	{
+		char const good[] = "[Settings]\nName=Alpha\nSide=0\nColor=3\nColorRGB=40,160,255\n";
+		char const dark[] = "[Settings]\nName=Alpha\nSide=0\nColor=3\nColorRGB=0,0,0\n";
+		char const bad[] = "[Settings]\nName=Alpha\nSide=0\nColor=3\nColorRGB=40,160\n";
+		char const high[] = "[Settings]\nName=Alpha\nSide=0\nColor=3\nColorRGB=40,160,256\n";
+		char const none[] = "[Settings]\nName=Alpha\nSide=0\nColor=3\n";
+
+		SpawnerConfigClass const free = Read(good, sizeof(good) - 1);
+		Check(free.Slots[0].Color == 3 && free.Slots[0].CustomColor != 0, "a ColorRGB entry gives the seat a free color, and Color still picks the seat");
+		Check(Player_Color_Is_Custom(free.Slots[0].CustomColor) && Player_Color_Unpack(free.Slots[0].CustomColor).Get_Value() == 255,
+			"the free color is the packed RGB of the entry");
+		SpawnerConfigClass const floor = Read(dark, sizeof(dark) - 1);
+		Check(Player_Color_Unpack(floor.Slots[0].CustomColor).Get_Value() == PLAYER_COLOR_MIN_VALUE, "a dark free color is raised to the minimum value");
+		Check(Read(bad, sizeof(bad) - 1).Slots[0].CustomColor == 0 && Read(high, sizeof(high) - 1).Slots[0].CustomColor == 0,
+			"a ColorRGB entry that is not three values from 0 to 255 is ignored");
+		Check(Read(none, sizeof(none) - 1).Slots[0].CustomColor == 0, "a seat without ColorRGB keeps the stock color");
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

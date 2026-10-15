@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "playercolor.h"
 #include "point.h"
 #include "rgb.h"
 #include "rtti.hh"
@@ -87,6 +88,16 @@ class UIControlsClass
 		Point2D InfantryWithPipGroupNumberOffset = Point2D(-4, -8);
 		Point2D BuildingWithPipGroupNumberOffset = Point2D(-4, -8);
 		Point2D AircraftWithPipGroupNumberOffset = Point2D(-4, -8);
+
+		// The colors of the relationship view: the local player, allies and enemies.
+		RGBClass PlayerColorOwn = RGBClass(0, 114, 178);
+		RGBClass PlayerColorAlly = RGBClass(86, 180, 233);
+		RGBClass PlayerColorEnemy = RGBClass(213, 94, 0);
+
+		// The color-blind safe colors that replace the eight stock lobby colors, in lobby order.
+		RGBClass ColorBlindSafeColors[PLAYER_COLOR_SEATS] = {
+			RGBClass(240, 228, 66), RGBClass(213, 94, 0), RGBClass(0, 114, 178), RGBClass(0, 158, 115),
+			RGBClass(230, 159, 0), RGBClass(86, 180, 233), RGBClass(204, 121, 167), RGBClass(240, 240, 240)};
 
 		// The ButtonList names of [AdvancedCommandBar] and [MultiplayerAdvancedCommandBar], in order.
 		std::vector<std::string> CommandBarButtons;

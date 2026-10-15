@@ -29,6 +29,7 @@
 #include "netdlg2.h"
 #include "netglobal.h"
 #include "newmenu.h"
+#include "playercolor.h"
 #include "rules.h"
 #include "scenario.h"
 #include "sendfile.h"
@@ -590,18 +591,21 @@ bool DecodePubGameopt(char * options, char * name)
 
 		token = strtok(NULL, ",:");
 		if (token == NULL) break;
-		int color = atol(token);
+		int color = 0;
+		unsigned int custom = 0;
+		Player_Color_Parse(token, color, custom);
 
-		if (stricmp(handle, Session.Handle) == 0 && color != Session.PrefColor && !IsColorChangePending) {
+		if (stricmp(handle, Session.Handle) == 0 && (color != Session.PrefColor || custom != Session.PrefCustomColor) && !IsColorChangePending) {
 			PMessagePrintf(-1, Fetch_String(TXT_COLOR_IN_USE));
 			Session.PrefColor = color;
+			Session.PrefCustomColor = custom;
 		}
 
 		if (stricmp(handle, Session.Handle) == 0) {
 			IsColorChangePending = false;
 		}
 
-		if (Net2SetHouseAndColor(handle, house, color)) {
+		if (Net2SetHouseAndColor(handle, house, color, custom)) {
 			do_decode = true;
 		}
 	}

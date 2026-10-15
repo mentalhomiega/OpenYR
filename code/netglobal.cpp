@@ -12,6 +12,7 @@
 #include "netglobal.h"
 
 #include "mpload.h"
+#include "playercolor.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -78,6 +79,12 @@ namespace NetGlobal
 		bool Color_Is_Valid(int color)
 		{
 			return(color >= 0 && color < MAX_MPLAYER_COLORS);
+		}
+
+		/// <summary>Checks a free color: zero for none, or a packed color with its custom flag.</summary>
+		bool Custom_Is_Valid(unsigned int custom)
+		{
+			return(custom == 0 || Player_Color_Is_Custom(custom));
 		}
 
 
@@ -409,13 +416,13 @@ namespace NetGlobal
 				if (!Text_Terminated(packet, packet_length, sizeof(NetCommandType) + sizeof(GlobalPacketType::Name), sizeof(GlobalPacketType::Serial))) {
 					return(DecodeError::UNTERMINATED_SERIAL);
 				}
-				if (!Color_Is_Valid(message->PlayerInfo.Color)) {
+				if (!Color_Is_Valid(message->PlayerInfo.Color) || !Custom_Is_Valid(message->PlayerInfo.CustomColor)) {
 					return(DecodeError::INVALID_COLOR);
 				}
 				break;
 
 			case NET_CONFIRM_JOIN:
-				if (!Color_Is_Valid(message->PlayerInfo.Color)) {
+				if (!Color_Is_Valid(message->PlayerInfo.Color) || !Custom_Is_Valid(message->PlayerInfo.CustomColor)) {
 					return(DecodeError::INVALID_COLOR);
 				}
 				break;
@@ -500,7 +507,9 @@ namespace NetGlobal
 			if (house_number < 0 || house_number >= house_count) {
 				return(DecodeError::INVALID_HOUSE);
 			}
-			if (!Color_Is_Valid(static_cast<int>(std::atol(color)))) {
+			int seat = 0;
+			unsigned int custom = 0;
+			if (!Player_Color_Parse(color, seat, custom) || !Color_Is_Valid(seat)) {
 				return(DecodeError::INVALID_COLOR);
 			}
 		}

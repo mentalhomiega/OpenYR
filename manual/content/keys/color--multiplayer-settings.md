@@ -27,4 +27,6 @@ Each position picks an entry of the rules' [`[Colors]`](/keys/color/) section by
 
 Reordering `[Colors]` therefore changes the color each lobby position gives. Keep at least 15 entries in `[Colors]`, or the green position names an entry that does not exist.
 
+A free color chosen in the lobby is kept in [`CustomColor`](/keys/customcolor/#scope-multiplayer-settings). This key still names the seat, and the free color is drawn in place of the seat's stock color.
+
 A value outside `0` to `7` shows gold in the color box. In skirmish, gold is used and saved. In a network game, pick a color in the lobby; otherwise the out-of-range value is kept, and the house does not get one of the eight lobby colors.

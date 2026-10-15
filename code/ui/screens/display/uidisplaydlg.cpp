@@ -16,6 +16,7 @@
 #include "hud.h"
 #include "misc.h"
 #include "options.h"
+#include "playerdisplay.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
@@ -107,6 +108,12 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 				int const frame_height = (height > 0) ? height : Options.ScreenHeight;
 				Main_Window_Resize(frame_width, frame_height);
 			}
+		}
+
+		virtual void Set_Player_Colors(int view) override
+		{
+			Options.PlayerColorView = view;
+			Player_View_Changed();
 		}
 
 		virtual void Set_Interface_Scale(float scale) override
@@ -424,6 +431,11 @@ void UI_Display_State(UIDisplayState & state)
 		state.WindowSize = (int)state.WindowSizes.size();
 		state.WindowSizes.push_back(mode);
 	}
+	state.PlayerColors = Fill_Choices(state.PlayerColorChoices, {
+		{PLAYER_VIEW_DEFAULT, "Default"},
+		{PLAYER_VIEW_COLORBLIND_SAFE, "Color-blind safe"},
+		{PLAYER_VIEW_RELATIONSHIP, "Relationship"}
+	}, Options.PlayerColorView, "%d");
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;

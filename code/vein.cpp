@@ -9,6 +9,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "vein.h"
 
 #include "_map.h"
@@ -417,7 +418,7 @@ void VeinholeMonsterClass::Draw_It(void)
 		int height = LEVEL_PIXEL_H_1 * Map[CellID].Height;
 		drawpoint.Y += -49 - height;
 		TacticalMap->Add_To_Selectables(this, Point2D(drawpoint.X, TacticalRect.Y + drawpoint.Y + 49));
-		ConvertClass * drawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
+		ConvertClass * drawer = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 		Draw_Shape(*LogicalSurface, *drawer, shape, frame, drawpoint, TacticalRect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|SHAPE_ZGRAD), 0, -2 - LEVEL_PIXEL_H_1 - height, ZGRAD_GROUND, Map[coord].TileBrightness);
 	}
 }

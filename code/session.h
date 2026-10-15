@@ -225,6 +225,7 @@ struct NodeNameType {
 			char Serial[SERIAL_MAX];	//
 			int House;					// "ActLike" House of this player
 			int Color;					// Color of this player
+			unsigned int CustomColor;			// packed free color (playercolor.h); zero for the stock color in Color
 			int ID;						// Actual House of this player
 			int ProcessTime;			// Length of time to process players main loop
 			int Status;					//
@@ -304,6 +305,7 @@ struct GlobalPacketType {
 			int ArtCheatCheck;					/// Unique ID of "art.ini" file.
 			unsigned int BuildNumber;			///
 			char Mods[MOD_SIGNATURE_MAX];		// The mods the player runs, as ModSync writes them; empty for none or for a build without the check.
+			unsigned int CustomColor;		// The packed free color, or zero for the stock color in Color.
 		} PlayerInfo;
 		struct {
 			#if 0 /// Fields that fall 13 bytes short of where TS keeps FileLength (offset 0x83), so the region is padded instead of mapped.
@@ -554,6 +556,7 @@ class SessionClass
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);
 		int Color_Index_To_Scheme(int id);
+		int Scheme_For_Color(int id, unsigned int custom);
 		std::string Shown_Name(int house, char const * name) const;
 		std::string Shown_Name(HouseClass const * house) const;
 		std::string Shown_Seat_Name(NodeNameType const * node) const;
@@ -598,7 +601,9 @@ class SessionClass
 		//.....................................................................
 		char Handle[MPLAYER_NAME_MAX];      // player name
 		int PrefColor;                      // preferred color index
+		unsigned int PrefCustomColor;       // preferred free color, zero for a stock color
 		int ColorIdx;                       // actual color index
+		unsigned int CustomColor;           // actual free color, zero for the stock color at ColorIdx
 		int House;                          // GDI / NOD
 		int ObiWan;                         // 1 = player can see all
 		bool AIOnly;                        // no human seat plays; kept in saves, and game over does not read it

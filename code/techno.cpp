@@ -130,6 +130,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "techno.h"
 #include "flyingtext.h"
 
@@ -6884,7 +6885,7 @@ void TechnoClass::Pay_Bounty(TechnoClass * source) const
 	if (display && value != 0) {
 		char text[32];
 		snprintf(text, sizeof(text), "%c$%d", value > 0 ? '+' : '-', value > 0 ? value : -value);
-		Add_Flying_Text(text, Center_Coord(), source->House->Scheme);
+		Add_Flying_Text(text, Center_Coord(), House_Display_Scheme(source->House));
 	}
 }
 
@@ -7702,9 +7703,9 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 				converter = EightBitDrawer;
 			} else if (Is_Disguised_To_Player()) {
-				converter = ColorSchemes[DisguiseHouse->Scheme]->Converter;
+				converter = ColorSchemes[House_Display_Scheme(DisguiseHouse)]->Converter;
 			} else {
-				converter = ColorSchemes[House->Scheme]->Converter;
+				converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
 			}
 		}
 
@@ -7745,7 +7746,7 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 		if (RTTI == RTTI_INFANTRY) {
 			if (!IsOwnedByPlayer) {
 				if (((InfantryClass *)this)->Class->IsDisguised) {
-					converter = ColorSchemes[PlayerPtr->Scheme]->Converter;
+					converter = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 				}
 			}
 		}
@@ -8001,7 +8002,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 		converter = EightBitDrawer;
 	} else {
-		converter = ColorSchemes[House->Scheme]->Converter;
+		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
 	}
 
 	int predoffset = 0;
@@ -8064,7 +8065,7 @@ void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Poin
 	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 		converter = EightBitDrawer;
 	} else {
-		converter = ColorSchemes[House->Scheme]->Converter;
+		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
 	}
 
 	RLEBlitter const * blitter = converter->RLEBlitter_From_Flags(flags);

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "ui/uipreview.h"
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/uiscreen.h"
 
 #include <memory>
@@ -73,6 +74,7 @@ struct UISkirmishSlot
 	int Kind = UI_SKIRMISH_SLOT_OPEN;
 	int Side = 0;
 	int Color = 0;
+	unsigned int Custom = 0;
 	int Start = 0;
 	int Team = 0;
 
@@ -124,6 +126,9 @@ struct UISkirmishState
 	int TechLevelMax = 1;
 	int GameSpeed = 0;
 
+	/// The free color picker, open over the lobby when Picker.Open is set.
+	UIColorPickState Picker;
+
 	int Computer_Count(void) const;
 	bool Is_Active(int row) const;
 };
@@ -143,6 +148,9 @@ class UISkirmishPresenterClass : public UIPresenterClass
 		void Settle_Slots(void);
 		void Choose(int row, int field, int index);
 		bool Judge_Setup(void);
+		void Open_Picker(int row);
+		void Apply_Picker(void);
+		std::vector<UIColorPickRival> Rivals(int row) const;
 
 		UISkirmishServiceClass & Service;
 };

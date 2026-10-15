@@ -1,0 +1,25 @@
+; The network game lobby's free color picker, from the main menu. It opens the host's lobby with New, opens
+; the picker with the Free color button, picks a preset, then presses the mouse on the color square.
+; The ui shot lines write .tga files to the autotest Screenshots folder; convert them to .png afterwards.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/colorpick/colour-picker-netlobby.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 120
+ui waitfor backdrop
+ui wait 2000
+ui press Network
+ui wait 2500
+ui shot netlobby-start
+ui press New
+ui wait 3000
+ui shot netgame-start
+ui click color-pick
+ui wait 1500
+ui shot netgame-picker-open
+ui press Okabe-Ito yellow
+ui wait 1000
+ui pointer colorfield 0.22 0.35
+ui wait 1000
+ui shot netgame-picker-wheel
+ui press Back
+ui wait 1000
+ui shot netgame-end
+ui quit

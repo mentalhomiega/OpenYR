@@ -22,6 +22,7 @@
 #include "netshare.h"
 #include "rules.h"
 #include "session.h"
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/netlobby/uinetlobby.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
@@ -67,6 +68,7 @@ class UINetLobbyEngineServiceClass : public UINetLobbyServiceClass
 		virtual void Say(char const * text) override;
 		virtual void Set_Side(int index) override;
 		virtual void Set_Color(int index) override;
+		virtual void Set_Custom_Color(int index, unsigned int custom) override;
 		virtual void Set_Switch(UINetSwitch which, bool on) override;
 		virtual void Set_Slider(UINetSlider which, int value) override;
 		virtual void Kick(std::vector<std::string> const & names) override;
@@ -125,7 +127,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 			UINetPlayerRow row;
 			row.Name = who->Name;
-			row.Color = UI_Color_Text(PlayerColorTable[who->Player.Color]);
+			row.Color = Player_Color_Is_Custom(who->Player.CustomColor) ? UI_Color_CSS(Player_Color_Preview(who->Player.CustomColor)) : UI_Color_Text(PlayerColorTable[who->Player.Color]);
 
 			int country = who->Player.House;
 			SideType side = (country >= HOUSE_FIRST && country < HouseTypes.Count()) ? HouseTypes[country]->Side : SIDE_NONE;
@@ -183,6 +185,18 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		state.Colors.push_back(option);
 	}
 	state.Color = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colors.size()) ? Session.ColorIdx : 0;
+	state.CustomColor = Player_Color_Is_Custom(Session.CustomColor) ? Session.CustomColor : 0;
+	state.Rivals.clear();
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		NodeNameType const * who = Session.Players[index];
+		if (strcmp(who->Name, Session.Handle) == 0) {
+			continue;
+		}
+		UIColorPickRival rival;
+		rival.Custom = Player_Color_Is_Custom(who->Player.CustomColor);
+		rival.Color = rival.Custom ? Player_Color_Preview(who->Player.CustomColor) : UI_Stock_Color_RGB(who->Player.Color);
+		state.Rivals.push_back(rival);
+	}
 
 	state.MapName = Session.Options.ScenarioDescription;
 	UI_Map_Preview_Image(state.Preview);
@@ -249,7 +263,7 @@ void UINetLobbyEngineServiceClass::Set_Side(int index)
 		PumpGameopts(1, 0);
 	} else {
 		Session.House = country;
-		Net2Request_House_And_Color(country, Session.ColorIdx);
+		Net2Request_House_And_Color(country, Session.ColorIdx, Session.CustomColor);
 	}
 }
 
@@ -261,10 +275,25 @@ void UINetLobbyEngineServiceClass::Set_Color(int index)
 	}
 
 	if (Net2LobbyPhase == NET2_LOBBY_HOST) {
-		Net2Host_Take_Color(index);
+		Net2Host_Take_Color(index, 0);
 	} else {
 		Session.PrefColor = index;
-		Net2Request_House_And_Color(Session.House, index);
+		Net2Request_House_And_Color(Session.House, index, 0);
+	}
+}
+
+
+void UINetLobbyEngineServiceClass::Set_Custom_Color(int index, unsigned int custom)
+{
+	if (index < 0 || index >= MAX_MPLAYER_COLORS || !Player_Color_Is_Custom(custom)) {
+		return;
+	}
+
+	if (Net2LobbyPhase == NET2_LOBBY_HOST) {
+		Net2Host_Take_Color(index, custom);
+	} else {
+		Session.PrefColor = index;
+		Net2Request_House_And_Color(Session.House, index, custom);
 	}
 }
 

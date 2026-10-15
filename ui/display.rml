@@ -38,6 +38,9 @@
 			<div class="row" id="hdr-row" data-attr-tip="hdroutputtip"><span class="caption">HDR:</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
 				<option data-for="entry : hdroutputs" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
+			<div class="row" id="player-colors-row"><span class="caption">Player colors:</span><select id="player-colors" data-value="playercolors" data-event-change="queue('playercolors', ev.value)">
+				<option data-for="entry : playercolorchoices" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
 		</div>
 		<div id="right">
 			<p class="heading" id="window-label">Window</p>

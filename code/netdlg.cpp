@@ -115,6 +115,7 @@
 #include "language/language.h"
 #include "list.h"
 #include "netglobal.h"
+#include "playerdisplay.h"
 #include "queue.h"
 #include "rules.h"
 #include "savemgr.h"
@@ -262,7 +263,7 @@ void Destroy_Connection(int id, int error)
 	}
 
 	if (strlen(txt)) {
-		Session.Messages.Add_Message (NULL,0, txt, housep->Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW|TPF_USE_GRAD_PAL), int(Rule->MessageDelay * TICKS_PER_MINUTE));
+		Session.Messages.Add_Message (NULL,0, txt, House_Display_Scheme(housep), TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW|TPF_USE_GRAD_PAL), int(Rule->MessageDelay * TICKS_PER_MINUTE));
 		Map.Flag_To_Redraw();
 	}
 
@@ -299,7 +300,7 @@ void Destroy_Connection(int id, int error)
 	//------------------------------------------------------------------------
 	if (Session.NumPlayers == 1) {
 		sprintf(txt,"%s",Fetch_String(TXT_JUST_YOU_AND_ME));
-		Session.Messages.Add_Message (NULL, 0, txt, housep->Class->Scheme,
+		Session.Messages.Add_Message (NULL, 0, txt, House_Display_Scheme(housep),
 			TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW|TPF_USE_GRAD_PAL), int(Rule->MessageDelay * TICKS_PER_MINUTE));
 		Map.Flag_To_Redraw();
 	}

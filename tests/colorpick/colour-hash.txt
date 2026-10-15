@@ -1,0 +1,5 @@
+; Hashes the game state every 100 frames, so a match in stock colors can be compared with the same
+; match with a free color: the hash lines must be identical.
+; Run: scripts/run_autotest.ps1 -Script <this file> -SpawnIni tests/colorpick/stock-match.ini (or free-match.ini)
+0 hash 100
+900 quit

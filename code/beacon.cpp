@@ -18,6 +18,7 @@
 #include "globals.h"
 #include "house.h"
 #include "language/language.h"
+#include "playerdisplay.h"
 #include "revent.h"
 #include "rules.h"
 #include "session.h"
@@ -265,8 +266,8 @@ void BeaconManagerClass::Announce(int house, BeaconClass const & beacon)
 
 	if (house == PlayerPtr->HeapID) {
 		TextPrintType const print = TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW);
-		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_PLACED), PlayerPtr->Scheme, print, TICKS_PER_SECOND * 4);
-		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_SELECT_HINT), PlayerPtr->Scheme, print, TICKS_PER_SECOND * 4);
+		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_PLACED), House_Display_Scheme(PlayerPtr), print, TICKS_PER_SECOND * 4);
+		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_SELECT_HINT), House_Display_Scheme(PlayerPtr), print, TICKS_PER_SECOND * 4);
 		Speak_Eva("EVA_BeaconPlaced");
 		Sound_Effect(Rule->PlaceBeaconSound);
 		return;
@@ -299,7 +300,7 @@ bool Beacon_Text_Begin(void)
 
 	char prompt[32];
 	std::snprintf(prompt, sizeof(prompt), "%s", Fetch_String(TXT_BEACON_TEXT_PROMPT));
-	Session.Messages.Add_Edit(PlayerPtr->Scheme,
+	Session.Messages.Add_Edit(House_Display_Scheme(PlayerPtr),
 		TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), prompt, 0, -1);
 	Editing_Beacon_Text = true;
 	Map.Flag_To_Redraw();

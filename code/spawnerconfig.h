@@ -56,6 +56,8 @@ class SpawnerConfigClass
 			OccupancyType Occupancy = OccupancyType::Empty;
 			std::string Name;
 			int Color = -1;
+			// The packed free color from a ColorRGB entry, or zero for the stock color at Color.
+			unsigned int CustomColor = 0;
 			int Country = -1;
 			int Handicap = -1;
 			bool IsSpectator = false;

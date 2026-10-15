@@ -221,6 +221,16 @@
 	line-height: 23dp;
 }
 
+.chip-button
+{
+	display: block;
+	flex: none;
+	margin: 0dp;
+	padding: 0dp;
+	border: 0dp #00000000;
+	background-color: transparent;
+}
+
 #notice
 {
 	display: block;

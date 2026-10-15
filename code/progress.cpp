@@ -9,6 +9,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "progress.h"
 
 #include "_convert.h"
@@ -281,7 +282,7 @@ void ProgressScreenClass::Display_Progress(Point2D xpt)
 						return;
 					} else {
 						pt = Point2D(Pos.X, Pos.Y + (10 * i));
-						drawer = ColorSchemes[Session.Color_Index_To_Scheme(Session.Players[i]->Player.Color)]->Converter;
+						drawer = ColorSchemes[Scheme_Display_Index(Session.Scheme_For_Color(Session.Players[i]->Player.Color, Session.Players[i]->Player.CustomColor))]->Converter;
 					}
 				}
 

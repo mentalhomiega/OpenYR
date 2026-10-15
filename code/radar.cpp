@@ -66,6 +66,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "radar.h"
 #include "viewzoom.h"
 
@@ -827,7 +828,7 @@ void RadarClass::Draw_Names(void)
 		/*
 		**	Decode this house's color
 		*/
-		c_idx = ptr->Scheme;
+		c_idx = House_Display_Scheme(ptr);
 
 		if (ptr->IsDefeated) {
 			color = Fetch_Scheme_By_Name(DEFAULT_GADGET_SCHEME);
@@ -1636,7 +1637,8 @@ void RadarClass::Plot_Radar_Pixel(Point2D const & point)
 				}
 			}
 
-			int color = DSurface::Build_Hicolor_Pixel(house->RemapColorRGB.Get_Red(), house->RemapColorRGB.Get_Green(), house->RemapColorRGB.Get_Blue());
+			RGBClass const remap = House_Display_RGB(house);
+			int color = DSurface::Build_Hicolor_Pixel(remap.Get_Red(), remap.Get_Green(), remap.Get_Blue());
 
 			int v = tech->RadarFlashTimer;
 			if (v > 0 && (v - 1) / Rule->FlashFrameTime % 2 == 1 && tech->House == PlayerPtr) {
@@ -1678,12 +1680,12 @@ void RadarClass::Render_Tracked_Objects(void)
 		if ((PixelFlags[i] & bit) == 0) {
 			PixelFlags[i] |= bit;
 
-			ColorScheme *scheme = ColorSchemes[tech->House->Scheme];
+			ColorScheme *scheme = ColorSchemes[House_Display_Scheme(tech->House)];
 
 			if (tech->RTTI == RTTI_INFANTRY) {
 				InfantryClass *inf = (InfantryClass *)tech;
 				if (inf->Class->IsDisguised) {
-					scheme = ColorSchemes[PlayerPtr->Scheme];
+					scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
 				}
 			}
 

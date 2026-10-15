@@ -45,7 +45,8 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialColorBlindMode(State.ColorBlindMode),
 	InitialColorBlindStrength(State.ColorBlindStrength),
 	InitialBrightness(State.Brightness),
-	InitialGamma(State.Gamma)
+	InitialGamma(State.Gamma),
+	InitialPlayerColors(State.PlayerColors)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -180,6 +181,8 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "windowsize") {
 		State.WindowSize = (intent.Value >= 0 && intent.Value < (int)State.WindowSizes.size()) ? intent.Value : InitialWindowSize;
+	} else if (intent.Name == "playercolors") {
+		State.PlayerColors = Pick_Choice(State.PlayerColorChoices, intent.Value, InitialPlayerColors);
 
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
@@ -262,6 +265,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (State.WindowSize != InitialWindowSize && State.WindowSize >= 0 && State.WindowSize < (int)State.WindowSizes.size()) {
 			Service.Set_Window_Size(State.WindowSizes[State.WindowSize].Width, State.WindowSizes[State.WindowSize].Height);
+		}
+		if (Choice_Changed(State.PlayerColorChoices, State.PlayerColors, InitialPlayerColors)) {
+			Service.Set_Player_Colors(State.PlayerColorChoices[State.PlayerColors].Value);
 		}
 		if (State.Fullscreen != InitialFullscreen) {
 			Service.Set_Fullscreen(State.Fullscreen);
@@ -420,6 +426,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("showfps");
 			Model.DirtyVariable("framelimit");
 			Model.DirtyVariable("windowsize");
+			Model.DirtyVariable("playercolors");
 			Model.DirtyVariable("scale");
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
@@ -490,6 +497,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("framelimit", &state.FrameLimit)
 				&& model.Bind("windowsizes", &state.WindowSizes)
 				&& model.Bind("windowsize", &state.WindowSize)
+				&& model.Bind("playercolorchoices", &state.PlayerColorChoices)
+				&& model.Bind("playercolors", &state.PlayerColors)
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)

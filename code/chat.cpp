@@ -22,6 +22,7 @@
 #include "house.h"
 #include "ipxmgr.h"
 #include "language/language.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "session.h"
 #include "stimer.h"
@@ -119,7 +120,7 @@ bool Chat_Begin(ChatScopeType scope, int house)
 
 	// A chat line never writes a beacon message, even if a closed beacon edit left its flag set.
 	Beacon_Text_Sync();
-	Session.Messages.Add_Edit(PlayerPtr->Scheme,
+	Session.Messages.Add_Edit(House_Display_Scheme(PlayerPtr),
 		TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), prefix, 0, -1);
 	Map.Flag_To_Redraw();
 	return(true);
@@ -229,7 +230,7 @@ void Chat_Show(HouseClass const * sender, ChatScopeType scope, int target, char 
 
 	int timeout = int(Rule->MessageDelay * TICKS_PER_MINUTE);
 	if (!Session.Messages.Concat_Message(name, sender->HeapID, text, timeout)) {
-		Session.Messages.Add_Message(name, sender->HeapID, text, sender->Scheme,
+		Session.Messages.Add_Message(name, sender->HeapID, text, House_Display_Scheme(sender),
 			TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), timeout);
 	}
 	DesyncDialog.Notify_Chat(name, text);

@@ -9,6 +9,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "savemgr.h"
 
 #include "_map.h"
@@ -75,7 +76,7 @@ static int Save_Message_Timeout(void)
 
 static void Add_Save_Message(int id, int text)
 {
-	Session.Messages.Add_Message(NULL, id, Fetch_String(text), PlayerPtr->Scheme,
+	Session.Messages.Add_Message(NULL, id, Fetch_String(text), House_Display_Scheme(PlayerPtr),
 		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Save_Message_Timeout());
 	Map.Flag_To_Redraw();
 }
@@ -205,7 +206,7 @@ void SaveManagerClass::Post_Pending_Notice(void)
 {
 	if (!ModsNotice.empty()) {
 		if (ScenarioActive && !Session.Play && PlayerPtr != NULL) {
-			Session.Messages.Add_Message(NULL, 0, ModsNotice.c_str(), PlayerPtr->Scheme,
+			Session.Messages.Add_Message(NULL, 0, ModsNotice.c_str(), House_Display_Scheme(PlayerPtr),
 				TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Save_Message_Timeout());
 			Map.Flag_To_Redraw();
 		}

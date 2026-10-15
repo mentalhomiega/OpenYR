@@ -16,9 +16,9 @@
 	margin-top: -195dp;
 }
 
+/* Not positioned: the free color picker takes the frame as its containing block, which needs a height. */
 #content
 {
-	position: relative;
 	padding: 0;
 }
 
@@ -53,6 +53,9 @@
 .guest #color selectvalue { padding-top: 4dp; }
 
 #pick { left: 240dp; top: 8dp; width: 136dp; }
+#color-pick { left: 240dp; top: 34dp; width: 136dp; }
+
+.chip { display: block; width: 12dp; height: 16dp; border: 1dp #00000099; }
 #mapname { left: 382dp; top: 13dp; width: 230dp; }
 
 .guest #cap-map { left: 223dp; top: 11dp; }

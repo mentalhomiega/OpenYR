@@ -70,6 +70,7 @@ class UIDisplayServiceClass
 		virtual void Set_HDR_Highlights(int highlights) = 0;
 		virtual void Set_Colour_Blind(int mode, int strength) = 0;
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) = 0;
+		virtual void Set_Player_Colors(int view) = 0;
 
 		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
 		// scale given (zero is automatic).
@@ -95,6 +96,9 @@ struct UIDisplayState
 	// The window sizes offered; the first is Match resolution, which leaves both dimensions at -1.
 	std::vector<UIDisplayMode> WindowSizes;
 	int WindowSize = 0;
+	// The player color view, as Options.PlayerColorView numbers it, and the choices the drop-down lists.
+	int PlayerColors = 0;
+	std::vector<UIDisplayChoice> PlayerColorChoices;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
 	bool Fullscreen = false;
@@ -183,6 +187,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialColorBlindStrength;
 		int InitialBrightness;
 		int InitialGamma;
+		int InitialPlayerColors;
 };
 
 

@@ -1,0 +1,37 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The free color picker. The skirmish and network lobbies link this sheet and use the same markup.
+   The square is 136 dp wide and high (UI_COLOR_FIELD_DP in uicolorpick.h must match it). The panel fits
+   the network lobby's 391 dp frame, so the picker does not need to leave it. */
+
+/* The picker covers the lobby while it is open. */
+#picker { display: none; position: absolute; z-index: 10; left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; background-color: #000000c0; }
+#picker.open { display: block; }
+#picker-panel { position: absolute; left: 50%; top: 50%; width: 524dp; margin-left: -262dp; margin-top: -183dp; padding: 10dp; background-color: #080810f2; }
+#picker-panel > .caption { display: block; margin-bottom: 6dp; }
+
+#picker-body { display: flex; position: relative; }
+#colorfield { width: 136dp; height: 136dp; border: 1dp #00000099; }
+#picker-side { display: flex; flex-direction: column; margin-left: 12dp; }
+#picker-value { width: 24dp; height: 100dp; }
+#picker-chip { width: 48dp; height: 28dp; margin-top: 4dp; }
+
+/* The marker is a black ring with a white ring inside it. It takes no pointer input, so a drag still starts on the square. */
+#field-marker { position: absolute; left: 0dp; top: 0dp; width: 10dp; height: 10dp; margin-left: -7dp; margin-top: -7dp; border: 2dp #000000; pointer-events: none; }
+#field-marker-core { position: absolute; left: 0dp; top: 0dp; width: 6dp; height: 6dp; border: 2dp #ffffff; }
+
+#presets { display: flex; flex-wrap: wrap; margin-top: 8dp; }
+/* The kit's button decorator is opaque, so a preset drops it to show its swatch. */
+.preset, .preset:active { width: 78dp; height: 28dp; margin: 2dp; padding: 5dp 2dp 0 2dp; border: 1dp #000000; decorator: none; font-size: 9dp; line-height: 10dp; color: #ffffff; }
+
+#picker-notice { display: block; height: 16dp; margin-top: 6dp; line-height: 16dp; color: #ffcc66; }
+#picker-buttons { display: flex; margin-top: 4dp; }
+#picker-use { width: 150dp; margin-right: 14dp; }
+#picker-back { width: 120dp; }

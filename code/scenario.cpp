@@ -59,6 +59,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "scenario.h"
 
 #include "autotest.h"
@@ -483,7 +484,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 		}
 
 		sprintf(message, Fetch_String(TXT_DIFFICULTY_LEVEL), named);
-		Session.Messages.Add_Message(NULL, 0, message, PlayerPtr->Scheme,
+		Session.Messages.Add_Message(NULL, 0, message, House_Display_Scheme(PlayerPtr),
 			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW),
 			int(Rule->MessageDelay * TICKS_PER_MINUTE));
 	}
@@ -2614,7 +2615,8 @@ void Assign_Houses(void)
 		housep->IsHuman = true;
 		housep->Init_Data(player->Player.Color, (HousesType)player->Player.House, Session.Options.Credits);
 
-		housep->Scheme = Session.Color_Index_To_Scheme(player->Player.Color);
+		housep->CustomColor = player->Player.CustomColor;
+		housep->Scheme = Session.Scheme_For_Color(player->Player.Color, player->Player.CustomColor);
 		housep->Initialize_Radar_Color();
 
 		if (index == 0) {
@@ -2690,8 +2692,10 @@ void Assign_Houses(void)
 		/*
 		 * A seated color is taken as written, repeats included: a cooperative team shares one.
 		 */
+		unsigned int custom = 0;
 		if (seat != NULL && seat->Player.Color != -1) {
 			color = seat->Player.Color;
+			custom = seat->Player.CustomColor;
 		}
 		color_used[color] = true;
 
@@ -2704,7 +2708,8 @@ void Assign_Houses(void)
 		housep->IsHuman = false;
 
 		housep->Init_Data(color, pref_house, Session.Options.Credits);
-		housep->Scheme = Session.Color_Index_To_Scheme(color);
+		housep->CustomColor = custom;
+		housep->Scheme = Session.Scheme_For_Color(color, custom);
 		housep->Initialize_Radar_Color();
 		housep->IniName = (seat != NULL && seat->Name[0] != '\0') ? seat->Name : Fetch_String(TXT_COMPUTER);
 

@@ -939,6 +939,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_HDR_Highlights(int highlights) override { Calls.push_back("hdr highlights " + std::to_string(highlights)); }
 		virtual void Set_Colour_Blind(int mode, int strength) override { Calls.push_back("colour blind " + std::to_string(mode) + " " + std::to_string(strength)); }
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override { Calls.push_back("brightness gamma " + std::to_string(brightness) + " " + std::to_string(gamma)); }
+		virtual void Set_Player_Colors(int view) override { Calls.push_back("player colors " + std::to_string(view)); }
 
 		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
@@ -4458,6 +4459,7 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 		virtual void Say(char const * text) override { Said.push_back(text); }
 		virtual void Set_Side(int) override {}
 		virtual void Set_Color(int) override {}
+		virtual void Set_Custom_Color(int, unsigned int) override {}
 		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
 		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
 		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
@@ -5162,7 +5164,12 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	// What the settings file keeps.
 	UISkirmishState reread = presenter.State;
 	std::string const kept = UI_Skirmish_Slot_Text(reread, 1);
-	Check(kept.rfind("3,12,", 0) == 0 && kept.size() > 5 && kept.back() == '2', "a row's text holds its kind, its country's value, its color, its start and its team");
+	Check(kept.rfind("3,12,", 0) == 0 && kept.size() > 5 && kept.compare(kept.size() - 4, 4, ",2,0") == 0, "a row's text holds its kind, its country's value, its color, its start, its team and its free color");
+	reread.Slots[1].Custom = Player_Color_Pack(HSVClass(10, 200, 200));
+	std::string const freed = UI_Skirmish_Slot_Text(reread, 1);
+	reread.Slots[1] = UISkirmishSlot();
+	UI_Skirmish_Slot_Parse(reread, 1, freed);
+	Check(reread.Slots[1].Custom == Player_Color_Pack(HSVClass(10, 200, 200)), "a row's free color reads back as it was written");
 	reread.Slots[1] = UISkirmishSlot();
 	UI_Skirmish_Slot_Parse(reread, 1, kept);
 	Check(UI_Skirmish_Slot_Text(reread, 1) == kept, "a row's text reads back as it was written");

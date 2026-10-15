@@ -31,6 +31,7 @@
 #include "msanim.h"
 #include "msengine.h"
 #include "msfont.h"
+#include "playerdisplay.h"
 #include "scheme.h"
 #include "session.h"
 #include "stats.h"
@@ -405,7 +406,7 @@ void MultiScore::Tally_Score(void)
 		/*
 		**	Init this player's color to his last-used color index
 		*/
-		Session.Score[score_index].Scheme = hptr->Scheme;
+		Session.Score[score_index].Scheme = House_Display_Scheme(hptr);
 
 		/*
 		**	If this house was undefeated, it must have been the winner.
