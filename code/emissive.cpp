@@ -46,6 +46,10 @@ struct Binding
 
 Binding _Bindings[MaxBindings];
 
+// The one plane whose pixels the caller owns, and the surface it belongs to.
+EmissivePlane _FixedPlane = {NULL, 0, 0, 0};
+void const * _FixedSurface = NULL;
+
 }
 
 
@@ -155,10 +159,23 @@ void Emissive_Set_Debug_View(bool debug)
 }
 
 
+void Emissive_Bind_Fixed(void const * surface, unsigned char * pixels, int width, int height)
+{
+	_FixedSurface = surface;
+	_FixedPlane.Pixels = pixels;
+	_FixedPlane.Width = width;
+	_FixedPlane.Height = height;
+	_FixedPlane.Pitch = width;
+}
+
+
 EmissivePlane * Emissive_Plane_For(void const * surface)
 {
 	if (surface == NULL) {
 		return(NULL);
+	}
+	if (surface == _FixedSurface && _FixedPlane.Pixels != NULL) {
+		return(EmissiveActive ? &_FixedPlane : NULL);
 	}
 	for (Binding & binding : _Bindings) {
 		if (binding.Surface == surface && binding.Plane.Pixels != NULL) {

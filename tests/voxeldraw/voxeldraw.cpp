@@ -38,6 +38,8 @@ void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state);
 extern "C" {
 unsigned char VoxelDrawBuffer[262144];
 unsigned char VoxelDrawZBuffer[262144];
+unsigned char VoxelMaskBuffer[262144];
+bool VoxelMaskActive = false;
 unsigned char VoxelPaletteTranslateTable[MAX_PALETTE_LOOKUP_ENTRIES][VOXEL_PALETTE_SIZE];
 }
 

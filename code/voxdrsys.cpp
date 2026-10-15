@@ -13,6 +13,7 @@
 
 #include "_voxel.h"
 #include "bsurface.h"
+#include "emissive.h"
 #include "stbuffer.h"
 #include "voxlib.h"
 #include "wwfile.h"
@@ -25,6 +26,9 @@ BOOL VoxelDrawSystem::EnableZBuffer;
 
 unsigned char VoxelDrawBuffer[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT * VOXEL_BITMAP_BPP];
 BSurface VoxelSurface(VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT, VOXEL_BITMAP_BPP, VoxelDrawBuffer);
+
+unsigned char VoxelMaskBuffer[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT * VOXEL_BITMAP_BPP];
+bool VoxelMaskActive = false;
 
 unsigned char VoxelDrawZBuffer[VOXEL_BITMAP_WIDTH * VOXEL_BITMAP_HEIGHT * VOXEL_BITMAP_BPP];
 BSurface VoxelZSurface(VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT, VOXEL_BITMAP_BPP, VoxelDrawZBuffer);
@@ -434,6 +438,13 @@ SurfaceRegion VoxelDrawSystem::Render(void)
 void VoxelDrawSystem::Clear_Buffer(void)
 {
 	std::fill(std::begin(VoxelDrawBuffer), std::end(VoxelDrawBuffer), 0);
+
+	// The mask follows the picture, so it is cleared with it and bound to the surface the blits read.
+	VoxelMaskActive = Emissive_Is_Enabled();
+	Emissive_Bind_Fixed(&VoxelSurface, VoxelMaskBuffer, VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT);
+	if (VoxelMaskActive) {
+		std::fill(std::begin(VoxelMaskBuffer), std::end(VoxelMaskBuffer), 0);
+	}
 }
 
 

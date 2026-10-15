@@ -168,6 +168,18 @@ extern "C" {
 extern unsigned char VoxelPaletteTranslateTable[MAX_PALETTE_LOOKUP_ENTRIES][VOXEL_PALETTE_SIZE];
 extern unsigned char VoxelDrawBuffer[];
 extern unsigned char VoxelDrawZBuffer[];
+extern unsigned char VoxelMaskBuffer[];
+}
+
+// Whether the emissive mask is kept, so the voxel drawers write VoxelMaskBuffer beside the palette indexes.
+extern bool VoxelMaskActive;
+
+// Writes the emissive strength of one voxel pixel, next to its palette index. Zero is not emissive.
+inline void Voxel_Set_Mask(unsigned int index, unsigned char strength)
+{
+	if (VoxelMaskActive) {
+		VoxelMaskBuffer[index] = strength;
+	}
 }
 
 extern RGBStruct VoxelRGBColors[VOXEL_PALETTE_SIZE];

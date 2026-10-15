@@ -101,6 +101,10 @@ void Emissive_Set_Debug_View(bool debug);
 // The plane bound to a surface, or NULL when the surface has none or the dimensions do not match.
 EmissivePlane * Emissive_Plane_For(void const * surface);
 
+// Binds a plane whose pixels the caller owns for the whole run, such as the voxel draw surface. Retain and
+// Release_All never free it, and Emissive_Plane_For returns it only while masks are on.
+void Emissive_Bind_Fixed(void const * surface, unsigned char * pixels, int width, int height);
+
 // Binds a plane of the given size to a surface, reusing the existing one when the size matches.
 EmissivePlane * Emissive_Bind(void const * surface, int width, int height);
 
