@@ -494,6 +494,8 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Model.DirtyVariable("pickswatch");
 			Model.DirtyVariable("picknotice");
 			Model.DirtyVariable("pickvalue");
+			Model.DirtyVariable("pickmarkerleft");
+			Model.DirtyVariable("pickmarkertop");
 			Model.DirtyVariable("pickpresets");
 
 			Show_Preview();
@@ -557,6 +559,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 			preset.RegisterMember("label", &UIColorPresetOption::Label);
 			preset.RegisterMember("value", &UIColorPresetOption::Value);
 			preset.RegisterMember("color", &UIColorPresetOption::Color);
+			preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
 
 			UISkirmishState & state = Data.State;
 			return(model.RegisterArray<std::vector<UISkirmishOption>>()
@@ -595,6 +598,8 @@ class UISkirmishViewClass : public UIRmlViewClass
 				&& model.Bind("pickswatch", &state.Picker.Swatch)
 				&& model.Bind("picknotice", &state.Picker.Notice)
 				&& model.Bind("pickvalue", &state.Picker.Value)
+				&& model.Bind("pickmarkerleft", &state.Picker.MarkerLeft)
+				&& model.Bind("pickmarkertop", &state.Picker.MarkerTop)
 				&& model.Bind("pickpresets", &state.Picker.Presets));
 		}
 

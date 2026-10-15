@@ -18,12 +18,17 @@
 // Side of the hue and saturation square, in pixels.
 #define UI_COLOR_FIELD_SIZE 128
 
+// Side of the hue and saturation square as ui/colorpick.rcss lays it out, in dp. The marker is placed with it.
+#define UI_COLOR_FIELD_DP 136
+
 // A preset as the picker lists it. Value is the preset's index in Player_Color_Preset_At.
+// TextColor is the label color that reads on Color: black on a light swatch, white otherwise.
 struct UIColorPresetOption
 {
 	std::string Label;
 	int Value = 0;
 	std::string Color;
+	std::string TextColor = "#ffffff";
 };
 
 // One player's color as another lobby row sees it, for the duplicate check.
@@ -43,6 +48,9 @@ struct UIColorPickState
 	int Saturation = 0;
 	int Value = PLAYER_COLOR_MIN_VALUE;
 	unsigned int Custom = 0;
+	// Where the marker that shows the chosen hue and saturation sits in the square, in dp.
+	std::string MarkerLeft = "0dp";
+	std::string MarkerTop = "0dp";
 	std::string Swatch = "#000000";
 	std::string Notice;
 	std::vector<UIColorPresetOption> Presets;

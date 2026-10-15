@@ -287,11 +287,14 @@ static bool Bind_Color_Picker(Rml::DataModelConstructor & model, UIColorPickStat
 	preset.RegisterMember("label", &UIColorPresetOption::Label);
 	preset.RegisterMember("value", &UIColorPresetOption::Value);
 	preset.RegisterMember("color", &UIColorPresetOption::Color);
+	preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
 	return(model.RegisterArray<std::vector<UIColorPresetOption>>()
 		&& model.Bind("pickopen", &picker.Open)
 		&& model.Bind("pickswatch", &picker.Swatch)
 		&& model.Bind("picknotice", &picker.Notice)
 		&& model.Bind("pickvalue", &picker.Value)
+		&& model.Bind("pickmarkerleft", &picker.MarkerLeft)
+		&& model.Bind("pickmarkertop", &picker.MarkerTop)
 		&& model.Bind("pickpresets", &picker.Presets));
 }
 
@@ -302,6 +305,8 @@ static void Dirty_Color_Picker(Rml::DataModelHandle model)
 	model.DirtyVariable("pickswatch");
 	model.DirtyVariable("picknotice");
 	model.DirtyVariable("pickvalue");
+	model.DirtyVariable("pickmarkerleft");
+	model.DirtyVariable("pickmarkertop");
 	model.DirtyVariable("pickpresets");
 }
 

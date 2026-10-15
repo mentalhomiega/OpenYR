@@ -10,7 +10,9 @@
 #include "ui/screens/colorpick/uicolorpick.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
+#include <string>
 
 namespace
 {
@@ -28,6 +30,28 @@ void Load_HSV(UIColorPickState & state, unsigned int packed)
 	state.Hue = hsv.Get_Hue();
 	state.Saturation = hsv.Get_Saturation();
 	state.Value = hsv.Get_Value();
+}
+
+// Picks the label color with the higher WCAG contrast against a swatch: black or white.
+std::string Label_Color(RGBClass const & rgb)
+{
+	auto const linear = [](int value) {
+		double const channel = value / 255.0;
+		return(channel <= 0.03928 ? channel / 12.92 : std::pow((channel + 0.055) / 1.055, 2.4));
+	};
+	double const luminance = 0.2126 * linear(rgb.Get_Red()) + 0.7152 * linear(rgb.Get_Green()) + 0.0722 * linear(rgb.Get_Blue());
+	double const with_black = (luminance + 0.05) / 0.05;
+	double const with_white = 1.05 / (luminance + 0.05);
+	return(with_black >= with_white ? "#000000" : "#ffffff");
+}
+
+// Moves the marker to the hue and saturation. The square's 1 dp border comes before the first step.
+void Place_Marker(UIColorPickState & state)
+{
+	int const x = 1 + state.Hue * UI_COLOR_FIELD_DP / 256;
+	int const y = 1 + (255 - state.Saturation) * UI_COLOR_FIELD_DP / 255;
+	state.MarkerLeft = std::to_string(x) + "dp";
+	state.MarkerTop = std::to_string(y) + "dp";
 }
 
 }
@@ -69,6 +93,7 @@ void UI_Color_Pick_Build_Presets(UIColorPickState & state)
 		option.Label = preset.Name;
 		option.Value = index;
 		option.Color = UI_Color_CSS(rgb);
+		option.TextColor = Label_Color(rgb);
 		state.Presets.push_back(option);
 	}
 }
@@ -93,6 +118,7 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 	state.Notice.clear();
 	state.Custom = Player_Color_Is_Custom(custom) ? custom : 0;
 	Load_HSV(state, state.Custom != 0 ? state.Custom : Player_Color_From_RGB(UI_Stock_Color_RGB(state.Seat)));
+	Place_Marker(state);
 	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
 	state.Generation++;
 }
@@ -111,6 +137,7 @@ void UI_Color_Pick_Field(UIColorPickState & state, int x, int y)
 	state.Hue = x * 256 / UI_COLOR_FIELD_SIZE;
 	state.Saturation = 255 - (y * 255) / (UI_COLOR_FIELD_SIZE - 1);
 	state.Custom = Player_Color_Pack(HSVClass((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value));
+	Place_Marker(state);
 	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
 }
 
@@ -147,6 +174,7 @@ void UI_Color_Pick_Preset(UIColorPickState & state, int index)
 		state.Custom = Player_Color_From_RGB(rgb);
 		Load_HSV(state, state.Custom);
 	}
+	Place_Marker(state);
 	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
 	state.Generation++;
 }

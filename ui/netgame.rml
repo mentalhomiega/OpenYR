@@ -12,6 +12,7 @@
 	<title>Network game</title>
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="netgame.rcss"/>
+	<link type="text/rcss" href="colorpick.rcss"/>
 </head>
 <body template="dialog" data-model="netlobby">
 	<span class="caption" id="cap-side">Your Side:</span>
@@ -74,13 +75,14 @@
 			<span class="caption">Choose a color</span>
 			<div id="picker-body">
 				<surface id="colorfield"/>
+				<span id="field-marker" data-style-left="pickmarkerleft" data-style-top="pickmarkertop"><span id="field-marker-core"></span></span>
 				<div id="picker-side">
 					<input type="range" id="picker-value" min="96" max="255" data-attr-value="pickvalue" data-event-change="queue('pickvalue', ev.value)"/>
 					<span class="chip big" id="picker-chip" style="background-color: #000000"></span>
 				</div>
 			</div>
 			<div id="presets">
-				<button class="preset" data-for="preset : pickpresets" data-style-background-color="preset.color" data-event-click="queue('pickpreset', preset.value)">{{preset.label}}</button>
+				<button class="preset" data-for="preset : pickpresets" data-style-background-color="preset.color" data-style-color="preset.textcolor" data-event-click="queue('pickpreset', preset.value)">{{preset.label}}</button>
 			</div>
 			<span id="picker-notice">{{picknotice}}</span>
 			<div id="picker-buttons">
