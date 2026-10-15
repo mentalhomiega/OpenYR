@@ -17,6 +17,7 @@
 #include "utf8.h"
 
 #include <cstring>
+#include <cwchar>
 #include <string>
 
 
@@ -196,7 +197,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"csf", 4096, 8000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"csf", 4096, 30000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

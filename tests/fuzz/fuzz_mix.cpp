@@ -14,6 +14,8 @@
 #include "fuzz.h"
 #include "fuzzio.h"
 
+#include <cassert>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -225,7 +227,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"mix", 4096, 3000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"mix", 4096, 10000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

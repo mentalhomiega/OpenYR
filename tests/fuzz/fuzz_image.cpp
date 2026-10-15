@@ -20,6 +20,7 @@
 
 #include "ui/rml/rmlimage.h"
 
+#include <algorithm>
 #include <cstring>
 #include <string>
 
@@ -258,7 +259,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"image", 4096, 20000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"image", 4096, 60000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

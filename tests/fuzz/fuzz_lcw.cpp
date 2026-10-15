@@ -201,7 +201,7 @@ void Read_Overlay_Section(Bytes const & stream)
 void Read_Format80(Bytes const & stream)
 {
 	// The source is an allocation of exactly its size, so a read past it is caught.
-	std::uint8_t * const source = new std::uint8_t[stream.size() + 1];
+	std::uint8_t * const source = new std::uint8_t[stream.size()];
 	std::memcpy(source, stream.data(), stream.size());
 
 	for (unsigned long size : {1ul, 3ul, 64ul, 300ul, 4096ul}) {
@@ -304,7 +304,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"lcw", 24000, 3000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"lcw", 24000, 8000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

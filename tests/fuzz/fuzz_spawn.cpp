@@ -156,7 +156,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"spawn", 4096, 8000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"spawn", 4096, 10000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

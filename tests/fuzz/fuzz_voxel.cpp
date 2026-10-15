@@ -21,8 +21,14 @@
 #include "fuzz.h"
 #include "fuzzio.h"
 
+#include <cassert>
+#include <cmath>
 #include <cstring>
 #include <string>
+
+// These headers are in before the access change below, so that it reaches only the libraries'
+// own classes and not the system headers.
+#include "win.h"
 
 // The libraries' members are private; the harness reads them to check what loading kept.
 #define private public
@@ -332,7 +338,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"voxel", 4096, 4000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"voxel", 4096, 12000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

@@ -359,7 +359,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"lzo", 24000, 2000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"lzo", 24000, 4000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 

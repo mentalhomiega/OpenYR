@@ -256,8 +256,7 @@ void Check_File_Chunk(Bytes const & payload)
 	Bytes const rest(payload.begin() + 4, payload.end());
 
 	// The chunk is an allocation of exactly the received size, so a read past it is caught.
-	std::vector<unsigned char> chunk_bytes(rest.begin(), rest.end());
-	unsigned char * const chunk = new unsigned char[rest.size() + 1];
+	unsigned char * const chunk = new unsigned char[rest.empty() ? 1 : rest.size()];
 	if (!rest.empty()) {
 		std::memcpy(chunk, rest.data(), rest.size());
 	}
@@ -338,7 +337,7 @@ namespace Fuzz
 
 Target const & Get_Target(void)
 {
-	static Target const target = {"net", 1400, 30000, Seeds, Regressions, Dictionary, Run};
+	static Target const target = {"net", 1400, 60000, Seeds, Regressions, Dictionary, Run};
 	return(target);
 }
 
