@@ -4093,6 +4093,17 @@ void AutoTest_Trigger_Sprung(TriggerTypeClass const * type)
 }
 
 
+void AutoTest_Score_Shown(void)
+{
+	if (!Active) {
+		return;
+	}
+	DebugString("AUTOTEST score screen shown frame %d\n", Frame);
+	Execute_Command("ScreenCapture");
+	Video_Present();
+}
+
+
 void AutoTest_Game_Over(bool won)
 {
 	if (!Active) {
