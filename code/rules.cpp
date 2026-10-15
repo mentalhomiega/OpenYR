@@ -2833,6 +2833,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoSparkle1);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
+	stream.Serialize(LetsDoTheTimeWarpOutAgain);
+	stream.Serialize(LetsDoTheTimeWarpInAgain);
 	stream.Serialize(AIAutoDeployFrameDelay);
 	stream.Serialize(AllyParaDropInf);
 	stream.Serialize(AllyParaDropNum);
@@ -3041,6 +3043,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DropPodAngle);
 	stream.Serialize(ScrollMultiplier);
 	stream.Serialize(DirectRockingCoefficient);
+	stream.Serialize(VoxelSpecularStrength);
+	stream.Serialize(VoxelShadeScale);
+	stream.Serialize(VoxelSpecularFromView);
 	stream.Serialize(CrewEscape);
 	stream.Serialize(ThreatPerOccupant);
 	stream.Serialize(ShakeScreen);
@@ -3367,6 +3372,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AINavalYardAdjacency);
 	stream.Serialize(SilverCrate);
 	stream.Serialize(WoodCrate);
+	stream.Serialize(WaterCrate);
 	stream.Serialize(CrateMinimum);
 	stream.Serialize(CrateMaximum);
 	stream.Serialize(LZScanRadius);
@@ -3491,6 +3497,14 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMPAIPlayers);
 	stream.Serialize(IsMPCaptureTheFlag);
 	stream.Serialize(IsMPBridgeDestruction);
+	stream.Serialize(IsMPShortGame);
+	stream.Serialize(IsMPBuildOffAlly);
+	stream.Serialize(IsMPFogOfWar);
+	stream.Serialize(IsMPMCVRedeploys);
+	stream.Serialize(IsMPMultiEngineer);
+	stream.Serialize(IsMPSuperWeapons);
+	stream.Serialize(MPGameSpeed);
+	stream.Serialize(AlliesAllowed);
 	stream.Serialize(NodAIBuildsWalls);
 	stream.Serialize(AIBuildsWalls);
 	stream.Serialize(UseMinDefenseRule);
