@@ -3057,6 +3057,12 @@ void Run(StepType const & step)
 		std::string house_name = step.Argument;
 		std::replace(house_name.begin(), house_name.end(), '_', ' ');
 		HouseClass * victim = House_From_Name(house_name.c_str());
+		// A skirmish's computer players are found by their names in the lobby, such as "Medium AI".
+		for (int index = 0; victim == NULL && index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) {
+				victim = Houses[index];
+			}
+		}
 		int const kinds = step.X;
 		TechnoClass * attacker = NULL;
 		for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
