@@ -170,6 +170,7 @@
 #include "radbeam.h"
 #include "fog.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "goptions.h"
 #include "house.h"
 #include "side.h"
@@ -10241,9 +10242,10 @@ void TechnoClass::Rock(Coord const & coord, float force, bool direct)
 		vec1.Z = pos.Z - coord.Z;
 		Vector3 vec2 = vec1;
 
-		float theta = PrimaryFacing.Current().As_Radian();
-		double sangle = std::sin(theta);
-		double cangle = std::cos(theta);
+		// gamemd reads its trig tables here, and the sign test below depends on their rounding (TechnoClass::vt_entry_3D8, 0x70B280).
+		double const theta = (double)(PrimaryFacing.Current().Facing - 0x3FFF) * -9.587672516830327e-05;
+		double sangle = Gamemd_Sine(theta);
+		double cangle = Gamemd_Cosine(theta);
 
 		float dist1 = vec1.Length();
 
