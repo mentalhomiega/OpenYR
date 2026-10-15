@@ -12,4 +12,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A virus kill now leaves a toxic cloud, as in Yuri's Revenge. The cloud poisons the infantry that stand in its cells. Before, the animation a virus kill leaves played alone and nothing hurt the soldiers around it.
+A virus kill now leaves a toxic cloud, as in Yuri's Revenge. The cloud's particles damage the objects that stand in their cells. Before, the animation a virus kill leaves played alone and nothing hurt the soldiers around it.
