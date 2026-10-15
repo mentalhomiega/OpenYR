@@ -7,11 +7,13 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-/* The layout of the settings pages: the Game, Display, Graphics, Audio, Controls and Accessibility
-   screens. The page fills the window. A scrolling list of settings runs down the left, each row with its
-   label on the left and its control on the right; the description panel stands on the right; and the
-   footer holds Reset to defaults, Cancel and OK. The theme sheets set the colours. Sizes are in dp. */
+/* The layout of the settings pages: the Game, Display, Graphics, Audio, Controls, Accessibility and Mods
+   screens. The tab column runs down the left (theme.rcss styles it), and each page fills the rest of the
+   window. Its settings lie in two columns, each label above its control; a section heading is a strip across
+   both columns. The description panel stands at the right, and the footer holds Reset to defaults at the left
+   and Back and OK at the right. Sizes are in dp. */
 
+/* The page fills the window, to the right of the tab column when the page is one of the tabbed Settings. */
 .page-settings #reveal
 {
 	position: absolute;
@@ -24,10 +26,9 @@
 	margin: 0;
 }
 
-/* The tab bar takes the top 40 dp of the window when the page is one of the tabbed Settings. */
 .settings.page-settings #reveal
 {
-	top: 40dp;
+	left: 200dp;
 }
 
 /* The chrome takes the reveal's height, so the footer stays at its bottom edge. */
@@ -47,7 +48,7 @@
 {
 	display: flex;
 	flex-direction: column;
-	flex: 1 1 auto;
+	flex: 1 1 0px;
 	min-height: 0;
 	padding: 0;
 }
@@ -55,17 +56,22 @@
 .page-settings #page
 {
 	display: flex;
-	flex: 1 1 auto;
+	flex: 1 1 0px;
 	min-height: 0;
 }
 
+/* The list of settings: its rows wrap into two columns, and a section heading takes a full row. */
 .page-settings #list
 {
-	flex: 1 1 auto;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	flex: 1 1 0px;
 	min-width: 0;
 	min-height: 0;
 	overflow-y: auto;
-	padding: 10dp 22dp 18dp 24dp;
+	padding: 10dp 18dp 18dp 18dp;
 }
 
 .page-settings #side
@@ -105,13 +111,32 @@
 	flex: 1 1 auto;
 }
 
-/* A heading that opens a group of rows. */
+/* A group of settings that sits in the list as one block takes the full width, so its own rows wrap inside it. */
+.page-settings #extras, .page-settings #music, .page-settings #buttons
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* A section heading: a thin strip across both columns with its title centred. */
 .page-settings .section
 {
-	margin: 14dp 0 6dp 0;
-	padding-bottom: 4dp;
-	line-height: 22dp;
-	font-size: 17dp;
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	height: 28dp;
+	margin: 14dp 0 10dp 0;
+	padding: 0 8dp;
+	line-height: 28dp;
+	text-align: center;
+	font-size: 15dp;
+	background-color: #1d1730b8;
+	border-top: 1dp #4d3d6b;
+	border-bottom: 1dp #4d3d6b;
 }
 
 .page-settings .section:first-child
@@ -119,14 +144,18 @@
 	margin-top: 0;
 }
 
-/* One setting: its label fills the row and the control sits at the right. */
+/* One setting: its label sits on the first line and its control below it. */
 .page-settings .setting
 {
 	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
 	align-items: center;
-	min-height: 40dp;
-	margin-bottom: 4dp;
-	padding: 0 8dp 0 8dp;
+	box-sizing: border-box;
+	width: 47%;
+	min-height: 0;
+	margin: 0 3% 10dp 0;
+	padding: 4dp 8dp;
 	border-radius: 4dp;
 }
 
@@ -137,9 +166,9 @@
 
 .page-settings .setting > .caption
 {
-	flex: 1 1 auto;
-	width: auto;
-	line-height: 40dp;
+	flex: 0 0 100%;
+	width: 100%;
+	line-height: 20dp;
 	white-space: nowrap;
 }
 
@@ -147,34 +176,35 @@
 {
 	width: 240dp;
 	height: 28dp;
-	margin: 0;
+	margin: 4dp 0 0 0;
 }
 
 .page-settings .setting > input[type='range']
 {
 	width: 200dp;
 	height: 24dp;
-	margin: 0 8dp 0 0;
+	margin: 4dp 8dp 0 0;
 }
 
 .page-settings .setting > .value
 {
 	width: 64dp;
-	line-height: 40dp;
-	text-align: right;
+	margin-top: 4dp;
+	line-height: 24dp;
+	text-align: left;
 }
 
-/* A switch is a label with its check box at the right. */
+/* A switch is a label with its check box under the caption. */
 .page-settings label.check.setting
 {
 	display: flex;
-	min-height: 40dp;
-	line-height: 40dp;
+	min-height: 0;
+	line-height: 20dp;
 }
 
 .page-settings label.check.setting > input[type='checkbox']
 {
-	margin: 0 0 0 12dp;
+	margin: 4dp 0 0 0;
 }
 
 /* A setting that cannot be changed right now shows its label greyed. */
@@ -183,24 +213,18 @@
 	color: #6a6388;
 }
 
-/* A list that a setting holds, such as the resolutions, sits under its label. */
+/* A list that a setting holds, such as the resolutions, takes the full width of its row. */
 .page-settings .setting.tall
 {
-	align-items: flex-start;
-	min-height: 0;
-	padding-top: 6dp;
-	padding-bottom: 6dp;
-}
-
-.page-settings .setting.tall > .caption
-{
-	line-height: 24dp;
+	width: 100%;
+	margin-right: 0;
 }
 
 .page-settings .setting.tall > .list
 {
-	width: 240dp;
-	height: 120dp;
+	width: 100%;
+	height: 130dp;
+	margin-top: 4dp;
 }
 
 /* The description panel. It shows the text of the setting the pointer or the focus is on. */

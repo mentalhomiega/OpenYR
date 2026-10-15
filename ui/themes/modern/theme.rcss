@@ -521,9 +521,9 @@ body.lobby #ok, body.lobby #cancel
 	width: 136dp;
 }
 
-/* The Settings screen: a tab bar across the top of the window, with the page below it. Every page
-   fills the window under the bar, so the bar stays put from page to page. The page layout is in
-   settings.rcss. */
+/* The Settings screen: a column of tabs down the left, with the page to its right. The whole screen is one
+   translucent tinted backdrop, the .settings-backdrop class, so the game behind it shows through. The
+   backdrop's colour and opacity are set in that one class; the tab column and the page sit on top of it. */
 #tabs
 {
 	display: none;
@@ -532,35 +532,31 @@ body.lobby #ok, body.lobby #cancel
 .settings #tabs
 {
 	display: flex;
+	flex-direction: column;
 	position: absolute;
 	left: 0;
 	top: 0;
-	right: 0;
-	height: 40dp;
-	padding: 5dp 12dp 0 12dp;
-	background-color: #0a0712f0;
-	border-bottom: 1dp #3b2f55;
+	bottom: 0;
+	width: 200dp;
+	padding: 16dp 12dp 0 12dp;
+	background-color: #0a0814b3;
+	border-right: 1dp #3b2f55;
 	z-index: 2;
 }
 
 #tabs button.tab
 {
-	flex: 1 1 0;
-	height: 34dp;
-	margin: 0 3dp 0 0;
-	padding: 8dp 4dp 0 4dp;
+	display: block;
+	width: 100%;
+	height: 40dp;
+	margin: 0 0 6dp 0;
+	padding: 10dp 12dp 0 16dp;
 	border: 1dp #4d3d6b;
-	border-bottom-width: 0;
-	border-radius: 5dp 5dp 0 0;
-	text-align: center;
+	border-radius: 4dp;
+	text-align: left;
 	color: #b9aad6;
 	background-color: transparent;
 	decorator: vertical-gradient(#2a2238 #18131f);
-}
-
-#tabs button.tab:last-child
-{
-	margin-right: 0;
 }
 
 #tabs button.tab.gone
@@ -577,15 +573,15 @@ body.lobby #ok, body.lobby #cancel
 
 #tabs button.tab:active
 {
-	padding: 8dp 4dp 0 4dp;
+	padding: 10dp 12dp 0 16dp;
 	decorator: vertical-gradient(#1a1424 #2a203a);
 }
 
-/* The tab of the page on show joins the panel below it. */
+/* The tab of the page on show has an accent bar at its left and joins the page. */
 #tabs button.tab.active, #tabs button.tab.active:hover, #tabs button.tab.active:active
 {
-	height: 35dp;
-	border-color: #6b43a8;
+	border-color: #d29bff;
+	border-left-width: 5dp;
 	color: #ffffff;
 	background-color: #120d1c;
 	decorator: none;
@@ -595,6 +591,24 @@ body.lobby #ok, body.lobby #cancel
 {
 	color: #ffffff;
 	border-color: #d29bff;
+}
+
+/* The backdrop: a translucent tinted fill over the whole screen, at about half opacity. Themes set
+   the colour here, with the alpha byte last. The title art behind the menus stays out of the way. */
+.settings-backdrop
+{
+	background-color: #0a081480;
+}
+
+.settings-backdrop #screen-bg
+{
+	display: none;
+}
+
+.settings-backdrop #wallpaper
+{
+	background-color: transparent;
+	border: 0dp #00000000;
 }
 
 .settings #buttons > #sound, .settings #buttons > #keyboard

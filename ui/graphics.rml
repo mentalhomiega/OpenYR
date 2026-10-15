@@ -16,7 +16,7 @@
 	<link type="text/rcss" href="graphics.rcss"/>
 	<link type="text/rcss" href="setting-preview.rcss"/>
 </head>
-<body template="dialog" class="page-settings" data-model="graphics">
+<body template="dialog" class="page-settings settings-backdrop" data-model="graphics">
 	<div id="page">
 		<div id="list">
 			<p class="section">Picture</p>
@@ -67,7 +67,7 @@
 	<div id="footer">
 		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
 		<span id="footer-spacer"></span>
-		<button id="footer-cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+		<button id="footer-cancel" data-event-click="queue('cancel')">Back</button>
 		<button id="footer-ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
 	</div>
 </body>

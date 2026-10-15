@@ -11,12 +11,13 @@
    enough for the longest binding, such as "Ctrl+Shift+Alt+F12". The layout frame is in settings.rcss.
    Sizes are in dp. */
 
-#list
+.page-settings #list
 {
 	display: flex;
 	flex-direction: column;
+	flex-wrap: nowrap;
 	overflow: hidden;
-	padding: 12dp 16dp 12dp 20dp;
+	padding: 12dp 16dp 12dp 28dp;
 }
 
 #filters
@@ -88,8 +89,9 @@
 
 #commands
 {
-	flex: 1 1 auto;
+	flex: 1 1 0px;
 	min-height: 0;
+	overflow-y: auto;
 	margin-top: 4dp;
 }
 

@@ -14,7 +14,7 @@
 	<link type="text/rcss" href="settings.rcss"/>
 	<link type="text/rcss" href="gamectrl.rcss"/>
 </head>
-<body template="dialog" class="page-settings" data-model="gamectrl" data-class-frontend="!ingame" data-class-difficulty="hasdifficulty">
+<body template="dialog" class="page-settings settings-backdrop" data-model="gamectrl" data-class-frontend="!ingame" data-class-difficulty="hasdifficulty">
 	<div id="page">
 		<div id="list">
 			<p class="section">Game</p>
@@ -55,7 +55,7 @@
 	<div id="footer">
 		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
 		<span id="footer-spacer"></span>
-		<button id="footer-cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+		<button id="footer-cancel" data-event-click="queue('cancel')">Back</button>
 		<button id="footer-ok" data-event-click="queue('ok')"><span id="ok-leave" data-if="leavelabel != ''">{{leavelabel}}</span><span id="ok-options" data-if="ingame &amp;&amp; leavelabel == ''">[[TXT_OPTIONS_MENU]]</span><span id="ok-main" data-if="!ingame &amp;&amp; leavelabel == ''">Main Menu</span></button>
 	</div>
 </body>
