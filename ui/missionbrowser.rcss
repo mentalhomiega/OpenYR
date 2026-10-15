@@ -92,6 +92,22 @@ body.missionbrowser #content
 	height: 214dp;
 }
 
+#map
+{
+	position: relative;
+}
+
+#map-empty
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 96dp;
+	text-align: center;
+	line-height: 24dp;
+	font-size: 15dp;
+}
+
 #summary
 {
 	width: 316dp;

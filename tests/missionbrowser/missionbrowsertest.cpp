@@ -255,6 +255,24 @@ void Test_Remembered_Mission(void)
 }
 
 
+void Test_First_Playable(void)
+{
+	// The Red Alert 2 mission comes first in the list, but Yuri's Revenge's group is shown first, so it is the default.
+	UIMissionBrowserState state;
+	state.Missions = {
+		Make_Mission("RA2_ALL01", "ALL01T.MAP", UI_BROWSER_RA2_ALLIED, true, 1),
+		Make_Mission("YR_ALL01", "ALL01UMD.MAP", UI_BROWSER_YR_ALLIED, true, 2),
+	};
+	Check(UI_Mission_Browser_First_Playable(state) == 1, "the default mission is the first in the order the list shows the groups");
+
+	state.Missions[1].Playable = false;
+	Check(UI_Mission_Browser_First_Playable(state) == 0, "a mission that cannot start is skipped");
+
+	state.Missions[0].Playable = false;
+	Check(UI_Mission_Browser_First_Playable(state) == -1, "nothing is chosen when no mission can start");
+}
+
+
 void Test_Rows_Ignore_Stale_Indexes(void)
 {
 	FakeServiceClass service;
@@ -280,6 +298,7 @@ int main(void)
 	Test_Double_Click_Plays();
 	Test_Cancel_And_Empty_Play();
 	Test_Remembered_Mission();
+	Test_First_Playable();
 	Test_Rows_Ignore_Stale_Indexes();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);

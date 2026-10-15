@@ -75,9 +75,13 @@ std::string Mission_Briefing(char const * map)
 		if (mission_file.Is_Available()) {
 			CCINIClass ini;
 			ini.Load(mission_file, false);
-			std::string const section = ini.Get_String(map, "Briefing");
-			if (!section.empty()) {
-				ini.Get_TextBlock(section.c_str(), text, sizeof(text));
+			// Red Alert 2 names a string table label here, and Yuri's Revenge's text blocks name a section.
+			std::string const entry = ini.Get_String(map, "Briefing");
+			if (!entry.empty() && StringTable.Find(entry.c_str()) != nullptr) {
+				return(Label_Text(entry.c_str()));
+			}
+			if (!entry.empty()) {
+				ini.Get_TextBlock(entry.c_str(), text, sizeof(text));
 			}
 		}
 	}
@@ -168,12 +172,7 @@ UIMissionBrowserState Mission_Browser_State(void)
 		}
 	}
 	if (state.Selected < 0) {
-		for (int index = 0; index < (int)state.Missions.size(); index++) {
-			if (state.Missions[index].Playable) {
-				state.Selected = index;
-				break;
-			}
-		}
+		state.Selected = UI_Mission_Browser_First_Playable(state);
 	}
 
 	UI_Mission_Browser_Build_Groups(state);
@@ -189,6 +188,7 @@ class UIMissionBrowserEngineServiceClass : public UIMissionBrowserServiceClass
 			UIBrowserMission const & mission = state.Missions[index];
 			state.Briefing = Mission_Briefing(mission.Map.c_str());
 			UI_Map_File_Preview_Image(mission.Map.c_str(), state.Preview);
+			state.HasPreview = state.Preview.Width > 0 && state.Preview.Height > 0;
 		}
 };
 

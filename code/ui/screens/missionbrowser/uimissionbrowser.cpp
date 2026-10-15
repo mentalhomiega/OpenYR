@@ -40,6 +40,24 @@ char const * UI_Mission_Browser_Group_Title(UIBrowserGroupType type)
 
 
 /// <summary>
+/// Returns the first mission that Play can start, walking the groups in the order of their type and each group's
+/// missions in list order. That is the first playable line of the list, so the browser opens on the top of the list.
+/// </summary>
+int UI_Mission_Browser_First_Playable(UIMissionBrowserState const & state)
+{
+	for (int type = 0; type < UI_BROWSER_GROUP_COUNT; type++) {
+		for (int index = 0; index < (int)state.Missions.size(); index++) {
+			UIBrowserMission const & mission = state.Missions[index];
+			if (mission.Group == type && mission.Playable) {
+				return(index);
+			}
+		}
+	}
+	return(-1);
+}
+
+
+/// <summary>
 /// Fills the groups from the missions. Groups are made in the order of their type, so a mission's place in the battle
 /// file does not move it. The testing group starts closed, since its missions are kept for testing only.
 /// </summary>

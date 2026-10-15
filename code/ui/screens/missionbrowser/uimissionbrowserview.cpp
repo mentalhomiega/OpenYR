@@ -42,6 +42,7 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 			Model.DirtyVariable("briefing");
 			Model.DirtyVariable("notice");
 			Model.DirtyVariable("playable");
+			Model.DirtyVariable("haspreview");
 			Show_Preview();
 		}
 
@@ -72,7 +73,8 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 				&& model.Bind("mapname", &state.MapName)
 				&& model.Bind("briefing", &state.Briefing)
 				&& model.Bind("notice", &state.Notice)
-				&& model.Bind("playable", &state.Playable));
+				&& model.Bind("playable", &state.Playable)
+				&& model.Bind("haspreview", &state.HasPreview));
 		}
 
 	private:

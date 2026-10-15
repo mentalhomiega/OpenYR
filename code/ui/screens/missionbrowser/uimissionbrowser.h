@@ -120,6 +120,9 @@ struct UIMissionBrowserState
 
 	/// Whether Play starts the selected mission.
 	bool Playable = false;
+
+	/// Whether the selected mission has a picture; a map file without a preview section has none.
+	bool HasPreview = false;
 };
 
 
@@ -156,6 +159,11 @@ class UIMissionBrowserPresenterClass : public UIPresenterClass
 		UIMissionBrowserServiceClass & Service;
 };
 
+
+/// <summary>
+/// Returns the first mission that Play can start, in the order the list shows the groups, or -1 when none can start.
+/// </summary>
+int UI_Mission_Browser_First_Playable(UIMissionBrowserState const & state);
 
 /// <summary>
 /// Fills the groups of the state from its missions, in the order of UIBrowserGroupType. A group with no missions is left out.

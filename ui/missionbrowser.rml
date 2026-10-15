@@ -26,7 +26,7 @@
 		</div>
 		<div id="info-column">
 			<div id="top">
-				<div id="map" class="frame"><surface id="preview"/></div>
+				<div id="map" class="frame"><surface id="preview"/><span id="map-empty" data-if="!haspreview">No picture for this mission.</span></div>
 				<div id="summary">
 					<span class="caption" id="subtitle">{{subtitle}}</span>
 					<span class="caption" id="title">{{title}}</span>
