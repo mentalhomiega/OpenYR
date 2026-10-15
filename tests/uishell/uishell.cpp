@@ -4054,6 +4054,36 @@ void Test_Settings_Tabs_Presenter(void)
 
 
 /*
+ * Every tab button a menu style's frame holds asks for the tab it names, so a new tab in the list
+ * cannot leave the buttons sending the old numbers.
+ */
+void Test_Settings_Tab_Buttons(void)
+{
+	struct { char const * Name; UISettingsTab Tab; } const tabs[] = {
+		{ "game", UI_TAB_GAME }, { "display", UI_TAB_DISPLAY }, { "graphics", UI_TAB_GRAPHICS }, { "audio", UI_TAB_AUDIO },
+		{ "keyboard", UI_TAB_KEYBOARD }, { "accessibility", UI_TAB_ACCESSIBILITY }, { "mods", UI_TAB_MODS },
+	};
+
+	std::filesystem::path const shipped(OPENTS_UI_DIR);
+	for (char const * style : { "modern", "classic" }) {
+		std::ifstream file(shipped / "themes" / style / "dialog.rml");
+		std::string const text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		if (text.find("class=\"tab\"") == std::string::npos) {
+			continue;
+		}
+		for (auto const & tab : tabs) {
+			std::string const id = std::string("id=\"tab-") + tab.Name + "\"";
+			size_t const at = text.find(id);
+			size_t const end = (at == std::string::npos) ? at : text.find('>', at);
+			std::string const want = "queue('tab', " + std::to_string((int)tab.Tab) + ")";
+			bool const right = at != std::string::npos && text.substr(at, end - at).find(want) != std::string::npos;
+			Check(right, (std::string("the ") + style + " tab bar's " + tab.Name + " button asks for its own tab").c_str());
+		}
+	}
+}
+
+
+/*
  * A page joined to the Settings marks its document, opens without the slide, and moves between
  * the tabs from the keyboard: Ctrl+Tab and Ctrl+Page Up/Down, skipping tabs the bar does not offer.
  */
@@ -6276,6 +6306,7 @@ void Test_Documents(void)
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
 		Test_Game_Controls_Screen(*context, system);
+		Test_Settings_Tab_Buttons();
 		Test_Settings_Tabs_Screen(*context, system);
 		Test_Display_Screen(*context, system);
 		Test_Classic_Options_Screen(*context, system);
