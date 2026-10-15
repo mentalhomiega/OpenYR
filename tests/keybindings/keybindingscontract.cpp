@@ -396,6 +396,23 @@ void Test_Timing_Ranges(void)
 }
 
 
+void Test_Held_State(void)
+{
+	// A key with a Held binding reads as held from its press to its release; a key with the modifier bit is another key.
+	HotkeyTimingClass timing;
+	timing.Set_Triggers(20, false, false, false, true);
+	timing.Press(20, 0);
+	Check(timing.Is_Held(20), "a key with a Held binding reads as held while it is down");
+	Check(!timing.Is_Held(20 | KEY_CTRL_BIT), "the same key with Control held is not the held key");
+	timing.Release(20);
+	Check(!timing.Is_Held(20), "a released key reads as up");
+
+	timing.Set_Triggers(65, true, false, false, false);
+	timing.Press(65, 0);
+	Check(!timing.Is_Held(65), "a key with only a press binding is not held");
+}
+
+
 void Test_Timing(void)
 {
 	// A key with only a press fires at once.
@@ -573,6 +590,7 @@ int main(void)
 	Test_File();
 	Test_Grid_Modifier();
 	Test_Timing_Ranges();
+	Test_Held_State();
 	Test_Timing();
 
 	if (Failures != 0) {

@@ -53,6 +53,9 @@ class HotkeyTimingClass
 		// Gives the bindings the key release fires now.
 		std::vector<Fire> Release(int key);
 
+		// Whether the key is down and its press started a Held binding, as while a player holds a modifier.
+		bool Is_Held(int key) const;
+
 		// Gives the bindings that fall due by now: a waiting press, a hold and a repeat of a held key.
 		std::vector<Fire> Poll(unsigned int now);
 

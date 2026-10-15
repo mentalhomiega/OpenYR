@@ -140,6 +140,13 @@ std::vector<HotkeyTimingClass::Fire> HotkeyTimingClass::Release(int key)
 }
 
 
+bool HotkeyTimingClass::Is_Held(int key) const
+{
+	std::map<int, Down>::const_iterator found = Downs.find(Base_Of(key));
+	return(found != Downs.end() && found->second.Key == key && found->second.Held);
+}
+
+
 std::vector<HotkeyTimingClass::Fire> HotkeyTimingClass::Poll(unsigned int now)
 {
 	std::vector<Fire> fired;
