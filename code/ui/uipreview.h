@@ -28,3 +28,8 @@ bool UI_Map_Preview_Image(UIMapPreviewImage & image);
 bool UI_Map_File_Preview_Image(char const * map, UIMapPreviewImage & image);
 
 bool UI_Generated_Map_Preview_Image(UIMapPreviewImage & image);
+
+class XSurface;
+
+/// Copies the picture on a 16-bit surface into the image and returns true. Returns false for a missing, empty or other surface; the image's size is set only on success, so a caller resets the image first.
+bool UI_Surface_Preview_Image(XSurface * surface, UIMapPreviewImage & image);

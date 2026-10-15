@@ -24,15 +24,10 @@ namespace
 {
 
 /// <summary>
-/// Copies a map preview's picture into an RGBA image. A preview with no picture leaves the image empty.
+/// Copies a 16-bit surface's picture into an RGBA image. A missing, empty or non-16-bit surface leaves the image empty.
 /// </summary>
-bool Copy_Preview(MapPreviewClass const * preview, UIMapPreviewImage & image)
+bool Copy_Surface(XSurface * surface, UIMapPreviewImage & image)
 {
-	if (preview == NULL) {
-		return(false);
-	}
-
-	XSurface * surface = const_cast<MapPreviewClass *>(preview)->Get_Preview_Surface();
 	if (surface == NULL || surface->Bytes_Per_Pixel() != 2) {
 		return(false);
 	}
@@ -63,6 +58,28 @@ bool Copy_Preview(MapPreviewClass const * preview, UIMapPreviewImage & image)
 	return(true);
 }
 
+
+/// <summary>
+/// Copies a map preview's picture into an RGBA image. A preview with no picture leaves the image empty.
+/// </summary>
+bool Copy_Preview(MapPreviewClass const * preview, UIMapPreviewImage & image)
+{
+	if (preview == NULL) {
+		return(false);
+	}
+
+	return(Copy_Surface(const_cast<MapPreviewClass *>(preview)->Get_Preview_Surface(), image));
+}
+
+}
+
+
+/// <summary>
+/// Copies the picture on a surface into an RGBA image. A surface that is missing, empty or not 16-bit leaves the image empty.
+/// </summary>
+bool UI_Surface_Preview_Image(XSurface * surface, UIMapPreviewImage & image)
+{
+	return(Copy_Surface(surface, image));
 }
 
 

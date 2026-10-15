@@ -16,14 +16,21 @@
 #include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "dsurface.h"
 #include "gamedlg.h"
 #include "globals.h"
+#include "gscreen.h"
 #include "init.h"
+#include "loadscreen.h"
 #include "options.h"
+#include "palette.h"
+#include "pcx.h"
+#include "scenario.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uiview.h"
+#include "winstub.h"
 
 #include <cstring>
 #include <memory>
@@ -204,6 +211,61 @@ UIMissionBrowserState Mission_Browser_State(void)
 }
 
 
+/// <summary>
+/// Makes the picture a campaign mission shows on its loading screen, for the browser's picture box. The picture is the
+/// one MISSIONMD.INI names for the mission, drawn at this screen's layout. A mission without one shows its side's loading
+/// backdrop, which the game picks from two at random; the browser shows the first of the two. The image is set only when
+/// a picture loads; the caller then falls back to the map's preview.
+/// </summary>
+/// <returns>Returns with true when a picture is in the image.</returns>
+bool Mission_Loading_Picture(CampaignClass const & campaign, char const * map, UIMapPreviewImage & image)
+{
+	int const generation = image.Generation + 1;
+	image = UIMapPreviewImage();
+	image.Generation = generation;
+
+	// The loading art lives in archives that are mounted only while a loading screen runs, so they are mounted for this
+	// picture and released when the function returns.
+	LoadScreenClass art;
+	art.Mount_Art();
+
+	// The same test the loading screen makes of the screen's width.
+	bool const small = (HiddenSurface->Get_Width() == 640);
+
+	CCINIClass scenario;
+	CCFileClass scenario_file(map);
+	bool const has_scenario = scenario_file.Is_Available();
+	if (has_scenario) {
+		scenario.Load(scenario_file, false);
+	}
+
+	Point2D const size = LoadScreenClass::Campaign_Picture_Size(small);
+	DSurface picture_surface(size.X, size.Y);
+	picture_surface.Fill(0);
+	std::string name;
+	if (LoadScreenClass::Draw_Campaign_Picture(map, has_scenario ? &scenario : NULL, small, picture_surface, Point2D(0, 0), name)) {
+		return(UI_Surface_Preview_Image(&picture_surface, image));
+	}
+
+	// The backdrop the game shows for this side, at this resolution. The choice is the side's first picture, so no random number is drawn.
+	int const side = Campaign_Load_Side(campaign);
+	Point2D pos;
+	char const * backdrop = Load_Background_Name(side, side << 1, pos);
+	CCFileClass backdrop_file(backdrop);
+	int width = 0;
+	int height = 0;
+	if (!backdrop_file.Is_Available() || !Read_PCX_Size(backdrop_file, width, height)) {
+		return(false);
+	}
+
+	DSurface backdrop_surface(width, height);
+	backdrop_surface.Fill(0);
+	PaletteClass palette;
+	Load_Title_Screen(backdrop, &backdrop_surface, &palette);
+	return(UI_Surface_Preview_Image(&backdrop_surface, image));
+}
+
+
 class UIMissionBrowserEngineServiceClass : public UIMissionBrowserServiceClass
 {
 	public:
@@ -211,7 +273,9 @@ class UIMissionBrowserEngineServiceClass : public UIMissionBrowserServiceClass
 		{
 			UIBrowserMission const & mission = state.Missions[index];
 			state.Briefing = Mission_Briefing(mission.Map.c_str());
-			UI_Map_File_Preview_Image(mission.Map.c_str(), state.Preview);
+			if (!Mission_Loading_Picture(*Campaigns[mission.Campaign], mission.Map.c_str(), state.Preview)) {
+				UI_Map_File_Preview_Image(mission.Map.c_str(), state.Preview);
+			}
 			state.HasPreview = state.Preview.Width > 0 && state.Preview.Height > 0;
 		}
 };

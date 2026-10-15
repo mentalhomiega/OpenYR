@@ -50,6 +50,17 @@ class LoadScreenClass
 		void Clear_Campaign_Briefing(void) {CampaignBriefing = false;}
 		std::string const & Picture_Name(void) const {return(PictureName);}
 
+		// Mounts the archives the loading art is in. A loading screen mounts them in Begin; anything else that draws
+		// the art mounts them here, and End or the destructor releases them.
+		void Mount_Art(void);
+
+		// Draws the picture MISSIONMD.INI names for a campaign mission, with its top left at the point given. Name receives
+		// the picture's file name whenever the mission names one, even if the picture then fails to draw.
+		static bool Draw_Campaign_Picture(char const * scenario, CCINIClass const * mission, bool small, Surface & surface, Point2D at, std::string & name);
+
+		// The size of a campaign mission's picture, which fills the loading screen between the title bar and the strip.
+		static Point2D Campaign_Picture_Size(bool small);
+
 	private:
 		class ShapeFile;
 

@@ -1734,6 +1734,31 @@ static SideType Side_For_Map_House(CCINIClass const & ini, char const * house)
 
 
 /// <summary>
+/// Fetches the side whose loading backdrop a campaign's missions show. The side is the campaign's CD number when
+/// that is 0 or 1; a campaign with a CD number above 1 takes side 1 unless its scenario name contains GDI, and any
+/// other campaign takes side 0.
+/// </summary>
+/// <param name="campaign">The campaign whose mission is loading.</param>
+/// <returns>Returns with 0 or 1.</returns>
+int Campaign_Load_Side(CampaignClass const & campaign)
+{
+	int side = campaign.CDNumber;
+
+	if (side > 1) {
+		side = 0;
+		if (strstr(campaign.ScenarioName, "GDI") == 0) {
+			side = 1;
+		}
+	}
+
+	if (side < 0 || side > 1) {
+		side = 0;
+	}
+	return(side);
+}
+
+
+/// <summary>
 /// Fetches the artwork to display while a scenario loads.
 /// The picture is chosen to suit the player's side and the current screen resolution, and
 /// one of the pair available is taken at random so that the loading screen is not always
@@ -1742,6 +1767,36 @@ static SideType Side_For_Map_House(CCINIClass const & ini, char const * house)
 /// <param name="pos">Filled in with the position the loading text belongs at.</param>
 /// <returns>Returns with the filename of the backdrop picture to display.</returns>
 char const * Pick_Load_Background_Name(Point2D & pos)
+{
+	int player = 0;
+
+	if (Session.Type == GAME_NORMAL) {
+		if (Scen->Campaign != CAMPAIGN_NONE) {
+			player = Campaign_Load_Side(*Campaigns[Scen->Campaign]);
+		}
+	} else if (Session.PlayerHouse >= HOUSE_FIRST && Session.PlayerHouse < HouseTypes.Count()) {
+		player = HouseTypes[Session.PlayerHouse]->Side;
+	}
+
+	// Only two sides have loading art, so any other side is shown the first side's.
+	if (player < 0 || player > 1) {
+		player = 0;
+	}
+
+	int choice = (player << 1) + Random_Pick(0, 1);
+	return(Load_Background_Name(player, choice, pos));
+}
+
+
+/// <summary>
+/// Fetches the loading backdrop of a side at the current screen resolution. The pair of pictures a side has is at
+/// choice 0 and 1 for side 0, and 2 and 3 for side 1. A caller that needs no random pick passes choice 0 or 2.
+/// </summary>
+/// <param name="player">The side, 0 or 1.</param>
+/// <param name="choice">Which of the side's two pictures, as 2 times the side plus 0 or 1.</param>
+/// <param name="pos">Filled in with the position the loading text belongs at.</param>
+/// <returns>Returns with the filename of the backdrop picture.</returns>
+char const * Load_Background_Name(int player, int choice, Point2D & pos)
 {
 	static char _backgrounds[12][13] = {
 		"LOAD400C.PCX",
@@ -1757,31 +1812,6 @@ char const * Pick_Load_Background_Name(Point2D & pos)
 		"LOAD600A.PCX",
 		"LOAD600B.PCX"
 	};
-
-	int player = 0;
-
-	if (Session.Type == GAME_NORMAL) {
-		if (Scen->Campaign != CAMPAIGN_NONE) {
-			CampaignClass * campaign = Campaigns[Scen->Campaign];
-			player = campaign->CDNumber;
-
-			if (player > 1) {
-				player = 0;
-				if (strstr(campaign->ScenarioName, "GDI") == 0) {
-					player = 1;
-				}
-			}
-		}
-	} else if (Session.PlayerHouse >= HOUSE_FIRST && Session.PlayerHouse < HouseTypes.Count()) {
-		player = HouseTypes[Session.PlayerHouse]->Side;
-	}
-
-	// Only two sides have loading art, so any other side is shown the first side's.
-	if (player < 0 || player > 1) {
-		player = 0;
-	}
-
-	int choice = (player << 1) + Random_Pick(0, 1);
 
 	if (VisibleRect.Width == 640) {
 		if (VisibleRect.Height == 480) {
