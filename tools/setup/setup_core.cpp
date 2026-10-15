@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "setup_core.h"
+#include "setup_names.h"
 #include "setup_system.h"
 
 #include <shellapi.h>
@@ -26,10 +27,6 @@ namespace {
 wchar_t const * const GameName = L"Game.exe";
 wchar_t const * const LauncherName = L"OpenYR.exe";
 wchar_t const * const UninstallerName = L"Uninstall OpenYR.exe";
-wchar_t const * const ConfigName = L"OPENTS.INI";
-wchar_t const * const RecordName = L"openyr-install.ini";
-wchar_t const * const UserFolder = L"user";
-wchar_t const * const DebugFolder = L"Debug";
 wchar_t const * const ShortcutName = L"OpenYR.lnk";
 wchar_t const * const UninstallShortcutName = L"Uninstall OpenYR.lnk";
 wchar_t const * const ProgramsFolderName = L"OpenYR";

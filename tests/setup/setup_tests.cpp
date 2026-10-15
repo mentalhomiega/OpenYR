@@ -364,6 +364,42 @@ void Test_Zip(void)
 }
 
 
+// A package entry whose name could reach outside the install folder, or that Windows would read as
+// something other than a plain file, is skipped; the entries around it still read.
+void Test_Zip_Hostile_Names(void)
+{
+	std::vector<std::pair<std::string, std::string>> entries = {
+		{"Game.exe", "engine"},
+		{"C:/evil.txt", "x"},
+		{"C:evil.txt", "x"},
+		{"/absolute.txt", "x"},
+		{"\\\\server\\share\\x.txt", "x"},
+		{"ui/../../escape.txt", "x"},
+		{"ui\\..\\..\\escape.txt", "x"},
+		{"ui/..", "x"},
+		{"Game.exe:stream", "x"},
+		{"ui//double.txt", "x"},
+		{"ui/dot.", "x"},
+		{"ui/space ", "x"},
+		{"ui/con", "x"},
+		{"ui/NUL.txt", "x"},
+		{"ui/bell\a.txt", "x"},
+		{"ui/star*.txt", "x"},
+		{std::string("ui/nul\0byte.txt", 15), "x"},
+		{"ui/ok.txt", "theme"},
+	};
+
+	std::vector<PayloadFileType> files;
+	std::wstring error;
+	Check(setup::Load_Zip_Payload(Make_Zip(entries), files, error), "a zip with hostile names still reads");
+	Check(files.size() == 2, "only the two plain names are kept");
+	Check(files.size() == 2 && files[0].Name == L"Game.exe" && files[1].Name == L"ui\\ok.txt", "and they are the plain ones");
+
+	std::vector<PayloadFileType> dotted;
+	Check(setup::Load_Zip_Payload(Make_Zip({{"./Game.exe", "engine"}}), dotted, error) && dotted.size() == 1 && dotted[0].Name == L"Game.exe", "a leading './' is dropped from a name");
+}
+
+
 void Test_Embedded(void)
 {
 	std::string const stub(4096, 'M');
@@ -689,6 +725,7 @@ int main()
 
 	Test_Normalize();
 	Test_Zip();
+	Test_Zip_Hostile_Names();
 	Test_Embedded();
 	Test_Find();
 	Test_Check_Folder();
