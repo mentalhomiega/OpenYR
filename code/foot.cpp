@@ -2944,6 +2944,13 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 		Release_Locomotor(true);
 	}
 
+	// A held vehicle that is given no destination lets go of its holder (FootClass::SetDestination, 0x4D94B0).
+	if (target == NULL && IsAttackedByLocomotor && LocomotorSource != NULL) {
+		LocomotorSource->LocomotorTarget = NULL;
+		LocomotorSource = NULL;
+		IsLetGoByLocomotor = true;
+	}
+
 	NavCom = target;
 
 	if (NavCom != NULL) {

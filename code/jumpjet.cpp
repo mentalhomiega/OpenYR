@@ -143,6 +143,11 @@ bool JumpjetLocomotionClass::Process(void)
 				break;
 		}
 
+		// A falling vehicle that its landing destroyed has nothing left to process.
+		if (!LinkedTo->IsActive) {
+			return(false);
+		}
+
 		if (LinkedTo->IsSelected && LinkedTo->House != PlayerPtr) {
 			if (Map.Is_Shrouded(LinkedTo->PositionCoord) || (Scen->Special.IsFogOfWar && Map.Is_Fogged(LinkedTo->PositionCoord))) {
 				LinkedTo->Unselect();
@@ -175,6 +180,11 @@ bool JumpjetLocomotionClass::Process(void)
 /// destination at all.</param>
 void JumpjetLocomotionClass::Move_To(Coord to)
 {
+	// A vehicle that is falling after a let go has no destination until it lands (gamemd SetDestination, 0x4D94B0).
+	if (LinkedTo->IsCrashing) {
+		return;
+	}
+
 	if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
 		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
 		IsLanding = false;
@@ -220,6 +230,11 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 /// </summary>
 void JumpjetLocomotionClass::Stop_Moving(void)
 {
+	// A vehicle that is falling after a let go keeps falling; it does not hover where it is.
+	if (LinkedTo->IsCrashing) {
+		return;
+	}
+
 	// A unit a locomotor warhead holds stops where it is.
 	if (IsMoving && LinkedTo->IsAttackedByLocomotor && CurrentState != GROUNDED) {
 		if (HeadToCoord != COORD_NONE && IsLanding) {
@@ -252,6 +267,32 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 			HeadToCoord = COORD_NONE;
 		}
 	}
+}
+
+
+/// <summary>
+/// Drops a vehicle that a locomotor warhead let go in the air straight down to the ground under
+/// it. The fall never cruises or climbs, and it does not wait for a free landing spot: whatever
+/// is under the vehicle is crushed when it lands (JumpjetLocomotionClass, 0x54C550).
+/// </summary>
+void JumpjetLocomotionClass::Begin_Fall(void)
+{
+	if (CurrentState == GROUNDED) {
+		return;
+	}
+
+	if (HeadToCoord != COORD_NONE && IsLanding) {
+		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+		IsLanding = false;
+	}
+
+	Coord const here = LinkedTo->PositionCoord;
+	HeadToCoord = Coord(here.X, here.Y, Map.Get_Height_GL(here));
+	CurrentSpeed = 0;
+	TargetSpeed = 0;
+	FlightLevel = 0;
+	IsMoving = true;
+	CurrentState = DESCENDING;
 }
 
 
@@ -393,18 +434,30 @@ bool JumpjetLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carr
 }
 
 
+/// <summary>
+/// Hands the carried locomotor back to the caller. The hold on the vehicle ends with it, so the
+/// vehicle is no longer held, let go or credited to its holder (JumpjetLocomotionClass, 0x54DA50).
+/// </summary>
 std::unique_ptr<ILocomotion> JumpjetLocomotionClass::End_Piggyback(void)
 {
+	if (Piggybacker != nullptr) {
+		LinkedTo->IsAttackedByLocomotor = false;
+		LinkedTo->IsLetGoByLocomotor = false;
+		LinkedTo->LetGoBy = NULL;
+		LinkedTo->LetGoByHouse = NULL;
+	}
 	return(std::move(Piggybacker));
 }
 
 
 /// <summary>
-/// The carried locomotor takes back over once the unit is let go and has landed.
+/// The carried locomotor takes back over once the vehicle is no longer held, or has been let go
+/// and landed (JumpjetLocomotionClass, 0x54DB00). A vehicle let go in the air stays held until
+/// it lands, so its move orders are refused while it falls.
 /// </summary>
 bool JumpjetLocomotionClass::Is_Ok_To_End(void)
 {
-	return(Piggybacker != nullptr && !LinkedTo->IsAttackedByLocomotor && CurrentState == GROUNDED);
+	return(Piggybacker != nullptr && (!LinkedTo->IsAttackedByLocomotor || LinkedTo->IsLetGoByLocomotor));
 }
 
 
@@ -616,8 +669,11 @@ void JumpjetLocomotionClass::Process_Descent(void)
 	int spot = CellClass::Spot_Index(HeadToCoord);
 	bool stop = true;
 
-	if ((cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
-		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding))) {
+	// A falling vehicle lands on whatever is under it, so the landing spot is not checked (JumpjetLocomotionClass, 0x54C550).
+	bool const crashing = LinkedTo->IsCrashing;
+
+	if (crashing || ((cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
+		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding)))) {
 
 		if (!IsLanding) {
 			IsLanding = true;
@@ -649,6 +705,17 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			IsMoving = false;
 			LinkedTo->Assign_Destination(NULL);
 			LinkedTo->Per_Cell_Process(PCP_END);
+
+			// A vehicle let go in the air crushes what is under it, may then take its drop damage, and is
+			// let go for good so that it can hand back its own locomotor (JumpjetLocomotionClass, 0x54C9FE).
+			if (crashing) {
+				LinkedTo->Crush_On_Landing();
+				LinkedTo->IsCrashing = false;
+				LinkedTo->IsLetGoByLocomotor = true;
+				if (LinkedTo->IsActive && !LinkedTo->IsInLimbo) {
+					LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
+				}
+			}
 
 			if (LinkedTo != NULL && LinkedTo->IsActive && !LinkedTo->IsInLimbo && !LinkedTo->IsFalling) {
 				LinkedTo->Look();

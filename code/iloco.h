@@ -110,6 +110,12 @@ struct ILocomotion
 	virtual void Stop_Moving(void) = 0;
 
 	/*
+	 * Drops the vehicle straight down from where it is, for a vehicle a locomotor warhead let go
+	 * in the air. Only a jumpjet locomotor falls this way; the others do nothing.
+	 */
+	virtual void Begin_Fall(void) {}
+
+	/*
 	 * Try to face direction specified.
 	 */
 	virtual void Do_Turn(DirType coord) = 0;

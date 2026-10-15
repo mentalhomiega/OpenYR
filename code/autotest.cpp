@@ -3307,6 +3307,26 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed);
 		}
+	} else if (step.Command == "lift") {
+		// lift <TypeID>: each object of the type with its height above the ground, its locomotor, its jumpjet state
+		// and the state of its magnetron hold (IsAttackedByLocomotor, IsLetGoByLocomotor, IsCrashing).
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			char const * state = "-";
+			char const * locomotor = "-";
+			if (techno->Is_Foot()) {
+				FootClass const * foot = static_cast<FootClass const *>(techno);
+				if (foot->Locomotion != NULL) {
+					locomotor = Locomotion_Class_ID(foot->Locomotion.get()) == ClassID_JumpjetLocomotion ? "jumpjet" : (Locomotion_Class_ID(foot->Locomotion.get()) == ClassID_DriveLocomotion ? "drive" : "other");
+					JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+					if (jump != NULL) {
+						state = jump->State_Name();
+					}
+				}
+			}
+			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo);
+		}
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
 		for (int index = 0; index < Technos.Count(); index++) {

@@ -38,6 +38,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Process(void) override;
 		virtual void Move_To(Coord to) override;
 		virtual void Stop_Moving(void) override;
+		virtual void Begin_Fall(void) override;
 		virtual void Do_Turn(DirType coord) override;
 		virtual LayerType In_Which_Layer(void) override;
 		virtual bool Is_Moving_Now(void) override;
