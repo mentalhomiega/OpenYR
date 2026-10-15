@@ -363,15 +363,22 @@ bool Main_Window_Create(bool windowed, int width, int height)
 
 	if (windowed) {
 		float const density = Pixel_Density();
-		int const clientwidth = (int)std::lround(width / density);
-		int const clientheight = (int)std::lround(height / density);
-		SDL_SetWindowSize(_Window, clientwidth, clientheight);
+		int clientwidth = (int)std::lround(width / density);
+		int clientheight = (int)std::lround(height / density);
 
 		int top = 0;
 		int left = 0;
 		int bottom = 0;
 		int right = 0;
 		SDL_GetWindowBordersSize(_Window, &top, &left, &bottom, &right);
+
+		// A window larger than the usable area of its display is shrunk to fit inside it, frame included.
+		SDL_Rect usable;
+		if (SDL_GetDisplayUsableBounds(SDL_GetPrimaryDisplay(), &usable)) {
+			clientwidth = SDL_min(clientwidth, usable.w - left - right);
+			clientheight = SDL_min(clientheight, usable.h - top - bottom);
+		}
+		SDL_SetWindowSize(_Window, clientwidth, clientheight);
 
 		SDL_Rect display;
 		if (SDL_GetDisplayBounds(SDL_GetPrimaryDisplay(), &display)) {

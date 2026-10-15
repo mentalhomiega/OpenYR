@@ -7,7 +7,7 @@ when_omitted:
   note: The window opens at the height the game renders at, ScreenHeight.
 ---
 
-The height is that of the window's drawable area. The border and title bar are added outside it. The window opens centered on the main display. A window taller than the display opens against its top edge.
+The height is that of the window's drawable area. The border and title bar are added outside it. The window opens centered on the main display. A window larger than the display's usable area, which excludes the taskbar, is shrunk to fit inside it, frame included.
 
 [`WindowWidth`](/keys/windowwidth/) explains how the pair sizes the window, when the window stops following the rendering resolution, and how a picture that does not match the window's shape is fitted.
 
