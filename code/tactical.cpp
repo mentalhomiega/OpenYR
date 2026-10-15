@@ -3660,8 +3660,9 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 
 
 /*
- * The waypoint marker is MOUSE.SHA frame 384 (MouseCursor::Cursors[0x3c] in TacticalClass::RenderPlanningPaths,
- * 006dad60). The entry has one frame, so the marker does not animate.
+ * The path marker is cursor entry 0x3C, MouseCursorType::Disallowed, so MOUSE.SHA frame 384 is the
+ * no-entry ring that gamemd draws at each waypoint (TacticalClass::RenderPlanningPaths, 006dad60).
+ * The entry has one frame and does not animate.
  */
 static int const WAYPOINT_MARKER_FRAME = 384;
 
