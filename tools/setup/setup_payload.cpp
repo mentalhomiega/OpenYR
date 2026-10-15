@@ -265,7 +265,8 @@ bool Read_Embedded_Archive(std::wstring const & exe, std::string & archive, std:
 			if (bytes.compare(16, 8, TrailerMagic, 8) == 0) {
 				std::uint64_t const offset = U64(bytes, 0);
 				std::uint64_t const length = U64(bytes, 8);
-				if (offset + length + TrailerBytes != static_cast<std::uint64_t>(size.QuadPart)) {
+				std::uint64_t const total = static_cast<std::uint64_t>(size.QuadPart);
+				if (offset > total || length > total || offset + length + TrailerBytes != total) {
 					CloseHandle(file);
 					error = L"The package inside this setup is damaged. Download the setup again.";
 					return(false);

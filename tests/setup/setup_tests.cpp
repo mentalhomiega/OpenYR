@@ -439,6 +439,19 @@ void Test_Embedded(void)
 	Check(setup::Read_Embedded_Archive(with_package, archive, stub_bytes, error) && archive == zip, "a package appended to the executable is read back");
 	Check(stub_bytes == stub.size(), "and the bytes before it are the executable's own");
 	Check(!setup::Read_Embedded_Archive(plain, archive, stub_bytes, error) && error.empty(), "an executable with no package reports no package and no error");
+
+	// A trailer whose offset and length add up to the file size only by wrapping around is damaged.
+	std::string wrapping;
+	for (std::uint64_t value : {static_cast<std::uint64_t>(0x8000000000000000ull), static_cast<std::uint64_t>(0x8000000000000000ull + stub.size())}) {
+		for (int byte = 0; byte < 8; byte++) {
+			wrapping += static_cast<char>((value >> (8 * byte)) & 0xFF);
+		}
+	}
+	wrapping += "OPYRPAY1";
+	std::wstring const wrapped = Path_Of(Root, L"wrapping-trailer.exe");
+	Make_File(wrapped, stub + wrapping);
+	archive.clear();
+	Check(!setup::Read_Embedded_Archive(wrapped, archive, stub_bytes, error) && !error.empty() && archive.empty(), "a trailer whose offset and length wrap around is refused with an error");
 }
 
 
