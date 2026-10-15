@@ -4451,6 +4451,23 @@ BarrelAnimIsVoxel:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+BarrelCompressFrames:
+  key: BarrelCompressFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BarrelRecoilControl.CompressFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 BarrelDebris:
   key: BarrelDebris
   scopes:
@@ -4511,6 +4528,23 @@ BarrelExplode:
       applies_to: *id016
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+BarrelHoldFrames:
+  key: BarrelHoldFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BarrelRecoilControl.HoldFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 BarrelParticle:
   key: BarrelParticle
   scopes:
@@ -4541,6 +4575,40 @@ BarrelParticle:
       applies_to: *id018
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+BarrelRecoverFrames:
+  key: BarrelRecoverFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BarrelRecoilControl.RecoverFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+BarrelTravel:
+  key: BarrelTravel
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BarrelRecoilControl.Travel
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 BaseBias:
   key: BaseBias
   scopes:
@@ -16766,6 +16834,60 @@ Gunner:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+HDROutput:
+  key: HDROutput
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Automatic
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+HDRPaperWhite:
+  key: HDRPaperWhite
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Auto
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+HDRPeakBrightness:
+  key: HDRPeakBrightness
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Auto
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 HSBuilding:
   key: HSBuilding
   scopes:
@@ -39581,6 +39703,23 @@ TurretChargeAnimRate:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+TurretCompressFrames:
+  key: TurretCompressFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: TurretRecoilControl.CompressFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 TurretCount:
   key: TurretCount
   scopes:
@@ -39615,6 +39754,23 @@ TurretFacings:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+TurretHoldFrames:
+  key: TurretHoldFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: TurretRecoilControl.HoldFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 TurretNotExportedOnGround:
   key: TurretNotExportedOnGround
   scopes:
@@ -39649,6 +39805,40 @@ TurretOffset:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+TurretRecoil:
+  key: TurretRecoil
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsTurretRecoil
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+TurretRecoverFrames:
+  key: TurretRecoverFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: TurretRecoilControl.RecoverFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 TurretRotateSound:
   key: TurretRotateSound
   scopes:
@@ -39683,6 +39873,23 @@ TurretSpins:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+TurretTravel:
+  key: TurretTravel
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: TurretRecoilControl.Travel
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Type:
   key: Type
   scopes:
