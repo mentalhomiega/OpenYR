@@ -1901,7 +1901,7 @@ static void Get_Join_Responses(void)
 		}
 
 		if (Session.GPacket.Command==NET_PRIV_GAMEOPT) {
-			char *opts = strdup(Session.GPacket.Options.Buf + 1);
+			char *opts = strdup(GameoptRules::Private_Fields(Session.GPacket.Options.Buf));
 			if (opts == NULL) {
 				continue;
 			}

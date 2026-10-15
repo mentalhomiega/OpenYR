@@ -35,6 +35,13 @@ namespace GameoptRules
 		return(result);
 	}
 
+	// The fields of a private options packet's text: the text after its leading mark. A text with
+	// no mark is empty and has no fields, so the result is still inside the terminated text.
+	inline char const * Private_Fields(char const * text)
+	{
+		return(text[0] == '\0' ? text : text + 1);
+	}
+
 	// The description a field holds. Only %2C and %25 are decoded; any other percent sign is kept,
 	// so a name from a build that does not escape still reads as it was sent.
 	inline std::string Unescape_Description(char const * field)

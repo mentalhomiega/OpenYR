@@ -144,3 +144,8 @@ fuzz_add_target(FuzzLzo NAME fuzz_lzo
     ENGINE ${FUZZ_INI_ENGINE} lzopipe.cpp lzostraw.cpp
     LIBRARIES lzo
 )
+
+fuzz_add_target(FuzzNet NAME fuzz_net
+    SOURCES fuzz_net.cpp
+    ENGINE netglobal.cpp mpload.cpp
+)
