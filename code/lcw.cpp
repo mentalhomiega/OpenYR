@@ -191,6 +191,135 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 }
 
 
+/// <summary>
+/// Decompresses an LCW block whose compressed size is known, for data that comes from a file or
+/// from another player. It decodes the same streams as LCW_Uncomp with a destination bound, and
+/// reads only the source's own bytes and the destination bytes already written.
+/// </summary>
+/// <param name="source">Compressed data.</param>
+/// <param name="source_length">Size of the compressed data in bytes.</param>
+/// <param name="dest">Buffer to decompress into.</param>
+/// <param name="dest_length">Size of the destination buffer. Decoding stops when it is full.</param>
+/// <returns>The number of destination bytes written, which is less than dest_length when the
+/// stream ends early, or -1 when the stream runs out of source bytes before it ends, or copies
+/// from a position that holds no decoded byte yet.</returns>
+int LCW_Uncomp_Checked(void const * source, unsigned long source_length, void * dest, unsigned long dest_length)
+{
+	unsigned char const * source_ptr = static_cast<unsigned char const *>(source);
+	unsigned char const * const source_end = source_ptr + source_length;
+	unsigned char * const first = static_cast<unsigned char *>(dest);
+	unsigned char * dest_ptr = first;
+	unsigned char * const dest_end = first + dest_length;
+
+	if (source_length == 0) {
+		return(-1);
+	}
+
+	bool const relative = (*source_ptr == 0);
+	if (relative) {
+		source_ptr++;
+	}
+
+	for (;;) {
+		if (dest_ptr == dest_end) {
+			return(static_cast<int>(dest_ptr - first));
+		}
+		if (source_ptr == source_end) {
+			return(-1);
+		}
+
+		unsigned char const op_code = *source_ptr++;
+		size_t const room = static_cast<size_t>(dest_end - dest_ptr);
+		size_t const written = static_cast<size_t>(dest_ptr - first);
+		size_t count;
+		size_t back = 0;
+
+		if (!(op_code & 0x80)) {
+
+			// Short copy from the destination, reaching back.
+			if (source_ptr == source_end) {
+				return(-1);
+			}
+			count = (op_code >> 4) + 3;
+			back = static_cast<size_t>(*source_ptr++) + ((static_cast<size_t>(op_code) & 0x0f) << 8);
+
+		} else if (!(op_code & 0x40)) {
+
+			if (op_code == 0x80) {
+				return(static_cast<int>(written));
+			}
+
+			// Medium copy from the source.
+			count = op_code & 0x3f;
+			if (count > room) {
+				count = room;
+			}
+			if (static_cast<size_t>(source_end - source_ptr) < count) {
+				return(-1);
+			}
+			while (count--) {
+				*dest_ptr++ = *source_ptr++;
+			}
+			continue;
+
+		} else if (op_code == 0xfe) {
+
+			// Long run of one byte.
+			if (source_end - source_ptr < 3) {
+				return(-1);
+			}
+			count = static_cast<size_t>(source_ptr[0]) + (static_cast<size_t>(source_ptr[1]) << 8);
+			unsigned char const data = source_ptr[2];
+			source_ptr += 3;
+			if (count > room) {
+				count = room;
+			}
+			while (count--) {
+				*dest_ptr++ = data;
+			}
+			continue;
+
+		} else {
+
+			// Long or medium copy from the destination.
+			size_t const operands = (op_code == 0xff) ? 4 : 2;
+			if (static_cast<size_t>(source_end - source_ptr) < operands) {
+				return(-1);
+			}
+			if (op_code == 0xff) {
+				count = static_cast<size_t>(source_ptr[0]) + (static_cast<size_t>(source_ptr[1]) << 8);
+				back = static_cast<size_t>(source_ptr[2]) + (static_cast<size_t>(source_ptr[3]) << 8);
+			} else {
+				count = (op_code & 0x3f) + 3;
+				back = static_cast<size_t>(source_ptr[0]) + (static_cast<size_t>(source_ptr[1]) << 8);
+			}
+			source_ptr += operands;
+
+			// An absolute offset counts from the start of the destination.
+			if (!relative) {
+				if (back >= written) {
+					return(-1);
+				}
+				back = written - back;
+			}
+		}
+
+		// A copy from the destination starts at a byte already written; it may run on into the
+		// bytes it writes.
+		if (back == 0 || back > written) {
+			return(-1);
+		}
+		if (count > room) {
+			count = room;
+		}
+		unsigned char const * copy_ptr = dest_ptr - back;
+		while (count--) {
+			*dest_ptr++ = *copy_ptr++;
+		}
+	}
+}
+
+
 /***********************************************************************************************
  * LCW_Comp -- Performes LCW compression on a block of data.                                   *
  *                                                                                             *

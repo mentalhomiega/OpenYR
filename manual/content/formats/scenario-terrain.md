@@ -11,6 +11,7 @@ source_files:
   - code/display.cpp
   - code/map.cpp
   - code/ini.cpp
+  - code/lcw.cpp
   - code/lcwpipe.cpp
   - code/lcwstraw.cpp
   - code/lzopipe.cpp
@@ -65,7 +66,7 @@ An LZO section is damaged when any of these holds:
 - The section ends partway through a block header or a block's compressed bytes.
 - The records end inside a record, even when every block present decompresses.
 
-`[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes.
+`[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes. It also ends at a block that decodes to fewer bytes than its header states, whose commands read past its compressed bytes, or that copies from a position it has not yet decoded.
 
 When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the load continues. Cells the read did not reach keep the terrain they had, except for these cells, which become clear ground:
 
@@ -74,6 +75,6 @@ When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the 
 
 ## Overlay packs
 
-`[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay.
+`[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay, and so does a number for which the rules define no overlay type.
 
 The loader reads both sections only when [`NewINIFormat`](/keys/newiniformat/) is above 1, and ignores the bytes for cells outside the playfield. It reads `[OverlayPack]` up to 512,000 decoded bytes and `[OverlayDataPack]` up to 256,000, and drops anything past that.

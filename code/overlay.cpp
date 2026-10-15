@@ -63,6 +63,7 @@
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "scenpack.h"
 #include "scheme.h"
 #include "surface.h"
 #include "tactical.h"
@@ -410,12 +411,9 @@ void OverlayClass::Read_INI(CCINIClass const & ini)
 				for (int x = 0; x < MAP_CELL_W; x++) {
 					Cell cell(x, y);
 
-					OverlayType classid = OVERLAY_NONE;
-
-					uncomp.Get(&(char&)classid, sizeof(char));
-					if (classid != OVERLAY_NONE) {
-						classid = OverlayType(classid & 0x00FF);
-					}
+					unsigned char type_byte = 0xFF;
+					uncomp.Get(&type_byte, sizeof(type_byte));
+					OverlayType classid = OverlayType(Overlay_Pack_Type(type_byte, OverlayTypes.Count()));
 
 					if (classid != OVERLAY_NONE && (OverlayTypes[classid]->Get_Image_Data() != NULL || OverlayTypes[classid]->CellAnim)) {
 

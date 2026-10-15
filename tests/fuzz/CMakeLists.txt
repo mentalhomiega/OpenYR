@@ -133,3 +133,8 @@ fuzz_add_target(FuzzSpawn NAME fuzz_spawn
     SOURCES fuzz_spawn.cpp
     ENGINE ${FUZZ_INI_ENGINE} spawnerconfig.cpp
 )
+
+fuzz_add_target(FuzzLcw NAME fuzz_lcw
+    SOURCES fuzz_lcw.cpp
+    ENGINE ${FUZZ_INI_ENGINE} lcw.cpp lcwpipe.cpp lcwstraw.cpp
+)
