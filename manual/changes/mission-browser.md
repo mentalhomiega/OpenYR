@@ -13,7 +13,7 @@ credit:
 
 In the modern menus, New Campaign opens a mission browser in place of the campaign list and Mission Select. The browser lists every campaign mission in one panel, in groups by expansion and side: Yuri's Revenge Allied and Soviet, Red Alert 2 Allied and Soviet, other campaigns, and testing campaigns, which start closed. A group header opens or closes its group.
 
-Selecting a mission shows its map picture and briefing. Play starts the selected mission, and a double click on a mission does the same. The difficulty drop-down sits at the foot of the panel, beside Back and Play.
+Selecting a mission shows its map picture and briefing. A map file with no preview section has no picture, and the browser says so in its place. Play starts the selected mission, and a double click on a mission does the same. The difficulty drop-down sits at the foot of the panel, beside Back and Play. The browser opens on the first mission the list shows, unless a mission was chosen last time.
 
 A mission whose map file is missing stays listed, greyed out and marked "(cannot start)", and its reason shows under the picture. The browser selects the mission last chosen the next time it opens, which it keeps in `LastMission=` under `[Options]` in `RA2MD.INI`.
 

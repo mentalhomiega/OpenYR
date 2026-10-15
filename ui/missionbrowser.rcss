@@ -127,7 +127,7 @@ body.missionbrowser #content
 	display: block;
 	height: 28dp;
 	line-height: 28dp;
-	font-size: 20dp;
+	font-size: 17dp;
 	overflow: hidden;
 }
 
