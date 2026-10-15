@@ -1489,6 +1489,12 @@ void TechnoTypeClass::Post_Load(void)
 		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
 		CameoPCX = buffer;
 
+		AltCameoData = NULL;
+		if (ArtINI.Get_String((const char *)GraphicName, "AltCameo", "", buffer, sizeof(buffer)) > 0) {
+			_makepath(fname, NULL, NULL, buffer, ".SHP");
+			AltCameoData = (const ShapeSet *)MFCD::Retrieve(fname);
+		}
+
 		Load_Insignia_Shapes();
 }
 
