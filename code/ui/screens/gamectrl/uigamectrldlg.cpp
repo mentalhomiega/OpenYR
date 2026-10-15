@@ -128,11 +128,6 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Debug_Mode_Set(on);
 		}
 
-		virtual void Set_Screen_Shake(bool on) override
-		{
-			Options.ScreenShake = on;
-		}
-
 		virtual void Set_Autosave_Interval(int frames) override
 		{
 			Options.AutoSaveInterval = frames;
@@ -201,7 +196,6 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;
 	state.SidebarSorting = Options.SidebarSorting;
 	state.DebugMode = Options.DebugMode;
-	state.ScreenShake = Options.ScreenShake;
 
 	static int const intervals[] = {0, 5400, 10800, 21600};
 	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;

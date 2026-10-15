@@ -1618,7 +1618,6 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
 		virtual void Set_Debug_Mode(bool on) override { Calls.push_back(on ? "debug mode on" : "debug mode off"); }
-		virtual void Set_Screen_Shake(bool on) override { Calls.push_back(on ? "shake on" : "shake off"); }
 		virtual void Save(void) override { Calls.push_back("save"); }
 
 		std::string Joined(void) const
@@ -1697,9 +1696,8 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "scroll", 1);
 		Drive(presenter, "cancel");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED &&
-			service.Joined() == "speed 0; scroll 1; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; hidden off; difficulty 0; save",
-			"Escape keeps and saves what was set");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(),
+			"Escape leaves the game controls with nothing applied");
 	}
 
 	{
@@ -1724,10 +1722,9 @@ void Test_Game_Controls_Presenter(void)
 		UIGameControlsState state;
 		UIGameControlsPresenterClass presenter(service, state);
 		Drive(presenter, "debugmode", 1);
-		Drive(presenter, "screenshake", 0);
-		Check(presenter.State.DebugMode && !presenter.State.ScreenShake && service.Calls.empty(), "the debug mode and screen shake switches are held until the player accepts");
+		Check(presenter.State.DebugMode && service.Calls.empty(), "the debug mode switch is held until the player accepts");
 		Drive(presenter, "ok");
-		Check(service.Joined().find("debug mode on; shake off; save") != std::string::npos, "accepting applies the debug mode and screen shake switches");
+		Check(service.Joined().find("debug mode on; save") != std::string::npos, "accepting applies the debug mode switch");
 	}
 
 	{
@@ -2525,7 +2522,7 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "Escape closes the sound screen without reverting anything");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Escape closes the sound screen and puts back its levels");
 
 		view->Release();
 		context.Update();
@@ -2696,7 +2693,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
 		context.Update();
 		presenter.Drain();
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !service.Calls.empty() && service.Calls.back() == "save", "Escape leaves the game controls and saves what was set");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Escape leaves the game controls with nothing applied");
 
 		view->Release();
 		context.Update();
@@ -6820,7 +6817,7 @@ void Test_Shell(void)
 				held = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
 			}
 			if (passes == 4 && score != nullptr) {
-				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
+				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged && service.Calls.size() == 1;
 				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
@@ -6830,7 +6827,7 @@ void Test_Shell(void)
 
 		Check(consumed && dragged == UISoundPresenterClass::LEVELS, "a drag to the end of the music slider reaches the document and lands on the top level");
 		Check(held, "the level a drag left is what the model holds after the pass");
-		Check(kept && service.Calls.size() == 1, "the level stays put on the next pass and previews once");
+		Check(kept, "the level stays put on the next pass and previews once");
 	}
 
 	{

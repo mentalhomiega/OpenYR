@@ -70,6 +70,12 @@ class UISoundPresenterClass : public UIPresenterClass
 
 	private:
 		UISoundServiceClass & Service;
+		// The levels and switches the screen opened with, which Cancel puts back.
+		int InitialScore = 0;
+		int InitialSound = 0;
+		int InitialVoice = 0;
+		bool InitialShuffle = false;
+		bool InitialRepeat = false;
 };
 
 
