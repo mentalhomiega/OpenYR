@@ -62,8 +62,10 @@ Section size limits count decoded bytes: a section's bytes after Base64 decoding
 An LZO section is damaged when any of these holds:
 
 - A block does not decompress, or expands to a size other than its header states.
-- The section ends partway through a block header or a block's compressed bytes.
+- The section ends partway through a block header or a block's compressed bytes. Zero bytes after the last block are padding, not a partial header.
 - The records end inside a record, even when every block present decompresses.
+
+A block header with both counts 0 is an empty block and is skipped, wherever it stands. Bytes that follow the end of a block's compressed data are ignored when the block expands to the size its header states.
 
 `[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes.
 

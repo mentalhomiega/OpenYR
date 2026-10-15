@@ -273,6 +273,93 @@ void Test_Cut_Stream(void)
 }
 
 
+// Bytes an editor may leave around the blocks. Zero padding after the last block, an empty block
+// and bytes after a block's end marker lose no data, so they read whole. A partial header that
+// is not padding is still a cut stream.
+void Test_Padding(void)
+{
+	int const first = 3000;
+	int const second = 2000;
+
+	Fill_Mixed(Source, first + second);
+
+	unsigned char work[LZO1X_1_MEM_COMPRESS];
+	lzo_uint packed1 = 0;
+	lzo_uint packed2 = 0;
+	unsigned char block1[BLOCK * 2];
+	unsigned char block2[BLOCK * 2];
+	lzo1x_1_compress(Source, first, block1, &packed1, work);
+	lzo1x_1_compress(&Source[first], second, block2, &packed2, work);
+
+	// Block 1, optional bytes, block 2, optional bytes. Extra bytes inside the first block's
+	// compressed count follow its end marker.
+	auto build = [&](int zeros_between, int zeros_after, int extra_in_first, unsigned char tail) {
+		int pos = 0;
+		int const comp1 = (int)packed1 + extra_in_first;
+		Packed[pos++] = (unsigned char)(comp1 & 0xFF);
+		Packed[pos++] = (unsigned char)(comp1 >> 8);
+		Packed[pos++] = (unsigned char)(first & 0xFF);
+		Packed[pos++] = (unsigned char)(first >> 8);
+		std::memcpy(&Packed[pos], block1, packed1);
+		pos += (int)packed1;
+		for (int i = 0; i < extra_in_first; i++) Packed[pos++] = 0;
+		for (int i = 0; i < zeros_between; i++) Packed[pos++] = 0;
+		Packed[pos++] = (unsigned char)(packed2 & 0xFF);
+		Packed[pos++] = (unsigned char)(packed2 >> 8);
+		Packed[pos++] = (unsigned char)(second & 0xFF);
+		Packed[pos++] = (unsigned char)(second >> 8);
+		std::memcpy(&Packed[pos], block2, packed2);
+		pos += (int)packed2;
+		for (int i = 0; i < zeros_after; i++) Packed[pos++] = tail;
+		return(pos);
+	};
+
+	struct Run {
+		char const * what;
+		int between;
+		int after;
+		int extra;
+		unsigned char tail;
+		bool damaged;
+	};
+
+	Run const runs[] = {
+		{"no padding", 0, 0, 0, 0, false},
+		{"an empty block between two blocks", 4, 0, 0, 0, false},
+		{"one zero byte after the last block", 0, 1, 0, 0, false},
+		{"three zero bytes after the last block", 0, 3, 0, 0, false},
+		{"an empty block after the last block", 0, 4, 0, 0, false},
+		{"two bytes after the first block's end marker", 0, 0, 2, 0, false},
+		{"one nonzero byte after the last block", 0, 1, 0, 0x7B, true},
+		{"a nonzero partial header after the last block", 0, 3, 0, 0x7B, true},
+	};
+
+	bool ok = true;
+
+	for (Run const & entry : runs) {
+		int const length = build(entry.between, entry.after, entry.extra, entry.tail);
+		Arm_Guard(0);
+
+		BufferStraw feed(Packed, length);
+		LZOStraw decomp(LZOStraw::DECOMPRESS);
+		decomp.Get_From(&feed);
+
+		// Asking for more than the blocks hold makes the straw read what follows them.
+		int const got = decomp.Get(Unpacked, first + second + 16);
+		bool const same = got == first + second && std::memcmp(Source, Unpacked, first + second) == 0;
+
+		// A damaged stream still yields the blocks that were whole before the damage.
+		if (decomp.Is_Damaged() != entry.damaged || !same || !Guard_Intact(first + second)) {
+			std::printf("  %s: damaged %d, wanted %d, %d bytes, same %d\n",
+				entry.what, (int)decomp.Is_Damaged(), (int)entry.damaged, got, (int)same);
+			ok = false;
+		}
+	}
+
+	Report("zero padding and empty blocks read whole, other partial headers do not", ok);
+}
+
+
 // Headers the compressor cannot have written. The straw has to stop at each without letting the
 // decompressor write past the block it decompresses into.
 void Test_Bad_Headers(void)
@@ -431,6 +518,7 @@ int main(void)
 	Test_Straw_To_Pipe();
 	Test_Incompressible_Block();
 	Test_Cut_Stream();
+	Test_Padding();
 	Test_Bad_Headers();
 	Test_Corrupted_Block();
 	Test_Oversized_Block_Header();
