@@ -1081,8 +1081,8 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 	 */
 	foot->Teleport_To(dest);
 
-	if (Rule->WarpOut != NULL) {
-		new AnimClass(Rule->WarpOut, foot->Center_Coord());
+	if (Rule->WarpIn != NULL) {
+		new AnimClass(Rule->WarpIn, foot->Center_Coord());
 	}
 	Sound_Effect(in_sound, foot->Center_Coord());
 
