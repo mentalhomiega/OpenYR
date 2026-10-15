@@ -241,6 +241,11 @@ class UIEngineHostClass : public UIShellHostClass
 			return(ScenarioActive);
 		}
 
+		virtual UIMenuTintType Menu_Tint(void) const override
+		{
+			return(UI_Theme_Tint());
+		}
+
 		virtual bool Live_Background(void) const override
 		{
 			return(Shellmap_Running());

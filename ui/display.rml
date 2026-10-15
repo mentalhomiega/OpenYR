@@ -41,6 +41,10 @@
 			<div class="setting" id="cursorscale-row" desc="The size of the pointer the game draws."><span class="caption">Cursor size</span><select id="cursorscale" data-value="cursorscale" data-event-change="queue('cursorscale', ev.value)">
 				<option data-for="entry : cursorscales" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>
+			<div class="setting" id="menutheme-row" desc="The colour of the menus: Allied blue, Soviet red or Yuri purple. Random picks one at each start. The change takes effect when you press OK."><span class="caption">Menu theme</span><select id="menutheme" data-value="menutheme" data-event-change="queue('menutheme', ev.value)">
+				<option data-for="entry : menuthemes" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<label class="check setting" id="switch-menu-battle" desc="Plays a computer battle behind the modern menus, in place of the title art. It stops when a game starts."><span class="caption">Battle behind the menus</span><input type="checkbox" id="menu-battle" data-attrif-checked="menubattle" data-event-click="queue('menubattle', menubattle ? 0 : 1)"/></label>
 		</div>
 		<div id="side">
 			<p id="side-title">Description</p>

@@ -10,6 +10,7 @@
 #pragma once
 
 #include "ui/uiinput.h"
+#include "ui/uitheme.h"
 #include "win.h"
 
 #include <string>
@@ -66,6 +67,9 @@ class UIShellHostClass
 
 		// Is a game in progress behind the menus?
 		virtual bool Game_Running(void) const { return(false); }
+
+		// The faction tint the modern menus are coloured with.
+		virtual UIMenuTintType Menu_Tint(void) const { return(UI_TINT_ALLIED); }
 
 		// Is the menu battle drawn behind the menus, in place of the title art?
 		virtual bool Live_Background(void) const { return(false); }

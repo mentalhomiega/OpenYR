@@ -15,10 +15,14 @@
 #include "goptions.h"
 
 #include <filesystem>
+#include <random>
 
 namespace {
 
 std::string Directory;
+
+// The tint Random drew for this run, or -1 before the first draw.
+int Random_Tint = -1;
 
 }	// namespace
 
@@ -39,6 +43,30 @@ std::string UI_Theme_Directory(void)
 {
 	char const separator = (char)std::filesystem::path::preferred_separator;
 	return(Directory + "themes" + separator + (Options.IsClassicMenus ? "classic" : "modern") + separator);
+}
+
+
+UIMenuTintType UI_Theme_Tint(void)
+{
+	switch (Options.MenuTheme) {
+		case MENU_THEME_ALLIED:
+			return(UI_TINT_ALLIED);
+
+		case MENU_THEME_SOVIET:
+			return(UI_TINT_SOVIET);
+
+		case MENU_THEME_YURI:
+			return(UI_TINT_YURI);
+
+		default:
+			break;
+	}
+
+	if (Random_Tint < 0) {
+		std::random_device device;
+		Random_Tint = (int)(device() % (unsigned int)UI_TINT_COUNT);
+	}
+	return((UIMenuTintType)Random_Tint);
 }
 
 

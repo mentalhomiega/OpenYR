@@ -1,0 +1,59 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The Soviet tint. Every colour of the modern menus for this tint is one of these variables;
+   theme.rcss reads them with var(). Soviet red: oxblood panels, light bevels and red buttons. The states differ by brightness and border. */
+body.theme-soviet
+{
+	--t-ink: #0a0404;
+	--t-shade-top: #1a060699;
+	--t-shade-bottom: #100303e6;
+	--t-panel: #3a0c0ca0;
+	--t-edge: #ff9c8a;
+	--t-edge-dim: #6e1a16;
+	--t-caption: #ffd6cf;
+	--t-text: #fbe9e6;
+	--t-text-hot: #ffffff;
+	--t-face-top: #9c2a22;
+	--t-face-bottom: #5a1512;
+	--t-hover-top: #c23a2e;
+	--t-hover-bottom: #84201b;
+	--t-press-top: #3d0909;
+	--t-press-bottom: #5c1310;
+	--t-accent: #ff7a66;
+	--t-accent-strong: #ffd0c8;
+	--t-disabled-top: #2a1d1d;
+	--t-disabled-bottom: #201616;
+	--t-disabled-edge: #4a3434;
+	--t-disabled-text: #8a7373;
+	--t-disabled-check: #6b3a38;
+	--t-field: #140505d0;
+	--t-field-solid: #140505;
+	--t-field-list: #140505a0;
+	--t-select: #7a2420;
+	--t-popup: #3a0c0c;
+	--t-tooltip: #3a0c0cf0;
+	--t-track: #2a1111;
+	--t-rule: #6e1a16;
+	--t-muted: #d8a59c;
+	--t-stamp: #c99086;
+	--t-column: #1e0606b3;
+	--t-column-edge: #6e1a16;
+	--t-tab-top: #6e1f1a;
+	--t-tab-text: #e6b8b0;
+	--t-tab-active: #3a0c0c;
+	--t-frame: #b3261e;
+	--t-backdrop: #1e060680;
+}
+
+/* The Soviet insignia, from the game's files, is the emblem of the title menus. */
+body.theme-soviet #badge
+{
+	decorator: image(RUSI.PCX fill);
+}

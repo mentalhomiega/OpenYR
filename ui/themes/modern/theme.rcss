@@ -13,7 +13,7 @@
 body
 {
 	font-family: fullfnt;
-	color: #ece6f7;
+	color: var(--t-text, #ece6f7);
 }
 
 /* Yuri's Revenge's title art fills the window behind the menus, dimmed. */
@@ -25,7 +25,7 @@ body
 	width: 100%;
 	height: 100%;
 	z-index: -2;
-	background-color: #05040a;
+	background-color: var(--t-ink, #05040a);
 	pointer-events: none;
 }
 
@@ -46,7 +46,7 @@ body
 	top: 0;
 	width: 100%;
 	height: 100%;
-	decorator: vertical-gradient(#0a061299 #05030ae6);
+	decorator: vertical-gradient(var(--t-shade-top, #0a061299) var(--t-shade-bottom, #05030ae6));
 }
 
 /* Over a game in progress the art gives way to a light shade, so the panel stands out from the
@@ -93,27 +93,27 @@ body
 
 #wallpaper
 {
-	background-color: #120d1ce8;
-	border: 1dp #6b43a8;
+	background-color: var(--t-panel, #120d1ce8);
+	border: 1dp var(--t-edge, #6b43a8);
 	border-radius: 6dp;
 }
 
 /* Text */
 .caption, .value
 {
-	color: #d9c8ff;
+	color: var(--t-caption, #d9c8ff);
 }
 
 /* Buttons */
 button, button.wide, button.tall
 {
 	height: 26dp;
-	border: 1dp #4d3d6b;
+	border: 1dp var(--t-edge-dim, #4d3d6b);
 	border-radius: 3dp;
 	padding: 4dp 8dp 0 8dp;
-	color: #ece6f7;
+	color: var(--t-text, #ece6f7);
 	background-color: transparent;
-	decorator: vertical-gradient(#2e2640 #18131f);
+	decorator: vertical-gradient(var(--t-face-top, #2e2640) var(--t-face-bottom, #18131f));
 }
 
 button.tall
@@ -124,18 +124,18 @@ button.tall
 
 button:hover, button.wide:hover, button.tall:hover
 {
-	border-color: #b46bff;
-	color: #ffffff;
-	decorator: vertical-gradient(#3d2f57 #1f1829);
+	border-color: var(--t-accent, #b46bff);
+	color: var(--t-text-hot, #ffffff);
+	decorator: vertical-gradient(var(--t-hover-top, #3d2f57) var(--t-hover-bottom, #1f1829));
 }
 
 button:active, button.wide:active, button.tall:active
 {
 	position: relative;
 	top: 0;
-	border: 1dp #d29bff;
+	border: 1dp var(--t-accent-strong, #d29bff);
 	padding: 5dp 8dp 0 8dp;
-	decorator: vertical-gradient(#1a1424 #2a203a);
+	decorator: vertical-gradient(var(--t-press-top, #1a1424) var(--t-press-bottom, #2a203a));
 }
 
 button.disabled, button:disabled, button.wide.disabled, button.wide:disabled, button.tall.disabled, button.tall:disabled,
@@ -144,126 +144,126 @@ button.tall.disabled:active, button.tall:disabled:active
 {
 	position: relative;
 	top: 0;
-	border: 1dp #2c2638;
+	border: 1dp var(--t-disabled-edge, #2c2638);
 	padding: 4dp 8dp 0 8dp;
-	color: #5f5873;
-	decorator: vertical-gradient(#1c1825 #141119);
+	color: var(--t-disabled-text, #5f5873);
+	decorator: vertical-gradient(var(--t-disabled-top, #1c1825) var(--t-disabled-bottom, #141119));
 }
 
 .keys button:focus, .keys label.check:focus
 {
-	color: #ffffff;
-	border-color: #d29bff;
+	color: var(--t-text-hot, #ffffff);
+	border-color: var(--t-accent-strong, #d29bff);
 }
 
 .keys button.disabled:focus
 {
-	color: #5f5873;
+	color: var(--t-disabled-text, #5f5873);
 }
 
 /* Fields, lists and drop-down boxes */
 input[type='range'], input[type='text'], input[type='password'], textarea, select, .hotkey, .list
 {
-	border-color: #4d3d6b;
-	background-color: #0b0812d0;
+	border-color: var(--t-edge-dim, #4d3d6b);
+	background-color: var(--t-field, #0b0812d0);
 }
 
 .keys .list:focus, .keys select:focus, .keys input[type='range']:focus
 {
-	border-color: #d29bff;
+	border-color: var(--t-accent-strong, #d29bff);
 }
 
 .list .item, select option
 {
-	color: #ece6f7;
+	color: var(--t-text, #ece6f7);
 }
 
 .list .item:checked, .list .item.selected, select option:checked
 {
-	background-color: #4a2f78;
-	color: #ffffff;
+	background-color: var(--t-select, #4a2f78);
+	color: var(--t-text-hot, #ffffff);
 }
 
 select selectbox
 {
-	background-color: #120d1c;
-	border: 1dp #6b43a8;
+	background-color: var(--t-popup, #120d1c);
+	border: 1dp var(--t-edge, #6b43a8);
 }
 
 /* Check boxes */
 input[type='checkbox']
 {
-	border: 1dp #6b43a8;
+	border: 1dp var(--t-edge, #6b43a8);
 	border-radius: 3dp;
-	background-color: #0b0812;
+	background-color: var(--t-field-solid, #0b0812);
 	decorator: none;
 }
 
 input[type='checkbox']:checked
 {
-	background-color: #b46bff;
+	background-color: var(--t-accent, #b46bff);
 	decorator: none;
 }
 
 input[type='checkbox']:disabled
 {
-	border-color: #2c2638;
-	background-color: #1c1825;
+	border-color: var(--t-disabled-edge, #2c2638);
+	background-color: var(--t-disabled-top, #1c1825);
 	decorator: none;
 }
 
 input[type='checkbox']:checked:disabled
 {
-	border-color: #2c2638;
-	background-color: #5f4a80;
+	border-color: var(--t-disabled-edge, #2c2638);
+	background-color: var(--t-disabled-check, #5f4a80);
 	decorator: none;
 }
 
 /* Sliders */
 input[type='range'] slidertrack
 {
-	background-color: #1c1528;
+	background-color: var(--t-track, #1c1528);
 	decorator: none;
 }
 
 input[type='range'] sliderbar
 {
 	border-radius: 2dp;
-	background-color: #b46bff;
+	background-color: var(--t-accent, #b46bff);
 	decorator: none;
 }
 
 /* Scroll bars */
 scrollbarvertical
 {
-	border-left-color: #2e2640;
+	border-left-color: var(--t-face-top, #2e2640);
 }
 
 scrollbarvertical slidertrack
 {
-	background-color: #0b0812;
+	background-color: var(--t-field-solid, #0b0812);
 	decorator: none;
 }
 
 scrollbarvertical sliderbar
 {
 	border-radius: 2dp;
-	background-color: #4d3d6b;
+	background-color: var(--t-edge-dim, #4d3d6b);
 	decorator: none;
 }
 
 scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc,
 scrollbarvertical sliderarrowdec:active, scrollbarvertical sliderarrowinc:active
 {
-	background-color: #2e2640;
+	background-color: var(--t-face-top, #2e2640);
 	decorator: none;
 }
 
 .tooltip
 {
-	background-color: #120d1cf0;
-	border: 1dp #6b43a8;
-	color: #ece6f7;
+	background-color: var(--t-tooltip, #120d1cf0);
+	border: 1dp var(--t-edge, #6b43a8);
+	color: var(--t-text, #ece6f7);
 }
 
 /* Text everywhere in the vector face, a notch smaller than the bitmap font it replaces. */
@@ -280,27 +280,27 @@ body
 
 input[type='text'], input[type='password'], textarea, .hotkey, select, select option
 {
-	color: #ece6f7;
-	caret-color: #d29bff;
+	color: var(--t-text, #ece6f7);
+	caret-color: var(--t-accent-strong, #d29bff);
 }
 
 input selection, textarea selection
 {
-	background-color: #4a2f78;
-	color: #ffffff;
+	background-color: var(--t-select, #4a2f78);
+	color: var(--t-text-hot, #ffffff);
 }
 
 select:disabled, select.disabled, .trough.disabled
 {
-	color: #5f5873;
+	color: var(--t-disabled-text, #5f5873);
 }
 
 /* Value boxes, frames and group outlines */
 .trough, .trough.disabled
 {
-	border: 1dp #4d3d6b;
-	background-color: #0b0812d0;
-	color: #ece6f7;
+	border: 1dp var(--t-edge-dim, #4d3d6b);
+	background-color: var(--t-field, #0b0812d0);
+	color: var(--t-text, #ece6f7);
 	decorator: none;
 }
 
@@ -311,29 +311,29 @@ select:disabled, select.disabled, .trough.disabled
 
 .frame, .group, progress, select selectbox
 {
-	border-color: #4d3d6b;
+	border-color: var(--t-edge-dim, #4d3d6b);
 }
 
 .group > .rule
 {
-	color: #d9c8ff;
+	color: var(--t-caption, #d9c8ff);
 }
 
 .group > .rule > span
 {
-	background-color: #4d3d6b;
+	background-color: var(--t-edge-dim, #4d3d6b);
 }
 
 progress fill
 {
-	background-color: #b46bff;
-	decorator: horizontal-gradient(#6b43a8 #b46bff);
+	background-color: var(--t-accent, #b46bff);
+	decorator: horizontal-gradient(var(--t-edge, #6b43a8) var(--t-accent, #b46bff));
 }
 
 /* Arrows */
 select selectarrow, select:disabled selectarrow, select.disabled selectarrow
 {
-	background-color: #2e2640;
+	background-color: var(--t-face-top, #2e2640);
 	decorator: image(arrow-down.png fill);
 }
 
@@ -358,8 +358,89 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	font-family: fullfnt;
 	font-size: 12dp;
 	line-height: 16dp;
-	color: #8f84a8;
+	color: var(--t-stamp, #8f84a8);
 	pointer-events: none;
+}
+
+/* The screen-edge frame: a tinted border round the window, over every screen. */
+#frame
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	border: 4dp var(--t-frame, #6b43a8);
+	pointer-events: none;
+}
+
+/* The profile panel at the top left of the title menus: the player's name over a smaller line. */
+#profile
+{
+	display: none;
+	position: absolute;
+	left: 16dp;
+	top: 16dp;
+	width: 200dp;
+	height: 50dp;
+	padding: 6dp 10dp 0 10dp;
+	background-color: var(--t-panel, #120d1ce8);
+	border: 1dp var(--t-edge, #6b43a8);
+	border-radius: 3dp;
+	pointer-events: none;
+}
+
+#profile-name
+{
+	font-size: 16dp;
+	line-height: 20dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+#profile-line
+{
+	font-size: 11dp;
+	line-height: 14dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+/* The faction emblem at the top right of the title menus, with the version centred under it. */
+#emblem
+{
+	display: none;
+	position: absolute;
+	right: 16dp;
+	top: 16dp;
+	width: 180dp;
+	height: 104dp;
+	pointer-events: none;
+}
+
+#badge
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 180dp;
+	height: 82dp;
+}
+
+#badge-version
+{
+	position: absolute;
+	left: 0;
+	top: 84dp;
+	width: 180dp;
+	height: 16dp;
+	font-size: 12dp;
+	line-height: 16dp;
+	text-align: center;
+	color: var(--t-stamp, #8f84a8);
+}
+
+body.titlemenu #profile, body.titlemenu #emblem
+{
+	display: block;
 }
 
 /* The title screen menus stand in one panel on the left, the same size for every menu, with
@@ -397,7 +478,7 @@ body.titlemenu #title
 	font-size: 18dp;
 	line-height: 24dp;
 	text-align: center;
-	color: #d9c8ff;
+	color: var(--t-caption, #d9c8ff);
 }
 
 /* The skirmish lobby fills most of the screen: the player list on the left, the map and the game
@@ -429,7 +510,7 @@ body.lobby #right
 body.lobby #players
 {
 	padding: 10dp 12dp 8dp 12dp;
-	background-color: #0b0812a0;
+	background-color: var(--t-field-list, #0b0812a0);
 	border-radius: 4dp;
 }
 
@@ -443,13 +524,13 @@ body.lobby #headings > .caption
 	height: 24dp;
 	line-height: 24dp;
 	font-size: 12dp;
-	color: #a99bc9;
+	color: var(--t-muted, #a99bc9);
 }
 
 body.lobby .slot
 {
 	height: 42dp;
-	border-top: 1dp #2e2640;
+	border-top: 1dp var(--t-rule, #2e2640);
 }
 
 body.lobby .col-player { width: 196dp; margin-right: 8dp; }
@@ -561,8 +642,8 @@ body.lobby #ok, body.lobby #cancel
 	bottom: 0;
 	width: 200dp;
 	padding: 16dp 12dp 0 12dp;
-	background-color: #0a0814b3;
-	border-right: 1dp #3b2f55;
+	background-color: var(--t-column, #0a0814b3);
+	border-right: 1dp var(--t-column-edge, #3b2f55);
 	z-index: 2;
 }
 
@@ -573,12 +654,12 @@ body.lobby #ok, body.lobby #cancel
 	height: 40dp;
 	margin: 0 0 6dp 0;
 	padding: 10dp 12dp 0 16dp;
-	border: 1dp #4d3d6b;
+	border: 1dp var(--t-edge-dim, #4d3d6b);
 	border-radius: 4dp;
 	text-align: left;
-	color: #b9aad6;
+	color: var(--t-tab-text, #b9aad6);
 	background-color: transparent;
-	decorator: vertical-gradient(#2a2238 #18131f);
+	decorator: vertical-gradient(var(--t-tab-top, #2a2238) var(--t-face-bottom, #18131f));
 }
 
 #tabs button.tab.gone
@@ -588,38 +669,38 @@ body.lobby #ok, body.lobby #cancel
 
 #tabs button.tab:hover
 {
-	border-color: #b46bff;
-	color: #ffffff;
-	decorator: vertical-gradient(#3d2f57 #1f1829);
+	border-color: var(--t-accent, #b46bff);
+	color: var(--t-text-hot, #ffffff);
+	decorator: vertical-gradient(var(--t-hover-top, #3d2f57) var(--t-hover-bottom, #1f1829));
 }
 
 #tabs button.tab:active
 {
 	padding: 10dp 12dp 0 16dp;
-	decorator: vertical-gradient(#1a1424 #2a203a);
+	decorator: vertical-gradient(var(--t-press-top, #1a1424) var(--t-press-bottom, #2a203a));
 }
 
 /* The tab of the page on show has an accent bar at its left and joins the page. */
 #tabs button.tab.active, #tabs button.tab.active:hover, #tabs button.tab.active:active
 {
-	border-color: #d29bff;
+	border-color: var(--t-accent-strong, #d29bff);
 	border-left-width: 5dp;
-	color: #ffffff;
-	background-color: #120d1c;
+	color: var(--t-text-hot, #ffffff);
+	background-color: var(--t-tab-active, #120d1c);
 	decorator: none;
 }
 
 .keys #tabs button.tab:focus
 {
-	color: #ffffff;
-	border-color: #d29bff;
+	color: var(--t-text-hot, #ffffff);
+	border-color: var(--t-accent-strong, #d29bff);
 }
 
 /* The backdrop: a translucent tinted fill over the whole screen, at about half opacity. Themes set
    the colour here, with the alpha byte last. The title art behind the menus stays out of the way. */
 .settings-backdrop
 {
-	background-color: #0a081480;
+	background-color: var(--t-backdrop, #0a081480);
 }
 
 .settings-backdrop #screen-bg
