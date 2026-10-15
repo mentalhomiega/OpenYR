@@ -415,12 +415,13 @@ bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
 }
 
 
+// Automatic targeting needs a multiplier above the single-precision 2%, so 1% is refused and 2% accepted (TechnoClass::CanAutoTargetObject, 0x6F7CA0).
 bool WarheadTypeClass::Can_Passive_Acquire(ArmorType armor) const
 {
 	if (armor >= 0 && armor < (int)PassiveAcquire.size() && PassiveAcquire[armor] >= 0) {
 		return(PassiveAcquire[armor] != 0);
 	}
-	return(Versus(armor) != 0.0);
+	return(Versus(armor) > 0.019999999552965164);
 }
 
 
