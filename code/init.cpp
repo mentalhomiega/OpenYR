@@ -57,6 +57,7 @@
 #include "always.h"
 
 #include "init.h"
+#include "sidebargrid.h"
 #include "rulescheck.h"
 #include "rulesreload.h"
 
@@ -6728,6 +6729,7 @@ static void Init_Commands(void)
 	AllCommands.Add(new HeldModifierCommandClass("ForceMove", "Force move", "Hold to move onto an occupied cell."));
 	AllCommands.Add(new HeldModifierCommandClass("SelectModifier", "Add to selection", "Hold to add or remove units from the selection."));
 	AllCommands.Add(new HeldModifierCommandClass("QueueMove", "Queue move", "Hold to queue a move after the current order."));
+	AllCommands.Add(new HeldModifierCommandClass("GridBuildModifier", "Grid build modifier", "Hold, then press Q W E R, A S D F or Z X C V to start the sidebar cameos in that order."));
 	AllCommands.Add(new DefenseTabCommandClass);
 	AllCommands.Add(new InfantryTabCommandClass);
 	AllCommands.Add(new UnitTabCommandClass);
@@ -6922,6 +6924,9 @@ static void Init_Commands(void)
 // The timing of the Double, Hold and Held triggers, and the bindings they fire.
 static HotkeyTimingClass HotkeyTiming;
 
+// The keys the grid build modifier is bound to, one for each slot; KN_NONE when a slot has none.
+static KeyNumType GridModifierKeys[HOTKEY_SLOT_COUNT] = { KN_NONE, KN_NONE };
+
 
 /// <summary>
 /// Returns the HotkeyTriggered index of the key with the trigger.
@@ -7061,6 +7066,52 @@ void Apply_Hotkeys(void)
 	KeyNumType const queue_2 = Held_Key_Of("QueueMove", 1);
 	Options.KeyQueueMove1 = (queue_1 != KN_NONE) ? queue_1 : queue_2;
 	Options.KeyQueueMove2 = (queue_2 != KN_NONE) ? queue_2 : queue_1;
+
+	for (int slot = 0; slot < HOTKEY_SLOT_COUNT; slot++) {
+		GridModifierKeys[slot] = Held_Key_Of("GridBuildModifier", slot);
+	}
+}
+
+
+/// <summary>
+/// Returns whether the grid build modifier is held down through one of its keys.
+/// </summary>
+static bool Grid_Modifier_Held(void)
+{
+	for (KeyNumType key : GridModifierKeys) {
+		if (key != KN_NONE && HotkeyTiming.Is_Held(key)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Shows the grid keys on the sidebar cameos for as long as the grid build modifier is held.
+/// </summary>
+static void Sync_Grid_Labels(void)
+{
+	Map.Set_Grid_Labels(Grid_Modifier_Held());
+}
+
+
+/// <summary>
+/// Starts the sidebar cameo of a grid key while the grid build modifier is held. Such a key runs no other binding.
+/// </summary>
+/// <param name="key">The key the queue reports, with its modifier bits.</param>
+/// <returns>bool; Did the key start a grid build?</returns>
+bool Hotkey_Grid_Press(int key)
+{
+	if (!Grid_Modifier_Held()) {
+		return(false);
+	}
+	int const index = Sidebar_Grid_Index(key);
+	if (index < 0) {
+		return(false);
+	}
+	Map.Grid_Build(index);
+	return(true);
 }
 
 
@@ -7076,6 +7127,7 @@ bool Hotkey_Route(int key)
 		return(false);
 	}
 	Run_Hotkey_Fires(HotkeyTiming.Press(key, timeGetTime()));
+	Sync_Grid_Labels();
 	return(true);
 }
 
@@ -7087,6 +7139,7 @@ bool Hotkey_Route(int key)
 void Hotkey_Release(int key)
 {
 	Run_Hotkey_Fires(HotkeyTiming.Release(key));
+	Sync_Grid_Labels();
 }
 
 
@@ -7106,6 +7159,7 @@ void Hotkey_Poll(void)
 void Hotkey_Reset_Pending(void)
 {
 	HotkeyTiming.Reset();
+	Sync_Grid_Labels();
 }
 
 

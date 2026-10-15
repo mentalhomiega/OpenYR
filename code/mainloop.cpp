@@ -556,6 +556,10 @@ void Keyboard_Process(KeyNumType & input)
 		// A release also completes a hold or a tap of the key's other bindings.
 		Hotkey_Release(input & ~WWKEY_RLS_BIT);
 
+	} else if (Hotkey_Grid_Press(key)) {
+
+		// The grid build modifier is held, so the grid key starts a sidebar cameo and runs no binding.
+
 	} else if (Hotkey_Route(key)) {
 
 		// The binding ran through the trigger timing, which may hold a press until its window ends.

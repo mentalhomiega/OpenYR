@@ -37,6 +37,7 @@ bool Init_Hotkeys(void);
 void Save_Hotkeys(void);
 void Apply_Hotkeys(void);
 bool Hotkey_Route(int key);
+bool Hotkey_Grid_Press(int key);
 void Hotkey_Release(int key);
 void Hotkey_Poll(void);
 void Hotkey_Reset_Pending(void);
