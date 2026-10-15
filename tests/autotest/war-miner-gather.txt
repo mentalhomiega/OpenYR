@@ -1,0 +1,20 @@
+; A War Miner (HARV) ordered onto ore harvests it. gamemd's UnitClass::DrawIt (0x73CEC0) draws the gather effect
+; OREGATH.SHP over a harvester that is harvesting and not moving: 8 facings of 15 frames, with the facing block chosen by
+; the facing and the frame by the walk count. The screenshots at frames 200-212 show that effect.
+; Ore overlay 102 is at 62,36 on XMP29U2.MAP.
+; Run: scripts/run_autotest.ps1 -Build agent18 -Script E:/Claude ra2 decomp/src-agent18/tests/autotest/war-miner-gather.txt -Width 800 -Height 600 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/shots/war-miner-gather/<before|after>" -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 reveal
+30 view 62 37
+35 own GAREFN 56 40
+40 own HARV 60 36
+60 clickcell HARV 62 36
+120 where HARV
+160 where HARV
+200 where HARV
+200 command ScreenCapture
+204 command ScreenCapture
+208 command ScreenCapture
+212 command ScreenCapture
+260 where HARV
+300 quit
