@@ -179,6 +179,7 @@ FootClass::FootClass(HouseClass * house) :
 	MoveSoundDelay(0),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
+	SensorRadius(0),
 	IsFiring(false),
 	IsRotating(false),
 	IsUnloading(false),
@@ -4279,6 +4280,9 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDeploying);
 	stream.Serialize(SensorCell);
 	stream.Serialize(SensorHouse);
+	if (!stream.Is_Saving()) {
+		SensorRadius = SensorCell != CELL_NONE ? TClass->SensorsSight : 0;
+	}
 	stream.Serialize(IsFiring);
 	stream.Serialize(IsRotating);
 	stream.Serialize(IsUnloading);
@@ -5427,39 +5431,48 @@ void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 
 /// <summary>
-/// Moves a Sensors=yes object's coverage with it (FootClass::AddSensorsAt, 0x4DE7B0, and
-/// RemoveSensorsAt): its owner senses every cell whose squared offset from where it stands is
-/// below SensorsSight squared, which reveals the cloaked objects there. With lift, or once the
-/// object is in limbo, the coverage is taken away.
+/// Keeps the cells this object senses in step with its cell and owner. Every object whose type
+/// has SensorsSight above zero senses the cells within that radius for its owner, whatever its
+/// Sensors flag (FootClass::AddSensorsAt, 0x4DE7B0). A sensed cell reveals the cloaked objects
+/// standing on it. With lift, or while the object is in limbo, the coverage is taken away
+/// (FootClass::RemoveSensorsAt, 0x4DE940), and only the coverage this object laid down is removed.
 /// </summary>
 void FootClass::Update_Sensors(bool lift)
 {
-	int const radius = TClass->IsScanner ? TClass->SensorsSight : 0;
-	Cell const now = (lift || IsInLimbo || radius <= 0) ? CELL_NONE : Get_Cell();
-	if (now == SensorCell && (now == CELL_NONE || House == SensorHouse)) {
+	Cell const now = (lift || IsInLimbo || TClass->SensorsSight <= 0) ? CELL_NONE : Get_Cell();
+	int const radius = now == CELL_NONE ? 0 : TClass->SensorsSight;
+	if (now == SensorCell && (now == CELL_NONE || (House == SensorHouse && radius == SensorRadius))) {
 		return;
 	}
 
 	for (int pass = 0; pass < 2; pass++) {
 		Cell const origin = pass == 0 ? SensorCell : now;
 		HouseClass * house = pass == 0 ? SensorHouse : House;
+		int const span = pass == 0 ? SensorRadius : radius;
 		if (origin == CELL_NONE || house == NULL) {
 			continue;
 		}
-		for (int y = -radius; y < radius; y++) {
-			for (int x = -radius; x < radius; x++) {
+		for (int y = -span; y < span; y++) {
+			for (int x = -span; x < span; x++) {
 				Cell const cell(origin.X + x, origin.Y + y);
-				if (x * x + y * y >= radius * radius || !Map.In_Radar(cell)) {
+				if (x * x + y * y >= span * span || !Map.In_Radar(cell)) {
 					continue;
 				}
 				CellClass * cellptr = &Map[cell];
-				bool const changed = pass == 0 ? cellptr->Remove_Sensor(house) : cellptr->Add_Sensor(house);
-				if (changed) {
-					Cloak_Cell_Occupiers(cellptr);
+				if (pass == 0) {
+					// A cell is lowered only while this house still senses it, so counts never go negative.
+					if (!cellptr->Is_Sensed(house)) {
+						continue;
+					}
+					cellptr->Remove_Sensor(house);
+				} else {
+					cellptr->Add_Sensor(house);
 				}
+				Cloak_Cell_Occupiers(cellptr);
 			}
 		}
 	}
 	SensorCell = now;
 	SensorHouse = now == CELL_NONE ? NULL : House;
+	SensorRadius = radius;
 }

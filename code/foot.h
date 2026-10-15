@@ -356,9 +356,11 @@ class FootClass : public TechnoClass
 		bool IsLocomotorProcessing;
 		bool IsPiggybackEndPending;
 
-		// The cell and house a Sensors=yes object's SensorsSight coverage was last laid down for.
+		// The cell, house and radius that SensorsSight coverage was last laid down for. The
+		// radius is not saved; it is rebuilt on load from the type, which is fixed at creation.
 		Cell SensorCell;
 		HouseClass * SensorHouse;
+		int SensorRadius;
 		void Update_Sensors(bool lift);
 
 		/*
