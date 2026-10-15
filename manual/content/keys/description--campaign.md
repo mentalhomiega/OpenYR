@@ -10,7 +10,7 @@ when_omitted:
 
 The value names the campaign's row in the mission selection list, the only part of a campaign the player sees before choosing it. It is a [string table](/formats/csf/) label, such as `DESC:ALL1`, and the row shows that label's text. A value that matches no label is shown as written. At most 127 characters of the value are kept; a longer value is cut.
 
-A campaign that the running expansion does not allow ([`RequiredAddon`](/keys/requiredaddon-campaign/#scope-campaign)) or that is marked [`DebugOnly=yes`](/keys/debugonly/#scope-campaign) is left out of the list, so its text is never shown.
+A campaign that the running expansion does not allow ([`RequiredAddon`](/keys/requiredaddon-campaign/#scope-campaign)) or that is marked [`DebugOnly=yes`](/keys/debugonly/#scope-campaign) is left out of the list, so its text is never shown. So is a campaign whose [`Scenario=`](/keys/scenario/#scope-campaign) does not name a map file, such as a header row or a movie sequence.
 
 Each value in a `[Battles]` section names one campaign, and that name is also the section the campaign's settings are read from, this key included. The number to the left of the `=` is ignored.
 

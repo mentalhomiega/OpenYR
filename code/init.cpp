@@ -811,6 +811,7 @@ static bool Init_Rules(void)
 	Rule->Color_Schemes(*RuleINI);
 	Rule->Do_Movies(ArtINI);
 	Rule->Do_Movies(art_ini);
+	Movies_Read_RA2_Art();
 	Rule->Audio_Visual_Rules(*RuleINI);
 	Rule->MPlayer(*RuleINI);
 	Rule->MPlayer(MPRuleINI);
@@ -1400,8 +1401,8 @@ static void Play_Intro(bool sequenced)
 
 	//Keyboard->Clear();
 	if (sequenced) {
-		if (_counter <= VQ_FIRST) _counter = (VQType)Movies.Count();
-		if (_counter == Movies.Count()) _counter--;
+		if (_counter <= VQ_FIRST) _counter = (VQType)Movies_Yuri_Count();
+		if (_counter == Movies_Yuri_Count()) _counter--;
 		//Hide_Mouse();
 		//VisiblePage.Clear();
 		//Show_Mouse();

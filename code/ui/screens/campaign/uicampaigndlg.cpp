@@ -12,6 +12,7 @@
 #include "_surface.h"
 #include "_ui.h"
 #include "campaign.h"
+#include "campaignname.hh"
 #include "csf.h"
 #include "data.h"
 #include "gamedlg.h"
@@ -35,7 +36,8 @@ void UI_Campaign_State(UICampaignState & state)
 
 	for (int index = 0; index < Campaigns.Count(); index++) {
 		CampaignClass * campaign = Campaigns[index];
-		if (campaign == NULL || campaign->DebugOnly || !Campaign_Available(campaign)) {
+		// A battle file's headers and movie sequences name no map, so they cannot start a mission and are left out.
+		if (campaign == NULL || campaign->DebugOnly || !Campaign_Available(campaign) || !Campaign_Is_Mission_File(campaign->ScenarioName)) {
 			continue;
 		}
 

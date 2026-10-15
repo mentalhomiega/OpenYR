@@ -40,6 +40,8 @@ class DeploymentConfigClass
 		std::string RulesExpansionFile = "";
 		std::string ArtFile = "ARTMD.INI";
 		std::string ArtExpansionFile = "";
+		// Red Alert 2's art file, whose movie list the missions of its campaigns index.
+		std::string RA2ArtFile = "ART.INI";
 		std::string AIFile = "AIMD.INI";
 		std::string AIExpansionFile = "";
 		std::string SoundFile = "SOUNDMD.INI";

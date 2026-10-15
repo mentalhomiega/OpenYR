@@ -13,6 +13,8 @@
 #include "campaign.hh"
 #include "vq.hh"
 
+#include <string>
+
 class CCINIClass;
 
 class CampaignClass : public AbstractTypeClass
@@ -44,9 +46,16 @@ class CampaignClass : public AbstractTypeClass
 
 		/*
 		 * This is the file name of the scenario that the campaign opens with. It is forced to
-		 * upper case as it is read from the rules.
+		 * upper case as it is read from the rules, and any archive prefix is taken off it.
 		 */
 		char ScenarioName[_MAX_FNAME+_MAX_EXT];
+
+		/*
+		 * The archive the scenario's prefix names, such as RA2 for RA2->ALL01T.MAP, or empty when
+		 * the value names none. It selects the movie list the mission's triggers index. Read
+		 * from the rules each time, so it is not serialized.
+		 */
+		std::string ScenarioArchive;
 
 		/*
 		 * This is the movie that plays once the last mission of the campaign has been won.

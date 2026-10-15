@@ -416,7 +416,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	**	If there's no briefing movie, restate the mission at the beginning.
 	*/
 	char buffer[25];
-	bool has_briefing_movie = Scen->BriefMovie != VQ_NONE;
+	bool has_briefing_movie = Scen->BriefMovie != VQ_NONE && Scen->BriefMovie >= 0 && Scen->BriefMovie < Movies.Count();
 
 	if (has_briefing_movie) {
 		snprintf(buffer, sizeof(buffer), "%s.VQA", Movies[Scen->BriefMovie]);
