@@ -28,6 +28,7 @@
 #include "savestream.h"
 #include "unit.h"
 #include "unittype.h"
+#include "voc.h"
 
 
 /// <summary>
@@ -72,10 +73,11 @@ bool TeleportLocomotionClass::Is_Stationary(void)
 
 
 /// <summary>
-/// Is the object warping?
-/// The object is warping from the order until it has jumped and the arrival delay has run out.
+/// Is the object warping in?
+/// The object holds from its jump until the arrival delay has run out. This is the state gamemd
+/// reads as IsWarpingIn (0x70C5C0).
 /// </summary>
-/// <returns>bool; True while the teleport waits to jump or holds the object after its jump.</returns>
+/// <returns>bool; True while the teleport holds the object at its destination.</returns>
 bool TeleportLocomotionClass::Is_Warping(void) const
 {
 	return(WarpPhase != TELEPORT_IDLE);
@@ -95,18 +97,15 @@ int TeleportLocomotionClass::Warp_Distance(Coord const & to) const
 
 
 /// <summary>
-/// Works out how long the object waits before it jumps to the destination.
-/// The wait is the distance divided by ChronoDistanceFactor when ChronoTrigger is set, never less
+/// Works out how many frames the object holds at its destination after the jump.
+/// The hold is the distance divided by ChronoDistanceFactor when ChronoTrigger is set, never less
 /// than ChronoMinimumDelay, and it is ChronoMinimumDelay when the distance is under ChronoRangeMinimum.
+/// This is gamemd's hold Timer (0x719494-0x719576), which vt_entry_28 (0x719BF0) releases.
 /// </summary>
-/// <param name="to">The coordinate the object is teleporting to.</param>
-/// <returns>int; The number of frames to wait.</returns>
+/// <param name="to">The coordinate the object is set down at.</param>
+/// <returns>int; The number of frames to hold.</returns>
 int TeleportLocomotionClass::Warp_Delay(Coord const & to) const
 {
-	// A harvester warps out with no wait, whatever the distance (the zero-delay branch of 0x719576).
-	if (LinkedTo->RTTI == RTTI_UNIT && static_cast<UnitClass const *>(LinkedTo)->Class->IsToHarvest) {
-		return(0);
-	}
 	int const distance = Warp_Distance(to);
 
 	int delay = 0;
@@ -139,25 +138,22 @@ Coord TeleportLocomotionClass::Destination(void)
 
 /// <summary>
 /// Orders the object to teleport to the location specified.
-/// The jump is not made here. It happens once the warp-out delay has run, when this locomotor is processed.
-/// An order given while the object holds after an earlier jump waits for that hold to end.
+/// The jump is made when this locomotor is next processed, not here. An order given while the
+/// object holds at its destination is refused, as gamemd's TeleportLocomotionClass::Move_To
+/// (0x718100) does while IsWarpingIn (TechnoClass vtable +0x1D8).
 /// </summary>
 /// <param name="to">The coordinate to teleport the object to.</param>
 void TeleportLocomotionClass::Move_To(Coord to)
 {
+	if (WarpPhase == TELEPORT_HOLD) {
+		return;
+	}
 	DestinationCoord = to;
-	if (Rule->WarpOut != NULL) {
-		new AnimClass(Rule->WarpOut, LinkedTo->PositionCoord);
-	}
-	if (WarpPhase != TELEPORT_HOLD) {
-		WarpPhase = TELEPORT_WARP_OUT;
-		WarpEnd = Frame + Warp_Delay(to);
-	}
 	if (AutoTest_Active()) {
 		Cell const to_cell = to.As_Cell();
-		DebugString("AUTOTEST   warp order %s cell %d,%d to %d,%d distance %d delay %d phase %d frame %d end %d\n",
+		DebugString("AUTOTEST   warp order %s cell %d,%d to %d,%d distance %d frame %d\n",
 			LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, to_cell.X, to_cell.Y,
-			Warp_Distance(to), WarpEnd - Frame, (int)WarpPhase, Frame, WarpEnd);
+			Warp_Distance(to), Frame);
 	}
 }
 
@@ -173,16 +169,12 @@ void TeleportLocomotionClass::Do_Turn(DirType dir)
 
 
 /// <summary>
-/// Cancels any teleport that has been ordered.
-/// The pending destination is forgotten, so the object stays where it is rather than
-/// making the jump.
+/// Cancels any teleport that has been ordered but not yet made.
+/// The object stays where it is. A hold at the destination is not affected.
 /// </summary>
 void TeleportLocomotionClass::Stop_Moving(void)
 {
 	DestinationCoord = COORD_NONE;
-	if (WarpPhase == TELEPORT_WARP_OUT) {
-		WarpPhase = TELEPORT_IDLE;
-	}
 }
 
 
@@ -230,47 +222,82 @@ Coord TeleportLocomotionClass::Landing_Spot(Coord const & dest)
 
 
 /// <summary>
-/// Advances the teleport: ends an arrival hold, and jumps once the warp-out delay has run.
-/// This routine is called by the owning object's movement processing. The jump lifts the object
-/// off the map, sets it down at its destination, and makes it look around from there. The object
-/// then holds for ChronoDelay frames, and an order given meanwhile starts its next warp-out.
+/// Advances the teleport. Each call either ends a hold or, when an order is pending, makes its jump.
+/// This routine is called by the owning object's movement processing. A hold ends on the first
+/// call at or after WarpEnd, and an order can only be pending outside a hold because Move_To
+/// refuses one during it.
 /// </summary>
 /// <returns>bool; Is there more movement still to process? A teleport never leaves any.</returns>
 bool TeleportLocomotionClass::Process(void)
 {
-	if (WarpPhase == TELEPORT_HOLD && Frame >= WarpEnd) {
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST   warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
+	if (WarpPhase == TELEPORT_HOLD) {
+		if (Frame >= WarpEnd) {
+			WarpPhase = TELEPORT_IDLE;
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST   warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
+			}
 		}
-		WarpPhase = TELEPORT_IDLE;
-		if (DestinationCoord != COORD_NONE) {
-			WarpPhase = TELEPORT_WARP_OUT;
-			WarpEnd = Frame + Warp_Delay(DestinationCoord);
-		}
-	}
-
-	if (WarpPhase == TELEPORT_WARP_OUT && Frame >= WarpEnd && DestinationCoord != COORD_NONE) {
-		Coord const landing = Landing_Spot(DestinationCoord);
-		LinkedTo->Mark(MARK_UP);
-		LinkedTo->PositionCoord = landing;
-		LinkedTo->RenderPrevCoord = COORD_NONE;
-		LinkedTo->Mark(MARK_DOWN);
-		DestinationCoord = COORD_NONE;
-		WarpPhase = TELEPORT_HOLD;
-		WarpEnd = Frame + Rule->ChronoDelay;
-		// A landing ends the move, as a walking locomotor's arrival does; otherwise the owner's
-		// mission orders the same destination again once the hold ends.
-		LinkedTo->Assign_Destination(NULL);
-		if (Rule->WarpIn != NULL) {
-			new AnimClass(Rule->WarpIn, landing);
-		}
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST   warp landed %s cell %d,%d frame %d hold until %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd);
-		}
-		LinkedTo->Per_Cell_Process(PCP_END);
-		LinkedTo->Look();
+	} else if (DestinationCoord != COORD_NONE) {
+		Start_Warp();
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Makes the jump for the pending order. The object leaves its source cell and is set down at its
+/// landing spot in this same call, then holds for Warp_Delay frames at the landing. The warp-out
+/// and warp-in effects play at the source and the landing. An order to the cell the object already
+/// stands on is dropped without a warp.
+/// </summary>
+void TeleportLocomotionClass::Start_Warp(void)
+{
+	Coord const from = LinkedTo->PositionCoord;
+	if (DestinationCoord == from) {
+		DestinationCoord = COORD_NONE;
+		LinkedTo->Assign_Destination(NULL);
+		return;
+	}
+
+	Coord const landing = Landing_Spot(DestinationCoord);
+	int const distance = Warp_Distance(landing);
+	int const delay = Warp_Delay(landing);
+	DestinationCoord = COORD_NONE;
+
+	// The sounds play from the type's override when it has one (gamemd: 0x7195EE and 0x7196D2).
+	VocType const out = LinkedTo->TClass->ChronoOutSound != VOC_NONE ? LinkedTo->TClass->ChronoOutSound : Rule->ChronoOutSound;
+	VocType const in = LinkedTo->TClass->ChronoInSound != VOC_NONE ? LinkedTo->TClass->ChronoInSound : Rule->ChronoInSound;
+	if (Rule->WarpOut != NULL) {
+		new AnimClass(Rule->WarpOut, from);
+	}
+	if (out != VOC_NONE) {
+		Sound_Effect(out, from);
+	}
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST   warp out %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
+	}
+
+	LinkedTo->Mark(MARK_UP);
+	LinkedTo->PositionCoord = landing;
+	LinkedTo->RenderPrevCoord = COORD_NONE;
+	LinkedTo->Mark(MARK_DOWN);
+	WarpPhase = TELEPORT_HOLD;
+	WarpEnd = Frame + delay;
+	// A landing ends the move, as a walking locomotor's arrival does; otherwise the owner's
+	// mission orders the same destination again once the hold ends.
+	LinkedTo->Assign_Destination(NULL);
+	// gamemd creates the WarpOut anim here as well (0x719788 reads Rules+0x33C), not WarpIn (+0x338).
+	if (Rule->WarpOut != NULL) {
+		new AnimClass(Rule->WarpOut, landing);
+	}
+	if (in != VOC_NONE) {
+		Sound_Effect(in, landing);
+	}
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST   warp in %s cell %d,%d frame %d hold until %d distance %d factor %d minimum %d range %d trigger %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd, distance, Rule->ChronoDistanceFactor, Rule->ChronoMinimumDelay, Rule->ChronoRangeMinimum, (int)Rule->ChronoTrigger);
+	}
+	LinkedTo->Per_Cell_Process(PCP_END);
+	LinkedTo->Look();
 }
 
 

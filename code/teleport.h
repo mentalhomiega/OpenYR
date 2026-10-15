@@ -13,14 +13,16 @@
 
 
 /*
- * Where a teleport stands. Ordering one starts the warp-out wait, the object jumps when it ends,
- * and the object then holds still for the arrival delay.
+ * Where a teleport stands. An order is carried out the next time the locomotor is processed:
+ * the object leaves its cell and is set down at the destination in that same call, and then it
+ * holds still for the arrival delay. gamemd has no wait before the jump (0x7192F0, 0x719715).
+ * TELEPORT_WARP_OUT (1) was an earlier pre-jump wait; it is retired and its number left unused
+ * so that saved phases keep their meaning.
  */
 enum TeleportWarpPhase
 {
-	TELEPORT_IDLE,
-	TELEPORT_WARP_OUT,
-	TELEPORT_HOLD,
+	TELEPORT_IDLE = 0,
+	TELEPORT_HOLD = 2,
 };
 
 
@@ -46,7 +48,7 @@ class TeleportLocomotionClass : public LocomotionClass
 		virtual bool Is_Stationary(void);
 
 		/*
-		 * Is the object warping, either waiting to jump or holding after the jump?
+		 * Is the object holding after a jump, the state gamemd reports as IsWarpingIn?
 		 */
 		bool Is_Warping(void) const;
 
@@ -63,7 +65,7 @@ class TeleportLocomotionClass : public LocomotionClass
 		Coord DestinationCoord;
 
 		/*
-		 * The phase of the pending teleport and the frame its current wait ends.
+		 * The phase of the teleport and the frame its hold ends.
 		 */
 		int WarpPhase;
 		int WarpEnd;
@@ -71,4 +73,5 @@ class TeleportLocomotionClass : public LocomotionClass
 		int Warp_Distance(Coord const & to) const;
 		Coord Landing_Spot(Coord const & dest);
 		int Warp_Delay(Coord const & to) const;
+		void Start_Warp(void);
 };
