@@ -3386,14 +3386,14 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		}
 
 		service.ConfirmAnswer = false;
-		Rml::Element * reset_all = document->GetElementById("reset-all");
+		Rml::Element * reset_all = document->GetElementById("footer-reset");
 		if (reset_all != nullptr) {
 			Click(context, reset_all);
 			presenter.Drain();
 			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.State.Bindings.size() == 3, "Reset all asks first and a refusal changes nothing");
 		}
 
-		Rml::Element * ok = document->GetElementById("ok");
+		Rml::Element * ok = document->GetElementById("footer-ok");
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
@@ -3623,7 +3623,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		view->Sync();
 		context.Update();
 
-		Rml::Element * ok = Rml(*view).Document()->GetElementById("ok");
+		Rml::Element * ok = Rml(*view).Document()->GetElementById("footer-ok");
 		if (ok != nullptr) {
 			ok->SetClass("disabled", true);
 			context.Update();
@@ -4226,7 +4226,7 @@ void Test_Classic_Options_Screen(Rml::Context & context, CountingSystemInterface
 		Check(presenter.Game.State.ActionLines && parts.Game.Calls.empty(), "a check box changes the page's state and applies nothing");
 	}
 
-	Rml::Element * ok = document != nullptr ? document->GetElementById("ok") : nullptr;
+	Rml::Element * ok = document != nullptr ? document->GetElementById("footer-ok") : nullptr;
 	if (ok != nullptr) {
 		Click(context, ok);
 		presenter.Drain();
@@ -7169,7 +7169,7 @@ void Test_Shell(void)
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
 			std::vector<Rml::Element *> rows = Visible_Rows(document, "commands");
-			listed = rows.size() == 4 && document->GetElementById("ok") != nullptr;
+			listed = rows.size() == 4 && document->GetElementById("footer-ok") != nullptr;
 			if (!listed) {
 				return(true);
 			}
@@ -7198,7 +7198,7 @@ void Test_Shell(void)
 			}
 			if (passes == 6) {
 				moved = Key_Of_Name(presenter.State.Bindings, "ToggleRepair") == 338 && Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) >= 0;
-				Click_Through_Hook(shell, host, document->GetElementById("ok"));
+				Click_Through_Hook(shell, host, document->GetElementById("footer-ok"));
 			}
 			return(passes > 7);
 		});

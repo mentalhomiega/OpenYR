@@ -11,28 +11,28 @@
 <head>
 	<title>Customize keyboard</title>
 	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="settings.rcss"/>
 	<link type="text/rcss" href="keyboard.rcss"/>
 </head>
-<body template="dialog" data-model="keyboard">
-	<p class="heading" id="title">Customize Keyboard</p>
-	<div id="top-row">
-		<div class="field" id="scheme-field"><span class="caption">Control scheme:</span>
-			<select id="scheme" data-value="scheme" data-event-change="queue('scheme', ev.value)">
-				<option value="0">Classic</option>
-				<option value="1">Modern</option>
-			</select>
-		</div>
-		<div class="field" id="search-field"><span class="caption">Search:</span>
-			<input type="text" id="search" maxlength="32" data-value="search" data-event-change="queue('search', 0, ev.value)"/>
-		</div>
-		<div class="field" id="category-field"><span class="caption">Category:</span>
-			<select id="categories" data-value="categoryindex" data-event-change="queue('category', ev.value)">
-				<option data-for="name : categories" data-attr-value="it_index">{{name}}</option>
-			</select>
-		</div>
-	</div>
-	<div id="columns">
-		<div id="left">
+<body template="dialog" class="page-settings" data-model="keyboard">
+	<div id="page">
+		<div id="list">
+			<div id="filters">
+				<div class="field" id="scheme-field"><span class="caption">Control scheme:</span>
+					<select id="scheme" data-value="scheme" data-event-change="queue('scheme', ev.value)">
+						<option value="0">Classic</option>
+						<option value="1">Modern</option>
+					</select>
+				</div>
+				<div class="field" id="search-field"><span class="caption">Search:</span>
+					<input type="text" id="search" maxlength="32" data-value="search" data-event-change="queue('search', 0, ev.value)"/>
+				</div>
+				<div class="field" id="category-field"><span class="caption">Category:</span>
+					<select id="categories" data-value="categoryindex" data-event-change="queue('category', ev.value)">
+						<option data-for="name : categories" data-attr-value="it_index">{{name}}</option>
+					</select>
+				</div>
+			</div>
 			<div class="head-row"><span class="caption cmd-head">Command</span><span class="caption slot-head">Primary</span><span class="caption slot-head">Secondary</span></div>
 			<div id="commands" class="list"><div class="rows">
 				<div class="item" data-for="row : rows" data-class-selected="row.command == selected">
@@ -43,8 +43,11 @@
 					</div>
 				</div>
 			</div></div>
+			<div id="list-footer">
+				<button id="reset-category" data-event-click="queue('resetcategory')">Reset category</button>
+			</div>
 		</div>
-		<div id="right">
+		<div id="side">
 			<p class="caption" id="editor-name" data-if="selected >= 0">{{selectedname}}</p>
 			<p class="caption" id="editor-hint" data-if="selected < 0">Choose a command, then a slot.</p>
 			<p id="description">{{description}}</p>
@@ -70,14 +73,14 @@
 					<button id="dismiss" data-event-click="queue('dismiss')">Cancel</button>
 				</div>
 			</div>
+			<p id="notice">{{notice}}</p>
 		</div>
 	</div>
-	<p id="notice">{{notice}}</p>
-	<div id="buttons">
-		<button id="reset-category" data-event-click="queue('resetcategory')">Reset category</button>
-		<button id="reset-all" data-event-click="queue('resetall')">Reset all</button>
-		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
-		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	<div id="footer">
+		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
+		<span id="footer-spacer"></span>
+		<button id="footer-cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+		<button id="footer-ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
 	</div>
 </body>
 </rml>

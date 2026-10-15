@@ -7,71 +7,49 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+/* The Controls page. The command list takes the width left of the editor, and each key column is wide
+   enough for the longest binding, such as "Ctrl+Shift+Alt+F12". The layout frame is in settings.rcss.
+   Sizes are in dp. */
 
-#reveal
-{
-	width: 600dp;
-	height: 424dp;
-	top: 50%;
-	margin-top: -212dp;
-}
-
-#content
-{
-	padding: 19dp 33dp 0 33dp;
-}
-
-#title
-{
-	height: 15dp;
-	line-height: 15dp;
-	text-align: center;
-}
-
-#top-row
+#list
 {
 	display: flex;
-	margin-top: 6dp;
-	height: 40dp;
+	flex-direction: column;
+	overflow: hidden;
+	padding: 12dp 16dp 12dp 20dp;
+}
+
+#filters
+{
+	display: flex;
+	flex: 0 0 auto;
+	height: 46dp;
 }
 
 .field
 {
-	margin-right: 10dp;
+	margin-right: 12dp;
 }
 
 #scheme-field
 {
-	width: 196dp;
+	width: 230dp;
 }
 
 #search-field
 {
-	width: 132dp;
+	flex: 1 1 auto;
+	min-width: 160dp;
 }
 
 #category-field
 {
-	width: 150dp;
+	width: 250dp;
 	margin-right: 0;
 }
 
-#scheme-field .caption,
-#search-field .caption,
-#category-field .caption
-{
-	height: 14dp;
-	line-height: 14dp;
-}
-
 #scheme,
-#categories
-{
-	display: block;
-	width: 100%;
-	margin-top: 3dp;
-}
-
+#categories,
 #search
 {
 	display: block;
@@ -79,108 +57,122 @@
 	margin-top: 3dp;
 }
 
-#columns
+.field .caption
 {
-	display: flex;
-	margin-top: 8dp;
-	height: 250dp;
+	height: 16dp;
+	line-height: 16dp;
 }
 
-#left
-{
-	width: 316dp;
-	margin-right: 10dp;
-}
-
-#right
-{
-	width: 208dp;
-}
-
+/* The key columns: a command name takes the rest of the row, and each slot holds the widest binding. */
 .head-row
 {
 	display: flex;
-	height: 14dp;
-	line-height: 14dp;
+	flex: 0 0 auto;
+	height: 24dp;
+	margin-top: 12dp;
+	padding: 0 8dp;
+	line-height: 24dp;
 }
 
 .head-row .cmd-head
 {
-	width: 150dp;
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
 .head-row .slot-head
 {
-	width: 76dp;
-	text-align: center;
+	flex: 0 0 230dp;
+	width: 230dp;
 }
 
 #commands
 {
-	margin-top: 3dp;
-	height: 232dp;
+	flex: 1 1 auto;
+	min-height: 0;
+	margin-top: 4dp;
 }
 
 #commands .item
 {
-	height: 17dp;
-	line-height: 17dp;
-	padding: 0 2dp;
+	height: 28dp;
+	line-height: 28dp;
+	padding: 0 8dp;
 }
 
 .cmd-row
 {
 	display: flex;
-	height: 17dp;
+	height: 28dp;
 	white-space: nowrap;
 }
 
 .cmd-name
 {
-	width: 150dp;
+	flex: 1 1 auto;
+	min-width: 0;
 	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .slot
 {
-	width: 76dp;
-	height: 17dp;
-	text-align: center;
+	flex: 0 0 230dp;
+	width: 230dp;
 	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-.caption
+#list-footer
 {
-	display: block;
-	height: 15dp;
-	line-height: 15dp;
+	display: flex;
+	flex: 0 0 auto;
+	margin-top: 10dp;
+}
+
+#reset-category
+{
+	width: 180dp;
+	white-space: nowrap;
+}
+
+/* The editor for the command chosen in the list, wide enough for the capture box and trigger side by side. */
+#side
+{
+	flex: 0 0 340dp;
+	width: 340dp;
 }
 
 #editor-name
 {
-	height: 16dp;
-	line-height: 16dp;
+	height: 24dp;
+	line-height: 24dp;
 	overflow: hidden;
+}
+
+#editor-hint
+{
+	line-height: 20dp;
 }
 
 #description
 {
-	height: 60dp;
-	overflow: hidden;
+	min-height: 40dp;
+	line-height: 19dp;
 }
 
 #capture-row
 {
 	display: flex;
-	margin-top: 4dp;
-	height: 24dp;
+	margin-top: 12dp;
+	height: 30dp;
 }
 
 #capture
 {
 	display: inline-block;
-	width: 112dp;
-	height: 24dp;
+	width: 170dp;
+	height: 30dp;
 	white-space: nowrap;
 	overflow: hidden;
 	tab-index: auto;
@@ -198,91 +190,61 @@
 
 #trigger
 {
-	width: 90dp;
-	margin-left: 6dp;
+	width: 120dp;
+	margin-left: 8dp;
 }
 
 #editor-buttons
 {
 	display: flex;
-	margin-top: 8dp;
+	margin-top: 12dp;
 }
 
 #assign
 {
-	width: 96dp;
-	margin-right: 6dp;
+	width: 120dp;
+	margin-right: 8dp;
 }
 
 #clear
 {
-	width: 96dp;
+	width: 120dp;
 }
 
 #conflict
 {
-	margin-top: 10dp;
+	margin-top: 14dp;
 }
 
 #conflict-text
 {
-	height: 46dp;
-	overflow: hidden;
+	min-height: 40dp;
 }
 
 #conflict-buttons
 {
 	display: flex;
-	margin-top: 4dp;
+	margin-top: 6dp;
 }
 
 #swap
 {
-	width: 96dp;
-	margin-right: 6dp;
+	width: 120dp;
+	margin-right: 8dp;
 }
 
 #dismiss
 {
-	width: 96dp;
+	width: 120dp;
 }
 
 #notice
 {
-	margin-top: 4dp;
-	height: 14dp;
-	line-height: 14dp;
-	overflow: hidden;
-	white-space: nowrap;
+	margin-top: 12dp;
+	line-height: 18dp;
 }
 
-#buttons
+selectbox
 {
-	display: flex;
-	margin-top: 6dp;
-}
-
-#reset-category
-{
-	width: 150dp;
-	white-space: nowrap;
-	margin-right: 8dp;
-}
-
-#reset-all
-{
-	width: 110dp;
-	margin-right: 0;
-}
-
-#ok
-{
-	width: 76dp;
-	margin-left: 106dp;
-	margin-right: 8dp;
-}
-
-#cancel
-{
-	width: 76dp;
+	background-color: #0a0615;
 }
