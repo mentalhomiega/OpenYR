@@ -3512,6 +3512,32 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo);
 		}
+	} else if (step.Command == "spots") {
+		// spots <TypeID>: each live object of that type, whoever owns it, with its cell, the sub-cell spot its
+		// coordinate falls in (CellClass::Spot_Index) and its lepton offset inside the cell. Then the pairs of
+		// them within 32 leptons of each other, which is what two objects sharing a spot looks like.
+		std::vector<TechnoClass const *> found;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (!techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				found.push_back(techno);
+			}
+		}
+		int pairs = 0;
+		for (size_t first = 0; first < found.size(); first++) {
+			Coord const at = found[first]->Get_Coord();
+			DebugString("AUTOTEST   spot %s of %s cell %d,%d spot %d offset %d,%d mission %s\n", found[first]->TClass->Name(), found[first]->House->Class->Name(), at.As_Cell().X, at.As_Cell().Y, CellClass::Spot_Index(at), at.X & (CELL_LEPTON_W - 1), at.Y & (CELL_LEPTON_H - 1), MissionClass::Mission_Name(found[first]->Get_Mission()));
+			for (size_t second = first + 1; second < found.size(); second++) {
+				Coord const other = found[second]->Get_Coord();
+				long long const dx = (long long)at.X - (long long)other.X;
+				long long const dy = (long long)at.Y - (long long)other.Y;
+				if (dx * dx + dy * dy < 32 * 32) {
+					pairs++;
+					DebugString("AUTOTEST   spot overlap %s %d,%d and %d,%d\n", found[first]->TClass->Name(), at.X, at.Y, other.X, other.Y);
+				}
+			}
+		}
+		DebugString("AUTOTEST spots %s count %d overlapping %d\n", step.Argument.c_str(), (int)found.size(), pairs);
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
 		for (int index = 0; index < Technos.Count(); index++) {

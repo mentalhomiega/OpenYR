@@ -75,6 +75,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
 | `rallyof <TypeID>` | Writes the rally point (archive target) of each of the player's structures of that type, as the cell it names, or `-1,-1` when none is set |
+| `spots <TypeID>` | Writes each live object of that type, whoever owns it, with its cell, the sub-cell spot its coordinate falls in (`CellClass::Spot_Index`), its lepton offset inside the cell and its mission. Then `overlapping` counts the pairs within 32 leptons of each other, which is what two objects sharing a spot looks like |
 | `pickable <TypeID>` | Writes each object of that type the player owns, with whether the clickable list holds it and, when it does, the window pixel its entry is drawn at (`window x,y`, or `-1,-1` when it is not listed). The list is the one the last render built |
 | `pickat x y` | Writes the object a left click at that window pixel would pick from the clickable list and the cell under it, without selecting anything |
 | `cellpixel x y` | Writes the window pixel of the centre of that cell under the current view, for a `windowclick` step |
