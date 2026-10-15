@@ -16,4 +16,4 @@ credit:
 - MentalHomiega
 ---
 
-A unit that a chronosphere picks stays on its cell under `WarpOut=` for `ChronoDelay` frames, then lands at the destination with `WarpIn=`. Before, it landed at once while the warp-out animation was still playing. While it waits, it is drawn half transparent and takes no unforced damage. A Chrono Legionnaire or Chrono Miner keeps the distance-based timing of the teleport locomotor.
+A unit that a chronosphere picks stays on its cell under `WarpOut=` for `ChronoDelay` frames, then lands at the destination with `WarpIn=`. Before, it landed at once while the warp-out animation was still playing. While it waits, it is drawn half transparent and takes no unforced damage. A teleporter that moves itself, such as a Chrono Legionnaire or a Chrono Miner, still holds for the distance-based delay after its own order.
