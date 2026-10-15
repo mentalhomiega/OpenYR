@@ -52,8 +52,3 @@ body.theme-allied
 	--t-backdrop: #0a1a3a80;
 }
 
-/* The Allied insignia, from the game's files, is the emblem of the title menus. */
-body.theme-allied #badge
-{
-	decorator: image(USAI.PCX fill);
-}

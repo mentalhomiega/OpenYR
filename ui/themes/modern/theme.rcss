@@ -404,7 +404,7 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	color: var(--t-muted, #a99bc9);
 }
 
-/* The faction emblem at the top right of the title menus, with the version centred under it. */
+/* The version at the top right of the title menus. */
 #emblem
 {
 	display: none;
@@ -412,29 +412,20 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	right: 16dp;
 	top: 16dp;
 	width: 180dp;
-	height: 104dp;
+	height: 16dp;
 	pointer-events: none;
-}
-
-#badge
-{
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 180dp;
-	height: 82dp;
 }
 
 #badge-version
 {
 	position: absolute;
 	left: 0;
-	top: 84dp;
+	top: 0;
 	width: 180dp;
 	height: 16dp;
 	font-size: 12dp;
 	line-height: 16dp;
-	text-align: center;
+	text-align: right;
 	color: var(--t-stamp, #8f84a8);
 }
 
