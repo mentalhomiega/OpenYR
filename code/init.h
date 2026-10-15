@@ -35,6 +35,11 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 
 bool Init_Hotkeys(void);
 void Save_Hotkeys(void);
+void Apply_Hotkeys(void);
+bool Hotkey_Route(int key);
+void Hotkey_Release(int key);
+void Hotkey_Poll(void);
+void Hotkey_Reset_Pending(void);
 void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
 
