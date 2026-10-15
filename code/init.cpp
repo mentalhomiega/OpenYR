@@ -184,6 +184,7 @@
 #include "script.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
+#include "shellmap.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
@@ -3100,6 +3101,9 @@ int Main_Menu(unsigned int timeout)
 	Draw_Version_Text(HiddenSurface);
 	Update_Visible_Surface();
 
+	// The title art stays up while the battle loads behind it.
+	Shellmap_Start();
+
 	while (retval == SEL_NONE) {
 		MainMenuKeyResult = SEL_NONE;
 
@@ -3147,6 +3151,11 @@ int Main_Menu(unsigned int timeout)
 /// <param name="force">Should the title screen be redrawn even if nothing was lost?</param>
 void Title_Screen_Restore(bool force)
 {
+	if (Shellmap_Running()) {
+		Shellmap_Service();
+		return;
+	}
+
 	if (force == true) {
 		HiddenSurface->Fill(0);
 		char *menu = Get_New_Menu()->Background;

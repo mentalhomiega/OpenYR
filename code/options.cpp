@@ -211,6 +211,7 @@ OptionsClass::OptionsClass(void) :
 	ShowHidden(false),
 	ScreenShake(true),
 	IsClassicMenus(false),
+	MenuBattle(true),
 	ToolTips(true),
 	AltToRally(false),
 	SimulateWhileUnfocused(false),
@@ -706,6 +707,7 @@ void OptionsClass::Load_Menu_Style(void)
 	char menustyle[32];
 	ConfigINI.Get_String("Options", "MenuStyle", "Modern", menustyle, sizeof(menustyle));
 	IsClassicMenus = (stricmp(menustyle, "Classic") == 0);
+	MenuBattle = ConfigINI.Get_Bool("Options", "MenuBattle", MenuBattle);
 }
 
 
@@ -798,6 +800,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
 	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
+	ConfigINI.Put_Bool("Options", "MenuBattle", MenuBattle);
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);

@@ -1,0 +1,26 @@
+; Menu battle hand-over: starts a skirmish from the menus while the battle runs, wins it, and checks
+; a new battle starts behind the lobby the game returns to. Run with -Menus and [MenuBattle] InTests=yes.
+0 continuewin
+150 killhouse Medium_AI 0
+ui waitfor backdrop
+ui wait 4000
+ui shot cycle-01-menu
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui shot cycle-02-lobby
+ui press OK
+ui wait 6000
+ui shot cycle-03-ingame
+ui wait 20000
+ui shot cycle-04-lobby-back
+ui press Cancel
+ui wait 4000
+ui shot cycle-05-menu-back
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui shot cycle-06-lobby-again
+ui quit

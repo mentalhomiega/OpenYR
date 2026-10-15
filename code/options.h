@@ -166,6 +166,9 @@ class OptionsClass {
 		// Yuri's Revenge's own screens (MenuStyle=Modern or Classic in the settings).
 		bool IsClassicMenus;
 
+		// A battle between computer players runs behind the modern menus (MenuBattle in the settings).
+		bool MenuBattle;
+
 		/*
 		 * If tooltips are to pop up over the user interface, then this flag will be true.
 		 */
