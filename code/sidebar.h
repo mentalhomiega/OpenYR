@@ -149,6 +149,12 @@ class SidebarClass : public PowerClass
 		// Flags every strip to redraw, for changes that can show on any tab.
 		void Flag_Strips_To_Redraw(void);
 
+		// Shows or hides the grid key on each of the first cameos while the grid build modifier is held. A change redraws the strips.
+		void Set_Grid_Labels(bool shown);
+
+		// Starts the cameo that the grid key at the index starts, as a left click on that cameo does. A key with no cameo does nothing.
+		void Grid_Build(int index);
+
 		// Makes the cameo of the object type given flash for a number of frames.
 		void Flash_Cameo(TechnoTypeClass const * type, int frames);
 
@@ -156,6 +162,9 @@ class SidebarClass : public PowerClass
 		int ActiveTab;
 
 		static ShapeButtonClass TabButton[COLUMNS];
+
+		// Whether the cameos show their grid keys, which the strips draw while the grid build modifier is held.
+		static bool IsGridLabelShown;
 
 		// The two buttons on the piece above the radar.
 		static ShapeButtonClass OptionsButton;
@@ -191,6 +200,9 @@ class SidebarClass : public PowerClass
 					SelectClass(void);
 
 					void Set_Owner(StripClass & strip, int index);
+
+					// Does what a left press on the cameo does, without a mouse event.
+					void Press_Left(void);
 
 					StripClass * Strip;
 					int Index;
