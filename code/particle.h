@@ -115,7 +115,7 @@ class ParticleClass : public ObjectClass
 		/*
 		 * The house credited with a kill this particle's damage makes. Gas released by an
 		 * explosion carries the explosion's house, as gamemd's particle system does; it is
-		 * null for particles no house released and is not saved.
+		 * null for particles no house released.
 		 */
 		HouseClass * SourceHouse;
 
