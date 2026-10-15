@@ -56,12 +56,15 @@
 #include "_xmouse.h"
 #include "bench.h"
 #include "cctooltip.h"
+#include "dialog.h"
 #include "gadget.h"
 #include "globals.h"
 #include "hud.h"
 #include "goptions.h"
 #include "keyboard.h"
+#include "logic.h"
 #include "savestream.h"
+#include "scheme.h"
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
@@ -465,6 +468,12 @@ void GScreenClass::Render(void)
 	Session.Messages.Draw();
 	if (Session.ShowInternetDebug) {
 		Multiplayer_Debug_Print();
+	}
+
+	if (Options.ShowFPS) {
+		char buffer[32];
+		snprintf(buffer, sizeof(buffer), "%u FPS", LastFramesPerSecond);
+		Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 	}
 
 	if (ToolTips != NULL) {

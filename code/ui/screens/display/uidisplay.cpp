@@ -31,7 +31,8 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialRenderer(State.Renderer),
-	InitialBitmapSystemFont(State.BitmapSystemFont)
+	InitialBitmapSystemFont(State.BitmapSystemFont),
+	InitialShowFPS(State.ShowFPS)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -158,6 +159,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "bitmapfont") {
 		State.BitmapSystemFont = (intent.Value != 0);
 
+	} else if (intent.Name == "showfps") {
+		State.ShowFPS = (intent.Value != 0);
+
 	} else if (intent.Name == "scale") {
 		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : InitialScale;
 		Refresh_Rows();
@@ -205,6 +209,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_Modern_Interface(State.ModernInterface);
 		if (State.BitmapSystemFont != InitialBitmapSystemFont) {
 			Service.Set_Bitmap_System_Font(State.BitmapSystemFont);
+		}
+		if (State.ShowFPS != InitialShowFPS) {
+			Service.Set_Show_FPS(State.ShowFPS);
 		}
 		if (State.Fullscreen != InitialFullscreen) {
 			Service.Set_Fullscreen(State.Fullscreen);
@@ -306,6 +313,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("classicmenus");
 			Model.DirtyVariable("moderninterface");
 			Model.DirtyVariable("bitmapfont");
+			Model.DirtyVariable("showfps");
 			Model.DirtyVariable("scale");
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
@@ -361,6 +369,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("classicmenus", &state.ClassicMenus)
 				&& model.Bind("moderninterface", &state.ModernInterface)
 				&& model.Bind("bitmapfont", &state.BitmapSystemFont)
+				&& model.Bind("showfps", &state.ShowFPS)
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)

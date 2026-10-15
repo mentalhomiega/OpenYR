@@ -218,6 +218,9 @@ class OptionsClass {
 		 */
 		bool IntegerScaling;
 
+		// If the game's frame count per second is to be drawn in the corner of the game view, then this flag will be true.
+		bool ShowFPS;
+
 		// Redraws a second between game frames, drawing moving objects between their positions;
 		// 0 draws once per game frame, as the original game does, and a negative value matches
 		// the display's refresh rate where Render_Frame_Rate allows it.

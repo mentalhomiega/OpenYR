@@ -921,6 +921,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Sidebar_Rows(int rows) override { Calls.push_back("sidebar rows " + std::to_string(rows)); }
 		virtual void Set_Bitmap_System_Font(bool on) override { Calls.push_back(on ? "bitmap font on" : "bitmap font off"); }
+		virtual void Set_Show_FPS(bool on) override { Calls.push_back(on ? "fps on" : "fps off"); }
 		virtual void Set_Interface_Scale(float scale) override { Calls.push_back("scale " + std::to_string((int)(scale * 10.0f))); }
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
@@ -3265,7 +3266,9 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("framerate"), "smooth motion follows the scaling filter");
 		Press(context, Rml::Input::KI_TAB);
-		Check(context.GetFocusElement() == cursor, "the pointer switch follows smooth motion");
+		Check(focused("show-fps"), "the show FPS switch follows smooth motion");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == cursor, "the pointer switch follows the show FPS switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);

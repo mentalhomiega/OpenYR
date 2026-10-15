@@ -220,6 +220,7 @@ OptionsClass::OptionsClass(void) :
 	WindowHeight(-1),
 	ScaleMode(VIDEO_SCALE_PIXELART),
 	IntegerScaling(false),
+	ShowFPS(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	VSync(true),
 	Renderer(0),
@@ -527,6 +528,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
+	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
@@ -655,6 +657,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "WindowHeight", WindowHeight);
 	ConfigINI.Put_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode));
 	ConfigINI.Put_Bool("Video", "IntegerScaling", IntegerScaling);
+	ConfigINI.Put_Bool("Video", "ShowFPS", ShowFPS);
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
