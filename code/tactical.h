@@ -178,6 +178,12 @@ class Tactical : public AbstractClass
 
 		bool Add_To_Selectables(ObjectClass * object, Point2D point);
 
+		/*
+		 * Records the screen area an object's body was drawn over, relative to the view, for the object
+		 * entry added most recently. Entries without a recorded body are picked by their draw point only.
+		 */
+		void Note_Selectable_Body(ObjectClass const * object, Rect const & rect);
+
 		void Start_Rubber_Band(Point2D const & point);
 		void Modify_Rubber_Band(Point2D const & point);
 		void Select_Rubber_Band(void (*select_callback)(ObjectClass * object));
@@ -322,6 +328,13 @@ class Tactical : public AbstractClass
 			 * to match and then takes the entry nearest to it.
 			 */
 			Point2D Position;
+
+			/*
+			 * This is the screen area the object's drawn body covered in the last render, in absolute
+			 * tactical pixels, or an empty rectangle when no body was drawn. A click inside it picks the
+			 * object when the aircraft body pick option is on.
+			 */
+			Rect Body;
 		};
 
 		/*

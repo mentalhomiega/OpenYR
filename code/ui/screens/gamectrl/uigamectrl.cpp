@@ -40,6 +40,7 @@ UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsService
 	Service(service),
 	InitialAltToRally(State.AltToRally),
 	InitialSimulateUnfocused(State.SimulateUnfocused),
+	InitialAircraftBodyPick(State.AircraftBodyPick),
 	InitialSidebarSorting(State.SidebarSorting),
 	InitialAutosave(State.Autosave),
 	InitialDebugMode(State.DebugMode)
@@ -72,6 +73,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.ShowHidden = (intent.Value != 0);
 	} else if (intent.Name == "rally") {
 		State.AltToRally = (intent.Value != 0);
+	} else if (intent.Name == "airpick") {
+		State.AircraftBodyPick = (intent.Value != 0);
 	} else if (intent.Name == "background") {
 		State.SimulateUnfocused = (intent.Value != 0);
 	} else if (intent.Name == "sorting") {
@@ -150,6 +153,9 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.SimulateUnfocused != InitialSimulateUnfocused) {
 		Service.Set_Simulate_Unfocused(State.SimulateUnfocused);
 	}
+	if (State.AircraftBodyPick != InitialAircraftBodyPick) {
+		Service.Set_Aircraft_Body_Pick(State.AircraftBodyPick);
+	}
 	if (State.SidebarSorting != InitialSidebarSorting) {
 		Service.Set_Sidebar_Sorting(State.SidebarSorting);
 	}
@@ -201,6 +207,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("detailname");
 			Model.DirtyVariable("difficultyname");
 			Model.DirtyVariable("rally");
+			Model.DirtyVariable("airpick");
 			Model.DirtyVariable("background");
 			Model.DirtyVariable("sorting");
 			Model.DirtyVariable("debugmode");
@@ -239,6 +246,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("leavelabel", &state.LeaveLabel)
 				&& model.Bind("extras", &state.Extras)
 				&& model.Bind("rally", &state.AltToRally)
+				&& model.Bind("airpick", &state.AircraftBodyPick)
 				&& model.Bind("background", &state.SimulateUnfocused)
 				&& model.Bind("sorting", &state.SidebarSorting)
 				&& model.Bind("debugmode", &state.DebugMode)

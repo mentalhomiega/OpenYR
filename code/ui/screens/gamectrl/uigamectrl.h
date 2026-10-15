@@ -41,6 +41,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Difficulty(int difficulty) = 0;
 		virtual void Set_Alt_To_Rally(bool on) = 0;
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
+		virtual void Set_Aircraft_Body_Pick(bool on) = 0;
 		virtual void Set_Sidebar_Sorting(bool on) = 0;
 		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
@@ -69,6 +70,7 @@ struct UIGameControlsState
 	bool Extras = false;
 	bool AltToRally = false;
 	bool SimulateUnfocused = false;
+	bool AircraftBodyPick = true;
 	bool SidebarSorting = false;
 	bool DebugMode = false;
 	std::vector<UIGameControlsChoice> Autosaves;
@@ -118,6 +120,7 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		UIGameControlsServiceClass & Service;
 		bool InitialAltToRally;
 		bool InitialSimulateUnfocused;
+		bool InitialAircraftBodyPick;
 		bool InitialSidebarSorting;
 		int InitialAutosave;
 		bool InitialDebugMode;
