@@ -111,8 +111,9 @@ class FootClass : public TechnoClass
 
 		/*
 		 * This is the running count of animation steps this object has taken. It advances
-		 * once every WalkRate game frames while the locomotor reports movement, and the walk
-		 * cycle, the tread animation and the harvesting animation are all indexed from it.
+		 * once every WalkRate game frames while the locomotor reports movement, and every
+		 * IdleRate frames while it stands still; FootClass::Update lists the other cases. The
+		 * walk cycle, the tread animation and the harvesting animation are all indexed from it.
 		 */
 		int TotalFramesWalked;
 

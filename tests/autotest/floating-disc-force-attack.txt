@@ -1,0 +1,91 @@
+; Floating Disc (DISK) force-attack: its animation state is logged with animlog every few frames
+; before, during and after a force-attack on the ground (cell 62,40) and on an enemy tank (58,46).
+; The Disk laser lines in the log show whether a ring was drawn for each shot; laser 1 in an animlog line
+; means a ring is being drawn that frame. Screenshots are taken during each ring and after it.
+; Force-attacks use the Ctrl+click outcome; see forceattack in autotest.cpp.
+; Run: scripts/run_autotest.ps1 -Build agent17 -Script tests/autotest/floating-disc-force-attack.txt -Width 800 -Height 600 -Seconds 240 -ShotDir "E:\Claude ra2 decomp\shots\floating-disc" -Filter "AUTOTEST|Disk laser|Exception"
+30 command CenterBase
+300 own DISK 58 40
+302 reveal
+303 follow DISK
+304 zoom 3
+305 command ScreenCapture
+310 animlog DISK
+320 animlog DISK
+330 animlog DISK
+340 animlog DISK
+350 animlog DISK
+360 animlog DISK
+370 animlog DISK
+380 animlog DISK
+390 animlog DISK
+400 animlog DISK
+405 command ScreenCapture
+420 forceattack DISK 62 40
+421 animlog DISK
+425 animlog DISK
+426 command ScreenCapture
+429 animlog DISK
+433 animlog DISK
+434 command ScreenCapture
+437 animlog DISK
+441 animlog DISK
+445 animlog DISK
+449 animlog DISK
+453 animlog DISK
+457 animlog DISK
+461 animlog DISK
+465 animlog DISK
+469 animlog DISK
+470 command ScreenCapture
+473 animlog DISK
+477 animlog DISK
+481 animlog DISK
+485 animlog DISK
+489 animlog DISK
+493 animlog DISK
+497 animlog DISK
+500 stop DISK
+510 animlog DISK
+520 animlog DISK
+530 animlog DISK
+540 animlog DISK
+550 animlog DISK
+560 animlog DISK
+600 spawn HTNK 58 46
+602 forceattack DISK 58 46
+604 animlog DISK
+608 animlog DISK
+612 animlog DISK
+612 command ScreenCapture
+616 animlog DISK
+618 command ScreenCapture
+620 animlog DISK
+624 animlog DISK
+628 animlog DISK
+632 animlog DISK
+636 animlog DISK
+640 animlog DISK
+644 animlog DISK
+648 animlog DISK
+652 animlog DISK
+656 animlog DISK
+660 animlog DISK
+660 command ScreenCapture
+664 animlog DISK
+668 animlog DISK
+672 animlog DISK
+676 animlog DISK
+680 animlog DISK
+690 stop DISK
+700 animlog DISK
+710 animlog DISK
+720 animlog DISK
+730 animlog DISK
+740 animlog DISK
+750 animlog DISK
+760 animlog DISK
+770 animlog DISK
+780 animlog DISK
+790 command ScreenCapture
+800 quit

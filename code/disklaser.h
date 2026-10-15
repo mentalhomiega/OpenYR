@@ -22,7 +22,8 @@ class DiskLaserClass
 	public:
 		DiskLaserClass(void) = default;
 
-		void Fire(TechnoClass * owner, TechnoClass * target, WeaponTypeClass * weapon, int damage);
+		// The target is an object or a cell; a cell is struck at its centre (DiskLaserClass::Fire, 0x4A71A0).
+		void Fire(TechnoClass * owner, AbstractClass * target, WeaponTypeClass * weapon, int damage);
 		void AI(void);
 		bool Is_Active(void) const {return(Delay >= 0 && Owner != nullptr);}
 		void Detach(AbstractClass const * target);
@@ -32,7 +33,7 @@ class DiskLaserClass
 		void Stop(void) {Delay = -1;}
 
 		TechnoClass * Owner = nullptr;
-		TechnoClass * Target = nullptr;
+		AbstractClass * Target = nullptr;
 		WeaponTypeClass * Weapon = nullptr;
 		int Damage = 0;
 

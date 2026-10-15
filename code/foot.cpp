@@ -3937,12 +3937,28 @@ void FootClass::AI(void)
 					Assign_Mission(MISSION_ENTER);
 				}
 			}
-			if (Locomotion->Is_Moving_Now()) {
-				if ((Frame % TClass->WalkRate) == 0) {
-					TotalFramesWalked++;
+			// FootClass::Update (0x4DA530) steps the walk counter on the walk rate while the locomotor moves, and on the idle rate
+			// while it stands still. A unit that stands still on a hover-attack target, and is not deployed, also steps on each
+			// walk-rate frame, and a DeployToLand unit in the air steps every frame. Warp-in is taken as a chrono teleport hold.
+			bool const moving = Locomotion->Is_Moving_Now();
+			bool const warp_out = IsBeingWarpedOut;
+			bool const warp_in = Is_Chrono_Warping();
+			bool const attacked = IsAttackedByLocomotor;
+			bool const busy = warp_out || warp_in || attacked;
+			bool const is_unit = RTTI == RTTI_UNIT;
+			bool const hover_holding = is_unit && TClass->IsHoverAttack && TarCom != NULL;
+			bool const deployed = is_unit && static_cast<UnitClass const *>(this)->IsSimpleDeployed;
+			bool const deploy_to_land = is_unit && static_cast<UnitClass const *>(this)->Class->IsDeployToLand;
+			bool const holds_still = (!moving || warp_in) && (!hover_holding || deployed);
+			bool const off_walk_frame = (Frame % TClass->WalkRate) != 0 || busy;
+			bool step = !holds_still && !off_walk_frame;
+			if (!step) {
+				step = TClass->IdleRate != 0 && !moving && (Frame % TClass->IdleRate) == 0 && !busy;
+				if (!step) {
+					step = deploy_to_land && HeightAGL >= 1 && !busy;
 				}
-			} else if (TClass->IdleRate != 0 && (Frame % TClass->IdleRate) == 0 && !IsAttackedByLocomotor) {
-				// A stopped object steps its walk animation every IdleRate frames (FootClass::Update, 0x4DA530).
+			}
+			if (step) {
 				TotalFramesWalked++;
 			}
 		}
