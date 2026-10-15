@@ -952,6 +952,7 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 		if (setid == _BlackTile) BlackTile = (IsometricTileType)heapid;
 		if (setid == _BridgeSet) BridgeSet = (IsometricTileType)heapid;
 		if (setid == _TrainBridgeSet) TrainBridgeSet = (IsometricTileType)heapid;
+		// gamemd also stores WoodBridgeSet in the slot CellClass::Is_Tile_Train_Bridge reads (DAT_00abad1c).
 		if (setid == _WoodBridgeSet) TrainBridgeSet = (IsometricTileType)heapid;
 		if (setid == _CliffSet) CliffSet = (IsometricTileType)heapid;
 		if (setid == _ShorePieces) ShorePieces = (IsometricTileType)heapid;
