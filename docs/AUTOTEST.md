@@ -53,6 +53,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `primary <TypeID>` | Toggles the primary flag of the player's first structure of that type, as the structure's self action does when the house has more than one factory of its kind |
 | `factories` | Writes each structure that builds something, whoever owns it, with what it builds (`vehicle`, `infantry`, `aircraft` or `structure`), whether it is naval, whether it is its house's primary factory and whether it is in limbo |
 | `kill <TypeID> [1]` | Destroys every computer object of the type with no attacker, the C4 warhead forced; with a `1`, every player object of the type instead |
+| `hollow <TypeID>` | Sets the strength of the player's factory-held object of that type to zero while it is in production, so it leaves the factory with no radio link (the state of an internal dummy unit). It logs each object it sets. |
 | `setlocal <index> <value>`, `setglobal <index> <value>` | Sets a scenario variable when the value is 1 and clears it when it is 0, as a trigger action does |
 | `dumpfile <name>` | Copies the file the game finds under that name, from a MIX or the game folder, to `dump-<name>` in the working directory, and logs its size |
 | `trigaction <number>[@<House>] <value> <waypoint>` | Carries out the trigger action with that number for the player's house, or for the named house with an underscore in place of a space, as a trigger would. The value fills the action's number, house or time field and the waypoint its waypoint field. The log gets `done` or `failed` |
