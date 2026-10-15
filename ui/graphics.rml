@@ -1,0 +1,74 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Graphics options</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="settings.rcss"/>
+	<link type="text/rcss" href="display.rcss"/>
+	<link type="text/rcss" href="graphics.rcss"/>
+	<link type="text/rcss" href="setting-preview.rcss"/>
+</head>
+<body template="dialog" class="page-settings" data-model="display">
+	<div id="page">
+		<div id="list">
+			<p class="section">Picture</p>
+			<div class="setting" id="filter-row" desc="How the game image is scaled to fit the window. Pixel art keeps the edges of pixels sharp."><span class="caption">Scaling filter</span><select id="filter" data-value="filter" data-event-change="queue('filter', ev.value)">
+				<option data-for="entry : filters" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<label class="check setting" id="switch-integer-scaling" desc="Scales the image by whole steps only, so every pixel is the same size. Leaves borders at the edges."><span class="caption">Integer scaling</span><input type="checkbox" id="integer-scaling" data-attrif-checked="integerscaling" data-event-click="queue('integerscaling', integerscaling ? 0 : 1)"/></label>
+			<div class="setting" id="framerate-row" desc="How the picture is paced. Match display follows the refresh rate of the screen."><span class="caption">Motion smoothing</span><select id="framerate" data-value="framerate" data-event-change="queue('framerate', ev.value)">
+				<option data-for="entry : framerates" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<label class="check setting" id="switch-stretch" desc="Stretches cutscenes to fill the screen instead of keeping their shape."><span class="caption">Stretch videos to fill the screen</span><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/></label>
+
+			<p class="section">Interface</p>
+			<label class="check setting" id="switch-modern-interface" desc="Draws the map under panels that float over it. Off keeps the classic sidebar."><span class="caption">Modern in-game interface</span><input type="checkbox" id="modern-interface" data-attrif-checked="moderninterface" data-event-click="queue('moderninterface', moderninterface ? 0 : 1)"/></label>
+			<div class="setting" id="rows-row" data-class-disabled="!moderninterface" desc="How many rows of buildings and units the sidebar shows. The preview beside the list shows the layout."><span class="caption">Sidebar rows</span><select id="sidebar-rows" data-value="rowcount" data-attrif-disabled="!moderninterface" data-event-change="queue('sidebarrows', ev.value)">
+				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<label class="check setting" id="switch-classic-menus" desc="Uses Yuri's Revenge's own menu screens. The change takes effect when you press OK."><span class="caption">Classic menu art</span><input type="checkbox" id="classic-menus" data-attrif-checked="classicmenus" data-event-click="queue('classicmenus', classicmenus ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-bitmap-font" desc="Draws the interface text with the game's bitmap font, which stays sharp at its own size."><span class="caption">Pixel-perfect UI font</span><input type="checkbox" id="bitmap-font" data-attrif-checked="bitmapfont" data-event-click="queue('bitmapfont', bitmapfont ? 0 : 1)"/></label>
+
+			<p class="section">HDR</p>
+			<div class="setting" id="hdr-row" data-attr-desc="hdroutputtip"><span class="caption">HDR output</span><select id="hdr" data-value="hdroutput" data-event-change="queue('hdroutput', ev.value)">
+				<option data-for="entry : hdroutputs" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+			<div class="setting" id="highlights-row" data-attr-desc="highlightstip" data-class-disabled="!hdractive"><span class="caption">Highlights</span><select id="highlights" data-value="highlights" data-attrif-disabled="!hdractive" data-event-change="queue('highlights', ev.value)">
+				<option value="0">Classic</option>
+				<option value="1">Enhanced</option>
+			</select></div>
+			<div class="setting slider-row" id="paper-row" data-class-disabled="!hdractive" desc="The brightness of white on an HDR screen, in nits. Automatic follows Windows."><span class="caption">Paper white</span><input type="range" id="paper-white" min="80" max="480" step="10" data-attr-value="paperwhite" data-attrif-disabled="!hdractive" data-event-change="queue('paperwhite', ev.value)"/><span class="value" id="paper-value">{{paperwhite}} nits</span></div>
+			<div class="setting slider-row" id="peak-row" data-class-disabled="!hdractive" desc="The brightest level HDR output uses, in nits. Automatic follows the display."><span class="caption">Peak brightness</span><input type="range" id="peak-brightness" min="80" max="10000" step="10" data-attr-value="peakbrightness" data-attrif-disabled="!hdractive" data-event-change="queue('peak', ev.value)"/><span class="value" id="peak-value">{{peakbrightness}} nits</span></div>
+
+			<p class="section">Picture level</p>
+			<div class="setting slider-row" id="brightness-row" desc="The brightness of the whole picture. 100% leaves it unchanged."><span class="caption">Brightness</span><input type="range" id="brightness" min="50" max="200" step="5" data-attr-value="brightness" data-event-change="queue('brightness', ev.value)"/><span class="value" id="brightness-value">{{brightness}}%</span></div>
+			<div class="setting slider-row" id="gamma-row" desc="The gamma curve of the whole picture. 1.00 leaves it unchanged."><span class="caption">Gamma</span><input type="range" id="gamma" min="50" max="200" step="5" data-attr-value="gamma" data-event-change="queue('gamma', ev.value)"/><span class="value" id="gamma-value">{{gammalabel}}</span></div>
+
+			<p class="section">Renderer</p>
+			<div class="setting" id="renderer-row" desc="The graphics interface the game asks for when it starts. Change it only if the picture fails to draw. Applies at the next start."><span class="caption">Graphics API</span><select id="renderer" data-value="renderer" data-event-change="queue('renderer', ev.value)">
+				<option data-for="entry : renderers" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+		</div>
+		<div id="side">
+			<p id="side-title">Description</p>
+			<p id="description">Point at a setting or select it to read what it does.</p>
+			<div id="panel-preview" class="setting-preview" data-class-disabled="!moderninterface"><p class="setting-preview-caption">{{preview.caption}}</p><div data-for="shape : preview.shapes" data-attr-class="shape.classes" data-style-left="shape.left" data-style-top="shape.top" data-style-width="shape.width" data-style-height="shape.height"></div></div>
+			<p class="side-note">Brightness, gamma and colour-blind changes show on the whole screen while this page is open. Cancel puts the old values back. HDR paper white and peak apply on OK.</p>
+		</div>
+	</div>
+	<div id="footer">
+		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
+		<span id="footer-spacer"></span>
+		<button id="footer-cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+		<button id="footer-ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	</div>
+</body>
+</rml>

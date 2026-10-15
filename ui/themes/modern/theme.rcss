@@ -521,9 +521,9 @@ body.lobby #ok, body.lobby #cancel
 	width: 136dp;
 }
 
-/* The Settings screen: one panel with a tab for the game, display, audio, keyboard and mods
-   pages. Each page is its own screen; the tab bar and the panel stand in the same place for
-   all of them, and the page's content is centered in the panel. */
+/* The Settings screen: a tab bar across the top of the window, with the page below it. Every page
+   fills the window under the bar, so the bar stays put from page to page. The page layout is in
+   settings.rcss. */
 #tabs
 {
 	display: none;
@@ -533,34 +533,14 @@ body.lobby #ok, body.lobby #cancel
 {
 	display: flex;
 	position: absolute;
-	left: 50%;
-	top: 50%;
-	width: 560dp;
-	height: 34dp;
-	margin-left: -280dp;
-	margin-top: -229dp;
+	left: 0;
+	top: 0;
+	right: 0;
+	height: 40dp;
+	padding: 5dp 12dp 0 12dp;
+	background-color: #0a0712f0;
+	border-bottom: 1dp #3b2f55;
 	z-index: 2;
-}
-
-/* Every page has the panel of the tallest one (the mods list, 424dp), and the tab bar and panel
-   together stand in the middle of the screen, so the block stays put from tab to tab. */
-.settings #backdrop #reveal
-{
-	width: 560dp;
-	height: 424dp;
-	top: 50%;
-	margin-top: -195dp;
-}
-
-/* The page's own content stands in the middle of the panel. */
-.settings #content
-{
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	height: 100%;
-	padding-top: 0;
-	padding-bottom: 0;
 }
 
 #tabs button.tab
@@ -617,31 +597,6 @@ body.lobby #ok, body.lobby #cancel
 	border-color: #d29bff;
 }
 
-.settings.tab-game #content
-{
-	padding-left: 91dp;
-	padding-right: 91dp;
-}
-
-.settings.tab-display #content
-{
-	padding-left: 13dp;
-	padding-right: 13dp;
-}
-
-.settings.tab-audio #content
-{
-	padding-left: 92dp;
-	padding-right: 92dp;
-}
-
-.settings.tab-keyboard #content
-{
-	padding-left: 60dp;
-	padding-right: 60dp;
-}
-
-/* The tabs take the place of the buttons that led from the game controls to the other pages. */
 .settings #buttons > #sound, .settings #buttons > #keyboard
 {
 	display: none;

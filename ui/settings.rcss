@@ -1,0 +1,223 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The layout of the settings pages: the Game, Display, Graphics, Audio, Controls and Accessibility
+   screens. The page fills the window. A scrolling list of settings runs down the left, each row with its
+   label on the left and its control on the right; the description panel stands on the right; and the
+   footer holds Reset to defaults, Cancel and OK. The theme sheets set the colours. Sizes are in dp. */
+
+.page-settings #reveal
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: auto;
+	height: auto;
+	margin: 0;
+}
+
+/* The tab bar takes the top 40 dp of the window when the page is one of the tabbed Settings. */
+.settings.page-settings #reveal
+{
+	top: 40dp;
+}
+
+/* The chrome takes the reveal's height, so the footer stays at its bottom edge. */
+.page-settings #chrome
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	height: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.page-settings #content
+{
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 0;
+}
+
+.page-settings #page
+{
+	display: flex;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.page-settings #list
+{
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 10dp 22dp 18dp 24dp;
+}
+
+.page-settings #side
+{
+	display: flex;
+	flex-direction: column;
+	flex: 0 0 300dp;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 18dp 20dp 18dp 16dp;
+}
+
+.page-settings #footer
+{
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	height: 56dp;
+	padding: 0 16dp;
+}
+
+.page-settings #footer button
+{
+	width: 150dp;
+	height: 34dp;
+	margin-left: 10dp;
+}
+
+.page-settings #footer #footer-reset
+{
+	margin-left: 0;
+	width: 180dp;
+}
+
+.page-settings #footer-spacer
+{
+	flex: 1 1 auto;
+}
+
+/* A heading that opens a group of rows. */
+.page-settings .section
+{
+	margin: 14dp 0 6dp 0;
+	padding-bottom: 4dp;
+	line-height: 22dp;
+	font-size: 17dp;
+}
+
+.page-settings .section:first-child
+{
+	margin-top: 0;
+}
+
+/* One setting: its label fills the row and the control sits at the right. */
+.page-settings .setting
+{
+	display: flex;
+	align-items: center;
+	min-height: 40dp;
+	margin-bottom: 4dp;
+	padding: 0 8dp 0 8dp;
+	border-radius: 4dp;
+}
+
+.page-settings .setting:hover
+{
+	background-color: #ffffff0f;
+}
+
+.page-settings .setting > .caption
+{
+	flex: 1 1 auto;
+	width: auto;
+	line-height: 40dp;
+	white-space: nowrap;
+}
+
+.page-settings .setting > select
+{
+	width: 240dp;
+	height: 28dp;
+	margin: 0;
+}
+
+.page-settings .setting > input[type='range']
+{
+	width: 200dp;
+	height: 24dp;
+	margin: 0 8dp 0 0;
+}
+
+.page-settings .setting > .value
+{
+	width: 64dp;
+	line-height: 40dp;
+	text-align: right;
+}
+
+/* A switch is a label with its check box at the right. */
+.page-settings label.check.setting
+{
+	display: flex;
+	min-height: 40dp;
+	line-height: 40dp;
+}
+
+.page-settings label.check.setting > input[type='checkbox']
+{
+	margin: 0 0 0 12dp;
+}
+
+/* A setting that cannot be changed right now shows its label greyed. */
+.page-settings .setting.disabled > .caption
+{
+	color: #6a6388;
+}
+
+/* A list that a setting holds, such as the resolutions, sits under its label. */
+.page-settings .setting.tall
+{
+	align-items: flex-start;
+	min-height: 0;
+	padding-top: 6dp;
+	padding-bottom: 6dp;
+}
+
+.page-settings .setting.tall > .caption
+{
+	line-height: 24dp;
+}
+
+.page-settings .setting.tall > .list
+{
+	width: 240dp;
+	height: 120dp;
+}
+
+/* The description panel. It shows the text of the setting the pointer or the focus is on. */
+.page-settings #side-title
+{
+	margin: 0 0 8dp 0;
+	line-height: 22dp;
+	font-size: 17dp;
+}
+
+.page-settings #description
+{
+	line-height: 20dp;
+}
+
+.page-settings .side-note
+{
+	margin-top: 14dp;
+	line-height: 18dp;
+}
