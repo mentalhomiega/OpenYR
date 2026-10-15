@@ -34,3 +34,4 @@ Rules for these files:
 | `phobos-autodeath-convert-animunit.md` | Phobos `AutoDeath.*`, `Convert.*` (ammo, health, owner change, deploy, superweapon) and `CreateUnit.*` on animations |
 | `superweapon-extensions.md` | Ares `SW.*` framework and `Type=` superweapons; Phobos superweapon additions (`SW.Next`, linked superweapons, `LimboDelivery`, EMPulse settings and others) |
 | `phobos-trajectories-and-interception.md` | Phobos projectile trajectories, projectile interception, parabombs, return weapon and related bullet-motion keys |
+| `small-per-type-switches.md` | 51 small Ares and Phobos per-type, weapon and warhead switches that add one field and one check, such as `CanPassiveAquire.*`, `AffectsAir`, `AffectsGround` and `CylinderRangefinding` |
