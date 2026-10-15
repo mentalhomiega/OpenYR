@@ -128,3 +128,8 @@ fuzz_add_target(FuzzIni NAME fuzz_ini
     SOURCES fuzz_ini.cpp
     ENGINE ${FUZZ_INI_ENGINE}
 )
+
+fuzz_add_target(FuzzSpawn NAME fuzz_spawn
+    SOURCES fuzz_spawn.cpp
+    ENGINE ${FUZZ_INI_ENGINE} spawnerconfig.cpp
+)

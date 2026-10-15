@@ -16,6 +16,7 @@
 #include "utf8.h"
 
 #include <algorithm>
+#include <climits>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -54,6 +55,16 @@ int Read_Slot_Int(INIClass const & ini, char const * section, int slot, int fall
 {
 	std::string entry = "Multi" + std::to_string(slot + 1);
 	return(ini.Get_Int(section, entry.c_str(), fallback));
+}
+
+
+/// <summary>
+/// Turns a number the client counts from one into one the game counts from zero. The smallest
+/// int has no smaller neighbor and stays as it is.
+/// </summary>
+int Count_From_Zero(int number)
+{
+	return(number == INT_MIN ? number : number - 1);
 }
 
 
@@ -494,8 +505,8 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	AutoSaveInterval = ini.Get_Int(SETTINGS, "AutoSaveGame", AutoSaveInterval);
 
 	// The client counts automatic saves from one; the game counts from zero.
-	NextCampaignAutoSave = ini.Get_Int(SETTINGS, "NextSPAutoSaveId", 1) - 1;
-	NextSkirmishAutoSave = ini.Get_Int(SETTINGS, "NextSkirmishAutoSaveId", 1) - 1;
+	NextCampaignAutoSave = Count_From_Zero(ini.Get_Int(SETTINGS, "NextSPAutoSaveId", 1));
+	NextSkirmishAutoSave = Count_From_Zero(ini.Get_Int(SETTINGS, "NextSkirmishAutoSaveId", 1));
 
 	Bases = Spawn_Bool(ini, SETTINGS, "Bases", Bases);
 	Credits = ini.Get_Int(SETTINGS, "Credits", Credits);
