@@ -17,6 +17,7 @@
 #include "netshare.h"
 #include "newmenu.h"
 #include "session.h"
+#include "shellmap.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 
 
@@ -35,6 +36,9 @@ bool Skirmish_Mode_Dialog(void)
 	Hide_Mouse();
 	Draw_Menu_Background();
 	Show_Mouse();
+
+	// A finished skirmish returns here rather than to the main menu.
+	Shellmap_Start();
 
 	bool started = UI_Skirmish_Dialog();
 

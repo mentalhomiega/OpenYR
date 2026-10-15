@@ -7,209 +7,22 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-
-#reveal
-{
-	width: 438dp;
-	height: 286dp;
-	top: 50%;
-	margin-top: -143dp;
-}
-
-.difficulty #reveal
-{
-	height: 336dp;
-	margin-top: -168dp;
-}
-
-.frontend #reveal
-{
-	height: 292dp;
-	margin-top: -146dp;
-}
-
-#content
-{
-	padding: 19dp 27dp 0 33dp;
-}
-
-.row
-{
-	display: block;
-	height: 25dp;
-	white-space: nowrap;
-}
-
-.row + .row
-{
-	margin-top: 26dp;
-}
-
-#row-detail, #row-difficulty
-{
-	margin-top: 25dp;
-}
-
-.frontend .row
-{
-	height: 22dp;
-}
-
-.frontend .row + .row, .frontend #row-detail, .frontend #row-difficulty
-{
-	margin-top: 14dp;
-}
-
-.row > .caption
-{
-	width: 95dp;
-	height: 25dp;
-	margin-right: 7dp;
-	padding-right: 1dp;
-	line-height: 17dp;
-	text-align: right;
-}
-
-.row > input[type='range']
-{
-	width: 192dp;
-	height: 25dp;
-}
-
-.row > .value
-{
-	width: 75dp;
-	height: 25dp;
-	margin-left: 9dp;
-	line-height: 17dp;
-}
-
-.frontend .row > .caption
-{
-	width: 104dp;
-	height: 22dp;
-	margin-right: 0;
-	text-align: left;
-}
-
-.frontend .row > input[type='range']
-{
-	width: 205dp;
-	height: 22dp;
-}
-
-.frontend .row > .value
-{
-	width: 68dp;
-	height: 22dp;
-	margin-left: 1dp;
-	padding-right: 1dp;
-	text-align: right;
-}
-
-#switches
-{
-	display: flex;
-	margin-top: 8dp;
-}
-
-.frontend #switches
-{
-	margin-top: 19dp;
-}
-
-#switches > .column
-{
-	width: 187dp;
-}
-
-.frontend #switches > .column
-{
-	width: 186dp;
-}
-
-#switches > .column > label.check + label.check
-{
-	margin-top: 10dp;
-}
-
-.frontend #switches > .column > label.check + label.check
-{
-	margin-top: 7dp;
-}
-
-.frontend #switches > .column > #switch-edge
-{
-	margin-top: 7dp;
-}
-
-#extras
-{
-	display: flex;
-	margin-top: 10dp;
-}
-
-#extras > .column
-{
-	width: 187dp;
-}
-
-#extras > .column > label.check + label.check
-{
-	margin-top: 10dp;
-}
-
-#autosave-row
-{
-	display: flex;
-	margin-top: 6dp;
-	height: 24dp;
-}
-
-#autosave-label
-{
-	width: 70dp;
-	line-height: 24dp;
-}
-
-#autosave
-{
-	width: 112dp;
-}
-
-#autosave selectbox
-{
-	background-color: #0a0615;
-}
+/* The game controls page. The layout is in settings.rcss. The Sound and Keyboard buttons only show
+   in a game, and the Settings tabs hide them because the tabs replace them. */
 
 #buttons
 {
 	display: flex;
-	margin-top: 12dp;
+	margin-top: 14dp;
 }
 
-.frontend #buttons
+#buttons button
 {
-	margin-top: 10dp;
+	width: 140dp;
+	margin-right: 8dp;
 }
 
-#buttons > button
+selectbox
 {
-	width: 116dp;
-}
-
-#sound
-{
-	margin-right: 14dp;
-}
-
-#keyboard
-{
-	margin-right: 15dp;
-}
-
-.frontend #ok
-{
-	width: 196dp;
-	margin-left: 88dp;
+	background-color: #0a0615;
 }

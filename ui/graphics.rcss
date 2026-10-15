@@ -1,0 +1,55 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+/* The sidebar-rows preview beside the list, and the colours of its pieces. The markup places the pieces. */
+
+#panel-preview
+{
+	margin-top: 12dp;
+}
+
+.mock-screen
+{
+	background-color: #342d63;
+}
+
+.mock-panel
+{
+	background-color: #0b0816;
+}
+
+.mock-top
+{
+	background-color: #4a3f86;
+}
+
+.mock-well
+{
+	background-color: #140f28;
+}
+
+.mock-fill
+{
+	background-color: #9d8ae6;
+}
+
+.mock-tab
+{
+	background-color: #6e5fb0;
+}
+
+.mock-cell
+{
+	background-color: #a897e8;
+}
+
+.mock-arrow
+{
+	background-color: #d6ccff;
+}

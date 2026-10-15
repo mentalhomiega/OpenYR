@@ -1,0 +1,17 @@
+; Superweapon countdown timers in the corner of the screen. Nuke, Iron Curtain and Chronosphere are granted ready, so their
+; timers show 00:00 and blink once a second (house colour, then grey). The timers are screen-space HUD text, so they keep the
+; same size and place at both zoom levels (zoom 1 and zoom 2.5). A granted weapon with no structure to grant it is dropped
+; by the house update, so the granting structure is not used here; the countdown is not shown by this test.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-timers.txt -Width 800 -Height 600 -Seconds 120 -ShotDir shots/sw-timers -Filter "AUTOTEST|Exception"
+20 own GAPOWR 56 40
+30 view 56 40
+35 reveal
+40 grant NukeSpecial
+41 grant IronCurtainSpecial
+42 grant ChronoSphereSpecial
+60 command ScreenCapture
+64 command ScreenCapture
+70 zoom 2.5
+75 command ScreenCapture
+80 zoom 1
+120 quit

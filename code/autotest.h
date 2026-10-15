@@ -34,6 +34,9 @@ bool AutoTest_Post_Win(void);
 
 void AutoTest_Loading_Screen_Shown(void);
 
+// Saves the window once the multiplayer score screen is drawn in full, when a script is running.
+void AutoTest_Score_Shown(void);
+
 class HouseClass;
 class TriggerTypeClass;
 

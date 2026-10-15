@@ -100,13 +100,14 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	Doc->AddEventListener(Rml::EventId::Textinput, this, true);
 	Doc->AddEventListener(Rml::EventId::Mousedown, this);
 	Doc->AddEventListener(Rml::EventId::Mousemove, this, true);
+	Doc->AddEventListener(Rml::EventId::Focus, this, true);
 	Loaded();
 	Apply_Tabs();
 	return(true);
 }
 
 
-static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "audio", "keyboard", "mods"};
+static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
 
 // A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
 static bool UI_Tab_Keyboard = false;
@@ -116,9 +117,33 @@ static bool UI_Tab_Keyboard = false;
 /// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
 /// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
 /// </summary>
+UISettingsTab UIRmlViewClass::Tab_Of_View(void) const
+{
+	return((ViewTab != UI_TAB_NONE) ? ViewTab : Owner.Settings_Tab());
+}
+
+
+unsigned UIRmlViewClass::Offered_Of_View(void) const
+{
+	return((ViewTab != UI_TAB_NONE) ? ViewOffered : Owner.Settings_Tabs_Offered());
+}
+
+
+/// <summary>
+/// Makes this view a page of the tabbed Settings: the tab bar of the page lights the tab given and hides the tabs not offered.
+/// The host calls this on every page at once, so the tab bars of pages that are not shown agree with the one on show.
+/// </summary>
+void UIRmlViewClass::Set_Tab(int tab, unsigned offered)
+{
+	ViewTab = (UISettingsTab)tab;
+	ViewOffered = offered;
+	Apply_Tabs();
+}
+
+
 void UIRmlViewClass::Apply_Tabs(void)
 {
-	UISettingsTab const tab = Owner.Settings_Tab();
+	UISettingsTab const tab = Tab_Of_View();
 	if (Doc == nullptr || tab == UI_TAB_NONE) {
 		return;
 	}
@@ -133,12 +158,10 @@ void UIRmlViewClass::Apply_Tabs(void)
 		Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[index]);
 		if (button != nullptr) {
 			button->SetClass("active", index == tab);
-			button->SetClass("gone", (Owner.Settings_Tabs_Offered() & (1u << index)) == 0);
+			button->SetClass("gone", (Offered_Of_View() & (1u << index)) == 0);
 		}
 	}
 
-	FocusTab = UI_Tab_Keyboard;
-	UI_Tab_Keyboard = false;
 }
 
 
@@ -149,7 +172,7 @@ void UIRmlViewClass::Apply_Tabs(void)
 /// <returns>bool; Was the key a tab change?</returns>
 bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
 {
-	if (Owner.Settings_Tab() == UI_TAB_NONE) {
+	if (Tab_Of_View() == UI_TAB_NONE) {
 		return(false);
 	}
 
@@ -176,10 +199,10 @@ bool UIRmlViewClass::Step_Tab(Rml::Event & event, int key)
 		return(false);
 	}
 
-	int tab = Owner.Settings_Tab();
+	int tab = Tab_Of_View();
 	for (int tries = 0; tries < UI_TAB_COUNT; tries++) {
 		tab = (tab + step + UI_TAB_COUNT) % UI_TAB_COUNT;
-		if ((Owner.Settings_Tabs_Offered() & (1u << tab)) != 0) {
+		if ((Offered_Of_View() & (1u << tab)) != 0) {
 			UI_Tab_Keyboard = true;
 			Mark_Keyboard();
 			Queue("tab", tab);
@@ -236,9 +259,11 @@ void UIRmlViewClass::Show(bool modal)
 	if (Doc != nullptr) {
 		Doc->Show(modal ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, Rml::FocusFlag::Document);
 
-		if (FocusTab) {
-			FocusTab = false;
-			Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[Owner.Settings_Tab()]);
+		// The keyboard flag belongs to the page on show, so only that page takes it.
+		bool const keyboard_tab = UI_Tab_Keyboard;
+		UI_Tab_Keyboard = false;
+		if (keyboard_tab && Tab_Of_View() != UI_TAB_NONE) {
+			Rml::Element * button = Doc->GetElementById(Rml::String("tab-") + UI_TAB_NAMES[Tab_Of_View()]);
 			if (button != nullptr) {
 				button->Focus();
 				Mark_Keyboard();
@@ -694,6 +719,63 @@ bool UIRmlViewClass::Step_Range(Rml::Element * element, int key)
 }
 
 
+/// <summary>
+/// Moves the focus to the nearest button of a grid, an element with class grid, in the arrow key's
+/// direction. A button in the same row is the neighbour for Left and Right, and the nearest button
+/// in the row above or below, and then in its column, for Up and Down.
+/// </summary>
+/// <returns>bool; Did the focus move?</returns>
+bool UIRmlViewClass::Navigate_Grid(Rml::Element * element, int key)
+{
+	Rml::Element * grid = (element != nullptr) ? element->GetParentNode() : nullptr;
+	if (grid == nullptr || element->GetTagName() != "button" || !grid->IsClassSet("grid")) {
+		return(false);
+	}
+
+	bool const across = key == Rml::Input::KI_LEFT || key == Rml::Input::KI_RIGHT;
+	if (!across && key != Rml::Input::KI_UP && key != Rml::Input::KI_DOWN) {
+		return(false);
+	}
+	float const sign = (key == Rml::Input::KI_LEFT || key == Rml::Input::KI_UP) ? -1.0f : 1.0f;
+
+	Rml::Vector2f const from = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+	float const half_height = element->GetBox().GetSize(Rml::BoxArea::Border).y * 0.5f;
+	Rml::Element * best = nullptr;
+	float best_rank = 0.0f;
+	for (int index = 0; index < grid->GetNumChildren(); index++) {
+		Rml::Element * other = grid->GetChild(index);
+		if (other == element || other->GetTagName() != "button" || Is_Disabled(other) || !other->IsVisible()) {
+			continue;
+		}
+
+		Rml::Vector2f const to = other->GetAbsoluteOffset(Rml::BoxArea::Border);
+		float const along = (across ? to.x - from.x : to.y - from.y) * sign;
+		float const side = across ? to.y - from.y : to.x - from.x;
+		if (along <= 0.0f) {
+			continue;
+		}
+
+		// Across a row, the candidate must sit in the same row; up or down, it must sit in a row of its own.
+		float const rank = across
+			? (std::fabs(side) < half_height ? along : -1.0f)
+			: (along >= half_height ? along * 1000.0f + std::fabs(side) : -1.0f);
+		if (rank < 0.0f) {
+			continue;
+		}
+		if (best == nullptr || rank < best_rank) {
+			best = other;
+			best_rank = rank;
+		}
+	}
+
+	if (best == nullptr) {
+		return(false);
+	}
+	best->Focus();
+	return(true);
+}
+
+
 bool UIRmlViewClass::Type_Ahead(Rml::Element * list, Rml::String const & text)
 {
 	if (text.empty() || (unsigned char)text[0] <= ' ') {
@@ -819,9 +901,33 @@ void UIRmlViewClass::Serve_Tip(void)
 	}
 }
 
+// Shows the desc attribute of the setting an element belongs to in the page's description element, if the page has one.
+static void Describe_Setting(Rml::ElementDocument * doc, Rml::Element * element)
+{
+	if (doc == nullptr) {
+		return;
+	}
+	for (Rml::Element * step = element; step != nullptr && step != doc; step = step->GetParentNode()) {
+		Rml::String const text = step->GetAttribute<Rml::String>("desc", Rml::String());
+		if (!text.empty()) {
+			Rml::Element * panel = doc->GetElementById("description");
+			if (panel != nullptr && panel->GetInnerRML() != text) {
+				panel->SetInnerRML(text);
+			}
+			return;
+		}
+	}
+}
+
+
 void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 {
+	if (event.GetId() == Rml::EventId::Focus) {
+		Describe_Setting(Doc, event.GetTargetElement());
+	}
+
 	if (event.GetId() == Rml::EventId::Mousemove) {
+		Describe_Setting(Doc, event.GetTargetElement());
 		Rml::Element * tipped = Tip_Of(event.GetTargetElement());
 		TipAt = Rml::Vector2f(event.GetParameter<float>("mouse_x", 0.0f),
 			event.GetParameter<float>("mouse_y", 0.0f));
@@ -925,6 +1031,12 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 	}
 
 	if (Step_Range(target, key)) {
+		Mark_Keyboard();
+		event.StopPropagation();
+		return;
+	}
+
+	if (Navigate_Grid(target, key)) {
 		Mark_Keyboard();
 		event.StopPropagation();
 		return;

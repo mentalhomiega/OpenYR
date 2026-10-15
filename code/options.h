@@ -46,6 +46,14 @@ enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_ENHANCED
 };
 
+// The faction tint of the modern menus. Random picks one of the three when the game starts.
+enum MenuThemeType {
+	MENU_THEME_RANDOM,
+	MENU_THEME_ALLIED,
+	MENU_THEME_SOVIET,
+	MENU_THEME_YURI
+};
+
 // Turns the emissive masks on or off from the HDR highlights setting and the debug view.
 void Apply_HDR_Highlights(void);
 
@@ -174,6 +182,12 @@ class OptionsClass {
 		// Yuri's Revenge's own screens (MenuStyle=Modern or Classic in the settings).
 		bool IsClassicMenus;
 
+		// The faction tint of the modern menus, from the MenuTheme setting.
+		MenuThemeType MenuTheme;
+
+		// A battle between computer players runs behind the modern menus (MenuBattle in the settings).
+		bool MenuBattle;
+
 		/*
 		 * If tooltips are to pop up over the user interface, then this flag will be true.
 		 */
@@ -183,6 +197,13 @@ class OptionsClass {
 		 * If true, the force-move key sets a rally point and the plain click moves the structure.
 		 */
 		bool AltToRally;
+
+		/*
+		 * If true, an airborne object, such as an aircraft or a flying Kirov, is picked by the area its
+		 * drawn body covers, and it wins over a building or ground unit under that area. If false, it is
+		 * picked only near the point its voxel is drawn from, as gamemd does.
+		 */
+		bool AircraftBodyPick;
 
 		/*
 		 * If true, a solo or skirmish game keeps running, silent and without input, while

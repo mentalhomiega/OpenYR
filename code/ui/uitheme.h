@@ -25,3 +25,23 @@ std::string UI_Theme_Directory(void);
 // from it.
 float UI_Theme_Reference_Width(void);
 float UI_Theme_Reference_Height(void);
+
+// The faction tints of the modern menus. The colours of each tint are set by its own sheet.
+enum UIMenuTintType
+{
+	UI_TINT_ALLIED,
+	UI_TINT_SOVIET,
+	UI_TINT_YURI,
+	UI_TINT_COUNT
+};
+
+// The tint the modern menus show: the one the MenuTheme setting names, or for Random the one
+// drawn the first time it is asked for in this run.
+UIMenuTintType UI_Theme_Tint(void);
+
+// The body class that selects a tint's colours, such as theme-soviet.
+inline char const * UI_Theme_Tint_Class(UIMenuTintType tint)
+{
+	static char const * const CLASSES[UI_TINT_COUNT] = {"theme-allied", "theme-soviet", "theme-yuri"};
+	return(CLASSES[tint]);
+}

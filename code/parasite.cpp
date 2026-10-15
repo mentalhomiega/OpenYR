@@ -43,6 +43,9 @@ constexpr double Squid_Shake_Limit = 0.7853981852531433;
 constexpr double Squid_Splash_Spread = 128.0;
 constexpr double Squid_Splash_Reach = 64.0;
 
+// The radians per facing step that a bite's roll turns by (ParasiteClass::Update, 0x629FD0; TechnoClass::vt_entry_3D8, 0x70B280).
+constexpr double Bite_Turn_Per_Facing = -9.587672516830327e-05;
+
 
 /// <summary>
 /// Returns the victim's turn in radians from facing 0x3FFF, the angle the grapple's splashes and wakes rotate by.
@@ -61,6 +64,19 @@ Coord Squid_Offset(Coord const & where, double turn, double side, double ahead)
 	double const cosine = Gamemd_Cosine(turn);
 	double const sine = Gamemd_Sine(turn);
 	return(Coord(where.X + (int)(side * cosine - ahead * sine), where.Y + (int)(side * sine + ahead * cosine), where.Z));
+}
+
+
+/// <summary>
+/// Returns the point a bite rolls its victim from, side leptons from the victim's center. The point lies a quarter turn from the facing, so the roll tilts the victim sideways.
+/// </summary>
+Coord Bite_Jolt_Point(Coord const & where, short facing, int side)
+{
+	// gamemd subtracts the facing bias twice, and the first subtraction wraps in 16 bits.
+	short const turned = (short)(facing - 0x3FFF);
+	double const turn = (double)(turned - 0x3FFF) * Bite_Turn_Per_Facing;
+	double const offset = side;
+	return(Coord((int)(where.X + offset * Gamemd_Cosine(turn)), (int)(where.Y - offset * Gamemd_Sine(turn)), where.Z));
 }
 
 }
@@ -132,8 +148,8 @@ void ParasiteClass::Try_Infect(TechnoClass * target)
 /// organic owner runs the giant squid's grapple instead. Otherwise, every ROF frames of the
 /// owner's primary weapon, the victim takes that weapon's Damage through its warhead. An
 /// infantry victim instead takes its whole remaining strength, ignoring its defenses, so a
-/// soldier dies at the first bite. A victim that is not infantry also throws sparks and plays
-/// the weapon's Anim.
+/// soldier dies at the first bite. A victim that is not infantry also throws sparks, plays the
+/// weapon's Anim, and is rolled sideways to a random side before the damage lands.
 /// </summary>
 void ParasiteClass::Update(void)
 {
@@ -170,6 +186,12 @@ void ParasiteClass::Update(void)
 	// Each bite sets the victim's paralysis to the warhead's Paralyzes, zero included (ParasiteClass::Update, 0x629FD0).
 	if (victim->Is_Foot()) {
 		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0;
+	}
+
+	// The roll draws its side from the synchronized random number generator, after the sparks and anim (ParasiteClass::Update, 0x629FD0).
+	if (!infantry) {
+		int const side = Random_Pick(0, 1) == 0 ? 2 : -2;
+		victim->Rock(Bite_Jolt_Point(where, victim->PrimaryFacing.Current().Facing, side), 1.5f, false);
 	}
 
 	int damage = infantry ? victim->Strength : weapon->Attack;

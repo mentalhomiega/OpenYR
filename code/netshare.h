@@ -28,6 +28,9 @@ struct NetChatLineType
 
 
 bool Set_Scenario_Info_From_Index(int index);
+void Select_Scenario_Session(int index);
+int First_Available_Scenario(void);
+int Find_Available_Scenario(char const * filename);
 void Commit_Session_Specials(void);
 void PregameSetup(void);
 bool Update_Network_Dialog_Preview(void);

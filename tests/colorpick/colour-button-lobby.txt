@@ -1,0 +1,32 @@
+; The skirmish lobby's colour button and free color picker, from the main menu. Shows a stock color,
+; a preset applied from the picker, the picker over another seat with that preset marked in use, and a
+; wheel color named as custom. The ui shot lines write .tga files to the autotest Screenshots folder; convert them to .png afterwards.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/colorpick/colour-button-lobby.txt -Menus -MenuStyle Modern -Width 1024 -Height 768 -Seconds 120
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 2500
+ui shot lobby-stock
+ui click swatch0
+ui wait 1000
+ui press Safe yellow
+ui wait 800
+ui press Use this color
+ui wait 1500
+ui shot lobby-preset
+ui click swatch1
+ui wait 1500
+ui shot picker-taken
+ui press Back
+ui wait 1000
+ui click swatch0
+ui wait 1000
+ui pointer colorfield 0.22 0.35
+ui wait 800
+ui press Use this color
+ui wait 1500
+ui shot lobby-custom
+ui quit

@@ -439,6 +439,7 @@ RulesClass::RulesClass(void) :
 	GeneticMutatorActivateSound(VOC_NONE),
 	PsychicDominatorActivateSound(VOC_NONE),
 	MutateExplosion(false),
+	MutateFriendly(true),
 	MutateWarhead(NULL),
 	MutateExplosionWarhead(NULL),
 	AnimToInfantry(),
@@ -1585,6 +1586,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		WeatherConBoltExplosion = TGet_Class(ini, GENERAL, "WeatherConBoltExplosion", WeatherConBoltExplosion);
 		MetallicDebris = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "MetallicDebris", MetallicDebris);
 		MutateExplosion = ini.Get_Bool(GENERAL, "MutateExplosion", MutateExplosion);
+		MutateFriendly = ini.Get_Bool(GENERAL, "MutateFriendly", MutateFriendly);
 		AnimToInfantry = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AnimToInfantry", AnimToInfantry);
 		InfantryMutate = TGet_Class(ini, GENERAL, "InfantryMutate", InfantryMutate);
 		InfantryBrute = TGet_Class(ini, GENERAL, "InfantryBrute", InfantryBrute);

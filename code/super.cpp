@@ -822,8 +822,11 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 	Sound_Effect(Rule->GeneticMutatorActivateSound, coord);
 	Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 
+	// With MutateFriendly=no the blast spares infantry of the firing house and its allies.
+	HouseClass const * spare = Rule->MutateFriendly ? NULL : House;
+
 	if (Rule->MutateExplosion) {
-		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House);
+		Explosion_Damage(coord, 10000, NULL, Rule->MutateExplosionWarhead, false, House, spare);
 		return;
 	}
 
@@ -834,7 +837,7 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 			if (!Map.In_Radar(where)) continue;
 			CellClass & cellptr = Map[where];
 			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
-				if (object->RTTI == RTTI_INFANTRY) {
+				if (object->RTTI == RTTI_INFANTRY && (spare == NULL || !spare->Is_Ally(((InfantryClass *)object)->House))) {
 					victims.Add((InfantryClass *)object);
 				}
 			}
@@ -1003,13 +1006,13 @@ static void Chrono_Kill(TechnoClass * techno, HouseClass * house = NULL)
 
 
 /// <summary>
-/// Sets a unit the chronosphere picked up down at the coordinate, as the Yuri's Revenge
-/// teleport locomotor does with the chronosphere's destination (0x718260, 0x7187A0).
+/// Starts the chronosphere warp of a unit the chronosphere picked, to the coordinate (0x718260, 0x7187A0).
 /// Whatever stands on the landing spot is destroyed, except the other units in moving; an
 /// infantryman crushes only infantry on its own spot. The unit dies instead if something
 /// there is under the Iron Curtain or the spot is off the map, and moves to the nearest free
-/// cell if a structure or tree stands there. A vehicle set down on water it cannot cross
-/// sinks; anything else set down where it cannot move is destroyed.
+/// cell if a structure or tree stands there. The unit then stays on its cell for ChronoDelay
+/// frames and lands (TeleportLocomotionClass::Land_Chrono_Warp). A vehicle set down on water it
+/// cannot cross sinks there, and anything else set down where it cannot move is destroyed.
 /// </summary>
 static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootClass *> const & moving)
 {
@@ -1047,8 +1050,6 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 		}
 		dest.X += (nearby.X - cell.X) * CELL_LEPTON_W;
 		dest.Y += (nearby.Y - cell.Y) * CELL_LEPTON_H;
-		cell = nearby;
-		cellptr = &Map[cell];
 	} else {
 		// A unit that may not be crushed, or a vehicle under infantry when ChronoInfantryCrush is off, destroys the arriving unit instead.
 		for (int index = 0; index < crushed.Count(); index++) {
@@ -1065,37 +1066,10 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 
 	TechnoTypeClass const * type = foot->TClass;
 	VocType const out_sound = type->ChronoOutSound != VOC_NONE ? type->ChronoOutSound : Rule->ChronoOutSound;
-	VocType const in_sound = type->ChronoInSound != VOC_NONE ? type->ChronoInSound : Rule->ChronoInSound;
-	if (Rule->WarpOut != NULL) {
-		new AnimClass(Rule->WarpOut, foot->Center_Coord());
-	}
 	Sound_Effect(out_sound, foot->Center_Coord());
 
-	/*
-	 * The unit moves the way a teleport locomotor moves it, without leaving the map, so it
-	 * keeps its team and its selection. A fresh locomotor drops any move it was part way
-	 * through.
-	 */
-	foot->Teleport_To(dest);
-
-	if (Rule->WarpOut != NULL) {
-		new AnimClass(Rule->WarpOut, foot->Center_Coord());
-	}
-	Sound_Effect(in_sound, foot->Center_Coord());
-
-	if (!cellptr->Is_Clear_To_Move(type->Speed, true, true)) {
-		if (foot->RTTI == RTTI_UNIT && cellptr->Land_Type() == LAND_WATER) {
-			foot->IsSinking = true;
-			foot->Stun();
-			if (Rule->Wake != NULL) {
-				new AnimClass(Rule->Wake, foot->PositionCoord);
-			}
-		} else {
-			Chrono_Kill(foot);
-			return;
-		}
-	}
-	foot->Per_Cell_Process(PCP_END);
+	// The unit keeps its place and its team while the warp runs, and lands through its teleport locomotor.
+	foot->Begin_Chrono_Warp(dest);
 }
 
 

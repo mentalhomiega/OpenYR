@@ -78,11 +78,14 @@ struct UISkirmishSlot
 	int Start = 0;
 	int Team = 0;
 
-	/// Does the map hold the row, and does it hold somebody who plays? The presenter keeps these
-	/// and the swatch in step.
+	/// Does the map hold the row, and does it hold somebody who plays? The presenter keeps these,
+	/// the swatch and the color name in step.
 	bool Shown = false;
 	bool Active = false;
 	std::string Swatch;
+	/// What the row's color button says, and its hover tip with the full name of a free color.
+	std::string ColorName;
+	std::string ColorTip;
 };
 
 
@@ -147,6 +150,7 @@ class UISkirmishPresenterClass : public UIPresenterClass
 	private:
 		void Settle_Slots(void);
 		void Choose(int row, int field, int index);
+		void Take_Color(int row, int index);
 		bool Judge_Setup(void);
 		void Open_Picker(int row);
 		void Apply_Picker(void);

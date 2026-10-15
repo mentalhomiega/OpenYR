@@ -170,6 +170,7 @@
 #include "radbeam.h"
 #include "fog.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "goptions.h"
 #include "house.h"
 #include "side.h"
@@ -7909,15 +7910,28 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 
 	brightness = Apparent_Brightness(brightness);
 
+	/*
+	 * An airborne object, such as an aircraft or a flying Kirov, records the area its body covers so
+	 * that the click search can pick it by its body. Only the body draw counts; the shadow is drawn
+	 * by its own routine.
+	 */
+	auto const note_body = [this, negflags](Rect const & area) {
+		if (negflags == SHAPE_NORMAL && In_Air()) {
+			TacticalMap->Note_Selectable_Body(this, area);
+		}
+	};
+
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
 		if (entry != NULL) {
 			Techno_Blit_Voxel(*entry, point, cliprect, flags, brightness);
+			note_body(Rect(point.X + entry->X, point.Y + entry->Y, entry->Width, entry->Height));
 			return;
 		}
 	}
 
 	SurfaceRegion region = Techno_Render_Voxel_Object(voxeldata, matrix, point, cliprect, frame, flags, brightness);
+	note_body(Rect(region.Point.X + point.X, region.Point.Y + point.Y, region.Bounds.Width, region.Bounds.Height));
 	UnitCompositeDirtyRect = Union(UnitCompositeDirtyRect, Rect(region.Point.X + point.X, region.Point.Y + point.Y, region.Bounds.Width, region.Bounds.Height));
 
 	if (key == -1) return;
@@ -10264,9 +10278,10 @@ void TechnoClass::Rock(Coord const & coord, float force, bool direct)
 		vec1.Z = pos.Z - coord.Z;
 		Vector3 vec2 = vec1;
 
-		float theta = PrimaryFacing.Current().As_Radian();
-		double sangle = std::sin(theta);
-		double cangle = std::cos(theta);
+		// gamemd reads its trig tables here, and the sign test below depends on their rounding (TechnoClass::vt_entry_3D8, 0x70B280).
+		double const theta = (double)(PrimaryFacing.Current().Facing - 0x3FFF) * -9.587672516830327e-05;
+		double sangle = Gamemd_Sine(theta);
+		double cangle = Gamemd_Cosine(theta);
 
 		float dist1 = vec1.Length();
 

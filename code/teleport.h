@@ -9,22 +9,28 @@
 
 #pragma once
 
+#include "ipiggy.h"
 #include "loco.h"
+
+#include <memory>
 
 
 /*
- * Where a teleport stands. Ordering one starts the warp-out wait, the object jumps when it ends,
- * and the object then holds still for the arrival delay.
+ * Where a teleport stands. An order is carried out the next time the locomotor is processed:
+ * the object leaves its cell and is set down at the destination in that same call, and then it
+ * holds still for the arrival delay. gamemd has no wait before that jump (0x7192F0, 0x719715).
+ * A chronosphere warp is the exception: TELEPORT_WARP_OUT holds the object on its cell for the
+ * chronosphere countdown (0x719973, 0x719B23) before the jump.
  */
 enum TeleportWarpPhase
 {
-	TELEPORT_IDLE,
-	TELEPORT_WARP_OUT,
-	TELEPORT_HOLD,
+	TELEPORT_IDLE = 0,
+	TELEPORT_WARP_OUT = 1,
+	TELEPORT_HOLD = 2,
 };
 
 
-class TeleportLocomotionClass : public LocomotionClass
+class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 {
 		typedef LocomotionClass BASECLASS;
 
@@ -43,10 +49,19 @@ class TeleportLocomotionClass : public LocomotionClass
 		virtual bool Process(void) override;
 		virtual LayerType In_Which_Layer(void) override;
 
+		// A chronosphere warp carries the object's own locomotor until the arrival hold has run out.
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
+		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
+		virtual bool Is_Ok_To_End(void) override;
+		virtual bool Is_Piggybacking(void) override {return(Piggybackee != nullptr);}
+
+		// Holds the object on its cell for countdown frames, then sets it down at to (chronosphere warps only).
+		void Begin_Chrono_Warp(Coord to, int countdown);
+
 		virtual bool Is_Stationary(void);
 
 		/*
-		 * Is the object warping, either waiting to jump or holding after the jump?
+		 * Is the object holding after a jump, the state gamemd reports as IsWarpingIn?
 		 */
 		bool Is_Warping(void) const;
 
@@ -63,12 +78,19 @@ class TeleportLocomotionClass : public LocomotionClass
 		Coord DestinationCoord;
 
 		/*
-		 * The phase of the pending teleport and the frame its current wait ends.
+		 * The phase of the teleport and the frame its hold ends.
 		 */
 		int WarpPhase;
 		int WarpEnd;
 
+		/*
+		 * The object's own locomotor while a chronosphere warp carries it. Null when nothing is carried.
+		 */
+		std::unique_ptr<ILocomotion> Piggybackee;
+
 		int Warp_Distance(Coord const & to) const;
 		Coord Landing_Spot(Coord const & dest);
 		int Warp_Delay(Coord const & to) const;
+		void Start_Warp(void);
+		void Land_Chrono_Warp(void);
 };

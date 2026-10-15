@@ -53,6 +53,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual void Reveal_To(float width) override;
 		virtual void Reveal_Done(void) override;
 		virtual void Placed(void) override;
+		virtual void Set_Tab(int tab, unsigned offered) override;
 		virtual void Sync(void) override = 0;
 
 	protected:
@@ -76,9 +77,13 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		Rml::Element * List_Of(Rml::Element * element) const;
 		bool Navigate_List(Rml::Element * list, int key);
 		bool Step_Range(Rml::Element * element, int key);
+		bool Navigate_Grid(Rml::Element * element, int key);
 		bool Type_Ahead(Rml::Element * list, Rml::String const & text);
 		void Mark_Keyboard(void);
 		void Apply_Tabs(void);
+		// The tab this view stands for: the one Set_Tab gave, or else the presenter's.
+		UISettingsTab Tab_Of_View(void) const;
+		unsigned Offered_Of_View(void) const;
 		bool Step_Tab(Rml::Event & event, int key);
 		void Place_Wallpaper(void);
 		void Size_Grips(void);
@@ -103,7 +108,9 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool TipUp = false;
 		float Wallpaper = 1.0e9f;
 		bool Anchored = false;
-		bool FocusTab = false;
+		// Set by Set_Tab for a view that is one page of a tabbed Settings screen; UI_TAB_NONE otherwise.
+		UISettingsTab ViewTab = UI_TAB_NONE;
+		unsigned ViewOffered = 0;
 		Rml::String DocumentName;
 		Rml::String ModelName;
 };

@@ -16,6 +16,8 @@ Skirmish and network matches end at this screen instead of the campaign score sc
 
 Click, or press Space or Escape, to close the screen. If the launch file enables [multiplayer movies](/systems/multiplayer-movies/), the map's win or lose movie then plays. After that, a match started from the game's menu returns to the menu, and a match [a client launched](/formats/spawn-ini/) exits the game.
 
+The title reads Skirmish Score in a skirmish and Multiplayer Score in a network match. The picture and the row bands come from the art of the player's side. The first side in the rules' `[Sides]` list uses the `MPA` art, the second uses `MPS`, and any other side uses `MPY`. At a render width of 640 the picture is the small one. The screen mounts `NTRLMD.MIX` and `NEUTRAL.MIX` while it is shown, because that is where Yuri's Revenge keeps the neutral art, and releases them when it closes.
+
 ## Who is listed
 
 The screen has one row for each house that played. Houses whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/) are left out, and so are [observers](/systems/observers/). Defeated players keep their rows, so a four-player match always ends with four rows.
@@ -24,16 +26,18 @@ Each row shows the house's name in the match, computer players included. With [`
 
 Undefeated houses are listed first, then defeated ones. Within each group, the house with the higher score ranks first.
 
-Each row's name band and bars use the house's color, so two houses with the same color look alike.
+Each row's band is the side's bar art and does not take the house's color.
 
 ## What each column holds
 
 | Column | What it counts |
 | --- | --- |
-| Losses | The house's vehicles, infantry, aircraft and structures that were destroyed or captured. A sold structure does not count. |
 | Kills | The vehicles, infantry, aircraft and structures the house destroyed or captured, whoever owned them, including the house itself. |
-| Economy | The credits the house spent, as a percentage of what the biggest spender spent. The biggest spender reads 100. |
+| Losses | The house's vehicles, infantry, aircraft and structures that were destroyed or captured. A sold structure does not count. |
+| Built | The credits the house spent, as a percentage of what the biggest spender spent. The biggest spender reads 100. |
 | Score | The points the house earned, plus a bonus if the house is undefeated. |
+
+The columns appear in the order Player, Kills, Losses, Built and Score. The Built figure's meaning is not yet confirmed against Yuri's Revenge, which labels the column "Built".
 
 A destroyed structure with [`Insignificant=yes`](/keys/insignificant/) counts in neither Losses nor Kills.
 
@@ -45,7 +49,7 @@ A player who surrenders a skirmish is still ranked with the undefeated houses on
 
 Scores never increase down the list. If an undefeated house scored less than the house listed below it, its shown score becomes the lower house's score plus a random amount. The amount is between 1 and the average points of all listed houses, or between 1 and 100 if that average is below 100. A raised score can pass the house listed above, which is then raised the same way. Several undefeated houses, the winner included, can therefore show more than they earned.
 
-The Losses, Kills and Economy columns fill one after another, with every bar in a column growing at the same time. The Score column then counts up. Each figure stops at its exact value.
+The Kills, Losses and Built figures count up together. The Score figures count up after them. Each figure stops at its exact value.
 
 A [saved game](/formats/save-games/) keeps the counts behind all four columns. A resumed match is therefore scored on the whole match, not only the part played since loading.
 

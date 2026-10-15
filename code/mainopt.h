@@ -11,4 +11,7 @@
 
 bool Change_Display_Mode(int width, int height);
 void Main_Options_Dialog(void);
-void Display_Options_Dialog(void);
+void Display_Options_Dialog(int page);
+struct UIDisplayMode;
+// Applies a picked mode as a trial and keeps it if the player confirms; false if they did not, so the display page opens again.
+bool Display_Mode_Kept(UIDisplayMode const & picked, float scale);

@@ -171,6 +171,7 @@
 **							TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point,
 **							with the body's draw matrix rows
 **	recoil <TypeID>			writes the recoil phase, frames left and travel of the turret body and barrel of each building of that type
+**	rock <TypeID>			writes the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it
 **	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
 **							now and every interval frames after when one is given
 **	stop <TypeID>			sends the Stop command's idle event to the player's objects of that type that can move or fire
@@ -1445,6 +1446,27 @@ static void Cursor_Probe(std::string const & type_name, int x, int y)
 }
 
 
+// swaim <SuperSection> x y: aims that super weapon as its cameo click does, then writes the action the cell and the
+// object under it give, and the mouse shape that action shows (Mouse_Left_Up). A cell under shroud is probed as shroud.
+static void SW_Aim_Probe(std::string const & section, int x, int y)
+{
+	SuperWeaponType const id = SuperWeaponTypeClass::From_Name(section.c_str());
+	if (id == SUPER_NONE) {
+		DebugString("AUTOTEST   swaim %s: no such super weapon\n", section.c_str());
+		return;
+	}
+
+	Cell const cell(x, y);
+	ObjectClass * target = Map[cell].Cell_Occupier();
+	bool const shadow = Map.Is_Shrouded(Map[cell].Center_Coord());
+	Unselect_All();
+	Map.IsTargettingMode = id;
+	ActionType const action = SuperWeaponTypes[id]->What_Action(cell, target);
+	Map.Mouse_Left_Up(cell, shadow, target, action, false);
+	DebugString("AUTOTEST   swaim %s cell %d,%d shroud %d object %s action %s mouse %d range %d line %d\n", section.c_str(), x, y, (int)shadow, target != NULL ? target->Class_Of()->Name() : "none", ActionName[action], (int)Map.Get_Mouse_Shape(), (int)SuperWeaponTypes[id]->Range, SuperWeaponTypes[id]->LineMultiplier);
+}
+
+
 // canbuild <TypeID>: writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses,
 // whether the country lists pass with the own country (gate own) and with the acted one (gate acted), and what
 // Can_Build says for that house now.
@@ -1828,6 +1850,12 @@ void Run(StepType const & step)
 	// cursor <TypeID> x y: see Cursor_Probe. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "cursor") {
 		Cursor_Probe(step.Argument, step.X, step.Y);
+		return;
+	}
+
+	// swaim <SuperSection> x y: see SW_Aim_Probe, dispatched here for the same reason as cursor.
+	if (step.Command == "swaim") {
+		SW_Aim_Probe(step.Argument, step.X, step.Y);
 		return;
 	}
 
@@ -3029,6 +3057,12 @@ void Run(StepType const & step)
 		std::string house_name = step.Argument;
 		std::replace(house_name.begin(), house_name.end(), '_', ' ');
 		HouseClass * victim = House_From_Name(house_name.c_str());
+		// A skirmish's computer players are found by their names in the lobby, such as "Medium AI".
+		for (int index = 0; victim == NULL && index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) {
+				victim = Houses[index];
+			}
+		}
 		int const kinds = step.X;
 		TechnoClass * attacker = NULL;
 		for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
@@ -3368,10 +3402,35 @@ void Run(StepType const & step)
 			TechnoClass const * techno = Technos[index];
 			if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
 			bool listed = false;
+			Point2D window(-1, -1);
 			for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
-				listed = listed || entry.Object == static_cast<ObjectClass const *>(techno);
+				if (!listed && entry.Object == static_cast<ObjectClass const *>(techno)) {
+					listed = true;
+					window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(entry.Position - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+				}
 			}
-			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed);
+			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d window %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed, window.X, window.Y);
+		}
+	} else if (step.Command == "cellpixel") {
+		// cellpixel x y: the window pixel of the centre of that cell under the current view, for windowclick.
+		Coord const centre = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();
+		Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
+		Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+		DebugString("AUTOTEST   cellpixel %d,%d at window %d,%d\n", std::atoi(step.Argument.c_str()), step.X, window.X, window.Y);
+	} else if (step.Command == "pickat") {
+		// pickat x y: the object a click at that window pixel would pick, and the cell under it. Selection is left alone.
+		Point2D const view = Screen_To_View_Offset(Point2D(std::atoi(step.Argument.c_str()), step.X) - ScreenTacticalRect.Top_Left());
+		ObjectClass * object = TacticalMap->Get_Selectable_Object(view);
+		Cell const cell = TacticalMap->Pixel_To_Cell(view + TacticalRect.Top_Left());
+		DebugString("AUTOTEST   pickat %d,%d picks %s cell %d,%d\n", std::atoi(step.Argument.c_str()), step.X,
+			object != NULL ? object->Class_Of()->Name() : "-", cell.X, cell.Y);
+	} else if (step.Command == "rallyof") {
+		// rallyof <TypeID>: the rally point (ArchiveTarget) of each of the player's structures of that type.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (building->House != PlayerPtr || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const rally = building->ArchiveTarget != NULL ? building->ArchiveTarget->Center_Coord().As_Cell() : Cell(-1, -1);
+			DebugString("AUTOTEST   rallyof %s cell %d,%d rally %d,%d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y, rally.X, rally.Y);
 		}
 	} else if (step.Command == "lift") {
 		// lift <TypeID>: each object of the type with its height above the ground, its locomotor, its jumpjet state
@@ -3468,6 +3527,14 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   recoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 				(int)building->TurretRecoil.CurrentPhase, building->TurretRecoil.FramesLeft, (double)building->TurretRecoil.TravelSoFar,
 				(int)building->BarrelRecoil.CurrentPhase, building->BarrelRecoil.FramesLeft, (double)building->BarrelRecoil.TravelSoFar);
+		}
+	} else if (step.Command == "rock") {
+		// rock <TypeID>: the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->IsInLimbo || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   rock %s frame %d at %d,%d sideways %.5f forwards %.5f sideways per frame %.5f forwards per frame %.5f facing %d strength %d parasite %d\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y,
+				(double)techno->AngleRotatedSideways, (double)techno->AngleRotatedForwards, (double)techno->RockingSidewaysPerFrame, (double)techno->RockingForwardsPerFrame, (int)techno->PrimaryFacing.Current().Facing, (int)techno->Strength, (int)(techno->ParasiteEatingMe != NULL));
 		}
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
@@ -3950,6 +4017,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "skipscore") {
+		// skipscore: a multiplayer or skirmish win passes over its score screen, as a launch file's
+		// SkipScoreScreen does, so the run reaches the lobby without a key press.
+		Session.SkipScoreScreen = true;
+		DebugString("AUTOTEST skipscore\n");
 	} else if (step.Command == "lansession") {
 		// lansession: marks the game as a network game, so steps can see the multiplayer limits.
 		Session.Type = GAME_IPX;
@@ -4193,6 +4265,17 @@ void AutoTest_Trigger_Sprung(TriggerTypeClass const * type)
 	if (TriggerLog) {
 		DebugString("AUTOTEST trigger fired frame %d: %s %s house %s\n", Frame, (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE");
 	}
+}
+
+
+void AutoTest_Score_Shown(void)
+{
+	if (!Active) {
+		return;
+	}
+	DebugString("AUTOTEST score screen shown frame %d\n", Frame);
+	Execute_Command("ScreenCapture");
+	Video_Present();
 }
 
 

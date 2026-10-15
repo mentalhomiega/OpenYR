@@ -1,0 +1,14 @@
+; Menu battle: the main menu with a computer battle running behind it (run with run_autotest.ps1 -Menus
+; -Settings "[MenuBattle]`r`nInTests=yes"). Captures the menu as the battle develops.
+ui waitfor backdrop
+ui wait 3000
+ui shot battle-01
+ui wait 15000
+ui shot battle-02
+ui wait 30000
+ui shot battle-03
+ui wait 30000
+ui shot battle-04
+ui press Options
+ui wait 3000
+ui shot battle-05-options

@@ -1340,7 +1340,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Rally_Points(true);
 		Draw_Placement(true);
 		Draw_Placement_Range();
-		Draw_Super_Timers();
+		Draw_Super_Range();
 		Draw_Chrono_Screen_Effect();
 		Draw_Flying_Texts();
 
@@ -1618,6 +1618,52 @@ void Tactical::Draw_Placement_Range(void)
 		BuildingClass * building = Buildings[index];
 		if (is_same_type(building) && distance_to(building) == nearest && building->Is_Powered_On() && building->House->Is_Player_Control()) {
 			Draw_Range_Ring(building->Center_Coord(), range, House_Display_RGB(building->House));
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws the target radius of the super weapon being aimed, centred on the cell under the pointer.
+/// Nothing is drawn unless unit action lines are on, a super weapon is aimed, and the pointer is over
+/// the tactical view. A weapon with LineMultiplier of at least one gets a ring for each step of
+/// 1/LineMultiplier cell up to its radius, each ring at its whole-cell radius (DrawUnitAndSuperRadialIndicators, 0x6DBE20).
+/// </summary>
+void Tactical::Draw_Super_Range(void)
+{
+	if (!TechnoClass::ActionLines || Map.IsTargettingMode == SUPER_NONE) {
+		return;
+	}
+
+	Point2D mouse = MouseCursor->Get_Mouse_Point();
+	if (!TacticalRect.Is_Point_Within(mouse)) {
+		return;
+	}
+
+	SuperWeaponTypeClass const * type = SuperWeaponTypes[Map.IsTargettingMode];
+	if (type->Range <= 0.0f) {
+		return;
+	}
+
+	Cell cell = Pixel_To_Cell(mouse);
+	if (!Map.In_Radar(cell)) {
+		return;
+	}
+
+	RGBClass const color = House_Display_RGB(PlayerPtr);
+	Coord const center = Map[cell].Center_Coord();
+	if (type->LineMultiplier < 1) {
+		Draw_Range_Ring(center, (int)type->Range, color);
+		return;
+	}
+
+	int const steps = (int)(type->LineMultiplier * type->Range);
+	int last = -1;
+	for (int step = 0; step <= steps; step++) {
+		int const radius = (int)((float)step / (float)type->LineMultiplier);
+		if (radius != last) {
+			Draw_Range_Ring(center, radius, color);
+			last = radius;
 		}
 	}
 }
@@ -3139,10 +3185,29 @@ bool Tactical::Add_To_Selectables(ObjectClass * object, Point2D point)
 		return(false);
 	}
 	if (point.X >= -32 && point.X <= TacticalRect.Width + 32 && point.Y >= -32 && point.Y <= TacticalRect.Height + 32) {
-		SelectableObjects.push_back({object, point + Point2D(TacPixelX, TacPixelY)});
+		SelectableObjects.push_back({object, point + Point2D(TacPixelX, TacPixelY), Rect(0, 0, 0, 0)});
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Records the screen area an object's body was drawn over, for the most recently added entry of that object.
+/// The rectangle is relative to the tactical view, as the body draw reports it.
+/// </summary>
+/// <param name="object">The object whose body was drawn.</param>
+/// <param name="rect">The area the body covered, relative to the tactical view.</param>
+void Tactical::Note_Selectable_Body(ObjectClass const * object, Rect const & rect)
+{
+	for (int index = (int)SelectableObjects.size() - 1; index >= 0; index--) {
+		Selectable & sel = SelectableObjects[index];
+		if (sel.Object == object) {
+			Rect const area(rect.X + TacPixelX, rect.Y + TacPixelY, rect.Width, rect.Height);
+			sel.Body = (sel.Body.Width > 0 && sel.Body.Height > 0) ? Union(sel.Body, area) : area;
+			return;
+		}
+	}
 }
 
 
@@ -3319,6 +3384,25 @@ void Tactical::Noop(int)
 
 
 /// <summary>
+/// Tells whether the click search may pick a clickable entry, as Get_Selectable_Object checks it.
+/// An active object that is not in limbo and is not cloaked from the player may be picked; a vein
+/// hole may be picked as terrain. Anything else may not.
+/// </summary>
+static bool Selectable_Is_Pickable(ObjectClass * obj)
+{
+	TechnoClass const * tech = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)obj);
+	if (tech != NULL) {
+		return(obj->IsActive && !tech->IsInLimbo && (tech->IsOwnedByPlayer || tech->Cloak != CLOAKED || tech->Is_Sensed_By_Player()));
+	}
+	if (obj->Class_Of() != NULL && obj->Class_Of()->RTTI == RTTI_TERRAINTYPE) {
+		TerrainTypeClass * type = (TerrainTypeClass *)obj->Class_Of();
+		return(type->IsVeinhole);
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Fetches the object that the player has clicked on.
 /// This routine picks the closest eligible object to the pixel specified. Objects in limbo
 /// are ignored, as is any cloaked object the player has no business seeing. When nothing
@@ -3336,39 +3420,32 @@ ObjectClass * Tactical::Get_Selectable_Object(Point2D const & point)
 	pixel.X = point.X + TacPixelX;
 	pixel.Y = point.Y + TacPixelY;
 
+	/*
+	 * With the aircraft body pick on, an aircraft whose drawn body covers the click is picked
+	 * ahead of anything beneath it. The body drawn last is on top, so it is taken first.
+	 */
+	if (Options.AircraftBodyPick) {
+		for (int index = (int)SelectableObjects.size() - 1; index >= 0; index--) {
+			Selectable const & sel = SelectableObjects[index];
+			if (sel.Object != NULL && sel.Body.Width > 0 && sel.Body.Height > 0
+				&& pixel.X >= sel.Body.X && pixel.X < sel.Body.X + sel.Body.Width
+				&& pixel.Y >= sel.Body.Y && pixel.Y < sel.Body.Y + sel.Body.Height
+				&& Selectable_Is_Pickable(sel.Object)) {
+				return(sel.Object);
+			}
+		}
+	}
+
 	for (int index = 0; index < (int)SelectableObjects.size(); index++) {
 		Selectable & sel = SelectableObjects[index];
 		ObjectClass * obj = sel.Object;
 
-		if (obj != NULL) {
-
-			TechnoClass const * tech = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)obj);
-			bool pass = false;
-
-			if (tech != NULL) {
-				if (obj->IsActive && !tech->IsInLimbo) {
-					if (tech->IsOwnedByPlayer || tech->Cloak != CLOAKED || tech->Is_Sensed_By_Player()) {
-						pass = true;
-					}
-				}
-			}
-
-			if (tech == NULL) {
-				if (obj->Class_Of() != NULL && obj->Class_Of()->RTTI == RTTI_TERRAINTYPE) {
-					TerrainTypeClass * type = (TerrainTypeClass *)obj->Class_Of();
-					if (type->IsVeinhole) {
-						pass = true;
-					}
-				}
-			}
-
-			if (pass) {
-				Point2D pos = sel.Position - pixel;
-				unsigned int dist = int(double(pos.X * pos.X) + double(pos.Y * pos.Y) * 0.5);
-				if (dist < bestdist && dist < 200) {
-					bestdist = dist;
-					best = obj;
-				}
+		if (obj != NULL && Selectable_Is_Pickable(obj)) {
+			Point2D pos = sel.Position - pixel;
+			unsigned int dist = int(double(pos.X * pos.X) + double(pos.Y * pos.Y) * 0.5);
+			if (dist < bestdist && dist < 200) {
+				bestdist = dist;
+				best = obj;
 			}
 		}
 	}
@@ -3660,6 +3737,14 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 
 
 /*
+ * The path marker is cursor entry 0x3C, MouseCursorType::Disallowed, so MOUSE.SHA frame 384 is the
+ * no-entry ring that gamemd draws at each waypoint (TacticalClass::RenderPlanningPaths, 006dad60).
+ * The entry has one frame and does not animate.
+ */
+static int const WAYPOINT_MARKER_FRAME = 384;
+
+
+/*
  * Dash pattern for the animated "marching" line that joins the selected waypoint path.
  */
 static bool Draw_WaypointPoint_Line_Style[8] = {
@@ -3706,17 +3791,17 @@ class Dash_Table_Restore
 
 
 /// <summary>
-/// Draws the local player's waypoint paths over the tactical view.
-/// Each waypoint on screen is marked with the waypoint cursor and its number within the
-/// path, and consecutive waypoints are joined by a line. The path the player currently has
-/// selected is drawn with an animated dashed line so it stands out from the rest.
+/// Draws the local player's waypoint paths over the tactical view, as gamemd's
+/// TacticalClass::RenderPlanningPaths (006dad60) does for every path the player owns.
+/// Each waypoint on screen is marked with the MOUSE.SHA waypoint frame and its number within
+/// the path, and consecutive waypoints are joined by a line in the path's colour. The selected
+/// path's line is dashed and animated; the other paths' lines are solid.
 /// </summary>
 /// <param name="inshroud">Draw the waypoints under shroud rather than the visible ones?</param>
 void Tactical::Draw_Waypoints(bool inshroud)
 {
 	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = Map.Get_Mouse_Start_Frame(MOUSE_WAYPOINT);
-	frame += WaypointAnimCounter % Map.Get_Mouse_Frame_Count(MOUSE_WAYPOINT);
+	int frame = WAYPOINT_MARKER_FRAME;
 
 	if (Debug_Map) {
 		return;
@@ -3724,7 +3809,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 	Dash_Table_Restore const dashtable;
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHP");
+	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
 	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
 
 	for (PathType path = PATH_FIRST; path < PATH_COUNT; path++) {
@@ -3775,7 +3860,8 @@ void Tactical::Draw_Waypoints(bool inshroud)
 				nextpixel.Y += TacticalRect.Y;
 
 				if (Clip_Line_To_Rect(pixel, nextpixel, TacticalRect)) {
-					unsigned color = MouseDrawer->Convert_Pixel(3);
+					// Translate entry 3 holds this path's colour, set by Update_Waypoint_Color above.
+					unsigned color = ((unsigned short *)MouseDrawer->Get_Translate_Table())[3];
 					if (path == PlayerPtr->SelectedPath) {
 						phase = LogicalSurface->Draw_Masked_Dashed_Line(pixel, nextpixel, color, Draw_WaypointPoint_Line_Style, phase, inshroud);
 					} else {
@@ -4187,8 +4273,7 @@ void Tactical::Draw_Radial_Indicators(void)
 
 
 /// <summary>
-/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of
-/// the battlefield, one line each in the owner's colors, as "name  minutes:seconds", with hours
+/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
 /// of passive houses are left out, as is a suspended weapon that is still fully uncharged in a
 /// campaign.
@@ -4197,15 +4282,17 @@ void Tactical::Draw_Super_Timers(void)
 {
 	int line = 0;
 
+	// The timers are drawn on the screen surface at a fixed size, not on the zoomed battlefield.
 	// The modern interface's build panel covers the bottom right, so its list stands in the bottom
 	// left above the command bar instead.
+	Rect const screen = LogicalSurface->Get_Rect();
 	bool const modern = Modern_Interface();
 	TextPrintType const align = modern ? TextPrintType(0) : TPF_RIGHT;
 	auto place = [&](int index) {
 		if (modern) {
-			return(Point2D(HUD_MARGIN, TacticalRect.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN * 3 - 16 * (index + 1)));
+			return(Point2D(HUD_MARGIN, screen.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN * 3 - 16 * (index + 1)));
 		}
-		return(Point2D(TacticalRect.Width - 3, TacticalRect.Height - 16 * (index + 1)));
+		return(Point2D(screen.Width - 3, screen.Height - 16 * (index + 1)));
 	};
 
 	/*
@@ -4224,7 +4311,7 @@ void Tactical::Draw_Super_Timers(void)
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
 		if (scheme == NULL) scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
-		Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
+		Simple_Text_Print(buffer, *LogicalSurface, screen, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 		line++;
 	}
 
@@ -4245,7 +4332,13 @@ void Tactical::Draw_Super_Timers(void)
 			} else {
 				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
 			}
-			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), ColorSchemes[House_Display_Scheme(house)], 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
+			// A ready weapon's timer blinks once a second between the house colour and a grey (the original blinks
+			// between the house colour and a palette entry of its scheme).
+			ColorScheme * scheme = ColorSchemes[House_Display_Scheme(house)];
+			if (left <= 0 && ((Frame / TICKS_PER_SECOND) & 1)) {
+				scheme = Fetch_Scheme_By_Name("Grey");
+			}
+			Simple_Text_Print(buffer, *LogicalSurface, screen, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 			line++;
 		}
 	}

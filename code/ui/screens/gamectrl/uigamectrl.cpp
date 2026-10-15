@@ -40,10 +40,10 @@ UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsService
 	Service(service),
 	InitialAltToRally(State.AltToRally),
 	InitialSimulateUnfocused(State.SimulateUnfocused),
+	InitialAircraftBodyPick(State.AircraftBodyPick),
 	InitialSidebarSorting(State.SidebarSorting),
 	InitialAutosave(State.Autosave),
-	InitialDebugMode(State.DebugMode),
-	InitialScreenShake(State.ScreenShake)
+	InitialDebugMode(State.DebugMode)
 {
 	Update_Names();
 }
@@ -73,14 +73,14 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.ShowHidden = (intent.Value != 0);
 	} else if (intent.Name == "rally") {
 		State.AltToRally = (intent.Value != 0);
+	} else if (intent.Name == "airpick") {
+		State.AircraftBodyPick = (intent.Value != 0);
 	} else if (intent.Name == "background") {
 		State.SimulateUnfocused = (intent.Value != 0);
 	} else if (intent.Name == "sorting") {
 		State.SidebarSorting = (intent.Value != 0);
 	} else if (intent.Name == "debugmode") {
 		State.DebugMode = (intent.Value != 0);
-	} else if (intent.Name == "screenshake") {
-		State.ScreenShake = (intent.Value != 0);
 	} else if (intent.Name == "autosave") {
 		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : InitialAutosave;
 	} else if (intent.Name == "ok") {
@@ -96,9 +96,29 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		Apply();
 		Next = NEXT_KEYBOARD;
 		Result = UI_RESULT_ACCEPTED;
+	} else if (intent.Name == "reset") {
+		// The values Options starts from. Nothing is saved until OK.
+		State.Speed = 3;
+		State.Scroll = 3;
+		State.Detail = 2;
+		State.Difficulty = 1;	// DIFF_NORMAL
+		State.CameoText = false;
+		State.ActionLines = true;
+		State.ToolTips = true;
+		State.Coasting = true;
+		State.EdgeScroll = true;
+		State.ShowHidden = false;
+		State.AltToRally = false;
+		State.SimulateUnfocused = false;
+		State.SidebarSorting = true;
+		State.DebugMode = false;
+		for (int index = 0; index < (int)State.Autosaves.size(); index++) {
+			if (State.Autosaves[index].Value == 10800) {	// Options.AutoSaveInterval's default, in frames
+				State.Autosave = index;
+			}
+		}
 	} else if (intent.Name == "cancel") {
-		// The screen has no cancel button, so leaving it with Escape keeps what was set.
-		Apply();
+		// Cancel leaves the values as they were when the screen opened.
 		Result = UI_RESULT_CANCELLED;
 	}
 
@@ -133,14 +153,14 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.SimulateUnfocused != InitialSimulateUnfocused) {
 		Service.Set_Simulate_Unfocused(State.SimulateUnfocused);
 	}
+	if (State.AircraftBodyPick != InitialAircraftBodyPick) {
+		Service.Set_Aircraft_Body_Pick(State.AircraftBodyPick);
+	}
 	if (State.SidebarSorting != InitialSidebarSorting) {
 		Service.Set_Sidebar_Sorting(State.SidebarSorting);
 	}
 	if (State.DebugMode != InitialDebugMode) {
 		Service.Set_Debug_Mode(State.DebugMode);
-	}
-	if (State.ScreenShake != InitialScreenShake) {
-		Service.Set_Screen_Shake(State.ScreenShake);
 	}
 	if (State.Autosave != InitialAutosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
 		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
@@ -187,10 +207,10 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("detailname");
 			Model.DirtyVariable("difficultyname");
 			Model.DirtyVariable("rally");
+			Model.DirtyVariable("airpick");
 			Model.DirtyVariable("background");
 			Model.DirtyVariable("sorting");
 			Model.DirtyVariable("debugmode");
-			Model.DirtyVariable("screenshake");
 			Model.DirtyVariable("autosave");
 		}
 
@@ -226,10 +246,10 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("leavelabel", &state.LeaveLabel)
 				&& model.Bind("extras", &state.Extras)
 				&& model.Bind("rally", &state.AltToRally)
+				&& model.Bind("airpick", &state.AircraftBodyPick)
 				&& model.Bind("background", &state.SimulateUnfocused)
 				&& model.Bind("sorting", &state.SidebarSorting)
 				&& model.Bind("debugmode", &state.DebugMode)
-				&& model.Bind("screenshake", &state.ScreenShake)
 				&& model.Bind("autosaves", &state.Autosaves)
 				&& model.Bind("autosave", &state.Autosave));
 		}

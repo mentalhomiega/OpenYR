@@ -95,7 +95,9 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	IsPreClick(false),
 	IsPostClick(false),
 	IsShowTimer(false),
-	PreDependent(SUPER_NONE)
+	PreDependent(SUPER_NONE),
+	Range(0.0f),
+	LineMultiplier(0)
 {
 	Create_ID();
 	HeapID = (SuperWeaponType)SuperWeaponTypes.Count();
@@ -266,6 +268,8 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 			if (type != SUPER_NONE) PreDependent = type;
 		}
 		CameoSortOrder = ini.Get_Int(IniName, "CameoSortOrder", CameoSortOrder);
+		Range = (float)ini.Get_Float(IniName, "Range", Range);
+		LineMultiplier = ini.Get_Int(IniName, "LineMultiplier", LineMultiplier);
 
 		float recharge = ini.Get_Float(IniName, "RechargeTime");
 		if (recharge != 0.0) {
@@ -350,6 +354,15 @@ SuperWeaponTypeClass * SuperWeaponTypeClass::Find_Or_Make(const char *name)
 /// shape.</returns>
 ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * object)
 {
+	// A force shield offers its own cursor only over a structure of the player or an ally; elsewhere
+	// it is the no-shield cursor (SuperWeaponTypeClass::MouseOverObject, 0x6CEF80).
+	if (Type == SUPER_FORCE_SHIELD) {
+		if (object == NULL || object->RTTI != RTTI_BUILDING || !((BuildingClass *)object)->House->Is_Ally(PlayerPtr)) {
+			return(ACTION_NO_FORCE_SHIELD);
+		}
+		return(Action);
+	}
+
 	if (Type != SUPER_EM_PULSE) {
 		return(Action);
 	}

@@ -43,17 +43,12 @@ void UIPresenterClass::Set_Settings_Tab(UISettingsTab tab, unsigned offered)
 
 void UIPresenterClass::Switch_Tab(int tab)
 {
-	if (OwnTab == UI_TAB_NONE || tab < 0 || tab >= UI_TAB_COUNT || tab == OwnTab || (Offered & (1u << tab)) == 0) {
+	// A tab request applies nothing: the host moves to the page and the pending values stay on their pages until
+	// OK or Cancel acts on every page.
+	if (tab < 0 || tab >= UI_TAB_COUNT || tab == OwnTab || (Offered & (1u << tab)) == 0) {
 		return;
 	}
-
-	// The page applies as OK does. One that refuses to close, such as a failed save, stays.
-	UIIntent ok;
-	ok.Name = "ok";
-	Execute(ok);
-	if (Result.has_value()) {
-		Tab_Request = (UISettingsTab)tab;
-	}
+	Tab_Request = (UISettingsTab)tab;
 }
 
 

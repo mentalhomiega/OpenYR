@@ -1,0 +1,20 @@
+; Iron Curtain on infantry and vehicles, own and enemy, inside the 3x3 block the curtain covers (SuperClass::Launch, IronCurtain
+; case). Gamemd's InfantryClass::IronCurtain (0x522600) calls the infantryman's Destroy (0x517FA0) instead of protecting it, so
+; every infantryman in the block dies; a vehicle in it is protected. The where lines write each E1 and HARV with its owner,
+; strength and limbo flag before and after the strike, and "where BRUTE" a possible mutation.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-kill-infantry.txt -Seconds 120 -Filter "AUTOTEST   where|frame 60|Exception"
+20 own GAPOWR 56 40
+30 own E1 51 39
+31 own E1 53 41
+32 spawn E1 52 41
+33 spawn E1 51 40
+34 spawn E1 50 44
+35 own HARV 53 39
+36 spawn HARV 58 36
+40 grant IronCurtainSpecial
+50 where E1
+51 where HARV
+60 fire IronCurtainSpecial 52 40
+100 where E1
+101 where HARV
+120 quit
