@@ -1904,6 +1904,11 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 
 	bool res = BASECLASS::Enter_Idle_Mode(initial, resume_waypoint);
 
+	// A planned leg that the base routine has just issued is the unit's next mission, so the idle mission below must not replace it.
+	if (res && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission)) {
+		return(res);
+	}
+
 	/*
 	**	A movement mission without a NavCom would be pointless to have a radio contact since
 	**	no radio coordination occurs on a just a simple movement mission.

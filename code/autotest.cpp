@@ -2393,6 +2393,18 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "planmove") {
+		// planmove <TypeID> x y: the player's objects of that type are given a move to the cell, as a click on the ground
+		// gives them. While planning is on, the move is recorded as a planned leg, so the next leg of the plan follows it.
+		Cell const cell(step.X, step.Y);
+		PlanningRecordScope const recording(Map.IsPlanningMode);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0 && techno->Is_Foot()) {
+				DebugString("AUTOTEST   planmove %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
+				techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
+			}
+		}
 	} else if (step.Command == "forceattack") {
 		// forceattack <TypeID> x y: the player's objects of that type force-attack the object on that cell, or the ground
 		// there when no object stands on it. Autotests report Ctrl as not held, so the order is given as the Ctrl+click

@@ -1,0 +1,41 @@
+; Planned move then attack on a building, for six tanks. Each tank's plan has two legs: a move to 62,62 and an
+; attack on the power plant at 72,62. Both legs are given with the planning mode on, as a player's Z-held clicks
+; are, and the commit at frame 350 starts the plans. The attack is given with forceattack, which records the same
+; planned order a Ctrl+click makes, because autotests cannot click a building through the window.
+; The fix is UnitClass::Enter_Idle_Mode and InfantryClass::Enter_Idle_Mode keeping a planned leg that the base
+; routine issued. Before it, a tank that arrived at the first leg took the idle guard mission instead, so the
+; attack was dropped and most of the group went to guard.
+; Expected AUTOTEST lines:
+;   frame 340: planstate MTNK orders 2 running 0 for each tank (both legs recorded, none run).
+;   frame 351: planstate MTNK orders 1 running 1 mission 2 (the move leg runs, the attack leg waits).
+;   frame 400: every tank on mission Move, toward 62,62.
+;   frames 600 to 800: all six where MTNK lines show mission Attack with tarcom GAPOWR.
+;   frame 900: the power plant is gone; the tanks are on mission Guard and most have tarcom E2 (an enemy infantryman).
+; Run: scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/planning-attack-group.txt -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+300 grantunit MTNK 50 50
+300 grantunit MTNK 50 56
+300 grantunit MTNK 50 62
+300 grantunit MTNK 50 68
+300 grantunit MTNK 50 74
+300 grantunit MTNK 44 62
+305 reveal
+306 spawn GAPOWR 72 62
+310 view 60 62
+320 select MTNK
+330 planning 1
+335 planmove MTNK 62 62
+336 forceattack MTNK 72 62
+340 planstate MTNK
+350 planning 0
+351 planstate MTNK
+400 where MTNK
+500 where MTNK
+600 where MTNK
+700 where MTNK
+800 where MTNK
+900 where MTNK
+1000 where MTNK
+1200 where MTNK
+1400 where MTNK
+1600 quit
