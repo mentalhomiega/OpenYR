@@ -17,6 +17,8 @@ The developer guides are split by subject:
   and values it cannot read.
 - [True-colour sprites](TRUECOLOUR.md) — PNG sheets drawn in place of SHP
   frames, with an optional house-colour mask.
+- [HDR output](HDR.md) — the HDR10 back buffer, the composite pass that keeps
+  the SDR colours, its settings and how it falls back to SDR.
 - [ts-patches in OpenTS](TS-PATCHES.md) — each CnCNet ts-patches patch and
   what OpenTS does in its place.
 - [Network timing](NETCODE.md) — how a network game schedules orders, how the
