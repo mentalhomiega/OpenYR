@@ -10,6 +10,7 @@
 #include "ui/screens/keyboard/uikeyboard.h"
 
 #include "keybindings.h"
+#include "keyboard.h"
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlview.h"
 
@@ -353,6 +354,8 @@ class UIKeyboardViewClass : public UIRmlViewClass
 			Rml::Element * capture = Capture();
 			if (capture != nullptr) {
 				capture->AddEventListener(Rml::EventId::Keydown, this);
+				capture->AddEventListener(Rml::EventId::Mousedown, this);
+				capture->AddEventListener(Rml::EventId::Mousescroll, this);
 			}
 		}
 
@@ -364,6 +367,33 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				Queue("capture", -1);
 				event.StopPropagation();
 				return;
+			}
+
+			// The side buttons and the wheel are bound like keys. The left and right buttons keep their usual use.
+			if (event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()
+				&& (event.GetId() == Rml::EventId::Mousedown || event.GetId() == Rml::EventId::Mousescroll)) {
+				int code = 0;
+				if (event.GetId() == Rml::EventId::Mousedown) {
+					switch (event.GetParameter<int>("button", -1)) {
+						case 2:		code = VK_MBUTTON; break;
+						case 3:		code = VK_XBUTTON1; break;
+						case 4:		code = VK_XBUTTON2; break;
+						default:	break;
+					}
+				} else {
+					// RmlUi reports a step up as a negative wheel delta.
+					float const delta = event.GetParameter<float>("wheel_delta_y", 0.0f);
+					code = (delta < 0.0f) ? VK_WHEEL_UP : ((delta > 0.0f) ? VK_WHEEL_DOWN : 0);
+				}
+				if (code != 0) {
+					int modifiers = 0;
+					modifiers |= event.GetParameter<bool>("shift_key", false) ? WWKEY_SHIFT_BIT : 0;
+					modifiers |= event.GetParameter<bool>("ctrl_key", false) ? WWKEY_CTRL_BIT : 0;
+					modifiers |= event.GetParameter<bool>("alt_key", false) ? WWKEY_ALT_BIT : 0;
+					Queue("capture", code | modifiers);
+					event.StopPropagation();
+					return;
+				}
 			}
 
 			if (event.GetId() == Rml::EventId::Keydown && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {

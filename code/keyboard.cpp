@@ -162,7 +162,7 @@ unsigned short WWKeyboardClass::Buff_Get(void)
 bool WWKeyboardClass::Is_Mouse_Key(unsigned short key)
 {
 	key &= 0xFF;
-	return(key == VK_LBUTTON || key == VK_MBUTTON || key == VK_RBUTTON);
+	return(key == VK_LBUTTON || key == VK_MBUTTON || key == VK_RBUTTON || key == VK_XBUTTON1 || key == VK_XBUTTON2);
 }
 
 
@@ -653,6 +653,14 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 
 		case WINDOW_BUTTON_MIDDLE:
 			button = VK_MBUTTON;
+			break;
+
+		case WINDOW_BUTTON_X1:
+			button = VK_XBUTTON1;
+			break;
+
+		case WINDOW_BUTTON_X2:
+			button = VK_XBUTTON2;
 			break;
 
 		default:

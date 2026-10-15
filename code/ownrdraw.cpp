@@ -70,6 +70,24 @@ void OwnerDraw::Prepare_Resources(void)
 
 
 /// <summary>
+/// Names a mouse button or a wheel step that a binding can use, or returns an empty name for any other key.
+/// </summary>
+static std::string Mouse_Key_Name(unsigned code)
+{
+	switch (code) {
+		case VK_LBUTTON:	return("Left mouse");
+		case VK_RBUTTON:	return("Right mouse");
+		case VK_MBUTTON:	return("Mouse 3");
+		case VK_XBUTTON1:	return("Mouse 4");
+		case VK_XBUTTON2:	return("Mouse 5");
+		case VK_WHEEL_UP:	return("Wheel up");
+		case VK_WHEEL_DOWN:	return("Wheel down");
+		default:			return(std::string());
+	}
+}
+
+
+/// <summary>
 /// Names a hotkey for the player, as its modifiers and then its key, for example
 /// "Ctrl+Shift+A".
 /// </summary>
@@ -88,7 +106,8 @@ std::string Build_Hotkey_String(KeyNumType key)
 		name += Main_Window_Key_Name(VK_SHIFT) + "+";
 	}
 
-	name += Main_Window_Key_Name(code & 0xFF);
+	std::string const mouse = Mouse_Key_Name(code & 0xFF);
+	name += mouse.empty() ? Main_Window_Key_Name(code & 0xFF) : mouse;
 	return(name);
 }
 

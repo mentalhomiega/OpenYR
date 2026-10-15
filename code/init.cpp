@@ -142,6 +142,7 @@
 #include "ionblast.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
+#include "windowevent.hh"
 #include "language/language.h"
 #include "laser.h"
 #include "light.h"
@@ -7081,6 +7082,34 @@ void Hotkey_Poll(void)
 void Hotkey_Reset_Pending(void)
 {
 	HotkeyTiming.Reset();
+}
+
+
+/// <summary>
+/// Runs the binding of a mouse wheel step with the modifiers held, when one exists. The wheel's built-in
+/// action runs only when no binding takes the step.
+/// </summary>
+/// <param name="delta">Positive for a step up, negative for a step down.</param>
+/// <param name="modifiers">The window's modifier bits, WINDOW_MOD_SHIFT and the rest.</param>
+/// <returns>bool; Did a binding take the step?</returns>
+bool Hotkey_Wheel(int delta, int modifiers)
+{
+	int key = (delta > 0) ? VK_WHEEL_UP : VK_WHEEL_DOWN;
+	if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
+		key |= WWKEY_SHIFT_BIT;
+	}
+	if ((modifiers & WINDOW_MOD_CTRL) != 0) {
+		key |= WWKEY_CTRL_BIT;
+	}
+	if ((modifiers & WINDOW_MOD_ALT) != 0) {
+		key |= WWKEY_ALT_BIT;
+	}
+	if (!Key_Has_Binding(key)) {
+		return(false);
+	}
+	Hotkey_Route(key);
+	Hotkey_Release(key);
+	return(true);
 }
 
 

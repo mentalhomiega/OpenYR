@@ -3209,6 +3209,24 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 			Check(Hotkey_Find(presenter.State.Bindings, "ToggleRepair", 0) < 0, "Backspace in the capture element clears the slot");
 		}
 
+		// A side button and the wheel on the capture box capture themselves, as keys do.
+		if (capture != nullptr) {
+			capture->Focus();
+			Rml::Vector2f const at = Center_Of(capture);
+			context.ProcessMouseMove((int)at.x, (int)at.y, 0);
+			context.Update();
+			context.ProcessMouseButtonDown(3, 0);
+			context.ProcessMouseButtonUp(3, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.State.Captured == 5, "the first side button on the capture box captures it as its own key");
+
+			context.ProcessMouseWheel(Rml::Vector2f(0.0f, -1.0f), 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.State.Captured == 7, "a wheel step up on the capture box captures the wheel step");
+		}
+
 		service.ConfirmAnswer = false;
 		Rml::Element * reset_all = document->GetElementById("reset-all");
 		if (reset_all != nullptr) {

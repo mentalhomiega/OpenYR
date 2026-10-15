@@ -155,7 +155,9 @@ int main(void)
 	Check(keyboard.Get() == KN_RMOUSE && keyboard.Get() == (KN_RMOUSE | KN_RLSE_BIT), "a double click is a press and a release");
 
 	keyboard.Handle_Window_Event(Click(true, WINDOW_BUTTON_X1, 1, 1));
-	Check(keyboard.Check() == 0, "the extra mouse buttons are not queued");
+	Check(keyboard.Get() == (KeyNumType)VK_XBUTTON1 && keyboard.MouseQX == 1, "the first side button is queued as its own key");
+	keyboard.Handle_Window_Event(Click(false, WINDOW_BUTTON_X2, 2, 2));
+	Check(keyboard.Get() == (KeyNumType)(VK_XBUTTON2 | KN_RLSE_BIT), "the second side button releases as its own key");
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

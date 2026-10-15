@@ -40,6 +40,7 @@ bool Hotkey_Route(int key);
 void Hotkey_Release(int key);
 void Hotkey_Poll(void);
 void Hotkey_Reset_Pending(void);
+bool Hotkey_Wheel(int delta, int modifiers);
 void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
 

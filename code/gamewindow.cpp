@@ -203,7 +203,10 @@ static bool Handle_Event(WindowEvent const & event)
 
 		case WINDOW_EVENT_MOUSE_WHEEL:
 			if (!event.Horizontal) {
-				On_Mouse_Wheel(event.Wheel < 0.0f ? -1 : 1);
+				int const delta = event.Wheel < 0.0f ? -1 : 1;
+				if (!Hotkey_Wheel(delta, event.Modifiers)) {
+					On_Mouse_Wheel(delta);
+				}
 			}
 			break;
 
