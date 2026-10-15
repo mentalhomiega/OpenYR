@@ -11,37 +11,6 @@
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
-/* $Header: /counterstrike/SCORE.CPP 3     3/14/97 12:02a Steve_tall $ */
-/***********************************************************************************************
- ***              C O N F I D E N T I A L  ---  W E S T W O O D  S T U D I O S               ***
- ***********************************************************************************************
- *                                                                                             *
- *                 Project Name : Command & Conquer                                            *
- *                                                                                             *
- *                    File Name : SCORE.CPP                                                    *
- *                                                                                             *
- *                   Programmer : Joe L. Bostic                                                *
- *                                                                                             *
- *                   Start Date : April 19, 1994                                               *
- *                                                                                             *
- *                  Last Update : May 3, 1995   [BWG]                                          *
- *                                                                                             *
- *---------------------------------------------------------------------------------------------*
- * Functions:                                                                                  *
- *   Call_Back_Delay -- Combines Call_Back() and Delay() functions                             *
- *   Draw_Bar_Graphs -- Draw "Casualties" bar graphs                                           *
- *   Draw_InfantryMan -- Draw one guy in score screen, update animation                        *
- *   Draw_Infantrymen -- Draw all the guys on the score screen                                 *
- *   New_Infantry_Anim -- Start up a new animation for one of the infantrymen                  *
- *   ScoreClass::Count_Up_Print -- Prints a number (up to its max) into a string, cleanly      *
- *   ScoreClass::DO_GDI_GRAPH -- Show # of people or buildings killed on GDI score screen      *
- *   ScoreClass::Delay -- Pauses waiting for keypress.                                         *
- *   ScoreClass::Presentation -- Main routine to display score screen.                         *
- *   ScoreClass::Print_Graph_Title -- Prints title on score screen.                            *
- *   ScoreClass::Print_Minutes -- Print out hours/minutes up to max                            *
- *   ScoreClass::Pulse_Bar_Graph -- Pulses the bargraph color.                                 *
- * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
 #include "always.h"
 
 #include "score.h"
@@ -54,36 +23,36 @@
 #include "audio/audioengine.h"
 #include "autotest.h"
 #include "conquer.h"
-#include "convert.h"
+#include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "draw.h"
 #include "dsurface.h"
-#include "goptions.h"
+#include "globals.h"
 #include "houstype.h"
 #include "keyboard.h"
-#include "language/language.h"
-#include "misc.h"
 #include "mixfile.h"
-#include "movie.h"
 #include "msgloop.h"
 #include "scenario.h"
 #include "session.h"
-#include "shapeset.h"
 #include "surface.h"
 #include "theme.h"
 #include "utf8.h"
 #include "winstub.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <string>
 
-
-#define SIZEGBAR			140
-#define HALLFAME_X		11
-#define HALLFAME_Y		242
 
 #define NUMFAMENAMES				9
 #define MAX_FAMENAME_LENGTH	104
+
+/*
+ * The campaign results dialog (dialog 3015) lists two places of the hall of fame, and each one
+ * gets a name field of this many dialog units.
+ */
+#define FAME_PLACES					2
 
 void const * Beepy6;
 int ControlQ;	// cheat key to skip past score/mapsel screens
@@ -96,108 +65,103 @@ struct Fame {
 	int	side;
 };
 
+namespace {
 
-/***********************************************************************************************
- * ScoreClass::Presentation -- Main routine to display score screen.                           *
- *                                                                                             *
- *    This is the main routine that displays the score screen graphics.                        *
- *    It gets called at the end of each scenario and is used to present                        *
- *    the results and a rating of the player's battle.                                         *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   05/02/1994     : Created.                                                                 *
- *=============================================================================================*/
+/*
+ * The results screen's layout, in dialog units of gamemd's Campaign Results dialog (dialog 3015)
+ * on the 800 by 600 stage.
+ */
+Rect const PICTURE_BOX = ScoreStageClass::Dialog_Rect(70, 84, 282, 141);
+Rect const TABLE_RECT = ScoreStageClass::Dialog_Rect(66, 28, 280, 36);
+Rect const BUTTON_RECT = ScoreStageClass::Dialog_Rect(425, 130, 108, 23);
+Rect const PROMPT_RECT = ScoreStageClass::Dialog_Rect(10, 356, 303, 12);
+
+constexpr int HEADING_Y = 31;
+constexpr int ROW_Y[2] = { 40, 51 };
+constexpr int NAME_X = 83;
+constexpr int KILLS_RIGHT = 186;
+constexpr int LOSSES_RIGHT = 236;
+constexpr int BUILT_RIGHT = 286;
+constexpr int SCORE_RIGHT = 334;
+
+constexpr int PLACE_X[FAME_PLACES] = { 123, 240 };
+constexpr int PLACE_LABEL_X[FAME_PLACES] = { 113, 233 };
+
+/*
+ * The picture's animation is 44 frames of 424 by 220 pixels, one pass of it runs while the screen
+ * comes up, and then it loops until the player continues.
+ */
+constexpr int ANIMATION_FRAMES = 44;
+
+/*
+ * The side letter names the art, as on the multiplayer screen: A for the first side in the rules'
+ * [Sides] list, S for the second, and Y for any other side.
+ */
+char const * Art_Prefix(void)
+{
+	char letter = ScoreStageClass::Side_Letter();
+	if (letter == 'A') return("ASCR");
+	if (letter == 'S') return("SSCR");
+	return("SYCR");
+}
+
+char const * Palette_Name(void)
+{
+	char letter = ScoreStageClass::Side_Letter();
+	if (letter == 'A') return("ASCORE.PAL");
+	if (letter == 'S') return("SSCORE.PAL");
+	return("YSCORE.PAL");
+}
+
+/*
+ * Waits for the given number of ticks while the window keeps its messages.
+ */
+void Score_Delay(int ticks)
+{
+	for (int i = 0; i < ticks; i++) {
+		Call_Back();
+		Windows_Message_Handler();
+		Sleep(16);
+	}
+}
+
+/*
+ * Formats an elapsed time the way the score screens print it.
+ */
+void Format_Elapsed(char * buffer, unsigned time)
+{
+	if (time / 3600 > 99) {
+		time = (100 * 3600) - 1;
+	}
+	unsigned hours = time / 3600;
+	time -= hours * 3600;
+	unsigned minutes = time / 60;
+	time -= minutes * 60;
+	std::string format = Fetch_String_UTF8("TXT_TIME_FORMAT_HOURS");
+	sprintf(buffer, format.c_str(), hours, minutes, time);
+}
+
+}
+
+/// <summary>
+/// Shows the campaign results screen after a mission.
+/// The screen is drawn on the side's art in the layout of gamemd's Campaign Results dialog. It lists
+/// the player, and the first enemy house, with the figures of the mission and the efficiency total.
+/// The two best places of the hall of fame are shown below the table, and a score that makes one of
+/// them takes a name from the keyboard.
+/// </summary>
 void ScoreClass::Presentation(void)
 {
-	int i;
-	int index;
-	int total;
-	int x, y;
-	const char *str;
-	ScoreAnimClass *obj;
-
-	CCFileClass file;
-	struct Fame hallfame[NUMFAMENAMES];
-
-	XPos = (HiddenSurface->Get_Width() - 640) / 2;
-	YPos = (HiddenSurface->Get_Height() - 400) / 2;
+	if (!Stage.Open()) {
+		return;
+	}
 
 	Hide_Mouse();
 	Keyboard->Clear();
+	Stage.Clear_Screen();
 
 	Theme.Stop();
 	Theme.Play_Song(Theme.From_Name("SCORE"));
-
-	file.Open("SIDEFNT3.PAL");
-	PaletteClass *fontpal = (PaletteClass *)Load_Alloc_Data(file);
-	file.Close();
-
-	/*
-	 * The score-screen palette is stored in 6-bit VGA gun values. Scale every
-	 * component up to 8-bit (value * 4) as it is copied into the game palette.
-	 */
-	for (i = 0; i < 256; i++) {
-		CCPalette[i] = RGBClass(
-			((unsigned char *)*fontpal)[i*3]<<2,
-			((unsigned char *)*fontpal)[i*3+1]<<2,
-			((unsigned char *)*fontpal)[i*3+2]<<2);
-	}
-
-	Color = DSurface::Build_Hicolor_Pixel((*fontpal)[68].Get_Red()<<2, (*fontpal)[68].Get_Green()<<2, (*fontpal)[68].Get_Blue()<<2);
-
-	delete fontpal;
-
-	ConvertClass *drawer = new ConvertClass(CCPalette, CCPalette, *VisibleSurface);
-	SurfacePtr = new DSurface(HiddenSurface->Get_Width(), HiddenSurface->Get_Height());
-
-	SurfacePtr->Fill(0);
-	Load_Title_Screen("SCORE.PCX", SurfacePtr, &CCPalette);
-
-	/*
-	**	Background's up, so now load various shapes and animations
-	*/
-
-	file.Open("BEST01.SHP");
-	ShapeSet *best01shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	file.Open("BEST02.SHP");
-	ShapeSet *best02shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	Call_Back();
-
-	file.Open("LOGO01.SHP");
-	ShapeSet *logo01shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	file.Open("EFIC01.SHP");
-	ShapeSet *efic01shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	file.Open("TIME01.SHP");
-	ShapeSet *time01shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	file.Open("CASU01.SHP");
-	ShapeSet *casu01shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	Call_Back();
-
-	file.Open("CASU02.SHP");
-	ShapeSet *casu02shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
-
-	file.Open("CURR01.SHP");
-	ShapeSet *curr01shape = (ShapeSet *)Load_Alloc_Data(file);
-	file.Close();
 
 	ScoreSnds = {
 		new SfxEntry("Wipe", "WIPE.AUD"),
@@ -209,365 +173,236 @@ void ScoreClass::Presentation(void)
 		new SfxEntry("Back", "SCOLD8.AUD")
 	};
 
-	FullFont = new ScoreFullFontClass(drawer);
-	BigFont = new ScoreBigFontClass(drawer);
-
-	Call_Back();
-
-	ScoreObjs.Clear();
-
-	Keyboard->Clear();
-
 	DoSound("Wipe", 256);
 
-	Play_Movie("SCORE.VQA", THEME_NONE, false, false, true);
+	/*
+	 * The side's palette, background and emblem animation.
+	 */
+	Stage.Load_Palette(Palette_Name());
 
-	HiddenSurface->Blit_From(*SurfacePtr);
-	AlternateSurface->Blit_From(*SurfacePtr);
+	char name[32];
+	sprintf(name, "%sBK%s.SHP", Art_Prefix(), Stage.Is_Small() ? "SM" : "MD");
+	ShapeSet * background = Stage.Load_Shape(name);
+	if (background != NULL) {
+		Stage.Draw_Shape_Frame(background, 0, Rect(0, 0, 632, 568));
+		ScoreStageClass::Free_Shape(background);
+	}
 
-	Drawer = new ConvertClass(CCPalette, CCPalette, *VisibleSurface);
+	sprintf(name, "%sAMD.SHP", Art_Prefix());
+	ShapeSet * animation = Stage.Load_Shape(name);
 
-	Alloc_Object(new ScoreTimeClass(XPos + 7, YPos + 6, logo01shape, 60, 3, Drawer));
+	/*
+	 * The figures of the two rows. The score is the efficiency total, and the built figure is the
+	 * share of the biggest spender's credits.
+	 */
+	HouseClass * enemy = NULL;
+	for (int i = 0; i < Houses.Count() && enemy == NULL; i++) {
+		HouseClass * hptr = Houses[i];
+		if (hptr != NULL && hptr != PlayerPtr && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver && !PlayerPtr->Is_Ally(hptr)) {
+			enemy = hptr;
+		}
+	}
+
+	unsigned int most_spent = 0;
+	for (int i = 0; i < Houses.Count(); i++) {
+		HouseClass * hptr = Houses[i];
+		if (hptr != NULL && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver) {
+			most_spent = std::max(most_spent, hptr->CreditsSpent);
+		}
+	}
+
+	struct Figures {
+		std::string Name;
+		int Kills;
+		int Losses;
+		int Built;
+		int Score;
+	} rows[2];
+
+	HouseClass * houses[2] = { PlayerPtr, enemy };
+	int const row_count = (enemy != NULL) ? 2 : 1;
+	for (int row = 0; row < row_count; row++) {
+		HouseClass * hptr = houses[row];
+		rows[row].Name = Session.Shown_Name(hptr);
+		rows[row].Kills = 0;
+		rows[row].Losses = 0;
+		for (unsigned int i = 0; i < sizeof(hptr->UnitsKilled) / sizeof(hptr->UnitsKilled[0]); i++) {
+			rows[row].Kills += hptr->UnitsKilled[i];
+		}
+		for (unsigned int i = 0; i < sizeof(hptr->BuildingsKilled) / sizeof(hptr->BuildingsKilled[0]); i++) {
+			rows[row].Kills += hptr->BuildingsKilled[i];
+		}
+		rows[row].Losses = hptr->UnitsLost + hptr->BuildingsLost;
+		rows[row].Built = (most_spent > 0) ? (int)((double)hptr->CreditsSpent / (double)most_spent * 100.0) : 0;
+		rows[row].Score = Do_Calc(hptr);
+	}
+	unsigned int total = (unsigned int)rows[0].Score;
+
+	/*
+	 * The static part of the screen: title, time, headings and the continue button.
+	 */
+	std::string title = Fetch_String_UTF8("GUI:CampaignResults");
+	Stage.Print_Centre(title.c_str(), ScoreStageClass::Dialog_X(424), ScoreStageClass::Dialog_X(108), ScoreStageClass::Dialog_Y(1));
+
+	char buffer[128];
+	Format_Elapsed(buffer, Scen->ElapsedTimer / 60);
+	Stage.Print_Centre(buffer, ScoreStageClass::Dialog_X(167), ScoreStageClass::Dialog_X(87), ScoreStageClass::Dialog_Y(19));
+
+	std::string heading_player = Fetch_String_UTF8("GUI:Player");
+	std::string heading_kills = Fetch_String_UTF8("GUI:Kills");
+	std::string heading_losses = Fetch_String_UTF8("GUI:Losses");
+	std::string heading_built = Fetch_String_UTF8("GUI:Built");
+	std::string heading_score = Fetch_String_UTF8("GUI:Score");
+	Stage.Print_Left(heading_player.c_str(), ScoreStageClass::Dialog_X(NAME_X), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_kills.c_str(), ScoreStageClass::Dialog_X(KILLS_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_losses.c_str(), ScoreStageClass::Dialog_X(LOSSES_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_built.c_str(), ScoreStageClass::Dialog_X(BUILT_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_score.c_str(), ScoreStageClass::Dialog_X(SCORE_RIGHT), ScoreStageClass::Dialog_Y(HEADING_Y));
+
+	RGBClass const edge(150, 150, 150);
+	Stage.Canvas()->Draw_Rect(BUTTON_RECT, DSurface::Build_Hicolor_Pixel(edge));
+	std::string caption = Fetch_String_UTF8("GUI:Continue");
+	Stage.Print_Centre(caption.c_str(), BUTTON_RECT.X, BUTTON_RECT.Width, BUTTON_RECT.Y + (BUTTON_RECT.Height - Stage.Text_Height()) / 2);
+
+	Stage.Save_Base();
+	Stage.Present(Rect(0, 0, 800, 600));
+
+	/*
+	 * The emblem animation plays once as the screen comes up.
+	 */
+	if (animation != NULL) {
+		DoSound("Emblem", 256);
+		Rect const frame_box(PICTURE_BOX.X, PICTURE_BOX.Y, 424, 220);
+		for (int frame = 0; frame < ANIMATION_FRAMES; frame++) {
+			Stage.Draw_Shape_Frame(animation, frame, frame_box);
+			Stage.Present(frame_box);
+			Score_Delay(2);
+		}
+	}
+
+	/*
+	 * Each row's name comes up, then the figures count up together, and the score follows.
+	 */
+	DoSound("BestBox", 256);
+	int const left = ScoreStageClass::Dialog_X(NAME_X);
+	int const right = ScoreStageClass::Dialog_X(SCORE_RIGHT);
+	for (int row = 0; row < row_count; row++) {
+		int const y = ScoreStageClass::Dialog_Y(ROW_Y[row]);
+		Stage.Print_Left(rows[row].Name.c_str(), left, y);
+		Rect const line(left, y, right - left, Stage.Text_Height());
+		Stage.Keep(line);
+		Stage.Present(line);
+		Score_Delay(6);
+	}
 
 	DoSound("Efficiency", 128);
+	int const steps = 100;
+	for (int step = 1; step <= steps; step++) {
+		Stage.Restore(TABLE_RECT);
+		for (int row = 0; row < row_count; row++) {
+			Print_Row_Figures(row, rows[row].Kills * step / steps, rows[row].Losses * step / steps, rows[row].Built * step / steps, 0);
+		}
+		Stage.Present(TABLE_RECT);
+		DoSound("BarGraph", 128);
+		Score_Delay(1);
+	}
+	for (int step = 1; step <= steps; step++) {
+		Stage.Restore(TABLE_RECT);
+		for (int row = 0; row < row_count; row++) {
+			Print_Row_Figures(row, rows[row].Kills, rows[row].Losses, rows[row].Built, rows[row].Score * step / steps);
+		}
+		Stage.Present(TABLE_RECT);
+		DoSound("BarGraph", 128);
+		Score_Delay(1);
+	}
+	Stage.Restore(TABLE_RECT);
+	for (int row = 0; row < row_count; row++) {
+		Print_Row_Figures(row, rows[row].Kills, rows[row].Losses, rows[row].Built, rows[row].Score);
+	}
+	Stage.Present(TABLE_RECT);
 
 	/*
-	 * Animate the efficiency emblem (box art), then restore the area behind it.
+	 * The hall of fame keeps the best nine scores, and its two best places are shown here. A score
+	 * that enters the list takes its name from the player.
 	 */
-	for (i = 0; i < 10; i++) {
-		Draw_Shape(*HiddenSurface, *Drawer, efic01shape, i, Point2D(XPos + 480, YPos + 23), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Call_Back_Delay(4);
-	}
-	Rect rect(XPos + 480, YPos + 23, 160, 120);
-	SurfacePtr->Blit_From(rect, *HiddenSurface, rect);
-	AlternateSurface->Blit_From(rect, *HiddenSurface, rect);
-
-	str = Fetch_String(TXT_MISSION_EFFICIENCY);
-	FullFont->String_Width(str);
-	x = XPos - FullFont->String_Width(str) / 2 + 552;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 13, FullFont, false));
-
-	Wait_For_Print(obj);
-	Keyboard->Clear();
-
-	/*
-	**	Determine economy rating.
-	*/
-	total = Do_Calc(PlayerPtr);
-	char Dest[56];
-	sprintf(Dest, "%3d%%", total);
-	Alloc_Object(obj = new ScorePrintClass(Dest, XPos + 520, YPos + 60, BigFont, false));
-
-	Wait_For_Print(obj);
-
-	/*
-	 * Animate the currency box art, then restore the area behind it.
-	 */
-	for (i = 0; i < 10; i++) {
-		Draw_Shape(*HiddenSurface, *Drawer, curr01shape, i, Point2D(XPos + 481, YPos + 148), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Call_Back_Delay(4);
-	}
-	rect.Set(XPos + 481, YPos + 148, 144, 86);
-	SurfacePtr->Blit_From(rect, *HiddenSurface, rect);
-	AlternateSurface->Blit_From(rect, *HiddenSurface, rect);
-
-	str = Fetch_String(TXT_CURRENCY);
-	FullFont->String_Width(str);
-	x = XPos - FullFont->String_Width(str) / 2 + 560;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 193, FullFont, false));
-
-	Wait_For_Print(obj);
-
-	rect.Set(XPos + 481, YPos + 148, 150, 120);
-	SurfacePtr->Blit_From(rect, *HiddenSurface, rect);
-	AlternateSurface->Blit_From(rect, *HiddenSurface, rect);
-
-	Show_Credits();
-
-	/*
-	 * Animate the mission-time box art, then restore the area behind it.
-	 */
-	for (i = 0; i < 10; i++) {
-		Draw_Shape(*HiddenSurface, *Drawer, time01shape, i, Point2D(XPos + 444, YPos + 273), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Call_Back_Delay(4);
-	}
-	rect.Set(XPos + 444, YPos + 273, 196, 118);
-	SurfacePtr->Blit_From(rect, *HiddenSurface, rect);
-	AlternateSurface->Blit_From(rect, *HiddenSurface, rect);
-
-	str = Fetch_String(TXT_MISSION_TIME_LAPSE);
-	FullFont->String_Width(str);
-	x = XPos - FullFont->String_Width(str) / 2 + 542;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 366, FullFont, false));
-
-	Wait_For_Print(obj);
-
-	Print_Minutes(Scen->ElapsedTimer / 60);
-
-	DoSound("Emblem", 256);
-
-	/*
-	 * Animate the casualties box art (two emblems), then restore the area behind it.
-	 */
-	for (i = 0; i < 10; i++) {
-		Draw_Shape(*HiddenSurface, *Drawer, casu01shape, i, Point2D(XPos + 186, YPos + 54), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Draw_Shape(*HiddenSurface, *Drawer, casu02shape, i, Point2D(XPos + 186, YPos + 254), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Call_Back_Delay(4);
-	}
-	rect.Set(XPos + 186, YPos + 54, 262, 326);
-	SurfacePtr->Blit_From(rect, *HiddenSurface, rect);
-	AlternateSurface->Blit_From(rect, *HiddenSurface, rect);
-
-	/*
-	** Show stats on # of units killed
-	*/
-	str = Fetch_String(TXT_CASUALTIES);
-	FullFont->String_Width(str);
-	x = XPos - FullFont->String_Width(str) / 2 + 316;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 300, FullFont, false));
-
-	Wait_For_Print(obj);
-
-	/*
-	** Print out stats on buildings destroyed
-	*/
-	str = Fetch_String(TXT_STRUCTURES);
-	x = XPos + 194;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 247, FullFont, false));
-	x = XPos + 328;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 247, FullFont, false));
-
-	Wait_For_Print(obj);
-
-	str = Fetch_String(TXT_UNITS);
-	x = XPos - FullFont->String_Width(str) / 2 + 290;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 247, FullFont, false));
-	x = XPos - FullFont->String_Width(str) / 2 + 422;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 247, FullFont, false));
-
-	Wait_For_Print(obj);
-
-	Do_Graphs();
-
-	// Wait for text printing to complete
-	while (StillUpdating) {
-		Call_Back_Delay(1);
-	}
-
-	Keyboard->Clear();
-
-	DoSound("BestBox", 256);
-
-	/*
-	 * Animate the best-scores box art (two emblems), then restore the area behind it.
-	 */
-	for (i = 0; i < 10; i++) {
-		Draw_Shape(*HiddenSurface, *Drawer, best01shape, i, Point2D(XPos, YPos + 188), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Draw_Shape(*HiddenSurface, *Drawer, best02shape, i, Point2D(XPos, YPos + 388), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Call_Back_Delay(4);
-	}
-
-	/*
-	** Hall of fame display and processing
-	*/
-	rect.Set(XPos, YPos + 188, 182, 212);
-	SurfacePtr->Blit_From(rect, *HiddenSurface, rect);
-	AlternateSurface->Blit_From(rect, *HiddenSurface, rect);
-
-	str = Fetch_String(TXT_BEST_SCORES);
-	FullFont->String_Width(str);
-	x = XPos - FullFont->String_Width(str) / 2 + 84;
-	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 217, FullFont, false));
-
+	Fame hallfame[NUMFAMENAMES];
 	memset(hallfame, 0, sizeof(hallfame));
-	file.Close();
+	CCFileClass file;
 	file.Set_Name(FAME_FILE_NAME);
 	if (file.Is_Available() == true) {
 		file.Read(hallfame, sizeof(hallfame));
 		file.Close();
 	}
 
-	/*
-	**	If the player's score is good enough to bump someone off the list,
-	**	remove their data, move everyone down a notch, and set index = where
-	**	their info goes
-	*/
-	if (hallfame[NUMFAMENAMES-1].score >= total)
-								hallfame[NUMFAMENAMES-1].score = 0;
+	if (hallfame[NUMFAMENAMES-1].score >= (int)total) {
+		hallfame[NUMFAMENAMES-1].score = 0;
+	}
+	int index = 0;
 	for (index = 0; index < NUMFAMENAMES; index++) {
-		if (total > hallfame[index].score) {
-			if (index < (NUMFAMENAMES-1)) for (i = (NUMFAMENAMES-1); i > index; i--) hallfame[i] = hallfame[i-1];
-			hallfame[index].name[0] = 0;	// blank out the name
-			hallfame[index].score = total;
+		if ((int)total > hallfame[index].score) {
+			if (index < (NUMFAMENAMES-1)) {
+				for (int i = (NUMFAMENAMES-1); i > index; i--) {
+					hallfame[i] = hallfame[i-1];
+				}
+			}
+			hallfame[index].name[0] = 0;
+			hallfame[index].score = (int)total;
 			hallfame[index].level = Scen->Scenario;
 			hallfame[index].side = PlayerPtr->Class->Side;
 			break;
 		}
 	}
 
-	/*
-	**	Now display the hall of fame
-	*/
-	char maststr[NUMFAMENAMES*32];
-	for (i = 0; i < NUMFAMENAMES; i++) {
-		Alloc_Object(obj = new ScorePrintClass(hallfame[i].name, XPos + HALLFAME_X - 4, YPos + HALLFAME_Y + (i*16), FullFont, false));
-		if (hallfame[i].score) {
-			sprintf(maststr + i*32, "%d%%", hallfame[i].score);
-			Alloc_Object(obj = new ScorePrintClass(maststr + i*32, XPos + HALLFAME_X + 98, YPos + HALLFAME_Y + (i*16), FullFont, false));
-			char *levelstr = maststr + i*32 + 16;
-			sprintf(levelstr, "%02d", hallfame[i].level);
-			Alloc_Object(obj = new ScorePrintClass(levelstr, XPos + HALLFAME_X + 140, YPos + HALLFAME_Y + (i*16), FullFont, false));
-			Wait_For_Print(obj);
+	DoSound("Emblem", 256);
+	for (int place = 0; place < FAME_PLACES; place++) {
+		std::string label = Fetch_String_UTF8(place == 0 ? "GUI:FirstPlace" : "GUI:SecondPlace");
+		Stage.Print_Left(label.c_str(), ScoreStageClass::Dialog_X(PLACE_LABEL_X[place]), ScoreStageClass::Dialog_Y(232));
+		if (hallfame[place].score > 0) {
+			sprintf(buffer, "%d%%", hallfame[place].score);
+			Stage.Print_Left(buffer, ScoreStageClass::Dialog_X(PLACE_X[place]), ScoreStageClass::Dialog_Y(254));
 		}
-		Call_Back_Delay(1);
+		Rect const field = ScoreStageClass::Dialog_Rect(PLACE_X[place], 242, 55, 10);
+		Stage.Print_Left(hallfame[place].name, field.X, field.Y);
+		Rect const place_area = ScoreStageClass::Dialog_Rect(PLACE_LABEL_X[place], 232, 80, 34);
+		Stage.Keep(place_area);
+		Stage.Present(place_area);
 	}
 
-	// Wait for text printing to complete
-	while (StillUpdating) {
-		Call_Back_Delay(1);
+	if (index < FAME_PLACES) {
+		Show_Mouse();
+		Input_Name(hallfame[index].name, ScoreStageClass::Dialog_Rect(PLACE_X[index], 242, 55, 10));
+		Hide_Mouse();
 	}
-
-	/*
-	**	If the player's on the hall of fame, have him enter his name now
-	*/
-	Keyboard->Clear();
-	Show_Mouse();
-
-	if (index < NUMFAMENAMES) {
-		Input_Name(hallfame[index].name, XPos + HALLFAME_X - 4, YPos + HALLFAME_Y + (index * 16));
-	} else {
-		str = Fetch_String(TXT_CLICK_CONTINUE);
-		x = XPos + (640 - FullFont->String_Width(str)) / 2;
-		y = YPos - FullFont->Get_Height() / 2 + 357;
-		Alloc_Object(obj = new ScorePrintClass(str, x, y, FullFont, false));
-		Cycle_Wait_Click();
-	}
-
-	Keyboard->Clear();
 
 	if (file.Open(FAME_FILE_NAME, FileClass::WRITE)) {
 		file.Write(hallfame, sizeof(hallfame));
 		file.Close();
 	}
 
-	Theme.Stop(true);
-
 	/*
-	 * get rid of all the objects
+	 * The prompt, and the screen waits for the player with the emblem looping.
 	 */
+	std::string prompt = Fetch_String_UTF8("TXT_CLICK_CONTINUE");
+	Stage.Print_Left(prompt.c_str(), PROMPT_RECT.X, PROMPT_RECT.Y);
+	Stage.Present(PROMPT_RECT);
 
-	for (i = 0; i < ScoreSnds.Count(); i++) {
-		if (ScoreSnds[i]) {
-			delete ScoreSnds[i];
-			//ScoreSnds[i] = NULL;
-		}
-	}
-	ScoreSnds.Clear();
+	AutoTest_Score_Shown();
 
-	for (i = 0; i < ScoreObjs.Count(); i++) {
-		if (ScoreObjs[i]) {
-			delete ScoreObjs[i];
-			//ScoreObjs[i] = NULL;
-		}
-	}
-	ScoreObjs.Clear();
+	Show_Mouse();
+	Wait_For_Click(animation);
+	Hide_Mouse();
 
-	if (Drawer != NULL) {
-		delete Drawer;
-		Drawer = NULL;
-	}
-
-	if (FullFont != NULL) {
-		delete FullFont;
-		FullFont = NULL;
-	}
-
-	if (BigFont != NULL) {
-		delete BigFont;
-		BigFont = NULL;
-	}
-
-	if (SurfacePtr != NULL) {
-		delete SurfacePtr;
-		SurfacePtr = NULL;
-	}
-
-	delete drawer;
-
-	HiddenSurface->Fill(0);
-
-	Draw();
-
+	Theme.Stop(true);
 	Theme.Queue_Song(THEME_NONE);
-}
 
-
-/// <summary>
-/// Adds an object to the score screen's animation list.
-/// The score screen owns the object from here on and will delete it once the object
-/// reports that it has finished.
-/// </summary>
-/// <returns>Returns with true if the object was accepted into the list.</returns>
-int ScoreClass::Alloc_Object(ScoreAnimClass *obj)
-{
-	return(ScoreObjs.Add(obj));
-}
-
-
-/// <summary>
-/// Has this object left the score screen's animation list?
-/// An object is dropped from the list as soon as it reports that it has finished, so this
-/// is how the score screen tells that a queued piece of text has printed itself out.
-/// </summary>
-/// <returns>bool; Is the object gone from the animation list?</returns>
-bool ScoreClass::Score_Object_Not_Present(ScoreAnimClass * obj)
-{
-	if (ScoreObjs.ID(obj) == -1) {
-		return(true);
+	ScoreSnds.Clear();
+	if (animation != NULL) {
+		ScoreStageClass::Free_Shape(animation);
 	}
-	return(false);
-}
+	Stage.Close();
 
-
-/// <summary>
-/// Waits for a queued score screen object to finish.
-/// This routine is used after handing a piece of text to the score screen, so that the
-/// screen builds itself up one line at a time rather than all at once. The score screen
-/// keeps ticking over while it waits.
-/// </summary>
-/// <param name="obj">The score screen object to wait on.</param>
-void ScoreClass::Wait_For_Print(ScoreAnimClass * obj)
-{
-	if (!Score_Object_Not_Present(obj)) {
-		do {
-			Call_Back_Delay(1);
-		} while (!Score_Object_Not_Present(obj));
-	}
-}
-
-
-/// <summary>
-/// Waits for the player to press a key before moving on.
-/// A minimum idle period is served first, so that a keystroke left over from the mission
-/// cannot skip the screen the instant it appears.
-/// </summary>
-void ScoreClass::Cycle_Wait_Click(bool cycle)
-{
-	int counter = 0;
-	int minclicks = 20;
-
-	Keyboard->Clear();
-	if (AutoTest_Post_Win()) {
-		return;
-	}
-	while (minclicks || (!Keyboard->Check()) ) {
-
-		Call_Back_Delay(1);
-		if (minclicks) {
-			minclicks--;
-			Keyboard->Clear();
-		}
-	}
+	Stage.Clear_Screen();
+	Show_Mouse();
 	Keyboard->Clear();
 }
 
@@ -621,514 +456,106 @@ unsigned int ScoreClass::Do_Calc(HouseClass * house)
 
 
 /// <summary>
-/// Draws the casualty bar graphs onto the score screen.
-/// Losses are tallied for the player and its allies on one hand and for everybody else on
-/// the other, then handed to Do_Graph as a buildings pair and a units pair. Which tally
-/// is drawn on which bar depends on the player's side, so that each house's own color
-/// always lands in the same place.
+/// Prints one row's figures on the results table.
 /// </summary>
-void ScoreClass::Do_Graphs(void)
+void ScoreClass::Print_Row_Figures(int row, int kills, int losses, int built, int score)
 {
-	int allyu = 0;
-	int allyb = 0;
-	int enemyu = 0;
-	int enemyb = 0;
+	char buffer[32];
+	int const y = ScoreStageClass::Dialog_Y(ROW_Y[row]);
 
-	for (int hous = 0; hous < Houses.Count(); hous++) {
-
-		HouseClass *hows = Houses[hous];
-		DebugString("Stats: %s - UnitsLost %ld, BuildingsLost %ld\n", hows->Class->IniName.c_str(), hows->UnitsLost, hows->BuildingsLost);
-
-		if ((PlayerPtr->Is_Ally(hows) && hows->Is_Ally(PlayerPtr)) || PlayerPtr == hows) {
-			allyu += hows->UnitsLost;
-			allyb += hows->BuildingsLost;
-		} else {
-			enemyu += hows->UnitsLost;
-			enemyb += hows->BuildingsLost;
-		}
-
-		DebugString("AllyUnits %ld, AllyBuildings %ld, EnemyUnits %ld, EnemyBldgs %ld\n", allyu, allyb, enemyu, enemyb);
-	}
-
-	if (PlayerPtr->Class->Side == SIDE_GDI) {
-		Do_Graph(allyb, enemyb, 227);
-		Do_Graph(allyu, enemyu, 283);
-	} else {
-		Do_Graph(enemyb, allyb, 227);
-		Do_Graph(enemyu, allyu, 283);
-	}
-}
-
-
-/***************************************************************************
-* DO_GDI_GRAPH -- Show # of people or buildings killed on GDI score screen*
-*                                                                         *
-*                                                                         *
-*                                                                         *
-* INPUT:   yellowptr, redptr = pointers to shape file for graphs          *
-*                                                                         *
-* OUTPUT:                                                                 *
-*                                                                         *
-* WARNINGS:                                                               *
-*                                                                         *
-* HISTORY:                                                                *
-*   05/03/1995 BWG : Created.                                             *
-*=========================================================================*/
-
-void ScoreClass::Do_Graph(int gkilled, int nkilled, int xpos)
-{
-	Rect rect1(0,0,0,0);
-	Rect rect2(0,0,0,0);
-
-	int maxval;
-
-	xpos = XPos + xpos;
-	int ypos = YPos + 244;
-
-	int gdikilled = gkilled, nodkilled=nkilled;
-
-	maxval = std::max(gdikilled, nodkilled);
-	if (!maxval) maxval=1;
-
-	gdikilled = (gdikilled * SIZEGBAR) / maxval;
-	nodkilled = (nodkilled * SIZEGBAR) / maxval;
-	if (maxval < 20) {
-		gdikilled = gkilled * 5;
-		nodkilled = nkilled * 5;
-	}
-
-	maxval = std::max(gdikilled, nodkilled);
-	if (!maxval) maxval=1;
-
-	Rect trect;
-
-	trect.Set(xpos, ypos - gdikilled, 4, gdikilled);
-	SurfacePtr->Fill_Rect_Trans(trect, RGBClass(253, 181, 28), 25);
-	trect.Set(xpos + 4, ypos - gdikilled, 7, gdikilled);
-	SurfacePtr->Fill_Rect_Trans(trect, RGBClass(253, 181, 28), 50);
-	trect.Set(xpos + 11, ypos - gdikilled, 4, gdikilled);
-	SurfacePtr->Fill_Rect_Trans(trect, RGBClass(253, 181, 28), 25);
-
-	trect.Set(xpos + 132, ypos - nodkilled, 4, nodkilled);
-	SurfacePtr->Fill_Rect_Trans(trect, RGBClass(250, 28, 28), 25);
-	trect.Set(xpos + 132 + 4, ypos - nodkilled, 7, nodkilled);
-	SurfacePtr->Fill_Rect_Trans(trect, RGBClass(250, 28, 28), 50);
-	trect.Set(xpos + 132 + 11, ypos - nodkilled, 4, nodkilled);
-	SurfacePtr->Fill_Rect_Trans(trect, RGBClass(250, 28, 28), 25);
-
-
-	int gdicount = 1;
-	int nodcount = 1;
-	int nodrun = nkilled;
-	int gdirun = gkilled;
-	int nodadd = 2 * nkilled;
-	int gdiadd = 2 * gkilled;
-
-	for (int i = ypos - 1; gdicount <= std::max(gdikilled, nodkilled); ) {
-
-		if (rect1.Is_Valid()) {
-			HiddenSurface->Blit_From(rect1, *AlternateSurface, rect1);
-		}
-
-		if (gdicount <= gdikilled) {
-			trect.Set(xpos, i, 15, gdicount);
-			HiddenSurface->Blit_From(trect, *SurfacePtr, trect);
-			rect1 = Count_Up_Print(HiddenSurface, (char *)"%d", gdirun / maxval, gkilled, xpos, i);
-		} else {
-			rect1 = Count_Up_Print(HiddenSurface, (char *)"%d", gkilled, gkilled, xpos, ypos - gdikilled);
-		}
-
-		if (rect2.Is_Valid()) {
-			HiddenSurface->Blit_From(rect2, *AlternateSurface, rect2);
-		}
-
-		if (nodcount <= nodkilled) {
-			trect.Set(xpos + 132, i, 15, nodcount);
-			HiddenSurface->Blit_From(trect, *SurfacePtr, trect);
-			rect2 = Count_Up_Print(HiddenSurface, (char *)"%d", nodrun / maxval, nkilled, xpos + 132, i);
-		} else {
-			rect2 = Count_Up_Print(HiddenSurface, (char *)"%d", nkilled, nkilled, xpos + 132, ypos - nodkilled);
-		}
-
-		DoSound("BarGraph", 96);
-		Call_Back_Delay(1);
-
-		gdicount += 2;
-		nodcount += 2;
-		gdirun += gdiadd;
-		i -= 2;
-		nodrun += nodadd;
-	}
-
-	/*
-	** Make sure accurate count is printed at end
-	*/
-
-	if (rect1.Is_Valid()) {
-		HiddenSurface->Blit_From(rect1, *AlternateSurface, rect1);
-	}
-	trect.Set(xpos, ypos - gdikilled, 15, gdikilled);
-	AlternateSurface->Blit_From(trect, *SurfacePtr, trect);
-	Count_Up_Print(HiddenSurface, (char *)"%d", gkilled, gkilled, xpos, ypos - gdikilled);
-	Count_Up_Print(AlternateSurface, (char *)"%d", gkilled, gkilled, xpos, ypos - gdikilled);
-
-	if (rect2.Is_Valid()) {
-		HiddenSurface->Blit_From(rect2, *AlternateSurface, rect2);
-	}
-	trect.Set(xpos + 132, ypos - nodkilled, 15, nodkilled);
-	AlternateSurface->Blit_From(trect, *SurfacePtr, trect);
-	Count_Up_Print(HiddenSurface, (char *)"%d", nkilled, nkilled, xpos + 132, ypos - nodkilled);
-	Count_Up_Print(AlternateSurface, (char *)"%d", nkilled, nkilled, xpos + 132, ypos - nodkilled);
-
-	Call_Back_Delay(20);
+	sprintf(buffer, "%d", kills);
+	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(KILLS_RIGHT), y);
+	sprintf(buffer, "%d", losses);
+	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(LOSSES_RIGHT), y);
+	sprintf(buffer, "%d%%", built);
+	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(BUILT_RIGHT), y);
+	sprintf(buffer, "%d%%", score);
+	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(SCORE_RIGHT), y);
 }
 
 
 /// <summary>
-/// Prints the player's leftover credits onto the score screen.
-/// This routine does not return until the figure has finished typing itself out, so that
-/// the score screen fills in one line at a time.
+/// Takes a name from the keyboard into a hall of fame place.
+/// The name is typed into the place's field on the stage, and the field is redrawn after each key.
+/// A name that would run past the field is not accepted.
 /// </summary>
-void ScoreClass::Show_Credits(void)
-{
-	char str[20];
-
-	sprintf(str, "%d", PlayerPtr->Available_Money());
-
-	int x = 590 - (12 * strlen(str));
-
-	ScoreAnimClass *obj = new ScorePrintClass(str, XPos + x, YPos + 214, FullFont, false);
-	Alloc_Object(obj);
-
-	/*
-	** Print out total credits left at end of scenario
-	*/
-	Wait_For_Print(obj);
-}
-
-
-/***************************************************************************
- * SCORECLASS::PRINT_MINUTES -- Print out hours/minutes up to max          *
- *                                                                         *
- *    Same as count-up-print, but for the time                             *
- *                                                                         *
- * INPUT:   current minute count and maximum                               *
- *                                                                         *
- * OUTPUT:                                                                 *
- *                                                                         *
- * WARNINGS:                                                               *
- *                                                                         *
- * HISTORY:                                                                *
- *   04/13/1995 BWG : Created.                                             *
- *=========================================================================*/
-void ScoreClass::Print_Minutes(int time)
-{
-	char str[20];
-
-	//if ((time/60) > 9) time = (9*60 + 59);
-	if (((unsigned)time/3600) > 99) time = 359999;
-
-	int hours	 = int((unsigned)time / 3600);
-	time		-= hours * 3600;
-	int minutes	 = int((unsigned)time / 60);
-	time		-= minutes * 60;
-	int seconds	 = (unsigned)time;
-
-	sprintf(str, "%02ld:%02ld:%02ld", hours, minutes, seconds);
-
-	int x = XPos - (BigFont->String_Width(str) / 2) + 542;
-
-	ScoreAnimClass *obj = new ScorePrintClass(str, x, YPos + 322, BigFont, false);
-	Alloc_Object(obj);
-
-	Wait_For_Print(obj);
-}
-
-
-/***********************************************************************************************
- * ScoreClass::Count_Up_Print -- Prints a number (up to its max) into a string, cleanly.       *
- *                                                                                             *
- *    This routine prints out a number (like 70) or its maximum number, into a string,   onto  *
- *    the screen, on a clean section of the screen, and blits it forward to the seenpage so you*
- *    can print without flashing and can print over something (to count up %'s).               *
- *                                                                                             *
- * INPUT:   str = string to print into                                                         *
- *            percent = # to print                                                             *
- *            max = # to print if percent > max                                                *
- *            xpos = x pixel coord                                                             *
- *            ypos = y pixel coord                                                             *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   04/07/1995 BWG : Created.                                                                 *
- *=============================================================================================*/
-Rect ScoreClass::Count_Up_Print(Surface * surf, char *str, int percent, int maxval, int xpos, int ypos)
-{
-	char destbuf[64];
-
-	sprintf(destbuf, str, percent >= maxval ? maxval : percent);
-	ScoreFontClass * font = FullFont;
-	ypos = ypos - FullFont->Get_Height();
-	FullFont->Print_String(surf, destbuf, xpos, ypos, 2);
-	return(Rect(xpos, ypos, FullFont->String_Width(destbuf), FullFont->Get_Height()));
-}
-
-
-/***********************************************************************************************
- * ScoreClass::Input_Name -- Gets the name from the keyboard                                   *
- *                                                                                             *
- *      This routine handles keyboard input, and does a nifty zooming letter effect too.       *
- *                                                                                             *
- * INPUT:   str = string to put user's typing into                                             *
- *            xpos = x pixel coord                                                             *
- *            ypos = y pixel coord                                                             *
- *            pal  = text remapping palette to print using                                     *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   05/15/1995 BWG : Created.                                                                 *
- *=============================================================================================*/
-void ScoreClass::Input_Name(char str[], int xpos, int ypos)
+/// <param name="str">The name to type into. It is cleared when it is entered.</param>
+/// <param name="field">The stage area the name is printed in.</param>
+void ScoreClass::Input_Name(char str[], Rect const & field)
 {
 	if (AutoTest_Post_Win()) {
 		return;
 	}
 
-	int x = xpos;
+	int index = (int)std::strlen(str);
 	int key = 0;
-	int index = 0;
 
+	Keyboard->Clear();
 	do {
-
-		Timing();
-
 		if (Keyboard->Check()) {
 			key = Keyboard->To_ASCII(Keyboard->Get());
-			Call_Back();
-
-			/*
-			 * Once the cursor has run off the right edge of the name field,
-			 * throw away any further queued keys.
-			 */
-			if (x >= xpos + 90) {
-				while (Keyboard->Check()) {
-					Keyboard->Get();
-				}
-			}
-
-			/*
-			** If they hit 'backspace' when they're on the last letter,
-			** turn it into a space instead.
-			*/
-			if (key == KN_BACKSPACE && x >= xpos + 84 && str[index] != 0 && str[index] != 32) {
-				Rect rect(x, ypos + 1, FullFont->Char_Width(UTF8::Peek(str + index)) + 1, 16);
-				HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
-				AlternateSurface->Blit_From(rect, *SurfacePtr, rect);
-				key = 32;
-			}
-
 			if (key == KN_BACKSPACE) {
-
-				/*
-				 * Any other backspace erases the previous character.
-				 */
-				if (index) {
+				if (index > 0) {
 					index = (int)(UTF8::Previous(str, str + index) - str);
-					int cw = FullFont->Char_Width(UTF8::Peek(str + index)) + 1;
-					x -= cw;
-					Rect rect(x, ypos + 1, cw, 16);
-					HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
-					AlternateSurface->Blit_From(rect, *SurfacePtr, rect);
 					str[index] = 0;
 					DoSound("Back", 192);
 				}
-
-			} else if (key != KN_KEYPAD_RETURN && key >= KN_SPACE) {
-
-				/*
-				 * Draw the new (or overwritten) character and advance the cursor.
-				 */
-				char32_t code = (char32_t)key;
-				int cw = FullFont->Char_Width(code) + 1;
-				if (x + FullFont->Get_Width() <= xpos + 90) {
-					if (x + cw >= xpos + 84) {
-						Rect rect(x, ypos + 1, FullFont->Char_Width(UTF8::Peek(str + index)) + 1, 16);
-						HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
-						AlternateSurface->Blit_From(rect, *SurfacePtr, rect);
-					}
-					int length = UTF8::Encode(code, str + index);
-					str[index + length] = 0;
-					Alloc_Object(new ScorePrintClass(str + index, x, ypos, FullFont, false));
+			} else if (key != KN_KEYPAD_RETURN && key != KN_RETURN && key >= KN_SPACE && index < MAX_FAMENAME_LENGTH - 8) {
+				int length = UTF8::Encode((char32_t)key, str + index);
+				str[index + length] = 0;
+				if (Stage.Text_Width(str) > field.Width) {
+					str[index] = 0;
+				} else {
+					index += length;
 					DoSound("Type", 128);
-					if (x < xpos + 87) {
-						index += length;
-						x += FullFont->Char_Width(code) + 1;
-					}
 				}
 			}
 		}
 
-		Animate_Cursor(x, ypos);
-		Call_Back_Delay(1);
-
-	} while (key != KN_RETURN);
+		Stage.Restore(field);
+		Stage.Print_Left(str, field.X, field.Y);
+		Stage.Present(field);
+		Call_Back();
+		Windows_Message_Handler();
+		Sleep(16);
+	} while (key != KN_RETURN && key != KN_KEYPAD_RETURN);
 }
 
 
 /// <summary>
-/// Blinks the hall of fame name entry cursor.
-/// The cursor alternates between a drawn underline and the artwork behind it. Moving to a
-/// new position erases the cursor from the old one first.
+/// Waits for the player to continue, with the emblem looping while the screen is up.
 /// </summary>
-/// <param name="pos">The horizontal pixel position to draw the cursor at.</param>
-/// <param name="ypos">The top of the letter the cursor sits beneath.</param>
-/// <remarks>Call this routine every frame while the player is entering a name.</remarks>
-void ScoreClass::Animate_Cursor(int pos, int ypos)
+/// <param name="animation">The emblem animation to loop, or NULL to wait with a still picture.</param>
+void ScoreClass::Wait_For_Click(ShapeSet const * animation)
 {
-	static int _lastpos = 0, _state;
-	static CDTimerClass<SystemTimerClass> _timer;
-
-	Rect rect;
-
-	ypos += 14;	// move cursor to bottom of letter
-
-	// If they moved the cursor, erase old one and force state=0, to make green draw right away
-	if (pos != _lastpos) {
-		rect.Set(_lastpos, ypos, HALLFAME_X, 1);
-		HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-		_lastpos = pos;
-		//_state = 0;
-	}
-
-	if (_state) {
-		HiddenSurface->Draw_Line(Point2D(pos, ypos), Point2D(pos + HALLFAME_X - 1, ypos), Color);
-	} else {
-		rect.Set(pos, ypos, HALLFAME_X, 1);
-		HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
-	}
-
-	/*
-	**	Toggle the color of the cursor, green or black, if it's time to do so.
-	*/
-	if (!_timer) {
-		_state ^= 1;
-		_timer = 5;
-	}
-}
-
-
-/***************************************************************************
- * Call_Back_Delay -- Combines Call_Back() and Delay() functions           *
- *                                                                         *
- *    This is just to cut down on code size and typing a little.           *
- *                                                                         *
- * INPUT:                                                                  *
- *                                                                         *
- * OUTPUT:                                                                 *
- *                                                                         *
- * WARNINGS:                                                               *
- *                                                                         *
- * HISTORY:                                                                *
- *   04/13/1995 BWG : Created.                                             *
- *=========================================================================*/
-void ScoreClass::Call_Back_Delay(int time)
-{
-	Rect rect;
-	CDTimerClass<SystemTimerClass> cd = 1;
-
-	do {
-		Animate_Score_Objs();
-
-		Draw();
-
-		do {
-
-			Call_Back();
-			Windows_Message_Handler();
-
-			if (!GameInFocus) {
-
-				cd.Stop();
-
-				Timing();
-
-				cd.Start();
-			}
-
-			Sleep(0);
-
-		} while (cd > 0);
-
-		cd = 1;
-		time--;
-
-	} while (time > 0);
-}
-
-
-/// <summary>
-/// Updates every animating object on the score screen.
-/// Each object is given its chance to advance, and any that report they have finished are
-/// deleted. The screen is rebuilt from the alternate surface first if the display was
-/// lost while the game sat in the background.
-/// </summary>
-void ScoreClass::Animate_Score_Objs(void)
-{
-	StillUpdating = false;
-
-	for (int i = 0; i < ScoreObjs.Count(); i++) {
-		if (ScoreObjs[i]->Update(SurfacePtr) == true) {
-			delete ScoreObjs[i];
-			ScoreObjs.Delete_Index(i);
-		}
-	}
-}
-
-
-/// <summary>
-/// Blits the finished score screen to the visible surface.
-/// </summary>
-void ScoreClass::Draw(void)
-{
-	Rect rect1(XPos, YPos, 640, 400);
-	Rect rect2(XPos, YPos, 640, 400);
-
-	VisibleSurface->Blit_From(rect1, *HiddenSurface, rect2);
-}
-
-
-/// <summary>
-/// Holds the score screen still while the game is out of focus.
-/// Every animating object is stopped, the routine idles until the window comes back to
-/// the foreground, and then the objects are started again. Without this the tallies would
-/// count themselves up while the player was away.
-/// </summary>
-void ScoreClass::Timing(void)
-{
-	if (GameInFocus == true) {
+	Keyboard->Clear();
+	if (AutoTest_Post_Win()) {
 		return;
 	}
 
-	int i;
+	int frame = 0;
+	int ticks = 0;
+	bool running = true;
+	Rect const frame_box(PICTURE_BOX.X, PICTURE_BOX.Y, 424, 220);
 
-	for (i = 0; i < ScoreObjs.Count(); i++) {
-		ScoreObjs[i]->Stop();
-	}
-
-	while (!GameInFocus) {
-		Sleep(500);
+	while (running) {
+		Call_Back();
 		Windows_Message_Handler();
+		if (Keyboard->Check()) {
+			int key = Keyboard->Get();
+			if (key == VK_LBUTTON || key == VK_ESCAPE || key == VK_SPACE) {
+				running = false;
+			}
+		}
+		if (animation != NULL && ++ticks % 3 == 0) {
+			frame = (frame + 1) % ANIMATION_FRAMES;
+			Stage.Draw_Shape_Frame(animation, frame, frame_box);
+			Stage.Present(frame_box);
+		}
+		Sleep(16);
 	}
 
-	for (i = 0; i < ScoreObjs.Count(); i++) {
-		ScoreObjs[i]->Start();
-	}
+	Keyboard->Clear();
 }
 
 
@@ -1155,381 +582,6 @@ void ScoreClass::DoSound(const char * name, int volume)
 			}
 		}
 	}
-}
-
-int score_font_count;
-struct ScoreTextSoundStruct {
-	void * mSound;
-	bool mAllocated;
-} text_sounds[3];
-
-
-/// <summary>
-/// Constructs an empty score screen font.
-/// The derived font classes build on this form and fill in their own glyph shapes and
-/// dimensions afterwards.
-/// </summary>
-ScoreFontClass::ScoreFontClass(void) :
-	Width(0),
-	Height(0),
-	ShapePtr(NULL),
-	Drawer(NULL)
-{
-	Load_Sounds();
-	score_font_count++;
-}
-
-
-/// <summary>
-/// Constructs a score screen font from glyph shapes that already exist.
-/// The font does not own the shape data in this form, so it will not release it.
-/// </summary>
-/// <param name="w">The nominal glyph width.</param>
-/// <param name="h">The nominal glyph height.</param>
-/// <param name="data">The shape set holding the font's glyphs.</param>
-/// <param name="drawer">The palette converter to draw the glyphs with.</param>
-ScoreFontClass::ScoreFontClass(int w, int h, void const * data, ConvertClass * drawer) :
-	Width(w),
-	Height(h),
-	ShapePtr((ShapeSet const *)data),
-	Drawer(drawer)
-{
-	Load_Sounds();
-	score_font_count++;
-}
-
-
-/// <summary>
-/// Destroys a score screen font.
-/// Any glyph shapes this font loaded for itself are released, and when the last font goes
-/// away the typing sounds they share are stopped and freed as well.
-/// </summary>
-ScoreFontClass::~ScoreFontClass(void)
-{
-	if (ShapePtr != NULL && IsShapeAllocated == true) {
-		delete (char *)ShapePtr;
-		ShapePtr = NULL;
-		IsShapeAllocated = false;
-	}
-
-	score_font_count--;
-	if (score_font_count == 0) {
-		for (int i = 0; i < 3; i++) {
-			if (text_sounds[i].mSound != NULL) {
-				AudioEngine.Stop_Sample_Playing(text_sounds[i].mSound);
-				AudioEngine.Release_Sample(text_sounds[i].mSound);
-				if (text_sounds[i].mAllocated == true) {
-					delete text_sounds[i].mSound;
-				}
-			}
-			text_sounds[i].mSound = NULL;
-			text_sounds[i].mAllocated = false;
-		}
-	}
-}
-
-
-/// <summary>
-/// Loads the typing sounds used by the score screen fonts.
-/// The samples come from the mixfiles where possible and from disk otherwise. They are
-/// shared by every font and are not released until the last font is destroyed.
-/// </summary>
-void ScoreFontClass::Load_Sounds(void)
-{
-	if (AudioEngine.Is_Available()) {
-		CCFileClass file;
-		text_sounds[0].mSound = (void *)MFCD::Retrieve("TEXT1.AUD");
-		if (text_sounds[0].mSound == NULL) {
-			file.Open("TEXT1.AUD", FileClass::READ);
-			text_sounds[0].mSound = Load_Alloc_Data(file);
-			text_sounds[0].mAllocated = true;
-			file.Close();
-			DebugString("ScoreScreen: Loaded TEXT1.AUD\n");
-		}
-		text_sounds[1].mSound = (void *)MFCD::Retrieve("TEXT2.AUD");
-		if (text_sounds[1].mSound == NULL) {
-			file.Open("TEXT2.AUD", FileClass::READ);
-			text_sounds[1].mSound = Load_Alloc_Data(file);
-			text_sounds[1].mAllocated = true;
-			file.Close();
-			DebugString("ScoreScreen: Loaded TEXT2.AUD\n");
-		}
-		text_sounds[2].mSound = (void *)MFCD::Retrieve("TEXT3.AUD");
-		if (text_sounds[2].mSound == NULL) {
-			file.Open("TEXT3.AUD", FileClass::READ);
-			text_sounds[2].mSound = Load_Alloc_Data(file);
-			text_sounds[2].mAllocated = true;
-			file.Close();
-			DebugString("ScoreScreen: Loaded TEXT3.AUD\n");
-		}
-	}
-}
-
-
-/// <summary>
-/// Fetches the printed width of a string in this font.
-/// This routine is used to center and right align the score screen's figures, which are
-/// not known until the mission is over.
-/// </summary>
-/// <returns>Returns with the width in pixels that the string would occupy.</returns>
-int ScoreFontClass::String_Width(const char * string)
-{
-	const char * str = string;
-	int w = 0;
-	while (*str) {
-		w += Char_Width(UTF8::Decode(str)) + 1;
-	}
-	return(w);
-}
-
-
-// The glyph shapes are in code page 437 order; a code point they lack draws as '?'.
-int ScoreFontClass::Glyph_Frame(char32_t code) const
-{
-	int index = UTF8::OEM_437_Glyph(code);
-	if (index < 0) {
-		index = '?';
-	}
-	return(3 * std::min(std::max(index - 33, 0), 216));
-}
-
-
-/// <summary>
-/// Fetches the printed width of a character in this font.
-/// The font is proportional, so every glyph must be measured rather than assumed.
-/// </summary>
-/// <returns>Returns with the width in pixels that the character occupies.</returns>
-int ScoreFontClass::Char_Width(char32_t code)
-{
-	if (code == 32) {
-		return(8);
-	}
-
-	int frame = Glyph_Frame(code);
-	return(ShapePtr->Get_Rect(frame + 2).Width);
-}
-
-
-/// <summary>
-/// Prints a single character with this font.
-/// This is the low level glyph blitter that the score screen's typewriter effect is built
-/// out of. It will also play one of the typing sounds as the character lands.
-/// </summary>
-/// <param name="v">The brightness frame to draw the glyph with.</param>
-/// <param name="play_sound">Should a typing sound be played along with the character?</param>
-void ScoreFontClass::Print_Char(Surface *surf, char32_t code, int x, int y, int v, bool play_sound)
-{
-	if (code != 32) {
-		int frame = Glyph_Frame(code);
-
-		if (play_sound == true && v == 0) {
-			void *snd = text_sounds[rand() % 3].mSound;
-			if (snd != NULL) {
-				AudioEngine.Play_Sample(snd, AUDIO_GROUP_SFX, 128.0f / 255.0f, 255);
-			}
-		}
-		Draw_Shape(*surf, *Drawer, ShapePtr, frame + v, Point2D(x - ShapePtr->Get_Rect(frame + 2).X, y), surf->Get_Rect(), SHAPE_WIN_REL);
-	}
-}
-
-
-/// <summary>
-/// Prints a whole string with this font.
-/// This routine draws the string in one go and in silence, unlike the typewriter effect
-/// the score screen builds out of Print_Char.
-/// </summary>
-/// <param name="brightness_frame">The brightness frame to draw the glyphs with.</param>
-void ScoreFontClass::Print_String(Surface *surf, const char * string, int x, int y, int brightness_frame)
-{
-	while (*string != '\0') {
-		char32_t code = UTF8::Decode(string);
-		if (code != 32) {
-			int frame = Glyph_Frame(code);
-
-			Draw_Shape(*surf, *Drawer, ShapePtr, frame + brightness_frame, Point2D(x - ShapePtr->Get_Rect(frame + 2).X, y), surf->Get_Rect(), SHAPE_WIN_REL);
-		}
-		x += Char_Width(code) + 1;
-	}
-}
-
-
-/// <summary>
-/// Constructs the standard score screen font.
-/// The glyph shapes are fetched from the mixfiles, or loaded from disk if they are not
-/// there. This is the font the score screen prints its labels and tallies with.
-/// </summary>
-/// <param name="drawer">The palette converter to draw the glyphs with.</param>
-ScoreFullFontClass::ScoreFullFontClass(ConvertClass * drawer) :
-	ScoreFontClass()
-{
-	IsShapeAllocated = false;
-	ShapePtr = (const ShapeSet *)MFCD::Retrieve("FULLFNT3.SHP");
-	if (ShapePtr == NULL) {
-		CCFileClass file("FULLFNT3.SHP");
-		ShapePtr = (ShapeSet const *)Load_Alloc_Data(file);
-		IsShapeAllocated = true;
-		file.Close();
-		DebugString("ScoreScreen: Loaded FULLFNT3.SHP\n");
-	}
-	Width = 11;
-	Drawer = drawer;
-	Height = 21;
-}
-
-
-/// <summary>
-/// Constructs the large score screen font.
-/// The glyph shapes are fetched from the mixfiles, or loaded from disk if they are not
-/// there. This is the font the score screen prints its headline figures with.
-/// </summary>
-/// <param name="drawer">The palette converter to draw the glyphs with.</param>
-ScoreBigFontClass::ScoreBigFontClass(ConvertClass * drawer) :
-	ScoreFontClass()
-{
-	IsShapeAllocated = false;
-	ShapePtr = (const ShapeSet *)MFCD::Retrieve("BIGFONT.SHP");
-	if (ShapePtr == NULL) {
-		CCFileClass file("BIGFONT.SHP");
-		ShapePtr = (ShapeSet const *)Load_Alloc_Data(file);
-		IsShapeAllocated = true;
-		file.Close();
-		DebugString("ScoreScreen: Loaded BIGFONT.SHP\n");
-	}
-	Width = 20;
-	Drawer = drawer;
-	Height = 35;
-}
-
-
-/// <summary>
-/// Constructs a looping animated graphic for the score screen.
-/// </summary>
-/// <param name="data">The shape set holding the animation frames.</param>
-/// <param name="maxval">The number of frames in the animation loop.</param>
-/// <param name="xtimer">The delay between frames.</param>
-/// <param name="drawer">The palette converter to draw the shape with.</param>
-ScoreTimeClass::ScoreTimeClass(int xpos, int ypos, void const * data, int maxval, int xtimer, ConvertClass * drawer) :
-	ScoreAnimClass(xpos, ypos, data),
-	Stage(0),
-	MaxStage(maxval),
-	TimerReset(xtimer),
-	Drawer(drawer)
-{
-}
-
-
-/// <summary>
-/// Advances the animation of a looping score screen graphic.
-/// The next frame is drawn each time the object's timer expires, onto the alternate
-/// surface as well as the hidden one so that the animation survives a background restore.
-/// </summary>
-/// <returns>bool; Has the object finished? Never -- these graphics loop until the score
-/// screen tears them down.</returns>
-bool ScoreTimeClass::Update(Surface * surf)
-{
-	if (!Timer) {
-		Timer = TimerReset;
-		if (++Stage >= MaxStage) Stage = 0;
-		Draw_Shape(*HiddenSurface, *Drawer, (ShapeSet *)DataPtr, Stage, Point2D(XPos, YPos), HiddenSurface->Get_Rect(), SHAPE_WIN_REL);
-		Draw_Shape(*AlternateSurface, *Drawer, (ShapeSet *)DataPtr, Stage, Point2D(XPos, YPos), AlternateSurface->Get_Rect(), SHAPE_WIN_REL);
-	}
-	return(false);
-}
-
-
-/// <summary>
-/// Constructs a score screen text object from a string table entry.
-/// This is the form used for the fixed labels of the score screen, which must come out of
-/// the string table so that they follow the language the game was installed in.
-/// </summary>
-/// <param name="string">The string table identifier of the text to print.</param>
-/// <param name="font">The score screen font to print the text with.</param>
-/// <param name="is_fully_lit">Should the text appear fully lit instead of typing itself in?</param>
-ScorePrintClass::ScorePrintClass(int string, int xpos, int ypos, ScoreFontClass * font, bool is_fully_lit) :
-	ScoreAnimClass(xpos, ypos, Fetch_String(string)),
-	Pos(0),
-	Stage(0),
-	State(is_fully_lit),
-	Font(font)
-{
-}
-
-
-/// <summary>
-/// Constructs a score screen text object from a literal string.
-/// This is the form used for the figures the score screen builds for itself, such as the
-/// credit and time totals.
-/// </summary>
-/// <param name="font">The score screen font to print the text with.</param>
-/// <param name="is_fully_lit">Should the text appear fully lit instead of typing itself in?</param>
-/// <remarks>The string is not copied, so its buffer must outlive this object.</remarks>
-ScorePrintClass::ScorePrintClass(void const * string, int xpos, int ypos, ScoreFontClass * font, bool is_fully_lit) :
-	ScoreAnimClass(xpos, ypos, string),
-	Pos(0),
-	Stage(0),
-	State(is_fully_lit),
-	Font(font)
-{
-}
-
-
-/// <summary>
-/// Advances the typewriter printing of this text.
-/// One more character is revealed each time the object's timer expires, the trailing few
-/// drawn in the brightening frames that give the score screen its typewriter look. The
-/// settled characters are laid into the alternate surface as well, so they survive a
-/// background restore.
-/// </summary>
-/// <returns>bool; Has the text finished printing, so that the object may be deleted?</returns>
-bool ScorePrintClass::Update(Surface * surf)
-{
-
-	StillUpdating = true;
-
-	if (!Timer) {
-		Timer = 2;
-
-		if ((unsigned)Pos > strlen((const char *)DataPtr) && Stage > 2) {
-			return(true);
-		}
-
-		if (State == false) {
-			Rect rect;
-			int w = Font->String_Width((const char *)DataPtr);
-			rect.Set(XPos - 8 <= 0 ? 0 : XPos - 8, YPos, w + 10, Font->Get_Height());
-			HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-		}
-
-		int x = XPos;
-		char const * text = (char const *)DataPtr;
-		for (int i = 0; i <= Pos; ) {
-
-			char const * cursor = text + i;
-			char32_t localstr = UTF8::Decode(cursor);
-			if (localstr == '\0') {
-				Stage++;
-				break;
-			}
-
-			int v;
-			if (State != true) {
-				v = (Pos - i >= 2) ? 2 : (Pos - i);
-			} else {
-				v = 2;
-			}
-
-			Font->Print_Char(HiddenSurface, localstr, x, YPos, v, true);
-			if (v == 2) {
-				Font->Print_Char(AlternateSurface, localstr, x, YPos, v, false);
-			}
-			x += Font->Char_Width(localstr) + 1;
-			i = (int)(cursor - text);
-		}
-
-		Pos++;
-	}
-
-	return(false);
 }
 
 
@@ -1578,21 +630,4 @@ SfxEntry::~SfxEntry(void)
 	if (Name != NULL) {
 		free(Name);
 	}
-}
-
-
-/// <summary>
-/// Constructs a score screen animation object.
-/// This is the base for every animated element of the score screen -- the counters, the
-/// typewriter text and the looping graphics all derive from it. Derived classes supply
-/// the shape or string data and drive the object from their own Update routine.
-/// </summary>
-/// <param name="data">The shape or string data this object will draw from.</param>
-ScoreAnimClass::ScoreAnimClass(int x, int y, void const * data) :
-	XPos(x),
-	YPos(y),
-	Timer(0),
-	DataPtr(data)
-{
-
 }
