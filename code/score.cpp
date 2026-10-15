@@ -834,7 +834,7 @@ void ScoreClass::Print_Minutes(int time)
 	time		-= minutes * 60;
 	int seconds	 = (unsigned)time;
 
-	sprintf(str, "%02ld:%02ld:%02ld", hours, minutes, seconds);
+	sprintf(str, "%02d:%02d:%02d", hours, minutes, seconds);
 
 	int x = XPos - (BigFont->String_Width(str) / 2) + 542;
 
