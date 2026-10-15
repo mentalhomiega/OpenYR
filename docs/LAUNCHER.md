@@ -50,11 +50,20 @@ A release is named by its beta, for example `beta23`. It has two assets:
 | Asset | Contents |
 | --- | --- |
 | `OpenYR-beta23-Setup.exe` | The setup with its package, as the packager writes it. |
-| `OpenYR-beta23-Setup.exe.sha256` | The SHA-256 digest of the setup in lower-case hex. A file name after the digest, as `sha256sum` writes, is allowed. |
+| `OpenYR-beta23-Setup.exe.sha256` | The SHA-256 digest of the setup as 64 hex digits. A file name after the digest, as `sha256sum` writes, is allowed. The file is refused if a later line holds text or any control character other than tab and line ends. |
 
 The feed is the latest release. A tag that is not a beta name is never offered. Beta numbers compare as numbers, so `beta9` is older than `beta22`.
 
 The checksum comes from the same release as the setup. It catches a damaged or cut-short download. It does not protect against a release that was changed on GitHub; we do not sign releases yet.
+
+## What the update checks
+
+- A feed read over `https://` may name only `https://` assets. A local feed, which the tests use, may name local files.
+- A download stops with an error at 512 MB, or when it passes the length the server declared. The launcher offers TLS 1.2 and 1.3 and refuses a redirect from `https://` to `http://`.
+- The update copy runs from `%TEMP%\OpenYR-Update-<process id>-<random digits>`. Only the current user and SYSTEM can open that folder, and the launcher stops the update if it cannot make the folder that way.
+- When the update ends, the copy removes its own folder only if the folder is an `OpenYR-Update-*` folder directly in `%TEMP%`, and its path has no `%` or quote. A copy started by hand elsewhere leaves its folder alone.
+- The launcher and the setup load DLLs from System32 only.
+- The setup is not signed, and Windows does not check a signature before the launcher runs it.
 
 ## Logs
 

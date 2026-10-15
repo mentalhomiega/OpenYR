@@ -176,7 +176,9 @@ The shortcuts are `OpenYR.lnk` on the desktop, when asked for, and `OpenYR.lnk` 
 
 An install over an existing one replaces the program files, removes the program files the earlier build wrote that the new one does not ship, and leaves `user\` as it is. Uninstall removes what `openyr-install.ini` lists, the shortcuts and the registry entry. `user\` and `Debug\` stay unless `/DELETEDATA` is given.
 
-The `setup` ctest covers the find, install, update and uninstall logic with a fake Yuri's Revenge folder and a fake package, and checks that the Yuri's Revenge folder is unchanged. Whether the installed copy finds the game's data needs the game, so check it with `scripts/run_autotest.ps1 -InstallDir <folder>`.
+The setup writes a package entry only when its name is relative and has no drive or stream colon, wildcard, control character, empty step, `..` step, step ending in a dot or a space, or device name such as `CON` or `NUL`. It skips any other entry. It deletes a line of the `[Files]` list in `openyr-install.ini` only when the line passes the same test unchanged and does not name `user\`, `Debug\`, `OPENTS.INI` or the record itself, and it logs each line it ignores. It writes and deletes nothing through a junction or symbolic link inside the install folder: an install stops with an error, and an uninstall leaves the file and reports it. The self-removal of the uninstaller is skipped when the install path holds a `%` or a quote, since `cmd.exe` would read it differently. Both programs load DLLs from System32 only, set by `SetDefaultDllDirectories` at start and by `/DEPENDENTLOADFLAG:0x800` in the link line.
+
+The `setup` ctest covers the find, install, update and uninstall logic with a fake Yuri's Revenge folder and a fake package, and checks that the Yuri's Revenge folder is unchanged. It also covers the name rules, a damaged record and, where the system allows a link to be made, a link inside the install folder. Whether the installed copy finds the game's data needs the game, so check it with `scripts/run_autotest.ps1 -InstallDir <folder>`.
 
 ## Experimental clang-cl cross-build
 
