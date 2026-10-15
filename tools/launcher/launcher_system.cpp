@@ -472,11 +472,19 @@ bool Wait_For_Process(HANDLE process, DWORD timeout_ms, DWORD & code)
 
 void Schedule_Folder_Removal(std::wstring const & folder)
 {
+	// Only an update folder in the temporary folder is removed. A path that cmd.exe would read
+	// differently stays on disk.
+	wchar_t temp[MAX_PATH] = {};
+	DWORD const length = GetTempPathW(MAX_PATH, temp);
+	if (length == 0 || length >= MAX_PATH || !Is_Update_Folder(folder, temp) || !Is_Safe_For_Cmd(folder)) {
+		return;
+	}
+
 	wchar_t system[MAX_PATH] = {};
 	GetSystemDirectoryW(system, MAX_PATH);
 
 	// The delay lets this process exit first, so the folder's launcher copy is no longer in use.
-	std::wstring const command = std::wstring(L"/d /c \"ping -n 3 127.0.0.1 >nul & rmdir /s /q \"") + folder + L"\"\"";
+	std::wstring const command = std::wstring(L"/d /v:off /s /c \"ping -n 3 127.0.0.1 >nul & rmdir /s /q \"") + folder + L"\"\"";
 	std::wstring const line = std::wstring(system) + L"\\cmd.exe " + command;
 	std::vector<wchar_t> buffer(line.begin(), line.end());
 	buffer.push_back(L'\0');

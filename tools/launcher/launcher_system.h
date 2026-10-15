@@ -57,7 +57,8 @@ bool Start_Process(std::wstring const & command_line, std::wstring const & folde
 // Waits for a process while keeping the window responsive. False on timeout; code is the exit code.
 bool Wait_For_Process(HANDLE process, DWORD timeout_ms, DWORD & code);
 
-// Deletes a folder a few seconds from now, after this process has exited.
+// Deletes an update folder a few seconds from now, after this process has exited. A folder that is
+// not an OpenYR-Update-* folder directly in the temporary folder is left alone.
 void Schedule_Folder_Removal(std::wstring const & folder);
 
 // Writes UTF-8 text to standard output, when the process has one. Used by the check-only run.

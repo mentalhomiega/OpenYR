@@ -124,6 +124,16 @@ std::string Wide_To_Utf8(std::wstring const & text);
 // One argument, quoted so that CommandLineToArgvW and the C runtime read it back unchanged.
 std::wstring Quote_Argument(std::wstring const & arg);
 
+// True when the folder is an update folder directly inside temp_root: a name that starts with
+// "OpenYR-Update-" and has more after it. Compared without regard to case or a trailing separator.
+// Only such a folder is ever removed after an update, so a launcher started by hand from the
+// install, with the update switches, cannot delete the install.
+bool Is_Update_Folder(std::wstring const & folder, std::wstring const & temp_root);
+
+// True when a path can sit inside a quoted argument of "cmd.exe /c" and reach the command unchanged.
+// cmd.exe expands %NAME% even inside quotes, and a quote or a line end ends the argument.
+bool Is_Safe_For_Cmd(std::wstring const & path);
+
 // Lower-case hex text of the given number of random bytes from the system's generator, or an empty
 // string when the generator fails.
 std::wstring Random_Hex(unsigned bytes);

@@ -334,6 +334,25 @@ void Test_Quoting(void)
 }
 
 
+// The update copy deletes its own folder when it ends. Started by hand from the install folder, it
+// must not delete that.
+void Test_Update_Folder(void)
+{
+	std::wstring const temp = L"C:\\Users\\Player\\AppData\\Local\\Temp\\";
+	Check(launcher::Is_Update_Folder(temp + L"OpenYR-Update-1234-0123456789abcdef", temp), "an OpenYR-Update folder in the temporary folder may be removed");
+	Check(launcher::Is_Update_Folder(L"c:/users/player/appdata/local/temp/openyr-update-1-ab/", L"C:\\Users\\Player\\AppData\\Local\\Temp"), "the comparison ignores case, slash direction and a trailing separator");
+	Check(!launcher::Is_Update_Folder(L"C:\\Games\\OpenYR", temp), "the install folder may not");
+	Check(!launcher::Is_Update_Folder(temp + L"OpenYR-Update-", temp), "a name that is only the prefix may not");
+	Check(!launcher::Is_Update_Folder(temp + L"Other", temp) && !launcher::Is_Update_Folder(temp.substr(0, temp.size() - 1), temp), "another folder, or the temporary folder itself, may not");
+	Check(!launcher::Is_Update_Folder(temp + L"Sub\\OpenYR-Update-1-ab", temp), "an update-named folder deeper than the temporary folder may not");
+	Check(!launcher::Is_Update_Folder(L"C:\\OpenYR-Update-1-ab", temp), "an update-named folder elsewhere may not");
+	Check(!launcher::Is_Update_Folder(L"", temp) && !launcher::Is_Update_Folder(temp + L"OpenYR-Update-1", L""), "an empty folder or an empty temporary folder never matches");
+
+	Check(launcher::Is_Safe_For_Cmd(L"C:\\Users\\Player One\\AppData\\Local\\Temp\\OpenYR-Update-1-ab"), "a path with spaces can go inside a quoted cmd.exe argument");
+	Check(!launcher::Is_Safe_For_Cmd(L"C:\\Users\\50%off\\Temp") && !launcher::Is_Safe_For_Cmd(L"C:\\a\"b") && !launcher::Is_Safe_For_Cmd(L"C:\\a\nb") && !launcher::Is_Safe_For_Cmd(L""), "a percent sign, a quote, a line end or nothing is refused");
+}
+
+
 // True when an access-allowed entry of the list names the well-known SID.
 bool Acl_Grants(PACL acl, WELL_KNOWN_SID_TYPE type)
 {
@@ -414,6 +433,7 @@ int main()
 	Test_Decision();
 	Test_Sources_And_Config();
 	Test_Quoting();
+	Test_Update_Folder();
 	Test_Private_Folder();
 	Test_Text();
 

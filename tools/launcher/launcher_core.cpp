@@ -728,6 +728,44 @@ std::wstring Quote_Argument(std::wstring const & arg)
 }
 
 
+bool Is_Update_Folder(std::wstring const & folder, std::wstring const & temp_root)
+{
+	auto trimmed = [](std::wstring text) {
+		for (wchar_t & character : text) {
+			if (character == L'/') {
+				character = L'\\';
+			}
+		}
+		while (text.size() > 3 && text.back() == L'\\') {
+			text.pop_back();
+		}
+		return text;
+	};
+
+	std::wstring const place = trimmed(folder);
+	std::wstring const root = trimmed(temp_root);
+	std::wstring::size_type const slash = place.find_last_of(L'\\');
+	if (slash == std::wstring::npos || root.empty()) {
+		return false;
+	}
+
+	std::wstring const leaf = place.substr(slash + 1);
+	std::wstring const prefix = L"OpenYR-Update-";
+	return Same_Text(place.substr(0, slash), root) && leaf.size() > prefix.size() && _wcsnicmp(leaf.c_str(), prefix.c_str(), prefix.size()) == 0;
+}
+
+
+bool Is_Safe_For_Cmd(std::wstring const & path)
+{
+	for (wchar_t character : path) {
+		if (character < 0x20 || character == L'%' || character == L'"') {
+			return false;
+		}
+	}
+	return !path.empty();
+}
+
+
 std::wstring Random_Hex(unsigned bytes)
 {
 	std::vector<UCHAR> random(bytes);
