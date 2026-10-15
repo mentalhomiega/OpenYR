@@ -32,3 +32,4 @@ Rules for these files:
 | `phobos-attached-effects.md` | Phobos `[AttachEffectTypes]` and the `AttachEffect.*` keys on technos and warheads |
 | `phobos-shields.md` | Phobos `[ShieldTypes]`, `Shield` and the `Shield.*` keys on technos and warheads |
 | `phobos-autodeath-convert-animunit.md` | Phobos `AutoDeath.*`, `Convert.*` (ammo, health, owner change, deploy, superweapon) and `CreateUnit.*` on animations |
+| `superweapon-extensions.md` | Ares `SW.*` framework and `Type=` superweapons; Phobos superweapon additions (`SW.Next`, linked superweapons, `LimboDelivery`, EMPulse settings and others) |
