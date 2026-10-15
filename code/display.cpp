@@ -2084,6 +2084,21 @@ void Bandbox_Selection_Callback(ObjectClass *object);
  *=============================================================================================*/
 void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, ObjectClass * object, ActionType action, bool wsmall)
 {
+	// The release that uses an armed attack-move makes its ground orders attack-moves, and the arm ends with it.
+	struct AttackMoveScope
+	{
+		AttackMoveScope(void)
+		{
+			AttackMoveOrdering = AttackMoveArmed;
+			AttackMoveArmed = false;
+		}
+
+		~AttackMoveScope(void)
+		{
+			AttackMoveOrdering = false;
+		}
+	} attack_move_scope;
+
 	if (object != NULL && ScenarioActive && GameActive && !Debug_Map && object->Visual_Character() == VISUAL_HIDDEN) {
 		object = NULL;
 	}

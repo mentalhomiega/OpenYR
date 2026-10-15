@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -51,9 +52,9 @@ bool Has_Command(std::vector<HotkeyEntry> const & entries, std::string const & c
 
 bool Keys_Distinct(std::vector<HotkeyEntry> const & entries)
 {
-	std::set<int> keys;
+	std::set<std::pair<int, int>> keys;
 	for (HotkeyEntry const & entry : entries) {
-		if (entry.Key == 0 || !keys.insert(entry.Key).second) {
+		if (entry.Key == 0 || !keys.insert({ entry.Key, (int)entry.Trigger }).second) {
 			return(false);
 		}
 	}
@@ -128,17 +129,17 @@ void Test_Upgrade_File(void)
 {
 	// A version 1 file holding only the keys the old build bound takes the keys of the commands it omits.
 	std::vector<HotkeyEntry> old_file = { { "ChatToAll", 13 }, { "Options", 27 } };
-	Upgrade_Hotkeys(old_file, 1);
+	Upgrade_Hotkeys(old_file, 1, KEYBOARD_SCHEME_CLASSIC);
 	Check(Key_Of(old_file, "TypeSelect") == 84 && Key_Of(old_file, "PlanningMode") == 90, "a version 1 file gains the stock keys of the new commands");
 	Check(Key_Of(old_file, "ChatToAll") == 13 && Key_Of(old_file, "Options") == 27, "the old bindings of a version 1 file stay");
 	Check(Keys_Distinct(old_file), "the upgraded file binds each key once");
 
 	std::vector<HotkeyEntry> saved = { { "Options", 27 } };
-	Upgrade_Hotkeys(saved, KEYBOARD_DEFAULTS_VERSION);
+	Upgrade_Hotkeys(saved, KEYBOARD_DEFAULTS_VERSION, KEYBOARD_SCHEME_CLASSIC);
 	Check(saved.size() == 1, "a version 2 file gets no defaults for the commands it omits");
 
 	std::vector<HotkeyEntry> legacy = Legacy_Hotkeys();
-	Upgrade_Hotkeys(legacy, 1);
+	Upgrade_Hotkeys(legacy, 1, KEYBOARD_SCHEME_CLASSIC);
 	Check(Keys_Distinct(legacy), "the legacy defaults upgrade to a file that binds each key once");
 }
 

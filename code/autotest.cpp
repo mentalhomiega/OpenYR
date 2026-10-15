@@ -49,10 +49,16 @@
 **							changes, and its destruction with the saboteur's experience and the player's money and points
 **	click x y				queues a left click at that screen position
 **	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
-**	key <Key>			presses and releases that key on the keyboard queue, skipping the interface; the key
-**							is a letter or digit, or a virtual-key code in decimal
-**	winkey <Key>			presses and releases that key through the game window, so the interface sees it first as it does
+**	key <Key> [ctrl|shift|alt]	presses and releases that key on the keyboard queue, skipping the interface; the key
+**							is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or
+**							digit, so Tab is written 09); the modifier words hold that key with the modifier
+**	hold <Key> [ctrl|shift|alt]	presses that key on the keyboard queue and leaves it down, as a player holding it does, until a release
+**	release <Key> [ctrl|shift|alt]	lets go of a key a hold step left down; Keyboard->Down stays false in autotests, so the held state is the queue's
+**	winkey <Key> [ctrl|shift|alt]	presses and releases that key through the game window, so the interface sees it first as it does
 **							a player's key; a one-character name is read as a letter or digit, so Backspace is written 08
+**	binding <Key> [Double|Hold|Held]	writes the command the key's binding of that trigger runs, with the modifier words
+**	scheme <Classic|Modern>	replaces the bindings with that scheme's defaults, as the keyboard screen does when the scheme changes
+**	camera					writes the tactical position the view is centred on, in leptons
 **	wintype <text>			types the text through the game window, one character at a time, each as a press, its text event and a release
 **	alliance <house>		queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame
 **	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
@@ -228,6 +234,7 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
+#include "keybindings.h"
 #include "gamewindow.h"
 #include "keyboard.h"
 #include "loco.h"
@@ -1295,12 +1302,44 @@ static void Mod_Signature_Step(StepType const & step)
 
 
 // key <Key>: the virtual-key code of a single letter or digit, or the decimal code given.
+// The first word of a key step's argument: a letter, or a virtual-key code in decimal.
 static int Key_Code(std::string const & name)
 {
-	if (name.size() == 1) {
-		return(std::toupper((unsigned char)name[0]));
+	std::string const word = name.substr(0, name.find_first_of(" \t"));
+	if (word.size() == 1) {
+		return(std::toupper((unsigned char)word[0]));
 	}
-	return(std::atoi(name.c_str()));
+	return(std::atoi(word.c_str()));
+}
+
+
+// The modifier words after the key of a key step, such as "ctrl" in "49 ctrl", as the window's modifier bits.
+static int Key_Modifiers(std::string const & argument)
+{
+	int modifiers = 0;
+	std::size_t const first = argument.find_first_of(" \t");
+	std::string const rest = (first == std::string::npos) ? std::string() : argument.substr(first);
+	if (rest.find("ctrl") != std::string::npos) modifiers |= WINDOW_MOD_CTRL;
+	if (rest.find("shift") != std::string::npos) modifiers |= WINDOW_MOD_SHIFT;
+	if (rest.find("alt") != std::string::npos) modifiers |= WINDOW_MOD_ALT;
+	return(modifiers);
+}
+
+
+// The trigger word after the key of a binding step, such as "Double"; Press when none is given.
+static HotkeyTrigger Binding_Trigger(std::string const & argument)
+{
+	HotkeyTrigger trigger = HOTKEY_PRESS;
+	std::size_t const first = argument.find_first_of(" \t");
+	std::string const rest = (first == std::string::npos) ? std::string() : argument.substr(first);
+	char const * const names[] = { "Double", "Hold", "Held" };
+	HotkeyTrigger const found[] = { HOTKEY_DOUBLE, HOTKEY_HOLD, HOTKEY_HELD };
+	for (int index = 0; index < 3; index++) {
+		if (rest.find(names[index]) != std::string::npos) {
+			trigger = found[index];
+		}
+	}
+	return(trigger);
 }
 
 
@@ -1832,10 +1871,50 @@ void Run(StepType const & step)
 	if (step.Command == "key") {
 		WindowEvent event;
 		event.VirtualKey = Key_Code(step.Argument);
+		event.Modifiers = Key_Modifiers(step.Argument);
 		event.Type = WINDOW_EVENT_KEY_DOWN;
 		Keyboard->Handle_Window_Event(event);
 		event.Type = WINDOW_EVENT_KEY_UP;
 		Keyboard->Handle_Window_Event(event);
+		return;
+	}
+
+	// hold <Key> / release <Key>: the press or the release alone, so the key stays down between steps as a held key does.
+	if (step.Command == "hold" || step.Command == "release") {
+		WindowEvent event;
+		event.VirtualKey = Key_Code(step.Argument);
+		event.Modifiers = Key_Modifiers(step.Argument);
+		event.Type = (step.Command == "hold") ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
+		Keyboard->Handle_Window_Event(event);
+		return;
+	}
+
+	// binding <key> [Press|Double|Hold|Held]: the command the key's binding of that trigger runs, with the key's modifier words.
+	if (step.Command == "binding") {
+		int const mods = Key_Modifiers(step.Argument);
+		int const key = Key_Code(step.Argument) | ((mods & WINDOW_MOD_SHIFT) != 0 ? WWKEY_SHIFT_BIT : 0)
+			| ((mods & WINDOW_MOD_CTRL) != 0 ? WWKEY_CTRL_BIT : 0) | ((mods & WINDOW_MOD_ALT) != 0 ? WWKEY_ALT_BIT : 0);
+		HotkeyTrigger const trigger = Binding_Trigger(step.Argument);
+		CommandClass const * command = (trigger == HOTKEY_PRESS) ? HotkeyCommands[key] : HotkeyTriggered[key * 4 + (int)trigger];
+		DebugString("AUTOTEST   binding %d %s %s\n", key, Hotkey_Trigger_Name(trigger), command != NULL ? command->Get_Unique_Name() : "none");
+		return;
+	}
+
+	// scheme <Classic|Modern>: replaces the bindings with that scheme's defaults, as the keyboard screen does when it changes the scheme.
+	if (step.Command == "scheme") {
+		KeyboardScheme scheme = KEYBOARD_SCHEME_CLASSIC;
+		Keyboard_Scheme_From_Name(step.Argument.substr(0, step.Argument.find_first_of(" \t")), scheme);
+		HotkeyScheme = scheme;
+		HotkeyBindings = Scheme_Hotkeys(scheme);
+		Apply_Hotkeys();
+		DebugString("AUTOTEST   scheme %s bindings %d\n", Keyboard_Scheme_Name(scheme), (int)HotkeyBindings.size());
+		return;
+	}
+
+	// camera: writes the tactical position the view is centred on, in leptons.
+	if (step.Command == "camera") {
+		Point2D const position = TacticalMap->Get_Tactical_Position();
+		DebugString("AUTOTEST   camera %d,%d\n", position.X, position.Y);
 		return;
 	}
 
@@ -1844,6 +1923,7 @@ void Run(StepType const & step)
 	if (step.Command == "winkey") {
 		WindowEvent event;
 		event.VirtualKey = Key_Code(step.Argument);
+		event.Modifiers = Key_Modifiers(step.Argument);
 		event.Type = WINDOW_EVENT_KEY_DOWN;
 		Game_Window_Handle_Event(event);
 		event.Type = WINDOW_EVENT_KEY_UP;
@@ -3890,7 +3970,9 @@ bool AutoTest_Load(char const * filename)
 			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
 			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
 			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
-			|| std::strcmp(command, "wintype") == 0) {
+			|| std::strcmp(command, "wintype") == 0 || std::strcmp(command, "key") == 0 || std::strcmp(command, "winkey") == 0
+			|| std::strcmp(command, "hold") == 0 || std::strcmp(command, "release") == 0
+			|| std::strcmp(command, "binding") == 0 || std::strcmp(command, "scheme") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);

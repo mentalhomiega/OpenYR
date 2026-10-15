@@ -659,6 +659,62 @@ int FootClass::Do_MISSION_MOVE(void)
 
 
 /// <summary>
+/// Handles the attack-move state machine. The unit travels to its destination, breaks off to engage a
+/// threat it can reach, and resumes travel to the same destination once that target is gone.
+/// </summary>
+/// <returns>The delay in game frames before this mission should be processed again.</returns>
+int FootClass::Do_MISSION_ATTACK_MOVE(void)
+{
+	enum {
+		ATTACK_MOVE_TRAVEL,		/// travelling; a threat within reach is taken
+		ATTACK_MOVE_ENGAGE		/// fighting the target until it is gone or out of reach
+	};
+
+	switch (Status) {
+
+		case ATTACK_MOVE_TRAVEL: {
+			AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
+			ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
+			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
+				ArchiveTarget = NavCom;
+				Assign_Destination(NULL);
+				Assign_Target(target);
+				Status = ATTACK_MOVE_ENGAGE;
+				return(1);
+			}
+			if (NavCom == NULL && !Locomotion->Is_Moving()) {
+				Enter_Idle_Mode();
+				return(1);
+			}
+			break;
+		}
+
+		case ATTACK_MOVE_ENGAGE: {
+			ObjectClass * optr = (TarCom != NULL) ? TarCom->As_ObjectClass() : NULL;
+			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
+				Approach_Target();
+				if (TarCom != NULL) {
+					break;
+				}
+			}
+
+			// The target is gone or out of reach, so travel resumes toward the destination the unit had.
+			Assign_Target(NULL);
+			Status = ATTACK_MOVE_TRAVEL;
+			if (ArchiveTarget == NULL) {
+				Enter_Idle_Mode();
+				return(1);
+			}
+			Assign_Destination(ArchiveTarget);
+			ArchiveTarget = NULL;
+			return(1);
+		}
+	}
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+/// <summary>
 /// Handles the patrol mission state machine. The unit scans for threats while
 /// traveling, breaks off to engage any threat it can reach, then returns to
 /// its patrol point or resumes its archived travel destination.

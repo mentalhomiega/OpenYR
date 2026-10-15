@@ -1,0 +1,19 @@
+; The controls screen: Options, then Keyboard, shown at the stock size with the command list, the editor and the
+; scheme, search and category controls. The shot lands in the folder -ShotDir names.
+; Run from the workspace root, once per menu style and size, with -Menus:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/controls-screen.txt -Menus -MenuStyle Modern -Width 640 -Height 480 -Seconds 90 -ShotDir "E:\Claude ra2 decomp\shots\controls"
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-keyboard
+ui wait 1500
+ui box scheme
+ui box categories
+ui box search
+ui box reset-category
+ui box reset-all
+ui box ok
+ui box cancel
+ui shot controls-modern-640
+ui quit

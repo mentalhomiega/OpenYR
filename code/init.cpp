@@ -57,6 +57,7 @@
 #include "always.h"
 
 #include "init.h"
+#include "sidebargrid.h"
 #include "rulescheck.h"
 #include "rulesreload.h"
 
@@ -117,6 +118,8 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "hotkeytiming.h"
+#include "keybindings.h"
 #include "keybinddefaults.h"
 #include "radbeam.h"
 #include "egos.h"
@@ -140,6 +143,7 @@
 #include "ionblast.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
+#include "windowevent.hh"
 #include "language/language.h"
 #include "laser.h"
 #include "light.h"
@@ -221,6 +225,7 @@
 #include "scrnsel.hh"
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <conio.h>
 #include <ctime>
@@ -4380,6 +4385,91 @@ class OptionsCommandClass : public CommandClass
 };
 
 
+// Shows the next sidebar tab after the one shown that has something to build. Nothing happens when no other tab has.
+class NextSidebarTabCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("NextSidebarTab");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Next sidebar tab");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Shows the next sidebar tab that has something to build.");
+		}
+
+		virtual void Execute(void) const {
+			for (int step = 1; step < SidebarClass::COLUMNS; step++) {
+				int const tab = (Map.ActiveTab + step) % SidebarClass::COLUMNS;
+				if (Map.Column[tab].BuildableCount > 0) {
+					Show_Sidebar_Tab(tab);
+					return;
+				}
+			}
+		}
+};
+
+
+// Arms an attack-move: the next left release on the map orders the selected units to attack-move to where it is.
+class AttackMoveCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("AttackMove");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Attack move");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Makes the next click on the ground an attack-move order for the selected units.");
+		}
+
+		virtual void Execute(void) const {
+			AttackMoveArmed = true;
+		}
+};
+
+
+// A modifier the player holds. The mouse commands test whether its key is down, so the binding does nothing when it runs.
+class HeldModifierCommandClass : public CommandClass
+{
+	public:
+		HeldModifierCommandClass(char const * name, char const * display, char const * description) :
+			Name(name),
+			Display(display),
+			Description(description)
+		{
+		}
+
+		virtual char const * Get_Unique_Name(void) const {
+			return(Name);
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return(Display);
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_INTERFACE));
+		}
+		virtual char const * Get_Description(void) const {
+			return(Description);
+		}
+		virtual void Execute(void) const {
+		}
+
+	private:
+		char const * Name;
+		char const * Display;
+		char const * Description;
+};
+
+
 class ScrollNCommandClass : public CommandClass
 {
 	public:
@@ -6565,15 +6655,13 @@ class BeaconDeleteCommandClass : public CommandClass
 /// </summary>
 static void Claim_Free_Key(KeyNumType key, CommandClass const * command)
 {
-	if (HotkeyCommands.Is_Present(key)) {
-		return;
-	}
-	for (int index = 0; index < HotkeyCommands.Count(); index++) {
-		if (HotkeyCommands.Fetch_By_Position(index) == command) {
+	std::string const name = command->Get_Unique_Name();
+	for (HotkeyEntry const & entry : HotkeyBindings) {
+		if (entry.Key == key || entry.Command == name) {
 			return;
 		}
 	}
-	HotkeyCommands.Add_Index(key, command);
+	HotkeyBindings.push_back(HotkeyEntry{ name, key, 0, HOTKEY_PRESS });
 }
 
 
@@ -6635,6 +6723,13 @@ static void Init_Commands(void)
 	AllCommands.Add(new RSidebarPageDownCommandClass);
 
 	AllCommands.Add(new StructureTabCommandClass);
+	AllCommands.Add(new NextSidebarTabCommandClass);
+	AllCommands.Add(new AttackMoveCommandClass);
+	AllCommands.Add(new HeldModifierCommandClass("ForceFire", "Force fire", "Hold to fire on a unit or the ground."));
+	AllCommands.Add(new HeldModifierCommandClass("ForceMove", "Force move", "Hold to move onto an occupied cell."));
+	AllCommands.Add(new HeldModifierCommandClass("SelectModifier", "Add to selection", "Hold to add or remove units from the selection."));
+	AllCommands.Add(new HeldModifierCommandClass("QueueMove", "Queue move", "Hold to queue a move after the current order."));
+	AllCommands.Add(new HeldModifierCommandClass("GridBuildModifier", "Grid build modifier", "Hold, then press Q W E R, A S D F or Z X C V to start the sidebar cameos in that order."));
 	AllCommands.Add(new DefenseTabCommandClass);
 	AllCommands.Add(new InfantryTabCommandClass);
 	AllCommands.Add(new UnitTabCommandClass);
@@ -6798,15 +6893,9 @@ static void Init_Commands(void)
 
 	Init_Hotkeys();
 
-	if (HotkeyCommands.Is_Present(KN_DELETE)) {
-		HotkeyCommands.Remove_Index(KN_DELETE);
-	}
-	HotkeyCommands.Add_Index(KN_DELETE, delwpcmd);
-
-	if (HotkeyCommands.Is_Present(KN_ESC)) {
-		HotkeyCommands.Remove_Index(KN_ESC);
-	}
-	HotkeyCommands.Add_Index(KN_ESC, optcmd);
+	// The delete and escape keys are claimed afterwards, so that no keyboard file can take them away from the player.
+	Hotkey_Assign(HotkeyBindings, "DeleteWaypoint", 0, KN_DELETE, HOTKEY_PRESS, true);
+	Hotkey_Assign(HotkeyBindings, "Options", 0, KN_ESC, HOTKEY_PRESS, true);
 
 	Claim_Free_Key(KN_RETURN, chatallcmd);
 	Claim_Free_Key((KeyNumType)(KN_R | KN_CTRL_BIT | KN_SHIFT_BIT), reloadcmd);
@@ -6827,64 +6916,337 @@ static void Init_Commands(void)
 	Claim_Free_Key((KeyNumType)(KN_E | KN_CTRL_BIT | KN_SHIFT_BIT), debugpromotecmd);
 	Claim_Free_Key((KeyNumType)(KN_D | KN_CTRL_BIT | KN_SHIFT_BIT), debugdestroycmd);
 	Claim_Free_Key((KeyNumType)(KN_F | KN_CTRL_BIT | KN_SHIFT_BIT), debugfastforwardcmd);
+
+	Apply_Hotkeys();
+}
+
+
+// The timing of the Double, Hold and Held triggers, and the bindings they fire.
+static HotkeyTimingClass HotkeyTiming;
+
+// The keys the grid build modifier is bound to, one for each slot; KN_NONE when a slot has none.
+static KeyNumType GridModifierKeys[HOTKEY_SLOT_COUNT] = { KN_NONE, KN_NONE };
+
+
+/// <summary>
+/// Returns the HotkeyTriggered index of the key with the trigger.
+/// </summary>
+static int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger)
+{
+	return(key * 4 + (int)trigger);
 }
 
 
 /// <summary>
-/// Binds the game commands to the keys named in the keyboard file, KEYBOARDMD.INI by default.
-/// A file that cannot be loaded gives each command its default key. A file from an older build
-/// is upgraded to the current defaults in memory, and is rewritten only when the keyboard
-/// dialog saves it.
+/// Returns the command with the unique name, or NULL when no command has it.
+/// </summary>
+static CommandClass const * Command_Named(std::string const & name)
+{
+	for (int index = 0; index < AllCommands.Count(); index++) {
+		if (name == AllCommands[index]->Get_Unique_Name()) {
+			return(AllCommands[index]);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
+/// Returns whether any binding, of any trigger, uses the key.
+/// </summary>
+static bool Key_Has_Binding(int key)
+{
+	return(HotkeyCommands.Is_Present(key)
+		|| HotkeyTriggered.Is_Present(Hotkey_Trigger_Index(key, HOTKEY_DOUBLE))
+		|| HotkeyTriggered.Is_Present(Hotkey_Trigger_Index(key, HOTKEY_HOLD))
+		|| HotkeyTriggered.Is_Present(Hotkey_Trigger_Index(key, HOTKEY_HELD)));
+}
+
+
+/// <summary>
+/// Runs the command of each fired binding, in the order given.
+/// </summary>
+static void Run_Hotkey_Fires(std::vector<HotkeyTimingClass::Fire> const & fires)
+{
+	for (HotkeyTimingClass::Fire const & fire : fires) {
+		CommandClass const * command = (fire.Trigger == HOTKEY_PRESS) ? HotkeyCommands[fire.Key] : HotkeyTriggered[Hotkey_Trigger_Index(fire.Key, fire.Trigger)];
+		if (command != NULL) {
+			command->Execute();
+		}
+	}
+}
+
+
+/// <summary>
+/// Gives the keyboard identifier of the held binding in the slot, or KN_NONE when the command has none there.
+/// </summary>
+static KeyNumType Held_Key_Of(char const * command, int slot)
+{
+	for (HotkeyEntry const & entry : HotkeyBindings) {
+		if (entry.Command == command && entry.Slot == slot && entry.Trigger == HOTKEY_HELD) {
+			return((KeyNumType)entry.Key);
+		}
+	}
+	return(KN_NONE);
+}
+
+
+/// <summary>
+/// Turns the keyboard bindings into the tables the game reads: the press and trigger commands, the
+/// trigger timing, and the modifier keys the mouse commands test. A binding whose command does not
+/// exist is skipped.
+/// </summary>
+void Apply_Hotkeys(void)
+{
+	struct KeyTriggers
+	{
+		bool Press = false;
+		bool Doubled = false;
+		bool Hold = false;
+		bool Held = false;
+	};
+
+	std::map<int, KeyTriggers> keys;
+	HotkeyCommands.Clear();
+	HotkeyTriggered.Clear();
+
+	for (HotkeyEntry const & entry : HotkeyBindings) {
+		CommandClass const * command = Command_Named(entry.Command);
+		if (command == NULL) {
+			continue;
+		}
+
+		KeyTriggers & triggers = keys[entry.Key];
+		switch (entry.Trigger) {
+			case HOTKEY_DOUBLE:
+				HotkeyTriggered.Add_Index(Hotkey_Trigger_Index(entry.Key, HOTKEY_DOUBLE), command);
+				triggers.Doubled = true;
+				break;
+
+			case HOTKEY_HOLD:
+				HotkeyTriggered.Add_Index(Hotkey_Trigger_Index(entry.Key, HOTKEY_HOLD), command);
+				triggers.Hold = true;
+				break;
+
+			case HOTKEY_HELD:
+				HotkeyTriggered.Add_Index(Hotkey_Trigger_Index(entry.Key, HOTKEY_HELD), command);
+				triggers.Held = true;
+				break;
+
+			default:
+				HotkeyCommands.Add_Index(entry.Key, command);
+				triggers.Press = true;
+				break;
+		}
+	}
+
+	HotkeyTiming.Clear();
+	HotkeyTiming.Set_Timing(HotkeyDoublePressMs, HotkeyHoldMs, HOTKEY_HELD_REPEAT_MS);
+	for (std::map<int, KeyTriggers>::const_iterator entry = keys.begin(); entry != keys.end(); ++entry) {
+		HotkeyTiming.Set_Triggers(entry->first, entry->second.Press, entry->second.Doubled, entry->second.Hold, entry->second.Held);
+	}
+
+	// The held modifiers are read from the options, which Keyboard->Down tests. A key bound in one slot only serves both slots.
+	KeyNumType const attack_1 = Held_Key_Of("ForceFire", 0);
+	KeyNumType const attack_2 = Held_Key_Of("ForceFire", 1);
+	Options.KeyForceAttack1 = (attack_1 != KN_NONE) ? attack_1 : attack_2;
+	Options.KeyForceAttack2 = (attack_2 != KN_NONE) ? attack_2 : attack_1;
+
+	KeyNumType const move_1 = Held_Key_Of("ForceMove", 0);
+	KeyNumType const move_2 = Held_Key_Of("ForceMove", 1);
+	Options.KeyForceMove1 = (move_1 != KN_NONE) ? move_1 : move_2;
+	Options.KeyForceMove2 = (move_2 != KN_NONE) ? move_2 : move_1;
+
+	KeyNumType const select_1 = Held_Key_Of("SelectModifier", 0);
+	KeyNumType const select_2 = Held_Key_Of("SelectModifier", 1);
+	Options.KeySelect1 = (select_1 != KN_NONE) ? select_1 : select_2;
+	Options.KeySelect2 = (select_2 != KN_NONE) ? select_2 : select_1;
+
+	KeyNumType const queue_1 = Held_Key_Of("QueueMove", 0);
+	KeyNumType const queue_2 = Held_Key_Of("QueueMove", 1);
+	Options.KeyQueueMove1 = (queue_1 != KN_NONE) ? queue_1 : queue_2;
+	Options.KeyQueueMove2 = (queue_2 != KN_NONE) ? queue_2 : queue_1;
+
+	for (int slot = 0; slot < HOTKEY_SLOT_COUNT; slot++) {
+		GridModifierKeys[slot] = Held_Key_Of("GridBuildModifier", slot);
+	}
+}
+
+
+/// <summary>
+/// Returns whether the grid build modifier is held down through one of its keys.
+/// </summary>
+static bool Grid_Modifier_Held(void)
+{
+	for (KeyNumType key : GridModifierKeys) {
+		if (key != KN_NONE && HotkeyTiming.Is_Held(key)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Shows the grid keys on the sidebar cameos for as long as the grid build modifier is held.
+/// </summary>
+static void Sync_Grid_Labels(void)
+{
+	Map.Set_Grid_Labels(Grid_Modifier_Held());
+}
+
+
+/// <summary>
+/// Starts the sidebar cameo of a grid key while the grid build modifier is held. Such a key runs no other binding.
+/// </summary>
+/// <param name="key">The key the queue reports, with its modifier bits.</param>
+/// <returns>bool; Did the key start a grid build?</returns>
+bool Hotkey_Grid_Press(int key)
+{
+	if (!Grid_Modifier_Held()) {
+		return(false);
+	}
+	int const index = Sidebar_Grid_Index(key);
+	if (index < 0) {
+		return(false);
+	}
+	Map.Grid_Build(index);
+	return(true);
+}
+
+
+/// <summary>
+/// Runs the press of a key that has a binding, through the trigger timing, and reports whether it has one.
+/// A press that waits for its double-press window runs later, from Hotkey_Poll.
+/// </summary>
+/// <param name="key">The key the queue reports, with its modifier bits.</param>
+/// <returns>bool; Does the key have a binding?</returns>
+bool Hotkey_Route(int key)
+{
+	if (!Key_Has_Binding(key)) {
+		return(false);
+	}
+	Run_Hotkey_Fires(HotkeyTiming.Press(key, timeGetTime()));
+	Sync_Grid_Labels();
+	return(true);
+}
+
+
+/// <summary>
+/// Runs the bindings that a key release completes, such as a hold that ends as a tap.
+/// </summary>
+/// <param name="key">The key whose press was released, with or without its modifier bits.</param>
+void Hotkey_Release(int key)
+{
+	Run_Hotkey_Fires(HotkeyTiming.Release(key));
+	Sync_Grid_Labels();
+}
+
+
+/// <summary>
+/// Runs the bindings that fall due now: a press whose double-press window has ended, a hold that
+/// reached its time, and a held key that repeats. The game calls it every frame it reads input.
+/// </summary>
+void Hotkey_Poll(void)
+{
+	Run_Hotkey_Fires(HotkeyTiming.Poll(timeGetTime()));
+}
+
+
+/// <summary>
+/// Drops the presses that wait and the keys that are down, for when the game stops reading input.
+/// </summary>
+void Hotkey_Reset_Pending(void)
+{
+	HotkeyTiming.Reset();
+	Sync_Grid_Labels();
+}
+
+
+/// <summary>
+/// Runs the binding of a mouse wheel step with the modifiers held, when one exists. The wheel's built-in
+/// action runs only when no binding takes the step.
+/// </summary>
+/// <param name="delta">Positive for a step up, negative for a step down.</param>
+/// <param name="modifiers">The window's modifier bits, WINDOW_MOD_SHIFT and the rest.</param>
+/// <returns>bool; Did a binding take the step?</returns>
+bool Hotkey_Wheel(int delta, int modifiers)
+{
+	int key = (delta > 0) ? VK_WHEEL_UP : VK_WHEEL_DOWN;
+	if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
+		key |= WWKEY_SHIFT_BIT;
+	}
+	if ((modifiers & WINDOW_MOD_CTRL) != 0) {
+		key |= WWKEY_CTRL_BIT;
+	}
+	if ((modifiers & WINDOW_MOD_ALT) != 0) {
+		key |= WWKEY_ALT_BIT;
+	}
+	if (!Key_Has_Binding(key)) {
+		return(false);
+	}
+	Hotkey_Route(key);
+	Hotkey_Release(key);
+	return(true);
+}
+
+
+/// <summary>
+/// Reads the bindings from the keyboard file, KEYBOARDMD.INI by default. A file that cannot be loaded
+/// gives the Classic bindings. A file from an older build is upgraded to the defaults of its scheme in
+/// memory, and the file is rewritten only when the keyboard dialog saves it. Apply_Hotkeys builds the
+/// tables from the result.
 /// </summary>
 /// <returns>bool; Was the keyboard file loaded?</returns>
-/// <remarks>The command list must already be built before calling this routine.</remarks>
+/// <remarks>The command list must already be built before the bindings are applied.</remarks>
 bool Init_Hotkeys(void)
 {
 	CCINIClass ini;
 	CCFileClass file(DeploymentConfig.KeyboardFile.c_str());
 	bool const loaded = ini.Load(file, false);
 
-	std::vector<HotkeyEntry> entries;
-	if (loaded) {
-		std::set<std::string> named;
-		for (int index = 0; index < ini.Entry_Count("Hotkey"); index++) {
-			std::string const entry = ini.Get_Entry("Hotkey", index);
-			int const id = ini.Get_Int("Hotkey", entry.c_str(), 0);
-			if (id != 0 && named.insert(entry).second) {
-				entries.push_back({ entry, id });
-			}
-		}
-		Upgrade_Hotkeys(entries, ini.Get_Int("Defaults", "Version", 1));
-	} else {
+	if (!loaded) {
 		DebugString("Unable to load %s\n", DeploymentConfig.KeyboardFile.c_str());
-		entries = Default_Hotkeys();
+		HotkeyScheme = KEYBOARD_SCHEME_CLASSIC;
+		HotkeyDoublePressMs = HOTKEY_DOUBLE_PRESS_MS;
+		HotkeyHoldMs = HOTKEY_HOLD_MS;
+		HotkeyBindings = Default_Hotkeys();
+		return(false);
 	}
 
-	HotkeyCommands.Clear();
-	for (HotkeyEntry const & entry : entries) {
-		for (int cindex = 0; cindex < AllCommands.Count(); cindex++) {
-			if (entry.Command == AllCommands[cindex]->Get_Unique_Name()) {
-				HotkeyCommands.Add_Index(entry.Key, AllCommands[cindex]);
-				break;
-			}
+	std::vector<HotkeyFileSection> sections;
+	char const * const names[] = { "Defaults", "Hotkey", "Hotkey2", "HotkeyTrigger", "HotkeyTrigger2" };
+	for (char const * name : names) {
+		HotkeyFileSection section;
+		section.Name = name;
+		for (int index = 0; index < ini.Entry_Count(name); index++) {
+			std::string const entry = ini.Get_Entry(name, index);
+			section.Lines.push_back({ entry, ini.Get_String(name, entry.c_str(), "") });
 		}
+		sections.push_back(section);
 	}
 
-	return(loaded);
+	HotkeyFile const read = Hotkey_File_Read(sections);
+	HotkeyScheme = read.Scheme;
+	HotkeyDoublePressMs = read.DoublePressMs;
+	HotkeyHoldMs = read.HoldMs;
+	HotkeyBindings = read.Entries;
+	Upgrade_Hotkeys(HotkeyBindings, read.Version, HotkeyScheme);
+	return(true);
 }
 
 
 /// <summary>
-/// Writes the current key assignments to the keyboard file with the current defaults version,
-/// so a command the file omits stays unbound when the file is read again.
+/// Writes the bindings, the scheme and the timings to the keyboard file with the current defaults
+/// version, so a command the file omits stays unbound when the file is read again.
 /// </summary>
 void Save_Hotkeys(void)
 {
 	CCINIClass ini;
-	ini.Put_Int("Defaults", "Version", KEYBOARD_DEFAULTS_VERSION);
-	for (int position = 0; position < HotkeyCommands.Count(); position++) {
-		CommandClass const * command = HotkeyCommands.Fetch_By_Position(position);
-		ini.Put_Int("Hotkey", command->Get_Unique_Name(), HotkeyCommands.Fetch_ID_By_Position(position));
+	for (HotkeyFileSection const & section : Hotkey_File_Sections(HotkeyBindings, HotkeyScheme, HotkeyDoublePressMs, HotkeyHoldMs)) {
+		for (HotkeyFileLine const & line : section.Lines) {
+			ini.Put_String(section.Name.c_str(), line.Name.c_str(), line.Value.c_str());
+		}
 	}
 
 	CDFileClass file(DeploymentConfig.KeyboardFile.c_str());

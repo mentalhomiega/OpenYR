@@ -17,6 +17,32 @@ Of the 95 Yuri's Revenge commands in the table, 72 keep the key our old builds b
 
 No OpenTS command takes a key that a Yuri's Revenge command uses by default. The table gives every default a distinct key.
 
+## Control schemes and triggers
+
+A keyboard file's `[Defaults] Scheme=` picks the defaults: Classic (Yuri's Revenge's keys, the default for a file with no scheme) or Modern. The keyboard page switches the scheme and replaces every binding with the new scheme's defaults after the player confirms. Each command has a primary and a secondary key. Each key has a trigger: `Press`, `Double`, `Hold` or `Held`. The file format is in [KEYBOARDMD.INI](/formats/keyboard-ini/).
+
+Modern differs from Classic in these bindings. Everything else is the same in both.
+
+| Key | Modern | Classic |
+| --- | --- | --- |
+| A | `AttackMove`, a press | `ToggleAlliance` |
+| V | `WaypointMode`, a press | none |
+| Home | `CenterBase`, a press; H is its secondary key | `LeftSidebarUp` |
+| End | none | `LeftSidebarDown` |
+| F10 | `Options`, the secondary key of Esc | `Taunt_6` |
+| Tab | `NextSidebarTab`, a press | map zoom (not a binding) |
+| Up, Down, Left, Right | `ScrollNorth`, `ScrollSouth`, `ScrollWest`, `ScrollEast`, each `Held` | none |
+| 1 to 9 and 0 | `TeamCenter_1` to `TeamCenter_10`, each a `Double` press of its group key | none |
+| Left and Right arrow, on release | none (the sidebar pages stay on Page Up and Page Down) | `SidebarPageUp`, `SidebarPageDown` |
+
+Modern keeps these Classic keys: Ctrl+1 to Ctrl+0 create a group, Shift adds to it, and 1 to 0 select it; Alt+1 to Alt+0 centre a group as a second key; S stops, G guards, D deploys, X scatters, Z plans; F1 to F4 jump to a bookmark and Ctrl+F1 to Ctrl+F4 store one; Space centres on the last event; Esc and F10 open the menu; Enter opens chat.
+
+The four held modifiers are the same in both schemes: `ForceFire` on Control, `ForceMove` on Alt, `SelectModifier` on Shift and `QueueMove` on Q. A `Held` binding is active while its key is down. The game reads these four keys when it applies the bindings, so the mouse commands see the key a player bound.
+
+A `Double` binding on a key with a `Press` binding makes that press wait for the double-press window, 250 ms by default. A key with only a `Press` fires at once. A `Hold` binding makes a quick tap of its key fire the press at the release, and a long press fire the hold at 400 ms. A `Held` binding fires when the key goes down and again every 40 ms while it stays down, which is how the arrow keys scroll the view.
+
+Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W, E and R tab keys and the A, S, D and X command keys.
+
 ## New command behaviour
 
 - `TypeSelect` selects the player's units on screen whose types match the selection, when the key is released within half a second. A longer press does nothing, as in gamemd.
@@ -32,7 +58,7 @@ No OpenTS command takes a key that a Yuri's Revenge command uses by default. The
 - A file with `[Defaults] Version=2` is read as saved. A command the file does not name has no key.
 - A file without that version is read as version 1, which is what the older builds wrote. Each start applies the upgrade in memory, and the file stays as it was until the keyboard dialog saves it. An entry that still holds its old key takes the current key, or loses its key when the current table gives none. A key the player set stays. A command the file does not name gets its current key when that key is free.
 - With no keyboard file, each command gets its current key.
-- The keyboard page's reset control, labelled "Reset to YR Defaults", deletes the loose file and reads the built-in defaults. "Reset to Yuri's Revenge defaults" measures about 232 px in Arial at 16 px, which leaves no room beside OK and Cancel in the row of about 440 dp; "Reset to YR Defaults" measures about 149 px. The button is 168 dp wide, and its margin keeps OK and Cancel where they were.
+- The keyboard page's "Reset category" and "Reset all" buttons change the page's bindings to the scheme's defaults. Nothing is written until OK saves them, and Cancel discards them. The reset does not delete the loose file.
 
 ## Yuri's Revenge commands
 

@@ -1,0 +1,27 @@
+; Grid build: holding the grid build modifier (Caps Lock, Modern) makes Q W E R, A S D F and Z X C V start the
+; visible sidebar cameos in reading order, as a click on the cameo does. stripfill offers the structure strip
+; twelve types, so Q starts the first one (a power plant for the Africans). V is the twelfth key and WaypointMode
+; without the modifier; with it held, V must not switch WaypointMode on, and without it, V must. The screenshot
+; is taken while the modifier is held, so the grid keys show on the cameos.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/grid-build.txt -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Exception" -Settings $'[Options]
+InterfaceStyle=Modern' -ShotDir "E:/Claude ra2 decomp/shots/controls"
+30 scheme Modern
+32 view 60 42
+35 reveal
+40 stripfill 0 12
+45 factories
+50 hold 20
+52 key 81
+54 release 20
+56 factories
+58 modes
+60 hold 20
+62 key 86
+64 release 20
+66 modes
+68 key 86
+70 modes
+90 hold 20
+92 command ScreenCapture
+94 release 20
+120 quit

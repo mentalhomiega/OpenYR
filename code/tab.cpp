@@ -711,7 +711,7 @@ void TabClass::Command_Bar_AI(KeyNumType & input)
 /// <summary>
 /// Runs a command bar button's command through the matching keyboard command. A team button
 /// makes the selection into its team while the team is empty and selects the team otherwise.
-/// Attack move and beacon have no command in this engine yet and do nothing.
+/// Beacon has no command in this engine yet and does nothing.
 /// </summary>
 void TabClass::Do_Command(CommandButtonType command)
 {
@@ -754,6 +754,10 @@ void TabClass::Do_Command(CommandButtonType command)
 		// A click toggles planning mode: the first click starts it and the next one commits the plan.
 		case COMMAND_PLANNING_MODE:
 			Map.Planning_Mode_Control(-1, -1);
+			break;
+
+		case COMMAND_ATTACK_MOVE:
+			Execute_Command("AttackMove");
 			break;
 
 		case COMMAND_CHEER:

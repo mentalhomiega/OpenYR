@@ -39,6 +39,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "fog.h"
+#include "init.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ipxmgr.h"
@@ -350,6 +351,7 @@ bool Main_Loop(void)
 		if (SpecialDialog == SDLG_NONE && GameInFocus) {
 			UIShell.Tick();
 			Map.Input(input, x, y);
+			Hotkey_Poll();
 			if (input) {
 				Keyboard_Process(input);
 			}
@@ -361,6 +363,8 @@ bool Main_Loop(void)
 			unsigned int const render_start = timeGetTime();
 			Map.Render();
 			Note_Render_Cost(timeGetTime() - render_start);
+		} else {
+			Hotkey_Reset_Pending();
 		}
 	}
 
@@ -542,11 +546,23 @@ void Keyboard_Process(KeyNumType & input)
 		}
 	}
 
-	const CommandClass * cmd = HotkeyCommands[key];
+	if ((input & WWKEY_RLS_BIT) != 0) {
 
-	if (cmd != NULL) {
+		const CommandClass * cmd = HotkeyCommands[key];
+		if (cmd != NULL) {
+			cmd->Execute();
+		}
 
-		cmd->Execute();
+		// A release also completes a hold or a tap of the key's other bindings.
+		Hotkey_Release(input & ~WWKEY_RLS_BIT);
+
+	} else if (Hotkey_Grid_Press(key)) {
+
+		// The grid build modifier is held, so the grid key starts a sidebar cameo and runs no binding.
+
+	} else if (Hotkey_Route(key)) {
+
+		// The binding ran through the trigger timing, which may hold a press until its window ends.
 
 	} else {
 

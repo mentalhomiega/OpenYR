@@ -378,6 +378,13 @@ class WWKeyboardClass
 #define VK_DOWNRIGHT VK_NEXT
 #define VK_ALT		 VK_MENU
 
+// The side mouse buttons and the mouse wheel, which a binding can use. The wheel has no virtual-key
+// code, so its two codes are unused ones.
+#define VK_XBUTTON1	 0x05
+#define VK_XBUTTON2	 0x06
+#define VK_WHEEL_UP	 0x07
+#define VK_WHEEL_DOWN	 0x0E
+
 enum KeyASCIIType {
 	//
 	// Define all the KA types as variations of the VK types.  This is

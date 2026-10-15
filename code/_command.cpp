@@ -17,4 +17,9 @@
 class CommandClass;
 
 IndexClass<int, CommandClass const *> HotkeyCommands;
+IndexClass<int, CommandClass const *> HotkeyTriggered;
 DynamicVectorClass<CommandClass const *> AllCommands;
+std::vector<HotkeyEntry> HotkeyBindings;
+KeyboardScheme HotkeyScheme = KEYBOARD_SCHEME_CLASSIC;
+unsigned int HotkeyDoublePressMs = HOTKEY_DOUBLE_PRESS_MS;
+unsigned int HotkeyHoldMs = HOTKEY_HOLD_MS;

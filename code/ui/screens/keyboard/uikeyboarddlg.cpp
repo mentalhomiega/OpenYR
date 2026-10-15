@@ -10,16 +10,10 @@
 #include "always.h"
 
 #include "_command.h"
-#include "_deploymentconfig.h"
 #include "_ui.h"
-#include "ccfile.h"
-#include "ccini.h"
-#include "cdfile.h"
 #include "command.h"
-#include "dbgprint.h"
-#include "deploymentconfig.h"
-#include "index.h"
 #include "init.h"
+#include "keybindings.h"
 #include "keyboard.h"
 #include "language/language.h"
 #include "msgbox.h"
@@ -31,25 +25,11 @@
 #include "ui/uiview.h"
 #include "vector.h"
 
+#include <algorithm>
+
 
 namespace
 {
-
-void Fetch_Bindings(std::vector<UIHotkeyBinding> & bindings)
-{
-	bindings.clear();
-
-	for (int position = 0; position < HotkeyCommands.Count(); position++) {
-		CommandClass const * command = HotkeyCommands.Fetch_By_Position(position);
-		for (int index = 0; index < AllCommands.Count(); index++) {
-			if (AllCommands[index] == command) {
-				bindings.push_back({ HotkeyCommands.Fetch_ID_By_Position(position), index });
-				break;
-			}
-		}
-	}
-}
-
 
 class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 {
@@ -59,29 +39,21 @@ class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 			return(Build_Hotkey_String((KeyNumType)key));
 		}
 
-		virtual bool Confirm_Reset(void) override
+		virtual bool Confirm(void) override
 		{
 			return(WWMessageBox()._Process(TXT_RESET_HOTKEYS, 1, TXT_YES, TXT_NO, TXT_NONE, false) == 0);
 		}
 
-		virtual void Reset(std::vector<UIHotkeyBinding> & bindings) override
+		virtual std::vector<HotkeyEntry> Defaults(int scheme) override
 		{
-			DebugString("Deleting users %s\n", DeploymentConfig.KeyboardFile.c_str());
-			CCFileClass file(DeploymentConfig.KeyboardFile.c_str());
-			file.Delete();
-			Init_Hotkeys();
-			Fetch_Bindings(bindings);
+			return(Scheme_Hotkeys((KeyboardScheme)scheme));
 		}
 
-		virtual void Save(std::vector<UIHotkeyBinding> const & bindings) override
+		virtual void Save(std::vector<HotkeyEntry> const & bindings, int scheme) override
 		{
-			HotkeyCommands.Clear();
-			for (UIHotkeyBinding const & binding : bindings) {
-				if (binding.Key != 0 && binding.Command >= 0 && binding.Command < AllCommands.Count()) {
-					HotkeyCommands.Add_Index(binding.Key, AllCommands[binding.Command]);
-				}
-			}
-
+			HotkeyBindings = bindings;
+			HotkeyScheme = (KeyboardScheme)scheme;
+			Apply_Hotkeys();
 			Save_Hotkeys();
 		}
 };
@@ -105,16 +77,25 @@ void UI_Keyboard_State(UIKeyboardState & state)
 		CommandClass const * command = AllCommands[index];
 
 		UIHotkeyCommand entry;
-		char const * category = command->Get_Category();
-		entry.Category = (category != NULL) ? category : "";
-		char const * name = command->Get_Display_Name();
-		entry.Name = (name != NULL) ? name : "";
+		entry.Name = command->Get_Unique_Name();
+		char const * display = command->Get_Display_Name();
+		entry.Display = (display != NULL && display[0] != '\0') ? display : entry.Name;
 		char const * description = command->Get_Description();
 		entry.Description = (description != NULL) ? description : "";
+		entry.Category = (int)Hotkey_Category_Of(entry.Name);
 		state.Commands.push_back(entry);
 	}
+	std::stable_sort(state.Commands.begin(), state.Commands.end(), [](UIHotkeyCommand const & a, UIHotkeyCommand const & b) {
+		return(a.Category < b.Category || (a.Category == b.Category && stricmp(a.Display.c_str(), b.Display.c_str()) < 0));
+	});
 
-	Fetch_Bindings(state.Bindings);
+	state.Categories.push_back("All");
+	for (int category = 0; category < HOTKEY_CATEGORY_COUNT; category++) {
+		state.Categories.push_back(Hotkey_Category_Name((HotkeyCategory)category));
+	}
+
+	state.Bindings = HotkeyBindings;
+	state.Scheme = (int)HotkeyScheme;
 }
 
 

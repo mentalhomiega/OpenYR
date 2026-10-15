@@ -10,125 +10,180 @@
 
 #reveal
 {
-	width: 504dp;
-	height: 339dp;
+	width: 600dp;
+	height: 424dp;
 	top: 50%;
-	margin-top: -169dp;
+	margin-top: -212dp;
 }
 
 #content
 {
-	padding: 19dp 32dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
 #title
 {
-	width: 437dp;
-	height: 18dp;
-	line-height: 17dp;
+	height: 15dp;
+	line-height: 15dp;
 	text-align: center;
+}
+
+#top-row
+{
+	display: flex;
+	margin-top: 6dp;
+	height: 40dp;
+}
+
+.field
+{
+	margin-right: 10dp;
+}
+
+#scheme-field
+{
+	width: 196dp;
+}
+
+#search-field
+{
+	width: 132dp;
+}
+
+#category-field
+{
+	width: 150dp;
+	margin-right: 0;
+}
+
+#scheme-field .caption,
+#search-field .caption,
+#category-field .caption
+{
+	height: 14dp;
+	line-height: 14dp;
+}
+
+#scheme,
+#categories
+{
+	display: block;
+	width: 100%;
+	margin-top: 3dp;
+}
+
+#search
+{
+	display: block;
+	width: 100%;
+	margin-top: 3dp;
 }
 
 #columns
 {
 	display: flex;
-	margin-top: 7dp;
+	margin-top: 8dp;
+	height: 250dp;
 }
 
 #left
 {
-	width: 207dp;
-	margin-right: 12dp;
+	width: 316dp;
+	margin-right: 10dp;
 }
 
 #right
 {
-	width: 220dp;
+	width: 208dp;
+}
+
+.head-row
+{
+	display: flex;
+	height: 14dp;
+	line-height: 14dp;
+}
+
+.head-row .cmd-head
+{
+	width: 150dp;
+}
+
+.head-row .slot-head
+{
+	width: 76dp;
+	text-align: center;
+}
+
+#commands
+{
+	margin-top: 3dp;
+	height: 232dp;
+}
+
+#commands .item
+{
+	height: 17dp;
+	line-height: 17dp;
+	padding: 0 2dp;
+}
+
+.cmd-row
+{
+	display: flex;
+	height: 17dp;
+	white-space: nowrap;
+}
+
+.cmd-name
+{
+	width: 150dp;
+	overflow: hidden;
+}
+
+.slot
+{
+	width: 76dp;
+	height: 17dp;
+	text-align: center;
+	overflow: hidden;
 }
 
 .caption
 {
 	display: block;
 	height: 15dp;
-	line-height: 17dp;
+	line-height: 15dp;
 }
 
-#right > .caption:first-child
+#editor-name
 {
-	height: 13dp;
-}
-
-.caption.tall
-{
-	margin-top: 9dp;
-	height: 18dp;
-}
-
-#right > .caption.tall
-{
-	margin-top: 9dp;
-}
-
-.value
-{
-	display: block;
-	margin-top: 6dp;
-	height: 17dp;
-	line-height: 17dp;
+	height: 16dp;
+	line-height: 16dp;
 	overflow: hidden;
-}
-
-#categories
-{
-	display: block;
-	width: 208dp;
-	margin-top: 8dp;
-}
-
-#about
-{
-	margin-top: 9dp;
-	width: 209dp;
-	height: 86dp;
-	padding-left: 10dp;
 }
 
 #description
 {
-	height: 69dp;
+	height: 60dp;
 	overflow: hidden;
 }
 
-#press
+#capture-row
 {
-	margin-top: 7dp;
-}
-
-#hotkey-row
-{
+	display: flex;
 	margin-top: 4dp;
 	height: 24dp;
-	white-space: nowrap;
 }
 
 #capture
 {
 	display: inline-block;
-	width: 121dp;
+	width: 112dp;
 	height: 24dp;
-	vertical-align: top;
 	white-space: nowrap;
 	overflow: hidden;
 	tab-index: auto;
-}
-
-#assign
-{
-	position: relative;
-	top: 2dp;
-	width: 76dp;
-	margin-left: 3dp;
-	vertical-align: top;
 }
 
 #capture span
@@ -136,29 +191,95 @@
 	focus: none;
 }
 
-#commands
+#capture .prompt
 {
-	margin-top: 10dp;
-	height: 170dp;
+	color: #8a8a8a;
 }
 
-#buttons
+#trigger
+{
+	width: 90dp;
+	margin-left: 6dp;
+}
+
+#editor-buttons
 {
 	display: flex;
 	margin-top: 8dp;
 }
 
-/* Wide enough for "Reset to YR Defaults"; the margin keeps OK and Cancel where they were. */
-#reset
+#assign
 {
-	width: 168dp;
-	margin-right: 79dp;
+	width: 96dp;
+	margin-right: 6dp;
+}
+
+#clear
+{
+	width: 96dp;
+}
+
+#conflict
+{
+	margin-top: 10dp;
+}
+
+#conflict-text
+{
+	height: 46dp;
+	overflow: hidden;
+}
+
+#conflict-buttons
+{
+	display: flex;
+	margin-top: 4dp;
+}
+
+#swap
+{
+	width: 96dp;
+	margin-right: 6dp;
+}
+
+#dismiss
+{
+	width: 96dp;
+}
+
+#notice
+{
+	margin-top: 4dp;
+	height: 14dp;
+	line-height: 14dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 6dp;
+}
+
+#reset-category
+{
+	width: 150dp;
+	white-space: nowrap;
+	margin-right: 8dp;
+}
+
+#reset-all
+{
+	width: 110dp;
+	margin-right: 0;
 }
 
 #ok
 {
 	width: 76dp;
-	margin-right: 40dp;
+	margin-left: 106dp;
+	margin-right: 8dp;
 }
 
 #cancel

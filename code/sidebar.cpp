@@ -75,6 +75,7 @@
 #include "always.h"
 
 #include "sidebar.h"
+#include "sidebargrid.h"
 #include "cameopcx.h"
 
 #include "_bench.h"
@@ -201,6 +202,8 @@ ShapeButtonClass SidebarClass::StripClass::UpButton[COLUMNS];
 ShapeButtonClass SidebarClass::StripClass::DownButton[COLUMNS];
 SidebarClass::StripClass::SelectClass
 SidebarClass::StripClass::SelectButton[COLUMNS][MAX_SLOTS];
+
+bool SidebarClass::IsGridLabelShown = false;
 
 bool SidebarClass::IsToBlitSidebar = false;
 
@@ -2470,6 +2473,13 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					}
 				}
 			}
+			/*
+			**	While the grid build modifier is held, each of the first cameos shows the grid key that starts it.
+			*/
+			if (IsGridLabelShown && i < Map.Max_Visible() && i < SIDEBAR_GRID_KEY_COUNT && index < BuildableCount) {
+				char const letter[2] = { Sidebar_Grid_Letter(i), '\0' };
+				Fancy_Text_Print(letter, *SidebarSurface, cliprect, Point2D(x + 3, y + 2), Fetch_Scheme_By_Name("Yellow"), TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_8POINT));
+			}
 		}
 
 		LastSlid = Slid;
@@ -2717,6 +2727,16 @@ void SidebarClass::StripClass::SelectClass::Set_Owner(StripClass & strip, int in
 {
 	Strip = &strip;
 	Index = index;
+}
+
+
+/// <summary>
+/// Runs the left press the cameo takes from a click, for the grid build keys to start it the same way.
+/// </summary>
+void SidebarClass::StripClass::SelectClass::Press_Left(void)
+{
+	KeyNumType key = KN_NONE;
+	Action(LEFTPRESS, key);
 }
 
 
@@ -3601,6 +3621,41 @@ void SidebarClass::Flag_Strips_To_Redraw(void)
 	for (int index = 0; index < COLUMNS; index++) {
 		Column[index].Flag_To_Redraw();
 	}
+}
+
+
+/// <summary>
+/// Shows or hides the grid keys on the cameos. A change flags every strip to redraw, so the keys appear or go at once.
+/// </summary>
+/// <param name="shown">Should the keys show?</param>
+void SidebarClass::Set_Grid_Labels(bool shown)
+{
+	if (IsGridLabelShown != shown) {
+		IsGridLabelShown = shown;
+		Flag_Strips_To_Redraw();
+	}
+}
+
+
+/// <summary>
+/// Starts the cameo of the visible slot at the grid index of the active strip, as a left press on it does.
+/// </summary>
+/// <param name="index">The grid index, from 0 for the first key to 11 for the last.</param>
+void SidebarClass::Grid_Build(int index)
+{
+	if (!IsSidebarActive || PlayerPtr == NULL) {
+		return;
+	}
+
+	StripClass & strip = Column[ActiveTab];
+	if (Sidebar_Grid_Buildable(index, Max_Visible(), strip.TopIndex, strip.BuildableCount) < 0) {
+		return;
+	}
+
+	// A slot that was never given its strip, such as one added when the panel grew, must still press.
+	StripClass::SelectClass & button = StripClass::SelectButton[ActiveTab][index];
+	button.Set_Owner(strip, index);
+	button.Press_Left();
 }
 
 

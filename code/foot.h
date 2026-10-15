@@ -564,6 +564,7 @@ class FootClass : public TechnoClass
 		virtual int Do_MISSION_RETREAT(void) override;
 		virtual int Do_MISSION_ENTER(void) override;
 		virtual int Do_MISSION_MOVE(void) override;
+		virtual int Do_MISSION_ATTACK_MOVE(void) override;
 		virtual int Do_MISSION_CAPTURE(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;
 		void Hover_Attack_Lift_Off(void);
