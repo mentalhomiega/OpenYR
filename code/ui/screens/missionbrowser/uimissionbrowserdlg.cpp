@@ -116,12 +116,37 @@ UIBrowserGroupType Group_Of(CampaignClass const & campaign)
 
 
 /// <summary>
+/// Gives a mission's title. A Red Alert 2 mission takes the name MISSION.INI gives its map under UIName=, resolved
+/// through the string table, as the game names it. Any other mission, or a Red Alert 2 map that names no resolvable
+/// label, keeps the campaign's description.
+/// </summary>
+std::string Mission_Title(CampaignClass const & campaign, CCINIClass const & ra2_missions)
+{
+	if (campaign.ScenarioArchive == "RA2") {
+		std::string const label = ra2_missions.Get_String(campaign.ScenarioName, "UIName");
+		if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+			return(StringTable.Find_UTF8(label.c_str()));
+		}
+	}
+
+	std::string title = StringTable.Find_UTF8(campaign.Description);
+	return(title.empty() ? std::string(campaign.Description) : title);
+}
+
+
+/// <summary>
 /// Lists the campaigns that can be offered and the mission each starts. A campaign whose map is one list already holds is
 /// left out, so a campaign listed by two battle files appears once; a testing campaign gives way to a regular one.
 /// </summary>
 UIMissionBrowserState Mission_Browser_State(void)
 {
 	UIMissionBrowserState state;
+
+	CCINIClass ra2_missions;
+	CCFileClass ra2_file("MISSION.INI");
+	if (ra2_file.Is_Available()) {
+		ra2_missions.Load(ra2_file, false);
+	}
 
 	for (int level = 0; level < OptionsClass::MAX_DIFFICULTY_SETTING; level++) {
 		UIBrowserOption option;
@@ -143,8 +168,7 @@ UIMissionBrowserState Mission_Browser_State(void)
 		mission.Campaign = index;
 		mission.Group = Group_Of(*campaign);
 
-		std::string title = StringTable.Find_UTF8(campaign->Description);
-		mission.Title = title.empty() ? std::string(campaign->Description) : title;
+		mission.Title = Mission_Title(*campaign, ra2_missions);
 
 		if (!CCFileClass(mission.Map.c_str()).Is_Available()) {
 			mission.Playable = false;

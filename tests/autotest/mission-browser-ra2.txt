@@ -18,7 +18,8 @@ ui wait 600
 ui shot mission-browser-group-closed
 ui choose [+] Red Alert 2: Allied (12)
 ui wait 600
-ui choose Test Allied mission 1
+ui shot mission-browser-ra2-names
+ui choose Operation: Lone Guardian
 ui wait 800
 ui shot mission-browser-ra2-selected
 ui press Play
