@@ -1,0 +1,76 @@
+; Nuke sequence: a missile silo fires a nuke at 42,50. The liveanims lines count NUKETO (take-off), NUKEPUFF (the smoke of the
+; flight), NUKEBALL (the build-up on impact) and NUKEANIM (the blast), and the screen captures take the mid-flight and blast shots.
+; The 'AUTOTEST nuke' lines give the payload release and the blast build-up frames.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-nuke-visuals.txt -Width 800 -Height 600 -Seconds 200 -ShotDir "E:\Claude ra2 decomp\shots\sw-followup" -Filter "AUTOTEST   liveanims|AUTOTEST nuke|AUTOTEST   screen shake|Exception"
+20 own GAPOWR 56 40
+22 own NAMISL 60 46
+24 own E1 41 50
+35 reveal
+60 view 42 50
+62 grant NukeSpecial
+63 fire NukeSpecial 42 50
+70 liveanims NUKETO
+70 liveanims NUKEBALL
+70 liveanims NUKEANIM
+70 command ScreenCapture
+150 liveanims NUKETO
+150 liveanims NUKEBALL
+150 liveanims NUKEANIM
+150 command ScreenCapture
+250 liveanims NUKETO
+250 liveanims NUKEBALL
+250 liveanims NUKEANIM
+250 command ScreenCapture
+300 liveanims NUKETO
+300 liveanims NUKEBALL
+300 liveanims NUKEANIM
+300 command ScreenCapture
+360 liveanims NUKETO
+360 liveanims NUKEBALL
+360 liveanims NUKEANIM
+360 command ScreenCapture
+420 liveanims NUKETO
+420 liveanims NUKEBALL
+420 liveanims NUKEANIM
+420 command ScreenCapture
+460 liveanims NUKETO
+460 liveanims NUKEBALL
+460 liveanims NUKEANIM
+460 command ScreenCapture
+465 liveanims NUKETO
+465 liveanims NUKEBALL
+465 liveanims NUKEANIM
+465 command ScreenCapture
+470 liveanims NUKETO
+470 liveanims NUKEBALL
+470 liveanims NUKEANIM
+470 command ScreenCapture
+475 liveanims NUKETO
+475 liveanims NUKEBALL
+475 liveanims NUKEANIM
+475 command ScreenCapture
+480 liveanims NUKETO
+480 liveanims NUKEBALL
+480 liveanims NUKEANIM
+480 command ScreenCapture
+490 liveanims NUKETO
+490 liveanims NUKEBALL
+490 liveanims NUKEANIM
+490 command ScreenCapture
+500 liveanims NUKETO
+500 liveanims NUKEBALL
+500 liveanims NUKEANIM
+500 command ScreenCapture
+520 liveanims NUKETO
+520 liveanims NUKEBALL
+520 liveanims NUKEANIM
+520 command ScreenCapture
+550 liveanims NUKETO
+550 liveanims NUKEBALL
+550 liveanims NUKEANIM
+550 command ScreenCapture
+580 liveanims NUKETO
+580 liveanims NUKEBALL
+580 liveanims NUKEANIM
+580 command ScreenCapture
+600 quit

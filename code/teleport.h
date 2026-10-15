@@ -9,24 +9,28 @@
 
 #pragma once
 
+#include "ipiggy.h"
 #include "loco.h"
+
+#include <memory>
 
 
 /*
  * Where a teleport stands. An order is carried out the next time the locomotor is processed:
  * the object leaves its cell and is set down at the destination in that same call, and then it
- * holds still for the arrival delay. gamemd has no wait before the jump (0x7192F0, 0x719715).
- * TELEPORT_WARP_OUT (1) was an earlier pre-jump wait; it is retired and its number left unused
- * so that saved phases keep their meaning.
+ * holds still for the arrival delay. gamemd has no wait before that jump (0x7192F0, 0x719715).
+ * A chronosphere warp is the exception: TELEPORT_WARP_OUT holds the object on its cell for the
+ * chronosphere countdown (0x719973, 0x719B23) before the jump.
  */
 enum TeleportWarpPhase
 {
 	TELEPORT_IDLE = 0,
+	TELEPORT_WARP_OUT = 1,
 	TELEPORT_HOLD = 2,
 };
 
 
-class TeleportLocomotionClass : public LocomotionClass
+class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 {
 		typedef LocomotionClass BASECLASS;
 
@@ -44,6 +48,15 @@ class TeleportLocomotionClass : public LocomotionClass
 		virtual void Do_Turn(DirType dir) override;
 		virtual bool Process(void) override;
 		virtual LayerType In_Which_Layer(void) override;
+
+		// A chronosphere warp carries the object's own locomotor until the arrival hold has run out.
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
+		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
+		virtual bool Is_Ok_To_End(void) override;
+		virtual bool Is_Piggybacking(void) override {return(Piggybackee != nullptr);}
+
+		// Holds the object on its cell for countdown frames, then sets it down at to (chronosphere warps only).
+		void Begin_Chrono_Warp(Coord to, int countdown);
 
 		virtual bool Is_Stationary(void);
 
@@ -70,8 +83,14 @@ class TeleportLocomotionClass : public LocomotionClass
 		int WarpPhase;
 		int WarpEnd;
 
+		/*
+		 * The object's own locomotor while a chronosphere warp carries it. Null when nothing is carried.
+		 */
+		std::unique_ptr<ILocomotion> Piggybackee;
+
 		int Warp_Distance(Coord const & to) const;
 		Coord Landing_Spot(Coord const & dest);
 		int Warp_Delay(Coord const & to) const;
 		void Start_Warp(void);
+		void Land_Chrono_Warp(void);
 };

@@ -1,6 +1,6 @@
 ---
 key: ChronoDelay
-summary: Reserved for the chronosphere's post-warp countdown. This build does not read it.
+summary: Frames a unit moved by a chronosphere waits on its cell before it lands.
 see_also: ["system:tiberium", "Teleporter", "ChronoTrigger", "ChronoDistanceFactor", "ChronoMinimumDelay", "ChronoRangeMinimum"]
 when_omitted:
   kind: value
@@ -12,6 +12,6 @@ when_omitted:
 ChronoDelay=60
 ```
 
-The hold after a [`Teleporter`](/keys/teleporter/) lands is set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/), not by this key. gamemd stores this value in the object's countdown on its chronosphere path (0x719973 to 0x719983), which this build does not model.
+A unit that a chronosphere moves stays on its cell under [`WarpOut`](/keys/warpout/) for this many frames, then lands with [`WarpIn`](/keys/warpin/). gamemd stores this value in the unit's countdown on the chronosphere path (0x719973 to 0x719983), and the warp-out timer counts it down (0x719B23).
 
-This build's teleport locomotor never reads this key, so changing it has no effect here.
+The hold after a [`Teleporter`](/keys/teleporter/) lands is set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/), not by this key. A teleporter's own warp does not wait for this key.

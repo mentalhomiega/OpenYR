@@ -1,0 +1,40 @@
+; Psychic Dominator, paradrop and spy plane visuals. PDFXCLD (the giant head) and PDFXLOC (the ring on the ground) are counted
+; after the dominator fires. The planes lines list each aircraft: PDPLANE for the paradrop and SPYP for the spy plane.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-psydom-planes.txt -Width 800 -Height 600 -Seconds 150 -ShotDir "E:\Claude ra2 decomp\shots\sw-followup" -Filter "AUTOTEST   liveanims|AUTOTEST   plane|AUTOTEST psy|AUTOTEST paradrop|AUTOTEST spy|Exception"
+20 own GAPOWR 56 40
+24 own E1 41 50
+35 reveal
+60 view 40 30
+62 grant PsychicDominatorSpecial
+64 fire PsychicDominatorSpecial 40 30
+66 liveanims PDFXCLD
+66 liveanims PDFXLOC
+66 command ScreenCapture
+75 liveanims PDFXCLD
+75 liveanims PDFXLOC
+75 command ScreenCapture
+90 liveanims PDFXCLD
+90 liveanims PDFXLOC
+90 command ScreenCapture
+110 liveanims PDFXCLD
+110 liveanims PDFXLOC
+110 command ScreenCapture
+130 liveanims PDFXCLD
+130 liveanims PDFXLOC
+130 command ScreenCapture
+160 liveanims PDFXCLD
+160 liveanims PDFXLOC
+160 command ScreenCapture
+200 grant ParaDropSpecial
+202 fire ParaDropSpecial 40 30
+205 planes
+215 planes
+230 planes
+250 planes
+270 grant SpyPlaneSpecial
+272 fire SpyPlaneSpecial 40 30
+275 planes
+290 planes
+310 planes
+330 planes
+340 quit
