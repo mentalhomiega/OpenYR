@@ -39,7 +39,8 @@ struct HotkeyEntry
 // The version a keyboard file records in its [Defaults] section. A file without that section is
 // version 1, the version the builds before it wrote. Version 2 files hold the bindings of the
 // version 2 builds. Version 3 adds the slots, the triggers, the control scheme and the timings.
-int const KEYBOARD_DEFAULTS_VERSION = 3;
+// Version 4 adds the grid build modifier of the Modern scheme.
+int const KEYBOARD_DEFAULTS_VERSION = 4;
 
 // The control schemes a keyboard file can name. Classic is Yuri's Revenge's keys; Modern is the
 // set of current RTS conventions. A file with no scheme is Classic.
@@ -48,9 +49,15 @@ enum KeyboardScheme {
 	KEYBOARD_SCHEME_MODERN = 1,
 };
 
-// The timing of the triggers, in milliseconds.
+// The timing of the triggers, in milliseconds. A keyboard file and the controls screen both keep the
+// double-press and hold windows within their range; the controls screen moves them by one step.
 int const HOTKEY_DOUBLE_PRESS_MS = 250;
+int const HOTKEY_DOUBLE_PRESS_MIN_MS = 150;
+int const HOTKEY_DOUBLE_PRESS_MAX_MS = 500;
 int const HOTKEY_HOLD_MS = 400;
+int const HOTKEY_HOLD_MIN_MS = 200;
+int const HOTKEY_HOLD_MAX_MS = 800;
+int const HOTKEY_TIMING_STEP_MS = 25;
 int const HOTKEY_HELD_REPEAT_MS = 40;
 
 // The name a keyboard file writes for a trigger, such as "Double".
@@ -71,7 +78,8 @@ std::vector<HotkeyEntry> Default_Hotkeys(void);
 
 // Returns the bindings of the Modern scheme. It follows Default_Hotkeys except where the scheme
 // names a different key: attack-move, waypoint mode, the arrow keys for scrolling, the Home key for the
-// base, a double press of a group number for its centre, and F10 for the menu.
+// base, a double press of a group number for its centre, F10 for the menu, and Caps Lock held for the
+// grid build keys. Classic leaves the grid modifier unbound.
 std::vector<HotkeyEntry> Modern_Hotkeys(void);
 
 // Returns the bindings of a scheme, as Default_Hotkeys or Modern_Hotkeys does.

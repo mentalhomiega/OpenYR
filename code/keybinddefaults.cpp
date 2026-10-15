@@ -329,6 +329,9 @@ std::vector<HotkeyEntry> const Modern_Table = {
 	{ "ForceMove", 18, 0, HOTKEY_HELD },
 	{ "SelectModifier", 16, 0, HOTKEY_HELD },
 	{ "QueueMove", 81, 0, HOTKEY_HELD },
+
+	// Caps Lock is the one held key neither scheme uses. Holding it lets the grid keys build from the sidebar.
+	{ "GridBuildModifier", 20, 0, HOTKEY_HELD },
 };
 
 
@@ -343,6 +346,16 @@ int Find_Key(std::vector<HotkeyEntry> const & table, std::string const & command
 		}
 	}
 	return(0);
+}
+
+
+/// <summary>
+/// Returns whether a version 4 build added the held binding of the command. A version 3 file predates these
+/// bindings only; the held keys it names, including any the player removed, are kept as saved.
+/// </summary>
+bool Added_In_Version_4(std::string const & command)
+{
+	return(command == "GridBuildModifier");
 }
 
 
@@ -445,10 +458,14 @@ void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std
 		return;
 	}
 
-	// A version 2 file predates the Held entries. Its other bindings are kept as saved.
+	// A version 2 file predates the Held entries, and a version 3 file predates the grid modifier. Its other
+	// bindings are kept as saved.
 	if (version >= 2) {
 		for (HotkeyEntry const & entry : current) {
 			if (entry.Trigger != HOTKEY_HELD || Names_Command(entries, entry.Command)) {
+				continue;
+			}
+			if (version >= 3 && !Added_In_Version_4(entry.Command)) {
 				continue;
 			}
 			bool taken = false;

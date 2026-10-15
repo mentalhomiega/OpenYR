@@ -334,6 +334,68 @@ void Test_File(void)
 }
 
 
+void Test_Grid_Modifier(void)
+{
+	// Caps Lock holds the grid build keys in Modern only; Classic leaves it unbound.
+	int const KEY_CAPS = 20;
+	Check(Key_Of(Modern_Hotkeys(), "GridBuildModifier") == KEY_CAPS && Find(Modern_Hotkeys(), "GridBuildModifier")->Trigger == HOTKEY_HELD, "Modern holds Caps Lock for the grid build keys");
+	Check(Find(Default_Hotkeys(), "GridBuildModifier") == nullptr, "Classic leaves the grid build modifier unbound");
+	Check(Hotkey_Category_Of("GridBuildModifier") == HOTKEY_CATEGORY_PRODUCTION, "the grid build modifier is listed under production");
+
+	// A version 3 file predates the grid modifier, so a Modern one gains it when no binding holds the key.
+	std::vector<HotkeyFileSection> const v3_modern = {
+		{ "Defaults", { { "Version", "3" }, { "Scheme", "Modern" } } },
+		{ "Hotkey", { { "CenterBase", "36" } } },
+	};
+	HotkeyFile v3 = Hotkey_File_Read(v3_modern);
+	std::vector<HotkeyEntry> upgraded = v3.Entries;
+	Upgrade_Hotkeys(upgraded, v3.Version, v3.Scheme);
+	Check(Key_Of(upgraded, "GridBuildModifier") == KEY_CAPS && Find(upgraded, "GridBuildModifier")->Trigger == HOTKEY_HELD, "a version 3 Modern file gains the grid build modifier");
+	Check(Key_Of(upgraded, "CenterBase") == 36, "a version 3 Modern file keeps the bindings it names");
+	Check(Hotkey_Bindings_Valid(upgraded), "the upgraded version 3 file binds each key once per trigger");
+
+	// A version 3 file that lacks a held modifier the player removed keeps it removed.
+	std::vector<HotkeyEntry> removed = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(removed, 3, KEYBOARD_SCHEME_MODERN);
+	Check(Find(removed, "ForceFire") == nullptr && Find(removed, "ForceMove") == nullptr, "a version 3 file does not regain the held modifiers it omits");
+
+	// A version 3 Classic file gains nothing, and a version 4 file is taken as saved.
+	std::vector<HotkeyEntry> classic = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(classic, 3, KEYBOARD_SCHEME_CLASSIC);
+	Check(Find(classic, "GridBuildModifier") == nullptr && classic.size() == 1, "a version 3 Classic file gains no grid modifier");
+	std::vector<HotkeyEntry> current = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(current, KEYBOARD_DEFAULTS_VERSION, KEYBOARD_SCHEME_MODERN);
+	Check(current.size() == 1, "a version 4 file gets no defaults for the commands it omits");
+
+	// A grid modifier key that a version 3 file binds to another command is left alone.
+	std::vector<HotkeyEntry> taken = { { "Options", KEY_CAPS } };
+	Upgrade_Hotkeys(taken, 3, KEYBOARD_SCHEME_MODERN);
+	Check(Key_Of(taken, "Options") == KEY_CAPS && Find(taken, "GridBuildModifier") != nullptr, "a version 3 file keeps a press of the modifier key and adds the held one");
+}
+
+
+void Test_Timing_Ranges(void)
+{
+	// The file keeps the double-press window within 150 to 500 and the hold within 200 to 800; other values give the default.
+	std::vector<HotkeyFileSection> const low = { { "Defaults", { { "DoublePressMs", "149" }, { "HoldMs", "199" } } } };
+	HotkeyFile below = Hotkey_File_Read(low);
+	Check(below.DoublePressMs == HOTKEY_DOUBLE_PRESS_MS && below.HoldMs == HOTKEY_HOLD_MS, "timings below their range give the defaults");
+
+	HotkeyFile at_low = Hotkey_File_Read({ { "Defaults", { { "DoublePressMs", "150" }, { "HoldMs", "200" } } } });
+	Check(at_low.DoublePressMs == 150 && at_low.HoldMs == 200, "timings at the bottom of their range are kept");
+
+	HotkeyFile at_high = Hotkey_File_Read({ { "Defaults", { { "DoublePressMs", "500" }, { "HoldMs", "800" } } } });
+	Check(at_high.DoublePressMs == 500 && at_high.HoldMs == 800, "timings at the top of their range are kept");
+
+	HotkeyFile above = Hotkey_File_Read({ { "Defaults", { { "DoublePressMs", "501" }, { "HoldMs", "801" } } } });
+	Check(above.DoublePressMs == HOTKEY_DOUBLE_PRESS_MS && above.HoldMs == HOTKEY_HOLD_MS, "timings above their range give the defaults");
+
+	std::vector<HotkeyFileSection> written = Hotkey_File_Sections(Modern_Hotkeys(), KEYBOARD_SCHEME_MODERN, 175, 650);
+	HotkeyFile round = Hotkey_File_Read(written);
+	Check(round.DoublePressMs == 175 && round.HoldMs == 650, "a timing inside its range round trips");
+}
+
+
 void Test_Timing(void)
 {
 	// A key with only a press fires at once.
@@ -509,6 +571,8 @@ int main(void)
 	Test_Search();
 	Test_Prefixes();
 	Test_File();
+	Test_Grid_Modifier();
+	Test_Timing_Ranges();
 	Test_Timing();
 
 	if (Failures != 0) {

@@ -70,7 +70,7 @@ HotkeyCategory Hotkey_Category_Of(std::string const & command)
 	if (Starts_With(command, "Sidebar") || Starts_With(command, "LeftSidebar") || Starts_With(command, "RightSidebar")
 		|| Starts_With(command, "RepeatLast") || Starts_With(command, "StructureTab") || Starts_With(command, "DefenseTab")
 		|| Starts_With(command, "InfantryTab") || Starts_With(command, "UnitTab") || Starts_With(command, "NextSidebarTab")
-		|| Starts_With(command, "TogglePower") || Starts_With(command, "ToggleRadar")) {
+		|| Starts_With(command, "TogglePower") || Starts_With(command, "ToggleRadar") || Starts_With(command, "GridBuild")) {
 		return(HOTKEY_CATEGORY_PRODUCTION);
 	}
 
@@ -331,11 +331,11 @@ bool Parse_Int(std::string const & text, int & value)
 }
 
 
-// Reads a window in milliseconds from the file, or the default when the file gives no usable number.
-unsigned int Read_Timing(std::string const * text, unsigned int fallback)
+// Reads a window in milliseconds from the file. A value outside the range, or no usable number, gives the default.
+unsigned int Read_Timing(std::string const * text, unsigned int fallback, int minimum, int maximum)
 {
 	int value = 0;
-	if (text == nullptr || !Parse_Int(*text, value) || value < 50 || value > 2000) {
+	if (text == nullptr || !Parse_Int(*text, value) || value < minimum || value > maximum) {
 		return(fallback);
 	}
 	return((unsigned int)value);
@@ -399,8 +399,8 @@ HotkeyFile Hotkey_File_Read(std::vector<HotkeyFileSection> const & sections)
 		if (scheme != nullptr) {
 			Keyboard_Scheme_From_Name(*scheme, file.Scheme);
 		}
-		file.DoublePressMs = Read_Timing(Find_Value(defaults, "DoublePressMs"), HOTKEY_DOUBLE_PRESS_MS);
-		file.HoldMs = Read_Timing(Find_Value(defaults, "HoldMs"), HOTKEY_HOLD_MS);
+		file.DoublePressMs = Read_Timing(Find_Value(defaults, "DoublePressMs"), HOTKEY_DOUBLE_PRESS_MS, HOTKEY_DOUBLE_PRESS_MIN_MS, HOTKEY_DOUBLE_PRESS_MAX_MS);
+		file.HoldMs = Read_Timing(Find_Value(defaults, "HoldMs"), HOTKEY_HOLD_MS, HOTKEY_HOLD_MIN_MS, HOTKEY_HOLD_MAX_MS);
 	}
 
 	Read_Slot(file, sections, "Hotkey", "HotkeyTrigger", 0);
