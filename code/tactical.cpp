@@ -1341,7 +1341,6 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		Draw_Placement(true);
 		Draw_Placement_Range();
 		Draw_Super_Range();
-		Draw_Super_Timers();
 		Draw_Chrono_Screen_Effect();
 		Draw_Flying_Texts();
 
@@ -4187,8 +4186,7 @@ void Tactical::Draw_Radial_Indicators(void)
 
 
 /// <summary>
-/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of
-/// the battlefield, one line each in the owner's colors, as "name  minutes:seconds", with hours
+/// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
 /// of passive houses are left out, as is a suspended weapon that is still fully uncharged in a
 /// campaign.
@@ -4197,15 +4195,17 @@ void Tactical::Draw_Super_Timers(void)
 {
 	int line = 0;
 
+	// The timers are drawn on the screen surface at a fixed size, not on the zoomed battlefield.
 	// The modern interface's build panel covers the bottom right, so its list stands in the bottom
 	// left above the command bar instead.
+	Rect const screen = LogicalSurface->Get_Rect();
 	bool const modern = Modern_Interface();
 	TextPrintType const align = modern ? TextPrintType(0) : TPF_RIGHT;
 	auto place = [&](int index) {
 		if (modern) {
-			return(Point2D(HUD_MARGIN, TacticalRect.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN * 3 - 16 * (index + 1)));
+			return(Point2D(HUD_MARGIN, screen.Height - SidebarClass::COMMAND_BAR_HEIGHT - HUD_MARGIN * 3 - 16 * (index + 1)));
 		}
-		return(Point2D(TacticalRect.Width - 3, TacticalRect.Height - 16 * (index + 1)));
+		return(Point2D(screen.Width - 3, screen.Height - 16 * (index + 1)));
 	};
 
 	/*
@@ -4224,7 +4224,7 @@ void Tactical::Draw_Super_Timers(void)
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
 		if (scheme == NULL) scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
-		Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
+		Simple_Text_Print(buffer, *LogicalSurface, screen, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 		line++;
 	}
 
@@ -4245,7 +4245,13 @@ void Tactical::Draw_Super_Timers(void)
 			} else {
 				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
 			}
-			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), ColorSchemes[House_Display_Scheme(house)], 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
+			// A ready weapon's timer blinks once a second between the house colour and a grey (the original blinks
+			// between the house colour and a palette entry of its scheme).
+			ColorScheme * scheme = ColorSchemes[House_Display_Scheme(house)];
+			if (left <= 0 && ((Frame / TICKS_PER_SECOND) & 1)) {
+				scheme = Fetch_Scheme_By_Name("Grey");
+			}
+			Simple_Text_Print(buffer, *LogicalSurface, screen, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 			line++;
 		}
 	}
