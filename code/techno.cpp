@@ -6618,9 +6618,10 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 
 			/*
-			 * Play the death voice response.
+			 * Play the death voice response, heard only for an object the local player controls
+			 * (TechnoClass::ReceiveDamage, 0x701900).
 			 */
-			if (TClass->VoiceDie.Count() > 0) {
+			if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
 				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Get_Coord());
 			}
