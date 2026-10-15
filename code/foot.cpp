@@ -186,6 +186,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsScattering(false),
 	IsIdle(false),
 	IsPlanRunning(false),
+	HasPlannedRunningOrder(false),
 	IonBlastYDrawOffset(0),
 	IsCrushing(false),
 	IsOccupyingCell(true),
@@ -2386,6 +2387,11 @@ bool FootClass::Advance_Planned_Order(void)
 		return(false);
 	}
 
+	// A unit that must rearm first keeps its plan; its idle mission sends it to a dock.
+	if (Plan_Waits_For_Rearm()) {
+		return(false);
+	}
+
 	while (PlannedOrders.Count() > 0) {
 		PlannedOrderClass const order = PlannedOrders[0];
 		PlannedOrders.Delete_Index(0);
@@ -2393,15 +2399,51 @@ bool FootClass::Advance_Planned_Order(void)
 			continue;
 		}
 
+		PlannedRunningOrder = order;
+		HasPlannedRunningOrder = true;
 		PlannedLeg = order.Destination.Is_Valid() ? order.Destination : order.Target;
 		EventClass leg(House->HeapID, EventClass::MEGAMISSION, TargetClass(this), order.Mission, order.Target, order.Destination);
 		leg.Execute_Planned_Leg();
+		Started_Planned_Leg();
 		return(true);
 	}
 
 	IsPlanRunning = false;
+	HasPlannedRunningOrder = false;
 	PlannedLeg.Invalidate();
 	return(false);
+}
+
+
+/// <summary>
+/// Called after a planned leg has been issued, so a unit can commit the leg it queued.
+/// </summary>
+void FootClass::Started_Planned_Leg(void)
+{
+}
+
+
+/// <summary>
+/// Tells whether the unit must rearm before it carries on with its plan.
+/// </summary>
+/// <returns>bool; False for every unit. An aircraft that rearms at a dock overrides this.</returns>
+bool FootClass::Plan_Waits_For_Rearm(void) const
+{
+	return(false);
+}
+
+
+/// <summary>
+/// Puts the attack the unit was carrying out back at the front of its plan, when its target still lives.
+/// </summary>
+/// <remarks>Only an attack is put back, because only an attack spends ammunition and a rearm can cut it short.
+/// A move leg is not put back.</remarks>
+void FootClass::Requeue_Interrupted_Planned_Leg(void)
+{
+	if (HasPlannedRunningOrder && PlannedRunningOrder.Mission == MISSION_ATTACK && Planned_Order_Objects_Live(PlannedRunningOrder)) {
+		PlannedOrders.Add_Head(PlannedRunningOrder);
+	}
+	HasPlannedRunningOrder = false;
 }
 
 
@@ -2412,6 +2454,7 @@ void FootClass::Clear_Planned_Orders(void)
 {
 	PlannedOrders.Clear();
 	IsPlanRunning = false;
+	HasPlannedRunningOrder = false;
 	PlannedLeg.Invalidate();
 }
 

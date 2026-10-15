@@ -1,0 +1,62 @@
+; Planned reload off: the rule override sets AircraftWaypointReload=0, which restores gamemd's refusal of every aircraft.
+; Expected: each click in planning mode is refused with the scold sound and 'You cannot use waypoints with aircraft.',
+; the Harrier keeps no plan (planstate orders 0, running 0), stays on guard at the airfield, and never attacks.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/aircraft-plan-refuse.txt -Seconds 200 -Filter "AUTOTEST|Exception|Planning"
+10 rule AircraftWaypointReload 0
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 60 45
+318 spawn CAR 44 44
+319 spawn CAR 40 30
+320 reveal
+330 view 50 45
+340 select ORCA
+350 planning 1
+360 clickon ORCA 44 44
+362 clickon ORCA 40 30
+364 clickcell ORCA 56 44
+366 planning 0
+370 planstate ORCA
+380 wpstate ORCA
+380 planstate ORCA
+440 wpstate ORCA
+440 planstate ORCA
+500 wpstate ORCA
+500 planstate ORCA
+560 wpstate ORCA
+560 planstate ORCA
+620 wpstate ORCA
+620 planstate ORCA
+680 wpstate ORCA
+680 planstate ORCA
+740 wpstate ORCA
+740 planstate ORCA
+800 wpstate ORCA
+800 planstate ORCA
+860 wpstate ORCA
+860 planstate ORCA
+920 wpstate ORCA
+920 planstate ORCA
+980 wpstate ORCA
+980 planstate ORCA
+1040 wpstate ORCA
+1040 planstate ORCA
+1100 wpstate ORCA
+1100 planstate ORCA
+1160 wpstate ORCA
+1160 planstate ORCA
+1220 wpstate ORCA
+1220 planstate ORCA
+1280 wpstate ORCA
+1280 planstate ORCA
+1340 wpstate ORCA
+1340 planstate ORCA
+1400 wpstate ORCA
+1400 planstate ORCA
+1460 wpstate ORCA
+1460 planstate ORCA
+1600 quit

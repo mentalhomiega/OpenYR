@@ -1,0 +1,181 @@
+; Planned reload (AircraftWaypointReload on, the default): one Harrier is given a plan in planning mode of an attack on a
+; Mammoth tank, an attack on a car, then a move home. The tank outlasts one attack run, so the run is cut short with the tank
+; still alive. A plan records a cell only inside the local radar (the playable area, x 2 to 58, y 4 to 54), so both targets
+; are computer units spawned inside it. Attack legs click the target as an object, as a player does.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/aircraft-plan-reload.txt -Seconds 300 -Filter "AUTOTEST|Exception|Planning"
+; Observed on 2026-10-15: the Harrier flies the tank attack and spends its one round, flies back to the Air Force Command
+; (mission Enter, then Sleep at the dock while ammo is 0), reloads to 1, takes the attack up again from the dock, spends the
+; round on the car, returns and reloads, then flies the move and lands on the Air Force Command. planstate shows the running
+; leg and queued orders every 60 frames, so the requeued attack and the resumed legs are visible.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 60 45
+318 spawn MTNK 44 44
+319 spawn CAR 40 30
+320 reveal
+330 view 50 45
+340 select ORCA
+350 planning 1
+353 where MTNK
+355 wpstate ORCA
+360 clickon ORCA 44 44
+362 clickon ORCA 40 30
+364 clickcell ORCA 56 44
+366 planning 0
+370 planstate ORCA
+380 wpstate ORCA
+380 planstate ORCA
+440 wpstate ORCA
+440 planstate ORCA
+500 wpstate ORCA
+500 planstate ORCA
+560 wpstate ORCA
+560 planstate ORCA
+620 wpstate ORCA
+620 planstate ORCA
+680 wpstate ORCA
+680 planstate ORCA
+740 wpstate ORCA
+740 planstate ORCA
+800 wpstate ORCA
+800 planstate ORCA
+860 wpstate ORCA
+860 planstate ORCA
+920 wpstate ORCA
+920 planstate ORCA
+980 wpstate ORCA
+980 planstate ORCA
+1040 wpstate ORCA
+1040 planstate ORCA
+1100 wpstate ORCA
+1100 planstate ORCA
+1160 wpstate ORCA
+1160 planstate ORCA
+1220 wpstate ORCA
+1220 planstate ORCA
+1280 wpstate ORCA
+1280 planstate ORCA
+1340 wpstate ORCA
+1340 planstate ORCA
+1400 wpstate ORCA
+1400 planstate ORCA
+1460 wpstate ORCA
+1460 planstate ORCA
+1520 wpstate ORCA
+1520 planstate ORCA
+1580 wpstate ORCA
+1580 planstate ORCA
+1640 wpstate ORCA
+1640 planstate ORCA
+1700 wpstate ORCA
+1700 planstate ORCA
+1760 wpstate ORCA
+1760 planstate ORCA
+1820 wpstate ORCA
+1820 planstate ORCA
+1880 wpstate ORCA
+1880 planstate ORCA
+1940 wpstate ORCA
+1940 planstate ORCA
+2000 wpstate ORCA
+2000 planstate ORCA
+2060 wpstate ORCA
+2060 planstate ORCA
+2120 wpstate ORCA
+2120 planstate ORCA
+2180 wpstate ORCA
+2180 planstate ORCA
+2240 wpstate ORCA
+2240 planstate ORCA
+2300 wpstate ORCA
+2300 planstate ORCA
+2360 wpstate ORCA
+2360 planstate ORCA
+2420 wpstate ORCA
+2420 planstate ORCA
+2480 wpstate ORCA
+2480 planstate ORCA
+2540 wpstate ORCA
+2540 planstate ORCA
+2600 wpstate ORCA
+2600 planstate ORCA
+2660 wpstate ORCA
+2660 planstate ORCA
+2720 wpstate ORCA
+2720 planstate ORCA
+2780 wpstate ORCA
+2780 planstate ORCA
+2840 wpstate ORCA
+2840 planstate ORCA
+2900 wpstate ORCA
+2900 planstate ORCA
+2960 wpstate ORCA
+2960 planstate ORCA
+3020 wpstate ORCA
+3020 planstate ORCA
+3080 wpstate ORCA
+3080 planstate ORCA
+3140 wpstate ORCA
+3140 planstate ORCA
+3200 wpstate ORCA
+3200 planstate ORCA
+3260 wpstate ORCA
+3260 planstate ORCA
+3320 wpstate ORCA
+3320 planstate ORCA
+3380 wpstate ORCA
+3380 planstate ORCA
+3440 wpstate ORCA
+3440 planstate ORCA
+3500 wpstate ORCA
+3500 planstate ORCA
+3560 wpstate ORCA
+3560 planstate ORCA
+3620 wpstate ORCA
+3620 planstate ORCA
+3680 wpstate ORCA
+3680 planstate ORCA
+3740 wpstate ORCA
+3740 planstate ORCA
+3800 wpstate ORCA
+3800 planstate ORCA
+3860 wpstate ORCA
+3860 planstate ORCA
+3920 wpstate ORCA
+3920 planstate ORCA
+3980 wpstate ORCA
+3980 planstate ORCA
+4040 wpstate ORCA
+4040 planstate ORCA
+4100 wpstate ORCA
+4100 planstate ORCA
+4160 wpstate ORCA
+4160 planstate ORCA
+4220 wpstate ORCA
+4220 planstate ORCA
+4280 wpstate ORCA
+4280 planstate ORCA
+4340 wpstate ORCA
+4340 planstate ORCA
+4400 wpstate ORCA
+4400 planstate ORCA
+4460 wpstate ORCA
+4460 planstate ORCA
+4520 wpstate ORCA
+4520 planstate ORCA
+4580 wpstate ORCA
+4580 planstate ORCA
+4640 wpstate ORCA
+4640 planstate ORCA
+4700 wpstate ORCA
+4700 planstate ORCA
+4760 wpstate ORCA
+4760 planstate ORCA
+500 where MTNK
+800 where MTNK
+1100 where MTNK
+4900 quit
