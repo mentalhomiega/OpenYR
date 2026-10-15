@@ -173,7 +173,14 @@ void Read_Sounds(INIClass const & ini, char const * section, AudioEventTypeClass
 		if (type.SoundCount >= (unsigned)AUDIO_MAX_SOUNDS) {
 			break;
 		}
-		std::strncpy(type.Sounds[type.SoundCount], token.c_str(), sizeof(type.Sounds[0]) - 1);
+		// Leading '$' and '#' marks are not part of the sample name; the original skips them before
+		// it looks the sample up (SoundEffectsClass::AddSampleByName, 0x4064A0), so "$igisea" is igisea.
+		std::size_t const first = token.find_first_not_of("$#");
+		if (first == std::string::npos) {
+			continue;
+		}
+		std::string const name = token.substr(first);
+		std::strncpy(type.Sounds[type.SoundCount], name.c_str(), sizeof(type.Sounds[0]) - 1);
 		type.Sounds[type.SoundCount][sizeof(type.Sounds[0]) - 1] = '\0';
 		type.SoundCount++;
 	}

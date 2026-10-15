@@ -5435,6 +5435,16 @@ void TechnoClass::Draw_Target_Laser(void) const
 }
 
 
+// Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
+static void Play_Unit_Voice(VocType voc)
+{
+	if (voc != VOC_NONE) {
+		DebugString("Voice: %s\n", Voc_Name(voc));
+	}
+	Sound_Effect(voc);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Player_Assign_Mission -- Assigns a mission as result of player input.          *
  *                                                                                             *
@@ -5491,14 +5501,14 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		// A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier, and never with the move voice (TechnoClass::ClickedMission, 0x6FFBE0).
 		if (mission == MISSION_UNLOAD) {
 			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
-			Sound_Effect(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+			Play_Unit_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
 		} else
 		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
-			Sound_Effect(Weapon_Attack_Voice(target));
+			Play_Unit_Voice(Weapon_Attack_Voice(target));
 		} else if (mission == MISSION_ATTACK) {
 			Response_Attack();
 		} else if (voice != VOC_NONE) {
-			Sound_Effect(voice);
+			Play_Unit_Voice(voice);
 		} else {
 			Response_Move();
 		}
@@ -9425,7 +9435,7 @@ DirType TechnoClass::Fire_Direction(void) const
 void TechnoClass::Response_Select(void)
 {
 	if (AllowVoice && TClass->VoiceSelect.Count()) {
-		Sound_Effect((VocType)TClass->VoiceSelect.Pick(NonCriticalRandomNumber));
+		Play_Unit_Voice((VocType)TClass->VoiceSelect.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -9448,7 +9458,7 @@ void TechnoClass::Response_Select(void)
 void TechnoClass::Response_Move(void)
 {
 	if (AllowVoice && TClass->VoiceMove.Count()) {
-		Sound_Effect((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
+		Play_Unit_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -9497,7 +9507,7 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 void TechnoClass::Response_Attack(void)
 {
 	if (AllowVoice && TClass->VoiceAttack.Count()) {
-		Sound_Effect((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
+		Play_Unit_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
 	}
 }
 
