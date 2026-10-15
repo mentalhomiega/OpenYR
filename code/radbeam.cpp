@@ -115,8 +115,9 @@ void RadBeamClass::Draw_It(void) const
 	Coord from = point(0);
 	for (int piece = 0; piece < pieces; piece++) {
 		Coord const to = point(piece + 1);
-		double const wave = std::fabs(std::sin(turn * piece) * height);
-		double const shade = wave * 0.5 / Amplitude + 0.5;
+		// The wave is truncated to whole units before the shade, as gamemd's FUN_00659AC0 does (0x659AC0).
+		int const wave = (int)(std::sin(turn * piece) * height);
+		double const shade = std::abs(wave) * 0.5 / Amplitude + 0.5;
 		unsigned const color = DSurface::Build_Hicolor_Pixel((int)(Color.Get_Red() * shade), (int)(Color.Get_Green() * shade), (int)(Color.Get_Blue() * shade));
 
 		Point2D a;
@@ -125,7 +126,9 @@ void RadBeamClass::Draw_It(void) const
 		TacticalMap->Coord_To_Pixel(to, b);
 		int const za = -Tactical::Z_Lepton_To_Pixel(from.Z) - 2;
 		int const zb = -Tactical::Z_Lepton_To_Pixel(to.Z) - 2;
-		LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, a, b, color, za, zb);
+		// The beam is drawn at the colour it was shaded to. gamemd's line takes that pixel as is (0x659650), so the
+		// alpha buffer, which holds the terrain's brightness, must not darken it.
+		LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, a, b, color, za, zb, false, false);
 		from = to;
 	}
 }
