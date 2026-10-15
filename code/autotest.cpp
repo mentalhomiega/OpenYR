@@ -2896,6 +2896,17 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   damage %s at %d,%d took %d strength %d curtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, damage, (int)techno->Strength, (int)techno->IronCurtainTimer);
 			}
 		}
+	} else if (step.Command == "hollow") {
+		// hollow <TypeID>: sets the strength of the player's factory-held object of that type to zero, the state
+		// of an internal dummy unit, so that the unit leaves with no radio contact.
+		for (int index = 0; index < Factories.Count(); index++) {
+			FactoryClass * factory = Factories[index];
+			TechnoClass * object = factory->Get_Object();
+			if (factory->Get_House() == PlayerPtr && object != NULL && stricmp(object->TClass->Name(), step.Argument.c_str()) == 0) {
+				object->Strength = 0;
+				DebugString("AUTOTEST   hollow %s: strength set to 0 while in production\n", object->TClass->Name());
+			}
+		}
 	} else if (step.Command == "rule") {
 		if (stricmp(step.Argument.c_str(), "CanDetonateTimeBomb") == 0) {
 			Rule->IsCanDetonateTimeBomb = step.X != 0;

@@ -1,0 +1,18 @@
+; A war factory builds a Rhino and its strength is set to zero while the Rhino is in production, the state an
+; internal dummy unit has when it leaves. The Rhino leaves the factory with no radio link, so the link is refused and
+; the factory tethers it anyway. Before the fix the game crashed in UnitClass::Can_Fire within a second of the exit,
+; when the unit's target scan read the missing contact. Expected: "AUTOTEST   hollow HTNK" in the log, a where line
+; for the Rhino that shows it outside the factory with strength 0, and the run reaches quit with no Exception.
+; Needs the debug cheats, so the settings file must turn them on:
+;   scripts/run_autotest.ps1 -Build agent11 -Script src-agent11/tests/autotest/factory-exit-zero-strength.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 150 -Filter "AUTOTEST|Exception"
+30 command DebugInfiniteMoney
+31 command DebugUnlockAll
+32 own GACNST 50 30
+33 own GAPOWR 56 40
+34 own GAWEAP 62 46
+120 produce HTNK
+200 hollow HTNK
+900 where HTNK
+1200 where HTNK
+1500 dump
+1600 quit
