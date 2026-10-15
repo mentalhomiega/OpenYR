@@ -19,9 +19,9 @@
 /// BodySize bytes of cell data, repeated until the end marker.
 /// </summary>
 /// <remarks>
-/// A stream that ends on a record boundary with no end marker is whole, as gamemd reads it. A
-/// record cut off in its coordinates or its body is not. The caller still checks the source
-/// for damage.
+/// A stream that ends on a record boundary with no end marker is whole, as gamemd reads it, and
+/// so is one that ends in one to three zero bytes. A record cut off in its coordinates by any
+/// other bytes, or in its body, is not. The caller still checks the source for damage.
 /// </remarks>
 /// <param name="source">The straw supplying the decompressed records.</param>
 /// <param name="end_x">The X coordinate of the end marker.</param>
@@ -41,7 +41,12 @@ bool Read_Cell_Records(Source & source, std::int16_t end_x, std::int16_t end_y, 
 			return(true);
 		}
 		if (got != static_cast<int>(sizeof(coords))) {
-			return(false);
+			for (int index = 0; index < got; index++) {
+				if (coords[index] != 0) {
+					return(false);
+				}
+			}
+			return(true);
 		}
 
 		std::int16_t x;

@@ -53,7 +53,7 @@ The later revisions store a list of cell records, only for the cells they set. E
 | Height | 1 byte, signed |
 | Ice-growth flag | 1 byte, `[IsoMapPack5]` only |
 
-The list ends with an X and Y of 0 and no further fields, so cell 0,0 cannot have a record. A record for a cell outside the map is skipped. A `[IsoMapPack4]` or `[IsoMapPack5]` list that ends cleanly between records loads in full even without the 0,0 terminator.
+The list ends with an X and Y of 0 and no further fields, so cell 0,0 cannot have a record. A record for a cell outside the map is skipped. A `[IsoMapPack4]` or `[IsoMapPack5]` list that ends cleanly between records loads in full even without the 0,0 terminator, and so does one that ends in one to three zero bytes.
 
 Section size limits count decoded bytes: a section's bytes after Base64 decoding and before decompression. `[IsoMapPack5]` accepts up to 5,784,964 decoded bytes, enough for a record for every cell of the 512 by 512 grid written in 8 KiB blocks. A larger section is damaged. The other four sections are read up to 512,000 decoded bytes, and anything past that is dropped. A section cut short by this limit is damaged when the cut falls inside a record or a block.
 

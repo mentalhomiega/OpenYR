@@ -186,6 +186,30 @@ void Test_Cut_In_Coordinates(void)
 }
 
 
+// Zero bytes where a record would start are padding after the last record, not a cut record.
+void Test_Zero_Padding(void)
+{
+	bool ok = true;
+
+	for (int pad = 1; pad <= 3; pad++) {
+		int size = Build_Raw(10, false);
+		std::memset(&Raw[size], 0, static_cast<std::size_t>(pad));
+		size += pad;
+		int const packed = Pack_Raw(size);
+
+		bool damaged = true;
+		bool const whole = Read_Packed(packed, damaged);
+
+		if (!whole || damaged || !Seen_Matches_Raw(10)) {
+			std::printf("  %d zero bytes after the last record\n", pad);
+			ok = false;
+		}
+	}
+
+	Report("one to three zero bytes after the last record read whole", ok);
+}
+
+
 void Test_Cut_In_Body(void)
 {
 	int size = Build_Raw(10, false);
@@ -244,6 +268,7 @@ int main(void)
 	Test_No_End_Marker();
 	Test_Empty();
 	Test_Cut_In_Coordinates();
+	Test_Zero_Padding();
 	Test_Cut_In_Body();
 	Test_Cut_At_Block_Edge();
 	Test_Damaged_Block();
