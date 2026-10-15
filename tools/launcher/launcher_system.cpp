@@ -27,6 +27,7 @@ wchar_t const * const AppTitle = L"OpenYR";
 wchar_t const * const ProgressClass = L"OpenYRLauncherProgress";
 std::uint64_t const FeedLimit = 1024 * 1024;
 DWORD const UpdateTimeoutMs = 15 * 60 * 1000;
+DWORD const FeedDeadlineMs = 20 * 1000;
 
 // WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 and _TLS1_3, which older headers do not define.
 DWORD const SecureProtocolTls12 = 0x00000800;
@@ -215,8 +216,23 @@ bool Fetch_Text(std::wstring const & source, std::string & body, std::wstring & 
 	HINTERNET request = nullptr;
 	bool ok = Open_Request(source, 3000, 3000, 5000, 5000, session, connection, request, error);
 	if (ok) {
-		DWORD available = 0;
-		while (ok && WinHttpQueryDataAvailable(request, &available) && available > 0) {
+		// The timeouts above apply to each step, so a feed that trickles in is cut off by a total time.
+		ULONGLONG const deadline = GetTickCount64() + FeedDeadlineMs;
+		while (ok) {
+			DWORD available = 0;
+			if (GetTickCount64() >= deadline) {
+				ok = false;
+				error = L"The feed took too long to download.";
+				break;
+			}
+			if (!WinHttpQueryDataAvailable(request, &available)) {
+				ok = false;
+				break;
+			}
+			if (available == 0) {
+				break;
+			}
+
 			std::vector<char> chunk(available);
 			DWORD read = 0;
 			ok = WinHttpReadData(request, chunk.data(), available, &read) && read > 0;
@@ -289,7 +305,14 @@ bool Download_File(std::wstring const & source, std::wstring const & path, Progr
 	bool ok = true;
 	std::uint64_t done = 0;
 	std::vector<char> buffer(64 * 1024);
+	ULONGLONG const deadline = GetTickCount64() + UpdateTimeoutMs;
 	while (ok) {
+		if (GetTickCount64() >= deadline) {
+			ok = false;
+			error = L"The download took too long.";
+			break;
+		}
+
 		DWORD available = 0;
 		if (!WinHttpQueryDataAvailable(request, &available)) {
 			ok = false;
