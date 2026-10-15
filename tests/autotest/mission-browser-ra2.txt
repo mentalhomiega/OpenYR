@@ -1,6 +1,7 @@
 ; Mission browser, end to end: Single Player, New Campaign, then the browser. It shows the Red Alert 2 group
 ; closed and open, takes a Red Alert 2 test mission (from tests/autotest/ra2-campaigns, which lists the RA2
-; maps), shows its briefing, and plays it. The steps then click through the briefing pages and the game runs
+; maps), shows its briefing, and plays it. Before that it shows the picture box for a Yuri's Revenge and a Red Alert 2
+; mission on each side. The steps then click through the briefing pages and the game runs
 ; in the mission. The in-game checks run at frames 60 to 180: the idle test player loses at frame 240, so the
 ; script quits at frame 200, before that.
 ; Run from E:\Claude ra2 decomp:
@@ -18,9 +19,21 @@ ui wait 600
 ui shot mission-browser-group-closed
 ui choose [+] Red Alert 2: Allied (12)
 ui wait 600
-ui choose Test Allied mission 1
+ui shot mission-browser-ra2-names
+ui choose Operation: Lone Guardian
 ui wait 800
 ui shot mission-browser-ra2-selected
+ui choose Allied Campaign - Strength of Patriots
+ui wait 800
+ui shot mission-browser-art-yr-allied
+ui choose Soviet Campaign - March of Destruction
+ui wait 800
+ui shot mission-browser-art-yr-soviet
+ui choose Operation: Red Dawn
+ui wait 800
+ui shot mission-browser-art-ra2-soviet
+ui choose Operation: Lone Guardian
+ui wait 800
 ui press Play
 ui wait 1500
 ui click more

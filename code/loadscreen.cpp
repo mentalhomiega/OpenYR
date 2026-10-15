@@ -565,8 +565,7 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 	Shown = Point2D(std::max(1, (int)(Width * scale + 0.5)), std::max(1, (int)(Height * scale + 0.5)));
 	Origin = Point2D((HiddenSurface->Get_Width() - Shown.X) / 2, (HiddenSurface->Get_Height() - Shown.Y) / 2);
 
-	LoadMix = Mount("LOADMD.MIX");
-	BaseLoadMix = Mount("LOAD.MIX");
+	Mount_Art();
 
 	Backdrop = std::make_unique<DSurface>(Width, Height);
 	Screen = std::make_unique<DSurface>(Width, Height);
@@ -586,6 +585,67 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 }
 
 
+/// <summary>
+/// Mounts the loading archives LOADMD.MIX and LOAD.MIX, which hold the loading art, until End releases them.
+/// </summary>
+void LoadScreenClass::Mount_Art(void)
+{
+	LoadMix = Mount("LOADMD.MIX");
+	BaseLoadMix = Mount("LOAD.MIX");
+}
+
+
+/// <summary>
+/// Draws the picture MISSIONMD.INI names for a campaign mission. The 640 by 480 picture uses its side's loading palette;
+/// the 800 by 600 picture uses LS800BkgdPal=.
+/// </summary>
+/// <param name="scenario">The mission's map file name, which MISSIONMD.INI names as a section.</param>
+/// <param name="mission">The mission's own INI, which picks the 640 by 480 side palette, or NULL.</param>
+/// <param name="small">True for the 640 by 480 picture, false for the 800 by 600 one.</param>
+/// <param name="surface">The surface the picture is drawn upon.</param>
+/// <param name="at">Where the picture's top left corner goes on the surface.</param>
+/// <param name="name">Receives the picture's file name whenever the mission names one.</param>
+/// <returns>Returns with false, and nothing drawn, when MISSIONMD.INI is missing, names no picture for the mission or
+/// the picture cannot be read.</returns>
+bool LoadScreenClass::Draw_Campaign_Picture(char const * scenario, CCINIClass const * mission, bool small, Surface & surface, Point2D at, std::string & name)
+{
+	CCFileClass database("MISSIONMD.INI");
+	if (!database.Is_Available()) {
+		return(false);
+	}
+	CCINIClass ini;
+	ini.Load(database, false);
+
+	name = ini.Get_String(scenario, small ? "LS640BkgdName" : "LS800BkgdName");
+	if (name.empty()) {
+		return(false);
+	}
+
+	ShapeFile const picture(name.c_str());
+	std::unique_ptr<ConvertClass> const picture_drawer = small
+		? Load_Drawer(Campaign_Is_Allied(mission) ? "LDSCRNA.PAL" : "LDSCRNS.PAL", surface)
+		: Load_Drawer(ini.Get_String(scenario, "LS800BkgdPal"), surface);
+	if (picture.Get() == NULL || picture_drawer == nullptr) {
+		return(false);
+	}
+
+	Draw_Shape(surface, *picture_drawer, picture.Get(), 0, at, surface.Get_Rect(), SHAPE_WIN_REL);
+	return(true);
+}
+
+
+/// <summary>
+/// Gives the size of a campaign mission's picture on the loading screen, which is the screen's width and the height
+/// between the title bar and the strip.
+/// </summary>
+/// <param name="small">True for the 640 by 480 layout, false for the 800 by 600 layout.</param>
+/// <returns>Returns with the picture's width and height.</returns>
+Point2D LoadScreenClass::Campaign_Picture_Size(bool small)
+{
+	return(Point2D(small ? 640 : 800, (small ? 480 : 600) - STRIP_HEIGHT * 2));
+}
+
+
 bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * mission)
 {
 	CCFileClass database("MISSIONMD.INI");
@@ -596,19 +656,6 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 	ini.Load(database, false);
 
 	bool const small = (Width == 640);
-	PictureName = ini.Get_String(scenario, small ? "LS640BkgdName" : "LS800BkgdName");
-	if (PictureName.empty()) {
-		return(false);
-	}
-
-	// The 640 by 480 picture is drawn with its side's loading palette; the 800 by 600 picture with LS800BkgdPal=.
-	ShapeFile const picture(PictureName.c_str());
-	std::unique_ptr<ConvertClass> const picture_drawer = small
-		? Load_Drawer(Campaign_Is_Allied(mission) ? "LDSCRNA.PAL" : "LDSCRNS.PAL", *Backdrop)
-		: Load_Drawer(ini.Get_String(scenario, "LS800BkgdPal"), *Backdrop);
-	if (picture.Get() == NULL || picture_drawer == nullptr) {
-		return(false);
-	}
 
 	Rect const title(0, 0, Width, STRIP_HEIGHT);
 	Rect const art(0, STRIP_HEIGHT, Width, Height - STRIP_HEIGHT * 2);
@@ -620,7 +667,10 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 		Draw_Shape(*Backdrop, *title_drawer, title_bar.Get(), 0, title.Top_Left(), Backdrop->Get_Rect(), SHAPE_WIN_REL);
 	}
 
-	Draw_Shape(*Backdrop, *picture_drawer, picture.Get(), 0, art.Top_Left(), Backdrop->Get_Rect(), SHAPE_WIN_REL);
+	// A mission with no picture returns false here, and Begin then leaves the game's own loading backdrop in place.
+	if (!Draw_Campaign_Picture(scenario, mission, small, *Backdrop, art.Top_Left(), PictureName)) {
+		return(false);
+	}
 
 	ShapeFile const strip_art(small ? "SPLDBRS.SHP" : "SPLDBRL.SHP");
 	BarDrawer = Load_Drawer("SPLDBR.PAL", *Backdrop);

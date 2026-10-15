@@ -16,14 +16,21 @@
 #include "csf.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "dsurface.h"
 #include "gamedlg.h"
 #include "globals.h"
+#include "gscreen.h"
 #include "init.h"
+#include "loadscreen.h"
 #include "options.h"
+#include "palette.h"
+#include "pcx.h"
+#include "scenario.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uiview.h"
+#include "winstub.h"
 
 #include <cstring>
 #include <memory>
@@ -116,12 +123,37 @@ UIBrowserGroupType Group_Of(CampaignClass const & campaign)
 
 
 /// <summary>
+/// Gives a mission's title. A Red Alert 2 mission takes the name MISSION.INI gives its map under UIName=, resolved
+/// through the string table, as the game names it. Any other mission, or a Red Alert 2 map that names no resolvable
+/// label, keeps the campaign's description.
+/// </summary>
+std::string Mission_Title(CampaignClass const & campaign, CCINIClass const & ra2_missions)
+{
+	if (campaign.ScenarioArchive == "RA2") {
+		std::string const label = ra2_missions.Get_String(campaign.ScenarioName, "UIName");
+		if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+			return(StringTable.Find_UTF8(label.c_str()));
+		}
+	}
+
+	std::string title = StringTable.Find_UTF8(campaign.Description);
+	return(title.empty() ? std::string(campaign.Description) : title);
+}
+
+
+/// <summary>
 /// Lists the campaigns that can be offered and the mission each starts. A campaign whose map is one list already holds is
 /// left out, so a campaign listed by two battle files appears once; a testing campaign gives way to a regular one.
 /// </summary>
 UIMissionBrowserState Mission_Browser_State(void)
 {
 	UIMissionBrowserState state;
+
+	CCINIClass ra2_missions;
+	CCFileClass ra2_file("MISSION.INI");
+	if (ra2_file.Is_Available()) {
+		ra2_missions.Load(ra2_file, false);
+	}
 
 	for (int level = 0; level < OptionsClass::MAX_DIFFICULTY_SETTING; level++) {
 		UIBrowserOption option;
@@ -143,8 +175,7 @@ UIMissionBrowserState Mission_Browser_State(void)
 		mission.Campaign = index;
 		mission.Group = Group_Of(*campaign);
 
-		std::string title = StringTable.Find_UTF8(campaign->Description);
-		mission.Title = title.empty() ? std::string(campaign->Description) : title;
+		mission.Title = Mission_Title(*campaign, ra2_missions);
 
 		if (!CCFileClass(mission.Map.c_str()).Is_Available()) {
 			mission.Playable = false;
@@ -180,6 +211,61 @@ UIMissionBrowserState Mission_Browser_State(void)
 }
 
 
+/// <summary>
+/// Makes the picture a campaign mission shows on its loading screen, for the browser's picture box. The picture is the
+/// one MISSIONMD.INI names for the mission, drawn at this screen's layout. A mission without one shows its side's loading
+/// backdrop, which the game picks from two at random; the browser shows the first of the two. The image is set only when
+/// a picture loads; the caller then falls back to the map's preview.
+/// </summary>
+/// <returns>Returns with true when a picture is in the image.</returns>
+bool Mission_Loading_Picture(CampaignClass const & campaign, char const * map, UIMapPreviewImage & image)
+{
+	int const generation = image.Generation + 1;
+	image = UIMapPreviewImage();
+	image.Generation = generation;
+
+	// The loading art lives in archives that are mounted only while a loading screen runs, so they are mounted for this
+	// picture and released when the function returns.
+	LoadScreenClass art;
+	art.Mount_Art();
+
+	// The same test the loading screen makes of the screen's width.
+	bool const small = (HiddenSurface->Get_Width() == 640);
+
+	CCINIClass scenario;
+	CCFileClass scenario_file(map);
+	bool const has_scenario = scenario_file.Is_Available();
+	if (has_scenario) {
+		scenario.Load(scenario_file, false);
+	}
+
+	Point2D const size = LoadScreenClass::Campaign_Picture_Size(small);
+	DSurface picture_surface(size.X, size.Y);
+	picture_surface.Fill(0);
+	std::string name;
+	if (LoadScreenClass::Draw_Campaign_Picture(map, has_scenario ? &scenario : NULL, small, picture_surface, Point2D(0, 0), name)) {
+		return(UI_Surface_Preview_Image(&picture_surface, image));
+	}
+
+	// The backdrop the game shows for this side, at this resolution. The choice is the side's first picture, so no random number is drawn.
+	int const side = Campaign_Load_Side(campaign);
+	Point2D pos;
+	char const * backdrop = Load_Background_Name(side, side << 1, pos);
+	CCFileClass backdrop_file(backdrop);
+	int width = 0;
+	int height = 0;
+	if (!backdrop_file.Is_Available() || !Read_PCX_Size(backdrop_file, width, height)) {
+		return(false);
+	}
+
+	DSurface backdrop_surface(width, height);
+	backdrop_surface.Fill(0);
+	PaletteClass palette;
+	Load_Title_Screen(backdrop, &backdrop_surface, &palette);
+	return(UI_Surface_Preview_Image(&backdrop_surface, image));
+}
+
+
 class UIMissionBrowserEngineServiceClass : public UIMissionBrowserServiceClass
 {
 	public:
@@ -187,7 +273,9 @@ class UIMissionBrowserEngineServiceClass : public UIMissionBrowserServiceClass
 		{
 			UIBrowserMission const & mission = state.Missions[index];
 			state.Briefing = Mission_Briefing(mission.Map.c_str());
-			UI_Map_File_Preview_Image(mission.Map.c_str(), state.Preview);
+			if (!Mission_Loading_Picture(*Campaigns[mission.Campaign], mission.Map.c_str(), state.Preview)) {
+				UI_Map_File_Preview_Image(mission.Map.c_str(), state.Preview);
+			}
 			state.HasPreview = state.Preview.Width > 0 && state.Preview.Height > 0;
 		}
 };
