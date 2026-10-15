@@ -1,7 +1,7 @@
 ---
 format_id: keyboard-ini
 title: KEYBOARDMD.INI
-summary: Maps registered command names to integer keyboard identifiers.
+summary: Binds registered command names to keys, with a secondary key, a trigger for each key and the control scheme.
 kind: file
 filenames:
   - KEYBOARDMD.INI
@@ -9,43 +9,96 @@ source_files:
   - code/init.cpp
   - code/keyboard.h
   - code/keybinddefaults.cpp
+  - code/keybindings.cpp
+  - code/hotkeytiming.cpp
   - code/options.cpp
 ---
 
-The file is `KEYBOARDMD.INI` unless [`Keyboard=`](/formats/opents-ini/#the-files-it-reads) in `OPENTS.INI` names another. Each assignment in `[Hotkey]` binds a key to a command. The name before `=` is the command's exact [registered name](/commands/), including its case. The value is a keyboard identifier: the key's Windows virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt.
+The file is `KEYBOARDMD.INI` unless [`Keyboard=`](/formats/opents-ini/#the-files-it-reads) in `OPENTS.INI` names another. Each command can hold two keys, a primary key and a secondary key. Each key has a trigger that says when it fires: a press, a double press, a hold, or a press held down. The name before `=` is the command's exact [registered name](/commands/), including its case.
 
 ```ini title="KEYBOARDMD.INI"
 [Defaults]
-Version=2
+Version=3
+Scheme=Modern
+DoublePressMs=250
+HoldMs=400
 
 [Hotkey]
-SelectView=577      ; A with Control
-ToggleRepair=338    ; R with Shift
-ScatterObject=88    ; X
+TeamSelect_1=49
+TeamCenter_1=49
+ScrollNorth=38
+AttackMove=65
+
+[HotkeyTrigger]
+TeamCenter_1=Double
+ScrollNorth=Held
+
+[Hotkey2]
+CenterBase=72
+Options=121
 ```
 
-A command name can appear only once in the section, so the file gives each command at most one key. If a name is repeated, the later value is used.
+## Sections
 
-The game reads the file at startup. A loose `KEYBOARDMD.INI` in the game directory replaces one inside an archive. An entry is ignored if its command name is not registered or its value is `0`.
+| Section | Holds |
+| --- | --- |
+| `[Defaults]` | The version, the control scheme and the two timings. |
+| `[Hotkey]` | Each command's primary key. |
+| `[Hotkey2]` | Each command's secondary key. |
+| `[HotkeyTrigger]` | The trigger of each primary key. A command with no line here fires on a press. |
+| `[HotkeyTrigger2]` | The trigger of each secondary key. |
 
-Each command has a default key. With no file, or with a file that has no section header, every command has its default key. A file with a `[Hotkey]` section replaces the defaults, so a command the file does not name has no key, unless the file is version 1 (see [Version](#version)).
+A key is a keyboard identifier: the key's Windows virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt. Zero is no key. The mouse and wheel use these codes:
 
-### Version
+| Code | Input |
+| --- | --- |
+| 1 and 2 | Left and right mouse button. The game uses them for orders, so a binding to them is not advised. |
+| 4 | Middle mouse button (mouse 3). |
+| 5 and 6 | Side mouse buttons (mouse 4 and mouse 5). |
+| 7 | Wheel up. |
+| 14 | Wheel down. |
 
-The `[Defaults]` section's `Version=` records the defaults the file was written against. The keyboard dialog writes version 2. A file with no `Version=` is version 1, which is what the earlier builds wrote. The game upgrades a version 1 file each time it reads it:
+A wheel step that a binding takes replaces the built-in action of that step: over the map the wheel zooms and elsewhere it scrolls the sidebar.
 
-- An entry that still has its old default takes the current default, or loses its key if the current defaults give that command none.
-- A key bound to a command in the file is kept. A default that would take that key is dropped.
-- A command the file does not name gets its current default, if that key is free.
+### Triggers
 
-The upgrade happens in memory. The file keeps version 1 until the keyboard dialog saves it.
+| Trigger | Fires |
+| --- | --- |
+| `Press` | When the key goes down. This is the default. |
+| `Double` | On the second press that comes within `DoublePressMs` of the first. |
+| `Hold` | When the key has stayed down for `HoldMs`. A quick tap fires the press instead, if the key has one. |
+| `Held` | When the key goes down, and again every 40 ms while it stays down. The modifier commands use it to read whether a key is held. |
 
-The game binds Delete to [`DeleteWaypoint`](/commands/deletewaypoint/) and Escape to [`Options`](/commands/options/). If the file binds either key, one binding for that key is removed, so a key the file binds once goes only to the built-in command. A key the file gives either command is kept, so that command can have two keys.
+A key with a `Double` or `Hold` binding and a `Press` binding waits before its press fires. The press waits for the double-press window, or for the release when the key has a hold. A key with neither binding fires its press at once.
 
-The keyboard dialog saves the bindings the player accepts to a loose `KEYBOARDMD.INI`, and canceling it discards the changes. Its reset control deletes the loose file at once, even if the dialog is then canceled, and reads the defaults again.
+### Scheme and timings
 
-At startup the game also binds Enter to [`ChatToAll`](/commands/chattoall/) and Backspace to [`ChatToAllies`](/commands/chattoallies/), each only when the file binds neither that command nor that key. A file that binds the command to another key, or gives the key to another command, keeps its binding.
+`Scheme=` is `Classic` or `Modern`. A file with no scheme is Classic. The scheme decides which bindings a command gets when the file does not name it, and which bindings the keyboard dialog's reset restores.
 
-:::caution[Bind each key once]
-Give each key to only one command. If two entries bind the same key, both are kept, and pressing the key runs only one of the two commands. Which one runs cannot be predicted from the file.
+`DoublePressMs=` and `HoldMs=` are in milliseconds, from 50 to 2000. A value outside that range, or one that is not a number, gives the default: 250 and 400.
+
+## Rules for a line
+
+- A key that is not a number, or is `0`, is ignored.
+- A command named twice in the same section keeps its first line.
+- A line whose key and trigger the file already gives another command is ignored, so no two bindings share a key and a trigger. A `Press` and a `Double` of one key do not share one, and can belong to two commands.
+- A trigger name other than `Press`, `Double`, `Hold` or `Held` is read as `Press`.
+- A command name that is not registered is ignored.
+
+## Version
+
+The `[Defaults]` section's `Version=` records the defaults the file was written against. The keyboard dialog writes version 3. A file with no `Version=` is version 1, which the earlier builds wrote; a file with `Version=2` is version 2.
+
+- Version 3 is read as saved. A command the file does not name has no key.
+- Version 2 is read as saved, except that the held modifiers version 3 added are filled in when the file does not name them: `ForceFire` on Control, `ForceMove` on Alt, `SelectModifier` on Shift and `QueueMove` on Q. Those keys stay in use, so force fire and force move work as before.
+- Version 1 is upgraded to the current defaults of its scheme in memory, as each earlier build upgraded it. An entry that still has its old default takes the current default, or loses its key if the scheme gives that command none. A key the file binds to a command is kept, and a default that would take that key is dropped. A command the file does not name gets its current default, if that key is free.
+
+The upgrade happens in memory. The file keeps its version until the keyboard dialog saves it.
+
+The game binds Delete to [`DeleteWaypoint`](/commands/deletewaypoint/) and Escape to [`Options`](/commands/options/), whatever the file says. If another command holds one of those keys, it takes the key the built-in command had, or loses its key when the built-in command had none. A key the file gives either built-in command is kept, so that command can have two keys.
+
+At startup the game also binds Enter to [`ChatToAll`](/commands/chattoall/) and Backspace to [`ChatToAllies`](/commands/chattoallies/), each only when the file binds neither that command nor that key.
+
+:::caution[Bind each key once for each trigger]
+Give each key and trigger to only one command. A file that binds the same key and trigger twice keeps the first binding and drops the second, so the result depends on the order of the lines.
 :::
