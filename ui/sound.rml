@@ -11,32 +11,49 @@
 <head>
 	<title>Sound options</title>
 	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="settings.rcss"/>
 	<link type="text/rcss" href="sound.rcss"/>
 </head>
-<body template="dialog" data-model="sound" data-class-lite="!ingame">
-	<div class="row" id="row-score">
-		<span class="caption">Music Volume:</span>
-		<input type="range" id="score" min="0" max="10" step="1" data-attr-value="score" data-attrif-disabled="!enabled" data-event-change="queue('score', ev.value)"/><span class="trough">{{score}}</span><span class="trough-edge"></span>
-	</div>
-	<div class="row" id="row-sound">
-		<span class="caption">Sound Volume:</span>
-		<input type="range" id="sound" min="0" max="10" step="1" data-attr-value="sound" data-attrif-disabled="!enabled" data-event-change="queue('sound', ev.value)"/><span class="trough">{{sound}}</span><span class="trough-edge"></span>
-	</div>
-	<div class="row" id="row-voice">
-		<span class="caption">Voice Volume:</span>
-		<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!enabled" data-event-change="queue('voice', ev.value)"/><span class="trough">{{voice}}</span><span class="trough-edge"></span>
-	</div>
-	<div id="music" data-if="ingame">
-		<div id="music-side">
-			<button id="play" data-event-click="queue('play')">Play</button>
-			<button id="stop" data-event-click="queue('stop')">Stop</button>
-			<label class="check" id="switch-shuffle"><input type="checkbox" id="shuffle" data-attrif-checked="shuffle" data-attrif-disabled="!enabled" data-event-click="queue('shuffle', shuffle ? 0 : 1)"/>Shuffle</label>
-			<label class="check" id="switch-repeat"><input type="checkbox" id="repeat" data-attrif-checked="repeat" data-attrif-disabled="!enabled" data-event-click="queue('repeat', repeat ? 0 : 1)"/>Repeat</label>
+<body template="dialog" class="page-settings" data-model="sound" data-class-lite="!ingame">
+	<div id="page">
+		<div id="list">
+			<p class="section">Volume</p>
+			<div class="setting slider-row" id="row-score" desc="The volume of the background music."><span class="caption">Music Volume</span>
+				<input type="range" id="score" min="0" max="10" step="1" data-attr-value="score" data-attrif-disabled="!enabled" data-event-change="queue('score', ev.value)"/><span class="value">{{score}}</span>
+			</div>
+			<div class="setting slider-row" id="row-sound" desc="The volume of the sound effects, such as weapons and unit replies."><span class="caption">Sound Volume</span>
+				<input type="range" id="sound" min="0" max="10" step="1" data-attr-value="sound" data-attrif-disabled="!enabled" data-event-change="queue('sound', ev.value)"/><span class="value">{{sound}}</span>
+			</div>
+			<div class="setting slider-row" id="row-voice" desc="The volume of the spoken lines, such as unit acknowledgements."><span class="caption">Voice Volume</span>
+				<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!enabled" data-event-change="queue('voice', ev.value)"/><span class="value">{{voice}}</span>
+			</div>
+
+			<div id="music" data-if="ingame">
+				<p class="section">Music</p>
+				<div class="setting" id="music-buttons-row" desc="Starts or stops the music that is playing now.">
+					<span class="caption">Playback</span>
+					<div id="music-buttons">
+						<button id="play" data-event-click="queue('play')">Play</button>
+						<button id="stop" data-event-click="queue('stop')">Stop</button>
+					</div>
+				</div>
+				<label class="check setting" id="switch-shuffle" desc="Plays the tracks in a random order."><span class="caption">Shuffle</span><input type="checkbox" id="shuffle" data-attrif-checked="shuffle" data-attrif-disabled="!enabled" data-event-click="queue('shuffle', shuffle ? 0 : 1)"/></label>
+				<label class="check setting" id="switch-repeat" desc="Starts the list again when the last track ends."><span class="caption">Repeat</span><input type="checkbox" id="repeat" data-attrif-checked="repeat" data-attrif-disabled="!enabled" data-event-click="queue('repeat', repeat ? 0 : 1)"/></label>
+				<div id="tracks" class="list" data-attrif-disabled="!enabled"><div class="rows">
+					<div class="item track" data-for="track : tracks" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{track.label}}</div>
+				</div></div>
+			</div>
 		</div>
-		<div id="tracks" class="list" data-attrif-disabled="!enabled"><div class="rows">
-			<div class="item track" data-for="track : tracks" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{track.label}}</div>
-		</div></div>
+		<div id="side">
+			<p id="side-title">Description</p>
+			<p id="description">Point at a setting or select it to read what it does.</p>
+		</div>
 	</div>
-	<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	<div id="footer">
+		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
+		<span id="footer-spacer"></span>
+		<button id="footer-cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+		<button id="footer-ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	</div>
 </body>
 </rml>
