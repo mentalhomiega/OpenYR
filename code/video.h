@@ -75,8 +75,15 @@ bool Video_HDR_Active(void);
 // Sets the colour adjustment for the presented frame, as Backend_Set_Colour_Adjust does, and presents it.
 void Video_Set_Colour_Adjust(float const * matrix, float brightness, float gamma);
 
-// Builds the colour adjustment from the colour-blind settings and sets it, and presents the frame again.
+// Builds the colour adjustment from the colour-blind, brightness and gamma settings and sets it, and
+// presents the frame again.
 void Video_Apply_Colour_Settings(void);
+
+// The limits of the Brightness setting in percent, and of the Gamma setting in hundredths.
+int const VIDEO_BRIGHTNESS_MIN = 50;
+int const VIDEO_BRIGHTNESS_MAX = 200;
+int const VIDEO_GAMMA_MIN = 50;
+int const VIDEO_GAMMA_MAX = 200;
 
 void Video_Mark_Dirty(void);
 void Video_Mark_Overlay_Dirty(void);

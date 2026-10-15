@@ -66,6 +66,7 @@ class UIDisplayServiceClass
 		virtual void Set_HDR_Peak_Brightness(int nits) = 0;
 		virtual void Set_HDR_Highlights(int highlights) = 0;
 		virtual void Set_Colour_Blind(int mode, int strength) = 0;
+		virtual void Set_Brightness_Gamma(int brightness, int gamma) = 0;
 
 		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
 		// scale given (zero is automatic).
@@ -114,6 +115,10 @@ struct UIDisplayState
 	std::vector<UIDisplayChoice> ColorBlindModes;
 	int ColorBlindMode = 0;
 	int ColorBlindStrength = 100;
+	// The brightness in percent, and the gamma in hundredths, with the gamma text the page shows.
+	int Brightness = 100;
+	int Gamma = 100;
+	std::string GammaLabel;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
 	// The screen the page starts on, used for the preview when no resolution is picked.
@@ -164,6 +169,8 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialPeakBrightness;
 		int InitialColorBlindMode;
 		int InitialColorBlindStrength;
+		int InitialBrightness;
+		int InitialGamma;
 };
 
 

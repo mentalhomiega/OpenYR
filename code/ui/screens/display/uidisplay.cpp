@@ -40,7 +40,9 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialPaperWhite(State.PaperWhite),
 	InitialPeakBrightness(State.PeakBrightness),
 	InitialColorBlindMode(State.ColorBlindMode),
-	InitialColorBlindStrength(State.ColorBlindStrength)
+	InitialColorBlindStrength(State.ColorBlindStrength),
+	InitialBrightness(State.Brightness),
+	InitialGamma(State.Gamma)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -211,6 +213,12 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "colorblindstrength") {
 		State.ColorBlindStrength = std::clamp(intent.Value, COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
 
+	} else if (intent.Name == "brightness") {
+		State.Brightness = std::clamp(intent.Value, VIDEO_BRIGHTNESS_MIN, VIDEO_BRIGHTNESS_MAX);
+
+	} else if (intent.Name == "gamma") {
+		State.Gamma = std::clamp(intent.Value, VIDEO_GAMMA_MIN, VIDEO_GAMMA_MAX);
+
 	} else if (intent.Name == "sidebarrows") {
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
@@ -270,6 +278,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		if (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size()
 			&& (State.ColorBlindMode != InitialColorBlindMode || State.ColorBlindStrength != InitialColorBlindStrength)) {
 			Service.Set_Colour_Blind(State.ColorBlindModes[State.ColorBlindMode].Value, State.ColorBlindStrength);
+		}
+		if (State.Brightness != InitialBrightness || State.Gamma != InitialGamma) {
+			Service.Set_Brightness_Gamma(State.Brightness, State.Gamma);
 		}
 		if (PickedRows >= 0) {
 			Service.Set_Sidebar_Rows(PickedRows);
@@ -334,6 +345,17 @@ namespace
 {
 
 /// <summary>
+/// Writes the gamma text the page shows, with two decimals, as the setting in hundredths reads.
+/// </summary>
+void Update_Gamma_Label(UIDisplayState & state)
+{
+	char text[16];
+	std::snprintf(text, sizeof(text), "%.2f", state.Gamma / 100.0);
+	state.GammaLabel = text;
+}
+
+
+/// <summary>
 /// Sets the two HDR tooltips from the choice on show. The HDR output tooltip says what the choice does and
 /// that it applies at the next start. The Highlights tooltip is empty while HDR output is on, so it shows
 /// only while the list is grayed out.
@@ -388,6 +410,10 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("highlights");
 			Model.DirtyVariable("colorblindmode");
 			Model.DirtyVariable("colorblindstrength");
+			Update_Gamma_Label(Data.State);
+			Model.DirtyVariable("brightness");
+			Model.DirtyVariable("gamma");
+			Model.DirtyVariable("gammalabel");
 			Model.DirtyVariable("rowcount");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
@@ -454,6 +480,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("colorblindmodes", &state.ColorBlindModes)
 				&& model.Bind("colorblindmode", &state.ColorBlindMode)
 				&& model.Bind("colorblindstrength", &state.ColorBlindStrength)
+				&& model.Bind("brightness", &state.Brightness)
+				&& model.Bind("gamma", &state.Gamma)
+				&& model.Bind("gammalabel", &state.GammaLabel)
 				&& model.Bind("hdractive", &state.HDRActive)
 				&& model.Bind("hdroutputtip", &state.HDROutputTip)
 				&& model.Bind("highlightstip", &state.HighlightsTip)

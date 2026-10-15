@@ -232,6 +232,8 @@ OptionsClass::OptionsClass(void) :
 	HDRPeakBrightness(0),
 	ColorBlindMode(COLORBLIND_OFF),
 	ColorBlindStrength(100),
+	Brightness(100),
+	Gamma(1.0f),
 	CursorScale(0),
 	InterfaceScale(0.0f),
 	SystemCursor(false),
@@ -451,6 +453,20 @@ static char const * ColorBlind_Mode_Name(int mode)
 }
 
 
+/// <summary>
+/// Reads a gamma exponent. Text that is not a positive number gives 1.0, and any other value is limited
+/// to the range of the setting.
+/// </summary>
+static float Gamma_From_Text(char const * text)
+{
+	double const value = Parse_Nearest_Double(text, nullptr);
+	if (!(value > 0.0)) {
+		return(1.0f);
+	}
+	return((float)std::clamp(value, VIDEO_GAMMA_MIN / 100.0, VIDEO_GAMMA_MAX / 100.0));
+}
+
+
 static char const * HDR_Output_Name(int mode)
 {
 	switch (mode) {
@@ -632,6 +648,12 @@ void OptionsClass::Load_Settings(void)
 	ColorBlindStrength = std::clamp(ConfigINI.Get_Int("Video", "ColorBlindStrength", ColorBlindStrength), COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
 	DebugString("ColorBlindMode is %s, ColorBlindStrength is %d\n", ColorBlind_Mode_Name(ColorBlindMode), ColorBlindStrength);
 
+	Brightness = std::clamp(ConfigINI.Get_Int("Video", "Brightness", Brightness), VIDEO_BRIGHTNESS_MIN, VIDEO_BRIGHTNESS_MAX);
+	char gammatext[16];
+	ConfigINI.Get_String("Video", "Gamma", "1.0", gammatext, sizeof(gammatext));
+	Gamma = Gamma_From_Text(gammatext);
+	DebugString("Brightness is %d, Gamma is %g\n", Brightness, Gamma);
+
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), 0, 1000);
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
@@ -787,6 +809,10 @@ void OptionsClass::Save_Settings (void)
 	Save_HDR_Nits("HDRPeakBrightness", HDRPeakBrightness);
 	ConfigINI.Put_String("Video", "ColorBlindMode", ColorBlind_Mode_Name(ColorBlindMode));
 	ConfigINI.Put_Int("Video", "ColorBlindStrength", ColorBlindStrength);
+	ConfigINI.Put_Int("Video", "Brightness", Brightness);
+	char gammasave[32];
+	Snprintf_Nearest(gammasave, sizeof(gammasave), "%.2f", Gamma);
+	ConfigINI.Put_String("Video", "Gamma", gammasave);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
 	if (InterfaceScale > 0.0f) {
 		char scaletext[32];

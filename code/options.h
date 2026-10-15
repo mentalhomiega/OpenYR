@@ -274,6 +274,13 @@ class OptionsClass {
 		int ColorBlindStrength;
 
 		/*
+		 * The brightness of the presented frame in percent, and its gamma exponent. Both are
+		 * presentation only; the defaults leave the picture unchanged.
+		 */
+		int Brightness;
+		float Gamma;
+
+		/*
 		 * This is how many times larger than its artwork the mouse pointer is drawn.
 		 * Zero follows the size of the frame on screen, and a negative value leaves the
 		 * pointer at the size the artwork was drawn at.

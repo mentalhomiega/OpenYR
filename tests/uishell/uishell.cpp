@@ -934,6 +934,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_HDR_Peak_Brightness(int nits) override { Calls.push_back("hdr peak " + std::to_string(nits)); }
 		virtual void Set_HDR_Highlights(int highlights) override { Calls.push_back("hdr highlights " + std::to_string(highlights)); }
 		virtual void Set_Colour_Blind(int mode, int strength) override { Calls.push_back("colour blind " + std::to_string(mode) + " " + std::to_string(strength)); }
+		virtual void Set_Brightness_Gamma(int brightness, int gamma) override { Calls.push_back("brightness gamma " + std::to_string(brightness) + " " + std::to_string(gamma)); }
 
 		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
@@ -1006,6 +1007,8 @@ void Test_Display_Presenter(void)
 		UIDisplayPresenterClass presenter(service, state);
 		Drive(presenter, "colorblindmode", 2);
 		Drive(presenter, "colorblindstrength", 40);
+		Drive(presenter, "brightness", 120);
+		Drive(presenter, "gamma", 80);
 		Check(service.Calls.empty(), "colour-blind edits are held until the player accepts");
 		Drive(presenter, "ok");
 		std::string joined;
@@ -1014,6 +1017,7 @@ void Test_Display_Presenter(void)
 		}
 		std::size_t const first = joined.find("colour blind 2 40");
 		Check(first != std::string::npos && joined.find("colour blind", first + 1) == std::string::npos, "accepting the colour-blind mode and strength applies them once");
+		Check(joined.find("brightness gamma 120 80;") != std::string::npos, "accepting the brightness and gamma applies them");
 	}
 
 	{
@@ -3312,6 +3316,10 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(focused("colorblind"), "the colour-blind mode drop-down follows the peak brightness slider");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("colorblind-strength"), "the colour-blind strength slider follows the mode");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("brightness"), "the brightness slider follows the colour-blind strength");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("gamma"), "the gamma slider follows brightness");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the settings");
 		Press(context, Rml::Input::KI_TAB);

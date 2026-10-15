@@ -31,6 +31,7 @@
 #include "wwmouse.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <initializer_list>
 #include <string>
@@ -165,6 +166,13 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 		{
 			Options.ColorBlindMode = mode;
 			Options.ColorBlindStrength = strength;
+			Video_Apply_Colour_Settings();
+		}
+
+		virtual void Set_Brightness_Gamma(int brightness, int gamma) override
+		{
+			Options.Brightness = brightness;
+			Options.Gamma = gamma / 100.0f;
 			Video_Apply_Colour_Settings();
 		}
 
@@ -357,6 +365,8 @@ void UI_Display_State(UIDisplayState & state)
 		{COLORBLIND_TRITANOPIA, "Tritanopia"}
 	}, Options.ColorBlindMode, "%d");
 	state.ColorBlindStrength = Options.ColorBlindStrength;
+	state.Brightness = Options.Brightness;
+	state.Gamma = (int)std::lround(Options.Gamma * 100.0f);
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},

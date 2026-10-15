@@ -408,7 +408,7 @@ void Video_Apply_Colour_Settings(void)
 {
 	float matrix[9];
 	ColorBlind_Matrix(Options.ColorBlindMode, Options.ColorBlindStrength / 100.0f, matrix);
-	Video_Set_Colour_Adjust(matrix, 1.0f, 1.0f);
+	Video_Set_Colour_Adjust(matrix, Options.Brightness / 100.0f, Options.Gamma);
 }
 
 
