@@ -507,6 +507,7 @@ class FootClass : public TechnoClass
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		virtual bool Enter_Idle_Mode(bool initial=false, bool = true) override;
 		virtual bool Plan_Waits_For_Rearm(void) const;
+		virtual void Started_Planned_Leg(void);
 		void Requeue_Interrupted_Planned_Leg(void);
 
 		// Planning mode: queue an order, start the queue on commit, and issue the next order when idle.

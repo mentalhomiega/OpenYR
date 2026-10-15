@@ -557,6 +557,17 @@ bool AircraftClass::Reloads_At_Dock(void) const
 
 
 /// <summary>
+/// Starts a planned leg that the aircraft queued while it was at rest, so the next idle assignment does not replace it.
+/// </summary>
+void AircraftClass::Started_Planned_Leg(void)
+{
+	if (Rule->AircraftWaypointReload && Reloads_At_Dock() && MissionQueue != MISSION_NONE) {
+		Commence();
+	}
+}
+
+
+/// <summary>
 /// Tells whether a planned order must wait until the aircraft has rearmed.
 /// </summary>
 /// <returns>bool; True when AircraftWaypointReload is on, the aircraft rearms at a dock and it is short of ammunition.</returns>

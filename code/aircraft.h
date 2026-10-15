@@ -122,6 +122,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		 */
 		bool Reloads_At_Dock(void) const;
 		virtual bool Plan_Waits_For_Rearm(void) const override;
+		virtual void Started_Planned_Leg(void) override;
 		virtual DirType Fire_Direction(void) const override;
 		virtual bool Can_Player_Fire(void) const override;
 		virtual FireErrorType Can_Fire(AbstractClass * target, int which) const override;

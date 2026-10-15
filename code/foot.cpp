@@ -2404,11 +2404,7 @@ bool FootClass::Advance_Planned_Order(void)
 		PlannedLeg = order.Destination.Is_Valid() ? order.Destination : order.Target;
 		EventClass leg(House->HeapID, EventClass::MEGAMISSION, TargetClass(this), order.Mission, order.Target, order.Destination);
 		leg.Execute_Planned_Leg();
-
-		// A unit at rest holds the leg in its queue, and the next idle assignment would replace it. The leg starts now.
-		if (MissionQueue != MISSION_NONE) {
-			Commence();
-		}
+		Started_Planned_Leg();
 		return(true);
 	}
 
@@ -2416,6 +2412,14 @@ bool FootClass::Advance_Planned_Order(void)
 	HasPlannedRunningOrder = false;
 	PlannedLeg.Invalidate();
 	return(false);
+}
+
+
+/// <summary>
+/// Called after a planned leg has been issued, so a unit can commit the leg it queued.
+/// </summary>
+void FootClass::Started_Planned_Leg(void)
+{
 }
 
 
