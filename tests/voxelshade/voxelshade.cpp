@@ -105,6 +105,27 @@ void Test_Off_And_Bad_Values(void)
 }
 
 
+int const Rows = 32;
+
+
+void Test_Row_Range(void)
+{
+	float const nan = std::numeric_limits<float>::quiet_NaN();
+	float const inf = std::numeric_limits<float>::infinity();
+
+	Report("a head-on surface takes the row the scale names", Voxel_Shade_Row(1.0f, 16.0f, Rows) == 16);
+	Report("the row is truncated, not rounded", Voxel_Shade_Row(0.99f, 16.0f, Rows) == 15);
+	Report("a row past the last is held to the last", Voxel_Shade_Row(2.0f, 16.0f, Rows) == 31);
+	Report("a scale of zero gives row 0", Voxel_Shade_Row(1.0f, 0.0f, Rows) == 0);
+	Report("a negative scale gives row 0", Voxel_Shade_Row(1.0f, -16.0f, Rows) == 0);
+	Report("a scale that is not a number gives row 0", Voxel_Shade_Row(1.0f, nan, Rows) == 0);
+	Report("a brightness that is not a number gives row 0", Voxel_Shade_Row(nan, 16.0f, Rows) == 0);
+	Report("an infinite scale gives the last row", Voxel_Shade_Row(1.0f, inf, Rows) == 31);
+	Report("an infinite scale on an unlit surface gives row 0", Voxel_Shade_Row(0.0f, inf, Rows) == 0);
+	Report("a very large scale gives the last row", Voxel_Shade_Row(1.0f, 1.0e30f, Rows) == 31);
+}
+
+
 }
 
 
@@ -115,6 +136,7 @@ int main(void)
 	Test_Rises_With_Alignment();
 	Test_Strength_One_Is_Linear();
 	Test_Off_And_Bad_Values();
+	Test_Row_Range();
 
 	std::printf("%s\n", Failures == 0 ? "voxelshade: all checks passed" : "voxelshade: FAILURES");
 	return Failures == 0 ? 0 : 1;
