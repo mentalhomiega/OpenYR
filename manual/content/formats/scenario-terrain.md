@@ -16,6 +16,7 @@ source_files:
   - code/lzopipe.cpp
   - code/lzostraw.cpp
   - code/overlay.cpp
+  - code/preview.cpp
   - code/session.cpp
 related:
   - type: format
@@ -79,3 +80,7 @@ When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the 
 `[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay, and so does a value that is not the index of an overlay type in the loaded rules.
 
 The loader reads both sections only when [`NewINIFormat`](/keys/newiniformat/) is above 1, and ignores the bytes for cells outside the playfield. It reads `[OverlayPack]` up to 512,000 decoded bytes and `[OverlayDataPack]` up to 256,000, and drops anything past that.
+
+## Preview pack
+
+`[Preview]` and `[PreviewPack]` hold the map's preview picture. The last two numbers of `Size=` in `[Preview]` are the picture's width and height in pixels. `[PreviewPack]` holds the pixels as red, green and blue bytes, row by row, in LZO blocks and Base64 as `[IsoMapPack4]` is. The multiplayer map list reads both sections wherever they stand in the file, before or after `[Map]`, and shows no preview for a file with neither.
