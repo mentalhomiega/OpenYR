@@ -11,4 +11,4 @@ credit:
 - MentalHomiega
 ---
 
-We now pack a computer player's dug-in soldier up when its target is out of reach of its `DeployFireWeapon`, as Yuri's Revenge does. A dug-in soldier also no longer walks toward its target.
+We now pack a computer player's dug-in soldier up when its target is out of reach of its `DeployFireWeapon`, as Yuri's Revenge does. A soldier whose `DeployFireWeapon` sets `AreaFire=yes` stays dug in. A dug-in soldier also no longer walks toward its target.
