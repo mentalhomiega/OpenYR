@@ -172,6 +172,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.MenuTheme = (MenuThemeType)theme;
 		}
 
+		virtual void Set_Menu_Battle(bool on) override
+		{
+			Options.MenuBattle = on;
+		}
+
 		virtual void Set_HDR_Output(int mode) override
 		{
 			// The output is decided when the renderer starts.
@@ -500,6 +505,7 @@ void UI_Display_State(UIDisplayState & state)
 		{MENU_THEME_SOVIET, "Soviet"},
 		{MENU_THEME_YURI, "Yuri"}
 	}, (int)Options.MenuTheme, "%d");
+	state.MenuBattle = Options.MenuBattle;
 	state.Renderer = Fill_Choices(state.Renderers, {
 		{BACKEND_RENDERER_AUTO, "Auto"},
 		{BACKEND_RENDERER_D3D11, "Direct3D 11"},

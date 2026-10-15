@@ -934,6 +934,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
 		virtual void Set_Menu_Theme(int theme) override { Calls.push_back("menu theme " + std::to_string(theme)); }
+		virtual void Set_Menu_Battle(bool on) override { Calls.push_back("menu battle " + std::to_string((int)on)); }
 		virtual void Set_Renderer(int renderer) override { Calls.push_back("renderer " + std::to_string(renderer)); }
 		virtual void Set_HDR_Output(int mode) override { Calls.push_back("hdr output " + std::to_string(mode)); }
 		virtual void Set_HDR_Paper_White(int nits) override { Calls.push_back("hdr paper white " + std::to_string(nits)); }

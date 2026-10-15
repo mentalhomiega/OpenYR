@@ -35,6 +35,7 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
 	InitialMenuTheme(State.MenuTheme),
+	InitialMenuBattle(State.MenuBattle),
 	InitialRenderer(State.Renderer),
 	InitialBitmapSystemFont(State.BitmapSystemFont),
 	InitialShowFPS(State.ShowFPS),
@@ -186,6 +187,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		}
 		State.CursorScale = Index_Of(State.CursorScales, 0, State.CursorScale);
 		State.MenuTheme = Index_Of(State.MenuThemes, 0, State.MenuTheme);
+		State.MenuBattle = true;
 		State.SystemCursor = true;
 		State.Fullscreen = true;
 		State.VSync = true;
@@ -328,6 +330,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "menutheme") {
 		State.MenuTheme = Pick_Choice(State.MenuThemes, intent.Value, InitialMenuTheme);
 
+	} else if (intent.Name == "menubattle") {
+		State.MenuBattle = (intent.Value != 0);
+
 	} else if (intent.Name == "renderer") {
 		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
 
@@ -416,6 +421,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (Choice_Changed(State.MenuThemes, State.MenuTheme, InitialMenuTheme)) {
 			Service.Set_Menu_Theme(State.MenuThemes[State.MenuTheme].Value);
+		}
+		if (State.MenuBattle != InitialMenuBattle) {
+			Service.Set_Menu_Battle(State.MenuBattle);
 		}
 		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
 			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
@@ -604,6 +612,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
 			Model.DirtyVariable("menutheme");
+			Model.DirtyVariable("menubattle");
 			Model.DirtyVariable("renderer");
 			Model.DirtyVariable("hdroutput");
 			Model.DirtyVariable("paperwhite");
@@ -681,6 +690,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("cursorscale", &state.CursorScale)
 				&& model.Bind("menuthemes", &state.MenuThemes)
 				&& model.Bind("menutheme", &state.MenuTheme)
+				&& model.Bind("menubattle", &state.MenuBattle)
 				&& model.Bind("renderers", &state.Renderers)
 				&& model.Bind("renderer", &state.Renderer)
 				&& model.Bind("hdroutputs", &state.HDROutputs)
