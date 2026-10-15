@@ -2580,6 +2580,18 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   face %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)facing);
 			}
 		}
+	} else if (step.Command == "pitch") {
+		// pitch <dir256> x y: sets the barrel pitch of the player's objects on that cell, 64 level and 0 straight up.
+		Cell const cell(step.X, step.Y);
+		int const value = std::atoi(step.Argument.c_str()) & 255;
+		DirType const pitch = DirType(value);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Cell() == cell) {
+				techno->BarrelPitch.Set(pitch);
+				DebugString("AUTOTEST   pitch %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, value);
+			}
+		}
 	} else if (step.Command == "voxelshade") {
 		// voxelshade <type>: shade index of each normal in that table under VoxelLightSource, for the diffuse term alone and for the highlight at the rules' strength seen straight on.
 		int const normal_type = std::atoi(step.Argument.c_str());
