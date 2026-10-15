@@ -126,7 +126,7 @@ The following sources can give an object a rank without kills. They ignore `Vete
 | [Make Elite trigger action](/mapping/actions/taction-make-elite/) | Every object the trigger is attached to is promoted to elite. |
 | Country veteran lists: [`VeteranInfantry=`](/keys/veteraninfantry/#scope-housetype), [`VeteranUnits=`](/keys/veteranunits/#scope-housetype) and [`VeteranAircraft=`](/keys/veteranaircraft/#scope-housetype) | A new object of a type its house's country lists starts as a veteran. The type need not be `Trainable=yes`. |
 
-A crate promotes each affected object one step at a time: below rookie to rookie, rookie to veteran, then veteran to elite. Elite objects stay elite. A unit that collects a veterancy crate receives money instead when it is not `Trainable=yes` or is already elite, and then promotes nothing. The crate's `Data` value in `[Powerups]` sets the number of steps. Fractions round up, so `2.5` gives three steps and `2` gives two. A value of `0` or less gives no promotion.
+A crate promotes each affected object one step at a time: below rookie to rookie, rookie to veteran, then veteran to elite. Elite objects stay elite. Outside a campaign, a unit that collects a veterancy crate receives money instead when it is not `Trainable=yes` or is already elite, and then promotes nothing. The crate's `Data` value in `[Powerups]` sets the number of steps. Fractions round up, so `2.5` gives three steps and `2` gives two. A value of `0` or less gives no promotion.
 
 The other sources set the rank directly. The armory's result depends on the infantry's current rank.
 
@@ -204,7 +204,7 @@ Set the five bonuses below in `rules.ini` under `[General]`. Each applies only w
 | Setting | Applied as |
 | --- | --- |
 | [`VeteranCombat`](/keys/veterancombat/) | Damage is multiplied by the value, after the house and object firepower biases. |
-| [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value, after the house ground-speed bias. |
+| [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value, after the country's speed multiplier for the object's kind. |
 | [`VeteranSight`](/keys/veteransight/) | Sight range is multiplied by the value. A value of `0` switches the bonus off. |
 | [`VeteranArmor`](/keys/veteranarmor/) | Incoming damage is divided by the value. |
 | [`VeteranROF`](/keys/veteranrof/) | Reload delay is multiplied by the value. |
