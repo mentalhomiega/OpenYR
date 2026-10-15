@@ -1063,17 +1063,20 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				matrix.Rotate_Z(PrimaryFacing.Current().As_Radian32());
 				matrix.Translate_X(Class->TurretOffset / 8);
 
+				// The barrel is taken from the turret before the turret's recoil, as BuildingClass::Draw does (0x43DA80, 0x43E0E8-0x43E17E).
+				Matrix3D barrel_matrix = matrix;
+
 				// The turret body slides back along its facing by its recoil travel (BuildingClass::Draw, 0x43DA80).
 				matrix.Translate_X(-TurretRecoil.TravelSoFar);
 
-				Matrix3D barrel_matrix = matrix;
-				Vector3 vec2 = Vector3(matrix.Get_X_Translation(), matrix.Get_Y_Translation(), matrix.Get_Z_Translation());
+				// The barrel pitches about the turret's translated origin, and its recoil slides it before the pitch (0x43E1B3-0x43E1F4).
+				Vector3 vec2 = Vector3(barrel_matrix.Get_X_Translation(), barrel_matrix.Get_Y_Translation(), barrel_matrix.Get_Z_Translation());
 				barrel_matrix.Translate(-vec2);
+
+				barrel_matrix.Translate_X(-BarrelRecoil.TravelSoFar);
 
 				barrel_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32()));
 
-				// The barrel slides back along its pitched axis by its own recoil travel.
-				barrel_matrix.Translate_X(-BarrelRecoil.TravelSoFar);
 				barrel_matrix.Translate(vec2);
 
 				Point2D drawpoint = xy + Class->AnimData[BANIM_TURRET].Location;
