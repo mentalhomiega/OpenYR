@@ -2799,6 +2799,23 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   exportshape %s: needs a shape name and an output path\n", argument.c_str());
 		}
+	} else if (step.Command == "exportpal") {
+		// exportpal <NAME.SHP> <theater|unit|anim|house|house:N> <out.png>: writes the shape's frames as a PNG sheet, shown with that palette.
+		// "house" is the player's own colour scheme, as the scheme a building animation draws with.
+		std::string const & argument = step.Argument;
+		size_t const first = argument.find_first_of(" \t");
+		size_t const second = first != std::string::npos ? argument.find_first_not_of(" \t", first) : std::string::npos;
+		size_t const third = second != std::string::npos ? argument.find_first_of(" \t", second) : std::string::npos;
+		size_t const last = third != std::string::npos ? argument.find_first_not_of(" \t", third) : std::string::npos;
+		if (last != std::string::npos) {
+			std::string palette = argument.substr(second, third - second);
+			if (palette == "house") {
+				palette = "house:" + std::to_string(PlayerPtr->Scheme);
+			}
+			TrueColour_Export_Palette(argument.substr(0, first).c_str(), palette.c_str(), argument.substr(last).c_str());
+		} else {
+			DebugString("AUTOTEST   exportpal %s: needs a shape name, a palette and an output path\n", argument.c_str());
+		}
 	} else if (step.Command == "versus") {
 		// versus <WarheadID>:<TypeID>: the warhead's multiplier and targeting switches against that type's armor.
 		std::string const & argument = step.Argument;
@@ -3967,7 +3984,7 @@ bool AutoTest_Load(char const * filename)
 		std::string text = argument;
 		// A rules step's path and a log line's text are the rest of the line, so they may hold spaces.
 		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
-			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "teamini") == 0
+			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "exportpal") == 0 || std::strcmp(command, "teamini") == 0
 			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
 			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
 			|| std::strcmp(command, "wintype") == 0 || std::strcmp(command, "key") == 0 || std::strcmp(command, "winkey") == 0
