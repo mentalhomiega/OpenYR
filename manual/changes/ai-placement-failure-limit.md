@@ -13,4 +13,4 @@ credit:
 - MentalHomiega
 ---
 
-A computer house now counts each blocked placement of a structure against its base node. In a skirmish or multiplayer game, a node blocked more than `MaximumBuildingPlacementFailures` times is removed from the plan, and its structure is placed by the placement search. Before, the house retried a blocked node every `PlacementDelay` minutes without limit. The default is 5 when the rules omit the key. The save revision moves to 32, so saves from earlier builds are not compatible.
+A computer house now counts each blocked placement of a structure against its base node. In a skirmish or multiplayer game, a node blocked more than `MaximumBuildingPlacementFailures` times is removed from the plan, and its structure is placed by the placement search. Before, the house retried a blocked node every `PlacementDelay` minutes without limit. The default is 5 when the rules omit the key. Saves from earlier builds are not compatible.
