@@ -73,6 +73,10 @@ A command runs once the game frame reaches its frame, in file order.
 | `census ore` | Writes, for each tiberium type, the cells holding it with their total density and credit value, how many of them can still grow or spread, and the lengths of its growth and spread queues. `census` writes the houses instead: each house's money, power, buildings, units, infantry and aircraft, and for each computer house its difficulty, the resource gatherers and destinations it owns (slave miners included), the factories it has by type, and the units, infantry, aircraft and structures it has finished producing so far |
 | `buildtrace <0\|1>` | Logs, as BUILDTRACE lines, each structure a computer house starts building from its base plan and the cell where it places a finished one |
 | `rallyclick <TypeID> x y` | Gives the player's structures of that type the rally click of an Alt-click on the ground, with the nearby-cell search |
+| `rallyof <TypeID>` | Writes the rally point (archive target) of each of the player's structures of that type, as the cell it names, or `-1,-1` when none is set |
+| `pickable <TypeID>` | Writes each object of that type the player owns, with whether the clickable list holds it and, when it does, the window pixel its entry is drawn at (`window x,y`, or `-1,-1` when it is not listed). The list is the one the last render built |
+| `pickat x y` | Writes the object a left click at that window pixel would pick from the clickable list and the cell under it, without selecting anything |
+| `cellpixel x y` | Writes the window pixel of the centre of that cell under the current view, for a `windowclick` step |
 | `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
 | `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
 | `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |

@@ -1,0 +1,35 @@
+; Kirov steady-state pick grid: the Kirov has settled at 750 AGL. pickat logs what a click at each window pixel picks.
+30 command CenterBase
+35 reveal
+40 own NAWEAP 60 20
+41 own ZEP 61 21
+50 view 61 21
+450 airborne ZEP
+451 pickable ZEP
+452 windowshot kirov-steady
+460 pickat 320 100
+461 pickat 320 108
+462 pickat 320 116
+463 pickat 320 124
+464 pickat 320 132
+465 pickat 320 140
+466 pickat 320 148
+467 pickat 320 156
+468 pickat 320 164
+469 pickat 320 172
+470 pickat 320 180
+471 pickat 320 188
+472 pickat 320 196
+473 pickat 320 204
+474 pickat 320 212
+475 pickat 320 220
+476 pickat 320 228
+477 pickat 280 132
+478 pickat 290 132
+479 pickat 300 132
+480 pickat 310 132
+481 pickat 330 132
+482 pickat 340 132
+483 pickat 350 132
+484 pickat 360 132
+485 quit
