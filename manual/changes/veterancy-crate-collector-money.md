@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A unit that collects a veterancy crate now receives money instead when it is not trainable or is already elite, as Yuri's Revenge does. Earlier builds still promoted the nearby units in that case.
+Outside a campaign, a unit that collects a veterancy crate now receives money instead when it is not trainable or is already elite, as Yuri's Revenge does. Earlier builds still promoted the nearby units in that case.
