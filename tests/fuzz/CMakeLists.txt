@@ -123,3 +123,8 @@ set(FUZZ_INI_ENGINE
     xpipe.cpp
     xstraw.cpp
 )
+
+fuzz_add_target(FuzzIni NAME fuzz_ini
+    SOURCES fuzz_ini.cpp
+    ENGINE ${FUZZ_INI_ENGINE}
+)

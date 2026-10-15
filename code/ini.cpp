@@ -717,7 +717,7 @@ bool INIClass::Put_UUBlock(char const * section, void const * block, int len)
  *=============================================================================================*/
 int INIClass::Get_UUBlock(char const * section, void * block, int len) const
 {
-	if (section == NULL) return(0);
+	if (section == NULL || block == NULL || len <= 0) return(0);
 
 	Base64Pipe b64pipe(Base64Pipe::DECODE);
 	BufferPipe bpipe(block, len);
