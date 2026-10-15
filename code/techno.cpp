@@ -6746,11 +6746,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		case RESULT_HALF: {
 
 			/*
-			 * Half-strength transition may trigger a feedback voice response.
+			 * Half-strength transition may trigger a feedback voice response, spoken only for an object the
+			 * local player controls. The roll comes first, as in TechnoClass::ReceiveDamage (0x701900).
 			 */
 			TechnoTypeClass const * ttype = TClass;
-			if (ttype->VoiceFeedback.Count() > 0 && Scen->RandomNumber(0, 99) < 30) {
-				VocType voc = (VocType)ttype->VoiceFeedback.Pick(Scen->RandomNumber());
+			if (ttype->VoiceFeedback.Count() > 0 && NonCriticalRandomNumber(0, 99) < 30 && House->Is_Player_Control()) {
+				VocType voc = (VocType)ttype->VoiceFeedback.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Center_Coord());
 			}
 			break;
