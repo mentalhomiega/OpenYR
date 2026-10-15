@@ -5025,13 +5025,13 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		return(NULL);
 	}
 
-	// A DiskLaser weapon draws its ring and strikes when the ring closes (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsDiskLaser && target->Is_Techno()) {
+	// A DiskLaser weapon draws its ring and strikes when the ring closes, at an object or at a cell (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDiskLaser) {
 		if (!DiskLaser.Is_Active()) {
 			// The burst index advances before the rate is read, as TechnoClass::Fire (0x6FDD50) does,
 			// so a one-shot laser waits out its full ROF rather than the short burst delay.
 			BurstIndex++;
-			DiskLaser.Fire(this, (TechnoClass *)target, weapon, Fire_Damage(weapon));
+			DiskLaser.Fire(this, target, weapon, Fire_Damage(weapon));
 			LastFireFrame = Frame;
 			Arm = Rearm_Delay(which);
 			ChargeTurretDelay = (int)Arm;
