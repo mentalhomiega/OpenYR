@@ -315,6 +315,11 @@ int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::
 		return Start_Game(options, folder, log);
 	}
 
+	if (!launcher::Asset_Sources_Allowed(feed, update, error)) {
+		Say(options, log, L"Update check skipped: " + error);
+		return Start_Game(options, folder, log);
+	}
+
 	if (config.DataDirectory.empty()) {
 		Say(options, log, L"OPENTS.INI names no Yuri's Revenge folder, so the update is not offered.");
 		return Start_Game(options, folder, log);

@@ -100,6 +100,11 @@ UpdateType Decide_Update(std::wstring const & installed, ReleaseType const & rel
 enum class SourceType { Https, LocalFile, Refused };
 SourceType Source_Kind(std::wstring const & url);
 
+// True when the offered assets may be fetched for this feed. A feed read over https may only name
+// https assets, so a release feed cannot send the update copy to a file on the player's disk. A local
+// feed, used by the tests, may name either. On false, reason says which asset was refused.
+bool Asset_Sources_Allowed(std::wstring const & feed, UpdateType const & update, std::wstring & reason);
+
 // The OpenYR settings the launcher reads from OPENTS.INI.
 struct ConfigType
 {

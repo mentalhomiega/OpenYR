@@ -588,6 +588,24 @@ SourceType Source_Kind(std::wstring const & url)
 }
 
 
+bool Asset_Sources_Allowed(std::wstring const & feed, UpdateType const & update, std::wstring & reason)
+{
+	if (Source_Kind(feed) != SourceType::Https) {
+		return true;
+	}
+
+	if (Source_Kind(update.Setup.Url) != SourceType::Https) {
+		reason = L"The feed names a setup address that is not https://, which a web feed may not do.";
+		return false;
+	}
+	if (Source_Kind(update.Checksum.Url) != SourceType::Https) {
+		reason = L"The feed names a checksum address that is not https://, which a web feed may not do.";
+		return false;
+	}
+	return true;
+}
+
+
 ConfigType Read_Config(std::wstring const & ini_text)
 {
 	ConfigType config;

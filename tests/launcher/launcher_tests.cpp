@@ -273,6 +273,31 @@ void Test_Decision(void)
 }
 
 
+// A release feed read over https must not send the update copy to a file on the player's disk.
+void Test_Asset_Sources(void)
+{
+	launcher::ReleaseType release;
+	std::wstring error;
+	launcher::Parse_Release(Release_Json, release, error);
+	launcher::UpdateType offer = launcher::Decide_Update(L"beta22", release);
+	Check(offer.Offer && launcher::Asset_Sources_Allowed(launcher::DefaultFeedUrl, offer, error), "https assets from an https feed are allowed");
+
+	launcher::UpdateType local_setup = offer;
+	local_setup.Setup.Url = L"C:\\Windows\\System32\\cmd.exe";
+	Check(!launcher::Asset_Sources_Allowed(launcher::DefaultFeedUrl, local_setup, error) && error.find(L"setup address") != std::wstring::npos, "a local setup path from an https feed is refused, and the reason names the setup");
+
+	launcher::UpdateType local_sum = offer;
+	local_sum.Checksum.Url = L"C:\\feed\\sum.sha256";
+	Check(!launcher::Asset_Sources_Allowed(L"https://example.test/feed.json", local_sum, error) && error.find(L"checksum address") != std::wstring::npos, "a local checksum path from an https feed is refused");
+
+	launcher::UpdateType plain = offer;
+	plain.Setup.Url = L"http://example.test/setup.exe";
+	Check(!launcher::Asset_Sources_Allowed(launcher::DefaultFeedUrl, plain, error), "a plain http setup address is refused");
+
+	Check(launcher::Asset_Sources_Allowed(L"C:\\feed\\latest.json", local_setup, error), "a local feed, as the tests use, may name local files");
+}
+
+
 void Test_Sources_And_Config(void)
 {
 	Check(launcher::Source_Kind(L"https://api.github.com/x") == launcher::SourceType::Https, "an https URL is fetched over the network");
@@ -431,6 +456,7 @@ int main()
 	Test_Release_And_Assets();
 	Test_Checksum();
 	Test_Decision();
+	Test_Asset_Sources();
 	Test_Sources_And_Config();
 	Test_Quoting();
 	Test_Update_Folder();
