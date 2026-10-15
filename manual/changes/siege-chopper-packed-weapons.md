@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A vehicle with `DeployFire=yes` now fires its normal weapons while packed up, and its DeployFireWeapon only while deployed. Before, a packed-up Siege Chopper always fired its first weapon, whatever the target.
+A vehicle with `IsSimpleDeployer=yes` and `DeployFire=yes` now fires its normal weapons while packed up, and its DeployFireWeapon only while deployed. Before, a packed-up Siege Chopper always fired its first weapon, whatever the target.
