@@ -4,6 +4,7 @@ summary: A crash writes a minidump, a readable report, and the end of that run's
 category: troubleshooting
 source_files:
   - code/except.cpp
+  - code/hangwatch.cpp
   - code/startup.cpp
   - code/init.cpp
 related:
@@ -84,6 +85,14 @@ After writing the folder, the game shows the report and the folder's path in a d
 - `Save full dump` writes `fulldump.dmp`, which holds the whole address space and is much larger than `minidump.dmp`. Save one for a crash that the report cannot explain.
 - `Debug` breaks into an attached debugger. The process ends when the debugger lets it continue. Without a debugger, `Debug` acts like `Quit`.
 - `Quit` ends the process, as does closing the dialog.
+
+## Hangs
+
+When the main thread goes without pumping messages for longer than `HangSeconds` in the `[Debug]` section of `RA2MD.INI`, the game reports a hang. The default is 5 seconds, and `HangSeconds=0` turns the check off.
+
+The report is a block in the debug log that starts `HANG: main thread stuck for N s`, followed by the stalled thread's call stack with symbols. The game suspends the thread only while it captures the stack and writes a minidump, then resumes it. The `Exceptions` folder beside the executable gets a folder named `exception-hang-...`, which holds `minidump.dmp` and `stall.txt`. `stall.txt` repeats the stack and says whether the minidump was written. When the thread runs again, the log says `HANG: main thread responded again after N s`.
+
+Nothing is timed before the first message pump after the game's one-time initialization. A scenario load is reported only after 60 seconds, or after `HangSeconds` when that is longer. A native message box waiting for an answer is not reported.
 
 ## Raising a crash on purpose
 

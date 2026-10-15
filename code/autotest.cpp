@@ -237,6 +237,7 @@
 #include "event.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hangwatch.h"
 #include "house.h"
 #include "houstype.h"
 #include "infantry.h"
@@ -4125,6 +4126,10 @@ void Run(StepType const & step)
 		// searchdir <path>: added to the search path when the script was read (AutoTest_Load).
 	} else if (step.Command == "loadshot") {
 		// loadshot <name>: kept when the script was read (AutoTest_Load).
+	} else if (step.Command == "stall") {
+		// stall <ms>: keeps the main thread busy without pumping messages, so the hang watchdog reports it.
+		DebugString("AUTOTEST stall %s\n", step.Argument.c_str());
+		Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
 	} else if (step.Command == "quit") {
 		DebugString("AUTOTEST quit\n");
 		std::exit(0);

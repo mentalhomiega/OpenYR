@@ -107,6 +107,7 @@
 #include "getcpu.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hangwatch.h"
 #include "houstype.h"
 #include "incdec.h"
 #include "infantry.h"
@@ -736,6 +737,9 @@ static char const * Apply_Custom_Load_Screen(char const * & background, Point2D 
  *=============================================================================================*/
 bool Read_Scenario(char const * fname)
 {
+	// A load can run a long time between message pumps, so the watchdog allows it a longer stall.
+	HangWatchLoadScope const loading;
+
 	char name[_MAX_PATH];
 
 	strcpy(name, fname);

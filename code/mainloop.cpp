@@ -39,6 +39,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "fog.h"
+#include "hangwatch.h"
 #include "init.h"
 #include "globals.h"
 #include "goptions.h"
@@ -264,6 +265,9 @@ bool Main_Loop(void)
 	int y;
 
 	//Mono_Set_Cursor(0,0);
+
+	// Each game frame beats, so a skirmish frame counts even when no message pump runs during it.
+	Hang_Watchdog_Beat();
 
 	if (!GameActive) {return(!GameActive);}
 

@@ -48,6 +48,7 @@
 #define EXCEPTION_OPENTS_TERMINATE			0xE0545302
 #define EXCEPTION_OPENTS_PURECALL			0xE0545303
 #define EXCEPTION_OPENTS_INVALID_PARAMETER	0xE0545304
+#define EXCEPTION_OPENTS_STALL				0xE0545305
 
 #else
 
@@ -58,6 +59,19 @@
 void Install_Exception_Handler(void);
 void Exception_Register_Log_File(char const * path);
 bool Describe_Code_Address(void const * address, char * buffer, unsigned size);
+
+#if defined(_WIN32)
+
+// Hooks for the hang watchdog. A stall is captured in this order: refresh the module table, take
+// the symbol lock, suspend the thread, describe it, write the dump, resume, then release the lock.
+// The lock keeps the stalled thread from holding the symbol handler when it is suspended.
+void Exception_Refresh_Module_Table(void);
+bool Exception_Stall_Lock(unsigned wait_milliseconds);
+void Exception_Stall_Unlock(void);
+bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, char * text, unsigned size);
+bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folder_size, DWORD * error);
+
+#endif
 
 void Exception_Set_Test_Mode(char const * mode);
 void Exception_Run_Immediate_Test(void);
