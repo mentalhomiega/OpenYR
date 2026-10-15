@@ -73,6 +73,7 @@ struct SessionPart
 SessionPart Battle;
 bool Running = false;
 bool Loading = false;
+float SoundLevel = 0.5f;
 int ScopeDepth = 0;
 bool InService = false;
 
@@ -294,6 +295,7 @@ bool Prepare_Battle(char * file, int file_size)
 	Battle.Options.BuildOffAlly = false;
 	Battle.Options.AutoDeployMCV = true;
 	Battle.Options.SWAllowed = ConfigINI.Get_Bool("MenuBattle", "SuperWeapons", false);
+	SoundLevel = std::clamp((float)ConfigINI.Get_Float("MenuBattle", "SoundVolume", 0.5), 0.0f, 1.0f);
 	Battle.AIOnly = true;
 	Battle.PlayerHouse = (HousesType)observer_house;
 	Battle.ScenarioActive = false;
@@ -509,6 +511,12 @@ bool Shellmap_Running(void)
 bool Shellmap_In_Scope(void)
 {
 	return(ScopeDepth > 0);
+}
+
+
+float Shellmap_Sound_Level(void)
+{
+	return(Running ? SoundLevel : 1.0f);
 }
 
 
