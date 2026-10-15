@@ -13,6 +13,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "tactical.h"
 #include "flyingtext.h"
 
@@ -1586,7 +1587,7 @@ void Tactical::Draw_Placement_Range(void)
 		return;
 	}
 
-	Draw_Range_Ring(Map[Map.ZoneCell].Center_Coord(), range, PlayerPtr->RemapColorRGB);
+	Draw_Range_Ring(Map[Map.ZoneCell].Center_Coord(), range, House_Display_RGB(PlayerPtr));
 
 	Cell cursor = Map.ZoneCell;
 	auto is_same_type = [&](BuildingClass * building) {
@@ -1616,7 +1617,7 @@ void Tactical::Draw_Placement_Range(void)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (is_same_type(building) && distance_to(building) == nearest && building->Is_Powered_On() && building->House->Is_Player_Control()) {
-			Draw_Range_Ring(building->Center_Coord(), range, building->House->RemapColorRGB);
+			Draw_Range_Ring(building->Center_Coord(), range, House_Display_RGB(building->House));
 		}
 	}
 }
@@ -3567,7 +3568,7 @@ void Tactical::Draw_Beacons(void)
 
 			if (beacon->Text[0] != '\0') {
 				Point2D label(pixel.X, pixel.Y - 25);
-				Simple_Text_Print(beacon->Text, *LogicalSurface, TacticalRect, label, ColorSchemes[Houses[house]->Scheme], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
+				Simple_Text_Print(beacon->Text, *LogicalSurface, TacticalRect, label, ColorSchemes[House_Display_Scheme(Houses[house])], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
 			}
 		}
 	}
@@ -3916,7 +3917,7 @@ void Tactical::Draw_Mind_Control_Links(void)
 			continue;
 		}
 		CaptureManagerClass const & manager = *techno->CaptureManager;
-		RGBClass const & rgb = techno->House->RemapColorRGB;
+		RGBClass const rgb = House_Display_RGB(techno->House);
 		int const color = DSurface::Build_Hicolor_Pixel(rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue());
 		Point2D start;
 		Coord_To_Pixel(techno->Center_Coord(), start);
@@ -4175,7 +4176,7 @@ void Tactical::Draw_Super_Timers(void)
 		}
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
-		if (scheme == NULL) scheme = ColorSchemes[PlayerPtr->Scheme];
+		if (scheme == NULL) scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
 		Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), scheme, 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 		line++;
 	}
@@ -4197,7 +4198,7 @@ void Tactical::Draw_Super_Timers(void)
 			} else {
 				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
 			}
-			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), ColorSchemes[house->Scheme], 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
+			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, place(line), ColorSchemes[House_Display_Scheme(house)], 0, (TextPrintType)(align | TPF_EFNT | TPF_FULLSHADOW), 1);
 			line++;
 		}
 	}

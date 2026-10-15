@@ -9,6 +9,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "vanim.h"
 
 #include "_convert.h"
@@ -239,7 +240,7 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 
 				ConvertClass * drawer;
 				if (House != NULL) {
-					drawer = ColorSchemes[House->Scheme]->Converter;
+					drawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
 				} else if (Class->IsTiberium) {
 					drawer = TiberiumDrawer;
 				} else {

@@ -35,6 +35,7 @@
 #include "mixfile.h"
 #include "palette.h"
 #include "pcx.h"
+#include "playerdisplay.h"
 #include "preview.h"
 #include "progress.h"
 #include "scenario.h"
@@ -472,7 +473,7 @@ void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_si
 
 ColorScheme const * Player_Scheme(NodeNameType const * node)
 {
-	int const index = Session.Scheme_For_Color(node->Player.Color, node->Player.CustomColor);
+	int const index = Scheme_Display_Index(Session.Scheme_For_Color(node->Player.Color, node->Player.CustomColor));
 	if (index < 0 || index >= ColorSchemes.Count()) {
 		return(NULL);
 	}
@@ -914,7 +915,7 @@ void LoadScreenClass::Show_Start_Positions(void)
 		if (house->IsObserver || house->SpawnWaypoint < 0 || house->Scheme < 0 || house->Scheme >= ColorSchemes.Count()) {
 			continue;
 		}
-		LightConvertClass * drawer = ColorSchemes[house->Scheme]->Converter;
+		LightConvertClass * drawer = ColorSchemes[House_Display_Scheme(house)]->Converter;
 		if (drawer == NULL) {
 			continue;
 		}

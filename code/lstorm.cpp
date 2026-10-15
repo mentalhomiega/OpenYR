@@ -23,6 +23,7 @@
 #include "globals.h"
 #include "house.h"
 #include "ion.h"
+#include "playerdisplay.h"
 #include "revent.h"
 #include "rules.h"
 #include "savestream.h"
@@ -110,7 +111,7 @@ void NukeFlashClass::Serialize(SaveStreamClass & stream)
 
 static void Storm_Message(char const * label, TextPrintType style)
 {
-	int const scheme = PlayerPtr != NULL ? PlayerPtr->Scheme : 3;
+	int const scheme = PlayerPtr != NULL ? House_Display_Scheme(PlayerPtr) : 3;
 	std::string const text = Fetch_String_UTF8(label);
 	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, style, TICKS_PER_SECOND * 10);
 }

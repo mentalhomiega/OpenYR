@@ -59,6 +59,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "scenario.h"
 
 #include "autotest.h"
@@ -483,7 +484,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 		}
 
 		sprintf(message, Fetch_String(TXT_DIFFICULTY_LEVEL), named);
-		Session.Messages.Add_Message(NULL, 0, message, PlayerPtr->Scheme,
+		Session.Messages.Add_Message(NULL, 0, message, House_Display_Scheme(PlayerPtr),
 			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW),
 			int(Rule->MessageDelay * TICKS_PER_MINUTE));
 	}

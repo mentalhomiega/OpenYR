@@ -63,6 +63,7 @@
 #include "language/language.h"
 #include "mouse.h"
 #include "netsemantic.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "savemgr.h"
 #include "scenario.h"
@@ -940,7 +941,7 @@ void EventClass::Execute(void)
 
 				sprintf(txt, Fetch_String(TXT_SPECIAL_WARNING), Session.Shown_Name(house).c_str());
 				Session.Messages.Add_Message(NULL, 0, txt,
-					house->Scheme,
+					House_Display_Scheme(house),
 					TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 1200);
 				Map.Flag_To_Redraw();
 			}
@@ -1485,7 +1486,7 @@ void EventClass::Execute(void)
 				str = Fetch_String(TXT_PLAYER_CHANGED_SPEED);
 				if (str != NULL && strlen(str) != 0) {
 					sprintf(msg, str, Session.Shown_Name(house).c_str());
-					Session.Messages.Add_Message(NULL, 0, msg, house->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+					Session.Messages.Add_Message(NULL, 0, msg, House_Display_Scheme(house), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 				}
 			}
 			break;
@@ -1575,7 +1576,7 @@ void EventClass::Execute(void)
 				str = Fetch_String(TXT_PLAYER_CHANGED_LATENCY);
 				if (str != NULL && strlen(str) != 0) {
 					sprintf(msg, str, Session.Shown_Name(house).c_str());
-					Session.Messages.Add_Message(NULL, 0, msg, house->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+					Session.Messages.Add_Message(NULL, 0, msg, House_Display_Scheme(house), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 				}
 			}
 			break;
@@ -1631,7 +1632,7 @@ void EventClass::Execute(void)
 				char const * quality_name = Fetch_String(Network_Quality_Text_ID(quality));
 				if (format != NULL && quality_name != NULL && format[0] != '\0' && quality_name[0] != '\0') {
 					snprintf(msg, sizeof(msg), format, quality_name);
-					Session.Messages.Add_Message(NULL, 0, msg, house->Scheme,
+					Session.Messages.Add_Message(NULL, 0, msg, House_Display_Scheme(house),
 						TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 				}
 			}
@@ -1732,7 +1733,7 @@ void Planning_Message(char const * label)
 	}
 	std::string const text = Fetch_String_UTF8(label);
 	DebugString("Planning message %s: %s\n", label, text.c_str());
-	Session.Messages.Add_Message(NULL, 0, text.c_str(), PlayerPtr->Scheme,
+	Session.Messages.Add_Message(NULL, 0, text.c_str(), House_Display_Scheme(PlayerPtr),
 		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 0x1E0);
 }
 

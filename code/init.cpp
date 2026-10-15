@@ -57,6 +57,7 @@
 #include "always.h"
 
 #include "init.h"
+#include "playerdisplay.h"
 #include "rulescheck.h"
 #include "rulesreload.h"
 
@@ -4881,7 +4882,7 @@ class ReloadRulesCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			char const * text = Reload_Rules() ? "Rules reloaded." : "Rules can only be reloaded in single-player and skirmish games.";
-			Session.Messages.Add_Message(NULL, 0, text, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+			Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
 			Map.Flag_To_Redraw();
 		}
 };
@@ -5079,7 +5080,7 @@ static void Step_Theme(int step)
 		Theme.Queue_Song(theme);
 		char buffer[128];
 		snprintf(buffer, sizeof(buffer), Fetch_String(TXT_NOW_PLAYING), Theme.Full_Name(theme));
-		Session.Messages.Add_Message(NULL, 0, buffer, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+		Session.Messages.Add_Message(NULL, 0, buffer, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
 		return;
 	}
 }
@@ -6469,7 +6470,7 @@ class TypeSelectCommandClass : public CommandClass
 
 			char const * label = CurrentObject.Count() == 0 ? "MSG:NothingSelected" : (Widen ? "MSG:SelAcrossMap" : "MSG:SelAcrossScreen");
 			// gamemd shows the message for 240 ticks (TypeSelect apply, 0x732BD5).
-			Session.Messages.Add_Message(NULL, 0, Fetch_String_UTF8(label).c_str(), PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), TICKS_PER_SECOND * 16);
+			Session.Messages.Add_Message(NULL, 0, Fetch_String_UTF8(label).c_str(), House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), TICKS_PER_SECOND * 16);
 			TypeSelectCycle = true;
 		}
 
@@ -6502,7 +6503,7 @@ class TauntCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (Session.Type != GAME_NORMAL) {
-				Session.Messages.Add_Message(NULL, 0, "Taunts are not available in this build.", PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+				Session.Messages.Add_Message(NULL, 0, "Taunts are not available in this build.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
 			}
 		}
 

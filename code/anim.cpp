@@ -81,6 +81,7 @@
 #include "overtype.h"
 #include "particle.h"
 #include "partsys.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -560,7 +561,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			ConvertClass * convert;
 
 			if (Class->IsVeins) {
-				convert = ColorSchemes[PlayerPtr->Scheme]->Converter;
+				convert = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 				if (!Class->IsUseNormalLight) {
 					brightness = Map[Render_Coord()].TileBrightness;
 				}
@@ -1769,7 +1770,7 @@ void AnimClass::Post_Load_Game(void)
 			}
 		}
 		if (anim->Class->IsFlamingGuy) {
-			anim->AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
+			anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 		}
 	}
 }

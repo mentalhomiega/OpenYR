@@ -9,6 +9,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "psydom.h"
 
 #include "_map.h"
@@ -145,7 +146,7 @@ bool PsychicDominatorClass::Can_Be_Dominated(TechnoClass const * techno)
 /// </summary>
 void PsychicDominatorClass::Print_Refusal(void)
 {
-	int const scheme = PlayerPtr != NULL ? PlayerPtr->Scheme : 3;
+	int const scheme = PlayerPtr != NULL ? House_Display_Scheme(PlayerPtr) : 3;
 	std::string const text = Fetch_String_UTF8("Msg:DominatorActive");
 	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
 }

@@ -72,6 +72,7 @@
 #include "globals.h"
 #include "house.h"
 #include "netglobal.h"
+#include "playerdisplay.h"
 #include "queue.h"
 #include "scheme.h"
 #include "session.h"
@@ -1459,7 +1460,7 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 	for (int i = 0; i < NumConnections; i++) {
 		HouseClass * house = Houses[Connection[i]->ID];
 		if (house != NULL && house != PlayerPtr) {
-			int scheme = house->Scheme;
+			int scheme = House_Display_Scheme(house);
 
 			Fancy_Text_Print(Session.Shown_Name(Connection[i]->ID, Connection[i]->Name).c_str(), *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 2), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 

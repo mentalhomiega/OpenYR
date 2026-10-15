@@ -112,6 +112,7 @@
 #include "mixfile.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -342,7 +343,7 @@ int CellClass::Preview_Cell_Color(unsigned char & unknown, bool terrainonly) con
 	BuildingClass * obj = Cell_Building();
 
 	if (!terrainonly && obj != NULL && !obj->Class->IsInvisible && !obj->Class->IsInvisibleInGame && obj->Visual_Character() != VISUAL_HIDDEN) {
-		ColorScheme * owner_scheme = ColorSchemes[obj->House->Scheme];
+		ColorScheme * owner_scheme = ColorSchemes[House_Display_Scheme(obj->House)];
 		unsigned int color = owner_scheme->Converter->Convert_Pixel(owner_scheme->Color);
 		return((color << 16) | color);
 	}
@@ -2393,9 +2394,9 @@ void CellClass::Draw_Overlay(Point2D const & xpoint, Rect const & cliprect)
 			Draw_Shape(*LogicalSurface, *TerrainDrawer, tibshape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_GROUND, NORMAL_LIGHT);
 		}
 	} else if (otype->IsWall) {
-		Draw_Shape(*LogicalSurface, *ColorSchemes[PlayerPtr->Scheme]->Converter, shape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_90DEG, Brightness);
+		Draw_Shape(*LogicalSurface, *ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter, shape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_90DEG, Brightness);
 	} else if (otype->HeapID == OVERLAY_VEINS) {
-		ConvertClass *drawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
+		ConvertClass *drawer = ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter;
 		if (Ramp != RAMP_NONE) {
 			Draw_Shape(*LogicalSurface, *drawer, shape, OverlayData, point, cliprect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA | SHAPE_ZWRITE), 0, -2 - yoffset, ZGRAD_GROUND, TileBrightness, SlopeZShapes[Ramp - 1], 0, Point2D(CELL_PIXEL_W, -2));
 		} else {

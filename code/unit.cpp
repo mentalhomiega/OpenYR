@@ -97,6 +97,7 @@
 
 #include "always.h"
 
+#include "playerdisplay.h"
 #include "unit.h"
 
 #include "_bench.h"
@@ -2668,25 +2669,25 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	switch (Visual_Character()) {
 
 	case VISUAL_INDISTINCT:
-		blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_ZGRAD));
+		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_ZGRAD));
 		break;
 
 	case VISUAL_DARKEN:
-		blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
+		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
 		break;
 
 	case VISUAL_SHADOWY:
-		blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
+		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
 		break;
 
 	case VISUAL_RIPPLE: {
 		int stage = CloakingDevice.Fetch_Stage();
 		if (stage == 0) {
-			blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD));
 		} else if (stage == 1) {
-			blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
 		} else {
-			blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
 		}
 
 		predoffset = Get_Predator_Offset();
@@ -2697,7 +2698,7 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 		break;
 
 	default:
-		blitter = ColorSchemes[House->Scheme]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
+		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
 		break;
 	}
 
@@ -3404,7 +3405,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		**	If this unit is carrying the flag, then draw that on top of everything else.
 		*/
 		if (Flagged != HOUSE_NONE) {
-			Draw_Shape(*LogicalSurface, *ColorSchemes[Houses[Flagged]->Scheme]->Converter, (ShapeSet const *)MFCD::Retrieve("FLAGFLY.SHP"), Frame % 14, raw_point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_ALPHA), NULL, 0, ZGRAD_GROUND, brightness);
+			Draw_Shape(*LogicalSurface, *ColorSchemes[House_Display_Scheme(Houses[Flagged])]->Converter, (ShapeSet const *)MFCD::Retrieve("FLAGFLY.SHP"), Frame % 14, raw_point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_ALPHA), NULL, 0, ZGRAD_GROUND, brightness);
 		}
 
 		BASECLASS::Draw_It(raw_point, cliprect);
@@ -7359,7 +7360,7 @@ int UnitClass::Simple_Deploy_AI(void)
 			if (Class->DeployingAnim != NULL) {
 				AnimClass * anim = new AnimClass(Class->DeployingAnim, Center_Coord());
 				// The animation is drawn from unit artwork, so it takes the owner's unit colors.
-				anim->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+				anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
 				anim->AlternativeBrightness = Map[Get_Cell()].Brightness;
 				if (IsSimpleDeployed) {
 					anim->Play_Backward();

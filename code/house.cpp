@@ -169,6 +169,7 @@
 #include "mouse.h"
 #include "mpmode.h"
 #include "overtype.h"
+#include "playerdisplay.h"
 #include "quarry.h"
 #include "revent.h"
 #include "rules.h"
@@ -1708,7 +1709,7 @@ void HouseClass::AI(void)
 				Speak(VOX_LOW_POWER);
 				SpeakPowerDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 //				Map.Flash_Power();
-				Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_LOW_POWER), Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
+				Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_LOW_POWER), House_Display_Scheme(this), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
 			}
 		}
 	}
@@ -2645,7 +2646,7 @@ void HouseClass::Make_Ally(HouseClass * house)
 
 			if (Is_Human_Player() && Session.Type != GAME_NORMAL && !house->Class->IsMultiplayPassive) {
 				snprintf(buffer, sizeof(buffer), Fetch_String(TXT_HAS_ALLIED), Session.Shown_Name(this).c_str(), Session.Shown_Name(house).c_str());
-				Session.Messages.Add_Message(NULL, 0, buffer, Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
+				Session.Messages.Add_Message(NULL, 0, buffer, House_Display_Scheme(this), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
 
 				if (Is_Player_Control()) {
 					Speak(VOX_ALLIANCE_FORMED);
@@ -2718,7 +2719,7 @@ void HouseClass::Make_Enemy(HouseClass * house)
 				char buffer[80];
 
 				snprintf(buffer, sizeof(buffer), Fetch_String(TXT_AT_WAR), Session.Shown_Name(this).c_str(), Session.Shown_Name(house).c_str());
-				Session.Messages.Add_Message(NULL, 0, buffer, Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
+				Session.Messages.Add_Message(NULL, 0, buffer, House_Display_Scheme(this), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
 				Map.Flag_To_Redraw();
 				if (Is_Player_Control()) {
 					Speak(VOX_ALLIANCE_BROKEN);
@@ -3991,7 +3992,7 @@ void HouseClass::MPlayer_Defeated(void)
 		if (!Class->IsMultiplayPassive) {
 			snprintf(txt, sizeof(txt), Fetch_String(TXT_PLAYER_DEFEATED), Session.Shown_Name(this).c_str());
 
-			Session.Messages.Add_Message(NULL, 0, txt, Scheme,
+			Session.Messages.Add_Message(NULL, 0, txt, House_Display_Scheme(this),
 				TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
 			Speak(VOX_PLAYER_WAS_DEFEATED);
 			Map.Flag_To_Redraw();
@@ -11008,12 +11009,7 @@ bool HouseClass::Can_Build_Here(BuildingTypeClass *building, Cell const & cell)
 /// changes.</remarks>
 void HouseClass::Initialize_Radar_Color(void)
 {
-	ColorScheme * scheme = ColorSchemes[Scheme];
-	unsigned short c = scheme->Converter->Convert_Pixel(scheme->Bright);
-	int r = (c >> DSurface::RedRight) << DSurface::RedLeft;
-	int g = (c >> DSurface::GreenRight) << DSurface::GreenLeft;
-	int b = (c >> DSurface::BlueRight) << DSurface::BlueLeft;
-	RemapColorRGB = RGBClass(r,g,b);
+	RemapColorRGB = Scheme_Remap_RGB(Scheme);
 }
 
 
@@ -11027,9 +11023,10 @@ void HouseClass::Initialize_Radar_Color(void)
 RGBClass HouseClass::Laser_Color(void) const
 {
 	// Summed in the order gamemd uses, so the scaled channels round the same way.
-	double const red = RemapColorRGB.Get_Red();
-	double const green = RemapColorRGB.Get_Green();
-	double const blue = RemapColorRGB.Get_Blue();
+	RGBClass const remap = House_Display_RGB(this);
+	double const red = remap.Get_Red();
+	double const green = remap.Get_Green();
+	double const blue = remap.Get_Blue();
 
 	double first_red = 255.0;
 	double first_green = 255.0;

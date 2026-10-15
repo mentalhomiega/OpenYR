@@ -60,6 +60,7 @@
 #include "lcwstraw.h"
 #include "lightcon.h"
 #include "overtype.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -561,7 +562,7 @@ void OverlayClass::Editor_Draw_It(Point2D const & point, Rect const & cliprect) 
 		if (Class->HeapID == OVERLAY_VEINHOLE) {
 			drawpoint.Y -= 38;
 		}
-		Draw_Shape(*LogicalSurface, *ColorSchemes[PlayerPtr->Scheme]->Converter, shapefile, 0, drawpoint, cliprect, (ShapeFlags_Type)(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -2-yadjust, ZGRAD_GROUND, Map[Get_Coord()].TileBrightness);
+		Draw_Shape(*LogicalSurface, *ColorSchemes[House_Display_Scheme(PlayerPtr)]->Converter, shapefile, 0, drawpoint, cliprect, (ShapeFlags_Type)(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -2-yadjust, ZGRAD_GROUND, Map[Get_Coord()].TileBrightness);
 	} else {
 		CellClass *cellptr = NULL;
 		if (Map.In_Radar(Get_Coord().As_Cell())) {

@@ -31,6 +31,7 @@
 #include "inline.h"
 #include "lightcon.h"
 #include "objtype.h"
+#include "playerdisplay.h"
 #include "rect.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -378,7 +379,7 @@ void Draw_Fogged_Objects(Rect const & rect)
 					int shapenum = data->Records[record].FrameNumber;
 					ShapeSet const * shape = (ShapeSet const *)type->Get_Image_Data();
 					unsigned char heightadjust = data->Records[record].HeightAdjust;
-					LightConvertClass * converter = ColorSchemes[data->House->Scheme]->Converter;
+					LightConvertClass * converter = ColorSchemes[House_Display_Scheme(data->House)]->Converter;
 
 					if (record == 0) {
 

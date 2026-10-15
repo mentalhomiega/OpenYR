@@ -155,6 +155,7 @@
 #include "overlay.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "playerdisplay.h"
 #include "queue.h"
 #include "revent.h"
 #include "rules.h"
@@ -2628,7 +2629,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						if (type != NULL) {
 							AnimClass * anim = new AnimClass(type, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
 							if (anim != NULL) {
-								anim->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+								anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
 								anim->AlternativeBrightness = Apparent_Brightness();
 							}
 						}
@@ -8993,7 +8994,7 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		}
 
 		if (animptr->Class->IsShouldUseCellDrawer) {
-			animptr->AlternativeDrawer = ColorSchemes[House->Scheme]->Converter;
+			animptr->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
 			animptr->AlternativeBrightness = Apparent_Brightness();
 		}
 
@@ -9174,7 +9175,7 @@ void BuildingClass::Set_Anim_Drawer(ConvertClass * drawer, int brightness)
 void BuildingClass::Update_Anim_Appearance(void)
 {
 	Brightness = Apparent_Brightness(Get_Cell_Ptr()->Brightness);
-	ConvertClass * converter = ColorSchemes[House->Scheme]->Converter;
+	ConvertClass * converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
 	Set_Anim_Drawer(converter, Brightness);
 	Set_Anim_Translucency(TranslucencyLevel);
 }
