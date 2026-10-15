@@ -12,6 +12,7 @@
 #include "voxlib.h"
 
 #include "voxdrsys.h"
+#include "voxshade.h"
 #include "wwfile.h"
 
 #include <algorithm>
@@ -2378,10 +2379,7 @@ void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, f
 		/*
 		 * Specular boost (empirical) - the formula adjusts how specular highlights behave
 		 */
-		float specular = 0.0f;
-		if (specular_strength > 0.0f) {
-			specular = halfway_dot / (specular_strength - halfway_dot * specular_strength + halfway_dot);
-		}
+		float specular = Voxel_Specular_Term(halfway_dot, specular_strength);
 
 		/*
 		 * Clamp both values to [0, inf)
