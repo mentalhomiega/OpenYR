@@ -1,11 +1,11 @@
 ---
-title: Delay a teleport's jump and the hold after it
+title: Teleport jumps at once and holds for a distance-based delay
 category: fix
 release: 0.2.0
 targets:
 - type: key
   id: ChronoDelay
-  effect: added
+  effect: changed
 - type: key
   id: ChronoTrigger
   effect: added
@@ -19,9 +19,6 @@ targets:
   id: ChronoRangeMinimum
   effect: added
 - type: key
-  id: WarpIn
-  effect: added
-- type: key
   id: WarpOut
   effect: changed
 - type: key
@@ -30,4 +27,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A teleport locomotor no longer jumps at once. It waits a warp-out delay set by `ChronoTrigger`, `ChronoDistanceFactor`, `ChronoMinimumDelay` and `ChronoRangeMinimum`, then lands and holds for `ChronoDelay` frames. A Chrono Miner has no warp-out delay, and it still holds after landing. The warp plays `WarpOut` where the object stands when ordered, and `WarpIn` where it lands. A landing outside the local map area, or on a cell the object cannot stand on, moves to the nearest cell it can. Before, the jump was instant and nothing held the unit after it landed.
+A teleport locomotor jumps when its order is processed. The object leaves its cell and appears at the destination in the same frame, as gamemd does (0x7192F0 and 0x719715). It then holds still for the larger of `ChronoMinimumDelay` and its distance divided by `ChronoDistanceFactor`, or `ChronoMinimumDelay` alone under `ChronoRangeMinimum` and when `ChronoTrigger` is `no`. `ChronoDelay` is no longer read by the teleport locomotor. An order given during the hold is refused. A Chrono Miner holds the same way on its refinery trip. A landing on a cell the object cannot stand on moves to the nearest cell it can.

@@ -1,0 +1,20 @@
+; Chrono Legionnaire chrono beam on the default skirmish map (XMP29U2, base at 64,19). A computer rifleman stands
+; two cells east of the Legionnaire, inside its beam range. The beam is an IsRadBeam weapon with a temporal
+; warhead, so it is drawn in ChronoBeamColor (techno.cpp Fire, gamemd 0x6FD620 with type 1).
+; Run: run_autotest.ps1 -Build agent2 -Script tests/teleport/cleg-beam.txt -Seconds 120 -ShotDir "E:/Claude ra2 decomp/shots/chrono-legion"
+; The screenshots are taken while the beam is up. Their names come from the runner (SCRN0000.png and onward), in frame order.
+60 command CenterBase
+70 select AMCV
+80 command DeployObject
+300 reveal
+300 own CLEG 60 24
+300 spawn E2 62 24
+320 strike CLEG 62 24
+330 view 61 24
+332 command ScreenCapture
+334 command ScreenCapture
+336 command ScreenCapture
+338 command ScreenCapture
+340 where CLEG
+360 where CLEG
+400 quit
