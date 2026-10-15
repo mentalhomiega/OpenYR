@@ -68,6 +68,7 @@ struct SessionPart
 	bool ScenarioActive = false;
 	bool TacticalActive = false;
 	bool IgnoreInput = false;
+	bool GameRunning = true;
 	int BuildLevel = 10;
 	HouseClass * PlayerPtr = nullptr;
 };
@@ -127,6 +128,7 @@ void Take(SessionPart & part)
 	part.ScenarioActive = ScenarioActive;
 	part.TacticalActive = TacticalActive;
 	part.IgnoreInput = IgnoreInput;
+	part.GameRunning = GameActive;
 	part.BuildLevel = BuildLevel;
 	part.PlayerPtr = PlayerPtr;
 }
@@ -143,6 +145,7 @@ void Give(SessionPart const & part)
 	ScenarioActive = part.ScenarioActive;
 	TacticalActive = part.TacticalActive;
 	IgnoreInput = part.IgnoreInput;
+	GameActive = part.GameRunning;
 	BuildLevel = part.BuildLevel;
 	PlayerPtr = part.PlayerPtr;
 }
@@ -494,6 +497,8 @@ bool Load_Battle(void)
 	Loading = true;
 	{
 		BattleScope scope;
+		// The battle runs live whatever state the menus left this flag in (Settings clears it), or it would not place or remove its objects.
+		GameActive = true;
 		Seed = (int)Dice();
 		Init_Random();
 		Scen->Campaign = CAMPAIGN_NONE;
