@@ -13,7 +13,7 @@ The flag also has these effects:
 
 - The player's selected vehicles and aircraft get the enter cursor over the depot. A helipad offers that cursor to aircraft without this flag.
 - A computer house sends its damaged vehicles to its nearest `UnitRepair` building, under the conditions in [Reaching the pad](/systems/repair/#reaching-the-pad).
-- An idle depot takes on the object on its first dock when that object, still on its way in, comes within a quarter of a cell of the depot's center. Repairs start once that object stops within 100 leptons of the dock's spot, or 200 leptons for a hovercraft or ship.
+- An idle depot leaves guard for its repair mission when a docked object, still on its way in, comes within a quarter of a cell of the depot's center. It repairs only the object on its first dock, once that object stops within 100 leptons of the dock's spot, or 200 leptons for a hovercraft or ship.
 - A vehicle or aircraft parked on the depot can be sold where it stands.
 
 The flag is independent of [`RepairBay`](/keys/repairbay/), which names the one building type that repair orders look for. A depot that `RepairBay` does not name still serves whatever reaches it. A `RepairBay` type without this flag refuses the vehicles sent to it.
