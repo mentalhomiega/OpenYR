@@ -19,6 +19,7 @@ The developer guides are split by subject:
   frames, with an optional house-colour mask.
 - [HDR output](HDR.md) — the HDR10 back buffer, the composite pass that keeps
   the SDR colours, its settings and how it falls back to SDR.
+- [Colour-blind correction](COLOURBLIND.md) — the colour-blind matrices, the Daltonize correction and its limits.
 - [ts-patches in OpenTS](TS-PATCHES.md) — each CnCNet ts-patches patch and
   what OpenTS does in its place.
 - [Network timing](NETCODE.md) — how a network game schedules orders, how the
