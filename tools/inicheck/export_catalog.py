@@ -31,13 +31,14 @@ PATTERN_SCOPES = [
     ("PowerUp{1-}LocYY", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}LocZZ", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}YSort", "art.ini", "@image", ["BuildingType"], "integer"),
-    # IsometricTileTypeClass loading: the keys of a tile set, numbered from 1 as "%02d", up to the
-    # set's TilesInSet. A lower bound written with a leading zero stands for that printed width.
-    ("Tile{01-}Anim", "theater control file", "@tile-set", ["tile controls"], "string"),
-    ("Tile{01-}XOffset", "theater control file", "@tile-set", ["tile controls"], "integer"),
-    ("Tile{01-}YOffset", "theater control file", "@tile-set", ["tile controls"], "integer"),
-    ("Tile{01-}AttachesTo", "theater control file", "@tile-set", ["tile controls"], "integer"),
-    ("Tile{01-}ZAdjust", "theater control file", "@tile-set", ["tile controls"], "integer"),
+    # IsometricTileTypeClass::Init: the per-tile keys, numbered from 1 as "%02d" up to the set's
+    # TilesInSet. They are read from the section the set's SetName= names, not from the TileSet
+    # section itself. A lower bound written with a leading zero stands for that printed width.
+    ("Tile{01-}Anim", "theater control file", "@tile-set-name", ["tile controls"], "string"),
+    ("Tile{01-}XOffset", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
+    ("Tile{01-}YOffset", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
+    ("Tile{01-}AttachesTo", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
+    ("Tile{01-}ZAdjust", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
 ]
 
 

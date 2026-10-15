@@ -278,6 +278,86 @@ void Test_Art_Placement(void)
 }
 
 
+char const THEATER_CATALOG[] =
+	"RampBase\ttheater control file\tGeneral\ttile controls\tinteger\n"
+	"TilesInSet\ttheater control file\t@tile-set\ttile controls\tinteger\n"
+	"LastTilesInSet\ttheater control file\t@tile-set\ttile controls\tinteger\n"
+	"SetName\ttheater control file\t@tile-set\ttile controls\tstring\n"
+	"Morphable\ttheater control file\t@tile-set\ttile controls\tboolean\n"
+	"Tile{01-}Anim\ttheater control file\t@tile-set-name\ttile controls\tstring\n"
+	"Tile{01-}XOffset\ttheater control file\t@tile-set-name\ttile controls\tinteger\n"
+	"RampBase\trules.ini\tGeneral\tglobal rules\tstring\n";
+
+
+void Test_Theater(void)
+{
+	IniCheck::Catalog catalog;
+	std::istringstream stream(THEATER_CATALOG);
+	std::string error;
+	Check(catalog.Load(stream, error), "the theater catalog loads");
+
+	char const text[] =
+		"[General]\n"                       // 1
+		"RampBase=two\n"                    // 2
+		"Bogus=1\n"                         // 3
+		"[TileSet0000]\n"                   // 4
+		"SetName=Clear\n"                   // 5
+		"TilesInSet=4\n"                    // 6
+		"Morphable=maybe\n"                 // 7
+		"Tile01Anim=FLAG\n"                 // 8
+		"[Clear]\n"                         // 9
+		"Tile01Anim=FLAG\n"                 // 10
+		"Tile02XOffset=wide\n"              // 11
+		"Tile1Anim=FLAG\n"                  // 12
+		"Tile02Bogus=1\n"                   // 13
+		"[TileSet0001]\n"                   // 14
+		"SetName=Water\n"                   // 15
+		"TilesInSet=$10\n"                  // 16
+		"Morphable=no\n"                    // 17
+		"[Water]\n"                         // 18
+		"Tile12Anim=WAVE\n"                 // 19
+		"[TileSet0002]\n"                   // 20
+		"SetName=Cliffs\n"                  // 21
+		"TilesInSet=-1\n"                   // 22
+		"[Cliffs]\n"                        // 23
+		"Tile01Anim=ROCK\n"                 // 24
+		"[TileSet0003]\n"                   // 25
+		"TilesInSet=2\n";                   // 26
+
+	IniCheck::Report const report = IniCheck::Check_Theater(catalog, text);
+
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "RampBase", 2) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Bogus", 3), "General is checked against the theater file's keys, not the rules'");
+	Check(Has(report, IniCheck::FindingType::BAD_VALUE, "Morphable", 7), "a tile set section's values are checked by their forms");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Tile01Anim", 8), "a per-tile key in the TileSet section itself is reported, because the engine reads it from the SetName section");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Tile01Anim", 10) && Has(report, IniCheck::FindingType::BAD_VALUE, "Tile02XOffset", 11), "the section a set's SetName= names takes the padded per-tile keys");
+	Check(Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Tile1Anim", 12) && Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Tile02Bogus", 13), "an unpadded per-tile key and an unknown one are reported");
+	Check(!Has(report, IniCheck::FindingType::UNKNOWN_KEY, "Tile12Anim", 19) && !Has(report, IniCheck::FindingType::BAD_VALUE, "TilesInSet", 16), "a hexadecimal TilesInSet keeps the chain going");
+	Check(report.Findings.size() == 7, "nothing else is reported");
+	Check(report.UncheckedSections.size() == 3 && report.UncheckedSections[0] == "TileSet0002" && report.UncheckedSections[1] == "Cliffs" && report.UncheckedSections[2] == "TileSet0003",
+		"the sets from the first with a negative TilesInSet on are never read, and neither is their SetName section");
+
+	char const gap[] =
+		"[TileSet0000]\n"
+		"TilesInSet=1\n"
+		"[TileSet0002]\n"
+		"TilesInSet=1\n"
+		"Morphable=maybe\n";
+	IniCheck::Report const after_gap = IniCheck::Check_Theater(catalog, gap);
+	Check(after_gap.Findings.empty() && after_gap.UncheckedSections.size() == 1 && after_gap.UncheckedSections[0] == "TileSet0002", "a set after a missing TileSet section is left unchecked");
+
+	char const no_count[] =
+		"[TileSet0000]\n"
+		"SetName=Clear\n"
+		"[Clear]\n"
+		"Tile01Anim=FLAG\n";
+	IniCheck::Report const without = IniCheck::Check_Theater(catalog, no_count);
+	Check(without.UncheckedSections.size() == 2, "a TileSet section without TilesInSet ends the chain");
+
+	IniCheck::Report const as_rules = IniCheck::Check_Rules(catalog, "[General]\nRampBase=two\n");
+	Check(as_rules.Findings.empty(), "the theater file's scopes are not used on a rules file");
+}
+
+
 void Test_Rules(void)
 {
 	IniCheck::Catalog catalog = Load_Catalog();
@@ -411,6 +491,7 @@ int main(void)
 	Test_References();
 	Test_Difficulty();
 	Test_Art_Placement();
+	Test_Theater();
 
 	std::printf("\n%d failure(s)\n", Failures);
 	return(Failures == 0 ? 0 : 1);

@@ -760,6 +760,78 @@ Report Check_Art(Catalog const & catalog, std::string_view text, std::string_vie
 }
 
 
+// Reads a whole number as INIClass::Get_Int does: '$' or a trailing 'h' marks hexadecimal, and
+// anything else reads as atoi does.
+static int Read_Whole_Number(std::string const & value)
+{
+	int number = 0;
+	if (!value.empty() && value[0] == '$') {
+		std::sscanf(value.c_str(), "$%x", &number);
+	} else if (!value.empty() && std::tolower((unsigned char)value.back()) == 'h') {
+		std::sscanf(value.c_str(), "%xh", &number);
+	} else {
+		number = std::atoi(value.c_str());
+	}
+	return(number);
+}
+
+
+// The last value of a key in a section, or null when the section holds no such line.
+static std::string const * Last_Value(Section const & section, char const * key)
+{
+	std::string const * value = nullptr;
+	for (Entry const & entry : section.Entries) {
+		if (entry.Key == key) {
+			value = &entry.Value;
+		}
+	}
+	return(value);
+}
+
+
+// Places the sections IsometricTileTypeClass::Init reads from a theater control file. It reads
+// TileSet0000, TileSet0001 and so on, and stops at the first section whose TilesInSet is missing
+// or negative, so a later TileSet section is never read. A set's SetName= names a second section
+// that holds the per-tile keys such as Tile01Anim=.
+static void Add_Tile_Sets(std::vector<Section> const & sections, KindMap & kinds)
+{
+	std::map<std::string, Section const *> by_name;
+	for (Section const & section : sections) {
+		by_name[section.Name] = &section;
+	}
+	for (int set = 0; ; set++) {
+		char name[32];
+		std::snprintf(name, sizeof(name), "TileSet%04d", set);
+		auto const found = by_name.find(name);
+		if (found == by_name.end()) {
+			break;
+		}
+		std::string const * tiles = Last_Value(*found->second, "TilesInSet");
+		if (tiles == nullptr || Read_Whole_Number(*tiles) < 0) {
+			break;
+		}
+		kinds[name].insert("@tile-set");
+		if (std::string const * set_name = Last_Value(*found->second, "SetName")) {
+			kinds[*set_name].insert("@tile-set-name");
+		}
+	}
+}
+
+
+/// <summary>
+/// Checks a theater control file such as temperat.ini against the catalog: its [General]
+/// section, each TileSet%04d section the engine reads, and the section each set's SetName=
+/// names. A TileSet section the engine does not reach is listed as unchecked.
+/// </summary>
+Report Check_Theater(Catalog const & catalog, std::string_view text)
+{
+	std::vector<Section> const sections = Parse(text);
+	KindMap kinds;
+	Add_Tile_Sets(sections, kinds);
+	return(Check_Sections(catalog, sections, kinds, {"theater control file"}));
+}
+
+
 /// <summary>
 /// One line describing the finding, starting with its line number.
 /// </summary>
