@@ -20,11 +20,31 @@
 #include <utility>
 
 
+static void Settle_Colour(UINetLobbyState & state);
+
+
 UINetLobbyPresenterClass::UINetLobbyPresenterClass(UINetLobbyServiceClass & service, UINetLobbyState state) :
 	State(std::move(state)),
 	Service(service),
 	Opened(State.Kind)
 {
+	Settle_Colour(State);
+}
+
+
+/// <summary>
+/// Brings the color button's name and swatch in line with the player's color.
+/// </summary>
+static void Settle_Colour(UINetLobbyState & state)
+{
+	bool const listed = state.Color >= 0 && state.Color < (int)state.Colors.size();
+	std::string const stock = listed ? state.Colors[state.Color].Label : std::string();
+	state.ColorName = UI_Color_Button_Name(stock, state.CustomColor);
+	state.ColorTip = UI_Color_Name(stock, state.CustomColor);
+
+	std::string const swatch = state.CustomColor != 0 ? UI_Color_CSS(Player_Color_Preview(state.CustomColor))
+		: (listed ? state.Colors[state.Color].Color : std::string());
+	state.ColorStyle = swatch.empty() ? std::string() : "background-color: " + swatch;
 }
 
 
@@ -53,6 +73,7 @@ static void Apply_Net_Picker(UINetLobbyState & state, UINetLobbyServiceClass & s
 	}
 	picker.Open = false;
 	picker.Notice.clear();
+	Settle_Colour(state);
 }
 
 
@@ -81,7 +102,7 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 			Service.Set_Side(State.Side);
 		}
 	} else if (intent.Name == "pickopen") {
-		UI_Color_Pick_Open(State.Picker, 0, State.CustomColor, State.Color);
+		UI_Color_Pick_Open(State.Picker, 0, State.CustomColor, State.Color, State.Rivals);
 	} else if (intent.Name == "pickfield") {
 		if (State.Picker.Open) {
 			UI_Color_Pick_Field(State.Picker, intent.Value, std::atoi(intent.Text.c_str()));
@@ -99,12 +120,6 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "pickcancel") {
 		State.Picker.Open = false;
 		State.Picker.Notice.clear();
-	} else if (intent.Name == "color") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Colors.size()) {
-			State.Color = intent.Value;
-			State.CustomColor = 0;
-			Service.Set_Color(State.Color);
-		}
 	} else if (intent.Name == "pick") {
 		if (intent.Value >= 0 && intent.Value < (int)State.Players.size()) {
 			std::string const & name = State.Players[intent.Value].Name;
@@ -257,6 +272,10 @@ int UINetLobbyPresenterClass::Reading(UINetSlider which) const
 void UINetLobbyPresenterClass::Refresh(void)
 {
 	Service.Read(State);
+	Settle_Colour(State);
+	if (State.Picker.Open) {
+		UI_Color_Pick_Mark_Taken(State.Picker, State.Rivals);
+	}
 
 	if (!Result.has_value() && (State.Kind != Opened || State.Answered)) {
 		Result = UI_RESULT_ACCEPTED;
@@ -288,13 +307,14 @@ static bool Bind_Color_Picker(Rml::DataModelConstructor & model, UIColorPickStat
 	preset.RegisterMember("value", &UIColorPresetOption::Value);
 	preset.RegisterMember("color", &UIColorPresetOption::Color);
 	preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
+	preset.RegisterMember("taken", &UIColorPresetOption::Taken);
+	preset.RegisterMember("caption", &UIColorPresetOption::Caption);
 	return(model.RegisterArray<std::vector<UIColorPresetOption>>()
 		&& model.Bind("pickopen", &picker.Open)
 		&& model.Bind("pickswatch", &picker.Swatch)
 		&& model.Bind("picknotice", &picker.Notice)
 		&& model.Bind("pickvalue", &picker.Value)
-		&& model.Bind("pickmarkerleft", &picker.MarkerLeft)
-		&& model.Bind("pickmarkertop", &picker.MarkerTop)
+		&& model.Bind("pickstyle", &picker.MarkerStyle)
 		&& model.Bind("pickpresets", &picker.Presets));
 }
 
@@ -305,8 +325,7 @@ static void Dirty_Color_Picker(Rml::DataModelHandle model)
 	model.DirtyVariable("pickswatch");
 	model.DirtyVariable("picknotice");
 	model.DirtyVariable("pickvalue");
-	model.DirtyVariable("pickmarkerleft");
-	model.DirtyVariable("pickmarkertop");
+	model.DirtyVariable("pickstyle");
 	model.DirtyVariable("pickpresets");
 }
 
@@ -507,7 +526,9 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			Sync_Shared();
 			Model.DirtyVariable("host");
 			Model.DirtyVariable("side");
-			Model.DirtyVariable("color");
+			Model.DirtyVariable("colorname");
+			Model.DirtyVariable("colortip");
+			Model.DirtyVariable("colorstyle");
 			Model.DirtyVariable("mapname");
 			Model.DirtyVariable("bases");
 			Model.DirtyVariable("crates");
@@ -540,8 +561,9 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 				&& model.Bind("host", &state.Host)
 				&& model.Bind("sides", &state.Sides)
 				&& model.Bind("side", &state.Side)
-				&& model.Bind("colors", &state.Colors)
-				&& model.Bind("color", &state.Color)
+				&& model.Bind("colorname", &state.ColorName)
+				&& model.Bind("colortip", &state.ColorTip)
+				&& model.Bind("colorstyle", &state.ColorStyle)
 				&& Bind_Color_Picker(model, state.Picker)
 				&& model.Bind("mapname", &state.MapName)
 				&& model.Bind("bases", &state.Bases)

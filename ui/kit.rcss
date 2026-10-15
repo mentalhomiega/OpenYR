@@ -44,6 +44,12 @@ div, form, h1, h2, p
 	height: 100%;
 }
 
+/* The footer of the settings pages; the other screens have none. */
+#footer
+{
+	display: none;
+}
+
 #wallpaper
 {
 	position: absolute;

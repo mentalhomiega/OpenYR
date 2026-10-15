@@ -28,6 +28,7 @@
 #include "house.h"
 #include "map.h"
 #include "savestream.h"
+#include "shellmap.h"
 #include "tactical.h"
 #include "vector.h"
 
@@ -299,7 +300,7 @@ float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & 
 	}
 
 	pan = std::clamp((pixel.X - width / 2) * 100 / (width / 2), -100, 100);
-	return(std::min(volume, 1.0f));
+	return(std::min(volume, 1.0f) * Shellmap_Sound_Level());
 }
 
 

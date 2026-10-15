@@ -11,37 +11,53 @@
 <head>
 	<title>Game controls</title>
 	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="settings.rcss"/>
 	<link type="text/rcss" href="gamectrl.rcss"/>
 </head>
-<body template="dialog" data-model="gamectrl" data-class-frontend="!ingame" data-class-difficulty="hasdifficulty">
-	<div class="row" id="row-speed" data-if="hasspeed"><span class="caption">Game Speed<span data-if="ingame">:</span></span><input type="range" id="speed" min="0" max="6" step="1" data-attr-value="6 - speed" data-event-change="queue('speed', 6 - ev.value)"/><span class="value" id="speed-name">{{speedname}}</span></div>
-	<div class="row" id="row-scroll"><span class="caption">Scroll Rate<span data-if="ingame">:</span></span><input type="range" id="scroll" min="0" max="6" step="1" data-attr-value="6 - scroll" data-event-change="queue('scroll', 6 - ev.value)"/><span class="value" id="scroll-name">{{scrollname}}</span></div>
-	<div class="row" id="row-detail"><span class="caption">Graphics quality<span data-if="ingame">:</span></span><input type="range" id="detail" min="0" max="2" step="1" data-attr-value="detail" data-event-change="queue('detail', ev.value)"/><span class="value" id="detail-name">{{detailname}}</span></div>
-	<div class="row" id="row-difficulty" data-if="hasdifficulty"><span class="caption">Difficulty</span><input type="range" id="difficulty" min="0" max="2" step="1" data-attr-value="difficulty" data-event-change="queue('difficulty', ev.value)"/><span class="value" id="difficulty-name">{{difficultyname}}</span></div>
-	<div id="switches"><div class="column">
-		<label class="check" id="switch-cameo"><input type="checkbox" id="cameo" data-attrif-checked="cameo" data-event-click="queue('cameo', cameo ? 0 : 1)"/><span data-if="ingame">Cameo names</span><span data-if="!ingame">Cameo names</span></label>
-		<label class="check" id="switch-lines"><input type="checkbox" id="lines" data-attrif-checked="lines" data-event-click="queue('lines', lines ? 0 : 1)"/>Movement and target lines</label>
-		<label class="check" id="switch-edge"><input type="checkbox" id="edge" data-attrif-checked="edge" data-event-click="queue('edge', edge ? 0 : 1)"/>Edge Scrolling</label>
-	</div><div class="column">
-		<label class="check" id="switch-tooltips"><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/>Tooltips</label>
-		<label class="check" id="switch-coasting"><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/>Scroll Coasting</label>
-		<label class="check" id="switch-hidden"><input type="checkbox" id="hidden" data-attrif-checked="hidden" data-event-click="queue('hidden', hidden ? 0 : 1)"/>Show units behind buildings</label>
-	</div></div>
-	<div id="extras" data-if="extras"><div class="column">
-		<label class="check" id="switch-rally"><input type="checkbox" id="rally" data-attrif-checked="rally" data-event-click="queue('rally', rally ? 0 : 1)"/>Rally With Force-Move</label>
-		<label class="check" id="switch-sorting"><input type="checkbox" id="sorting" data-attrif-checked="sorting" data-event-click="queue('sorting', sorting ? 0 : 1)"/>Sort Sidebar</label>
-		<label class="check" id="switch-shake"><input type="checkbox" id="shake" data-attrif-checked="screenshake" data-event-click="queue('screenshake', screenshake ? 0 : 1)"/>Screen shake</label>
-	</div><div class="column">
-		<label class="check" id="switch-background"><input type="checkbox" id="background" data-attrif-checked="background" data-event-click="queue('background', background ? 0 : 1)"/>Play In Background</label>
-		<label class="check" id="switch-debug-mode"><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/>Debug mode (for testing)</label>
-		<div id="autosave-row"><span id="autosave-label">Autosave</span><select id="autosave" data-value="autosave" data-event-change="queue('autosave', ev.value)">
-			<option data-for="entry : autosaves" data-attr-value="it_index">{{entry.label}}</option>
-		</select></div>
-	</div></div>
-	<div id="buttons">
-		<button id="sound" data-if="ingame" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
-		<button id="keyboard" data-if="ingame" data-event-click="queue('keyboard')">Keyboard</button>
-		<button id="ok" data-class-wide="!ingame" data-event-click="queue('ok')"><span id="ok-leave" data-if="leavelabel != ''">{{leavelabel}}</span><span id="ok-options" data-if="ingame &amp;&amp; leavelabel == ''">[[TXT_OPTIONS_MENU]]</span><span id="ok-main" data-if="!ingame &amp;&amp; leavelabel == ''">Main Menu</span></button>
+<body template="dialog" class="page-settings settings-backdrop" data-model="gamectrl" data-class-frontend="!ingame" data-class-difficulty="hasdifficulty">
+	<div id="page">
+		<div id="list">
+			<p class="section">Game</p>
+			<div class="setting slider-row" id="row-speed" data-if="hasspeed" desc="How fast the game runs. Moving left slows it down."><span class="caption">Game Speed<span data-if="ingame">:</span></span><input type="range" id="speed" min="0" max="6" step="1" data-attr-value="6 - speed" data-event-change="queue('speed', 6 - ev.value)"/><span class="value" id="speed-name">{{speedname}}</span></div>
+			<div class="setting slider-row" id="row-scroll" desc="How fast the view scrolls when you use the keys or the edge of the screen."><span class="caption">Scroll Rate<span data-if="ingame">:</span></span><input type="range" id="scroll" min="0" max="6" step="1" data-attr-value="6 - scroll" data-event-change="queue('scroll', 6 - ev.value)"/><span class="value" id="scroll-name">{{scrollname}}</span></div>
+			<div class="setting slider-row" id="row-detail" desc="How much detail the game draws. Lower settings run faster on slower machines."><span class="caption">Graphics quality<span data-if="ingame">:</span></span><input type="range" id="detail" min="0" max="2" step="1" data-attr-value="detail" data-event-change="queue('detail', ev.value)"/><span class="value" id="detail-name">{{detailname}}</span></div>
+			<div class="setting slider-row" id="row-difficulty" data-if="hasdifficulty" desc="How hard the computer opponents play."><span class="caption">Difficulty</span><input type="range" id="difficulty" min="0" max="2" step="1" data-attr-value="difficulty" data-event-change="queue('difficulty', ev.value)"/><span class="value" id="difficulty-name">{{difficultyname}}</span></div>
+			<div class="setting" id="autosave-row" desc="How often the game saves by itself. Off turns autosave off."><span class="caption" id="autosave-label">Autosave</span><select id="autosave" data-value="autosave" data-event-change="queue('autosave', ev.value)">
+				<option data-for="entry : autosaves" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+
+			<p class="section">Interface</p>
+			<label class="check setting" id="switch-cameo" desc="Shows the name of each unit on its sidebar cameo."><span class="caption">Cameo names</span><input type="checkbox" id="cameo" data-attrif-checked="cameo" data-event-click="queue('cameo', cameo ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-lines" desc="Draws lines for where selected units are heading and what they are attacking."><span class="caption">Movement and target lines</span><input type="checkbox" id="lines" data-attrif-checked="lines" data-event-click="queue('lines', lines ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-edge" desc="Scrolls the view when the pointer reaches the edge of the screen."><span class="caption">Edge Scrolling</span><input type="checkbox" id="edge" data-attrif-checked="edge" data-event-click="queue('edge', edge ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-tooltips" desc="Shows a short description when the pointer rests on a button or a unit."><span class="caption">Tooltips</span><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-coasting" desc="The view keeps moving for a moment after you stop scrolling."><span class="caption">Scroll Coasting</span><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-hidden" desc="Draws units that stand behind a building, so you can see them."><span class="caption">Show units behind buildings</span><input type="checkbox" id="hidden" data-attrif-checked="hidden" data-event-click="queue('hidden', hidden ? 0 : 1)"/></label>
+			<label class="check setting" id="switch-airpick" desc="A click on an aircraft's body picks the aircraft, even over a building or unit under it."><span class="caption">Pick aircraft by body</span><input type="checkbox" id="airpick" data-attrif-checked="airpick" data-event-click="queue('airpick', airpick ? 0 : 1)"/></label>
+
+			<div id="extras" data-if="extras">
+				<p class="section">More</p>
+				<label class="check setting" id="switch-rally" desc="Makes the force-move key also set the rally point of a building."><span class="caption">Rally With Force-Move</span><input type="checkbox" id="rally" data-attrif-checked="rally" data-event-click="queue('rally', rally ? 0 : 1)"/></label>
+				<label class="check setting" id="switch-sorting" desc="Keeps the sidebar cameos in a fixed order."><span class="caption">Sort Sidebar</span><input type="checkbox" id="sorting" data-attrif-checked="sorting" data-event-click="queue('sorting', sorting ? 0 : 1)"/></label>
+				<label class="check setting" id="switch-background" desc="Keeps the game running while its window is not the active one."><span class="caption">Play In Background</span><input type="checkbox" id="background" data-attrif-checked="background" data-event-click="queue('background', background ? 0 : 1)"/></label>
+				<label class="check setting" id="switch-debug-mode" desc="Turns on the debug keys and views, for testing."><span class="caption">Debug mode (for testing)</span><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/></label>
+			</div>
+
+			<div id="buttons">
+				<button id="sound" data-if="ingame" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
+				<button id="keyboard" data-if="ingame" data-event-click="queue('keyboard')">Keyboard</button>
+			</div>
+		</div>
+		<div id="side">
+			<p id="side-title">Description</p>
+			<p id="description">Point at a setting or select it to read what it does.</p>
+		</div>
+	</div>
+	<div id="footer">
+		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
+		<span id="footer-spacer"></span>
+		<button id="footer-cancel" data-event-click="queue('cancel')">Back</button>
+		<button id="footer-ok" data-event-click="queue('ok')"><span id="ok-leave" data-if="leavelabel != ''">{{leavelabel}}</span><span id="ok-options" data-if="ingame &amp;&amp; leavelabel == ''">[[TXT_OPTIONS_MENU]]</span><span id="ok-main" data-if="!ingame &amp;&amp; leavelabel == ''">Main Menu</span></button>
 	</div>
 </body>
 </rml>

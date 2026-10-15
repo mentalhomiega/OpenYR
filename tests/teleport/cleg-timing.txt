@@ -1,0 +1,64 @@
+; Chrono Legionnaire warp timing on the default skirmish map (XMP29U2, base at 64,19).
+; Run: run_autotest.ps1 -Build agent2 -Script tests/teleport/cleg-timing.txt -Seconds 150 -ShotDir "E:/Claude ra2 decomp/shots/chrono-legion"
+; Two moves: a short one (2 cells north, 512 leptons) at frame 330 and a long one (16 cells west, 4096
+; leptons) at frame 400. Each move should log 'warp out' and 'warp in' on the same frame, with the unit
+; at its destination then. 'warp released' marks the frame it can act again. The hold is
+; max(distance / ChronoDistanceFactor, ChronoMinimumDelay) on the 'warp in' line.
+; The order at frame 336 is inside the short hold, so gamemd refuses it and no 'warp order' line follows.
+60 command CenterBase
+70 select AMCV
+80 command DeployObject
+300 own CLEG 60 24
+310 where CLEG
+320 reveal
+330 move CLEG 60 22
+331 where CLEG
+332 where CLEG
+333 where CLEG
+334 where CLEG
+335 where CLEG
+336 where CLEG
+336 move CLEG 60 26
+337 where CLEG
+338 where CLEG
+339 where CLEG
+340 where CLEG
+340 view 60 23
+341 where CLEG
+342 where CLEG
+343 where CLEG
+344 where CLEG
+345 where CLEG
+345 command ScreenCapture
+350 where CLEG
+360 where CLEG
+380 where CLEG
+400 move CLEG 44 24
+401 where CLEG
+406 where CLEG
+411 where CLEG
+416 where CLEG
+420 view 46 25
+421 where CLEG
+426 where CLEG
+430 command ScreenCapture
+431 where CLEG
+436 where CLEG
+441 where CLEG
+446 where CLEG
+451 where CLEG
+456 where CLEG
+461 where CLEG
+466 where CLEG
+471 where CLEG
+476 where CLEG
+481 where CLEG
+486 where CLEG
+491 where CLEG
+496 where CLEG
+500 where CLEG
+520 where CLEG
+560 where CLEG
+600 where CLEG
+600 dump
+700 quit

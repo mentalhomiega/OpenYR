@@ -16,32 +16,143 @@
 #include "mpscore.h"
 
 #include "_keyboar.h"
-#include "_palette.h"
 #include "_surface.h"
+#include "autotest.h"
 #include "ccrand.h"
 #include "conquer.h"
-#include "data.h"
+#include "csf.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "houstype.h"
 #include "incdec.h"
 #include "keyboard.h"
-#include "language/language.h"
-#include "msanim.h"
 #include "msengine.h"
-#include "msfont.h"
+#include "palette.h"
 #include "playerdisplay.h"
 #include "scheme.h"
+#include "scorestage.h"
 #include "session.h"
 #include "stats.h"
 #include "surface.h"
-#include "winstub.h"
+#include "theme.h"
 
 #include "color.hh"
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
+#include <string>
+
+
+namespace {
+
+/*
+ * The table is laid out in dialog units of gamemd's MultiplayerScore dialog (dialog 264), on the
+ * 800 by 600 stage. A band sits behind the Game and Time line, one behind the headings, and one
+ * behind each player row, and each player row's text sits 4 units below its band.
+ */
+constexpr int MAX_ROWS = 8;
+constexpr int BAND_X = 63;
+constexpr int BAND_WIDTH = 293;
+constexpr int BAND_HEIGHT = 22;
+constexpr int TOP_BAND_Y = 72;
+constexpr int HEADING_BAND_Y = 94;
+constexpr int PLAYER_BAND_Y = 116;
+constexpr int LINE_Y = 76;
+constexpr int HEADING_Y = 98;
+constexpr int PLAYER_TEXT_Y = 120;
+
+struct Column {
+	int X;
+	int Width;
+};
+
+constexpr Column NAME_COLUMN = { 66, 75 };
+constexpr Column KILLS_COLUMN = { 147, 45 };
+constexpr Column LOSSES_COLUMN = { 202, 45 };
+constexpr Column BUILT_COLUMN = { 257, 45 };
+constexpr Column SCORE_COLUMN = { 308, 45 };
+
+/*
+ * The picture box. Its art is 632 by 568, and the 640 wide variant is stretched into the same box.
+ */
+Rect const PICTURE_RECT(0, 0, 632, 568);
+
+/*
+ * The table is every band and figure a player row uses, and the counting animation redraws it.
+ */
+Rect const TABLE_RECT = ScoreStageClass::Dialog_Rect(BAND_X, TOP_BAND_Y, BAND_WIDTH, PLAYER_BAND_Y + BAND_HEIGHT * MAX_ROWS - TOP_BAND_Y);
+
+Rect const BUTTON_RECT = ScoreStageClass::Dialog_Rect(425, 326, 108, 23);
+Rect const PROMPT_RECT = ScoreStageClass::Dialog_Rect(2, 353, 303, 14);
+
+int Left_Edge(Column const & column)
+{
+	return(ScoreStageClass::Dialog_X(column.X));
+}
+
+int Right_Edge(Column const & column)
+{
+	return(ScoreStageClass::Dialog_X(column.X + column.Width));
+}
+
+int Row_Text_Y(int row)
+{
+	return(ScoreStageClass::Dialog_Y(PLAYER_TEXT_Y + BAND_HEIGHT * row));
+}
+
+/// <summary>
+/// Formats an elapsed time for display.
+/// Absurdly long games are capped rather than printed with a runaway hour count.
+/// </summary>
+/// <param name="buffer">The buffer to fill in with the formatted time. NULL is tolerated.</param>
+/// <param name="time">The elapsed time, in seconds.</param>
+/// <remarks>Be sure that the destination buffer is big enough to hold the formatted time.</remarks>
+inline void Format_Time(char * buffer, unsigned time)
+{
+	if (buffer != NULL) {
+		if (time / 3600 > 99) {
+			time = (100 * 3600) - 1;
+		}
+		unsigned hours = time / 3600;
+		time -= hours * 3600;
+		unsigned minutes = time / 60;
+		time -= minutes * 60;
+		std::string format = Fetch_String_UTF8("TXT_TIME_FORMAT_HOURS");
+		sprintf(buffer, format.c_str(), hours, minutes, time);
+	}
+}
+
+
+/// <summary>
+/// Determines which of two players should be listed first.
+/// This routine is the sort callback used to rank the players for the score screen.
+/// Games won decide the order, and the round's score settles a tie.
+/// </summary>
+/// <param name="p1">Pointer to the first player's score record pointer.</param>
+/// <param name="p2">Pointer to the second player's score record pointer.</param>
+/// <returns>Returns with a negative value if the first player ranks ahead of the second, a
+/// positive value if it ranks behind, and zero if they are tied.</returns>
+int _cdecl Sort_Scores(const void *p1, const void *p2)
+{
+	MPlayerScoreType * mpscore1 = *(MPlayerScoreType **)p1;
+	MPlayerScoreType * mpscore2 = *(MPlayerScoreType **)p2;
+
+	int wins1 = mpscore1->Wins;
+	int wins2 = mpscore2->Wins;
+
+	if (wins1 > wins2) return(-1);
+	if (wins1 < wins2) return(1);
+
+	int score1 = mpscore1->Score[0];
+	int score2 = mpscore2->Score[0];
+
+	if (score1 == score2) return(0);
+	return(score1 > score2 ? -1 : 1);
+}
+
+}
 
 
 class MultiScore : public MSEngine
@@ -60,41 +171,32 @@ class MultiScore : public MSEngine
 		void Tally_Score(void);
 		void Process_Scores(void);
 
-		void Print_Headings(void);
-		void Print_Player_Names(void);
-		void Draw_Losses(void);
-		void Draw_Kills(void);
-		void Draw_Economy(void);
-		void Print_Scores(void);
-		void Draw_Bars(int * scores, int numScores, int x, int y, int width);
-		Rect Print_Score(Surface * surface, int score, int maximum, int x, int y);
-
 		void Callback(void);
 		bool Single_Presentation(HouseClass *house);
 		bool Multi_Presentation(void);
 
 	private:
-		int XPos;
-		int YPos;
-		Surface * ScoreSurface;
-		MSFont * Font;
-		/// Unused
-		MSFont * UnusedFont;
-		MPlayerScoreType * Scores[MAX_PLAYERS];
+		void Draw_Picture(void);
+		void Draw_Static(void);
+		void Print_Player_Names(void);
+		void Print_Row(int row, int kills, int losses, int built, int score);
+		void Print_Figures(void);
+		void Print_Prompt(void);
 
+		bool Skirmish;
+		ScoreStageClass Stage;
+		MPlayerScoreType * Scores[MAX_PLAYERS];
 };
 
 
-static int _cdecl Sort_Scores(const void *p1, const void *p2);
-
-
 /// <summary>
-/// Determines if the specified house won the round.
-/// This routine is used where only the outcome is wanted and no score screen is to be
-/// presented.
+/// Determines if the specified house finished the round in the lead.
+/// Only houses that actually take part in the game are considered, so a neutral or
+/// spectating house can never take the lead away from a real player.
 /// </summary>
-/// <param name="house">The house to test for the win.</param>
+/// <param name="house">The house to test for the lead.</param>
 /// <returns>bool; Did this house come out on top?</returns>
+/// <remarks>This routine tallies the round's scores as a side effect.</remarks>
 bool Single_Score_Presentation(HouseClass *house)
 {
 	return(MultiScore().Single_Presentation(house));
@@ -103,7 +205,7 @@ bool Single_Score_Presentation(HouseClass *house)
 
 /// <summary>
 /// Presents the multiplayer score screen.
-/// This routine is called when a multiplayer game has finished, in order to show the
+/// This routine is called when a multiplayer or skirmish game has finished, in order to show the
 /// players how the round went.
 /// </summary>
 void Multi_Score_Presentation(void)
@@ -119,13 +221,11 @@ void Multi_Score_Presentation(void)
 /// </summary>
 MultiScore::MultiScore(void) :
 	MSEngine(),
-	XPos(0),
-	YPos(0),
-	ScoreSurface(NULL),
-	Font(NULL),
-	UnusedFont(NULL)
+	Skirmish(false)
 {
-
+	for (int i = 0; i < MAX_PLAYERS; i++) {
+		Scores[i] = NULL;
+	}
 }
 
 
@@ -171,9 +271,9 @@ bool MultiScore::Single_Presentation(HouseClass * house)
 
 /// <summary>
 /// Handles the multiplayer score screen.
-/// This routine runs the whole end of game presentation. It tears down any dialog still
-/// on screen, tallies and ranks the round's scores, animates each column into place, and
-/// then waits for the player before restoring the display and the mouse.
+/// This routine runs the whole end of game presentation. It clears the whole screen, starts the
+/// score theme, tallies and ranks the round's scores, draws the table, reveals each player's name,
+/// counts the figures up, and then waits for the player before restoring the display and the mouse.
 /// </summary>
 /// <returns>bool; Was the presentation run? It is refused if there is no surface to
 /// present on.</returns>
@@ -188,24 +288,27 @@ bool MultiScore::Multi_Presentation(void)
 		Callback();
 		MouseCursor->Release_Mouse();
 		MouseCursor->Hide_Mouse();
-		Blit_Rect(HiddenSurface, HiddenSurface->Get_Rect());
+
+		Stage.Clear_Screen();
+		Theme.Stop();
+		Theme.Play_Song(Theme.From_Name("SCORE"));
 
 		Tally_Score();
 		Process_Scores();
-		Print_Headings();
+		Draw_Static();
 		Print_Player_Names();
-		Draw_Losses();
-		Draw_Kills();
-		Draw_Economy();
-		Print_Scores();
+		Print_Figures();
+		Print_Prompt();
+
+		AutoTest_Score_Shown();
 
 		MouseCursor->Show_Mouse();
 		User_Input();
 		MouseCursor->Hide_Mouse();
 
-		HiddenSurface->Fill(TBLACK);
-		Add_Update_Rect(HiddenSurface->Get_Rect());
-		Blit_All(HiddenSurface);
+		Stage.Clear_Screen();
+		Theme.Stop(true);
+		Theme.Queue_Song(THEME_NONE);
 
 		Deinit();
 		Keyboard->Clear();
@@ -217,36 +320,18 @@ bool MultiScore::Multi_Presentation(void)
 
 
 /// <summary>
-/// Prepares the score screen for display.
-/// This routine builds the offscreen surface the presentation composes into, loads the
-/// score screen artwork onto it and onto the visible surfaces, creates the font, and
-/// registers the sound effect that the counters tick with.
+/// Prepares the score screen for display by opening its stage and recording the skirmish caption.
 /// </summary>
 /// <returns>bool; Was the screen prepared successfully?</returns>
 bool MultiScore::Init(void)
 {
 	Deinit();
 
-	ScoreSurface = new DSurface(640, 400);
-	if (ScoreSurface == NULL) {
-		DebugString("MultiScore: Failed to create surface!\n");
+	if (!Stage.Open()) {
 		return(false);
 	}
 
-	XPos = ((HiddenSurface->Get_Width() - ScoreSurface->Get_Width()) / 2);
-	YPos = ((HiddenSurface->Get_Height() - ScoreSurface->Get_Height()) / 2);
-
-	AlternateSurface->Fill(TBLACK);
-	Load_Title_Screen("MPSCORE.PCX", AlternateSurface, &CCPalette);
-	HiddenSurface->Fill(TBLACK);
-	HiddenSurface->Blit_From(*AlternateSurface, false, true);
-	ScoreSurface->Blit_From(ScoreSurface->Get_Rect(), *AlternateSurface, Rect(XPos, YPos, ScoreSurface->Get_Width(), ScoreSurface->Get_Height()), false, true);
-
-	Font = new MSFont(false);
-	if (Font == NULL) {
-		DebugString("MultiScore: Unable to create font!\n");
-		return(false);
-	}
+	Skirmish = (Session.Type == GAME_SKIRMISH);
 
 	Add_Sound_Effect("Graph", "TEXT1.AUD");
 
@@ -255,24 +340,13 @@ bool MultiScore::Init(void)
 
 
 /// <summary>
-/// Releases the resources the score screen allocated.
+/// Releases the stage and the neutral archives the score screen mounted.
 /// This routine is called by Init before it builds the screen, and again when the
 /// presentation is over. It is safe to call at any time.
 /// </summary>
 void MultiScore::Deinit(void)
 {
-	if (Font != NULL) {
-		delete Font;
-		Font = NULL;
-	}
-	if (UnusedFont != NULL) {
-		delete UnusedFont;
-		UnusedFont = NULL;
-	}
-	if (ScoreSurface != NULL) {
-		delete ScoreSurface;
-		ScoreSurface = NULL;
-	}
+	Stage.Close();
 }
 
 
@@ -290,25 +364,17 @@ void MultiScore::Do_Custom_Draw(Surface * surface)
 
 /// <summary>
 /// Waits for the player to dismiss the score screen.
-/// A prompt is animated in along the bottom of the screen and this routine then sits
-/// there until the player clicks or presses escape or space.
+/// This routine sits until the player clicks or presses escape or space.
 /// </summary>
 bool MultiScore::User_Input(void)
 {
 	int key = VK_NONE;
 	bool running = true;
 
-	char const * text = Fetch_String(TXT_CLICK_CONTINUE);
-	int x = 320 - Font->Get_String_Width(text) / 2;
-
-	MSWordAnim * anim = new MSWordAnim(text, XPos + x, YPos + 370, Font);
-	Add_Animation(anim);
-	Wait_For_Anim(anim);
-
-	Font->Draw_String(ScoreSurface,text, x, 370, 2);
-	Font->Draw_String(AlternateSurface,text, XPos + x, YPos + 370, 2);
-
 	Keyboard->Clear();
+	if (AutoTest_Post_Win()) {
+		return(true);
+	}
 
 	while (running == true) {
 		Wait_For_Focus();
@@ -330,21 +396,189 @@ bool MultiScore::User_Input(void)
 }
 
 
-/***************************************************************************
- * HouseClass::Tally_Score -- Fills in the score system for this round     *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   11/29/1995 BRR : Created.                                             *
- *=========================================================================*/
+/// <summary>
+/// Draws the side's picture into its box on the stage.
+/// </summary>
+void MultiScore::Draw_Picture(void)
+{
+	char letter = ScoreStageClass::Side_Letter();
+	bool const small = Stage.Is_Small();
+
+	/*
+	 * gamemd has no small picture for the third side, and uses the second side's instead.
+	 */
+	if (small && letter == 'Y') {
+		letter = 'S';
+	}
+
+	char name[32];
+	sprintf(name, "MP%cSCRN%s.SHP", letter, small ? "S" : "L");
+
+	char palname[32];
+	sprintf(palname, "MP%cSCRN.PAL", ScoreStageClass::Side_Letter());
+	Stage.Load_Palette(palname);
+
+	ShapeSet * shapes = Stage.Load_Shape(name);
+	if (shapes == NULL) {
+		DebugString("MultiScore: %s is missing\n", name);
+		return;
+	}
+	Stage.Draw_Shape_Frame(shapes, 0, PICTURE_RECT);
+	ScoreStageClass::Free_Shape(shapes);
+}
+
+
+/// <summary>
+/// Draws the parts of the screen that stay put while the figures count up, and keeps them on the
+/// base surface.
+/// </summary>
+void MultiScore::Draw_Static(void)
+{
+	Stage.Canvas()->Fill(TBLACK);
+	Draw_Picture();
+
+	char const side = ScoreStageClass::Side_Letter();
+	char name[32];
+	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 1);
+	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(TOP_BAND_Y));
+	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 2);
+	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(HEADING_BAND_Y));
+	for (int row = 0; row < MAX_ROWS; row++) {
+		sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 3 + row);
+		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(PLAYER_BAND_Y + BAND_HEIGHT * row));
+	}
+
+	std::string title = Fetch_String_UTF8(Skirmish ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");
+	Stage.Print_Centre(title.c_str(), ScoreStageClass::Dialog_X(424), ScoreStageClass::Dialog_X(108), ScoreStageClass::Dialog_Y(1));
+
+	char buffer[256];
+	std::string game = Fetch_String_UTF8("TXT_GAME");
+	if (Session.Type == GAME_INTERNET) {
+		sprintf(buffer, game.c_str(), WestwoodOnline_GameID);
+	} else {
+		sprintf(buffer, game.c_str(), Session.GamesPlayed);
+	}
+	Stage.Print_Left(buffer, Left_Edge(NAME_COLUMN), ScoreStageClass::Dialog_Y(LINE_Y));
+
+	Format_Time(buffer, Scen->ElapsedTimer / 60);
+	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(248 + 105), ScoreStageClass::Dialog_Y(LINE_Y));
+
+	std::string heading_name = Fetch_String_UTF8("GUI:Player");
+	std::string heading_kills = Fetch_String_UTF8("GUI:Kills");
+	std::string heading_losses = Fetch_String_UTF8("GUI:Losses");
+	std::string heading_built = Fetch_String_UTF8("GUI:Built");
+	std::string heading_score = Fetch_String_UTF8("GUI:Score");
+	Stage.Print_Left(heading_name.c_str(), Left_Edge(NAME_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_kills.c_str(), Right_Edge(KILLS_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_losses.c_str(), Right_Edge(LOSSES_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_built.c_str(), Right_Edge(BUILT_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+	Stage.Print_Right(heading_score.c_str(), Right_Edge(SCORE_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+
+	RGBClass const edge(150, 150, 150);
+	Stage.Canvas()->Draw_Rect(BUTTON_RECT, DSurface::Build_Hicolor_Pixel(edge));
+	std::string caption = Fetch_String_UTF8("GUI:Continue");
+	Stage.Print_Centre(caption.c_str(), BUTTON_RECT.X, BUTTON_RECT.Width, BUTTON_RECT.Y + (BUTTON_RECT.Height - Stage.Text_Height()) / 2);
+
+	Stage.Save_Base();
+	Stage.Present(Rect(0, 0, 800, 600));
+}
+
+
+/// <summary>
+/// Reveals each player's name on its row, one row at a time.
+/// Each name is kept on the base surface, so the counting animation keeps it on screen.
+/// </summary>
+void MultiScore::Print_Player_Names(void)
+{
+	int const left = Left_Edge(NAME_COLUMN);
+	int const right = Right_Edge(SCORE_COLUMN);
+
+	for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
+		int const y = Row_Text_Y(i);
+		Stage.Print_Left(Scores[i]->Name, left, y);
+
+		Rect const row(left, y, right - left, Stage.Text_Height());
+		Stage.Keep(row);
+		Stage.Present(row);
+		Wait_Delay(7);
+	}
+
+	Wait_Delay(30);
+}
+
+
+/// <summary>
+/// Prints one player's figures on its row.
+/// </summary>
+void MultiScore::Print_Row(int row, int kills, int losses, int built, int score)
+{
+	char buffer[32];
+	int const y = Row_Text_Y(row);
+
+	sprintf(buffer, "%d", kills);
+	Stage.Print_Right(buffer, Right_Edge(KILLS_COLUMN), y);
+	sprintf(buffer, "%d", losses);
+	Stage.Print_Right(buffer, Right_Edge(LOSSES_COLUMN), y);
+	sprintf(buffer, "%d", built);
+	Stage.Print_Right(buffer, Right_Edge(BUILT_COLUMN), y);
+	sprintf(buffer, "%d", score);
+	Stage.Print_Right(buffer, Right_Edge(SCORE_COLUMN), y);
+}
+
+
+/// <summary>
+/// Counts the figures up to their final values.
+/// Kills, losses and what each player built count up together, and then the score counts up
+/// from zero.
+/// </summary>
+void MultiScore::Print_Figures(void)
+{
+	int const steps = 100;
+
+	for (int step = 1; step <= steps; step++) {
+		Stage.Restore(TABLE_RECT);
+		for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
+			Print_Row(i, Scores[i]->Kills[0] * step / steps, Scores[i]->Lost[0] * step / steps, Scores[i]->Built[0] * step / steps, 0);
+		}
+		Stage.Present(TABLE_RECT);
+		Play_Sound_Effect("Graph", 100);
+		Wait_Delay(1);
+	}
+
+	for (int step = 1; step <= steps; step++) {
+		Stage.Restore(TABLE_RECT);
+		for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
+			Print_Row(i, Scores[i]->Kills[0], Scores[i]->Lost[0], Scores[i]->Built[0], Scores[i]->Score[0] * step / steps);
+		}
+		Stage.Present(TABLE_RECT);
+		Play_Sound_Effect("Graph", 100);
+		Wait_Delay(1);
+	}
+
+	Stage.Restore(TABLE_RECT);
+	for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
+		Print_Row(i, Scores[i]->Kills[0], Scores[i]->Lost[0], Scores[i]->Built[0], Scores[i]->Score[0]);
+	}
+	Stage.Present(TABLE_RECT);
+}
+
+
+/// <summary>
+/// Shows the prompt along the bottom of the screen.
+/// </summary>
+void MultiScore::Print_Prompt(void)
+{
+	std::string prompt = Fetch_String_UTF8("TXT_CLICK_CONTINUE");
+	Stage.Print_Left(prompt.c_str(), PROMPT_RECT.X, PROMPT_RECT.Y);
+	Stage.Present(PROMPT_RECT);
+}
+
+
+/// <summary>
+/// Tallies the round's scores and fills in each house's row.
+/// </summary>
+/// <remarks>The Built value is the percentage of credits each house spent, relative to the
+/// biggest spender. It is not yet confirmed to be what gamemd shows under the Built heading.</remarks>
 void MultiScore::Tally_Score(void)
 {
 	HousesType house;
@@ -472,7 +706,7 @@ void MultiScore::Tally_Score(void)
 		}
 
 		DebugString(
-			"%s: %s\n Scheme: %d\n Lost = %d\n Kills = %d\n Economy = %d\n Score = %d\n",
+			"%s: %s\n Scheme: %d\n Lost = %d\n Kills = %d\n Built = %d\n Score = %d\n",
 			Session.Score[score_index].Name,
 			Session.Score[score_index].Wins > 0 ? "Winner" : "Loser",
 			Session.Score[score_index].Scheme,
@@ -533,540 +767,6 @@ void MultiScore::Process_Scores(void)
 			}
 		}
 	}
-}
-
-
-/// <summary>
-/// Determines which of two players should be listed first.
-/// This routine is the sort callback used to rank the players for the score screen.
-/// Games won decide the order, and the round's score settles a tie.
-/// </summary>
-/// <param name="p1">Pointer to the first player's score record pointer.</param>
-/// <param name="p2">Pointer to the second player's score record pointer.</param>
-/// <returns>Returns with a negative value if the first player ranks ahead of the second, a
-/// positive value if it ranks behind, and zero if they are tied.</returns>
-static int _cdecl Sort_Scores(const void *p1, const void *p2)
-{
-	MPlayerScoreType * mpscore1 = *(MPlayerScoreType **)p1;
-	MPlayerScoreType * mpscore2 = *(MPlayerScoreType **)p2;
-
-	int wins1 = mpscore1->Wins;
-	int wins2 = mpscore2->Wins;
-
-	if (wins1 > wins2) return(-1);
-	if (wins1 < wins2) return(1);
-
-	int score1 = mpscore1->Score[0];
-	int score2 = mpscore2->Score[0];
-
-	if (score1 == score2) return(0);
-	return(score1 > score2 ? -1 : 1);
-}
-
-
-/// <summary>
-/// Formats an elapsed time for display.
-/// Absurdly long games are capped rather than printed with a runaway hour count.
-/// </summary>
-/// <param name="buffer">The buffer to fill in with the formatted time. NULL is tolerated.</param>
-/// <param name="time">The elapsed time, in seconds.</param>
-/// <remarks>Be sure that the destination buffer is big enough to hold the formatted time.</remarks>
-inline void Format_Time(char * buffer, unsigned time)
-{
-	if (buffer != NULL) {
-		if (time / 3600 > 99) {
-			time = (100 * 3600) - 1;
-		}
-		unsigned hours = time / 3600;
-		time -= hours * 3600;
-		unsigned minutes = time / 60;
-		time -= minutes * 60;
-		sprintf(buffer, Fetch_String(TXT_TIME_FORMAT_HOURS), hours, minutes, time);
-	}
-}
-
-
-/// <summary>
-/// Draws the headings of the multiplayer score screen.
-/// This routine lays out the top of the screen -- the game number on the left and the
-/// elapsed playing time on the right -- and then animates in the heading for each of
-/// the score columns over its own tinted backdrop.
-/// </summary>
-void MultiScore::Print_Headings(void)
-{
-	/// Display the number of games played
-	char buffer[256];
-	if (Session.Type == GAME_INTERNET) {
-		sprintf(buffer, Fetch_String(TXT_GAME), WestwoodOnline_GameID);
-	} else {
-		sprintf(buffer, Fetch_String(TXT_GAME), Session.GamesPlayed);
-	}
-
-	MSPrintAnim *gameAnim = new MSPrintAnim(buffer, XPos + 15, YPos + 15, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(gameAnim);
-	Wait_For_Anim(gameAnim);
-	Font->Draw_String(AlternateSurface,buffer, XPos + 15, YPos + 15, 2);
-
-	Rect rect(XPos + 15, YPos + 15, Font->Get_Font_Width() * strlen(buffer), Font->Get_Font_Height());
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Font->Draw_String(ScoreSurface,buffer, 15, 15, 2);
-
-	/// Display elapsed time
-	Format_Time(buffer, Scen->ElapsedTimer / 60);
-	int timeXPos = 625 - Font->Get_String_Width(buffer);
-
-	MSPrintAnim *timeAnim = new MSPrintAnim(buffer, timeXPos + XPos, YPos + 15, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(timeAnim);
-	Wait_For_Anim(timeAnim);
-	Font->Draw_String(AlternateSurface,buffer, timeXPos + XPos, YPos + 15, 2);
-
-	int w = Font->Get_Font_Width() * strlen(buffer);
-	rect.Set(XPos - w + 625, YPos + 15, w, Font->Get_Font_Height());
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Font->Draw_String(ScoreSurface,buffer, 625, 15, 2);
-
-	/// Draw section for names
-	rect.Set(XPos + 15, YPos + 40, 100, 315);
-	AlternateSurface->Fill_Rect_Trans(rect, RGBClass(Font->Get_Red(), Font->Get_Green(), Font->Get_Blue()), 25);
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-
-	const char *namesLabel = Fetch_String(TXT_NAMES);
-	int namesLabelXPos = (100 - Font->Get_String_Width(namesLabel)) / 2;
-	Font->Draw_String(ScoreSurface,namesLabel, namesLabelXPos + 15, 45, 2);
-
-	ScoreSurface->Draw_Line(Point2D(20, 45 + Font->Get_Font_Height()), Point2D(110, 45 + Font->Get_Font_Height()), Font->Get_Color());
-	HiddenSurface->Draw_Line(Point2D(XPos + 20, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 110, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
-	Blit_Rect(HiddenSurface, rect);
-
-	MSWordAnim *namesAnim = new MSWordAnim(TXT_NAMES, namesLabelXPos + XPos + 15, YPos + 45, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(namesAnim);
-	Wait_For_Anim(namesAnim);
-	Wait_Delay(7);
-	AlternateSurface->Blit_From(rect, *ScoreSurface, Rect(15, 40, 100, 315));
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Blit_Rect(HiddenSurface, rect);
-
-	/// Draw section for losses
-	rect.Set(XPos + 147, YPos + 40, 110, 315);
-	AlternateSurface->Fill_Rect_Trans(rect, RGBClass(Font->Get_Red(), Font->Get_Green(), Font->Get_Blue()), 25);
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-
-	const char *lossesLabel = Fetch_String(TXT_LOSSES);
-	int lossesLabelXPos = (110 - Font->Get_String_Width(lossesLabel)) / 2;
-	Font->Draw_String(ScoreSurface,lossesLabel, lossesLabelXPos + 147, 45, 2);
-
-	ScoreSurface->Draw_Line(Point2D(152, 45 + Font->Get_Font_Height()), Point2D(252, 45 + Font->Get_Font_Height()), Font->Get_Color());
-	HiddenSurface->Draw_Line(Point2D(XPos + 152, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 252, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
-	Blit_Rect(HiddenSurface, rect);
-
-	MSWordAnim *lossesAnim = new MSWordAnim(TXT_LOSSES, lossesLabelXPos + XPos + 147, YPos + 45, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(lossesAnim);
-	Wait_For_Anim(lossesAnim);
-	Wait_Delay(7);
-	AlternateSurface->Blit_From(rect, *ScoreSurface, Rect(147, 40, 110, 315));
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Blit_Rect(HiddenSurface, rect);
-
-	/// Draw section for kills
-	rect.Set(XPos + 269, YPos + 40, 110, 315);
-	AlternateSurface->Fill_Rect_Trans(rect, RGBClass(Font->Get_Red(), Font->Get_Green(), Font->Get_Blue()), 25);
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-
-	const char *killsLabel = Fetch_String(TXT_KILLS);
-	int killsLabelXPos = (110 - Font->Get_String_Width(killsLabel)) / 2;
-	Font->Draw_String(ScoreSurface,killsLabel, killsLabelXPos + 269, 45, 2);
-
-	ScoreSurface->Draw_Line(Point2D(274, 45 + Font->Get_Font_Height()), Point2D(374, 45 + Font->Get_Font_Height()), Font->Get_Color());
-	HiddenSurface->Draw_Line(Point2D(XPos + 274, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 374, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
-	Blit_Rect(HiddenSurface, rect);
-
-	MSWordAnim *killsAnim = new MSWordAnim(TXT_KILLS, killsLabelXPos + XPos + 269, YPos + 45, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(killsAnim);
-	Wait_For_Anim(killsAnim);
-	Wait_Delay(7);
-	AlternateSurface->Blit_From(rect, *ScoreSurface, Rect(269, 40, 110, 315));
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Blit_Rect(HiddenSurface, rect);
-
-	/// Draw section for economy
-	rect.Set(XPos + 391, YPos + 40, 110, 315);
-	AlternateSurface->Fill_Rect_Trans(rect, RGBClass(Font->Get_Red(), Font->Get_Green(), Font->Get_Blue()), 25);
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-
-	const char *economyLabel = Fetch_String(TXT_ECONOMY);
-	int economyLabelXPos = (110 - Font->Get_String_Width(economyLabel)) / 2;
-	Font->Draw_String(ScoreSurface,economyLabel, economyLabelXPos + 391, 45, 2);
-
-	ScoreSurface->Draw_Line(Point2D(396, 45 + Font->Get_Font_Height()), Point2D(496, 45 + Font->Get_Font_Height()), Font->Get_Color());
-	HiddenSurface->Draw_Line(Point2D(XPos + 396, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 496, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
-	Blit_Rect(HiddenSurface, rect);
-
-	MSWordAnim *economyAnim = new MSWordAnim(TXT_ECONOMY, economyLabelXPos + XPos + 391, YPos + 45, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(economyAnim);
-	Wait_For_Anim(economyAnim);
-	Wait_Delay(7);
-	AlternateSurface->Blit_From(rect, *ScoreSurface, Rect(391, 40, 110, 315));
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Blit_Rect(HiddenSurface, rect);
-
-	/// Draw section for scores
-	rect.Set(XPos + 530, YPos + 40, 90, 315);
-	AlternateSurface->Fill_Rect_Trans(rect, RGBClass(Font->Get_Red(), Font->Get_Green(), Font->Get_Blue()), 25);
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-
-	const char *scoresLabel = Fetch_String(TXT_SCORE);
-	int scoresLabelXPos = (90 - Font->Get_String_Width(scoresLabel)) / 2;
-	Font->Draw_String(ScoreSurface,scoresLabel, scoresLabelXPos + 530, 45, 2);
-
-	ScoreSurface->Draw_Line(Point2D(535, 45 + Font->Get_Font_Height()), Point2D(615, 45 + Font->Get_Font_Height()), Font->Get_Color());
-	HiddenSurface->Draw_Line(Point2D(XPos + 535, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 615, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
-	Blit_Rect(HiddenSurface, rect);
-
-	MSWordAnim *scoresAnim = new MSWordAnim(TXT_SCORE, scoresLabelXPos + XPos + 530, YPos + 45, Font, RECT_NONE, 0, 4, true, false);
-	Add_Animation(scoresAnim);
-	Wait_For_Anim(scoresAnim);
-	Wait_Delay(7);
-	AlternateSurface->Blit_From(rect, *ScoreSurface, Rect(530, 40, 90, 315));
-	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Blit_Rect(HiddenSurface, rect);
-	Wait_Delay(30);
-}
-
-
-/// <summary>
-/// Draws the name column of the score screen.
-/// Each player's name is animated into place over a band tinted with his own color
-/// scheme, from the winner downward.
-/// </summary>
-void MultiScore::Print_Player_Names(void)
-{
-	int yPos = 80;
-
-	for (int i = 0; i < Session.NumScores; i++) {
-
-		RGBClass color = ColorSchemes[Scores[i]->Scheme]->HSV;
-		Rect rect(XPos + 15, YPos + yPos - 5, -605, 30);
-		AlternateSurface->Fill_Rect_Trans(rect, color, 25);
-		HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-		Blit_Rect(HiddenSurface, rect);
-
-		Font->Draw_String(ScoreSurface,Scores[i]->Name, 20, yPos, 2);
-		MSWordAnim * anim = new MSWordAnim(Scores[i]->Name, XPos + 20, YPos + yPos, Font);
-		Add_Animation(anim);
-		Wait_For_Anim(anim);
-
-		Wait_Delay(7);
-
-		Rect r = rect;
-		r.X -= XPos;
-		r.Y -= YPos;
-
-		AlternateSurface->Blit_From(rect, *ScoreSurface, r);
-		HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-		Blit_Rect(HiddenSurface, rect);
-
-		yPos += 35;
-	}
-
-	Wait_Delay(30);
-}
-
-
-/// <summary>
-/// Draws the losses column of the score screen.
-/// This routine collects what each player lost over the round and hands it to the
-/// bar graph drawer.
-/// </summary>
-void MultiScore::Draw_Losses(void)
-{
-	int scores[MAX_PLAYERS];
-
-	for (int i = 0; i < Session.NumScores; i++) {
-		scores[i] = Scores[i]->Lost[0];
-	}
-
-	Draw_Bars(scores, Session.NumScores, XPos + 152, YPos + 80, 100);
-	Wait_Delay(45);
-}
-
-
-/// <summary>
-/// Draws the kills column of the score screen.
-/// This routine collects each player's kill count and hands it to the bar graph
-/// drawer.
-/// </summary>
-void MultiScore::Draw_Kills(void)
-{
-	int scores[MAX_PLAYERS];
-
-	for (int i = 0; i < Session.NumScores; i++) {
-		scores[i] = Scores[i]->Kills[0];
-	}
-
-	Draw_Bars(scores, Session.NumScores, XPos + 274, YPos + 80, 100);
-	Wait_Delay(45);
-}
-
-
-/// <summary>
-/// Draws the economy column of the score screen.
-/// This routine collects what each player built over the round and hands it to the
-/// bar graph drawer.
-/// </summary>
-void MultiScore::Draw_Economy(void)
-{
-	int scores[MAX_PLAYERS];
-
-	for (int i = 0; i < Session.NumScores; i++) {
-		scores[i] = Scores[i]->Built[0];
-	}
-
-	Draw_Bars(scores, Session.NumScores, XPos + 396, YPos + 80, 100);
-	Wait_Delay(45);
-}
-
-
-/// <summary>
-/// Draws and animates the final score column.
-/// This routine is the climax of the presentation. Every player's score counts up
-/// together from nothing to its final value, and then the finished numbers are laid
-/// down on the working surfaces so that they survive the rest of the screen.
-/// </summary>
-void MultiScore::Print_Scores(void)
-{
-	int i;
-	int maxScore = 1;
-
-	/// Find the maximum score among all players
-	for (i = 0; i < Session.NumScores; i++) {
-		if (maxScore <= Scores[i]->Score[0]) {
-			maxScore = Scores[i]->Score[0];
-		}
-	}
-
-	/// Temporary buffer to store rectangles for updating
-	Rect updateRects[MAX_PLAYERS];
-
-	/// Animate the scores incrementally
-	if (maxScore > 0) {
-		for (int percentage = 1; percentage <= 100; percentage++) {
-			int yPos = YPos + 80;
-
-			for (i = 0; i < Session.NumScores; i++) {
-
-				int score = Scores[i]->Score[0];
-
-				/// Clear the previous rectangle if valid
-				if (updateRects[i].Is_Valid()) {
-					HiddenSurface->Blit_From(updateRects[i], *AlternateSurface, updateRects[i]);
-					Add_Update_Rect(updateRects[i]);
-				}
-
-				int xPos = XPos + 575;
-
-				/// Calculate the current score based on the percentage
-				int currentScore = (percentage * score) / 100;
-				updateRects[i] = Print_Score(HiddenSurface, currentScore, score, xPos, yPos);
-				Add_Update_Rect(updateRects[i]);
-
-				/// Move to the next player's score position
-				yPos += 35;
-			}
-
-			/// Play the "Graph" sound effect and wait briefly
-			Play_Sound_Effect("Graph", 100);
-			Wait_Delay(1);
-		}
-	}
-
-	/// Draw the final scores
-	int yPos = YPos + 80;
-	for (i = 0; i < Session.NumScores; i++) {
-		/// The score and maximum arguments really are the other way round here. Print_Score
-		/// only uses 'maximum' to clamp, so the smaller of 100 and the player's score is
-		/// printed either way.
-		int score = Scores[i]->Score[0];
-		Print_Score(AlternateSurface, 100, score, XPos + 575, yPos);
-		Print_Score(ScoreSurface, 100, score, 575, yPos - YPos);
-		yPos += 35;
-	}
-}
-
-
-/// <summary>
-/// Converts a color into the display's pixel format.
-/// </summary>
-/// <returns>Returns with the pixel value that the display surfaces expect.</returns>
-static inline unsigned RGB_To_Pixel(RGBClass &rgb)
-{
-	return (unsigned((rgb.Get_Blue() >> DSurface::BlueLeft) << DSurface::BlueRight)
-		  | unsigned((rgb.Get_Red() >> DSurface::RedLeft) << DSurface::RedRight)
-		  | unsigned((rgb.Get_Green() >> DSurface::GreenLeft) << DSurface::GreenRight));
-}
-
-
-/// <summary>
-/// Draws and animates one bar graph column of the score screen.
-/// This routine is used by the losses, kills and economy columns. Each player gets a
-/// bar in his own color scheme, and the bars grow together with the running value
-/// printed alongside until every bar has reached its final length.
-/// </summary>
-/// <param name="scores">The value to graph for each player, in score screen display order.</param>
-/// <param name="x">The screen position of the first bar.</param>
-/// <param name="y">The screen position of the first bar.</param>
-/// <param name="width">The length of a full length bar.</param>
-void MultiScore::Draw_Bars(int * scores, int numScores, int x, int y, int width)
-{
-	int i;
-
-	int maxScore = 1;
-
-	/// Find the maximum score among all players
-	for (i = 0; i < numScores; i++) {
-		if (scores[i] > maxScore) {
-			maxScore = scores[i];
-		}
-	}
-
-	/// Calculate bar widths based on scores
-	int adjustedScores[MAX_PLAYERS];
-
-	for (i = 0; i < numScores; i++) {
-		adjustedScores[i] = width * scores[i] / maxScore;
-	}
-
-	/// Scale scores if the maximum score is less than 20
-	if (maxScore < 20) {
-		for (i = 0; i < numScores; i++) {
-			adjustedScores[i] = scores[i] * 5;
-		}
-	}
-
-	int maxWidth = 1;
-	/// Find the maximum score among all players
-	for (i = 0; i < numScores; i++) {
-		if (adjustedScores[i] > maxWidth) {
-			maxWidth = adjustedScores[i];
-		}
-	}
-
-	/// Draw the bars
-	int yPos = y - YPos;
-	for (i = 0; i < numScores; i++) {
-		/// Get the color for the player's bar
-		RGBClass color = ColorSchemes[Scores[i]->Scheme]->HSV;
-
-		/// Draw the bar background
-		Rect barRect(x - XPos, yPos, adjustedScores[i], 20);
-		ScoreSurface->Fill_Rect_Trans(barRect, color, 50);
-
-		int colorInt = RGB_To_Pixel(color);
-
-		/// Draw the bar outline
-		barRect.Set(x - XPos, yPos, width, 20);
-		ScoreSurface->Draw_Rect(barRect, colorInt);
-
-		/// Draw the bar on the alternate and hidden surfaces
-		barRect.Set(x, yPos + YPos, width, 20);
-		AlternateSurface->Draw_Rect(barRect, colorInt);
-		HiddenSurface->Draw_Rect(barRect, colorInt);
-
-		/// Add the bar to the update rects
-		Add_Update_Rect(barRect);
-
-		/// Move to the next bar position
-		yPos += 35;
-	}
-
-	/// Temporary buffer to store rectangles for updating
-	Rect updateRects[MAX_PLAYERS];
-
-	Rect dr;
-	Rect sr;
-
-	/// Animate the bars incrementally
-	for (int percentage = 1; percentage <= maxWidth; percentage += 2) {
-		yPos = y;
-		for (i = 0; i < numScores; i++) {
-
-			/// Clear the previous rectangle if valid
-			if (updateRects[i].Is_Valid()) {
-				HiddenSurface->Blit_From(updateRects[i], *AlternateSurface, updateRects[i]);
-				Add_Update_Rect(dr);
-			}
-
-			if (percentage <= adjustedScores[i]) {
-				dr.Set(x, yPos, percentage, 20);
-				sr.Set(x - XPos, yPos - YPos, percentage, 20);
-				HiddenSurface->Blit_From(dr, *ScoreSurface, sr);
-				AlternateSurface->Blit_From(dr, *ScoreSurface, sr);
-				Add_Update_Rect(dr);
-				updateRects[i] = Print_Score(HiddenSurface, scores[i] * percentage / maxWidth, scores[i], x + width / 2, yPos);
-				Add_Update_Rect(updateRects[i]);
-			} else {
-				updateRects[i] = Print_Score(HiddenSurface, scores[i], scores[i], x + width / 2, yPos);
-				Add_Update_Rect(updateRects[i]);
-				updateRects[i].Set(0, 0, 0, 0);
-			}
-
-			/// Move to the next bar position
-			yPos += 35;
-		}
-
-		/// Play the "Graph" sound effect and wait briefly
-		Play_Sound_Effect("Graph", 100);
-		Wait_Delay(1);
-	}
-
-	// The animation steps two pixels at a time, so its last frame stops short of the longest
-	// bar's own figure, and that figure has to come off the screen before the finished one.
-	for (i = 0; i < numScores; i++) {
-		if (updateRects[i].Is_Valid()) {
-			HiddenSurface->Blit_From(updateRects[i], *AlternateSurface, updateRects[i]);
-			Add_Update_Rect(updateRects[i]);
-		}
-	}
-
-	/// Draw the final bars and scores
-	int srcYPos = y - YPos;
-	for (i = 0; i < numScores; i++) {
-		/// Draw the final bar
-		dr.Set(x, y, adjustedScores[i], 20);
-		sr.Set(x - XPos, srcYPos, adjustedScores[i], 20);
-		AlternateSurface->Blit_From(dr, *ScoreSurface, sr);
-
-		/// Draw the final score text
-		Print_Score(AlternateSurface, scores[i], scores[i], x + width / 2, y);
-		Print_Score(ScoreSurface, scores[i], scores[i], x + width / 2 - XPos, srcYPos);
-		Add_Update_Rect(Print_Score(HiddenSurface, scores[i], scores[i], x + width / 2, y));
-
-		/// Move to the next bar position
-		y += 35;
-		srcYPos += 35;
-	}
-}
-
-
-/// <summary>
-/// Draws a score value onto a surface.
-/// The number is centered about the horizontal position given. The rectangle returned
-/// lets the animating callers erase the number again before they print the next one.
-/// </summary>
-/// <param name="maximum">The largest value that may be printed; a larger score is
-/// clamped to it.</param>
-/// <param name="x">The horizontal center of the printed number.</param>
-/// <returns>Returns with the rectangle that the number occupies.</returns>
-Rect MultiScore::Print_Score(Surface * surface, int score, int maximum, int x, int y)
-{
-	char buffer[32];
-
-	sprintf(buffer, "%d", score > maximum ? maximum : score);
-
-	int stringWidth = Font->Get_String_Width(buffer);
-	Font->Draw_String(surface,buffer, x - stringWidth / 2, y, 2);
-
-	int totalStringWidth = Font->Get_Font_Width() * strlen(buffer);
-	return(Rect(x - totalStringWidth / 2, y, totalStringWidth, Font->Get_Font_Height()));
 }
 
 

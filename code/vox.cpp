@@ -22,6 +22,7 @@
 #include "_deploymentconfig.h"
 #include "deploymentconfig.h"
 #include "globals.h"
+#include "shellmap.h"
 #include "stimer.h"
 #include "timer.h"
 #include "voxqueue.h"
@@ -818,7 +819,8 @@ void Speak_Eva_Index(int line, bool now)
 	if (line >= 0 && line < (int)EvaLines.size()) {
 		DebugString("Speech: request %s\n", EvaLines[line].Name.c_str());
 	}
-	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || line < 0) {
+	// The menu battle has nobody playing, so EVA stays quiet for it.
+	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || line < 0 || Shellmap_In_Scope()) {
 		return;
 	}
 

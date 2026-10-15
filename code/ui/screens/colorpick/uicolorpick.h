@@ -23,12 +23,16 @@
 
 // A preset as the picker lists it. Value is the preset's index in Player_Color_Preset_At.
 // TextColor is the label color that reads on Color: black on a light swatch, white otherwise.
+// Taken is set while another seat's color clashes with the preset. Caption is the text the button
+// shows: the label, with "(in use)" added while the preset is taken.
 struct UIColorPresetOption
 {
 	std::string Label;
 	int Value = 0;
 	std::string Color;
 	std::string TextColor = "#ffffff";
+	bool Taken = false;
+	std::string Caption;
 };
 
 // One player's color as another lobby row sees it, for the duplicate check.
@@ -48,9 +52,8 @@ struct UIColorPickState
 	int Saturation = 0;
 	int Value = PLAYER_COLOR_MIN_VALUE;
 	unsigned int Custom = 0;
-	// Where the marker that shows the chosen hue and saturation sits in the square, in dp.
-	std::string MarkerLeft = "0dp";
-	std::string MarkerTop = "0dp";
+	// The inline style that places the marker over the chosen hue and saturation, in dp.
+	std::string MarkerStyle = "left: 0dp; top: 0dp";
 	std::string Swatch = "#000000";
 	std::string Notice;
 	std::vector<UIColorPresetOption> Presets;
@@ -60,8 +63,11 @@ struct UIColorPickState
 RGBClass UI_Stock_Color_RGB(int index);
 std::string UI_Color_CSS(RGBClass const & rgb);
 RGBClass UI_Color_Pick_Color(UIColorPickState const & state);
+std::string UI_Color_Name(std::string const & stock_label, unsigned int custom);
+std::string UI_Color_Button_Name(std::string const & stock_label, unsigned int custom);
 void UI_Color_Pick_Build_Presets(UIColorPickState & state);
-void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, int seat);
+void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, int seat, std::vector<UIColorPickRival> const & rivals);
+void UI_Color_Pick_Mark_Taken(UIColorPickState & state, std::vector<UIColorPickRival> const & rivals);
 void UI_Color_Pick_Field(UIColorPickState & state, int x, int y);
 void UI_Color_Pick_Value(UIColorPickState & state, int value);
 void UI_Color_Pick_Preset(UIColorPickState & state, int index);

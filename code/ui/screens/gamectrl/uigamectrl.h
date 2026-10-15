@@ -41,10 +41,10 @@ class UIGameControlsServiceClass
 		virtual void Set_Difficulty(int difficulty) = 0;
 		virtual void Set_Alt_To_Rally(bool on) = 0;
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
+		virtual void Set_Aircraft_Body_Pick(bool on) = 0;
 		virtual void Set_Sidebar_Sorting(bool on) = 0;
 		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
-		virtual void Set_Screen_Shake(bool on) = 0;
 		virtual void Save(void) = 0;
 };
 
@@ -70,9 +70,9 @@ struct UIGameControlsState
 	bool Extras = false;
 	bool AltToRally = false;
 	bool SimulateUnfocused = false;
+	bool AircraftBodyPick = true;
 	bool SidebarSorting = false;
 	bool DebugMode = false;
-	bool ScreenShake = true;
 	std::vector<UIGameControlsChoice> Autosaves;
 	int Autosave = 0;
 
@@ -120,14 +120,16 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		UIGameControlsServiceClass & Service;
 		bool InitialAltToRally;
 		bool InitialSimulateUnfocused;
+		bool InitialAircraftBodyPick;
 		bool InitialSidebarSorting;
 		int InitialAutosave;
 		bool InitialDebugMode;
-		bool InitialScreenShake;
 };
 
 
 std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
+// The presenter of the game controls, with the settings as they stand now. Tabbed, it leaves with the Back label.
+std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(bool tabbed);
 
 UIGameControlsServiceClass & UI_Game_Controls_Service(void);
 void UI_Game_Controls_State(UIGameControlsState & state);

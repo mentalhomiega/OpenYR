@@ -1,0 +1,21 @@
+; Nuke sequence, wide view: the silo at 60,46 launches a nuke at 42,50. Captures at take-off, climb, descent and blast.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sw-nuke-visuals-wide.txt -Width 800 -Height 600 -Seconds 200 -ShotDir "E:\Claude ra2 decomp\shots\sw-followup" -Filter "AUTOTEST nuke|Exception"
+20 own GAPOWR 56 40
+22 own NAMISL 60 46
+24 own E1 41 50
+35 reveal
+36 zoom 0.5
+37 view 51 46
+62 grant NukeSpecial
+63 fire NukeSpecial 42 50
+70 command ScreenCapture
+110 command ScreenCapture
+160 command ScreenCapture
+210 command ScreenCapture
+240 command ScreenCapture
+300 command ScreenCapture
+380 command ScreenCapture
+440 command ScreenCapture
+470 command ScreenCapture
+490 command ScreenCapture
+500 quit

@@ -29,6 +29,7 @@
 #include "rules.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
+#include "shellmap.h"
 #include "side.h"
 #include "ui/uishell.h"
 #include "ui/uitheme.h"
@@ -240,6 +241,16 @@ class UIEngineHostClass : public UIShellHostClass
 			return(ScenarioActive);
 		}
 
+		virtual UIMenuTintType Menu_Tint(void) const override
+		{
+			return(UI_Theme_Tint());
+		}
+
+		virtual bool Live_Background(void) const override
+		{
+			return(Shellmap_Running());
+		}
+
 		virtual void Log(char const * text) override
 		{
 			DebugString("%s", text);
@@ -265,6 +276,12 @@ bool UI_Service_Game(void)
 	static bool inmainloop = false;
 
 	Windows_Message_Handler();
+
+	if (Shellmap_Running()) {
+		Call_Back();
+		Shellmap_Service();
+		return(false);
+	}
 
 	// Main_Loop needs the local house, which a launch that was refused before its match started never sets.
 	if (PlayerPtr != NULL && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.NetOpen && !Session.Suspended) {

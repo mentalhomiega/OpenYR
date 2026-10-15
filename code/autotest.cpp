@@ -3068,6 +3068,12 @@ void Run(StepType const & step)
 		std::string house_name = step.Argument;
 		std::replace(house_name.begin(), house_name.end(), '_', ' ');
 		HouseClass * victim = House_From_Name(house_name.c_str());
+		// A skirmish's computer players are found by their names in the lobby, such as "Medium AI".
+		for (int index = 0; victim == NULL && index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) {
+				victim = Houses[index];
+			}
+		}
 		int const kinds = step.X;
 		TechnoClass * attacker = NULL;
 		for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
@@ -4022,6 +4028,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "skipscore") {
+		// skipscore: a multiplayer or skirmish win passes over its score screen, as a launch file's
+		// SkipScoreScreen does, so the run reaches the lobby without a key press.
+		Session.SkipScoreScreen = true;
+		DebugString("AUTOTEST skipscore\n");
 	} else if (step.Command == "lansession") {
 		// lansession: marks the game as a network game, so steps can see the multiplayer limits.
 		Session.Type = GAME_IPX;
@@ -4265,6 +4276,17 @@ void AutoTest_Trigger_Sprung(TriggerTypeClass const * type)
 	if (TriggerLog) {
 		DebugString("AUTOTEST trigger fired frame %d: %s %s house %s\n", Frame, (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE");
 	}
+}
+
+
+void AutoTest_Score_Shown(void)
+{
+	if (!Active) {
+		return;
+	}
+	DebugString("AUTOTEST score screen shown frame %d\n", Frame);
+	Execute_Command("ScreenCapture");
+	Video_Present();
 }
 
 

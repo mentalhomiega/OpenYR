@@ -99,6 +99,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `triggerlog <0\|1>` | With `1`, writes `AUTOTEST trigger fired frame N: <ID> <name> house <house>` each time a trigger springs |
 | `triggercoverage` | Writes each trigger type in the scenario with how many times it has sprung since the run started, then the types that never sprung. A long list runs over several lines, the later ones marked `(continued)` |
 | `modsig [text]` | Writes the mods in force as a join request carries them: each folder name with a hash of its `mod.ini` and overlay files. With a signature as text, which is another machine's, also writes whether a host with these mods would take that machine in, and how the mods differ |
+| `skipscore` | A won multiplayer or skirmish game passes over its score screen, as `SkipScoreScreen=yes` in a launch file does |
 | `quit` | Ends the process |
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to
@@ -140,6 +141,30 @@ and does nothing.
 
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
+
+## Skirmish lobby
+
+`tests/autotest/skirmish-lobby-restore.txt` checks that the skirmish lobby keeps its setup after a
+game and after a cancel. A `-Settings` text writes a `[Skirmish]` setup into the settings file: four
+players on `XMP03T4.MAP`, which has four start spots. The script opens the lobby and starts a game.
+`killhouse Spawn2 0`, `Spawn3 0` and `Spawn4 0` destroy the computers, `skipscore` passes over the
+score screen, and the player wins. The lobby opens again, is cancelled, and opens a third time. The
+log has three `AUTOTEST lobby` blocks, one for each opening. Each block is an `AUTOTEST lobby map`
+line followed by one `AUTOTEST lobby row` line per row, and the three blocks must match.
+
+```text
+$s = "[Skirmish]`r`nMap=XMP03T4.MAP`r`nUnits=8`r`nCredits=5000`r`nTech=5`r`nSpeed=3`r`nBases=0`r`nCrates=1`r`nFog=1`r`nBridges=0`r`nRedeploy=0`r`nShortGame=0`r`nEngineer=1`r`nSuperWeapons=0`r`nBuildOffAlly=1`r`nSlot1=0,-1,0,0,0,0`r`nSlot2=3,2,1,2,1,0`r`nSlot3=4,0,2,3,1,0`r`nSlot4=2,-1,3,4,2,0"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/skirmish-lobby-restore.txt -Menus -MenuStyle Modern -Width 800 -Height 600 -Seconds 200 -Settings $s -Filter "AUTOTEST lobby|game over|Exception"
+```
+
+`tests/autotest/skirmish-lobby-fallback.txt` opens the lobby once and cancels it. Its `AUTOTEST lobby`
+block shows what the lobby fell back to. Run it with a `-Settings` text that names a map that is not on
+hand, or four rows on a two-start map such as `XMP29U2.MAP`. The lobby then shows the first map on hand,
+or two rows.
+
+The unit test `skirmishsetup` (CTest name `skirmishsetup`) restores saved rows onto maps with fewer
+start spots and checks the fallbacks for a missing country or start, a kind past the list, and clashing
+colors and starts. It needs no game data.
 
 ## Saving and loading
 

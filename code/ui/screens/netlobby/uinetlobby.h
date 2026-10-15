@@ -111,6 +111,11 @@ struct UINetLobbyState
 	int Color = 0;
 	/// The free color, zero for the stock color at Color, and the picker over the lobby.
 	unsigned int CustomColor = 0;
+	/// What the color button shows: its name, its hover tip with the full name of a free color, and
+	/// the inline style of its swatch.
+	std::string ColorName;
+	std::string ColorTip;
+	std::string ColorStyle;
 	UIColorPickState Picker;
 	/// The colors of the other players, for the picker's duplicate check.
 	std::vector<UIColorPickRival> Rivals;

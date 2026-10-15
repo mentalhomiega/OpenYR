@@ -61,6 +61,7 @@
 
 #include "playerdisplay.h"
 #include "scenario.h"
+#include "shellmap.h"
 
 #include "autotest.h"
 #include "_bench.h"
@@ -767,7 +768,8 @@ bool Read_Scenario(char const * fname)
 	Scen->IsRandom = is_seed_file || random_map;
 	DebugString("Scen->IsRandom = %s\n", Scen->IsRandom ? "true" : "false");
 
-	if (!Debug_Map) {
+	// The menu battle loads behind the menus, with no loading screen.
+	if (!Debug_Map && !Shellmap_In_Scope()) {
 
 		int players = 1;
 
@@ -867,7 +869,9 @@ bool Read_Scenario(char const * fname)
 
 		DebugString("Error - %s\n", text);
 		LoadScreen.End();
-		WWMessageBox().Process(text, TXT_OK);
+		if (!Shellmap_In_Scope()) {
+			WWMessageBox().Process(text, TXT_OK);
+		}
 
 		BEnd(BENCH_SCENARIO);
 		ScenarioInit--;
@@ -909,7 +913,7 @@ bool Read_Scenario(char const * fname)
 
 	ScenarioInit--;
 
-	if (!Debug_Map) {
+	if (!Debug_Map && !Shellmap_In_Scope()) {
 		if (all_loaded) {
 
 			Call_Back();
@@ -1157,6 +1161,11 @@ void Post_Load_Game(void)
  *=============================================================================================*/
 void Clear_Scenario(void)
 {
+	// A scenario the menus start takes the world from the menu battle.
+	if (!Shellmap_In_Scope()) {
+		Shellmap_Stop();
+	}
+
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
 

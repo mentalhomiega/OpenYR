@@ -19,6 +19,10 @@
 
 #include <RmlUi/Core.h>
 
+#include "globals.h"
+#include "goptions.h"
+
+#include <cctype>
 #include <chrono>
 #include <cstdlib>
 #include <sstream>
@@ -207,7 +211,7 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// set (a slider's id and the value to give it, separated by a space), press (a button's
 /// label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
-/// visible screen), box (logs where an element and each element around it lie), movie (plays the
+/// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does) and quit.
 /// </summary>
 void UIScript_Tick(Rml::Context * context)
@@ -367,7 +371,24 @@ void UIScript_Tick(Rml::Context * context)
 				WaitUntil = now + 300;
 				return;
 			}
-		} else if (step.Command == "movie") {
+		} else if (step.Command == "theme") {
+				// Sets the MenuTheme setting in memory, so the menus shown next take that tint.
+				std::string name = step.Argument;
+				for (char & c : name) {
+					c = (char)std::tolower((unsigned char)c);
+				}
+				if (name == "allied") {
+					Options.MenuTheme = MENU_THEME_ALLIED;
+				} else if (name == "soviet") {
+					Options.MenuTheme = MENU_THEME_SOVIET;
+				} else if (name == "yuri") {
+					Options.MenuTheme = MENU_THEME_YURI;
+				} else {
+					Options.MenuTheme = MENU_THEME_RANDOM;
+				}
+				WaitUntil = now + 300;
+				return;
+			} else if (step.Command == "movie") {
 			Play_Movie(step.Argument.c_str());
 			WaitUntil = Now_Milliseconds() + 300;
 			return;

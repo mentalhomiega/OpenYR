@@ -1118,6 +1118,40 @@ bool FootClass::Is_Chrono_Warping(void) const
 /// way through. The place is not checked: the caller sees to what stands there.
 /// </summary>
 /// <param name="dest">Where the object goes.</param>
+/// <summary>
+/// Starts a chronosphere warp that lands the object at dest. The object stays on its cell, under the
+/// warp-out animation, for ChronoDelay frames, then its teleport locomotor sets it down at dest. A
+/// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
+/// is dropped.
+/// </summary>
+/// <param name="dest">The coordinate the object lands at.</param>
+void FootClass::Begin_Chrono_Warp(Coord dest)
+{
+	IsBeingWarpedOut = true;
+	Stop_Driver();
+	Assign_Destination(NULL);
+
+	if (dynamic_cast<TeleportLocomotionClass *>(Locomotion.get()) == NULL) {
+		std::unique_ptr<ILocomotion> carried = std::move(Locomotion);
+		carried->Mark_All_Occupation_Bits(0);
+		carried->Stop_Movement_Animation();
+		carried->Stop_Moving();
+		Locomotion = Create_Locomotor(ClassID_TeleportLocomotion);
+		Locomotion->Link_To_Object(this);
+		Locomotion->Unlimbo();
+		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+		piggy->Begin_Piggyback(carried);
+	}
+	if (IonStormClass::Is_Ion_Storm_Active() && Locomotion->Is_Ion_Sensitive()) {
+		Locomotion->Power_Off();
+	} else {
+		Locomotion->Power_On();
+	}
+	TeleportLocomotionClass * teleport = static_cast<TeleportLocomotionClass *>(Locomotion.get());
+	teleport->Begin_Chrono_Warp(dest, Rule->ChronoDelay);
+}
+
+
 void FootClass::Teleport_To(Coord dest)
 {
 	CellClass * cellptr = &Map[dest.As_Cell()];

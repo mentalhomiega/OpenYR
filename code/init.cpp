@@ -184,6 +184,7 @@
 #include "script.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
+#include "shellmap.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
@@ -3100,6 +3101,9 @@ int Main_Menu(unsigned int timeout)
 	Draw_Version_Text(HiddenSurface);
 	Update_Visible_Surface();
 
+	// The title art stays up while the battle loads behind it.
+	Shellmap_Start();
+
 	while (retval == SEL_NONE) {
 		MainMenuKeyResult = SEL_NONE;
 
@@ -3112,7 +3116,12 @@ int Main_Menu(unsigned int timeout)
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
-		menu.Stamp.push_back(Version_Text());
+		if (Options.IsClassicMenus) {
+			menu.Stamp.push_back(Version_Text());
+		} else {
+			menu.Version = Version_Text();
+			menu.Profile = (Session.Handle[0] != 0) ? Session.Handle : Fetch_String(TXT_NONAME);
+		}
 		menu.Stamp.push_back(Fetch_String(TXT_COPYRIGHT));
 		UI_Menu_Place(menu);
 
@@ -3147,6 +3156,11 @@ int Main_Menu(unsigned int timeout)
 /// <param name="force">Should the title screen be redrawn even if nothing was lost?</param>
 void Title_Screen_Restore(bool force)
 {
+	if (Shellmap_Running()) {
+		Shellmap_Service();
+		return;
+	}
+
 	if (force == true) {
 		HiddenSurface->Fill(0);
 		char *menu = Get_New_Menu()->Background;

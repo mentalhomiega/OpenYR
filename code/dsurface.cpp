@@ -1944,8 +1944,10 @@ bool DSurface::Draw_Ping_Pong_Gradient_Line(Rect const & cliprect, Point2D const
 /// <param name="start_depth">Depth value at the start point.</param>
 /// <param name="end_depth">Depth value at the end point.</param>
 /// <param name="write_depth">If true, the depth buffer is updated at each plotted pixel.</param>
+/// <param name="shade_by_alpha">If false, each pixel is plotted at the color given, without the
+/// alpha-buffer darkening or the skip of zero-alpha pixels.</param>
 /// <returns>True if any portion of the line was drawn, false otherwise.</returns>
-bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth)
+bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth, bool shade_by_alpha)
 {
 	/*
 	**	Ensure that the clipping rectangle is legal.
@@ -2106,7 +2108,7 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 			int offset = 0;
 			for (int i = abs_dz; i != 0; i--) {
 
-				int v = *abuffer;
+				int v = shade_by_alpha ? *abuffer : 127;
 				if (z < *zbuffer && v != 0) {
 					if (v != 127) {
 						*(unsigned short *)((char *)buffer + offset) = (unsigned short)((((red * v) >> 7 >> RedLeft) << RedRight) | (((green * v) >> 7 >> GreenLeft) << GreenRight) | (((blue * v) >> 7 >> BlueLeft) << BlueRight));
@@ -2161,7 +2163,7 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 		if (dx > 0) {
 			for (; i < dx; i++) {
 
-				int v = *abuffer;
+				int v = shade_by_alpha ? *abuffer : 127;
 				if (z < *zbuffer && v != 0) {
 					if (v != 127) {
 						*(unsigned short *)((char *)buffer + 2 * i) = (unsigned short)((((red * v) >> 7 >> RedLeft) << RedRight) | (((green * v) >> 7 >> GreenLeft) << GreenRight) | (((blue * v) >> 7 >> BlueLeft) << BlueRight));
@@ -2216,7 +2218,7 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 			int offset = 0;
 			do {
 
-				int v = *abuffer;
+				int v = shade_by_alpha ? *abuffer : 127;
 				if (z < *zbuffer && v != 0) {
 					if (v != 127) {
 						*(unsigned short *)((char *)buffer + offset) = (unsigned short)((((red * v) >> 7 >> RedLeft) << RedRight) | (((green * v) >> 7 >> GreenLeft) << GreenRight) | (((blue * v) >> 7 >> BlueLeft) << BlueRight));
