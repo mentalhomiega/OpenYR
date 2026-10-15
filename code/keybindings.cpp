@@ -57,6 +57,11 @@ HotkeyCategory Hotkey_Category_Of(std::string const & command)
 		return(HOTKEY_CATEGORY_CONTROL_GROUPS);
 	}
 
+	// The cheat commands, which only work with debug mode on.
+	if (Starts_With(command, "Debug")) {
+		return(HOTKEY_CATEGORY_DEBUG);
+	}
+
 	if (Starts_With(command, "Chat") || Starts_With(command, "Taunt_")) {
 		return(HOTKEY_CATEGORY_CHAT);
 	}
@@ -103,6 +108,7 @@ char const * Hotkey_Category_Name(HotkeyCategory category)
 		case HOTKEY_CATEGORY_PRODUCTION:		return("Production / sidebar");
 		case HOTKEY_CATEGORY_CONTROL_GROUPS:	return("Control groups");
 		case HOTKEY_CATEGORY_CHAT:				return("Chat");
+		case HOTKEY_CATEGORY_DEBUG:				return("Debug");
 		default:								return("Interface");
 	}
 }
