@@ -172,7 +172,7 @@ Each person has a section: `[Settings]` for the player at this machine, and `[Ot
 - `Name` is UTF-8 text. A name longer than 63 bytes is shortened.
 - `Side` is the person's country, numbered from `0` in the order of the rules' `[Countries]` list.
 - `Color` is one of the eight player colors, `0` to `7`. In a game against other machines, no two people may share a color.
-- `ColorRGB` is optional. It gives three values from `0` to `255` separated by commas, such as `ColorRGB=255,128,0`, for a free color that the person draws in. `Color` still picks the seat, so the seats stay distinct. A value that is not three numbers in that range is ignored and the person keeps the color at `Color`. A brightness below `96` is raised to `96`. The file is not checked for two people with close colors; the lobby does that check for the people who join it.
+- `ColorRGB` is optional. It gives three values from `0` to `255` separated by commas, such as `ColorRGB=255,128,0`, for a free color that the person draws in. `Color` still picks the seat, so the seats stay distinct. A value that is not three numbers in that range is ignored and the person keeps the color at `Color`. A brightness below `96` is raised to `96`. The file is not checked for two people with close colors.
 - `IsSpectator` is `yes` when the person watches instead of playing. The client writes it here as well as in `[IsSpectator]`; either one makes the seat a watcher.
 
 A person's section must give a valid `Side` and `Color`; it cannot leave them to the game.
