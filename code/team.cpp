@@ -2444,6 +2444,7 @@ void TeamClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsNextMission);
 	crc(IsLeaveMap);
 	crc(Suspended);
+	crc(IsTargetNotAssigned);
 
 	crc(Quantity, sizeof(Quantity));
 }
