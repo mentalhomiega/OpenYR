@@ -3510,6 +3510,10 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);
+		Check(focused("menutheme"), "the menu colour follows the pointer size");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("menu-battle"), "the menu battle switch follows the menu colour");
+		Press(context, Rml::Input::KI_TAB);
 		Check(focused("footer-reset"), "the footer's first stop is Reset to defaults");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("footer-cancel"), "Cancel follows Reset to defaults");
