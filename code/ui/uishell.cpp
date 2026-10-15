@@ -806,8 +806,10 @@ void UIShellClass::Tick(void)
 	{
 		// A style tells the menus over a game apart from the ones at the title by this class.
 		bool const ingame = Host.Game_Running();
+		bool const live = Host.Live_Background();
 		for (int index = 0; index < Context->GetNumDocuments(); index++) {
 			Context->GetDocument(index)->SetClass("ingame", ingame);
+			Context->GetDocument(index)->SetClass("live", live);
 		}
 
 		UIReentryGuardClass ticking(InTick);

@@ -66,4 +66,7 @@ class UIShellHostClass
 
 		// Is a game in progress behind the menus?
 		virtual bool Game_Running(void) const { return(false); }
+
+		// Is the menu battle drawn behind the menus, in place of the title art?
+		virtual bool Live_Background(void) const { return(false); }
 };

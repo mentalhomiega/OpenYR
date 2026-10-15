@@ -67,6 +67,23 @@ body
 	decorator: none;
 }
 
+/* The menu battle shows through in place of the title art, under a light shade. */
+.live #screen-bg
+{
+	background-color: transparent;
+}
+
+.live #screen-art
+{
+	display: none;
+}
+
+.live #screen-shade
+{
+	background-color: #00000030;
+	decorator: none;
+}
+
 /* The panel replaces Tiberian Sun's chrome: no side bars, glow or teal backdrop. */
 #bar-left, #bar-right, #edge-left, #edge-right, #glow, #wallpaper-art,
 .revealing #edge-left, .revealing #edge-right
