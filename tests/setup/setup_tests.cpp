@@ -629,6 +629,83 @@ void Test_Damaged_Record(void)
 }
 
 
+// Makes a link to a folder: a junction from the system's own mklink, which needs no elevation, or
+// where that fails a symbolic link. False when neither can be made.
+bool Make_Junction(std::wstring const & link, std::wstring const & target)
+{
+	wchar_t system[MAX_PATH] = {};
+	GetSystemDirectoryW(system, MAX_PATH);
+
+	std::wstring line = std::wstring(system) + L"\\cmd.exe /d /s /c \"mklink /J \"" + link + L"\" \"" + target + L"\" >nul 2>nul\"";
+	std::vector<wchar_t> buffer(line.begin(), line.end());
+	buffer.push_back(L'\0');
+
+	STARTUPINFOW startup{};
+	startup.cb = sizeof(startup);
+	PROCESS_INFORMATION process{};
+	if (CreateProcessW(nullptr, buffer.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process)) {
+		WaitForSingleObject(process.hProcess, 30000);
+		DWORD code = 1;
+		GetExitCodeProcess(process.hProcess, &code);
+		CloseHandle(process.hThread);
+		CloseHandle(process.hProcess);
+		if (code == 0 && setup::Is_Directory(link)) {
+			return(true);
+		}
+	}
+
+	// SYMBOLIC_LINK_FLAG_DIRECTORY, with SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE where Windows knows it.
+	bool made = CreateSymbolicLinkW(link.c_str(), target.c_str(), 0x1 | 0x2) != 0 || CreateSymbolicLinkW(link.c_str(), target.c_str(), 0x1) != 0;
+	return(made && setup::Is_Directory(link));
+}
+
+
+// A folder of the install that was swapped for a junction must not carry an update or an uninstall
+// to the folder it points at.
+void Test_Junction(void)
+{
+	std::wstring const folder = Installs + L"\\junction";
+	std::wstring const target = Root + L"\\junction-target";
+	std::wstring error;
+	auto const files = Package("engine v1", "2026-10-14i", false, false);
+	Check(Install(folder, files, false, error), "an install to hold a junction succeeds");
+
+	Make_File(Path_Of(target, L"theme.txt"), "precious");
+	Check(setup::Remove_Tree(folder + L"\\ui", error), "the install's ui folder is removed to make room for a link");
+	if (!Make_Junction(folder + L"\\ui", target)) {
+		std::printf("%-72s skipped\n", "a junction could not be made here, so the link checks are skipped");
+		return;
+	}
+
+	Check(setup::Crosses_Link(folder, L"ui\\theme.txt"), "a file below a junction is reported as crossing a link");
+	Check(!setup::Crosses_Link(folder, L"ui") && !setup::Crosses_Link(folder, L"Game.exe") && !setup::Crosses_Link(folder, L"other\\file.txt"), "a link itself, a plain file and a missing folder are not crossings");
+
+	Check(!Install(folder, files, false, error) && !error.empty(), "an update refuses to write through a junction");
+	Check(Read_Text(Path_Of(target, L"theme.txt")) == "precious", "and the folder the junction points at is unchanged");
+
+	setup::UninstallType request;
+	request.Folder = folder;
+	request.DeleteData = true;
+	request.Where = Where();
+	std::vector<std::wstring> left;
+	Check(!setup::Uninstall_Package(request, nullptr, error, left), "an uninstall reports the file it left behind a junction");
+	Check(Read_Text(Path_Of(target, L"theme.txt")) == "precious", "and deletes nothing in the folder the junction points at");
+	Check(setup::Is_Directory(folder + L"\\ui"), "and the junction itself is kept");
+	Check(!Exists(Path_Of(folder, L"Game.exe")), "while the program files beside it are removed");
+
+	// DeleteData removes a junction at user\ as a link, without emptying what it points at.
+	Make_File(Path_Of(Root + L"\\user-target", L"saves.sav"), "a save");
+	Make_File(Path_Of(folder, L"openyr-install.ini"), "[OpenYR]\r\nBuild=x\r\n[Files]\r\n");
+	setup::Remove_Tree(folder + L"\\user", error);
+	if (Make_Junction(folder + L"\\user", Root + L"\\user-target")) {
+		left.clear();
+		error.clear();
+		setup::Uninstall_Package(request, nullptr, error, left);
+		Check(Read_Text(Path_Of(Root + L"\\user-target", L"saves.sav")) == "a save", "deleting the data removes a junction named user without emptying its target");
+	}
+}
+
+
 void Test_Config_File(void)
 {
 	std::wstring error;
@@ -802,6 +879,7 @@ int main()
 	Test_Check_Folder();
 	Test_Install_And_Uninstall();
 	Test_Damaged_Record();
+	Test_Junction();
 	Test_Shortcuts();
 	Test_Config_File();
 	Test_Refusals();

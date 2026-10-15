@@ -57,8 +57,12 @@ bool Shortcut_Target(std::wstring const & link, std::wstring & target);
 // Deletes a file, clearing a read-only flag first. A missing file is not a failure.
 bool Delete_File_Forced(std::wstring const & path);
 
-// Removes a folder only when it is empty.
+// Removes a folder only when it is empty. A junction or symbolic link is left alone.
 void Remove_Folder_If_Empty(std::wstring const & folder);
+
+// True when a folder that exists between the root and the file named by relative is a junction or
+// symbolic link, so that a write or a delete would land outside the root. A missing folder is not a link.
+bool Crosses_Link(std::wstring const & root, std::wstring const & relative);
 
 // Removes a folder and everything in it.
 bool Remove_Tree(std::wstring const & folder, std::wstring & error);

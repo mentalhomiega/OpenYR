@@ -557,6 +557,16 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 	}
 	std::string const config = Merged_Config(existing, yuri_ansi);
 
+	// A junction or symbolic link inside the install folder would send a write to another place.
+	for (std::vector<PayloadFileType const *> const * list : {&programs, &defaults}) {
+		for (PayloadFileType const * file : *list) {
+			if (Crosses_Link(folder, file->Name)) {
+				error = L"A folder on the way to " + Join(folder, file->Name) + L" is a link to another place. Remove the link, then run this setup again.";
+				return(false);
+			}
+		}
+	}
+
 	BuildType const build = Package_Build(files);
 	InstalledType const previous = Read_Installed(folder);
 
@@ -611,7 +621,7 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 
 	// Files the previous build wrote that this one does not are removed.
 	for (std::wstring const & old : previous.Files) {
-		if (Contains_Name(written, old)) {
+		if (Contains_Name(written, old) || Crosses_Link(folder, old)) {
 			continue;
 		}
 
@@ -748,7 +758,10 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 	for (std::wstring const & name : info.Files) {
 		int const percent = 5 + static_cast<int>(80 * index / (info.Files.size() + 1));
 		Say(report, percent, L"Removing " + name);
-		if (!Delete_File_Forced(Join(folder, name)) && Is_File(Join(folder, name))) {
+		if (Crosses_Link(folder, name)) {
+			Say(report, -1, L"Left " + name + L" because a folder on the way to it is a link to another place.");
+			left.push_back(name);
+		} else if (!Delete_File_Forced(Join(folder, name)) && Is_File(Join(folder, name))) {
 			left.push_back(name);
 		}
 		index++;
