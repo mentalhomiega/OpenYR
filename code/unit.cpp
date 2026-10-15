@@ -697,7 +697,8 @@ void UnitClass::AI(void)
  *=============================================================================================*/
 void UnitClass::Rotation_AI(void)
 {
-	if (TarCom != NULL && !IsRotating) {
+	// A TurretSpins turret keeps turning from its own facing whatever it targets, so it is not aimed (UnitClass::UpdateRotation, 0x736990).
+	if (TarCom != NULL && !IsRotating && !Class->IsRadarEquipped) {
 		DirType dir = Direction(TarCom);
 
 		if (Class->IsTurretEquipped) {
