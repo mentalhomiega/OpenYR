@@ -149,3 +149,8 @@ fuzz_add_target(FuzzNet NAME fuzz_net
     SOURCES fuzz_net.cpp
     ENGINE netglobal.cpp mpload.cpp
 )
+
+fuzz_add_target(FuzzCsf NAME fuzz_csf
+    SOURCES fuzz_csf.cpp
+    ENGINE csf.cpp utf8.cpp buff.cpp straw.cpp xstraw.cpp
+)
