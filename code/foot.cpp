@@ -129,6 +129,7 @@
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
+#include "veteranrules.h"
 #include "voc.h"
 #include "vox.h"
 #include "waypoint.h"
@@ -4009,7 +4010,7 @@ int FootClass::Current_Speed(void)
 {
 	int speed = Get_Max_Speed() * House->Country_Speed_Multiplier(TClass) * SpeedBias * AttachedEffects.Speed_Multiplier();
 	if (Has_Ability(ABILITY_FASTER)) {
-		speed *= Rule->VeteranSpeed;
+		speed = VeteranRules::Multiplied(speed, Rule->VeteranSpeed);
 	}
 	speed *= Speed;
 	if (RTTI == RTTI_UNIT && ((UnitClass *)this)->Flagged != HOUSE_NONE) {
