@@ -20,7 +20,7 @@ Unless one of the cases further down applies, the value is adjusted in this orde
 
 1. In skirmish and multiplayer games it is multiplied by the firing house's [country `ROF`](/keys/rof/#scope-housetype). The [difficulty `ROF`](/keys/rof/#scope-difficulty-settings) takes no part.
 2. A random 0 to 2 frames is added.
-3. If the firer has earned the rate-of-fire ability, the result is divided by one plus [`VeteranROF`](/keys/veteranrof/).
+3. If the firer has earned the rate-of-fire ability, the result is multiplied by [`VeteranROF`](/keys/veteranrof/).
 
 Three cases use a different delay. The first case that applies decides it:
 
