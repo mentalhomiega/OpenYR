@@ -164,6 +164,9 @@
 **							animation frame, recoil state, target cell, and a building's turret and barrel frame counts
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon
+**	animlog <TypeID>		writes each object of that type, whoever owns it, with its walk counter and the body voxel frame it draws,
+**							its turret frame and facings, whether its locomotor is moving, its firing state, its target, and whether a DiskLaser ring is active
+**	forceattack <TypeID> x y	orders the player's objects of that type to force-attack the object on that cell, or the ground there, as a Ctrl+click does
 **	turretcoord <TypeID>	writes each object of that type, whoever owns it, with its body and turret facings in 256 directions, its
 **							TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point,
 **							with the body's draw matrix rows
@@ -2316,6 +2319,23 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "forceattack") {
+		// forceattack <TypeID> x y: the player's objects of that type force-attack the object on that cell, or the ground
+		// there when no object stands on it. Autotests report Ctrl as not held, so the order is given as the Ctrl+click
+		// outcome: FootClass::Active_Click_With(ACTION_ATTACK) with the object or cell as the target.
+		Cell const cell(step.X, step.Y);
+		TechnoClass * over = Techno_Over_Cell(cell);
+		AbstractClass * target = over != NULL ? static_cast<AbstractClass *>(over) : static_cast<AbstractClass *>(&Map[cell]);
+		PlanningRecordScope const recording(Map.IsPlanningMode);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   forceattack %s at %d,%d on %s (fire %d)\n", techno->TClass->Name(), step.X, step.Y, over != NULL ? over->TClass->Name() : "ground", (int)techno->Can_Player_Fire());
+				if (techno->Can_Player_Fire()) {
+					techno->Player_Assign_Mission(MISSION_ATTACK, target);
+				}
+			}
+		}
 	} else if (step.Command == "enemies") {
 		Enemies();
 	} else if (step.Command == "threat") {
@@ -3277,6 +3297,40 @@ void Run(StepType const & step)
 				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
 				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
 				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
+		}
+	} else if (step.Command == "animlog") {
+		// animlog <TypeID>: the animation state of each object of that type, whoever owns it. The body draws the voxel frame
+		// TotalFramesWalked / 2 modulo its frame count (UnitClass::Unit_Draw_Voxel), the turret animates from its facing and
+		// TurretAnimFrame, and a DiskLaser ring is drawn while DiskLaser is active.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
+			int const walked = foot != NULL ? foot->TotalFramesWalked : -1;
+			int body_frames = -1;
+			int secondary = -1;
+			int secondary_desired = -1;
+			if (techno->RTTI == RTTI_UNIT) {
+				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
+				body_frames = vehicle->Class->Voxel.MotLib != NULL ? vehicle->Class->Voxel.MotLib->Get_Frame_Count() : -1;
+				secondary = (int)vehicle->SecondaryFacing.Current().As_Int();
+				secondary_desired = (int)vehicle->SecondaryFacing.Desired().As_Int();
+			}
+			int const body_frame = body_frames > 0 && walked >= 0 ? (walked / 2) % body_frames : -1;
+			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
+			char tar[48] = "none";
+			if (tarobject != NULL) {
+				std::snprintf(tar, sizeof(tar), "object %s", tarobject->Class_Of()->Name());
+			} else if (techno->TarCom != NULL) {
+				Cell const cell = techno->TarCom->Center_Coord().As_Cell();
+				std::snprintf(tar, sizeof(tar), "cell %d,%d", cell.X, cell.Y);
+			}
+			bool const moving = foot != NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving();
+			bool const moving_now = foot != NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving_Now();
+			DebugString("AUTOTEST   anim %s of %s frame %d cell %d,%d mission %s walked %d body %d/%d turretframe %d secondary %d desired %d primary %d moving %d now %d firing %d target %s laser %d height %d strength %d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), (int)Frame, techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
+				walked, body_frame, body_frames, techno->TurretAnimFrame, secondary, secondary_desired, (int)techno->PrimaryFacing.Current().As_Int(),
+				(int)moving, (int)moving_now, foot != NULL ? (int)foot->IsFiring : -1, tar, (int)techno->DiskLaser.Is_Active(), foot != NULL ? foot->HeightAGL : -1, (int)techno->Strength);
 		}
 	} else if (step.Command == "pickable") {
 		// pickable <TypeID>: each object of that type the player owns, and whether the clickable list
