@@ -586,6 +586,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Options.ScreenHeight = ConfigINI.Get_Int("Video", "ScreenHeight", Options.ScreenHeight);
 		Options.Load_Menu_Style();
 		Options.Load_Interface_Scale();
+		Options.Load_HDR_Output();
 		Options.Load_Interface_Style();
 
 		/*

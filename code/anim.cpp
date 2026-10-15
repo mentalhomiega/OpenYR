@@ -71,6 +71,7 @@
 #include "conquer.h"
 #include "crc.h"
 #include "draw.h"
+#include "emissive.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -602,6 +603,29 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			if (Class->IsShadow && !Class->IsTiled) {
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum + shapefile->Get_Count() / 2, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
 			}
+
+			// The shadow and the bounce above pass draw ordinary light; only the picture itself is emissive.
+			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
+			// translucency is three quarters opaque, as the blitter's opacity is.
+			int opacity = 255;
+			switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
+				case SHAPE_TRANSLUCENT25:
+					opacity = 192;
+					break;
+
+				case SHAPE_TRANSLUCENT50:
+					opacity = 128;
+					break;
+
+				case SHAPE_TRANSLUCENT75:
+					opacity = 64;
+					break;
+
+				default:
+					break;
+			}
+			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
+			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
 			if (Class->IsTiled) {
 				int frameheight = shapefile->Get_Rect(0).Height;

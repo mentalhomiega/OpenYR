@@ -97,6 +97,10 @@
 #include <cstring>
 #include <string>
 
+#include "colourblind.h"
+#include "emissive.h"
+#include "goptions.h"
+
 
 char const * const OptionsClass::HotkeyName = "WinHotkeys";
 
@@ -224,7 +228,15 @@ OptionsClass::OptionsClass(void) :
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
 	VSync(true),
+	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
+	HDROutput(VIDEO_HDR_AUTOMATIC),
+	HDRPaperWhite(0),
+	HDRPeakBrightness(0),
+	ColorBlindMode(COLORBLIND_OFF),
+	ColorBlindStrength(100),
+	Brightness(100),
+	Gamma(1.0f),
 	CursorScale(0),
 	InterfaceScale(0.0f),
 	SystemCursor(true),
@@ -409,6 +421,93 @@ static int Scale_Mode_From_Name(char const * name, int fallback)
 }
 
 
+static int HDR_Output_From_Name(char const * name)
+{
+	if (stricmp(name, "Off") == 0) return(VIDEO_HDR_OFF);
+	if (stricmp(name, "On") == 0) return(VIDEO_HDR_ON);
+	return(VIDEO_HDR_AUTOMATIC);
+}
+
+
+static int ColorBlind_Mode_From_Name(char const * name)
+{
+	if (stricmp(name, "Protanopia") == 0) return(COLORBLIND_PROTANOPIA);
+	if (stricmp(name, "Deuteranopia") == 0) return(COLORBLIND_DEUTERANOPIA);
+	if (stricmp(name, "Tritanopia") == 0) return(COLORBLIND_TRITANOPIA);
+	return(COLORBLIND_OFF);
+}
+
+
+static char const * ColorBlind_Mode_Name(int mode)
+{
+	switch (mode) {
+		case COLORBLIND_PROTANOPIA:
+			return("Protanopia");
+
+		case COLORBLIND_DEUTERANOPIA:
+			return("Deuteranopia");
+
+		case COLORBLIND_TRITANOPIA:
+			return("Tritanopia");
+
+		default:
+			return("Off");
+	}
+}
+
+
+/// <summary>
+/// Reads a gamma exponent. Text that is not a positive number gives 1.0, and any other value is limited
+/// to the range of the setting.
+/// </summary>
+static float Gamma_From_Text(char const * text)
+{
+	double const value = Parse_Nearest_Double(text, nullptr);
+	if (!(value > 0.0)) {
+		return(1.0f);
+	}
+	return((float)std::clamp(value, VIDEO_GAMMA_MIN / 100.0, VIDEO_GAMMA_MAX / 100.0));
+}
+
+
+static char const * HDR_Output_Name(int mode)
+{
+	switch (mode) {
+		case VIDEO_HDR_OFF:
+			return("Off");
+
+		case VIDEO_HDR_ON:
+			return("On");
+
+		default:
+			return("Automatic");
+	}
+}
+
+
+/// <summary>
+/// Reads a nit setting. "Auto", or anything that is not a positive number, gives zero.
+/// </summary>
+static int HDR_Nits_From_Text(char const * text)
+{
+	double const value = Parse_Nearest_Double(text, nullptr);
+	return((value > 0.0) ? (int)std::min(value, 10000.0) : 0);
+}
+
+
+/// <summary>
+/// Writes a nit setting as a number, or as "Auto" when it is zero.
+/// </summary>
+static void Save_HDR_Nits(char const * key, int nits)
+{
+	if (nits > 0) {
+		ConfigINI.Put_Int("Video", key, nits);
+	} else {
+		ConfigINI.Put_String("Video", key, "Auto");
+	}
+}
+
+
 /// <summary>
 /// Names the frame filter setting for writing back.
 /// </summary>
@@ -446,6 +545,17 @@ static char const * Scale_Mode_Name(int mode)
  *   07/03/1996 JLB : Reworked to use new INI handler.                                         *
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
+/// <summary>
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, and for the debug view.
+/// The masks follow the renderer, so this is called again once the renderer has started.
+/// </summary>
+void Apply_HDR_Highlights(void)
+{
+	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
+}
+
+
 void OptionsClass::Load_Settings(void)
 {
 	DebugString("--------- Loading %s settings ---------------\n", DeploymentConfig.SettingsFile.c_str());
@@ -532,6 +642,25 @@ void OptionsClass::Load_Settings(void)
 	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
+
+	char highlightsname[16];
+	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
+	HDRHighlights = stricmp(highlightsname, "Classic") == 0 ? HDR_HIGHLIGHTS_CLASSIC : HDR_HIGHLIGHTS_ENHANCED;
+	Emissive_Set_Debug_View(ConfigINI.Get_Bool("Video", "EmissiveDebugView", false));
+	Apply_HDR_Highlights();
+
+	char colorblindname[16];
+	ConfigINI.Get_String("Video", "ColorBlindMode", "Off", colorblindname, sizeof(colorblindname));
+	ColorBlindMode = ColorBlind_Mode_From_Name(colorblindname);
+	ColorBlindStrength = std::clamp(ConfigINI.Get_Int("Video", "ColorBlindStrength", ColorBlindStrength), COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
+	DebugString("ColorBlindMode is %s, ColorBlindStrength is %d\n", ColorBlind_Mode_Name(ColorBlindMode), ColorBlindStrength);
+
+	Brightness = std::clamp(ConfigINI.Get_Int("Video", "Brightness", Brightness), VIDEO_BRIGHTNESS_MIN, VIDEO_BRIGHTNESS_MAX);
+	char gammatext[16];
+	ConfigINI.Get_String("Video", "Gamma", "1.0", gammatext, sizeof(gammatext));
+	Gamma = Gamma_From_Text(gammatext);
+	DebugString("Brightness is %d, Gamma is %g\n", Brightness, Gamma);
+
 	DebugString("RenderFrameRate is %d\n", RenderFrameRate);
 
 	char scalename[32];
@@ -604,6 +733,25 @@ void OptionsClass::Load_Interface_Scale(void)
 }
 
 
+/// <summary>
+/// Reads the HDR output settings from the settings file. Startup calls it before the window is
+/// made, since the window's renderer is started with the output decided by them.
+/// </summary>
+void OptionsClass::Load_HDR_Output(void)
+{
+	char text[32];
+	ConfigINI.Get_String("Video", "HDROutput", "Automatic", text, sizeof(text));
+	HDROutput = HDR_Output_From_Name(text);
+
+	ConfigINI.Get_String("Video", "HDRPaperWhite", "Auto", text, sizeof(text));
+	HDRPaperWhite = HDR_Nits_From_Text(text);
+
+	ConfigINI.Get_String("Video", "HDRPeakBrightness", "Auto", text, sizeof(text));
+	HDRPeakBrightness = HDR_Nits_From_Text(text);
+	DebugString("HDROutput is %s, HDRPaperWhite is %d, HDRPeakBrightness is %d\n", HDR_Output_Name(HDROutput), HDRPaperWhite, HDRPeakBrightness);
+}
+
+
 /***********************************************************************************************
  * OptionsClass::Save_Settings -- writes options settings to the INI file                      *
  *                                                                                             *
@@ -663,7 +811,17 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
+	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
+	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));
+	Save_HDR_Nits("HDRPaperWhite", HDRPaperWhite);
+	Save_HDR_Nits("HDRPeakBrightness", HDRPeakBrightness);
+	ConfigINI.Put_String("Video", "ColorBlindMode", ColorBlind_Mode_Name(ColorBlindMode));
+	ConfigINI.Put_Int("Video", "ColorBlindStrength", ColorBlindStrength);
+	ConfigINI.Put_Int("Video", "Brightness", Brightness);
+	char gammasave[32];
+	Snprintf_Nearest(gammasave, sizeof(gammasave), "%.2f", Gamma);
+	ConfigINI.Put_String("Video", "Gamma", gammasave);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
 	if (InterfaceScale > 0.0f) {
 		char scaletext[32];

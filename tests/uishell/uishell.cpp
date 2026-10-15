@@ -932,6 +932,12 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
 		virtual void Set_Renderer(int renderer) override { Calls.push_back("renderer " + std::to_string(renderer)); }
+		virtual void Set_HDR_Output(int mode) override { Calls.push_back("hdr output " + std::to_string(mode)); }
+		virtual void Set_HDR_Paper_White(int nits) override { Calls.push_back("hdr paper white " + std::to_string(nits)); }
+		virtual void Set_HDR_Peak_Brightness(int nits) override { Calls.push_back("hdr peak " + std::to_string(nits)); }
+		virtual void Set_HDR_Highlights(int highlights) override { Calls.push_back("hdr highlights " + std::to_string(highlights)); }
+		virtual void Set_Colour_Blind(int mode, int strength) override { Calls.push_back("colour blind " + std::to_string(mode) + " " + std::to_string(strength)); }
+		virtual void Set_Brightness_Gamma(int brightness, int gamma) override { Calls.push_back("brightness gamma " + std::to_string(brightness) + " " + std::to_string(gamma)); }
 
 		// A whole interface scale divides the screen into a frame, as the engine does; automatic is 1 here.
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
@@ -974,6 +980,10 @@ UIDisplayState Display_Fixture(void)
 	state.FrameRates = { { 0, "Off" }, { 60, "60" }, { 144, "144" } };
 	state.CursorScales = { { 0, "Auto" }, { 1, "1x" }, { 2, "2x" } };
 	state.Renderers = { { 0, "Auto" }, { 1, "Direct3D 11" } };
+	state.HDROutputs = { { 0, "Automatic" }, { 1, "Off" }, { 2, "On (testing)" } };
+	state.HDROutput = 0;
+	state.PaperWhite = 200;
+	state.PeakBrightness = 1000;
 	return(state);
 }
 
@@ -991,6 +1001,26 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "classic menus off", "modern interface off" }, "accepting the display options applies the switches");
 		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.ColorBlindModes = { {0, "Off"}, {1, "Protanopia"}, {2, "Deuteranopia"}, {3, "Tritanopia"} };
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "colorblindmode", 2);
+		Drive(presenter, "colorblindstrength", 40);
+		Drive(presenter, "brightness", 120);
+		Drive(presenter, "gamma", 80);
+		Check(service.Calls.empty(), "colour-blind edits are held until the player accepts");
+		Drive(presenter, "ok");
+		std::string joined;
+		for (std::string const & call : service.Calls) {
+			joined += call + ";";
+		}
+		std::size_t const first = joined.find("colour blind 2 40");
+		Check(first != std::string::npos && joined.find("colour blind", first + 1) == std::string::npos, "accepting the colour-blind mode and strength applies them once");
+		Check(joined.find("brightness gamma 120 80;") != std::string::npos, "accepting the brightness and gamma applies them");
 	}
 
 	{
@@ -3260,6 +3290,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("windowsize"), "the window size list follows the pixel-perfect UI font switch");
 		Press(context, Rml::Input::KI_TAB);
+		Check(focused("hdr"), "the HDR output drop-down follows the debug mode switch");
+		Press(context, Rml::Input::KI_TAB);
 		Check(focused("fullscreen"), "the second column starts with the full screen switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("vsync"), "the vertical sync switch follows full screen");
@@ -3279,6 +3311,18 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		Check(focused("cursorscale"), "the pointer size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(focused("renderer"), "the graphics interface follows the pointer size");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("paper-white"), "the paper white slider follows the graphics interface");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("peak-brightness"), "the peak brightness slider follows paper white");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("colorblind"), "the colour-blind mode drop-down follows the peak brightness slider");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("colorblind-strength"), "the colour-blind strength slider follows the mode");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("brightness"), "the brightness slider follows the colour-blind strength");
+		Press(context, Rml::Input::KI_TAB);
+		Check(focused("gamma"), "the gamma slider follows brightness");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the settings");
 		Press(context, Rml::Input::KI_TAB);

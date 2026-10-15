@@ -29,8 +29,26 @@ enum BackendScaleMode {
 
 
 // Drawable sizes are physical pixel dimensions supplied by the application shell.
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync);
+// With hdr set the renderer asks for an HDR10 back buffer. A renderer that cannot give one starts
+// with the SDR back buffer instead, and Backend_HDR_Active reports which it has.
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr);
 void Backend_Shutdown(void);
+
+// True when the frame reaches the window as HDR10, through the composite pass.
+bool Backend_HDR_Active(void);
+
+// The paper white and the peak brightness, in nits, that HDR10 output draws with. They take effect at
+// the next present.
+void Backend_Set_HDR_Levels(float paperwhite, float peak);
+
+// Sets the colour adjustment the composite pass applies to linear light: a row-major 3x3 matrix of nine
+// values, then the brightness multiplier, then the gamma exponent. The identity changes nothing and
+// keeps the frame on the direct path, so SDR output stays as it was.
+void Backend_Set_Colour_Adjust(float const * matrix, float brightness, float gamma);
+
+// Points a renderer view at the frame's target, which is the scene target when frames are composited
+// and the window otherwise.
+void Backend_Set_View_Target(unsigned short view);
 
 bool Backend_Set_Frame_Size(int width, int height);
 void Backend_On_Resize(int drawablewidth, int drawableheight);
@@ -54,7 +72,20 @@ struct BackendLayer
 	int DestHeight;
 };
 
-bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr);
+// Emissive masks for the frame and the layer, one byte per pixel laid out like their pictures. A
+// null pointer means the picture has no mask this present.
+struct BackendEmissive
+{
+	unsigned char const * Frame;
+	int FramePitch;
+	unsigned char const * Layer;
+	int LayerPitch;
+};
+
+bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr, BackendEmissive const * emissive = nullptr);
+
+// Shows the emissive masks in place of the pictures; the red channel carries the mask value.
+void Backend_Set_Emissive_View(bool masks);
 void Backend_End_Frame(void);
 
 void Backend_Build_Ortho_Projection(float * result, int width, int height);

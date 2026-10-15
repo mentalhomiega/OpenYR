@@ -9,9 +9,12 @@
 
 #include "ui/screens/display/uidisplay.h"
 
+#include "hdrcolour.h"
 #include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uisettingpreview.h"
+#include "video.h"
+#include "colourblind.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -34,7 +37,15 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialBitmapSystemFont(State.BitmapSystemFont),
 	InitialShowFPS(State.ShowFPS),
 	InitialFrameLimit(State.FrameLimit),
-	InitialWindowSize(State.WindowSize)
+	InitialWindowSize(State.WindowSize),
+	InitialHighlights(State.Highlights),
+	InitialHDROutput(State.HDROutput),
+	InitialPaperWhite(State.PaperWhite),
+	InitialPeakBrightness(State.PeakBrightness),
+	InitialColorBlindMode(State.ColorBlindMode),
+	InitialColorBlindStrength(State.ColorBlindStrength),
+	InitialBrightness(State.Brightness),
+	InitialGamma(State.Gamma)
 {
 	ShownRowIndex = State.RowCount;
 	Refresh_Preview();
@@ -195,6 +206,31 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "renderer") {
 		State.Renderer = Pick_Choice(State.Renderers, intent.Value, InitialRenderer);
 
+	} else if (intent.Name == "hdroutput") {
+		State.HDROutput = Pick_Choice(State.HDROutputs, intent.Value, InitialHDROutput);
+
+	} else if (intent.Name == "paperwhite") {
+		State.PaperWhite = std::clamp(intent.Value, HDR_PAPER_WHITE_MIN, HDR_PAPER_WHITE_MAX);
+		State.PeakBrightness = std::max(State.PeakBrightness, State.PaperWhite);
+
+	} else if (intent.Name == "peak") {
+		State.PeakBrightness = std::clamp(intent.Value, State.PaperWhite, (int)HDR_PQ_PEAK_NITS);
+
+	} else if (intent.Name == "highlights") {
+		State.Highlights = std::clamp(intent.Value, 0, 1);
+
+	} else if (intent.Name == "colorblindmode") {
+		State.ColorBlindMode = Pick_Choice(State.ColorBlindModes, intent.Value, InitialColorBlindMode);
+
+	} else if (intent.Name == "colorblindstrength") {
+		State.ColorBlindStrength = std::clamp(intent.Value, COLORBLIND_STRENGTH_MIN, COLORBLIND_STRENGTH_MAX);
+
+	} else if (intent.Name == "brightness") {
+		State.Brightness = std::clamp(intent.Value, VIDEO_BRIGHTNESS_MIN, VIDEO_BRIGHTNESS_MAX);
+
+	} else if (intent.Name == "gamma") {
+		State.Gamma = std::clamp(intent.Value, VIDEO_GAMMA_MIN, VIDEO_GAMMA_MAX);
+
 	} else if (intent.Name == "sidebarrows") {
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
@@ -247,6 +283,25 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (Choice_Changed(State.Renderers, State.Renderer, InitialRenderer)) {
 			Service.Set_Renderer(State.Renderers[State.Renderer].Value);
+		}
+		if (Choice_Changed(State.HDROutputs, State.HDROutput, InitialHDROutput)) {
+			Service.Set_HDR_Output(State.HDROutputs[State.HDROutput].Value);
+		}
+		if (State.PaperWhite != InitialPaperWhite) {
+			Service.Set_HDR_Paper_White(State.PaperWhite);
+		}
+		if (State.PeakBrightness != InitialPeakBrightness) {
+			Service.Set_HDR_Peak_Brightness(State.PeakBrightness);
+		}
+		if (State.Highlights != InitialHighlights) {
+			Service.Set_HDR_Highlights(State.Highlights);
+		}
+		if (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size()
+			&& (State.ColorBlindMode != InitialColorBlindMode || State.ColorBlindStrength != InitialColorBlindStrength)) {
+			Service.Set_Colour_Blind(State.ColorBlindModes[State.ColorBlindMode].Value, State.ColorBlindStrength);
+		}
+		if (State.Brightness != InitialBrightness || State.Gamma != InitialGamma) {
+			Service.Set_Brightness_Gamma(State.Brightness, State.Gamma);
 		}
 		if (PickedRows >= 0) {
 			Service.Set_Sidebar_Rows(PickedRows);
@@ -310,6 +365,37 @@ void UIConfirmModePresenterClass::Refresh(void)
 namespace
 {
 
+/// <summary>
+/// Writes the gamma text the page shows, with two decimals, as the setting in hundredths reads.
+/// </summary>
+void Update_Gamma_Label(UIDisplayState & state)
+{
+	char text[16];
+	std::snprintf(text, sizeof(text), "%.2f", state.Gamma / 100.0);
+	state.GammaLabel = text;
+}
+
+
+/// <summary>
+/// Sets the two HDR tooltips from the choice on show. The HDR output tooltip says what the choice does and
+/// that it applies at the next start. The Highlights tooltip is empty while HDR output is on, so it shows
+/// only while the list is grayed out.
+/// </summary>
+void Update_HDR_Tips(UIDisplayState & state)
+{
+	bool forced = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_ON;
+	bool off = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_OFF;
+	if (forced) {
+		state.HDROutputTip = "On forces HDR10 output. Turn on HDR in Windows for this display first, or the picture will look wrong. Applies at the next start.";
+	} else if (off) {
+		state.HDROutputTip = "Off keeps the picture in SDR. Applies at the next start.";
+	} else {
+		state.HDROutputTip = "Automatic uses HDR10 output while Windows HDR is on for this display. Applies at the next start.";
+	}
+	state.HighlightsTip = state.HDRActive ? std::string() : std::string("Needs HDR output");
+}
+
+
 class UIDisplayViewClass : public UIRmlViewClass
 {
 	public:
@@ -321,6 +407,10 @@ class UIDisplayViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
+			Update_HDR_Tips(Data.State);
+			Model.DirtyVariable("hdractive");
+			Model.DirtyVariable("hdroutputtip");
+			Model.DirtyVariable("highlightstip");
 			Model.DirtyVariable("selected");
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
@@ -338,6 +428,16 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
 			Model.DirtyVariable("renderer");
+			Model.DirtyVariable("hdroutput");
+			Model.DirtyVariable("paperwhite");
+			Model.DirtyVariable("peakbrightness");
+			Model.DirtyVariable("highlights");
+			Model.DirtyVariable("colorblindmode");
+			Model.DirtyVariable("colorblindstrength");
+			Update_Gamma_Label(Data.State);
+			Model.DirtyVariable("brightness");
+			Model.DirtyVariable("gamma");
+			Model.DirtyVariable("gammalabel");
 			Model.DirtyVariable("rowcount");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
@@ -401,6 +501,20 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("cursorscale", &state.CursorScale)
 				&& model.Bind("renderers", &state.Renderers)
 				&& model.Bind("renderer", &state.Renderer)
+				&& model.Bind("hdroutputs", &state.HDROutputs)
+				&& model.Bind("hdroutput", &state.HDROutput)
+				&& model.Bind("paperwhite", &state.PaperWhite)
+				&& model.Bind("peakbrightness", &state.PeakBrightness)
+				&& model.Bind("highlights", &state.Highlights)
+				&& model.Bind("colorblindmodes", &state.ColorBlindModes)
+				&& model.Bind("colorblindmode", &state.ColorBlindMode)
+				&& model.Bind("colorblindstrength", &state.ColorBlindStrength)
+				&& model.Bind("brightness", &state.Brightness)
+				&& model.Bind("gamma", &state.Gamma)
+				&& model.Bind("gammalabel", &state.GammaLabel)
+				&& model.Bind("hdractive", &state.HDRActive)
+				&& model.Bind("hdroutputtip", &state.HDROutputTip)
+				&& model.Bind("highlightstip", &state.HighlightsTip)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
 				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));

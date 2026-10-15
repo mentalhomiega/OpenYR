@@ -246,6 +246,11 @@ target_link_libraries(OpenTS PRIVATE
     odbc32 odbccp32
 )
 
+# HDR detection reads the display's DXGI output and its HDR state.
+if(WIN32)
+    target_link_libraries(OpenTS PRIVATE dxgi)
+endif()
+
 if(MSVC)
     target_link_options(OpenTS PRIVATE
         /SUBSYSTEM:WINDOWS

@@ -25,9 +25,11 @@
 #include "sdl/sdlwindow.h"
 #include "vidscale.h"
 #include "video.h"
+#include "colourblind.h"
 #include "wwmouse.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <initializer_list>
 #include <string>
@@ -156,10 +158,48 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
+		virtual void Set_HDR_Output(int mode) override
+		{
+			// The output is decided when the renderer starts.
+			Options.HDROutput = mode;
+		}
+
+		virtual void Set_HDR_Paper_White(int nits) override
+		{
+			Options.HDRPaperWhite = nits;
+			Video_Refresh_HDR_Levels();
+		}
+
+		virtual void Set_HDR_Peak_Brightness(int nits) override
+		{
+			Options.HDRPeakBrightness = nits;
+			Video_Refresh_HDR_Levels();
+		}
+
 		virtual void Set_Renderer(int renderer) override
 		{
 			// The renderer is chosen when the game starts.
 			Options.Renderer = renderer;
+		}
+
+		virtual void Set_Colour_Blind(int mode, int strength) override
+		{
+			Options.ColorBlindMode = mode;
+			Options.ColorBlindStrength = strength;
+			Video_Apply_Colour_Settings();
+		}
+
+		virtual void Set_Brightness_Gamma(int brightness, int gamma) override
+		{
+			Options.Brightness = brightness;
+			Options.Gamma = gamma / 100.0f;
+			Video_Apply_Colour_Settings();
+		}
+
+		virtual void Set_HDR_Highlights(int highlights) override
+		{
+			Options.HDRHighlights = (highlights == 1) ? HDR_HIGHLIGHTS_ENHANCED : HDR_HIGHLIGHTS_CLASSIC;
+			Apply_HDR_Highlights();
 		}
 
 		virtual void Frame_Size(int width, int height, float scale, int & frame_width, int & frame_height) override
@@ -387,6 +427,17 @@ void UI_Display_State(UIDisplayState & state)
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
+	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
+	state.HDRActive = Video_HDR_Active();
+	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {
+		{COLORBLIND_OFF, "Off"},
+		{COLORBLIND_PROTANOPIA, "Protanopia"},
+		{COLORBLIND_DEUTERANOPIA, "Deuteranopia"},
+		{COLORBLIND_TRITANOPIA, "Tritanopia"}
+	}, Options.ColorBlindMode, "%d");
+	state.ColorBlindStrength = Options.ColorBlindStrength;
+	state.Brightness = Options.Brightness;
+	state.Gamma = (int)std::lround(Options.Gamma * 100.0f);
 
 	state.Filter = Fill_Choices(state.Filters, {
 		{VIDEO_SCALE_PIXELART, "Pixel art"},
@@ -416,6 +467,15 @@ void UI_Display_State(UIDisplayState & state)
 		{BACKEND_RENDERER_VULKAN, "Vulkan"},
 		{BACKEND_RENDERER_OPENGL, "OpenGL"}
 	}, Options.Renderer, "%d");
+
+	// HDR output is a choice of mode; the brightness sliders show the levels in use, whether set or automatic.
+	state.HDROutput = Fill_Choices(state.HDROutputs, {
+		{VIDEO_HDR_AUTOMATIC, "Automatic"},
+		{VIDEO_HDR_OFF, "Off"},
+		{VIDEO_HDR_ON, "On"}
+	}, Options.HDROutput, "%d");
+	state.PaperWhite = Video_HDR_Paper_White();
+	state.PeakBrightness = Video_HDR_Peak();
 
 	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
 	// the frame allows when the saved count is more.

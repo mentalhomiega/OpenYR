@@ -23,6 +23,16 @@ enum VideoScaleMode {
 };
 
 
+// Whether the presented frame goes out as HDR10, as one of the HDROutput settings values.
+// Automatic does so only while Windows has HDR on for the game's display; On does so even when
+// Windows reports HDR off, for testing.
+enum VideoHDROutput {
+	VIDEO_HDR_AUTOMATIC,
+	VIDEO_HDR_OFF,
+	VIDEO_HDR_ON,
+};
+
+
 // Where the game's frame lands inside the window. The frame keeps its aspect ratio, so
 // the destination is centered and the window may show bars on two of its sides.
 // Drawable dimensions and the destination rectangle are measured in physical pixels.
@@ -51,6 +61,30 @@ int Video_Refresh_Rate(void);
 
 // Takes up a change to the filter, integer scaling or pointer size settings from the next present.
 void Video_Refresh_Scaling(void);
+
+// The paper white and peak brightness, in nits, that HDR10 output uses now. Each follows its setting when set,
+// and the display otherwise.
+int Video_HDR_Paper_White(void);
+int Video_HDR_Peak(void);
+
+// Hands the HDR brightness settings to the renderer and presents them.
+void Video_Refresh_HDR_Levels(void);
+
+// Whether the renderer started with an HDR10 back buffer, so the frame is composed in HDR now.
+bool Video_HDR_Active(void);
+
+// Sets the colour adjustment for the presented frame, as Backend_Set_Colour_Adjust does, and presents it.
+void Video_Set_Colour_Adjust(float const * matrix, float brightness, float gamma);
+
+// Builds the colour adjustment from the colour-blind, brightness and gamma settings and sets it, and
+// presents the frame again.
+void Video_Apply_Colour_Settings(void);
+
+// The limits of the Brightness setting in percent, and of the Gamma setting in hundredths.
+int const VIDEO_BRIGHTNESS_MIN = 50;
+int const VIDEO_BRIGHTNESS_MAX = 200;
+int const VIDEO_GAMMA_MIN = 50;
+int const VIDEO_GAMMA_MAX = 200;
 
 void Video_Mark_Dirty(void);
 void Video_Mark_Overlay_Dirty(void);

@@ -28,6 +28,9 @@
 
 #include <algorithm>
 
+#include "emissive.h"
+#include "emissive_surface.h"
+
 DynamicVectorClass<LaserDrawClass *> LaserDrawClass::LaserDraws;
 
 
@@ -49,6 +52,7 @@ LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown
 	End(end),
 	ZAdjust(zadjust),
 	UnusedBool1(unknown),
+	EmissiveStrength(EmissiveDefaults[EMISSIVE_LASER].Strength),
 	InnerColor(),
 	OuterColor(),
 	OuterSpread(),
@@ -192,6 +196,9 @@ void LaserDrawClass::Draw_It(void)
 			TacticalMap->Coord_To_Pixel(Start, start_pixel);
 			Point2D end_pixel;
 			TacticalMap->Coord_To_Pixel(End, end_pixel);
+			if (Emissive_Is_Enabled() && EmissiveStrength != 0) {
+				Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, start_pixel, end_pixel, EmissiveStrength);
+			}
 
 			int start_z = ZAdjust - TacticalMap->Z_Lepton_To_Pixel(Start.Z) - 2;
 			int end_z = -TacticalMap->Z_Lepton_To_Pixel(End.Z) - 2;

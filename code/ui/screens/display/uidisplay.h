@@ -64,6 +64,12 @@ class UIDisplayServiceClass
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
 		virtual void Set_Renderer(int renderer) = 0;
+		virtual void Set_HDR_Output(int mode) = 0;
+		virtual void Set_HDR_Paper_White(int nits) = 0;
+		virtual void Set_HDR_Peak_Brightness(int nits) = 0;
+		virtual void Set_HDR_Highlights(int highlights) = 0;
+		virtual void Set_Colour_Blind(int mode, int strength) = 0;
+		virtual void Set_Brightness_Gamma(int brightness, int gamma) = 0;
 
 		// The size of the frame the interface is drawn in on a screen of the size given, at the interface
 		// scale given (zero is automatic).
@@ -102,6 +108,26 @@ struct UIDisplayState
 	int CursorScale = 0;
 	std::vector<UIDisplayChoice> Renderers;
 	int Renderer = 0;
+	std::vector<UIDisplayChoice> HDROutputs;
+	int HDROutput = 0;
+	// The paper white and peak brightness on the sliders, in nits.
+	int PaperWhite = 0;
+	int PeakBrightness = 0;
+	// Whether HDR output is on now. The Highlights list needs it, and its tooltip says so while it is off.
+	bool HDRActive = false;
+	// The tooltips of the HDR output and Highlights rows, which describe the choice on show. Empty means none.
+	std::string HDROutputTip;
+	std::string HighlightsTip;
+	// Whether the emissive highlights are on, as 0 or 1.
+	int Highlights = 0;
+	// The colour-blind mode, as an index into ColorBlindModes, and how strongly it applies, in percent.
+	std::vector<UIDisplayChoice> ColorBlindModes;
+	int ColorBlindMode = 0;
+	int ColorBlindStrength = 100;
+	// The brightness in percent, and the gamma in hundredths, with the gamma text the page shows.
+	int Brightness = 100;
+	int Gamma = 100;
+	std::string GammaLabel;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
 	// The screen the page starts on, used for the preview when no resolution is picked.
@@ -141,6 +167,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialFrameRate;
 		int InitialCursorScale;
 		int InitialRenderer;
+		int InitialHighlights;
 		// The rows the player last picked on this page, or -1 for none. Only a pick is saved on OK.
 		int PickedRows = -1;
 		// The index of the row the drop-down shows, as the presenter last set it.
@@ -149,6 +176,13 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		bool InitialShowFPS;
 		int InitialFrameLimit;
 		int InitialWindowSize;
+		int InitialHDROutput;
+		int InitialPaperWhite;
+		int InitialPeakBrightness;
+		int InitialColorBlindMode;
+		int InitialColorBlindStrength;
+		int InitialBrightness;
+		int InitialGamma;
 };
 
 

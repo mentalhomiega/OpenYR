@@ -62,6 +62,7 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "truecolour.h"
+#include "emissive.h"
 #include "warhead.h"
 
 
@@ -172,6 +173,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsGroundLayer(false),
 	IsFlat(false),
 	IsTranslucent(false),
+	EmissiveStrength(0),
 	IsScorcher(false),
 	IsFlameThrower(false),
 	IsCraterForming(false),
@@ -535,6 +537,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsTiled = ini.Get_Bool(Name(), "Tiled", IsTiled);
 		IsShouldUseCellDrawer = ini.Get_Bool(Name(), "ShouldUseCellDrawer", IsShouldUseCellDrawer);
 		IsUseNormalLight = ini.Get_Bool(Name(), "UseNormalLight", IsUseNormalLight);
+		EmissiveStrength = Emissive_Parse_Strength(ini.Get_String(Name(), "Emissive", "").c_str(), std::max(Emissive_Anim_Default(IsTranslucent, IsUseNormalLight, Translucency, IsAnimatedTiberium), Emissive_Anim_Name_Default(Name())));
 
 		Point2D random_rate = ini.Get_Point(Name(), "RandomRate", Point2D(-1, -1));
 		if (random_rate.X != -1) {

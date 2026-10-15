@@ -33,8 +33,19 @@
 #pragma once
 
 #include "keyboard.h"
+#include "video.h"
 
 #include "diff.hh"
+
+// Whether HDR output uses the emissive masks: Classic keeps every picture at paper white, and
+// Enhanced lets light sources go brighter. Enhanced has no effect without HDR output.
+enum HDRHighlightsMode {
+	HDR_HIGHLIGHTS_CLASSIC,
+	HDR_HIGHLIGHTS_ENHANCED
+};
+
+// Turns the emissive masks on or off from the HDR highlights setting and the debug view.
+void Apply_HDR_Highlights(void);
 
 class OptionsClass {
 	public:
@@ -70,6 +81,7 @@ class OptionsClass {
 		void Load_Menu_Style(void);
 		void Load_Interface_Scale(void);
 		void Load_Interface_Style(void);
+		void Load_HDR_Output(void);
 		void Load_Seen_Movies(void);
 		void Save_Seen_Movies(void) const;
 		void Save_Settings(void);
@@ -236,11 +248,49 @@ class OptionsClass {
 		bool VSync;
 
 		/*
+		 * Whether light sources go brighter than paper white on HDR output, as an
+		 * HDRHighlightsMode. It defaults to Enhanced and takes effect only while HDR output is on.
+		 */
+		int HDRHighlights;
+
+		/*
 		 * This is the graphics interface the renderer is asked for, as one of the
 		 * BackendRenderer values. It exists to work around a driver, and is best left
 		 * choosing for itself.
 		 */
 		int Renderer;
+
+		/*
+		 * Whether the frame is presented as HDR10, as one of the VideoHDROutput values. The
+		 * setting applies when the game next starts.
+		 */
+		int HDROutput;
+
+		/*
+		 * The brightness, in nits, that SDR white is drawn at when HDR output is on. Zero follows
+		 * the SDR content brightness Windows reports, or 200 nits when it reports none.
+		 */
+		int HDRPaperWhite;
+
+		/*
+		 * The brightness, in nits, of the brightest output when HDR output is on. Zero follows the
+		 * peak luminance the display reports.
+		 */
+		int HDRPeakBrightness;
+
+		/*
+		 * The colour-blind correction for the presented frame, as a ColorBlindMode value, and how much
+		 * of it applies, from 0 to 100 percent. Off applies no correction at any strength.
+		 */
+		int ColorBlindMode;
+		int ColorBlindStrength;
+
+		/*
+		 * The brightness of the presented frame in percent, and its gamma exponent. Both are
+		 * presentation only; the defaults leave the picture unchanged.
+		 */
+		int Brightness;
+		float Gamma;
 
 		/*
 		 * This is how many times larger than its artwork the mouse pointer is drawn.

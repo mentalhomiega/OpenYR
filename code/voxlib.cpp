@@ -14,6 +14,8 @@
 #include "voxdrsys.h"
 #include "wwfile.h"
 
+#include "emissive.h"
+
 #include <algorithm>
 
 short VoxelPixelDeltaTable[VOXEL_BITMAP_WIDTH][2];
@@ -857,7 +859,9 @@ static void __cdecl _voxel_draw_shadow(VoxelFuncArgumentStruct * state)
 				unsigned char color_index = 1;
 				unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 				VoxelDrawBuffer[buffer_index] = color_index;
+				Voxel_Set_Mask(buffer_index, 0);
 				VoxelDrawBuffer[buffer_index + 1] = color_index;
+				Voxel_Set_Mask(buffer_index + 1, 0);
 			}
 
 			/// Advance to next voxel in X direction
@@ -1098,7 +1102,9 @@ void __cdecl Draw_Voxel_Regular_Normals(VoxelFuncArgumentStruct * state)
 							/// buffer bytes, so the color goes down twice.
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
+							Voxel_Set_Mask(buffer_index, 0);
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
+							Voxel_Set_Mask(buffer_index + 1, 0);
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -1186,7 +1192,9 @@ void __cdecl Draw_Voxel_Reverse_Normals(VoxelFuncArgumentStruct * state)
 							/// buffer bytes, so the color goes down twice.
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
+							Voxel_Set_Mask(buffer_index, 0);
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
+							Voxel_Set_Mask(buffer_index + 1, 0);
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -1302,7 +1310,9 @@ void __cdecl Draw_Voxel_Regular_Normals_ZBuffer(VoxelFuncArgumentStruct * state)
 							if ((pixel_z >> 8) > VoxelDrawZBuffer[buffer_index]) {
 								VoxelDrawZBuffer[buffer_index] = (pixel_z >> 8);
 								VoxelDrawBuffer[buffer_index] = value;
+								Voxel_Set_Mask(buffer_index, 0);
 								VoxelDrawBuffer[buffer_index + 1] = value;
+								Voxel_Set_Mask(buffer_index + 1, 0);
 								VoxelDrawZBuffer[buffer_index + 1] = (pixel_z >> 8);
 							}
 
@@ -1405,7 +1415,9 @@ void __cdecl Draw_Voxel_Reverse_Normals_ZBuffer(VoxelFuncArgumentStruct * state)
 							if ((pixel_z >> 8) > VoxelDrawZBuffer[buffer_index]) {
 								VoxelDrawZBuffer[buffer_index] = (pixel_z >> 8);
 								VoxelDrawBuffer[buffer_index] = value;
+								Voxel_Set_Mask(buffer_index, 0);
 								VoxelDrawBuffer[buffer_index + 1] = value;
+								Voxel_Set_Mask(buffer_index + 1, 0);
 								VoxelDrawZBuffer[buffer_index + 1] = (pixel_z >> 8);
 							}
 
@@ -1524,7 +1536,9 @@ void __cdecl Draw_Voxel_Regular_Normals_Lighting(VoxelFuncArgumentStruct * state
 							color_index = VoxelPaletteTranslateTable[table_index][color_index];
 
 							VoxelDrawBuffer[buffer_index] = color_index;
+							Voxel_Set_Mask(buffer_index, Emissive_Voxel_Highlight(table_index));
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
+							Voxel_Set_Mask(buffer_index + 1, Emissive_Voxel_Highlight(table_index));
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -1615,7 +1629,9 @@ void __cdecl Draw_Voxel_Reverse_Normals_Lighting(VoxelFuncArgumentStruct * state
 							color_index = VoxelPaletteTranslateTable[table_index][color_index];
 
 							VoxelDrawBuffer[buffer_index] = color_index;
+							Voxel_Set_Mask(buffer_index, Emissive_Voxel_Highlight(table_index));
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
+							Voxel_Set_Mask(buffer_index + 1, Emissive_Voxel_Highlight(table_index));
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -1736,7 +1752,9 @@ void __cdecl Draw_Voxel_Regular_Normals_ZBuffer_Lighting(VoxelFuncArgumentStruct
 								VoxelDrawZBuffer[buffer_index] = (pixel_z >> 8);
 								VoxelDrawZBuffer[buffer_index + 1] = (pixel_z >> 8);
 								VoxelDrawBuffer[buffer_index] = color_index;
+								Voxel_Set_Mask(buffer_index, Emissive_Voxel_Highlight(table_index));
 								VoxelDrawBuffer[buffer_index + 1] = color_index;
+								Voxel_Set_Mask(buffer_index + 1, Emissive_Voxel_Highlight(table_index));
 							} else {
 								/*
 								 * Byte 2 - color index
@@ -1848,7 +1866,9 @@ void __cdecl Draw_Voxel_Reverse_Normals_ZBuffer_Lighting(VoxelFuncArgumentStruct
 								VoxelDrawZBuffer[buffer_index] = (pixel_z >> 8);
 								VoxelDrawZBuffer[buffer_index + 1] = (pixel_z >> 8);
 								VoxelDrawBuffer[buffer_index] = color_index;
+								Voxel_Set_Mask(buffer_index, Emissive_Voxel_Highlight(table_index));
 								VoxelDrawBuffer[buffer_index + 1] = color_index;
+								Voxel_Set_Mask(buffer_index + 1, Emissive_Voxel_Highlight(table_index));
 							} else {
 
 								/*
@@ -1967,6 +1987,7 @@ void __cdecl Draw_Voxel_Regular(VoxelFuncArgumentStruct * state)
 							/// Compute buffer index and write color. Unlike the shaded
 							/// drawers, this one covers a single buffer byte per voxel.
 							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
+							Voxel_Set_Mask((pixel_x >> 8) | (pixel_y & 0xFF00), 0);
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -2047,6 +2068,7 @@ void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state)
 							/// Compute buffer index and write color. Unlike the shaded
 							/// drawers, this one covers a single buffer byte per voxel.
 							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
+							Voxel_Set_Mask((pixel_x >> 8) | (pixel_y & 0xFF00), 0);
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -2157,7 +2179,9 @@ void __cdecl Draw_Voxel_Regular_ZBuffer(VoxelFuncArgumentStruct * state)
 							if ((pixel_z >> 8) > VoxelDrawZBuffer[buffer_index]) {
 								VoxelDrawZBuffer[buffer_index] = (pixel_z >> 8);
 								VoxelDrawBuffer[buffer_index] = value;
+								Voxel_Set_Mask(buffer_index, 0);
 								VoxelDrawBuffer[buffer_index + 1] = value;
+								Voxel_Set_Mask(buffer_index + 1, 0);
 								VoxelDrawZBuffer[buffer_index + 1] = (pixel_z >> 8);
 							}
 
@@ -2255,7 +2279,9 @@ void __cdecl Draw_Voxel_Reverse_ZBuffer(VoxelFuncArgumentStruct * state)
 							if ((pixel_z >> 8) > VoxelDrawZBuffer[buffer_index]) {
 								VoxelDrawZBuffer[buffer_index] = (pixel_z >> 8);
 								VoxelDrawBuffer[buffer_index] = value;
+								Voxel_Set_Mask(buffer_index, 0);
 								VoxelDrawBuffer[buffer_index + 1] = value;
+								Voxel_Set_Mask(buffer_index + 1, 0);
 								VoxelDrawZBuffer[buffer_index + 1] = (pixel_z >> 8);
 							}
 

@@ -19,11 +19,16 @@
 #include "_ui.h"
 #include "_xmouse.h"
 #include "bgfxbackend.h"
+#include "colourblind.h"
 #include "dbgprint.h"
 #include "dsurface.h"
+#include "emissive.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hdrcolour.h"
+#include "hdrdisplay.h"
 #include "misc.h"
+#include "options.h"
 #include "sdl/sdlwindow.h"
 #include "surface.h"
 #include "ui/uishell.h"
@@ -172,6 +177,47 @@ static BackendScaleMode Backend_Scale_Mode(void)
 
 
 /// <summary>
+/// Decides whether the renderer starts with an HDR10 back buffer. Automatic does so only while Windows
+/// has HDR on for the display; On does so regardless, and Off never does.
+/// </summary>
+/// <param name="renderer">The graphics API the settings ask for.</param>
+/// <returns>bool; Should the back buffer be HDR10?</returns>
+static bool HDR_Output_Wanted(BackendRenderer renderer)
+{
+	if (Options.HDROutput == VIDEO_HDR_OFF) {
+		DebugString("HDR: output is off\n");
+		return(false);
+	}
+
+	// The composite shader ships for Direct3D 11. Automatic may still resolve to another API, which the renderer then rejects.
+	if (renderer != BACKEND_RENDERER_AUTO && renderer != BACKEND_RENDERER_D3D11) {
+		DebugString("HDR: output needs Direct3D 11, and the renderer setting asks for another API\n");
+		return(false);
+	}
+
+	if (Options.HDROutput == VIDEO_HDR_ON) {
+		DebugString("HDR: output is forced on\n");
+		return(true);
+	}
+	if (!HDR_Current_Display().HDREnabled) {
+		DebugString("HDR: Windows HDR is off for the game's display, so the frame is drawn as SDR\n");
+		return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Hands the paper white and the peak brightness, with the settings and the display resolved, to the renderer.
+/// </summary>
+static void Push_HDR_Levels(void)
+{
+	int const paper = Video_HDR_Paper_White();
+	Backend_Set_HDR_Levels((float)paper, (float)Video_HDR_Peak());
+}
+
+
+/// <summary>
 /// Starts the presenter on the game's window.
 /// </summary>
 /// <param name="window">The native window whose drawable area receives the frame.</param>
@@ -192,12 +238,17 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 	_ScaleInfo.DrawableWidth = drawablewidth;
 	_ScaleInfo.DrawableHeight = drawableheight;
 
+	HDR_Query_Window_Display(window.Handle);
+	Video_Apply_Colour_Settings();
+
 	BackendRenderer renderer = (BackendRenderer)Options.Renderer;
-	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync)) {
+	bool const hdr = HDR_Output_Wanted(renderer);
+	if (!Backend_Init(window, drawablewidth, drawableheight, renderer, Options.VSync, hdr)) {
 		return(false);
 	}
 
-	DebugString("Video: renderer is %s\n", Backend_Renderer_Name());
+	DebugString("Video: renderer is %s, HDR output %s\n", Backend_Renderer_Name(), Backend_HDR_Active() ? "on" : "off");
+	Push_HDR_Levels();
 
 	_Initialized = true;
 
@@ -210,6 +261,9 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 	Update_Scale_Info();
 	Refresh_Mouse_Pointer();
 	Update_Present_Interval(refreshrate);
+
+	// The emissive masks follow the renderer, so they are switched on only once HDR output is known to be on.
+	Apply_HDR_Highlights();
 	return(true);
 }
 
@@ -302,6 +356,69 @@ void Video_Refresh_Scaling(void)
 	UIShell.On_Video_Change();
 	_Dirty.Invalidate_Frame();
 	Video_Mark_Overlay_Dirty();
+}
+
+
+/// <summary>
+/// The paper white in nits that HDR10 output draws SDR white at, from the setting or the display.
+/// </summary>
+int Video_HDR_Paper_White(void)
+{
+	HDRDisplayInfo const & display = HDR_Current_Display();
+	return(HDR_Resolve_Paper_White(Options.HDRPaperWhite, display.SDRWhiteKnown, display.SDRWhiteNits));
+}
+
+
+/// <summary>
+/// The peak brightness in nits that HDR10 output limits to, from the setting or the display, never below the paper white.
+/// </summary>
+int Video_HDR_Peak(void)
+{
+	return(HDR_Resolve_Peak(Options.HDRPeakBrightness, HDR_Current_Display().PeakNits, Video_HDR_Paper_White()));
+}
+
+
+/// <summary>
+/// Whether the renderer started with an HDR10 back buffer.
+/// </summary>
+bool Video_HDR_Active(void)
+{
+	return(Backend_HDR_Active());
+}
+
+
+/// <summary>
+/// Hands the HDR brightness settings to the renderer and presents them, so a change shows at once.
+/// </summary>
+void Video_Refresh_HDR_Levels(void)
+{
+	Push_HDR_Levels();
+	Video_Refresh_Scaling();
+}
+
+
+/// <summary>
+/// Sets the colour adjustment the presented frame goes through, and presents the frame again.
+/// </summary>
+/// <param name="matrix">A row-major 3x3 matrix of nine values, applied to linear light.</param>
+/// <param name="brightness">A multiplier for linear light, applied after the matrix.</param>
+/// <param name="gamma">The exponent applied after the brightness. The identity is matrix (1 0 0 0 1 0 0 0 1), brightness 1 and gamma 1.</param>
+void Video_Set_Colour_Adjust(float const * matrix, float brightness, float gamma)
+{
+	Backend_Set_Colour_Adjust(matrix, brightness, gamma);
+	Video_Refresh_Scaling();
+}
+
+
+/// <summary>
+/// Sets the colour adjustment from the colour-blind settings. Before the presenter starts, the adjustment
+/// is kept for the renderer to use from its first frame.
+/// </summary>
+void Video_Apply_Colour_Settings(void)
+{
+	float matrix[9];
+	ColorBlind_Matrix(Options.ColorBlindMode, Options.ColorBlindStrength / 100.0f, matrix);
+	Video_Set_Colour_Adjust(matrix, Options.Brightness / 100.0f, Options.Gamma);
 }
 
 
@@ -401,10 +518,26 @@ static void Present(void)
 		}
 	}
 
-	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr);
-	if (presented && layerptr != NULL) {
-		_LayerFresh = false;
+	// Masks are passed only while they are kept; the layer's mask follows the layer picture when it is fresh.
+	BackendEmissive emissive = {NULL, 0, NULL, 0};
+	BackendEmissive const * emissiveptr = NULL;
+	Backend_Set_Emissive_View(Emissive_Debug_View());
+	if (Emissive_Is_Enabled()) {
+		if (EmissivePlane const * frame = Emissive_Plane_For(VisibleSurface)) {
+			emissive.Frame = frame->Pixels;
+			emissive.FramePitch = frame->Pitch;
+			emissiveptr = &emissive;
+		}
+		if (layerptr != NULL && layer.Pixels != NULL) {
+			if (EmissivePlane const * layer_plane = Emissive_Plane_For(_LayerSurface)) {
+				emissive.Layer = layer_plane->Pixels + _LayerSource.Y * layer_plane->Pitch + _LayerSource.X;
+				emissive.LayerPitch = layer_plane->Pitch;
+				emissiveptr = &emissive;
+			}
+		}
 	}
+
+	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr, emissiveptr);
 	if (presented) {
 		if (snapshot.Upload) {
 			_Dirty.Upload_Completed();

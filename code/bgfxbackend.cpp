@@ -16,6 +16,7 @@
 #include "except.h"
 
 #include "bgfxviews.hh"
+#include "hdrcolour.h"
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
@@ -24,14 +25,31 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <vector>
 #include <fs_ocornut_imgui.bin.h>
 #include <malloc.h>
 #include <vs_ocornut_imgui.bin.h>
+#include "shaders/fs_composite.bin.h"
 
 
 static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 	BGFX_EMBEDDED_SHADER(vs_ocornut_imgui),
 	BGFX_EMBEDDED_SHADER(fs_ocornut_imgui),
+	BGFX_EMBEDDED_SHADER_END()
+};
+
+
+// The composite shader ships for Direct3D 11 only. Other renderers get no program, so HDR output
+// falls back to SDR and the colour adjustment has no effect.
+static const bgfx::EmbeddedShader _CompositeShaders[] = {
+	{
+		"fs_composite",
+		{
+			{ bgfx::RendererType::Direct3D11, fs_composite_dxbc, sizeof(fs_composite_dxbc) },
+			{ bgfx::RendererType::Count, NULL, 0 },
+		}
+	},
 	BGFX_EMBEDDED_SHADER_END()
 };
 
@@ -73,6 +91,53 @@ static bool _KeyedFrameUploaded = false;
 static unsigned int * _LayerConvertBuffer = NULL;
 static bgfx::TextureHandle _KeyedFrameTexture = BGFX_INVALID_HANDLE;
 static unsigned int * _KeyedFrameBuffer = NULL;
+
+// HDR output and the colour adjustment. Frames are routed through the scene target when HDR10 output
+// is on or the colour adjustment is not the identity; the composite pass then draws them to the window.
+static bool _HdrActive = false;
+static bool _Routed = false;
+static bool _ShotRequested = false;
+static bgfx::TextureHandle _ReadbackTexture = BGFX_INVALID_HANDLE;
+static std::vector<unsigned char> _ReadbackPixels;
+static std::string _ReadbackPath;
+static bool _ReadbackPending = false;
+static uint32_t _ReadbackFrame = 0;
+static uint32_t _LastFrame = 0;
+static bgfx::FrameBufferHandle _SceneTarget = BGFX_INVALID_HANDLE;
+static bgfx::FrameBufferHandle _ShotTarget = BGFX_INVALID_HANDLE;
+static bgfx::ProgramHandle _CompositeProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _CompositeLevels = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _ColourMatrix = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _ColourTone = BGFX_INVALID_HANDLE;
+static float _PaperWhiteNits = (float)HDR_PAPER_WHITE_DEFAULT;
+static float _PeakNits = (float)HDR_PEAK_FALLBACK_NITS;
+static HDRColourAdjust _ColourAdjust = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}, 1.0f, 1.0f};
+
+// An emissive mask uploaded as an R8 texture. Uploaded says whether the texture holds a mask for
+// the picture it follows, so the presenter draws it only then.
+struct BackendMask
+{
+	bgfx::TextureHandle Handle;
+	int Width;
+	int Height;
+	bool Uploaded;
+};
+
+static BackendMask _FrameMask = {BGFX_INVALID_HANDLE, 0, 0, false};
+static BackendMask _LayerMask = {BGFX_INVALID_HANDLE, 0, 0, false};
+static bool _MaskView = false;
+
+// The emissive mask target is drawn at the drawable size, in the same places as the colour, so the
+// composite reads the mask at its own UV. The keyed mask is the frame mask with alpha zero where the
+// frame has the layer key, so the layer mask shows through there, as the layer colour does.
+static bgfx::FrameBufferHandle _MaskTarget = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _MaskSampler = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _MaskLevels = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _KeyedMaskTexture = BGFX_INVALID_HANDLE;
+static unsigned int * _KeyedMaskBuffer = NULL;
+static bool _KeyedMaskUploaded = false;
+// Set by any mask draw this frame. Without one the composite reads no mask.
+static bool _MaskDrawn = false;
 
 
 struct BackendVertex
@@ -193,7 +258,7 @@ static void Build_Convert_Table(void)
 /// Submits one textured rectangle covering the given destination. False means the
 /// transient vertex memory ran out and nothing was submitted.
 /// </summary>
-static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false)
+static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, bgfx::ProgramHandle program = BGFX_INVALID_HANDLE, unsigned int colour = 0xFFFFFFFF)
 {
 	bgfx::TransientVertexBuffer buffer;
 
@@ -204,22 +269,21 @@ static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 	bgfx::allocTransientVertexBuffer(&buffer, 6, _VertexLayout);
 
 	BackendVertex * vertex = (BackendVertex *)buffer.data;
-	const unsigned int white = 0xFFFFFFFF;
 
 	const float vtop = flipv ? 1.0f : 0.0f;
 	const float vbottom = flipv ? 0.0f : 1.0f;
 
-	vertex[0] = { x, y, 0.0f, vtop, white };
-	vertex[1] = { x + width, y, 1.0f, vtop, white };
-	vertex[2] = { x + width, y + height, 1.0f, vbottom, white };
-	vertex[3] = { x, y, 0.0f, vtop, white };
-	vertex[4] = { x + width, y + height, 1.0f, vbottom, white };
-	vertex[5] = { x, y + height, 0.0f, vbottom, white };
+	vertex[0] = { x, y, 0.0f, vtop, colour };
+	vertex[1] = { x + width, y, 1.0f, vtop, colour };
+	vertex[2] = { x + width, y + height, 1.0f, vbottom, colour };
+	vertex[3] = { x, y, 0.0f, vtop, colour };
+	vertex[4] = { x + width, y + height, 1.0f, vbottom, colour };
+	vertex[5] = { x, y + height, 0.0f, vbottom, colour };
 
 	bgfx::setVertexBuffer(0, &buffer);
 	bgfx::setTexture(0, _TextureSampler, texture, samplerflags);
 	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | (blend ? BGFX_STATE_BLEND_ALPHA : 0));
-	bgfx::submit(view, _Program);
+	bgfx::submit(view, bgfx::isValid(program) ? program : _Program);
 	return(true);
 }
 
@@ -300,8 +364,81 @@ static bool Ensure_Prescale_Target(int width, int height)
 }
 
 
+static void Destroy_Mask(BackendMask & mask)
+{
+	if (bgfx::isValid(mask.Handle)) {
+		bgfx::destroy(mask.Handle);
+	}
+	mask.Handle = BGFX_INVALID_HANDLE;
+	mask.Width = 0;
+	mask.Height = 0;
+	mask.Uploaded = false;
+}
+
+
+/// <summary>
+/// Uploads one mask, making its R8 texture first when the size changed. False means the mask is
+/// not available, such as when the hardware cannot sample R8.
+/// </summary>
+static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pitch, int width, int height)
+{
+	if (!bgfx::isValid(mask.Handle) || mask.Width != width || mask.Height != height) {
+		Destroy_Mask(mask);
+		const bgfx::Caps * caps = bgfx::getCaps();
+		if ((caps->formats[bgfx::TextureFormat::R8] & BGFX_CAPS_FORMAT_TEXTURE_2D) == 0) {
+			return(false);
+		}
+		if (width > caps->limits.maxTextureSize || height > caps->limits.maxTextureSize) {
+			return(false);
+		}
+		mask.Handle = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8);
+		if (!bgfx::isValid(mask.Handle)) {
+			return(false);
+		}
+		mask.Width = width;
+		mask.Height = height;
+	}
+
+	// The rows are packed to the texture width, since the pitch of a mask may be wider than the picture.
+	bgfx::Memory const * memory = bgfx::alloc((uint32_t)(width * height));
+	for (int y = 0; y < height; y++) {
+		std::memcpy(memory->data + y * width, pixels + y * pitch, (size_t)width);
+	}
+	bgfx::updateTexture2D(mask.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)height, memory, (uint16_t)width);
+	mask.Uploaded = true;
+	return(true);
+}
+
+
+/// <summary>
+/// Sets the mask target as the view the emissive masks are drawn into. It is cleared to zero first, so a
+/// pixel that no mask covers reads zero in the composite.
+/// </summary>
+static void Begin_Mask_View(void)
+{
+	bgfx::setViewFrameBuffer(VIEW_MASK, _MaskTarget);
+	bgfx::setViewClear(VIEW_MASK, BGFX_CLEAR_COLOR, 0x00000000);
+	bgfx::setViewMode(VIEW_MASK, bgfx::ViewMode::Sequential);
+	Set_View_Transform(VIEW_MASK, _DrawableWidth, _DrawableHeight);
+}
+
+
+/// <summary>
+/// Draws a mask into the mask target over a rectangle of the window, where the colour picture is drawn.
+/// The texture is an R8 mask or a keyed mask, and the draw reads its red channel. A zero draw writes zero
+/// over the rectangle instead, using the texture only for its shape. The mask is point sampled.
+/// </summary>
+static bool Submit_Mask(bgfx::TextureHandle texture, float x, float y, float width, float height, bool blend, bool zero)
+{
+	unsigned int const sampler = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT;
+	_MaskDrawn = true;
+	return(Submit_Quad(VIEW_MASK, texture, x, y, width, height, sampler, false, blend, BGFX_INVALID_HANDLE, zero ? 0x00000000u : 0xFFFFFFFFu));
+}
+
+
 static void Destroy_Layer(void)
 {
+	Destroy_Mask(_LayerMask);
 	if (bgfx::isValid(_LayerTexture)) {
 		bgfx::destroy(_LayerTexture);
 		_LayerTexture = BGFX_INVALID_HANDLE;
@@ -310,14 +447,21 @@ static void Destroy_Layer(void)
 		bgfx::destroy(_KeyedFrameTexture);
 		_KeyedFrameTexture = BGFX_INVALID_HANDLE;
 	}
+	if (bgfx::isValid(_KeyedMaskTexture)) {
+		bgfx::destroy(_KeyedMaskTexture);
+		_KeyedMaskTexture = BGFX_INVALID_HANDLE;
+	}
 	delete [] _LayerConvertBuffer;
 	_LayerConvertBuffer = NULL;
 	delete [] _KeyedFrameBuffer;
 	_KeyedFrameBuffer = NULL;
+	delete [] _KeyedMaskBuffer;
+	_KeyedMaskBuffer = NULL;
 	_LayerWidth = 0;
 	_LayerHeight = 0;
 	_LayerUploaded = false;
 	_KeyedFrameUploaded = false;
+	_KeyedMaskUploaded = false;
 }
 
 
@@ -337,6 +481,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 		}
 		delete [] _LayerConvertBuffer;
 		_LayerConvertBuffer = NULL;
+		Destroy_Mask(_LayerMask);
 
 		const bgfx::Caps * caps = bgfx::getCaps();
 		if (layer.Width > caps->limits.maxTextureSize || layer.Height > caps->limits.maxTextureSize) {
@@ -409,25 +554,265 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 
 
 /// <summary>
-/// Starts the renderer on an existing window.
+/// Uploads the keyed mask for a frame: the frame's emissive mask in the red channel, and alpha zero where
+/// the frame has the layer key. Without a mask the red channel is zero. False means it could not be made.
 /// </summary>
-/// <param name="window">The window the frame is presented into.</param>
-/// <param name="drawablewidth">The drawable area's width in physical pixels.</param>
-/// <param name="drawableheight">The drawable area's height in physical pixels.</param>
-/// <param name="renderer">Which graphics API to ask for, or auto to let bgfx decide.</param>
-/// <param name="vsync">Should presents wait for the display's refresh?</param>
-/// <returns>bool; Did the renderer start?</returns>
-bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync)
+static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char const * mask, int maskpitch)
 {
-	if (_Initialized) {
-		return(true);
+	_KeyedMaskUploaded = false;
+	if (!bgfx::isValid(_KeyedMaskTexture)) {
+		_KeyedMaskTexture = bgfx::createTexture2D((uint16_t)_FrameWidth, (uint16_t)_FrameHeight, false, 1, bgfx::TextureFormat::BGRA8);
+		if (!bgfx::isValid(_KeyedMaskTexture)) {
+			return(false);
+		}
+		delete [] _KeyedMaskBuffer;
+		_KeyedMaskBuffer = new unsigned int[_FrameWidth * _FrameHeight];
 	}
 
-	bgfx::renderFrame();
+	// A BGRA8 pixel is blue, green, red, alpha from its lowest byte up, so red sits at bit 16 and alpha at bit 24.
+	for (int y = 0; y < _FrameHeight; y++) {
+		unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
+		unsigned char const * value = (mask != NULL) ? mask + y * maskpitch : NULL;
+		unsigned int * dest = _KeyedMaskBuffer + y * _FrameWidth;
+		for (int x = 0; x < _FrameWidth; x++) {
+			unsigned int const alpha = (source[x] == BACKEND_LAYER_KEY) ? 0u : 255u;
+			unsigned int const red = (value != NULL) ? value[x] : 0u;
+			dest[x] = (alpha << 24) | (red << 16);
+		}
+	}
+	bgfx::updateTexture2D(_KeyedMaskTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_KeyedMaskBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
+	_KeyedMaskUploaded = true;
+	return(true);
+}
 
-	_DrawableWidth = drawablewidth;
-	_DrawableHeight = drawableheight;
-	_ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+
+/// <summary>
+/// Reports whether the renderer can present an HDR10 back buffer.
+/// </summary>
+/// <returns>bool; Can the renderer present RGB10A2 with HDR10 metadata?</returns>
+static bool HDR_Caps_Available(void)
+{
+	bgfx::Caps const * caps = bgfx::getCaps();
+	if ((caps->supported & BGFX_CAPS_HDR10) == 0) {
+		DebugString("HDR: the renderer reports no HDR10 support\n");
+		return(false);
+	}
+	if ((caps->formats[bgfx::TextureFormat::RGB10A2] & BGFX_CAPS_FORMAT_TEXTURE_BACKBUFFER) == 0) {
+		DebugString("HDR: RGB10A2 is not a back buffer format on this renderer\n");
+		return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Builds the reset flags, which carry HDR10 when the back buffer is HDR10.
+/// </summary>
+static unsigned int Reset_Flags(bool vsync, bool hdr)
+{
+	return(BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE) | (hdr ? BGFX_RESET_HDR10 : BGFX_RESET_NONE));
+}
+
+
+/// <summary>
+/// Frees the scene and shot targets. The next Ensure_Targets makes them again at the current size. A
+/// capture still being read keeps its readback texture until it is written.
+/// </summary>
+static void Destroy_Targets(void)
+{
+	if (bgfx::isValid(_SceneTarget)) {
+		bgfx::destroy(_SceneTarget);
+		_SceneTarget = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_ShotTarget)) {
+		bgfx::destroy(_ShotTarget);
+		_ShotTarget = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_MaskTarget)) {
+		bgfx::destroy(_MaskTarget);
+		_MaskTarget = BGFX_INVALID_HANDLE;
+	}
+	if (!_ReadbackPending && bgfx::isValid(_ReadbackTexture)) {
+		bgfx::destroy(_ReadbackTexture);
+		_ReadbackTexture = BGFX_INVALID_HANDLE;
+		_ReadbackPixels.clear();
+	}
+}
+
+
+/// <summary>
+/// Makes the targets the current routing needs, at the drawable size.
+/// </summary>
+/// <returns>bool; Does every target the routing needs exist?</returns>
+static bool Ensure_Targets(void)
+{
+	if (_Routed && !bgfx::isValid(_SceneTarget)) {
+		_SceneTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+		if (!bgfx::isValid(_SceneTarget)) {
+			DebugString("Video: could not create the scene target at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+	}
+	if (_HdrActive && !bgfx::isValid(_MaskTarget)) {
+		_MaskTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+		if (!bgfx::isValid(_MaskTarget)) {
+			DebugString("Video: could not create the emissive mask target at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+	}
+	if (_HdrActive && !bgfx::isValid(_ShotTarget)) {
+		_ShotTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+		if (!bgfx::isValid(_ShotTarget)) {
+			DebugString("Video: could not create the screenshot target at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+	}
+	if (_HdrActive && !bgfx::isValid(_ReadbackTexture)) {
+		uint64_t const flags = BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+		_ReadbackTexture = bgfx::createTexture2D((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, false, 1, bgfx::TextureFormat::BGRA8, flags);
+		if (!bgfx::isValid(_ReadbackTexture)) {
+			DebugString("Video: could not create the screenshot readback at %dx%d\n", _DrawableWidth, _DrawableHeight);
+			return(false);
+		}
+		_ReadbackPixels.assign((size_t)_DrawableWidth * (size_t)_DrawableHeight * 4, 0);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Decides whether frames reach the window through the scene target. They do under HDR10 output and
+/// whenever the colour adjustment is not the identity.
+/// </summary>
+static void Update_Routing(void)
+{
+	_Routed = _Initialized && bgfx::isValid(_CompositeProgram) && (_HdrActive || !HDR_Colour_Adjust_Is_Identity(_ColourAdjust));
+}
+
+
+/// <summary>
+/// Returns the target the frame is drawn into: the scene target when frames are routed, else the window.
+/// </summary>
+static bgfx::FrameBufferHandle Frame_Target(void)
+{
+	bgfx::FrameBufferHandle const window = BGFX_INVALID_HANDLE;
+	if (_Routed) {
+		return(_SceneTarget);
+	}
+	return(window);
+}
+
+
+/// <summary>
+/// Draws the scene target into a target through the composite shader, applying the colour adjustment.
+/// </summary>
+/// <param name="view">The view to draw with.</param>
+/// <param name="target">The target to draw into; the window when invalid.</param>
+/// <param name="hdr">True to encode ST.2084 with Rec.2020 primaries; false to encode sRGB.</param>
+static void Submit_Composite(bgfx::ViewId view, bgfx::FrameBufferHandle target, bool hdr)
+{
+	bgfx::setViewFrameBuffer(view, target);
+	bgfx::setViewClear(view, BGFX_CLEAR_COLOR, 0x000000FF);
+	Set_View_Transform(view, _DrawableWidth, _DrawableHeight);
+
+	float const levels[4] = {
+		_PaperWhiteNits / HDR_PQ_PEAK_NITS,
+		_PeakNits / HDR_PQ_PEAK_NITS,
+		hdr ? 1.0f : 0.0f,
+		HDR_Colour_Adjust_Is_Identity(_ColourAdjust) ? 0.0f : 1.0f,
+	};
+	bgfx::setUniform(_CompositeLevels, levels);
+
+	float rows[12];
+	for (int row = 0; row < 3; row++) {
+		for (int column = 0; column < 3; column++) {
+			rows[row * 4 + column] = _ColourAdjust.Matrix[row * 3 + column];
+		}
+		rows[row * 4 + 3] = 0.0f;
+	}
+	bgfx::setUniform(_ColourMatrix, rows, 3);
+
+	float const tone[4] = {_ColourAdjust.Brightness, _ColourAdjust.Gamma, 0.0f, 0.0f};
+	bgfx::setUniform(_ColourTone, tone);
+
+	// The mask is bound only to an HDR composite that has masks this frame. SDR never reads it.
+	bool const masked = hdr && _MaskDrawn && bgfx::isValid(_MaskTarget);
+	if (masked) {
+		bgfx::setTexture(1, _MaskSampler, bgfx::getTexture(_MaskTarget), BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT);
+	}
+	float const maskflags[4] = {masked ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f};
+	bgfx::setUniform(_MaskLevels, maskflags);
+
+	unsigned int const sampler = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT;
+	Submit_Quad(view, bgfx::getTexture(_SceneTarget), 0.0f, 0.0f, (float)_DrawableWidth, (float)_DrawableHeight, sampler, false, false, _CompositeProgram);
+}
+
+
+/// <summary>
+/// Writes the capture that the readback has finished, as a 32-bit TGA of the drawable area.
+/// </summary>
+static void Write_Capture(void)
+{
+	_ReadbackPending = false;
+	FILE * file = std::fopen(_ReadbackPath.c_str(), "wb");
+	if (file == NULL) {
+		return;
+	}
+	unsigned char header[18] = {};
+	header[2] = 2;
+	header[12] = (unsigned char)(_DrawableWidth & 0xFF);
+	header[13] = (unsigned char)((_DrawableWidth >> 8) & 0xFF);
+	header[14] = (unsigned char)(_DrawableHeight & 0xFF);
+	header[15] = (unsigned char)((_DrawableHeight >> 8) & 0xFF);
+	header[16] = 32;
+	header[17] = 0x28;
+	std::fwrite(header, 1, sizeof(header), file);
+	std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
+	std::fclose(file);
+}
+
+
+/// <summary>
+/// Copies the SDR picture of the frame into the readback texture and starts reading it back. The picture is
+/// the scene target, or a composite of it when a colour adjustment applies.
+/// </summary>
+static void Start_Capture(void)
+{
+	bgfx::TextureHandle source = bgfx::getTexture(_SceneTarget);
+	if (!HDR_Colour_Adjust_Is_Identity(_ColourAdjust)) {
+		Submit_Composite(VIEW_SHOT, _ShotTarget, false);
+		source = bgfx::getTexture(_ShotTarget);
+	}
+	bgfx::blit(VIEW_READBACK, _ReadbackTexture, 0, 0, source);
+	_ReadbackFrame = bgfx::readTexture(_ReadbackTexture, _ReadbackPixels.data());
+	_ReadbackPending = true;
+	_ShotRequested = false;
+}
+
+
+/// <summary>
+/// Waits for a pending capture to finish reading and writes it, so its buffer is free before the targets change size.
+/// </summary>
+static void Finish_Capture(void)
+{
+	for (int attempt = 0; attempt < 4 && _ReadbackPending; attempt++) {
+		_LastFrame = bgfx::frame();
+		if (_LastFrame >= _ReadbackFrame) {
+			Write_Capture();
+		}
+	}
+}
+
+
+/// <summary>
+/// Starts the renderer on the window, with an HDR10 back buffer when hdr is set.
+/// </summary>
+/// <returns>bool; Did the renderer start with the back buffer asked for? Nothing is left running on false.</returns>
+static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+{
+	_HdrActive = false;
+	_Routed = false;
+	_ResetFlags = Reset_Flags(vsync, hdr);
 
 	bgfx::Init init;
 	init.platformData.ndt = window.Display;
@@ -438,6 +823,9 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 	init.resolution.width = (uint32_t)drawablewidth;
 	init.resolution.height = (uint32_t)drawableheight;
 	init.resolution.reset = _ResetFlags;
+	if (hdr) {
+		init.resolution.formatColor = bgfx::TextureFormat::RGB10A2;
+	}
 	init.callback = &_Callback;
 	init.allocator = &_Allocator;
 
@@ -464,6 +852,14 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 	}
 
 	if (!bgfx::init(init)) {
+		if (hdr) {
+			DebugString("HDR: the renderer did not start with an RGB10A2 back buffer\n");
+		}
+		return(false);
+	}
+
+	if (hdr && !HDR_Caps_Available()) {
+		bgfx::shutdown();
 		return(false);
 	}
 
@@ -490,8 +886,64 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 		return(false);
 	}
 
+	// The composite pass draws the scene target to the window. Renderers without its shader keep the direct path.
+	bgfx::ShaderHandle compositevs = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "vs_ocornut_imgui");
+	bgfx::ShaderHandle compositefs = bgfx::createEmbeddedShader(_CompositeShaders, type, "fs_composite");
+	if (bgfx::isValid(compositevs) && bgfx::isValid(compositefs)) {
+		_CompositeProgram = bgfx::createProgram(compositevs, compositefs, true);
+	}
+	_CompositeLevels = bgfx::createUniform("u_compositeLevels", bgfx::UniformType::Vec4);
+	_ColourMatrix = bgfx::createUniform("u_colourMatrix", bgfx::UniformType::Vec4, 3);
+	_ColourTone = bgfx::createUniform("u_colourTone", bgfx::UniformType::Vec4);
+	_MaskSampler = bgfx::createUniform("s_mask", bgfx::UniformType::Sampler);
+	_MaskLevels = bgfx::createUniform("u_maskLevels", bgfx::UniformType::Vec4);
+
+	if (hdr && !bgfx::isValid(_CompositeProgram)) {
+		DebugString("HDR: the composite shader is not available for this renderer\n");
+		bgfx::shutdown();
+		return(false);
+	}
+
 	_Initialized = true;
+	_HdrActive = hdr;
+	Update_Routing();
+	if (!Ensure_Targets()) {
+		Backend_Shutdown();
+		return(false);
+	}
 	return(true);
+}
+
+
+/// <summary>
+/// Starts the renderer on an existing window. An HDR10 request that the renderer cannot honour starts
+/// the SDR back buffer instead.
+/// </summary>
+/// <param name="window">The window the frame is presented into.</param>
+/// <param name="drawablewidth">The drawable area's width in physical pixels.</param>
+/// <param name="drawableheight">The drawable area's height in physical pixels.</param>
+/// <param name="renderer">Which graphics API to ask for, or auto to let bgfx decide.</param>
+/// <param name="vsync">Should presents wait for the display's refresh?</param>
+/// <param name="hdr">Should the back buffer be HDR10?</param>
+/// <returns>bool; Did the renderer start?</returns>
+bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr)
+{
+	if (_Initialized) {
+		return(true);
+	}
+
+	bgfx::renderFrame();
+
+	_DrawableWidth = drawablewidth;
+	_DrawableHeight = drawableheight;
+
+	if (hdr && Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, true)) {
+		return(true);
+	}
+	if (hdr) {
+		DebugString("HDR: starting the SDR back buffer instead\n");
+	}
+	return(Start_Renderer(window, drawablewidth, drawableheight, renderer, vsync, false));
 }
 
 
@@ -506,6 +958,8 @@ void Backend_Shutdown(void)
 
 	Destroy_Prescale_Target();
 	Destroy_Layer();
+	Destroy_Targets();
+	Destroy_Mask(_FrameMask);
 
 	if (bgfx::isValid(_FrameTexture)) {
 		bgfx::destroy(_FrameTexture);
@@ -519,6 +973,30 @@ void Backend_Shutdown(void)
 		bgfx::destroy(_Program);
 		_Program = BGFX_INVALID_HANDLE;
 	}
+	if (bgfx::isValid(_CompositeProgram)) {
+		bgfx::destroy(_CompositeProgram);
+		_CompositeProgram = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_CompositeLevels)) {
+		bgfx::destroy(_CompositeLevels);
+		_CompositeLevels = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_ColourMatrix)) {
+		bgfx::destroy(_ColourMatrix);
+		_ColourMatrix = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_ColourTone)) {
+		bgfx::destroy(_ColourTone);
+		_ColourTone = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_MaskSampler)) {
+		bgfx::destroy(_MaskSampler);
+		_MaskSampler = BGFX_INVALID_HANDLE;
+	}
+	if (bgfx::isValid(_MaskLevels)) {
+		bgfx::destroy(_MaskLevels);
+		_MaskLevels = BGFX_INVALID_HANDLE;
+	}
 
 	delete [] _ConvertBuffer;
 	_ConvertBuffer = NULL;
@@ -529,6 +1007,10 @@ void Backend_Shutdown(void)
 	_FrameHeight = 0;
 	_FrameUploaded = false;
 	_FramePending = false;
+	_HdrActive = false;
+	_Routed = false;
+	_ShotRequested = false;
+	_ReadbackPending = false;
 	_Initialized = false;
 }
 
@@ -552,6 +1034,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 		_FrameTexture = BGFX_INVALID_HANDLE;
 	}
 	Destroy_Layer();
+	Destroy_Mask(_FrameMask);
 
 	// bgfx names packed formats from their low bits up, so its B5G6R5 is the layout the
 	// game already draws in. Emulated support would convert every upload on the way
@@ -596,13 +1079,18 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 
 	_DrawableWidth = drawablewidth;
 	_DrawableHeight = drawableheight;
+	Finish_Capture();
 	bgfx::reset((uint32_t)drawablewidth, (uint32_t)drawableheight, _ResetFlags);
+
+	// The targets are sized to the drawable area, so they are made again at the new size.
+	Destroy_Targets();
+	Ensure_Targets();
 }
 
 
 void Backend_Set_VSync(bool vsync)
 {
-	unsigned int const flags = BGFX_RESET_FLIP_AFTER_RENDER | (vsync ? BGFX_RESET_VSYNC : BGFX_RESET_NONE);
+	unsigned int const flags = Reset_Flags(vsync, _HdrActive);
 	if (flags == _ResetFlags) {
 		return;
 	}
@@ -618,11 +1106,15 @@ void Backend_Set_VSync(bool vsync)
 /// Submits the layer and then the frame over it, with the frame's key pixels see-through. False
 /// means nothing was submitted and the frame should be presented without the layer.
 /// </summary>
-static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer)
+static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer, BackendEmissive const * emissive)
 {
 	if (layer.Pixels != NULL) {
 		if (!Upload_Layer(layer)) {
 			return(false);
+		}
+		_LayerMask.Uploaded = false;
+		if (emissive != NULL && emissive->Layer != NULL) {
+			Upload_Mask(_LayerMask, emissive->Layer, emissive->LayerPitch, layer.Width, layer.Height);
 		}
 	} else if (!_LayerUploaded) {
 		return(false);
@@ -635,11 +1127,15 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		_KeyedFrameUploaded = true;
 		// The plain frame texture now holds an older picture than the screen shows.
 		_FrameUploaded = false;
+		// The keyed mask is made from the same pixels, so it keys out exactly where the keyed frame does.
+		if (_HdrActive) {
+			Upload_Keyed_Mask(pixels, pitch, emissive != NULL ? emissive->Frame : NULL, emissive != NULL ? emissive->FramePitch : 0);
+		}
 	} else if (!_KeyedFrameUploaded) {
 		return(false);
 	}
 
-	bgfx::setViewFrameBuffer(VIEW_PRESENT, BGFX_INVALID_HANDLE);
+	bgfx::setViewFrameBuffer(VIEW_PRESENT, Frame_Target());
 	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
 	bgfx::setViewMode(VIEW_PRESENT, bgfx::ViewMode::Sequential);
 	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
@@ -648,12 +1144,32 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 
 	// The map keeps whole pixels while it is drawn at its own size or larger, and is smoothed when shrunk.
 	bool const layer_shrunk = layer.DestWidth < _LayerWidth || layer.DestHeight < _LayerHeight;
-	if (!Submit_Quad(VIEW_PRESENT, _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
+	// The debug view shows the layer's mask alone, since it covers the same area as the frame.
+	// Masks follow the colour in the same order: the layer's mask, or zero, over the layer, then the
+	// keyed mask over the frame, which blends so that keyed pixels keep the layer's mask.
+	bool const masks = _HdrActive && emissive != NULL;
+	if (masks) {
+		Begin_Mask_View();
+		if (_LayerMask.Uploaded) {
+			Submit_Mask(_LayerMask.Handle, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, false);
+		} else {
+			Submit_Mask(_FrameTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, false, true);
+		}
+	}
+
+	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
+	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
+	}
+	if (layer_masked) {
+		return(true);
 	}
 
 	unsigned int const framesampler = clamp | (mode == BACKEND_SCALE_LINEAR ? 0 : BGFX_SAMPLER_POINT);
 	_FramePointSampled = (framesampler & BGFX_SAMPLER_POINT) != 0;
+	if (masks && _KeyedMaskUploaded) {
+		Submit_Mask(_KeyedMaskTexture, (float)destx, (float)desty, (float)destwidth, (float)destheight, true, false);
+	}
 	return(Submit_Quad(VIEW_PRESENT, _KeyedFrameTexture, (float)destx, (float)desty, (float)destwidth, (float)destheight, framesampler, false, true));
 }
 
@@ -674,7 +1190,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 /// <param name="layer">A picture to draw under the frame, or NULL for none.</param>
 /// <returns>bool; Was a frame submitted? When not, the window is unchanged and nothing should
 /// be drawn over it.</returns>
-bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer)
+bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer, BackendEmissive const * emissive)
 {
 	if (!_Initialized || !bgfx::isValid(_FrameTexture)) {
 		return(false);
@@ -692,9 +1208,24 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		return(false);
 	}
 
+	if (!Ensure_Targets()) {
+		return(false);
+	}
+
 	_FramePending = true;
 
-	if (layer != NULL && Present_With_Layer(pixels, pitch, destx, desty, destwidth, destheight, mode, *layer)) {
+	// A frame with no mask this present leaves the frame mask cleared, so the debug view shows nothing stale.
+	if (pixels != NULL) {
+		_FrameMask.Uploaded = false;
+		if (emissive != NULL && emissive->Frame != NULL) {
+			Upload_Mask(_FrameMask, emissive->Frame, emissive->FramePitch, _FrameWidth, _FrameHeight);
+		}
+	}
+
+	// Masks are drawn only for an HDR composite that has emissive planes this present.
+	bool const masks = _HdrActive && emissive != NULL;
+
+	if (layer != NULL && Present_With_Layer(pixels, pitch, destx, desty, destwidth, destheight, mode, *layer, emissive)) {
 		return(true);
 	}
 
@@ -719,7 +1250,9 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		}
 	}
 
-	bgfx::TextureHandle source = _FrameTexture;
+	// The debug view draws the frame mask where the picture would be.
+	bgfx::TextureHandle const picture = (_MaskView && _FrameMask.Uploaded) ? _FrameMask.Handle : _FrameTexture;
+	bgfx::TextureHandle source = picture;
 	unsigned int samplerflags = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 	bool from_prescale = false;
 
@@ -745,7 +1278,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 				bgfx::setViewFrameBuffer(VIEW_PRESCALE, _PrescaleTarget);
 				bgfx::setViewClear(VIEW_PRESCALE, BGFX_CLEAR_COLOR, 0x000000FF);
 				Set_View_Transform(VIEW_PRESCALE, _PrescaleWidth, _PrescaleHeight);
-				if (Submit_Quad(VIEW_PRESCALE, _FrameTexture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
+				if (Submit_Quad(VIEW_PRESCALE, picture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
 					source = bgfx::getTexture(_PrescaleTarget);
 					from_prescale = true;
 				}
@@ -755,14 +1288,31 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	// Clearing the whole window is what paints the bars beside a frame that does not
 	// share the window's shape.
-	bgfx::setViewFrameBuffer(VIEW_PRESENT, BGFX_INVALID_HANDLE);
+	bgfx::setViewFrameBuffer(VIEW_PRESENT, Frame_Target());
 	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
 	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
 
 	_FramePointSampled = (samplerflags & BGFX_SAMPLER_POINT) != 0;
 
 	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
-	return(Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv));
+	bool const shown = Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv);
+
+	// The frame mask covers the rectangle the picture covers. Without one, that rectangle is zeroed.
+	if (masks) {
+		Begin_Mask_View();
+		if (_FrameMask.Uploaded) {
+			Submit_Mask(_FrameMask.Handle, (float)destx, (float)desty, (float)destwidth, (float)destheight, false, false);
+		} else {
+			Submit_Mask(_FrameTexture, (float)destx, (float)desty, (float)destwidth, (float)destheight, false, true);
+		}
+	}
+	return(shown);
+}
+
+
+void Backend_Set_Emissive_View(bool masks)
+{
+	_MaskView = masks;
 }
 
 
@@ -779,15 +1329,74 @@ void Backend_End_Frame(void)
 	}
 
 	_FramePending = false;
-	bgfx::frame();
+
+	if (_ReadbackPending && _LastFrame >= _ReadbackFrame) {
+		Write_Capture();
+	}
+	if (_Routed) {
+		// The mask target is cleared on every HDR frame, even one with no masks, so the composite reads zero there.
+		if (_HdrActive) {
+			Begin_Mask_View();
+			bgfx::touch(VIEW_MASK);
+		}
+		Submit_Composite(VIEW_COMPOSITE, BGFX_INVALID_HANDLE, _HdrActive);
+	}
+	if (_ShotRequested && !_ReadbackPending) {
+		Start_Capture();
+	}
+	_MaskDrawn = false;
+	_LastFrame = bgfx::frame();
+}
+
+
+bool Backend_HDR_Active(void)
+{
+	return(_HdrActive);
+}
+
+
+void Backend_Set_HDR_Levels(float paperwhite, float peak)
+{
+	_PaperWhiteNits = paperwhite;
+	_PeakNits = peak;
+}
+
+
+void Backend_Set_Colour_Adjust(float const * matrix, float brightness, float gamma)
+{
+	for (int index = 0; index < 9; index++) {
+		_ColourAdjust.Matrix[index] = matrix[index];
+	}
+	_ColourAdjust.Brightness = brightness;
+	_ColourAdjust.Gamma = gamma;
+
+	if (!_Initialized) {
+		return;
+	}
+	Update_Routing();
+	Ensure_Targets();
+}
+
+
+void Backend_Set_View_Target(unsigned short view)
+{
+	bgfx::setViewFrameBuffer((bgfx::ViewId)view, Frame_Target());
 }
 
 
 void Backend_Request_Window_Capture(char const * filepath)
 {
-	if (_Initialized) {
-		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
+	if (!_Initialized) {
+		return;
 	}
+
+	// Under HDR10 the window holds PQ values, so the capture reads the SDR picture back instead of the window.
+	if (!_HdrActive) {
+		bgfx::requestScreenShot(BGFX_INVALID_HANDLE, filepath);
+		return;
+	}
+	_ReadbackPath = filepath;
+	_ShotRequested = true;
 }
 
 
