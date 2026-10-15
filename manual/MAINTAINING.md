@@ -17,6 +17,7 @@ For ordinary content work, start with [Authoring](AUTHORING.md).
 | Numeric scripting compatibility paths | `data/scripting-route-aliases.yaml` |
 | Direct controls and launch parser classification | `data/command-adapters.yaml` |
 | Exceptional INI read classification | `data/adjudications.yaml` and `data/ini-read-exclusions.yaml` |
+| Keys gamemd does not read | `tools/openyr_keys.yaml` decides each key-adding record; `tools/openyr_keys.py` writes `docs/OPENYR_KEYS.md` from it, `data/ini-keys.yaml` and `changes/` |
 | Site dependency graph | `site/package-lock.json` |
 
 Python and Astro consume the same schemas through adapters. Changing a schema
