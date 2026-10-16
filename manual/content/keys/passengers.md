@@ -19,10 +19,9 @@ A transport accepts a passenger only when all of these hold, tested in this orde
 
 1. this capacity is above `0`;
 2. the passenger is allied with the transport's owner;
-3. the passenger is not a vehicle, or the transport sets [`IsVehicleTransport=yes`](/keys/isvehicletransport/);
+3. the passenger is not a vehicle, or the transport does not set [`IsVehicleTransport=no`](/keys/isvehicletransport/);
 4. the passenger's `Size` is no larger than the transport's [`SizeLimit`](/keys/sizelimit/);
-5. the space already taken plus the passenger's `Size` is no more than this capacity;
-6. if the transport is a vehicle, it is not standing on a water or shore cell.
+5. the space already taken plus the passenger's `Size` is no more than this capacity.
 
 Any capacity above `0` also changes these behaviors:
 

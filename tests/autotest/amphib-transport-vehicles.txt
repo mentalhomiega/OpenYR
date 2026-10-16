@@ -1,0 +1,71 @@
+; Vehicles and infantry boarding a Soviet Amphibious Transport (SAPC: Passengers=12, SizeLimit=6, Hover, Naval=yes).
+; Three trials on Lostlake.mmx, each with a War Miner (SMIN), a Rhino (HTNK), a Size 3 tank (MGTK) and a rifleman (E1, Size 1).
+; The transport stands on land (78,45), on a beach cell (80,47, a shore piece) and on open water (82,45). Each trial's enter
+; order reaches every player object of its type that is outside, so objects that did not board are killed before the next
+; trial. Boarded objects are in limbo and are not killed. The terrain of each transport cell is logged.
+; Run from the repository root (the debug cheats are needed for DebugRevealMap):
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Map Lostlake.mmx -Country 8 -Script src-agent8/tests/autotest/amphib-transport-vehicles.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 900 -Filter "AUTOTEST|Exception"
+; Read each object's "where" line: limbo 1 means it boarded. The loading decision is UnitClass's radio CAN_LOAD case
+; (0x73758A) and DOCKING case (0x7377D8); neither tests the vehicle type or the terrain under the transport.
+; Observed on the final build: HTNK and SMIN board the beach and the water transport; MGTK and E1 stay outside those trials,
+; which is the open part of the radio handshake. In the land trial no passenger left its starting cell (Guard), so that
+; result is not a load result: the start cells may be cut off from the transport, and the layout has not been checked.
+30 command CenterBase
+35 reveal
+36 command DebugRevealMap
+40 terrain 78 45
+41 terrain 80 47
+42 terrain 82 45
+50 own SAPC 78 45
+51 own HTNK 74 44
+52 own SMIN 74 45
+53 own MGTK 74 46
+54 own E1 74 43
+300 enter HTNK 78 45
+301 enter SMIN 78 45
+302 enter MGTK 78 45
+303 enter E1 78 45
+450 where SAPC
+451 where HTNK
+452 where SMIN
+453 where MGTK
+454 where E1
+460 kill HTNK 1
+461 kill SMIN 1
+462 kill MGTK 1
+463 kill E1 1
+600 own SAPC 80 47
+601 own HTNK 78 46
+602 own SMIN 78 47
+603 own MGTK 79 44
+604 own E1 77 46
+620 terrain 80 47
+630 enter HTNK 80 47
+631 enter SMIN 80 47
+632 enter MGTK 80 47
+633 enter E1 80 47
+1000 where SAPC
+1001 where HTNK
+1002 where SMIN
+1003 where MGTK
+1004 where E1
+1010 kill HTNK 1
+1011 kill SMIN 1
+1012 kill MGTK 1
+1013 kill E1 1
+1150 own SAPC 82 45
+1151 own HTNK 80 44
+1152 own SMIN 80 43
+1153 own MGTK 81 44
+1154 own E1 81 43
+1170 terrain 82 45
+1180 enter HTNK 82 45
+1181 enter SMIN 82 45
+1182 enter MGTK 82 45
+1183 enter E1 82 45
+1500 where SAPC
+1501 where HTNK
+1502 where SMIN
+1503 where MGTK
+1504 where E1
+1600 quit

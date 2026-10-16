@@ -141,7 +141,7 @@ Only keys with an edge case are listed. Every other row behaves as its Check col
 - Enter cursors show over every transport. A healer shows the guard-area cursor on itself.
 - Auto-targeting skips objects of `MultiplayPassive` houses in multiplayer. A human-owned cloak-capable object on Guard takes no target on its own ([target selection](../../../manual/content/systems/target-selection.md)); other objects on Guard scan.
 - An `OmniCrusher=yes` vehicle drives at its attack target to crush it.
-- A passenger boards when the transport has room, allows its `Size` and is not a vehicle aboard a non-vehicle transport. There is no list by type.
+- A unit transport admits a passenger when the transport has room for its `Size` and the passenger's `Size` is no larger than `SizeLimit`. Vehicles and infantry are not separated by type, and no test looks at the terrain under the transport. The load check (the CAN_LOAD case of `UnitClass`'s radio message handler, 0x73758A) tests the ally, warp-out, building-on-cell, mind-control and size limits, and has no terrain test.
 - A type's `Prerequisite` and `PrerequisiteOverride` are the only build gates besides tech level and house. A drag-selection takes buildings that undeploy into a unit.
 - Every object cloaks in the same number of stages and with the same sound. Berserk objects halve their reload time. The Iron Curtain and the Force Shield last for the rules' durations on every target. A turret turns at the body's `ROT`.
 - A Psychedelic warhead sends non-allied vehicles, infantry and aircraft berserk unless the type is `ImmuneToPsionics`.

@@ -2829,6 +2829,10 @@ void Run(StepType const & step)
 			}
 		}
 		DebugString("AUTOTEST   water nearest %d,%d: %d,%d\n", from.X, from.Y, best.X, best.Y);
+	} else if (step.Command == "terrain") {
+		// terrain x y: logs the land type (LandType, 2 is water, 6 is beach), whether the cell is a shore piece and whether it holds any water.
+		CellClass const & cell = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
+		DebugString("AUTOTEST   terrain %d,%d land %d shore %d water %d\n", std::atoi(step.Argument.c_str()), step.X, (int)cell.Land_Type(), (int)cell.Is_Tile_Shore(), (int)cell.Is_Tile_With_Water());
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
 	} else if (step.Command == "enter") {
@@ -2843,6 +2847,17 @@ void Run(StepType const & step)
 			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Assign_Mission(MISSION_ENTER);
 				techno->Assign_Destination(building);
+			}
+		}
+	} else if (step.Command == "spy") {
+		// spy <TypeID> x y: the player's objects of that type get the capture order a click on an enemy structure gives
+		// (FootClass::Active_Click_With ACTION_CAPTURE, which sets the structure as the destination). Infiltration happens on arrival.
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		DebugString("AUTOTEST spy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
+		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
 			}
 		}
 	} else if (step.Command == "unload") {
@@ -2932,15 +2947,23 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
 		}
-	} else if (step.Command == "own" || step.Command == "neutral") {
+	} else if (step.Command == "own" || step.Command == "neutral" || step.Command == "enemy") {
 		// own <TypeID> x y: puts an object of the type, owned by the player, on that cell. neutral does the
-		// same for the house of the Civilian side.
+		// same for the house of the Civilian side. enemy does it for the first computer house with a
+		// construction yard that the player is not allied with.
 		HouseClass * owner = PlayerPtr;
 		if (step.Command == "neutral") {
 			owner = NULL;
 			SideType const civilian = SideClass::From_Name("Civilian");
 			for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
 				if (Houses[index]->Class->Side == civilian) {
+					owner = Houses[index];
+				}
+			}
+		} else if (step.Command == "enemy") {
+			owner = NULL;
+			for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+				if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0 && !PlayerPtr->Is_Ally(Houses[index])) {
 					owner = Houses[index];
 				}
 			}
