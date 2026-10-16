@@ -3234,13 +3234,6 @@ AbstractClass * FootClass::Greatest_Threat(ThreatType method, Coord const & coor
 	}
 
 	/*
-	**	If this object can cloak, then it won't select a target automatically.
-	*/
-	if (House->Is_Human_Player() && (Is_Allowed_To_Recloak() || Has_Ability(ABILITY_CLOAK)) && Mission == MISSION_GUARD) {
-		return(NULL);
-	}
-
-	/*
 	**	Perform the search for the target. A scan that names no kind finds nothing here; the
 	**	UnitClass and InfantryClass overrides add their weapons' kinds before this point.
 	*/
