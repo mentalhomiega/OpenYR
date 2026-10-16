@@ -217,3 +217,15 @@ site_exclusions:
     classification: duplicate
     canonical_key: ParentCountry
     reason: Follows the ParentCountry setting of the player's country before the countries exist, to choose the side whose archives load.
+
+  # Choices the skirmish and LAN screens write back to RA2MD.INI and read again when they open.
+  - path: code/netdlg2.cpp
+    function: Load_Lan_Map
+    keys: [Map]
+    classification: excluded
+    reason: The map a host last picked in a LAN lobby, which the lobby writes to [LAN] when a map is picked; it is remembered state, not a setting.
+  - path: code/ui/screens/skirmish/uiskirmishdlg.cpp
+    function: Load_Memory
+    keys: [Map, Units, Credits, Tech, Speed, Bases, Crates, Fog, Bridges, Redeploy, ShortGame, Engineer, SuperWeapons, BuildOffAlly]
+    classification: excluded
+    reason: The setup the skirmish screen remembers in [Skirmish], which the screen writes when it closes; the skirmish setup page owns it, and a launch file does not use it.
