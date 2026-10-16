@@ -262,7 +262,12 @@ Report:
   "WeaponTypeClass::Sound": {verdict: distinct}
 
 Scenario:
-  "CampaignClass::ScenarioName": {verdict: distinct}
+  "CampaignClass::None":
+    verdict: distinct
+    note: >-
+      read only when the key is present, and a value beginning with RA2-> (in
+      any letter case) has that prefix split off before the rest is kept as the
+      file name; any other prefix stays part of the name
   "ThemeControl::Scenario": {verdict: distinct}
 
 Side:
