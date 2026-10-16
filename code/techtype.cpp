@@ -99,7 +99,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MaxPassengers(0),
 	Size(1),
 	SizeLimit(1),
-	IsVehicleTransport(false),
+	IsVehicleTransport(true),
 	SightRange(0),
 	Cost(0),
 	Soylent(0),

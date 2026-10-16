@@ -1230,11 +1230,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 			if (Class->Max_Passengers() == 0 || from == NULL || !House->Is_Ally(from)) return(RADIO_STATIC);
 			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
 			if (Can_Fit_Passenger(from)) {
-				Cell cell = PositionCell;
-				CellClass * cellptr = &Map[cell];
-				if (!cellptr->Is_Tile_With_Water() && !cellptr->Is_Tile_Shore()) {
-					return(RADIO_ROGER);
-				}
+				return(RADIO_ROGER);
 			}
 			return(RADIO_NEGATIVE);
 
@@ -1277,9 +1273,10 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 		case RADIO_DOCKING:
 
 			/*
-			**	If this transport is moving, then always abort the docking request.
+			**	A moving transport on a move mission refuses the docking request. When it is not
+			**	on a move mission, the request is handled below (gamemd's DOCKING case, 0x7377D8).
 			*/
-			if (Locomotion->Is_Moving() || NavCom != NULL) {
+			if ((Locomotion->Is_Moving() || NavCom != NULL) && Mission == MISSION_MOVE) {
 				return(RADIO_NEGATIVE);
 			}
 

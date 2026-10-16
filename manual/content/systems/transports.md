@@ -26,7 +26,7 @@ A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero
 [MYAPC]                  ; a UnitType registered in [VehicleTypes]
 Passengers=5             ; hold space shared by every passenger aboard
 SizeLimit=2              ; the largest Size admitted to that hold
-IsVehicleTransport=yes   ; lets a vehicle board; infantry never needs it
+IsVehicleTransport=no    ; refuses vehicles; by default a vehicle boards by Size
 PipScale=Passengers      ; draws one pip per unit of space in the hold
 ```
 
@@ -35,11 +35,10 @@ PipScale=Passengers      ; draws one pip per unit of space in the hold
 When a player points infantry or a vehicle at an allied transport, the result is the first of these that applies:
 
 1. The transport is moving, or it is on a team whose type does not set [`Loadable=yes`](/keys/loadable/). The passenger gets the cannot-enter cursor.
-2. The passenger is a vehicle and the transport does not set [`IsVehicleTransport=yes`](/keys/isvehicletransport/). No enter order is offered, and the cursor shows what it would over any other allied object.
+2. The passenger is a vehicle and the transport sets [`IsVehicleTransport=no`](/keys/isvehicletransport/). No enter order is offered, and the cursor shows what it would over any other allied object.
 3. The passenger is under [mind control](/systems/mind-control/#going-into-transports-and-structures). The passenger gets the cannot-enter cursor.
 4. The passenger does not fit. Its [`Size`](/keys/size/) must be no larger than the transport's [`SizeLimit`](/keys/sizelimit/), and no larger than the space left in the hold. The space left is `Passengers` minus the `Size` of everyone already aboard. A passenger that fails either test gets the cannot-enter cursor.
-5. The transport is a vehicle standing on a water or shore cell. The passenger gets the cannot-enter cursor. An aircraft transport skips this test.
-6. Otherwise, the passenger can board.
+5. Otherwise, the passenger can board.
 
 A soldier with [`Mechanic=yes`](/keys/mechanic/) or [`OmniHealer=yes`](/keys/omnihealer/), pointed at a damaged transport, offers to repair it. Hold force-move to board the transport instead.
 
@@ -54,7 +53,7 @@ Two ways into a hold skip every test above:
 
 ## Boarding
 
-An ordered passenger moves onto the cell the transport stands on and is tested again when it arrives. A vehicle repeats the mind-control, `IsVehicleTransport` and size tests. An infantry passenger repeats the ally, mind-control and size tests, and at a vehicle transport also the water-or-shore test.
+An ordered passenger moves onto the cell the transport stands on and is tested again when it arrives. A vehicle repeats the mind-control, `IsVehicleTransport` and size tests. An infantry passenger repeats the ally, mind-control and size tests.
 
 Several passengers can be sent to a transport that has room for only one of them. Only those that still fit when they arrive get in.
 
