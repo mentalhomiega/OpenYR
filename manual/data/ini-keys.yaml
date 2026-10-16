@@ -2123,6 +2123,24 @@ Aircraft:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AircraftBodyPick:
+  key: AircraftBodyPick
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: AircraftBodyPick
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 AircraftCostBonus:
   key: AircraftCostBonus
   scopes:
@@ -2176,6 +2194,24 @@ AircraftGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+AircraftWaypointReload:
+  key: AircraftWaypointReload
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: AircraftWaypointReload
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AircraftWithPipGroupNumberOffset:
   key: AircraftWithPipGroupNumberOffset
   scopes:
@@ -2638,6 +2674,24 @@ AllowedToStartInMultiplayer:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+AllyColor:
+  key: AllyColor
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Relationship
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: PlayerColorAlly
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
 AllyParaDropInf:
   key: AllyParaDropInf
   scopes:
@@ -4897,7 +4951,7 @@ BitmapSystemFont:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'yes'
+      default_candidate: 'no'
       declared_in: OptionsClass
       member: BitmapSystemFont
       source: code/options.cpp
@@ -5770,6 +5824,24 @@ Bright:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+Brightness:
+  key: Brightness
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 BuildAA:
   key: BuildAA
   scopes:
@@ -8536,6 +8608,42 @@ Color:
       source: code/session.cpp
       guard: null
     level: SessionClass
+ColorBlindMode:
+  key: ColorBlindMode
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: 'Off'
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+ColorBlindStrength:
+  key: ColorBlindStrength
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 ColorList:
   key: ColorList
   scopes:
@@ -9934,6 +10042,24 @@ CursorScale:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+CustomColor:
+  key: CustomColor
+  scopes:
+  - applies_to:
+    - multiplayer settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: MultiPlayer
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: SessionClass
+      member: null
+      source: code/session.cpp
+      guard: null
+    level: SessionClass
 CustomPalette:
   key: CustomPalette
   scopes:
@@ -14064,6 +14190,55 @@ EliteWeapon9FLH:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Emissive:
+  key: Emissive
+  scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: ''
+      declared_in: AnimTypeClass
+      member: null
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: ''
+      declared_in: WeaponTypeClass
+      member: null
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+EmissiveDebugView:
+  key: EmissiveDebugView
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 End:
   key: End
   scopes:
@@ -14134,6 +14309,24 @@ EndStateAI:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+EnemyColor:
+  key: EnemyColor
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Relationship
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: PlayerColorEnemy
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
 EnemyHealth:
   key: EnemyHealth
   scopes:
@@ -15827,6 +16020,26 @@ Frame:
       source: code/session.cpp
       guard: null
     level: SessionClass
+FrameRateLimit:
+  key: FrameRateLimit
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: integer
+    status: reviewed
+    _provenance:
+      default_candidate: '-1'
+      declared_in: OptionsClass
+      member: FrameRateLimit
+      source: code/options.cpp
+      guard: null
+    note: read a second time at startup, before the window exists, from the same file and into the same
+      member
+    level: OptionsClass
 FreeAfterPlaying:
   key: FreeAfterPlaying
   scopes:
@@ -16263,6 +16476,24 @@ GameSpeedBias:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Gamma:
+  key: Gamma
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 GapGenerator:
   key: GapGenerator
   scopes:
@@ -16834,6 +17065,24 @@ Gunner:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+HDRHighlights:
+  key: HDRHighlights
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Enhanced
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 HDROutput:
   key: HDROutput
   scopes:
@@ -16975,6 +17224,24 @@ Handle:
       source: code/session.cpp
       guard: null
     level: SessionClass
+HangSeconds:
+  key: HangSeconds
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Debug
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HangWatchdog
+      member: seconds
+      source: code/hangwatch.cpp
+      guard: null
+    level: HangWatchdog
 HarvestRate:
   key: HarvestRate
   scopes:
@@ -19327,7 +19594,7 @@ InterfaceStyle:
     value_type: string
     status: generated
     _provenance:
-      default_candidate: Classic
+      default_candidate: Modern
       declared_in: OptionsClass
       member: null
       source: code/options.cpp
@@ -21363,6 +21630,24 @@ LaserOuterSpread:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+LastMission:
+  key: LastMission
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 LastTilesInSet:
   key: LastTilesInSet
   scopes:
@@ -22069,6 +22354,23 @@ LimpetFactor:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+LineMultiplier:
+  key: LineMultiplier
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: SuperWeaponTypeClass
+      member: LineMultiplier
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Loadable:
   key: Loadable
   scopes:
@@ -23250,6 +23552,24 @@ Medians:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+MenuBattle:
+  key: MenuBattle
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: MenuBattle
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 MenuStyle:
   key: MenuStyle
   scopes:
@@ -23263,6 +23583,24 @@ MenuStyle:
     status: generated
     _provenance:
       default_candidate: Modern
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+MenuTheme:
+  key: MenuTheme
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Random
       declared_in: OptionsClass
       member: null
       source: code/options.cpp
@@ -24244,6 +24582,24 @@ MutateExplosionWarhead:
       default_candidate: none
       declared_in: RulesClass
       member: MutateExplosionWarhead
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+MutateFriendly:
+  key: MutateFriendly
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: MutateFriendly
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -26443,6 +26799,24 @@ Overrides:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+OwnColor:
+  key: OwnColor
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Relationship
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: PlayerColorOwn
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
 Owner:
   key: Owner
   scopes:
@@ -27308,6 +27682,24 @@ PlayerAutoCrush:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+PlayerColors:
+  key: PlayerColors
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: Default
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 PlayerControl:
   key: PlayerControl
   scopes:
@@ -29746,6 +30138,20 @@ RandomRate:
 Range:
   key: Range
   scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: needs_review
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: SuperWeaponTypeClass
+      member: Range
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
   - applies_to: *id008
     file: rules.ini
     section:
@@ -31199,9 +31605,12 @@ Scenario:
     _provenance:
       default_candidate: null
       declared_in: CampaignClass
-      member: ScenarioName
+      member: null
       source: code/campaign.cpp
       guard: null
+    note: read only when the key is present, and a value beginning with RA2-> (in any letter case) has
+      that prefix split off before the rest is kept as the file name; any other prefix stays part of the
+      name
     level: CampaignClass
   - applies_to:
     - Themes
@@ -31447,6 +31856,24 @@ ScreenHeight:
       source: code/startup.cpp
       guard: null
     level: Startup
+ScreenShake:
+  key: ScreenShake
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: ScreenShake
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 ScreenWidth:
   key: ScreenWidth
   scopes:
@@ -32576,6 +33003,24 @@ ShouldUseCellDrawer:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ShowFPS:
+  key: ShowFPS
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Video
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: ShowFPS
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 ShowHidden:
   key: ShowHidden
   scopes:
@@ -37283,7 +37728,7 @@ SystemCursor:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: 'yes'
       declared_in: OptionsClass
       member: SystemCursor
       source: code/options.cpp

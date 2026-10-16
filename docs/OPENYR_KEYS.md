@@ -36,13 +36,13 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 100 entries
-- [Art](#art): 2 entries
-- [Client settings](#client-settings): 24 entries
+- [Rules](#rules): 107 entries
+- [Art](#art): 5 entries
+- [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
-- [Other game files](#other-game-files): 9 entries
+- [Other game files](#other-game-files): 10 entries
 - [SPAWN.INI](#spawnini): 64 entries
-- [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 30 entries
+- [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 31 entries
 
 ## Rules
 
@@ -116,6 +116,9 @@ Bounty.Value=200
 | [`InsigniaFrame`](../manual/content/keys/insigniaframe.md) | `-1` | The insignia frame an object type shows for all three ranks, or for one rank through the rank keys. | Ares, Phobos |
 | [`InsigniaFrames`](../manual/content/keys/insigniaframes.md) | `none` | The insignia frames of an object type's rookie, veteran and elite ranks, as a comma-separated list. | Ares, Phobos |
 | [`KeepAlive`](../manual/content/keys/keepalive.md) | Depends; see the page | Whether owning an object of this type keeps a player in a short game. | Ares |
+| [`MaxPips`](../manual/content/keys/maxpips.md) | Depends; see the page | How many pips a selected object's pip row holds. | OpenYR |
+| [`Mechanic`](../manual/content/keys/mechanic.md) | `no` | Turns a healing weapon away from infantry and onto vehicles. | OpenYR |
+| [`OmniHealer`](../manual/content/keys/omnihealer.md) | `no` | Lets a healing weapon mend infantry and vehicles alike. | OpenYR |
 | [`OpenTopped.DamageMultiplier`](../manual/content/keys/opentopped.damagemultiplier--aircrafttype.md) | The [CombatDamage] OpenToppedDamageMultiplier= value | `OpenTopped.DamageMultiplier` multiplies the damage of each shot a passenger fires from this `OpenTopped=yes` transport. | Phobos |
 | [`OpenTopped.RangeBonus`](../manual/content/keys/opentopped.rangebonus--aircrafttype.md) | The [CombatDamage] OpenToppedRangeBonus= value | `OpenTopped.RangeBonus` sets how many whole cells beyond its weapons' `Range` a passenger can fire from this `OpenTopped=yes` transport. | Phobos |
 | [`OpenTopped.WarpDistance`](../manual/content/keys/opentopped.warpdistance--aircrafttype.md) | The [CombatDamage] OpenToppedWarpDistance= value | `OpenTopped.WarpDistance` sets how far, in cells, a temporal firer riding this `OpenTopped=yes` transport can hold its target before it lets go. | Phobos |
@@ -163,6 +166,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`Totable`](../manual/content/keys/totable.md) | `yes` | Whether a carryall may pick this vehicle up. | OpenYR |
 | [`WreckReleasesPassengers`](../manual/content/keys/wreckreleasespassengers--unittype.md) | `yes` | A vehicle whose artwork sets `DeathFrames` above `0` becomes a wreck when it is destroyed, and stays on the map until its `MaxDeathCounter` passes. | OpenYR |
 
 ### WarheadType
@@ -182,6 +186,12 @@ Bounty.Value=200
 | [`AttachEffect.ROFMultiplier`](../manual/content/keys/attacheffect.rofmultiplier--warheadtype.md) | `1.0` | Multiplies the reload time of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.SpeedMultiplier`](../manual/content/keys/attacheffect.speedmultiplier--warheadtype.md) | `1.0` | Multiplies the movement speed of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.TemporalHidesAnim`](../manual/content/keys/attacheffect.temporalhidesanim--warheadtype.md) | `no` | Whether an attached effect's animation is hidden while a temporal weapon warps the object out. | Ares |
+
+### WeaponType
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`Emissive`](../manual/content/keys/emissive--weapontype.md) | Computed; see the page | `Emissive` on a weapon sets the strength of the beam or electric bolt the weapon draws. | OpenYR |
 
 ### [AI]
 
@@ -218,11 +228,13 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AircraftWaypointReload`](../manual/content/keys/aircraftwaypointreload--global-rules.md) | `yes` | Lets an armed aircraft with limited ammunition take planned orders in planning mode, and resume them after it rearms at a dock. | OpenYR |
 | [`BountyEnablers`](../manual/content/keys/bountyenablers.md) | `none` | The structures a house must own before it collects any bounty. | Ares |
 | [`ChronoInfantryCrush`](../manual/content/keys/chronoinfantrycrush.md) | `yes` | Sets whether a chronoshifted infantryman destroys a vehicle or aircraft on its landing cell, or dies instead. | Ares |
 | [`EnemyInsignia`](../manual/content/keys/enemyinsignia.md) | `yes` | Whether players not allied with an object's owner see its rank insignia, unless the type decides. | Ares, Phobos |
 | [`LargeSidebarStrips`](../manual/content/keys/largesidebarstrips--global-rules.md) | `no` | Lets each sidebar strip hold 225 cameos instead of 75. | OpenYR |
 | [`MultipleFactoryCap`](../manual/content/keys/multiplefactorycap--global-rules.md) | `0` | The most factories of one category that count toward the MultipleFactory build-time adjustment. | OpenTS |
+| [`MutateFriendly`](../manual/content/keys/mutatefriendly.md) | `yes` | Whether the genetic mutator also mutates infantry of the firing house and its allies. | OpenYR |
 | [`RecheckPrerequisites`](../manual/content/keys/recheckprerequisites--global-rules.md) | `yes` | Removes a type's sidebar cameo and cancels its production once the house no longer meets the type's prerequisites, tech level or ownership rules. | OpenTS |
 | [`SelfHealCap`](../manual/content/keys/selfhealcap.md) | `-1` | The share of maximum strength at which self-healing stops. | OpenTS |
 | [`SelfHealRate`](../manual/content/keys/selfhealrate.md) | `-1` | The interval between self-healing ticks. | OpenTS |
@@ -235,12 +247,20 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`CustomPalette`](../manual/content/keys/custompalette.md) | none; the animation is drawn through the shared animation palette | Names a palette file that the animation is drawn through instead of the shared animation palette. | Ares |
+| [`Emissive`](../manual/content/keys/emissive--animtype.md) | Computed; see the page | `Emissive` sets how strongly the animation's picture can rise above paper white on HDR output. | OpenYR |
 
 ### Object types
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`CameoPCX`](../manual/content/keys/cameopcx.md) | (none) | The PCX picture drawn as an object's sidebar cameo instead of its `Cameo=` shape. | Ares |
+
+### UnitType
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`StartTurretFrame`](../manual/content/keys/startturretframe.md) | 8 × WalkFrames, counted from frame 0, whatever Facings holds | The frame a shape-drawn vehicle's turret artwork begins at. | OpenYR |
+| [`TurretFacings`](../manual/content/keys/turretfacings.md) | `32` | The number of facings a shape-drawn vehicle's turret artwork is cut into. | OpenYR |
 
 ## Client settings
 
@@ -259,11 +279,23 @@ RenderFrameRate=60
 SystemCursor=no
 ```
 
+### [Debug]
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`HangSeconds`](../manual/content/keys/hangseconds.md) | `5` | How long the main thread may go without handling messages before the game reports a hang. Zero turns the check off. | OpenYR |
+
 ### [Intro]
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`PlayIntro`](../manual/content/keys/playintro.md) | `yes` | Controls the one-time `EVA.VQA` startup movie. | OpenTS |
+
+### [MultiPlayer]
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`CustomColor`](../manual/content/keys/customcolor--multiplayer-settings.md) | `0` | The value is a free color packed into one number: bit 24 marks it as a free color, bits 16 to 23 hold the hue, bits 8 to 15 the saturation and bits 0 to 7 the value. | OpenYR |
 
 ### [Options]
 
@@ -271,11 +303,12 @@ SystemCursor=no
 | --- | --- | --- | --- |
 | [`AltToRally`](../manual/content/keys/alttorally.md) | `no` | Makes the force-move key set a factory's rally point and the plain click move the structure. | OpenTS |
 | [`AutoSaveInterval`](../manual/content/keys/autosaveinterval.md) | `10800` | How many frames pass between one automatic save and the next in a game started from the menu, or zero for none. | OpenTS |
-| [`BitmapSystemFont`](../manual/content/keys/bitmapsystemfont--client-settings.md) | `yes` | `BitmapSystemFont=yes` draws the lists, text boxes, tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the ... | OpenTS |
+| [`BitmapSystemFont`](../manual/content/keys/bitmapsystemfont--client-settings.md) | `no` | `BitmapSystemFont=yes` draws the lists, text boxes, tooltips, hotkey fields and group headings of the game's screens in the fixed-size bitmap face that Windows ships, the face the ... | OpenTS |
 | [`DebugMode`](../manual/content/keys/debugmode--client-settings.md) | `no` | `DebugMode=yes` turns on the debug cheat commands for single-player games, which are campaign and skirmish games. | OpenYR |
-| [`InterfaceStyle`](../manual/content/keys/interfacestyle--client-settings.md) | `Classic` | `InterfaceStyle=` chooses how the in-game interface is laid out. | OpenYR |
+| [`InterfaceStyle`](../manual/content/keys/interfacestyle--client-settings.md) | `Modern` | `InterfaceStyle=` chooses how the in-game interface is laid out. | OpenYR |
 | [`MenuStyle`](../manual/content/keys/menustyle--client-settings.md) | `Modern` | `MenuStyle=` chooses how the menus look. | OpenYR |
 | [`Mods`](../manual/content/keys/mods--client-settings.md) | The list in `Mods=` under `[Paths]` in `OPENTS.INI`, or no mods when that file gives none | The mods this player starts the game with, in the order they are read. | OpenYR |
+| [`ScreenShake`](../manual/content/keys/screenshake--client-settings.md) | `yes` | `ScreenShake=yes` shakes the picture when a warhead or an ion blast detonates. | OpenYR |
 | [`SidebarRows`](../manual/content/keys/sidebarrows--client-settings.md) | `4` | `SidebarRows=` sets how many rows of cameos the modern build panel shows at once. | OpenYR |
 | [`SidebarSorting`](../manual/content/keys/sidebarsorting.md) | `yes` | Keeps each sidebar strip in a fixed order that depends only on the rules. | OpenTS |
 | [`SimulateWhileUnfocused`](../manual/content/keys/simulatewhileunfocused.md) | `no` | Keeps a campaign or skirmish running while another program has the focus. | OpenTS |
@@ -286,15 +319,26 @@ SystemCursor=no
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`Brightness`](../manual/content/keys/brightness--client-settings.md) | `100` | `Brightness=` sets the brightness of the picture as a whole number of percent. | OpenYR |
+| [`ColorBlindMode`](../manual/content/keys/colorblindmode--client-settings.md) | `Off` | `ColorBlindMode=` chooses a colour-blind correction for the picture the game shows. | OpenYR |
+| [`ColorBlindStrength`](../manual/content/keys/colorblindstrength--client-settings.md) | `100` | `ColorBlindStrength=` sets how much of the `ColorBlindMode` correction applies, as a whole number of percent. | OpenYR |
 | [`CursorScale`](../manual/content/keys/cursorscale.md) | `0` | How many times larger than its artwork the mouse pointer is drawn. | OpenTS |
+| [`EmissiveDebugView`](../manual/content/keys/emissivedebugview.md) | `no` | Shows the emissive masks in place of the art, even without HDR output. | OpenYR |
+| [`FrameRateLimit`](../manual/content/keys/frameratelimit.md) | `-1` | The most presents per second the game makes. Zero is unlimited. | OpenYR |
 | [`Fullscreen`](../manual/content/keys/fullscreen.md) | `yes` | Whether the game covers the whole screen instead of running in a resizable window. | OpenTS |
+| [`Gamma`](../manual/content/keys/gamma--client-settings.md) | `1.0` | `Gamma=` sets the exponent of the curve the picture's light follows, as a number. | OpenYR |
+| [`HDRHighlights`](../manual/content/keys/hdrhighlights.md) | `Enhanced` | Whether light sources may be drawn brighter than paper white on HDR output. | OpenYR |
+| [`HDROutput`](../manual/content/keys/hdroutput--client-settings.md) | `Automatic` | `HDROutput=` chooses whether the game sends its picture to the display as HDR10. | OpenYR |
+| [`HDRPaperWhite`](../manual/content/keys/hdrpaperwhite--client-settings.md) | `Auto` | `HDRPaperWhite=` sets the brightness, in nits, at which SDR white is drawn when HDR output is on. | OpenYR |
+| [`HDRPeakBrightness`](../manual/content/keys/hdrpeakbrightness--client-settings.md) | `Auto` | `HDRPeakBrightness=` sets the highest brightness, in nits, that HDR output draws. | OpenYR |
 | [`IntegerScaling`](../manual/content/keys/integerscaling.md) | `no` | Whether the picture is only ever enlarged by whole multiples. | OpenTS |
 | [`InterfaceScale`](../manual/content/keys/interfacescale--client-settings.md) | `Auto` | `InterfaceScale=` sets how many times larger than its original size the in-game interface is drawn: the sidebar and its cameos, the radar, the top tabs, the command bar, tooltips ... | OpenYR |
 | [`Renderer`](../manual/content/keys/renderer.md) | `0` | Which graphics interface the game draws through, as a number. | OpenTS |
-| [`RenderFrameRate`](../manual/content/keys/renderframerate.md) | `0` | The most extra pictures per second the game draws between game frames. | OpenYR |
+| [`RenderFrameRate`](../manual/content/keys/renderframerate.md) | `-1` | The most extra pictures per second the game draws between game frames. | OpenYR |
 | [`ScaleMode`](../manual/content/keys/scalemode.md) | `PixelArt` | How the picture is filtered when it is scaled into the window. | OpenTS |
-| [`SystemCursor`](../manual/content/keys/systemcursor--client-settings.md) | `no` | `SystemCursor=yes` shows the Windows mouse pointer wherever the game would show its green arrow: over its menus and dialogs, and wherever no battlefield pointer is up. | OpenTS |
-| [`VSync`](../manual/content/keys/vsync.md) | `no` | Whether the renderer waits for the display's refresh before showing a finished frame. | OpenTS |
+| [`ShowFPS`](../manual/content/keys/showfps--client-settings.md) | `no` | `ShowFPS=yes` draws a frame count in the top-left corner of the game view. | OpenYR |
+| [`SystemCursor`](../manual/content/keys/systemcursor--client-settings.md) | `yes` | `SystemCursor=yes` shows the Windows mouse pointer wherever the game would show its green arrow: over its menus and dialogs, and wherever no battlefield pointer is up. | OpenTS |
+| [`VSync`](../manual/content/keys/vsync.md) | `yes` | Whether the renderer waits for the display's refresh before showing a finished frame. | OpenTS |
 | [`WindowHeight`](../manual/content/keys/windowheight.md) | `-1` | The height of the drawable area of the game window, in pixels. | OpenTS |
 | [`WindowWidth`](../manual/content/keys/windowwidth.md) | `-1` | The width of the drawable area of the game window, in pixels. | OpenTS |
 
@@ -348,6 +392,7 @@ SystemCursor=no
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`RandomMap`](../manual/content/keys/randommap.md) | `no` | Builds the scenario's map with the random map generator instead of reading it from the file. | OpenTS |
+| [`UseMPAIBaseNodes`](../manual/content/keys/usempaibasenodes.md) | `no` | Whether the computer houses of a skirmish or multiplayer game follow the base plans the map wrote for their start positions. | OpenYR |
 
 ### Map and scenario files: [SpecialFlags]
 
@@ -486,6 +531,7 @@ Check=yes
 | [`[Files] RulesExpansion`](../manual/content/formats/opents-ini.md#the-files-it-reads) | (none) | The expansion's copy of the matching base file, read after it. |
 | [`[Files] Art`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `ARTMD.INI` | The artwork definitions. |
 | [`[Files] ArtExpansion`](../manual/content/formats/opents-ini.md#the-files-it-reads) | (none) | The expansion's copy of the matching base file, read after it. |
+| [`[Files] RA2Art`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `ART.INI` | Red Alert 2's artwork definitions, whose movie list its campaigns' missions index. |
 | [`[Files] AI`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `AIMD.INI` | The computer player's data. |
 | [`[Files] AIExpansion`](../manual/content/formats/opents-ini.md#the-files-it-reads) | (none) | The expansion's copy of the matching base file, read after it. |
 | [`[Files] Sound`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `SOUNDMD.INI` | The sound registry. |

@@ -5,7 +5,7 @@ label: Brightness
 see_also: [Gamma, ColorBlindMode, HDRPaperWhite]
 when_omitted:
   kind: value
-  value: 100
+  value: "100"
 ---
 
 `Brightness=` sets the brightness of the picture as a whole number of percent. It is written in `[Video]`. `100` leaves the picture unchanged. A number below `50` clamps to `50`, and a number above `200` clamps to `200`.

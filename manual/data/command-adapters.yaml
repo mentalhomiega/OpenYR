@@ -225,6 +225,17 @@ fixed_controls:
       - { file: code/mpscore.cpp, function: MultiScore::User_Input, expression: VK_LBUTTON }
       - { file: code/mpscore.cpp, function: MultiScore::User_Input, expression: VK_ESCAPE }
       - { file: code/mpscore.cpp, function: MultiScore::User_Input, expression: VK_SPACE }
+  - id: fixed:campaign-results-continue
+    title: Dismiss campaign results
+    description: Closes the campaign results screen after its prompt appears.
+    audience: player
+    bindings: [Left mouse button, Escape, Space]
+    context: Campaign results screen after a won mission
+    availability: *all
+    sites:
+      - { file: code/score.cpp, function: ScoreClass::Wait_For_Click, expression: VK_LBUTTON }
+      - { file: code/score.cpp, function: ScoreClass::Wait_For_Click, expression: VK_ESCAPE }
+      - { file: code/score.cpp, function: ScoreClass::Wait_For_Click, expression: VK_SPACE }
   - id: fixed:main-menu-version
     title: Open version information
     description: Opens the version dialog from the classic main menu.
@@ -352,13 +363,11 @@ fixed_exclusions:
       - { file: code/init.cpp, function: Main_Menu_Keys, expression: KN_RLSE_BIT }
     reason: Filters release events before the classic main-menu cheat handler.
   - sites:
-      - { file: code/init.cpp, function: Init_Commands, expression: KN_DELETE }
-      - { file: code/init.cpp, function: Init_Commands, expression: KN_ESC }
-    reason: Initialization removes conflicting mappings before assigning the two forced bindings.
-  - sites:
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_LBUTTON }
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_MBUTTON }
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_RBUTTON }
+      - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_XBUTTON1 }
+      - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_XBUTTON2 }
     reason: Keyboard-backend classification of mouse virtual keys.
   - sites:
       - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_LBUTTON }
@@ -470,6 +479,23 @@ fixed_exclusions:
     reason: UI shell modifier keys kept out of press ownership, not separate controls.
   - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
     reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
+  - sites:
+      - { file: code/init.cpp, function: Apply_Hotkeys, expression: KN_NONE }
+      - { file: code/init.cpp, function: Grid_Modifier_Held, expression: KN_NONE }
+    reason: Empty-slot sentinel. An unbound first slot takes the second slot's key, and an unbound grid modifier is never held.
+  - site: { file: code/init.cpp, function: Hotkey_Wheel, expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
+    reason: Selects the wheel step's key for its binding lookup; the command it runs is the control.
+  - site: { file: code/ui/screens/keyboard/uikeyboard.cpp, function: '<file-scope>', expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
+    reason: The binding dialog turns a wheel step into the key it captures; it dispatches no command.
+  - sites:
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_LBUTTON }
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_RBUTTON }
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_MBUTTON }
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_XBUTTON1 }
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_XBUTTON2 }
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_WHEEL_UP }
+      - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_WHEEL_DOWN }
+    reason: Names a mouse key for the binding list; it dispatches no command.
 
 launch_options:
   - id: launch:help
