@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-[`SystemCursor`](/keys/systemcursor--client-settings/) now defaults to `yes`, so menus and dialogs show the Windows mouse pointer. The battlefield pointers stay the game's own. A settings file that already sets `SystemCursor` keeps its value.
+[`SystemCursor`](/keys/systemcursor/#scope-client-settings) now defaults to `yes`, so menus and dialogs show the Windows mouse pointer. The battlefield pointers stay the game's own. A settings file that already sets `SystemCursor` keeps its value.

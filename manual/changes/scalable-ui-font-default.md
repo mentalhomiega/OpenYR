@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-[`BitmapSystemFont`](/keys/bitmapsystemfont--client-settings/) now defaults to `no`, so lists, text boxes and tooltips draw in the scalable face. A settings file that sets `BitmapSystemFont` keeps its value. The Display page has a Pixel-perfect UI font switch that selects the bitmap face.
+[`BitmapSystemFont`](/keys/bitmapsystemfont/#scope-client-settings) now defaults to `no`, so lists, text boxes and tooltips draw in the scalable face. A settings file that sets `BitmapSystemFont` keeps its value. The Display page has a Pixel-perfect UI font switch that selects the bitmap face.

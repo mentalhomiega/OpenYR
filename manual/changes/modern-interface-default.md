@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-[`InterfaceStyle`](/keys/interfacestyle--client-settings/) now defaults to `Modern`, so the map fills the screen with the panel in the top-right corner. A settings file that names `Classic` keeps the classic sidebar, and the display options screen still switches between the two.
+[`InterfaceStyle`](/keys/interfacestyle/#scope-client-settings) now defaults to `Modern`, so the map fills the screen with the panel in the top-right corner. A settings file that names `Classic` keeps the classic sidebar, and the display options screen still switches between the two.
