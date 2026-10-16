@@ -229,6 +229,13 @@ void Test_Sources_And_Config(void)
 	Check(launcher::Ini_Value(ini, L"Paths", L"DataDirectory", value) && value == L"C:\\First", "the first match wins, and a comment line is skipped");
 	Check(launcher::Ini_Value(ini, L"PATHS", L"Mods", value) && value == L"Mods\\a=b", "section and key names ignore case, and a value may hold '='");
 	Check(!launcher::Ini_Value(ini, L"Paths", L"Missing", value), "a missing key reports false");
+
+	std::wstring const commented = L"[Paths] ; where the game lives\r\nDataDirectory=C:\\Games\\RA2 ; my copy\r\n[Update]\r\nCheck=no ; skip the update question\r\nFeedURL=C:\\feed.json;\r\n";
+	launcher::ConfigType const trailing = launcher::Read_Config(commented);
+	Check(trailing.DataDirectory == L"C:\\Games\\RA2", "a comment after a value is not part of the value, as the game reads it");
+	Check(!trailing.Check, "Check=no with a comment after it turns checking off");
+	Check(trailing.FeedUrl == L"C:\\feed.json", "a ';' that ends a value leaves the value");
+	Check(launcher::Ini_Value(commented, L"paths", L"DataDirectory", value) && value == L"C:\\Games\\RA2", "a comment after a section heading leaves the section");
 }
 
 

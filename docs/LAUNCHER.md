@@ -24,7 +24,7 @@ The question reads "Beta 23 is available (you have Beta 22). Update now?" with t
 | `[Paths] DataDirectory=` | set by the setup | The Yuri's Revenge folder. The update passes it to the setup. |
 | `[Paths] UserDirectory=` | `user` | The folder for settings, saves and the launcher log. A relative path is taken from the install folder. |
 
-The setup keeps every other line of `OPENTS.INI` when it installs or updates, so these keys survive an update.
+The launcher reads comments as the game does: a `;` ends the value, so `Check=no ; skip` reads as `no`. When a key appears twice, the launcher takes the first. The setup keeps every other line of `OPENTS.INI` when it installs or updates, so these keys survive an update.
 
 ## Switches
 

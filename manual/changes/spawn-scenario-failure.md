@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-A game started with `-SPAWN` now exits after it shows the error for a scenario it cannot read. It no longer goes on to start the match on an empty map.
+A game started with `-SPAWN` now exits as soon as it shows the error for a scenario it cannot read. It no longer starts the menu music again before it exits.

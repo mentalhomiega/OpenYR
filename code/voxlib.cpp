@@ -12,6 +12,7 @@
 #include "voxlib.h"
 
 #include "voxdrsys.h"
+#include "voxshade.h"
 #include "wwfile.h"
 
 #include "emissive.h"
@@ -2385,14 +2386,13 @@ void Precalculate_Normal_Lookup(Vector3 const & light, int normal_type, float sh
 		float diffuse = normal * light;
 
 		/*
-		 * Scale to a palette row and truncate; the row is clamped before the cast so a
-		 * negative or oversized scale cannot index outside the lookup.
+		 * Scale to a palette row and truncate; the row is held inside the lookup so a
+		 * negative, oversized or non-numeric scale cannot index outside it.
 		 */
 		if (diffuse < 0.0) {
 			VoxelNormalTranslateTable[i] = 0;
 		} else {
-			double row = std::clamp((double)diffuse * shade_scale, 0.0, (double)(MAX_PALETTE_LOOKUP_ENTRIES - 1));
-			VoxelNormalTranslateTable[i] = (unsigned char)row;
+			VoxelNormalTranslateTable[i] = Voxel_Shade_Row(diffuse, shade_scale, MAX_PALETTE_LOOKUP_ENTRIES);
 		}
 	}
 
@@ -2440,10 +2440,7 @@ void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, f
 		/*
 		 * Specular boost (empirical) - the formula adjusts how specular highlights behave
 		 */
-		float specular = 0.0f;
-		if (specular_strength > 0.0f) {
-			specular = halfway_dot / (specular_strength - halfway_dot * specular_strength + halfway_dot);
-		}
+		float specular = Voxel_Specular_Term(halfway_dot, specular_strength);
 
 		/*
 		 * Clamp both values to [0, inf)
@@ -2462,8 +2459,7 @@ void Precalculate_Normal_Lookup(Vector3 const & light, Vector3 const & viewer, f
 		 * load-bearing: specular has no natural bound, and the drawers index
 		 * this row unchecked.
 		 */
-		double row = std::clamp((double)brightness * shade_scale, 0.0, (double)(MAX_PALETTE_LOOKUP_ENTRIES - 1));
-		VoxelNormalTranslateTable[i] = (unsigned char)row;
+		VoxelNormalTranslateTable[i] = Voxel_Shade_Row(brightness, shade_scale, MAX_PALETTE_LOOKUP_ENTRIES);
 	}
 
 	VoxelNormalTranslateTable[VOXEL_PALETTE_SIZE - 1] = VOXEL_PALETTE_LOOKUP_NEUTRAL;
