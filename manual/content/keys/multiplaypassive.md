@@ -14,6 +14,8 @@ MultiplayPassive=true
 
 In any kind of game, a computer-controlled house of a passive country never chooses attacks and never queues buildings, vehicles, infantry or aircraft. It raises teams from AI triggers only after [its AI-trigger switch](/systems/ai-team-production/#when-the-pass-runs) is turned on, for example by a map trigger action.
 
+The objects of a passive country never look, so they reveal no ground.
+
 The structures of a passive country's houses never pay [`ProduceCashAmount`](/keys/producecashamount/) income, whoever controls the house.
 
 In skirmish and multiplayer games, a passive house is treated as scenery, not as an opponent:
@@ -23,7 +25,7 @@ In skirmish and multiplayer games, a passive house is treated as scenery, not as
 - A computer house never picks it as the nearest enemy, but damage from its objects can still make it that house's enemy.
 - No house can break an alliance with it or declare war on it.
 - Automatic target scans reject its objects unless the [launch file](/formats/spawn-ini/) sets `AttackNeutralUnits=`.
-- Its objects never collect crates and do not reveal the map.
+- Its objects never collect crates.
 - Its structures are never marked for automatic repair.
 - The score screen and the starting-unit generator skip it.
 

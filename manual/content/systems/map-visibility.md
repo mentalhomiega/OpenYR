@@ -156,7 +156,7 @@ With `RevealByHeight=no`, a vehicle or infantryman that has moved one cell resca
 
 A vehicle, infantryman or structure can look only after it has been inside the playable area, the region [`LocalSize`](/keys/localsize/) declares inside the playfield. It qualifies when it is placed there or reaches the center of a cell there, and it keeps qualifying when it moves out. It loses the qualification if it is placed outside the playable area, for example by leaving a transport there. When the playable area changes, the game rechecks every object against the cell it stands on, so an object the new area leaves outside also loses it.
 
-Outside a campaign, the vehicles, infantry and structures of a house with [`MultiplayPassive=yes`](/keys/multiplaypassive/) never look.
+The vehicles, infantry and structures of a house with [`MultiplayPassive=yes`](/keys/multiplaypassive/) never look, in a campaign or outside one.
 
 Regular looks happen as follows:
 
@@ -177,7 +177,7 @@ An object also looks at once when:
 - it is a vehicle, infantryman or aircraft, and the playable area grows to include it; in a campaign, only a player-controlled house's objects look then;
 - a human player [discovers](#what-the-other-houses-know) it.
 
-In a campaign, only the player's own objects make the discovery look. Outside a campaign, an object looks each time a human player discovers it. The discovery look is an ordinary look: it uncovers ground for the object's owner and the houses that share the owner's view, and the player who discovered the object gains nothing from it without that view. Outside a campaign, every human player discovers each object as it is placed, so a structure an ally places uncovers the ground around it at once while `AllyReveal=yes`.
+In a campaign, only the player's own objects make the discovery look. Outside a campaign, an object looks each time a human player discovers it. The discovery look is an ordinary look: it uncovers ground for the object's owner and the houses that share the owner's view, and the player who discovered the object gains nothing from it without that view. Outside a campaign, every human player discovers each object as it is placed, so a structure an ally places uncovers the ground around it at once while `AllyReveal=yes`, unless its country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/).
 
 Terrain objects and animations never look. Only vehicles, infantry, aircraft and structures do.
 
@@ -192,7 +192,7 @@ A human player's aircraft that fires reveals [`AttackingAircraftSightRange`](/ke
 
 Both firing reveals uncover ground for the house they are made for and for the houses that share its view. In a campaign, both reveals also apply to the other player-controlled houses, and their tests read the player's own shroud, fog and discoveries.
 
-When a house makes another its ally while `AllyReveal=yes`, every object of the house that made the alliance looks at once, so the new ally sees what those objects see. Outside a campaign, the objects of a [passive house](/keys/multiplaypassive/) never look, so its alliances reveal nothing.
+When a house makes another its ally while `AllyReveal=yes`, every object of the house that made the alliance looks at once, so the new ally sees what those objects see. The objects of a [passive house](/keys/multiplaypassive/) never look, so its alliances reveal nothing.
 
 A spy that enters a [`Radar=yes`](/keys/radar/) structure shrouds the map again for the structure's owner, as [Infiltrating it](/systems/capture/#infiltrating-it) describes.
 
@@ -257,12 +257,12 @@ Nothing is fogged for an observer or for a defeated player outside coach mode, a
 
 Two regrowth passes cover ground again, one for the shroud and one for the fog. Each covers ground for every house except the house of an observer and a house defeated outside coach mode, which keep [the whole map](/systems/observers/#the-whole-map).
 
-Both passes leave uncovered the ground that watching objects can still see. Outside a campaign, every vehicle, infantryman and structure on the ground is a watching object, and it keeps ground uncovered for its owner and for the houses that share the owner's view. Aircraft in flight do not watch.
+Both passes leave uncovered the ground that watching objects can still see. Outside a campaign, every vehicle, infantryman and structure on the ground is a watching object, except those of a house with [`MultiplayPassive=yes`](/keys/multiplaypassive/). Each one keeps ground uncovered for its owner and for the houses that share the owner's view. Aircraft in flight do not watch.
 
 In a campaign, the watching objects are:
 
 - the objects on the ground of player-controlled houses that the player has discovered;
-- while `AllyReveal=yes`, the structures of computer houses allied to the player.
+- while `AllyReveal=yes`, the structures of computer houses allied to the player, except those of a house with [`MultiplayPassive=yes`](/keys/multiplaypassive/).
 
 An allied computer house's vehicles and infantry are not watching objects in a campaign. They uncover ground only when they move, so a mission can keep the ground around them hidden until the player reaches it.
 
@@ -280,7 +280,7 @@ While fog of war is on and [`FogRate`](/keys/fograte/) is not zero, a fog pass r
 
 Each pass works on the edge of the fog the way the shroud pass works on the edge of the shroud. It fogs the edge cells that no watching object can see, so the fog also creeps inward one cell per pass. The watching objects only keep their cells clear; they do not uncover new ground.
 
-The exception is an allied computer structure in a campaign while `AllyReveal=yes`. Its look during the pass is an ordinary one, so each fog pass lifts both covers around it.
+The exception is a structure of an allied computer house in a campaign while `AllyReveal=yes`, unless its country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/). Its look during the pass is an ordinary one, so each fog pass lifts both covers around it.
 
 ### Re-shrouding everything
 
