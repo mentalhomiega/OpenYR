@@ -89,6 +89,9 @@ struct LocationType
 };
 
 // What an install at a folder holds, from its record. Present is false when there is no record.
+// Files holds only names that stay inside the install folder and are not the player's own files
+// (user\, Debug\, OPENTS.INI and the record). An update and an uninstall delete just those; any
+// other line of the record's [Files] list is kept in Refused and left alone.
 struct InstalledType
 {
 	bool Present = false;
@@ -96,6 +99,7 @@ struct InstalledType
 	std::wstring Commit;
 	std::wstring Yuri;
 	std::vector<std::wstring> Files;
+	std::vector<std::wstring> Refused;
 };
 
 InstalledType Read_Installed(std::wstring const & folder);

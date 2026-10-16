@@ -30,6 +30,7 @@
  * Exit codes: 0 when the launcher is done, 1 when the update copy failed.
  */
 
+#include "dll_search.h"
 #include "launcher_core.h"
 #include "launcher_system.h"
 
@@ -315,6 +316,11 @@ int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::
 		return Start_Game(options, folder, log);
 	}
 
+	if (!launcher::Asset_Sources_Allowed(feed, update, error)) {
+		Say(options, log, L"Update check skipped: " + error);
+		return Start_Game(options, folder, log);
+	}
+
 	if (config.DataDirectory.empty()) {
 		Say(options, log, L"OPENTS.INI names no Yuri's Revenge folder, so the update is not offered.");
 		return Start_Game(options, folder, log);
@@ -482,6 +488,8 @@ int Run_Update(OptionsType const & options)
 
 int APIENTRY wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
+	dll_search::Restrict_Dll_Search();
+
 	INITCOMMONCONTROLSEX controls{sizeof(controls), ICC_PROGRESS_CLASS | ICC_STANDARD_CLASSES};
 	InitCommonControlsEx(&controls);
 

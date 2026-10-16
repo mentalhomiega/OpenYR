@@ -11,6 +11,7 @@ add_library(OpenYRLauncherCore STATIC
 )
 target_include_directories(OpenYRLauncherCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_features(OpenYRLauncherCore PUBLIC cxx_std_20)
+target_link_libraries(OpenYRLauncherCore PUBLIC bcrypt advapi32)
 target_compile_definitions(OpenYRLauncherCore PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
 target_compile_options(OpenYRLauncherCore PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8 /EHsc /W4>)
 set_property(TARGET OpenYRLauncherCore PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -32,4 +33,6 @@ set_target_properties(OpenYRLauncher PROPERTIES
     OUTPUT_NAME "OpenYR"
     FOLDER "Tools"
 )
-target_link_options(OpenYRLauncher PRIVATE /MANIFEST:NO)
+target_include_directories(OpenYRLauncher PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../common")
+# LOAD_LIBRARY_SEARCH_SYSTEM32 for the DLLs Windows loads before WinMain; see tools/common/dll_search.h.
+target_link_options(OpenYRLauncher PRIVATE /MANIFEST:NO $<$<CXX_COMPILER_ID:MSVC>:/DEPENDENTLOADFLAG:0x800>)

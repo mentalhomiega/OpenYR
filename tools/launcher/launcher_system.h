@@ -48,7 +48,7 @@ std::wstring Module_Path(void);
 // The folder a path lies in, without the trailing separator.
 std::wstring Folder_Of(std::wstring const & path);
 
-// A new empty folder in the temporary folder for one update.
+// A new empty folder in the temporary folder for one update, with an unguessable name and open to this user and SYSTEM only.
 bool Make_Update_Folder(std::wstring & folder, std::wstring & error);
 
 // Starts a command line in a folder. The process handle is returned in info and must be closed.
@@ -57,7 +57,8 @@ bool Start_Process(std::wstring const & command_line, std::wstring const & folde
 // Waits for a process while keeping the window responsive. False on timeout; code is the exit code.
 bool Wait_For_Process(HANDLE process, DWORD timeout_ms, DWORD & code);
 
-// Deletes a folder a few seconds from now, after this process has exited.
+// Deletes an update folder a few seconds from now, after this process has exited. A folder that is
+// not an OpenYR-Update-* folder directly in the temporary folder is left alone.
 void Schedule_Folder_Removal(std::wstring const & folder);
 
 // Writes UTF-8 text to standard output, when the process has one. Used by the check-only run.

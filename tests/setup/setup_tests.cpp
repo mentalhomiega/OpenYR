@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "setup_core.h"
+#include "setup_names.h"
 #include "setup_system.h"
 
 namespace {
@@ -337,6 +338,17 @@ void Test_Normalize(void)
 }
 
 
+// The uninstaller removes itself through cmd.exe, so a path cmd.exe would read differently is refused.
+void Test_Cmd_Paths(void)
+{
+	Check(setup::Is_Safe_For_Cmd(L"C:\\Users\\Player One\\AppData\\Local\\Programs\\OpenYR\\Uninstall OpenYR.exe"), "an ordinary path with spaces can go inside a cmd.exe argument");
+	Check(setup::Is_Safe_For_Cmd(L"C:\\Games\\A&B (x86)\\OpenYR"), "an ampersand or a parenthesis inside quotes is literal");
+	Check(!setup::Is_Safe_For_Cmd(L"C:\\Games\\%TEMP%\\OpenYR"), "a path with a percent sign is refused, since cmd.exe expands it");
+	Check(!setup::Is_Safe_For_Cmd(L"C:\\Games\\a\"b"), "a path with a quote is refused");
+	Check(!setup::Is_Safe_For_Cmd(L"C:\\Games\\a\nb") && !setup::Is_Safe_For_Cmd(L""), "a path with a line end, or no path, is refused");
+}
+
+
 void Test_Zip(void)
 {
 	std::string const engine = "engine bytes";
@@ -361,6 +373,55 @@ void Test_Zip(void)
 
 	std::vector<PayloadFileType> none;
 	Check(!setup::Load_Zip_Payload(std::string("not a zip at all, nowhere near one"), none, error), "bytes without an end record are refused");
+}
+
+
+// A package entry whose name could reach outside the install folder, or that Windows would read as
+// something other than a plain file, is skipped; the entries around it still read.
+void Test_Zip_Hostile_Names(void)
+{
+	std::vector<std::pair<std::string, std::string>> entries = {
+		{"Game.exe", "engine"},
+		{"C:/evil.txt", "x"},
+		{"C:evil.txt", "x"},
+		{"/absolute.txt", "x"},
+		{"\\\\server\\share\\x.txt", "x"},
+		{"ui/../../escape.txt", "x"},
+		{"ui\\..\\..\\escape.txt", "x"},
+		{"ui/..", "x"},
+		{"Game.exe:stream", "x"},
+		{"ui//double.txt", "x"},
+		{"ui/dot.", "x"},
+		{"ui/space ", "x"},
+		{"ui/con", "x"},
+		{"ui/NUL.txt", "x"},
+		{"ui/bell\a.txt", "x"},
+		{"ui/star*.txt", "x"},
+		{std::string("ui/nul\0byte.txt", 15), "x"},
+		{"ui/ok.txt", "theme"},
+	};
+
+	std::vector<PayloadFileType> files;
+	std::wstring error;
+	Check(setup::Load_Zip_Payload(Make_Zip(entries), files, error), "a zip with hostile names still reads");
+	Check(files.size() == 2, "only the two plain names are kept");
+	Check(files.size() == 2 && files[0].Name == L"Game.exe" && files[1].Name == L"ui\\ok.txt", "and they are the plain ones");
+
+	// An entry whose data header is placed near the top of the 32-bit range must not be read, even
+	// where adding the header size to the offset would wrap around.
+	std::string damaged = Make_Zip({{"Game.exe", "engine"}});
+	std::string::size_type const central = damaged.find("PK\x01\x02");
+	Check(central != std::string::npos, "the test zip has a directory entry to damage");
+	if (central != std::string::npos) {
+		for (int byte = 0; byte < 4; byte++) {
+			damaged[central + 42 + byte] = static_cast<char>(byte == 0 ? 0xF0 : 0xFF);
+		}
+		std::vector<PayloadFileType> wrapped;
+		Check(!setup::Load_Zip_Payload(damaged, wrapped, error), "an entry whose data header lies beyond the archive is refused");
+	}
+
+	std::vector<PayloadFileType> dotted;
+	Check(setup::Load_Zip_Payload(Make_Zip({{"./Game.exe", "engine"}}), dotted, error) && dotted.size() == 1 && dotted[0].Name == L"Game.exe", "a leading './' is dropped from a name");
 }
 
 
@@ -390,6 +451,19 @@ void Test_Embedded(void)
 	Check(setup::Read_Embedded_Archive(with_package, archive, stub_bytes, error) && archive == zip, "a package appended to the executable is read back");
 	Check(stub_bytes == stub.size(), "and the bytes before it are the executable's own");
 	Check(!setup::Read_Embedded_Archive(plain, archive, stub_bytes, error) && error.empty(), "an executable with no package reports no package and no error");
+
+	// A trailer whose offset and length add up to the file size only by wrapping around is damaged.
+	std::string wrapping;
+	for (std::uint64_t value : {static_cast<std::uint64_t>(0x8000000000000000ull), static_cast<std::uint64_t>(0x8000000000000000ull + stub.size())}) {
+		for (int byte = 0; byte < 8; byte++) {
+			wrapping += static_cast<char>((value >> (8 * byte)) & 0xFF);
+		}
+	}
+	wrapping += "OPYRPAY1";
+	std::wstring const wrapped = Path_Of(Root, L"wrapping-trailer.exe");
+	Make_File(wrapped, stub + wrapping);
+	archive.clear();
+	Check(!setup::Read_Embedded_Archive(wrapped, archive, stub_bytes, error) && !error.empty() && archive.empty(), "a trailer whose offset and length wrap around is refused with an error");
 }
 
 
@@ -519,6 +593,128 @@ void Test_Install_And_Uninstall(void)
 	// The Yuri's Revenge folder is never written to.
 	Check(Snapshot(Yuri) == yuri_before, "the Yuri's Revenge folder is unchanged after every step");
 	Check(Read_Text(Path_Of(Yuri, L"RA2MD.INI")) == yuri_ini_before, "its own settings file is unchanged");
+}
+
+
+// A record whose [Files] list was damaged or written by hand must not make an update or an uninstall
+// delete anything outside the install folder, or the player's settings, saves and log.
+void Test_Damaged_Record(void)
+{
+	std::wstring const folder = Installs + L"\\damaged";
+	std::wstring error;
+	auto const files = Package("engine v1", "2026-10-14i", false, false);
+	Check(Install(folder, files, false, error), "an install to hold a damaged record succeeds");
+
+	std::wstring const outside = Path_Of(Installs, L"outside-the-install.txt");
+	Make_File(outside, "keep me");
+	Make_File(Path_Of(folder, L"user\\RA2MD.INI"), "settings");
+	Make_File(Path_Of(folder, L"Debug\\log.txt"), "log");
+
+	std::string record = Read_Text(Path_Of(folder, L"openyr-install.ini"));
+	record += "..\\outside-the-install.txt\r\n";
+	record += "ui\\..\\..\\outside-the-install.txt\r\n";
+	record += Narrow(outside) + "\r\n";
+	record += "user\\RA2MD.INI\r\n";
+	record += "Debug\\log.txt\r\n";
+	record += "ui/theme.txt\r\n";
+	Make_File(Path_Of(folder, L"openyr-install.ini"), record);
+
+	setup::InstalledType const info = setup::Read_Installed(folder);
+	Check(info.Present && info.Files.size() == 8, "the record's seven program files and the uninstaller are still read");
+	Check(info.Refused.size() == 6, "and the six damaged lines are set aside");
+
+	Check(Install(folder, files, false, error), "an update over a damaged record succeeds");
+	Check(Read_Text(outside) == "keep me", "an update deletes nothing outside the install folder");
+	Check(Read_Text(Path_Of(folder, L"user\\RA2MD.INI")) == "settings" && Read_Text(Path_Of(folder, L"Debug\\log.txt")) == "log", "and keeps the settings and the log a damaged line named");
+	Check(setup::Read_Installed(folder).Refused.empty(), "the update writes a clean record");
+
+	Make_File(Path_Of(folder, L"openyr-install.ini"), record);
+	setup::UninstallType request;
+	request.Folder = folder;
+	request.DeleteData = false;
+	request.Where = Where();
+	std::vector<std::wstring> left;
+	Check(setup::Uninstall_Package(request, nullptr, error, left), "an uninstall over a damaged record succeeds");
+	Check(Read_Text(outside) == "keep me", "an uninstall deletes nothing outside the install folder");
+	Check(Read_Text(Path_Of(folder, L"user\\RA2MD.INI")) == "settings" && Read_Text(Path_Of(folder, L"Debug\\log.txt")) == "log", "and keeps the settings and the log a damaged line named");
+	Check(!Exists(Path_Of(folder, L"Game.exe")), "while the program files are removed");
+}
+
+
+// Makes a link to a folder: a junction from the system's own mklink, which needs no elevation, or
+// where that fails a symbolic link. False when neither can be made.
+bool Make_Junction(std::wstring const & link, std::wstring const & target)
+{
+	wchar_t system[MAX_PATH] = {};
+	GetSystemDirectoryW(system, MAX_PATH);
+
+	std::wstring line = std::wstring(system) + L"\\cmd.exe /d /s /c \"mklink /J \"" + link + L"\" \"" + target + L"\" >nul 2>nul\"";
+	std::vector<wchar_t> buffer(line.begin(), line.end());
+	buffer.push_back(L'\0');
+
+	STARTUPINFOW startup{};
+	startup.cb = sizeof(startup);
+	PROCESS_INFORMATION process{};
+	if (CreateProcessW(nullptr, buffer.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startup, &process)) {
+		WaitForSingleObject(process.hProcess, 30000);
+		DWORD code = 1;
+		GetExitCodeProcess(process.hProcess, &code);
+		CloseHandle(process.hThread);
+		CloseHandle(process.hProcess);
+		if (code == 0 && setup::Is_Directory(link)) {
+			return(true);
+		}
+	}
+
+	// SYMBOLIC_LINK_FLAG_DIRECTORY, with SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE where Windows knows it.
+	bool made = CreateSymbolicLinkW(link.c_str(), target.c_str(), 0x1 | 0x2) != 0 || CreateSymbolicLinkW(link.c_str(), target.c_str(), 0x1) != 0;
+	return(made && setup::Is_Directory(link));
+}
+
+
+// A folder of the install that was swapped for a junction must not carry an update or an uninstall
+// to the folder it points at.
+void Test_Junction(void)
+{
+	std::wstring const folder = Installs + L"\\junction";
+	std::wstring const target = Root + L"\\junction-target";
+	std::wstring error;
+	auto const files = Package("engine v1", "2026-10-14i", false, false);
+	Check(Install(folder, files, false, error), "an install to hold a junction succeeds");
+
+	Make_File(Path_Of(target, L"theme.txt"), "precious");
+	Check(setup::Remove_Tree(folder + L"\\ui", error), "the install's ui folder is removed to make room for a link");
+	if (!Make_Junction(folder + L"\\ui", target)) {
+		std::printf("%-72s skipped\n", "a junction could not be made here, so the link checks are skipped");
+		return;
+	}
+
+	Check(setup::Crosses_Link(folder, L"ui\\theme.txt"), "a file below a junction is reported as crossing a link");
+	Check(!setup::Crosses_Link(folder, L"ui") && !setup::Crosses_Link(folder, L"Game.exe") && !setup::Crosses_Link(folder, L"other\\file.txt"), "a link itself, a plain file and a missing folder are not crossings");
+
+	Check(!Install(folder, files, false, error) && !error.empty(), "an update refuses to write through a junction");
+	Check(Read_Text(Path_Of(target, L"theme.txt")) == "precious", "and the folder the junction points at is unchanged");
+
+	setup::UninstallType request;
+	request.Folder = folder;
+	request.DeleteData = true;
+	request.Where = Where();
+	std::vector<std::wstring> left;
+	Check(!setup::Uninstall_Package(request, nullptr, error, left), "an uninstall reports the file it left behind a junction");
+	Check(Read_Text(Path_Of(target, L"theme.txt")) == "precious", "and deletes nothing in the folder the junction points at");
+	Check(setup::Is_Directory(folder + L"\\ui"), "and the junction itself is kept");
+	Check(!Exists(Path_Of(folder, L"Game.exe")), "while the program files beside it are removed");
+
+	// DeleteData removes a junction at user\ as a link, without emptying what it points at.
+	Make_File(Path_Of(Root + L"\\user-target", L"saves.sav"), "a save");
+	Make_File(Path_Of(folder, L"openyr-install.ini"), "[OpenYR]\r\nBuild=x\r\n[Files]\r\n");
+	setup::Remove_Tree(folder + L"\\user", error);
+	if (Make_Junction(folder + L"\\user", Root + L"\\user-target")) {
+		left.clear();
+		error.clear();
+		setup::Uninstall_Package(request, nullptr, error, left);
+		Check(Read_Text(Path_Of(Root + L"\\user-target", L"saves.sav")) == "a save", "deleting the data removes a junction named user without emptying its target");
+	}
 }
 
 
@@ -688,11 +884,15 @@ int main()
 	Remove_Test_Keys();
 
 	Test_Normalize();
+	Test_Cmd_Paths();
 	Test_Zip();
+	Test_Zip_Hostile_Names();
 	Test_Embedded();
 	Test_Find();
 	Test_Check_Folder();
 	Test_Install_And_Uninstall();
+	Test_Damaged_Record();
+	Test_Junction();
 	Test_Shortcuts();
 	Test_Config_File();
 	Test_Refusals();

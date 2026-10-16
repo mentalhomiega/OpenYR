@@ -36,4 +36,6 @@ set_target_properties(OpenYRSetup PROPERTIES
     OUTPUT_NAME "OpenYR-Setup"
     FOLDER "Tools"
 )
-target_link_options(OpenYRSetup PRIVATE /MANIFEST:NO)
+target_include_directories(OpenYRSetup PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../common")
+# LOAD_LIBRARY_SEARCH_SYSTEM32 for the DLLs Windows loads before WinMain; see tools/common/dll_search.h.
+target_link_options(OpenYRSetup PRIVATE /MANIFEST:NO $<$<CXX_COMPILER_ID:MSVC>:/DEPENDENTLOADFLAG:0x800>)

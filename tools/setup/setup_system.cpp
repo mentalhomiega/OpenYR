@@ -318,7 +318,33 @@ bool Delete_File_Forced(std::wstring const & path)
 
 void Remove_Folder_If_Empty(std::wstring const & folder)
 {
-	RemoveDirectoryW(folder.c_str());
+	DWORD const attributes = GetFileAttributesW(folder.c_str());
+	if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+		RemoveDirectoryW(folder.c_str());
+	}
+}
+
+
+bool Crosses_Link(std::wstring const & root, std::wstring const & relative)
+{
+	std::wstring path = Normalize_Path(root);
+	std::wstring::size_type start = 0;
+	while (true) {
+		std::wstring::size_type const slash = relative.find(L'\\', start);
+		if (slash == std::wstring::npos) {
+			return(false);
+		}
+
+		path = With_Separator(path) + relative.substr(start, slash - start);
+		DWORD const attributes = GetFileAttributesW(path.c_str());
+		if (attributes == INVALID_FILE_ATTRIBUTES) {
+			return(false);
+		}
+		if ((attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
+			return(true);
+		}
+		start = slash + 1;
+	}
 }
 
 

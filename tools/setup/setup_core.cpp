@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "setup_core.h"
+#include "setup_names.h"
 #include "setup_system.h"
 
 #include <shellapi.h>
@@ -26,10 +27,6 @@ namespace {
 wchar_t const * const GameName = L"Game.exe";
 wchar_t const * const LauncherName = L"OpenYR.exe";
 wchar_t const * const UninstallerName = L"Uninstall OpenYR.exe";
-wchar_t const * const ConfigName = L"OPENTS.INI";
-wchar_t const * const RecordName = L"openyr-install.ini";
-wchar_t const * const UserFolder = L"user";
-wchar_t const * const DebugFolder = L"Debug";
 wchar_t const * const ShortcutName = L"OpenYR.lnk";
 wchar_t const * const UninstallShortcutName = L"Uninstall OpenYR.lnk";
 wchar_t const * const ProgramsFolderName = L"OpenYR";
@@ -475,7 +472,11 @@ InstalledType Read_Installed(std::wstring const & folder)
 			section = SectionType::Files;
 			info.Present = true;
 		} else if (section == SectionType::Files && !line.empty()) {
-			info.Files.push_back(line);
+			if (Is_Record_File_Name(line)) {
+				info.Files.push_back(line);
+			} else {
+				info.Refused.push_back(line);
+			}
 		} else if (section == SectionType::Build) {
 			std::wstring::size_type equals = line.find(L'=');
 			if (equals != std::wstring::npos) {
@@ -556,10 +557,23 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 	}
 	std::string const config = Merged_Config(existing, yuri_ansi);
 
+	// A junction or symbolic link inside the install folder would send a write to another place.
+	for (std::vector<PayloadFileType const *> const * list : {&programs, &defaults}) {
+		for (PayloadFileType const * file : *list) {
+			if (Crosses_Link(folder, file->Name)) {
+				error = L"A folder on the way to " + Join(folder, file->Name) + L" is a link to another place. Remove the link, then run this setup again.";
+				return(false);
+			}
+		}
+	}
+
 	BuildType const build = Package_Build(files);
 	InstalledType const previous = Read_Installed(folder);
 
 	Say(report, 0, previous.Present ? L"Updating OpenYR in " + folder : L"Installing OpenYR to " + folder);
+	for (std::wstring const & name : previous.Refused) {
+		Say(report, -1, L"Ignored a line of the install record that is not one of OpenYR's files: " + name);
+	}
 	if (!Make_Folders(folder)) {
 		error = L"Could not create " + folder + L".";
 		return(false);
@@ -607,7 +621,7 @@ bool Install_Package(InstallType const & request, std::vector<PayloadFileType> c
 
 	// Files the previous build wrote that this one does not are removed.
 	for (std::wstring const & old : previous.Files) {
-		if (Contains_Name(written, old)) {
+		if (Contains_Name(written, old) || Crosses_Link(folder, old)) {
 			continue;
 		}
 
@@ -725,6 +739,10 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 		return(false);
 	}
 
+	for (std::wstring const & name : info.Refused) {
+		Say(report, -1, L"Ignored a line of the install record that is not one of OpenYR's files: " + name);
+	}
+
 	LocationType const where = request.Where;
 	std::wstring const start_folder = Program_Shortcut_Folder(where);
 
@@ -740,7 +758,10 @@ bool Uninstall_Package(UninstallType const & request, ReportType const & report,
 	for (std::wstring const & name : info.Files) {
 		int const percent = 5 + static_cast<int>(80 * index / (info.Files.size() + 1));
 		Say(report, percent, L"Removing " + name);
-		if (!Delete_File_Forced(Join(folder, name)) && Is_File(Join(folder, name))) {
+		if (Crosses_Link(folder, name)) {
+			Say(report, -1, L"Left " + name + L" because a folder on the way to it is a link to another place.");
+			left.push_back(name);
+		} else if (!Delete_File_Forced(Join(folder, name)) && Is_File(Join(folder, name))) {
 			left.push_back(name);
 		}
 		index++;

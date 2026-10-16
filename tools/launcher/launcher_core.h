@@ -76,7 +76,8 @@ bool Parse_Release(std::string const & json, ReleaseType & release, std::wstring
 bool Choose_Release_Assets(ReleaseType const & release, AssetType & setup, AssetType & checksum, std::wstring & error);
 
 // The SHA-256 digest a checksum file holds, in lower-case hex. The file is one hex digest, optionally
-// followed by a space and a file name, as sha256sum writes it.
+// followed by a space and a file name, as sha256sum writes it. A second line with text, a control
+// character other than tab and line ends, or a token that is not 64 hex digits makes it false.
 bool Parse_Checksum(std::string const & text, std::string & digest);
 
 struct UpdateType
@@ -98,6 +99,18 @@ UpdateType Decide_Update(std::wstring const & installed, ReleaseType const & rel
 // Where a feed or download comes from: an https:// URL, an absolute local path, or something refused.
 enum class SourceType { Https, LocalFile, Refused };
 SourceType Source_Kind(std::wstring const & url);
+
+// True when the offered assets may be fetched for this feed. A feed read over https may only name
+// https assets, so a release feed cannot send the update copy to a file on the player's disk. A local
+// feed, used by the tests, may name either. On false, reason says which asset was refused.
+bool Asset_Sources_Allowed(std::wstring const & feed, UpdateType const & update, std::wstring & reason);
+
+// The largest download, in bytes, that the update copy accepts. The setup with its package is far smaller.
+inline constexpr std::uint64_t DownloadLimit = 512ull * 1024 * 1024;
+
+// True when a download of the declared length (zero when the server gave none) that has received the
+// given number of bytes is within the limit and has not passed its declared length.
+bool Download_Size_Allowed(std::uint64_t declared, std::uint64_t received);
 
 // The OpenYR settings the launcher reads from OPENTS.INI.
 struct ConfigType
@@ -122,6 +135,25 @@ std::string Wide_To_Utf8(std::wstring const & text);
 
 // One argument, quoted so that CommandLineToArgvW and the C runtime read it back unchanged.
 std::wstring Quote_Argument(std::wstring const & arg);
+
+// True when the folder is an update folder directly inside temp_root: a name that starts with
+// "OpenYR-Update-" and has more after it. Compared without regard to case or a trailing separator.
+// Only such a folder is ever removed after an update, so a launcher started by hand from the
+// install, with the update switches, cannot delete the install.
+bool Is_Update_Folder(std::wstring const & folder, std::wstring const & temp_root);
+
+// True when a path can sit inside a quoted argument of "cmd.exe /c" and reach the command unchanged.
+// cmd.exe expands %NAME% even inside quotes, and a quote or a line end ends the argument.
+bool Is_Safe_For_Cmd(std::wstring const & path);
+
+// Lower-case hex text of the given number of random bytes from the system's generator, or an empty
+// string when the generator fails.
+std::wstring Random_Hex(unsigned bytes);
+
+// Creates the folder, whose parent must exist, so that only the current user and SYSTEM can open it
+// and what is made inside it. Fails when the folder already exists, so a name another user made
+// beforehand is never taken over.
+bool Create_Private_Folder(std::wstring const & path, std::wstring & error);
 
 // Appends a line to the log, prefixed with the local time. Nothing is written when the file cannot be opened.
 void Append_Log(std::wstring const & path, std::wstring const & line);

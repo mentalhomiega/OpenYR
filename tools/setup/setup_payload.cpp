@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "setup_core.h"
+#include "setup_names.h"
 
 #include <algorithm>
 #include <array>
@@ -87,42 +88,6 @@ std::wstring Utf8_To_Wide(std::string const & text)
 }
 
 
-/*
- * A name a package may place on disk: relative, backslash separated, with no drive, no ".." step
- * and no empty step. Returns false for anything else, so a hostile archive cannot write outside
- * the install folder.
- */
-bool Clean_Name(std::wstring name, std::wstring & clean)
-{
-	std::replace(name.begin(), name.end(), L'/', L'\\');
-
-	if (name.empty() || name.front() == L'\\' || name.find(L':') != std::wstring::npos) {
-		return(false);
-	}
-
-	std::wstring::size_type start = 0;
-	while (start <= name.size()) {
-		std::wstring::size_type end = name.find(L'\\', start);
-		if (end == std::wstring::npos) {
-			end = name.size();
-		}
-
-		std::wstring const step = name.substr(start, end - start);
-		if (step.empty() || step == L"..") {
-			return(false);
-		}
-
-		if (end == name.size()) {
-			break;
-		}
-		start = end + 1;
-	}
-
-	clean = name;
-	return(true);
-}
-
-
 bool Zip_Failed(std::wstring & error, wchar_t const * why)
 {
 	error = L"The package is damaged: ";
@@ -179,7 +144,7 @@ bool Load_Folder_Payload(std::wstring const & folder, std::vector<PayloadFileTyp
 	std::sort(names.begin(), names.end());
 	for (std::wstring const & name : names) {
 		std::wstring clean;
-		if (!Clean_Name(name, clean)) {
+		if (!Clean_Package_Name(name, clean)) {
 			continue;
 		}
 
@@ -250,7 +215,7 @@ bool Load_Zip_Payload(std::string const & archive, std::vector<PayloadFileType> 
 			return(Zip_Failed(error, L"an entry is compressed; the setup reads stored entries only"));
 		}
 
-		if (local + ZipLocalBytes > archive.size() || U32(archive, local) != ZipLocalSignature) {
+		if (local > archive.size() || ZipLocalBytes > archive.size() - local || U32(archive, local) != ZipLocalSignature) {
 			return(Zip_Failed(error, L"an entry's data header is missing"));
 		}
 
@@ -265,7 +230,7 @@ bool Load_Zip_Payload(std::string const & archive, std::vector<PayloadFileType> 
 
 		std::wstring const name = Utf8_To_Wide(raw_name);
 		std::wstring clean;
-		if (!Clean_Name(name, clean)) {
+		if (!Clean_Package_Name(name, clean)) {
 			continue;
 		}
 
@@ -300,7 +265,8 @@ bool Read_Embedded_Archive(std::wstring const & exe, std::string & archive, std:
 			if (bytes.compare(16, 8, TrailerMagic, 8) == 0) {
 				std::uint64_t const offset = U64(bytes, 0);
 				std::uint64_t const length = U64(bytes, 8);
-				if (offset + length + TrailerBytes != static_cast<std::uint64_t>(size.QuadPart)) {
+				std::uint64_t const total = static_cast<std::uint64_t>(size.QuadPart);
+				if (offset > total || length > total || offset + length + TrailerBytes != total) {
 					CloseHandle(file);
 					error = L"The package inside this setup is damaged. Download the setup again.";
 					return(false);
