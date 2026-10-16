@@ -117,6 +117,7 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAIBuildsWalls);
 	crc(AIBaseDefensePlaceholders);
 	crc(IsAIBaseDefensesWithWalls);
+	crc(ListPosition);
 }
 
 

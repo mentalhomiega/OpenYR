@@ -10677,6 +10677,12 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(Unused1);
 	crc(SightIncrease);
 	LimpetType.Compute_CRC(crc);
+	crc(ThreatPosed);
+	crc(ChargeTurretDelay);
+	if (OriginallyOwnedByHouse != NULL) crc(OriginallyOwnedByHouse->HeapID);
+	if (MindControlledByHouse != NULL) crc(MindControlledByHouse->HeapID);
+	if (LetGoBy != NULL) crc(LetGoBy->Fetch_ID());
+	if (LetGoByHouse != NULL) crc(LetGoByHouse->HeapID);
 }
 
 

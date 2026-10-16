@@ -341,6 +341,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(DeformThreshhold);
 	crc(ProneDamage);
 	crc(IsVeinhole);
+	crc(IsCulling);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));

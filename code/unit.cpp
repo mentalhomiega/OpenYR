@@ -6715,6 +6715,8 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsDumping);
 	crc(IsHarvesting);
 	crc(IsToScatter);
+	crc(IsLandingToDeploy);
+	crc(MirageBlinkUntil);
 }
 
 

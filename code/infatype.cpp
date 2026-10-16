@@ -521,6 +521,9 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAgent);
 	crc(IsThief);
 	crc(IsVehicleThief);
+	crc(IsAssaulter);
+	crc(UndeployDelay);
+	crc(IsDeployedCrushable);
 }
 
 

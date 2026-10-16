@@ -7596,6 +7596,16 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 	crc(WhoLastHurtMe);
 	crc(Enemy);
 	crc((int)Base_Edge);
+	crc((int)OwnCountry);
+	crc(CountResourceGatherers);
+	crc(CountResourceDestinations);
+	crc(PreferredDefensiveCell.X);
+	crc(PreferredDefensiveCell.Y);
+	crc(PreferredDefensiveCell2.X);
+	crc(PreferredDefensiveCell2.Y);
+	crc(PreferredDefensiveCellStartTime);
+	crc(BaseSpawnCell.X);
+	crc(BaseSpawnCell.Y);
 	Allies.Compute_CRC(crc);
 	Base.Compute_CRC(crc);
 }

@@ -917,6 +917,7 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MovementDirection);
 	stream.Serialize(PrecisePosition);
 	stream.Serialize(System);
+	stream.Serialize(SourceHouse);
 	stream.Serialize(RemainingEC);
 	stream.Serialize(RemainingDC);
 	stream.Serialize(StateAIAdvance);
