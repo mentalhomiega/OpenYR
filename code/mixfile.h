@@ -39,6 +39,14 @@ class MixFileClass : public Node<MixFileClass *>
 		static bool Offset(char const *filename, void ** realptr = 0, MixFileClass ** mixfile = 0, int * offset = 0, int * size = 0);
 		static void const * Retrieve(char const *filename);
 
+		/*
+		**	The mixfiles the game has attached, in the order they were attached, for a check that reads
+		**	every member. The walk ends with NULL.
+		*/
+		static MixFileClass * First_Attached(void) {MixFileClass * first = List.First(); return(first->Is_Valid() ? first : NULL);}
+		MixFileClass * Next_Attached(void) {MixFileClass * next = Next(); return(next->Is_Valid() ? next : NULL);}
+		int Member_Count(void) const {return(Count);}
+
 		struct SubBlock {
 			int CRC;				// CRC code for embedded file.
 			int Offset;			// Offset from start of data section.

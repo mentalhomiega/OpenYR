@@ -11,6 +11,7 @@
 
 #include "voxlib.h"
 
+#include "dbgprint.h"
 #include "voxdrsys.h"
 #include "voxshade.h"
 #include "wwfile.h"
@@ -577,6 +578,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 
 	VoxelHeaderStruct hdr;
 	if (file.Read(&hdr, sizeof(hdr)) != sizeof(hdr)) {
+		DebugString("VXL %s rejected: its header is cut short\n", file.File_Name());
 		file.Close();
 		return(false);
 	}
@@ -588,6 +590,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 		|| (long long)hdr.LayerInfoCount * (long long)sizeof(VoxelLayerInfoStruct) > file_size
 		|| (long long)hdr.DataSize > file_size
 		|| (long long)hdr.PaletteCount * (long long)(2 + VOXEL_PALETTE_SIZE * sizeof(RGBStruct)) > file_size) {
+		DebugString("VXL %s rejected: %d layers, %d layer records, %d body bytes and %d palettes, which its %lld bytes cannot hold\n", file.File_Name(), hdr.LayerCount, hdr.LayerInfoCount, hdr.DataSize, hdr.PaletteCount, file_size);
 		file.Close();
 		return(false);
 	}
@@ -666,6 +669,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 
 		VoxelLayerHeaderStruct lyrhdr;
 		if (file.Read(&lyrhdr, sizeof(lyrhdr)) != sizeof(lyrhdr)) {
+			DebugString("VXL %s rejected: layer %d is cut short\n", file.File_Name(), (int)i);
 			Clear();
 			file.Close();
 			return(false);
@@ -673,6 +677,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 
 		// The layer's info records must exist, or drawing it would index past the table.
 		if (lyrhdr.InfoIndex < 0 || lyrhdr.InfoIndex >= (int)LayerInfoCount) {
+			DebugString("VXL %s rejected: layer %d names record %d, and it has %d records\n", file.File_Name(), (int)i, (int)lyrhdr.InfoIndex, (int)LayerInfoCount);
 			Clear();
 			file.Close();
 			return(false);
@@ -684,6 +689,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 	}
 
 	if (file.Read(Data, DataSize) != DataSize) {
+		DebugString("VXL %s rejected: its %d body bytes are cut short\n", file.File_Name(), DataSize);
 		Clear();
 		file.Close();
 		return(false);
@@ -693,6 +699,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 
 		VoxelLayerInfoStruct layerinfo;
 		if (file.Read(&layerinfo, sizeof(layerinfo)) != sizeof(layerinfo)) {
+			DebugString("VXL %s rejected: record %d is cut short\n", file.File_Name(), (int)i);
 			Clear();
 			file.Close();
 			return(false);
@@ -704,6 +711,7 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 		if (layerinfo.StartOffset < 0 || layerinfo.EndOffset < 0 || layerinfo.DataOffset < 0
 			|| layerinfo.StartOffset + table_size > DataSize || layerinfo.EndOffset + table_size > DataSize
 			|| layerinfo.DataOffset > DataSize) {
+			DebugString("VXL %s rejected: record %d has a span or data table outside its %d body bytes\n", file.File_Name(), (int)i, DataSize);
 			Clear();
 			file.Close();
 			return(false);

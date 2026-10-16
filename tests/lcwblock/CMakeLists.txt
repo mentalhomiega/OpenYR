@@ -5,8 +5,10 @@
 opents_add_test(LcwBlock
     NAME lcwblock
     SOURCES lcwblock.cpp
+    INCLUDES ${OPENTS_GENERATED_DIR}
     ENGINE
         buff.cpp
+        dbgprint.cpp
         lcw.cpp
         lcwpipe.cpp
         lcwstraw.cpp

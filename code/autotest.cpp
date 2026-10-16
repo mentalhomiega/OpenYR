@@ -119,6 +119,8 @@
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
 **	dumpfile <name>	copies a file the game can read to dump-<name> in the working directory
+**	stockcheck		reads every VXL, HVA, SHP and PCX that the art and rules files name, through the loaders, and logs each one refused
+**	previewtime		reads the preview of each map on the multiplayer list three times and logs how long each pass took
 **	trigaction <number>[@<House>] <value> <waypoint>	carries out that trigger action for the player's house, or the named one, with the value in its number, house or time field
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
@@ -292,6 +294,12 @@
 #include "vox.h"
 #include "_voxel.h"
 #include "voxlib.h"
+#include "motlib.h"
+#include "mixfile.h"
+#include "_pk.h"
+#include "pcx.h"
+#include "preview.h"
+#include "ui/rml/rmlimage.h"
 
 extern int VoxelNormalTableEntryCount[];
 #include "unittype.h"
@@ -309,10 +317,16 @@ extern int VoxelNormalTableEntryCount[];
 #include "windowevent.hh"
 
 #include <algorithm>
+#include <cctype>
+#include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <memory>
+#include <set>
+#include <span>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1295,6 +1309,231 @@ bool Wait_Over(StepType const & step)
 }
 
 
+// Adds each word of the text that holds a letter, in upper case, as a file name the check may read.
+static void Add_Stock_Names(std::set<std::string> & names, char const * text)
+{
+	std::string word;
+	bool letter = false;
+	for (char const * at = text; ; at++) {
+		unsigned char const c = static_cast<unsigned char>(*at);
+		if (std::isalnum(c) || c == '_') {
+			word += static_cast<char>(std::toupper(c));
+			letter = letter || std::isalpha(c);
+		} else {
+			if (letter && word.size() <= 16) {
+				names.insert(word);
+			}
+			word.clear();
+			letter = false;
+		}
+		if (c == '\0') {
+			break;
+		}
+	}
+}
+
+
+/*
+**	stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
+**	the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
+**	each name, so the names are the words of the INI files' sections and values, which is how the art and
+**	rules name their images. The summary counts the files those names reach and the ones refused, and lists
+**	the MIX archives the game attached with their entry counts.
+*/
+static void Stock_Check_Step(void)
+{
+	static char const * const sources[] = {
+		"ART.INI", "ARTMD.INI", "RULES.INI", "RULESMD.INI", "UI.INI", "UIMD.INI", "MISSION.INI", "MISSIONMD.INI",
+		"THEME.INI", "THEMEMD.INI", "BATTLE.INI", "BATTLEMD.INI", "AI.INI", "AIMD.INI", "SOUND.INI", "SOUNDMD.INI",
+		"MULTI.INI", "MULTIMD.INI", "EVA.INI", "EVAMD.INI", "SCORE.INI", "SCOREMD.INI", "CAMEO.INI", "CAMEOMD.INI"};
+
+	std::set<std::string> names;
+	// Picture names the engine's own code opens by name, such as the loading screens and the side pictures.
+	static char const * const coded[] = {"ARBI", "DJBI", "FRAI", "GBRI", "GERI", "JAPI", "LATI", "OBSI", "RUSI", "USAI", "YRII",
+		"LOADING", "TITLE", "LOAD400A", "LOAD400B", "LOAD400C", "LOAD400D", "LOAD480A", "LOAD480B", "LOAD480C", "LOAD480D",
+		"LOAD600A", "LOAD600B", "LOAD600C", "LOAD600D", "SBACK", "SBACKH", "02D", "NODI", "GDII"};
+	for (char const * text : coded) {
+		Add_Stock_Names(names, text);
+	}
+	int sections = 0;
+	int sources_read = 0;
+	for (char const * source : sources) {
+		CCFileClass file(source);
+		CCINIClass ini;
+		if (!file.Is_Available() || !ini.Load(file, false)) {
+			continue;
+		}
+		sources_read++;
+
+		for (int index = 0; index < ini.Section_Count(); index++) {
+			char const * section = ini.Section_Name(index);
+			if (section == NULL) {
+				continue;
+			}
+			sections++;
+			Add_Stock_Names(names, section);
+
+			for (int entry = 0; entry < ini.Entry_Count(section); entry++) {
+				char value[512] = "";
+				ini.Get_String(section, ini.Get_Entry(section, entry), "", value, sizeof(value));
+				Add_Stock_Names(names, value);
+			}
+		}
+	}
+
+	int found_voxels = 0;
+	int found_anims = 0;
+	int found_shapes = 0;
+	int found_pictures = 0;
+	int pairs = 0;
+	int refused_voxels = 0;
+	int refused_anims = 0;
+	int refused_shapes = 0;
+	int refused_pictures = 0;
+	int frames = 0;
+	int empty_shapes = 0;
+
+	for (std::string const & name : names) {
+		std::string const vxl = name + ".VXL";
+		std::string const hva = name + ".HVA";
+		std::string const shp = name + ".SHP";
+		std::string const pcx = name + ".PCX";
+
+		bool const has_vxl = CCFileClass(vxl.c_str()).Is_Available();
+		bool const has_hva = CCFileClass(hva.c_str()).Is_Available();
+		if (has_vxl) {
+			CCFileClass file(vxl.c_str());
+			VoxelLibrary library;
+			found_voxels++;
+			if (!library.Read_File(file, false)) {
+				refused_voxels++;
+				DebugString("AUTOTEST   stockcheck refused %s\n", vxl.c_str());
+			}
+		}
+		if (has_hva) {
+			CCFileClass file(hva.c_str());
+			MotionLibrary motion;
+			found_anims++;
+			if (!motion.Read_File(file)) {
+				refused_anims++;
+				DebugString("AUTOTEST   stockcheck refused %s\n", hva.c_str());
+			}
+		}
+		if (has_vxl && has_hva) {
+			pairs++;
+		}
+
+		if (CCFileClass(shp.c_str()).Is_Available()) {
+			std::vector<std::uint8_t> bytes;
+			CCFileClass file(shp.c_str());
+			if (file.Open(FileClass::READ)) {
+				int const size = file.Size();
+				if (size > 0) {
+					bytes.resize(static_cast<std::size_t>(size));
+					if (file.Read(bytes.data(), size) != size) {
+						bytes.clear();
+					}
+				}
+				file.Close();
+			}
+
+			found_shapes++;
+			int const count = bytes.size() >= 8 ? (bytes[6] | (bytes[7] << 8)) : 0;
+			bool loaded = bytes.size() >= 8;
+			if (loaded && count == 0) {
+				empty_shapes++;
+			}
+			int failed = -1;
+			for (int frame = 0; loaded && frame < count; frame++) {
+				UIImageIndexed image;
+				loaded = UI_Decode_SHP(std::span<std::uint8_t const>(bytes.data(), bytes.size()), frame, image);
+				frames += loaded ? 1 : 0;
+				if (!loaded) {
+					failed = frame;
+				}
+			}
+			if (!loaded) {
+				refused_shapes++;
+				if (bytes.size() >= 8 && failed >= 0) {
+					std::size_t const at = 8 + 24 * static_cast<std::size_t>(failed);
+					if (at + 24 <= bytes.size()) {
+						auto const word = [&bytes](std::size_t where) {return(bytes[where] | (bytes[where + 1] << 8));};
+						DebugString("AUTOTEST   stockcheck refused %s: frame %d of %d, canvas %dx%d, frame box %d,%d %dx%d, kind %d\n",
+							shp.c_str(), failed, count, word(2), word(4), word(at), word(at + 2), word(at + 4), word(at + 6), bytes[at + 8]);
+					} else {
+						DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for its %d frames\n", shp.c_str(), (int)bytes.size(), count);
+					}
+				} else {
+					DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for a header\n", shp.c_str(), (int)bytes.size());
+				}
+			}
+		}
+
+		if (CCFileClass(pcx.c_str()).Is_Available()) {
+			CCFileClass file(pcx.c_str());
+			std::unique_ptr<Surface> picture(Read_PCX_File(file));
+			found_pictures++;
+			if (picture == NULL) {
+				refused_pictures++;
+				DebugString("AUTOTEST   stockcheck refused %s\n", pcx.c_str());
+			}
+		}
+	}
+
+	int mixes = 0;
+	int entries = 0;
+	for (MixFileClass * mix = MixFileClass::First_Attached(); mix != NULL; mix = mix->Next_Attached()) {
+		mixes++;
+		entries += mix->Member_Count();
+		DebugString("AUTOTEST   stockcheck mix %s: %d entries\n", mix->Filename, mix->Member_Count());
+	}
+
+	// WDT.MIX is mounted only by the world domination setup, when it is on hand. The check mounts it the same way.
+	if (CCFileClass("WDT.MIX").Is_Available()) {
+		MixFileClass * wdt = new MixFileClass("WDT.MIX", &FastKey);
+		mixes++;
+		entries += wdt->Member_Count();
+		DebugString("AUTOTEST   stockcheck mix WDT.MIX (mounted by the world domination setup): %d entries\n", wdt->Member_Count());
+		delete wdt;
+	}
+
+	DebugString("AUTOTEST stockcheck: %d INI files, %d sections, %d names; found VXL %d, HVA %d, SHP %d, PCX %d; %d VXL and HVA pairs; refused VXL %d, HVA %d, SHP %d, PCX %d; %d SHP frames decoded, %d SHP empty; %d mixes attached with %d entries\n",
+		sources_read, sections, (int)names.size(), found_voxels, found_anims, found_shapes, found_pictures, pairs, refused_voxels, refused_anims, refused_shapes, refused_pictures, frames, empty_shapes, mixes, entries);
+}
+
+
+/*
+**	previewtime: loads the multiplayer list the game builds from its packet files, then reads the preview of
+**	each map on it that is on hand, three times, and logs how long each step took.
+*/
+static void Preview_Time_Step(void)
+{
+	std::chrono::steady_clock::time_point const listed = std::chrono::steady_clock::now();
+	Session.Read_Scenario_Descriptions();
+	std::chrono::duration<double, std::milli> const list_time = std::chrono::steady_clock::now() - listed;
+	DebugString("AUTOTEST   previewtime list: %d scenarios in %.1f ms\n", Session.Scenarios.Count(), list_time.count());
+
+	for (int pass = 1; pass <= 3; pass++) {
+		std::chrono::steady_clock::time_point const start = std::chrono::steady_clock::now();
+		int on_hand = 0;
+		int previews = 0;
+		for (int index = 0; index < Session.Scenarios.Count(); index++) {
+			char const * filename = Session.Scenarios[index]->Get_Filename();
+			if (!CCFileClass(filename).Is_Available()) {
+				continue;
+			}
+			on_hand++;
+			MapPreviewClass preview;
+			if (preview.Read_INI_Preview(filename)) {
+				previews++;
+			}
+		}
+		std::chrono::duration<double, std::milli> const elapsed = std::chrono::steady_clock::now() - start;
+		DebugString("AUTOTEST   previewtime pass %d: %d maps on hand, %d with a preview, %.1f ms\n", pass, on_hand, previews, elapsed.count());
+	}
+}
+
+
 // modsig [text]: the mods in force as a join request carries them. With text, which is another machine's
 // signature, also says whether a host with these mods would take that machine in.
 static void Mod_Signature_Step(StepType const & step)
@@ -2050,6 +2289,16 @@ void Run(StepType const & step)
 
 	if (step.Command == "modsig") {
 		Mod_Signature_Step(step);
+		return;
+	}
+
+	if (step.Command == "stockcheck") {
+		Stock_Check_Step();
+		return;
+	}
+
+	if (step.Command == "previewtime") {
+		Preview_Time_Step();
 		return;
 	}
 

@@ -289,6 +289,7 @@ bool MapPreviewClass::Read_INI(CCINIClass const & ini)
 
 	Rect rect = ini.Get_Rect(PREVIEW, "Size", Map.LocalRect);
 	if (!Preview_Size_Is_Valid(rect.Width, rect.Height)) {
+		DebugString("Preview: a size of %dx%d is outside 1 to %d a side; no preview is read\n", rect.Width, rect.Height, PREVIEW_MAX_SIDE);
 		return(false);
 	}
 

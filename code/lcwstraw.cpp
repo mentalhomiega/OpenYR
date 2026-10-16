@@ -37,6 +37,7 @@
 
 #include "lcwstraw.h"
 
+#include "dbgprint.h"
 #include "lcw.h"
 
 #include <cassert>
@@ -170,7 +171,11 @@ int LCWStraw::Get(void * destbuf, int slen)
 
 			// A block that ends early, reads past its own bytes or copies from data it has not
 			// written is cut off; its bytes are never handed on.
-			if (LCW_Uncomp_Checked(ptr, BlockHeader.CompCount, Buffer, BlockHeader.UncompCount) != BlockHeader.UncompCount) break;
+			int const decoded = LCW_Uncomp_Checked(ptr, BlockHeader.CompCount, Buffer, BlockHeader.UncompCount);
+			if (decoded != BlockHeader.UncompCount) {
+				DebugString("LCW block of %d bytes decodes to %d of %d bytes; the stream ends there\n", (int)BlockHeader.CompCount, decoded, (int)BlockHeader.UncompCount);
+				break;
+			}
 			Counter = BlockHeader.UncompCount;
 		} else {
 			BlockHeader.UncompCount = (unsigned short)BASECLASS::Get(Buffer, BlockSize);

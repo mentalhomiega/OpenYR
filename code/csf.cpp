@@ -128,6 +128,7 @@ bool CSFClass::Load(Straw & straw)
 		return(false);
 	}
 	if (header.LabelCount <= 0 || header.StringCount <= 0) {
+		DebugString("CSF rejected: its header counts %d labels and %d strings\n", header.LabelCount, header.StringCount);
 		return(false);
 	}
 	LanguageID = header.Version < 2 ? 0 : header.Language;

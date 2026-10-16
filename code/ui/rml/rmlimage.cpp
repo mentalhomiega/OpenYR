@@ -9,6 +9,7 @@
 
 #include "ui/rml/rmlimage.h"
 
+#include "dbgprint.h"
 #include "ui/rml/rmlrendermath.h"
 
 #include <algorithm>
@@ -57,6 +58,9 @@ bool UI_Decode_SHP(std::span<std::uint8_t const> encoded, int frame, UIImageInde
 	int const width = Read_U16(encoded, 2);
 	int const height = Read_U16(encoded, 4);
 	int const count = Read_U16(encoded, 6);
+	if (width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION) {
+		DebugString("UI shape of %dx%d pixels is refused; a shape may be %d pixels a side at most\n", width, height, UI_SHP_MAX_DIMENSION);
+	}
 	if (width <= 0 || height <= 0 || width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION
 		|| frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
 		return(false);

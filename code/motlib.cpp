@@ -11,6 +11,7 @@
 
 #include "motlib.h"
 
+#include "dbgprint.h"
 #include "wwfile.h"
 
 #include "voxel.hh"
@@ -77,6 +78,7 @@ BOOL MotionLibrary::Read_File(FileClass & file)
 	VoxelAnimFileHeaderStruct header;
 
 	if (file.Read(&header, sizeof(header)) != sizeof(header)) {
+		DebugString("HVA %s rejected: its header is cut short\n", file.File_Name());
 		file.Close();
 		return(false);
 	}
@@ -89,6 +91,7 @@ BOOL MotionLibrary::Read_File(FileClass & file)
 	long long const matrices = (long long)header.LayerCount * (long long)header.FrameCount;
 	if (header.LayerCount <= 0 || header.FrameCount <= 0 || matrices > file_size / matrix_size
 		|| (long long)sizeof(header) + (long long)MAX_VOXEL_NAME_LENGTH * header.LayerCount + matrices * matrix_size > file_size) {
+		DebugString("HVA %s rejected: %d sections and %d frames, which its %lld bytes cannot hold\n", file.File_Name(), (int)header.LayerCount, (int)header.FrameCount, file_size);
 		file.Close();
 		return(false);
 	}
