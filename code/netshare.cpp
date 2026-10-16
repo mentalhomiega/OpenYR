@@ -415,6 +415,7 @@ bool DecodePubGameopt(char * options, char * name)
 	if (token[0] == 'A') {
 		int status = atol(&token[1]);
 		Net2SetAccept(name, status);
+		free(string);
 		return(false);
 	}
 

@@ -65,6 +65,7 @@
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "scenpack.h"
 #include "scheme.h"
 #include "surface.h"
 #include "tactical.h"

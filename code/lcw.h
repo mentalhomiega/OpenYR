@@ -35,6 +35,10 @@
 
 uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length=0);
 
+// LCW_Uncomp for a block whose compressed size is known. It never reads or writes outside the
+// two buffers; see lcw.cpp.
+int LCW_Uncomp_Checked(void const * source, unsigned long source_length, void * dest, unsigned long dest_length);
+
 int LCW_Comp(void const * source, void * dest, int length);
 
 /// <summary>

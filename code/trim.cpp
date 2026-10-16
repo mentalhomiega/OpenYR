@@ -62,7 +62,7 @@ char * strtrim(char * buffer)
 		}
 
 		if (source != buffer) {
-			strcpy(buffer, source);
+			memmove(buffer, source, strlen(source) + 1);
 		}
 
 		/*

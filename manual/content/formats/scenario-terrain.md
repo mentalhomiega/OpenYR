@@ -11,6 +11,7 @@ source_files:
   - code/display.cpp
   - code/map.cpp
   - code/ini.cpp
+  - code/lcw.cpp
   - code/lcwpipe.cpp
   - code/lcwstraw.cpp
   - code/lzopipe.cpp
@@ -68,7 +69,7 @@ An LZO section is damaged when any of these holds:
 
 A block header with both counts 0 is an empty block and is skipped, wherever it stands. Bytes that follow the end of a block's compressed data are ignored when the block expands to the size its header states.
 
-`[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes.
+`[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes. It also ends at a block that decodes to fewer bytes than its header states, whose commands read past its compressed bytes, or that copies from a position it has not yet decoded.
 
 When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the load continues. Cells the read did not reach keep the terrain they had, except for these cells, which become clear ground:
 

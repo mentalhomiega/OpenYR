@@ -57,6 +57,8 @@
 #include "shastraw.h"
 #include "xstraw.h"
 
+#include <climits>
+
 
 //template<class T> int Compare(T const *obj1, T const *obj2) {
 //	if (*obj1 < *obj2) return(-1);
@@ -121,8 +123,10 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 {
 	CCFileClass file(filename);		// Working file object.
 	Filename = strdup(file.File_Name());
-	FileStraw fstraw(file);
+	// The key straw is declared first so that it outlives the file straw it is chained to. The
+	// file straw's destructor reaches back to the straw chained from it.
 	PKStraw pstraw(PKStraw::DECRYPT, CryptRandom);
+	FileStraw fstraw(file);
 	Straw * straw = &fstraw;
 
 	if (!file.Is_Available()) return;
@@ -130,18 +134,20 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	/*
 	**	Stuctures used to hold the various file headers.
 	*/
-	FileHeader fileheader;
+	FileHeader fileheader = {};
 	struct {
 		short First;		// Always zero for extended mixfile format.
 		short Second;		// Bitfield of extensions to this mixfile.
-	} alternate;
+	} alternate = {};
 
 	/*
 	**	Fetch the first bit of the file. From this bit, it is possible to detect
 	**	whether this is an extended mixfile format or the plain format. An
-	**	extended format may have extra options or data layout.
+	**	extended format may have extra options or data layout. A file too short to hold
+	**	even that is not a mixfile.
 	*/
 	int got = straw->Get(&alternate, sizeof(alternate));
+	if (got != sizeof(alternate)) return;
 
 	/*
 	**	Detect if this is an extended mixfile. If so, then see if it is encrypted
@@ -157,22 +163,35 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 			pstraw.Get_From(&fstraw);
 			straw = &pstraw;
 		}
-		straw->Get(&fileheader, sizeof(fileheader));
+		if (straw->Get(&fileheader, sizeof(fileheader)) != sizeof(fileheader)) return;
 
 	} else {
 		memmove(&fileheader, &alternate, sizeof(alternate));
-		straw->Get(((char*)&fileheader)+sizeof(alternate), sizeof(fileheader)-sizeof(alternate));
+		int const rest = sizeof(fileheader)-sizeof(alternate);
+		if (straw->Get(((char*)&fileheader)+sizeof(alternate), rest) != rest) return;
 	}
+
+	/*
+	**	The counts are the file's claims. A negative one describes no mixfile.
+	*/
+	if (fileheader.count < 0 || fileheader.size < 0) return;
 
 	Count = fileheader.count;
 	DataSize = fileheader.size;
 //BGMono_Printf("Mixfileclass %s DataSize: %08x   \n",filename,DataSize);Get_Key();
 	/*
-	**	Load up the offset control array. If RAM is exhausted, then the mixfile is invalid.
+	**	Load up the offset control array. A directory that the file does not hold in full
+	**	is not a mixfile.
 	*/
 	HeaderBuffer = new SubBlock [Count];
 	if (HeaderBuffer == NULL) return;
-	straw->Get(HeaderBuffer, Count * sizeof(SubBlock));
+	if (straw->Get(HeaderBuffer, Count * sizeof(SubBlock)) != (int)(Count * sizeof(SubBlock))) {
+		delete [] HeaderBuffer;
+		HeaderBuffer = NULL;
+		Count = 0;
+		DataSize = 0;
+		return;
+	}
 
 	/*
 	**	The start of the embedded mixfile data will be at the current file offset.
@@ -180,8 +199,32 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	**	header was cleverly written with just the sufficient number of padding bytes so
 	**	that this condition would be true.
 	*/
-	DataStart = file.Seek(0, SEEK_CUR) + file.BiasStart;
+	int const header_end = file.Seek(0, SEEK_CUR);
+	DataStart = header_end + file.BiasStart;
 //	DataStart = file.Seek(0, SEEK_CUR);
+
+	/*
+	**	The data cannot be larger than what the file holds after its directory, and a member
+	**	can only be found if it lies inside the data. A member that reaches outside is left out
+	**	of the directory, so that no lookup hands out a position beyond the file or its cache.
+	*/
+	long long available = (long long)file.Size() - header_end;
+	if (available < 0) available = 0;
+	if (available > INT_MAX) available = INT_MAX;
+	long long data_size = (DataSize < available) ? DataSize : available;
+	int kept = 0;
+	for (int index = 0; index < Count; index++) {
+		SubBlock const & block = HeaderBuffer[index];
+		long long const end = (long long)block.Offset + block.Size;
+		if (block.Offset >= 0 && block.Size >= 0 && end <= available) {
+			HeaderBuffer[kept++] = block;
+
+			// A header that undercounts its data still finds the members that lie inside the file.
+			if (end > data_size) data_size = end;
+		}
+	}
+	Count = kept;
+	DataSize = (int)data_size;
 
 	/*
 	**	Attach to list of mixfiles.
@@ -441,7 +484,8 @@ bool MixFileClass::Cache(Buffer const * buffer)
 		*/
 		int actual = straw->Get(Data, DataSize);
 		if (actual != DataSize) {
-			delete [] Data;
+			if (IsAllocated) delete [] Data;
+			IsAllocated = false;
 			Data = NULL;
 			file.Error(EIO);
 			return(false);
@@ -458,7 +502,8 @@ bool MixFileClass::Cache(Buffer const * buffer)
 			sha.Result(digest2);
 			fstraw.Get(digest1, sizeof(digest1));
 			if (memcmp(digest1, digest2, sizeof(digest1)) != 0) {
-				delete [] Data;
+				if (IsAllocated) delete [] Data;
+				IsAllocated = false;
 				Data = NULL;
 				return(false);
 			}
@@ -546,6 +591,9 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 
 	/// Can't call strupr on a const string.
 	char filename_upper[_MAX_PATH];
+	if (strlen(filename) >= sizeof(filename_upper)) {
+		return(false);
+	}
 	strcpy(filename_upper, filename);
 	strupr(filename_upper);
 	int crc = (CRCEngine()(filename_upper, strlen(filename_upper))); //Calculate_CRC(strupr((char *)filename), strlen(filename));

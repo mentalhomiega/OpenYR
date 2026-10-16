@@ -26,6 +26,7 @@
 #include "pcx.h"
 #include "previewtext.h"
 #include "scenario.h"
+#include "scenpack.h"
 #include "surface.h"
 #include "tactical.h"
 #include "terrain.h"
@@ -283,9 +284,13 @@ bool MapPreviewClass::Read_INI(CCINIClass const & ini)
 
 	if (SurfacePtr != NULL) {
 		delete SurfacePtr;
+		SurfacePtr = NULL;
 	}
 
 	Rect rect = ini.Get_Rect(PREVIEW, "Size", Map.LocalRect);
+	if (!Preview_Size_Is_Valid(rect.Width, rect.Height)) {
+		return(false);
+	}
 
 	SurfacePtr = new DSurface(rect.Width, rect.Height);
 	SurfacePtr->Fill(0);

@@ -262,6 +262,37 @@ Git is optional at build time once the complete source tree is present. Without
 Git or repository metadata, the build records the commit as `unknown` and shows
 the version without one.
 
+## Fuzz tests
+
+`tests/fuzz` holds one CTest test, named `fuzz_<parser>`, for each parser that reads data from outside the game:
+
+| Test | Parser |
+| --- | --- |
+| `fuzz_ini` | The INI reader, including the Base64 blocks of a section |
+| `fuzz_spawn` | The `SPAWN.INI` reader |
+| `fuzz_lcw` | The Format80 decoder, and `OverlayPack` and `OverlayDataPack` read through it |
+| `fuzz_lzo` | The LZO block decoder, and `IsoMapPack5` and `PreviewPack` read through it |
+| `fuzz_net` | The lobby's game options text, packet header, file offer and file chunk checks |
+| `fuzz_csf` | The CSF string table |
+| `fuzz_mix` | The MIX archive header and directory |
+| `fuzz_image` | The interface's SHP, PCX and PAL decoders |
+| `fuzz_pcx` | The engine's PCX reader |
+| `fuzz_voxel` | The VXL and HVA readers |
+
+Each test writes its own seed inputs, mutates them with a generator that starts from a fixed seed, and runs a fixed number of mutated inputs through the parser. It needs no game files, and every run gives the same result. A test fails when the parser crashes, runs for more than 10 seconds on one input, asks for a single allocation of more than 256 MiB, throws, or breaks a check on its result. The failure prints the input in hex on the standard error stream.
+
+To reproduce a failure, pass the input to the test with `--file <path>`. `--iterations N` and `--seed S` change the run, as do the `FUZZ_ITERATIONS` and `FUZZ_SEED` environment variables, and `--dump-iteration N` prints mutated input number N. An input that once crashed a parser stays in that test's regression list and runs unmutated before the others.
+
+The Visual Studio build compiles these tests with the rest of `tests/`. On Linux, where the project does not configure, `tests/fuzz` configures on its own. It compiles the engine sources with clang against stand-in Windows headers in `tests/fuzz/shim` and builds with AddressSanitizer and UndefinedBehaviorSanitizer:
+
+```bash
+cmake -S tests/fuzz -B build-fuzz -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang
+cmake --build build-fuzz -j 2
+ctest --test-dir build-fuzz
+```
+
+The standalone build links with the system C++ compiler, so it works where only GCC's sanitizer libraries are installed. It is not a supported target and shows nothing about Windows behavior. The SHA and big-number code assumes a 32-bit `long`, so `fuzz_mix` leaves the archive digest check and the header key off.
+
 ## Continuous integration
 
 The `Engine` workflow runs for ready pull requests and pushes to `main` when

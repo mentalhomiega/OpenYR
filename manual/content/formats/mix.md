@@ -108,6 +108,6 @@ An archive starts with a header, then its index, then the member data:
 
 The checksum is computed from the member's name in upper case, without a path. Keep the index sorted by checksum in ascending order, compared as signed 32-bit integers. The game finds a member by binary search over the index, so an entry out of order may not be found. The order of the members in the data does not matter.
 
-:::danger[Do not mount an empty or truncated archive]
-Keep every archive the game mounts at least as long as its header and index. If the file is shorter, for example an empty file, the missing member count, data size and index entries are taken from leftover memory. A negative member count crashes the game when it mounts the archive. Otherwise the archive joins the search with meaningless entries, and a request that matches one of them reads data from a wrong position.
+:::caution[A damaged archive is skipped]
+An archive that is shorter than its header and index, or whose member count or data size is negative, is not mounted. A member whose offset or size is negative, or whose end lies past the end of the file, is left out of the search, so a request for it goes on to the next archive. A data size larger than the bytes after the index is cut to them, and one smaller than the members inside the file is raised to cover them.
 :::

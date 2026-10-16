@@ -44,6 +44,28 @@ bool Get_Int(Straw & straw, int & value)
 
 
 /*
+ * Reads count bytes into the buffer, a piece at a time. A length the table writes is only a
+ * claim, so the buffer grows with the bytes the stream really has; a claim the stream cannot
+ * back fails after those bytes instead of asking for the whole size at once.
+ */
+bool Get_Bytes(Straw & straw, std::string & buffer, long long count)
+{
+	buffer.clear();
+
+	char piece[4096];
+	while (count > 0) {
+		int const want = (int)std::min<long long>(count, (long long)sizeof(piece));
+		if (straw.Get(piece, want) != want) {
+			return(false);
+		}
+		buffer.append(piece, (std::size_t)want);
+		count -= want;
+	}
+	return(true);
+}
+
+
+/*
  * Drops spaces at the start of a line, after a tab, doubled, or before a line break or tab,
  * and a trailing space, as Yuri's Revenge does when it reads a string. A dropped space does
  * not count as the previous character.
@@ -105,7 +127,7 @@ bool CSFClass::Load(Straw & straw)
 	if (straw.Get(&header, sizeof(header)) != sizeof(header) || header.ID != TAG_FILE) {
 		return(false);
 	}
-	if (header.LabelCount == 0 || header.StringCount == 0) {
+	if (header.LabelCount <= 0 || header.StringCount <= 0) {
 		return(false);
 	}
 	LanguageID = header.Version < 2 ? 0 : header.Language;
@@ -120,8 +142,7 @@ bool CSFClass::Load(Straw & straw)
 		}
 
 		EntryType entry;
-		entry.Label.resize(length);
-		if (length > 0 && straw.Get(entry.Label.data(), length) != length) {
+		if (!Get_Bytes(straw, entry.Label, length)) {
 			break;
 		}
 		entry.HasExtra = false;
@@ -135,24 +156,22 @@ bool CSFClass::Load(Straw & straw)
 				break;
 			}
 
-			std::wstring value(chars, L'\0');
-			if (chars > 0 && straw.Get(value.data(), chars * 2) != chars * 2) {
+			// The characters are 16-bit units, stored complemented.
+			std::string units;
+			if (!Get_Bytes(straw, units, 2LL * chars)) {
 				ok = false;
 				break;
 			}
-			for (wchar_t & c : value) {
-				c = (wchar_t)~c;
+			std::wstring value((std::size_t)chars, L'\0');
+			for (std::size_t at = 0; at < value.size(); at++) {
+				unsigned int const unit = (unsigned char)units[at * 2] | ((unsigned int)(unsigned char)units[at * 2 + 1] << 8);
+				value[at] = (wchar_t)(unit ^ 0xFFFF);
 			}
 
 			std::string extra;
 			if ((unsigned int)tag == TAG_STRING_EXTRA) {
 				int extra_length = 0;
-				if (!Get_Int(straw, extra_length) || extra_length < 0) {
-					ok = false;
-					break;
-				}
-				extra.resize(extra_length);
-				if (extra_length > 0 && straw.Get(extra.data(), extra_length) != extra_length) {
+				if (!Get_Int(straw, extra_length) || extra_length < 0 || !Get_Bytes(straw, extra, extra_length)) {
 					ok = false;
 					break;
 				}

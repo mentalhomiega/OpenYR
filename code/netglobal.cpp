@@ -43,6 +43,20 @@ namespace NetGlobal
 		static_assert(HEADER_SIZE + sizeof(GlobalPacketType::Options) == PACKET_SIZE);
 
 
+		static_assert(sizeof(NetCommandType) == sizeof(int));
+
+		/// <summary>
+		/// Reads the command number at the start of a packet. The number is read as an integer
+		/// because it comes off the wire and need not name a command.
+		/// </summary>
+		int Read_Command(void const * packet) noexcept
+		{
+			int number;
+			std::memcpy(&number, packet, sizeof(number));
+			return(number);
+		}
+
+
 		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
 		bool Has_Terminator(char const * text, std::size_t capacity)
 		{
@@ -163,10 +177,7 @@ namespace NetGlobal
 			return(available);
 		}
 
-		NetCommandType command;
-		std::memcpy(&command, packet, sizeof(command));
-
-		switch (command) {
+		switch (Read_Command(packet)) {
 			case NET_QUERY_GAME:
 			case NET_QUERY_PLAYER:
 			case NET_CHAT_REQUEST:
@@ -278,14 +289,14 @@ namespace NetGlobal
 
 
 	/// <summary>Identifies public in-game discovery commands.</summary>
-	static bool Command_Is_Public(NetCommandType command)
+	static bool Command_Is_Public(int command)
 	{
 		return(command == NET_QUERY_GAME || command == NET_QUERY_PLAYER);
 	}
 
 
 	/// <summary>Identifies commands restricted to session members.</summary>
-	static bool Command_Requires_Member(NetCommandType command)
+	static bool Command_Requires_Member(int command)
 	{
 		switch (command) {
 			case NET_SIGN_OFF:
@@ -313,8 +324,9 @@ namespace NetGlobal
 			return(DecodeError::INVALID_LENGTH);
 		}
 
-		bool const is_public = Command_Is_Public(packet.Command);
-		bool const requires_member = Command_Requires_Member(packet.Command);
+		int const command = Read_Command(&packet);
+		bool const is_public = Command_Is_Public(command);
+		bool const requires_member = Command_Requires_Member(command);
 		if (!is_public && !requires_member) {
 			return(DecodeError::INVALID_COMMAND);
 		}
@@ -322,7 +334,7 @@ namespace NetGlobal
 			return(DecodeError::SENDER_NOT_MEMBER);
 		}
 
-		switch (packet.Command) {
+		switch (command) {
 			case NET_QUERY_PLAYER:
 				if (!Has_Terminator(packet.Name, sizeof(packet.Name))) {
 					return(DecodeError::UNTERMINATED_NAME);
@@ -394,8 +406,7 @@ namespace NetGlobal
 			return(DecodeError::INVALID_LENGTH);
 		}
 
-		NetCommandType command;
-		std::memcpy(&command, packet, sizeof(command));
+		int const command = Read_Command(packet);
 		if (command == NET_FILE_CHUNK) {
 			return(DecodeError::NONE);
 		}

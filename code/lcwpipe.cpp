@@ -181,8 +181,11 @@ int LCWPipe::Put(void const * source, int slen)
 				**	through the pipe.
 				*/
 				if (Counter == BlockHeader.CompCount) {
-					LCW_Uncomp(Buffer, Buffer2, BlockHeader.UncompCount);
-					total += BASECLASS::Put(Buffer2, BlockHeader.UncompCount);
+					// Only the bytes the block really decoded to go on; a damaged block adds none.
+					int const decoded = LCW_Uncomp_Checked(Buffer, BlockHeader.CompCount, Buffer2, BlockHeader.UncompCount);
+					if (decoded > 0) {
+						total += BASECLASS::Put(Buffer2, decoded);
+					}
 					Counter = 0;
 					BlockHeader.CompCount = 0xFFFF;
 				}

@@ -22,6 +22,9 @@ static const std::uint8_t UI_PCX_PALETTE_MARKER = 0x0C;
 
 static const int UI_PCX_MAX_DIMENSION = 4096;
 
+// A shape file states its size in 16 bits a side, which would allocate up to 4 GB.
+static const int UI_SHP_MAX_DIMENSION = 4096;
+
 
 static int Read_16(std::span<std::uint8_t const> bytes, std::size_t offset)
 {
@@ -54,7 +57,8 @@ bool UI_Decode_SHP(std::span<std::uint8_t const> encoded, int frame, UIImageInde
 	int const width = Read_U16(encoded, 2);
 	int const height = Read_U16(encoded, 4);
 	int const count = Read_U16(encoded, 6);
-	if (width <= 0 || height <= 0 || frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
+	if (width <= 0 || height <= 0 || width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION
+		|| frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
 		return(false);
 	}
 

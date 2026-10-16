@@ -59,4 +59,4 @@ Every number is a 32-bit little-endian integer. A tag is four bytes.
 | Labels | One record per label: the tag ` LBL`, the number of strings the label has, the length of the label name in bytes, and the name in ASCII. The label's strings follow it directly. |
 | Strings | The tag ` RTS`, or `WRTS` for a string with an extra value, then the length in UTF-16 characters and the characters with every bit inverted. A `WRTS` string ends with the length of its extra value in bytes and the value in ASCII. |
 
-A table that declares no labels or no strings is refused. A record that is cut short or carries an unknown tag ends the table: the labels before it are kept, and the rest are missing.
+A table that declares no labels or no strings, or a negative number of either, is refused. A record that is cut short or carries an unknown tag ends the table: the labels before it are kept, and the rest are missing.

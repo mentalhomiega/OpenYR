@@ -547,6 +547,10 @@ void VoxelLibrary::Clear(void)
 		delete [] Data;
 	}
 	Data = NULL;
+
+	LayerCount = 0;
+	LayerInfoCount = 0;
+	DataSize = 0;
 }
 
 
@@ -571,7 +575,21 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 	}
 
 	VoxelHeaderStruct hdr;
-	file.Read(&hdr, sizeof(hdr));
+	if (file.Read(&hdr, sizeof(hdr)) != sizeof(hdr)) {
+		file.Close();
+		return(false);
+	}
+
+	// The counts are the file's claims, and each table they size must fit in the file.
+	long long const file_size = file.Size();
+	if (hdr.LayerCount < 0 || hdr.LayerInfoCount < 0 || hdr.DataSize < 0
+		|| (long long)hdr.LayerCount * (long long)sizeof(VoxelLayerHeaderStruct) > file_size
+		|| (long long)hdr.LayerInfoCount * (long long)sizeof(VoxelLayerInfoStruct) > file_size
+		|| (long long)hdr.DataSize > file_size
+		|| (long long)hdr.PaletteCount * (long long)(2 + VOXEL_PALETTE_SIZE * sizeof(RGBStruct)) > file_size) {
+		file.Close();
+		return(false);
+	}
 
 	LayerCount = hdr.LayerCount;
 	LayerInfoCount = hdr.LayerInfoCount;
@@ -652,6 +670,13 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 			return(false);
 		}
 
+		// The layer's info records must exist, or drawing it would index past the table.
+		if (lyrhdr.InfoIndex < 0 || lyrhdr.InfoIndex >= (int)LayerInfoCount) {
+			Clear();
+			file.Close();
+			return(false);
+		}
+
 		LayerHeaders[i].InfoIndex = lyrhdr.InfoIndex;
 		LayerHeaders[i].Unused1 = lyrhdr.Unused1;
 		LayerHeaders[i].Unused2 = lyrhdr.Unused2;
@@ -667,6 +692,17 @@ int VoxelLibrary::Read_File(FileClass & file, int load_file_palette)
 
 		VoxelLayerInfoStruct layerinfo;
 		if (file.Read(&layerinfo, sizeof(layerinfo)) != sizeof(layerinfo)) {
+			Clear();
+			file.Close();
+			return(false);
+		}
+
+		// The span tables and the voxel data are offsets into the body. The drawers read two
+		// 4-byte entries for each column of the layer's footprint, so both tables must lie in it.
+		long long const table_size = 4LL * layerinfo.XSize * layerinfo.YSize;
+		if (layerinfo.StartOffset < 0 || layerinfo.EndOffset < 0 || layerinfo.DataOffset < 0
+			|| layerinfo.StartOffset + table_size > DataSize || layerinfo.EndOffset + table_size > DataSize
+			|| layerinfo.DataOffset > DataSize) {
 			Clear();
 			file.Close();
 			return(false);
