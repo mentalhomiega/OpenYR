@@ -11,7 +11,7 @@ when_omitted:
 
 The value is the map file of the campaign's first mission. Choosing the campaign from the mission list starts that file. Write the path with its extension, as the shipped campaigns do with `Maps/Missions/GDI1A.MAP`.
 
-A value may start with `RA2->`: `RA2->ALL01T.MAP` starts the map `ALL01T.MAP`. The game finds the map by its file name in the archives it searches, so the prefix does not limit where the map is read from. A mission with the prefix reads its movie indexes from Red Alert 2's movie list, not Yuri's Revenge's.
+A value may start with `RA2->`, as in `RA2->ALL01T.MAP`. The prefix is removed before the file name is used, so the map is found by `ALL01T.MAP` alone, as it would be without the prefix. The prefix also makes the movie that a mission's trigger plays get its index from Red Alert 2's movie list rather than Yuri's Revenge's. Any other prefix stays part of the file name.
 
 If the file cannot be read, the game shows an error message and returns to the menu. An empty value fails the same way.
 
