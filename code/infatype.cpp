@@ -350,7 +350,7 @@ void InfantryTypeClass::Read_Sequence_INI(void)
 			if (ArtINI.Get_String(seqname, SequenceName[i], "", dostring, sizeof(dostring)) > 0) {
 				DoInfoStruct * doinfo = &control[i];
 
-				sscanf(dostring, "%d,%d,%d,%s", &doinfo->Frame, &doinfo->Count, &doinfo->Jump, facing);
+				sscanf(dostring, "%d,%d,%d,%9s", &doinfo->Frame, &doinfo->Count, &doinfo->Jump, facing);
 				if (strcmp("N", facing) == 0) {
 					doinfo->Facing = FACING_N;
 				} else if (strcmp("NE", facing) == 0) {
