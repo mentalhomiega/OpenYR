@@ -237,3 +237,19 @@ site_exclusions:
     classification: duplicate
     canonical_key: LocalSize
     reason: The menu battle sizes a map from its [Map] LocalSize, the same setting DisplayClass already extracts from the map file.
+  # Settings for the menu battle's own setup, which the settings screen does not expose.
+  - path: code/shellmap.cpp
+    function: Pick_Map
+    keys: [Map]
+    classification: excluded
+    reason: Tuning for the menu battle's own setup, which no manual page documents; the switch players see is the Options MenuBattle key.
+  - path: code/shellmap.cpp
+    function: Prepare_Battle
+    keys: [Players, Credits, SuperWeapons]
+    classification: excluded
+    reason: Tuning for the menu battle's own setup, which no manual page documents; the switch players see is the Options MenuBattle key.
+  - path: code/shellmap.cpp
+    function: Shellmap_Enabled
+    keys: [InTests]
+    classification: excluded
+    reason: A switch the menu battle test scripts write with -Settings so the battle runs during a test; the manual does not document it.
