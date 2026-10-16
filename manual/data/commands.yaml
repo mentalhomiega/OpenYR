@@ -541,6 +541,111 @@ registered_commands:
     source: code/init.cpp
     class: StructureTabCommandClass
     guard: null
+- id: NextSidebarTab
+  route_id: nextsidebartab
+  kind: registered
+  title: Next sidebar tab
+  description: Shows the next sidebar tab that has something to build.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: NextSidebarTabCommandClass
+    guard: null
+- id: AttackMove
+  route_id: attackmove
+  kind: registered
+  title: Attack move
+  description: Makes the next click on the ground an attack-move order for the selected units.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AttackMoveCommandClass
+    guard: null
+- id: ForceFire
+  route_id: forcefire
+  kind: registered
+  title: Force fire
+  description: Hold to fire on a unit or the ground.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: HeldModifierCommandClass
+    guard: null
+- id: ForceMove
+  route_id: forcemove
+  kind: registered
+  title: Force move
+  description: Hold to move onto an occupied cell.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: HeldModifierCommandClass
+    guard: null
+- id: SelectModifier
+  route_id: selectmodifier
+  kind: registered
+  title: Add to selection
+  description: Hold to add or remove units from the selection.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: HeldModifierCommandClass
+    guard: null
+- id: QueueMove
+  route_id: queuemove
+  kind: registered
+  title: Queue move
+  description: Hold to queue a move after the current order.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: HeldModifierCommandClass
+    guard: null
+- id: GridBuildModifier
+  route_id: gridbuildmodifier
+  kind: registered
+  title: Grid build modifier
+  description: Hold, then press Q W E R, A S D F or Z X C V to start the sidebar cameos in that order.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: HeldModifierCommandClass
+    guard: null
 - id: DefenseTab
   route_id: defensetab
   kind: registered
@@ -2644,6 +2749,21 @@ fixed_controls:
   context: Multiplayer score screen
   _provenance:
     source: code/mpscore.cpp
+    guard: null
+- id: fixed:campaign-results-continue
+  route_id: fixed-campaign-results-continue
+  kind: fixed
+  title: Dismiss campaign results
+  description: Closes the campaign results screen after its prompt appears.
+  audience: player
+  availability: *id001
+  bindings:
+  - Left mouse button
+  - Escape
+  - Space
+  context: Campaign results screen after a won mission
+  _provenance:
+    source: code/score.cpp
     guard: null
 - id: fixed:main-menu-version
   route_id: fixed-main-menu-version
