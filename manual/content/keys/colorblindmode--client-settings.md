@@ -5,7 +5,7 @@ label: Colour-blind mode
 see_also: [ColorBlindStrength, Brightness, Gamma, HDROutput]
 when_omitted:
   kind: value
-  value: Off
+  value: "Off"
 ---
 
 `ColorBlindMode=` chooses a colour-blind correction for the picture the game shows. It is written in `[Video]` and takes one of four values:
