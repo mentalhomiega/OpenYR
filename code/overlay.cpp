@@ -409,12 +409,16 @@ void OverlayClass::Read_INI(CCINIClass const & ini)
 			LCWStraw uncomp(LCWStraw::DECOMPRESS);
 			uncomp.Get_From(&bpipe);
 
+			int rejected = 0;
 			for (int y = 0; y < MAP_CELL_H; y++) {
 				for (int x = 0; x < MAP_CELL_W; x++) {
 					Cell cell(x, y);
 
 					unsigned char value = 0xFF;
 					uncomp.Get(&value, sizeof(value));
+					if (value != 0xFF && Overlay_Index_From_Byte(value, OverlayTypes.Count()) < 0) {
+						rejected++;
+					}
 					OverlayType classid = OverlayType(Overlay_Index_From_Byte(value, OverlayTypes.Count()));
 
 					if (classid != OVERLAY_NONE && (OverlayTypes[classid]->Get_Image_Data() != NULL || OverlayTypes[classid]->CellAnim)) {
@@ -434,6 +438,9 @@ void OverlayClass::Read_INI(CCINIClass const & ini)
 						}
 					}
 				}
+			}
+			if (rejected > 0) {
+				DebugString("OverlayPack: %d cell(s) name an overlay type the rules do not define; they are left empty\n", rejected);
 			}
 			temp_surface.Unlock();
 		}
