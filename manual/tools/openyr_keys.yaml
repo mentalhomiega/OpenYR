@@ -34,6 +34,7 @@ records:
   brightness-and-gamma: OpenYR
   colour-blind-correction: OpenYR
   frame-rate-limit-option: OpenYR
+  hang-seconds: OpenYR
   free-player-colors: OpenYR
   hdr-emissive-groundwork: OpenYR
   hdr-output: OpenYR
