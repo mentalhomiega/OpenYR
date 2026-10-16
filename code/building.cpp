@@ -7042,7 +7042,7 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 				Status = CLEAR_BIB;
 				IsToDisplay = true;
 				End_Anim(BANIM_IDLE);
-				Begin_Anim(BANIM_PRODUCTION, false);
+				Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
 				break;
 
 			/*
@@ -8536,7 +8536,8 @@ void BuildingClass::Animation_AI(void)
 
 	Update_Anim_Appearance();
 
-	if (Class->IsCanUnitRepair && Mission != MISSION_REPAIR && (Anims[BANIM_PRODUCTION] != NULL || Anims[BANIM_SPECIAL_TWO] != NULL)) {
+	// A naval repair yard keeps its production animation, which plays the ship's exit to its end (gamemd UpdateAnimations 0x4509D0 tests Naval).
+	if (Class->IsCanUnitRepair && !Class->IsNaval && Mission != MISSION_REPAIR && (Anims[BANIM_PRODUCTION] != NULL || Anims[BANIM_SPECIAL_TWO] != NULL)) {
 		Begin_Anim(BANIM_SPECIAL_THREE, false);
 		End_Anim(BANIM_PRODUCTION);
 		End_Anim(BANIM_SPECIAL_TWO);
