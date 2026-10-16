@@ -1942,7 +1942,11 @@ void HouseClass::AI(void)
 
 	if (IsToLook) {
 		IsToLook = false;
-		Map.All_To_Look(false, false, this);
+
+		// Gamemd's allied-building reveal goes through TechnoClass::UpdateSight (0x70AF50), which returns for a MultiplayPassive owner.
+		if (!Class->IsMultiplayPassive) {
+			Map.All_To_Look(false, false, this);
+		}
 	}
 }
 

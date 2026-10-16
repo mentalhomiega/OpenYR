@@ -1,0 +1,17 @@
+; Allied 7 (ALL07SMD.MAP) on Medium, the campaign default: the two Neutral oil derricks at 141,228 and 141,232
+; are not discovered at the start. Neutral is MultiplayPassive, so the first-frame sweep of its buildings reveals
+; nothing (gamemd's allied-building reveal goes through TechnoClass::UpdateSight, 0x70AF50, which returns for a
+; passive owner). Derrick_AR_Found and Derrick_AS_Found are "Discovered by player" triggers, and Activate_Oil_Grab(Med)
+; starts the Yuri3 engineers that capture the derricks, so none of the three may spring before the player's sight
+; reaches a derrick.
+; Expected: radarall CAOILD writes "discovered 0" for both derricks at frames 2 and 300, and the trigger log
+; has no "sprung" line for Derrick_AR_Found, Derrick_AS_Found or Activate_Oil_Grab before frame 300. At frame
+; 1400 both derricks still belong to Neutral; before this fix the Yuri3 engineers captured them at about 1205
+; and 1385.
+; Run from E:\Claude ra2 decomp:
+;   scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/all07-derrick-discovery.txt -Campaign -Map ALL07SMD.MAP -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST   (radarall|sprung)|AUTOTEST trigger fired|AUTOTEST frame (300|1400)|Exception"
+1 triggerlog 1
+2 radarall CAOILD
+300 radarall CAOILD
+1400 radarall CAOILD
+1401 quit
