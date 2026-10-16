@@ -20,102 +20,54 @@ Your job:
 
 ## Open jobs
 
-Jobs A to E target Beta 23 (`d375ab28`) and are the most useful now; take them first. Jobs 1 to 10 are older and still open.
+These jobs build on the 2026-10-15 cloud branches, which are now merged into `modern`. Take them in order.
 
-### A. Review: the Beta 23 changes
-
-```text
-Review the commits in `33ea7c86..d375ab28` on `origin/modern` (Beta 23). They change four areas. (1) The map reader accepts a terrain pack with no end marker: `code/cellrecords.h` and `MapClass::Read_Binary_4/5`. (2) A `-SPAWN` game whose scenario fails to load now exits: `code/init.cpp` `Select_Game`. (3) Structure turret recoil and its keys: `code/building.cpp`, `code/techno.cpp`, `BuildingRecoilState`. (4) The voxel specular highlight and the `VoxelSpecularStrength`/`VoxelShadeScale`/`VoxelSpecularFromView` keys: `code/techno.cpp`, `voxlib.cpp`, `_voxel.cpp`. Also review the new launcher and setup in `tools/launcher` and `tools/setup`, but only for correctness, because job B covers security. For each real bug you find (wrong behaviour, a missed case, undefined behaviour, a save or sync mistake), fix it with a unit test if one fits, one commit per fix. Branch: `cloud/review-beta23-YYYY-MM-DD`.
-```
-
-### B. Security review: setup program and launcher
+### A. Fix the findings the reviews listed
 
 ```text
-Testers run `tools/setup` (OpenYR-Setup.exe) and `tools/launcher` (OpenYR.exe) on their own PCs. The launcher downloads new betas from GitHub Releases and runs the setup silently, so audit both programs as code that handles untrusted input. Check these things. Zip extraction: path traversal (zip-slip), absolute paths, `..`, drive letters and reparse points. Uninstall: it must never delete outside the install folder, never follow junctions, and never act on a damaged `openyr-install.ini` `[Files]` list. Download: the HTTPS checks; the SHA-256 compare and its exact parsing of the `.sha256` file; partial-download handling; temp-folder permissions; DLL search-order hijacking when the copied updater runs from %TEMP% (consider `SetDefaultDllDirectories`). Also check command-line quoting when starting processes, registry writes, and the JSON feed parser against hostile input such as huge strings, odd escapes and missing fields. Fix every real issue with a test in `tests/setup` or `tests/launcher`, one commit per fix. Note in the log what can only be checked on Windows. Branch: `cloud/security-setup-YYYY-MM-DD`.
+Read the "Open" or "Not fixed" lists in `cloud-log/2026-10-15-review-ai.md`, `cloud-log/2026-10-15-review-units.md` and `cloud-log/2026-10-15-review-buildings.md` on `origin/modern`. They include reinforcement edge cases, the dead test in `Pick_Drop_Target`, the `Stop_Drain` takeover case, a dangling spawn node pointer and the jumpjet turn wrap. For each, re-read the code on `modern` (it may have changed since), and fix it when the code itself proves it wrong, one fix per commit with a unit test where one fits and its manual update. Where the right behaviour depends on what gamemd does, list it for us with file, line and the case instead of guessing. Stop when every listed finding has a verdict. Branch: `cloud/review-fixes-YYYY-MM-DD`.
 ```
 
-### C. Fuzz the parsers that read untrusted data
+### B. Finish the file-reader hardening
 
 ```text
-Players load custom maps, mods and network data from strangers. Add a deterministic fuzz-test harness under `tests/fuzz` that needs no game files and no new dependencies. It should use a fixed-seed mutator over small synthetic seed inputs written by the test itself, run a bounded number of iterations, and register in ctest. Point it at these parsers: the INI parser; the spawn.ini reader (`code/spawnerconfig.cpp`, including the new `ColorRGB`); the scenario binary packs (IsoMapPack5, OverlayPack, OverlayDataPack, PreviewPack) and the Format80 and LZO decoders they use; the network game-options text decode (`code/netshare.cpp`); the CSF string table; the MIX header; and the SHP, VXL, HVA, PCX and PAL header readers. Where you can, build the targets with the sanitizers available on Linux (`-fsanitize=address,undefined`). Fix each crash, overflow or hang with a bounds check, one commit per parser, and keep any input that once crashed as a regression seed. Branch: `cloud/fuzz-YYYY-MM-DD`.
+Read `cloud-log/2026-10-15-fuzz.md` and `cloud-log/2026-10-15-custom-maps.md` on `origin/modern`. Do the follow-ups they left: structure validation for SHP and VXL frames (offsets and sizes inside the file), the `strtrim` trailing-space case, and every caller of `LCW_Uncomp` that does not check its result or pass an output limit. Each new check must still accept every well-formed file, including unusual ones gamemd loads; when unsure, log and accept rather than reject. Add a regression seed for each fix to the fuzz harness, one commit per reader. Also make the standalone Linux fuzz build compile again with the engine sources the harnesses now need. Branch: `cloud/fuzz-followup-YYYY-MM-DD`.
 ```
 
-### D. Custom map compatibility
+### C. Security follow-ups: setup and launcher
 
 ```text
-Beta 22 rejected custom maps from the CnCNet map list because our IsoMapPack5 reader required an end marker that map editors don't write (fixed in commit `3ad785e1`). Other readers may be stricter than gamemd in the same way. From public format documentation only (ModEnc, the C&C modding wikis and format write-ups), list how maps saved by FinalAlert 2 and by newer editors such as World-Altering Editor differ from Westwood's maps. Never copy code from GPL editors. Check: pack chunk sizes and padding; empty or missing sections; key order; lowercase or duplicate keys; Tags, Triggers, Events and Actions written with extra or fewer fields; `[Map] Size`/`LocalSize` edge cases; `[Basic]` keys editors add; and preview packs. Compare each with our readers (grep `Read_Binary`, `Read_INI`, `Load_Scenario_File`, `trigger*.cpp`, `tevent.cpp`, `taction.cpp`). Wherever we reject or mis-read something gamemd accepts, fix it to accept what gamemd accepts, and write a synthetic unit test. Branch: `cloud/custom-maps-YYYY-MM-DD`.
+Read `cloud-log/2026-10-15-security-setup.md` on `origin/modern`. Fix the residual hardening findings it lists that can be fixed and tested without Windows, one commit per finding with a test in `tests/setup` or `tests/launcher`. For the rest, and for code signing, write a short plan in your log: what to change, how to test it on Windows, and the risk if we leave it. Branch: `cloud/security-followup-YYYY-MM-DD`.
 ```
 
-### E. Index of OpenYR-only INI keys for modders
+### D. Review: the Beta 24 changes
 
 ```text
-Since forking, OpenYR has added many INI keys that Yuri's Revenge doesn't have, for example the recoil keys, the voxel lighting keys, `ColorRGB` in spawn.ini, launcher `[Update]` keys and the display options. The change records in `manual/changes/` and the key pages under `manual/content/keys/` describe them one by one. Write `docs/OPENYR_KEYS.md`: a single index of every key OpenYR reads that gamemd does not, grouped by area (rules, art, client settings, spawn.ini, OPENTS.INI). Give each key its default, a one-line effect, and a link to its key page, plus a short example block for the main groups. Generate the list from the manual data (`manual/data/ini-keys.yaml` and the change records) rather than by hand, and add a small script under `manual/tools/` that rebuilds the index, so it stays current. Write in our docs voice ("we/our", plain). Branch: `cloud/keys-index-YYYY-MM-DD`.
+Review the commits in `d375ab28..origin/modern` that touch `code/`, skipping merges and the 2026-10-15 cloud work you can recognise by its `cloud-log` entries. The main areas are the menu battle behind the menus (`code/shellmap.cpp`, its `BattleScope` state swap, sound gating in `code/voc.cpp`), the Settings screen and tabs (`code/ui/uisettings*.cpp`, `ui/themes/*/`), the mission browser (`code/ui/screens/missionbrowser/`), the hang watchdog (`code/hangwatch.cpp`), the score screens, aircraft waypoints and picking, and the gameplay fixes for slave miners, 1% Verses, voices, sensors, hover health bars and planned waypoint legs. Look for logic errors, objects used after they are freed (the menu battle swaps global state, so check what it misses), thread-safety in the watchdog, and comments or manual pages the code does not support. Fix only what the code proves wrong, one fix per commit; list the rest with file, line and case. Branch: `cloud/review-beta24-YYYY-MM-DD`.
 ```
 
-### 1. Review: AI, teams and triggers
+### E. Save-game audit since revision 69
 
 ```text
-Review the `modern` commits since `1cb8bf7` that touch the computer player, teams, scripts and triggers: run `git log --oneline 1cb8bf7..origin/modern -- code/team.cpp code/team.h code/teamtype.cpp code/teamtype.h code/aitrig.cpp code/aitrig.h code/house.cpp code/house.h code/reinf.cpp code/scenario.cpp code/capture.cpp code/_script.cpp code/script.cpp code/tevent.cpp code/taction.cpp code/tag.cpp`. For each commit, look for logic errors, missed cases (a dead or limbo object, a team with no members, a house that has been defeated), null pointers, iterator invalidation while units are removed, and comments or manual pages the code does not support. Fix only what the code itself proves wrong, one fix per commit with its manual update; list everything else with file, line, the failing case and a suggested fix. Stop when every commit in the list has been read. Branch: cloud/review-ai-YYYY-MM-DD.
+`code/savever.h` went from 69 to 73 since the last save audit (`cloud-log/2026-10-15-save-audit.md`). Repeat that audit for data members added to saved classes since then: `git log -p 4d36e67d..origin/modern -- 'code/*.h'`. For each field, check it is initialised in every constructor, saved and loaded in order, and in the CRC if it affects the simulation. The audit also asked whether the plan queue and beacons should be saved: say what gamemd does from the decompiled class layouts in public sources (YRpp headers are fine to read; copy nothing), and implement it if it is a clear gap, bumping `REVISION` once. Branch: `cloud/save-audit-2-YYYY-MM-DD`.
 ```
 
-### 2. Review: units, infantry, aircraft and combat
-
-```text
-Review the `modern` commits since `1cb8bf7` that touch units and combat: run `git log --oneline 1cb8bf7..origin/modern -- code/techno.cpp code/techno.h code/unit.cpp code/unit.h code/infantry.cpp code/infantry.h code/foot.cpp code/jumpjet.cpp code/aircraft.cpp code/veteran.cpp code/weapon.cpp code/weapon.h code/parasite.cpp code/spawnman.cpp code/temporal.cpp code/cell.cpp code/bullet.cpp code/combat.cpp code/infatype.cpp code/techtype.cpp`. For each commit, look for logic errors, rounding and integer-overflow mistakes in damage, experience and speed maths, objects used after they are destroyed or put in limbo, null pointers, and comments or manual pages the code does not support. Fix only what the code itself proves wrong, one fix per commit with its manual update; list everything else with file, line, the failing case and a suggested fix. Stop when every commit in the list has been read. Branch: cloud/review-units-YYYY-MM-DD.
-```
-
-### 3. Review: buildings, economy and superweapons
-
-```text
-Review the `modern` commits since `1cb8bf7` that touch buildings, money and superweapons: run `git log --oneline 1cb8bf7..origin/modern -- code/building.cpp code/building.h code/builtype.cpp code/builtype.h code/super.cpp code/psydom.cpp code/lstorm.cpp code/slaveman.cpp code/rules.cpp code/rules.h code/const.cpp code/house.cpp`. For each commit, look for logic errors, money or power that can go negative or overflow, buildings that are sold, captured or destroyed partway through an action, null pointers, and comments or manual pages the code does not support. Fix only what the code itself proves wrong, one fix per commit with its manual update; list everything else with file, line, the failing case and a suggested fix. Stop when every commit in the list has been read. Branch: cloud/review-buildings-YYYY-MM-DD.
-```
-
-### 4. Save-game and sync audit
-
-```text
-The save revision in `code/savever.h` went from 19 to 69 since `1cb8bf7` as new fields were added to game classes. Run `git log -p 1cb8bf7..origin/modern -- 'code/*.h'` and list every data member added to a class that is saved. For each one, check that it is initialised in every constructor (including the one used when a save is loaded), written and read by the class's save and load code in the same order, and included in the class's CRC or sync calculation if it affects the simulation. Fix only what is missing, one class per commit, bumping `REVISION` once for the whole branch if the save layout changes. List the fields you checked in your log, each with its verdict. Stop when every new field has a verdict. Branch: cloud/save-audit-YYYY-MM-DD.
-```
-
-### 5. Research: specs for the next priorities
-
-```text
-Follow docs/research/RESEARCH_BRIEFING.md, output 4 (specs). Read docs/research/priorities.md, docs/research/specs/README.md and the newest log in docs/research/log/, then write specs for the three highest-ranked items that have no spec yet. Items 3, 5, 6, 7 and 8 already have specs (per-type rules, weapon selection, attached effects, shields, auto-death and conversion). Next are item 2 (the Ares and Phobos small per-type switches, as one spec listing each switch and its single check), item 9 (Phobos projectile trajectories and interception) and item 10 (superweapon extensions, Ares `SW.*` and Phobos). For each, give where it hooks into `code/` on `modern`, the saved state it needs, and a test plan we can run in the real game. Stop after three specs. Branch: cloud/research-YYYY-MM-DD, begun from `origin/modern`.
-```
-
-### 6. Research: check the tables
+### F. Research: check the tables
 
 ```text
 Follow docs/research/RESEARCH_BRIEFING.md. Begin from `origin/modern` and read the newest log in `docs/research/log/`. Do its "Next session" items that need no game files: spot-check the effect and size of the rows ranked first to seventh in `docs/research/priorities.md` against their sources, merge the two `AnimRemapDefaultColorScheme` rows, and check the 14 ticked rows against the manual and `code/`. Leave the mod scan and the `Foundation.*` and `UC.*` questions for us. Stop when those are done. Branch: cloud/research-tables-YYYY-MM-DD.
 ```
 
-### 7. Unit tests for the new rules maths
+### G. Unit tests for the newest rules maths
 
 ```text
-Add unit tests that need no game files for self-contained calculations added to `modern` since `1cb8bf7`: veterancy multipliers and the experience a kill is worth by the victim's rank, the cell spread table used for area damage, prone infantry damage rounding, ore purifier bonus rounding, `HarvestersPerRefinery`, and production speed under low power. Find each with `git log --oneline 1cb8bf7..origin/modern` and the code it changed. Use the existing test setup in `tests/`. If a calculation needs too much engine state, test the smallest piece you can lift out without changing behaviour, or say so in your log. Stop when each calculation has tests or a stated reason. Branch: cloud/tests-YYYY-MM-DD.
-```
-
-### 8. Manual audit of the new change records
-
-```text
-For every file added to `manual/changes/` since `1cb8bf7` (`git diff --name-only --diff-filter=A 1cb8bf7 origin/modern -- manual/changes`), and the key and system pages those commits changed, check each claim against the current source on `modern`. Narrow or correct any claim the code does not support, following `manual/AGENTS.md` and the prose rules in `AGENTS.md`. Keep each page's fix in its own commit. Stop when every new record has been checked. Branch: cloud/manual-audit-YYYY-MM-DD.
-```
-
-### 9. INI checker: tile sets and infantry sequences
-
-```text
-Read docs/INICHECK.md and the "Open" section of `cloud-log/2026-10-06-inicheck.md` (on `origin/modern`). Extend the INI checker in two steps, each with unit tests in `tests/inicheck` and its docs update: (1) place `[TileSet0000]`-style sections (`TileSet%04d`, as `code/isotype.cpp` reads them) from a theater control file passed with a new CLI option, and check their keys, including the zero-padded `Tile{01-}` keys; (2) place the `Sequence=` sections named by infantry art sections in `art.ini` and check their keys against what `code/` reads. Stop when both are done. Branch: cloud/inicheck-YYYY-MM-DD.
-```
-
-### 10. Static analysis: the remaining cppcheck findings
-
-```text
-Read `cloud-log/2026-10-04-static.md` and `cloud-log/2026-10-06-static.md` on `origin/modern`. Work through the findings they left: printf format mismatches, `selfAssignment` in the network and VQA code, `ignoredReturnValue`, virtual calls in constructors, `duplInheritedMember`, and the always-true test at `code/object.cpp:1748`. For each, read it in context and decide: a real defect (fix it in its own commit, smallest change that keeps behaviour otherwise the same), harmless (say why), or needs gamemd evidence (list it for us). Do not change reconstructed conditions without proof. Stop when every listed finding has a verdict. Branch: cloud/static-YYYY-MM-DD.
+Add unit tests that need no game files for calculations changed on `modern` since `d375ab28`: the passive-acquire Verses threshold (`WarheadTypeClass::Can_Passive_Acquire`: 1% refused, 2% accepted), the mobile sensor circle (`FootClass::Update_Sensors`: x and y over [-r, r-1] with x*x+y*y < r*r), the teleport hold delay (`code/teleport.cpp` `Warp_Delay`), and the menu battle's map-size fit (`code/shellmap.cpp`, the `LocalSize` to pixel conversion). Lift the smallest piece you can without changing behaviour, or say in your log why a calculation can't be tested. Branch: `cloud/tests-2-YYYY-MM-DD`.
 ```
 
 ## Answers we still owe
 
-Questions from earlier logs that wait on MentalHomiega: how Mental Omega's `Foundation.*` keys draw, which Ares version Mental Omega runs, whether the `[Phobos]` RA2MD.INI options get their own page, and whether research sessions should start porting Ares or Phobos behaviour.
+Questions from earlier logs that wait on MentalHomiega: how Mental Omega's `Foundation.*` keys draw, which Ares version Mental Omega runs, whether the `[Phobos]` RA2MD.INI options get their own page, and whether research sessions should start porting Ares or Phobos behaviour. From the 2026-10-15 logs: whether Civilian is third or fourth in `[Sides]`, whose allies a spy's disguise uses, whether gamemd reads the recoil keys and in what units, which trig library trajectories should use, and whether a tick in the research tables means "has an effect".
 
 ## Done
 
-Merged into `modern` and `yr`: research (4, 6 and 9 October, including the Phobos specs for items 3 and 5 to 8), INI checker, static analysis, unit tests, docks and radio, mind-controlled units entering buildings, the manual CI check, and the nightly combined branches up to 7 October.
+Merged into `modern`: all 14 branches from 2026-10-15 (Beta 23 review, security, fuzzing, custom maps, key index, AI, units and buildings reviews, save audit, research specs, unit tests, manual audit, INI checker, static analysis). Merged into `modern` and `yr` earlier: research (4, 6 and 9 October, including the Phobos specs for items 3 and 5 to 8), INI checker, static analysis, unit tests, docks and radio, mind-controlled units entering buildings, the manual CI check, and the nightly combined branches up to 7 October.
