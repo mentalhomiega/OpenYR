@@ -9,11 +9,11 @@ when_omitted:
   value: "10"
 ---
 
-A computer house considers raising its force shield only when the target of a weapon with [`AIDefendAgainst=yes`](/keys/aidefendagainst/) lies no farther than this from the center of its base. The value is in cells and may have a fraction; the engine keeps it in leptons. When the key is omitted the distance is 10 leptons, a twenty-fifth of a cell, so rules files set it.
+A computer house considers raising its force shield only when the target of a weapon with [`AIDefendAgainst=yes`](/keys/aidefendagainst/) lies no farther than this from its [starting cell](/systems/ai-base-building/#the-placement-search), which is cell `0,0` for a house that has none. The value is in cells and may have a fraction; the engine keeps it in leptons. When the key is omitted the distance is 10 leptons, a twenty-fifth of a cell, so rules files set it.
 
 ```ini title="rulesmd.ini"
 [General]
 AISuperDefenseDistance=12 ; within twelve cells of the base
 ```
 
-The distance is measured in a straight line, height included, from the center of the base to the center of the target cell.
+The distance is measured in a straight line, height included, from the center of the starting cell to the center of the target cell.

@@ -27,7 +27,7 @@ The origin controls five things:
 - [Recruitment](/systems/ai-team-production/#recruitment) ranks candidate members by their distance from the origin, not from the team.
 - An infantry or vehicle member on the Retreat mission heads for the map edge nearest the origin. Without an origin, it heads for the edge nearest itself. Aircraft on the Retreat mission ignore the origin.
 - An aircraft other than a dropship picks its landing zone near the origin when it unloads a passenger that belongs to a team of this type.
-- A group delivered by the [Reinforcement (team)](/mapping/actions/taction-reinforcements/) action arrives at the origin, or at the map edge nearest it when the group enters across the edge. Without an origin, a group that enters across the edge uses its house's [`Edge`](/keys/edge/). The [Reinforcement (team) at waypoint](/mapping/actions/taction-reinforcements-special/) action uses the waypoint it names instead.
+- A group delivered by the [Reinforcement (team)](/mapping/actions/taction-reinforcements/) action appears on the origin cell and faces its house's [`Edge`](/keys/edge/), unless it parachutes, burrows or walks out of a host. Without an origin, such a group enters at a clear cell along that edge. The [Reinforcement (team) at waypoint](/mapping/actions/taction-reinforcements-special/) action uses the waypoint it names instead.
 - After a Reinforcement (team) delivery that EVA announces, [Goto Radar Event](/commands/centeronradarevent/) jumps to the origin, not to the cell where the group entered.
 
 The origin is not the team's center. A new team uses the origin as its center only until its first logic pass, which [computes the center from the team's members](/systems/ai-team-execution/#the-teams-center).

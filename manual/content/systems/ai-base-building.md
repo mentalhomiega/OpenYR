@@ -423,8 +423,9 @@ The house sends every vehicle, infantry and aircraft it owns to hunt in any of t
 
 A structure taken off the map, destroyed or sold, no longer matches its node, so the node becomes a gap the house fills again in list order, subject to the hold-back below.
 
-In a skirmish or multiplayer game, a node that has held a structure is checked when its structure is lost. A node that has never held one is filled at once. For a node that has held one, the first rule below that applies decides:
+In a skirmish or multiplayer game, a node that has held a structure is checked when its structure is lost. A node that has never held one is filled at once. For a node that has held one, the first rule below that applies decides. A node whose cell was cleared to `0,0` is checked the same way as a node with a cell.
 
+- A structure with both [`ResourceGatherer=yes`](/keys/resourcegatherer/) and [`ResourceDestination=yes`](/keys/resourcedestination/), such as the Slave Miner's deployed refinery, is filled only while the house has fewer ore gatherers than its [`AISlaveMinerNumber`](/keys/aislaveminernumber/) entry for its difficulty slot. A slot past the end of the list counts as `0`, which never allows it. Time does not matter.
 - An armed structure, one with a primary weapon, and a power plant are filled at once.
 - A wall is filled only when one of the house's structures stands in one of the eight cells beside it. It is never held back by time.
 - Any other structure, including an unarmed base defense and a construction yard, is held back until [`AIRestrictReplaceTime`](/keys/airestrictreplacetime/) frames have passed since one of the house's structures last took damage from an attacker.

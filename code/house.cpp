@@ -5099,7 +5099,8 @@ bool HouseClass::Can_Replace_Node(int index) const
 	}
 
 	BaseNodeClass const & node = Base.Nodes[index];
-	if (node.Type < STRUCT_FIRST || node.CellID == CELL_NONE || !node.Placed) {
+	// A node that has lost its cell (cell 0,0) is held back like any other once it has held a structure.
+	if (node.Type < STRUCT_FIRST || !node.Placed) {
 		return(true);
 	}
 
