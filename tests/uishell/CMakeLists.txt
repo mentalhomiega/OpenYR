@@ -6,8 +6,10 @@
 # for the developer overlays.
 opents_add_test(UIShell
     NAME uishell
+    INCLUDES ${OPENTS_GENERATED_DIR}
     SOURCES uishell.cpp uicolorstub.cpp uidevstub.cpp uiscriptstub.cpp uitexturestub.cpp
     ENGINE
+        dbgprint.cpp
         ui/uiscreen.cpp
         ui/uisettingshost.cpp
         ui/uiinput.cpp

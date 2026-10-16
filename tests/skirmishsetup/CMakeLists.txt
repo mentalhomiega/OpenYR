@@ -2,12 +2,14 @@
 # so a remembered setup is restored through the code the lobby runs. Needs no game data.
 opents_add_test(SkirmishSetup
     NAME skirmishsetup
+    INCLUDES ${OPENTS_GENERATED_DIR}
     SOURCES skirmishsetup.cpp
         ../uishell/uicolorstub.cpp
         ../uishell/uidevstub.cpp
         ../uishell/uiscriptstub.cpp
         ../uishell/uitexturestub.cpp
     ENGINE
+        dbgprint.cpp
         ui/uiscreen.cpp
         ui/uiinput.cpp
         ui/uishell.cpp

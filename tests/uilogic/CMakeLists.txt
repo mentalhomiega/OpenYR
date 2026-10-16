@@ -5,7 +5,10 @@
 opents_add_test(UILogic
     NAME uilogic
     SOURCES uilogictest.cpp
+    INCLUDES ${OPENTS_GENERATED_DIR}
+    DEFINITIONS NOMINMAX
     ENGINE
+        dbgprint.cpp
         hsv.cpp
         rgb.cpp
         ui/uiinput.cpp
