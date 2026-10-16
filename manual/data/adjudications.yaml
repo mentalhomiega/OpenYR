@@ -157,6 +157,14 @@ Foundation:
       replace the footprint the image entry gave
   "TerrainTypeClass::Foundation": {verdict: distinct}
 
+FrameRateLimit:
+  "OptionsClass::FrameRateLimit":
+    verdict: distinct
+    absorbs: ["Startup::Options"]
+    note: >-
+      read a second time at startup, before the window exists, from the same
+      file and into the same member
+
 Group:
   "TeamTypeClass::Group": {verdict: distinct}
   "TaskForceClass::Group": {verdict: distinct}
