@@ -296,6 +296,7 @@
 #include "voxlib.h"
 #include "motlib.h"
 #include "mixfile.h"
+#include "_pk.h"
 #include "pcx.h"
 #include "preview.h"
 #include "ui/rml/rmlimage.h"
@@ -1485,6 +1486,15 @@ static void Stock_Check_Step(void)
 		mixes++;
 		entries += mix->Member_Count();
 		DebugString("AUTOTEST   stockcheck mix %s: %d entries\n", mix->Filename, mix->Member_Count());
+	}
+
+	// WDT.MIX is mounted only by the world domination setup, when it is on hand. The check mounts it the same way.
+	if (CCFileClass("WDT.MIX").Is_Available()) {
+		MixFileClass * wdt = new MixFileClass("WDT.MIX", &FastKey);
+		mixes++;
+		entries += wdt->Member_Count();
+		DebugString("AUTOTEST   stockcheck mix WDT.MIX (mounted by the world domination setup): %d entries\n", wdt->Member_Count());
+		delete wdt;
 	}
 
 	DebugString("AUTOTEST stockcheck: %d INI files, %d sections, %d names; found VXL %d, HVA %d, SHP %d, PCX %d; %d VXL and HVA pairs; refused VXL %d, HVA %d, SHP %d, PCX %d; %d SHP frames decoded, %d SHP empty; %d mixes attached with %d entries\n",
