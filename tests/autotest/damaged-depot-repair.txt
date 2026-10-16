@@ -1,0 +1,80 @@
+; Allied Service Depot (GADEPT) on the XMP29U2 land at 60,22, with a Grizzly (MTNK) at 60,28. The depot is damaged below the yellow threshold, the Grizzly is damaged, and then the Grizzly enters the depot for repair. Logs the depot's anim slots (banimstate) every 30 frames, and a screenshot and the Grizzly's position every 60 frames, until the repair is done.
+; Run: scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/damaged-depot-repair.txt -Map XMP29U2.MAP -Seconds 150 -Filter "banimstate|  slot|damage |enter|where MTNK|canrepair|own |ScreenCapture|Exception"
+; Expected: while the Grizzly is repaired, the depot plays its repair animation in the damaged form (the slot wants name with the damaged variant), and the production slot ends once the repair mission ends.
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+300 own GADEPT 60 22
+302 own MTNK 60 28
+304 reveal
+305 view 61 23
+306 canrepair 60 22
+310 banimstate GADEPT
+312 damage GADEPT 500
+314 damage GADEPT 300
+316 banimstate GADEPT
+318 damage MTNK 200
+320 where MTNK
+330 banimstate GADEPT
+332 command ScreenCapture
+340 enter MTNK 60 22
+341 where MTNK
+350 banimstate GADEPT
+360 command ScreenCapture
+361 where MTNK
+380 banimstate GADEPT
+410 banimstate GADEPT
+420 command ScreenCapture
+421 where MTNK
+440 banimstate GADEPT
+470 banimstate GADEPT
+480 command ScreenCapture
+481 where MTNK
+500 banimstate GADEPT
+530 banimstate GADEPT
+540 command ScreenCapture
+541 where MTNK
+560 banimstate GADEPT
+590 banimstate GADEPT
+600 command ScreenCapture
+601 where MTNK
+620 banimstate GADEPT
+650 banimstate GADEPT
+660 command ScreenCapture
+661 where MTNK
+680 banimstate GADEPT
+710 banimstate GADEPT
+720 command ScreenCapture
+721 where MTNK
+740 banimstate GADEPT
+770 banimstate GADEPT
+780 command ScreenCapture
+781 where MTNK
+800 banimstate GADEPT
+830 banimstate GADEPT
+840 command ScreenCapture
+841 where MTNK
+860 banimstate GADEPT
+890 banimstate GADEPT
+900 command ScreenCapture
+901 where MTNK
+920 banimstate GADEPT
+950 banimstate GADEPT
+960 command ScreenCapture
+961 where MTNK
+980 banimstate GADEPT
+1010 banimstate GADEPT
+1020 command ScreenCapture
+1021 where MTNK
+1040 banimstate GADEPT
+1070 banimstate GADEPT
+1080 command ScreenCapture
+1081 where MTNK
+1100 banimstate GADEPT
+1130 banimstate GADEPT
+1140 command ScreenCapture
+1141 where MTNK
+1160 banimstate GADEPT
+1190 banimstate GADEPT
+1200 command ScreenCapture
+1201 where MTNK
+1220 banimstate GADEPT

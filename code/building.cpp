@@ -6332,8 +6332,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					if (!In_Radio_Contact()) {
 						End_Anim(BANIM_PRODUCTION);
 						End_Anim(BANIM_SPECIAL_TWO);
-						Begin_Anim(BANIM_SPECIAL_THREE, false);
-						Begin_Anim(BANIM_ACTIVE_ONE, false);
+						Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+						Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
@@ -6454,8 +6454,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					}
 					if (!any_docked) {
 						if (Anims[BANIM_PRODUCTION] || Anims[BANIM_SPECIAL_TWO]) {
-							Begin_Anim(BANIM_SPECIAL_THREE, false);
-							Begin_Anim(BANIM_ACTIVE_ONE, false);
+							Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+							Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 							End_Anim(BANIM_PRODUCTION);
 							End_Anim(BANIM_SPECIAL_TWO);
 						}
@@ -6472,8 +6472,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				if (!In_Radio_Contact()) {
 					End_Anim(BANIM_PRODUCTION);
 					End_Anim(BANIM_SPECIAL_TWO);
-					Begin_Anim(BANIM_SPECIAL_THREE, false);
-					Begin_Anim(BANIM_ACTIVE_ONE, false);
+					Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 					Status = IDLE;
 					return(1);
 				}
@@ -6519,8 +6519,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
 								End_Anim(BANIM_PRODUCTION);
 								End_Anim(BANIM_SPECIAL_TWO);
-								Begin_Anim(BANIM_SPECIAL_THREE, false);
-								Begin_Anim(BANIM_ACTIVE_ONE, false);
+								Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+								Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 								Status = IDLE;
 								break;
 
@@ -6534,8 +6534,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 									if (Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell()) && IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
 									End_Anim(BANIM_PRODUCTION);
 									End_Anim(BANIM_SPECIAL_TWO);
-									Begin_Anim(BANIM_SPECIAL_THREE, false);
-									Begin_Anim(BANIM_ACTIVE_ONE, false);
+									Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+									Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 									Status = IDLE;
 
 									FootClass * foot = dynamic_cast<FootClass *>(docked);
