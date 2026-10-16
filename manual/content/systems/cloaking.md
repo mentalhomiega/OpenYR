@@ -218,7 +218,7 @@ Area damage still reaches a hidden object, because it does not check whether any
 
 A hidden object also does not block a vehicle's or infantryman's path. The step through its cell costs more (see [losing a cloak](#losing-a-cloak)), and a route that takes that step reveals what is standing there.
 
-A cloaking object on the Guard mission picks targets like any other object, whoever owns it. A player's cloaked unit that comes within reach of an enemy fires on it and uncloaks, as a computer-owned one does.
+A cloaking object on the Guard mission picks targets like any other object, whoever owns it. A player's cloaked unit that comes within reach of an enemy fires on it, uncloaking first only when its weapon has [`DecloakToFire`](/keys/decloaktofire--weapontype/) set to `yes`.
 
 ## What the player sees
 
