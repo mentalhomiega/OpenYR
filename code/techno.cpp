@@ -10220,7 +10220,8 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 {
 	assert(!IsInLimbo);
 
-	if (IsLocked && (!House->Class->IsMultiplayPassive || Session.Type == GAME_NORMAL)) {
+	// Gamemd's TechnoClass::UpdateSight (0x70AF50) returns for a MultiplayPassive owner in every game type.
+	if (IsLocked && !House->Class->IsMultiplayPassive) {
 		int sight_increase = 10 * (Get_Coord().Z / Rule->LeptonsPerSightIncrease);
 		if (sight_increase > SightIncrease) {
 			incremental = false;
