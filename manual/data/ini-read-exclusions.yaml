@@ -253,3 +253,20 @@ site_exclusions:
     keys: [InTests]
     classification: excluded
     reason: A switch the menu battle test scripts write with -Settings so the battle runs during a test; the manual does not document it.
+
+  # Campaign mission labels and palettes that the mission browser shows as menu text.
+  - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
+    function: Mission_Briefing
+    keys: [Briefing]
+    classification: excluded
+    reason: A campaign mission's briefing label, read from MISSIONMD.INI and then MISSION.INI; the objectives screen shows the text it names, so it is menu text rather than game data.
+  - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
+    function: Mission_Title
+    keys: [UIName]
+    classification: excluded
+    reason: A Red Alert 2 mission's name label in MISSION.INI, which the browser shows as menu text; the label is not game or mod data.
+  - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
+    function: Read_Art_Entry
+    keys: [LS800BkgdPal]
+    classification: excluded
+    reason: A setting of a campaign mission's section in MISSIONMD.INI or MISSION.INI, documented as that format rather than as game data.
