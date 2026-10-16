@@ -4479,7 +4479,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 				action = ACTION_SELECT;
 			} else {
 				Cell cell = object->Center_Coord().As_Cell();
-				if (Class->ToBuild != RTTI_AIRCRAFTTYPE) {
+				if (Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsNaval) {
 					if (!Is_In_Same_Zone(cell)) {
 						action = ACTION_NOMOVE;
 					}
@@ -4525,8 +4525,9 @@ ActionType BuildingClass::What_Action(Cell const & cell, bool check_fog, bool di
 		action = BASECLASS::What_Action(cell, check_fog, disallow_force);
 	}
 
+	// A naval factory's rally point may be on water: SetRallypoint searches with the amphibious zone, so the land test does not apply.
 	if (action == ACTION_RALLY_TO_POINT) {
-		if (Class->ToBuild != RTTI_AIRCRAFTTYPE) {
+		if (Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsNaval) {
 			if (!Is_In_Same_Zone(cell)) {
 				action = ACTION_NOMOVE;
 			}
