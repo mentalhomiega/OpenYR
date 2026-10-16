@@ -1,6 +1,6 @@
 ; Allied Service Depot (GADEPT) on the XMP29U2 land at 60,22, with a Grizzly (MTNK) at 60,28. The depot is damaged below the yellow threshold, the Grizzly is damaged, and then the Grizzly enters the depot for repair. Logs the depot's anim slots (banimstate) every 30 frames, and a screenshot and the Grizzly's position every 60 frames, until the repair is done.
 ; Run: scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/damaged-depot-repair.txt -Map XMP29U2.MAP -Seconds 150 -Filter "banimstate|  slot|damage |enter|where MTNK|canrepair|own |ScreenCapture|Exception"
-; Expected: while the Grizzly is repaired, the depot plays its repair animation in the damaged form (the slot wants name with the damaged variant), and the production slot ends once the repair mission ends.
+; Expected: the depot stays at 400 of 1200 health, so once the Grizzly is repaired and leaves, its SpecialAnimThree (slot 12) starts in the damaged form (the slot wants GADEPT_C, damaged GADEPT_CD, and shows GADEPT_CD).
 ; Script lines must be in frame order, because the engine waits at each line until its frame.
 30 command CenterBase
 300 own GADEPT 60 22
