@@ -15,12 +15,6 @@ reader_exclusions:
     reason: The overlay pack fields are compressed scenario payloads, not authored scalar settings.
 
 site_exclusions:
-  - path: code/init.cpp
-    function: Init_Hotkeys
-    keys: [Version]
-    classification: excluded
-    reason: The keyboard file's [Defaults] Version is written by the game to mark which default key table the file was saved against; players and modders do not set it.
-
   - path: code/loadscreen.cpp
     function: Campaign_Is_Allied
     keys: [Player]
@@ -166,7 +160,7 @@ site_exclusions:
 
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
-    keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
+    keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
     classification: excluded
     reason: Each is a setting of the deployment's own file, documented as that format rather than as game data.
 
@@ -223,3 +217,63 @@ site_exclusions:
     classification: duplicate
     canonical_key: ParentCountry
     reason: Follows the ParentCountry setting of the player's country before the countries exist, to choose the side whose archives load.
+
+  # Choices the skirmish and LAN screens write back to RA2MD.INI and read again when they open.
+  - path: code/netdlg2.cpp
+    function: Load_Lan_Map
+    keys: [Map]
+    classification: excluded
+    reason: The map a host last picked in a LAN lobby, which the lobby writes to [LAN] when a map is picked; it is remembered state, not a setting.
+  - path: code/ui/screens/skirmish/uiskirmishdlg.cpp
+    function: Load_Memory
+    keys: [Map, Units, Credits, Tech, Speed, Bases, Crates, Fog, Bridges, Redeploy, ShortGame, Engineer, SuperWeapons, BuildOffAlly]
+    classification: excluded
+    reason: The setup the skirmish screen remembers in [Skirmish], which the screen writes when it closes; the skirmish setup page owns it, and a launch file does not use it.
+
+  # Map sizing for the menu battle's choice of map.
+  - path: code/shellmap.cpp
+    function: Visible_Map_Size
+    keys: [LocalSize]
+    classification: duplicate
+    canonical_key: LocalSize
+    reason: The menu battle sizes a map from its [Map] LocalSize, the same setting DisplayClass already extracts from the map file.
+  # Settings for the menu battle's own setup, which the settings screen does not expose.
+  - path: code/shellmap.cpp
+    function: Pick_Map
+    keys: [Map]
+    classification: excluded
+    reason: Tuning for the menu battle's own setup, which no manual page documents; the switch players see is the Options MenuBattle key.
+  - path: code/shellmap.cpp
+    function: Prepare_Battle
+    keys: [Players, Credits, SuperWeapons]
+    classification: excluded
+    reason: Tuning for the menu battle's own setup, which no manual page documents; the switch players see is the Options MenuBattle key.
+  - path: code/shellmap.cpp
+    function: Shellmap_Enabled
+    keys: [InTests]
+    classification: excluded
+    reason: A switch the menu battle test scripts write with -Settings so the battle runs during a test; the manual does not document it.
+
+  # Campaign mission labels and palettes that the mission browser shows as menu text.
+  - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
+    function: Mission_Briefing
+    keys: [Briefing]
+    classification: excluded
+    reason: A campaign mission's briefing label, read from MISSIONMD.INI and then MISSION.INI; the objectives screen shows the text it names, so it is menu text rather than game data.
+  - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
+    function: Mission_Title
+    keys: [UIName]
+    classification: excluded
+    reason: A Red Alert 2 mission's name label in MISSION.INI, which the browser shows as menu text; the label is not game or mod data.
+  - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
+    function: Read_Art_Entry
+    keys: [LS800BkgdPal]
+    classification: excluded
+    reason: A setting of a campaign mission's section in MISSIONMD.INI or MISSION.INI, documented as that format rather than as game data.
+
+  # A seat's free color in a launch file, read from the per-seat section that the CnCNet client numbers.
+  - path: code/spawnerconfig.cpp
+    function: Read_Free_Color
+    keys: [ColorRGB]
+    classification: excluded
+    reason: Each names one seat of a match inside a section the CnCNet client numbers per seat, not an authored game-data setting.

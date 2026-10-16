@@ -82,6 +82,12 @@ records:
   object-type-keys: Ares, Phobos
   rank-insignia-keys: Ares, Phobos
   phobos-opentopped-values: Phobos
+  # Added keys that the original gamemd.exe has no string for, checked on 2026-10-16.
+  healer-target-kinds: OpenYR
+  more-shape-facings: OpenYR
+  pip-row-length: OpenYR
+  spawn-house-base-nodes: OpenYR
+  totable: OpenYR
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
@@ -171,13 +177,8 @@ gamemd_records:
 # Records whose keys we could not place. The index leaves them out until
 # someone with the gamemd rules decides.
 undecided_records:
-  - healer-target-kinds
-  - more-shape-facings
-  - pip-row-length
   - produce-cash-buildings
-  - spawn-house-base-nodes
   - theaters-declared-in-rules
-  - totable
   - vehicle-transports
 
 # Examples for the main groups. Every key an example sets must be a key the

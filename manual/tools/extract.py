@@ -100,6 +100,10 @@ ADAPTER_UNITS = [
       }}),
     ("startup.cpp", "Startup", [":WinMain"],
      {"file": "ra2md.ini", "group": "client settings"}),
+    # The hang watchdog's timeout is a player's setting in RA2MD.INI, documented on the
+    # crash reports page. Only the _WIN32 definition reads it; the other one is empty.
+    ("hangwatch.cpp", "HangWatchdog", [":Hang_Watchdog_Start"],
+     {"file": "ra2md.ini", "group": "client settings"}),
     # Outside campaign the house holding a start position reads its own spawn house
     # section, [Spawn1]..[Spawn8]; the section name is the house identifier.
     ("scenario.cpp", "HouseClass", [":Read_Spawn_House_Allies"],
