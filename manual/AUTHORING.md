@@ -255,6 +255,13 @@ Records still local to a branch may be reorganized until merge; verify them
 with `--base-ref` against that branch's own base. See
 [Maintaining](MAINTAINING.md) for release and route work.
 
+A record that adds a key also needs a decision in `tools/openyr_keys.yaml`.
+List its change ID under `gamemd_records` when Yuri's Revenge reads the key, or
+under `records` with the key's source when it does not. A record whose name
+starts with `yr-` needs no entry. Then run `python manual/tools/openyr_keys.py` to rebuild
+[`docs/OPENYR_KEYS.md`](../docs/OPENYR_KEYS.md), which indexes the keys gamemd
+does not read.
+
 ### What a record says
 
 Write for someone comparing released builds. An addition states only the new

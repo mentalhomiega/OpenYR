@@ -1,0 +1,354 @@
+# Inputs for manual/tools/openyr_keys.py, which writes docs/OPENYR_KEYS.md.
+#
+# The script finds keys in the change records of manual/changes/ and the key
+# catalog in data/ini-keys.yaml. A change record says that OpenYR started
+# reading a key. It does not say whether gamemd reads that key too, so each
+# record that adds a key is classified here. A record whose file name starts
+# with "yr-" ports gamemd behavior and needs no entry.
+#
+# Add a record to the right list when `openyr_keys.py --check` reports it as
+# unclassified. Change a record's list only with evidence: a key that
+# Yuri's Revenge reads belongs under gamemd.
+
+version: 1
+
+# Records whose keys no gamemd reads. The value is the source the index shows
+# in its From column.
+records:
+  # Our own keys.
+  added-synclog: OpenYR
+  added-voxelshadescale: OpenYR
+  added-voxelspecularfromview: OpenYR
+  added-voxelspecularstrength: OpenYR
+  added-wreckreleasespassengers: OpenYR
+  debug-mode-cheats: OpenYR
+  interface-scale: OpenYR
+  map-packs-and-yrm-maps: OpenYR
+  menu-styles: OpenYR
+  modern-ingame-interface: OpenYR
+  modern-sidebar-rows: OpenYR
+  mods-screen: OpenYR
+  render-frame-rate: OpenYR
+  sidebar-strip-default-capacity: OpenYR
+  # Keys OpenTS added.
+  action-lines-and-ui-ini: OpenTS
+  autosave: OpenTS
+  bgfx-presenter: OpenTS
+  build-off-ally: OpenTS
+  buildable-overlays: OpenTS
+  cd-search-path: OpenTS
+  chat-echo-and-background: OpenTS
+  crate-money-bonus: OpenTS
+  emp-immunity: OpenTS
+  game-arrow-pointer: OpenTS
+  group-number-offsets: OpenTS
+  ion-storm-audio: OpenTS
+  map-file-random-map: OpenTS
+  multiple-factory-bonus: OpenTS
+  music-fade-times: OpenTS
+  music-track-conditions: OpenTS
+  music-track-files: OpenTS
+  rally-point-on-a-plain-click: OpenTS
+  recheck-prerequisites: OpenTS
+  scrap-debris: OpenTS
+  self-healing-settings: OpenTS
+  short-game-fire-sale-keeps-a-structure: OpenTS
+  side-base-building: OpenTS
+  sidebar-cameo-ordering: OpenTS
+  simulate-while-unfocused: OpenTS
+  stacking-crate-upgrades: OpenTS
+  ui-documents-replace-dialogs: OpenTS
+  # Keys we read as the Ares or Phobos documentation describes them.
+  attach-effects: Ares
+  bounty: Ares
+  cameo-pcx: Ares
+  chronoshift-keys: Ares
+  custom-animation-palette: Ares
+  emp-threshold-modifier: Ares
+  group-and-keep-alive: Ares
+  reverse-engineering: Ares
+  object-type-keys: Ares, Phobos
+  rank-insignia-keys: Ares, Phobos
+  phobos-opentopped-values: Phobos
+
+# Records whose keys gamemd reads. The index leaves them out.
+gamemd_records:
+  - added-aircraft-trailer
+  - added-airportbound
+  - added-clearallweapons
+  - added-closerange
+  - added-courselockduration
+  - added-culling
+  - added-fighter
+  - added-firewhilemoving
+  - added-mobilefire
+  - added-numberimpassablerows
+  - added-radialfiresegments
+  - added-super-charge-anims
+  - added-supergapradiusincells
+  - added-undeploy-delay
+  - added-yuribarracks
+  - ai-clear-placement-area
+  - ai-naval-yard-placement
+  - ai-placement-failure-limit
+  - ai-protective-walls
+  - ai-rebuild-restriction
+  - battle-fortress-omni-crusher
+  - building-turret-recoil
+  - campaign-list-names
+  - chrono-warp-delay
+  - combat-light-channels
+  - computer-alliances-need-alliesallowed
+  - computer-force-shield
+  - computer-harvesters-per-refinery
+  - computer-soldier-digs-in-on-guard
+  - country-armor-multipliers
+  - country-build-time-multipliers
+  - country-speed-multipliers
+  - country-veteran-lists
+  - crush-warhead
+  - crusher-spares-falling-shielded-and-deployed
+  - delayed-fire-structures
+  - deploy-dir
+  - direct-rocker-warhead
+  - direct-rocking-coefficient
+  - disguise-detection
+  - dontscore-kill-credit
+  - engineer-damage-key
+  - flak-scatter-matches-gamemd
+  - flyby-flyback
+  - garrison-assaulter-clears
+  - grinder-sound-keys
+  - harvester-queueing-cell
+  - hoverattack
+  - idle-rate
+  - ion-cannon-tech-center-value
+  - jumpjet-crash-clearance
+  - jumpjet-moving-shot-estimate
+  - leave-bio-reactor-sound-type
+  - low-power-production-speed
+  - map-max-players
+  - mirage-blink-targeting
+  - missile-safety-altitude
+  - movies-seen
+  - multiplayer-beacons
+  - nuke-and-dominator-lighting
+  - pips-draw-for-all
+  - power-plant-blackout-anims
+  - prerequisite-override
+  - primary-fire-dual-offset
+  - prism-tank-charge-turret
+  - recalc-approach-target
+  - refinery-by-trip-cost
+  - secondary-weapon-fire-sequences
+  - skirmish-lobby-rules-defaults
+  - sonic-warhead-frees-parasite
+  - sound-definitions
+  - soylent
+  - spy-altcameo-sidebar
+  - structure-create-unit-sound
+  - superweapons-option
+  - survivor-count-from-refund
+  - tech-secret-labs
+  - terrainfire-weapon-key
+  - third-power-plant
+  - threat-per-occupant
+  - unloading-class
+  - water-crate-setting
+
+# Records whose keys we could not place. The index leaves them out until
+# someone with the gamemd rules decides.
+undecided_records:
+  - healer-target-kinds
+  - more-shape-facings
+  - pip-row-length
+  - produce-cash-buildings
+  - spawn-house-base-nodes
+  - theaters-declared-in-rules
+  - totable
+  - vehicle-transports
+
+# Examples for the main groups. Every key an example sets must be a key the
+# group lists; the script refuses an example that sets any other.
+examples:
+  rules: |
+    [AudioVisual]
+    VoxelSpecularStrength=3      ; 0 or less turns the highlight off
+    VoxelShadeScale=16
+    VoxelSpecularFromView=no
+
+    [General]
+    LargeSidebarStrips=yes       ; keep the 225-cameo sidebar strip
+
+    [HTNK]                       ; a unit type
+    WreckReleasesPassengers=yes
+    Bounty=yes
+    Bounty.Value=200
+  client: |
+    [Options]
+    InterfaceStyle=Modern
+    MenuStyle=Classic
+    SidebarRows=4
+    SyncLog=no
+
+    [Video]
+    InterfaceScale=Auto
+    RenderFrameRate=60
+    SystemCursor=no
+  spawn: |
+    [Settings]
+    Scenario=spawnmap.ini
+    Name=Alice
+    Side=0
+    Color=0
+    AIPlayers=1
+    Credits=10000
+  opents: |
+    [Paths]
+    SearchPaths=INI,MIX,Maps
+    Mods=HighTech
+
+    [Update]
+    Check=yes
+
+# Rows for SPAWN.INI, which no catalog lists, one per line as
+# "section | key | default | anchor | effect". Each key must appear as a quoted
+# name in the launch file code, and the anchor must be a heading of the
+# manual's launch file page.
+spawn_ini: |
+  Settings | Scenario | spawnmap.ini | what-the-file-asks-for | The scenario file to play.
+  Settings | IsSinglePlayer | no | what-the-file-asks-for | `yes` plays a campaign mission instead of a match.
+  Settings | LoadSaveGame | no | resuming-a-saved-game | `yes` resumes the saved game `SaveGameName` names.
+  Settings | SaveGameName | (none) | resuming-a-saved-game | The saved game to resume, written as a file name from the saved-games folder.
+  Settings | Host | no | the-host | `yes` marks this machine as the host of a game against other machines.
+  Settings | SyncLog | no | what-the-file-asks-for | `yes` writes the frame check value to the debug log on every frame.
+  Settings | CampaignID | -1 | a-campaign-mission | The campaign a campaign mission belongs to, counted from `0`. `-1` plays it outside any campaign.
+  Settings | DifficultyModeHuman | 1 | a-campaign-mission | The difficulty slot, `0` to `2`, of the player's houses in a campaign mission.
+  Settings | DifficultyModeComputer | 1 | a-campaign-mission | The difficulty slot, `0` to `2`, of the computer's houses in a campaign mission.
+  Settings | DifficultyName | (none) | what-a-player-is-shown | Replaces the difficulty name in the message a campaign mission opens with.
+  Settings | Bases | yes | the-options-every-house-plays-under | Whether houses start with a base unit. A match option.
+  Settings | Credits | 10000 | the-options-every-house-plays-under | The credits each house starts with. A match option.
+  Settings | BridgeDestroy | yes | the-options-every-house-plays-under | Whether bridges can be destroyed. A match option.
+  Settings | Crates | no | the-options-every-house-plays-under | Whether crates appear. A match option.
+  Settings | ShortGame | no | the-options-every-house-plays-under | The Short Game option. A match option.
+  Settings | SuperWeapons | yes | the-options-every-house-plays-under | `no` withholds the superweapons whose `DisableableFromShell` is `yes`.
+  Settings | GameSpeed | 0 | the-options-every-house-plays-under | The game speed, `0` the fastest to `6` the slowest.
+  Settings | MultiEngineer | no | the-options-every-house-plays-under | The Multi Engineer option. A match option.
+  Settings | UnitCount | 0 | the-options-every-house-plays-under | How many starting units each house gets. A match option.
+  Settings | AIPlayers | 0 | the-options-every-house-plays-under | The number of computer players, from `0` to 8 minus the number of people.
+  Settings | AIDifficulty | 1 | the-options-every-house-plays-under | The computer players' difficulty: `0` easy, `1` normal, `2` hard.
+  Settings | AlliesAllowed | no | the-options-every-house-plays-under | `no` stops players from changing alliances during play.
+  Settings | GameMode | 1 | the-multiplayer-mode | The index of a multiplayer mode in `MPModesMD.ini`; `1` is Battle.
+  Settings | HarvesterTruce | no | the-options-every-house-plays-under | The harvester truce option. A skirmish ignores it.
+  Settings | FogOfWar | no | the-options-every-house-plays-under | The Fog Of War option. A match option.
+  Settings | MCVRedeploy | yes | the-options-every-house-plays-under | The Re-Deployable MCV option. A match option.
+  Settings | AutoDeployMCV | no | the-options-every-house-plays-under | `yes` deploys every house's starting base unit as the match opens.
+  Settings | TechLevel | 10 | the-options-every-house-plays-under | The tech level of the match. A match option.
+  Settings | Firestorm | yes | the-options-every-house-plays-under | `yes` plays the expansion when it is installed.
+  Settings | Seed | 0 | the-options-every-house-plays-under | A nonzero value makes a launch repeatable. In a game against other machines every machine uses it as written.
+  Settings | CoachMode | no | the-options-every-house-plays-under | Decides what a defeated player keeps.
+  Settings | AutoSurrender | yes | the-options-every-house-plays-under | `yes` destroys the base of a player who leaves; `no` hands it to the computer.
+  Settings | BuildOffAlly | no | the-options-every-house-plays-under | `yes` lets a player place buildings next to an ally's buildings whose type allows it.
+  Settings | AttackNeutralUnits | no | the-options-every-house-plays-under | `yes` lets a target scan consider a neutral house.
+  Settings | ScrapMetal | no | the-options-every-house-plays-under | `yes` makes a wreck play its `ScrapExplosion` animations instead of `Explosion`.
+  Settings | PlayMoviesInMultiplayer | no | the-options-every-house-plays-under | `yes` plays the scenario's movies in a skirmish or a game against other machines.
+  Settings | AutoSaveGame | 0 | automatic-saves | The number of frames between automatic saves. `0` or less turns them off. It wins over `AutoSaveInterval`.
+  Settings | AutoSaveInterval | 0 | automatic-saves | The number of frames between automatic saves when `AutoSaveGame` is not written.
+  Settings | NextSPAutoSaveId | 1 | automatic-saves | The next slot, `1` to `5`, of the campaign's rotating automatic saves.
+  Settings | NextSkirmishAutoSaveId | 1 | automatic-saves | The next slot, `1` to `5`, of the skirmish's rotating automatic saves.
+  Settings | Name | (none) | who-is-playing | The person's name as UTF-8 text, shortened to 63 bytes. Also read in `[Other1]` to `[Other7]`.
+  Settings | Side | (none) | who-is-playing | The person's country, numbered from `0` in the order of the rules' `[Countries]` list. Required.
+  Settings | Color | (none) | who-is-playing | The person's player color, `0` to `7`. Required.
+  Settings | IsSpectator | no | who-is-playing | `yes` makes the person watch instead of play.
+  Other1 | Ip | 0.0.0.0 | a-game-against-other-machines | The address another person's machine answers on, in `[Other1]` to `[Other7]`. A tunnel makes it unused.
+  Settings | Port | 1234 | a-game-against-other-machines | The port this machine listens on, or the tunnel number the tunnel knows it by. `[Other1]` to `[Other7]` hold the other machines' values.
+  Settings | BindAddress | (none) | a-game-against-other-machines | The address the listening socket binds. Left out, it binds every address.
+  Tunnel | Ip | 0.0.0.0 | a-game-against-other-machines | The address of the tunnel server.
+  Tunnel | Port | 0 | a-game-against-other-machines | The port of the tunnel server. A nonzero value plays the match through the tunnel.
+  Settings | ConnTimeout | 3600 | a-game-against-other-machines | How long loading may go without progress, in ticks of 16 milliseconds.
+  Settings | ReconnectTimeout | 2400 | a-game-against-other-machines | How long a machine may go quiet during play, in ticks of 16 milliseconds.
+  Settings | TimingPolicy | (none) | a-game-against-other-machines | `Adaptive` makes this machine's timing master use the adaptive timing table.
+  Settings | SkipScoreScreen | no | what-a-player-is-shown | `yes` ends a skirmish or network match without its score screen.
+  Settings | CustomLoadScreen | (none) | what-a-player-is-shown | The picture shown while the scenario loads.
+  Settings | CustomLoadScreenPos | (none) | what-a-player-is-shown | Places the loading bars at `x,y` within the picture.
+  Settings | DifficultyBasedAINames | no | what-a-player-is-shown | Names each computer player `Hard AI`, `Medium AI` or `Easy AI`.
+  Settings | QuickMatch | no | what-a-player-is-shown | Shows every player as `Player 1` to `Player 8` instead of by name.
+  HouseColors | Multi1 | -1 | who-is-playing | The color, `0` to `7`, a computer seat plays. `Multi1` to `Multi8` name the seats. `-1` leaves the choice to the game.
+  HouseCountries | Multi1 | -1 | who-is-playing | The country a computer seat plays. `Multi1` to `Multi8` name the seats.
+  HouseHandicaps | Multi1 | -1 | who-is-playing | The difficulty slot a computer seat plays at. `Multi1` to `Multi8` name the seats. `-1` follows `AIDifficulty`.
+  SpawnLocations | Multi1 | -1 | who-is-playing | The map start position, `0` to `7`, a seat begins at. `Multi1` to `Multi8` name the seats.
+  IsSpectator | Multi1 | no | who-is-playing | `yes` makes the person in a seat watch instead of play. `Multi1` to `Multi8` name the seats.
+  Multi1_Alliances | HouseAllyOne | -1 | who-is-playing | One seat this seat allies with. `HouseAllyOne` to `HouseAllyEight` hold up to eight, and `[Multi1_Alliances]` to `[Multi8_Alliances]` name the seats.
+  GlobalFlags | GlobalFlag0 | no | a-campaign-mission | A scenario flag a campaign mission starts with set. `GlobalFlag0` to `GlobalFlag49`.
+
+# What each OPENTS.INI key does. The script reads the key names and the
+# defaults from code/deploymentconfig.cpp and code/deploymentconfig.h, and
+# refuses a key with no entry here. A "default" here replaces the code's.
+# A name ending in "*" covers every key with that ending that has no entry of
+# its own.
+opents_ini:
+  Paths/SearchPaths:
+    effect: "Extra folders the game searches for its files, in the order written. A written list replaces the default."
+    anchor: ""
+  Paths/Mods:
+    effect: "The mods the game starts with, in the order they are read. A player's own `Mods=` in `RA2MD.INI` replaces it."
+    anchor: the-mods-it-starts-with
+  Paths/DataDirectory:
+    effect: "The game data directory, in place of `-DATADIR`."
+    default: "(the game's own directory)"
+    anchor: the-data-and-user-directories
+  Paths/UserDirectory:
+    effect: "The user data directory, in place of `-USERDIR`."
+    default: "(none; the game's own directory)"
+    anchor: the-data-and-user-directories
+  Saves/CarryScenarioFile:
+    effect: "`yes` stores a copy of the scenario file in every saved game, and a restart reads that copy."
+    anchor: what-a-save-carries
+  Files/Rules:
+    effect: "The rules file."
+    anchor: the-files-it-reads
+  Files/Art:
+    effect: "The artwork definitions."
+    anchor: the-files-it-reads
+  Files/AI:
+    effect: "The computer player's data."
+    anchor: the-files-it-reads
+  Files/Sound:
+    effect: "The sound registry."
+    anchor: the-files-it-reads
+  Files/Theme:
+    effect: "The music registry."
+    anchor: the-files-it-reads
+  Files/Eva:
+    effect: "The announcer's lines."
+    anchor: the-files-it-reads
+  Files/Battle:
+    effect: "The campaign list."
+    anchor: the-files-it-reads
+  Files/LanguageRules:
+    effect: "The translated rules, read over the other rules."
+    anchor: the-files-it-reads
+  Files/MultiplayerRules:
+    effect: "The rules read only outside a campaign."
+    anchor: the-files-it-reads
+  Files/Tutorial:
+    effect: "The numbered text lines."
+    anchor: the-files-it-reads
+  Files/UI:
+    effect: "The interface settings."
+    anchor: the-files-it-reads
+  Files/Settings:
+    effect: "The file a player's options are read from and saved to."
+    anchor: the-files-it-reads
+  Files/Keyboard:
+    effect: "The hotkey file, read at startup and saved by the keyboard dialog."
+    anchor: the-files-it-reads
+  Files/*Expansion:
+    effect: "The expansion's copy of the matching base file, read after it."
+    anchor: the-files-it-reads
+  Palettes/Scheme:
+    effect: "The palette player colors are built against until a theater loads."
+    anchor: the-palettes-it-starts-with
+  Palettes/Game:
+    effect: "The palette the game is drawn with until a theater loads."
+    anchor: the-palettes-it-starts-with
