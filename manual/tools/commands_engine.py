@@ -141,12 +141,65 @@ def method_body(class_body, method):
     return class_body[opening + 1:closing]
 
 
-def _method_text(class_name, body, method, resources, team=None, fallback=None):
+def constructor_layout(class_name, body):
+    """Return a class's constructor as (parameter names, member -> parameter), or None.
+
+    Only ``char const *`` parameters are recognised. A parameter counts only when the
+    initializer list stores it in a member, which a metadata method can then return.
+    """
+    match = re.search(
+        rf"\b{re.escape(class_name)}\s*\(([^()]*)\)\s*(?::([^{{;]*))?\{{", body)
+    if match is None:
+        return None
+
+    parameters = []
+    if match.group(1).strip():
+        for declaration in match.group(1).split(","):
+            parameter = re.fullmatch(r"\s*char\s+const\s*\*\s*(\w+)\s*", declaration)
+            if parameter is None:
+                raise ValueError(
+                    f"{class_name}: unsupported constructor parameter {declaration.strip()!r}")
+            parameters.append(parameter.group(1))
+
+    members = {}
+    for member, parameter in re.findall(r"(\w+)\s*\(\s*(\w+)\s*\)", match.group(2) or ""):
+        if parameter in parameters:
+            members[member] = parameter
+    return parameters, members
+
+
+def constructor_values(class_name, body, argument):
+    """Return the metadata each stored member takes from a registration's string arguments."""
+    layout = constructor_layout(class_name, body)
+    if layout is None:
+        raise ValueError(f"{class_name}: no constructor takes the argument {argument!r}")
+    parameters, members = layout
+
+    literals = []
+    for part in extract_engine.split_args(argument):
+        literal = re.fullmatch(r'"((?:[^"\\]|\\.)*)"', part)
+        if literal is None:
+            raise ValueError(f"{class_name}: unsupported constructor argument {part!r}")
+        literals.append(_decode_rc_string(literal.group(1)))
+    if len(literals) != len(parameters):
+        raise ValueError(
+            f"{class_name}: constructor takes {len(parameters)} strings, "
+            f"registration gives {len(literals)}")
+
+    bound = dict(zip(parameters, literals))
+    return {member: bound[parameter] for member, parameter in members.items()}
+
+
+def _method_text(class_name, body, method, resources, team=None, fallback=None, values=None):
     source = method_body(body, method)
     if source is None:
         if fallback is not None:
             return fallback
         raise ValueError(f"{class_name}: no supported {method}() definition")
+    # A method that returns a member the constructor filled reports the registration's string.
+    stored = re.fullmatch(r"\s*return\s*\(\s*(\w+)\s*\)\s*;\s*", source)
+    if stored and values and stored.group(1) in values:
+        return values[stored.group(1)]
     # A team command builds its text from its own number, through the helper that gives each
     # instance its own storage.
     formatted = re.search(
@@ -198,7 +251,9 @@ def _registrations(text, function):
     records = []
     for match in re.finditer(r"AllCommands\.Add\s*\(\s*([^;]+?)\s*\)\s*;", body):
         argument = match.group(1).strip()
-        direct = re.fullmatch(r"new\s+(\w+CommandClass)\s*(?:\(([^()]*)\))?", argument)
+        # Parentheses may appear only inside a string literal, such as a description.
+        direct = re.fullmatch(
+            r'new\s+(\w+CommandClass)\s*(?:\(((?:"(?:[^"\\]|\\.)*"|[^()"])*)\))?', argument)
         if direct:
             class_name, parameter = direct.group(1), (direct.group(2) or "").strip() or None
         elif argument in aliases:
@@ -225,16 +280,23 @@ def registered_commands(init_text=None, language_text=None):
             raise ValueError(f"registered command class {class_name} has no definition")
         body, class_position = classes[class_name]
         parameter = registration["parameter"]
+        # A digit argument is a team number; anything else must be the class's string constructor.
         team = None
+        values = None
         if parameter is not None:
-            if not parameter.isdigit():
-                raise ValueError(f"{class_name}: unsupported constructor argument {parameter!r}")
-            team = int(parameter)
-        identifier = _method_text(class_name, body, "Get_Unique_Name", resources, team)
+            if parameter.isdigit():
+                team = int(parameter)
+            else:
+                values = constructor_values(class_name, body, parameter)
+        identifier = _method_text(
+            class_name, body, "Get_Unique_Name", resources, team, values=values)
         title = _method_text(
-            class_name, body, "Get_Display_Name", resources, team, fallback=identifier)
-        category = _method_text(class_name, body, "Get_Category", resources, team)
-        description = _method_text(class_name, body, "Get_Description", resources, team)
+            class_name, body, "Get_Display_Name", resources, team, fallback=identifier,
+            values=values)
+        category = _method_text(
+            class_name, body, "Get_Category", resources, team, values=values)
+        description = _method_text(
+            class_name, body, "Get_Description", resources, team, values=values)
         records.append({
             "id": identifier,
             "route_id": route_id(identifier),

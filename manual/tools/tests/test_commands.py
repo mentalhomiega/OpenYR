@@ -60,6 +60,98 @@ class RegisteredCommandTests(unittest.TestCase):
                 f"Creates Team {number} from currently selected units.")
 
 
+class StringConstructorRegistrationTests(unittest.TestCase):
+    INIT = (
+        "class HeldModifierCommandClass : public CommandClass\n"
+        "{\n"
+        "\tpublic:\n"
+        "\t\tHeldModifierCommandClass(char const * name, char const * display, char const * description) :\n"
+        "\t\t\tName(name),\n"
+        "\t\t\tDisplay(display),\n"
+        "\t\t\tDescription(description)\n"
+        "\t\t{\n"
+        "\t\t}\n"
+        "\t\tvirtual char const * Get_Unique_Name(void) const {\n"
+        "\t\t\treturn(Name);\n"
+        "\t\t}\n"
+        "\t\tvirtual char const * Get_Display_Name(void) const {\n"
+        "\t\t\treturn(Display);\n"
+        "\t\t}\n"
+        "\t\tvirtual char const * Get_Category(void) const {\n"
+        "\t\t\treturn(Fetch_String(TXT_INTERFACE));\n"
+        "\t\t}\n"
+        "\t\tvirtual char const * Get_Description(void) const {\n"
+        "\t\t\treturn(Description);\n"
+        "\t\t}\n"
+        "\tprivate:\n"
+        "\t\tchar const * Name;\n"
+        "\t\tchar const * Display;\n"
+        "\t\tchar const * Description;\n"
+        "};\n"
+        "\n"
+        "void Init_Commands(void)\n"
+        "{\n"
+        "\tAllCommands.Add(new HeldModifierCommandClass(\"ForceFire\", \"Force fire\", "
+        "\"Hold to fire (on a unit or the ground), then release.\"));\n"
+        # The forced bindings must be registered too, or registered_commands refuses the text.
+        "\tAllCommands.Add(new HeldModifierCommandClass(\"DeleteWaypoint\", \"Delete waypoint\", "
+        "\"Deletes the selected waypoint.\"));\n"
+        "\tAllCommands.Add(new HeldModifierCommandClass(\"Options\", \"Options\", "
+        "\"Opens the options menu.\"));\n"
+        "}\n"
+    )
+    LANGUAGE = 'TXT_INTERFACE "Interface"\n'
+
+    def registration_text(self, arguments):
+        return self.INIT.replace(
+            '"ForceFire", "Force fire", "Hold to fire (on a unit or the ground), then release."',
+            arguments)
+
+    def test_string_arguments_fill_the_members_the_methods_return(self):
+        records = {
+            record["id"]: record
+            for record in commands_engine.registered_commands(self.INIT, self.LANGUAGE)
+        }
+        record = records["ForceFire"]
+        self.assertEqual(record["title"], "Force fire")
+        self.assertEqual(
+            record["description"], "Hold to fire (on a unit or the ground), then release.")
+        self.assertEqual(record["category"], "Interface")
+        self.assertEqual(record["route_id"], "forcefire")
+
+    def test_wrong_string_count_fails_against_the_constructor(self):
+        text = self.registration_text('"ForceFire", "Force fire"')
+        with self.assertRaisesRegex(ValueError, "constructor takes 3 strings, registration gives 2"):
+            commands_engine.registered_commands(text, self.LANGUAGE)
+
+    def test_non_literal_string_argument_is_rejected(self):
+        text = self.registration_text('"ForceFire", name, "Hold to fire."')
+        with self.assertRaisesRegex(ValueError, "unsupported constructor argument 'name'"):
+            commands_engine.registered_commands(text, self.LANGUAGE)
+
+    def test_unstored_parameter_is_not_returned_as_metadata(self):
+        text = self.INIT.replace(
+            "\t\t\treturn(Display);", "\t\t\treturn(Name2);")
+        with self.assertRaisesRegex(ValueError, "Get_Display_Name"):
+            commands_engine.registered_commands(text, self.LANGUAGE)
+
+    def test_shipped_modifier_registrations_publish_their_source_strings(self):
+        records = {record["id"]: record for record in commands_engine.registered_commands()}
+        expected = {
+            "ForceFire": "Force fire",
+            "ForceMove": "Force move",
+            "SelectModifier": "Add to selection",
+            "QueueMove": "Queue move",
+            "GridBuildModifier": "Grid build modifier",
+        }
+        for identifier, title in expected.items():
+            self.assertEqual(records[identifier]["title"], title)
+        self.assertEqual(
+            records["GridBuildModifier"]["description"],
+            "Hold, then press Q W E R, A S D F or Z X C V to start the sidebar cameos in that order.",
+        )
+
+
 class CommandAdapterTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
