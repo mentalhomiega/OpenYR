@@ -91,7 +91,7 @@ Any of the following refuses the attempt:
 
 - the object is already hidden, or is part way through either fade;
 - its weapon is still reloading;
-- its target is within range of its primary weapon;
+- its target is within range of the weapon chosen for it;
 - the [`CloakDelay`](/keys/cloakdelay/) countdown is still running;
 - for a structure, a [`Sensors=yes`](/keys/sensors/) object stands within one cell of its footprint, and that object's owner does not consider the structure allied.
 
