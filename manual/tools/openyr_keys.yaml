@@ -30,6 +30,18 @@ records:
   mods-screen: OpenYR
   render-frame-rate: OpenYR
   sidebar-strip-default-capacity: OpenYR
+  aircraft-waypoint-reload: OpenYR
+  brightness-and-gamma: OpenYR
+  colour-blind-correction: OpenYR
+  frame-rate-limit-option: OpenYR
+  free-player-colors: OpenYR
+  hdr-emissive-groundwork: OpenYR
+  hdr-output: OpenYR
+  hdr-paper-white: OpenYR
+  hdr-peak-brightness: OpenYR
+  mutate-friendly-key: OpenYR
+  screen-shake-option: OpenYR
+  show-fps-option: OpenYR
   # Keys OpenTS added.
   action-lines-and-ui-ini: OpenTS
   autosave: OpenTS
@@ -306,6 +318,9 @@ opents_ini:
     anchor: what-a-save-carries
   Files/Rules:
     effect: "The rules file."
+    anchor: the-files-it-reads
+  Files/RA2Art:
+    effect: "Red Alert 2's artwork definitions, whose movie list its campaigns' missions index."
     anchor: the-files-it-reads
   Files/Art:
     effect: "The artwork definitions."
