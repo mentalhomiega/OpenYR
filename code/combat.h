@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include "cellspread.h"
 #include "coord.h"
 
 #include "armor.hh"
@@ -31,7 +32,6 @@ int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor,
 bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL, HouseClass const * spare_infantry_of=NULL);
 
 // The cells within a radius of up to CELL_SPREAD_MAX, nearest first, as gamemd's CellSpreadTable lists them.
-static int const CELL_SPREAD_MAX = 11;
 int Cell_Spread_Count(int radius);
 Cell Cell_Spread_Offset(int index);
 

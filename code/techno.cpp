@@ -190,6 +190,7 @@
 #include "navalweapon.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "productionrules.h"
 #include "psystype.h"
 #include "queue.h"
 #include "revent.h"
@@ -212,6 +213,7 @@
 #include "unittype.h"
 #include "vanim.h"
 #include "vein.h"
+#include "veteranrules.h"
 #include "voc.h"
 #include "vox.h"
 #include "voxdrsys.h"
@@ -981,13 +983,8 @@ int TechnoClass::Time_To_Build(void) const
 	**	minimum and, while the house is short, the maximum (TechnoClass::TimeToBuild, 0x6F47A0).
 	*/
 	// gamemd stores the power ratio as a float32 truncated toward zero (TechnoClass::TimeToBuild, 0x6F4808).
-	double const power = Truncate_To_Single(House->Power_Fraction());
-	double speed = 1.0 - (1.0 - power) * Rule->LowPowerPenaltyModifier;
-	speed = std::max(speed, Rule->MinLowPowerProductionSpeed);
-	if (power < 1.0) speed = std::min(speed, Rule->MaxLowPowerProductionSpeed);
-	// The floor is gamemd's float32 0.01 (TechnoClass::TimeToBuild, 0x7F4E34), not the double.
-	if (speed == 0.0) speed = 0.01f;
-	val /= speed;
+	// The zero-speed floor is gamemd's float32 0.01 (TechnoClass::TimeToBuild, 0x7F4E34), not the double.
+	val = ProductionRules::Low_Power_Build_Time(val, House->Power_Fraction(), Rule->LowPowerPenaltyModifier, Rule->MinLowPowerProductionSpeed, Rule->MaxLowPowerProductionSpeed);
 
 	int extra = House->Factory_Count(RTTI) - 1;
 	if (Rule->MultipleFactoryCap > 0) {
@@ -4674,7 +4671,7 @@ int TechnoClass::Rearm_Delay(int which) const
 		int delay = weapon->ROF * House->ROFBias * AttachedEffects.ROF_Multiplier() + Random_Pick(0, 2);
 
 		if (Has_Ability(ABILITY_ROF)) {
-			delay = (int)(Rule->VeteranROF * delay);
+			delay = VeteranRules::Multiplied(delay, Rule->VeteranROF);
 		}
 
 		if (Is_Bunkered() && Rule->BunkerROFMultiplier != 0) {
@@ -4864,7 +4861,7 @@ int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 	if (firepower > 0) {
 		firepower = (int)(House->FirepowerBias * FirepowerBias * AttachedEffects.Firepower_Multiplier() * weapon->Attack);
 		if (Has_Ability(ABILITY_FIREPOWER)) {
-			firepower = (int)(Rule->VeteranCombat * firepower);
+			firepower = VeteranRules::Multiplied(firepower, Rule->VeteranCombat);
 		}
 		if (Is_Bunkered()) {
 			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
@@ -4908,13 +4905,13 @@ int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass co
 	// The firepower steps match Fire_Damage, without its bunker, garrison and transport multipliers.
 	int firepower = (int)(House->FirepowerBias * FirepowerBias * damage);
 	if (Has_Ability(ABILITY_FIREPOWER)) {
-		firepower = (int)(Rule->VeteranCombat * firepower);
+		firepower = VeteranRules::Multiplied(firepower, Rule->VeteranCombat);
 	}
 
 	// The divisor is the target's house country multiplier for this object's type category, times this object's ArmorBias.
 	int estimate = (int)(firepower / (target->House->Country_Armor_Multiplier(TClass) * ArmorBias));
 	if (target->Has_Ability(ABILITY_STRONGER)) {
-		estimate = (int)(estimate / Rule->VeteranArmor);
+		estimate = VeteranRules::Divided(estimate, Rule->VeteranArmor);
 	}
 	if (estimate < 1) {
 		estimate = 1;
@@ -6417,7 +6414,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * AttachedEffects.Armor_Multiplier()));
 
 		if (Has_Ability(ABILITY_STRONGER)) {
-			damage = (int)((double)damage / Rule->VeteranArmor);
+			damage = VeteranRules::Divided(damage, Rule->VeteranArmor);
 		}
 
 		if (damage < 1) {
@@ -6933,14 +6930,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 
 	if (killer != NULL) {
 		// The victim's value is doubled when it was a veteran and tripled when elite; an ally is worth nothing.
-		int value = points;
-		if (killer->House->Is_Ally(House)) {
-			value = 0;
-		} else if (Veterancy.Is_Veteran()) {
-			value *= 2;
-		} else if (Veterancy.Is_Elite()) {
-			value *= 3;
-		}
+		int const value = VeteranRules::Kill_Value(points, killer->House->Is_Ally(House), Veterancy.Is_Veteran(), Veterancy.Is_Elite());
 
 		// The experience goes to the object that fired, or to the transport or launcher it fired through. A garrison gives it to the occupant whose turn is next, since each shot moves the turn on when it is placed.
 		TechnoClass * credit = NULL;
@@ -7095,14 +7085,7 @@ void TechnoClass::Record_The_Kill_By_House(HouseClass * house)
 	Spring_Kill_Events(house != NULL);
 
 	if (house != NULL) {
-		int value = points;
-		if (house->Is_Ally(House)) {
-			value = 0;
-		} else if (Veterancy.Is_Veteran()) {
-			value *= 2;
-		} else if (Veterancy.Is_Elite()) {
-			value *= 3;
-		}
+		int const value = VeteranRules::Kill_Value(points, house->Is_Ally(House), Veterancy.Is_Veteran(), Veterancy.Is_Elite());
 
 		House->WhoLastHurtMe = house->HeapID;
 		house->PointTotal += value;
@@ -10245,7 +10228,7 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 
 		int sight_range = TClass->SightRange * (SightIncrease * 0.01 + 1.0);
 		if (Has_Ability(ABILITY_SIGHT) && Rule->VeteranSight != 0.0) {
-			sight_range *= Rule->VeteranSight;
+			sight_range = VeteranRules::Multiplied(sight_range, Rule->VeteranSight);
 		}
 
 		if (sight_range) {

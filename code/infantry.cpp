@@ -102,6 +102,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "data.h"
+#include "damagerules.h"
 #include "dbgprint.h"
 #include "draw.h"
 #include "fly.h"
@@ -407,11 +408,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 	**	points as gamemd's float-to-int helper does (_ftol, 0x007C5F00), but never less than one point.
 	*/
 	if (warhead != NULL && IsProne && damage > 0 && !forced) {
-		damage = (int)(damage * warhead->ProneDamage);
-
-		if (damage < 1) {
-			damage = 1;
-		}
+		damage = DamageRules::Prone_Damage(damage, warhead->ProneDamage);
 	}
 
 	/*

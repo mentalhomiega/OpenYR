@@ -33,6 +33,7 @@
 #include "always.h"
 
 #include "veteran.h"
+#include "veteranrules.h"
 
 #include "_rules.h"
 #include "globals.h"
@@ -116,10 +117,7 @@ VeterancyClass::~VeterancyClass(void)
 /// <param name="value">The point value of the victim.</param>
 void VeterancyClass::Made_A_Kill(int cost, int value)
 {
-	// The game keeps the total as a float; a zero divisor makes the share infinite or NaN, and either lifts the total to the cap.
-	double const total = Experience + value / (cost * Rule->VeteranRatio);
-	double const cap = Rule->VeteranCap;
-	Experience = double(float(cap > total ? total : cap));
+	Experience = VeteranRules::Experience_After_Kill(Experience, cost, value, Rule->VeteranRatio, Rule->VeteranCap);
 }
 
 
