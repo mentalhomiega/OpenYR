@@ -16,4 +16,4 @@ credit:
 - MentalHomiega
 ---
 
-A computer house now places a naval yard, or any other naval structure, on open water within `AINavalYardAdjacency` cells of its construction yard, using the foundation of the first `Shipyard` type it may own to size the site. Before, it searched the land around its base, so a naval yard could never be placed and the house gave up on naval structures after the first try. The save revision moves to 41, so saves from earlier builds are not compatible.
+A computer house now places a naval yard, or any other naval structure, on open water within `AINavalYardAdjacency` cells of its construction yard, using the foundation of the first `Shipyard` type it may own to size the site. Before, it searched the land around its base, so a naval yard could never be placed and the house gave up on naval structures after the first try. Saves from earlier builds are not compatible.

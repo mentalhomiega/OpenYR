@@ -16,4 +16,4 @@ FreeForAll and Cooperative turn `AlliesAllowed` off, so players cannot change al
 
 A launch whose `GameMode` the game does not list, or a game that cannot read `MPModesMD.ini`, plays as Battle and writes one debug line. It is not refused. The key and its index meaning match the one the CnCNet spawner reads.
 
-The session identity now includes the launch file's schema version, which is 6. A machine on an earlier build does not share a match with this one.
+This change raised the launch file's schema version, which feeds the session identity, so a machine on an earlier build does not share a match with this one.

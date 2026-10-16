@@ -1,5 +1,5 @@
 ---
-title: Keep a full charge on a suspended superweapon after a spy enters its building
+title: Empty the charge of a suspended superweapon after a spy enters its building
 category: fix
 release: 0.2.0
 targets:
@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-A spy that enters the building of a suspended superweapon now leaves that weapon with a full charge, and it stays suspended until power returns. We used to leave a suspended weapon with the charge it had. A weapon that is charging still starts again from the beginning.
+A spy that enters the building of a suspended superweapon now sets that weapon's countdown back to the full delay, so it shows no charge, and it stays suspended until power returns. We used to leave a suspended weapon with the countdown it had. A weapon that is charging still starts again from the beginning.

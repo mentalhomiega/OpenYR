@@ -1,5 +1,5 @@
 ---
-title: Round prone damage to the nearest point
+title: Round prone damage down to a whole point
 category: fix
 release: 0.2.0
 targets:
@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A soldier that is lying down now takes the scaled damage rounded to the nearest point, not rounded down. A 15-point hit against `ProneDamage=50%` deals 8 points instead of 7. The minimum of one point is unchanged.
+A soldier that is lying down takes the scaled damage rounded down to a whole point, as gamemd does, and never less than one point. A 15-point hit against `ProneDamage=50%` deals 7 points.

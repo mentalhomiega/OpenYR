@@ -1,5 +1,5 @@
 ---
-title: Wake an idle repair bay for any docked object
+title: Wake an idle repair or rearming structure for any docked object
 category: fix
 release: 0.2.0
 targets:
@@ -12,4 +12,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-An idle `UnitRepair=yes` structure with several docks now starts repairing when any docked object comes within a quarter of a cell of the center, and a pad that also sets `UnitReload=yes` wakes for any docked aircraft that needs rearming. Before, only the object on the first dock could wake them. A structure with one dock behaves as before.
+An idle `UnitRepair=yes` or `UnitReload=yes` structure with several docks now leaves guard when any docked object needs it, not only the one on the first dock. A repair structure wakes for an object within a quarter of a cell of its center, and a rearming pad for an aircraft that needs ammunition. A repair structure still repairs only the object on its first dock. A structure with one dock behaves as before.

@@ -12,4 +12,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-We now read `WaterCrate=` and `WaterCrateImg=` from `[CrateRules]`. In a campaign, a collected crate on the `WaterCrateImg` overlay gives the `WaterCrate` result, as in Yuri's Revenge. Before, we ignored both keys, so such a crate always gave money. The default and the shipped rules both say `Money`, so existing rules play the same. These values are part of the save, so saved games from earlier builds no longer load.
+We now read `WaterCrate=` and `WaterCrateImg=` from `[CrateRules]`. In a campaign, a crate on the `WaterCrateImg` overlay that the map draws gives the `WaterCrate` result, as in Yuri's Revenge. Before, we ignored both keys, so such a crate always gave money. The default and the shipped rules both say `Money`, so existing rules play the same. These values are part of the save, so saved games from earlier builds no longer load.

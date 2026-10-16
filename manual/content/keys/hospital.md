@@ -7,13 +7,13 @@ when_omitted:
   value: "no"
 ---
 
-A hospital heals damaged infantry free of charge, one at a time. With the player's infantry selected, pointing at an allied hospital shows the enter cursor when the infantry is below full strength and not under [mind control](/systems/mind-control/#going-into-transports-and-structures), and **all of** the following hold:
+A hospital heals damaged infantry free of charge, one at a time. With the player's infantry selected, pointing at an allied hospital shows the enter cursor when the infantry is below full strength and **all of** the following hold:
 
 - the hospital has finished construction and is not being sold;
 - it is switched on;
 - it is not already treating another infantry;
 - its [`Ammo`](/keys/ammo/) count is not zero;
-- the infantry neither holds a mind-controlled unit nor is mind controlled itself.
+- the infantry neither holds a mind-controlled unit nor is under [mind control](/systems/mind-control/#going-into-transports-and-structures) or dominated by a psychic dominator itself.
 
 Otherwise the cursor shows that the infantry cannot enter.
 

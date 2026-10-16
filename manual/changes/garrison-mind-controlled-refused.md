@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A soldier under mind control can no longer move into a structure. We refuse it as gamemd's BuildingClass::CanBeOccupiedBy does. Before, such a soldier could move in like any other.
+A soldier with `Occupier=yes` that is under mind control can no longer garrison a structure, as gamemd's BuildingClass::CanBeOccupiedBy decides. Before, such a soldier could move in like any other.

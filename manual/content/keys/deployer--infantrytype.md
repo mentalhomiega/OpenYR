@@ -25,7 +25,7 @@ While a human player's soldier is deployed:
 
 A computer player's soldier that is told to move packs up first and then walks off, unless its [`UndeployDelay`](/keys/undeploydelay/#scope-infantrytype) is set. A soldier that starts walking any other way while deployed leaves its deployment without playing `Undeploy`.
 
-A computer player's dug-in soldier on an attack mission packs up when its target is out of reach of its `DeployFireWeapon`. A dug-in soldier on guard takes only targets within that reach and drops one that leaves it. A dug-in soldier of either side does not walk toward its target.
+A computer player's dug-in soldier on an attack mission packs up when its target is out of reach of its `DeployFireWeapon`, unless that weapon sets `AreaFire=yes`. A dug-in soldier with `DeployFire=yes`, a negative `UndeployDelay` and no immunity to radiation takes only targets within that reach on guard, and drops one that leaves it. A dug-in soldier of either side does not walk toward its target.
 
 A computer player's soldier on guard digs in on its own after its [`AIAutoDeployFrameDelay`](/keys/aiautodeployframedelay/) has passed.
 

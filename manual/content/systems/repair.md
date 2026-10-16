@@ -263,14 +263,14 @@ The building admits the infantry under **all of**, in this order:
 - it is not in contact with anything other than this infantry;
 - it is switched on;
 - the caller is infantry, not a vehicle or an aircraft;
-- the caller is not under [mind control](/systems/mind-control/#going-into-transports-and-structures);
+- the caller holds no mind-controlled unit and is neither under [mind control](/systems/mind-control/#going-into-transports-and-structures) nor dominated by a psychic dominator;
 - its [`Ammo`](/keys/ammo/) count is not zero;
 - it is not already serving someone.
 
-Each admission uses up one point of `Ammo`.
+Each admission uses up one point of `Ammo`, except at a hospital whose type sets no `Ammo`.
 
-:::caution[Give hospitals and armories an `Ammo` count]
-Set `Ammo` to the number of visits the building should serve for the whole match. Hospitals and armories never restock, unlike other buildings. A building with no `Ammo` set admits one visitor and then refuses everyone for the rest of the match.
+:::caution[Give armories and limited hospitals an `Ammo` count]
+Set `Ammo` to the number of visits the building should serve for the whole match. Hospitals and armories never restock, unlike other buildings. An armory with no `Ammo` set admits one visitor and then refuses everyone for the rest of the match. A hospital with no `Ammo` set keeps a count of `-1` and admits every visitor, so give it an `Ammo` count only to limit its visits.
 :::
 
 A hospital heals [`IRepairStep`](/keys/irepairstep/) strength per step, at no charge. It takes a step each time its count reaches `IRepairRate * 900`, counting once per frame. It releases the occupant at maximum strength. An occupant that needs no healing is released at the first count and still uses up its admission.

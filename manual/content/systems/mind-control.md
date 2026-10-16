@@ -87,7 +87,7 @@ Other structures take it in under their usual conditions: a [`Grinding=yes`](/ke
 
 Taking an object over gives it a new order, so one that was on its way in does not go in. A computer team that loads its transport leaves its members under mind control outside.
 
-An object the psychic dominator took is no longer under mind control, so it may go in anywhere its house's other objects may.
+An object the psychic dominator took is no longer under mind control, so it may board a transport, garrison a structure and enter a tank bunker like its house's other objects. A dominated infantryman is still refused at a hospital or armory.
 
 ## Overload
 

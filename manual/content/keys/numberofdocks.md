@@ -16,7 +16,7 @@ When infantry asks to dock at a [`Hospital=yes`](/keys/hospital/) or [`Armory=ye
 
 When a structure with several docks is [captured](/systems/capture/), every object on a dock is judged on its own: one standing within a quarter of a cell of its dock's spot changes owner with the structure, and any other is sent away.
 
-A `UnitRepair=yes` structure takes on the object on its first dock only when that object stands within a quarter of a cell of the structure's center. It starts repairing that object once the object has stopped within 100 leptons of the dock's spot, or within 200 leptons for a hovercraft or ship. An object on a later dock is never repaired. Keep the first `DockingOffset0=` within a quarter of a cell of the center; otherwise the object is never taken on.
+A `UnitRepair=yes` structure starts repairing the object on its first dock once that object has stopped within 100 leptons of the dock's spot, or within 200 leptons for a hovercraft or ship. An object on a later dock is never repaired.
 
 A free aircraft that a pad hands out with [`FreeUnit=`](/keys/freeunit/) or [`PadAircraft=`](/keys/padaircraft/) appears on its dock when the pad has several docks, and at the center when it has one. An aircraft built at a pad with a free dock appears on that dock. When every dock is taken, a new aircraft arrives from the map edge instead. During an [ion storm](/systems/ion-storms/), a new aircraft appears on a cell near the pad and does not dock, whether or not a dock is free.
 

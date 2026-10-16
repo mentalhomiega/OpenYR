@@ -20,7 +20,9 @@ Unless one of the cases further down applies, the value is adjusted in this orde
 
 1. In skirmish and multiplayer games it is multiplied by the firing house's [country `ROF`](/keys/rof/#scope-housetype). The [difficulty `ROF`](/keys/rof/#scope-difficulty-settings) takes no part.
 2. A random 0 to 2 frames is added.
-3. If the firer has earned the rate-of-fire ability, the result is divided by one plus [`VeteranROF`](/keys/veteranrof/).
+3. If the firer has earned the rate-of-fire ability, the result is multiplied by [`VeteranROF`](/keys/veteranrof/).
+4. A vehicle in a tank bunker divides the result by [`BunkerROFMultiplier`](/keys/bunkerrofmultiplier/#scope-global-rules), unless that is `0`.
+5. A garrisoned structure divides the result by the number of soldiers inside, then by [`OccupyROFMultiplier`](/keys/occupyrofmultiplier/) when that is above `0`.
 
 Three cases use a different delay. The first case that applies decides it:
 

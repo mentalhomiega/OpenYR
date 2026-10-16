@@ -164,10 +164,10 @@ A pinpoint blast, one with `CellSpread` of `0.5` or less, that lands within 85 l
 
 Every candidate receives the same raw figure and then reduces it separately, so two objects in the same explosion can lose very different amounts. The steps run in this order:
 
-1. **Prone infantry.** An infantryman lying down keeps only the warhead's [`ProneDamage`](/keys/pronedamage/) fraction of the figure, rounded to the nearest point but never below one point.
+1. **Prone infantry.** An infantryman lying down keeps only the warhead's [`ProneDamage`](/keys/pronedamage/) fraction of the figure, rounded down to a whole point but never below one point.
 2. **Web.** A [`Webby=yes`](/keys/webby/) warhead entangles any infantryman whose type is not [`IsWebImmune=yes`](/keys/iswebimmune/). The figure becomes zero, so the hit does nothing else.
 3. **Armor multipliers.** The figure is divided by the owning country's armor multiplier for the object's kind and by the object's crate armor multiplier, then rounded down. The country multiplier is [`ArmorInfantryMult`](/keys/armorinfantrymult/), [`ArmorUnitsMult`](/keys/armorunitsmult/), [`ArmorAircraftMult`](/keys/armoraircraftmult/), [`ArmorBuildingsMult`](/keys/armorbuildingsmult/) or [`ArmorDefensesMult`](/keys/armordefensesmult/), and a kind outside those five has none. The crate multiplier stays `1` until an armor crate raises it. Neither the country's nor the difficulty's `Armor=` takes part.
-4. **Veteran armor.** An object with the `STRONGER` [ability](/systems/veterancy/#abilities) divides the figure again by one plus [`VeteranArmor`](/keys/veteranarmor/), rounded down.
+4. **Veteran armor.** An object with the `STRONGER` [ability](/systems/veterancy/#abilities) divides the figure again by [`VeteranArmor`](/keys/veteranarmor/), rounded down.
 5. **Minimum of one.** If steps 3 and 4 left less than one point, the figure becomes one point. This includes a hit of zero to begin with, except a [`Webby=yes`](/keys/webby/) hit, which stays at zero.
 6. **Type immunity.** An object whose type is [`TypeImmune=yes`](/keys/typeimmune/) takes no damage from a credited attacker of the same type owned by the same house.
 7. **Iron Curtain.** An object under the [Iron Curtain](/systems/superweapons/#iron-curtain) takes no damage.
