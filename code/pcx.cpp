@@ -33,6 +33,7 @@
 
 #include "pcx.h"
 
+#include "dbgprint.h"
 #include "dsurface.h"
 
 #include <algorithm>
@@ -164,10 +165,14 @@ Surface * Read_PCX_File(FileClass & file_handle, PaletteClass * palette, void * 
 {
 	if (!file_handle.Is_Available()) return(NULL);
 
-	if (!file_handle.Open(FileClass::READ)) return(NULL);
+	if (!file_handle.Open(FileClass::READ)) {
+		DebugString("PCX %s rejected: it cannot be opened\n", file_handle.File_Name());
+		return(NULL);
+	}
 
 	PCX_HEADER header;
 	if (file_handle.Read(&header, sizeof(PCX_HEADER)) != (int)sizeof(PCX_HEADER)) {
+		DebugString("PCX %s rejected: its header is cut short\n", file_handle.File_Name());
 		file_handle.Close();
 		return(NULL);
 	}
@@ -179,6 +184,7 @@ Surface * Read_PCX_File(FileClass & file_handle, PaletteClass * palette, void * 
 
 	if (header.id != 10 || header.pixelsize != 8 || (planes != 1 && planes != 3)
 		|| width < 1 || width > PCX_MAX_SIDE || height < 1 || height > PCX_MAX_SIDE || line_bytes < width) {
+		DebugString("PCX %s rejected: id %d, %d bit pixels, %d planes, %dx%d pixels and %d bytes a line\n", file_handle.File_Name(), (int)header.id, (int)header.pixelsize, planes, width, height, line_bytes);
 		file_handle.Close();
 		return(NULL);
 	}
@@ -189,6 +195,7 @@ Surface * Read_PCX_File(FileClass & file_handle, PaletteClass * palette, void * 
 		int const rows = Size / (width * bytes_per_pixel);
 		height = std::min(rows, height);
 		if (height < 1) {
+			DebugString("PCX %s rejected: its %d byte buffer holds no whole row\n", file_handle.File_Name(), Size);
 			file_handle.Close();
 			return(NULL);
 		}
@@ -197,6 +204,7 @@ Surface * Read_PCX_File(FileClass & file_handle, PaletteClass * palette, void * 
 	BSurface * pic = new BSurface(width, height, bytes_per_pixel, Buff);
 	unsigned char * buffer = (unsigned char *)pic->Lock();
 	if (buffer == NULL) {
+		DebugString("PCX %s rejected: its picture could not be locked\n", file_handle.File_Name());
 		delete pic;
 		file_handle.Close();
 		return(NULL);
@@ -248,6 +256,7 @@ Surface * Read_PCX_File(FileClass & file_handle, PaletteClass * palette, void * 
 	pic->Unlock();
 
 	if (!whole) {
+		DebugString("PCX %s rejected: its picture data ends before the picture does (%dx%d pixels, %d planes)\n", file_handle.File_Name(), width, height, planes);
 		delete pic;
 		file_handle.Close();
 		return(NULL);

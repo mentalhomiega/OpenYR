@@ -50,6 +50,7 @@
 #include "ccfile.h"
 #include "conquer.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "globals.h"
 #include "pk.h"
 #include "pkstraw.h"
@@ -147,7 +148,10 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	**	even that is not a mixfile.
 	*/
 	int got = straw->Get(&alternate, sizeof(alternate));
-	if (got != sizeof(alternate)) return;
+	if (got != sizeof(alternate)) {
+		DebugString("MIX %s rejected: it is too short for a header\n", Filename);
+		return;
+	}
 
 	/*
 	**	Detect if this is an extended mixfile. If so, then see if it is encrypted
@@ -163,18 +167,27 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 			pstraw.Get_From(&fstraw);
 			straw = &pstraw;
 		}
-		if (straw->Get(&fileheader, sizeof(fileheader)) != sizeof(fileheader)) return;
+		if (straw->Get(&fileheader, sizeof(fileheader)) != sizeof(fileheader)) {
+			DebugString("MIX %s rejected: its header is cut short\n", Filename);
+			return;
+		}
 
 	} else {
 		memmove(&fileheader, &alternate, sizeof(alternate));
 		int const rest = sizeof(fileheader)-sizeof(alternate);
-		if (straw->Get(((char*)&fileheader)+sizeof(alternate), rest) != rest) return;
+		if (straw->Get(((char*)&fileheader)+sizeof(alternate), rest) != rest) {
+			DebugString("MIX %s rejected: its header is cut short\n", Filename);
+			return;
+		}
 	}
 
 	/*
 	**	The counts are the file's claims. A negative one describes no mixfile.
 	*/
-	if (fileheader.count < 0 || fileheader.size < 0) return;
+	if (fileheader.count < 0 || fileheader.size < 0) {
+		DebugString("MIX %s rejected: its header claims %d entries and %d bytes\n", Filename, (int)fileheader.count, (int)fileheader.size);
+		return;
+	}
 
 	Count = fileheader.count;
 	DataSize = fileheader.size;
@@ -186,6 +199,7 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	HeaderBuffer = new SubBlock [Count];
 	if (HeaderBuffer == NULL) return;
 	if (straw->Get(HeaderBuffer, Count * sizeof(SubBlock)) != (int)(Count * sizeof(SubBlock))) {
+		DebugString("MIX %s rejected: its directory of %d entries is cut short\n", Filename, Count);
 		delete [] HeaderBuffer;
 		HeaderBuffer = NULL;
 		Count = 0;
@@ -212,6 +226,7 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	if (available < 0) available = 0;
 	if (available > INT_MAX) available = INT_MAX;
 	long long data_size = (DataSize < available) ? DataSize : available;
+	int const listed = Count;
 	int kept = 0;
 	for (int index = 0; index < Count; index++) {
 		SubBlock const & block = HeaderBuffer[index];
@@ -222,6 +237,9 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 			// A header that undercounts its data still finds the members that lie inside the file.
 			if (end > data_size) data_size = end;
 		}
+	}
+	if (kept < listed) {
+		DebugString("MIX %s: %d of its %d entries are left out, as they lie outside the file\n", Filename, listed - kept, listed);
 	}
 	Count = kept;
 	DataSize = (int)data_size;
@@ -592,6 +610,7 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	/// Can't call strupr on a const string.
 	char filename_upper[_MAX_PATH];
 	if (strlen(filename) >= sizeof(filename_upper)) {
+		DebugString("MIX lookup rejected: a name of %d characters is too long\n", (int)strlen(filename));
 		return(false);
 	}
 	strcpy(filename_upper, filename);
