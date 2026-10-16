@@ -259,6 +259,7 @@ class ObjectClass : public AbstractClass
 		virtual bool On_Ground(void) const override;
 		virtual bool In_Air(void) const override;
 		virtual bool Is_Moving_Onto_Bridge(void) const;
+		bool Is_On_Bridge_Toward(Coord const & destination) const;
 		virtual bool Occupies_Cells(void) const {return(true);}
 
 		int Distance(AbstractClass const * target) const;

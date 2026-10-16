@@ -1748,14 +1748,15 @@ static void Can_Build_Step(StepType const & step)
 static void Bridge_Cell_Step(StepType const & step)
 {
 	CellClass const & c = Map[Cell(std::atoi(step.Argument.c_str()), step.X)];
-	DebugString("AUTOTEST   bridge %d,%d tile %d sub %d height %d overlay %d od %d deck %d under %d was %d ew %d rail %d road %d\n",
+	DebugString("AUTOTEST   bridge %d,%d tile %d sub %d height %d overlay %d od %d deck %d under %d was %d ew %d rail %d road %d zone %d zonebridge %d land %d\n",
 		(int)c.CellID.X, (int)c.CellID.Y, (int)c.ITType, (int)c.SubTile, (int)c.Height, (int)c.Overlay, (int)c.OverlayData,
-		(int)c.IsBridgeDeck, (int)c.IsUnderBridge, (int)c.WasUnderBridge, (int)c.IsBridgeEastWest, (int)c.Is_Tile_Train_Bridge(), (int)c.Is_Tile_Bridge());
+		(int)c.IsBridgeDeck, (int)c.IsUnderBridge, (int)c.WasUnderBridge, (int)c.IsBridgeEastWest, (int)c.Is_Tile_Train_Bridge(), (int)c.Is_Tile_Bridge(),
+		Map.Get_Cell_Zone(c.CellID, MZONE_NORMAL, false), Map.Get_Cell_Zone(c.CellID, MZONE_NORMAL, true), (int)c.Land_Type());
 }
 
 
 /// <summary>
-/// Logs each bridge deck overlay on the map with whether its footprint is flagged, then the counts.
+/// Logs each bridge deck overlay and each bridge terrain tile on the map with its bridge flags, then the counts.
 /// </summary>
 /// <param name="step">The step, which takes no argument.</param>
 static void Bridge_Census_Step(StepType const & step)
@@ -1777,6 +1778,12 @@ static void Bridge_Census_Step(StepType const & step)
 			concrete++;
 			DebugString("AUTOTEST   bridgeconcrete %d,%d overlay %d\n", (int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->Overlay);
 		}
+		if (cptr->Is_Tile_Bridge() || cptr->Is_Tile_Train_Bridge()) {
+			DebugString("AUTOTEST   bridgetile %d,%d tile %d sub %d height %d overlay %d deck %d under %d was %d ew %d train %d high %d\n",
+				(int)cptr->CellID.X, (int)cptr->CellID.Y, (int)cptr->ITType, (int)cptr->SubTile, (int)cptr->Height, (int)cptr->Overlay,
+				(int)cptr->IsBridgeDeck, (int)cptr->IsUnderBridge, (int)cptr->WasUnderBridge, (int)cptr->IsBridgeEastWest,
+				(int)cptr->Is_Tile_Train_Bridge(), (int)cptr->Is_Tile_Bridge());
+		}
 		bool const is_high = cptr->Overlay == OVERLAY_BRIDGE1 || cptr->Overlay == OVERLAY_BRIDGE2;
 		bool const is_railway = cptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || cptr->Overlay == OVERLAY_RAILWAY_BRIDGE2;
 		if (!is_high && !is_railway) {
@@ -1795,6 +1802,25 @@ static void Bridge_Census_Step(StepType const & step)
 			(int)cptr->IsBridgeDeck, (int)cptr->IsUnderBridge, (int)cptr->WasUnderBridge);
 	}
 	DebugString("AUTOTEST bridgecensus high %d flagged %d railway %d flagged %d lowbridge %d concrete %d\n", high, high_flagged, railway, railway_flagged, lowbridge, concrete);
+}
+
+
+/// <summary>
+/// Logs, for each foot the player owns of the type, whether it is standing on a bridge and the bridge state of its cell.
+/// </summary>
+/// <param name="step">A step whose argument is the type name.</param>
+static void Bridge_Unit_Step(StepType const & step)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (!techno->Is_Foot() || techno->House != PlayerPtr || techno->IsInLimbo || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) {
+			continue;
+		}
+		FootClass const * foot = static_cast<FootClass const *>(techno);
+		Cell const cell = foot->Get_Cell();
+		DebugString("AUTOTEST   bridgeunit %s cell %d,%d onbridge %d under %d deck %d height %d\n", foot->TClass->Name(), cell.X, cell.Y,
+			(int)foot->IsOnBridge, (int)Map[cell].IsUnderBridge, (int)Map[cell].IsBridgeDeck, Map.Get_Height_GL(foot->Center_Coord()));
+	}
 }
 
 
@@ -2089,6 +2115,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "bridgearea") {
 		Bridge_Area_Step(step);
+		return;
+	}
+	if (step.Command == "bridgeunit") {
+		Bridge_Unit_Step(step);
 		return;
 	}
 	if (step.Command == "repairbridge") {
