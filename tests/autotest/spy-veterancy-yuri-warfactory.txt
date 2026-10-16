@@ -1,0 +1,36 @@
+; A spy that infiltrates an enemy Yuri War Factory (YAWEAP, Factory=UnitType) makes the spy owner's new trainable vehicles
+; veterans (gamemd's WarFactoryInfiltrated flag, read by UnitClass::Init, 0x746810). Infantry and ships are unaffected.
+; Run as in spy-veterancy-barracks.txt, with the same -Settings. The enemy Yuri War Factory is placed in the first computer
+; house with a construction yard (Africans). Each control step builds E1, MTNK and DEST and logs its rank.
+; Expected: every control line reads rank 0. After the spy, "houses" shows factory 1 once the spy is in, and the MTNK built
+; after the spy reads rank 1, while the DEST (destroyer) and E1 built after it read rank 0.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy YAWEAP 50 34
+100 produce E1
+160 produce MTNK
+220 produce DEST
+400 veterancy E1
+401 veterancy MTNK
+402 veterancy DEST
+405 kill E1 1
+406 kill MTNK 1
+407 kill DEST 1
+500 houses
+600 own SPY 52 34
+610 spy SPY 50 34
+1000 where SPY
+1001 houses
+1100 produce E1
+1160 produce MTNK
+1220 produce DEST
+1400 veterancy E1
+1401 veterancy MTNK
+1402 veterancy DEST
+1500 quit

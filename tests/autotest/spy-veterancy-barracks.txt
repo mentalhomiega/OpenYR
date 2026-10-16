@@ -1,0 +1,40 @@
+; A spy that infiltrates an enemy barracks (YABRCK, Factory=InfantryType) makes the spy owner's new trainable infantry
+; veterans (gamemd's BarracksInfiltrated flag, read by InfantryClass::Init, 0x517CC0). The same spy does not make vehicles
+; or ships veterans. Run on XMP29U2.MAP (the default map; Lostlake.mmx does not register buildings placed by own or enemy)
+; as the Americans, with the debug cheats that -Settings turns on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/spy-veterancy-barracks.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 900 -Filter "AUTOTEST|Exception"
+; The enemy barracks is placed in the first computer house with a construction yard (Africans). Each control step builds a
+; rookie E1 (infantry), MTNK (vehicle) and DEST (destroyer) and logs its rank, then kills the ones outside the factory.
+; The spy is ordered with the capture order a click gives, so it walks in and infiltrates.
+; Expected: every control line reads rank 0. After the spy, "houses" shows barracks 1 and factory 0, the new E1 reads rank 1,
+; and the MTNK and DEST built after the spy read rank 0.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy YABRCK 50 26
+100 produce E1
+160 produce MTNK
+220 produce DEST
+400 veterancy E1
+401 veterancy MTNK
+402 veterancy DEST
+405 kill E1 1
+406 kill MTNK 1
+407 kill DEST 1
+500 houses
+600 own SPY 52 26
+610 spy SPY 50 26
+1000 where SPY
+1001 houses
+1100 produce E1
+1160 produce MTNK
+1220 produce DEST
+1400 veterancy E1
+1401 veterancy MTNK
+1402 veterancy DEST
+1500 quit

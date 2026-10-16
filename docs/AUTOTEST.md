@@ -67,6 +67,9 @@ A command runs once the game frame reaches its frame, in file order.
 | `occupy <TypeID> x y` | Puts the player's first infantry of that type inside the structure on that cell, without walking there |
 | `radar <TypeID>` | Writes each of the player's objects of that type with whether it is in limbo, whether the radar tracks it, whether the player has discovered it, and its radar pixel |
 | `neutral <TypeID> x y` | Puts an object of the type on that cell, owned by the house of the Civilian side, as `own` does for the player |
+| `enemy <TypeID> x y` | Puts an object of the type on that cell, owned by the first computer house with a construction yard that the player is not allied with, as `own` does for the player |
+| `spy <TypeID> x y` | Gives the player's objects of that type the capture order a click on the structure on that cell gives, so a spy walks in and infiltrates it |
+| `terrain x y` | Logs the land type of that cell (2 is water, 6 is beach), whether it is a shore piece and whether it holds any water |
 | `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
 | `veterancy <TypeID>` | Writes the rules' `VeteranRatio` and `VeteranCap`, the player's score, then each object of that type with its rank, experience and cost |
 | `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
