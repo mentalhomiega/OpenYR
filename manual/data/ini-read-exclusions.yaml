@@ -229,3 +229,11 @@ site_exclusions:
     keys: [Map, Units, Credits, Tech, Speed, Bases, Crates, Fog, Bridges, Redeploy, ShortGame, Engineer, SuperWeapons, BuildOffAlly]
     classification: excluded
     reason: The setup the skirmish screen remembers in [Skirmish], which the screen writes when it closes; the skirmish setup page owns it, and a launch file does not use it.
+
+  # Map sizing for the menu battle's choice of map.
+  - path: code/shellmap.cpp
+    function: Visible_Map_Size
+    keys: [LocalSize]
+    classification: duplicate
+    canonical_key: LocalSize
+    reason: The menu battle sizes a map from its [Map] LocalSize, the same setting DisplayClass already extracts from the map file.
