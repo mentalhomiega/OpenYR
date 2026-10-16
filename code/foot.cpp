@@ -414,9 +414,16 @@ bool FootClass::Is_In_Same_Zone(Coord const & coord) const
 	**	FootClass::IsInSameZoneAsCoords, 0x4D3810, through FootClass::GetDestination, 0x4DBDF0).
 	*/
 	Coord const dest = Locomotion->Destination();
-	Cell cell2 = (dest != COORD_NONE ? dest : Center_Coord()).As_Cell();
+	Coord const target = (dest != COORD_NONE ? dest : Center_Coord());
+	Cell cell2 = target.As_Cell();
 
-	return(Map.Is_Same_Cell_Zone(cell2, cell1, zone, ((ObjectClass *)this)->Is_Moving_Onto_Bridge(), Map[cell1].IsUnderBridge, Is_Allowed_To_Leave_Map()));
+	/*
+	**	The bridge state is judged toward the ultimate destination, as gamemd's ObjectClass::IsOnBridge
+	**	does. A foot with no path yet has no next step to judge from, so a bridge deck would be refused.
+	*/
+	bool const from_bridge = (CurrentTube >= 0) ? false : Is_On_Bridge_Toward(target);
+
+	return(Map.Is_Same_Cell_Zone(cell2, cell1, zone, from_bridge, Map[cell1].IsUnderBridge, Is_Allowed_To_Leave_Map()));
 	return(0);
 }
 

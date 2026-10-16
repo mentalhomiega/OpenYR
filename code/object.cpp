@@ -2665,11 +2665,23 @@ CellClass * ObjectClass::Get_Target_Cell_Ptr(void) const
 /// <returns>bool; Will the object be on a bridge once it reaches its destination?</returns>
 bool ObjectClass::Is_Moving_Onto_Bridge(void) const
 {
+	return(Is_On_Bridge_Toward(Destination_Coord()));
+}
+
+
+/// <summary>
+/// Will the object be standing on a bridge once it reaches the given destination?
+/// Pass the ultimate destination to learn the bridge state a whole path ends in; the next step
+/// of the path answers a different question.
+/// </summary>
+/// <param name="destination">The coordinate the object is headed for.</param>
+/// <returns>bool; Is the object on a bridge at that destination?</returns>
+bool ObjectClass::Is_On_Bridge_Toward(Coord const & destination) const
+{
 	assert(this != NULL);
 
 	bool bridge = IsOnBridge;
 
-	Coord destination = Destination_Coord();
 	int dest_height = Map.Get_Height_GL(destination);
 	int current_height = Map.Get_Height_GL(PositionCoord);
 
