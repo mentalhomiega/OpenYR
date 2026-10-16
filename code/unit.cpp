@@ -228,7 +228,8 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	FollowingMe(NULL),
 	IsFollowing(false),
 	IsCompositingToEightBitSurface(false),
-	Charge(0)
+	Charge(0),
+	Unused1(0)
 {
 	Create_ID();
 	Units.Add(this);
