@@ -270,3 +270,10 @@ site_exclusions:
     keys: [LS800BkgdPal]
     classification: excluded
     reason: A setting of a campaign mission's section in MISSIONMD.INI or MISSION.INI, documented as that format rather than as game data.
+
+  # A seat's free color in a launch file, read from the per-seat section that the CnCNet client numbers.
+  - path: code/spawnerconfig.cpp
+    function: Read_Free_Color
+    keys: [ColorRGB]
+    classification: excluded
+    reason: Each names one seat of a match inside a section the CnCNet client numbers per seat, not an authored game-data setting.
