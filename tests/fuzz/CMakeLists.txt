@@ -66,7 +66,7 @@ endif()
 # Builds one harness and registers its test. ENGINE names engine sources relative to code/;
 # SOURCES are harness sources relative to this directory.
 function(fuzz_add_target target)
-    cmake_parse_arguments(FUZZ "" "NAME" "SOURCES;ENGINE;LIBRARIES" ${ARGN})
+    cmake_parse_arguments(FUZZ "STAMP" "NAME" "SOURCES;ENGINE;LIBRARIES" ${ARGN})
 
     set(sources "${CMAKE_CURRENT_SOURCE_DIR}/fuzz.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/fuzz_debug.cpp")
     foreach(source IN LISTS FUZZ_SOURCES)
@@ -91,8 +91,14 @@ function(fuzz_add_target target)
         target_link_libraries(${target} PRIVATE ${FUZZ_LIBRARIES} pthread)
         add_test(NAME ${FUZZ_NAME} COMMAND ${target})
     else()
+        set(fuzz_stamp "")
+        if(FUZZ_STAMP)
+            set(fuzz_stamp STAMP)
+        endif()
         opents_add_test(${target}
+            ${fuzz_stamp}
             NAME ${FUZZ_NAME}
+            INCLUDES ${OPENTS_GENERATED_DIR}
             SOURCES ${FUZZ_SOURCES} fuzz.cpp fuzz_debug.cpp
             ENGINE ${FUZZ_ENGINE}
             DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
@@ -140,7 +146,7 @@ fuzz_add_target(FuzzIni NAME fuzz_ini
 
 fuzz_add_target(FuzzSpawn NAME fuzz_spawn
     SOURCES fuzz_spawn.cpp
-    ENGINE ${FUZZ_INI_ENGINE} spawnerconfig.cpp
+    ENGINE ${FUZZ_INI_ENGINE} spawnerconfig.cpp playercolor.cpp hsv.cpp rgb.cpp
 )
 
 fuzz_add_target(FuzzLcw NAME fuzz_lcw
@@ -155,8 +161,9 @@ fuzz_add_target(FuzzLzo NAME fuzz_lzo
 )
 
 fuzz_add_target(FuzzNet NAME fuzz_net
+    STAMP
     SOURCES fuzz_net.cpp
-    ENGINE netglobal.cpp mpload.cpp
+    ENGINE netglobal.cpp mpload.cpp playercolor.cpp hsv.cpp rgb.cpp
 )
 
 fuzz_add_target(FuzzCsf NAME fuzz_csf
@@ -178,7 +185,7 @@ fuzz_add_target(FuzzImage NAME fuzz_image
 
 fuzz_add_target(FuzzVoxel NAME fuzz_voxel
     SOURCES fuzz_voxel.cpp
-    ENGINE voxlib.cpp motlib.cpp voxpal.cpp matrix3d.cpp gmmath.cpp
+    ENGINE voxlib.cpp motlib.cpp voxpal.cpp matrix3d.cpp gmmath.cpp emissive.cpp
 )
 
 fuzz_add_target(FuzzPcx NAME fuzz_pcx
