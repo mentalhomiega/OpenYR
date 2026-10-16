@@ -6332,8 +6332,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					if (!In_Radio_Contact()) {
 						End_Anim(BANIM_PRODUCTION);
 						End_Anim(BANIM_SPECIAL_TWO);
-						Begin_Anim(BANIM_SPECIAL_THREE, false);
-						Begin_Anim(BANIM_ACTIVE_ONE, false);
+						Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+						Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
@@ -6454,8 +6454,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					}
 					if (!any_docked) {
 						if (Anims[BANIM_PRODUCTION] || Anims[BANIM_SPECIAL_TWO]) {
-							Begin_Anim(BANIM_SPECIAL_THREE, false);
-							Begin_Anim(BANIM_ACTIVE_ONE, false);
+							Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+							Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 							End_Anim(BANIM_PRODUCTION);
 							End_Anim(BANIM_SPECIAL_TWO);
 						}
@@ -6472,8 +6472,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				if (!In_Radio_Contact()) {
 					End_Anim(BANIM_PRODUCTION);
 					End_Anim(BANIM_SPECIAL_TWO);
-					Begin_Anim(BANIM_SPECIAL_THREE, false);
-					Begin_Anim(BANIM_ACTIVE_ONE, false);
+					Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 					Status = IDLE;
 					return(1);
 				}
@@ -6519,8 +6519,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
 								End_Anim(BANIM_PRODUCTION);
 								End_Anim(BANIM_SPECIAL_TWO);
-								Begin_Anim(BANIM_SPECIAL_THREE, false);
-								Begin_Anim(BANIM_ACTIVE_ONE, false);
+								Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+								Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 								Status = IDLE;
 								break;
 
@@ -6534,8 +6534,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 									if (Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell()) && IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
 									End_Anim(BANIM_PRODUCTION);
 									End_Anim(BANIM_SPECIAL_TWO);
-									Begin_Anim(BANIM_SPECIAL_THREE, false);
-									Begin_Anim(BANIM_ACTIVE_ONE, false);
+									Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+									Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
 									Status = IDLE;
 
 									FootClass * foot = dynamic_cast<FootClass *>(docked);
@@ -7025,7 +7025,8 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 			CLEAR_BIB,
 			OPEN,
 			LEAVE,
-			CLOSE
+			CLOSE,
+			NAVAL_IDLE
 		};
 		UnitClass * unit;
 		switch (Status) {
@@ -7037,6 +7038,14 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 				if (unit) {
 					unit->Assign_Mission(MISSION_GUARD);
 					unit->Commence();
+				}
+				if (Class->IsNaval) {
+					// A naval yard never opens its door: gamemd (BuildingClass::Mission_Unload, 0x44D880) goes from here straight to idle on its next pass.
+					Status = NAVAL_IDLE;
+					IsToDisplay = true;
+					End_Anim(BANIM_IDLE);
+					Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+					break;
 				}
 				Door.Open_Door(Class->DeployTime);
 				Status = CLEAR_BIB;
@@ -7121,6 +7130,14 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 					Enter_Idle_Mode();
 					IsToDisplay = true;
 				}
+				break;
+
+			/*
+			**	A naval yard's door never moves, so the yard goes idle on the pass after its production animation starts.
+			*/
+			case NAVAL_IDLE:
+				Enter_Idle_Mode();
+				IsToDisplay = true;
 				break;
 
 			default:
@@ -8537,8 +8554,9 @@ void BuildingClass::Animation_AI(void)
 	Update_Anim_Appearance();
 
 	// A naval repair yard keeps its production animation, which plays the ship's exit to its end (gamemd UpdateAnimations 0x4509D0 tests Naval).
+	// The repair animation takes its damaged form below ConditionYellow, as in gamemd (0x4509D0 picks the form by health ratio).
 	if (Class->IsCanUnitRepair && !Class->IsNaval && Mission != MISSION_REPAIR && (Anims[BANIM_PRODUCTION] != NULL || Anims[BANIM_SPECIAL_TWO] != NULL)) {
-		Begin_Anim(BANIM_SPECIAL_THREE, false);
+		Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
 		End_Anim(BANIM_PRODUCTION);
 		End_Anim(BANIM_SPECIAL_TWO);
 	}
