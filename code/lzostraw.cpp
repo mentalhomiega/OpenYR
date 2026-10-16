@@ -163,9 +163,20 @@ int LZOStraw::Get(void * destbuf, int slen)
 		if (Control == DECOMPRESS) {
 			int incount = BASECLASS::Get(&BlockHeader, sizeof(BlockHeader));
 			if (incount != sizeof(BlockHeader)) {
-				// No header at all is the end of the stream; a partial one is a cut stream.
-				if (incount != 0) IsDamaged = true;
+				// No header at all is the end of the stream, and so are zero bytes that pad it;
+				// any other partial header is a cut stream.
+				if (incount != 0) {
+					unsigned char const * partial = reinterpret_cast<unsigned char const *>(&BlockHeader);
+					for (int index = 0; index < incount; index++) {
+						if (partial[index] != 0) IsDamaged = true;
+					}
+				}
 				break;
+			}
+
+			// A header of two zero counts is an empty block, as padding between blocks or after the last.
+			if (BlockHeader.CompCount == 0 && BlockHeader.UncompCount == 0) {
+				continue;
 			}
 
 			char *staging_buffer = new char [BlockHeader.CompCount];
@@ -180,7 +191,8 @@ int LZOStraw::Get(void * destbuf, int slen)
 			lzo_uint length = BlockSize + SafetyMargin;
 			int const status = lzo1x_decompress_safe((unsigned char*)staging_buffer, BlockHeader.CompCount, (unsigned char*)Buffer, &length, NULL);
 			delete [] staging_buffer;
-			if (status != LZO_E_OK || length != BlockHeader.UncompCount) {
+			// Bytes after the block's end marker are ignored; the block is whole when it expanded to its size.
+			if ((status != LZO_E_OK && status != LZO_E_INPUT_NOT_CONSUMED) || length != BlockHeader.UncompCount) {
 				IsDamaged = true;
 				break;
 			}

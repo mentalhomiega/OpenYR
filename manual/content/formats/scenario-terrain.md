@@ -16,6 +16,7 @@ source_files:
   - code/lzopipe.cpp
   - code/lzostraw.cpp
   - code/overlay.cpp
+  - code/preview.cpp
   - code/session.cpp
 related:
   - type: format
@@ -53,7 +54,7 @@ The later revisions store a list of cell records, only for the cells they set. E
 | Height | 1 byte, signed |
 | Ice-growth flag | 1 byte, `[IsoMapPack5]` only |
 
-The list ends with an X and Y of 0 and no further fields, so cell 0,0 cannot have a record. A record for a cell outside the map is skipped. A `[IsoMapPack4]` or `[IsoMapPack5]` list that ends cleanly between records loads in full even without the 0,0 terminator.
+The list ends with an X and Y of 0 and no further fields, so cell 0,0 cannot have a record. A record for a cell outside the map is skipped. A `[IsoMapPack4]` or `[IsoMapPack5]` list that ends cleanly between records loads in full even without the 0,0 terminator, and so does one that ends in one to three zero bytes.
 
 Section size limits count decoded bytes: a section's bytes after Base64 decoding and before decompression. `[IsoMapPack5]` accepts up to 5,784,964 decoded bytes, enough for a record for every cell of the 512 by 512 grid written in 8 KiB blocks. A larger section is damaged. The other four sections are read up to 512,000 decoded bytes, and anything past that is dropped. A section cut short by this limit is damaged when the cut falls inside a record or a block.
 
@@ -62,8 +63,10 @@ Section size limits count decoded bytes: a section's bytes after Base64 decoding
 An LZO section is damaged when any of these holds:
 
 - A block does not decompress, or expands to a size other than its header states.
-- The section ends partway through a block header or a block's compressed bytes.
+- The section ends partway through a block header or a block's compressed bytes. Zero bytes after the last block are padding, not a partial header.
 - The records end inside a record, even when every block present decompresses.
+
+A block header with both counts 0 is an empty block and is skipped, wherever it stands. Bytes that follow the end of a block's compressed data are ignored when the block expands to the size its header states.
 
 `[IsoMapPack]` and `[IsoMapPack2]` use LCW blocks with the same two-count header. Each block expands to at most 8 KiB and takes at most 10,308 compressed bytes. The read ends at a block that breaks either limit, has a count of zero, or runs out of bytes.
 
@@ -74,6 +77,10 @@ When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the 
 
 ## Overlay packs
 
-`[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay.
+`[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay, and so does a value that is not the index of an overlay type in the loaded rules.
 
 The loader reads both sections only when [`NewINIFormat`](/keys/newiniformat/) is above 1, and ignores the bytes for cells outside the playfield. It reads `[OverlayPack]` up to 512,000 decoded bytes and `[OverlayDataPack]` up to 256,000, and drops anything past that.
+
+## Preview pack
+
+`[Preview]` and `[PreviewPack]` hold the map's preview picture. The last two numbers of `Size=` in `[Preview]` are the picture's width and height in pixels. `[PreviewPack]` holds the pixels as red, green and blue bytes, row by row, in LZO blocks and Base64 as `[IsoMapPack4]` is. The multiplayer map list reads both sections wherever they stand in the file, before or after `[Map]`, and shows no preview for a file with neither.

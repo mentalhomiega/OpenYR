@@ -24,6 +24,7 @@
 #include "lzostraw.h"
 #include "overtype.h"
 #include "pcx.h"
+#include "previewtext.h"
 #include "scenario.h"
 #include "surface.h"
 #include "tactical.h"
@@ -353,49 +354,35 @@ bool MapPreviewClass::Read_PCX_Preview(char const * filename)
 
 /// <summary>
 /// Reads the preview image out of a scenario file.
-/// This routine is used to peek at a scenario without loading it. Only as much of the
-/// file as is needed to reach the map section is parsed, so that browsing a directory
-/// full of scenarios stays cheap.
+/// This routine is used to peek at a scenario without loading it. Only the preview sections
+/// are parsed, wherever they stand in the file, so that browsing a directory full of scenarios
+/// stays cheap.
 /// </summary>
 /// <param name="filename">The name of the scenario file to peek into.</param>
-/// <returns>bool; Was a preview image recovered from the file?</returns>
+/// <returns>bool; Was a preview image recovered from the file? False when the file is missing
+/// or has no preview section.</returns>
 bool MapPreviewClass::Read_INI_Preview(char const * filename)
 {
 	CCFileClass file(filename);
-	if (file.Is_Available() && file.Open(FileClass::READ)) {
-		int percent_load = 0;
-		char * buffer = NULL;
-
-		while (percent_load < 100) {
-			percent_load += 25;
-
-			int length = percent_load * file.Size() / 100;
-			if (buffer != NULL) {
-				delete [] buffer;
-			}
-			buffer = new char[length + 1];
-			if (buffer == NULL) {
-				return(false);
-			}
-
-			file.Seek(0, 0);
-			file.Read(buffer, length);
-			buffer[length] = '\0';
-
-			char * section = strstr(buffer, "[Map]");
-			if (section != NULL) {
-				section[0] = '\0';
-				CCINIClass ini;
-				BufferStraw straw(buffer, section - buffer - 1);
-				ini.Load(straw, false);
-				bool result = Read_INI(ini);
-				delete [] buffer;
-				return(result);
-			}
-		}
-		delete [] buffer;
+	if (!file.Is_Available() || !file.Open(FileClass::READ)) {
+		return(false);
 	}
-	return(false);
+
+	int const size = file.Size();
+	std::string text(size > 0 ? size : 0, '\0');
+	int const read = size > 0 ? file.Read(text.data(), size) : 0;
+	file.Close();
+	text.resize(read > 0 ? read : 0);
+
+	std::string const sections = Preview_Sections_Text(text);
+	if (sections.empty()) {
+		return(false);
+	}
+
+	CCINIClass ini;
+	BufferStraw straw(sections.data(), (int)sections.size());
+	ini.Load(straw, false);
+	return(Read_INI(ini));
 }
 
 
