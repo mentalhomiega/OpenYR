@@ -1,0 +1,36 @@
+; High bridge on Allied 3 (ALL03UMD.MAP): tanks and riflemen ordered onto the deck, then across it to the far bank.
+; The span is the BRIDGE1 overlay (index 24) on row 78 from x 64 to 84, with the deck flag set (IsBridgeDeck, IsUnderBridge).
+; The east bank at x 86 and beyond is ground at height 4; the deck and the water under it are at height 0.
+; Expected: "AUTOTEST wait done" for the tank waits: a tank on the deck at 80,78 (bridgeunit shows onbridge 1), then a
+; tank on the west bank at 60,78 (bridgeunit shows onbridge 0 at height 416). The where lines give each unit's mission and
+; NavCom on the way. The riflemen are ordered the same way and logged, but they are not waited on: the Yuri units on the
+; approaches shot them down or took them over in every run, before they reached the deck.
+; Arabs and French psychic dominators capture units that walk the bridge approaches, so killhouse clears those two houses at
+; the start. YuriCountry is not cleared: it owns the nuclear silo, and killing it wins the mission at once.
+; Before the fix in src-agent4 code/object.cpp and code/foot.cpp, the order to 80,78 was refused at once: no path was
+; started, and the NavCom cleared. The zone check judged the bridge state from the next step, which a unit with no path
+; does not have, not from the destination. The tank's wait for 80,78 then timed out.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/bridge-all03-deck.txt -Build agent4 -Campaign -Map ALL03UMD.MAP -Width 800 -Height 600 -Seconds 600 -Filter "AUTOTEST( +(wait|bridgeunit|where|killhouse)| frame [0-9]+: (move|waitcell|bridgeunit|killhouse))|Exception|game over"
+30 killhouse Arabs 0
+30 killhouse French 0
+30 move MTNK 80 78
+30 move E1 80 78
+120 bridgeunit MTNK
+120 bridgeunit E1
+240 where MTNK
+240 where E1
+400 waitcell MTNK 80 78 2 3000
+401 bridgeunit MTNK
+401 where MTNK
+402 move MTNK 60 78
+410 bridgeunit MTNK
+410 where MTNK
+420 waitcell MTNK 60 78 2 3000
+421 bridgeunit MTNK
+421 where MTNK
+430 bridgeunit E1
+430 where E1
+440 move E1 60 78
+450 bridgeunit E1
+450 where E1
+460 quit
