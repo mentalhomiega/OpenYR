@@ -4,11 +4,11 @@ category: feature
 release: 0.2.0
 targets:
 - type: key
-	id: CustomColor
-	effect: added
+  id: CustomColor
+  effect: added
 - type: key
-	id: Color
-	effect: changed
+  id: Color
+  effect: changed
 credit:
 - MentalHomiega
 ---
