@@ -12,6 +12,7 @@ the engine builds from a number in that range. A lower bound with a leading zero
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -31,14 +32,30 @@ PATTERN_SCOPES = [
     ("PowerUp{1-}LocYY", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}LocZZ", "art.ini", "@image", ["BuildingType"], "integer"),
     ("PowerUp{1-}YSort", "art.ini", "@image", ["BuildingType"], "integer"),
-    # IsometricTileTypeClass loading: the keys of a tile set, numbered from 1 as "%02d", up to the
-    # set's TilesInSet. A lower bound written with a leading zero stands for that printed width.
-    ("Tile{01-}Anim", "theater control file", "@tile-set", ["tile controls"], "string"),
-    ("Tile{01-}XOffset", "theater control file", "@tile-set", ["tile controls"], "integer"),
-    ("Tile{01-}YOffset", "theater control file", "@tile-set", ["tile controls"], "integer"),
-    ("Tile{01-}AttachesTo", "theater control file", "@tile-set", ["tile controls"], "integer"),
-    ("Tile{01-}ZAdjust", "theater control file", "@tile-set", ["tile controls"], "integer"),
+    # IsometricTileTypeClass::Init: the per-tile keys, numbered from 1 as "%02d" up to the set's
+    # TilesInSet. They are read from the section the set's SetName= names, not from the TileSet
+    # section itself. A lower bound written with a leading zero stands for that printed width.
+    ("Tile{01-}Anim", "theater control file", "@tile-set-name", ["tile controls"], "string"),
+    ("Tile{01-}XOffset", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
+    ("Tile{01-}YOffset", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
+    ("Tile{01-}AttachesTo", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
+    ("Tile{01-}ZAdjust", "theater control file", "@tile-set-name", ["tile controls"], "integer"),
 ]
+
+
+# InfantryTypeClass::Read_Sequence_INI reads one do-string from the section an infantry art
+# section names with Sequence=, under each name in this table.
+SEQUENCE_SOURCE = ROOT / "code/infatype.cpp"
+
+
+def sequence_names(source):
+    """The do-string key names listed in the SequenceName table of infatype.cpp."""
+    text = source.read_text(encoding="utf-8")
+    table = re.search(r"SequenceName\s*\[[^\]]*\]\s*=\s*\{(.*?)\}\s*;", text, re.S)
+    names = re.findall(r'"([^"]+)"', table.group(1)) if table else []
+    if not names:
+        sys.exit(f"{source}: no SequenceName table found")
+    return names
 
 
 # Sections the engine names in code that the manual's extractor describes by source only.
@@ -67,6 +84,7 @@ def section_field(section):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--keys", type=Path, default=ROOT / "manual/data/ini-keys.yaml")
+    parser.add_argument("--sequence-source", type=Path, default=SEQUENCE_SOURCE, help="source file holding the SequenceName table")
     parser.add_argument("--output", type=Path, help="file to write; standard output when omitted")
     args = parser.parse_args()
 
@@ -89,6 +107,8 @@ def main():
                 lines.append("\t".join(fields))
     for key, file, section, applies_to, value_type in PATTERN_SCOPES:
         lines.append("\t".join([key, file, section, ",".join(applies_to), value_type]))
+    for key in sequence_names(args.sequence_source):
+        lines.append("\t".join([key, "art.ini", "@sequence", "InfantryType", "infantry sequence"]))
 
     text = "\n".join(lines) + "\n"
     if args.output:

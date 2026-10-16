@@ -2,3 +2,6 @@
 Speed	rules.ini	*	UnitType	integer
 Gravity	rules.ini	General	global rules	integer
 RotCount	art.ini	@image	UnitType	integer
+TilesInSet	theater control file	@tile-set	tile controls	integer
+SetName	theater control file	@tile-set	tile controls	string
+Tile{01-}XOffset	theater control file	@tile-set-name	tile controls	integer

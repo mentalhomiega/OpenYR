@@ -30,3 +30,8 @@ add_test(NAME inicheck-cli-art
     COMMAND inicheck --catalog "${CMAKE_CURRENT_SOURCE_DIR}/sample-catalog.tsv" --art "${CMAKE_CURRENT_SOURCE_DIR}/sample-art.ini" "${CMAKE_CURRENT_SOURCE_DIR}/sample.ini"
 )
 set_tests_properties(inicheck-cli-art PROPERTIES PASS_REGULAR_EXPRESSION "sample-art.ini: line 2: \\[MYTANK\\] RotCount=many: expected a whole number")
+
+add_test(NAME inicheck-cli-theater
+    COMMAND inicheck --catalog "${CMAKE_CURRENT_SOURCE_DIR}/sample-catalog.tsv" --theater "${CMAKE_CURRENT_SOURCE_DIR}/sample-theater.ini"
+)
+set_tests_properties(inicheck-cli-theater PROPERTIES PASS_REGULAR_EXPRESSION "sample-theater.ini: line 6: \\[Clear\\] Tile02XOffset=wide: expected a whole number")

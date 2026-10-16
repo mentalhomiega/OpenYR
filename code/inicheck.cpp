@@ -190,6 +190,31 @@ bool Real_Numbers_Fit(std::string const & value, int count)
 }
 
 
+// Matches InfantryTypeClass::Read_Sequence_INI, which scans "%d,%d,%d,%s" and takes the facing
+// only from the eight names below. No blank may precede a comma, and a missing or unknown facing
+// leaves the facing unset without notice, which the checker still reports.
+bool Sequence_Fits(std::string const & value)
+{
+	int frame = 0;
+	int count = 0;
+	int jump = 0;
+	char facing[64] = {0};
+	int const read = std::sscanf(value.c_str(), "%d,%d,%d,%63s", &frame, &count, &jump, facing);
+	if (read < 3) {
+		return(false);
+	}
+	if (read == 3) {
+		return(true);
+	}
+	for (char const * name : {"N", "NE", "E", "SE", "S", "SW", "W", "NW"}) {
+		if (std::string_view(facing) == name) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 struct Entry {
 	int Line;
 	std::string Key;
@@ -262,6 +287,19 @@ std::vector<Section> Parse(std::string_view text)
 }
 
 
+// The last value of a key in a section, or null when the section holds no such line.
+std::string const * Last_Value(Section const & section, char const * key)
+{
+	std::string const * value = nullptr;
+	for (Entry const & entry : section.Entries) {
+		if (entry.Key == key) {
+			value = &entry.Value;
+		}
+	}
+	return(value);
+}
+
+
 char const * Kind_Name(ValueKind kind)
 {
 	switch (kind) {
@@ -272,6 +310,7 @@ char const * Kind_Name(ValueKind kind)
 		case ValueKind::POINT3: return("three numbers separated by commas");
 		case ValueKind::COLOR: return("three whole numbers separated by commas");
 		case ValueKind::INTEGER_LIST: return("whole numbers separated by commas");
+		case ValueKind::SEQUENCE: return("a frame, a count and a jump as whole numbers separated by commas, then optionally a facing of N, NE, E, SE, S, SW, W or NW");
 		default: return("a value");
 	}
 }
@@ -292,6 +331,7 @@ ValueKind Kind_From_Name(std::string_view value_type)
 		{"point (x,y,z)", ValueKind::POINT3},
 		{"color (R,G,B)", ValueKind::COLOR},
 		{"list of integers", ValueKind::INTEGER_LIST},
+		{"infantry sequence", ValueKind::SEQUENCE},
 	};
 	for (auto const & name : NAMES) {
 		if (value_type == name.first) {
@@ -335,6 +375,9 @@ bool Value_Fits(ValueKind kind, std::string_view text)
 				}
 			}
 			return(true);
+
+		case ValueKind::SEQUENCE:
+			return(Sequence_Fits(value));
 
 		default:
 			return(true);
@@ -727,7 +770,8 @@ ArtKind const ART_KINDS[] = {
 /// Checks art.ini against the catalog, placing each section through the rules. An object type
 /// reads the art section named by its Image= in the rules, or else the section of its own name;
 /// an animation always reads its own name, and a projectile reads art only when it has an Image=.
-/// A section no type reads is listed as unchecked.
+/// A section that an infantry type's art section names with Sequence= is checked against the
+/// sequence keys. A section nothing places is listed as unchecked.
 /// </summary>
 Report Check_Art(Catalog const & catalog, std::string_view text, std::string_view rules)
 {
@@ -745,6 +789,7 @@ Report Check_Art(Catalog const & catalog, std::string_view text, std::string_vie
 		}
 	}
 
+	std::vector<Section> const art_sections = Parse(text);
 	KindMap kinds;
 	for (auto const & [name, type_kinds] : types) {
 		auto const image = images.find(name);
@@ -756,7 +801,76 @@ Report Check_Art(Catalog const & catalog, std::string_view text, std::string_vie
 			kinds[own_section ? name : image->second].insert(art.Kind);
 		}
 	}
-	return(Check_Sections(catalog, Parse(text), kinds, {"art.ini"}));
+
+	// An infantry type's art section names the section that holds its do-strings.
+	for (Section const & section : art_sections) {
+		auto const kind = kinds.find(section.Name);
+		if (kind != kinds.end() && kind->second.contains("InfantryType")) {
+			if (std::string const * sequence = Last_Value(section, "Sequence")) {
+				kinds[*sequence].insert("@sequence");
+			}
+		}
+	}
+	return(Check_Sections(catalog, art_sections, kinds, {"art.ini"}));
+}
+
+
+// Reads a whole number as INIClass::Get_Int does: '$' or a trailing 'h' marks hexadecimal, and
+// anything else reads as atoi does.
+static int Read_Whole_Number(std::string const & value)
+{
+	int number = 0;
+	if (!value.empty() && value[0] == '$') {
+		std::sscanf(value.c_str(), "$%x", &number);
+	} else if (!value.empty() && std::tolower((unsigned char)value.back()) == 'h') {
+		std::sscanf(value.c_str(), "%xh", &number);
+	} else {
+		number = std::atoi(value.c_str());
+	}
+	return(number);
+}
+
+
+// Places the sections IsometricTileTypeClass::Init reads from a theater control file. It reads
+// TileSet0000, TileSet0001 and so on, and stops at the first section whose TilesInSet is missing
+// or negative, so a later TileSet section is never read. A set's SetName= names a second section
+// that holds the per-tile keys such as Tile01Anim=.
+static void Add_Tile_Sets(std::vector<Section> const & sections, KindMap & kinds)
+{
+	std::map<std::string, Section const *> by_name;
+	for (Section const & section : sections) {
+		by_name[section.Name] = &section;
+	}
+	for (int set = 0; ; set++) {
+		char name[32];
+		std::snprintf(name, sizeof(name), "TileSet%04d", set);
+		auto const found = by_name.find(name);
+		if (found == by_name.end()) {
+			break;
+		}
+		std::string const * tiles = Last_Value(*found->second, "TilesInSet");
+		if (tiles == nullptr || Read_Whole_Number(*tiles) < 0) {
+			break;
+		}
+		kinds[name].insert("@tile-set");
+		if (std::string const * set_name = Last_Value(*found->second, "SetName")) {
+			kinds[*set_name].insert("@tile-set-name");
+		}
+	}
+}
+
+
+/// <summary>
+/// Checks a theater control file such as temperat.ini against the catalog: its [General]
+/// section, each TileSet%04d section the engine reads, and the section each set's SetName=
+/// names. A TileSet section the engine does not reach is listed as unchecked.
+/// </summary>
+Report Check_Theater(Catalog const & catalog, std::string_view text)
+{
+	std::vector<Section> const sections = Parse(text);
+	KindMap kinds;
+	Add_Tile_Sets(sections, kinds);
+	return(Check_Sections(catalog, sections, kinds, {"theater control file"}));
 }
 
 

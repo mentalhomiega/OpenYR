@@ -36,6 +36,7 @@ namespace IniCheck
 		POINT3,
 		COLOR,
 		INTEGER_LIST,
+		SEQUENCE,
 	};
 
 	ValueKind Kind_From_Name(std::string_view value_type);
@@ -108,5 +109,6 @@ namespace IniCheck
 	Report Check_Rules_Overlay(Catalog const & catalog, std::string_view text, std::string_view rules);
 	Report Check_Map(Catalog const & catalog, std::string_view text, std::string_view rules);
 	Report Check_Art(Catalog const & catalog, std::string_view text, std::string_view rules);
+	Report Check_Theater(Catalog const & catalog, std::string_view text);
 	std::string Format(Finding const & finding);
 }
