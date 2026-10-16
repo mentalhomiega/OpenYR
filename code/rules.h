@@ -1493,8 +1493,8 @@ class RulesClass
 		// harvester; one fewer than AISlaveMinerNumber when it cannot.
 		TypeList<int> AIExtraRefineries;
 		TypeList<int> AISlaveMinerNumber;
-		// Frames after the house last took damage during which a lost structure is rebuilt only if it
-		// is a wall, base defense or power plant.
+		// Frames after the house last took damage during which a lost structure waits, unless it is armed
+		// or a power plant (HouseClass::Can_Replace_Node decides the other cases).
 		int AIRestrictReplaceTime;
 
 		// Failed placements a computer structure may make before its base node is dropped. A node is
