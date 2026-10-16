@@ -4164,9 +4164,10 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 
 	/*
 	**	If it seems like this object is about to fire on a target, then don't begin
-	**	cloaking either.
+	**	cloaking either. The range is the one the weapon chosen for the target has, as
+	**	TechnoClass::IsReadyToCloak (0x6FBDC0) tests it through IsCloseEnoughToAttack.
 	*/
-	if (TarCom != NULL && In_Range(TarCom)) {
+	if (TarCom != NULL && Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom))) {
 		return(false);
 	}
 

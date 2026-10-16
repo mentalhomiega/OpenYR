@@ -91,7 +91,7 @@ Any of the following refuses the attempt:
 
 - the object is already hidden, or is part way through either fade;
 - its weapon is still reloading;
-- its target is within range of its primary weapon;
+- its target is within range of the weapon chosen for it;
 - the [`CloakDelay`](/keys/cloakdelay/) countdown is still running;
 - for a structure, a [`Sensors=yes`](/keys/sensors/) object stands within one cell of its footprint, and that object's owner does not consider the structure allied.
 
@@ -218,7 +218,7 @@ Area damage still reaches a hidden object, because it does not check whether any
 
 A hidden object also does not block a vehicle's or infantryman's path. The step through its cell costs more (see [losing a cloak](#losing-a-cloak)), and a route that takes that step reveals what is standing there.
 
-A human player's cloaking vehicles, infantry and aircraft do not pick targets for themselves while on the Guard mission. This applies to an object that may cloak by itself, through `Cloakable=yes` or the `CLOAK` ability. It holds fire at everything that walks past, so it does not give itself away. Computer-owned objects have no such restriction.
+A cloaking object on the Guard mission picks targets like any other object, whoever owns it. A player's cloaked unit that comes within reach of an enemy fires on it, uncloaking first only when its weapon has [`DecloakToFire`](/keys/decloaktofire--weapontype/) set to `yes`.
 
 ## What the player sees
 
