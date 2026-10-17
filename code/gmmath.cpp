@@ -395,6 +395,27 @@ float Gamemd_Magnitude_3D(double x, double y, double z)
 }
 
 
+int Gamemd_Lepton_To_Pixel(int lepton)
+{
+	// The table sine of 60 degrees times 60 over the 362.04-lepton cell diagonal, from gamemd's constants.
+	static double const per_lepton = double(Gamemd_Sine(60.0 * (PI_DOUBLE / 180.0)))
+		* (60.0 / double(Gamemd_Sqrt(2.0 * 256.0 * 256.0)));
+	int const step = lepton >= 728 ? 1 : 0;
+	return int(double(lepton) * per_lepton + double(step) + 0.5);
+}
+
+
+int Gamemd_Reveal_Shift_Cells(int pixel)
+{
+	// gamemd takes the high 32 bits of pixel * 0x77777777 (7 / 15 of 2^32, rounded down), subtracts the
+	// pixel, and divides by 16, adding one for a negative quotient. Over every 32-bit pixel this equals
+	// trunc(-pixel / 30).
+	std::int64_t const high = (std::int64_t(0x77777777) * std::int64_t(pixel)) >> 32;
+	std::int64_t const step = (high - std::int64_t(pixel)) >> 4;
+	return int(step + (step < 0 ? 1 : 0));
+}
+
+
 double Gamemd_Atan2(double y, double x)
 {
 	float const y_single = Truncate_To_Single(y);

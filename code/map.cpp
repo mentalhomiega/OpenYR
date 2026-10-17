@@ -1061,9 +1061,11 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 
 	int cell_height = xcoord.Z / LEVEL_LEPTON_H;
 
+	// The look is centred on the cell the looker is drawn over: gamemd moves it by the same cell count on both axes.
+	int const shift = Gamemd_Reveal_Shift_Cells(TacticalMap->Z_Lepton_To_Pixel(xcoord.Z));
 	Coord coord = xcoord;
-	coord.X = coord.X + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
-	coord.Y = coord.Y + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
+	coord.X = coord.X + shift * CELL_LEPTON;
+	coord.Y = coord.Y + shift * CELL_LEPTON;
 
 	Cell cell = coord.As_Cell();                            /// Center cell as is appears on the map
 	Cell hoffset = cell - xcoord.As_Cell() - Cell(2, 2);    /// Height offset between real and apparent cells

@@ -50,6 +50,7 @@
 #include "font.h"
 #include "foot.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
@@ -272,16 +273,7 @@ Point2D Tactical::Pixel_To_Lepton(Point2D const & pixel)
 /// <returns>Returns with the number of pixels the object should be lifted by.</returns>
 int Tactical::Z_Lepton_To_Pixel(LEPTON lepton)
 {
-	int fudge = 0;
-
-	static double pixels_per_lepton = ISO_TILE_PIXEL_W / CELL_LEPTON_DIAG;
-	static double z_pixels_per_lepton = std::sin(RAD_60) * pixels_per_lepton;
-
-	if (lepton >= (CELL_LEPTON * 3) + (CELL_LEPTON / 2) + 40) {
-		fudge = 1;
-	}
-
-	return(int(lepton * z_pixels_per_lepton + fudge + 0.5));
+	return(Gamemd_Lepton_To_Pixel(lepton));
 }
 
 

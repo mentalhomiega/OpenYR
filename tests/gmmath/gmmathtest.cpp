@@ -140,6 +140,35 @@ int main(void)
 	}
 	Check(acos_falls, "arccosine falls as its value rises");
 
+	std::printf("\nLepton to pixel (gamemd 0x6D20E0) and the reveal centre shift (gamemd 0x5673A0)\n");
+	Check(Gamemd_Sine(60.0 * (3.141592653589793 / 180.0)) == Single_From_Bits(0x3F5DAB76u),
+		"the sine of 60 degrees is gamemd's table entry 1365, which is not the exact sine");
+	Check(Gamemd_Lepton_To_Pixel(0) == 0, "height 0 lifts 0 pixels");
+	Check(Gamemd_Lepton_To_Pixel(104) == 15, "one height level lifts 15 pixels");
+	Check(Gamemd_Lepton_To_Pixel(416) == 60, "four height levels lift 60 pixels");
+	Check(Gamemd_Lepton_To_Pixel(727) == 104, "727 leptons lift 104 pixels, before the step");
+	Check(Gamemd_Lepton_To_Pixel(728) == 105, "728 leptons lift 105 pixels, the first step");
+	Check(Gamemd_Lepton_To_Pixel(936) == 135, "936 leptons lift 135 pixels");
+	Check(Gamemd_Lepton_To_Pixel(1040) == 150 && Gamemd_Lepton_To_Pixel(3000) == 432, "1040 leptons lift 150 pixels and 3000 lift 432");
+	Check(Gamemd_Lepton_To_Pixel(-104) == -14, "a negative height truncates toward zero after the half step");
+	bool lift_rises = true;
+	for (int lepton = -2000; lepton < 20000; lepton++) {
+		lift_rises = lift_rises && Gamemd_Lepton_To_Pixel(lepton) <= Gamemd_Lepton_To_Pixel(lepton + 1);
+	}
+	Check(lift_rises, "the lift never falls as the height rises");
+	Check(Gamemd_Reveal_Shift_Cells(0) == 0 && Gamemd_Reveal_Shift_Cells(29) == 0, "a lift under 30 pixels does not move the centre");
+	Check(Gamemd_Reveal_Shift_Cells(30) == -1 && Gamemd_Reveal_Shift_Cells(59) == -1, "30 to 59 pixels move the centre one cell on each axis");
+	Check(Gamemd_Reveal_Shift_Cells(60) == -2 && Gamemd_Reveal_Shift_Cells(90) == -3, "60 pixels move it two cells and 90 pixels three");
+	Check(Gamemd_Reveal_Shift_Cells(Gamemd_Lepton_To_Pixel(416)) == -2, "a bridge deck at height 416 moves the centre two cells");
+	bool shift_truncates = true;
+	for (int pixel = -100000; pixel <= 100000; pixel++) {
+		shift_truncates = shift_truncates && Gamemd_Reveal_Shift_Cells(pixel) == -(pixel / 30);
+	}
+	Check(shift_truncates, "the shift is minus the pixel over 30, truncated, from -100000 to 100000");
+	Check(Gamemd_Reveal_Shift_Cells(2147483647) == -(2147483647 / 30)
+		&& Gamemd_Reveal_Shift_Cells(-2147483647 - 1) == -((-2147483647 - 1) / 30),
+		"the shift is the same at both ends of the 32-bit range");
+
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Checks FAILED.");
 	return(Failures == 0 ? 0 : 1);
 }
