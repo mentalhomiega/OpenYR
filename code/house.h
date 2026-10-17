@@ -1054,8 +1054,10 @@ class HouseClass : public AbstractClass
 		void Begin_Production(void) {IsStarted = true;};
 		SUGGESTED_TEAM_LIST Suggested_New_Team(bool alertcheck = false);
 		void Adjust_Threat(int region, int threat);
-		void Tracking_Remove(TechnoClass const * techno);
-		void Tracking_Add(TechnoClass const * techno);
+		void Tracking_Remove(TechnoClass * techno);
+		void Tracking_Add(TechnoClass * techno);
+		void Tracking_Absorb(TechnoClass * techno);
+		void Tracking_Release(TechnoClass * techno);
 		void Tracking_Active_Remove(TechnoClass * techno, bool bycapture);
 		void Tracking_Active_Add(TechnoClass * techno, bool bycapture);
 		void Active_Remove(TechnoClass const * techno);

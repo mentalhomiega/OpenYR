@@ -50,6 +50,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
 | `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
+| `counts <House>` | Writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read (`CurUnits` and so on); an underscore in the name stands for a space |
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
 | `primary <TypeID>` | Toggles the primary flag of the player's first structure of that type, as the structure's self action does when the house has more than one factory of its kind |
 | `factories` | Writes each structure that builds something, whoever owns it, with what it builds (`vehicle`, `infantry`, `aircraft` or `structure`), whether it is naval, whether it is its house's primary factory and whether it is in limbo |

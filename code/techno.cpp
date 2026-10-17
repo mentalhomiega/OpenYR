@@ -304,6 +304,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	DrainingMe(NULL),
 	DrainAnim(NULL),
 	IsPermaControlled(false),
+	CountedAsOwnedInfantry(false),
 	OriginallyOwnedByHouse(NULL),
 	MindControlledByHouse(NULL),
 	CurrentWeaponNumber(0),
@@ -10508,6 +10509,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CaptureManager);
 	stream.Serialize(MindControlledBy);
 	stream.Serialize(IsPermaControlled);
+	stream.Serialize(CountedAsOwnedInfantry);
 	stream.Serialize(OriginallyOwnedByHouse);
 	stream.Serialize(MindControlledByHouse);
 	stream.Serialize(SpawnManager);

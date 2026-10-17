@@ -125,6 +125,7 @@
 **	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
 **							with a player's object as the attacker
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
+**	counts <House>			writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read
 **	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
 **	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
 **	factories				writes each factory structure, whoever owns it, with what it builds, its naval, primary and limbo flags
@@ -2703,6 +2704,19 @@ void Run(StepType const & step)
 					techno->Player_Assign_Mission(MISSION_ATTACK, target);
 				}
 			}
+		}
+	} else if (step.Command == "counts") {
+		// counts <House>: the owned counts a map event reads (an underscore stands for a space in the name).
+		std::string house_name = step.Argument;
+		std::replace(house_name.begin(), house_name.end(), '_', ' ');
+		HouseClass * owner = House_From_Name(house_name.c_str());
+		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) owner = Houses[index];
+		}
+		if (owner != NULL) {
+			DebugString("AUTOTEST   counts %s units %d buildings %d infantry %d aircraft %d\n", step.Argument.c_str(), owner->CurUnits, owner->CurBuildings, owner->CurInfantry, owner->CurAircraft);
+		} else {
+			DebugString("AUTOTEST   counts %s: no such house\n", step.Argument.c_str());
 		}
 	} else if (step.Command == "enemies") {
 		Enemies();
