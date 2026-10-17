@@ -1,0 +1,41 @@
+; A spy the player clicks onto an enemy Yuri barracks (YABRCK, Spyable=yes) gets the Capture order that the click gives,
+; walks in and infiltrates, so the owner's new trainable infantry are veterans. The test uses clickon, which runs the
+; object click path (What_Action on the structure, then Active_Click_With), as a click on the structure does.
+; Before the fix the action reads NoMove, because the spy's weapon cannot fire at a building and the attack
+; check dropped the click.
+; Run on XMP29U2.MAP as the Americans, with the same -Settings as spy-veterancy-barracks.txt:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/spy-click-barracks.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 300 -Filter "AUTOTEST|Exception"
+; Expected: the "action SPY on YABRCK" lines at 605 and 610 read Capture. "where SPY" at 1000 shows the spy walking to
+; the barracks (mission Capture), and "houses" at 1001 shows barracks 1 with the spy gone. The E1, MTNK and DEST built before
+; the spy read rank 0; the E1 built after it reads rank 1, and the MTNK and DEST built after it read rank 0.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy YABRCK 50 26
+100 produce E1
+160 produce MTNK
+220 produce DEST
+400 veterancy E1
+401 veterancy MTNK
+402 veterancy DEST
+405 kill E1 1
+406 kill MTNK 1
+407 kill DEST 1
+500 houses
+600 own SPY 52 26
+605 action SPY 50 26
+610 clickon SPY 50 26
+1000 where SPY
+1001 houses
+1100 produce E1
+1160 produce MTNK
+1220 produce DEST
+1400 veterancy E1
+1401 veterancy MTNK
+1402 veterancy DEST
+1500 quit
