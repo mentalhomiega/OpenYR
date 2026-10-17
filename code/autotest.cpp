@@ -3855,6 +3855,25 @@ void Run(StepType const & step)
 			}
 		}
 		DebugString("AUTOTEST spots %s count %d overlapping %d\n", step.Argument.c_str(), (int)found.size(), pairs);
+	} else if (step.Command == "airstrike") {
+		// airstrike <TypeID>: each object of that type, whoever owns it, with the frame its next strike is ready, and each
+		// plane that strike still has out, with its cell, mission, ammunition and target.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size());
+			{
+				// The weapon chosen for the target, its range, and whether it reaches and can fire at the target now.
+				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
+				WeaponTypeClass const * weapon = techno->Get_Class_Weapon_Data(which)->Weapon;
+				bool const airstrike = weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike;
+				DebugString("AUTOTEST   airstrike weapon %d %s airstrike %d range %d tarcom %s closeenough %d inrange %d fire %d\n", which, weapon != NULL ? weapon->Name() : "none", (int)airstrike, techno->Weapon_Range(which), dynamic_cast<ObjectClass const *>(techno->TarCom) != NULL ? dynamic_cast<ObjectClass const *>(techno->TarCom)->Class_Of()->Name() : "-", techno->TarCom != NULL ? (int)techno->Is_Close_Enough(techno->TarCom, which) : -1, techno->TarCom != NULL ? (int)techno->In_Range(techno->TarCom, which) : -1, techno->TarCom != NULL ? (int)techno->Can_Fire(techno->TarCom, which) : -1);
+			}
+			for (AircraftClass const * plane : techno->AirstrikePlanes) {
+				ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(plane->TarCom);
+				DebugString("AUTOTEST   airstrike plane %s cell %d,%d mission %s ammo %d target %s at %d,%d limbo %d\n", plane->TClass->Name(), plane->Get_Cell().X, plane->Get_Cell().Y, MissionClass::Mission_Name(plane->Get_Mission()), plane->Ammo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? tarobject->Get_Cell().X : -1, tarobject != NULL ? tarobject->Get_Cell().Y : -1, (int)plane->IsInLimbo);
+			}
+		}
 	} else if (step.Command == "where") {
 		// where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
 		for (int index = 0; index < Technos.Count(); index++) {

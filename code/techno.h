@@ -216,6 +216,8 @@ class TechnoClass :	public RadioClass,
 		// The frame this object can call its next airstrike, and the planes of the strike still out.
 		int AirstrikeReadyFrame;
 		std::vector<AircraftClass *> AirstrikePlanes;
+		void Retire_Airstrike_Planes(void);
+		void Start_Airstrike_Recharge(void);
 
 		// The structure this object drains, the object draining this one, and the animation shown while draining.
 		TechnoClass * DrainTarget;

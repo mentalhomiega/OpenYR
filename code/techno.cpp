@@ -3517,8 +3517,39 @@ static bool Is_Aggressive_Team_Member(TechnoClass const * techno)
  * HISTORY:                                                                                    *
  *   12/09/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+/// <summary>
+/// Drops the planes of this object's airstrike that are destroyed or in limbo. When the last one
+/// goes, the next strike waits AirstrikeRechargeTime frames from this frame, or the elite time for
+/// an elite object (AirstrikeClass::RemoveFromList, 0x41DC80).
+/// </summary>
+void TechnoClass::Retire_Airstrike_Planes(void)
+{
+	if (AirstrikePlanes.empty()) return;
+
+	std::erase_if(AirstrikePlanes, [](AircraftClass * plane) { return plane == NULL || plane->IsInLimbo; });
+	if (AirstrikePlanes.empty()) {
+		Start_Airstrike_Recharge();
+	}
+}
+
+
+/// <summary>
+/// Sets the frame the next airstrike can be called: AirstrikeRechargeTime frames from now, or the
+/// elite time for an elite object. Called when the strike's last plane has left.
+/// </summary>
+void TechnoClass::Start_Airstrike_Recharge(void)
+{
+	AirstrikeReadyFrame = Frame + (Veterancy.Is_Elite() ? TClass->EliteAirstrikeRechargeTime : TClass->AirstrikeRechargeTime);
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST airstrike recharge %s frame %d ready %d\n", TClass->Name(), Frame, AirstrikeReadyFrame);
+	}
+}
+
+
 void TechnoClass::AI(void)
 {
+	Retire_Airstrike_Planes();
+
 	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
 		IsBerzerk = false;
 	}
@@ -5002,7 +5033,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					AirstrikePlanes.push_back(plane);
 				}
 			}
-			AirstrikeReadyFrame = Frame + (elite ? TClass->EliteAirstrikeRechargeTime : TClass->AirstrikeRechargeTime);
+			// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
 			if (House->Is_Player_Control()) {
 				Sound_Effect(Rule->AirstrikeAttackVoice);
 			}
@@ -8449,7 +8480,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		}
 		DiskLaser.Detach(target);
 		AttachedEffects.Detach(target);
-		std::erase(AirstrikePlanes, (AircraftClass *)target);
+		if (std::erase(AirstrikePlanes, (AircraftClass *)target) != 0 && AirstrikePlanes.empty()) {
+			Start_Airstrike_Recharge();
+		}
 		if (LocomotorTarget == target) {
 			LocomotorTarget = NULL;
 		}
