@@ -1457,6 +1457,14 @@ void BulletClass::Detonate(Coord const & coord)
 		RadSiteClass::Irradiate(coord, (int)warhead->CellSpread, Weapon->RadLevel);
 	}
 
+	// An Airstrike warhead does no damage: when its designator detonates on a techno, the firer calls its planes onto it (BulletClass::Detonate, 0x4690B0).
+	if (warhead->IsAirstrike) {
+		if (Payback != NULL && TarCom != NULL && TarCom->Is_Techno()) {
+			Payback->Call_Airstrike(TarCom);
+		}
+		return;
+	}
+
 	if (warhead->IsNukeMaker && !direct_rocks) {
 		Nuke_Maker();
 	}

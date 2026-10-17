@@ -3517,6 +3517,41 @@ static bool Is_Aggressive_Team_Member(TechnoClass const * techno)
  * HISTORY:                                                                                    *
  *   12/09/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+void TechnoClass::Call_Airstrike(AbstractClass * target)
+{
+	bool const elite = Veterancy.Is_Elite();
+	AircraftTypeClass const * type = elite && TClass->EliteAirstrikeTeamType != NULL ? TClass->EliteAirstrikeTeamType : TClass->AirstrikeTeamType;
+	int const count = elite ? TClass->EliteAirstrikeTeam : TClass->AirstrikeTeam;
+	// While the last strike's planes are out, a new target only redirects those with ammunition left.
+	if (!AirstrikePlanes.empty()) {
+		for (AircraftClass * plane : AirstrikePlanes) {
+			if (plane->Ammo > 0 && plane->TarCom != target) {
+				plane->Assign_Target(target);
+				plane->Assign_Mission(MISSION_ATTACK);
+			}
+		}
+		return;
+	}
+	if (type != NULL && count > 0 && Frame >= AirstrikeReadyFrame && target->As_ObjectClass() != NULL) {
+		Cell const cell = target->As_ObjectClass()->Center_Coord().As_Cell();
+		for (int index = 0; index < count; index++) {
+			AircraftClass * plane = House->Send_Plane(type, MISSION_ATTACK, cell, NULL, 0, target);
+			if (plane != NULL) {
+				AirstrikePlanes.push_back(plane);
+			}
+		}
+		// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
+		if (House->Is_Player_Control()) {
+			Sound_Effect(Rule->AirstrikeAttackVoice);
+		}
+		DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
+		}
+	}
+}
+
+
 /// <summary>
 /// Drops the planes of this object's airstrike that are destroyed or in limbo. When the last one
 /// goes, the next strike waits AirstrikeRechargeTime frames from this frame, or the elite time for
@@ -5007,40 +5042,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
 		int damage = TClass->MaxStrength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
-		return(NULL);
-	}
-
-	// An Airstrike warhead calls the firer's planes onto the target (AirstrikeClass::StartMission, 0x41D830).
-	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
-		bool const elite = Veterancy.Is_Elite();
-		AircraftTypeClass const * type = elite && TClass->EliteAirstrikeTeamType != NULL ? TClass->EliteAirstrikeTeamType : TClass->AirstrikeTeamType;
-		int const count = elite ? TClass->EliteAirstrikeTeam : TClass->AirstrikeTeam;
-		// While the last strike's planes are out, a new target only redirects those with ammunition left.
-		if (!AirstrikePlanes.empty()) {
-			for (AircraftClass * plane : AirstrikePlanes) {
-				if (plane->Ammo > 0 && plane->TarCom != target) {
-					plane->Assign_Target(target);
-					plane->Assign_Mission(MISSION_ATTACK);
-				}
-			}
-			return(NULL);
-		}
-		if (type != NULL && count > 0 && Frame >= AirstrikeReadyFrame && target->As_ObjectClass() != NULL) {
-			Cell const cell = target->As_ObjectClass()->Center_Coord().As_Cell();
-			for (int index = 0; index < count; index++) {
-				AircraftClass * plane = House->Send_Plane(type, MISSION_ATTACK, cell, NULL, 0, target);
-				if (plane != NULL) {
-					AirstrikePlanes.push_back(plane);
-				}
-			}
-			// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
-			if (House->Is_Player_Control()) {
-				Sound_Effect(Rule->AirstrikeAttackVoice);
-			}
-			DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
-			LastFireFrame = Frame;
-			Arm = Rearm_Delay(which);
-		}
 		return(NULL);
 	}
 
