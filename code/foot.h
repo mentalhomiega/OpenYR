@@ -342,6 +342,9 @@ class FootClass : public TechnoClass
 		*/
 		bool IsPlanningToLook;
 
+		// Paces Airborne_Look: 15 frames between looks.
+		CDTimerClass<FrameTimerClass> SightTimer;
+
 		/*
 		**	Certain units have the ability to metamorphize into a building. When this
 		**	operation begins, certain processes must occur. During these operations, this
@@ -362,6 +365,9 @@ class FootClass : public TechnoClass
 		HouseClass * SensorHouse;
 		int SensorRadius;
 		void Update_Sensors(bool lift);
+
+		// Called from UnitClass::AI and AircraftClass::AI; see the definition for the gate.
+		void Airborne_Look(void);
 
 		/*
 		**	This flag tells the system that the unit is doing a firing animation. This is

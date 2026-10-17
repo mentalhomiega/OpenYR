@@ -535,6 +535,7 @@ void UnitClass::AI(void)
 		Commence();
 	}
 	BASECLASS::AI();
+	Airborne_Look();
 
 	if (IsSinking) {
 		static Coord _sink_coords[] = {

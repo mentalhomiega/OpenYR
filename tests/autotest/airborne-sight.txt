@@ -1,0 +1,31 @@
+; Airborne sight on a skirmish map, with fog and shroud on and no reveal step. A Harrier (ORCA) and a Kirov (ZEP) are granted
+; to the player over the shroud and flown across it. Each is held on a cell with waitcell, then the cells around it are
+; logged with "cell". An airborne aircraft or moving jump-jet vehicle looks every 15 frames, and each look centres on the
+; cell the object is drawn over, which lies north-west of its cell at its height. Measured on the fixed build: at frame 177
+; the Harrier was at 60,14 and its samples read mapped at 58,14 and 54,10, unmapped at 58,6, 62,10, 40,10 and 76,10. The
+; Kirov at 62,40 (frame 798) mapped 62,36 and 58,40, and not 62,44, 66,40, 62,56 or 80,40. Before the fix the Kirov looked
+; only when its move ended, so it mapped nothing on its way (batch7, frame 400: cells 62,26 and 62,30 unmapped with the
+; Kirov at 62,28). The Harrier is shot down near 60,12 about frame 250, so its samples come first.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/airborne-sight.txt -Seconds 240 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 grantunit ORCA 58 26
+41 grantunit ZEP 62 24
+50 move ORCA 58 10
+50 move ZEP 62 40
+60 waitcell ORCA 60 12 2 200
+60 where ORCA
+60 cell 58 6
+60 cell 58 14
+60 cell 54 10
+60 cell 62 10
+60 cell 40 10
+60 cell 76 10
+60 waitcell ZEP 62 40 2 1500
+60 where ZEP
+60 cell 62 36
+60 cell 58 40
+60 cell 62 44
+60 cell 66 40
+60 cell 62 56
+60 cell 80 40
+60 quit

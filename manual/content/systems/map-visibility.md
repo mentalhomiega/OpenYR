@@ -162,11 +162,11 @@ Regular looks happen as follows:
 
 - A vehicle or infantryman looks each time it reaches the center of a cell.
 - An infantryman looks once a second while it is moving in the air, if its `Sight=` is above zero.
-- An aircraft looks every 15 frames. It skips the playable-area test, the height bonus and the veteran bonus.
+- An aircraft or a vehicle in the air looks every 15 frames while it is moving and its owner is the player or an ally of the player. An aircraft's look skips the playable-area test, the height bonus and the veteran bonus. A vehicle's look keeps them.
 
 A landed aircraft sees one cell, whatever its `Sight=`.
 
-An airborne aircraft whose type sets `Sight=0` lifts only the fog, within [`AircraftFogReveal`](/keys/aircraftfogreveal/) cells, and only while fog of war is on. This fog-only look works only on cells already out of the shroud. It applies the height test only while the aircraft flies below half the `[General]` [`FlightLevel`](/keys/flightlevel/#scope-global-rules), the rules-wide value, not the aircraft type's key of that name.
+An airborne aircraft whose type sets `Sight=0` lifts only the fog, within [`AircraftFogReveal`](/keys/aircraftfogreveal/) cells, and only while fog of war is on. Its look every 15 frames needs the same moving, allied owner as the regular look above. This fog-only look works only on cells already out of the shroud. It applies the height test only while the aircraft flies below half the `[General]` [`FlightLevel`](/keys/flightlevel/#scope-global-rules), the rules-wide value, not the aircraft type's key of that name.
 
 An object also looks at once when:
 
