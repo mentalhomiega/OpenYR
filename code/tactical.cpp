@@ -2908,31 +2908,22 @@ void Tactical::Update_Visible_Cells(void)
 
 
 /// <summary>
-/// Computes an object's on-screen pixel position, clip-tests it against the tactical window
-/// (with a 6-tile edge zone), and if visible draws its pre- and post-render decorations.
-/// </summary>
-/// <param name="object">The object whose pre- and post-render decorations are drawn.</param>
-/// <param name="cliprect">The clipping rectangle passed to the draw routines.</param>
-void Tactical::Draw_Render_Hooks(ObjectClass * object, Rect const & cliprect)
-{
-	Point2D pixel;
-	if (TacticalMap->Coord_To_Pixel(object->Center_Coord(), pixel)) {
-		object->Draw_Pre_Render(pixel, cliprect);
-		object->Draw_Post_Render(pixel, cliprect);
-	}
-}
-
-
-/// <summary>
 /// Renders every object in each display layer (and, after the ground layer, the overlay sprites
 /// of placed buildings). Each object kind takes a slightly different path: buildings and static
-/// terrain draw only their selection brackets and decorations here (buildings additionally render
-/// their body), animating terrain and animations render normally unless fog hides them, and mobile
-/// objects run their pre-render hook, render their body, then run their post-render hook.
+/// terrain run their pre-render hook here and buildings render their attached extras, animating
+/// terrain and animations render normally unless fog hides them, and mobile objects run their
+/// pre-render hook, then render their body. Every object that was drawn then has its post-render
+/// hook run after all layers, so selection brackets, health bars and pips sit over every body.
 /// </summary>
 /// <param name="forced">Forwarded to each object's Render to force a full redraw.</param>
 void Tactical::Draw_Objects(bool forced)
 {
+	/*
+	 * Each entry is an object whose post-render hook is due, with the pixel it was drawn at. The
+	 * entries stay in layer order, as gamemd's second pass (Tactical::Draw_Objects, 0x6D8DB0) runs them.
+	 */
+	std::vector<std::pair<ObjectClass *, Point2D>> post_render;
+
 	for (int layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {
 		for (int index = 0; index < DisplayClass::Layer[layer].Count(); index++) {
 			ObjectClass * obj = DisplayClass::Layer[layer][index];
@@ -2941,12 +2932,16 @@ void Tactical::Draw_Objects(bool forced)
 			if (rtti == RTTI_BUILDING || (rtti == RTTI_TERRAIN && !((TerrainClass *)obj)->Is_Animating())) {
 
 				/*
-				 * Buildings and terrain that is standing still get their decorations drawn
-				 * here, but only the building renders its body. Terrain that never moves was
-				 * already laid into the cached tile surface by the background pass, so
-				 * drawing it a second time would merely cost time.
+				 * Buildings and terrain that is standing still get their pre-render hook here.
+				 * A building's body was laid into the cached tile surface by the background
+				 * pass, so only its attached extras render here. Terrain that never moves is
+				 * not drawn a second time, as that would merely cost time.
 				 */
-				Draw_Render_Hooks(obj,TacticalRect);
+				Point2D pixel;
+				if (TacticalMap->Coord_To_Pixel(obj->Center_Coord(), pixel)) {
+					obj->Draw_Pre_Render(pixel, TacticalRect);
+					post_render.emplace_back(obj, pixel);
+				}
 				if (rtti == RTTI_BUILDING) {
 					obj->Render(TacticalRect, forced, true);
 				}
@@ -3006,7 +3001,7 @@ void Tactical::Draw_Objects(bool forced)
 					pixel += obj->Render_Blend_Offset();
 					obj->Draw_Pre_Render(pixel, TacticalRect);
 					obj->Render(TacticalRect, forced, false);
-					obj->Draw_Post_Render(pixel, TacticalRect);
+					post_render.emplace_back(obj, pixel);
 				}
 			}
 		}
@@ -3029,6 +3024,13 @@ void Tactical::Draw_Objects(bool forced)
 				}
 			}
 		}
+	}
+
+	/*
+	 * Runs after every layer, so no body drawn later covers an indicator.
+	 */
+	for (std::pair<ObjectClass *, Point2D> const & entry : post_render) {
+		entry.first->Draw_Post_Render(entry.second, TacticalRect);
 	}
 }
 

@@ -223,7 +223,6 @@ class Tactical : public AbstractClass
 		void Draw_Tiles(Cell const & cell, Rect const & cliprect);
 		void Draw_Tile_Shadows(int, Rect const & area);
 
-		static void Draw_Render_Hooks(ObjectClass * object, Rect const & cliprect);
 		void Draw_Objects(bool forced);
 		void Draw_Terrain(bool forced, Rect const & area, Rect const & cliprect);
 		void Draw_Fogged_Objects(Rect const & area);
