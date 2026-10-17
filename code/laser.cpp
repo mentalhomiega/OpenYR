@@ -9,6 +9,9 @@
 
 #include "always.h"
 
+#include "autotest.h"
+#include "dbgprint.h"
+
 #include "laser.h"
 
 #include "_map.h"
@@ -71,6 +74,10 @@ LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown
 	OuterSpread = outer_spread;
 
 	LaserDraws.Add(this);
+
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST laser beam from %d,%d,%d to %d,%d,%d duration %d\n", start.X, start.Y, start.Z, end.X, end.Y, end.Z, duration);
+	}
 }
 
 
