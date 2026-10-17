@@ -1797,6 +1797,12 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 		with_hs = true;
 	}
 
+	// A sabotage order aims at a structure, whose cell can lie in another zone than the cells beside it. The
+	// hierarchical search refuses such a route, so the flat search decides for these orders.
+	if (foot->RTTI == RTTI_INFANTRY && ((InfantryClass *)foot)->Mission == MISSION_SABOTAGE && Map[to].Cell_Building() != NULL) {
+		with_hs = false;
+	}
+
 	if (from_zone != to_zone) {
 		if (with_hs) {
 			/// Hierarchical search requires the from and to zones to match
