@@ -71,6 +71,8 @@
 #include "persist.hh"
 
 #include <cstdio>
+#include <set>
+#include <vector>
 
 
 char const * const TriggerTypeClass::INI_NAME = "Triggers";
@@ -589,6 +591,34 @@ bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 
 
 /// <summary>
+/// Cuts every loop in the linked trigger chains, so that walking a chain always ends.
+/// A loop is cut at the link that closes it, so a trigger linked to itself loses that link.
+/// </summary>
+static void Cut_Trigger_Link_Loops(void)
+{
+	std::set<TriggerTypeClass const *> settled;
+	for (int index = 0; index < TriggerTypes.Count(); index++) {
+		std::vector<TriggerTypeClass *> chain;
+		std::set<TriggerTypeClass const *> on_chain;
+		TriggerTypeClass * node = TriggerTypes[index];
+
+		while (node != NULL && settled.count(node) == 0) {
+			if (!on_chain.insert(node).second) {
+				TriggerTypeClass * closing = chain.back();
+				DebugString("Trigger %s links back to %s, which loops its chain: the link is dropped\n",
+					(char const *)closing->IniName, (char const *)node->IniName);
+				closing->LinkedTo = NULL;
+				break;
+			}
+			chain.push_back(node);
+			node = node->LinkedTo;
+		}
+		settled.insert(chain.begin(), chain.end());
+	}
+}
+
+
+/// <summary>
 /// Reads all trigger types from the INI database specified.
 /// Every name is created before any body is read so forward links can resolve. Definitions
 /// whose owner is not live in the session are then discarded and the survivors renumbered.
@@ -612,6 +642,8 @@ void TriggerTypeClass::Read_All(CCINIClass const & ini)
 			delete trigger;
 		}
 	}
+
+	Cut_Trigger_Link_Loops();
 
 	for (int index = 0; index < TriggerTypes.Count(); index++) {
 		TriggerTypes[index]->HeapID = index;
