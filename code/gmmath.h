@@ -39,6 +39,15 @@ int Gamemd_Length_3D(int x, int y, int z);
 float Gamemd_Magnitude_2D(double x, double y);
 float Gamemd_Magnitude_3D(double x, double y, double z);
 
+// gamemd 0x6D20E0. The pixel lift of an object at a height in leptons. The factor is the table sine
+// of 60 degrees, which is not the exact sine, times 60 over the cell diagonal. The lift is rounded
+// half up, and gains one pixel from 728 leptons on.
+int Gamemd_Lepton_To_Pixel(int lepton);
+
+// gamemd 0x5673A0 and 0x5678E0. The cells a sight look moves its centre by on each axis, for a
+// pixel lift from Gamemd_Lepton_To_Pixel. The result is trunc(-pixel / 30).
+int Gamemd_Reveal_Shift_Cells(int pixel);
+
 // gamemd 0x4CAE30. The angle of (x, y) in radians, read from gamemd's table of arctangents at the
 // index trunc(y / x / K), where K is the table's step. Both arguments are rounded toward zero to
 // single precision first. The steps are coarse near the x axis (about 0.0244 at zero), so the
