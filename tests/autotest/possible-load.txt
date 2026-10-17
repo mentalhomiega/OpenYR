@@ -1,0 +1,9 @@
+; Skirmish load of the stock Yuri's Revenge map "Anything is Possible" (Possible.yrm, NEWURBAN theater) at a
+; 1912 wide screen, for 400 frames. Before the trigger link fix the game overflowed its stack in
+; TriggerTypeClass::Attaches_To during Read_Scenario, because the [Triggers] entries 01000010 and 01000012 link to
+; themselves. The map is a game file and is not in the repository. Copy it into the runner's user folder first,
+; build\<runner>-autotest-user\Possible.yrm, which the game searches for loose maps.
+; Run: scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/possible-load.txt -Map Possible.yrm -Width 1912 -Height 1000 -Seconds 300 -Filter "AUTOTEST|Exception|links back"
+; Expected: two "links back to" lines (01000010 and 01000012), "AUTOTEST frame 400: quit", "exited with 0", and no
+; Exception line. The log shows Start_Day_Night_Loop springing at frame 30.
+400 quit
