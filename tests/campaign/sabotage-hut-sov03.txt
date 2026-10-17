@@ -1,9 +1,9 @@
-; Bridge hut sabotage on SOV03UMD.MAP (Soviet 3): a SEAL (GHOST) two cells west of the computer's bridge repair hut at
-; 69,72 is ordered onto the hut through the real click path (hutclick gives the sabotage action). The SEAL plants the
-; charge, and when its countdown runs out the road span beside the hut comes down.
-; Before the fix in src-agent6 code/astar.cpp, the hierarchical zone test refused the route from 67,72 to the hut's cell
-; (the hut's cell lies in another AmphibiousDestroyer zone than 67,72), so the SEAL dropped the order at once and planted
-; nothing.
+; Bridge hut sabotage on SOV03UMD.MAP (Soviet 3): a SEAL (GHOST) two cells west and one south of the computer's bridge
+; repair hut at 69,72 is ordered onto the hut through the real click path (hutclick gives the sabotage action). The SEAL
+; plants the charge, and when its countdown runs out the road span beside the hut comes down.
+; The start cell 67,73 is open land in the SEAL's zone. Cell 67,72 holds a tree that partly blocks it, which an
+; AmphibiousDestroyer cannot enter, so a SEAL placed there is in a zone of its own and no route leads from it to the hut.
+; The order comes on frame 102 because the map's gatling fire reaches a SEAL near the hut from about frame 119.
 ; Expected: "repairbridge 69,72 0" before the click; then "c4 placed" with GHOST as the saboteur, a countdown to 0, and
 ; "repairbridge 69,72 1" after it. The hut stands throughout ("the building still stands" is expected, as a bridge hut
 ; is immune to its own charge).
@@ -20,10 +20,10 @@ ui click more
 ui wait 300
 ui click resume
 100 repairbridge 69 72
-101 grantunit GHOST 67 72
-120 hutaction GHOST 69 72
-121 hutclick GHOST 69 72
-122 c4watch 300 69 72
+100 grantunit GHOST 67 73
+102 hutaction GHOST 69 72
+102 hutclick GHOST 69 72
+103 c4watch 300 69 72
 160 where GHOST
 400 repairbridge 69 72
 410 where GHOST
