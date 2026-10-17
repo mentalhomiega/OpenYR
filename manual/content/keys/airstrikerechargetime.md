@@ -7,4 +7,4 @@ when_omitted:
   value: "0"
 ---
 
-After calling an airstrike the object cannot call another for this many frames. An elite object waits [`EliteAirstrikeRechargeTime`](/keys/eliteairstrikerechargetime/) instead.
+After the last plane of an airstrike leaves the map or is destroyed, the object cannot call another airstrike for this many frames. The count does not start when the airstrike is called. An elite object waits [`EliteAirstrikeRechargeTime`](/keys/eliteairstrikerechargetime/) instead.
