@@ -647,7 +647,8 @@ void BuildingTypeClass::Fetch_Z_Data(void)
 	for (int h = 0; h < height; h++) {
 		for (int w = 0; w < width; w++) {
 			if (data[h * width + w] != 0) {
-				data[h * width + w] -= 39;
+				// gamemd's BUILDNGZ loader (0x45E8F0) subtracts 65 from each nonzero value.
+				data[h * width + w] -= 65;
 			}
 		}
 	}
