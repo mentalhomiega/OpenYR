@@ -300,6 +300,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	LetGoByHouse(NULL),
 	ThreatPosed(0),
 	AirstrikeReadyFrame(0),
+	AirstrikeMarkedBy(NULL),
+	AirstrikeMarkedTarget(NULL),
 	DrainTarget(NULL),
 	DrainingMe(NULL),
 	DrainAnim(NULL),
@@ -3530,6 +3532,7 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 				plane->Assign_Mission(MISSION_ATTACK);
 			}
 		}
+		Mark_Airstrike_Target(target);
 		return;
 	}
 	if (type != NULL && count > 0 && Frame >= AirstrikeReadyFrame && target->As_ObjectClass() != NULL) {
@@ -3539,6 +3542,9 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 			if (plane != NULL) {
 				AirstrikePlanes.push_back(plane);
 			}
+		}
+		if (!AirstrikePlanes.empty()) {
+			Mark_Airstrike_Target(target);
 		}
 		// The recharge starts when the last plane of this strike leaves (Retire_Airstrike_Planes), not at the call.
 		if (House->Is_Player_Control()) {
@@ -3577,6 +3583,47 @@ void TechnoClass::Start_Airstrike_Recharge(void)
 	AirstrikeReadyFrame = Frame + (Veterancy.Is_Elite() ? TClass->EliteAirstrikeRechargeTime : TClass->AirstrikeRechargeTime);
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST airstrike recharge %s frame %d ready %d\n", TClass->Name(), Frame, AirstrikeReadyFrame);
+	}
+}
+
+
+/// <summary>
+/// Marks the structure that this object's airstrike is attacking, so it is drawn with the
+/// LaserTargetColor tint, and lifts the mark from the structure marked before. Only a structure
+/// is marked; any other target leaves the tint off. The mark is lifted by Clear_Airstrike_Designation.
+/// </summary>
+/// <param name="target">The object the airstrike planes were called onto.</param>
+void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
+{
+	TechnoClass * structure = target->As_TechnoClass();
+	if (structure == AirstrikeMarkedTarget) return;
+
+	Clear_Airstrike_Designation();
+	if (structure == NULL || structure->RTTI != RTTI_BUILDING) return;
+
+	structure->AirstrikeMarkedBy = this;
+	AirstrikeMarkedTarget = structure;
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
+	}
+}
+
+
+/// <summary>
+/// Lifts the tint from the structure this object's airstrike marked. It runs when this object
+/// changes its target and when either side leaves the map.
+/// </summary>
+void TechnoClass::Clear_Airstrike_Designation(void)
+{
+	TechnoClass * structure = AirstrikeMarkedTarget;
+	if (structure == NULL) return;
+
+	if (structure->AirstrikeMarkedBy == this) {
+		structure->AirstrikeMarkedBy = NULL;
+	}
+	AirstrikeMarkedTarget = NULL;
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
 	}
 }
 
@@ -4621,6 +4668,8 @@ void TechnoClass::Assign_Target(AbstractClass * target)
 	AbstractClass * old_target = TarCom;
 
 	if (target == TarCom) return;
+
+	Clear_Airstrike_Designation();
 
 	if (target == NULL) {
 		target = NULL;
@@ -7799,6 +7848,18 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			}
 		}
 
+		// A structure that an airstrike designator marks is drawn with the LaserTargetColor added (BuildingClass::Draw_It, 0x43D290).
+		if (RTTI == RTTI_BUILDING && AirstrikeMarkedBy != NULL && !((BuildingClass *)this)->Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
+			RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
+			if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
+				// The table's red and blue are 5-bit and green 6-bit; the palette is 6-bit throughout.
+				ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 2, add.Get_Green(), add.Get_Blue() * 2);
+				if (tinted != NULL) {
+					converter = tinted;
+				}
+			}
+		}
+
 		if (zgrad != ZGRAD_NONE) flags = ShapeFlags_Type(flags|SHAPE_ZGRAD);
 		if (zwrite) flags = ShapeFlags_Type(flags|SHAPE_ZWRITE);
 		flags = ShapeFlags_Type(flags|SHAPE_ALPHA);
@@ -8486,6 +8547,12 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		AttachedEffects.Detach(target);
 		if (std::erase(AirstrikePlanes, (AircraftClass *)target) != 0 && AirstrikePlanes.empty()) {
 			Start_Airstrike_Recharge();
+		}
+		if (AirstrikeMarkedTarget == target) {
+			Clear_Airstrike_Designation();
+		}
+		if (AirstrikeMarkedBy == target) {
+			AirstrikeMarkedBy = NULL;
 		}
 		if (LocomotorTarget == target) {
 			LocomotorTarget = NULL;
@@ -10566,6 +10633,8 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ThreatPosed);
 	stream.Serialize(AirstrikeReadyFrame);
 	stream.Serialize(AirstrikePlanes);
+	stream.Serialize(AirstrikeMarkedBy);
+	stream.Serialize(AirstrikeMarkedTarget);
 	stream.Serialize(DrainTarget);
 	stream.Serialize(DrainingMe);
 	stream.Serialize(DrainAnim);

@@ -493,6 +493,7 @@ RulesClass::RulesClass(void) :
 	RadTintFactor(0.0),
 	RadSiteWarhead(NULL),
 	ChronoBeamColor(0, 0, 0),
+	LaserTargetColor(0),
 	MindClearedSound(VOC_NONE),
 	MasterMindOverloadDeathSound(VOC_NONE),
 	MindControlAttackLineFrames(0),
@@ -1242,6 +1243,11 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		CrateUnitSound = ini.Get_VocType(AUDIOVISUAL, "CrateUnitSound", CrateUnitSound);
 		CratePromoteSound = ini.Get_VocType(AUDIOVISUAL, "CratePromoteSound", CratePromoteSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
+		LaserTargetColor = ini.Get_Int(AUDIOVISUAL, "LaserTargetColor", LaserTargetColor);
+		ColorAdd.clear();
+		for (int i = 0; i < ini.Entry_Count("ColorAdd"); i++) {
+			ColorAdd.push_back(ini.Get_RGBClass("ColorAdd", ini.Get_Entry("ColorAdd", i), RGBClass(0, 0, 0)));
+		}
 		BombTickingSound = ini.Get_VocType(AUDIOVISUAL, "BombTickingSound", BombTickingSound);
 		BombAttachSound = ini.Get_VocType(AUDIOVISUAL, "BombAttachSound", BombAttachSound);
 		MindClearedSound = ini.Get_VocType(AUDIOVISUAL, "MindClearedSound", MindClearedSound);
@@ -2923,6 +2929,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadTintFactor);
 	stream.Serialize(RadSiteWarhead);
 	stream.Serialize(ChronoBeamColor);
+	stream.Serialize(ColorAdd);
+	stream.Serialize(LaserTargetColor);
 	stream.Serialize(MindClearedSound);
 	stream.Serialize(MasterMindOverloadDeathSound);
 	stream.Serialize(MindControlAttackLineFrames);

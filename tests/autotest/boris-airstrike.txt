@@ -7,7 +7,10 @@
 ; find an attack cell and drops its target.
 ; The planes are called when the Flare designator detonates on the plant ("AUTOTEST airstrike call" follows the
 ; "AUTOTEST detonate" line for the Flare in the same frame), not when Boris fires.
-; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/boris-airstrike.txt -Country 8 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   airstrike|AUTOTEST   plane|AUTOTEST   count GAPOWR|AUTOTEST airstrike call|AUTOTEST detonate frame [0-9]+ Invisible |Exception"
+; The plant is marked when the strike is called ("AUTOTEST airstrike mark GAPOWR by BORIS"), drawn tinted from then on
+; ("AUTOTEST airstrike tint built" once, when the tinted converter is first drawn), and unmarked when it is destroyed
+; ("AUTOTEST airstrike unmark"). No "AUTOTEST laser" line is written: the Flare draws no beam.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/boris-airstrike.txt -Country 8 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   airstrike|AUTOTEST   plane|AUTOTEST   count GAPOWR|AUTOTEST airstrike|AUTOTEST detonate frame [0-9]+ Invisible |AUTOTEST laser|Exception"
 30 view 46 36
 40 grantunit BORIS 44 36
 50 enemy GAPOWR 46 38

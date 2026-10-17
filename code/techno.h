@@ -220,6 +220,12 @@ class TechnoClass :	public RadioClass,
 		void Retire_Airstrike_Planes(void);
 		void Start_Airstrike_Recharge(void);
 
+		// The airstrike designator that marks this structure, and the structure this object's airstrike marked (both NULL when none).
+		TechnoClass * AirstrikeMarkedBy;
+		TechnoClass * AirstrikeMarkedTarget;
+		void Mark_Airstrike_Target(AbstractClass * target);
+		void Clear_Airstrike_Designation(void);
+
 		// The structure this object drains, the object draining this one, and the animation shown while draining.
 		TechnoClass * DrainTarget;
 		TechnoClass * DrainingMe;

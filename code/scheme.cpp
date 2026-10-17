@@ -9,6 +9,9 @@
 
 #include "always.h"
 
+#include "autotest.h"
+#include "dbgprint.h"
+
 #include "scheme.h"
 
 #include "_palette.h"
@@ -18,6 +21,7 @@
 #include "sun.h"
 #include "vector.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -178,12 +182,58 @@ ColorScheme::ColorScheme(const char *name, HSVClass &hsv, const PaletteClass & b
 /// <param name="b">The blue tint level to shade the converter with.</param>
 void ColorScheme::Build_Light_Converters(const PaletteClass & base, const PaletteClass & screenpalette, int r, int g, int b)
 {
+	if (TintedConverter != NULL) {
+		delete TintedConverter;
+		TintedConverter = NULL;
+	}
+
 	if (Converter != NULL) {
 		delete Converter;
 		Converter = NULL;
 	}
 
 	Converter = (LightConvertClass *)Build_Light_Converter(HSV, base, screenpalette, &Palette, *VisibleSurface, IntensityLevels, r, g, b, _indexes);
+}
+
+
+/// <summary>
+/// Returns the scheme's converter with an amount added to every palette entry. It draws a structure
+/// that an airstrike designator marks. The converter is rebuilt when the amount changes or the
+/// scheme's converter is rebuilt for new lighting.
+/// </summary>
+/// <param name="red">The amount added to each entry's red, in palette units from 0 to 63.</param>
+/// <param name="green">The amount added to each entry's green, in palette units from 0 to 63.</param>
+/// <param name="blue">The amount added to each entry's blue, in palette units from 0 to 63.</param>
+/// <returns>Returns with the converter to draw with, or NULL when the scheme has no converter yet.</returns>
+ConvertClass * ColorScheme::Designated_Converter(int red, int green, int blue)
+{
+	if (Converter == NULL) return NULL;
+
+	if (TintedConverter == NULL || TintedAmount[0] != red || TintedAmount[1] != green || TintedAmount[2] != blue) {
+		delete TintedConverter;
+		TintedConverter = NULL;
+
+		PaletteClass tinted = Palette;
+		for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
+			RGBClass & color = tinted[index];
+			color.Set_Red((unsigned char)std::min(color.Get_Red() + red, 63));
+			color.Set_Green((unsigned char)std::min(color.Get_Green() + green, 63));
+			color.Set_Blue((unsigned char)std::min(color.Get_Blue() + blue, 63));
+		}
+
+		int tint_red = 1000;
+		int tint_green = 1000;
+		int tint_blue = 1000;
+		Converter->Get_Tint(tint_red, tint_green, tint_blue);
+		TintedConverter = new LightConvertClass(tinted, GamePalette, *VisibleSurface, tint_red, tint_green, tint_blue, false, _indexes, IntensityLevels);
+		TintedAmount[0] = red;
+		TintedAmount[1] = green;
+		TintedAmount[2] = blue;
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST airstrike tint built %d,%d,%d\n", red, green, blue);
+		}
+	}
+	return TintedConverter;
 }
 
 
@@ -198,6 +248,11 @@ ColorScheme::~ColorScheme(void)
 		free(Name);
 	}
 	Name = NULL;
+
+	if (TintedConverter != NULL) {
+		delete TintedConverter;
+	}
+	TintedConverter = NULL;
 
 	if (Converter != NULL) {
 		delete Converter;
