@@ -1,9 +1,9 @@
 ; Bridge hut sabotage on SOV03UMD.MAP (Soviet 3): a SEAL (GHOST) two cells west and one south of the computer's bridge
 ; repair hut at 69,72 is ordered onto the hut through the real click path (hutclick gives the sabotage action). The SEAL
 ; plants the charge, and when its countdown runs out the road span beside the hut comes down.
-; The start cell 67,73 is open land in the SEAL's zone. Cell 67,72 holds a tree that partly blocks it, which an
-; AmphibiousDestroyer cannot enter, so a SEAL placed there is in a zone of its own and no route leads from it to the hut.
-; The order comes on frame 102 because the map's gatling fire reaches a SEAL near the hut from about frame 119.
+; The start cell 67,73 is open land in the hut's zone. Cell 67,72 holds a tree that partly blocks it, which an
+; AmphibiousDestroyer cannot enter, so a SEAL placed there is in the zone of impassable cells and no route leads from it
+; to the hut. The order comes on frame 102 because a SEAL near the hut comes under fire from about frame 119.
 ; Expected: "repairbridge 69,72 0" before the click; then "c4 placed" with GHOST as the saboteur, a countdown to 0, and
 ; "repairbridge 69,72 1" after it. The hut stands throughout ("the building still stands" is expected, as a bridge hut
 ; is immune to its own charge).

@@ -1,7 +1,7 @@
 ; Bridge hut sabotage on SOV03UMD.MAP (Soviet 3) at the northern repair hut 76,49. A SEAL (GHOST) on the open land cell
 ; 75,50 beside the hut is ordered onto it through the real click path (hutaction writes the action the mouse-over gets and
-; hutclick gives the click). The hut stands on an elevated cell, so the shroud test looks at the cell 74,47 that the hut
-; is drawn over. That cell is revealed by a SEAL this close, so the action must be Sabotage and not Move.
+; hutclick gives the click). The shroud test for an elevated hut reads the cell two cells up-left of it (74,47 for
+; 76,49), so the action is Sabotage only once a SEAL has revealed that cell. A SEAL on 75,50 reveals it.
 ; Expected: "repairbridge 76,49 0" before the click; "hutaction ... Sabotage" and "hutclick ... Sabotage"; then "c4 placed"
 ; with GHOST as the saboteur, a countdown to 0, and "repairbridge 76,49 1" after it. The hut stands throughout.
 ; Run: scripts/run_autotest.ps1 -Script src-agent6/tests/campaign/sabotage-hut-sov03-north.txt -Build agent6 -Campaign -Map SOV03UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST   (hutaction|hutclick|c4 placed|c4 countdown frame [0-9]+: 0|c4watch|repairbridge|where GHOST of Soviets)|Exception|game over"
