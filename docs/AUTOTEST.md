@@ -146,7 +146,7 @@ If `Start_Briefing` springs at frame 130, the wait ends at 130 and the move runs
 
 ## Campaign missions
 
-A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`.
+A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`. `-Difficulty 0`, `1` or `2` sets the campaign difficulty to Easy, Normal or Hard; the default is Normal. The game reads that difficulty from the spawn file, so `-Settings` does not change it unless its `[Settings]` section sets `DifficultyModeHuman`.
 The mission opens on its loading screen, which prints the briefing; no briefing page follows it, as in Yuri's Revenge, so a script needs no `ui` lines to start. The briefing
 movies are skipped in an unattended run. The older scripts still begin with `ui click more` and `ui click resume` lines; with no page to click, each one logs `no such visible element`
 and does nothing.
