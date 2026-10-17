@@ -9534,6 +9534,7 @@ void BuildingClass::Absorb(FootClass * object)
 	Sound_Effect(Rule->EnterBioReactorSound, Center_Coord());
 	object->Limbo();
 	Cargo.Attach(object);
+	object->House->Tracking_Absorb(object);
 	House->RecalcPower = true;
 	Mark(MARK_CHANGE);
 }
@@ -9554,6 +9555,7 @@ bool BuildingClass::Release_Passenger(void)
 		bool placed = coord != COORD_NONE && passenger->Unlimbo(coord, DIR_S);
 		ScenarioInit--;
 		if (placed) {
+			passenger->House->Tracking_Release(passenger);
 			passenger->Enter_Idle_Mode();
 			Sound_Effect(Rule->LeaveBioReactorSound, Center_Coord());
 		} else {

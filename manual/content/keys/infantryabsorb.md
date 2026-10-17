@@ -19,3 +19,5 @@ ExtraPower=100
 The owner lets them out with the Deploy command while the structure is selected, or by clicking the structure while it is the only object selected. They come out one at a time onto free cells next to the structure. Selling the structure lets everyone out at once; destroying it kills everyone inside. A soldier with no room to stand when it comes out is removed from the game.
 
 Several of them can be sent at the same time. Any that find the structure full give up the order.
+
+A soldier inside is not counted as one of its owner's infantry until it comes out. A map event that waits for the owner to lose all its infantry does not wait for it.

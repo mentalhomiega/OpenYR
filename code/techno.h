@@ -157,6 +157,9 @@ class TechnoClass :	public RadioClass,
 		TechnoClass * MindControlledBy;
 		bool IsPermaControlled;
 
+		// Whether the owner's infantry count includes this soldier. An InfantryAbsorb structure drops it while the soldier is inside.
+		bool CountedAsOwnedInfantry;
+
 		/*
 		 * A trigger can have a house take over another's whole base. Each structure taken
 		 * remembers the house it came from and the house that holds it, until a trigger
