@@ -382,6 +382,11 @@ class RulesClass
 		RGBClass RadColor;
 		RGBClass ChronoBeamColor;
 
+		// The [ColorAdd] table, numbered from 0 in listed order: each entry is a red, green and blue amount added to a tint.
+		// Red and blue are 5-bit values and green is 6-bit, as in RGB565. LaserTargetColor picks the entry that tints a structure an airstrike designator marks; 0 leaves it untinted.
+		std::vector<RGBClass> ColorAdd;
+		int LaserTargetColor;
+
 		/*
 		 * Radiation: a site lasts RadDurationMultiple frames per point of level, loses a step every
 		 * RadLevelDelay frames and dims its light every RadLightDelay frames. Every

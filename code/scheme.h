@@ -32,6 +32,7 @@ class ColorScheme
 		~ColorScheme(void);
 
 		void Build_Light_Converters(const PaletteClass & base, const PaletteClass & screenpalette, int r = 1000, int g = 1000, int b = 1000);
+		ConvertClass * Designated_Converter(int red, int green, int blue);
 
 		bool operator==(const ColorScheme &that);
 		bool operator!=(const ColorScheme &that);
@@ -76,6 +77,14 @@ class ColorScheme
 		 * levels is a different scheme.
 		 */
 		int IntensityLevels;
+
+		/*
+		 * This is the converter that draws the scheme with an amount added to every palette entry,
+		 * for a structure that an airstrike designator marks, and the amount it was built with. It is
+		 * thrown away whenever Converter is rebuilt.
+		 */
+		LightConvertClass * TintedConverter = NULL;
+		int TintedAmount[3] = {0, 0, 0};
 
 		/****************************************************************************
 		**	This entry defines a complete color scheme, with the player's remap table,
