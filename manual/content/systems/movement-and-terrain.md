@@ -187,7 +187,7 @@ Before a route is planned, the engine checks that the destination is reachable o
 
 1. Every cell gets one of seven **blockage ratings**.
 2. Each of the ten [movement zone](/reference/enums/movement-zone/) classes accepts some ratings and refuses the others.
-3. Each connected run of accepted cells becomes one of that class's [movement zones](/glossary/#movement-zone). A destination outside the object's zone is unreachable, except a route a saboteur takes to a structure: see [Arming a structure](/systems/capture/#arming-a-structure).
+3. Each connected run of accepted cells becomes one of that class's [movement zones](/glossary/#movement-zone). A destination outside the object's zone is unreachable.
 
 A cell takes the first rating in this table that fits. The rating ignores the object, its speed type and every terrain column except `Wheel`, so one rating serves every class.
 

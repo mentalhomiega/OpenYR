@@ -282,8 +282,6 @@ Rank, abilities and the elite weapon [are kept](/systems/veterancy/#carrying-ran
 
 A soldier arms a charge when it reaches a structure while on the sabotage mission, with that structure as its destination. The structure must still be `Repairable=yes` when the soldier arrives. If it is not, the soldier drops its target and destination and goes idle. There is no alliance test, so force fire can send a saboteur against a structure of its own house.
 
-A saboteur's route to the structure is not refused because the structure's cell lies in another [movement zone](/glossary/#movement-zone) than the saboteur's cell. The route search decides instead, so the saboteur can reach a structure that the zone map places apart from it. Other soldiers and vehicles keep the zone refusal.
-
 The charge is armed unless the structure is already being sold or is iron-curtained. The structure then flashes as a target, and the countdown starts at [`C4Delay`](/keys/c4delay/) minutes converted to frames. For example, `C4Delay=0.03` gives 27 frames. The saboteur is recorded against the structure.
 
 A structure that already carries a charge keeps that charge's countdown and the saboteur recorded against it. The second saboteur does not restart the countdown and does not take the credit for the detonation.
