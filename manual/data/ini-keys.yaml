@@ -21630,6 +21630,24 @@ LaserOuterSpread:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+LaserTargetColor:
+  key: LaserTargetColor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: LaserTargetColor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LastMission:
   key: LastMission
   scopes:
