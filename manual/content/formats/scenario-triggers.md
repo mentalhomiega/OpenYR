@@ -38,7 +38,7 @@ The entry name is the trigger's ID, which other records use to refer to the trig
 | Position | Content |
 | --- | --- |
 | 1 | The owner: a house name, or `<none>` for the house playing the first country the rules register. [Runtime owners](/formats/scenario-objects/#runtime-owners) covers both forms. |
-| 2 | The next trigger in this trigger's chain, by ID or display name, or `<none>` for none. [Tags, triggers and events in brief](/systems/trigger-springing/#tags-triggers-and-events-in-brief) explains how a tag uses the chain. |
+| 2 | The next trigger in this trigger's chain, by ID or display name, or `<none>` for none. [Tags, triggers and events in brief](/systems/trigger-springing/#tags-triggers-and-events-in-brief) explains how a tag uses the chain. A link that leads back into the chain, such as a trigger naming itself, is dropped as the scenario loads and noted in the debug log. |
 | 3 | The trigger's display name. Field 2 of another trigger row and the trigger field of a tag row accept this name in place of the ID. |
 | 4 | `0` starts the trigger enabled; any other number starts it disabled. The three fields after it use the opposite sense. |
 | 5 | `1` enables the trigger at easy difficulty. |
