@@ -1954,7 +1954,7 @@ static void Hut_C4_Step(StepType const & step)
 		DebugString("AUTOTEST   hutc4 %d,%d no building\n", step.X, step.Y);
 		return;
 	}
-	DebugString("AUTOTEST   hutc4 %s %d,%d c4 %d going_to_blow %d countdown %d strength %d active %d\n", building->Class->Name(), step.X, step.Y, (int)building->IsC4Applied, (int)building->IsGoingToBlow, building->CountDown, (int)building->Strength, (int)building->IsActive);
+	DebugString("AUTOTEST   hutc4 %s %d,%d c4 %d going_to_blow %d countdown %d strength %d active %d\n", building->Class->Name(), step.X, step.Y, (int)building->IsC4Applied, (int)building->IsGoingToBlow, building->CountDown.Value(), (int)building->Strength, (int)building->IsActive);
 }
 
 
