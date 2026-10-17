@@ -1,0 +1,31 @@
+; Airborne sight in a campaign: a Harrier (ORCA) and a Kirov (ZEP) are granted to the player over the shroud on SOV05UMD.MAP
+; and flown across it. The view is centred first, because an object takes its lock (TechnoClass::IsLocked) only when it is
+; placed inside the local view. Each aircraft is held on its destination with waitcell, then the cells around it are logged
+; with "cell". An airborne aircraft or moving jump-jet vehicle looks every 15 frames, and each look centres on the cell the
+; object is drawn over. At 1500 leptons the Harrier is drawn about nine cells north-west of its cell, and the Kirov at 750
+; about four and a half, so the mapped cells lie to the north-west. Measured on the fixed build: 94,58, 86,58, 100,58 and
+; 94,66 read "mapped 1" for the Harrier, and 80,90, 76,90 and 80,82 for the Kirov; 94,50, 110,68, 84,100, 88,96 and 84,112 read "mapped 0".
+; Before the fix a cruising Kirov did not look at all; airborne-sight.txt has the batch7 numbers for it.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/airborne-sight-campaign.txt -Campaign -Map SOV05UMD.MAP -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST|Exception"
+30 view 90 80
+31 grantunit ZEP 84 74
+32 grantunit ORCA 84 68
+50 move ORCA 104 68
+50 move ZEP 84 96
+60 waitcell ORCA 104 68 2 600
+60 where ORCA
+60 cell 94 58
+60 cell 86 58
+60 cell 100 58
+60 cell 94 50
+60 cell 94 66
+60 cell 110 68
+60 waitcell ZEP 84 96 2 1500
+60 where ZEP
+60 cell 80 90
+60 cell 76 90
+60 cell 80 82
+60 cell 84 100
+60 cell 88 96
+60 cell 84 112
+60 quit

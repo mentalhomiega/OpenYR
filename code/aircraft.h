@@ -229,13 +229,6 @@ class AircraftClass : public FootClass, public IFlyControl
 
 	private:
 		/*
-		**	This timer controls when the aircraft will reveal the terrain around itself.
-		**	When this timer expires and this aircraft has a sight range, then the
-		**	look around process will occur.
-		*/
-		CDTimerClass<FrameTimerClass> SightTimer;
-
-		/*
 		**	Most attack aircraft can make several attack runs. This value contains the
 		**	number of attack runs the aircraft has left. When this value reaches
 		**	zero then the aircraft is technically out of ammo.

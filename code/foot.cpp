@@ -171,6 +171,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsInitiated(false),
 	IsNewNavCom(false),
 	IsPlanningToLook(false),
+	SightTimer(0),
 	IsDeploying(false),
 	IsLocomotorProcessing(false),
 	IsPiggybackEndPending(false),
@@ -4278,6 +4279,7 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsInitiated);
 	stream.Serialize(IsNewNavCom);
 	stream.Serialize(IsPlanningToLook);
+	stream.Serialize(SightTimer);
 	stream.Serialize(IsDeploying);
 	stream.Serialize(SensorCell);
 	stream.Serialize(SensorHouse);
@@ -4417,6 +4419,7 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsInitiated);
 	crc(IsNewNavCom);
 	crc(IsPlanningToLook);
+	crc((int)SightTimer);
 	crc(IsDeploying);
 	crc(IsFiring);
 	crc(IsRotating);
@@ -5429,6 +5432,24 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 
 
 void Cloak_Cell_Occupiers(CellClass * cellptr);
+
+
+/// <summary>
+/// Looks around once each time SightTimer expires, while this object is in the air, moving, and
+/// owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
+/// aircraft and vehicles. The timer runs whether or not the object qualifies. Infantry keep their
+/// own once-a-second look in InfantryClass::AI.
+/// </summary>
+void FootClass::Airborne_Look(void)
+{
+	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving() || !House->Is_Ally(PlayerPtr)) {
+		return;
+	}
+	if (SightTimer == 0) {
+		Look();
+		SightTimer = TICKS_PER_SECOND;
+	}
+}
 
 
 /// <summary>

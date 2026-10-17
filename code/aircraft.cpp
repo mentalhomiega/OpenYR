@@ -215,7 +215,6 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	IsLockedStraight(false),
 	ParadropPasses(5),
 	DockNowHeadingTo(NULL),
-	SightTimer(0),
 	AttacksRemaining(1),
 	IsReadyToCommence(true)
 {
@@ -672,10 +671,7 @@ void AircraftClass::AI(void)
 		}
 	}
 
-	if (SightTimer == 0) {
-		Look();
-		SightTimer = TICKS_PER_SECOND;
-	}
+	Airborne_Look();
 
 	if (HealthRatio < Rule->ConditionRed && HeightAGL > 0) {
 		if (Percent_Chance(Strength != 0 ? 10 : 80)) {
@@ -4055,7 +4051,6 @@ void AircraftClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLockedStraight);
 	stream.Serialize(ParadropPasses);
 	stream.Serialize(DockNowHeadingTo);
-	stream.Serialize(SightTimer);
 	stream.Serialize(AttacksRemaining);
 	stream.Serialize(IsReadyToCommence);
 }
@@ -4103,7 +4098,6 @@ void AircraftClass::Compute_CRC(CRCEngine & crc) const
 	crc(Passenger);
 	crc(IsKamikaze);
 	crc(field_35B);
-	crc((int)SightTimer);
 	crc(AttacksRemaining);
 }
 
