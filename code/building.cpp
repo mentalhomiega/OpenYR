@@ -6443,6 +6443,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 									Begin_Anim(BANIM_PRODUCTION, false);
 									Begin_Anim(BANIM_SPECIAL_ONE, false);
 									End_Anim(BANIM_ACTIVE_ONE);
+									// gamemd's BuildingClass::Mission_Repair (0x44B780) also destroys the idle animation at the repair start.
+									End_Anim(BANIM_IDLE);
 									IsReadyToCommence = false;
 									BuildingStage.Set_Stage(0);
 									BuildingStage.Set_Rate(1);
