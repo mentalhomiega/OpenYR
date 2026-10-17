@@ -5343,6 +5343,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
 				// The effects below start at fire_coord, which gamemd keeps in CStack_74 (TechnoClass::Fire, 0x6FDD50).
+				if (AutoTest_Active() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
+					TPoint3D<int> const flh = Weapon_FLH(which);
+					Coord const center = Center_Coord();
+					DebugString("AUTOTEST designator fire %s %s which %d origin %d,%d,%d center %d,%d,%d flh %d,%d,%d\n", TClass->Name(), weapon->Name(), which, fire_coord.X, fire_coord.Y, fire_coord.Z, center.X, center.Y, center.Z, flh.X, flh.Y, flh.Z);
+				}
 				if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
 					ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
 				}
