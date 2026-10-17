@@ -122,10 +122,11 @@
 **	stockcheck		reads every VXL, HVA, SHP and PCX that the art and rules files name, through the loaders, and logs each one refused
 **	previewtime		reads the preview of each map on the multiplayer list three times and logs how long each pass took
 **	trigaction <number>[@<House>] <value> <waypoint>	carries out that trigger action for the player's house, or the named one, with the value in its number, house or time field
-**	killhouse <House> [1|2]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
-**							with a player's object as the attacker
+**	killhouse <House> [1|2|3]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
+**							with a player's object as the attacker; 3 destroys only the units, infantry and aircraft on cells the player can see
 **	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
 **	counts <House>			writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read
+**	listhouse <House>		writes every object the house has, limbo'd ones too, with its limbo and transport state, cargo, team, occupants and visibility, then the counts the land-units event reads
 **	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
 **	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
 **	factories				writes each factory structure, whoever owns it, with what it builds, its naval, primary and limbo flags
@@ -2718,6 +2719,51 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   counts %s: no such house\n", step.Argument.c_str());
 		}
+	} else if (step.Command == "listhouse") {
+		// listhouse <House>: writes every object the house has in the object list, limbo'd or not, with what holds it,
+		// then the land, naval and infantry counts the land-units event reads and the ones the objects add up to.
+		std::string house_name = step.Argument;
+		std::replace(house_name.begin(), house_name.end(), '_', ' ');
+		HouseClass * owner = House_From_Name(house_name.c_str());
+		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) owner = Houses[index];
+		}
+		if (owner == NULL) {
+			DebugString("AUTOTEST   listhouse %s: no such house\n", step.Argument.c_str());
+		} else {
+			int land = 0, naval = 0, infantry = 0, live = 0, limbo = 0;
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass * techno = Technos[index];
+				if (techno->House != owner) continue;
+				if (techno->IsInLimbo) limbo++; else live++;
+				if (techno->What_Am_I() == RTTI_UNIT && techno->IsActive) {
+					UnitClass const * unit = static_cast<UnitClass const *>(techno);
+					if (unit->Class->IsNaval && unit->Class->MaxPassengers == 0) naval++; else land++;
+				}
+				if (techno->What_Am_I() == RTTI_INFANTRY && techno->IsActive) infantry++;
+				FootClass * foot = dynamic_cast<FootClass *>(techno);
+				BuildingClass * building = dynamic_cast<BuildingClass *>(techno);
+				char cell[32] = "-";
+				if (!techno->IsInLimbo) {
+					Cell where = techno->Get_Cell();
+					std::snprintf(cell, sizeof(cell), "%d,%d", (int)where.X, (int)where.Y);
+				}
+				int const visible = (!techno->IsInLimbo && Map[techno->Get_Cell()].IsVisible[PlayerPtr]) ? 1 : 0;
+				DebugString("AUTOTEST   listhouse %s obj %d %s rtti %d limbo %d active %d strength %d cell %s insignificant %d dontscore %d counted %d transporter %s intransport %d cargo %d team %s occupants %d visible %d\n",
+					owner->Class->Name(), index, techno->TClass->Name(), (int)techno->What_Am_I(), (int)techno->IsInLimbo, (int)techno->IsActive, techno->Strength, cell,
+					(int)techno->TClass->IsInsignificant, (int)techno->TClass->IsDontScore, (int)techno->CountedAsOwnedInfantry,
+					techno->Transporter != NULL ? techno->Transporter->TClass->Name() : "-", (int)techno->IsInTransport, techno->Cargo.How_Many(),
+					(foot != NULL && foot->Team != NULL) ? foot->Team->Class->Name() : "-", building != NULL ? building->Occupants.Count() : 0, visible);
+			}
+			for (int index = 0; index < Teams.Count(); index++) {
+				TeamClass * team = Teams[index];
+				if (team->House == owner && !team->Is_Empty()) {
+					DebugString("AUTOTEST   listhouse %s team %s with members\n", owner->Class->Name(), team->Class->Name());
+				}
+			}
+			DebugString("AUTOTEST   listhouse %s summary: active land units %d naval units %d infantry %d; objects live %d limbo %d; owned counts units %d infantry %d\n",
+				owner->Class->Name(), land, naval, infantry, live, limbo, owner->CurUnits, owner->CurInfantry);
+		}
 	} else if (step.Command == "enemies") {
 		Enemies();
 	} else if (step.Command == "threat") {
@@ -3444,7 +3490,7 @@ void Run(StepType const & step)
 		}
 		DebugString("AUTOTEST   %s %d: %d\n", step.Command.c_str(), index, (int)value);
 	} else if (step.Command == "killhouse") {
-		// killhouse <House> [1|2]: (an underscore stands for a space in the name) destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) that house owns, as a player's attack would.
+		// killhouse <House> [1|2|3]: (an underscore stands for a space in the name) destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) that house owns, as a player's attack would. Kind 3 leaves out the objects on cells the player cannot see.
 		std::string house_name = step.Argument;
 		std::replace(house_name.begin(), house_name.end(), '_', ' ');
 		HouseClass * victim = House_From_Name(house_name.c_str());
@@ -3466,6 +3512,8 @@ void Run(StepType const & step)
 			if (techno->House != victim || techno->IsInLimbo || techno->Strength <= 0) continue;
 			if (kinds == 1 && !building) continue;
 			if (kinds == 2 && building) continue;
+			// Kind 3 is a player's sweep: the units, infantry and aircraft on cells the player can see now.
+			if (kinds == 3 && (building || !Map[techno->Get_Cell()].IsVisible[PlayerPtr])) continue;
 			int damage = techno->Strength;
 			techno->Take_Damage(damage, 0, Rule->C4Warhead, attacker, true);
 			killed++;
