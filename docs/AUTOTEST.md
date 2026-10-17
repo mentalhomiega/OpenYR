@@ -49,9 +49,10 @@ A command runs once the game frame reaches its frame, in file order.
 | `quantity <TypeID>` | Writes how many of that type each house is counted as having, owned and active, which are the two counts the map events read. A structure uses the building counts, a unit, infantry or aircraft type its own |
 | `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in; a teleporting object gets its warp phase (0 idle, 1 warping out, 2 holding), the frame the phase ends, whether it is warping, whether a chrono warp holds it, and whether it is selected |
 | `quantity <StructureID>` | Writes how many of that structure each house is counted as having, owned and active, which are the two counts the map events read |
-| `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. An underscore in the name stands for a space |
+| `killhouse <House> [kind]` | Destroys the buildings (kind 1), the vehicles, soldiers and aircraft (kind 2) or everything (kind 0, the default) the house owns, with one of the player's objects as the attacker. Kind 3 destroys only the vehicles, soldiers and aircraft on cells the player can see. An underscore in the name stands for a space |
 | `killtag <Tag>` | Destroys every object that carries a tag of that ID or name, with one of the player's objects as the attacker |
 | `counts <House>` | Writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read (`CurUnits` and so on); an underscore in the name stands for a space |
+| `listhouse <House>` | Writes each object the house has in the technos list, limbo'd ones included, with its cell (`-` in limbo), limbo and active state, strength, transporter, cargo, team, a building's occupant count and whether the player can see its cell (`visible`); then the active land, naval and infantry counts and the owned counts. An underscore in the name stands for a space |
 | `transfer <TypeID>` | Gives the first live object of that type that a computer house owns to the player through `TechnoClass::Set_Owning_House`, the path a mind control capture takes |
 | `primary <TypeID>` | Toggles the primary flag of the player's first structure of that type, as the structure's self action does when the house has more than one factory of its kind |
 | `factories` | Writes each structure that builds something, whoever owns it, with what it builds (`vehicle`, `infantry`, `aircraft` or `structure`), whether it is naval, whether it is its house's primary factory and whether it is in limbo |
@@ -145,7 +146,7 @@ If `Start_Briefing` springs at frame 130, the wait ends at 130 and the move runs
 
 ## Campaign missions
 
-A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`.
+A campaign mission is played by naming it with `run_autotest.ps1 -Campaign -Map ALL01UMD.MAP`. The mission needs a window of at least 800x600, so add `-Width 800 -Height 600`. `-Difficulty 0`, `1` or `2` sets the campaign difficulty to Easy, Normal or Hard; the default is Normal. The game reads that difficulty from the spawn file, so `-Settings` does not change it unless its `[Settings]` section sets `DifficultyModeHuman`.
 The mission opens on its loading screen, which prints the briefing; no briefing page follows it, as in Yuri's Revenge, so a script needs no `ui` lines to start. The briefing
 movies are skipped in an unattended run. The older scripts still begin with `ui click more` and `ui click resume` lines; with no page to click, each one logs `no such visible element`
 and does nothing.

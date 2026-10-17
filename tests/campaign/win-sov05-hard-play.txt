@@ -1,0 +1,36 @@
+; Campaign win check for Soviet 5 on Hard, played as a player would: the Yuri naval yard dies, then the Yuri
+; houses' structures and units are killed as they are found. Limbo'd objects are not touched by the sweeps.
+; The AI sells its Bio Reactors and cloning and barracks structures after the first sweep, which lets absorbed
+; Initiates out as counted infantry, so the sweeps repeat until the land-units event sees none left.
+; Forces what the map's triggers wait for and expects "AUTOTEST game over frame N: won" in the log.
+; Run: scripts/run_autotest.ps1 -Script src-agent7/tests/campaign/win-sov05-hard-play.txt -Build agent7 -Campaign -Difficulty 2 -Map SOV05UMD.MAP -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST +(sprung|win|game over|killhouse|killtag|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+300 killtag 0ED70D7C
+301 killhouse Yuri2Country 0
+302 killhouse YuriCountry 0
+400 killhouse Yuri2Country 2
+401 killhouse YuriCountry 2
+500 killhouse Yuri2Country 2
+501 killhouse YuriCountry 2
+600 killhouse Yuri2Country 2
+601 killhouse YuriCountry 2
+700 killhouse Yuri2Country 2
+701 killhouse YuriCountry 2
+800 killhouse Yuri2Country 2
+801 killhouse YuriCountry 2
+900 counts YuriCountry
+901 counts Yuri2Country
+1000 killhouse Yuri2Country 2
+1001 killhouse YuriCountry 2
+1200 quit

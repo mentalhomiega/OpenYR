@@ -84,7 +84,8 @@ static int Count_Of_Techno_Type(char const * name)
 }
 
 /// <summary>
-/// Counts the vehicles a house owns that are, or are not, naval.
+/// Counts the vehicles a house owns that are, or are not, naval. A naval vehicle that carries
+/// passengers counts as not naval, as the owned navy count leaves it out (HouseClass::AddTracking).
 /// </summary>
 /// <param name="house">The house whose vehicles are counted.</param>
 /// <param name="naval">Whether to count the naval vehicles or the others.</param>
@@ -94,7 +95,9 @@ static int Count_Units_Of_House(HouseClass const * house, bool naval)
 	int count = 0;
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass const * unit = Units[index];
-		if (unit != NULL && unit->IsActive && unit->House == house && unit->Class->IsNaval == naval) {
+		if (unit == NULL || !unit->IsActive || unit->House != house) continue;
+		bool const counts_as_naval = unit->Class->IsNaval && unit->Class->MaxPassengers == 0;
+		if (counts_as_naval == naval) {
 			count++;
 		}
 	}
