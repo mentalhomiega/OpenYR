@@ -175,6 +175,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	MakeInfantry(-1),
 	IsGroundLayer(false),
 	IsFlat(false),
+	IsDoubleThick(false),
 	IsTranslucent(false),
 	EmissiveStrength(0),
 	IsScorcher(false),
@@ -445,6 +446,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		char palette[64];
 		ArtINI.Get_String(Name(), "CustomPalette", CustomPalette.c_str(), palette, sizeof(palette));
 		CustomPalette = palette;
+		IsDoubleThick = ini.Get_Bool(Name(), "DoubleThick", IsDoubleThick);
 		IsFlat = ini.Get_Bool(Name(), "Flat", IsFlat);
 		IsFlameThrower = ini.Get_Bool(Name(), "Flamer", IsFlameThrower);
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
@@ -668,6 +670,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MakeInfantry);
 	stream.Serialize(IsGroundLayer);
 	stream.Serialize(IsFlat);
+	stream.Serialize(IsDoubleThick);
 	stream.Serialize(IsTranslucent);
 	stream.Serialize(IsScorcher);
 	stream.Serialize(IsFlameThrower);

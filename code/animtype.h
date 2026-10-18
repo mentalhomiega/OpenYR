@@ -404,6 +404,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		bool IsFlat;
 
+		// An animation under a temporal beam is drawn 75 percent translucent instead of 50 (DoubleThick=).
+		bool IsDoubleThick;
+
 		/*
 		**	If this animation should be rendered in a translucent fashion, this flag
 		**	will be true. Translucent colors are some of the reds and some of the

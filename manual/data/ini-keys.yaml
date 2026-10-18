@@ -12497,6 +12497,23 @@ DoubleOwned:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DoubleThick:
+  key: DoubleThick
+  scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AnimTypeClass
+      member: IsDoubleThick
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 Drag:
   key: Drag
   scopes:
