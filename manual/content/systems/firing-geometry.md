@@ -97,7 +97,7 @@ One shot runs the steps below in order. A step that ends the shot skips every la
 4. The barrel starts turning to the elevation chosen for this target.
 5. The projectile's damage is set. An [`IsSonic=yes`](/keys/issonic/) or [`UseFireParticles=yes`](/keys/usefireparticles/) weapon gives its projectile no damage. For any other weapon, a positive [`Damage`](/keys/damage/#scope-weapontype) is multiplied by the house's firepower bias and the object's firepower bias, and raised further by the veteran firepower ability. A zero or negative `Damage` is used unchanged.
 6. The projectile is created and [launched from the mounting](/systems/projectile-flight/#what-the-shot-leaves-with). A laser, railgun or sonic weapon also creates its projectile here. The shot ends if the projectile cannot be created, if no ballistic arc reaches the target, or if the projectile cannot be placed at the mounting.
-7. A turreted object recoils.
+7. A turreted object recoils if its type sets [`TurretRecoil=yes`](/keys/turretrecoil/).
 8. The projectile takes no [flight turn](/systems/projectile-flight/#the-turn) during firing. Its first turn comes later in this frame, when the turn order reaches it.
 9. A `UseFireParticles=yes`, [`UseSparkParticles=yes`](/keys/usesparkparticles/) or [`IsRailgun=yes`](/keys/israilgun/) weapon starts its effect at the mounting, or at the firer's center for a [`Dropping=yes`](/keys/dropping/) weapon. The railgun beam deals its damage now, before any later step; `IsRailgun` covers what it hits.
 10. The burst counter advances, the reload delay is set from the advanced counter, and the counter returns to `0` after the last round of the burst.

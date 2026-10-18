@@ -99,6 +99,9 @@ class UnitTypeClass : public TechnoTypeClass
 		*/
 		bool IsLockTurret;
 
+		// Set by TurretRecoil=. When true, the turret jerks back for one frame each time the unit fires.
+		bool IsTurretRecoil;
+
 		/*
 		**	If this unit cannot fire while moving, then this flag will be
 		**	true. Such a unit must stop and stabilize for a bit before it

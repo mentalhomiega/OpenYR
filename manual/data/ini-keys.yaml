@@ -40311,7 +40311,7 @@ TurretRecoil:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: null
       declared_in: BuildingTypeClass
@@ -40319,6 +40319,20 @@ TurretRecoil:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsTurretRecoil
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 TurretRecoverFrames:
   key: TurretRecoverFrames
   scopes:
