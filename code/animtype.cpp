@@ -160,6 +160,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsMeteor(false),
 	IsTiberiumChainReaction(false),
 	IsTiberium(false),
+	IsHideIfNoOre(false),
 	IsBouncer(false),
 	IsTiled(false),
 	IsShouldUseCellDrawer(true),
@@ -177,6 +178,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsScorcher(false),
 	IsFlameThrower(false),
 	IsCraterForming(false),
+	IsForceBigCraters(false),
 	IsSticky(false),
 	IsPingPong(false),
 	IsReverse(false),
@@ -452,6 +454,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsTranslucent = ini.Get_Bool(Name(), "Translucent", IsTranslucent);
 		IsScorcher = ini.Get_Bool(Name(), "Scorch", IsScorcher);
 		IsCraterForming = ini.Get_Bool(Name(), "Crater", IsCraterForming);
+		IsForceBigCraters = ini.Get_Bool(Name(), "ForceBigCraters", IsForceBigCraters);
 		IsSticky = ini.Get_Bool(Name(), "Sticky", IsSticky);
 		IsPingPong = ini.Get_Bool(Name(), "PingPong", IsPingPong);
 		IsReverse = ini.Get_Bool(Name(), "Reverse", IsReverse);
@@ -498,6 +501,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 
 		Translucency = ini.Get_Int(Name(), "Translucency", Translucency);
 		IsTiberium = ini.Get_Bool(Name(), "IsTiberium", IsTiberium);
+		IsHideIfNoOre = ini.Get_Bool(Name(), "HideIfNoOre", IsHideIfNoOre);
 		YSortAdjust = ini.Get_Int(Name(), "YSortAdjust", YSortAdjust);
 
 		IsDemandLoad = ini.Get_Bool(Name(), "DemandLoad", IsDemandLoad);
@@ -636,6 +640,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMeteor);
 	stream.Serialize(IsTiberiumChainReaction);
 	stream.Serialize(IsTiberium);
+	stream.Serialize(IsHideIfNoOre);
 	stream.Serialize(IsBouncer);
 	stream.Serialize(IsTiled);
 	stream.Serialize(IsShouldUseCellDrawer);
@@ -653,6 +658,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsScorcher);
 	stream.Serialize(IsFlameThrower);
 	stream.Serialize(IsCraterForming);
+	stream.Serialize(IsForceBigCraters);
 	stream.Serialize(IsSticky);
 	stream.Serialize(IsPingPong);
 	stream.Serialize(IsReverse);
@@ -686,6 +692,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScorcher);
 	crc(IsFlameThrower);
 	crc(IsCraterForming);
+	crc(IsForceBigCraters);
 	crc(IsSticky);
 	crc(IsPingPong);
 	crc(IsReverse);
@@ -693,6 +700,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Biggest);
 	crc(Damage);
 	crc(IsTiberiumChainReaction);
+	crc(IsHideIfNoOre);
 	crc(Delay);
 	crc(Start);
 	crc(LoopStart);

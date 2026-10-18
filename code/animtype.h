@@ -311,6 +311,13 @@ class AnimTypeClass : public ObjectTypeClass
 		bool IsTiberium;
 
 		/*
+		 * If this animation is hidden while the cell under it holds no tiberium, then this flag
+		 * will be true. It keeps playing and is only not drawn, so an ore sparkle stops showing
+		 * once its ore is gone and returns when the ore grows back.
+		 */
+		bool IsHideIfNoOre;
+
+		/*
 		 * If this animation should be thrown into the air and left to bounce, then this flag
 		 * will be true. Rather than playing in place it is launched with a random velocity
 		 * bounded by MaxXYVel and the ZVel pair, then follows that arc until it settles.
@@ -423,6 +430,13 @@ class AnimTypeClass : public ObjectTypeClass
 		**	This flag will be true for those types.
 		*/
 		bool IsCraterForming;
+
+		/*
+		 * If the crater this animation leaves must be a multiple cell one, then this flag will
+		 * be true. Such a crater may lie over a building, and a single cell crater is used only
+		 * when no multiple cell crater fits.
+		 */
+		bool IsForceBigCraters;
 
 		/*
 		**	If this animation should attach itself to any unit that is in the same

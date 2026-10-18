@@ -824,6 +824,10 @@ void AnimClass::AI(void)
 		IsPsychicHidden = !Psychic_Warning_Seen(Map[Center_Coord()], owner);
 	}
 
+	if (Class->IsHideIfNoOre) {
+		IsInvisible = Map[Center_Coord()].Tiberium_Value() == 0;
+	}
+
 	if (Class->IsFlamingGuy) {
 		Flaming_Guy_AI();
 		BASECLASS::AI();
@@ -1316,7 +1320,12 @@ void AnimClass::Middle(void)
 			**	If there already is a crater in the cell, then just expand the
 			**	crater.
 			*/
-			SmudgeTypeClass::Crater_The_Ground(Center_Coord(), width, height);
+			if (Class->IsForceBigCraters) {
+				// The size is read only when the crater is not forced to be multiple-cell; 300 is the value gamemd passes.
+				SmudgeTypeClass::Crater_The_Ground(Center_Coord(), 300, 300, true);
+			} else {
+				SmudgeTypeClass::Crater_The_Ground(Center_Coord(), width, height);
+			}
 		}
 	}
 
