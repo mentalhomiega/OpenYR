@@ -3450,8 +3450,9 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					if (base->Unlimbo(exitcoord, dir)) {
 
 						// A hospital or armory also exits its infantry here without having produced them.
+						// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
 						if (Class->ToBuild == RTTI_INFANTRYTYPE) {
-							Begin_Anim(BANIM_PRODUCTION, false);
+							Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
 						}
 
 						if (((FootClass *)base)->NavCom != NULL) {
@@ -9577,10 +9578,26 @@ void BuildingClass::Bunker_Down(void)
 	}
 	BunkerLinkedItem->BunkerLinkedItem = NULL;
 	BunkerLinkedItem = NULL;
-	End_Anim(BANIM_SPECIAL_ONE);
-	End_Anim(BANIM_SPECIAL_TWO);
+	Bunker_Walls_Down_Anims();
 	Sound_Effect(Rule->BunkerWallsDownSound, Center_Coord());
 	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Ends the walls-up animations of a tank bunker and starts the walls-down pair (SPECIAL_THREE and
+/// SPECIAL_FOUR), as BuildingClass::EmptyBunker (0x4595C0) and ClearBunker (0x459470) do. Nothing
+/// starts once the bunker is off the map.
+/// </summary>
+void BuildingClass::Bunker_Walls_Down_Anims(void)
+{
+	End_Anim(BANIM_SPECIAL_ONE);
+	End_Anim(BANIM_SPECIAL_TWO);
+	if (!IsInLimbo) {
+		bool const damaged = HealthRatio <= Rule->ConditionYellow;
+		Begin_Anim(BANIM_SPECIAL_THREE, damaged);
+		Begin_Anim(BANIM_SPECIAL_FOUR, damaged);
+	}
 }
 
 

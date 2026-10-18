@@ -8560,8 +8560,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (BunkerLinkedItem == target) {
 			BunkerLinkedItem = NULL;
 			if (RTTI == RTTI_BUILDING) {
-				((BuildingClass *)this)->End_Anim(BANIM_SPECIAL_ONE);
-				((BuildingClass *)this)->End_Anim(BANIM_SPECIAL_TWO);
+				((BuildingClass *)this)->Bunker_Walls_Down_Anims();
 			}
 		}
 		DiskLaser.Detach(target);

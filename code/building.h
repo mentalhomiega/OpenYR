@@ -663,6 +663,7 @@ class BuildingClass : public TechnoClass
 		bool Blocks_Cell(CellClass const * cell) const;
 		void Bunker_Up(FootClass * object);
 		void Bunker_Down(void);
+		void Bunker_Walls_Down_Anims(void);
 		void Garrison_AI(void);
 		void Set_Garrison_House(HouseClass * newowner);
 		void Refresh_Garrison_Anims(void);
