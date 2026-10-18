@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-When a structure of this type is destroyed, one of these animations, chosen at random, plays at its center, drawn in its owner's colors as the structure's own animations are. Yuri's Revenge uses it for collapsing landmarks. A vehicle of this type that has an [`Explosion`](/keys/explosion/) list also plays one where it is destroyed.
+When a structure of this type is destroyed, one of these animations, chosen at random, plays at its center, drawn in its owner's colors as the structure's own animations are. Yuri's Revenge uses it for collapsing landmarks. A vehicle of this type also plays one where it is destroyed, whether or not it has an [`Explosion`](/keys/explosion/) list.
 
 ```ini title="rulesmd.ini"
 [MYLANDMARK] ; example BuildingType
