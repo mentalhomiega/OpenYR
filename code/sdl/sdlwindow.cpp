@@ -672,7 +672,7 @@ void Main_Window_Warp_Cursor(int x, int y)
 bool Main_Window_Key_Down(int virtualkey)
 {
 	if (AutoTest_Active()) {
-		return(false);
+		return(AutoTest_Key_Held(virtualkey));
 	}
 
 	switch (virtualkey) {

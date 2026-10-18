@@ -1,0 +1,61 @@
+; Attack-move keys in the Modern scheme. A is the attack-move key (AttackMove, a press). A tap arms the next click on the
+; ground; holding the key keeps every click on the ground an attack-move while it is down. Ctrl with Shift and a click on the
+; ground is gamemd's attack-move (ClickedMission, 0x006FFBE0, with AllSelectedCanAttackForced, 0x00731BF0). Ctrl with Alt is
+; gamemd's guard-area order (TechnoClass::MouseOverCell, 0x00700600, returns GuardArea). The shape lines give the mouse
+; shape the map shows: 18 is MOUSE_CAN_MOVE, 21 is MOUSE_CAN_ATTACK (the armed cursor) and 22 is MOUSE_AREA_GUARD.
+; At this view, 380,420 is cell 67,47 and 300,360 is cell 64,46. No enemy stands near, so the mission is the order alone.
+; A mission name can lag its order by a few frames, so each where line follows its click by 40 frames.
+; Expected: the tap gives Attack Move to 67,47, and the next plain click gives Move to 64,46. While A is held, its clicks give
+; Attack Move; after the release a click gives Move. Ctrl with Shift gives Attack Move and Ctrl with Alt gives Area Guard.
+; A side button bound to AttackMove, pressed as a tap, gives Attack Move.
+; Run: scripts/run_autotest.ps1 -Build agent5 -Script src-agent5/tests/autotest/attack-move-key.txt -Width 640 -Height 480 -Seconds 90 -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+35 reveal
+40 grantunit E1 60 42
+41 grantunit E1 61 42
+50 select E1
+55 selected
+60 binding 65
+62 windowmove 380 420
+64 shape
+66 key 65
+68 shape
+70 windowclick 380 420
+110 where E1
+112 shape
+120 windowclick 300 360
+160 where E1
+170 hold 65
+172 windowmove 380 420
+174 shape
+176 windowclick 380 420
+216 where E1
+220 windowclick 300 360
+260 where E1
+270 release 65
+272 windowmove 380 420
+274 shape
+276 windowclick 380 420
+316 where E1
+330 hold 17
+332 hold 16
+334 windowclick 300 360
+374 where E1
+376 release 16
+378 release 17
+390 hold 17
+392 hold 18
+394 windowmove 380 420
+396 shape
+398 windowclick 380 420
+438 where E1
+440 release 18
+442 release 17
+450 bind AttackMove 6
+452 windowmove 380 420
+454 xbutton 2
+456 windowclick 380 420
+496 where E1
+500 bind AttackMove 65
+600 quit

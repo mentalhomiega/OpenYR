@@ -12,7 +12,7 @@
 50 select E1
 55 selected
 60 command AttackMove
-62 windowclick 400 300
+62 windowclick 380 420
 66 where E1
 72 where E1
 80 where E1

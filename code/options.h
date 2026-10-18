@@ -369,6 +369,8 @@ class OptionsClass {
 		KeyNumType KeySelect2;
 		KeyNumType KeyQueueMove1;
 		KeyNumType KeyQueueMove2;
+		KeyNumType KeyAttackMove1;
+		KeyNumType KeyAttackMove2;
 
 		bool BitmapSystemFont;
 

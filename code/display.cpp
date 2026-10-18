@@ -1933,6 +1933,14 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 		*/
 		switch (waypoint_action) {
 			case ACTION_MOVE:
+				// An armed or held attack-move shows the attack cursor over open ground, where its click gives the order.
+				if (object == NULL && (AttackMoveArmed || Attack_Move_Key_Held())) {
+					Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
+					break;
+				}
+				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
+				break;
+
 			case ACTION_RALLY_TO_POINT:
 				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
 				break;
@@ -2084,12 +2092,13 @@ void Bandbox_Selection_Callback(ObjectClass *object);
  *=============================================================================================*/
 void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, ObjectClass * object, ActionType action, bool wsmall)
 {
-	// The release that uses an armed attack-move makes its ground orders attack-moves, and the arm ends with it.
+	// The release that uses an armed attack-move, or is made while the attack-move key is held, makes its ground orders
+	// attack-moves. The arm ends with the release; a held key lasts until it is let go.
 	struct AttackMoveScope
 	{
 		AttackMoveScope(void)
 		{
-			AttackMoveOrdering = AttackMoveArmed;
+			AttackMoveOrdering = AttackMoveArmed || Attack_Move_Key_Held();
 			AttackMoveArmed = false;
 		}
 

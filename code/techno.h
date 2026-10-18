@@ -33,9 +33,10 @@
 #pragma once
 
 // An attack-move order is armed by the AttackMove command and used by the next left release on the map. A
-// ground order is an attack-move while the release uses it or while Ctrl and Shift are held.
+// ground order is an attack-move while the release uses it, while the attack-move key is held, or while Ctrl and Shift are held.
 extern bool AttackMoveArmed;
 extern bool AttackMoveOrdering;
+bool Attack_Move_Key_Held(void);
 
 #include "_voxel.h"
 #include "audio/audiohandle.h"

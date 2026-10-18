@@ -373,6 +373,10 @@ struct StepType
 };
 
 bool Active = false;
+
+// The keys a script holds with hold and lets go with release. An unattended run reads the held keys from here,
+// so Keyboard->Down sees the keys the script holds.
+bool ScriptHeldKeys[256];
 std::vector<StepType> Steps;
 std::size_t Next = 0;
 
@@ -2173,6 +2177,12 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// shape: writes the mouse shape the map shows now, as the last hover set it (MouseType numbers, MOUSE_CAN_ATTACK is 21).
+	if (step.Command == "shape") {
+		DebugString("AUTOTEST   shape %d\n", (int)Map.Get_Mouse_Shape());
+		return;
+	}
+
 	// swaim <SuperSection> x y: see SW_Aim_Probe, dispatched here for the same reason as cursor.
 	if (step.Command == "swaim") {
 		SW_Aim_Probe(step.Argument, step.X, step.Y);
@@ -2237,6 +2247,9 @@ void Run(StepType const & step)
 		event.Modifiers = Key_Modifiers(step.Argument);
 		event.Type = (step.Command == "hold") ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
 		Keyboard->Handle_Window_Event(event);
+		if (event.VirtualKey > 0 && event.VirtualKey < 256) {
+			ScriptHeldKeys[event.VirtualKey] = (step.Command == "hold");
+		}
 		return;
 	}
 
@@ -2259,6 +2272,16 @@ void Run(StepType const & step)
 		HotkeyBindings = Scheme_Hotkeys(scheme);
 		Apply_Hotkeys();
 		DebugString("AUTOTEST   scheme %s bindings %d\n", Keyboard_Scheme_Name(scheme), (int)HotkeyBindings.size());
+		return;
+	}
+
+	// bind <Command> <vk> [trigger]: gives the command the virtual-key code vk (decimal) with the trigger, a HotkeyTrigger
+	// number (0 Press, 1 Double, 2 Hold, 3 Held), displacing a conflicting binding as the keyboard screen does.
+	if (step.Command == "bind") {
+		HotkeyTrigger const trigger = (step.Y >= 0 && step.Y <= 3) ? (HotkeyTrigger)step.Y : HOTKEY_PRESS;
+		Hotkey_Assign(HotkeyBindings, step.Argument, 0, step.X, trigger, true);
+		Apply_Hotkeys();
+		DebugString("AUTOTEST   bind %s key %d %s\n", step.Argument.c_str(), step.X, Hotkey_Trigger_Name(trigger));
 		return;
 	}
 
@@ -2848,6 +2871,17 @@ void Run(StepType const & step)
 		event.Type = WINDOW_EVENT_MOUSE_DOWN;
 		event.Button = WINDOW_BUTTON_LEFT;
 		event.Clicks = 1;
+		Game_Window_Handle_Event(event);
+		event.Type = WINDOW_EVENT_MOUSE_UP;
+		Game_Window_Handle_Event(event);
+	} else if (step.Command == "xbutton") {
+		// xbutton <1|2>: a press and release of a side button at the pointer, given to the window the way the mouse gives it.
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_DOWN;
+		event.Button = (step.Argument.find('2') != std::string::npos) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1;
+		event.Clicks = 1;
+		event.X = _CursorX;
+		event.Y = _CursorY;
 		Game_Window_Handle_Event(event);
 		event.Type = WINDOW_EVENT_MOUSE_UP;
 		Game_Window_Handle_Event(event);
@@ -4582,6 +4616,12 @@ void AutoTest_Cursor_Position(int & x, int & y)
 bool AutoTest_Active(void)
 {
 	return(Active);
+}
+
+
+bool AutoTest_Key_Held(int virtualkey)
+{
+	return(virtualkey > 0 && virtualkey < 256 && ScriptHeldKeys[virtualkey]);
 }
 
 
