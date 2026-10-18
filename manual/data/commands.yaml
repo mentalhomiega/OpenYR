@@ -560,7 +560,8 @@ registered_commands:
   route_id: attackmove
   kind: registered
   title: Attack move
-  description: Makes the next click on the ground an attack-move order for the selected units.
+  description: Makes the next click on the ground an attack-move order for the selected units. While the
+    key is held, every click on the ground is one.
   category: Interface
   audience: player
   availability:

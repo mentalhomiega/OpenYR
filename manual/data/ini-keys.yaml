@@ -29255,6 +29255,23 @@ ProximityDistance:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+PsiWarning:
+  key: PsiWarning
+  scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AnimTypeClass
+      member: IsPsiWarning
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 Psychedelic:
   key: Psychedelic
   scopes:
@@ -40533,6 +40550,24 @@ UndeploysInto:
     level: TechnoTypeClass
 UnderDoorAnim:
   key: UnderDoorAnim
+  scopes:
+  - applies_to:
+    - BuildingType
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+UnderRoofDoorAnim:
+  key: UnderRoofDoorAnim
   scopes:
   - applies_to:
     - BuildingType
