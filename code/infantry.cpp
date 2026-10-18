@@ -4342,10 +4342,11 @@ bool InfantryClass::Is_Ready_To_Random_Animate(void) const
 	}
 
 	/*
-	**	Only if the infantry is in guard or ready stance is idle animations allowed. This is
-	**	because the idle animations start and end with these frames.
+	**	Only if the infantry is in guard, ready or tread stance is idle animations allowed. This is
+	**	because the idle animations start and end with these frames. Tread is the ready stance in
+	**	water, and gamemd allows it too (InfantryClass::IsItTimeForIdleActionYet, 0x5216D0).
 	*/
-	if (Doing != DO_STAND_GUARD && Doing != DO_STAND_READY) {
+	if (Doing != DO_STAND_GUARD && Doing != DO_STAND_READY && Doing != DO_TREAD) {
 		return(false);
 	}
 
