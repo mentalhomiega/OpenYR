@@ -2311,7 +2311,13 @@ bool InfantryClass::Random_Animate(void)
 			return(true);
 		}
 
-		switch (Random_Pick(0, 10)) {
+		int idle = Random_Pick(0, 10);
+		// gamemd's UpdateIdleAction (0x51CDB0) draws again for a COW, and a low roll there makes the idle the wander case.
+		bool const is_cow = stricmp(Class->Name(), "COW") == 0;
+		if (is_cow && Random_Pick(0, 10) < 5) {
+			idle = 8;
+		}
+		switch (idle) {
 			case 0:
 				break;
 
@@ -2340,7 +2346,8 @@ bool InfantryClass::Random_Animate(void)
 			*/
 			case 8:
 				PrimaryFacing.Set(Facing_Dir(Random_Pick(FACING_N, FACING_NW)));
-				if (!House->Is_Human_Player() && Class->IsFraidyCat) {
+				// A COW scatters even under human control, as gamemd's case 8 does.
+				if (is_cow || (!House->Is_Human_Player() && Class->IsFraidyCat)) {
 					Scatter(COORD_NONE, true);
 				}
 				break;
@@ -4191,14 +4198,11 @@ void InfantryClass::Doing_AI(void)
 				}
 				break;
 
-			// A soldier killed in water is removed when its wet death ends, as one killed on land is.
 			case DO_GUN_DEATH:
 			case DO_EXPLOSION_DEATH:
 			case DO_EXPLOSION2_DEATH:
 			case DO_GRENADE_DEATH:
 			case DO_FIRE_DEATH:
-			case DO_WET_DIE1:
-			case DO_WET_DIE2:
 				if (Fetch_Stage() >= Class->DoControls[Doing].Count) {
 					// As gamemd's FUN_00520AE0: the type's own bodies, else the shared list unless NotHuman=yes.
 					if (Class->DeadBodies.Count() > 0) {
@@ -4209,6 +4213,17 @@ void InfantryClass::Doing_AI(void)
 					Delete_Me();
 					return;
 				}
+				break;
+
+			// No body and no random draw: gamemd's FUN_00520AE0 only removes the soldier for these sequences.
+			case DO_WET_DIE1:
+			case DO_WET_DIE2:
+			case DO_AIR_DEATH_FINISH:
+				if (Fetch_Stage() >= Class->DoControls[Doing].Count) {
+					Delete_Me();
+					return;
+				}
+				break;
 		}
 	}
 }

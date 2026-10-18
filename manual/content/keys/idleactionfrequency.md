@@ -20,7 +20,7 @@ The wait is a minimum. When it has passed, the infantryman idles at the next che
 - it is not moving, firing or prone;
 - it has no target nearby.
 
-Each idle action is one of eleven equally likely outcomes. The animations are the `Idle1` and `Idle2` entries of the infantry type's [`Sequence`](/keys/sequence/).
+Each idle action is one of eleven equally likely outcomes, except for a `COW` (see below). The animations are the `Idle1` and `Idle2` entries of the infantry type's [`Sequence`](/keys/sequence/).
 
 | Outcomes | Action |
 | --- | --- |
@@ -28,6 +28,8 @@ Each idle action is one of eleven equally likely outcomes. The animations are th
 | 3 | Plays the `Idle2` animation and turns to a random facing. |
 | 4 | Turns to a random facing. |
 | 1 | Does nothing. |
+
+A `COW` infantryman draws a second number after the first. When that number is below five, the idle action is a random facing followed by a scatter, even when the player owns the cow. About half of a cow's idle actions therefore scatter.
 
 On an `Idle2` outcome, an infantryman the player owns and has not selected has a one-in-three chance to play the first sound in its [`VoiceComment`](/keys/voicecomment/) list.
 

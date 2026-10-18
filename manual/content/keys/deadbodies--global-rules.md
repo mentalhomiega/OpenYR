@@ -18,6 +18,8 @@ DeadBodies=MYDEATH_A,MYDEATH_B ; AnimTypes registered in [Animations]
 
 With this list empty and no list on the type, the infantryman leaves no corpse.
 
+An infantryman whose [`MovementZone=AmphibiousDestroyer`](/keys/movementzone/) gun or explosion death starts in water plays `WetDie1` or `WetDie2` instead, when its art defines that sequence. It is removed at the end of the sequence and leaves no corpse, whatever the lists say.
+
 Many deaths remove the infantryman at once, without a death sequence, so they leave no corpse whatever the warhead's `InfDeath` is. These include:
 
 - an infantryman who was already falling and comes down in water;
