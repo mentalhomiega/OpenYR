@@ -528,6 +528,22 @@ void Keyboard_Process(KeyNumType & input)
 	if (input == KN_NONE) {
 		return;
 	}
+
+	// While input is locked, gamemd drops every key except Esc (Buffer_Put_Key, 0x0054f200).
+	// Esc still queues the options screen. A release still ends a hold started before the lock.
+	if (Scen != NULL && Scen->IsInputLocked) {
+		KeyNumType const unmodified = KeyNumType(input & ~(WWKEY_SHIFT_BIT|WWKEY_ALT_BIT|WWKEY_CTRL_BIT|WWKEY_VK_BIT|WWKEY_RLS_BIT));
+		if ((input & WWKEY_RLS_BIT) != 0) {
+			const CommandClass * released = HotkeyCommands[KeyNumType(input & ~WWKEY_RLS_BIT)];
+			if (released != NULL) {
+				released->Release();
+			}
+		} else if (unmodified == KN_ESC) {
+			Queue_Options();
+		}
+		return;
+	}
+
 	/*
 	**	For network, process user input for inter-player messages.
 	*/

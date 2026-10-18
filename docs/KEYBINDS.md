@@ -41,6 +41,8 @@ The four held modifiers are the same in both schemes: `ForceFire` on Control, `F
 
 A `Double` binding on a key with a `Press` binding makes that press wait for the double-press window, 250 ms by default. A key with only a `Press` fires at once. A `Hold` binding makes a quick tap of its key fire the press at the release, and a long press fire the hold at 400 ms. A `Held` binding fires when the key goes down and again every 40 ms while it stays down, which is how the arrow keys scroll the view.
 
+While the scenario's input is locked, keyboard bindings do not fire, and the presses and held keys waiting in the timing are dropped. A lock comes from a `LOCK_INPUT` action, which lasts until an `UNLOCK_INPUT` action, from a chronoshift, or from a won or lost campaign mission. Esc still opens the options menu unless the player has already won or lost. Mouse-wheel bindings are not affected by the lock.
+
 Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W, E and R tab keys and the A, S, D and X command keys.
 
 ## New command behaviour

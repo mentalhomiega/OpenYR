@@ -7169,9 +7169,14 @@ void Hotkey_Release(int key)
 /// <summary>
 /// Runs the bindings that fall due now: a press whose double-press window has ended, a hold that
 /// reached its time, and a held key that repeats. The game calls it every frame it reads input.
+/// While input is locked, nothing fires and the pending presses and held keys are dropped.
 /// </summary>
 void Hotkey_Poll(void)
 {
+	if (Scen != NULL && Scen->IsInputLocked) {
+		Hotkey_Reset_Pending();
+		return;
+	}
 	Run_Hotkey_Fires(HotkeyTiming.Poll(timeGetTime()));
 }
 
