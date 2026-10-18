@@ -545,7 +545,8 @@ void Test_Room(void)
 	Check(guest.Status() == CnCNetRoomStatus::WAITING_HOST, "room: a guest waits for the host after joining");
 	sent = Deliver(guest, "Guest", {&host}, 200);
 	Check(Sent(sent, CnCNetRoomSendKind::CTCP, "OYRHELLO") && sent[0].Text == "1;b1", "room: the guest says hello with protocol and build");
-	Check(host.Players().size() == 2 && host.Find_Player("guest") != nullptr, "room: the host seats a guest with the same build");
+	Check(host.Players().size() == 2 && host.Find_Player("guest") != nullptr && host.Find_Player("Guest")->Color == 1,
+		"room: the host seats a guest with the same build on the first free colour");
 	sent = Deliver(host, "Host", {&guest}, 300);
 	Check(Sent(sent, CnCNetRoomSendKind::CTCP, "OYROPTS") && Sent(sent, CnCNetRoomSendKind::CTCP, "OYRPLAYERS"),
 		"room: the host answers with the options and the players");
@@ -561,7 +562,7 @@ void Test_Room(void)
 
 	host.Request_Setup(0, 3, 4, -1);
 	host.Take_Outgoing();
-	Check(host.Find_Player("Host")->Color == -1, "room: a taken colour is refused, the host's own included");
+	Check(host.Find_Player("Host")->Color == 0, "room: a taken colour is refused, the host's own included");
 
 	guest.Request_Setup(2, 9, 1, 0);
 	Deliver(guest, "Guest", {&host}, 450);

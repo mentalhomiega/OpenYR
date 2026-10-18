@@ -292,13 +292,20 @@ void UIScript_Tick(Rml::Context * context)
 				return;
 			}
 		} else if (step.Command == "set") {
-			// "id value" sets the value of a slider, as dragging it would.
+			// "id value" sets the value of a slider, as dragging it would, or the text of a text
+			// box, as typing it and leaving the box would.
 			std::size_t const space = step.Argument.find(' ');
 			Rml::Element * element = Find_Element(context, step.Argument.substr(0, space));
 			if (element == nullptr || space == std::string::npos) {
 				DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
 			} else {
-				element->SetAttribute("value", step.Argument.substr(space + 1));
+				std::string const value = step.Argument.substr(space + 1);
+				element->SetAttribute("value", value);
+				if (element->GetAttribute<Rml::String>("type", "") == "text") {
+					Rml::Dictionary parameters;
+					parameters["value"] = Rml::Variant(value);
+					element->DispatchEvent(Rml::EventId::Change, parameters);
+				}
 				WaitUntil = now + 300;
 				return;
 			}

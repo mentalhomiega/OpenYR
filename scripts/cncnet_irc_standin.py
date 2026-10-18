@@ -5,8 +5,12 @@ keys and limits, NAMES, TOPIC, PRIVMSG and NOTICE (CTCP included), MODE +k/+l/+i
 QUIT. Optional bot players fill the lobby: they chat in the main channel and announce games in the
 broadcast channel the way a CnCNet host does, so the lobby screen has something to show.
 
+With --openyr-build and --room-password, two bots also speak the OpenYR room protocol: the first
+hosts a password-protected OpenYR room that answers a player's hello, and the last joins any game a
+player announces, says hello and gets ready. The build must be the game's version text.
+
   python scripts/cncnet_irc_standin.py [--port 6667] [--bots 3] [--game-version 1.001]
-      [--log FILE]
+      [--log FILE] [--openyr-build TEXT --room-password TEXT]
 
 Nothing here leaves the machine: the server binds to the loopback address only.
 """
@@ -403,12 +407,119 @@ class Bot:
             await asyncio.sleep(30)
 
 
+def ctcp(text):
+    if len(text) >= 2 and text[0] == '\x01' and text[-1] == '\x01':
+        command, _, arguments = text[1:-1].partition(' ')
+        return command, arguments
+    return None, None
+
+
+def escape(text):
+    return ''.join('%%%02X' % ord(c) if c in ';,=|%' or ord(c) < 0x20 else c for c in text)
+
+
+class OpenYRHostBot(Bot):
+    """Hosts an OpenYR room behind the password: seats a player whose hello names the same build,
+    accepts every setup request and marks ready players."""
+
+    def __init__(self, server, nick, game_version, build, password):
+        super().__init__(server, nick, game_version, hosts=True)
+        self.build = build
+        self.password = password
+        self.seats = {}
+        server.cmd_join(self.client, [self.room])
+        server.cmd_mode(self.client, [self.room, '+kl', password, '8'])
+
+    def listing(self, closed=False):
+        fields = super().listing(closed).split(';')
+        fields[5] = '01%s00' % ('1' if closed else '0')
+        return ';'.join(fields)
+
+    def send(self, command, arguments):
+        self.server.cmd_notice(self.client, [self.room, '\x01%s %s\x01' % (command, arguments)])
+
+    def send_players(self):
+        rows = ['%s,-1,0,-1,-1,H' % escape(self.client.nick)]
+        for nick, seat in self.seats.items():
+            rows.append('%s,%s,%s' % (escape(nick), ','.join(str(v) for v in seat['setup']), 'R' if seat['ready'] else ''))
+        self.send('OYRPLAYERS', '|'.join(rows))
+
+    def receive(self, line):
+        message = parse(line)
+        if not message:
+            return
+        prefix, command, params = message
+        sender = prefix.split('!')[0]
+        if command == 'NOTICE' and len(params) == 2 and fold(params[0]) == fold(self.room):
+            name, arguments = ctcp(params[1])
+            if name == 'OYRHELLO':
+                if arguments != '1;' + escape(self.build):
+                    self.send('OYRREFUSE', '%s;%s' % (escape(sender), escape('This room runs OpenYR %s.' % self.build)))
+                    self.server.cmd_kick(self.client, [self.room, sender, 'Wrong build'])
+                    return
+                self.seats[sender] = {'setup': [-1, len(self.seats) + 1, -1, -1], 'ready': False}
+                self.send('OYROPTS', 'Map=%s;MapName=%s;Credits=10000' % (escape('lakeblitz.map'), escape(self.map_name)))
+                self.send_players()
+            elif name == 'OYRREQ' and sender in self.seats:
+                values = [int(v) for v in arguments.split(',')[:4]]
+                self.seats[sender] = {'setup': values, 'ready': False}
+                self.send_players()
+            elif name == 'OYRREADY' and sender in self.seats:
+                self.seats[sender]['ready'] = arguments == '1'
+                self.send_players()
+        elif command in ('PART', 'QUIT') and sender in self.seats:
+            del self.seats[sender]
+            self.send_players()
+        else:
+            super().receive(line)
+
+
+class OpenYRGuestBot(Bot):
+    """Joins the room of any game a player announces, using the password, then says hello and
+    gets ready whenever the host's player list shows it not ready."""
+
+    def __init__(self, server, nick, game_version, build, password):
+        super().__init__(server, nick, game_version, hosts=False)
+        self.build = build
+        self.password = password
+        self.rooms = set()
+
+    def receive(self, line):
+        message = parse(line)
+        if not message:
+            return
+        prefix, command, params = message
+        sender = prefix.split('!')[0]
+        if command == 'NOTICE' and len(params) == 2:
+            name, arguments = ctcp(params[1])
+            if name == 'GAME' and fold(params[0]) == fold(BROADCAST):
+                fields = arguments.split(';')
+                host = self.server.clients.get(fold(sender))
+                if len(fields) == 14 and host is not None and host.bot is None and fields[5][2:3] != '1':
+                    room = fields[3]
+                    if fold(room) not in self.rooms:
+                        self.rooms.add(fold(room))
+                        self.server.cmd_join(self.client, [room, self.password])
+                        self.server.cmd_notice(self.client, [room, '\x01OYRHELLO 1;%s\x01' % escape(self.build)])
+            elif name == 'OYRPLAYERS':
+                for row in arguments.split('|'):
+                    fields = row.split(',')
+                    if len(fields) >= 6 and fold(fields[0]) == fold(self.client.nick) and 'R' not in fields[5]:
+                        self.server.cmd_notice(self.client, [params[0], '\x01OYRREADY 1\x01'])
+        elif command == 'KICK' and len(params) >= 2 and fold(params[1]) == fold(self.client.nick):
+            self.rooms.discard(fold(params[0]))
+        else:
+            super().receive(line)
+
+
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=6667)
     parser.add_argument('--bots', type=int, default=3)
     parser.add_argument('--game-version', default='1.001')
     parser.add_argument('--log', default='')
+    parser.add_argument('--openyr-build', default='')
+    parser.add_argument('--room-password', default='')
     args = parser.parse_args()
 
     server = Server(args.log)
@@ -428,8 +539,12 @@ async def main():
             server.drop(client, 'Connection closed')
 
     listener = await asyncio.start_server(connection, '127.0.0.1', args.port)
+    server.bots = []
     bots = [Bot(server, name, args.game_version, hosts=index % 2 == 0, greets=index == 0)
             for index, name in enumerate(['Tanya', 'Yuri_Fan', 'Boris', 'Lt_Eva', 'Kirov'][:args.bots])]
+    if args.openyr_build and args.room_password:
+        bots.append(OpenYRHostBot(server, 'Eva_Host', args.game_version, args.openyr_build, args.room_password))
+        bots.append(OpenYRGuestBot(server, 'Dasha_Guest', args.game_version, args.openyr_build, args.room_password))
     server.bots = bots
     print('CnCNet stand-in listening on 127.0.0.1:%d with %d bots' % (args.port, len(bots)), flush=True)
     async with listener:

@@ -113,7 +113,8 @@ class CnCNetRoomClass
 		void Tick(uint64_t now);
 
 		// Our own setup. A guest sends it to the host as a request; the host
-		// checks its own choices against the same limits.
+		// checks its own choices against the same limits. The host starts on
+		// the first colour and gives each guest the first free one.
 		void Request_Setup(int side, int color, int start, int team);
 		void Set_Ready(bool ready);
 

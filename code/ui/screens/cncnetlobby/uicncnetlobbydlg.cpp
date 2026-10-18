@@ -15,11 +15,13 @@
 #include "_rules.h"
 #include "ccfile.h"
 #include "ccini.h"
+#include "cncnet/cncnetroom.h"
 #include "cncnet/cncnetsession.h"
 #include "deploymentconfig.h"
 #include "globals.h"
 #include "session.h"
 #include "ui/uienginehost.h"
+#include "ui/screens/cncnetlobby/uicncnetroom.h"
 #include "ui/uiview.h"
 
 #include <cstdlib>
@@ -174,7 +176,31 @@ bool UI_CnCNet_Lobby_Dialog(void)
 
 	UICnCNetLobbyPresenterClass presenter(session, chat);
 	std::unique_ptr<UIViewClass> view = UI_CnCNet_Lobby_View(presenter);
-	UI_Run_Modal(*view);
+	std::mt19937 random{std::random_device{}()};
+	for (;;) {
+		UI_Run_Modal(*view);
+		if (presenter.Choice == UICnCNetLobbyChoice::NONE) {
+			break;
+		}
+
+		CnCNetLobbyClass lobby;
+		session.Read(lobby, 0);
+		UICnCNetRoomSetupType setup;
+		setup.Host = presenter.Choice == UICnCNetLobbyChoice::HOST;
+		setup.Nick = lobby.Own_Nick();
+		setup.Channel = setup.Host ? CnCNet_Room_Channel(random()) : presenter.JoinChannel;
+		setup.HostNick = setup.Host ? setup.Nick : presenter.JoinHost;
+		setup.Password = presenter.State.Password;
+		setup.RoomName = setup.Nick + "'s game";
+		setup.GameVersion = version;
+		setup.BroadcastChannel = config.Lobby.BroadcastChannel;
+
+		UICnCNetRoomResult const result = UI_CnCNet_Room_Dialog(session, setup);
+		if (!result.Reason.empty()) {
+			session.Note(chat, result.Reason);
+		}
+		presenter.Reopen();
+	}
 
 	session.Stop();
 	return(true);

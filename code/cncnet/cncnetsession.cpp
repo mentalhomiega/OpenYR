@@ -137,6 +137,14 @@ void CnCNetSessionClass::Mark_Read(std::string const & channel)
 }
 
 
+void CnCNetSessionClass::Note(std::string const & channel, std::string const & text)
+{
+	std::lock_guard<std::mutex> guard(Lock);
+	Lobby.Add_System_Line(channel, text, CnCNet_Clock());
+	Changed();
+}
+
+
 std::vector<IRCEventType> CnCNetSessionClass::Take_Room_Messages(void)
 {
 	std::lock_guard<std::mutex> guard(Lock);

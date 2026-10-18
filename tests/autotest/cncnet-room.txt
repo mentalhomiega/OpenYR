@@ -1,0 +1,35 @@
+; Joining and hosting an OpenYR room through the built-in CnCNet lobby, against the local IRC
+; stand-in with its OpenYR bots. Start the stand-in first, with the game's version text:
+;   python scripts/cncnet_irc_standin.py --port 16668 --bots 1 --game-version 9.3.5 --openyr-build "<version>" --room-password test
+; then run from the workspace root with -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16668".
+; Eva_Host's room seats us; Dasha_Guest joins the room we host and gets ready, so Go! lights up.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Online lobby
+ui wait 34000
+ui set password test
+ui wait 500
+ui choose Eva_Host's game
+ui wait 1000
+ui shot cncnet-room-lobby
+ui press Join
+ui wait 9000
+ui shot cncnet-room-guest
+ui press Accept
+ui wait 6000
+ui shot cncnet-room-guest-ready
+ui press Cancel
+ui wait 2000
+ui press Host game
+ui wait 20000
+ui shot cncnet-room-host
+ui press Cancel
+ui wait 2000
+ui shot cncnet-room-back
+ui press Back
+ui wait 1500
+ui press OK
+ui wait 1000
+ui quit

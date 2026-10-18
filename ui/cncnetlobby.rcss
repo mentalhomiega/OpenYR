@@ -137,8 +137,20 @@
 
 #gamebuttons button
 {
-	width: 110dp;
-	margin-right: 8dp;
+	width: 90dp;
+	margin-left: 8dp;
+}
+
+#passwordlabel
+{
+	margin-right: 4dp;
+}
+
+#password
+{
+	width: 120dp;
+	height: 21dp;
+	box-sizing: border-box;
 }
 
 #chattabs

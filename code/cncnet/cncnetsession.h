@@ -73,6 +73,8 @@ class CnCNetSessionClass
 		void Set_Topic(std::string const & channel, std::string const & topic);
 		void Kick(std::string const & channel, std::string const & nick, std::string const & reason);
 		void Mark_Read(std::string const & channel);
+		// Adds a line of our own to a channel's chat, or to every public channel when the channel is empty.
+		void Note(std::string const & channel, std::string const & text);
 
 		std::vector<IRCEventType> Take_Room_Messages(void);
 

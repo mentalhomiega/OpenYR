@@ -34,6 +34,7 @@
 			<p id="gamecount">{{gamecount}}</p>
 			<p id="detail">{{detail}}</p>
 			<div class="row" id="gamebuttons">
+				<span id="passwordlabel">Password:</span><input type="text" id="password" maxlength="20" tip="The password for the game you join or host" data-value="password" data-event-change="queue('password', 0, ev.value)"/>
 				<button id="join" data-class-disabled="!canjoin" data-attr-tip="jointip" data-event-click="queue('join')">[[TXT_JOIN]]</button>
 				<button id="host" data-class-disabled="!canhost" data-attr-tip="hosttip" data-event-click="queue('host')">Host game</button>
 			</div>

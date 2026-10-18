@@ -117,6 +117,7 @@ CnCNetRoomClass CnCNetRoomClass::Host(CnCNetRoomConfigType config, std::map<std:
 	CnCNetRoomPlayerType host;
 	host.Name = room.Config.OwnNick;
 	host.Host = true;
+	host.Color = 0;
 	room.PlayerList.push_back(host);
 	return(room);
 }
@@ -273,6 +274,11 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 		} else {
 			CnCNetRoomPlayerType player;
 			player.Name = event.Nick;
+			for (int color = 0; color < Config.Limits.Colors && player.Color < 0; ++color) {
+				if (Setup_Allowed(player, -1, color, -1, -1)) {
+					player.Color = color;
+				}
+			}
 			PlayerList.push_back(player);
 			Changed();
 			Send_Options();

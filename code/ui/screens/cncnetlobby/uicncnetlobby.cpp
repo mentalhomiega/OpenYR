@@ -23,9 +23,6 @@ namespace
 
 std::size_t const MAX_SAY = 400;
 
-char const * const NOT_YET = "Joining and hosting through the built-in lobby come in a later build. "
-	"Until then, play through the CnCNet client from the CnCNet page.";
-
 
 std::string Lower(std::string text)
 {
@@ -86,8 +83,6 @@ UICnCNetLobbyPresenterClass::UICnCNetLobbyPresenterClass(CnCNetSessionClass & se
 	ChatChannel(std::move(chat_channel)),
 	SelectedChannel(ChatChannel)
 {
-	State.JoinTip = NOT_YET;
-	State.HostTip = NOT_YET;
 	Refresh();
 }
 
@@ -158,8 +153,25 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 				}
 			}
 		}
-	} else if (intent.Name == "join" || intent.Name == "host") {
-		// Not offered yet; the buttons stay disabled with a tip saying why.
+	} else if (intent.Name == "password") {
+		State.Password = Trim(intent.Text);
+	} else if (intent.Name == "join") {
+		if (State.CanJoin) {
+			for (CnCNetGameType const & game : Lobby.Games()) {
+				if (CnCNetLobbyClass::Same_Nick(game.HostNick, SelectedHost)) {
+					Choice = UICnCNetLobbyChoice::JOIN;
+					JoinChannel = game.Listing.RoomChannel;
+					JoinHost = game.HostNick;
+					Result = UI_RESULT_ACCEPTED;
+					break;
+				}
+			}
+		}
+	} else if (intent.Name == "host") {
+		if (State.CanHost) {
+			Choice = UICnCNetLobbyChoice::HOST;
+			Result = UI_RESULT_ACCEPTED;
+		}
 	} else if (intent.Name == "back") {
 		Result = UI_RESULT_CANCELLED;
 	}
@@ -294,8 +306,33 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 	} else {
 		State.GameCount = std::to_string(shown.size()) + " of " + std::to_string(total) + " games shown";
 	}
-	State.CanJoin = false;
-	State.CanHost = false;
+	UICnCNetGameRow const * selected = State.Game >= 0 ? &State.Games[State.Game] : nullptr;
+	State.CanJoin = State.Online && selected != nullptr && selected->Joinable && !State.Password.empty();
+	if (!State.Online) {
+		State.JoinTip = "Not connected.";
+	} else if (selected == nullptr) {
+		State.JoinTip = "Pick a game in the list first.";
+	} else if (!selected->Joinable) {
+		State.JoinTip = selected->Tip;
+	} else if (State.Password.empty()) {
+		State.JoinTip = "Type the game's password first. Test games are private.";
+	} else {
+		State.JoinTip = "Join " + selected->Name + ".";
+	}
+	State.CanHost = State.Online && !State.Password.empty();
+	State.HostTip = !State.Online ? "Not connected." : State.Password.empty()
+		? "Type a password for your game first. Test games are private." : "Host a game with this password.";
+}
+
+
+void UICnCNetLobbyPresenterClass::Reopen(void)
+{
+	Result.reset();
+	Choice = UICnCNetLobbyChoice::NONE;
+	JoinChannel.clear();
+	JoinHost.clear();
+	Revision = 0;
+	Refresh();
 }
 
 
@@ -470,6 +507,7 @@ class UICnCNetLobbyViewClass : public UIRmlViewClass
 				&& model.Bind("users", &state.Users)
 				&& model.Bind("user", &state.User)
 				&& model.Bind("usercount", &state.UserCount)
+				&& model.Bind("password", &state.Password)
 				&& model.Bind("canjoin", &state.CanJoin)
 				&& model.Bind("canhost", &state.CanHost)
 				&& model.Bind("canwhisper", &state.CanWhisper)

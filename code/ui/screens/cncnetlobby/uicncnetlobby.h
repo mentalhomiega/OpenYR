@@ -86,12 +86,22 @@ struct UICnCNetLobbyState
 	int User = -1;
 	std::string UserCount;
 
+	std::string Password;
+
 	bool CanJoin = false;
 	bool CanHost = false;
 	bool CanWhisper = false;
 	bool CanClose = false;
 	std::string JoinTip;
 	std::string HostTip;
+};
+
+
+enum class UICnCNetLobbyChoice
+{
+	NONE,
+	JOIN,
+	HOST
 };
 
 
@@ -106,6 +116,15 @@ class UICnCNetLobbyPresenterClass : public UIPresenterClass
 
 		// Bumped whenever the rows change, so the view rebuilds lists only then.
 		uint64_t Generation = 0;
+
+		// What closed the screen: a game to join (its room channel, host and
+		// password) or a game to host with the password typed.
+		UICnCNetLobbyChoice Choice = UICnCNetLobbyChoice::NONE;
+		std::string JoinChannel;
+		std::string JoinHost;
+
+		// Ready to show the lobby again after a room closes.
+		void Reopen(void);
 
 	private:
 		void Rebuild(void);
