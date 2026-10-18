@@ -9532,10 +9532,26 @@ void BuildingClass::Bunker_Down(void)
 	}
 	BunkerLinkedItem->BunkerLinkedItem = NULL;
 	BunkerLinkedItem = NULL;
-	End_Anim(BANIM_SPECIAL_ONE);
-	End_Anim(BANIM_SPECIAL_TWO);
+	Bunker_Walls_Down_Anims();
 	Sound_Effect(Rule->BunkerWallsDownSound, Center_Coord());
 	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Ends the walls-up animations of a tank bunker and starts the walls-down pair (SPECIAL_THREE and
+/// SPECIAL_FOUR), as BuildingClass::EmptyBunker (0x4595C0) and ClearBunker (0x459470) do. Nothing
+/// starts once the bunker is off the map.
+/// </summary>
+void BuildingClass::Bunker_Walls_Down_Anims(void)
+{
+	End_Anim(BANIM_SPECIAL_ONE);
+	End_Anim(BANIM_SPECIAL_TWO);
+	if (!IsInLimbo) {
+		bool const damaged = HealthRatio <= Rule->ConditionYellow;
+		Begin_Anim(BANIM_SPECIAL_THREE, damaged);
+		Begin_Anim(BANIM_SPECIAL_FOUR, damaged);
+	}
 }
 
 
