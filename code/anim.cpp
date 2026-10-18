@@ -621,12 +621,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height));
 			}
 
-			// Yuri's Revenge draws no shadow under a flat animation.
-			if (Class->IsShadow && !Class->IsTiled && !Class->IsFlat) {
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum + shapefile->Get_Count() / 2, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
-			}
-
-			// The shadow and the bounce above pass draw ordinary light; only the picture itself is emissive.
+			// The bounce pass above draws ordinary light; only the picture itself is emissive.
 			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
 			// translucency is three quarters opaque, as the blitter's opacity is.
 			int opacity = 255;
@@ -665,6 +660,13 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
 			} else {
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_90DEG, brightness);
+			}
+
+			// Yuri's Revenge draws the shadow of an upright animation after the picture, at the draw point
+			// without the Y draw offset and without a depth test. Flat and tiled animations have none.
+			if (Class->IsShadow && !Class->IsTiled && !Class->IsFlat) {
+				EmissiveDrawScope shadow_scope(0);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum + shapefile->Get_Count() / 2, point, cliprect, ShapeFlags_Type((flags & ~SHAPE_TRANSLUCENT75)|SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL), NULL, -2 - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, brightness);
 			}
 
 			if (Class->IsFlamingGuy && !IsFalling) {

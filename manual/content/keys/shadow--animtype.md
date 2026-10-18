@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-With `yes`, the second half of the animation's file holds a shadow for each frame of the first half. The animation plays only the first half, and each frame is drawn over its shadow, which darkens the ground beneath. Without an `End`, the animation's length is half the file's frame count.
+With `yes`, the second half of the animation's file holds a shadow for each frame of the first half. The animation plays only the first half. Each frame is drawn first, then its shadow darkens whatever is beneath, including the frame itself. The shadow sits at the animation's position without the vertical offset that [`YDrawOffset`](/keys/ydrawoffset/) gives the frame. Without an `End`, the animation's length is half the file's frame count.
 
 ```ini title="artmd.ini"
 [MYANIM] ; example animation
