@@ -1,0 +1,249 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 900dp;
+	height: 600dp;
+	top: 50%;
+	margin-top: -300dp;
+}
+
+#content
+{
+	padding: 14dp 24dp 0 24dp;
+}
+
+.row
+{
+	display: flex;
+	align-items: center;
+}
+
+#top
+{
+	display: flex;
+	align-items: baseline;
+	height: 20dp;
+}
+
+#title
+{
+	font-weight: bold;
+	margin: 0;
+}
+
+/* The status reads as words first; the colour only repeats it. */
+#status
+{
+	margin: 0 0 0 auto;
+	color: #ffd34d;
+}
+
+#status.online { color: #70ff00; }
+#status.problem { color: #ff7070; }
+
+#columns
+{
+	display: flex;
+	margin-top: 8dp;
+	height: 500dp;
+}
+
+#left
+{
+	width: 430dp;
+	margin-right: 16dp;
+}
+
+#right
+{
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+#filters { margin-bottom: 6dp; }
+
+#searchlabel
+{
+	margin-right: 4dp;
+}
+
+#filter
+{
+	width: 110dp;
+	height: 21dp;
+	margin: 0 8dp 0 0;
+	box-sizing: border-box;
+}
+
+#filters label.check
+{
+	margin-right: 8dp;
+	white-space: nowrap;
+}
+
+.heading
+{
+	height: 16dp;
+	font-weight: bold;
+	padding-left: 2dp;
+}
+
+.col-name { width: 150dp; overflow: hidden; white-space: nowrap; }
+.col-map { width: 130dp; overflow: hidden; white-space: nowrap; }
+.col-players { width: 55dp; }
+.col-status { width: 85dp; white-space: nowrap; }
+
+#games
+{
+	height: 330dp;
+}
+
+#games .item.game
+{
+	display: flex;
+	height: 18dp;
+	line-height: 17dp;
+}
+
+/* A game that cannot be joined is dimmed and its status column says why. */
+#games .item.closed
+{
+	color: #8aa07a;
+}
+
+#gamecount
+{
+	margin: 4dp 0 0 0;
+	line-height: 15dp;
+}
+
+#detail
+{
+	margin: 2dp 0 0 0;
+	height: 34dp;
+	line-height: 15dp;
+	white-space: pre-wrap;
+}
+
+#gamebuttons button
+{
+	width: 110dp;
+	margin-right: 8dp;
+}
+
+#chattabs
+{
+	flex-wrap: wrap;
+	margin-bottom: 4dp;
+}
+
+#chattabs button
+{
+	white-space: nowrap;
+	margin: 0 4dp 2dp 0;
+	padding: 0 8dp;
+	width: auto;
+}
+
+/* The selected tab is underlined as well as lit, so it does not rely on colour. */
+#chattabs button.tab.selected
+{
+	text-decoration: underline;
+	font-weight: bold;
+}
+
+#chattabs button.tab.unread
+{
+	font-style: italic;
+}
+
+#closetab { margin-left: auto; }
+
+#topic
+{
+	margin: 0 0 4dp 0;
+	line-height: 15dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#chatrow
+{
+	display: flex;
+	flex: 1;
+}
+
+#chat
+{
+	flex: 1;
+	margin-right: 8dp;
+}
+
+#chat .line
+{
+	display: block;
+	margin: 0;
+	padding-left: 2dp;
+	line-height: 15dp;
+	white-space: pre-wrap;
+}
+
+#chat .time { color: #9ab08a; margin-right: 4dp; }
+#chat .nick { font-weight: bold; }
+#chat .own .nick { text-decoration: underline; }
+#chat .notice { font-style: italic; }
+#chat .action { font-style: italic; }
+#chat .system { color: #c8c8c8; font-style: italic; }
+
+#userside
+{
+	width: 130dp;
+	display: flex;
+	flex-direction: column;
+}
+
+#usercount
+{
+	margin: 0 0 2dp 0;
+	line-height: 15dp;
+}
+
+#users
+{
+	flex: 1;
+}
+
+#whisper
+{
+	margin-top: 4dp;
+	width: 130dp;
+}
+
+#say
+{
+	height: 21dp;
+	margin: 6dp 0 0 0;
+	box-sizing: border-box;
+	width: 100%;
+}
+
+#buttons
+{
+	margin-top: 8dp;
+}
+
+#back
+{
+	margin-left: auto;
+	width: 94dp;
+}

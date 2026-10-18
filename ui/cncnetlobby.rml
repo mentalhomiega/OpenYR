@@ -1,0 +1,66 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>CnCNet lobby</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="cncnetlobby.rcss"/>
+</head>
+<body template="dialog" data-model="cncnetlobby">
+	<div id="top">
+		<p id="title">CnCNet lobby</p>
+		<p id="status" data-class-online="online" data-class-problem="failed">{{status}}</p>
+	</div>
+	<div id="columns">
+		<div id="left">
+			<div class="row" id="filters">
+				<span id="searchlabel">Search:</span><input type="text" id="filter" maxlength="40" tip="Search game names, maps and hosts" data-value="filter" data-event-change="queue('filter', 0, ev.value)"/>
+				<label class="check" tip="Hide games that are locked or need a password"><input type="checkbox" data-attrif-checked="hidelocked" data-event-click="queue('hidelocked', hidelocked ? 0 : 1)"/>Hide locked</label>
+				<label class="check" tip="Hide games from other versions, which this build cannot join"><input type="checkbox" data-attrif-checked="hideother" data-event-click="queue('hideother', hideother ? 0 : 1)"/>Hide other versions</label>
+			</div>
+			<div class="row heading"><span class="col-name">Game</span><span class="col-map">Map</span><span class="col-players">Players</span><span class="col-status">Status</span></div>
+			<div id="games" class="list"><div class="rows">
+				<div class="item game" data-for="entry : games" data-class-selected="entry.selected" data-class-closed="!entry.joinable" data-attr-tip="entry.tip" data-event-click="queue('game', it_index)" data-event-dblclick="queue('join')">
+					<span class="col-name">{{entry.name}}</span><span class="col-map">{{entry.map}}</span><span class="col-players">{{entry.players}}</span><span class="col-status">{{entry.status}}</span>
+				</div>
+			</div></div>
+			<p id="gamecount">{{gamecount}}</p>
+			<p id="detail">{{detail}}</p>
+			<div class="row" id="gamebuttons">
+				<button id="join" data-class-disabled="!canjoin" data-attr-tip="jointip" data-event-click="queue('join')">[[TXT_JOIN]]</button>
+				<button id="host" data-class-disabled="!canhost" data-attr-tip="hosttip" data-event-click="queue('host')">Host game</button>
+			</div>
+		</div>
+		<div id="right">
+			<div class="row" id="chattabs">
+				<button class="tab" data-for="t : tabs" data-class-selected="t.selected" data-class-unread="t.unread" data-event-click="queue('tab', it_index)">{{t.label}}</button>
+				<button id="closetab" data-if="canclose" tip="Close this conversation" data-event-click="queue('closetab')">Close</button>
+			</div>
+			<p id="topic" data-if="topic != ''">{{topic}}</p>
+			<div id="chatrow">
+				<div id="chat" class="list log"><div class="rows">
+					<p class="line" data-for="line : lines" data-class-own="line.kind == 'own'" data-class-notice="line.kind == 'notice'" data-class-action="line.kind == 'action'" data-class-system="line.kind == 'system'"><span class="time">{{line.time}}</span> <span class="nick" data-if="line.kind == 'chat' || line.kind == 'own' || line.kind == 'notice'">&lt;{{line.nick}}&gt;</span><span class="nick" data-if="line.kind == 'action'">* {{line.nick}}</span> {{line.text}}</p>
+				</div></div>
+				<div id="userside">
+					<p id="usercount">{{usercount}}</p>
+					<div id="users" class="list"><div class="rows">
+						<div class="item" data-for="u : users" data-class-selected="u.selected" data-event-click="queue('user', it_index)" data-event-dblclick="queue('whisper', it_index)">{{u.mark}}{{u.name}}</div>
+					</div></div>
+					<button id="whisper" data-class-disabled="!canwhisper" tip="Open a private conversation with the selected player (or double-click a name)" data-event-click="queue('whisper', -1)">Message</button>
+				</div>
+			</div>
+			<input type="text" id="say" maxlength="400" tip="Enter sends. /me does an action; /msg name text sends a private message." data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
+		</div>
+	</div>
+	<div class="row" id="buttons">
+		<button id="back" data-event-click="queue('back')">Back</button>
+	</div>
+</body>
+</rml>

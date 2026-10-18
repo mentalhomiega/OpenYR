@@ -25,6 +25,7 @@ enum UICNCNetChoice
 	UI_CNCNET_CHOOSE,
 	UI_CNCNET_DESTINATION,
 	UI_CNCNET_START,
+	UI_CNCNET_LOBBY,
 };
 
 
@@ -110,6 +111,7 @@ struct UICNCNetState
 	bool CanCancel = false;
 	bool CanStart = false;
 	bool CanRemove = false;
+	bool NativeLobby = false;      // The settings turn the built-in lobby preview on.
 	bool Confirming = false;
 	bool CopyPresent = false;
 	bool InstallFound = false;

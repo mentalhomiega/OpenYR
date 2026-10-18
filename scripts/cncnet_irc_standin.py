@@ -90,6 +90,7 @@ class Server:
     def __init__(self, log_path):
         self.clients = {}       # folded nick -> client
         self.channels = {}
+        self.bots = []
         self.log_file = open(log_path, 'a', encoding='utf-8') if log_path else None
 
     def log(self, text):
@@ -206,6 +207,9 @@ class Server:
             if channel.topic:
                 client.numeric('332', channel.name, channel.topic)
             self.send_names(client, channel)
+            for bot in self.bots:
+                if bot.client is not client:
+                    bot.joined(channel, client)
 
     def send_names(self, client, channel):
         names = [('@' if nick in channel.ops else '') + member.nick for nick, member in channel.members.items()]
@@ -355,8 +359,9 @@ class Bot:
     LINES = ['anyone up for a 2v2?', 'gg', 'need one more for Lake Blitz', 'brb', 'who wants a rematch',
              'hosting now, join up']
 
-    def __init__(self, server, nick, game_version, hosts):
+    def __init__(self, server, nick, game_version, hosts, greets=False):
         self.server = server
+        self.greets = greets
         self.client = Client(server, None)
         self.client.bot = self
         self.game_version = game_version
@@ -375,6 +380,11 @@ class Bot:
         if message and message[1] == 'PRIVMSG' and fold(message[2][0]) == fold(self.client.nick):
             sender = message[0].split('!')[0]
             self.server.cmd_privmsg(self.client, [sender, 'hi %s, I am a stand-in bot' % sender])
+
+    def joined(self, channel, client):
+        # The first bot greets a player joining the chat channel, so a test sees a chat line soon.
+        if self.greets and fold(channel.name) == fold(CHAT) and client.bot is None:
+            self.server.cmd_privmsg(self.client, [CHAT, 'welcome %s' % client.nick])
 
     def listing(self, closed=False):
         flags = '0%s%s00' % ('0', '1' if closed else '0')
@@ -418,8 +428,9 @@ async def main():
             server.drop(client, 'Connection closed')
 
     listener = await asyncio.start_server(connection, '127.0.0.1', args.port)
-    bots = [Bot(server, name, args.game_version, hosts=index % 2 == 0)
+    bots = [Bot(server, name, args.game_version, hosts=index % 2 == 0, greets=index == 0)
             for index, name in enumerate(['Tanya', 'Yuri_Fan', 'Boris', 'Lt_Eva', 'Kirov'][:args.bots])]
+    server.bots = bots
     print('CnCNet stand-in listening on 127.0.0.1:%d with %d bots' % (args.port, len(bots)), flush=True)
     async with listener:
         await asyncio.gather(listener.serve_forever(), *(bot.run() for bot in bots))
