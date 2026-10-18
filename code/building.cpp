@@ -8966,10 +8966,17 @@ void BuildingClass::Update_Super_Anims(void)
 	if (super->Is_Ready()) {
 		// A ready animation that a power shortfall removed stays away until the power comes back.
 		if (Anims[BANIM_SUPER_THREE] == NULL && !AnimStates[BANIM_SUPER_THREE]) {
-			End_Anim(BANIM_SUPER_ONE);
-			End_Anim(BANIM_SUPER_TWO);
 			End_Anim(BANIM_SUPER_FOUR);
-			Begin_Anim(BANIM_SUPER_THREE, damaged);
+
+			// A charge that is still finishing plays out; the ready animation starts when it ends.
+			if (Anims[BANIM_SUPER_TWO] == NULL) {
+				if (Anims[BANIM_SUPER_ONE] != NULL) {
+					End_Anim(BANIM_SUPER_ONE);
+					Begin_Anim(BANIM_SUPER_TWO, damaged);
+				} else {
+					Begin_Anim(BANIM_SUPER_THREE, damaged);
+				}
+			}
 		}
 	} else if (Class->ChargedAnimTime < super->Control.Value() * 0.0011111111f) {
 		if (Anims[BANIM_SUPER_THREE] != NULL || Anims[BANIM_SUPER_TWO] != NULL) {
