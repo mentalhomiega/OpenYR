@@ -16,6 +16,7 @@ version: 1
 # in its From column.
 records:
   # Our own keys.
+  added-barrelanimzadjust: OpenYR
   added-synclog: OpenYR
   added-voxelshadescale: OpenYR
   added-voxelspecularfromview: OpenYR

@@ -386,6 +386,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsJuggernaut(false),
 	IsCoreDefender(false),
 	IsBarrelAnimAVoxel(false),
+	BarrelAnimZAdjust(-21),
 	IsTurretAnimExclusive(false),
 	IsTurretRecoil(false),
 	IsDamagedDoor(false),
@@ -1348,6 +1349,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCoreDefender = ini.Get_Bool(Name(), "IsCoreDefender", IsCoreDefender);
 
 		IsBarrelAnimAVoxel = ini.Get_Bool(Name(), "BarrelAnimIsVoxel", IsBarrelAnimAVoxel);
+		BarrelAnimZAdjust = ini.Get_Int(Name(), "BarrelAnimZAdjust", BarrelAnimZAdjust);
 		ini.Get_String(Name(), "VoxelBarrelFile", VoxelBarrelFile, VoxelBarrelFile, sizeof(VoxelBarrelFile));
 		VoxelBarrelOffsetToPitchPivotPoint = ini.Get_Point(Name(), "VoxelBarrelOffsetToPitchPivotPoint", VoxelBarrelOffsetToPitchPivotPoint);
 		VoxelBarrelOffsetToRotatePivotPoint = ini.Get_Point(Name(), "VoxelBarrelOffsetToRotatePivotPoint", VoxelBarrelOffsetToRotatePivotPoint);
@@ -2320,6 +2322,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsJuggernaut);
 	crc(IsCoreDefender);
 	crc(IsBarrelAnimAVoxel);
+	crc(BarrelAnimZAdjust);
 	crc(TurretChargeAnimRate);
 	crc(ChargedAnimTime);
 	crc(IsTurretAnimExclusive);
@@ -2555,6 +2558,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsJuggernaut);
 	stream.Serialize(IsCoreDefender);
 	stream.Serialize(IsBarrelAnimAVoxel);
+	stream.Serialize(BarrelAnimZAdjust);
 	stream.Serialize(IsTurretAnimExclusive);
 	stream.Serialize(IsTurretRecoil);
 	stream.Serialize(TurretRecoilControl.Travel);

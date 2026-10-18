@@ -929,6 +929,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsBarrelAnimAVoxel;
 
 		/*
+		 * The depth bias, in pixels, of a voxel barrel drawn by IsBarrelAnimAVoxel. Its default
+		 * is -21, and the value has no effect on a building whose barrel is not a voxel.
+		 */
+		int BarrelAnimZAdjust;
+
+		/*
 		 * If this building's turret animation may not run alongside its active animation,
 		 * then this flag will be true. Such a turret only animates while the weapon is
 		 * charging or charged, and the active animation is stopped for the duration.

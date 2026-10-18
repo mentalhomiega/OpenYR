@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 107 entries
+- [Rules](#rules): 108 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -67,6 +67,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |

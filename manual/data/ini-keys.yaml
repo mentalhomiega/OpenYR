@@ -4505,6 +4505,23 @@ BarrelAnimIsVoxel:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+BarrelAnimZAdjust:
+  key: BarrelAnimZAdjust
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: BarrelAnimZAdjust
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 BarrelCompressFrames:
   key: BarrelCompressFrames
   scopes:

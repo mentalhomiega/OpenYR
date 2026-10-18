@@ -1,7 +1,7 @@
 ---
 key: BarrelAnimIsVoxel
 summary: Draws a building's gun barrel from a voxel model over its turret animation.
-see_also: ["VoxelBarrelFile", "VoxelBarrelScale", "VoxelBarrelOffsetToBarrelEnd", "TurretAnimIsVoxel", "TurretAnim", "PrimaryFireFLH"]
+see_also: ["VoxelBarrelFile", "VoxelBarrelScale", "VoxelBarrelOffsetToBarrelEnd", "TurretAnimIsVoxel", "TurretAnim", "PrimaryFireFLH", "BarrelAnimZAdjust"]
 when_omitted:
   kind: value
   value: "no"
@@ -25,7 +25,7 @@ The four `VoxelBarrelOffset…` keys and [`VoxelBarrelScale`](/keys/voxelbarrels
 
 ## Draw order
 
-The building draws the turret animation and the barrel together, so they keep a consistent order as the gun turns. The barrel is drawn over the animation while the gun points anywhere from north-east round through south to south-west, and under it for the rest of the circle. The barrel uses a fixed depth bias; [`TurretAnimZAdjust`](/keys/turretanimzadjust/) does not move it.
+The building draws the turret animation and the barrel together, so they keep a consistent order as the gun turns. The barrel is drawn over the animation while the gun points anywhere from north-east round through south to south-west, and under it for the rest of the circle. The barrel's depth bias comes from [`BarrelAnimZAdjust`](/keys/barrelanimzadjust/), which defaults to `-21`. [`TurretAnimZAdjust`](/keys/turretanimzadjust/) does not move it.
 
 Neither the barrel nor the turret animation is drawn while the building's buildup plays, or once its deconstruction is past the first frame.
 

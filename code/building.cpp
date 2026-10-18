@@ -1270,15 +1270,13 @@ void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) 
 /// <returns>Returns with the depth bias to apply, expressed in pixels.</returns>
 int BuildingClass::Get_Z_Adjust(void) const
 {
-	static int _barrel_z_adj = -21;
-
 	int pixel = -Tactical::Z_Lepton_To_Pixel(Height);
 
 	if (Class->IsTurretAnimAVoxel) {
 		return(Class->AnimData[BANIM_TURRET].ZAdjust + pixel);
 	}
 	if (Class->IsBarrelAnimAVoxel) {
-		return(_barrel_z_adj + pixel);
+		return(Class->BarrelAnimZAdjust + pixel);
 	}
 	return(pixel);
 }
