@@ -568,9 +568,9 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				}
 			}
 
-			// The blitter picks one translucency, so an animation that already has one keeps it. The DoubleThick key (75 percent) is not read by this build.
+			// The blitter picks one translucency, so an animation that already has one keeps it.
 			if (IsUnderTemporal && (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) == 0) {
-				flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
+				flags = ShapeFlags_Type(flags|(Class->IsDoubleThick ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50));
 			}
 
 			if ((flags & SHAPE_DARKEN) == 0) {
@@ -1941,7 +1941,7 @@ bool AnimClass::Make_Infantry(void)
 	if (infantry == NULL) {
 		return(true);
 	}
-	if (!infantry->Unlimbo(Center_Coord(), DIR_S)) {
+	if (!infantry->Unlimbo(Center_Coord(), DIR_SE)) {
 		delete infantry;
 		return(false);
 	}

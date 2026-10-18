@@ -20,7 +20,7 @@ The value selects one of eleven deaths:
 | `6` | The soldier is removed and leaves the [`InfantryHeadPop`](/keys/infantryheadpop/) animation |
 | `7` | The soldier is removed and leaves the [`InfantryNuked`](/keys/infantrynuked/) animation |
 | `8` | The soldier is removed and leaves the [`InfantryVirus`](/keys/infantryvirus/) animation |
-| `9` | The soldier is removed and leaves the [`InfantryMutate`](/keys/infantrymutate/) animation, which becomes a new infantryman of the attacker's house |
+| `9` | On ground infantry can walk on or on a bridge, with a free spot in the cell and no structure there, the soldier is removed and leaves the [`InfantryMutate`](/keys/infantrymutate/) animation, which becomes a new infantryman of the attacker's house. Otherwise he plays his explosion death sequence, as for `2` |
 | `10` | The soldier is removed and leaves the [`InfantryBrute`](/keys/infantrybrute/) animation |
 
 A death that names an animation the rules leave unset removes the soldier without one.
