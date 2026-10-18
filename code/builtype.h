@@ -331,6 +331,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		ShapeSet const * UnderDoorAnim;
 
 		/*
+		 * This is the shape data drawn over a factory's doorway while a unit that jumps or hovers
+		 * leaves through the roof. It takes the place of UnderDoorAnim for that exit.
+		 */
+		ShapeSet const * UnderRoofDoorAnim;
+
+		/*
 		 * This is the shape data for a factory's door, animated open and shut as the building
 		 * unloads. Its frame is interpolated across the DoorStages by the door timer.
 		 */

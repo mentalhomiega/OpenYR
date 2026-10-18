@@ -963,8 +963,21 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 		Techno_Draw_Object(Class->BibShape, Shape_Number(), xdrawpoint, xcliprect, DIR_N, 256, -1 - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, true, Map[cell].Brightness + Class->ExtraLight);
 	}
 
-	if (Mission == MISSION_UNLOAD && Class->UnderDoorAnim != NULL) {
-		Techno_Draw_Object(Class->UnderDoorAnim, HealthRatio <= Rule->ConditionYellow ? 1 : 0, xdrawpoint, xcliprect, DIR_N, 256, -TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, true, Map[cell].Brightness + Class->ExtraLight);
+	if (Mission == MISSION_UNLOAD) {
+
+		// A jumpjet or balloon-hover unit leaves through the roof. The unit is the first radio link, as in BuildingClass::DrawIt (0x43D290).
+		TechnoClass * unit = Contact_With_Whom();
+		bool through_roof = false;
+		if (unit != NULL) {
+			TechnoTypeClass const * unittype = unit->Techno_Type_Class();
+			through_roof = unittype->IsJumpJet || unittype->IsBalloonHover;
+		}
+
+		// A roof exit draws only UnderRoofDoorAnim, so a structure without one draws no door for that exit.
+		ShapeSet const * underdoor = through_roof ? Class->UnderRoofDoorAnim : Class->UnderDoorAnim;
+		if (underdoor != NULL) {
+			Techno_Draw_Object(underdoor, HealthRatio <= Rule->ConditionYellow ? 1 : 0, xdrawpoint, xcliprect, DIR_N, 256, -TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, true, Map[cell].Brightness + Class->ExtraLight);
+		}
 	}
 }
 

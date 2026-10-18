@@ -263,6 +263,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Upgrades(0),
 	DeployingAnim(NULL),
 	UnderDoorAnim(NULL),
+	UnderRoofDoorAnim(NULL),
 	DoorAnim(NULL),
 	SpecialZOverlay(NULL),
 	SpecialZOverlayZAdjust(0),
@@ -1117,6 +1118,13 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
 		UnderDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+	}
+
+	ArtINI.Get_String(Graphic_Name(), "UnderRoofDoorAnim", "", buffer, sizeof(buffer));
+	if (strlen(buffer) != 0) {
+		_makepath(fullname, NULL, NULL, buffer, ".SHP");
+		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
+		UnderRoofDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "SpecialZOverlay", "", buffer, sizeof(buffer));
@@ -2418,6 +2426,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Upgrades);
 	// DeployingAnim -- artwork, fetched from the mix files again as this loads.
 	// UnderDoorAnim
+	// UnderRoofDoorAnim
 	// DoorAnim
 	// SpecialZOverlay
 	stream.Serialize(SpecialZOverlayZAdjust);
